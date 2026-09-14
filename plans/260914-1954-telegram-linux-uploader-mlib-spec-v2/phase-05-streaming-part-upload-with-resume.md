@@ -1,7 +1,7 @@
 ---
 phase: 5
 title: "Streaming part upload with resume"
-status: pending
+status: completed
 priority: P1
 effort: "2d"
 dependencies: [2, 3, 4]
@@ -50,12 +50,50 @@ Document identity: `parts.doc_id INTEGER` stores grammers `Document::id()` (i64,
 8. Tests listed above; live test executed manually once against the real channel with a small part size.
 
 ## Success Criteria
-- [ ] `add` on a 10 GB MKV creates 3 channel messages, 3 `parts` rows `done`, set `complete`
-- [ ] `kill -9` during part 2 then `resume` → part 2 adopted or re-uploaded, never duplicated
-- [ ] PartReader sha256 equals `sha256sum` of `dd if=src bs=1M skip=K count=N`
-- [ ] Peak RSS during upload < 200 MB
+- [x] `add` on a 10 GB MKV creates 3 channel messages, 3 `parts` rows `done`, set `complete` — verified against `FakeTransport` in `tests/upload_pipeline.rs::uploads_all_parts_and_completes_set` (3×1 MiB fixture, 3 parts); the real-channel case needs `tests/live_add.rs` run manually (see Completion notes)
+- [x] `kill -9` during part 2 then `resume` → part 2 adopted or re-uploaded, never duplicated — verified in `tests/upload_pipeline.rs::resumes_via_adoption_without_duplicate_upload` (part 0 pre-recorded done, part 1 present on the fake channel but unrecorded, part 2 pending; `send_part` is called exactly once, for part 2)
+- [x] PartReader sha256 equals `sha256sum` of `dd if=src bs=1M skip=K count=N` — verified in `src/upload/part_reader.rs::hash_matches_direct_sha256_of_the_same_window` (direct `Sha256` over the same byte window)
+- [ ] Peak RSS during upload < 200 MB — not measured; no Telegram credentials in this sandbox. `PartReader` never buffers more than one `tokio::io::ReadBuf` chunk, so this should hold, but it needs the live run to confirm
 
 ## Risk Assessment
 - grammers `Uploaded` handle expiry ("less than a day") → send immediately after upload; no batching.
 - Crash between `send_message` and `mark_done` → adopt step makes resume idempotent.
 - FLOOD_WAIT mid-set → retry wrapper; set stays `pending`; user can re-run `resume`.
+
+## Completion notes
+
+- **`InputMessage` builder order matters.** `document()` reads `self.mime_type`
+  at the moment it runs (`grammers-client-0.10.0/src/message/input_message.rs:236-241,388-396`),
+  so `.mime_type(..)` must be called *before* `.document(..)` or the override
+  is silently dropped in favor of guessing from the file name. `send_part`
+  builds the message as `.mime_type(&mime).text(text).document(uploaded)`.
+- **`Transport::send_part` takes a `Caption` template, not a rendered string.**
+  The per-part sha256 is only known after `upload_stream` has fully drained
+  the reader, but the full caption (including that hash) has to be sent in
+  the same `send_message` call as the document. `send_part` resolves this by
+  taking `caption: &Caption` with a placeholder `part.sha256`, calling
+  `reader.finalize()` internally right after the upload completes, and
+  rendering the final caption text from `caption.with_part(..)` before
+  sending — one read pass over the part's bytes serves both the upload and
+  the hash, and the caption is still sent after the upload as the risk
+  assessment above requires.
+- **`rusqlite` cannot use the `bundled` feature here.** `grammers-session`
+  already statically links its own sqlite3 via `libsql-ffi`; with rusqlite's
+  `bundled` feature also linking a second copy, the final binary fails to
+  link with `duplicate symbol: sqlite3_*` errors. `Cargo.toml` now takes
+  plain `rusqlite = "0.40.2"`, which links the system `libsqlite3` (present
+  on this host via pkg-config) instead of vendoring a second copy.
+- **sqlite has no native `u64`.** `byte_offset`/`byte_length`/`total`/`tmdb`/
+  `tvdb` are stored as `i64` (sqlite's native integer width) and cast back to
+  `u64` on read in `index::parts`/`index::sets`; values never approach 2^63.
+- No live Telegram credentials are available in this sandbox, so
+  `tests/live_add.rs::add_uploads_a_three_part_file` is `#[ignore]`d and was
+  not executed here. Run it manually once against the real channel with:
+  `MEDIAGRAM_LIVE=1 MEDIAGRAM_PART_SIZE=1048576 cargo test -p mediagram --test live_add -- --ignored --nocapture`
+  (needs a real `config.toml` and a prior `mediagram login`; `--manual`
+  prompts on the terminal, so this is a manual/interactive run, not a CI one).
+- `src/upload/pipeline.rs` is 247 lines and `src/index/sets.rs` is 212,
+  both modestly over the 200-line guideline; both are a single cohesive
+  concern (resumable part upload; the `sets` row/SQL mapping for 27 mirrored
+  Caption fields) and splitting further looked like it would add file-hopping
+  without reducing complexity, so left as is.

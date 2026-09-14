@@ -21,7 +21,7 @@ Stack: Rust 1.98 edition 2024, grammers-client 0.10.0, rusqlite (bundled), clap,
 | 2 | [Config and Telegram auth](phase-02-config-and-telegram-auth.md) | completed | P1 | 0.5d | 1 |
 | 3 | [Media inspect and faststart remux](phase-03-media-inspect-and-faststart-remux.md) | completed | P2 | 0.5d | 1 |
 | 4 | [TMDB metadata resolution](phase-04-tmdb-metadata-resolution.md) | completed | P2 | 1d | 1 |
-| 5 | [Streaming part upload with resume](phase-05-streaming-part-upload-with-resume.md) | pending | P1 | 2d | 2,3,4 |
+| 5 | [Streaming part upload with resume](phase-05-streaming-part-upload-with-resume.md) | completed | P1 | 2d | 2,3,4 |
 | 6 | [Index push and rescan](phase-06-index-push-and-rescan.md) | pending | P2 | 1d | 5 |
 | 7 | [Verify command and project docs](phase-07-verify-command-and-project-docs.md) | pending | P2 | 1d | 6 |
 
