@@ -70,6 +70,16 @@ async fn rescan_all(conn: &mut Connection, tg: &Tg, chat_id: i64) -> Result<Resc
     }
     flush_batch(conn, chat_id, &mut batch, &mut totals)?;
 
+    // Set-level counts come from the library as a whole: a set that straddles
+    // two batches would otherwise be counted twice.
+    let count = |sql: &str| -> Result<usize> {
+        let n: i64 = conn.query_row(sql, [], |row| row.get(0))?;
+        Ok(n as usize)
+    };
+    totals.sets_seen = count("SELECT COUNT(DISTINCT set_id) FROM parts WHERE status = 'done'")?;
+    totals.sets_complete = count("SELECT COUNT(*) FROM sets WHERE status = 'complete'")?;
+    totals.sets_incomplete = count("SELECT COUNT(*) FROM sets WHERE status != 'complete'")?;
+
     Ok(totals)
 }
 
@@ -90,11 +100,9 @@ fn flush_batch(
     let summary = rescan::apply_seen(&tx, chat_id, batch)?;
     tx.commit().context("committing rescan batch")?;
 
-    totals.sets_seen += summary.sets_seen;
     totals.parts_seen += summary.parts_seen;
-    totals.sets_complete += summary.sets_complete;
-    totals.sets_incomplete += summary.sets_incomplete;
     totals.duplicates_skipped += summary.duplicates_skipped;
+    totals.unparsed += summary.unparsed;
     batch.clear();
     Ok(())
 }

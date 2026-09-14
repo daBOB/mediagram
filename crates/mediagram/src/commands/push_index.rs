@@ -16,6 +16,8 @@ use crate::telegram::retry::{with_flood_wait_only, with_retry};
 
 const INDEX_CAPTION_MARKER: &str = "#mlib-index v=2";
 const META_INDEX_MESSAGE_ID: &str = "index_message_id";
+/// A previous index message whose unpin failed; retried on every later push.
+const META_STALE_INDEX_ID: &str = "stale_index_message_id";
 const INDEX_DOCUMENT_NAME: &str = "library.db";
 const INDEX_MIME_TYPE: &str = "application/vnd.sqlite3";
 
@@ -38,7 +40,8 @@ async fn push_snapshot(cfg: &Config) -> Result<i32> {
     let data_dir = cfg.data_dir()?;
     let conn = db::open(&data_dir)?;
     snapshot::checkpoint(&conn).context("checkpointing before snapshot")?;
-    let temp_path = data_dir.join("library.push.db");
+    // Per-process name so two overlapping pushes cannot rewrite each other's snapshot mid-upload.
+    let temp_path = data_dir.join(format!("library.push.{}.db", std::process::id()));
     snapshot::snapshot_to(&conn, &temp_path).context("snapshotting library.db")?;
 
     let result = push_via_telegram(cfg, &conn, &temp_path).await;
@@ -137,30 +140,54 @@ async fn send_and_pin(
     Ok(new_id)
 }
 
-/// Unpins the previously recorded index message, if any. Best-effort: a
-/// failure here only leaves a stale pin alongside the new one, which every
-/// reader is expected to resolve by picking the newest `#mlib-index` pin.
+/// Unpins the previously recorded index message and any pin a past push
+/// failed to remove. Best-effort: a failure only leaves a stale pin next to
+/// the new one (readers pick the newest `#mlib-index` pin), and the id is
+/// kept under `stale_index_message_id` so the next push tries again.
 async fn unpin_previous(
     tg: &Tg,
     max_attempts: u32,
     conn: &Connection,
     channel: grammers_session::types::PeerRef,
 ) {
-    let Ok(Some(old_id)) = db::get_meta(conn, META_INDEX_MESSAGE_ID) else {
-        return;
-    };
-    let Ok(old_id) = old_id.parse::<i32>() else {
-        tracing::warn!(old_id = %old_id, "recorded index_message_id is not a valid message id");
-        return;
-    };
-
-    let client = tg.client.clone();
-    let result = with_retry(max_attempts, move || {
-        let client = client.clone();
-        async move { client.unpin_message(channel, old_id).await }
-    })
-    .await;
-    if let Err(err) = result {
-        tracing::warn!(old_id, error = %err, "failed to unpin previous index message");
+    for key in [META_STALE_INDEX_ID, META_INDEX_MESSAGE_ID] {
+        let Ok(Some(raw)) = db::get_meta(conn, key) else {
+            continue;
+        };
+        let Ok(old_id) = raw.parse::<i32>() else {
+            tracing::warn!(key, value = %raw, "recorded index message id is not valid");
+            continue;
+        };
+        let client = tg.client.clone();
+        let result = with_retry(max_attempts, move || {
+            let client = client.clone();
+            async move { client.unpin_message(channel, old_id).await }
+        })
+        .await;
+        match result {
+            Ok(_) => {
+                let _ = db::delete_meta(conn, META_STALE_INDEX_ID);
+            }
+            Err(err) if message_is_gone(&err) => {
+                tracing::info!(
+                    old_id,
+                    "previous index message no longer exists; nothing to unpin"
+                );
+                let _ = db::delete_meta(conn, META_STALE_INDEX_ID);
+            }
+            Err(err) => {
+                tracing::warn!(old_id, error = %err, "failed to unpin previous index message; will retry on the next push");
+                let _ = db::set_meta(conn, META_STALE_INDEX_ID, &old_id.to_string());
+            }
+        }
     }
+}
+
+/// Telegram answers a client error (4xx) when the message id is unknown or
+/// already unpinned; that is not worth retrying later.
+fn message_is_gone(err: &anyhow::Error) -> bool {
+    matches!(
+        err.downcast_ref::<grammers_mtsender::InvocationError>(),
+        Some(grammers_mtsender::InvocationError::Rpc(rpc)) if rpc.code == 400
+    )
 }

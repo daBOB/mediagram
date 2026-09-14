@@ -42,7 +42,7 @@ enum Cmd {
         #[arg(long)]
         full: bool,
     },
-    /// Rebuild library.db from channel captions
+    /// Rebuild library.db from channel captions (additive: never demotes local sets; use verify for that)
     Rescan,
     /// Upload one small file with a smoke caption, print the message id, delete it
     #[command(hide = true)]

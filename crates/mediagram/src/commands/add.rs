@@ -134,7 +134,11 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
 
     println!("set {set_id} added");
     if completed && !args.no_push {
-        push_index::push_after_set(cfg).await?;
+        push_index::push_after_set(cfg).await.with_context(|| {
+            format!(
+                "set {set_id} is complete but the index push failed; run `mediagram push-index`"
+            )
+        })?;
     }
     Ok(())
 }

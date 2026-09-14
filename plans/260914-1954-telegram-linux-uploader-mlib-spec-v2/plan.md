@@ -22,7 +22,7 @@ Stack: Rust 1.98 edition 2024, grammers-client 0.10.0, rusqlite (bundled), clap,
 | 3 | [Media inspect and faststart remux](phase-03-media-inspect-and-faststart-remux.md) | completed | P2 | 0.5d | 1 |
 | 4 | [TMDB metadata resolution](phase-04-tmdb-metadata-resolution.md) | completed | P2 | 1d | 1 |
 | 5 | [Streaming part upload with resume](phase-05-streaming-part-upload-with-resume.md) | in-progress | P1 | 2d | 2,3,4 |
-| 6 | [Index push and rescan](phase-06-index-push-and-rescan.md) | pending | P2 | 1d | 5 |
+| 6 | [Index push and rescan](phase-06-index-push-and-rescan.md) | in-progress | P2 | 1d | 5 |
 | 7 | [Verify command and project docs](phase-07-verify-command-and-project-docs.md) | pending | P2 | 1d | 6 |
 
 Phases 2, 3, 4 are independent of each other and can run in parallel after phase 1.
@@ -107,3 +107,6 @@ See phase 7 success criteria: 10 GB MKV → 3 parts; kill -9 mid-part then `resu
 
 ### Implementation log — phase 5 (2026-09-15)
 - Built by a worktree agent, merged in `565d5e9`; review found three high-severity resume edge cases (temp deletion by suffix, unvalidated source size, retry-induced duplicate sends), fixed in `be70497`. Tester added 18 probes, no defects. 161 tests. Status stays in-progress until the live 3-part `add` runs (needs `tmdb_key`).
+
+### Implementation log — phase 6 (2026-09-15)
+- Built by a worktree agent, merged in `b1373e5`. Review: no data-loss defects; fixed stale-pin retry, per-process snapshot temp name, double-counted rescan summaries, unparsed-caption counter, push-failure context. Decision recorded: rescan is additive. Tester added 18 probes, no defects. 187 tests. Live push/unpin criteria wait for the live `add` (needs `tmdb_key`).

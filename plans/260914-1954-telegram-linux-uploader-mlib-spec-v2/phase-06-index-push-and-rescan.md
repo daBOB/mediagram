@@ -38,9 +38,9 @@ Playable invariant: `count(parts where status='done') == part_count AND sum(byte
 4. Tests: fixture captions incl. one incomplete set → status `pending`; duplicate part message (same set+idx twice) → keep highest message_id, warn.
 
 ## Success Criteria
-- [x] After `add`, channel shows a pinned `library.db` whose `sets` count matches local
+- [ ] After `add`, channel shows a pinned `library.db` whose `sets` count matches local (pending live gate)
 - [x] `rm library.db && mediagram rescan` reproduces sets/parts rows equal to the previous DB minus timestamps
-- [x] Old index message is no longer pinned after a push
+- [ ] Old index message is no longer pinned after a push (pending live gate)
 
 ## Risk Assessment
 - Rescan cost on large channels → paged iteration, only documents; acceptable for DR-only use.
@@ -54,3 +54,11 @@ Playable invariant: `count(parts where status='done') == part_count AND sum(byte
 - `add`/`resume` call `push_index::push_after_set` on successful completion unless `--no-push`; `resume` pushes once after the whole batch, not per set.
 - Tests: `crates/mediagram/tests/index_rescan.rs` (5 cases: complete/incomplete/duplicate/ignored/idempotent) + `crates/mediagram/tests/index_snapshot.rs` (round trip through a real file) + inline unit tests in `index/snapshot.rs`.
 - Verification: `cargo fmt --all -- --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test --workspace` all clean; no live Telegram calls made (no credentials in this sandbox).
+
+## Review fixes (2026-09-15)
+- Unpin failures keep the old id under `meta.stale_index_message_id` and are retried on every later push; a 400 from Telegram (message gone) clears it.
+- Snapshot temp file is per process (`library.push.<pid>.db`) so overlapping pushes cannot corrupt each other's upload.
+- Rescan reports set counts from the library after the full scan (batch sums double-counted sets straddling a 500-message boundary); captions with the mlib marker that fail to parse are counted as `unparsed` and logged.
+- Decision: rescan is additive. It rebuilds from captions and never demotes a locally `complete` set whose messages vanished; `verify` is the tool that detects missing parts. Stated in the command help.
+- Push failure after a completed set now names the set and the recovery command.
+- Live criteria (pinned library.db, old pin removed) are unticked until the live `add` runs.

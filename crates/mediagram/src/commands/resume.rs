@@ -36,7 +36,9 @@ pub async fn run(cfg: &Config, no_push: bool) -> Result<()> {
     result?;
 
     if !no_push {
-        push_index::push_after_set(cfg).await?;
+        push_index::push_after_set(cfg)
+            .await
+            .context("sets are complete but the index push failed; run `mediagram push-index`")?;
     }
     Ok(())
 }

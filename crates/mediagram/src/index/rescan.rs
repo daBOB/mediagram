@@ -27,6 +27,8 @@ pub struct RescanSummary {
     pub sets_incomplete: usize,
     /// Times a part index was seen again under a different message id.
     pub duplicates_skipped: usize,
+    /// Captions carrying the mlib marker that failed to parse (e.g. a newer spec version).
+    pub unparsed: usize,
 }
 
 /// Folds every mlib-captioned message in `seen` into `sets`/`parts`, then
@@ -42,6 +44,8 @@ pub fn apply_seen(conn: &Connection, chat_id: i64, seen: &[Seen]) -> Result<Resc
     let mut parts_seen = 0usize;
     let mut duplicates_skipped = 0usize;
 
+    let mut unparsed = 0usize;
+
     for msg in seen {
         // `is_mlib` only matches the `#mlib v=` part marker, so the
         // `#mlib-index` snapshot document (a different marker entirely) and
@@ -49,8 +53,13 @@ pub fn apply_seen(conn: &Connection, chat_id: i64, seen: &[Seen]) -> Result<Resc
         if !mlib_spec::caption_codec::is_mlib(&msg.caption) {
             continue;
         }
-        let Ok(caption) = mlib_spec::parse(&msg.caption) else {
-            continue;
+        let caption = match mlib_spec::parse(&msg.caption) {
+            Ok(caption) => caption,
+            Err(err) => {
+                tracing::warn!(message_id = msg.message_id, error = %err, "skipping unparsable mlib caption");
+                unparsed += 1;
+                continue;
+            }
         };
         // A part with no document media has nothing to index.
         let Some(doc_id) = msg.doc_id else {
@@ -87,6 +96,7 @@ pub fn apply_seen(conn: &Connection, chat_id: i64, seen: &[Seen]) -> Result<Resc
         sets_complete,
         sets_incomplete,
         duplicates_skipped,
+        unparsed,
     })
 }
 
