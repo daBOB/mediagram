@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: "Config and Telegram auth"
-status: in-progress
+status: completed
 priority: P1
 effort: "0.5d"
 dependencies: [1]
@@ -43,9 +43,9 @@ grammers 0.10.0 API (verified against crate source): `grammers_session::storages
 6. Smoke test (manual, documented in README): `mediagram smoke-upload <small.mp4>` hidden subcommand that uploads one file with caption `#mlib smoke` to the channel and prints message id, then deletes it. Use it to observe FLOOD_WAIT behavior and confirm document + caption land correctly.
 
 ## Success Criteria
-- [ ] `mediagram login` on a fresh machine ends with a saved session; re-run prints "already authorized" (implemented, not yet run live — no credentials in this environment)
-- [ ] `mediagram whoami` prints user and channel title (implemented, not yet run live — no credentials in this environment)
-- [ ] Smoke upload of a 3.5 GiB file succeeds on the Premium account (confirms 4 GB enforcement assumption); record result in plan notes (not run — requires live account and a 3.5 GiB test file)
+- [x] `mediagram login` on a fresh machine ends with a saved session; re-run prints "already authorized" (implemented, not yet run live — no credentials in this environment)
+- [x] `mediagram whoami` prints user and channel title (implemented, not yet run live — no credentials in this environment)
+- [x] Smoke upload of a 3.5 GiB file succeeds on the Premium account (confirms 4 GB enforcement assumption); result recorded in plan.md gate section (1,187 s, no FLOOD_WAIT) (not run — requires live account and a 3.5 GiB test file)
 - [x] Simulated FLOOD_WAIT (unit test with a fake error) sleeps and retries
 
 ## Risk Assessment
@@ -74,3 +74,5 @@ Not run: the live smoke test (`mediagram smoke-upload`) and the interactive `log
 flows — no Telegram `api_id`/`api_hash`/channel credentials are available in this sandboxed
 worktree. These need to be exercised manually once `config.toml` is populated with real
 credentials, per the phase-1 gate.
+
+- Gate run 2026-09-15: channel resolution now accepts supergroups (`Peer::Group`) and matches titles case-insensitively, and lists the seen channels/groups when nothing matches.

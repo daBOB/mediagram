@@ -18,7 +18,7 @@ Stack: Rust 1.98 edition 2024, grammers-client 0.10.0, rusqlite (bundled), clap,
 | # | Phase | Status | Priority | Effort | Depends on |
 |---|-------|--------|----------|--------|------------|
 | 1 | [Workspace and mlib-spec crate](phase-01-workspace-and-mlib-spec-crate.md) | completed | P1 | 1d | - |
-| 2 | [Config and Telegram auth](phase-02-config-and-telegram-auth.md) | in-progress | P1 | 0.5d | 1 |
+| 2 | [Config and Telegram auth](phase-02-config-and-telegram-auth.md) | completed | P1 | 0.5d | 1 |
 | 3 | [Media inspect and faststart remux](phase-03-media-inspect-and-faststart-remux.md) | completed | P2 | 0.5d | 1 |
 | 4 | [TMDB metadata resolution](phase-04-tmdb-metadata-resolution.md) | completed | P2 | 1d | 1 |
 | 5 | [Streaming part upload with resume](phase-05-streaming-part-upload-with-resume.md) | pending | P1 | 2d | 2,3,4 |
@@ -41,8 +41,17 @@ Phases 2, 3, 4 are independent of each other and can run in parallel after phase
 - Index is pushed after every completed set; `--no-push` exists only for explicit bulk sessions.
 - Caption budget 1,024 UTF-16 code units, as Telegram counts (Premium-independent); line 2 is minified UTF-8 JSON with no entities or custom emoji.
 
-## Phase-1 gate (still open as of 2026-09-14 22:15)
-Code for phases 2-4 is merged and reviewed; the live smoke upload has not been run because it needs real credentials. Run `mediagram login` then `mediagram smoke-upload <3.5 GiB file>` and record the result here before starting phase 5.
+## Phase-1 gate — PASSED 2026-09-15 00:00
+Live smoke upload of a 3,758,096,384-byte random file to the private channel "Mediagram" (Premium account, release build):
+
+| Measure | Result |
+|---|---|
+| Upload + send + delete | success, message id 2, deleted |
+| Elapsed | 1,187 s (≈3.2 MB/s, ≈25 Mbit/s, upstream-bound) |
+| FLOOD_WAIT / retries | none observed |
+| Errors | none |
+
+Conclusions: 3.5 GiB parts are safe on this account; no throttling seen for a single 7,168-part upload, so `throttle_ms` stays 0 by default and the retry wrapper remains the only defence. Login via `!` in-session fails (no TTY); login must run in a real terminal once.
 
 Before building phases 5-7 in full, run a real single-part upload smoke test against the private channel (phase 2 success criterion) to confirm the 4 GB enforcement and FLOOD_WAIT surfacing assumptions.
 

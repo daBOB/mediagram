@@ -126,21 +126,34 @@ async fn login_interactive(client: &Client, cfg: &Config) -> Result<()> {
 /// account's dialogs.
 pub async fn resolve_channel(client: &Client, channel_cfg: &str) -> Result<(PeerRef, String)> {
     let numeric = channel_cfg.trim().parse::<i64>().ok();
+    let wanted = channel_cfg.trim();
+    let mut seen = Vec::new();
     let mut dialogs = client.iter_dialogs();
     while let Some(dialog) = dialogs.next().await.context("listing dialogs")? {
-        let Peer::Channel(channel) = dialog.peer() else {
-            continue;
+        // Broadcast channels and supergroups are both acceptable library homes;
+        // grammers reports supergroups as `Peer::Group`.
+        let title = match dialog.peer() {
+            Peer::Channel(channel) => channel.title().to_string(),
+            Peer::Group(group) => group.title().unwrap_or_default().to_string(),
+            Peer::User(_) => continue,
         };
-        let title = channel.title();
         let matches = match numeric {
             Some(n) => peer_id_matches(dialog.peer_id(), n),
-            None => title == channel_cfg,
+            None => title.eq_ignore_ascii_case(wanted),
         };
         if matches {
-            return Ok((dialog.peer_ref(), title.to_string()));
+            return Ok((dialog.peer_ref(), title));
         }
+        seen.push(title);
     }
-    bail!("channel '{channel_cfg}' not found among the account's dialogs; is the account a member?")
+    bail!(
+        "channel '{channel_cfg}' not found among the account's dialogs; channels and groups seen: {}",
+        if seen.is_empty() {
+            "(none)".to_string()
+        } else {
+            seen.join(", ")
+        }
+    )
 }
 
 /// Matches a resolved [`PeerId`] against a config-supplied numeric id, in
