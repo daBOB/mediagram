@@ -34,10 +34,30 @@ fn is_retryable(err: &InvocationError) -> bool {
 /// Runs `op` up to `max_attempts` times. A `FLOOD_WAIT` error sleeps for the
 /// server-specified duration before retrying; any other error backs off
 /// exponentially. Returns the last error once `max_attempts` is reached.
-pub async fn with_retry<T, F, Fut>(max_attempts: u32, mut op: F) -> Result<T>
+pub async fn with_retry<T, F, Fut>(max_attempts: u32, op: F) -> Result<T>
 where
     F: FnMut() -> Fut,
     Fut: Future<Output = Result<T, InvocationError>>,
+{
+    with_retry_if(max_attempts, op, is_retryable).await
+}
+
+/// Like [`with_retry`] but only ever retries on `FLOOD_WAIT`. Use it for
+/// requests that are not idempotent (e.g. `send_message`): a lost response
+/// after a committed send must surface as an error, not as a second copy.
+pub async fn with_flood_wait_only<T, F, Fut>(max_attempts: u32, op: F) -> Result<T>
+where
+    F: FnMut() -> Fut,
+    Fut: Future<Output = Result<T, InvocationError>>,
+{
+    with_retry_if(max_attempts, op, |err| flood_wait_secs(err).is_some()).await
+}
+
+async fn with_retry_if<T, F, Fut, P>(max_attempts: u32, mut op: F, should_retry: P) -> Result<T>
+where
+    F: FnMut() -> Fut,
+    Fut: Future<Output = Result<T, InvocationError>>,
+    P: Fn(&InvocationError) -> bool,
 {
     let max_attempts = max_attempts.max(1);
     let mut attempt = 0u32;
@@ -45,7 +65,7 @@ where
         attempt += 1;
         match op().await {
             Ok(value) => return Ok(value),
-            Err(err) if attempt >= max_attempts || !is_retryable(&err) => return Err(err.into()),
+            Err(err) if attempt >= max_attempts || !should_retry(&err) => return Err(err.into()),
             Err(err) => {
                 let delay = match flood_wait_secs(&err) {
                     Some(secs) => Duration::from_secs(secs),

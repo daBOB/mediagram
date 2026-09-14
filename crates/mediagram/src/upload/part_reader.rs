@@ -17,6 +17,7 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncSeekExt, ReadBuf, Take};
 pub struct PartReader {
     inner: Take<File>,
     hasher: Sha256,
+    bytes_read: u64,
 }
 
 impl PartReader {
@@ -27,7 +28,14 @@ impl PartReader {
         Ok(PartReader {
             inner: file.take(len),
             hasher: Sha256::new(),
+            bytes_read: 0,
         })
+    }
+
+    /// Bytes handed to the consumer so far; equals the planned length only if
+    /// the file still held the whole window.
+    pub fn bytes_read(&self) -> u64 {
+        self.bytes_read
     }
 
     /// Hex sha256 of every byte read so far.
@@ -48,6 +56,7 @@ impl AsyncRead for PartReader {
         let result = Pin::new(&mut this.inner).poll_read(cx, buf);
         if let Poll::Ready(Ok(())) = &result {
             this.hasher.update(&buf.filled()[before..]);
+            this.bytes_read += (buf.filled().len() - before) as u64;
         }
         result
     }

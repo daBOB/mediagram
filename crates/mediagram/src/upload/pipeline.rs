@@ -6,23 +6,15 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::time::{Duration, Instant};
 
-use anyhow::{Result, bail};
-use mlib_spec::caption::{Caption, Kind, Part};
-use mlib_spec::ids::ProviderIds;
+use anyhow::Result;
+use mlib_spec::caption::{Caption, Part};
 use rusqlite::Connection;
 
 use super::part_reader::PartReader;
-use super::transport::{Seen, Transport};
+use super::transport::Transport;
 use crate::index::sets::SetRow;
-use crate::index::{parts, sets};
-
-/// An existing channel message already carrying one of our parts, found by
-/// scanning recent history instead of re-uploading.
-struct Adopted {
-    message_id: i64,
-    doc_id: i64,
-    sha256: String,
-}
+use crate::index::{db, parts, sets};
+use crate::upload::adopt::adoption_map;
 
 /// Finishes `set`: uploads/adopts every pending part in idx order, then
 /// finalizes the set once none remain. Safe to call again on a set that is
@@ -34,7 +26,7 @@ pub async fn run_set<T: Transport>(
     set: &SetRow,
     source_path: &Path,
 ) -> Result<()> {
-    let template = set_caption_template(set)?;
+    let template = set.caption_template()?;
     let total_parts = set.part_count;
 
     let pending = parts::pending_parts(conn, &set.set_id)?;
@@ -83,7 +75,7 @@ pub async fn run_set<T: Transport>(
     if parts::pending_parts(conn, &set.set_id)?.is_empty() {
         let hash = mlib_spec::set_hash::set_hash(&parts::done_hashes(conn, &set.set_id)?);
         sets::set_hash_and_complete(conn, &set.set_id, &hash)?;
-        remove_faststart_tmp(source_path).await;
+        remove_recorded_tmp(conn, &set.set_id).await;
     }
 
     Ok(())
@@ -151,79 +143,6 @@ async fn upload_one<T: Transport>(
     Ok((sent.message_id, sent.doc_id, sha256))
 }
 
-/// The set's `Caption` with a placeholder part block (idx 0, empty hash);
-/// used to derive names and human text that don't depend on which part.
-fn set_caption_template(set: &SetRow) -> Result<Caption> {
-    let t = match set.kind.as_str() {
-        "movie" => Kind::Movie,
-        "ep" => Kind::Ep,
-        other => bail!("set {} has unknown kind `{other}`", set.set_id),
-    };
-    let e = set
-        .episode
-        .as_deref()
-        .map(serde_json::from_str)
-        .transpose()?;
-    Ok(Caption {
-        t,
-        ids: ProviderIds {
-            tmdb: set.tmdb,
-            tvdb: set.tvdb,
-            imdb: set.imdb.clone(),
-        },
-        show: set.show.clone(),
-        title: set.title.clone(),
-        year: set.year,
-        s: set.season,
-        e,
-        abs: set.abs,
-        q: set.quality.clone(),
-        hdr: set.hdr.clone(),
-        container: set.container.clone(),
-        vcodec: set.vcodec.clone(),
-        acodec: set.acodec.clone(),
-        alang: set.alang.clone(),
-        slang: set.slang.clone(),
-        dur: set.duration,
-        variant: set.variant.clone(),
-        set: set.set_id.clone(),
-        part: Part {
-            i: 0,
-            n: set.part_count,
-            off: 0,
-            len: 0,
-            sha256: String::new(),
-        },
-        total: set.total,
-    })
-}
-
-/// Matches recent channel messages against `set_id` by parsing their
-/// caption, keyed by part index so each pending part can be looked up once.
-fn adoption_map(set_id: &str, recent: &[Seen]) -> HashMap<u32, Adopted> {
-    let mut map = HashMap::new();
-    for seen in recent {
-        if !mlib_spec::caption_codec::is_mlib(&seen.caption) {
-            continue;
-        }
-        let Ok(caption) = mlib_spec::parse(&seen.caption) else {
-            continue;
-        };
-        if caption.set != set_id {
-            continue;
-        }
-        let Some(doc_id) = seen.doc_id else {
-            continue;
-        };
-        map.entry(caption.part.i).or_insert(Adopted {
-            message_id: seen.message_id,
-            doc_id,
-            sha256: caption.part.sha256,
-        });
-    }
-    map
-}
-
 fn mime_for(container: &str) -> &'static str {
     match container {
         "mkv" => "video/x-matroska",
@@ -232,16 +151,18 @@ fn mime_for(container: &str) -> &'static str {
     }
 }
 
-/// Deletes a remux temp file once its set is done; a no-op for any other path.
-async fn remove_faststart_tmp(path: &Path) {
-    let is_generated = path
-        .file_name()
-        .and_then(|n| n.to_str())
-        .is_some_and(|n| n.ends_with(".faststart.mp4"));
-    if !is_generated {
+/// Deletes the remux temp file that `add` recorded for this set (meta key
+/// `tmp:<set_id>`), then forgets it. Sets without a recorded temp are untouched,
+/// so a user's original file can never be removed here.
+async fn remove_recorded_tmp(conn: &Connection, set_id: &str) {
+    let key = format!("tmp:{set_id}");
+    let Ok(Some(path)) = db::get_meta(conn, &key) else {
         return;
+    };
+    if let Err(err) = tokio::fs::remove_file(&path).await {
+        tracing::warn!(path = %path, error = %err, "failed to remove faststart temp file");
     }
-    if let Err(err) = tokio::fs::remove_file(path).await {
-        tracing::warn!(path = %path.display(), error = %err, "failed to remove faststart temp file");
+    if let Err(err) = db::delete_meta(conn, &key) {
+        tracing::warn!(error = %err, "failed to forget faststart temp path");
     }
 }

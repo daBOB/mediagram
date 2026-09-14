@@ -3,4 +3,5 @@
 
 pub mod db;
 pub mod parts;
+pub mod set_row;
 pub mod sets;

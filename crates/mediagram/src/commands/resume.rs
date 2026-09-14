@@ -48,11 +48,19 @@ async fn resume_one(
         )
     })?;
     let source_path = PathBuf::from(source_path);
-    if !source_path.exists() {
-        bail!(
-            "source file for set {} is missing: {}",
+    let actual = match tokio::fs::metadata(&source_path).await {
+        Ok(meta) => meta.len(),
+        Err(err) => bail!(
+            "source file for set {} is unavailable: {} ({err})",
             set.set_id,
             source_path.display()
+        ),
+    };
+    if actual != set.total {
+        bail!(
+            "source file for set {} is {actual} bytes but the set was planned for {} bytes; it changed since add",
+            set.set_id,
+            set.total
         );
     }
 

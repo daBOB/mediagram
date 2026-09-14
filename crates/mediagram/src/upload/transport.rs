@@ -11,7 +11,7 @@ use mlib_spec::caption::{Caption, Part};
 
 use super::part_reader::PartReader;
 use crate::telegram::client::Tg;
-use crate::telegram::retry::with_retry;
+use crate::telegram::retry::with_flood_wait_only;
 
 /// Result of successfully sending one part as a document message.
 pub struct Sent {
@@ -84,6 +84,12 @@ impl Transport for TelegramTransport {
             .upload_stream(reader, len as usize, name)
             .await
             .map_err(|err| anyhow::anyhow!("uploading part bytes: {err}"))?;
+        if reader.bytes_read() != len {
+            bail!(
+                "source shrank during upload: read {} of {len} planned bytes",
+                reader.bytes_read()
+            );
+        }
 
         let final_caption = caption.with_part(Part {
             sha256: reader.finalize(),
@@ -94,7 +100,9 @@ impl Transport for TelegramTransport {
         let client = self.client.clone();
         let channel = self.channel;
         let mime = mime.to_string();
-        let message = with_retry(self.max_attempts, move || {
+        // Only FLOOD_WAIT is retried here: any other failure after the server may
+        // have committed the send is left to the adopt scan on the next resume.
+        let message = with_flood_wait_only(self.max_attempts, move || {
             let client = client.clone();
             let uploaded = uploaded.clone();
             let text = text.clone();

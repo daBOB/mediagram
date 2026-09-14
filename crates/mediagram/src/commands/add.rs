@@ -90,6 +90,15 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
         .as_secs() as i64;
+    let probe = caption.with_part(Part {
+        i: part_ranges.len() as u32 - 1,
+        n: part_ranges.len() as u32,
+        off: total,
+        len: total,
+        sha256: "0".repeat(64),
+    });
+    mlib_spec::to_text(&probe, &probe.display_name())
+        .context("caption exceeds Telegram's budget; shorten --variant or the language lists")?;
     let set_row = SetRow::from_caption(&caption, created_at)?;
 
     let mut conn = db::open(&data_dir)?;
@@ -104,6 +113,10 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
         sets::insert_set(&tx, &set_row)?;
         parts::insert_parts(&tx, &set_id, &part_ranges)?;
         db::set_meta(&tx, &source_key, &source_value)?;
+        if source_path != args.file {
+            // A faststart remux was written; remember it so only that file is deleted later.
+            db::set_meta(&tx, &format!("tmp:{set_id}"), &source_value)?;
+        }
         tx.commit().context("committing index transaction")?;
     }
 
