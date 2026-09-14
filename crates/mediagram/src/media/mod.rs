@@ -4,3 +4,5 @@ pub mod classify;
 pub mod inspect;
 pub mod mp4_atoms;
 pub mod remux;
+#[cfg(test)]
+pub mod test_fixtures;
