@@ -9,3 +9,4 @@ pub mod metadata;
 pub mod paths;
 pub mod telegram;
 pub mod upload;
+pub mod verify;
