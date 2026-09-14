@@ -1,0 +1,9 @@
+//! mediagram library surface: everything the CLI binary and the integration
+//! tests share. The binary in `main.rs` only parses arguments and dispatches.
+
+pub mod commands;
+pub mod config;
+pub mod media;
+pub mod metadata;
+pub mod paths;
+pub mod telegram;

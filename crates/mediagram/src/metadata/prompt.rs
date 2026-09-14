@@ -1,6 +1,5 @@
 //! Interactive disambiguation UI. The trait lets `resolve` and its tests
 //! script deterministic answers instead of driving a real terminal.
-#![allow(dead_code)] // Consumed once `add` wires metadata resolution in.
 
 use anyhow::{Context, Result};
 use dialoguer::{Input, Select};

@@ -1,7 +1,6 @@
 //! Turns a file name plus optional explicit ids into a `ResolvedItem`,
 //! preferring explicit ids, then a TMDB search seeded by the filename guess,
 //! prompting only when the search is ambiguous. `--manual` bypasses TMDB.
-#![allow(dead_code)] // Consumed once `add` wires metadata resolution in.
 
 use anyhow::{Context, Result};
 use mlib_spec::filename::{Guess, parse_filename};

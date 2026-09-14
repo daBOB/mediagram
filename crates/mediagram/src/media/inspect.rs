@@ -1,6 +1,5 @@
 // Not wired into any command yet; the add command calls this to fill
 // caption technical fields once a source file has been chosen.
-#![allow(dead_code)]
 
 //! Runs `ffprobe` on a media file and turns its JSON report into the
 //! technical fields a caption record needs: container, duration, codecs,

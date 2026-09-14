@@ -2,3 +2,4 @@
 /config.toml
 *.sqlite
 *.db
+/.claude/

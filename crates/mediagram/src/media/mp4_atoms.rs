@@ -1,6 +1,5 @@
 // Not wired into any command yet; the add command calls this once a source
 // file's container is known.
-#![allow(dead_code)]
 
 //! Minimal MP4/ISO-BMFF top-level box reader. We only need to know whether
 //! `mdat` (the media data box) appears before `moov` (the movie metadata

@@ -1,11 +1,8 @@
 //! End-to-end tests for `media::inspect`, `media::mp4_atoms`, and
-//! `media::remux`, exercised against ffmpeg-generated fixtures. `mediagram`
-//! is a binary-only crate (no `lib` target), so this pulls the module tree
-//! in directly via `#[path]` rather than through a crate dependency; tests
-//! skip gracefully (with a printed note) when ffmpeg is not on PATH.
+//! `media::remux` against ffmpeg-generated fixtures; skipped with a printed
+//! note when ffmpeg is not on PATH.
 
-#[path = "../src/media/mod.rs"]
-mod media;
+use mediagram::media;
 
 use media::inspect::inspect;
 use media::mp4_atoms::needs_faststart;

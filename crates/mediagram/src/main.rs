@@ -1,19 +1,12 @@
 //! mediagram: uploads a personal video library to one private Telegram channel
 //! using the mlib v2 caption + index spec.
 
-mod commands;
-mod config;
-mod media;
-mod metadata;
-mod paths;
-mod telegram;
-
 use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-
-use commands::args::AddArgs;
+use mediagram::commands::args::AddArgs;
+use mediagram::{commands, config};
 
 #[derive(Parser)]
 #[command(name = "mediagram", version, about)]

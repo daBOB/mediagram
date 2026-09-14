@@ -1,10 +1,5 @@
 //! Shared test doubles for TMDB resolution tests: no network access.
-//!
-//! The `metadata` module tree has no `crate::` dependencies on the rest of
-//! the `mediagram` binary, so it is pulled in directly rather than via a
-//! separate library target.
-#[path = "../../src/metadata/mod.rs"]
-pub mod metadata;
+pub use mediagram::metadata;
 
 use std::cell::Cell;
 use std::collections::{HashMap, VecDeque};

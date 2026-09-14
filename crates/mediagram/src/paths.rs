@@ -14,7 +14,6 @@ pub fn config_file() -> Result<PathBuf> {
     Ok(dirs()?.config_dir().join("config.toml"))
 }
 
-#[allow(dead_code)] // used by the session/index commands
 pub fn data_dir() -> Result<PathBuf> {
     Ok(dirs()?.data_dir().to_path_buf())
 }

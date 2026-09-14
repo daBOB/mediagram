@@ -1,6 +1,5 @@
 // Not wired into any command yet; the add command calls these once inspect
 // results are available.
-#![allow(dead_code)]
 
 //! Pure classification helpers: pixel height to a caption `q` label, HDR
 //! transfer/side-data to a `hdr` label, ISO 639-2 to 639-1 language codes,

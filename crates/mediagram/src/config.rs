@@ -10,7 +10,6 @@ use serde::Deserialize;
 use crate::paths;
 
 #[derive(Deserialize, Debug, Clone)]
-#[allow(dead_code)] // fields are consumed by the upload/remux commands
 pub struct Config {
     pub api_id: i32,
     pub api_hash: String,
@@ -39,7 +38,6 @@ fn default_max_attempts() -> u32 {
 }
 
 impl Config {
-    #[allow(dead_code)] // used by the session/index commands
     pub fn data_dir(&self) -> Result<PathBuf> {
         match &self.data_dir {
             Some(d) => Ok(d.clone()),

@@ -1,5 +1,4 @@
 //! Minimal serde mirrors of the TMDB response shapes `resolve` consumes.
-#![allow(dead_code)] // Some fields exist for shape-completeness; not all are read yet.
 
 use serde::Deserialize;
 

@@ -1,5 +1,4 @@
 //! TMDB search plus the plausibility/auto-pick/prompt rule for disambiguation.
-#![allow(dead_code)] // Consumed once `add` wires metadata resolution in.
 
 use anyhow::{Context, Result, bail};
 use mlib_spec::Kind;

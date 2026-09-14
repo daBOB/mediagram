@@ -1,6 +1,5 @@
 //! HTTP access to TMDB plus an on-disk cache; kept generic behind `TmdbApi`
 //! so `resolve` and its tests never need a live network connection.
-#![allow(dead_code)] // Consumed once `add` wires metadata resolution in.
 
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -14,6 +13,8 @@ const MAX_RETRIES: u32 = 3;
 
 /// A single TMDB endpoint call, keyed by path + query params. Implemented by
 /// the real HTTP client and by fixture/stub doubles in tests.
+// Consumed via `impl TmdbApi` (static dispatch), so `Send` bounds on the future are not needed.
+#[allow(async_fn_in_trait)]
 pub trait TmdbApi {
     async fn get_json(&self, path: &str, query: &[(&str, String)]) -> Result<Value>;
 }

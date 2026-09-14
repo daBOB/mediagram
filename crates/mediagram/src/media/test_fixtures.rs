@@ -1,9 +1,5 @@
-#![cfg(test)]
-
-//! Shared ffmpeg-backed fixture builders for media module tests. Only
-//! compiled for test binaries (unit tests inside this crate and the
-//! `tests/media_inspect.rs` integration test, which pulls this module in
-//! via `#[path]`); never part of the release binary.
+//! Shared ffmpeg-backed fixture builders for media tests, used by unit tests
+//! in this crate and by `tests/media_inspect.rs`; never called at runtime.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;

@@ -1,6 +1,5 @@
 // Not wired into any command yet; the add command calls this before
 // splitting an MP4 source that fails the faststart check.
-#![allow(dead_code)]
 
 //! Remuxes an MP4 source so `moov` precedes `mdat` (`ffmpeg -movflags
 //! +faststart`), without re-encoding. Splitting requires part 0 to hold the
