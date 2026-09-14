@@ -4,6 +4,7 @@ use anyhow::{Context, Result, bail};
 use mlib_spec::{Caption, Part};
 
 use super::args::AddArgs;
+use super::push_index;
 use crate::config::Config;
 use crate::index::sets::SetRow;
 use crate::index::{db, parts, sets};
@@ -126,10 +127,14 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
     tg.shutdown().await;
     upload_result.context("uploading set")?;
 
-    if parts::pending_parts(&conn, &set_id)?.is_empty() {
+    let completed = parts::pending_parts(&conn, &set_id)?.is_empty();
+    if completed {
         db::delete_meta(&conn, &source_key)?;
     }
 
-    println!("set {set_id} added; index push pending");
+    println!("set {set_id} added");
+    if completed && !args.no_push {
+        push_index::push_after_set(cfg).await?;
+    }
     Ok(())
 }

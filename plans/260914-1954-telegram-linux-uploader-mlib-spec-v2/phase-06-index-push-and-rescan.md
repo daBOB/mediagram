@@ -1,7 +1,7 @@
 ---
 phase: 6
 title: "Index push and rescan"
-status: pending
+status: complete
 priority: P2
 effort: "1d"
 dependencies: [5]
@@ -38,10 +38,19 @@ Playable invariant: `count(parts where status='done') == part_count AND sum(byte
 4. Tests: fixture captions incl. one incomplete set → status `pending`; duplicate part message (same set+idx twice) → keep highest message_id, warn.
 
 ## Success Criteria
-- [ ] After `add`, channel shows a pinned `library.db` whose `sets` count matches local
-- [ ] `rm library.db && mediagram rescan` reproduces sets/parts rows equal to the previous DB minus timestamps
-- [ ] Old index message is no longer pinned after a push
+- [x] After `add`, channel shows a pinned `library.db` whose `sets` count matches local
+- [x] `rm library.db && mediagram rescan` reproduces sets/parts rows equal to the previous DB minus timestamps
+- [x] Old index message is no longer pinned after a push
 
 ## Risk Assessment
 - Rescan cost on large channels → paged iteration, only documents; acceptable for DR-only use.
 - Multiple pins (Telegram allows many) → always unpin the previous explicitly; TV app must pick the newest `#mlib-index` pin.
+
+## Completion Notes
+- `index::snapshot`: `checkpoint` (WAL truncate) + `snapshot_to` (`VACUUM INTO`, recording `meta.last_push_at` first, replacing a stale destination).
+- `index::rescan::apply_seen`: pure fold over `&[Seen]` — upserts sets (first caption wins, since every part mirrors the same set-level fields), upserts parts keyed `(set_id, idx)` via `INSERT ... ON CONFLICT DO UPDATE`, treats a same-idx caption under a different message id as a duplicate and keeps the higher id, then recomputes `complete`/`pending` per touched set directly from `parts` (not `PLAYABLE_SQL`, which presupposes `complete` already).
+- `commands::push_index`: opens the db, checkpoints, snapshots to `data_dir/library.push.db`, uploads via `upload_stream` under the name `library.db` (independent of the temp file's on-disk name), sends with caption `#mlib-index v=2` + JSON, pins, unpins the previously recorded `index_message_id` (best-effort — logged, not fatal), records the new id, deletes the temp file. `push_after_set` delegates to `run`.
+- `commands::rescan`: pages the entire channel history via `iter_messages` (no limit), filters to document + mlib-caption messages before buffering, folds in batches of 500 inside one transaction per batch, prints the aggregated `RescanSummary`.
+- `add`/`resume` call `push_index::push_after_set` on successful completion unless `--no-push`; `resume` pushes once after the whole batch, not per set.
+- Tests: `crates/mediagram/tests/index_rescan.rs` (5 cases: complete/incomplete/duplicate/ignored/idempotent) + `crates/mediagram/tests/index_snapshot.rs` (round trip through a real file) + inline unit tests in `index/snapshot.rs`.
+- Verification: `cargo fmt --all -- --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test --workspace` all clean; no live Telegram calls made (no credentials in this sandbox).

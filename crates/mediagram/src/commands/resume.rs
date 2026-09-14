@@ -4,15 +4,17 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result, bail};
 
+use super::push_index;
 use crate::config::Config;
 use crate::index::{db, parts, sets};
 use crate::telegram::client::Tg;
 use crate::upload::pipeline::run_set;
 use crate::upload::transport::TelegramTransport;
 
-/// `no_push` is accepted for CLI symmetry with `add --no-push`; index push
-/// is a later command, so it is currently a no-op either way.
-pub async fn run(cfg: &Config, _no_push: bool) -> Result<()> {
+/// Finishes every pending set, then pushes the index once at the end
+/// (unless `no_push`) rather than after each individual set, since a bulk
+/// resume session is typically followed by one manual push anyway.
+pub async fn run(cfg: &Config, no_push: bool) -> Result<()> {
     let conn = db::open(&cfg.data_dir()?)?;
     let pending_sets = sets::list_pending(&conn)?;
     if pending_sets.is_empty() {
@@ -31,7 +33,12 @@ pub async fn run(cfg: &Config, _no_push: bool) -> Result<()> {
         }
     }
     tg.shutdown().await;
-    result
+    result?;
+
+    if !no_push {
+        push_index::push_after_set(cfg).await?;
+    }
+    Ok(())
 }
 
 async fn resume_one(
