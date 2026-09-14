@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: "Config and Telegram auth"
-status: pending
+status: in-progress
 priority: P1
 effort: "0.5d"
 dependencies: [1]

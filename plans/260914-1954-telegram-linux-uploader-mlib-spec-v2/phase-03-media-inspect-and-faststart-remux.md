@@ -1,7 +1,7 @@
 ---
 phase: 3
 title: "Media inspect and faststart remux"
-status: pending
+status: completed
 priority: P2
 effort: "0.5d"
 dependencies: [1]
