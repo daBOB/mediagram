@@ -1,0 +1,35 @@
+[package]
+name = "mediagram"
+description = "Linux uploader for a Telegram-backed personal video library (mlib v2)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow = "1.0.104"
+clap = { version = "4.6.7", features = ["derive"] }
+dialoguer = "0.12.0"
+directories = "6.0.0"
+futures = "0.3.34"
+grammers-client = "0.10"
+grammers-mtsender = "0.10"
+grammers-session = "0.10"
+grammers-tl-types = "0.10"
+hex.workspace = true
+mlib-spec = { path = "../mlib-spec" }
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "json"] }
+rusqlite = { version = "0.40.2", features = ["bundled"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+sha2.workspace = true
+strsim = "0.11.1"
+thiserror.workspace = true
+tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "fs", "io-util", "signal", "time", "process"] }
+toml = "1.1.6"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+ulid.workspace = true
+
+[dev-dependencies]
+tempfile = "3.27.0"

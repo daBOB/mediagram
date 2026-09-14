@@ -1,0 +1,16 @@
+[package]
+name = "mlib-spec"
+description = "Caption, part-plan, filename grammar and index schema for the mlib v2 Telegram media library format"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+regex = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+ulid = { workspace = true }
+thiserror = { workspace = true }

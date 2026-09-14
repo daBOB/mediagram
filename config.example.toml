@@ -1,0 +1,11 @@
+# Copy to ~/.config/mediagram/config.toml. Every key can be overridden with
+# MEDIAGRAM_<KEY> in the environment (e.g. MEDIAGRAM_API_HASH).
+api_id = 12345                      # from https://my.telegram.org
+api_hash = "0123456789abcdef"
+channel = "My Library"             # channel id like -1001234567890, or exact title
+tmdb_key = ""                      # https://www.themoviedb.org/settings/api
+# part_size = 3758096384           # 3.5 GiB, must be a multiple of 1 MiB
+# throttle_ms = 0                  # pause between part uploads
+# max_attempts = 5
+# tmp_dir = "/fast/scratch"        # faststart remux output; default: next to source
+# data_dir = "/var/lib/mediagram"  # session, library.db, tmdb cache; default: XDG data dir
