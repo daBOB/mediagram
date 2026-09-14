@@ -1,0 +1,16 @@
+{
+  "page": 1,
+  "results": [
+    {
+      "id": 1091,
+      "title": "The Thing",
+      "release_date": "1982-06-25"
+    },
+    {
+      "id": 8563,
+      "title": "The Thing",
+      "release_date": "2011-10-14"
+    }
+  ],
+  "total_results": 2
+}
