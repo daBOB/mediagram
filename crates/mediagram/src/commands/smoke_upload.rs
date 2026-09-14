@@ -1,6 +1,6 @@
 //! Hidden smoke test: upload one file with a smoke caption, print message id, delete it.
 //!
-//! Manual gate for the phase-1 assumptions: that Telegram enforces the 4 GB
+//! Manual gate for two assumptions: that Telegram enforces the 4 GB
 //! per-document cap on this (Premium) account, and that FLOOD_WAIT surfaces
 //! the way `telegram::retry` expects it to.
 

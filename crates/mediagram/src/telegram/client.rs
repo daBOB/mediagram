@@ -154,6 +154,9 @@ fn session_path(cfg: &Config) -> Result<PathBuf> {
     let dir = cfg.data_dir()?;
     std::fs::create_dir_all(&dir)
         .with_context(|| format!("creating data dir {}", dir.display()))?;
+    // libsql keeps the auth key in WAL/SHM sidecars too, so the directory itself is private.
+    std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700))
+        .with_context(|| format!("restricting permissions on {}", dir.display()))?;
     Ok(dir.join("session.sqlite"))
 }
 

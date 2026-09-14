@@ -81,7 +81,9 @@ pub fn needs_faststart(path: &Path) -> Result<bool> {
             break;
         }
 
-        pos += box_size;
+        pos = pos.checked_add(box_size).ok_or_else(|| {
+            anyhow::anyhow!("{}: box size overflows at offset {pos}", path.display())
+        })?;
     }
 
     match (mdat_offset, moov_offset) {

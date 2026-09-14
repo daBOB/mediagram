@@ -9,7 +9,7 @@ use serde::Deserialize;
 
 use crate::paths;
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Clone)]
 pub struct Config {
     pub api_id: i32,
     pub api_hash: String,
@@ -28,6 +28,23 @@ pub struct Config {
     pub tmp_dir: Option<PathBuf>,
     /// Session, library.db, tmdb cache; default: XDG data dir.
     pub data_dir: Option<PathBuf>,
+}
+
+/// Manual Debug so api_hash and tmdb_key can never reach logs or error chains.
+impl std::fmt::Debug for Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("api_id", &self.api_id)
+            .field("api_hash", &"<redacted>")
+            .field("channel", &self.channel)
+            .field("tmdb_key", &self.tmdb_key.as_ref().map(|_| "<redacted>"))
+            .field("part_size", &self.part_size)
+            .field("throttle_ms", &self.throttle_ms)
+            .field("max_attempts", &self.max_attempts)
+            .field("tmp_dir", &self.tmp_dir)
+            .field("data_dir", &self.data_dir)
+            .finish()
+    }
 }
 
 fn default_part_size() -> u64 {
@@ -106,5 +123,16 @@ mod tests {
         assert_eq!(cfg.part_size, DEFAULT_PART_SIZE);
         assert_eq!(cfg.max_attempts, 5);
         assert!(cfg.tmdb_key.is_none());
+    }
+
+    #[test]
+    fn debug_output_redacts_secrets() {
+        let cfg: Config = toml::from_str(
+            "api_id = 1\napi_hash = \"sekrit\"\nchannel = \"c\"\ntmdb_key = \"k3y\"\n",
+        )
+        .unwrap();
+        let dbg = format!("{cfg:?}");
+        assert!(!dbg.contains("sekrit") && !dbg.contains("k3y"));
+        assert!(dbg.contains("<redacted>"));
     }
 }

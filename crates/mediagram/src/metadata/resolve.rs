@@ -4,6 +4,7 @@
 
 use anyhow::{Context, Result};
 use mlib_spec::filename::{Guess, parse_filename};
+use mlib_spec::ids::normalize_imdb;
 use mlib_spec::{Episode, Kind, ProviderIds};
 
 use super::prompt::Prompter;
@@ -60,7 +61,9 @@ pub async fn resolve(
     let mut item = if let Some(id) = input.tmdb {
         fetch_details(api, id, kind).await?
     } else if let Some(imdb) = &input.imdb {
-        let id = find_by_external(api, imdb, "imdb_id", kind).await?;
+        let imdb =
+            normalize_imdb(imdb).ok_or_else(|| anyhow::anyhow!("invalid imdb id `{imdb}`"))?;
+        let id = find_by_external(api, &imdb, "imdb_id", kind).await?;
         fetch_details(api, id, kind).await?
     } else if let Some(tvdb) = input.tvdb {
         let id = find_by_external(api, &tvdb.to_string(), "tvdb_id", kind).await?;
@@ -73,6 +76,9 @@ pub async fn resolve(
     // the caller supplied wins over anything TMDB's external_ids returned.
     if let Some(tvdb) = input.tvdb {
         item.ids.tvdb = Some(tvdb);
+    }
+    if let Some(imdb) = input.imdb.as_deref().and_then(normalize_imdb) {
+        item.ids.imdb = Some(imdb);
     }
     item.season = input.season.or(guess.season);
     item.episode = episode_value(input, &guess);

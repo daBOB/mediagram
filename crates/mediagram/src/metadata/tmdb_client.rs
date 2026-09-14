@@ -62,6 +62,7 @@ impl TmdbApi for TmdbClient {
                 .get(url.clone())
                 .send()
                 .await
+                .map_err(reqwest::Error::without_url) // the URL carries the api key
                 .with_context(|| format!("tmdb request to {path} failed"))?;
 
             if resp.status() == reqwest::StatusCode::TOO_MANY_REQUESTS && retries < MAX_RETRIES {
@@ -80,6 +81,7 @@ impl TmdbApi for TmdbClient {
             let body: Value = resp
                 .json()
                 .await
+                .map_err(reqwest::Error::without_url)
                 .with_context(|| format!("tmdb response for {path} was not JSON"))?;
             if !status.is_success() {
                 bail!("tmdb request to {path} failed with {status}: {body}");
@@ -132,6 +134,13 @@ impl<A: TmdbApi> TmdbApi for DiskCachedApi<A> {
         }
 
         let value = self.inner.get_json(path, query).await?;
+        let empty_page = value
+            .get("results")
+            .and_then(|r| r.as_array())
+            .is_some_and(|a| a.is_empty());
+        if empty_page {
+            return Ok(value);
+        }
         std::fs::create_dir_all(&self.cache_dir)
             .with_context(|| format!("creating tmdb cache dir {}", self.cache_dir.display()))?;
         std::fs::write(&file, serde_json::to_vec(&value)?)

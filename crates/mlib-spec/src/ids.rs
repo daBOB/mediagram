@@ -10,6 +10,17 @@ pub struct ProviderIds {
     pub imdb: Option<String>,
 }
 
+/// Accepts `tt0816692` or `0816692` (any case); returns the canonical `tt`-prefixed form.
+pub fn normalize_imdb(raw: &str) -> Option<String> {
+    let raw = raw.trim();
+    let digits = raw
+        .strip_prefix("tt")
+        .or_else(|| raw.strip_prefix("TT"))
+        .unwrap_or(raw);
+    (!digits.is_empty() && digits.chars().all(|c| c.is_ascii_digit()))
+        .then(|| format!("tt{digits}"))
+}
+
 impl ProviderIds {
     pub fn is_empty(&self) -> bool {
         self.tmdb.is_none() && self.tvdb.is_none() && self.imdb.is_none()
@@ -21,13 +32,7 @@ impl ProviderIds {
         match src {
             "tmdb" => ids.tmdb = Some(id.parse().ok()?),
             "tvdb" => ids.tvdb = Some(id.parse().ok()?),
-            "imdb" => {
-                let id = id.strip_prefix("tt").unwrap_or(id);
-                if id.is_empty() || !id.chars().all(|c| c.is_ascii_digit()) {
-                    return None;
-                }
-                ids.imdb = Some(format!("tt{id}"));
-            }
+            "imdb" => ids.imdb = Some(normalize_imdb(id)?),
             _ => return None,
         }
         Some(ids)
@@ -52,6 +57,7 @@ mod tests {
             Some("tt0816692")
         );
         assert!(ProviderIds::from_token("imdb", "abc").is_none());
+        assert_eq!(normalize_imdb(" TT42 ").as_deref(), Some("tt42"));
         assert!(ProviderIds::from_token("plex", "1").is_none());
         assert!(ProviderIds::default().is_empty());
     }

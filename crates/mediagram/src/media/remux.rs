@@ -45,6 +45,7 @@ pub async fn ensure_faststart(
         .with_context(|| format!("running ffmpeg faststart remux on {}", src.display()))?;
 
     if !output.status.success() {
+        let _ = std::fs::remove_file(&dest);
         bail!(
             "ffmpeg faststart remux failed for {}: {}",
             src.display(),

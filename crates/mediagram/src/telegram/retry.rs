@@ -22,6 +22,15 @@ pub fn flood_wait_secs(err: &InvocationError) -> Option<u64> {
     }
 }
 
+/// Flood waits and server-side failures are worth retrying; client errors such
+/// as bad requests or a dead auth key never fix themselves.
+fn is_retryable(err: &InvocationError) -> bool {
+    match err {
+        InvocationError::Rpc(rpc) => rpc.name == "FLOOD_WAIT" || rpc.code >= 500,
+        _ => true,
+    }
+}
+
 /// Runs `op` up to `max_attempts` times. A `FLOOD_WAIT` error sleeps for the
 /// server-specified duration before retrying; any other error backs off
 /// exponentially. Returns the last error once `max_attempts` is reached.
@@ -36,7 +45,7 @@ where
         attempt += 1;
         match op().await {
             Ok(value) => return Ok(value),
-            Err(err) if attempt >= max_attempts => return Err(err.into()),
+            Err(err) if attempt >= max_attempts || !is_retryable(&err) => return Err(err.into()),
             Err(err) => {
                 let delay = match flood_wait_secs(&err) {
                     Some(secs) => Duration::from_secs(secs),

@@ -24,20 +24,12 @@ pub(super) async fn search_and_resolve(
     kind: Kind,
     ui: &mut dyn Prompter,
 ) -> Result<ResolvedItem> {
-    let mut query = vec![("query", guess.title.clone())];
+    // No server-side year filter: TMDB matches it exactly, which would hide the
+    // off-by-one release years the client-side window below is meant to tolerate.
+    let query = vec![("query", guess.title.clone())];
     let path = match kind {
-        Kind::Movie => {
-            if let Some(year) = guess.year {
-                query.push(("year", year.to_string()));
-            }
-            "/search/movie"
-        }
-        Kind::Ep => {
-            if let Some(year) = guess.year {
-                query.push(("first_air_date_year", year.to_string()));
-            }
-            "/search/tv"
-        }
+        Kind::Movie => "/search/movie",
+        Kind::Ep => "/search/tv",
     };
 
     let value = api.get_json(path, &query).await?;
