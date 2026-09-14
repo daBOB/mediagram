@@ -43,11 +43,34 @@ grammers 0.10.0 API (verified against crate source): `grammers_session::storages
 6. Smoke test (manual, documented in README): `mediagram smoke-upload <small.mp4>` hidden subcommand that uploads one file with caption `#mlib smoke` to the channel and prints message id, then deletes it. Use it to observe FLOOD_WAIT behavior and confirm document + caption land correctly.
 
 ## Success Criteria
-- [ ] `mediagram login` on a fresh machine ends with a saved session; re-run prints "already authorized"
-- [ ] `mediagram whoami` prints user and channel title
-- [ ] Smoke upload of a 3.5 GiB file succeeds on the Premium account (confirms 4 GB enforcement assumption); record result in plan notes
-- [ ] Simulated FLOOD_WAIT (unit test with a fake error) sleeps and retries
+- [ ] `mediagram login` on a fresh machine ends with a saved session; re-run prints "already authorized" (implemented, not yet run live — no credentials in this environment)
+- [ ] `mediagram whoami` prints user and channel title (implemented, not yet run live — no credentials in this environment)
+- [ ] Smoke upload of a 3.5 GiB file succeeds on the Premium account (confirms 4 GB enforcement assumption); record result in plan notes (not run — requires live account and a 3.5 GiB test file)
+- [x] Simulated FLOOD_WAIT (unit test with a fake error) sleeps and retries
 
 ## Risk Assessment
 - grammers may not expose admin-rights check simply → document the requirement, let send fail loudly.
 - FLOOD_WAIT shape verified (`RpcError.name`/`value` in grammers-mtsender 0.10.0 errors.rs:79). Remaining unknown is only how often Telegram issues it for multi-GB uploads; the smoke test measures that.
+
+## Completion notes
+
+Implemented `telegram/client.rs` (`Tg::connect`/`shutdown`, `open_client`, `ensure_login`,
+`resolve_channel`), `telegram/retry.rs` (`with_retry`, `flood_wait_secs`), and
+`commands/{login,whoami,smoke_upload}.rs` against the verified grammers 0.10.0 API
+(`SqliteSession::open` → `SenderPool::new` → `Client::new(handle)`, `iter_dialogs` for
+channel resolution, `RpcError{name,value}` FLOOD_WAIT parsing). Session file is created
+under `cfg.data_dir()/session.sqlite` with `0600` permissions. Channel resolution accepts
+either numeric id form (bare or `-100…`) or an exact title match via `PeerId::bot_api_dialog_id`/`bare_id`.
+`with_retry` sleeps `FLOOD_WAIT` seconds (server value + 1s slack) without exhausting the
+attempt budget differently from other errors — all error kinds count toward `max_attempts`,
+and non-FLOOD_WAIT errors back off exponentially (`200ms * 2^(attempt-1)`).
+
+Verification run in this environment: `cargo fmt --all -- --check` clean, `cargo clippy
+--all-targets -- -D warnings` clean, `cargo test` green (8/8, including
+`flood_wait_secs` unit tests and two `with_retry` async tests using a fake
+`InvocationError` closure — no network). `cargo build --workspace` also green.
+
+Not run: the live smoke test (`mediagram smoke-upload`) and the interactive `login`/`whoami`
+flows — no Telegram `api_id`/`api_hash`/channel credentials are available in this sandboxed
+worktree. These need to be exercised manually once `config.toml` is populated with real
+credentials, per the phase-1 gate.
