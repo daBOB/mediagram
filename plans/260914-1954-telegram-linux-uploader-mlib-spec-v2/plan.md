@@ -21,7 +21,7 @@ Stack: Rust 1.98 edition 2024, grammers-client 0.10.0, rusqlite (bundled), clap,
 | 2 | [Config and Telegram auth](phase-02-config-and-telegram-auth.md) | completed | P1 | 0.5d | 1 |
 | 3 | [Media inspect and faststart remux](phase-03-media-inspect-and-faststart-remux.md) | completed | P2 | 0.5d | 1 |
 | 4 | [TMDB metadata resolution](phase-04-tmdb-metadata-resolution.md) | completed | P2 | 1d | 1 |
-| 5 | [Streaming part upload with resume](phase-05-streaming-part-upload-with-resume.md) | completed | P1 | 2d | 2,3,4 |
+| 5 | [Streaming part upload with resume](phase-05-streaming-part-upload-with-resume.md) | in-progress | P1 | 2d | 2,3,4 |
 | 6 | [Index push and rescan](phase-06-index-push-and-rescan.md) | pending | P2 | 1d | 5 |
 | 7 | [Verify command and project docs](phase-07-verify-command-and-project-docs.md) | pending | P2 | 1d | 6 |
 
@@ -104,3 +104,6 @@ See phase 7 success criteria: 10 GB MKV → 3 parts; kill -9 mid-part then `resu
 - Combined review found: TMDB api_key in reqwest error URLs (critical), unprotected libsql WAL/SHM sidecars, u64 wrap in the atom scanner, server-side year filter defeating the ±1 rule, `--imdb` not normalised, permanent RPC errors retried, partial remux output on failure, empty search pages cached, Debug on Config. All fixed in commit `30d7a5b`.
 - Deferred (documented, not blocking): `--tmdb` kind inference calls `/movie/{id}` for a show when no season/episode markers are given (user passes `--season/--episode`, which phase 5's `add` requires for `t=ep`); `test_fixtures` compiled into the release binary; `with_retry` around `send_message` is not idempotent, so phase 5 must scan-before-resend as already planned.
 - Test count after phases 1-4: 131 (unit + fixture-based integration + probe suites). Reports: `reports/code-reviewer-260914-2203-*.md`, `reports/tester-260914-2203-*.md`.
+
+### Implementation log — phase 5 (2026-09-15)
+- Built by a worktree agent, merged in `565d5e9`; review found three high-severity resume edge cases (temp deletion by suffix, unvalidated source size, retry-induced duplicate sends), fixed in `be70497`. Tester added 18 probes, no defects. 161 tests. Status stays in-progress until the live 3-part `add` runs (needs `tmdb_key`).

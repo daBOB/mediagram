@@ -118,6 +118,7 @@ impl SetRow {
 }
 
 impl SetRow {
+    /// The set's `Caption` with a placeholder part block (idx 0, empty hash),
     /// used to derive names and human text that don't depend on which part.
     pub fn caption_template(&self) -> Result<Caption> {
         let t = match self.kind.as_str() {

@@ -97,3 +97,12 @@ Document identity: `parts.doc_id INTEGER` stores grammers `Document::id()` (i64,
   concern (resumable part upload; the `sets` row/SQL mapping for 27 mirrored
   Caption fields) and splitting further looked like it would add file-hopping
   without reducing complexity, so left as is.
+
+## Review fixes (2026-09-15, commit be70497)
+- Temp remux file is recorded per set (`meta` key `tmp:<set_id>`) and only that path is deleted on completion; the filename-suffix check was a data-loss path.
+- `resume` refuses a source whose size differs from `sets.total`; `PartReader::bytes_read` must equal the planned length before `send_message`.
+- `send_message` retries only on FLOOD_WAIT (`telegram::retry::with_flood_wait_only`); other failures surface and the adopt scan on the next run prevents duplicates.
+- Caption budget is checked with a worst-case part block before any upload.
+- `upload/adopt.rs` and `index/set_row.rs` split out; every file now under 200 lines.
+- Deferred: cross-process lock between concurrent `add`/`resume` (single-user tool); hash format validation on adopted captions; rusqlite links the system libsqlite3 because grammers-session's libsql already bundles sqlite3 (duplicate symbols with `bundled`).
+- Live gate for this phase (real 3-part `add`) pending a TMDB key in config; test clip and command are ready.
