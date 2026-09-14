@@ -3,7 +3,9 @@
 
 pub mod commands;
 pub mod config;
+pub mod index;
 pub mod media;
 pub mod metadata;
 pub mod paths;
 pub mod telegram;
+pub mod upload;
