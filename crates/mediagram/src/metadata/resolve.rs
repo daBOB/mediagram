@@ -2,7 +2,7 @@
 //! preferring explicit ids, then a TMDB search seeded by the filename guess,
 //! prompting only when the search is ambiguous. `--manual` bypasses TMDB.
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use mlib_spec::filename::{Guess, parse_filename};
 use mlib_spec::ids::normalize_imdb;
 use mlib_spec::{Episode, Kind, ProviderIds};
@@ -127,6 +127,7 @@ pub(super) async fn fetch_details(api: &impl TmdbApi, id: u64, kind: Kind) -> Re
     let path = match kind {
         Kind::Movie => format!("/movie/{id}"),
         Kind::Ep => format!("/tv/{id}"),
+        Kind::Tut => bail!("a tutorial has no TMDB entry; courses are described by hand"),
     };
     let query = [("append_to_response", "external_ids".to_string())];
     let value = api.get_json(&path, &query).await?;
@@ -134,7 +135,12 @@ pub(super) async fn fetch_details(api: &impl TmdbApi, id: u64, kind: Kind) -> Re
         .with_context(|| format!("invalid tmdb response for {path}"))?;
     let ext = details.external_ids.clone().unwrap_or_default();
 
+    if kind == Kind::Tut {
+        bail!("a tutorial has no TMDB entry; courses are described by hand");
+    }
     Ok(match kind {
+        // Guarded immediately above; a course never reaches TMDB.
+        Kind::Tut => bail!("a tutorial has no TMDB entry"),
         Kind::Movie => ResolvedItem {
             kind,
             ids: ProviderIds {
@@ -175,6 +181,7 @@ async fn find_by_external(api: &impl TmdbApi, id: &str, source: &str, kind: Kind
     let hit = match kind {
         Kind::Movie => found.movie_results.into_iter().next(),
         Kind::Ep => found.tv_results.into_iter().next(),
+        Kind::Tut => bail!("a tutorial has no TMDB entry; courses are described by hand"),
     };
     hit.map(|h| h.id)
         .ok_or_else(|| anyhow::anyhow!("no tmdb match found for {source} {id}"))
@@ -192,4 +199,21 @@ async fn fetch_episode_title(
     let details: EpisodeDetails =
         serde_json::from_value(value).context("invalid tmdb episode response")?;
     Ok(details.name)
+}
+
+/// Metadata for a course lesson. No lookup: TMDB has no courses, so
+/// everything comes from what the caller passed and from the file name.
+pub fn tutorial(course: &str, input: &ResolveInput) -> ResolvedItem {
+    let (_, title) =
+        crate::course::plan::split_number_and_title(crate::course::plan::stem(&input.file_name));
+    ResolvedItem {
+        kind: Kind::Tut,
+        ids: ProviderIds::default(),
+        show: Some(course.to_string()),
+        title,
+        year: None,
+        season: input.season.or(Some(1)),
+        episode: input.episode.map(Episode::Single),
+        abs: input.abs,
+    }
 }

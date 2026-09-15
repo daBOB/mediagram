@@ -39,6 +39,11 @@ async fn add_uploads_a_three_part_file() {
     tokio::fs::write(&file, &data).await.unwrap();
 
     let args = AddArgs {
+        course: None,
+        cid: None,
+        chapter: None,
+        chap: None,
+        lesson: None,
         file: file.clone(),
         tmdb: None,
         tvdb: None,

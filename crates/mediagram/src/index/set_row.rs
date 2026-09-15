@@ -14,6 +14,8 @@ pub struct SetRow {
     pub tvdb: Option<u64>,
     pub imdb: Option<String>,
     pub show: Option<String>,
+    /// Chapter title, for course lessons.
+    pub chap: Option<String>,
     pub title: Option<String>,
     pub year: Option<u16>,
     pub season: Option<u32>,
@@ -48,11 +50,13 @@ impl SetRow {
             kind: match caption.t {
                 Kind::Movie => "movie".to_string(),
                 Kind::Ep => "ep".to_string(),
+                Kind::Tut => "tut".to_string(),
             },
             tmdb: caption.ids.tmdb,
             tvdb: caption.ids.tvdb,
             imdb: caption.ids.imdb.clone(),
             show: caption.show.clone(),
+            chap: caption.chap.clone(),
             title: caption.title.clone(),
             year: caption.year,
             season: caption.s,
@@ -67,7 +71,9 @@ impl SetRow {
             slang: caption.slang.clone(),
             duration: caption.dur,
             variant: caption.variant.clone(),
-            group_key: None,
+            // A course's lessons group by collection id; nothing else sets
+            // one today, so this is None for movies and episodes.
+            group_key: caption.cid.clone(),
             total: caption.total,
             part_count: caption.part.n,
             set_hash: None,
@@ -92,6 +98,7 @@ impl SetRow {
             tvdb: tvdb.map(|v| v as u64),
             imdb: row.get("imdb")?,
             show: row.get("show")?,
+            chap: row.get("chap")?,
             title: row.get("title")?,
             year: row.get("year")?,
             season: row.get("season")?,
@@ -132,6 +139,8 @@ impl SetRow {
             .map(serde_json::from_str)
             .transpose()?;
         Ok(Caption {
+            cid: None,
+            chap: None,
             t,
             ids: ProviderIds {
                 tmdb: self.tmdb,

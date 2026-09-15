@@ -5,7 +5,7 @@ channel**: files are split into raw byte-range parts (3.5 GiB by default,
 Telegram Premium's 4 GB per-message cap), each part is uploaded with a
 structured caption, and a local SQLite index (`library.db`) is the
 canonical record of what's in the channel. See
-[`docs/mlib-spec-v2.md`](docs/mlib-spec-v2.md) for how it stores things.
+[`docs/mlib-spec.md`](docs/mlib-spec.md) for how it stores things.
 
 ## Requirements
 
@@ -47,6 +47,7 @@ list of optional keys (`part_size`, `throttle_ms`, `max_attempts`,
 | `mediagram resume [--no-push]` | Finish every set left `pending` by an interrupted `add` (adopts already-uploaded parts instead of re-uploading them). |
 | `mediagram push-index` | Snapshot `library.db` and upload it to the channel as a pinned document. |
 | `mediagram verify <set-id> \| --all [--full] [--since <unix>]` | Check a set (or every set): default mode compares each part's message/document against the index; `--full` re-downloads and hashes every part, and `--since` skips parts already verified at or after that timestamp so an interrupted sweep resumes. `--all` skips sets that are still uploading. |
+| `mediagram add-course <dir> [--dry-run]` | Walk a course folder and upload every lesson: subdirectories are chapters, video files inside them are lessons. Re-running skips lessons already finished. |
 | `mediagram export-package [--publish] [--dry-run] [--out <dir>]` | Assemble the encrypted prebuilt package for a player and, with `--publish`, hand it and its pointer to `publish_cmd`. See [the package spec](docs/mlib-package-v1.md). |
 | `mediagram rescan` | Rebuild `library.db` from channel captions. Additive only — never demotes or deletes a locally-recorded set; use `verify` to detect mismatches. |
 
@@ -55,6 +56,33 @@ multi-terabyte library takes hours; the command prints the byte total and a
 rough time estimate before it starts. Parts that fail keep their `FAIL` row
 and lose any earlier `verified_at`, and one unreachable part no longer ends
 the run: it is reported as a failed part and the sweep continues.
+
+### Adding a course
+
+Tutorials are a third kind of content alongside movies and episodes. A course
+has chapters, a chapter has lessons, and each lesson is one video file, so it
+becomes one ordinary set.
+
+```
+mediagram add-course ~/Courses/Rust\ Course --dry-run
+mediagram add-course ~/Courses/Rust\ Course
+```
+
+The walk treats each subdirectory as a chapter and each video inside it as a
+lesson, reading the leading number as the number and the rest as the title.
+A flat folder is one chapter. Files that are not video are ignored. The
+dry-run table shows every inferred number and title before anything uploads.
+
+Courses never touch TMDB, which has no entry for them, so no API key is
+needed on this path. Identity is the collection id plus the chapter and
+lesson numbers, which means re-running after an interruption skips what
+finished and survives renaming or moving the folder. Pass `--cid` to keep a
+course's grouping stable across a retitle. A lesson that was started but
+never finished is reported for `mediagram resume` rather than uploaded
+again.
+
+Single lessons can be added by hand with `--course`, `--chapter`, `--chap`
+and `--lesson` on `mediagram add`.
 
 ### Publishing a package for a player
 
@@ -120,7 +148,7 @@ real Premium channel confirmed no throttling. `part_size` can be tuned in
 Every part carries a structured caption (`#mlib v=2` marker + minified
 JSON) with the file's metadata, provider ids, and its own byte offset,
 length and SHA-256 — full detail in
-[`docs/mlib-spec-v2.md`](docs/mlib-spec-v2.md). The local `library.db`
+[`docs/mlib-spec.md`](docs/mlib-spec.md). The local `library.db`
 SQLite database is canonical; a snapshot of it is pushed to the channel as
 a pinned document after every completed set, so the channel alone is
 enough to rebuild the index elsewhere (`mediagram rescan`). Architecture

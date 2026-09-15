@@ -49,6 +49,9 @@ async fn poster_path_for(api: &impl TmdbApi, kind: Kind, id: u64) -> Option<Stri
     let path = match kind {
         Kind::Movie => format!("/movie/{id}"),
         Kind::Ep => format!("/tv/{id}"),
+        // A course has no provider id, so it never reaches this lookup and
+        // simply has no poster from TMDB.
+        Kind::Tut => return None,
     };
     // Must match what `resolve::fetch_details` sends, or the cache key
     // (a hash of path plus sorted query) misses and this hits the network.
@@ -82,6 +85,6 @@ fn is_image_path(path: &str) -> bool {
 fn poster_key(kind: Kind, id: u64) -> String {
     match kind {
         Kind::Movie => format!("tmdb-movie-{id}"),
-        Kind::Ep => format!("tmdb-tv-{id}"),
+        Kind::Ep | Kind::Tut => format!("tmdb-tv-{id}"),
     }
 }

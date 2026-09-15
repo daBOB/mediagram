@@ -8,6 +8,7 @@
 //! - [`filename`]: fallback grammar for un-captioned files
 //! - [`set_hash`]: set identity derived from per-part hashes
 //! - [`schema`]: SQLite DDL for `library.db`
+//! - [`slug`]: default derivation of a collection id
 //! - [`package`]: the prebuilt metadata package published for a player
 
 pub mod caption;
@@ -19,6 +20,7 @@ pub mod part_name;
 pub mod part_plan;
 pub mod schema;
 pub mod set_hash;
+pub mod slug;
 
 pub use caption::{Caption, Episode, Kind, Part};
 pub use caption_codec::{CaptionError, parse, to_text};
@@ -27,4 +29,4 @@ pub use package::{LatestPointer, PackageManifest};
 pub use part_plan::{PartRange, PlanError, plan_parts};
 
 /// Spec version written in the caption marker line and `sets.spec_version`.
-pub const SPEC_VERSION: u32 = 2;
+pub const SPEC_VERSION: u32 = 3;

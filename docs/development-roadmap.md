@@ -42,6 +42,21 @@ acceptance run needs an interactive terminal rather than an API key:
   `rm library.db && rescan` reproducing the same rows. Whole-plan success
   criteria are listed in `plan.md` and get checked off there once run.
 
+## Tutorials and courses
+
+Caption `v3` adds a third kind, `tut`, plus two fields: `chap` for a chapter
+title and `cid`, a general collection id that groups sets with no provider
+id. Course, chapter and lesson map onto `show`, `s`/`chap` and `e`/`title`,
+so ordering, resume and the playable invariant need no special cases.
+
+`mediagram add-course` walks a course folder; `mediagram add` gained
+`--course`, `--cid`, `--chapter`, `--chap` and `--lesson` for a single
+lesson. Schema version 2 adds `sets.chap`, and migrations became
+version-gated because SQLite has no `ADD COLUMN IF NOT EXISTS` and the old
+runner replayed every statement on each open.
+
+Design: `docs/superpowers/specs/2026-09-15-tutorial-course-support-design.md`.
+
 ## Prebuilt metadata package
 
 `mediagram export-package` publishes an encrypted package (index snapshot

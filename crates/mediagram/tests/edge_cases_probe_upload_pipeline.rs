@@ -134,6 +134,8 @@ impl Transport for FakeTransport {
 
 fn sample_caption(set_id: &str, total: u64, n: u32) -> Caption {
     Caption {
+        cid: None,
+        chap: None,
         t: Kind::Movie,
         ids: ProviderIds {
             tmdb: Some(603),
@@ -546,6 +548,8 @@ async fn long_title_in_part_name() {
     // Test that part_name handles long titles without truncating incorrectly
     let long_title = "A".repeat(100); // Very long title
     let caption = Caption {
+        cid: None,
+        chap: None,
         t: Kind::Movie,
         ids: ProviderIds {
             tmdb: Some(603),

@@ -42,6 +42,8 @@ fn caption_with_bom_is_handled() {
 fn caption_to_text_with_multibyte_chars_respects_budget() {
     // Use emoji (multibyte UTF-8) to verify char-based counting, not byte-based
     let c = Caption {
+        cid: None,
+        chap: None,
         t: Kind::Movie,
         ids: ProviderIds::default(),
         show: None,
@@ -90,6 +92,8 @@ fn caption_to_text_with_multibyte_chars_respects_budget() {
 fn caption_roundtrip_preserves_field_order_with_exotic_values() {
     // Test with anime absolute numbering, season 0 (specials), episode ranges
     let c = Caption {
+        cid: None,
+        chap: None,
         t: Kind::Ep,
         ids: ProviderIds {
             tmdb: Some(123456),
@@ -343,6 +347,8 @@ fn part_file_name_edge_case_exactly_at_max_len() {
 fn base_name_episode_with_abs_only() {
     // Anime with absolute numbering but no season/episode
     let c = Caption {
+        cid: None,
+        chap: None,
         t: Kind::Ep,
         ids: ProviderIds::default(),
         show: Some("Evangelion".into()),
@@ -380,6 +386,8 @@ fn base_name_episode_with_abs_only() {
 #[test]
 fn base_name_episode_with_season_and_episode() {
     let c = Caption {
+        cid: None,
+        chap: None,
         t: Kind::Ep,
         ids: ProviderIds::default(),
         show: Some("The Office".into()),
@@ -416,6 +424,8 @@ fn base_name_episode_with_season_and_episode() {
 #[test]
 fn base_name_episode_with_episode_range() {
     let c = Caption {
+        cid: None,
+        chap: None,
         t: Kind::Ep,
         ids: ProviderIds::default(),
         show: Some("Breaking Bad".into()),

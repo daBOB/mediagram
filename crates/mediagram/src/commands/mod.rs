@@ -1,6 +1,7 @@
 //! One module per subcommand; each exposes `run`.
 
 pub mod add;
+pub mod add_course;
 pub mod args;
 pub mod export_package;
 pub mod login;

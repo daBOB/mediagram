@@ -627,6 +627,8 @@ fn stage_very_long_staging_name() {
 /// A caption for a set row, varying only the fields these probes care about.
 fn probe_caption(set: &str, kind: Kind, tmdb: Option<u64>) -> Caption {
     Caption {
+        cid: None,
+        chap: None,
         t: kind,
         ids: ProviderIds {
             tmdb,

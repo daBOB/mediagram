@@ -6,8 +6,8 @@ use rusqlite::{Connection, OptionalExtension, params};
 
 pub use crate::index::set_row::SetRow;
 
-const COLUMNS: &str = "set_id, kind, tmdb, tvdb, imdb, show, title, year, season, episode, abs,
-    quality, hdr, container, vcodec, acodec, alang, slang, duration, variant, group_key,
+const COLUMNS: &str = "set_id, kind, tmdb, tvdb, imdb, show, chap, title, year, season, episode,
+    abs, quality, hdr, container, vcodec, acodec, alang, slang, duration, variant, group_key,
     total, part_count, set_hash, status, created_at, spec_version";
 
 /// Inserts a new set row. Fails if `set_id` already exists.
@@ -22,7 +22,7 @@ pub fn insert_set(conn: &Connection, row: &SetRow) -> Result<()> {
             "INSERT INTO sets({COLUMNS}) VALUES (
                 ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11,
                 ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21,
-                ?22, ?23, ?24, ?25, ?26, ?27)"
+                ?22, ?23, ?24, ?25, ?26, ?27, ?28)"
         ),
         params![
             row.set_id,
@@ -31,6 +31,7 @@ pub fn insert_set(conn: &Connection, row: &SetRow) -> Result<()> {
             tvdb,
             row.imdb,
             row.show,
+            row.chap,
             row.title,
             row.year,
             row.season,
@@ -99,3 +100,50 @@ pub fn list_pending(conn: &Connection) -> Result<Vec<SetRow>> {
 
 // Covered by `tests/index_state.rs`: insert/get/list_pending/complete round
 // trip through a real sqlite file, plus the not-found case.
+
+/// Whether a lesson with this identity is already uploaded and complete.
+///
+/// Identity is the collection id plus the chapter and lesson numbers, which
+/// is what lets `add-course` be re-run after an interruption: it survives
+/// renaming or moving the course folder, because none of the three comes
+/// from a path.
+pub fn complete_lesson_exists(
+    conn: &Connection,
+    cid: &str,
+    chapter: u32,
+    lesson: u32,
+) -> Result<bool> {
+    // `episode` holds the JSON encoding of the caption's `e` field, so a
+    // single lesson number is stored as a bare integer.
+    let episode = serde_json::to_string(&mlib_spec::caption::Episode::Single(lesson))?;
+    let found: Option<i64> = conn
+        .query_row(
+            "SELECT 1 FROM sets
+             WHERE group_key = ?1 AND season = ?2 AND episode = ?3
+               AND kind = 'tut' AND status = 'complete'",
+            params![cid, chapter, episode],
+            |row| row.get(0),
+        )
+        .optional()?;
+    Ok(found.is_some())
+}
+
+/// The status of a lesson already in the index, if any, so a caller can tell
+/// "finished" from "interrupted" and route the second to `resume`.
+pub fn lesson_status(
+    conn: &Connection,
+    cid: &str,
+    chapter: u32,
+    lesson: u32,
+) -> Result<Option<String>> {
+    let episode = serde_json::to_string(&mlib_spec::caption::Episode::Single(lesson))?;
+    let status: Option<String> = conn
+        .query_row(
+            "SELECT status FROM sets
+             WHERE group_key = ?1 AND season = ?2 AND episode = ?3 AND kind = 'tut'",
+            params![cid, chapter, episode],
+            |row| row.get(0),
+        )
+        .optional()?;
+    Ok(status)
+}

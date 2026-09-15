@@ -17,7 +17,7 @@ crates/
 
 `mediagram` depends on `mlib-spec`; nothing depends on `mediagram`. The
 wire format itself is documented normatively in
-[`docs/mlib-spec-v2.md`](mlib-spec-v2.md); this document covers how the CLI
+[`docs/mlib-spec.md`](mlib-spec.md); this document covers how the CLI
 is put together around it.
 
 ## 2. Module map (`crates/mediagram/src`)
@@ -87,7 +87,7 @@ an ambiguous filename match prompts interactively. The remux step only
 touches MP4s whose `moov` atom trails `mdat` (detected by scanning atom
 headers, not by re-encoding) — MKV and already-faststart MP4 files pass
 through untouched. Every part carries the caption
-[described in the spec](mlib-spec-v2.md#1-part-caption); the caption's own
+[described in the spec](mlib-spec.md#1-part-caption); the caption's own
 size is validated against Telegram's 1,024-UTF-16-unit budget before any
 upload starts, using a worst-case (highest part index, longest field
 values already known) probe caption.
@@ -144,7 +144,7 @@ split matters for testing.
 ## 7. Backend portability
 
 The index (`library.db`, described fully in
-[`docs/mlib-spec-v2.md`](mlib-spec-v2.md#6-local-index-librarydb)) and the
+[`docs/mlib-spec.md`](mlib-spec.md#6-local-index-librarydb)) and the
 caption format it mirrors are Telegram-agnostic in shape: `parts` stores a
 `chat_id`/`message_id`/`doc_id` triple as opaque identifiers, not anything
 grammers-specific, and the caption JSON carries no Telegram types. The package export (`commands/export_package.rs`, `export/`) is a second,

@@ -29,6 +29,22 @@ pub struct AddArgs {
     /// Enter metadata by hand instead of looking it up
     #[arg(long)]
     pub manual: bool,
+    /// Course title. Marks this a tutorial: no provider lookup happens
+    #[arg(long)]
+    pub course: Option<String>,
+    /// Collection id grouping a course's lessons; defaults to a slug of the
+    /// course title. Give one explicitly to keep grouping across a rename
+    #[arg(long)]
+    pub cid: Option<String>,
+    /// Chapter number within the course (default 1)
+    #[arg(long)]
+    pub chapter: Option<u32>,
+    /// Chapter title
+    #[arg(long)]
+    pub chap: Option<String>,
+    /// Lesson number within the chapter
+    #[arg(long)]
+    pub lesson: Option<u32>,
     /// Skip the MP4 faststart remux
     #[arg(long)]
     pub no_remux: bool,
@@ -44,4 +60,29 @@ pub struct AddArgs {
     /// Do not push the index after this set completes
     #[arg(long)]
     pub no_push: bool,
+}
+
+/// Arguments for `mediagram add-course`.
+#[derive(Args, Debug, Clone)]
+pub struct AddCourseArgs {
+    /// The course folder: chapters are its subdirectories
+    pub dir: PathBuf,
+    /// Course title; defaults to the folder name
+    #[arg(long)]
+    pub course: Option<String>,
+    /// Collection id; defaults to a slug of the course title
+    #[arg(long)]
+    pub cid: Option<String>,
+    /// Show what would be uploaded and stop
+    #[arg(long)]
+    pub dry_run: bool,
+    /// Do not push the index after the walk completes
+    #[arg(long)]
+    pub no_push: bool,
+    /// Variant label applied to every lesson
+    #[arg(long)]
+    pub variant: Option<String>,
+    /// Skip the MP4 faststart remux
+    #[arg(long)]
+    pub no_remux: bool,
 }

@@ -1,10 +1,29 @@
 //! SQLite DDL for `library.db`. The uploader keeps this file locally as the
 //! canonical index and pushes a snapshot to the channel as a pinned document.
 
-pub const SCHEMA_VERSION: i64 = 1;
+pub const SCHEMA_VERSION: i64 = 2;
 
-/// Statements applied in order on an empty database. Each is idempotent.
-pub const MIGRATIONS: &[&str] = &[
+/// Statements grouped by the version they produce: `GROUPS[0]` takes a
+/// database from nothing to version 1, `GROUPS[1]` from 1 to 2, and so on.
+///
+/// Grouping by version rather than replaying every statement on each open is
+/// what lets a migration do something other than `CREATE ... IF NOT EXISTS`.
+/// SQLite has no `ADD COLUMN IF NOT EXISTS`, so an idempotent-by-wording list
+/// could never gain a column.
+pub const GROUPS: &[&[&str]] = &[V1, V2];
+
+/// Every statement needed to reach `version` from an empty database. Used by
+/// tests and by anyone reconstructing an older layout.
+pub fn migrations_up_to(version: i64) -> Vec<&'static str> {
+    GROUPS
+        .iter()
+        .take(version.max(0) as usize)
+        .flat_map(|group| group.iter().copied())
+        .collect()
+}
+
+/// v0 → v1: the original tables.
+const V1: &[&str] = &[
     "CREATE TABLE IF NOT EXISTS sets(
         set_id TEXT PRIMARY KEY,
         kind TEXT NOT NULL,
@@ -37,6 +56,10 @@ pub const MIGRATIONS: &[&str] = &[
     "CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT NOT NULL)",
 ];
 
+/// v1 → v2: chapter titles for courses. `group_key`, declared in v1 and never
+/// populated until now, carries the collection id.
+const V2: &[&str] = &["ALTER TABLE sets ADD COLUMN chap TEXT"];
+
 /// Playable invariant, as SQL usable in a WHERE clause on `sets s`.
 pub const PLAYABLE_SQL: &str = "s.status = 'complete'
     AND s.part_count = (SELECT COUNT(*) FROM parts p WHERE p.set_id = s.set_id AND p.status = 'done')
@@ -45,12 +68,26 @@ pub const PLAYABLE_SQL: &str = "s.status = 'complete'
 #[cfg(test)]
 mod tests {
     #[test]
-    fn migrations_are_present_and_idempotent_in_wording() {
-        assert!(super::MIGRATIONS.len() >= 4);
-        assert!(
-            super::MIGRATIONS
-                .iter()
-                .all(|m| m.contains("IF NOT EXISTS"))
+    fn the_first_group_creates_the_tables_idempotently() {
+        let v1 = super::GROUPS[0];
+        assert!(v1.len() >= 4);
+        assert!(v1.iter().all(|m| m.contains("IF NOT EXISTS")));
+    }
+
+    /// Later groups run once, gated by the recorded version, so they are free
+    /// to use statements SQLite cannot express idempotently.
+    #[test]
+    fn there_is_one_group_per_version() {
+        assert_eq!(super::GROUPS.len() as i64, super::SCHEMA_VERSION);
+    }
+
+    #[test]
+    fn migrations_up_to_accumulates_groups() {
+        assert!(super::migrations_up_to(0).is_empty());
+        assert_eq!(super::migrations_up_to(1).len(), super::GROUPS[0].len());
+        assert_eq!(
+            super::migrations_up_to(2).len(),
+            super::GROUPS[0].len() + super::GROUPS[1].len()
         );
     }
 }

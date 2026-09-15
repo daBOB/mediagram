@@ -10,6 +10,8 @@ const CHAT_ID: i64 = -1001234567890;
 
 fn sample_seen() -> Seen {
     let caption = Caption {
+        cid: None,
+        chap: None,
         t: Kind::Movie,
         ids: ProviderIds {
             tmdb: Some(42),

@@ -21,19 +21,61 @@ pub fn open(data_dir: &Path) -> Result<Connection> {
     conn.pragma_update(None, "foreign_keys", true)
         .context("enabling foreign key enforcement")?;
 
-    for migration in mlib_spec::schema::MIGRATIONS {
-        conn.execute(migration, [])
-            .with_context(|| format!("running migration: {migration}"))?;
-    }
-
-    set_meta(
-        &conn,
-        "schema_version",
-        &mlib_spec::schema::SCHEMA_VERSION.to_string(),
-    )
-    .context("recording schema version")?;
+    migrate(&conn)?;
 
     Ok(conn)
+}
+
+/// Applies every migration group above the database's recorded version, in
+/// one transaction, then records the version reached.
+///
+/// Gating by version rather than replaying every statement is what allows a
+/// migration to add a column: SQLite has no `ADD COLUMN IF NOT EXISTS`, so a
+/// replayed list fails the second time it runs. The version is only advanced
+/// after the statements commit, so an interrupted upgrade is retried rather
+/// than skipped.
+fn migrate(conn: &Connection) -> Result<()> {
+    // The meta table lives in the first group, so a database that predates it
+    // reports version 0 and gets everything.
+    let current: i64 = conn
+        .query_row(
+            "SELECT value FROM meta WHERE key = 'schema_version'",
+            [],
+            |row| row.get::<_, String>(0),
+        )
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(0);
+
+    if current >= mlib_spec::schema::SCHEMA_VERSION {
+        return Ok(());
+    }
+
+    conn.execute_batch("BEGIN")
+        .context("starting the migration transaction")?;
+    for (index, group) in mlib_spec::schema::GROUPS.iter().enumerate() {
+        let version = index as i64 + 1;
+        if version <= current {
+            continue;
+        }
+        for statement in group.iter() {
+            if let Err(err) = conn.execute(statement, []) {
+                let _ = conn.execute_batch("ROLLBACK");
+                return Err(err).with_context(|| format!("migrating to v{version}: {statement}"));
+            }
+        }
+    }
+    if let Err(err) = set_meta(
+        conn,
+        "schema_version",
+        &mlib_spec::schema::SCHEMA_VERSION.to_string(),
+    ) {
+        let _ = conn.execute_batch("ROLLBACK");
+        return Err(err).context("recording schema version");
+    }
+    conn.execute_batch("COMMIT")
+        .context("committing the migration")?;
+    Ok(())
 }
 
 /// Upserts a key in the `meta` table.

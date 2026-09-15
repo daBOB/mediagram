@@ -11,6 +11,10 @@ use crate::ids::ProviderIds;
 pub enum Kind {
     Movie,
     Ep,
+    /// One lesson of a course. Course, chapter and lesson map onto `show`,
+    /// `s`/`chap` and `e`/`title`, so ordering, resume and the playable
+    /// invariant work without a second set of rules.
+    Tut,
 }
 
 /// Episode number: a single episode or an inclusive range for multi-episode files.
@@ -51,8 +55,19 @@ pub struct Part {
 pub struct Caption {
     pub t: Kind,
     pub ids: ProviderIds,
+    /// Collection id: a stable grouping anchor for sets that belong together
+    /// but have no provider id. Courses are its first user. Carried in the
+    /// caption, not derived from the title, so renaming a course does not
+    /// scatter its lessons and `rescan` can rebuild the grouping from the
+    /// channel alone.
+    #[serde(default)]
+    pub cid: Option<String>,
+    /// Course title for `Kind::Tut`, show title for `Kind::Ep`.
     pub show: Option<String>,
-    /// Movie title, or episode title for `Kind::Ep`.
+    /// Chapter title. Only meaningful for `Kind::Tut`.
+    #[serde(default)]
+    pub chap: Option<String>,
+    /// Movie title, episode title for `Kind::Ep`, lesson title for `Kind::Tut`.
     pub title: Option<String>,
     pub year: Option<u16>,
     pub s: Option<u32>,
@@ -105,8 +120,21 @@ impl Caption {
                     _ => show.to_string(),
                 }
             }
+            Kind::Tut => {
+                let course = self.show.as_deref().unwrap_or("?");
+                match (self.s, self.e) {
+                    (Some(c), Some(l)) => format!("{course} {}", lesson_code(c, l)),
+                    _ => course.to_string(),
+                }
+            }
         }
     }
+}
+
+/// `C02L02`. Chapter and lesson rather than season and episode, so a course
+/// never reads as a television series.
+pub fn lesson_code(chapter: u32, lesson: Episode) -> String {
+    format!("C{chapter:02}L{:02}", lesson.first())
 }
 
 /// `S02E01` or `S02E01-E02`.
@@ -123,6 +151,8 @@ mod tests {
 
     fn ep() -> Caption {
         Caption {
+            cid: None,
+            chap: None,
             t: Kind::Ep,
             ids: ProviderIds {
                 tmdb: Some(95396),

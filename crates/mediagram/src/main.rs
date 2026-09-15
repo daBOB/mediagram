@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use mediagram::commands::args::AddArgs;
+use mediagram::commands::args::{AddArgs, AddCourseArgs};
 use mediagram::{commands, config};
 
 #[derive(Parser)]
@@ -26,6 +26,8 @@ enum Cmd {
     Whoami,
     /// Split, upload, caption and index one media file
     Add(AddArgs),
+    /// Walk a course folder and upload every lesson in it
+    AddCourse(AddCourseArgs),
     /// Finish every set left pending by an interrupted `add`
     Resume {
         /// Do not push the index after completing sets
@@ -77,6 +79,7 @@ async fn main() -> Result<()> {
         Cmd::Login => commands::login::run(&cfg).await,
         Cmd::Whoami => commands::whoami::run(&cfg).await,
         Cmd::Add(args) => commands::add::run(&cfg, args).await,
+        Cmd::AddCourse(args) => commands::add_course::run(&cfg, args).await,
         Cmd::Resume { no_push } => commands::resume::run(&cfg, no_push).await,
         Cmd::PushIndex => commands::push_index::run(&cfg).await,
         Cmd::Verify {

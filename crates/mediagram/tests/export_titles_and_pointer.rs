@@ -11,6 +11,8 @@ use mlib_spec::ids::ProviderIds;
 
 fn caption(set: &str, kind: Kind, tmdb: Option<u64>) -> Caption {
     Caption {
+        cid: None,
+        chap: None,
         t: kind,
         ids: ProviderIds {
             tmdb,

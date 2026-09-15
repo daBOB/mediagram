@@ -27,7 +27,12 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
         .with_context(|| format!("{} has no usable file name", args.file.display()))?
         .to_string();
 
-    if !args.manual && cfg.tmdb_key.is_none() {
+    // A course is described by hand, so it needs neither a key nor a lookup.
+    let course = args.course.clone();
+    if course.is_some() && (args.tmdb.is_some() || args.tvdb.is_some() || args.imdb.is_some()) {
+        bail!("--course describes a tutorial, which has no provider id; drop --tmdb/--tvdb/--imdb");
+    }
+    if course.is_none() && !args.manual && cfg.tmdb_key.is_none() {
         bail!("no tmdb_key configured in config.toml; set one or pass --manual");
     }
 
@@ -39,14 +44,17 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
         tmdb: args.tmdb,
         tvdb: args.tvdb,
         imdb: args.imdb,
-        season: args.season,
-        episode: args.episode,
+        season: args.season.or(args.chapter),
+        episode: args.episode.or(args.lesson),
         abs: args.abs_no,
         manual: args.manual,
     };
-    let resolved = resolve::resolve(&api, &resolve_input, &mut prompter)
-        .await
-        .context("resolving metadata")?;
+    let resolved = match &course {
+        Some(title) => resolve::tutorial(title, &resolve_input),
+        None => resolve::resolve(&api, &resolve_input, &mut prompter)
+            .await
+            .context("resolving metadata")?,
+    };
 
     let source_path = remux::ensure_faststart(&args.file, cfg.tmp_dir.as_deref(), args.no_remux)
         .await
@@ -58,7 +66,14 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
     let part_ranges = mlib_spec::plan_parts(total, cfg.part_size).context("planning parts")?;
 
     let set_id = ulid::Ulid::new().to_string();
+    let cid = course.as_ref().map(|title| {
+        args.cid
+            .clone()
+            .unwrap_or_else(|| mlib_spec::slug::slug(title))
+    });
     let caption = Caption {
+        cid,
+        chap: args.chap.clone(),
         t: resolved.kind,
         ids: resolved.ids,
         show: resolved.show,

@@ -22,6 +22,19 @@ pub fn base_name(c: &Caption) -> String {
                 _ => show,
             }
         }
+        Kind::Tut => {
+            let course = with_year(c.show.as_deref().unwrap_or(&c.set));
+            let code = match (c.s, c.e) {
+                (Some(ch), Some(l)) => Some(crate::caption::lesson_code(ch, l).to_lowercase()),
+                _ => None,
+            };
+            match (code, c.title.as_deref()) {
+                // The lesson title is last so truncation eats it first.
+                (Some(code), Some(lesson)) => format!("{course} - {code} - {lesson}"),
+                (Some(code), None) => format!("{course} - {code}"),
+                (None, _) => course,
+            }
+        }
     };
     sanitize(&raw)
 }

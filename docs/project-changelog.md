@@ -179,3 +179,38 @@ do **not** need a TMDB key: `add --manual` takes metadata by hand. See
 - `poster_key_is_valid` had no caller; it now gates every key that reaches a
   path. Poster downloads have a timeout and a size cap. Packing skips
   symlinks that would otherwise pull outside files into the package.
+
+## 2026-09-15 (tutorials, and a parser that validates)
+
+**Added**
+
+- Caption `v3`: a third kind `tut` for course lessons, plus `chap` (chapter
+  title) and `cid` (a general collection id for sets with no provider id).
+  Course, chapter and lesson reuse `show`, `s` and `e`, so nothing downstream
+  needed a second vocabulary. `v2` captions stay readable and are never
+  rewritten.
+- `mediagram add-course <dir>`: subdirectories are chapters, videos inside
+  them are lessons, leading digits are numbers and the rest is the title.
+  `--dry-run` shows every inference before anything uploads. Re-running skips
+  finished lessons by identity (collection id plus the two numbers), so it
+  survives renaming or moving the folder, and reports unfinished ones for
+  `resume` instead of uploading them twice.
+- `add` gained `--course`, `--cid`, `--chapter`, `--chap` and `--lesson`. The
+  tutorial path never contacts TMDB, which has no courses, so it needs no key.
+- Schema version 2: `sets.chap`, with `group_key` finally carrying the
+  collection id.
+
+**Changed**
+
+- Migrations are applied by version in one transaction instead of replaying
+  every statement on each open. The old shape relied on every statement being
+  `CREATE ... IF NOT EXISTS`, which cannot express adding a column.
+
+**Fixed**
+
+- The caption parser validated nothing, so any message in the channel could
+  introduce an arbitrary `set` id, including one containing path separators,
+  which `rescan` would write into the index as a primary key. `set`, part
+  indices and lengths are now checked at the boundary. `sha256` deliberately
+  is not: it never reaches a path, and refusing it would make rescan drop a
+  part it could otherwise recover.

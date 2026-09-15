@@ -13,7 +13,9 @@ use thiserror::Error;
 
 use crate::caption::Caption;
 
-pub const MARKER: &str = "#mlib v=2";
+/// Marker written on every new caption. Readers accept older versions too;
+/// see [`parse`].
+pub const MARKER: &str = "#mlib v=3";
 pub const MARKER_PREFIX: &str = "#mlib v=";
 /// Free-tier caption limit, counted in UTF-16 code units like Telegram does;
 /// Premium-independent by design.
@@ -110,7 +112,10 @@ pub fn parse(text: &str) -> Result<Caption, CaptionError> {
     let version = marker
         .strip_prefix(MARKER_PREFIX)
         .ok_or(CaptionError::NoMarker)?;
-    if version != "2" {
+    // Accept every version this build can decode, not just the newest: a
+    // channel holds a mix from before and after an uploader upgrade, and both
+    // must stay readable. v2 captions simply lack `cid` and `chap`.
+    if !matches!(version, "2" | "3") {
         return Err(CaptionError::UnsupportedVersion(version.to_string()));
     }
     let json = lines.next().ok_or(CaptionError::MissingJson)?.trim();

@@ -7,6 +7,8 @@ use mlib_spec::part_plan::PartRange;
 
 fn sample_caption() -> Caption {
     Caption {
+        cid: None,
+        chap: None,
         t: Kind::Movie,
         ids: ProviderIds {
             tmdb: Some(42),

@@ -1,7 +1,11 @@
-# mlib caption/index spec v2
+# mlib caption and index spec (v2 and v3)
 
 Normative description of the wire format a video library stored in a
-private Telegram channel uses: what every uploaded part's caption contains,
+private Telegram channel uses. **Two caption versions are current**: `v3` is
+written on every new part, `v2` is what earlier uploads carry, and a reader
+must accept both. They differ by two fields, described in §2.
+
+The format covers: what every uploaded part's caption contains,
 how files are split and named, how the local index is structured, and the
 pinned document that snapshots it to the channel. Everything here is
 implemented in the `mlib-spec` Rust crate (`crates/mlib-spec/src`), but this
@@ -19,7 +23,8 @@ shape:
 optional free-form human text (truncated first if the caption is too long)
 ```
 
-- Line 1 is the marker, byte-for-byte `#mlib v=2`. A parser identifies an
+- Line 1 is the marker, byte-for-byte `#mlib v=3` on new captions and
+  `#mlib v=2` on older ones. A parser identifies an
   mlib caption by checking the text starts with the prefix `#mlib v=`
   (after trimming leading whitespace); the version that follows determines
   how to parse line 2.
@@ -53,6 +58,40 @@ though it is 1 `char`; a parser/writer that counts Rust `chars` or UTF-8
 bytes instead of UTF-16 units will compute a different (wrong) budget.
 
 ## 2. Caption JSON
+
+### What changed in v3
+
+| Field | Added | Meaning |
+|---|---|---|
+| `cid` | v3 | Collection id: a stable grouping anchor for sets with no provider id. Courses are its first user; `null` for movies and episodes |
+| `chap` | v3 | Chapter title, for course lessons; `null` otherwise |
+
+A v2 caption simply lacks both. A reader decoding v2 treats them as absent,
+which is why the uploader can keep writing v3 without rewriting anything
+already published.
+
+### The third kind
+
+`t` is `movie`, `ep`, or `tut`. A **tutorial** is one lesson of a course, and
+it reuses the fields an episode already has rather than introducing a second
+vocabulary:
+
+| Concept | Field |
+|---|---|
+| Course title | `show` |
+| Collection id | `cid` |
+| Chapter number | `s` |
+| Chapter title | `chap` |
+| Lesson number | `e`, always a single number |
+| Lesson title | `title` |
+
+Because chapter and lesson live in `s` and `e`, ordering, resume, the
+playable invariant and the index schema need no special cases for courses.
+
+A course with no chapters uses chapter 1. A lesson file is named
+`Course (Year) - c02l02 - Lesson Title`, with `c`/`l` rather than `s`/`e` so
+a course never reads as a television series in a file list.
+
 
 Field order below is the **wire order**: a byte-for-byte reference
 implementation serializes fields in exactly this order, and tooling that
@@ -168,7 +207,7 @@ CREATE TABLE IF NOT EXISTS sets(
     set_id TEXT PRIMARY KEY,
     kind TEXT NOT NULL,
     tmdb INTEGER, tvdb INTEGER, imdb TEXT,
-    show TEXT, title TEXT, year INTEGER,
+    show TEXT, chap TEXT, title TEXT, year INTEGER,
     season INTEGER, episode TEXT, abs INTEGER,
     quality TEXT, hdr TEXT, container TEXT NOT NULL,
     vcodec TEXT, acodec TEXT,
@@ -234,7 +273,7 @@ caption:
 
 ```text
 #mlib-index v=2
-{"pushed_at":1700000000,"schema":1,"sets":42}
+{"pushed_at":1700000000,"schema":2,"sets":42}
 ```
 
 `pushed_at` is a Unix timestamp, `sets` is the row count of the `sets`
@@ -259,15 +298,18 @@ the channel's pinned messages and picks the newest `#mlib-index` one.
 
 ## 8. Versioning
 
-- `v=2` is the current caption marker version; `mlib_spec::SPEC_VERSION`
-  (`2`) is written into every new `sets.spec_version` row.
-- A future wire-format change bumps the marker to `v=3` and beyond.
-  Parsers should be written to accept every version they know how to
-  decode (not just the latest), so a channel containing a mix of `v=2` and
-  `v=3` parts — from before and after an uploader upgrade — stays fully
-  readable. The reference parser currently accepts only `v=2` since `v=3`
-  does not yet exist; extending it means adding a second accepted version,
-  not replacing the check.
+- `v=3` is written on every new caption and `v=2` remains readable. A
+  reader accepts both, because a channel holds a mix from before and after an
+  uploader upgrade.
+- `v=2` was the previous caption marker version. `mlib_spec::SPEC_VERSION`
+  (now `3`) is written into every new `sets.spec_version` row.
+- A parser accepts every version it can decode, not just the latest, so a
+  channel holding a mix from before and after an uploader upgrade stays
+  fully readable. The reference parser accepts `v=2` and `v=3`; the v3
+  additions are optional fields, so a v2 caption decodes into the same
+  structure with both absent.
+- A future change bumps the marker again, and adds an accepted version
+  rather than replacing one.
 - A spec bump **never** requires re-uploading already-posted media: the
   caption is the only thing that changes shape, and old parts keep working
   with a parser that still understands their version.
