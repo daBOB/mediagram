@@ -9,3 +9,19 @@ tmdb_key = ""                      # https://www.themoviedb.org/settings/api
 # max_attempts = 5
 # tmp_dir = "/fast/scratch"        # faststart remux output; default: next to source
 # data_dir = "/var/lib/mediagram"  # session, library.db, tmdb cache; default: XDG data dir
+
+# --- prebuilt metadata package (mediagram export-package) -------------------
+# A player fetches one encrypted file instead of scanning the channel.
+# Generate the key once and keep it: head -c 32 /dev/urandom | base64
+# The same value goes into the player. Losing it costs the package, never the
+# library.
+# package_key = "base64-of-32-random-bytes"
+#
+# How to publish. Argv, not a shell string: mediagram runs this directly, so a
+# failed upload cannot be hidden by a pipeline's exit status. {file} is
+# replaced with the path, and stays one argument even with spaces.
+# publish_cmd = ["rclone", "copy", "{file}", "r2:mediagram/"]
+#
+# Where those files end up being served from, used to build the URL inside
+# latest.json. Not verified against where publish_cmd actually puts them.
+# publish_base_url = "https://example.com/pkgs"

@@ -42,6 +42,19 @@ acceptance run needs an interactive terminal rather than an API key:
   `rm library.db && rescan` reproducing the same rows. Whole-plan success
   criteria are listed in `plan.md` and get checked off there once run.
 
+## Prebuilt metadata package
+
+`mediagram export-package` publishes an encrypted package (index snapshot
+plus posters) to a static URL, with a small plaintext pointer at a fixed
+path. Phases 1-3 of
+`plans/260915-1956-prebuilt-metadata-package-for-player/` are complete and
+the format is specified in [`mlib-package-v1.md`](mlib-package-v1.md).
+
+Known limits of format 1, all deliberate: the pointer is unsigned, so a
+hostile or stale host can withhold updates though it cannot pass off stale
+content as fresh; key rotation is manual; and the package is capped at 48 MB
+on export because a reader must hold it whole to verify it.
+
 ## Next: Android TV app round
 
 A native Android TV player is the planned second client of the mlib

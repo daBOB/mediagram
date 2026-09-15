@@ -19,6 +19,14 @@ pub struct Config {
     /// 32 random bytes, base64, shared with the player. Encrypts the
     /// prebuilt package; see `mediagram export-package`.
     pub package_key: Option<String>,
+    /// Argv for publishing one file, with `{file}` standing in for its path,
+    /// e.g. `["rclone", "copy", "{file}", "r2:mediagram/"]`. Run directly,
+    /// never through a shell.
+    pub publish_cmd: Option<Vec<String>>,
+    /// Where the published files will be reachable, used to build the URL in
+    /// `latest.json`. Not verified against where `publish_cmd` actually puts
+    /// them.
+    pub publish_base_url: Option<String>,
     #[serde(default = "default_part_size")]
     pub part_size: u64,
     /// Pause between part uploads, to stay clear of flood limits.
@@ -46,6 +54,8 @@ impl std::fmt::Debug for Config {
                 "package_key",
                 &self.package_key.as_ref().map(|_| "<redacted>"),
             )
+            .field("publish_cmd", &self.publish_cmd)
+            .field("publish_base_url", &self.publish_base_url)
             .field("part_size", &self.part_size)
             .field("throttle_ms", &self.throttle_ms)
             .field("max_attempts", &self.max_attempts)

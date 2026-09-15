@@ -17,12 +17,25 @@ use crate::export::budget::{Verdict, estimate_bytes, verdict_for};
 use crate::export::encrypt::{parse_key, seal};
 use crate::export::posters::resolve_posters;
 use crate::export::stage::Staging;
-use crate::export::{archive, pointer};
+use crate::export::{archive, latest, pointer, publish};
 use crate::metadata::tmdb_client::TmdbClient;
 
-pub async fn run(cfg: &Config, out: Option<PathBuf>, dry_run: bool) -> Result<()> {
+pub async fn run(
+    cfg: &Config,
+    out: Option<PathBuf>,
+    dry_run: bool,
+    publish_it: bool,
+) -> Result<()> {
     let data_dir = cfg.data_dir()?;
     let key = package_key(cfg)?;
+    // Checked before any work: finding the command missing after a full
+    // export would waste the run.
+    if publish_it && cfg.publish_cmd.as_ref().is_none_or(Vec::is_empty) {
+        bail!(
+            "--publish needs publish_cmd in config.toml, e.g. \
+             publish_cmd = [\"rclone\", \"copy\", \"{{file}}\", \"r2:mediagram/\"]"
+        );
+    }
 
     // A plain connection, not `index::db::open`: opening through the helper
     // would replay migrations and rewrite the recorded schema version, and an
@@ -117,6 +130,16 @@ pub async fn run(cfg: &Config, out: Option<PathBuf>, dry_run: bool) -> Result<()
         written.display(),
         manifest.posters.len()
     );
+    if manifest.posters.is_empty() && !titles.is_empty() {
+        println!(
+            "warning: no posters for {} title(s); a player will show a catalog with no artwork",
+            titles.len()
+        );
+    }
+
+    if publish_it {
+        publish_package(cfg, &pointer, &written, sealed_len, &sealed, dry_run).await?;
+    }
     Ok(())
 }
 
@@ -154,4 +177,47 @@ fn now_unix() -> i64 {
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_secs() as i64
+}
+
+/// Publishes the archive, then the pointer that names it. The order is a
+/// correctness property: a reader must never find a pointer to a file that is
+/// not there yet. A reader arriving mid-publish sees the previous pointer and
+/// the previous archive, which is still present.
+async fn publish_package(
+    cfg: &Config,
+    draft: &mlib_spec::package::LatestPointer,
+    package: &Path,
+    bytes: u64,
+    sealed: &[u8],
+    dry_run: bool,
+) -> Result<()> {
+    let argv = cfg.publish_cmd.clone().unwrap_or_default();
+    let base_url = cfg.publish_base_url.as_deref().unwrap_or("");
+    let file_name = package
+        .file_name()
+        .and_then(|n| n.to_str())
+        .context("package has no usable file name")?;
+
+    let digest = hex::encode(pointer::sha256(sealed));
+    let complete = latest::complete(draft, file_name, base_url, bytes, &digest);
+    let pointer_path = package.with_file_name("latest.json");
+    std::fs::write(&pointer_path, serde_json::to_vec(&complete)?)
+        .with_context(|| format!("writing {}", pointer_path.display()))?;
+
+    if dry_run {
+        for file in [package, pointer_path.as_path()] {
+            println!("would run: {:?}", publish::substitute(&argv, file));
+        }
+        return Ok(());
+    }
+
+    publish::run_publish(&argv, package).await?;
+    publish::run_publish(&argv, &pointer_path).await?;
+
+    println!("published {}", complete.url);
+    println!(
+        "pointer at {}/latest.json is the URL the player needs",
+        base_url.trim_end_matches('/')
+    );
+    Ok(())
 }

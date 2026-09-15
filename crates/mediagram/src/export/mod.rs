@@ -5,7 +5,9 @@
 pub mod archive;
 pub mod budget;
 pub mod encrypt;
+pub mod latest;
 pub mod pointer;
 pub mod posters;
+pub mod publish;
 pub mod stage;
 pub mod titles;

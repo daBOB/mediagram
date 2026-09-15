@@ -54,6 +54,9 @@ enum Cmd {
         /// Report what would be exported without writing or downloading
         #[arg(long)]
         dry_run: bool,
+        /// Hand the package and pointer to publish_cmd from config
+        #[arg(long)]
+        publish: bool,
     },
     /// Rebuild library.db from channel captions (additive: never demotes local sets; use verify for that)
     Rescan,
@@ -82,9 +85,11 @@ async fn main() -> Result<()> {
             full,
             since,
         } => commands::verify::run(&cfg, set_id, all, full, since).await,
-        Cmd::ExportPackage { out, dry_run } => {
-            commands::export_package::run(&cfg, out, dry_run).await
-        }
+        Cmd::ExportPackage {
+            out,
+            dry_run,
+            publish,
+        } => commands::export_package::run(&cfg, out, dry_run, publish).await,
         Cmd::Rescan => commands::rescan::run(&cfg).await,
         Cmd::SmokeUpload { file } => commands::smoke_upload::run(&cfg, &file).await,
     }

@@ -1,6 +1,6 @@
 ---
 title: "Prebuilt metadata package for the player"
-status: pending
+status: completed
 created: 2026-09-15
 revised: 2026-09-15
 source: user request 2026-09-15 ("uploader prepares a prebuilt metadata package, publishes it to a simple URL")
@@ -39,7 +39,7 @@ mediagram export-package --publish
 |---|-------|--------|----------|--------|------------|
 | 1 | [Package format and manifest](phase-01-package-format-and-manifest.md) | completed | P1 | 0.5d | - |
 | 2 | [Export, archive and encrypt](phase-02-export-archive-and-encrypt.md) | completed | P1 | 1d | 1 |
-| 3 | [Publish, pointer and spec](phase-03-publish-pointer-and-spec.md) | pending | P2 | 1d | 2 |
+| 3 | [Publish, pointer and spec](phase-03-publish-pointer-and-spec.md) | completed | P2 | 1d | 2 |
 
 ## Decisions (settled with the user)
 
@@ -165,7 +165,12 @@ Reports: `reports/` in this directory.
 
 ## Open questions
 
-1. Should `latest.json` be signed? **The reasoning that deferred this was
+1. **Decided by default, not by argument: format 1 ships unsigned.** The
+   question was raised twice and answered with "implement next phase" both
+   times, so the standing recommendation was followed and the limitation is
+   documented in the spec's security model. Revisit if a second reader
+   appears or the hosting stops being trusted. Original reasoning:
+   Should `latest.json` be signed? **The reasoning that deferred this was
    wrong and the review proved it.** `sha256` cannot be authenticated by the
    tag (it is the digest of the ciphertext the tag protects), so anyone who
    can rewrite the pointer can set it to the digest of the copy a reader

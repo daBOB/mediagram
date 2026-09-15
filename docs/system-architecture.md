@@ -147,7 +147,15 @@ The index (`library.db`, described fully in
 [`docs/mlib-spec-v2.md`](mlib-spec-v2.md#6-local-index-librarydb)) and the
 caption format it mirrors are Telegram-agnostic in shape: `parts` stores a
 `chat_id`/`message_id`/`doc_id` triple as opaque identifiers, not anything
-grammers-specific, and the caption JSON carries no Telegram types. `grammers_*` imports are confined to the Telegram-facing layer —
+grammers-specific, and the caption JSON carries no Telegram types. The package export (`commands/export_package.rs`, `export/`) is a second,
+read-only consumer of the index. It copies `library.db` with `VACUUM INTO`
+over a read-only connection, so it never writes to the index and never
+disturbs `last_push_at`, which belongs to the channel push. It reaches
+Telegram not at all: the only network it touches is TMDB's image CDN, and a
+configured command does the uploading. See
+[`docs/mlib-package-v1.md`](mlib-package-v1.md).
+
+`grammers_*` imports are confined to the Telegram-facing layer —
 `telegram/`, `upload/transport.rs`, `verify/download_hash.rs`,
 `verify/session.rs` and the `commands/*` files that drive them — and never
 appear in `index/`, `media/`, `metadata/` or the `mlib-spec` crate, which

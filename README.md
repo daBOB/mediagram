@@ -47,6 +47,7 @@ list of optional keys (`part_size`, `throttle_ms`, `max_attempts`,
 | `mediagram resume [--no-push]` | Finish every set left `pending` by an interrupted `add` (adopts already-uploaded parts instead of re-uploading them). |
 | `mediagram push-index` | Snapshot `library.db` and upload it to the channel as a pinned document. |
 | `mediagram verify <set-id> \| --all [--full] [--since <unix>]` | Check a set (or every set): default mode compares each part's message/document against the index; `--full` re-downloads and hashes every part, and `--since` skips parts already verified at or after that timestamp so an interrupted sweep resumes. `--all` skips sets that are still uploading. |
+| `mediagram export-package [--publish] [--dry-run] [--out <dir>]` | Assemble the encrypted prebuilt package for a player and, with `--publish`, hand it and its pointer to `publish_cmd`. See [the package spec](docs/mlib-package-v1.md). |
 | `mediagram rescan` | Rebuild `library.db` from channel captions. Additive only — never demotes or deletes a locally-recorded set; use `verify` to detect mismatches. |
 
 `--full` re-downloads every requested byte, 512 KiB per request, so a
@@ -54,6 +55,33 @@ multi-terabyte library takes hours; the command prints the byte total and a
 rough time estimate before it starts. Parts that fail keep their `FAIL` row
 and lose any earlier `verified_at`, and one unreachable part no longer ends
 the run: it is reported as a failed part and the sweep continues.
+
+### Publishing a package for a player
+
+A player can read the pinned `library.db` from the channel, but it has to be
+logged in first and it gets no artwork. The prebuilt package is one encrypted
+file on a plain URL holding the index and its posters.
+
+```
+head -c 32 /dev/urandom | base64      # do this once, keep the output
+```
+
+Put that in `package_key`, set `publish_cmd` and `publish_base_url`, then:
+
+```
+mediagram export-package --dry-run     # what would be included
+mediagram export-package --publish     # write, encrypt, upload
+```
+
+The archive is uploaded before `latest.json`, so a player never sees a
+pointer to a file that is not there. A failing upload fails the run and no
+pointer is published. Give the player the `latest.json` URL and the same key.
+
+The package holds your private channel id and every message id. The key is
+the only thing protecting it, so the URL is not a secret but the key is.
+Format 1 does not sign the pointer: someone who controls the host can
+withhold updates, though they cannot pass off stale content as fresh. The
+[spec](docs/mlib-package-v1.md) states the model in full.
 
 ### `add` flags
 
