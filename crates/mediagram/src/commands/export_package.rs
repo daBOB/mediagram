@@ -1,0 +1,134 @@
+//! `mediagram export-package`: assemble the prebuilt metadata package, then
+//! archive and encrypt it. Publishing is phase 3.
+//!
+//! The command never writes to `library.db`, including in `--dry-run`: it
+//! copies the index through the side-effect-free path and reads everything
+//! else from that copy.
+
+use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use anyhow::{Context, Result, bail};
+use mlib_spec::package::{PackageManifest, package_file_name};
+use rusqlite::Connection;
+
+use crate::config::Config;
+use crate::export::budget::{Verdict, estimate_bytes, verdict_for};
+use crate::export::encrypt::{parse_key, seal};
+use crate::export::posters::resolve_posters;
+use crate::export::stage::Staging;
+use crate::export::{archive, pointer};
+use crate::metadata::tmdb_client::TmdbClient;
+
+pub async fn run(cfg: &Config, out: Option<PathBuf>, dry_run: bool) -> Result<()> {
+    let data_dir = cfg.data_dir()?;
+    let key = package_key(cfg)?;
+
+    // A plain connection, not `index::db::open`: opening through the helper
+    // would replay migrations and rewrite the recorded schema version, and an
+    // export must leave the index exactly as it found it.
+    let live = data_dir.join("library.db");
+    if !live.exists() {
+        bail!("no library.db in {}; nothing to export", data_dir.display());
+    }
+    let conn =
+        Connection::open(&live).with_context(|| format!("opening {} read-only", live.display()))?;
+
+    let staging = Staging::create(&data_dir, "export-staging")?;
+    let index_bytes = staging.copy_index(&conn)?;
+    drop(conn);
+
+    let snapshot = Connection::open(staging.path().join(crate::export::stage::INDEX_FILE))
+        .context("opening the snapshot")?;
+    let titles = crate::export::titles::distinct_titles(&snapshot)?;
+    let (sets, parts) = crate::export::titles::counts(&snapshot)?;
+
+    // Refuse before downloading: discovering the limit afterwards would throw
+    // away every poster fetched to get there.
+    match verdict_for(estimate_bytes(index_bytes, titles.len() as u64)) {
+        Verdict::TooLarge(bytes) => bail!(
+            "estimated package is {bytes} bytes, over the limit; \
+             a reader must hold the whole file in memory to verify it"
+        ),
+        Verdict::Large(bytes) => {
+            println!("warning: estimated package is {bytes} bytes and getting large")
+        }
+        Verdict::Fine => {}
+    }
+
+    if dry_run {
+        println!(
+            "dry run: {sets} set(s), {parts} part(s), {} poster(s) to fetch, index {index_bytes} bytes",
+            titles.len()
+        );
+        return Ok(());
+    }
+
+    let posters = fetch_posters(cfg, &data_dir, &staging, &titles).await?;
+    let created_at = now_unix();
+    let manifest = PackageManifest {
+        format: mlib_spec::package::PACKAGE_FORMAT,
+        created_at,
+        schema: mlib_spec::schema::SCHEMA_VERSION,
+        spec: mlib_spec::SPEC_VERSION,
+        sets,
+        parts,
+        posters,
+    };
+    staging.write_manifest(&manifest)?;
+
+    let packed = archive::pack_dir(staging.path())?;
+    let pointer = pointer::draft(created_at, &key);
+    let sealed = seal(
+        &key,
+        &packed,
+        &mlib_spec::package::associated_data(&pointer),
+    )
+    .context("encrypting the package")?;
+
+    let dest_dir = out.unwrap_or_else(|| data_dir.join("export"));
+    let written = write_package(&dest_dir, created_at, &sealed)?;
+    println!(
+        "wrote {} ({} bytes, {} poster(s))",
+        written.display(),
+        sealed.len(),
+        manifest.posters.len()
+    );
+    Ok(())
+}
+
+fn package_key(cfg: &Config) -> Result<[u8; 32]> {
+    let configured = cfg.package_key.as_deref().context(
+        "no package_key configured; generate one with `head -c 32 /dev/urandom | base64`",
+    )?;
+    Ok(parse_key(configured)?)
+}
+
+async fn fetch_posters(
+    cfg: &Config,
+    data_dir: &Path,
+    staging: &Staging,
+    titles: &[(mlib_spec::Kind, u64)],
+) -> Result<Vec<mlib_spec::package::PosterEntry>> {
+    // Works with no key at all when the cache is warm, which is the normal
+    // case: `add` cached these payloads when it resolved each title.
+    let api = TmdbClient::with_cache(cfg.tmdb_key.as_deref().unwrap_or(""), data_dir);
+    let refs = resolve_posters(&api, titles).await;
+    let http = reqwest::Client::new();
+    staging.fetch_posters(&http, &refs).await
+}
+
+fn write_package(dir: &Path, created_at: i64, sealed: &[u8]) -> Result<PathBuf> {
+    std::fs::create_dir_all(dir).with_context(|| format!("creating {}", dir.display()))?;
+    let digest = pointer::sha256(sealed);
+    let dest = dir.join(package_file_name(created_at, &digest));
+    std::fs::write(&dest, sealed).with_context(|| format!("writing {}", dest.display()))?;
+    Ok(dest)
+}
+
+fn now_unix() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs() as i64
+}

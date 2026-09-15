@@ -79,6 +79,11 @@ pub struct DetailsResponse {
     pub first_air_date: Option<String>,
     #[serde(default)]
     pub external_ids: Option<ExternalIds>,
+    /// Present in every cached details payload; the package export reads it
+    /// back rather than re-fetching, so adding the field makes caches that
+    /// already exist on disk usable with no network access.
+    #[serde(default)]
+    pub poster_path: Option<String>,
 }
 
 impl DetailsResponse {

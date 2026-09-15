@@ -21,6 +21,9 @@ pub fn checkpoint(conn: &Connection) -> Result<()> {
 /// recording the push time in `meta.last_push_at` (so the snapshot itself
 /// carries the timestamp it was taken at). `dest` is removed first if it
 /// already exists, since `VACUUM INTO` refuses to overwrite a file.
+///
+/// This writes to the live database. Callers that are only reading it — the
+/// package export — use [`copy_to`] instead.
 pub fn snapshot_to(conn: &Connection, dest: &Path) -> Result<()> {
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -28,7 +31,16 @@ pub fn snapshot_to(conn: &Connection, dest: &Path) -> Result<()> {
         .as_secs() as i64;
     db::set_meta(conn, "last_push_at", &now.to_string())
         .context("recording last_push_at before snapshot")?;
+    copy_to(conn, dest)
+}
 
+/// A copy with no side effect on the source: `VACUUM INTO` runs in a read
+/// transaction, so a concurrent writer cannot be captured mid-write, and
+/// nothing is recorded in the live database. The export uses this, because a
+/// command that claims to read the index must not leave a mark on it — and
+/// because `last_push_at` means "pushed to the channel", which an export has
+/// not done.
+pub fn copy_to(conn: &Connection, dest: &Path) -> Result<()> {
     if dest.exists() {
         std::fs::remove_file(dest)
             .with_context(|| format!("removing stale snapshot {}", dest.display()))?;

@@ -46,6 +46,15 @@ enum Cmd {
         #[arg(long)]
         since: Option<i64>,
     },
+    /// Assemble the encrypted prebuilt metadata package for a player
+    ExportPackage {
+        /// Where to write the package (default: <data dir>/export)
+        #[arg(long)]
+        out: Option<PathBuf>,
+        /// Report what would be exported without writing or downloading
+        #[arg(long)]
+        dry_run: bool,
+    },
     /// Rebuild library.db from channel captions (additive: never demotes local sets; use verify for that)
     Rescan,
     /// Upload one small file with a smoke caption, print the message id, delete it
@@ -73,6 +82,9 @@ async fn main() -> Result<()> {
             full,
             since,
         } => commands::verify::run(&cfg, set_id, all, full, since).await,
+        Cmd::ExportPackage { out, dry_run } => {
+            commands::export_package::run(&cfg, out, dry_run).await
+        }
         Cmd::Rescan => commands::rescan::run(&cfg).await,
         Cmd::SmokeUpload { file } => commands::smoke_upload::run(&cfg, &file).await,
     }

@@ -16,6 +16,9 @@ pub struct Config {
     /// Channel id (`-100…`) or exact channel title.
     pub channel: String,
     pub tmdb_key: Option<String>,
+    /// 32 random bytes, base64, shared with the player. Encrypts the
+    /// prebuilt package; see `mediagram export-package`.
+    pub package_key: Option<String>,
     #[serde(default = "default_part_size")]
     pub part_size: u64,
     /// Pause between part uploads, to stay clear of flood limits.
@@ -30,7 +33,8 @@ pub struct Config {
     pub data_dir: Option<PathBuf>,
 }
 
-/// Manual Debug so api_hash and tmdb_key can never reach logs or error chains.
+/// Manual Debug so api_hash, tmdb_key and package_key can never reach logs
+/// or error chains.
 impl std::fmt::Debug for Config {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Config")
@@ -38,6 +42,10 @@ impl std::fmt::Debug for Config {
             .field("api_hash", &"<redacted>")
             .field("channel", &self.channel)
             .field("tmdb_key", &self.tmdb_key.as_ref().map(|_| "<redacted>"))
+            .field(
+                "package_key",
+                &self.package_key.as_ref().map(|_| "<redacted>"),
+            )
             .field("part_size", &self.part_size)
             .field("throttle_ms", &self.throttle_ms)
             .field("max_attempts", &self.max_attempts)
@@ -82,6 +90,7 @@ pub fn load(path: Option<&Path>) -> Result<Config> {
     // empty MEDIAGRAM_TMDB_KEY; without this the add command's "set a key or
     // pass --manual" guard is bypassed and TMDB fails later with a bare 401.
     cfg.tmdb_key = cfg.tmdb_key.filter(|v| !v.is_empty());
+    cfg.package_key = cfg.package_key.filter(|v| !v.is_empty());
     validate_part_size(cfg.part_size).context("part_size")?;
     if cfg.api_hash.is_empty() || cfg.channel.is_empty() {
         bail!("api_hash and channel must be set");
@@ -106,6 +115,9 @@ fn apply_env(cfg: &mut Config) -> Result<()> {
     }
     if let Some(v) = env("TMDB_KEY") {
         cfg.tmdb_key = Some(v);
+    }
+    if let Some(v) = env("PACKAGE_KEY") {
+        cfg.package_key = Some(v);
     }
     if let Some(v) = env("PART_SIZE") {
         cfg.part_size = v.parse().context("MEDIAGRAM_PART_SIZE")?;
@@ -153,6 +165,25 @@ mod tests {
         .unwrap();
         let cfg = load(Some(f.path())).unwrap();
         assert_eq!(cfg.tmdb_key.as_deref(), Some("k3y"));
+    }
+
+    #[test]
+    fn package_key_is_redacted_and_empty_loads_as_absent() {
+        let mut f = tempfile::NamedTempFile::new().unwrap();
+        std::io::Write::write_all(
+            f.as_file_mut(),
+            b"api_id = 1\napi_hash = \"h\"\nchannel = \"c\"\npackage_key = \"\"\n",
+        )
+        .unwrap();
+        assert!(load(Some(f.path())).unwrap().package_key.is_none());
+
+        let cfg: Config = toml::from_str(
+            "api_id = 1\napi_hash = \"h\"\nchannel = \"c\"\npackage_key = \"c2VjcmV0\"\n",
+        )
+        .unwrap();
+        let rendered = format!("{cfg:?}");
+        assert!(!rendered.contains("c2VjcmV0"));
+        assert!(rendered.contains("<redacted>"));
     }
 
     #[test]

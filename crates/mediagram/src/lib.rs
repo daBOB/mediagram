@@ -3,6 +3,7 @@
 
 pub mod commands;
 pub mod config;
+pub mod export;
 pub mod index;
 pub mod media;
 pub mod metadata;
