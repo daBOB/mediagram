@@ -37,7 +37,7 @@ mediagram export-package --publish
 
 | # | Phase | Status | Priority | Effort | Depends on |
 |---|-------|--------|----------|--------|------------|
-| 1 | [Package format and manifest](phase-01-package-format-and-manifest.md) | pending | P1 | 0.5d | - |
+| 1 | [Package format and manifest](phase-01-package-format-and-manifest.md) | completed | P1 | 0.5d | - |
 | 2 | [Export, archive and encrypt](phase-02-export-archive-and-encrypt.md) | pending | P1 | 1d | 1 |
 | 3 | [Publish, pointer and spec](phase-03-publish-pointer-and-spec.md) | pending | P2 | 1d | 2 |
 
@@ -165,8 +165,16 @@ Reports: `reports/` in this directory.
 
 ## Open questions
 
-1. Should `latest.json` be signed? The AEAD binding makes a replayed archive
-   fail, so signing now only protects against denial and metadata edits an
-   attacker gains nothing from. Deferred unless a second reader appears.
+1. Should `latest.json` be signed? **The reasoning that deferred this was
+   wrong and the review proved it.** `sha256` cannot be authenticated by the
+   tag (it is the digest of the ciphertext the tag protects), so anyone who
+   can rewrite the pointer can set it to the digest of the copy a reader
+   already holds and freeze that reader's updates silently. Phase 3 now
+   bases the skip decision on authenticated fields instead, which closes the
+   bypass, but a hostile or stale host can still withhold updates. Signing
+   plus an expiry is the only thing that converts "never accepts stale
+   content as fresh" into "notices when it is being starved". It costs one
+   keypair, one dependency, and a second value to transcribe into the
+   player. Needs a decision before phase 3.
 2. Key rotation is manual: re-export, update the player. No versioning
    scheme until there is more than one reader.

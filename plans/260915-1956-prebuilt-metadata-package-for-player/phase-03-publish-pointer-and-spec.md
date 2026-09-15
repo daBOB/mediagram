@@ -56,8 +56,12 @@ Telegram hash or TMDB key.
    `created_at` implausibly far in the future. This is a cheap first filter;
    the real protection is step 6.
 3. Stop if `key_id` does not match the held key, before downloading.
-4. Skip the download when `sha256` matches the package already held. Compare
-   the hash, never the filename.
+4. Skip the download only when the pointer's **authenticated** identity
+   (`format`, `created_at`, `key_id`, `schema`, `spec`) equals the one
+   recorded after the last successful decrypt. Never decide this from
+   `sha256`: it is not covered by the tag, so an attacker can set it to the
+   digest of the copy the reader already holds and suppress updates without
+   the cipher ever running. `sha256` is a download-integrity check only.
 5. Download, enforcing a size limit from `bytes`, and verify sha256.
 6. Reconstruct the associated data from the pointer's five identifying
    fields and decrypt with `Cipher.doFinal` over the whole ciphertext.
@@ -126,6 +130,13 @@ rationale into the specification rather than being left as "unpack".
   caches, while the archives are uniquely named and need no invalidation.
   The docs must tell the operator to serve `latest.json` with a short
   max-age.
+- **Update suppression** is the residual risk once the skip branch is fixed:
+  anyone who can serve or cache `latest.json` can keep serving an old one and
+  freeze a reader. Encryption cannot prevent that, and neither can signing
+  without an expiry. The guarantee this design does make is narrower and
+  worth stating plainly in the spec: a reader never accepts stale content as
+  fresh. Making freshness itself guaranteed needs a signed pointer carrying
+  an expiry, which is open question 1 in `plan.md`.
 - **A spec that drifts from the code** is worse than none, because a player
   author trusts it. Mitigation: fixture-generated examples, the pattern the
   caption spec already uses.

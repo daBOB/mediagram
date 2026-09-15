@@ -1,7 +1,7 @@
 ---
 phase: 1
 title: "Package format and manifest"
-status: pending
+status: completed
 priority: P1
 effort: "0.5d"
 dependencies: []
@@ -35,7 +35,7 @@ Inside the archive:
 ```json
 {
   "format": 1,
-  "created_at": 1781827200,
+  "created_at": 1781568000,
   "schema": 1,
   "spec": 2,
   "sets": 312,
@@ -51,7 +51,7 @@ Beside the archive, at a fixed URL, `latest.json`:
 ```json
 {
   "format": 1,
-  "created_at": 1781827200,
+  "created_at": 1781568000,
   "file": "prebuilt_mediagram_db_20260616-3d7e10c4.tar.gz.enc",
   "url": "https://example.com/prebuilt_mediagram_db_20260616-3d7e10c4.tar.gz.enc",
   "bytes": 8127744,
@@ -85,7 +85,19 @@ any future key whose input is less trustworthy.
 
 **File naming.** `prebuilt_mediagram_db_YYYYMMDD-{first 4 bytes of the
 ciphertext sha256}.tar.gz.enc`. Stateless and collision-free, with no
-counter that depends on what happens to be in a local directory.
+counter that depends on what happens to be in a local directory. The helper
+takes the digest as `&[u8; 32]`, not as text, so no caller can put a path
+separator or a `..` into a published file name. A timestamp before the epoch
+is clamped so the `YYYYMMDD` shape always holds.
+
+**Pointer validation.** Ten fields arrive in a plaintext file from a public
+URL. `pointer_is_readable` checks all of the ones that reach a cipher, a file
+name or an allocation: `format`, `cipher`, `schema`, plus `key_id` and
+`sha256` as exact-length lowercase hex, a non-negative `created_at`, and a
+non-zero `bytes` within `MAX_PACKAGE_BYTES`. Constraining `key_id` to hex is
+also what makes the associated data reproducible by a reader on another
+JSON library: no character survives that two writers could escape
+differently.
 
 ## Related Code Files
 - Create: `crates/mlib-spec/src/package.rs` (`PackageManifest`,
@@ -123,3 +135,43 @@ counter that depends on what happens to be in a local directory.
 - Associated data is easy to get subtly wrong, for instance by serializing a
   map whose key order varies. Mitigation: it is a fixed-order struct, not a
   map, and a test pins the exact bytes.
+
+## Completion notes (2026-09-15)
+
+Built test-first: 20 tests written and watched fail, then the module. Review
+and edge-case rounds followed, adding 54 probes.
+
+Applied from the review:
+- `package_file_name` takes `&[u8; 32]` instead of a hex string, so a path
+  separator cannot reach a published file name. Four probes that asserted the
+  old permissive behaviour were replaced by one that asserts the guarantee.
+- `pointer_is_readable` validates every field that reaches a cipher, a file
+  name or an allocation, including a `MAX_PACKAGE_BYTES` ceiling.
+- The pointer-leak test pins the exact field set; as a denylist it could not
+  fail on the day a leaky field was added, which was the only day it mattered.
+- The associated-data test derives its expectation from the crate constants
+  rather than hard-coding `1` and `2`.
+- The doc comment no longer misattributes the exclusion of `sha256`: it is
+  excluded because authenticating the digest of the ciphertext the data helps
+  produce would be circular, and the comment now says what a reader must not
+  do as a result.
+- Split into `package/mod.rs` and `package/naming.rs` to stay under 200 lines.
+
+Corrected, not accepted: the tester reported three date defects in
+`civil_from_unix`. All three came from wrong fixture timestamps. The value it
+labelled 2024-02-29 is 2024-03-01, and the one labelled 2100-03-01 is
+2100-01-01. Verified against Python, and the reviewer independently compared
+1,362,222 timestamps spanning years 1 to 4187 with zero mismatches. The
+probes were corrected and now pass unignored.
+
+Deliberately declined: adding `cipher` to the associated data (the cipher set
+is fixed by `format`, which is already authenticated) and adding a random
+export id to distinguish two packages created in the same second (an export
+takes minutes, so the collision cannot occur).
+
+Verification: 320 tests pass, 1 ignored (the pre-existing live test); clippy
+and rustfmt clean; every `src/` file within the 200-line limit. The two new
+validation checks were confirmed to bite by removing them and watching
+exactly the matching tests fail.
+
+Open for phase 3: whether to sign `latest.json`. See `plan.md` question 1.
