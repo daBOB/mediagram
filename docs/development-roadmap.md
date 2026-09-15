@@ -7,7 +7,9 @@ the plan directory.
 
 ## v1 (Linux CLI uploader): phases 1-7
 
-All seven implementation phases are code-complete and merged:
+All seven implementation phases are code-complete and merged. Phases 5-7
+stay "live gate pending" until the acceptance run in `plan.md` executes
+against the real channel; `plan.md` is the source of truth for that state:
 
 | Phase | Scope | Status |
 |---|---|---|
@@ -15,25 +17,26 @@ All seven implementation phases are code-complete and merged:
 | 2 | Config + Telegram auth (grammers 0.10 client, session, login/whoami) | Complete |
 | 3 | Media inspect + faststart remux | Complete |
 | 4 | TMDB metadata resolution | Complete |
-| 5 | Streaming part upload with resume | Complete |
-| 6 | Index push + rescan | Complete |
-| 7 | `verify` command + this documentation set | Complete |
+| 5 | Streaming part upload with resume | Code-complete, live gate pending |
+| 6 | Index push + rescan | Code-complete, live gate pending |
+| 7 | `verify` command + this documentation set | Code-complete, live gate pending |
 
-`cargo test` is green (198 passing tests across both crates, plus 1
-`#[ignore]`d live test) and every source file is under the 200-line limit.
+`cargo test` is green (240 passing tests across both crates, plus 1
+`#[ignore]`d live test) and every file under `src/` is within the 200-line
+limit.
 
 ### Open live gates
 
-These require a real Telegram account, an admin-owned private channel, and
-(for phase 5/6's full acceptance criteria) a TMDB key, so they were not run
-in this environment and are not yet checked off:
+These require a real Telegram account and an admin-owned private channel,
+so they were not run in this environment and are not yet checked off. They
+do not require a TMDB key: `add --manual` enters metadata by hand, so the
+acceptance run needs an interactive terminal rather than an API key:
 
 - **Phase 1 gate — PASSED 2026-09-15**: a live 3,758,096,384-byte (3.5 GiB)
   smoke upload to a real Premium account's private channel succeeded with
   no `FLOOD_WAIT` and no throttling; see `plan.md`'s "Phase-1 gate" section
   for the full measurement.
-- **Phase 5/6/7 live gates — pending**: a live 3-part `add` (needs
-  `tmdb_key`), `kill -9` mid-part followed by `resume` producing no
+- **Phase 5/6/7 live gates — pending**: a live 3-part `add`, `kill -9` mid-part followed by `resume` producing no
   duplicate parts, `verify --full` matching all hashes on that set (and
   failing loudly on a deliberately tampered `parts.sha256` row), and
   `rm library.db && rescan` reproducing the same rows. Whole-plan success
@@ -80,10 +83,5 @@ scheduled:
   fixture-integration tests) compiles into the release binary rather than
   being gated behind `#[cfg(test)]` / a dev-dependency-only crate. Unused
   at runtime, adds to binary size.
-- `--full` verify always re-verifies every requested part; there is no
-  "skip parts verified in the last N hours" flag. Deliberately kept out of
-  v1 per the phase 7 spec ("keep it simple; no extra flags") — add one only
-  if a real multi-terabyte library makes full re-verification too slow in
-  practice.
 - TVDB ids are stored verbatim when passed via `--tvdb` but never fetched
   from the TVDB API; TMDB is the only metadata provider in v1.

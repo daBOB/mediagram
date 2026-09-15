@@ -147,9 +147,11 @@ The index (`library.db`, described fully in
 [`docs/mlib-spec-v2.md`](mlib-spec-v2.md#6-local-index-librarydb)) and the
 caption format it mirrors are Telegram-agnostic in shape: `parts` stores a
 `chat_id`/`message_id`/`doc_id` triple as opaque identifiers, not anything
-grammers-specific, and the caption JSON carries no Telegram types. The
-`telegram/` and `upload/transport.rs` modules are the only places that
-import `grammers_*` crates. A future Android TV player (or any other
+grammers-specific, and the caption JSON carries no Telegram types. `grammers_*` imports are confined to the Telegram-facing layer —
+`telegram/`, `upload/transport.rs`, `verify/download_hash.rs`,
+`verify/session.rs` and the `commands/*` files that drive them — and never
+appear in `index/`, `media/`, `metadata/` or the `mlib-spec` crate, which
+are the parts a second client would reuse. A future Android TV player (or any other
 client) can read `library.db` and the caption spec directly; the planned
 `UniFFI` binding over `mlib-spec` would need a UniFFI-friendly shape for
 `Episode::Range([u32; 2])` (UniFFI does not support fixed-size array

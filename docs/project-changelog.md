@@ -87,12 +87,56 @@ phases 1-4).
   parallel-test flakiness.
 
 **Test counts:** 161 after phase 5's review fixes, 187 after phase 6, 198
-passing (+1 `#[ignore]`d live test) after phase 7's `verify` command and
-its `verify::report` unit tests.
+passing (+1 `#[ignore]`d live test) after phase 7's `verify` command, 240
+after phase 7's review and test round.
+
+## 2026-09-15 (phase 7 review round)
+
+**Fixed**
+
+- Reachable panic on remote data: `grammers`'s `Document::id()` unwraps an
+  optional field that `Media::from_raw` never checks, so a message carrying
+  stripped or expired document media could panic a run. `telegram/document.rs`
+  is now the only accessor, used by `verify`, `rescan` and `upload/transport`.
+- `verify --full` no longer discards a long run: a download failure becomes
+  a per-part verdict and each set prints as it completes, instead of every
+  result being withheld until all sets succeeded.
+- `verify` honours `parts.chat_id` and names both chats when a part was
+  recorded elsewhere, instead of reporting "message not found", which reads
+  as data loss and invites a re-upload.
+- A truncated download reports "download ended after N of M bytes" rather
+  than a hash mismatch, which read as corruption on Telegram.
+- A failing part's stale `verified_at` is cleared, so the index snapshot
+  pushed to the channel cannot advertise an old success beside a failure.
+- `verify --all` skips sets that are still uploading rather than failing
+  while `resume` still has work; byte sums use `checked_add`.
+- An empty `tmdb_key = ""` in `config.toml` now loads as absent, so `add`
+  gives the "set a key or pass --manual" message instead of a late TMDB
+  authentication failure.
+
+**Added**
+
+- `verify --since <unix>`: skips parts already verified at or after the
+  timestamp, making an interrupted `--full` sweep resumable. It was a
+  written phase-7 requirement; the roadmap had recorded it as cut, citing a
+  quote that appears in no plan file.
+- 36 edge-case probes for the verify decision layer plus 6 new unit tests.
+
+**Docs**
+
+- Caption line 2 is documented as UTF-8, matching the plan's locked
+  decision and `caption_codec::to_text`; the spec previously said ASCII.
+- Spec example part count corrected (`n:18` → `n:17`, the value the total
+  implies) in both the document and the fixture it is copied from; index
+  caption key order corrected to what `serde_json` actually emits;
+  `verified_at` semantics documented as "result of the last verification".
+- The grammers import boundary, the one-`run`-per-command rule, the
+  200-line rule's scope, and the commit-trailer rule now describe the code
+  as it is.
 
 **Status:** phases 1-7 are code-complete. The phase-1 live smoke gate
 above passed; the remaining live acceptance gates (live 3-part `add`, kill
 mid-upload + `resume`, `verify --full` hash match and tamper detection,
-`rescan` reproduction) require a configured `tmdb_key` and a real Telegram
-account and have not been run in this environment — see
+`rescan` reproduction) need a real terminal against the live channel. They
+do **not** need a TMDB key: `add --manual` takes metadata by hand. See
 [`docs/development-roadmap.md`](development-roadmap.md#open-live-gates).

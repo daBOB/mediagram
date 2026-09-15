@@ -27,7 +27,7 @@ fn movie() -> Caption {
         set: "01JQ8F2K9M4XZ".into(),
         part: Part {
             i: 0,
-            n: 18,
+            n: 17,
             off: 0,
             len: 3_758_096_384,
             sha256: "a".repeat(64),
@@ -57,7 +57,7 @@ fn exact_wire_format_is_stable() {
 \"show\":null,\"title\":\"Dune: Part Two\",\"year\":2024,\"s\":null,\"e\":null,\"abs\":null,\
 \"q\":\"2160p\",\"hdr\":\"DV\",\"container\":\"mkv\",\"vcodec\":\"hevc\",\"acodec\":\"truehd\",\
 \"alang\":[\"en\",\"de\"],\"slang\":[\"en\"],\"dur\":9960,\"variant\":null,\"set\":\"01JQ8F2K9M4XZ\",\
-\"part\":{{\"i\":0,\"n\":18,\"off\":0,\"len\":3758096384,\"sha256\":\"{}\"}},\"total\":62914560000}}",
+\"part\":{{\"i\":0,\"n\":17,\"off\":0,\"len\":3758096384,\"sha256\":\"{}\"}},\"total\":62914560000}}",
         "a".repeat(64)
     );
     assert_eq!(text, expected);

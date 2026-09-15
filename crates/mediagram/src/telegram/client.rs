@@ -47,6 +47,13 @@ impl Tg {
     }
 
     /// Signals the sender pool to disconnect and waits for it to stop.
+    /// The id recorded in every `parts.chat_id`: the bot-API dialog id when
+    /// the channel exposes one, else the bare peer id. Verification compares
+    /// against this, so the derivation lives in one place.
+    pub fn chat_id(&self) -> i64 {
+        chat_id_of(self.channel)
+    }
+
     pub async fn shutdown(self) {
         self.handle.quit();
         let _ = self.pool_task.await;
@@ -178,4 +185,13 @@ fn session_path(cfg: &Config) -> Result<PathBuf> {
 fn restrict_session_permissions(path: &Path) -> Result<()> {
     std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))
         .with_context(|| format!("restricting permissions on {}", path.display()))
+}
+
+/// See [`Tg::chat_id`]; free function so call sites holding only a
+/// [`PeerRef`] (the upload transport) derive the id identically.
+pub fn chat_id_of(channel: PeerRef) -> i64 {
+    channel
+        .id
+        .bot_api_dialog_id()
+        .unwrap_or_else(|| channel.id.bare_id_unchecked())
 }

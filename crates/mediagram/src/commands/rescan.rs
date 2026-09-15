@@ -2,7 +2,6 @@
 //! local index is lost. Reads only; never re-uploads media.
 
 use anyhow::{Context, Result};
-use grammers_client::media::Media;
 use rusqlite::Connection;
 
 use crate::config::Config;
@@ -19,13 +18,7 @@ const BATCH_SIZE: usize = 500;
 pub async fn run(cfg: &Config) -> Result<()> {
     let mut conn = db::open(&cfg.data_dir()?)?;
     let tg = Tg::connect(cfg).await.context("connecting to Telegram")?;
-    // Mirrors `TelegramTransport::chat_id`: the bot-API dialog id when the
-    // channel exposes one, else the bare peer id.
-    let chat_id = tg
-        .channel
-        .id
-        .bot_api_dialog_id()
-        .unwrap_or_else(|| tg.channel.id.bare_id_unchecked());
+    let chat_id = tg.chat_id();
 
     let result = rescan_all(&mut conn, &tg, chat_id).await;
     tg.shutdown().await;
@@ -51,10 +44,7 @@ async fn rescan_all(conn: &mut Connection, tg: &Tg, chat_id: i64) -> Result<Resc
     let mut iter = tg.client.iter_messages(tg.channel);
 
     while let Some(message) = iter.next().await.context("scanning channel history")? {
-        let doc_id = match message.media() {
-            Some(Media::Document(doc)) => Some(doc.id()),
-            _ => None,
-        };
+        let doc_id = crate::telegram::document::message_document(&message).map(|(_, id)| id);
         let caption = message.text().to_string();
         if doc_id.is_none() || !mlib_spec::caption_codec::is_mlib(&caption) {
             continue;

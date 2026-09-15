@@ -2,10 +2,12 @@
 //! index invariant check, and row/summary rendering. No Telegram connection
 //! is needed since `report` never performs IO.
 
+use mediagram::verify::render::{render_rows, summary_line};
 use mediagram::verify::report::{
     ExpectedPart, ObservedMessage, PartVerdict, SetReport, apply_hash, check_local_invariant,
-    render_rows, summary_line, verify_size,
+    verify_size,
 };
+use mediagram::verify::{LocalPart, verified_since};
 
 fn expected() -> ExpectedPart {
     ExpectedPart {
@@ -181,4 +183,97 @@ fn a_local_issue_fails_the_set_even_with_no_part_failures() {
     assert!(report.failed());
     assert!(summary_line(&report).contains("local index issue"));
     assert!(render_rows(&report)[0].contains("local index issue"));
+}
+
+/// A part recorded in a different chat is not "missing": the message id was
+/// never meant to be looked up in the chat now configured, and saying
+/// "missing" would read as data loss and invite a re-upload.
+#[test]
+fn a_part_in_another_chat_names_both_chats() {
+    let expected = ExpectedPart {
+        idx: 0,
+        byte_length: 1024,
+        doc_id: Some(7),
+        sha256: None,
+        verified_at: None,
+    };
+    let verdict = verify_size(
+        &expected,
+        &ObservedMessage::OtherChat {
+            recorded: -1001,
+            current: -1002,
+        },
+    );
+    assert!(!verdict.size_ok);
+    let failure = verdict.failure.unwrap();
+    assert!(
+        failure.contains("-1001") && failure.contains("-1002"),
+        "{failure}"
+    );
+}
+
+/// A transient download error is a part-level failure carrying the cause,
+/// never a hash mismatch (which would read as corruption on Telegram).
+#[test]
+fn a_failed_download_reports_the_cause_not_a_hash_mismatch() {
+    let expected = ExpectedPart {
+        idx: 4,
+        byte_length: 2048,
+        doc_id: Some(9),
+        sha256: Some("a".repeat(64)),
+        verified_at: None,
+    };
+    let verdict = verify_size(
+        &expected,
+        &ObservedMessage::DownloadFailed("connection reset".into()),
+    );
+    assert!(!verdict.size_ok);
+    assert_eq!(verdict.hash_ok, None);
+    let failure = verdict.failure.unwrap();
+    assert!(failure.contains("connection reset"), "{failure}");
+    assert!(!failure.contains("hash mismatch"), "{failure}");
+}
+
+/// A part whose index row never recorded a hash cannot be proven by `--full`.
+#[test]
+fn a_part_with_no_recorded_hash_fails_the_comparison() {
+    let expected = ExpectedPart {
+        idx: 1,
+        byte_length: 512,
+        doc_id: Some(3),
+        sha256: None,
+        verified_at: None,
+    };
+    let verdict = verify_size(
+        &expected,
+        &ObservedMessage::Document {
+            doc_id: 3,
+            size: Some(512),
+        },
+    );
+    let verdict = apply_hash(verdict, &"b".repeat(64), None, 1_700_000_000);
+    assert_eq!(verdict.hash_ok, Some(false));
+    assert!(verdict.verified_at.is_none());
+    assert!(verdict.failure.unwrap().contains("none recorded"));
+}
+
+/// `--since` skips only parts already proven at or after the cutoff; an
+/// older stamp, a missing stamp, or no cutoff at all means re-check.
+#[test]
+fn since_skips_only_parts_verified_at_or_after_the_cutoff() {
+    let part = |verified_at| LocalPart {
+        idx: 0,
+        byte_length: 1024,
+        chat_id: Some(-1001),
+        message_id: Some(2),
+        doc_id: Some(3),
+        sha256: Some("c".repeat(64)),
+        status: "done".into(),
+        verified_at,
+    };
+    assert!(verified_since(&part(Some(1_000)), Some(1_000)));
+    assert!(verified_since(&part(Some(1_001)), Some(1_000)));
+    assert!(!verified_since(&part(Some(999)), Some(1_000)));
+    assert!(!verified_since(&part(None), Some(1_000)));
+    assert!(!verified_since(&part(Some(1_000)), None));
 }

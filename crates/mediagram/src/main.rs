@@ -41,6 +41,10 @@ enum Cmd {
         all: bool,
         #[arg(long)]
         full: bool,
+        /// With --full, skip parts already verified at or after this unix
+        /// timestamp, so an interrupted sweep resumes instead of restarting
+        #[arg(long)]
+        since: Option<i64>,
     },
     /// Rebuild library.db from channel captions (additive: never demotes local sets; use verify for that)
     Rescan,
@@ -63,7 +67,12 @@ async fn main() -> Result<()> {
         Cmd::Add(args) => commands::add::run(&cfg, args).await,
         Cmd::Resume { no_push } => commands::resume::run(&cfg, no_push).await,
         Cmd::PushIndex => commands::push_index::run(&cfg).await,
-        Cmd::Verify { set_id, all, full } => commands::verify::run(&cfg, set_id, all, full).await,
+        Cmd::Verify {
+            set_id,
+            all,
+            full,
+            since,
+        } => commands::verify::run(&cfg, set_id, all, full, since).await,
         Cmd::Rescan => commands::rescan::run(&cfg).await,
         Cmd::SmokeUpload { file } => commands::smoke_upload::run(&cfg, &file).await,
     }

@@ -46,8 +46,14 @@ list of optional keys (`part_size`, `throttle_ms`, `max_attempts`,
 | `mediagram add <file>` | Split, upload, caption and index one media file. See flags below. |
 | `mediagram resume [--no-push]` | Finish every set left `pending` by an interrupted `add` (adopts already-uploaded parts instead of re-uploading them). |
 | `mediagram push-index` | Snapshot `library.db` and upload it to the channel as a pinned document. |
-| `mediagram verify <set-id> \| --all [--full]` | Check a set (or every set): default mode compares each part's message/document against the index; `--full` re-downloads and hashes every part. |
+| `mediagram verify <set-id> \| --all [--full] [--since <unix>]` | Check a set (or every set): default mode compares each part's message/document against the index; `--full` re-downloads and hashes every part, and `--since` skips parts already verified at or after that timestamp so an interrupted sweep resumes. `--all` skips sets that are still uploading. |
 | `mediagram rescan` | Rebuild `library.db` from channel captions. Additive only — never demotes or deletes a locally-recorded set; use `verify` to detect mismatches. |
+
+`--full` re-downloads every requested byte, 512 KiB per request, so a
+multi-terabyte library takes hours; the command prints the byte total and a
+rough time estimate before it starts. Parts that fail keep their `FAIL` row
+and lose any earlier `verified_at`, and one unreachable part no longer ends
+the run: it is reported as a failed part and the sweep continues.
 
 ### `add` flags
 

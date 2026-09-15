@@ -23,8 +23,11 @@ optional free-form human text (truncated first if the caption is too long)
   mlib caption by checking the text starts with the prefix `#mlib v=`
   (after trimming leading whitespace); the version that follows determines
   how to parse line 2.
-- Line 2 is one JSON object, minified (no extra whitespace), plain ASCII,
-  no HTML entities or custom emoji. It is the [`Caption`](#2-caption-json)
+- Line 2 is one JSON object, minified (no extra whitespace), encoded as
+  UTF-8 with non-ASCII characters written raw (`Amelie` stays `Amélie`, not
+  `Am\u00e9lie`), no HTML entities or custom emoji. The caption budget is
+  counted in UTF-16 code units rather than bytes, so a raw non-ASCII title
+  costs more budget than its byte length suggests. It is the [`Caption`](#2-caption-json)
   record below.
 - Any further lines are free-form human text (e.g. an emoji + title line).
   They are not part of the record and must never be parsed for data — they
@@ -54,10 +57,10 @@ bytes instead of UTF-16 units will compute a different (wrong) budget.
 Field order below is the **wire order**: a byte-for-byte reference
 implementation serializes fields in exactly this order, and tooling that
 compares captions verbatim (e.g. detecting an unmodified re-upload) depends
-on it. Round-trip example (a movie, part 0 of 18, 3.5 GiB parts):
+on it. Round-trip example (a movie, part 0 of 17, 3.5 GiB parts):
 
 ```json
-{"t":"movie","ids":{"tmdb":693134,"tvdb":null,"imdb":"tt15239678"},"show":null,"title":"Dune: Part Two","year":2024,"s":null,"e":null,"abs":null,"q":"2160p","hdr":"DV","container":"mkv","vcodec":"hevc","acodec":"truehd","alang":["en","de"],"slang":["en"],"dur":9960,"variant":null,"set":"01JQ8F2K9M4XZ","part":{"i":0,"n":18,"off":0,"len":3758096384,"sha256":"aaaa…(64 lowercase hex chars)"},"total":62914560000}
+{"t":"movie","ids":{"tmdb":693134,"tvdb":null,"imdb":"tt15239678"},"show":null,"title":"Dune: Part Two","year":2024,"s":null,"e":null,"abs":null,"q":"2160p","hdr":"DV","container":"mkv","vcodec":"hevc","acodec":"truehd","alang":["en","de"],"slang":["en"],"dur":9960,"variant":null,"set":"01JQ8F2K9M4XZ","part":{"i":0,"n":17,"off":0,"len":3758096384,"sha256":"aaaa…(64 lowercase hex chars)"},"total":62914560000}
 ```
 
 An episode of a show additionally sets `show`, `s` (season) and `e`
@@ -97,7 +100,7 @@ a parser can assume every key above is always present.
 ## 3. Part block
 
 ```json
-{"i":0,"n":18,"off":0,"len":3758096384,"sha256":"…64 lowercase hex chars…"}
+{"i":0,"n":17,"off":0,"len":3758096384,"sha256":"…64 lowercase hex chars…"}
 ```
 
 | Field | Type | Notes |
@@ -201,6 +204,12 @@ from the message id); it is recorded for reference but message lookup
 always keys on `(chat_id, message_id)`, since a document can be re-sent
 under a different id (e.g. after a forward) while the message stays put.
 
+`verified_at` is the result of the **last** verification, not a high-water
+mark: `verify --full` sets it to the check time when the downloaded bytes
+hash to `sha256`, and clears it as soon as that part fails a later check. A
+non-null value means "this part matched its recorded hash then and has not
+failed since"; null means unverified, never verified, or last seen failing.
+
 ### Playable invariant
 
 A set is considered complete/playable exactly when:
@@ -225,7 +234,7 @@ caption:
 
 ```text
 #mlib-index v=2
-{"pushed_at":1700000000,"sets":42,"schema":1}
+{"pushed_at":1700000000,"schema":1,"sets":42}
 ```
 
 `pushed_at` is a Unix timestamp, `sets` is the row count of the `sets`

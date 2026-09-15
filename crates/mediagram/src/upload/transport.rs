@@ -4,13 +4,13 @@
 
 use anyhow::{Context, Result, bail};
 use grammers_client::Client;
-use grammers_client::media::Media;
 use grammers_client::message::InputMessage;
 use grammers_session::types::PeerRef;
 use mlib_spec::caption::{Caption, Part};
 
 use super::part_reader::PartReader;
 use crate::telegram::client::Tg;
+use crate::telegram::document;
 use crate::telegram::retry::with_flood_wait_only;
 
 /// Result of successfully sending one part as a document message.
@@ -122,9 +122,9 @@ impl Transport for TelegramTransport {
         .await
         .context("sending part message")?;
 
-        let doc_id = match message.media() {
-            Some(Media::Document(doc)) => doc.id(),
-            _ => bail!("sent part message has no document media"),
+        let doc_id = match document::message_document(&message) {
+            Some((_, id)) => id,
+            None => bail!("sent part message has no usable document media"),
         };
         Ok(Sent {
             message_id: i64::from(message.id()),
@@ -140,10 +140,7 @@ impl Transport for TelegramTransport {
             .await
             .context("scanning recent channel messages")?
         {
-            let doc_id = match message.media() {
-                Some(Media::Document(doc)) => Some(doc.id()),
-                _ => None,
-            };
+            let doc_id = document::message_document(&message).map(|(_, id)| id);
             out.push(Seen {
                 message_id: i64::from(message.id()),
                 doc_id,
@@ -154,9 +151,6 @@ impl Transport for TelegramTransport {
     }
 
     fn chat_id(&self) -> i64 {
-        self.channel
-            .id
-            .bot_api_dialog_id()
-            .unwrap_or_else(|| self.channel.id.bare_id_unchecked())
+        crate::telegram::client::chat_id_of(self.channel)
     }
 }

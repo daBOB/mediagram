@@ -78,6 +78,10 @@ pub fn load(path: Option<&Path>) -> Result<Config> {
     let mut cfg: Config =
         toml::from_str(&text).with_context(|| format!("invalid config {}", path.display()))?;
     apply_env(&mut cfg)?;
+    // An empty `tmdb_key = ""` in the file means "not configured", same as an
+    // empty MEDIAGRAM_TMDB_KEY; without this the add command's "set a key or
+    // pass --manual" guard is bypassed and TMDB fails later with a bare 401.
+    cfg.tmdb_key = cfg.tmdb_key.filter(|v| !v.is_empty());
     validate_part_size(cfg.part_size).context("part_size")?;
     if cfg.api_hash.is_empty() || cfg.channel.is_empty() {
         bail!("api_hash and channel must be set");
@@ -123,6 +127,32 @@ mod tests {
         assert_eq!(cfg.part_size, DEFAULT_PART_SIZE);
         assert_eq!(cfg.max_attempts, 5);
         assert!(cfg.tmdb_key.is_none());
+    }
+
+    #[test]
+    fn empty_tmdb_key_in_file_loads_as_absent() {
+        // A commented-out or blanked key must reach `add` as None so the
+        // "set a key or pass --manual" guard fires instead of a TMDB 401.
+        let mut f = tempfile::NamedTempFile::new().unwrap();
+        std::io::Write::write_all(
+            f.as_file_mut(),
+            b"api_id = 1\napi_hash = \"h\"\nchannel = \"c\"\ntmdb_key = \"\"\n",
+        )
+        .unwrap();
+        let cfg = load(Some(f.path())).unwrap();
+        assert!(cfg.tmdb_key.is_none());
+    }
+
+    #[test]
+    fn non_empty_tmdb_key_in_file_is_kept() {
+        let mut f = tempfile::NamedTempFile::new().unwrap();
+        std::io::Write::write_all(
+            f.as_file_mut(),
+            b"api_id = 1\napi_hash = \"h\"\nchannel = \"c\"\ntmdb_key = \"k3y\"\n",
+        )
+        .unwrap();
+        let cfg = load(Some(f.path())).unwrap();
+        assert_eq!(cfg.tmdb_key.as_deref(), Some("k3y"));
     }
 
     #[test]

@@ -21,9 +21,9 @@ Stack: Rust 1.98 edition 2024, grammers-client 0.10.0, rusqlite (bundled), clap,
 | 2 | [Config and Telegram auth](phase-02-config-and-telegram-auth.md) | completed | P1 | 0.5d | 1 |
 | 3 | [Media inspect and faststart remux](phase-03-media-inspect-and-faststart-remux.md) | completed | P2 | 0.5d | 1 |
 | 4 | [TMDB metadata resolution](phase-04-tmdb-metadata-resolution.md) | completed | P2 | 1d | 1 |
-| 5 | [Streaming part upload with resume](phase-05-streaming-part-upload-with-resume.md) | in-progress | P1 | 2d | 2,3,4 |
-| 6 | [Index push and rescan](phase-06-index-push-and-rescan.md) | in-progress | P2 | 1d | 5 |
-| 7 | [Verify command and project docs](phase-07-verify-command-and-project-docs.md) | pending | P2 | 1d | 6 |
+| 5 | [Streaming part upload with resume](phase-05-streaming-part-upload-with-resume.md) | code-complete (live gate) | P1 | 2d | 2,3,4 |
+| 6 | [Index push and rescan](phase-06-index-push-and-rescan.md) | code-complete (live gate) | P2 | 1d | 5 |
+| 7 | [Verify command and project docs](phase-07-verify-command-and-project-docs.md) | code-complete (live gate) | P2 | 1d | 6 |
 
 Phases 2, 3, 4 are independent of each other and can run in parallel after phase 1.
 
@@ -110,3 +110,33 @@ See phase 7 success criteria: 10 GB MKV → 3 parts; kill -9 mid-part then `resu
 
 ### Implementation log — phase 6 (2026-09-15)
 - Built by a worktree agent, merged in `b1373e5`. Review: no data-loss defects; fixed stale-pin retry, per-process snapshot temp name, double-counted rescan summaries, unparsed-caption counter, push-failure context. Decision recorded: rescan is additive. Tester added 18 probes, no defects. 187 tests. Live push/unpin criteria wait for the live `add` (needs `tmdb_key`).
+
+### Implementation log — phase 7 (2026-09-15)
+- Built by a worktree agent, merged in `c5828a3`. Review + tester rounds ran
+  afterwards (`reports/code-reviewer-260915-1915-*`, `reports/tester-260915-1915-*`):
+  36 edge-case probes added, no defects from the probes; the review found
+  3 high, 7 medium, 10 low, no critical.
+- Fixed in this round: `Document::id()` panics on a document-media message
+  whose document field is absent (guarded centrally in
+  `telegram/document.rs`, applied to `verify`, `rescan` and `transport`);
+  one unreachable part or transient download error no longer discards a
+  whole `--full` run (per-part verdicts, per-set printing); `verify` now
+  honours `parts.chat_id` and reports a cross-chat part as such instead of
+  "missing"; a truncated download fails loudly instead of masquerading as a
+  hash mismatch; a failing part's stale `verified_at` is cleared; `--all`
+  skips sets that are still uploading; byte sums are checked for overflow.
+- `--since` was implemented rather than cut: the phase file required a
+  resumable `--full`, and the roadmap's justification for dropping it
+  quoted text that does not exist in any plan file. Quote removed.
+- Decisions recorded: caption line 2 is **UTF-8** (plan lock wins over the
+  phase file's "ASCII rule" wording, and matches `caption_codec::to_text`);
+  `verified_at` means "result of the last verification", so it is cleared on
+  failure rather than kept as a high-water mark.
+- Tests 240 passing + 1 ignored; clippy and fmt clean; every `src/` file
+  under 200 lines. Live gates unchanged: still need the real channel run.
+
+## Open live gates (blocked on a real terminal, not on TMDB)
+`add --manual` takes metadata by hand and needs no TMDB key, so the
+acceptance run is not blocked by the empty `tmdb_key` in `config.toml`. It
+does need a real TTY (manual entry prompts) and roughly an hour of upstream
+for a 10 GB file at the measured 3.2 MB/s.

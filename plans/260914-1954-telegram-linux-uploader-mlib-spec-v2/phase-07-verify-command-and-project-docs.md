@@ -1,7 +1,7 @@
 ---
 phase: 7
 title: "Verify command and project docs"
-status: in-progress
+status: code-complete (live gate)
 priority: P2
 effort: "1d"
 dependencies: [6]
@@ -108,3 +108,42 @@ touched); it is reliably green under `--test-threads=1` or run alone.
 environment): the phase's two Telegram-dependent success criteria above,
 and the whole-plan acceptance checklist in `plan.md`. Left unticked and
 marked "pending live gate" rather than assumed passing.
+
+## Review round (2026-09-15)
+
+Reports: `reports/code-reviewer-260915-1915-phase-07-verify-and-docs-review-report.md`,
+`reports/tester-260915-1915-phase-07-verify-test-report.md`.
+
+Applied:
+- **Panic on remote data**: `Document::id()` unwraps an optional field that
+  `Media::from_raw` never checks, so one stripped/expired document media in
+  the channel could panic a run. `telegram/document.rs` is now the single
+  guarded accessor; `verify`, `rescan` and `upload/transport` all use it.
+- **Whole-run loss**: per-part download failures became `PartVerdict`s and
+  each set prints as it finishes, so a transient error hours into a `--full`
+  sweep no longer throws away every result printed so far.
+- **Ignored `chat_id`**: `verify` compares `parts.chat_id` against the
+  resolved channel and reports a cross-chat part with both ids, instead of
+  claiming the message is missing (which reads as data loss).
+- **Truncated download**: `hash_document` counts bytes and fails with
+  "download ended after N of M bytes" rather than reporting a hash mismatch.
+- **Stale `verified_at`**: cleared when a part fails, so the pushed index
+  snapshot never advertises an old success next to a current failure.
+- **`--all` on a pending set**: skipped with a `pending, skipped` line
+  rather than failing the whole command while `resume` still has work.
+- **Overflow**: byte sums use `checked_add`; a corrupt length is reported as
+  an index problem instead of panicking or wrapping.
+- **`--since`**: implemented (this file required a resumable `--full`; the
+  roadmap's justification for dropping it quoted text that exists nowhere).
+- Docs: grammers import boundary corrected, caption line 2 documented as
+  UTF-8 per the plan lock, `n:18` → `n:17` in the spec example and the
+  fixture it is copied from, index-caption key order corrected to what
+  `serde_json` emits, `verified_at` semantics documented, and the four
+  self-contradictions in `code-standards.md`/`development-roadmap.md` fixed.
+
+Module split to stay under the 200-line rule: `verify/render.rs` (printing)
+and `verify/session.rs` (per-set IO orchestration) out of `verify/report.rs`
+and `commands/verify.rs`.
+
+Not applied: nothing from the review was rejected; the two remaining live
+criteria above still need the real channel.

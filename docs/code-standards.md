@@ -12,12 +12,15 @@ the module map these rules apply to.
   for and which submodule (if any) is the only one allowed to touch an
   external system (e.g. `verify/mod.rs` states that `download_hash` is the
   only piece of `verify` that talks to Telegram).
-- Each `commands/*.rs` file exposes exactly one `pub async fn run(...)` and
-  is the orchestration layer: it wires config, the index, and Telegram
+- Each `commands/*.rs` file exposes a `pub async fn run(...)` as its entry
+  point (plus, rarely, one helper another command reuses — `push_index`
+  exposes `push_after_set` for `add`) and is the orchestration layer: it wires config, the index, and Telegram
   together and prints output. Decision logic that doesn't need IO (e.g.
   `verify::report`, `index::rescan::apply_seen`) lives in its own module so
   it can be unit-tested without a live connection or a temp database.
-- **Every source file stays under 200 lines.** When a file would grow past
+- **Every file under `src/` stays under 200 lines.** Test files in
+  `tests/` are exempt: a probe suite is a flat list of independent cases,
+  and splitting it by line count would hide rather than clarify coverage. When a file would grow past
   that, split out a focused submodule (`media/mp4_atoms.rs` out of
   `media/remux.rs`; `verify/report.rs` out of `commands/verify.rs`) rather
   than letting one file accumulate unrelated responsibility.
@@ -133,4 +136,7 @@ right place for that history.
 
 Conventional commits (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`,
 `chore:`), scoped when it adds clarity (`feat(mediagram): ...`), imperative
-mood, no AI-authorship references. One logical change per commit.
+mood, no AI-authorship references in the subject or body. One logical
+change per commit. The `Claude-Session:` trailer this repository's commits
+carry is the documented exception: it is a machine-readable provenance
+link, kept out of the human-readable message.

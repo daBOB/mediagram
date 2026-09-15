@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use grammers_client::Client;
 use grammers_client::media::Document;
 use grammers_client::message::Message;
@@ -53,15 +53,28 @@ pub async fn fetch_messages(
 /// the chunk — that would produce a wrong, truncated hash instead of a loud
 /// error. A transient failure therefore surfaces as an error here, and the
 /// caller re-runs `verify --full` to try the part again from the start.
-pub async fn hash_document(client: &Client, document: &Document) -> Result<String> {
+pub async fn hash_document(
+    client: &Client,
+    document: &Document,
+    expected_len: u64,
+) -> Result<String> {
     let mut chunks = client.iter_download(document);
     let mut hasher = Sha256::new();
+    let mut hashed = 0u64;
     while let Some(chunk) = chunks
         .next()
         .await
         .context("downloading part chunk for hashing")?
     {
+        hashed = hashed.saturating_add(chunk.len() as u64);
         hasher.update(&chunk);
+    }
+    // grammers ends the stream on any short chunk and advances its offset by
+    // the request limit rather than the bytes received, so a truncated
+    // download would otherwise be reported as a hash mismatch, i.e. as data
+    // corruption on Telegram. Fail honestly instead.
+    if hashed != expected_len {
+        bail!("download ended after {hashed} of {expected_len} bytes");
     }
     Ok(hex::encode(hasher.finalize()))
 }

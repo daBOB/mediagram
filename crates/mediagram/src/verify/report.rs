@@ -20,8 +20,17 @@ pub enum ObservedMessage {
     NotUploaded,
     /// `get_messages_by_id` returned nothing for the recorded message id.
     MessageMissing,
-    /// The message exists but carries no document media.
+    /// The message exists but carries no usable document media.
     NoDocument,
+    /// The part was uploaded to a different chat than the one being checked,
+    /// so its message id says nothing about the chat now configured.
+    OtherChat {
+        recorded: i64,
+        current: i64,
+    },
+    /// The part's bytes could not be fetched (transient network/Telegram
+    /// error). Reported per part so one failure never discards a long run.
+    DownloadFailed(String),
     Document {
         doc_id: i64,
         size: Option<u64>,
@@ -62,7 +71,11 @@ pub fn verify_size(expected: &ExpectedPart, observed: &ObservedMessage) -> PartV
     match observed {
         ObservedMessage::NotUploaded => base(Some("no upload recorded locally".into())),
         ObservedMessage::MessageMissing => base(Some("message not found on the channel".into())),
-        ObservedMessage::NoDocument => base(Some("message has no document media".into())),
+        ObservedMessage::NoDocument => base(Some("message has no usable document media".into())),
+        ObservedMessage::OtherChat { recorded, current } => base(Some(format!(
+            "recorded in chat {recorded}, verifying chat {current}"
+        ))),
+        ObservedMessage::DownloadFailed(err) => base(Some(format!("download failed: {err}"))),
         ObservedMessage::Document { doc_id, size } => {
             let mut verdict = if *size == Some(expected.byte_length) {
                 base(None)
@@ -119,7 +132,7 @@ pub fn check_local_invariant(
     total: u64,
     sum_len: u64,
 ) -> Option<String> {
-    if row_count as u32 != part_count {
+    if row_count != part_count as usize {
         return Some(format!(
             "index has {row_count} part row(s), expected {part_count}"
         ));
@@ -139,60 +152,5 @@ pub struct SetReport {
 impl SetReport {
     pub fn failed(&self) -> bool {
         self.local_issue.is_some() || self.parts.iter().any(PartVerdict::failed)
-    }
-}
-
-/// One printable line per part: index, size result, hash result, timestamp.
-pub fn render_rows(report: &SetReport) -> Vec<String> {
-    let set_id = &report.set_id;
-    let mut rows = Vec::with_capacity(report.parts.len() + 1);
-    if let Some(issue) = &report.local_issue {
-        rows.push(format!("  set {set_id}: local index issue: {issue}"));
-    }
-    rows.extend(report.parts.iter().map(render_row));
-    rows
-}
-
-fn render_row(part: &PartVerdict) -> String {
-    let size_col = if part.size_ok { "ok" } else { "FAIL" };
-    let hash_col = match part.hash_ok {
-        None => "skipped",
-        Some(true) => "ok",
-        Some(false) => "FAIL",
-    };
-    let verified = part
-        .verified_at
-        .map(|t| t.to_string())
-        .unwrap_or_else(|| "-".to_string());
-    let mut row = format!(
-        "  part {:>3}  size {size_col:<7} hash {hash_col:<7} verified_at {verified}",
-        part.idx
-    );
-    if let Some(warning) = &part.warning {
-        row.push_str(&format!("  warn: {warning}"));
-    }
-    if let Some(failure) = &part.failure {
-        row.push_str(&format!("  fail: {failure}"));
-    }
-    row
-}
-
-/// One-line summary for a set, printed after its part rows.
-pub fn summary_line(report: &SetReport) -> String {
-    let total = report.parts.len();
-    let failed = report.parts.iter().filter(|p| p.failed()).count();
-    let warned = report.parts.iter().filter(|p| p.warning.is_some()).count();
-    let set_id = &report.set_id;
-    if report.failed() {
-        let suffix = if report.local_issue.is_some() {
-            " (local index issue)"
-        } else {
-            ""
-        };
-        format!("set {set_id}: {failed}/{total} part(s) FAILED{suffix}")
-    } else if warned > 0 {
-        format!("set {set_id}: {total}/{total} part(s) ok, {warned} warning(s)")
-    } else {
-        format!("set {set_id}: {total}/{total} part(s) ok")
     }
 }
