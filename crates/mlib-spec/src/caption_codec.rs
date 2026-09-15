@@ -36,6 +36,38 @@ pub enum CaptionError {
     MissingJson,
     #[error("caption JSON: {0}")]
     Json(#[from] serde_json::Error),
+    #[error("caption field `{0}` is not usable")]
+    InvalidField(&'static str),
+}
+
+/// Longest a set id may be. Real ones are 26-character ULIDs; the limit only
+/// exists so a hostile caption cannot make one unbounded.
+const MAX_SET_LEN: usize = 64;
+
+/// Captions arrive from a channel anyone with access can post to, and
+/// `rescan` writes these values into the index, where `set` becomes a primary
+/// key and, for the package export, part of a file name. Structural
+/// validation therefore belongs here, at the boundary, not at each use.
+fn validate(caption: &Caption) -> Result<(), CaptionError> {
+    let set_ok = !caption.set.is_empty()
+        && caption.set.len() <= MAX_SET_LEN
+        && caption.set.chars().all(|c| c.is_ascii_alphanumeric());
+    if !set_ok {
+        return Err(CaptionError::InvalidField("set"));
+    }
+    if caption.part.n == 0 || caption.part.i >= caption.part.n {
+        return Err(CaptionError::InvalidField("part"));
+    }
+    // The index stores these as signed 64-bit integers.
+    let fits = |v: u64| i64::try_from(v).is_ok();
+    if !fits(caption.part.len) || !fits(caption.part.off) || !fits(caption.total) {
+        return Err(CaptionError::InvalidField("length"));
+    }
+    // `sha256` is deliberately not validated here. It never reaches a path or
+    // a key; it is only ever compared. A malformed one fails `verify`, which
+    // is the right place to notice, whereas refusing the caption would make
+    // `rescan` drop a recoverable part during disaster recovery.
+    Ok(())
 }
 
 /// Render a caption. `human` may be empty; it is truncated to fit the budget.
@@ -85,7 +117,9 @@ pub fn parse(text: &str) -> Result<Caption, CaptionError> {
     if json.is_empty() {
         return Err(CaptionError::MissingJson);
     }
-    Ok(serde_json::from_str(json)?)
+    let caption: Caption = serde_json::from_str(json)?;
+    validate(&caption)?;
+    Ok(caption)
 }
 
 #[cfg(test)]
