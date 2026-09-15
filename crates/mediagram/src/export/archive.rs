@@ -92,6 +92,16 @@ fn collect_files(root: &Path, dir: &Path) -> Result<Vec<PathBuf>> {
     for entry in entries {
         let entry = entry.context("reading a directory entry")?;
         let path = entry.path();
+        // `is_dir`/`read` follow symlinks, so a link inside staging would pull
+        // an outside file into the package. Nothing legitimate puts one there.
+        if entry
+            .file_type()
+            .context("typing a directory entry")?
+            .is_symlink()
+        {
+            tracing::warn!(path = %path.display(), "symlink skipped");
+            continue;
+        }
         if path.is_dir() {
             out.extend(collect_files(root, &path)?);
         } else {

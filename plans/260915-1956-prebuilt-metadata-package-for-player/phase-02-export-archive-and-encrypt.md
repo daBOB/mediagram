@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: "Export, archive and encrypt"
-status: pending
+status: completed
 priority: P1
 effort: "1d"
 dependencies: [1]
@@ -138,3 +138,41 @@ rate limit, costs that title its poster and nothing more.
   before publishing.
 - **Plaintext on disk** during staging is the same class of secret as the
   session file, hence the same permissions and prompt removal.
+
+## Completion notes (2026-09-15)
+
+Built test-first across six modules. Review and edge-case rounds followed,
+adding 41 probes.
+
+**The read-only guarantee was wrong when first committed.** `copy_index`
+called `wal_checkpoint(TRUNCATE)` before vacuuming, and a checkpoint folds
+write-ahead pages into the main file, which changes it. The first end-to-end
+check missed this because closing the last connection checkpoints anyway, so
+the only observable case is the concurrent one the design exists for.
+Measured directly: with a second connection holding the index open, the
+checkpoint changed the file; a read-only connection running `VACUUM INTO`
+alone left it byte-identical and still captured every row through the
+uncheckpointed log. The checkpoint is gone and the connection now opens with
+`SQLITE_OPEN_READ_ONLY`, so the export is incapable of writing rather than
+merely careful not to. A test reproduces the original defect.
+
+Also applied from the review:
+- The reader's ceiling is now enforced on the bytes actually produced, not
+  only on the estimate. The estimate over-counts the uncompressed index and
+  under-counts posters, so it can pass while the real package exceeds what a
+  reader will accept.
+- The draft pointer is written beside the package. Phase 3 completes it
+  rather than recomputing `created_at`, which would produce a tag failure
+  indistinguishable from an attack.
+- `poster_key_is_valid`, added in phase 1, had no caller; it now gates every
+  key before it reaches a path.
+- Poster downloads have a timeout and a size cap.
+- `pack_dir` skips symlinks, which otherwise pulled outside files into the
+  package.
+
+Independently verified: a package decrypts under Python's `cryptography`
+using associated data rebuilt from the pointer, the manifest is the first
+member, its counts match the database, and the index inside opens as SQLite.
+That is the contract a player implements, checked across two implementations.
+
+404 tests pass, 1 ignored; clippy and rustfmt clean.

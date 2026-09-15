@@ -9,7 +9,9 @@
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
+use std::time::Duration;
+
+use anyhow::{Context, Result, bail};
 use mlib_spec::package::{PackageManifest, PosterEntry};
 use rusqlite::Connection;
 
@@ -46,9 +48,14 @@ impl Staging {
     }
 
     /// Copies the index without touching the live database.
+    ///
+    /// Deliberately no WAL checkpoint first. `push-index` checkpoints because
+    /// it is about to write anyway, but a checkpoint folds WAL pages into the
+    /// main file, which changes it. `VACUUM INTO` reads through an
+    /// uncheckpointed WAL on its own, so skipping it is both correct and the
+    /// only way this stays a read.
     pub fn copy_index(&self, conn: &Connection) -> Result<u64> {
         let dest = self.path.join(INDEX_FILE);
-        snapshot::checkpoint(conn)?;
         snapshot::copy_to(conn, &dest)?;
         restrict(&dest)?;
         Ok(std::fs::metadata(&dest)
@@ -73,6 +80,12 @@ impl Staging {
 
         let mut entries = Vec::new();
         for poster in refs {
+            // The key becomes a file name, a manifest path and a tar member
+            // name, so it is checked here rather than trusted from upstream.
+            if !mlib_spec::package::poster_key_is_valid(&poster.key) {
+                tracing::warn!(key = %poster.key, "poster key rejected");
+                continue;
+            }
             let file = format!("{}/{}.jpg", POSTER_DIR, poster.key);
             match download(http, &poster_url(&poster.path), &self.path.join(&file)).await {
                 Ok(()) => entries.push(PosterEntry {
@@ -106,12 +119,30 @@ impl Drop for Staging {
     }
 }
 
+/// A poster that will not arrive promptly is not worth stalling an export
+/// for, and a body that keeps coming is not worth buffering.
+const POSTER_TIMEOUT: Duration = Duration::from_secs(20);
+const POSTER_MAX_BYTES: u64 = 4 * 1024 * 1024;
+
 async fn download(http: &reqwest::Client, url: &str, dest: &Path) -> Result<()> {
-    let response = http.get(url).send().await.context("requesting poster")?;
+    let response = http
+        .get(url)
+        .timeout(POSTER_TIMEOUT)
+        .send()
+        .await
+        .context("requesting poster")?;
     let response = response
         .error_for_status()
         .context("poster request failed")?;
+    if let Some(len) = response.content_length()
+        && len > POSTER_MAX_BYTES
+    {
+        bail!("poster is {len} bytes, over the {POSTER_MAX_BYTES} byte limit");
+    }
     let bytes = response.bytes().await.context("reading poster body")?;
+    if bytes.len() as u64 > POSTER_MAX_BYTES {
+        bail!("poster body exceeded the {POSTER_MAX_BYTES} byte limit");
+    }
     std::fs::write(dest, &bytes).with_context(|| format!("writing {}", dest.display()))?;
     restrict(dest)
 }

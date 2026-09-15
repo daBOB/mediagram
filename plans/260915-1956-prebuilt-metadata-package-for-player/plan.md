@@ -38,7 +38,7 @@ mediagram export-package --publish
 | # | Phase | Status | Priority | Effort | Depends on |
 |---|-------|--------|----------|--------|------------|
 | 1 | [Package format and manifest](phase-01-package-format-and-manifest.md) | completed | P1 | 0.5d | - |
-| 2 | [Export, archive and encrypt](phase-02-export-archive-and-encrypt.md) | pending | P1 | 1d | 1 |
+| 2 | [Export, archive and encrypt](phase-02-export-archive-and-encrypt.md) | completed | P1 | 1d | 1 |
 | 3 | [Publish, pointer and spec](phase-03-publish-pointer-and-spec.md) | pending | P2 | 1d | 2 |
 
 ## Decisions (settled with the user)

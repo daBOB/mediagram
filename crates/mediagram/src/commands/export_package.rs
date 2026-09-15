@@ -31,8 +31,13 @@ pub async fn run(cfg: &Config, out: Option<PathBuf>, dry_run: bool) -> Result<()
     if !live.exists() {
         bail!("no library.db in {}; nothing to export", data_dir.display());
     }
-    let conn =
-        Connection::open(&live).with_context(|| format!("opening {} read-only", live.display()))?;
+    // Read-only at the SQLite level, not merely by convention: the export
+    // must be incapable of writing to the index, not just careful not to.
+    let conn = Connection::open_with_flags(
+        &live,
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_URI,
+    )
+    .with_context(|| format!("opening {} read-only", live.display()))?;
 
     let staging = Staging::create(&data_dir, "export-staging")?;
     let index_bytes = staging.copy_index(&conn)?;
@@ -86,12 +91,30 @@ pub async fn run(cfg: &Config, out: Option<PathBuf>, dry_run: bool) -> Result<()
     )
     .context("encrypting the package")?;
 
+    // The estimate decided whether to start; this decides whether to ship.
+    // A reader refuses a pointer over this limit, so producing one would mean
+    // publishing a package nothing can open.
+    let sealed_len = sealed.len() as u64;
+    if sealed_len > mlib_spec::package::MAX_PACKAGE_BYTES {
+        bail!(
+            "package is {sealed_len} bytes, over the {} byte limit a reader enforces; \
+             trim artwork or split the library",
+            mlib_spec::package::MAX_PACKAGE_BYTES
+        );
+    }
+
     let dest_dir = out.unwrap_or_else(|| data_dir.join("export"));
     let written = write_package(&dest_dir, created_at, &sealed)?;
+    // Written beside the package because these are the exact fields the
+    // cipher authenticated. Phase 3 completes this pointer; recomputing
+    // `created_at` there would produce a package every reader rejects with a
+    // tag failure that looks like an attack.
+    let draft_path = written.with_extension("pointer.json");
+    std::fs::write(&draft_path, serde_json::to_vec(&pointer)?)
+        .with_context(|| format!("writing {}", draft_path.display()))?;
     println!(
-        "wrote {} ({} bytes, {} poster(s))",
+        "wrote {} ({sealed_len} bytes, {} poster(s))",
         written.display(),
-        sealed.len(),
         manifest.posters.len()
     );
     Ok(())

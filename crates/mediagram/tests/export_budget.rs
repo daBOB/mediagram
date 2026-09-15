@@ -10,8 +10,15 @@ fn an_estimate_counts_the_index_and_every_poster() {
     let with_ten = estimate_bytes(1_000_000, 10);
     assert_eq!(with_none, 1_000_000);
     assert!(with_ten > with_none);
-    // Ten posters at the assumed size, not some rounding artefact.
-    assert_eq!(with_ten - with_none, 10 * (with_ten - with_none) / 10);
+    // Ten posters cost ten times one poster, and a poster is a plausible
+    // size. The previous form of this assertion was a tautology that held
+    // for any implementation.
+    let one = estimate_bytes(0, 1);
+    assert_eq!(with_ten - with_none, one * 10);
+    assert!(
+        (8 * 1024..=128 * 1024).contains(&one),
+        "poster estimate {one}"
+    );
 }
 
 #[test]

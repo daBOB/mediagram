@@ -68,3 +68,38 @@ fn the_push_path_still_records_a_push_time() {
         .unwrap();
     assert!(pushed.parse::<i64>().unwrap() > 0);
 }
+
+/// The defect this file exists to prevent, exercised through the path the
+/// command actually uses. A WAL is present and uncheckpointed, as it is
+/// whenever another process holds the index open, which is the only case
+/// where the difference is observable.
+#[test]
+fn staging_copies_the_index_without_writing_to_it_even_with_a_live_wal() {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = db::open(dir.path()).unwrap();
+    conn.execute(
+        "INSERT INTO meta(key, value) VALUES('probe', 'x')
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        [],
+    )
+    .unwrap();
+    // A second connection keeps the WAL from being folded away on close.
+    let live = dir.path().join("library.db");
+    let holder = rusqlite::Connection::open(&live).unwrap();
+    holder
+        .query_row("SELECT COUNT(*) FROM sets", [], |r| r.get::<_, i64>(0))
+        .unwrap();
+
+    let before = digest_of(&live);
+
+    let staging = mediagram::export::stage::Staging::create(dir.path(), "export-staging").unwrap();
+    let reader = rusqlite::Connection::open(&live).unwrap();
+    let bytes = staging.copy_index(&reader).unwrap();
+
+    assert!(bytes > 0);
+    assert_eq!(
+        digest_of(&live),
+        before,
+        "copying the index for an export must not write to it"
+    );
+}
