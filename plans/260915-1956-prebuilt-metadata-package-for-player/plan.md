@@ -2,6 +2,7 @@
 title: "Prebuilt metadata package for the player"
 status: pending
 created: 2026-09-15
+revised: 2026-09-15
 source: user request 2026-09-15 ("uploader prepares a prebuilt metadata package, publishes it to a simple URL")
 relatedSpec: docs/superpowers/specs/2026-09-15-tutorial-course-support-design.md
 blockedBy: []
@@ -11,26 +12,25 @@ blocks: []
 # Prebuilt metadata package for the player
 
 The uploader exports one encrypted archive holding the library index plus
-artwork, and publishes it to a static HTTPS URL. A player fetches a small
+posters, and publishes it to a static HTTPS URL. A player fetches a small
 plaintext pointer, downloads the archive, decrypts it, and has a complete
-browsable catalog without scanning the channel, without a TMDB key, and
-without fetching a single image at runtime.
+browsable catalog without scanning the channel and without a TMDB key.
 
 ```
 mediagram export-package --publish
         |
-        +-- snapshot library.db        (VACUUM INTO, as push-index does)
-        +-- collect art/               (TMDB images + captured frames)
-        +-- manifest.json              (counts, schema, spec, per-item art map)
+        +-- snapshot library.db       (read-only copy, no writes to the index)
+        +-- posters from the TMDB cache already on disk
+        +-- manifest.json
         |
-        +-> tar.gz -> AES-256-GCM -> prebuilt_mediagram_db_20260616.tar.gz.enc
-        +-> latest.json                (plaintext pointer: file, size, sha256)
+        +-> tar.gz -> AES-256-GCM (pointer fields as associated data)
+        +-> latest.json
         |
-        +-- publish_cmd runs for each file
+        +-- publish_cmd runs per file, argv only, exit code checked
                 |
                 v
         https://example.com/latest.json
-        https://example.com/prebuilt_mediagram_db_20260616.tar.gz.enc
+        https://example.com/prebuilt_mediagram_db_20260616-3d7e10c4.tar.gz.enc
 ```
 
 ## Phases
@@ -38,116 +38,135 @@ mediagram export-package --publish
 | # | Phase | Status | Priority | Effort | Depends on |
 |---|-------|--------|----------|--------|------------|
 | 1 | [Package format and manifest](phase-01-package-format-and-manifest.md) | pending | P1 | 0.5d | - |
-| 2 | [Artwork capture at add time](phase-02-artwork-capture-at-add-time.md) | pending | P1 | 1d | - |
-| 3 | [Export assembly](phase-03-export-assembly.md) | pending | P1 | 1d | 1,2 |
-| 4 | [Encryption and archive](phase-04-encryption-and-archive.md) | pending | P1 | 1d | 1 |
-| 5 | [Publish and latest pointer](phase-05-publish-and-latest-pointer.md) | pending | P2 | 0.5d | 3,4 |
-| 6 | [Docs and player integration notes](phase-06-docs-and-player-integration.md) | pending | P2 | 0.5d | 5 |
+| 2 | [Export, archive and encrypt](phase-02-export-archive-and-encrypt.md) | pending | P1 | 1d | 1 |
+| 3 | [Publish, pointer and spec](phase-03-publish-pointer-and-spec.md) | pending | P2 | 1d | 2 |
 
-Phases 1 and 2 are independent and can run in parallel. Phase 4 needs only
-phase 1, so it can start while phase 2 is still running.
+## Decisions (settled with the user)
 
-## Decisions (settled with the user, 2026-09-15)
+- **Contents**: index snapshot plus posters, so the player needs no TMDB key.
+- **Publishing**: mediagram writes the files and runs a configured command
+  per file. No storage API, no storage credentials in mediagram.
+- **Protection**: the archive is encrypted. It carries the private channel
+  id and every message id, so a leaked URL must yield ciphertext only.
+- **Artwork source**: TMDB only, read at export time from the responses
+  already cached on disk. Nothing in the upload path changes. Content with
+  no TMDB id simply has no poster.
+- **Scope**: the URL package is kept, but everything the red team proved
+  unnecessary or broken is cut (see below).
+- **The Telegram pinned index stays.** It remains the recovery copy; this
+  package is an additional, player-facing convenience.
 
-- **Contents**: index snapshot plus artwork, so the player needs no TMDB
-  key and fetches no images at runtime.
-- **Publishing**: mediagram writes the files, then runs a configured
-  command (`publish_cmd`) per file. rclone, scp, rsync and aws-cli all work
-  without mediagram learning any storage API or holding storage credentials.
-- **Protection**: the archive is encrypted. The package contains the private
-  channel id and every message id, so a leaked URL must yield ciphertext
-  only. Hosting stays a dumb static file server.
-- **Discovery**: a fixed plaintext `latest.json` names the newest archive,
-  its size and its sha256. The dated filename stays, so old packages remain
-  fetchable and a player can pin one.
-- **The Telegram pinned index stays.** It is the disaster-recovery copy and
-  is unaffected; this package is an additional, player-facing convenience.
+## Cut after the red team review
 
-## Constraints discovered in the codebase
+| Cut | Why |
+|---|---|
+| Artwork capture during `add` | Would have read a file `run_set` already deleted, and `resume` never got a hook, so interrupted uploads silently lost art forever |
+| `sets.art_key` column and its migration | `MIGRATIONS` is a flat list replayed on every open, guarded by a test asserting `IF NOT EXISTS`; an `ALTER TABLE` there breaks every command on an existing database. The value is derivable in one SQL expression anyway |
+| Deterministic tar and its test | Unachievable: `snapshot_to` writes `last_push_at` before vacuuming, so the payload differs every run. No consumer ever sees the inner archive |
+| Per-file sha256 in the manifest | The GCM tag already covers every byte; a corrupt member cannot reach a reader |
+| `gen-key` subcommand | Config loads and validates before dispatch, so the command meant to fill an empty config required a valid one. A documented one-liner replaces it |
+| `image` crate | TMDB serves pre-sized images, so nothing needs decoding or resizing. The crate also requires Rust 1.88 against this workspace's declared 1.87 |
+| Same-day filename counter | Its only input was local state, so a cleaned output directory silently overwrote a published archive. The ciphertext hash prefix names files instead |
+| Backdrops | Most of the package size for the least benefit; posters alone keep the package small |
 
-- `index::snapshot::{checkpoint, snapshot_to}` already produce a safe
-  point-in-time copy of `library.db`; the export reuses them rather than
-  inventing a second snapshot path.
-- **Source files are gone by export time.** `add` records the source path in
-  `meta` under `source:{set_id}` and deletes it when the set completes
-  (`upload/pipeline.rs`, `commands/add.rs`), so artwork that must come from
-  the video itself has to be captured during `add`, not during export. This
-  is why artwork capture is its own phase and precedes assembly.
-- The TMDB layer is a `TmdbApi` trait behind `DiskCachedApi`, so the export
-  reuses the cache for image lookups. TMDB responses are currently parsed
-  into a minimal struct with no `poster_path`/`backdrop_path`; phase 2 adds
-  those fields.
-- `mlib_spec::schema::SCHEMA_VERSION` and `mlib_spec::SPEC_VERSION` identify
-  what a package contains; both go in the manifest and in `latest.json`.
+## Defects fixed in the revised phases
+
+| Defect | Fix | Phase |
+|---|---|---|
+| Export mutated the live index, even in `--dry-run` | A snapshot variant that writes nothing, opened without the migration-running helper | 2 |
+| Rollback guard trusted a value the attacker writes | The pointer's identifying fields are the AEAD associated data, so a replayed archive fails its tag | 1, 2 |
+| Shell publish reported success for failed uploads | Argv only, no shell, exit code checked, child environment scrubbed of `MEDIAGRAM_*` | 3 |
+| Size ceiling fired after all the work | Estimated before any download, from the poster list | 2 |
+| `tmdb-{id}` collided across TMDB's movie and TV id spaces | Keys carry the kind: `tmdb-movie-{id}`, `tmdb-tv-{id}` | 1 |
+| Art filenames derived from an unvalidated `set_id` | Keys are validated against a strict charset before touching a path | 1 |
+| Crate APIs specified against versions that do not compile | Nonce and key bytes come from `getrandom`; no `rand` dependency | 2 |
+
+## Pre-existing bug found during review, not caused by this plan
+
+`caption_codec::parse` is a bare `serde_json::from_str` with no field
+validation (`crates/mlib-spec/src/caption_codec.rs:75-89`), and `rescan`
+writes `caption.set` straight into `sets.set_id`
+(`crates/mediagram/src/index/set_row.rs:47`). Any message in the channel can
+therefore set an arbitrary `set_id`, including one containing path
+separators. Nothing in the shipped code writes that value to a path today,
+so it is latent rather than exploitable, but this package would have made it
+reachable. Phase 1 validates keys defensively; the parser itself should be
+fixed separately, in the crate that owns it.
 
 ## Verified dependencies
 
-Checked against crates.io on 2026-09-15. The research report
-(`plans/reports/researcher-260915-1956-prebuilt-metadata-package-crypto-and-packaging-report.md`)
-cites `aes-gcm` 0.10.3 and `flate2` 1.0.31; both are outdated and the
-`aes-gcm` 0.11 API differs from its 0.10 snippets.
+Checked against crates.io on 2026-09-15.
 
 | Crate | Version | Use |
 |---|---|---|
 | `aes-gcm` | 0.11.1 | AES-256-GCM |
 | `tar` | 0.4.46 | archive writer |
 | `flate2` | 1.1.10 | gzip |
-| `image` | 0.25.10 | poster downscaling |
 | `base64` | 0.23.1 | key in config |
-| `rand` | 0.10.2 | `OsRng` |
+| `getrandom` | latest 0.3.x | nonce and key bytes |
 
-## Key dependencies
-
-- A static HTTPS host (any object store or web server) and whatever CLI
-  tool publishes to it.
-- A 32-byte package key shared between the uploader config and the player.
-- TMDB key for artwork of movies and episodes; tutorials use captured
-  frames instead.
+`image` and `rand` are not needed. The research report
+(`plans/reports/researcher-260915-1956-prebuilt-metadata-package-crypto-and-packaging-report.md`)
+cites `aes-gcm` 0.10.3 and `flate2` 1.0.31; both are outdated and its 0.10
+snippets do not match the 0.11 API.
 
 ## Size ceiling
 
-A reader verifies the GCM tag over the whole file, holding ciphertext and
-plaintext at once, so a package costs roughly twice its size in transient
-heap on the player. The export refuses to exceed 64 MB and warns above
-48 MB. The measured estimate for a 300-title library with posters and
-backdrops is about 35 MB, so the ceiling is generous without risking an
-out-of-memory failure on a television.
+A reader verifies the GCM tag over the whole file, so a package costs
+roughly twice its size in transient heap, and more on Android where the
+cipher buffers internally. Posters only, at TMDB's w342 size, put a
+300-title library near 8 MB. The export warns above 24 MB and refuses above
+48 MB, checked before anything is downloaded.
 
 ## Success (whole plan)
 
-- `mediagram export-package` on a library with movies, episodes and
-  tutorials produces an archive and a `latest.json` whose sha256 matches the
-  archive on disk.
-- Decrypting and unpacking the archive by hand yields a `library.db` that
-  opens in `sqlite3`, an `art/` directory, and a `manifest.json` whose
-  counts match the database.
-- Running the export twice with no library changes produces a byte-identical
-  inner `tar.gz`. The encrypted file differs every run because the nonce is
-  fresh, which is required; see phase 4 for which hash covers what.
-- A wrong key fails loudly on decrypt rather than producing garbage.
-- `--dry-run` reports what would be written and published, touching neither
-  the network nor the publish command.
+- `export-package` produces an archive and a `latest.json` whose sha256 and
+  byte count match the archive on disk.
+- Decrypting by hand with the documented command yields a `library.db` that
+  opens in `sqlite3`, a `posters/` directory, and a manifest whose counts
+  match the database.
+- The live `library.db` is byte-identical before and after an export,
+  including with `--dry-run`.
+- A wrong key, a flipped bit, or a pointer whose fields were edited all fail
+  loudly instead of yielding partial data.
+- A publish command that fails makes the run fail, and no pointer is
+  published for an archive that is not there.
 - `cargo test` green; every file under `src/` within the 200-line rule.
 
-## Cross-plan relationship
+## Red Team Review
 
-The tutorial/course design
-(`docs/superpowers/specs/2026-09-15-tutorial-course-support-design.md`) is
-approved but has no implementation plan yet. Relationship is soft, in one
-direction only:
+### Session — 2026-09-15
+**Findings:** 38 raised across 4 reviewers (security adversary, failure mode
+analyst, assumption destroyer, scope and complexity critic), deduplicated to
+16 distinct issues.
+**Severity breakdown:** 6 Critical, 6 High, 4 Medium after deduplication.
+**Disposition:** 14 accepted, 2 surfaced to the user as decisions.
 
-- The export copies `library.db` wholesale, so it carries new columns
-  automatically and needs no change when the tutorial schema lands.
-- Artwork keyed by collection id (`cid`) and frame capture for lessons only
-  become reachable once `add-course` exists. Phase 2 therefore treats art
-  sources as pluggable and degrades to "no art for this set" rather than
-  failing, so the two efforts can land in either order.
-- **Both efforts add a schema migration**: the tutorial work adds
-  `sets.chap`, phase 2 here adds `sets.art_key`. Whichever lands second
-  takes the next version number and appends its own migration group; they
-  do not conflict, but the second one to land must not reuse the first
-  one's number.
+| # | Finding | Severity | Disposition | Applied to |
+|---|---------|----------|-------------|------------|
+| 1 | Package duplicates the pinned index | Critical | User decision: keep the URL package | plan.md |
+| 2 | `art_key` migration breaks every command | Critical | Accept, cut the column | cut |
+| 3 | Art capture reads a deleted file; `resume` uncovered | Critical | Accept, cut capture | cut |
+| 4 | Shell publish reports false success | Critical | Accept, argv only | 3 |
+| 5 | `set_id` from captions reaches a path | Critical | Accept, validate keys | 1 |
+| 6 | Rollback guard trusts attacker-written data | Critical | Accept, bind via AAD | 1, 2 |
+| 7 | Export mutates the live index | High | Accept, read-only snapshot | 2 |
+| 8 | Determinism criterion unachievable | High | Accept, criterion removed | cut |
+| 9 | Cross-plan schema version collision | High | Accept, no migration needed now | cut |
+| 10 | Size ceiling fires after the work, heap model optimistic | High | Accept, estimate first, lower ceiling | 2 |
+| 11 | `tmdb-{id}` collides across movie and TV | High | Accept, key carries kind | 1 |
+| 12 | TMDB cache miss on a different query string | High | Accept, reuse the exact cached path | 2 |
+| 13 | Per-file sha256 redundant under AEAD | Medium | Accept, cut | cut |
+| 14 | `gen-key` cannot run without a config | Medium | Accept, cut | cut |
+| 15 | `image` crate breaks MSRV 1.87 | Medium | Accept, dependency removed | cut |
+| 16 | Example `schema`/`spec` values wrong | Medium | Accept, examples marked illustrative | 1 |
+
+Reports: `reports/` in this directory.
 
 ## Open questions
 
-Resolved in phase files where they belong. Nothing blocking at plan level.
+1. Should `latest.json` be signed? The AEAD binding makes a replayed archive
+   fail, so signing now only protects against denial and metadata edits an
+   attacker gains nothing from. Deferred unless a second reader appears.
+2. Key rotation is manual: re-export, update the player. No versioning
+   scheme until there is more than one reader.
