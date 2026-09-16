@@ -1,13 +1,13 @@
 ---
-phase: 4
+phase: 6
 title: "Transcoding to HLS"
 status: pending
 priority: P2
 effort: "2d"
-dependencies: [2, 3]
+dependencies: [4, 5]
 ---
 
-# Phase 4: Transcoding to HLS
+# Phase 6: Transcoding to HLS
 
 ## Overview
 Play what browsers refuse. ffmpeg reads from the Range server, transcodes to
@@ -20,7 +20,8 @@ from phase 1 rather than of ffmpeg:
 
 1. **`Content-Length` must be present on the initial response.** ffmpeg cannot
    seek an HTTP source without it, and without seeking it either fails or
-   buffers from byte zero. Phase 1's server must always send it.
+   buffers from byte zero. Phase 2's routes must always send it, as phase 1's
+   do.
 2. **Keyframes must align with segment boundaries**, or seeking within a
    transcode lands mid-segment and stalls.
 
@@ -54,7 +55,7 @@ that would have gone straight into the code:
 browser ──/hls/:session/index.m3u8──> Bun ──spawns──> ffmpeg
                                         │                │ reads Range
                                         │                ▼
-                                        │        mediagram serve
+                                        │        Bun's own /api/sets/:id/stream
                                         └── serves segments from <work>/:session/
 ```
 
@@ -63,7 +64,7 @@ Baseline command, with the corrections applied:
 ```
 ffmpeg -hwaccel cuda
        -ss <seek-seconds>            # before -i: fast, keyframe-approximate
-       -i http://127.0.0.1:<port>/sets/<id>/stream
+       -i http://127.0.0.1:<port>/api/sets/<id>/stream
        -c:v h264_nvenc -rc vbr -cq 26 -maxrate 8M -bufsize 16M
        -g 48 -force_key_frames "expr:gte(t,n_forced*2)"
        -c:a aac -b:a 160k -ac 2
@@ -122,8 +123,8 @@ wrong on stereo speakers.
 - **Seek restarts feel slow.** Each seek outside the buffer restarts encoding.
   Acceptable for one viewer; revisit only if it grates.
 - **Transcoding masks Range bugs.** ffmpeg is tolerant and may paper over a
-  server that mishandles ranges. Phase 1's correctness tests stay the source
-  of truth, and must keep passing without ffmpeg in the picture.
+  server that mishandles ranges. The phase 1 and 2 correctness tests stay the
+  source of truth, and must keep passing without ffmpeg in the picture.
 - **Disk churn from segments.** Segments accumulate per session. Clean the
   work directory on session end, and on startup for sessions that died.
 

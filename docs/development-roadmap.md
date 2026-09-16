@@ -75,16 +75,27 @@ on export because a reader must hold it whole to verify it.
 A web player comes first, decided 2026-09-16. Design:
 `plans/reports/brainstorm-to-planner-260916-1936-web-player-bun-stack-report.md`.
 
-Shape: `mediagram serve` exposes HTTP Range over a set's concatenated parts,
-reusing the verified Rust Telegram code; a Bun app serves the UI and never
-speaks MTProto; ffmpeg transcodes what browsers cannot play. Browsers refuse
-AC3/E-AC3 and Matroska and are patchy on HEVC, so the films need transcoding,
-and a 25 Mbit/s uplink means remote viewing needs it for bitrate too.
+Shape, revised 2026-09-16 once the player was required to run anywhere rather
+than beside the uploader: the Bun app speaks MTProto itself through
+`teleproto` (the maintained fork of the archived GramJS), takes its catalog
+from the published encrypted package, and serves HTTP Range over a set's
+concatenated parts. ffmpeg transcodes what browsers cannot play. Browsers
+refuse AC3/E-AC3 and Matroska and are patchy on HEVC, so the films need
+transcoding, and a 25 Mbit/s uplink means remote viewing needs it for bitrate
+too.
 
-Phase 1 of `plans/260916-1936-web-player-bun-stack/` is complete: `mediagram
-serve` answers Range requests over a set's concatenated parts, verified live
-against the channel byte-for-byte against the local source file. Phase 2, the
-browser UI, is next; browser playback itself is first exercised there.
+`mediagram serve` (Rust, phase 1, complete) is kept as the reference the
+TypeScript port is checked against byte for byte. Verified before committing
+to the reversal: `teleproto` on Bun 1.4.2 read five byte ranges of the live
+7 GB film identically to the local source file, seeking in 46-152 ms, using a
+session string exported from the uploader's own auth key — so the player needs
+no second Telegram login.
+
+Phase 1 is complete: `mediagram serve` answers Range requests over a set's
+concatenated parts, verified live byte-for-byte against the local source file.
+Phase 2 is the same thing in TypeScript over `teleproto`, and phase 3 is the
+package reader that gives an off-host player its catalog — the half of
+`mlib-package-v1` that has been published since 2026-09-15 and never read.
 
 Android is not cancelled, only no longer first. The UniFFI notes below still
 apply when that round starts.

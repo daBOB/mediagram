@@ -1,23 +1,28 @@
 ---
-phase: 3
+phase: 5
 title: "Disk cache"
 status: pending
 priority: P1
 effort: "1d"
-dependencies: [1]
+dependencies: [2]
 ---
 
-# Phase 3: Disk cache
+# Phase 5: Disk cache
 
 ## Overview
-Cache fetched byte ranges on the homelab disk so seeking and re-watching do
-not refetch from Telegram.
+Cache fetched byte ranges on disk so seeking and re-watching do not refetch
+from Telegram. Wherever the player runs, this is the difference between a
+scrub bar that costs bandwidth and one that does not.
 
 ## Key insight
-Downloads arrive in fixed 512 KiB chunks at a known offset, so the natural
+Downloads arrive as whole aligned chunks at a known offset, so the natural
 cache unit is the chunk, not the request. Chunk-aligned caching makes any
 Range request a mix of hits and misses with no partial-overlap arithmetic,
 and it matches what the transport already does.
+
+The unit is the request size phase 2 settled on, not 512 KiB: teleproto's
+legal sizes are 4 KiB multiples that divide 1 MiB. Pick one size, record it
+in the cache path, and a file name stays derivable from a byte offset.
 
 ## Requirements
 - Functional: a chunk present on disk is served without a Telegram call; a
@@ -27,21 +32,22 @@ and it matches what the transport already does.
 
 ## Architecture
 ```
-<cache_dir>/<set_id>/<part_idx>/<chunk_index>
+<cache_dir>/<chunk_bytes>/<set_id>/<part_idx>/<chunk_index>
 ```
 
-Chunk index is `offset / 512 KiB`, so a file name is derivable from a byte
-offset with no index. Eviction is least-recently-used by access time, run when
+Chunk index is `offset / chunk_bytes`, so a file name is derivable from a
+byte offset with no index. The size sits in the path so changing it retires
+the old entries instead of misreading them. Eviction is least-recently-used by access time, run when
 the total exceeds the budget.
 
 Size comes from the file itself: a chunk file of the wrong length is a
 truncated write and is refetched rather than served.
 
 ## Related Code Files
-- Create: `crates/mediagram/src/serve/cache.rs`
-- Modify: `crates/mediagram/src/serve/stream.rs` (consult the cache first),
-  `crates/mediagram/src/config.rs` (`cache_dir`, `cache_max_bytes`),
-  `config.example.toml`
+- Create: `web/src/cache/store.ts` (read, write, evict),
+  `web/src/cache/key.ts` (pure: offset to path)
+- Modify: `web/src/telegram/download.ts` (consult the cache first),
+  `web/src/config.ts` (`cacheDir`, `cacheMaxBytes`)
 
 ## Implementation Steps
 1. Chunk path derivation, pure and tested.

@@ -1,34 +1,38 @@
 ---
-phase: 5
+phase: 7
 title: "Remote access, auth and TLS"
 status: pending
 priority: P2
 effort: "0.5d"
-dependencies: [2]
+dependencies: [4]
 ---
 
-# Phase 5: Remote access, auth and TLS
+# Phase 7: Remote access, auth and TLS
 
 ## Overview
-Make the player reachable from outside the house without writing an auth
-system.
+Put authentication and TLS in front of the player, without writing an auth
+system. Where the player runs — at home behind a tunnel, or on a host of its
+own — changes the topology but not this phase's answer.
 
 ## Key insight
 Authentication and TLS are solved problems with mature implementations, and a
 hand-rolled login on a media server is a liability with no upside. A tunnel or
-reverse proxy in front means the app itself keeps no credentials, and the Rust
-service never has to leave localhost.
+reverse proxy in front means the app itself keeps no credentials.
+
+This matters more than when it was planned: the player holds the account's
+MTProto auth key, so an unauthenticated player is not merely a leaked
+library.
 
 ## Requirements
 - Functional: the player is reachable over the internet, behind
   authentication, over TLS.
 - Non-functional: nothing is exposed unauthenticated, not even briefly during
-  setup; the Rust service stays bound to localhost.
+  setup; the player binds to loopback and is reached only through the proxy.
 
 ## Architecture
 ```
 internet ──TLS──> Cloudflare Tunnel or Caddy ──auth──> Bun (127.0.0.1)
-                                                        └──> mediagram serve (127.0.0.1)
+                                                        └──> Telegram
 ```
 
 Two options, both fine:
@@ -52,20 +56,20 @@ question entirely. Worth deciding deliberately rather than by default.
   `README.md`
 
 ## Implementation Steps
-1. Bind Bun to 127.0.0.1 and confirm the Rust service is already localhost.
+1. Bind Bun to 127.0.0.1.
 2. Put the chosen proxy in front; verify with the app stopped that nothing
    answers on the public name.
 3. Range requests must survive the proxy: verify a seek still produces a 206
    end to end from outside.
-4. Cap transcode bitrate under the uplink (phase 4 supplies the knob); direct
-   play remains LAN-only, because 13.9 Mbit/s against a 25 Mbit/s uplink with
-   no headroom will stall.
+4. Cap transcode bitrate under the uplink (phase 6 supplies the knob). Direct
+   play of a 13.9 Mbit/s film only works where the link carries it: on the LAN,
+   or from a host whose egress is not the house's 25 Mbit/s uplink.
 5. Document the setup, including how to revoke access.
 
 ## Success Criteria
 - [ ] The public name serves nothing without authentication
 - [ ] A seek from outside produces a 206, not a full refetch
-- [ ] The Rust service is not reachable from outside at all
+- [ ] The player is reachable only through the proxy, never directly
 - [ ] Playback from outside stays within the uplink and does not stall
 - [ ] The operating document is enough to rebuild this from scratch
 
