@@ -79,7 +79,16 @@ console.error("\nLogging in. This creates a session separate from the uploader's
 
 await client.start({
   phoneNumber: askPhone,
-  phoneCode: () => ask("login code: "),
+  phoneCode: () => {
+    // Telegram delivers the code in-app whenever the account has another
+    // active session, which it does if the uploader has ever logged in. People
+    // wait for an SMS that is never coming.
+    stderr.write(
+      '\n  The code arrives in Telegram itself, in the "Telegram" service chat,\n' +
+        "  not by SMS, whenever this account is signed in somewhere else.\n",
+    );
+    return ask("login code: ");
+  },
   password: () => askHidden("2FA password (hidden): "),
   onError: async (error) => {
     console.error(`login failed: ${error.message}`);
