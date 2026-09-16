@@ -18,6 +18,7 @@ const main = document.getElementById("main");
 const dialog = document.getElementById("player");
 const video = document.getElementById("video");
 const note = document.getElementById("note");
+const summaryBox = document.getElementById("summary");
 const now = document.getElementById("now");
 
 /** @type {{movies: any[], series: any[], tutorials: any[]}} */
@@ -44,8 +45,39 @@ function playerNoteFor(set) {
     : `Your browser cannot decode this (${decision.reason}). It will not start until transcoding exists.`;
 }
 
+/** Attaches whatever subtitle tracks the catalog said this set has. */
+function attachSubtitles(set) {
+  for (const existing of [...video.querySelectorAll("track")]) existing.remove();
+  for (const [index, lang] of (set.subtitles ?? []).entries()) {
+    const track = document.createElement("track");
+    track.kind = "subtitles";
+    track.srclang = lang;
+    track.label = lang;
+    track.src = `/api/sets/${encodeURIComponent(set.setId)}/subtitles/${lang}.vtt`;
+    if (index === 0) track.default = true;
+    video.append(track);
+  }
+}
+
+/** Fetched on open rather than carried in the catalog, which would be large. */
+async function showSummary(set) {
+  summaryBox.hidden = true;
+  summaryBox.textContent = "";
+  if (!set.hasSummary) return;
+  try {
+    const response = await fetch(`/api/sets/${encodeURIComponent(set.setId)}/summary`);
+    if (!response.ok) return;
+    summaryBox.textContent = await response.text();
+    summaryBox.hidden = false;
+  } catch {
+    /* A missing summary is not worth interrupting playback for. */
+  }
+}
+
 function play(set) {
   video.src = `/api/sets/${encodeURIComponent(set.setId)}/stream`;
+  attachSubtitles(set);
+  void showSummary(set);
   now.textContent = [set.show, episodeLabel(set), set.title].filter(Boolean).join(" · ");
   const warning = playerNoteFor(set);
   note.textContent = warning ?? "";
@@ -61,7 +93,9 @@ dialog.addEventListener("close", () => {
   // Drop the connection so the server stops pulling bytes from Telegram.
   video.pause();
   video.removeAttribute("src");
+  for (const track of [...video.querySelectorAll("track")]) track.remove();
   video.load();
+  summaryBox.hidden = true;
 });
 
 /** A card for a film, a show or a course. */
@@ -191,6 +225,7 @@ function viewCollection(section, name) {
 
       const badge = transcodeBadge(set);
       if (badge) row.append(badge);
+      if (set.hasSummary) row.append(el("span", "has-summary", "notes"));
 
       row.append(
         el("div", "meta", [humanDuration(set.duration), humanSize(set.total)].filter(Boolean).join(" · ")),

@@ -234,6 +234,14 @@ CREATE TABLE IF NOT EXISTS parts(
 );
 CREATE INDEX IF NOT EXISTS parts_message ON parts(chat_id, message_id);
 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
+
+CREATE TABLE IF NOT EXISTS assets(
+    set_id TEXT NOT NULL REFERENCES sets(set_id) ON DELETE CASCADE,
+    kind TEXT NOT NULL,          -- 'subtitle' | 'summary'
+    lang TEXT NOT NULL DEFAULT '', -- '' when not language-specific
+    body TEXT NOT NULL,
+    PRIMARY KEY(set_id, kind, lang)
+);
 ```
 
 `episode` stores the JSON encoding of the caption's `e` field (a bare

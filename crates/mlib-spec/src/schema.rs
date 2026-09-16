@@ -1,7 +1,7 @@
 //! SQLite DDL for `library.db`. The uploader keeps this file locally as the
 //! canonical index and pushes a snapshot to the channel as a pinned document.
 
-pub const SCHEMA_VERSION: i64 = 3;
+pub const SCHEMA_VERSION: i64 = 4;
 
 /// Statements grouped by the version they produce: `GROUPS[0]` takes a
 /// database from nothing to version 1, `GROUPS[1]` from 1 to 2, and so on.
@@ -10,7 +10,7 @@ pub const SCHEMA_VERSION: i64 = 3;
 /// what lets a migration do something other than `CREATE ... IF NOT EXISTS`.
 /// SQLite has no `ADD COLUMN IF NOT EXISTS`, so an idempotent-by-wording list
 /// could never gain a column.
-pub const GROUPS: &[&[&str]] = &[V1, V2, V3];
+pub const GROUPS: &[&[&str]] = &[V1, V2, V3, V4];
 
 /// Every statement needed to reach `version` from an empty database. Used by
 /// tests and by anyone reconstructing an older layout.
@@ -67,6 +67,23 @@ const V2: &[&str] = &["ALTER TABLE sets ADD COLUMN chap TEXT"];
 /// and the player rebuilds the tree by splitting it.
 const V3: &[&str] = &["ALTER TABLE sets ADD COLUMN path TEXT"];
 
+/// v3 → v4: text that belongs to a set.
+///
+/// Subtitles and an optional summary live here rather than as their own
+/// channel messages. A whole course's subtitles are about 2 MB, which rides
+/// the published package unnoticed, and a player can then show a summary or
+/// attach a subtitle track without a Telegram round trip.
+///
+/// `lang` is `''` for anything not language-specific, never NULL: SQLite
+/// treats NULLs in a primary key as distinct, which would let duplicates in.
+const V4: &[&str] = &["CREATE TABLE IF NOT EXISTS assets(
+        set_id TEXT NOT NULL REFERENCES sets(set_id) ON DELETE CASCADE,
+        kind TEXT NOT NULL,
+        lang TEXT NOT NULL DEFAULT '',
+        body TEXT NOT NULL,
+        PRIMARY KEY(set_id, kind, lang)
+    )"];
+
 /// Playable invariant, as SQL usable in a WHERE clause on `sets s`.
 pub const PLAYABLE_SQL: &str = "s.status = 'complete'
     AND s.part_count = (SELECT COUNT(*) FROM parts p WHERE p.set_id = s.set_id AND p.status = 'done')
@@ -96,8 +113,10 @@ mod tests {
             super::migrations_up_to(2).len(),
             super::GROUPS[0].len() + super::GROUPS[1].len()
         );
+        // Every group, whatever the current version, so this keeps holding
+        // as versions are added.
         assert_eq!(
-            super::migrations_up_to(3).len(),
+            super::migrations_up_to(super::SCHEMA_VERSION).len(),
             super::GROUPS.iter().map(|g| g.len()).sum::<usize>()
         );
     }

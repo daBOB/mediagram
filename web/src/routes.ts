@@ -19,6 +19,7 @@
 import type { Database } from "bun:sqlite";
 import { readFileSync } from "node:fs";
 import { join, normalize } from "node:path";
+import { subtitle, subtitleLanguages, summary } from "./assets";
 import { listPlayable, partLocations, playableSet, type PartLocation } from "./catalog";
 import { planReads, totalSize, type PartSpan, type Step } from "./range";
 import { contentType, planResponse } from "./response";
@@ -43,6 +44,10 @@ export interface PlayerResponse {
 }
 
 const STREAM_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/stream$/;
+const SUMMARY_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/summary$/;
+// The language is spelled out rather than captured loosely: it ends up in no
+// path, but a route that accepts `../` invites someone to make it one.
+const SUBTITLE_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/subtitles\/([A-Za-z]{2,8})\.vtt$/;
 
 /** The page and its script, served from `web/public`. */
 const PUBLIC_DIR = new URL("../public/", import.meta.url).pathname;
@@ -75,6 +80,19 @@ function staticFile(urlPath: string): { body: Uint8Array; type: string } | null 
   }
 }
 
+/** A text response, with its length stated as every response states one. */
+function text(body: string, contentType: string): PlayerResponse {
+  const bytes = new TextEncoder().encode(body);
+  return {
+    status: 200,
+    headers: {
+      "content-type": contentType,
+      "content-length": String(bytes.byteLength),
+    },
+    body: bytes,
+  };
+}
+
 /**
  * A response with the status and nothing else. `Content-Length: 0` is stated
  * rather than left to the runtime, because every response carrying one is the
@@ -90,7 +108,14 @@ export function createRouter(db: Database, source: ByteSource) {
     if (!readOnlyMethod) return empty(405);
 
     if (request.path === "/api/sets") {
-      const body = new TextEncoder().encode(JSON.stringify(listPlayable(db)));
+      // What a set has, so the page can offer a summary or a subtitle track
+      // without asking per title.
+      const sets = listPlayable(db).map((set) => ({
+        ...set,
+        hasSummary: summary(db, set.setId) !== null,
+        subtitles: subtitleLanguages(db, set.setId),
+      }));
+      const body = new TextEncoder().encode(JSON.stringify(sets));
       return {
         status: 200,
         headers: {
@@ -103,6 +128,22 @@ export function createRouter(db: Database, source: ByteSource) {
 
     const streaming = STREAM_PATH.exec(request.path);
     if (streaming) return streamSet(db, source, request, streaming[1]!);
+
+    const wantsSummary = SUMMARY_PATH.exec(request.path);
+    if (wantsSummary) {
+      const body = summary(db, wantsSummary[1]!);
+      if (body === null) return empty(404);
+      const response = text(body, "text/plain; charset=utf-8");
+      return request.method === "HEAD" ? { ...response, body: null } : response;
+    }
+
+    const wantsSubtitle = SUBTITLE_PATH.exec(request.path);
+    if (wantsSubtitle) {
+      const body = subtitle(db, wantsSubtitle[1]!, wantsSubtitle[2]!);
+      if (body === null) return empty(404);
+      const response = text(body, "text/vtt; charset=utf-8");
+      return request.method === "HEAD" ? { ...response, body: null } : response;
+    }
 
     if (!request.path.startsWith("/api/")) {
       const file = staticFile(request.path);

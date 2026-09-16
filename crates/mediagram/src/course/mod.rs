@@ -2,4 +2,5 @@
 
 pub mod plan;
 pub mod report;
+pub mod sidecars;
 pub mod walk;

@@ -151,6 +151,19 @@ video { display: block; max-width: 94vw; max-height: 78vh; background: #000; }
 }
 .bar button:hover { border-color: var(--accent); }
 .note { color: var(--warn); font-size: 12.5px; padding: 0 15px 11px; background: var(--panel); }
+.summary {
+  background: var(--panel);
+  color: var(--text);
+  padding: 0 15px 14px;
+  max-width: 70ch;
+  font-size: 14px;
+  white-space: pre-wrap;
+  max-height: 22vh;
+  overflow-y: auto;
+}
+/* Says a lesson has notes before it is opened. */
+.has-summary { color: var(--dim); font-size: 11px; border: 1px solid var(--line);
+  border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
 
 @media (max-width: 720px) {
   body { grid-template-columns: 1fr; }

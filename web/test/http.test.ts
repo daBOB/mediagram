@@ -58,6 +58,12 @@ function index(): Database {
       vcodec TEXT, acodec TEXT, duration INTEGER,
       total INTEGER NOT NULL, part_count INTEGER NOT NULL,
       status TEXT NOT NULL, created_at INTEGER NOT NULL)`);
+  db.run(`CREATE TABLE assets(
+      set_id TEXT NOT NULL, kind TEXT NOT NULL,
+      lang TEXT NOT NULL DEFAULT '', body TEXT NOT NULL,
+      PRIMARY KEY(set_id, kind, lang))`);
+  db.run("INSERT INTO assets VALUES (?, 'summary', '', 'Worum es geht.')", [SET]);
+  db.run("INSERT INTO assets VALUES (?, 'subtitle', 'deu', 'WEBVTT\n\nhallo')", [SET]);
   db.run(`CREATE TABLE parts(
       set_id TEXT NOT NULL, idx INTEGER NOT NULL,
       byte_offset INTEGER NOT NULL, byte_length INTEGER NOT NULL,
@@ -205,6 +211,45 @@ describe("the stream route", () => {
 
   test("an unknown path is not found", async () => {
     expect((await request("/nope")).status).toBe(404);
+  });
+});
+
+describe("assets", () => {
+  test("a summary is served as text a page can render", async () => {
+    const response = await request(`/api/sets/${SET}/summary`);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/");
+    expect(new TextDecoder().decode(response.body)).toBe("Worum es geht.");
+    expect(lengthOf(response)).toBe(response.body.byteLength);
+  });
+
+  /** A <track> element fetches this URL directly, so the type must be right. */
+  test("a subtitle is served as WebVTT", async () => {
+    const response = await request(`/api/sets/${SET}/subtitles/deu.vtt`);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/vtt");
+    expect(new TextDecoder().decode(response.body)).toContain("WEBVTT");
+  });
+
+  test("a language that is not there is not found", async () => {
+    expect((await request(`/api/sets/${SET}/subtitles/eng.vtt`)).status).toBe(404);
+  });
+
+  test("the catalog says what a set has, so the page need not ask", async () => {
+    const listed = JSON.parse(new TextDecoder().decode((await request("/api/sets")).body));
+
+    expect(listed[0].hasSummary).toBe(true);
+    expect(listed[0].subtitles).toEqual(["deu"]);
+  });
+
+  /** A language is a label, not a path: it must not reach the filesystem. */
+  test("a language that looks like a path is refused", async () => {
+    for (const lang of ["..%2f..%2fetc", "a/b", "%2e%2e"]) {
+      const response = await request(`/api/sets/${SET}/subtitles/${lang}.vtt`);
+      expect([400, 404]).toContain(response.status);
+    }
   });
 });
 

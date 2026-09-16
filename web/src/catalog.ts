@@ -21,7 +21,7 @@ import type { PartSpan } from "./range";
  * `crates/mediagram/tests/shared_playable_sql.rs`, which fails if the two
  * drift — the player reads the uploader's database and cannot migrate it.
  */
-export const EXPECTED_SCHEMA = 3;
+export const EXPECTED_SCHEMA = 4;
 
 /**
  * Refuses an index written by an older uploader.

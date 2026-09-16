@@ -7,7 +7,7 @@ use super::args::AddArgs;
 use super::push_index;
 use crate::config::Config;
 use crate::index::sets::SetRow;
-use crate::index::{db, parts, sets};
+use crate::index::{assets, db, parts, sets};
 use crate::media::{classify, inspect, remux};
 use crate::metadata::prompt::DialoguerPrompter;
 use crate::metadata::resolve::{self, ResolveInput};
@@ -130,6 +130,7 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
         sets::insert_set(&tx, &set_row)?;
         parts::insert_parts(&tx, &set_id, &part_ranges)?;
         db::set_meta(&tx, &source_key, &source_value)?;
+        store_sidecars(&tx, &set_id, &args.file, &caption)?;
         if source_path != args.file {
             // A faststart remux was written; remember it so only that file is deleted later.
             db::set_meta(&tx, &format!("tmp:{set_id}"), &source_value)?;
@@ -155,6 +156,39 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
                 "set {set_id} is complete but the index push failed; run `mediagram push-index`"
             )
         })?;
+    }
+    Ok(())
+}
+
+/// Stores the subtitle and summary sitting beside a video, if any.
+///
+/// Read from the source the user named rather than from a faststart remux:
+/// the remux is a temporary file this command wrote, and the sidecars belong
+/// to the original.
+///
+/// A missing sidecar is the ordinary case and says nothing. A present one
+/// that cannot be stored is worth a warning, and no more: a lesson without
+/// its subtitle is still worth having.
+fn store_sidecars(
+    conn: &rusqlite::Connection,
+    set_id: &str,
+    source: &std::path::Path,
+    caption: &mlib_spec::Caption,
+) -> Result<()> {
+    let found = crate::course::sidecars::find_sidecars(source)?;
+
+    if let Some(subtitle) = &found.subtitle {
+        // The subtitle is the audio written down, so it is in the audio's
+        // language; `und` when the file never said.
+        let lang = caption.alang.first().map(String::as_str).unwrap_or("und");
+        if let Err(err) = assets::put(conn, set_id, assets::Kind::Subtitle, lang, subtitle) {
+            tracing::warn!("subtitle for {set_id} not stored: {err:#}");
+        }
+    }
+    if let Some(summary) = &found.summary
+        && let Err(err) = assets::put(conn, set_id, assets::Kind::Summary, "", summary)
+    {
+        tracing::warn!("summary for {set_id} not stored: {err:#}");
     }
     Ok(())
 }

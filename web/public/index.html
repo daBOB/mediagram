@@ -18,8 +18,9 @@
     <main id="main"><p class="empty">Loading…</p></main>
 
     <dialog id="player">
-      <video id="video" controls preload="metadata"></video>
+      <video id="video" controls preload="metadata" crossorigin="anonymous"></video>
       <p class="note" id="note" hidden></p>
+      <div class="summary" id="summary" hidden></div>
       <div class="bar">
         <span class="what" id="now"></span>
         <button id="close">Close</button>
