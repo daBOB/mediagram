@@ -12,6 +12,7 @@ fn sample_seen() -> Seen {
     let caption = Caption {
         cid: None,
         chap: None,
+        path: None,
         t: Kind::Movie,
         ids: ProviderIds {
             tmdb: Some(42),

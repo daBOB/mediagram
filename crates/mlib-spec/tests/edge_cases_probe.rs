@@ -44,6 +44,7 @@ fn caption_to_text_with_multibyte_chars_respects_budget() {
     let c = Caption {
         cid: None,
         chap: None,
+        path: None,
         t: Kind::Movie,
         ids: ProviderIds::default(),
         show: None,
@@ -94,6 +95,7 @@ fn caption_roundtrip_preserves_field_order_with_exotic_values() {
     let c = Caption {
         cid: None,
         chap: None,
+        path: None,
         t: Kind::Ep,
         ids: ProviderIds {
             tmdb: Some(123456),
@@ -349,6 +351,7 @@ fn base_name_episode_with_abs_only() {
     let c = Caption {
         cid: None,
         chap: None,
+        path: None,
         t: Kind::Ep,
         ids: ProviderIds::default(),
         show: Some("Evangelion".into()),
@@ -388,6 +391,7 @@ fn base_name_episode_with_season_and_episode() {
     let c = Caption {
         cid: None,
         chap: None,
+        path: None,
         t: Kind::Ep,
         ids: ProviderIds::default(),
         show: Some("The Office".into()),
@@ -426,6 +430,7 @@ fn base_name_episode_with_episode_range() {
     let c = Caption {
         cid: None,
         chap: None,
+        path: None,
         t: Kind::Ep,
         ids: ProviderIds::default(),
         show: Some("Breaking Bad".into()),

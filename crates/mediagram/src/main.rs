@@ -18,6 +18,10 @@ struct Cli {
     cmd: Cmd,
 }
 
+// Parsed once, at startup, and dropped. The size gap between `Login` and
+// `Add(AddArgs)` costs a few stack bytes on one value and boxing would only
+// obscure the argument types.
+#[allow(clippy::large_enum_variant)]
 #[derive(Subcommand)]
 enum Cmd {
     /// Sign in with phone + code (+ 2FA password) and persist the session

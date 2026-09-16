@@ -29,4 +29,4 @@ pub use package::{LatestPointer, PackageManifest};
 pub use part_plan::{PartRange, PlanError, plan_parts};
 
 /// Spec version written in the caption marker line and `sets.spec_version`.
-pub const SPEC_VERSION: u32 = 3;
+pub const SPEC_VERSION: u32 = 4;

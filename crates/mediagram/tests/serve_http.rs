@@ -64,6 +64,7 @@ fn index() -> (tempfile::TempDir, rusqlite::Connection) {
         cid: None,
         show: None,
         chap: None,
+        path: None,
         title: Some("The Matrix".into()),
         year: Some(1999),
         s: None,

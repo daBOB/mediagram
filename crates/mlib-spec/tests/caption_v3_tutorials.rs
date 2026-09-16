@@ -4,7 +4,7 @@
 //! collection id that survives renaming the course.
 
 use mlib_spec::caption::{Caption, Episode, Kind, Part};
-use mlib_spec::caption_codec::{MARKER_PREFIX, parse, to_text};
+use mlib_spec::caption_codec::{MARKER, parse, to_text};
 use mlib_spec::ids::ProviderIds;
 
 fn lesson() -> Caption {
@@ -14,6 +14,7 @@ fn lesson() -> Caption {
         cid: Some("rust-course-2024".into()),
         show: Some("Rust Course".into()),
         chap: Some("Ownership".into()),
+        path: None,
         title: Some("Borrowing".into()),
         year: Some(2024),
         s: Some(2),
@@ -43,7 +44,9 @@ fn lesson() -> Caption {
 #[test]
 fn a_tutorial_round_trips_through_the_wire_format() {
     let text = to_text(&lesson(), "").unwrap();
-    assert!(text.starts_with(&format!("{MARKER_PREFIX}3")), "{text}");
+    // The version is whatever this build writes; the subject here is the
+    // round-trip, and pinning a number made this fail when `path` arrived.
+    assert!(text.starts_with(MARKER), "{text}");
     assert_eq!(parse(&text).unwrap(), lesson());
 }
 

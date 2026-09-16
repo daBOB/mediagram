@@ -6,7 +6,8 @@ use rusqlite::{Connection, OptionalExtension, params};
 
 pub use crate::index::set_row::SetRow;
 
-const COLUMNS: &str = "set_id, kind, tmdb, tvdb, imdb, show, chap, title, year, season, episode,
+const COLUMNS: &str =
+    "set_id, kind, tmdb, tvdb, imdb, show, chap, path, title, year, season, episode,
     abs, quality, hdr, container, vcodec, acodec, alang, slang, duration, variant, group_key,
     total, part_count, set_hash, status, created_at, spec_version";
 
@@ -20,9 +21,9 @@ pub fn insert_set(conn: &Connection, row: &SetRow) -> Result<()> {
     conn.execute(
         &format!(
             "INSERT INTO sets({COLUMNS}) VALUES (
-                ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11,
-                ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21,
-                ?22, ?23, ?24, ?25, ?26, ?27, ?28)"
+                ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12,
+                ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22,
+                ?23, ?24, ?25, ?26, ?27, ?28, ?29)"
         ),
         params![
             row.set_id,
@@ -32,6 +33,7 @@ pub fn insert_set(conn: &Connection, row: &SetRow) -> Result<()> {
             row.imdb,
             row.show,
             row.chap,
+            row.path,
             row.title,
             row.year,
             row.season,

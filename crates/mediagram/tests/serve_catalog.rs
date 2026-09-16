@@ -22,6 +22,7 @@ fn caption(set: &str, parts_n: u32, total: u64) -> Caption {
         cid: None,
         show: None,
         chap: None,
+        path: None,
         title: Some("The Matrix".into()),
         year: Some(1999),
         s: None,

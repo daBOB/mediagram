@@ -19,6 +19,7 @@ fn template(set_id: &str, part_count: u32, total: u64) -> Caption {
     Caption {
         cid: None,
         chap: None,
+        path: None,
         t: Kind::Movie,
         ids: ProviderIds {
             tmdb: Some(42),

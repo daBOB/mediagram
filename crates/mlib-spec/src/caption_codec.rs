@@ -15,7 +15,7 @@ use crate::caption::Caption;
 
 /// Marker written on every new caption. Readers accept older versions too;
 /// see [`parse`].
-pub const MARKER: &str = "#mlib v=3";
+pub const MARKER: &str = "#mlib v=4";
 pub const MARKER_PREFIX: &str = "#mlib v=";
 /// Free-tier caption limit, counted in UTF-16 code units like Telegram does;
 /// Premium-independent by design.
@@ -46,6 +46,30 @@ pub enum CaptionError {
 /// exists so a hostile caption cannot make one unbounded.
 const MAX_SET_LEN: usize = 64;
 
+/// Bounds on `path`. Generous for any real course, small enough that a
+/// hostile caption cannot make a reader allocate or recurse without limit.
+const MAX_PATH_LEN: usize = 512;
+const MAX_PATH_DEPTH: usize = 16;
+
+/// True if `path` is a collection-relative label and nothing more.
+///
+/// Refuses what a careless reader could turn into a filesystem escape: `..`,
+/// absolute paths, empty or dot segments, and backslashes, which some
+/// platforms treat as separators too.
+fn path_ok(path: &str) -> bool {
+    if path.is_empty() || path.len() > MAX_PATH_LEN {
+        return false;
+    }
+    if path.starts_with('/') || path.ends_with('/') || path.contains('\\') {
+        return false;
+    }
+    let segments: Vec<&str> = path.split('/').collect();
+    segments.len() <= MAX_PATH_DEPTH
+        && segments
+            .iter()
+            .all(|segment| !segment.is_empty() && *segment != "." && *segment != "..")
+}
+
 /// Captions arrive from a channel anyone with access can post to, and
 /// `rescan` writes these values into the index, where `set` becomes a primary
 /// key and, for the package export, part of a file name. Structural
@@ -56,6 +80,11 @@ fn validate(caption: &Caption) -> Result<(), CaptionError> {
         && caption.set.chars().all(|c| c.is_ascii_alphanumeric());
     if !set_ok {
         return Err(CaptionError::InvalidField("set"));
+    }
+    if let Some(path) = &caption.path
+        && !path_ok(path)
+    {
+        return Err(CaptionError::InvalidField("path"));
     }
     if caption.part.n == 0 || caption.part.i >= caption.part.n {
         return Err(CaptionError::InvalidField("part"));
@@ -114,8 +143,8 @@ pub fn parse(text: &str) -> Result<Caption, CaptionError> {
         .ok_or(CaptionError::NoMarker)?;
     // Accept every version this build can decode, not just the newest: a
     // channel holds a mix from before and after an uploader upgrade, and both
-    // must stay readable. v2 captions simply lack `cid` and `chap`.
-    if !matches!(version, "2" | "3") {
+    // must stay readable. v2 captions lack `cid` and `chap`, v3 lacks `path`.
+    if !matches!(version, "2" | "3" | "4") {
         return Err(CaptionError::UnsupportedVersion(version.to_string()));
     }
     let json = lines.next().ok_or(CaptionError::MissingJson)?.trim();
@@ -125,6 +154,17 @@ pub fn parse(text: &str) -> Result<Caption, CaptionError> {
     let caption: Caption = serde_json::from_str(json)?;
     validate(&caption)?;
     Ok(caption)
+}
+
+#[cfg(test)]
+mod version_agreement {
+    /// The marker line and `SPEC_VERSION` are the same number said twice.
+    /// They drifted apart once, when `path` was added and only the marker
+    /// moved, which put the wrong version in every published package.
+    #[test]
+    fn the_marker_names_the_spec_version() {
+        assert_eq!(super::MARKER, format!("#mlib v={}", crate::SPEC_VERSION));
+    }
 }
 
 #[cfg(test)]

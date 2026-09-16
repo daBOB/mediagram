@@ -15,6 +15,7 @@ fn lesson_caption(set: &str, cid: &str, chapter: u32, lesson: u32) -> Caption {
         cid: Some(cid.into()),
         show: Some("Rust Course".into()),
         chap: Some("Ownership".into()),
+        path: None,
         title: Some("Borrowing".into()),
         year: None,
         s: Some(chapter),

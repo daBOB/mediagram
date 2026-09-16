@@ -42,6 +42,11 @@ pub struct AddArgs {
     /// Chapter title
     #[arg(long)]
     pub chap: Option<String>,
+    /// Folders this lesson came from within the course, `/`-separated. Set by
+    /// `add-course` from the walk; a course nests unevenly and chapter number
+    /// alone cannot say where a lesson sat
+    #[arg(long)]
+    pub path: Option<String>,
     /// Lesson number within the chapter
     #[arg(long)]
     pub lesson: Option<u32>,

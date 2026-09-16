@@ -125,6 +125,7 @@ async fn upload_one(
             cid: Some(cid.to_string()),
             chapter: Some(lesson.chapter),
             chap: lesson.chapter_title.clone(),
+            path: None,
             lesson: Some(lesson.lesson),
         },
     )

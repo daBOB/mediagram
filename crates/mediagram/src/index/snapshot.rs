@@ -64,6 +64,7 @@ mod tests {
         Caption {
             cid: None,
             chap: None,
+            path: None,
             t: Kind::Movie,
             ids: ProviderIds {
                 tmdb: Some(1),

@@ -43,6 +43,7 @@ async fn add_uploads_a_three_part_file() {
         cid: None,
         chapter: None,
         chap: None,
+        path: None,
         lesson: None,
         file: file.clone(),
         tmdb: None,

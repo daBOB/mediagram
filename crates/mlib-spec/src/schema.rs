@@ -1,7 +1,7 @@
 //! SQLite DDL for `library.db`. The uploader keeps this file locally as the
 //! canonical index and pushes a snapshot to the channel as a pinned document.
 
-pub const SCHEMA_VERSION: i64 = 2;
+pub const SCHEMA_VERSION: i64 = 3;
 
 /// Statements grouped by the version they produce: `GROUPS[0]` takes a
 /// database from nothing to version 1, `GROUPS[1]` from 1 to 2, and so on.
@@ -10,7 +10,7 @@ pub const SCHEMA_VERSION: i64 = 2;
 /// what lets a migration do something other than `CREATE ... IF NOT EXISTS`.
 /// SQLite has no `ADD COLUMN IF NOT EXISTS`, so an idempotent-by-wording list
 /// could never gain a column.
-pub const GROUPS: &[&[&str]] = &[V1, V2];
+pub const GROUPS: &[&[&str]] = &[V1, V2, V3];
 
 /// Every statement needed to reach `version` from an empty database. Used by
 /// tests and by anyone reconstructing an older layout.
@@ -60,6 +60,13 @@ const V1: &[&str] = &[
 /// populated until now, carries the collection id.
 const V2: &[&str] = &["ALTER TABLE sets ADD COLUMN chap TEXT"];
 
+/// v2 → v3: where a set sat inside its collection.
+///
+/// A course nests unevenly — the one this was built for runs from one to four
+/// folders deep — so a chapter number cannot describe the shape. The path can,
+/// and the player rebuilds the tree by splitting it.
+const V3: &[&str] = &["ALTER TABLE sets ADD COLUMN path TEXT"];
+
 /// Playable invariant, as SQL usable in a WHERE clause on `sets s`.
 pub const PLAYABLE_SQL: &str = "s.status = 'complete'
     AND s.part_count = (SELECT COUNT(*) FROM parts p WHERE p.set_id = s.set_id AND p.status = 'done')
@@ -88,6 +95,10 @@ mod tests {
         assert_eq!(
             super::migrations_up_to(2).len(),
             super::GROUPS[0].len() + super::GROUPS[1].len()
+        );
+        assert_eq!(
+            super::migrations_up_to(3).len(),
+            super::GROUPS.iter().map(|g| g.len()).sum::<usize>()
         );
     }
 }

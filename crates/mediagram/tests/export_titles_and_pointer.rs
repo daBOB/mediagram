@@ -13,6 +13,7 @@ fn caption(set: &str, kind: Kind, tmdb: Option<u64>) -> Caption {
     Caption {
         cid: None,
         chap: None,
+        path: None,
         t: kind,
         ids: ProviderIds {
             tmdb,

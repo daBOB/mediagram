@@ -67,6 +67,20 @@ pub struct Caption {
     /// Chapter title. Only meaningful for `Kind::Tut`.
     #[serde(default)]
     pub chap: Option<String>,
+    /// Folders this set came from, within its collection, `/`-separated:
+    /// `"Ausbildung Trading/1. Grundlagen/1. Trading"`.
+    ///
+    /// A real course does not nest to a fixed depth. The one this was built
+    /// for runs from one to four folders deep and has a folder holding videos
+    /// beside a subfolder, which chapter-and-lesson cannot describe. Carrying
+    /// the path lets a player rebuild any tree by splitting on `/`, and keeps
+    /// `chap` meaning what it says: a title.
+    ///
+    /// A label, never a path to open. `caption_codec` refuses `..`, absolute
+    /// paths and empty segments so that a reader which forgets that cannot be
+    /// aimed at a filesystem.
+    #[serde(default)]
+    pub path: Option<String>,
     /// Movie title, episode title for `Kind::Ep`, lesson title for `Kind::Tut`.
     pub title: Option<String>,
     pub year: Option<u16>,
@@ -153,6 +167,7 @@ mod tests {
         Caption {
             cid: None,
             chap: None,
+            path: None,
             t: Kind::Ep,
             ids: ProviderIds {
                 tmdb: Some(95396),

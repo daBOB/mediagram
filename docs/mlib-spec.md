@@ -23,7 +23,7 @@ shape:
 optional free-form human text (truncated first if the caption is too long)
 ```
 
-- Line 1 is the marker, byte-for-byte `#mlib v=3` on new captions and
+- Line 1 is the marker, byte-for-byte `#mlib v=4` on new captions and
   `#mlib v=2` on older ones. A parser identifies an
   mlib caption by checking the text starts with the prefix `#mlib v=`
   (after trimming leading whitespace); the version that follows determines
@@ -65,6 +65,7 @@ bytes instead of UTF-16 units will compute a different (wrong) budget.
 |---|---|---|
 | `cid` | v3 | Collection id: a stable grouping anchor for sets with no provider id. Courses are its first user; `null` for movies and episodes |
 | `chap` | v3 | Chapter title, for course lessons; `null` otherwise |
+| `path` | v4 | Folders this set came from within its collection, `/`-separated (`"Ausbildung Trading/1. Grundlagen/1. Trading"`); `null` otherwise |
 
 A v2 caption simply lacks both. A reader decoding v2 treats them as absent,
 which is why the uploader can keep writing v3 without rewriting anything
@@ -207,7 +208,7 @@ CREATE TABLE IF NOT EXISTS sets(
     set_id TEXT PRIMARY KEY,
     kind TEXT NOT NULL,
     tmdb INTEGER, tvdb INTEGER, imdb TEXT,
-    show TEXT, chap TEXT, title TEXT, year INTEGER,
+    show TEXT, chap TEXT, path TEXT, title TEXT, year INTEGER,
     season INTEGER, episode TEXT, abs INTEGER,
     quality TEXT, hdr TEXT, container TEXT NOT NULL,
     vcodec TEXT, acodec TEXT,
@@ -298,14 +299,14 @@ the channel's pinned messages and picks the newest `#mlib-index` one.
 
 ## 8. Versioning
 
-- `v=3` is written on every new caption and `v=2` remains readable. A
+- `v=4` is written on every new caption; `v=2` and `v=3` remain readable. A
   reader accepts both, because a channel holds a mix from before and after an
   uploader upgrade.
 - `v=2` was the previous caption marker version. `mlib_spec::SPEC_VERSION`
   (now `3`) is written into every new `sets.spec_version` row.
 - A parser accepts every version it can decode, not just the latest, so a
   channel holding a mix from before and after an uploader upgrade stays
-  fully readable. The reference parser accepts `v=2` and `v=3`; the v3
+  fully readable. The reference parser accepts `v=2`, `v=3` and `v=4`; the v3
   additions are optional fields, so a v2 caption decodes into the same
   structure with both absent.
 - A future change bumps the marker again, and adds an accepted version

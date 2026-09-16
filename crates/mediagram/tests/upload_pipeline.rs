@@ -115,6 +115,7 @@ fn sample_caption(set_id: &str, total: u64, n: u32) -> Caption {
     Caption {
         cid: None,
         chap: None,
+        path: None,
         t: Kind::Movie,
         ids: ProviderIds {
             tmdb: Some(603),

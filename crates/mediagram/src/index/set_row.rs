@@ -16,6 +16,8 @@ pub struct SetRow {
     pub show: Option<String>,
     /// Chapter title, for course lessons.
     pub chap: Option<String>,
+    /// Folders within the collection, `/`-separated. See `Caption::path`.
+    pub path: Option<String>,
     pub title: Option<String>,
     pub year: Option<u16>,
     pub season: Option<u32>,
@@ -57,6 +59,7 @@ impl SetRow {
             imdb: caption.ids.imdb.clone(),
             show: caption.show.clone(),
             chap: caption.chap.clone(),
+            path: caption.path.clone(),
             title: caption.title.clone(),
             year: caption.year,
             season: caption.s,
@@ -99,6 +102,7 @@ impl SetRow {
             imdb: row.get("imdb")?,
             show: row.get("show")?,
             chap: row.get("chap")?,
+            path: row.get("path")?,
             title: row.get("title")?,
             year: row.get("year")?,
             season: row.get("season")?,
@@ -145,6 +149,7 @@ impl SetRow {
             // no chapter, and `rescan` would have nothing to rebuild from.
             cid: self.group_key.clone(),
             chap: self.chap.clone(),
+            path: self.path.clone(),
             t,
             ids: ProviderIds {
                 tmdb: self.tmdb,

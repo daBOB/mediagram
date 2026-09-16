@@ -9,6 +9,7 @@ fn sample_caption() -> Caption {
     Caption {
         cid: None,
         chap: None,
+        path: None,
         t: Kind::Movie,
         ids: ProviderIds {
             tmdb: Some(42),
