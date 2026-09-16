@@ -46,7 +46,7 @@ pub async fn run(cfg: &Config) -> Result<()> {
         } else {
             "  "
         };
-        println!("{marker} {}  {}", message.date(), truncate(&text, 100));
+        println!("{marker} {}  {}", message.date(), truncate(&text, 400));
         shown += 1;
     }
     if shown == 0 {

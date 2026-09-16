@@ -1,5 +1,6 @@
 //! One module per subcommand; each exposes `run`.
 
+pub mod accept_login;
 pub mod add;
 pub mod add_course;
 pub mod args;

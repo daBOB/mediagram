@@ -62,6 +62,11 @@ enum Cmd {
     },
     /// Drop unwanted audio and subtitle tracks so a file fits one upload part
     Prepare(PrepareArgs),
+    /// Approve a QR login for the player, the way a phone approves a scan
+    AcceptLogin {
+        /// The token the player printed
+        token: String,
+    },
     /// Show the login code Telegram just sent, read from this account's messages
     LoginCode,
     /// Print a portable session string for the player backend (it is the account)
@@ -110,6 +115,7 @@ async fn main() -> Result<()> {
             publish,
         } => commands::export_package::run(&cfg, out, dry_run, publish).await,
         Cmd::Prepare(args) => commands::prepare::run(&cfg, args).await,
+        Cmd::AcceptLogin { token } => commands::accept_login::run(&cfg, &token).await,
         Cmd::LoginCode => commands::login_code::run(&cfg).await,
         Cmd::ExportSession => commands::export_session::run(&cfg).await,
         Cmd::Serve { addr } => commands::serve::run(&cfg, addr).await,
