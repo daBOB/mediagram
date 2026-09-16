@@ -125,7 +125,9 @@ async fn upload_one(
             cid: Some(cid.to_string()),
             chapter: Some(lesson.chapter),
             chap: lesson.chapter_title.clone(),
-            path: None,
+            // Empty means the lesson sat at the course root, which the
+            // caption spells as absent rather than as an empty string.
+            path: Some(lesson.rel_path.clone()).filter(|p| !p.is_empty()),
             lesson: Some(lesson.lesson),
         },
     )

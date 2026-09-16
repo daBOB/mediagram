@@ -21,6 +21,14 @@ use crate::course::plan::{assign_unique_numbers, is_video};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Lesson {
     pub path: PathBuf,
+    /// Folders between the course root and this lesson, `/`-separated, empty
+    /// for a lesson sitting at the root.
+    ///
+    /// Chapter numbers are made unique across the course, because sections
+    /// number their own chapters from 1 and the identity has to stay
+    /// distinct. That renumbering is correct and also erases the shape, so
+    /// the path is what a player rebuilds the tree from.
+    pub rel_path: String,
     pub chapter: u32,
     pub chapter_title: Option<String>,
     pub lesson: u32,
@@ -53,9 +61,11 @@ pub fn walk_course(root: &Path) -> Result<Vec<Lesson>> {
     for (chapter, inferred_title, dir) in assign_unique_numbers(&folders) {
         let files = by_folder.get(&dir).cloned().unwrap_or_default();
         let chapter_title = chapter_title(root, &dir).or(inferred_title);
+        let rel_path = relative_path(root, &dir);
         for (lesson, title, file) in number_lessons(&files) {
             lessons.push(Lesson {
                 path: dir.join(&file),
+                rel_path: rel_path.clone(),
                 chapter,
                 chapter_title: chapter_title.clone(),
                 lesson,
@@ -64,6 +74,20 @@ pub fn walk_course(root: &Path) -> Result<Vec<Lesson>> {
         }
     }
     Ok(lessons)
+}
+
+/// The folders between the course root and `dir`, as the caption spells them.
+///
+/// Always `/`-separated: this is a label inside a course, not a path on the
+/// machine that happened to upload it, and it has to mean the same thing
+/// wherever it is read.
+fn relative_path(root: &Path, dir: &Path) -> String {
+    dir.strip_prefix(root)
+        .unwrap_or(dir)
+        .components()
+        .map(|component| component.as_os_str().to_string_lossy().to_string())
+        .collect::<Vec<_>>()
+        .join("/")
 }
 
 /// Lesson numbers within one chapter, guaranteed distinct.

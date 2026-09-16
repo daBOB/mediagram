@@ -74,7 +74,7 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
     let caption = Caption {
         cid,
         chap: args.chap.clone(),
-        path: None,
+        path: args.path.clone(),
         t: resolved.kind,
         ids: resolved.ids,
         show: resolved.show,

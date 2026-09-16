@@ -108,6 +108,7 @@ fn a_lesson_never_seen_has_no_status() {
 fn the_summary_tells_the_user_what_to_do_about_unfinished_lessons() {
     let lesson = Lesson {
         path: "x.mp4".into(),
+        rel_path: String::new(),
         chapter: 1,
         chapter_title: None,
         lesson: 1,
@@ -128,6 +129,7 @@ fn the_summary_tells_the_user_what_to_do_about_unfinished_lessons() {
 fn the_dry_run_table_shows_the_id_that_identity_is_built_from() {
     let lessons = vec![Lesson {
         path: "01 Install.mp4".into(),
+        rel_path: String::new(),
         chapter: 1,
         chapter_title: Some("Getting Started".into()),
         lesson: 1,
@@ -136,7 +138,9 @@ fn the_dry_run_table_shows_the_id_that_identity_is_built_from() {
     let table = dry_run_table("Rust Course", "rust-course", &lessons).join("\n");
     assert!(table.contains("rust-course"));
     assert!(table.contains("Install"));
-    assert!(table.contains("1 lesson(s) across 1 chapter(s)"));
+    // Folders, not chapter numbers: the numbers are made unique across a
+    // course and no longer describe the shape anyone recognises.
+    assert!(table.contains("1 lesson(s) across 1 folder(s)"));
 }
 
 /// The upload pipeline rebuilds each part's caption from the stored row, so

@@ -45,34 +45,54 @@ impl Summary {
     }
 }
 
-/// The table shown before anything uploads, so inferred numbers and titles
-/// can be corrected while correcting them is still cheap.
+/// What a course walk will upload, grouped by the folder each lesson came
+/// from, so inferred numbers and titles can be corrected while correcting
+/// them is still cheap.
+///
+/// Grouped rather than tabulated because chapter numbers are made unique
+/// across the whole course: two sections that each call something "chapter 1"
+/// appear as 2 and 5, and a flat table then shows numbers nobody recognises.
+/// The folder is what a person named.
 pub fn dry_run_table(course: &str, cid: &str, lessons: &[Lesson]) -> Vec<String> {
     let mut out = vec![
         format!("course: {course}"),
         format!("id:     {cid}"),
         String::new(),
-        format!("{:>3}  {:>3}  {:<28} {}", "ch", "les", "title", "file"),
     ];
+
+    // BTreeMap so folders print in path order, which is the order someone
+    // browsing the course on disk would see them.
+    let mut by_folder: std::collections::BTreeMap<&str, Vec<&Lesson>> =
+        std::collections::BTreeMap::new();
     for lesson in lessons {
-        out.push(format!(
-            "{:>3}  {:>3}  {:<28} {}",
-            lesson.chapter,
-            lesson.lesson,
-            lesson.title.as_deref().unwrap_or("-"),
-            lesson
-                .path
-                .file_name()
-                .map(|n| n.to_string_lossy().to_string())
-                .unwrap_or_default()
-        ));
+        by_folder
+            .entry(lesson.rel_path.as_str())
+            .or_default()
+            .push(lesson);
     }
-    let chapters: std::collections::BTreeSet<u32> = lessons.iter().map(|l| l.chapter).collect();
-    out.push(String::new());
+
+    for (folder, mut items) in by_folder.iter().map(|(k, v)| (*k, v.clone())) {
+        items.sort_by_key(|lesson| lesson.lesson);
+        let heading = if folder.is_empty() {
+            "(course root)".to_string()
+        } else {
+            folder.to_string()
+        };
+        out.push(format!("{heading}  ({} lesson(s))", items.len()));
+        for lesson in items {
+            out.push(format!(
+                "  {:>3}  {}",
+                lesson.lesson,
+                lesson.title.as_deref().unwrap_or("-")
+            ));
+        }
+        out.push(String::new());
+    }
+
     out.push(format!(
-        "{} lesson(s) across {} chapter(s)",
+        "{} lesson(s) across {} folder(s)",
         lessons.len(),
-        chapters.len()
+        by_folder.len()
     ));
     out
 }
