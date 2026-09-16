@@ -22,6 +22,22 @@ function ask(question: string): Promise<string> {
   return rl.question(question);
 }
 
+/**
+ * teleproto's `parsePhone` returns undefined for a number that does not begin
+ * with `+`, and the login then fails somewhere less obvious. Ask again here.
+ * Spaces, hyphens and parentheses are stripped for us, so only the `+` and
+ * the country code actually matter.
+ */
+async function askPhone(): Promise<string> {
+  for (;;) {
+    const phone = (await ask("phone number, with country code (e.g. +49151…): ")).trim();
+    if (/^\+[\d()\s-]{6,}$/.test(phone)) return phone;
+    stderr.write(
+      "  Needs to start with + and the country code. A German 0151… is +49151….\n",
+    );
+  }
+}
+
 /** Reads a line without echoing it, for the 2FA password. */
 async function askHidden(question: string): Promise<string> {
   const ETX = "\u0003"; // Ctrl-C
@@ -60,7 +76,7 @@ const client = new TelegramClient(new sessions.StringSession(""), apiId, apiHash
 console.error("\nLogging in. This creates a session separate from the uploader's.\n");
 
 await client.start({
-  phoneNumber: () => ask("phone number (e.g. +49…): "),
+  phoneNumber: askPhone,
   phoneCode: () => ask("login code: "),
   password: () => askHidden("2FA password (hidden): "),
   onError: async (error) => {
