@@ -52,6 +52,8 @@ options object.
 - Functional: `GET /api/sets` and `GET /api/sets/:id/stream` match phase 1's
   contract exactly — 200, 206, 416, 400, `Content-Length` on every response,
   well-formed `Content-Range` on a 206.
+- Functional: no response to a browser contains a session string, the channel
+  id, or a message id.
 - Functional: the set of bytes returned for any range is identical to what
   phase 1 returns for the same range. Phase 1 is the oracle.
 - Non-functional: no part is ever buffered whole; one Telegram client per
@@ -106,20 +108,39 @@ at most 4 KiB, so a small seek costs almost nothing.
 - [ ] 416 on unsatisfiable, 400 on malformed, 404 on not playable
 - [ ] Memory flat while streaming several hundred MB
 - [ ] Seeks anywhere in a 6.5 GiB set stay under about 250 ms
-- [ ] The player runs on a machine that has no `library.db` of its own, given
-      a package (phase 3) and a session string
+- [ ] The backend runs on a machine that has no `library.db` of its own,
+      given a package (phase 3) and a session string
+- [ ] No route's response body or headers contain the channel id, a message
+      id, or session material — asserted, not assumed
 
 ## Security
-The player holds the account's MTProto auth key. On the uploader's machine
-that was already true; on a host you do not fully control it is a different
-risk, because the key is the account, not just the library. Consequences to
-decide before running this anywhere exposed:
+
+**Two things are called "the player" and only one of them touches Telegram.**
+
+| | Holds the session | Speaks MTProto | Sees channel/message ids |
+|---|---|---|---|
+| Player backend (Bun server) | yes | yes | yes |
+| Web UI (browser) | never | never | never |
+
+The browser is a client of the backend over HTTP, exactly as it would be of
+any media server. It receives a catalog and a byte stream. It never receives
+a session string, the channel id, or a message id — those are precisely what
+`mlib-package-v1` treats as the secret worth encrypting, and handing them to
+a browser tab would undo that. `PlayableSet` carries no location fields, and
+`partLocations` stays server-side; an assertion in the route tests keeps it
+that way.
+
+The backend holds the account's MTProto auth key, because `upload.getFile`
+authenticates every call and the protocol has no scoped credential. On the
+uploader's machine that was already true. On a host you do not fully control
+it is a different risk, because the key is the account, not just the library.
+Consequences to decide before running the backend anywhere exposed:
 
 - A dedicated Telegram account for the library limits the blast radius to the
   library. Worth doing if the player will live on rented hardware.
-- The session string must never reach the repository, a log, or an error
-  message. The command that emits it prints to stdout only, writes no file by
-  default, and is excluded from any diagnostic dump.
+- The session string must never reach the repository, a log, an error
+  message, or an HTTP response. The command that emits it prints to stdout
+  only, writes no file by default, and is excluded from any diagnostic dump.
 - Revocation is Telegram's "terminate session", and it invalidates the
   uploader's session too if they share an auth key. Deciding whether the
   player gets its own login or a copy of the uploader's is therefore a

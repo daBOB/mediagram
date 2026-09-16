@@ -29,6 +29,10 @@ browser ──HLS / direct play──> Bun ────────────�
                                                  Telegram
 ```
 
+"The player" is two things: a **backend** that speaks MTProto and serves
+bytes, and a **web UI** in the browser that speaks only to that backend. Only
+the backend holds credentials.
+
 The uploader stays in Rust and keeps `add`, `verify`, `export-package` and the
 rest. `mediagram serve` (phase 1) remains as the reference implementation the
 TypeScript port is checked against, byte for byte.
@@ -93,10 +97,13 @@ Checked in the codebase and against the live channel, not assumed:
   built into the app.
 - **One viewer.** No multi-user accounts, no watch history, no concurrent
   session management in v1.
-- **The player holds the account's auth key.** Unavoidable for a client that
-  speaks MTProto. Whether it gets a copy of the uploader's session or a login
-  of its own — ideally on a dedicated account — is decided in phase 2, and it
-  is a security decision rather than a convenience one.
+- **The backend holds the account's auth key; the browser holds nothing.**
+  MTProto authenticates every file call and has no scoped credential, so
+  whichever process fetches bytes is the account. That process is the Bun
+  backend. The web UI is an ordinary HTTP client of it and never receives a
+  session string, the channel id, or a message id. Whether the backend gets a
+  copy of the uploader's session or a login of its own — ideally on a
+  dedicated account — is decided in phase 2.
 
 ## Scope note
 
