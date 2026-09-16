@@ -62,6 +62,12 @@ enum Cmd {
     },
     /// Drop unwanted audio and subtitle tracks so a file fits one upload part
     Prepare(PrepareArgs),
+    /// Serve the library over HTTP for a player: what is playable, and bytes
+    Serve {
+        /// Address to listen on; default: 127.0.0.1:8765, or serve_addr
+        #[arg(long)]
+        addr: Option<String>,
+    },
     /// Rebuild library.db from channel captions (additive: never demotes local sets; use verify for that)
     Rescan,
     /// Upload one small file with a smoke caption, print the message id, delete it
@@ -100,6 +106,7 @@ async fn main() -> Result<()> {
             publish,
         } => commands::export_package::run(&cfg, out, dry_run, publish).await,
         Cmd::Prepare(args) => commands::prepare::run(&cfg, args).await,
+        Cmd::Serve { addr } => commands::serve::run(&cfg, addr).await,
         Cmd::Rescan => commands::rescan::run(&cfg).await,
         Cmd::SmokeUpload { file } => commands::smoke_upload::run(&cfg, &file).await,
     }

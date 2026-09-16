@@ -9,6 +9,9 @@ tmdb_key = ""                      # https://www.themoviedb.org/settings/api
 # max_attempts = 5
 # tmp_dir = "/fast/scratch"        # faststart remux output; default: next to source
 # data_dir = "/var/lib/mediagram"  # session, library.db, tmdb cache; default: XDG data dir
+# The playback API has no authentication of its own. Keep it on loopback and
+# put a reverse proxy in front of it to reach the library from elsewhere.
+# serve_addr = "127.0.0.1:8765"    # where `mediagram serve` listens
 
 # --- prebuilt metadata package (mediagram export-package) -------------------
 # A player fetches one encrypted file instead of scanning the channel.

@@ -81,6 +81,11 @@ speaks MTProto; ffmpeg transcodes what browsers cannot play. Browsers refuse
 AC3/E-AC3 and Matroska and are patchy on HEVC, so the films need transcoding,
 and a 25 Mbit/s uplink means remote viewing needs it for bitrate too.
 
+Phase 1 of `plans/260916-1936-web-player-bun-stack/` is complete: `mediagram
+serve` answers Range requests over a set's concatenated parts, verified live
+against the channel byte-for-byte against the local source file. Phase 2, the
+browser UI, is next; browser playback itself is first exercised there.
+
 Android is not cancelled, only no longer first. The UniFFI notes below still
 apply when that round starts.
 

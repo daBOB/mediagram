@@ -5,6 +5,27 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 2026-09-16
+
+**Shipped**
+
+- `mediagram serve`: a local HTTP API a player can use. `GET /sets` lists what
+  `PLAYABLE_SQL` matches, with the codecs a browser needs to decide between
+  direct play and a transcode. `GET /sets/{id}/stream` serves a set's parts as
+  one virtual file with Range support, seeking into the right Telegram message
+  by skipping 512 KiB chunks rather than downloading from zero.
+- `db::open_read_only`: the serving process never checkpoints or migrates the
+  uploader's index.
+- `serve_addr` in config, loopback by default. The API has no authentication
+  of its own; exposing it is a later, deliberate step.
+
+Verified live against the channel: five 2,000-byte ranges of a
+7,011,563,463-byte two-part film — including one crossing the part boundary —
+came back byte-identical to the local source file, as did a 400 MiB slice; a
+whole one-part lesson matched its recorded part hash; seeks anywhere in the
+6.5 GB file cost 0.15-0.21 s; memory moved 164 kB over 800 MiB streamed; and
+`library.db` was byte-identical throughout, including after shutdown.
+
 ## 2026-09-14
 
 **Shipped**

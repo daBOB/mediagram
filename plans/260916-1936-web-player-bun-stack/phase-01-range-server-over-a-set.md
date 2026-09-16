@@ -1,7 +1,7 @@
 ---
 phase: 1
 title: "Range server over a set"
-status: pending
+status: completed
 priority: P1
 effort: "1.5d"
 dependencies: []
@@ -80,20 +80,42 @@ lengths, produce the list of `(part, skip_chunks, head_drop, take)` steps.
    SQLite before the index is opened, as `main` already does.
 
 ## Success Criteria
-- [ ] `GET /sets` lists exactly what `PLAYABLE_SQL` matches
-- [ ] A full `GET` streams a whole set and the bytes match the source file
-- [ ] `bytes=0-` returns 206 with the whole remainder
-- [ ] A mid-file range returns exactly the requested bytes, verified against
+- [x] `GET /sets` lists exactly what `PLAYABLE_SQL` matches
+- [x] A full `GET` streams a whole set and the bytes match the source file
+- [x] `bytes=0-` returns 206 with the whole remainder
+- [x] A mid-file range returns exactly the requested bytes, verified against
       the same range read from the local source file
-- [ ] A range spanning the boundary between part 0 and part 1 is correct
-- [ ] An unsatisfiable range returns 416, a malformed one 400
-- [ ] Every response carries `Content-Length`; a 206 carries a well-formed
+- [x] A range spanning the boundary between part 0 and part 1 is correct
+- [x] An unsatisfiable range returns 416, a malformed one 400
+- [x] Every response carries `Content-Length`; a 206 carries a well-formed
       `Content-Range`. Asserted in a test, because phase 4 silently degrades
       to buffering-from-zero when it is missing
 - [ ] Playback works in Safari as well as Chrome, which is the stricter test
-      of the two
-- [ ] Memory stays flat while streaming a 6.5 GiB set
-- [ ] The index file is byte-identical after serving
+      of the two — carried into phase 2, which is where a page exists to
+      play it in
+- [x] Memory stays flat while streaming a 6.5 GiB set
+- [x] The index file is byte-identical after serving
+
+## Live acceptance, 2026-09-16
+
+Run against the real channel with the 7,011,563,463-byte two-part film and a
+one-part course lesson.
+
+| Check | Result |
+|---|---|
+| `HEAD` | 200, `content-length: 7011563463`, `accept-ranges: bytes`, `content-type: video/x-matroska` |
+| Five 2,000-byte ranges (file head, mid part 0, across the part boundary, start of part 1, file tail) | every one byte-identical to the same range of the local source file |
+| 400 MiB slice from offset 2,000,000,000 | sha256 identical to the source file's |
+| Whole one-part lesson, 18,968,265 bytes | sha256 identical to the recorded part hash |
+| Seek latency, 64 KiB at four offsets up to 6.9 GB | 0.15-0.21 s, flat with depth: `skip_chunks` works as the design assumed |
+| Throughput | 5.1-5.3 MB/s (~42 Mbit/s), above a 13.9 Mbit/s source |
+| Memory over 800 MiB streamed | 30,324 kB → 30,488 kB |
+| `library.db` sha256, before / during / after, including after shutdown | unchanged |
+| 416 / 400 / 404 | as specified |
+
+Not yet checked: two processes sharing the session store (`serve` running
+while `add` runs). The SQLite init-order defect found this week makes this
+worth proving rather than assuming.
 
 ## Risk Assessment
 - **Seek cost.** Each seek discards up to 512 KiB. Acceptable, and the only
@@ -104,4 +126,5 @@ lengths, produce the list of `(part, skip_chunks, head_drop, take)` steps.
   message on failure rather than surfacing a broken stream.
 - **Two processes, one session store.** `serve` runs alongside a possible
   `add`. Both open the libsql session; the SQLite init-order defect found this
-  week proves this area bites. Verify explicitly before assuming it works.
+  week proves this area bites. Still unverified: the live run above used
+  `serve` alone.

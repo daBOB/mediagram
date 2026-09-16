@@ -9,6 +9,7 @@ pub mod prepare;
 pub mod push_index;
 pub mod rescan;
 pub mod resume;
+pub mod serve;
 pub mod smoke_upload;
 pub mod verify;
 pub mod whoami;

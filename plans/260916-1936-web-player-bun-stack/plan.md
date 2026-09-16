@@ -1,6 +1,6 @@
 ---
 title: "Web player on a Bun stack"
-status: pending
+status: in-progress
 created: 2026-09-16
 source: plans/reports/brainstorm-to-planner-260916-1936-web-player-bun-stack-report.md
 blockedBy: []
@@ -33,7 +33,7 @@ browser ──direct play───────────────> mediagra
 
 | # | Phase | Status | Priority | Effort | Depends on |
 |---|-------|--------|----------|--------|------------|
-| 1 | [Range server over a set](phase-01-range-server-over-a-set.md) | pending | P1 | 1.5d | - |
+| 1 | [Range server over a set](phase-01-range-server-over-a-set.md) | complete | P1 | 1.5d | - |
 | 2 | [Minimal web UI, direct play](phase-02-web-ui-direct-play.md) | pending | P1 | 1d | 1 |
 | 3 | [Disk cache](phase-03-disk-cache.md) | pending | P1 | 1d | 1 |
 | 4 | [Transcoding to HLS](phase-04-transcoding-to-hls.md) | pending | P2 | 2d | 2,3 |
@@ -51,7 +51,8 @@ Checked in the codebase and against the live channel, not assumed:
 | Fact | Evidence |
 |---|---|
 | Seeking to an arbitrary offset is possible | `DownloadIter::skip_chunks(n)` advances by `n × 512 KiB` (grammers-client 0.10 `files.rs:68`). A byte offset costs at most one discarded chunk |
-| Download throughput is ~5-10 MB/s | `verify --full` pulled 6.53 GiB back and re-hashed it; enough for a 13.9 Mbit/s source to direct-play |
+| Download throughput is ~5-10 MB/s | `verify --full` pulled 6.53 GiB back and re-hashed it; measured again at 5.1-5.3 MB/s through `serve`, enough for a 13.9 Mbit/s source to direct-play |
+| A seek costs one round trip wherever it lands | `serve` returned 64 KiB from offsets up to 6.9 GB in 0.15-0.21 s |
 | Parts concatenate to the exact file | Independently re-hashed byte ranges of a 6.53 GiB film against the index; both parts and the set hash matched |
 | What is playable is already defined | `mlib_spec::schema::PLAYABLE_SQL` |
 | Library codec profiles | `mp4/h264/aac` (162 lessons) and `mkv/hevc/ac3` (films), from the live index |

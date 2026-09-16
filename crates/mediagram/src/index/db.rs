@@ -26,6 +26,40 @@ pub fn open(data_dir: &Path) -> Result<Connection> {
     Ok(conn)
 }
 
+/// Opens an existing `<data_dir>/library.db` for reading only.
+///
+/// The player never writes, and a read-write connection would: SQLite
+/// checkpoints the WAL back into the main file when the last such connection
+/// closes, which rewrites an index the uploader owns. Read-only also means a
+/// serving process can never migrate a database a newer uploader wrote.
+///
+/// No migration runs here, so an index older than this build is reported
+/// rather than upgraded behind the uploader's back.
+pub fn open_read_only(data_dir: &Path) -> Result<Connection> {
+    let path = data_dir.join("library.db");
+    let conn = Connection::open_with_flags(
+        &path,
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
+    )
+    .with_context(|| format!("opening {} read-only", path.display()))?;
+    let version: i64 = conn
+        .query_row(
+            "SELECT value FROM meta WHERE key = 'schema_version'",
+            [],
+            |row| row.get::<_, String>(0),
+        )
+        .map(|v| v.parse().unwrap_or(0))
+        .unwrap_or(0);
+    if version < mlib_spec::schema::SCHEMA_VERSION {
+        anyhow::bail!(
+            "{} is at schema v{version}, this build expects v{}; run any writing command once to migrate it",
+            path.display(),
+            mlib_spec::schema::SCHEMA_VERSION
+        );
+    }
+    Ok(conn)
+}
+
 /// Applies every migration group above the database's recorded version, in
 /// one transaction, then records the version reached.
 ///
@@ -150,6 +184,29 @@ mod tests {
         );
         delete_meta(&conn, "source:x").unwrap();
         assert_eq!(get_meta(&conn, "source:x").unwrap(), None);
+    }
+
+    /// The player only reads. Opening read-only is what keeps a serving
+    /// process from checkpointing, and so from rewriting, the uploader's
+    /// index underneath it.
+    #[test]
+    fn read_only_open_sees_committed_rows_and_refuses_writes() {
+        let dir = tempfile::tempdir().unwrap();
+        let writable = open(dir.path()).unwrap();
+        set_meta(&writable, "schema_version_probe", "1").unwrap();
+
+        let reader = open_read_only(dir.path()).unwrap();
+        assert_eq!(
+            get_meta(&reader, "schema_version_probe").unwrap(),
+            Some("1".to_string())
+        );
+        assert!(set_meta(&reader, "schema_version_probe", "2").is_err());
+    }
+
+    #[test]
+    fn read_only_open_refuses_a_database_that_is_not_there() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(open_read_only(dir.path()).is_err());
     }
 
     #[test]

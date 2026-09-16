@@ -39,6 +39,9 @@ pub struct Config {
     pub tmp_dir: Option<PathBuf>,
     /// Session, library.db, tmdb cache; default: XDG data dir.
     pub data_dir: Option<PathBuf>,
+    /// Where `mediagram serve` listens; default: loopback, see
+    /// `commands::serve::DEFAULT_ADDR`.
+    pub serve_addr: Option<String>,
 }
 
 /// Manual Debug so api_hash, tmdb_key and package_key can never reach logs
@@ -61,6 +64,7 @@ impl std::fmt::Debug for Config {
             .field("max_attempts", &self.max_attempts)
             .field("tmp_dir", &self.tmp_dir)
             .field("data_dir", &self.data_dir)
+            .field("serve_addr", &self.serve_addr)
             .finish()
     }
 }
@@ -134,6 +138,9 @@ fn apply_env(cfg: &mut Config) -> Result<()> {
     }
     if let Some(v) = env("DATA_DIR") {
         cfg.data_dir = Some(PathBuf::from(v));
+    }
+    if let Some(v) = env("SERVE_ADDR") {
+        cfg.serve_addr = Some(v);
     }
     Ok(())
 }
