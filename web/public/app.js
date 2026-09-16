@@ -1,152 +1,231 @@
 /**
- * The catalog page.
+ * The library page: three shelves, a drill-down, and a player.
  *
- * Talks only to this server's own API: it never learns where a set's bytes
- * live, which is the point of keeping the channel and message ids on the
+ * Talks only to this server's own API. It never learns which channel or
+ * message a set's bytes live in, which is the point of keeping those on the
  * server side.
+ *
+ * Routing is the URL hash, so the back button works and a view can be linked:
+ *   #/movies                     #/series                #/tutorials
+ *   #/series/Widow%27s%20Bay     #/tutorials/Geldhochschule
  */
 
+import { groupLibrary } from "./lib/library.js";
+import { decidePlayback } from "./lib/playable.js";
+import { codecLine, episodeLabel, humanDuration, humanSize } from "./lib/format.js";
+
 const main = document.getElementById("main");
-const count = document.getElementById("count");
 const dialog = document.getElementById("player");
 const video = document.getElementById("video");
+const note = document.getElementById("note");
 const now = document.getElementById("now");
 
-/** Same rules as `src/playable.ts`, which is the tested copy. */
-const CONTAINERS = new Set(["mp4", "m4v", "webm"]);
-const VIDEO = new Set(["h264", "avc", "avc1", "vp8", "vp9", "av1"]);
-const AUDIO = new Set(["aac", "mp4a", "opus", "vorbis", "mp3"]);
-const PRETTY = { hevc: "HEVC", h265: "HEVC" };
+/** @type {{movies: any[], series: any[], tutorials: any[]}} */
+let library = { movies: [], series: [], tutorials: [] };
 
-function decide(set) {
-  const container = (set.container ?? "").toLowerCase();
-  const v = (set.vcodec ?? "").toLowerCase();
-  const a = (set.acodec ?? "").toLowerCase();
-  const reasons = [];
-  if (!CONTAINERS.has(container)) {
-    reasons.push(container === "mkv" ? "Matroska" : container || "unknown container");
-  }
-  if (!VIDEO.has(v)) reasons.push(PRETTY[v] ?? v ?? "unknown video");
-  if (!AUDIO.has(a)) reasons.push(a || "unknown audio");
-  return reasons.length ? { direct: false, reason: reasons.join(", ") } : { direct: true };
+const SECTIONS = {
+  movies: { label: "Movies", empty: "No films yet." },
+  series: { label: "Series", empty: "No series yet." },
+  tutorials: { label: "Tutorials", empty: "No courses yet." },
+};
+
+/** Cleared and rebuilt per view; every node is created, never interpolated. */
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
 }
 
-function humanSize(bytes) {
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  let value = bytes;
-  let unit = 0;
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024;
-    unit += 1;
-  }
-  return `${value < 10 && unit > 0 ? value.toFixed(1) : Math.round(value)} ${units[unit]}`;
-}
-
-function humanDuration(seconds) {
-  if (!seconds) return "";
-  const h = Math.floor(seconds / 3600);
-  const m = Math.round((seconds % 3600) / 60);
-  return h ? `${h}h ${m}m` : `${m}m`;
-}
-
-/** Course lessons group under their course; episodes under their show. */
-function groupOf(set) {
-  if (set.show) return set.show;
-  if (set.kind === "movie") return "Films";
-  return "Other";
-}
-
-function subtitleOf(set) {
-  const bits = [];
-  if (set.season != null && set.episode) bits.push(`S${set.season}E${set.episode}`);
-  else if (set.episode) bits.push(`Lesson ${set.episode}`);
-  if (set.chap) bits.push(set.chap);
-  if (set.year) bits.push(String(set.year));
-  bits.push([set.container, set.vcodec, set.acodec].filter(Boolean).join(" · "));
-  return bits.filter(Boolean).join(" — ");
+function playerNoteFor(set) {
+  const decision = decidePlayback(set);
+  return decision.kind === "direct"
+    ? null
+    : `Your browser cannot decode this (${decision.reason}). It will not start until transcoding exists.`;
 }
 
 function play(set) {
   video.src = `/api/sets/${encodeURIComponent(set.setId)}/stream`;
-  now.textContent = set.title ?? set.setId;
+  now.textContent = [set.show, episodeLabel(set), set.title].filter(Boolean).join(" · ");
+  const warning = playerNoteFor(set);
+  note.textContent = warning ?? "";
+  note.hidden = warning === null;
   dialog.showModal();
   video.play().catch(() => {
-    /* The viewer can press play; autoplay is often blocked. */
+    /* Autoplay is often blocked; the viewer can press play. */
   });
 }
 
 document.getElementById("close").addEventListener("click", () => dialog.close());
 dialog.addEventListener("close", () => {
-  // Drop the connection so the server stops fetching from Telegram.
+  // Drop the connection so the server stops pulling bytes from Telegram.
   video.pause();
   video.removeAttribute("src");
   video.load();
 });
 
-function render(sets) {
-  count.textContent = `${sets.length} playable`;
-  if (sets.length === 0) {
-    main.innerHTML = '<p class="empty">Nothing playable in the index yet.</p>';
+/** A card for a film, a show or a course. */
+function card({ name, meta, initials, onClick, badge }) {
+  const button = el("button", "card");
+  const thumb = el("div", "thumb", initials);
+  const body = el("div", "body");
+  body.append(el("div", "name", name));
+  if (meta) body.append(el("div", "meta", meta));
+  if (badge) body.append(badge);
+  button.append(thumb, body);
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+function initialsOf(text) {
+  return (text ?? "?")
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((word) => word[0] ?? "")
+    .join("")
+    .toUpperCase();
+}
+
+function transcodeBadge(set) {
+  const decision = decidePlayback(set);
+  return decision.kind === "direct" ? null : el("span", "badge", "needs transcode");
+}
+
+function heading(title, subtitle) {
+  main.append(el("h1", null, title));
+  if (subtitle) main.append(el("p", "sub", subtitle));
+}
+
+function emptyState(section) {
+  const p = el("p", "empty");
+  p.append(SECTIONS[section].empty + " ");
+  if (section === "movies") p.append("Upload one with "), p.append(el("code", null, "mediagram add <file> --tmdb <id>"));
+  if (section === "series") p.append("Upload episodes with "), p.append(el("code", null, "mediagram add <file> --season 1 --episode 1"));
+  if (section === "tutorials") p.append("Upload a course with "), p.append(el("code", null, "mediagram add-course <folder>"));
+  p.append(".");
+  main.append(p);
+}
+
+/** Films: a flat grid, since a film is one thing. */
+function viewMovies() {
+  heading("Movies", `${library.movies.length} in the library`);
+  if (library.movies.length === 0) return emptyState("movies");
+
+  const grid = el("div", "grid");
+  for (const set of library.movies) {
+    grid.append(
+      card({
+        name: set.title ?? set.setId,
+        meta: [set.year, humanDuration(set.duration), humanSize(set.total)].filter(Boolean).join(" · "),
+        initials: initialsOf(set.title),
+        badge: transcodeBadge(set),
+        onClick: () => play(set),
+      }),
+    );
+  }
+  main.append(grid);
+}
+
+/** Shows and courses: a grid of collections, each opening its own view. */
+function viewCollections(section) {
+  const collections = library[section];
+  heading(SECTIONS[section].label, `${collections.length} in the library`);
+  if (collections.length === 0) return emptyState(section);
+
+  const grid = el("div", "grid");
+  for (const collection of collections) {
+    const divisions = collection.seasons.length;
+    grid.append(
+      card({
+        name: collection.name,
+        meta: `${collection.count} ${section === "series" ? "episodes" : "lessons"} · ${divisions} ${
+          section === "series" ? (divisions === 1 ? "season" : "seasons") : divisions === 1 ? "chapter" : "chapters"
+        }`,
+        initials: initialsOf(collection.name),
+        onClick: () => {
+          location.hash = `#/${section}/${encodeURIComponent(collection.name)}`;
+        },
+      }),
+    );
+  }
+  main.append(grid);
+}
+
+/** One show or course: its divisions, each a list of numbered items. */
+function viewCollection(section, name) {
+  const collection = library[section].find((entry) => entry.name === name);
+  if (!collection) {
+    main.append(el("p", "error", `No ${section === "series" ? "show" : "course"} called "${name}".`));
     return;
   }
 
-  const groups = new Map();
-  for (const set of sets) {
-    const key = groupOf(set);
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(set);
+  const back = el("button", "back", `← ${SECTIONS[section].label}`);
+  back.addEventListener("click", () => {
+    location.hash = `#/${section}`;
+  });
+  main.append(back);
+  heading(collection.name, `${collection.count} ${section === "series" ? "episodes" : "lessons"}`);
+
+  for (const division of collection.seasons) {
+    const block = el("section", "season");
+    block.append(el("h2", null, `${division.title} · ${division.items.length}`));
+
+    for (const set of division.items) {
+      const row = el("button", "row");
+      row.append(el("div", "num", episodeLabel(set)));
+
+      const title = el("div", "title");
+      title.append(el("b", null, set.title ?? set.setId));
+      title.append(el("span", null, codecLine(set)));
+      row.append(title);
+
+      const badge = transcodeBadge(set);
+      if (badge) row.append(badge);
+
+      row.append(
+        el("div", "meta", [humanDuration(set.duration), humanSize(set.total)].filter(Boolean).join(" · ")),
+      );
+      row.addEventListener("click", () => play(set));
+      block.append(row);
+    }
+    main.append(block);
+  }
+}
+
+function route() {
+  const [section = "movies", name] = location.hash.replace(/^#\/?/, "").split("/");
+  const known = SECTIONS[section] ? section : "movies";
+
+  for (const link of document.querySelectorAll("nav a")) {
+    link.classList.toggle("active", link.dataset.section === known);
   }
 
   main.textContent = "";
-  for (const [name, items] of groups) {
-    const section = document.createElement("section");
-    section.className = "group";
-    const heading = document.createElement("h2");
-    heading.textContent = `${name} · ${items.length}`;
-    section.append(heading);
-
-    for (const set of items) {
-      const decision = decide(set);
-      const button = document.createElement("button");
-      button.className = "item";
-
-      const title = document.createElement("div");
-      title.className = "title";
-      const strong = document.createElement("b");
-      strong.textContent = set.title ?? set.setId;
-      const sub = document.createElement("span");
-      sub.textContent = subtitleOf(set);
-      title.append(strong, sub);
-
-      const meta = document.createElement("div");
-      meta.className = "meta";
-      meta.textContent = [humanDuration(set.duration), humanSize(set.total)]
-        .filter(Boolean)
-        .join(" · ");
-
-      button.append(title);
-      if (!decision.direct) {
-        const badge = document.createElement("span");
-        badge.className = "badge";
-        badge.textContent = `needs transcode: ${decision.reason}`;
-        button.append(badge);
-      }
-      button.append(meta);
-      button.addEventListener("click", () => play(set));
-      section.append(button);
-    }
-    main.append(section);
-  }
+  if (name) viewCollection(known, decodeURIComponent(name));
+  else if (known === "movies") viewMovies();
+  else viewCollections(known);
 }
+
+window.addEventListener("hashchange", route);
 
 try {
   const response = await fetch("/api/sets");
   if (!response.ok) throw new Error(`the catalog answered ${response.status}`);
-  render(await response.json());
+  const sets = await response.json();
+  library = groupLibrary(sets);
+
+  document.getElementById("n-movies").textContent = String(library.movies.length);
+  document.getElementById("n-series").textContent = String(library.series.length);
+  document.getElementById("n-tutorials").textContent = String(library.tutorials.length);
+  document.getElementById("foot").textContent = `${sets.length} playable sets`;
+
+  if (!location.hash) {
+    // Open on a shelf that has something in it.
+    const first = ["movies", "series", "tutorials"].find((s) => library[s].length > 0) ?? "movies";
+    location.hash = `#/${first}`;
+  }
+  route();
 } catch (error) {
-  main.innerHTML = "";
-  const p = document.createElement("p");
-  p.className = "error";
-  p.textContent = `Could not load the catalog: ${error.message}`;
-  main.append(p);
+  main.textContent = "";
+  main.append(el("p", "error", `Could not load the catalog: ${error.message}`));
 }

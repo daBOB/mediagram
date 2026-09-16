@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { decidePlayback } from "../src/playable";
+import { decidePlayback } from "../public/lib/playable.js";
 
 const set = (container: string, vcodec: string | null, acodec: string | null) => ({
   container,
