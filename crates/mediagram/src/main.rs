@@ -62,6 +62,8 @@ enum Cmd {
     },
     /// Drop unwanted audio and subtitle tracks so a file fits one upload part
     Prepare(PrepareArgs),
+    /// Show the login code Telegram just sent, read from this account's messages
+    LoginCode,
     /// Print a portable session string for the player backend (it is the account)
     ExportSession,
     /// Serve the library over HTTP for a player: what is playable, and bytes
@@ -108,6 +110,7 @@ async fn main() -> Result<()> {
             publish,
         } => commands::export_package::run(&cfg, out, dry_run, publish).await,
         Cmd::Prepare(args) => commands::prepare::run(&cfg, args).await,
+        Cmd::LoginCode => commands::login_code::run(&cfg).await,
         Cmd::ExportSession => commands::export_session::run(&cfg).await,
         Cmd::Serve { addr } => commands::serve::run(&cfg, addr).await,
         Cmd::Rescan => commands::rescan::run(&cfg).await,

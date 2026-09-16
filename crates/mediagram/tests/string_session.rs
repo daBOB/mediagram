@@ -8,7 +8,7 @@
 //! The layout is not ours and is not negotiable, so it is pinned here rather
 //! than described in a comment.
 
-use mediagram::telegram::string_session::{encode_string_session, SessionError};
+use mediagram::telegram::string_session::{SessionError, encode_string_session};
 
 use base64::Engine;
 

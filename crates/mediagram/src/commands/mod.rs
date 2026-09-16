@@ -6,6 +6,7 @@ pub mod args;
 pub mod export_package;
 pub mod export_session;
 pub mod login;
+pub mod login_code;
 pub mod prepare;
 pub mod push_index;
 pub mod rescan;

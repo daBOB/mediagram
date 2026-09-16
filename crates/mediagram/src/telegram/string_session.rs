@@ -38,7 +38,8 @@ pub fn encode_string_session(
         return Err(SessionError::KeyLength(auth_key.len()));
     }
     let address = address.as_bytes();
-    let address_len = i16::try_from(address.len()).map_err(|_| SessionError::AddressLength(address.len()))?;
+    let address_len =
+        i16::try_from(address.len()).map_err(|_| SessionError::AddressLength(address.len()))?;
 
     let mut blob = Vec::with_capacity(1 + 2 + address.len() + 2 + AUTH_KEY_LEN);
     blob.push(dc_id);
