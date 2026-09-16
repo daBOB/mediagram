@@ -24,11 +24,15 @@
  */
 
 import { Api, TelegramClient, sessions } from "teleproto";
+import { Logger } from "teleproto/extensions";
 import { createInterface } from "node:readline/promises";
+import { chmodSync, writeFileSync } from "node:fs";
 import { stderr, stdin } from "node:process";
 
 const forceSMS = process.argv.includes("--sms");
 const useQr = process.argv.includes("--qr");
+/** Print the settings instead of writing `.env`, for piping into a secret store. */
+const toStdout = process.argv.includes("--stdout");
 
 // Prompts go to stderr so that `bun run login > .env` captures the settings
 // and still lets you answer the questions.
@@ -86,11 +90,23 @@ const wantedChannel =
   process.env.MEDIAGRAM_CHANNEL ??
   (await ask("channel (exact title, or -100… id): "));
 
+/**
+ * teleproto logs through `console.log`, which is stdout — the same channel the
+ * settings use. Its version banner is printed before any client logger can be
+ * installed, so redirect the channel itself and keep stdout for settings alone.
+ */
+const printSettings = console.log.bind(console);
+console.log = (...args: unknown[]) => void stderr.write(args.join(" ") + "\n");
+
+/** Errors only, and even those go to stderr via the redirect above. */
+const quietLogger = new Logger("error" as never);
+
 const client = new TelegramClient(
   new sessions.StringSession(""),
   apiId,
   apiHash,
   {
+    baseLogger: quietLogger,
     connectionRetries: 3,
     // Surface flood waits instead of sleeping through them. teleproto otherwise
     // sleeps inside the request loop for any wait up to a minute and never
@@ -105,6 +121,11 @@ stderr.write(
 );
 
 const password = () => askHidden("2FA password (hidden): ");
+
+// `client.start` connects on its own; `signInUserWithQrCode` does not, and
+// invoking anything before a sender exists fails with "Cannot send requests
+// while disconnected". Connecting here covers both paths.
+await client.connect();
 
 if (useQr) {
   await client.signInUserWithQrCode(
@@ -220,14 +241,23 @@ stderr.write(
     "Save the block to web/.env (gitignored), then `bun run start`.\n\n",
 );
 
-console.log(`MEDIAGRAM_API_ID=${apiId}`);
-console.log(`MEDIAGRAM_API_HASH=${apiHash}`);
-console.log(`MEDIAGRAM_SESSION=${session}`);
-console.log(`MEDIAGRAM_CHAT_ID=${chatId}`);
-console.log(`MEDIAGRAM_CHANNEL_ACCESS_HASH=${accessHash}`);
-console.log(
+const settings = [
+  `MEDIAGRAM_API_ID=${apiId}`,
+  `MEDIAGRAM_API_HASH=${apiHash}`,
+  `MEDIAGRAM_SESSION=${session}`,
+  `MEDIAGRAM_CHAT_ID=${chatId}`,
+  `MEDIAGRAM_CHANNEL_ACCESS_HASH=${accessHash}`,
   `MEDIAGRAM_LIBRARY_DB=${process.env.MEDIAGRAM_LIBRARY_DB ?? `${process.env.HOME}/.local/share/mediagram/library.db`}`,
-);
-console.log(
   `MEDIAGRAM_PLAYER_ADDR=${process.env.MEDIAGRAM_PLAYER_ADDR ?? "127.0.0.1:8770"}`,
-);
+].join("\n");
+
+if (toStdout) {
+  printSettings(settings);
+} else {
+  // Written here rather than left to `> .env`: a redirect also captures
+  // whatever the library decides to print, and a session file is a bad place
+  // to discover log noise.
+  writeFileSync(".env", settings + "\n", { mode: 0o600 });
+  chmodSync(".env", 0o600);
+  stderr.write("Written to web/.env (owner-readable only). Now: bun run start\n");
+}
