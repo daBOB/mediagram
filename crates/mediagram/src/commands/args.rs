@@ -86,3 +86,22 @@ pub struct AddCourseArgs {
     #[arg(long)]
     pub no_remux: bool,
 }
+
+/// Arguments for `mediagram prepare`.
+#[derive(Args, Debug, Clone)]
+pub struct PrepareArgs {
+    /// A video file, or a folder to walk
+    pub path: PathBuf,
+    /// Rewrite the files in place. Without this, prepare only reports
+    #[arg(long)]
+    pub replace: bool,
+    /// Audio languages to keep, comma separated
+    #[arg(long, default_value = "ger,deu,eng")]
+    pub audio: String,
+    /// Subtitle languages to keep, comma separated
+    #[arg(long, default_value = "ger,deu,eng")]
+    pub subs: String,
+    /// Size a file must fit in; defaults to the configured part size
+    #[arg(long)]
+    pub limit: Option<u64>,
+}

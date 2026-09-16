@@ -5,6 +5,7 @@ pub mod add_course;
 pub mod args;
 pub mod export_package;
 pub mod login;
+pub mod prepare;
 pub mod push_index;
 pub mod rescan;
 pub mod resume;

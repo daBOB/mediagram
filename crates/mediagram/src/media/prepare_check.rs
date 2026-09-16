@@ -1,0 +1,69 @@
+//! Checking a prepared file before it replaces the original.
+//!
+//! `prepare --replace` is irreversible: the dropped tracks are gone. Every
+//! check here exists because of a way ffmpeg can exit successfully having
+//! produced something that is not a usable replacement. Pure, so each one can
+//! be tested against the case it guards.
+
+use super::prepare_plan::{Stream, StreamKind};
+
+/// Why a prepared file was rejected. Each variant names one real failure.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Rejection {
+    /// ffmpeg can exit 0 having written nothing useful.
+    Empty,
+    /// A bad stream map can drop the picture entirely.
+    NoVideo,
+    /// The keep set was not applied, or was applied to nothing.
+    MissingLanguage(String),
+    /// The likeliest silent failure: a truncated copy.
+    DurationChanged { source: f64, prepared: f64 },
+    /// Dropping tracks cannot make a file bigger; something was misunderstood.
+    NotSmaller { source: u64, prepared: u64 },
+}
+
+/// Seconds the prepared duration may differ from the source before it counts
+/// as truncated. Remuxing shifts the last frame slightly; a truncation is
+/// always far larger than this.
+pub const DURATION_TOLERANCE: f64 = 1.0;
+
+/// Whether a prepared file may replace its original.
+pub fn check_prepared(
+    prepared_streams: &[Stream],
+    prepared_size: u64,
+    prepared_duration: f64,
+    source_size: u64,
+    source_duration: f64,
+    expected_languages: &[String],
+) -> Result<(), Rejection> {
+    if prepared_size == 0 || prepared_streams.is_empty() {
+        return Err(Rejection::Empty);
+    }
+    if !prepared_streams.iter().any(|s| s.kind == StreamKind::Video) {
+        return Err(Rejection::NoVideo);
+    }
+    for language in expected_languages {
+        let present = prepared_streams.iter().any(|s| {
+            s.kind == StreamKind::Audio
+                && s.language
+                    .as_deref()
+                    .is_some_and(|l| l.eq_ignore_ascii_case(language))
+        });
+        if !present {
+            return Err(Rejection::MissingLanguage(language.clone()));
+        }
+    }
+    if (prepared_duration - source_duration).abs() > DURATION_TOLERANCE {
+        return Err(Rejection::DurationChanged {
+            source: source_duration,
+            prepared: prepared_duration,
+        });
+    }
+    if prepared_size >= source_size {
+        return Err(Rejection::NotSmaller {
+            source: source_size,
+            prepared: prepared_size,
+        });
+    }
+    Ok(())
+}

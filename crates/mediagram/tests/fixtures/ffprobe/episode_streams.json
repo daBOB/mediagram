@@ -1,0 +1,439 @@
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_type": "video",
+            "tags": {
+                "language": "eng"
+            }
+        },
+        {
+            "index": 1,
+            "codec_name": "eac3",
+            "codec_type": "audio",
+            "bit_rate": "768000",
+            "tags": {
+                "language": "eng"
+            }
+        },
+        {
+            "index": 2,
+            "codec_name": "ac3",
+            "codec_type": "audio",
+            "bit_rate": "384000",
+            "tags": {
+                "language": "ger"
+            }
+        },
+        {
+            "index": 3,
+            "codec_name": "ac3",
+            "codec_type": "audio",
+            "bit_rate": "384000",
+            "tags": {
+                "language": "spa"
+            }
+        },
+        {
+            "index": 4,
+            "codec_name": "ac3",
+            "codec_type": "audio",
+            "bit_rate": "384000",
+            "tags": {
+                "language": "spa"
+            }
+        },
+        {
+            "index": 5,
+            "codec_name": "ac3",
+            "codec_type": "audio",
+            "bit_rate": "384000",
+            "tags": {
+                "language": "fre"
+            }
+        },
+        {
+            "index": 6,
+            "codec_name": "ac3",
+            "codec_type": "audio",
+            "bit_rate": "384000",
+            "tags": {
+                "language": "fre"
+            }
+        },
+        {
+            "index": 7,
+            "codec_name": "ac3",
+            "codec_type": "audio",
+            "bit_rate": "384000",
+            "tags": {
+                "language": "ita"
+            }
+        },
+        {
+            "index": 8,
+            "codec_name": "ac3",
+            "codec_type": "audio",
+            "bit_rate": "384000",
+            "tags": {
+                "language": "jpn"
+            }
+        },
+        {
+            "index": 9,
+            "codec_name": "ac3",
+            "codec_type": "audio",
+            "bit_rate": "384000",
+            "tags": {
+                "language": "por"
+            }
+        },
+        {
+            "index": 10,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "eng"
+            }
+        },
+        {
+            "index": 11,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "eng"
+            }
+        },
+        {
+            "index": 12,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "ara"
+            }
+        },
+        {
+            "index": 13,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "bul"
+            }
+        },
+        {
+            "index": 14,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "cze"
+            }
+        },
+        {
+            "index": 15,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "dan"
+            }
+        },
+        {
+            "index": 16,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "ger"
+            }
+        },
+        {
+            "index": 17,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "gre"
+            }
+        },
+        {
+            "index": 18,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "spa"
+            }
+        },
+        {
+            "index": 19,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "spa"
+            }
+        },
+        {
+            "index": 20,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "est"
+            }
+        },
+        {
+            "index": 21,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "fin"
+            }
+        },
+        {
+            "index": 22,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "fre"
+            }
+        },
+        {
+            "index": 23,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "fre"
+            }
+        },
+        {
+            "index": 24,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "heb"
+            }
+        },
+        {
+            "index": 25,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "hin"
+            }
+        },
+        {
+            "index": 26,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "hun"
+            }
+        },
+        {
+            "index": 27,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "ind"
+            }
+        },
+        {
+            "index": 28,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "ita"
+            }
+        },
+        {
+            "index": 29,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "jpn"
+            }
+        },
+        {
+            "index": 30,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "kor"
+            }
+        },
+        {
+            "index": 31,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "lit"
+            }
+        },
+        {
+            "index": 32,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "lav"
+            }
+        },
+        {
+            "index": 33,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "may"
+            }
+        },
+        {
+            "index": 34,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "dut"
+            }
+        },
+        {
+            "index": 35,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "nor"
+            }
+        },
+        {
+            "index": 36,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "pol"
+            }
+        },
+        {
+            "index": 37,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "por"
+            }
+        },
+        {
+            "index": 38,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "por"
+            }
+        },
+        {
+            "index": 39,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "rus"
+            }
+        },
+        {
+            "index": 40,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "slo"
+            }
+        },
+        {
+            "index": 41,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "slv"
+            }
+        },
+        {
+            "index": 42,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "swe"
+            }
+        },
+        {
+            "index": 43,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "tam"
+            }
+        },
+        {
+            "index": 44,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "tel"
+            }
+        },
+        {
+            "index": 45,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "tha"
+            }
+        },
+        {
+            "index": 46,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "tur"
+            }
+        },
+        {
+            "index": 47,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "ukr"
+            }
+        },
+        {
+            "index": 48,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "vie"
+            }
+        },
+        {
+            "index": 49,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "chi"
+            }
+        },
+        {
+            "index": 50,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "chi"
+            }
+        },
+        {
+            "index": 51,
+            "codec_name": "subrip",
+            "codec_type": "subtitle",
+            "tags": {
+                "language": "chi"
+            }
+        }
+    ],
+    "format": {
+        "duration": "2547.136000",
+        "size": "4426249518"
+    }
+}

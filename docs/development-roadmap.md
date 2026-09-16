@@ -70,7 +70,21 @@ hostile or stale host can withhold updates though it cannot pass off stale
 content as fresh; key rotation is manual; and the package is capped at 48 MB
 on export because a reader must hold it whole to verify it.
 
-## Next: Android TV app round
+## Next: web player, then Android
+
+A web player comes first, decided 2026-09-16. Design:
+`plans/reports/brainstorm-to-planner-260916-1936-web-player-bun-stack-report.md`.
+
+Shape: `mediagram serve` exposes HTTP Range over a set's concatenated parts,
+reusing the verified Rust Telegram code; a Bun app serves the UI and never
+speaks MTProto; ffmpeg transcodes what browsers cannot play. Browsers refuse
+AC3/E-AC3 and Matroska and are patchy on HEVC, so the films need transcoding,
+and a 25 Mbit/s uplink means remote viewing needs it for bitrate too.
+
+Android is not cancelled, only no longer first. The UniFFI notes below still
+apply when that round starts.
+
+## Later: Android TV app round
 
 A native Android TV player is the planned second client of the mlib
 format. Approach: bind `mlib-spec` into Kotlin via

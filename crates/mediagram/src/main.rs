@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use mediagram::commands::args::{AddArgs, AddCourseArgs};
+use mediagram::commands::args::{AddArgs, AddCourseArgs, PrepareArgs};
 use mediagram::{commands, config};
 
 #[derive(Parser)]
@@ -60,6 +60,8 @@ enum Cmd {
         #[arg(long)]
         publish: bool,
     },
+    /// Drop unwanted audio and subtitle tracks so a file fits one upload part
+    Prepare(PrepareArgs),
     /// Rebuild library.db from channel captions (additive: never demotes local sets; use verify for that)
     Rescan,
     /// Upload one small file with a smoke caption, print the message id, delete it
@@ -97,6 +99,7 @@ async fn main() -> Result<()> {
             dry_run,
             publish,
         } => commands::export_package::run(&cfg, out, dry_run, publish).await,
+        Cmd::Prepare(args) => commands::prepare::run(&cfg, args).await,
         Cmd::Rescan => commands::rescan::run(&cfg).await,
         Cmd::SmokeUpload { file } => commands::smoke_upload::run(&cfg, &file).await,
     }
