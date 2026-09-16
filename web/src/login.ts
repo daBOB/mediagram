@@ -30,10 +30,12 @@ function ask(question: string): Promise<string> {
  */
 async function askPhone(): Promise<string> {
   for (;;) {
-    const phone = (await ask("phone number, with country code (e.g. +49151…): ")).trim();
+    const phone = (await ask("phone number, international format (+<country><number>): ")).trim();
     if (/^\+[\d()\s-]{6,}$/.test(phone)) return phone;
     stderr.write(
-      "  Needs to start with + and the country code. A German 0151… is +49151….\n",
+      "  Needs to start with + and your country code, with the national\n" +
+        "  leading 0 dropped. It is the number this Telegram account is\n" +
+        "  registered with — your Telegram settings show it in this form.\n",
     );
   }
 }
