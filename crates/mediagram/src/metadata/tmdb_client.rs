@@ -19,19 +19,51 @@ pub trait TmdbApi {
     async fn get_json(&self, path: &str, query: &[(&str, String)]) -> Result<Value>;
 }
 
-/// Direct HTTP access to the TMDB v3 API, authenticating via the `api_key`
-/// query parameter. Retries on HTTP 429, honoring `Retry-After` up to
-/// `MAX_RETRIES` times before giving up.
+/// How TMDB wants a credential presented.
+///
+/// The settings page offers two, and people paste whichever they see first.
+/// A v3 API key is 32 hex characters and goes in the `api_key` query
+/// parameter; a v4 "API Read Access Token" is a JWT and goes in an
+/// `Authorization: Bearer` header. Sent the wrong way, a read token answers
+/// 401 with nothing to say why.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Credential {
+    QueryParam,
+    Bearer,
+}
+
+/// Works out which kind of credential this is.
+///
+/// Anything unrecognised is treated as a v3 key, which is what this client
+/// always did: a wrong guess there fails loudly with a 401 rather than
+/// quietly doing something else.
+pub fn classify(key: &str) -> Credential {
+    let key = key.trim();
+    let looks_like_a_jwt =
+        key.starts_with("eyJ") && key.split('.').filter(|part| !part.is_empty()).count() == 3;
+    if looks_like_a_jwt {
+        Credential::Bearer
+    } else {
+        Credential::QueryParam
+    }
+}
+
+/// Direct HTTP access to the TMDB v3 API. Accepts either credential TMDB
+/// issues and sends it the way that one requires. Retries on HTTP 429,
+/// honoring `Retry-After` up to `MAX_RETRIES` times before giving up.
 pub struct TmdbClient {
     http: reqwest::Client,
     api_key: String,
+    credential: Credential,
 }
 
 impl TmdbClient {
     pub fn new(api_key: impl Into<String>) -> Self {
+        let api_key = api_key.into().trim().to_string();
         Self {
             http: reqwest::Client::new(),
-            api_key: api_key.into(),
+            credential: classify(&api_key),
+            api_key,
         }
     }
 
@@ -49,7 +81,9 @@ impl TmdbApi for TmdbClient {
             .with_context(|| format!("invalid tmdb path {path}"))?;
         {
             let mut pairs = url.query_pairs_mut();
-            pairs.append_pair("api_key", &self.api_key);
+            if self.credential == Credential::QueryParam {
+                pairs.append_pair("api_key", &self.api_key);
+            }
             for (key, value) in query {
                 pairs.append_pair(key, value);
             }
@@ -57,9 +91,13 @@ impl TmdbApi for TmdbClient {
 
         let mut retries = 0;
         loop {
-            let resp = self
-                .http
-                .get(url.clone())
+            let mut request = self.http.get(url.clone());
+            if self.credential == Credential::Bearer {
+                // Never in the URL: a bearer token in a query string reaches
+                // logs, proxies and error messages.
+                request = request.bearer_auth(&self.api_key);
+            }
+            let resp = request
                 .send()
                 .await
                 .map_err(reqwest::Error::without_url) // the URL carries the api key
