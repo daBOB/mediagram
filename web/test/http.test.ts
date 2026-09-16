@@ -204,3 +204,29 @@ describe("the stream route", () => {
     expect((await request("/nope")).status).toBe(404);
   });
 });
+
+describe("the page", () => {
+  test("the root serves a page, not a 404", async () => {
+    const response = await request("/");
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/html");
+    expect(lengthOf(response)).toBe(response.body.byteLength);
+    expect(new TextDecoder().decode(response.body)).toContain("<title>mediagram</title>");
+  });
+
+  test("the page's script is served", async () => {
+    const response = await request("/app.js");
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("javascript");
+  });
+
+  /** A path that climbs out of the public directory must not be served. */
+  test("a traversal attempt is refused", async () => {
+    for (const path of ["/../src/config.ts", "/..%2fsrc%2fconfig.ts", "/../../.env"]) {
+      const response = await request(path);
+      expect([400, 404]).toContain(response.status);
+    }
+  });
+});

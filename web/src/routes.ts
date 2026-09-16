@@ -17,6 +17,8 @@
  */
 
 import type { Database } from "bun:sqlite";
+import { readFileSync } from "node:fs";
+import { join, normalize } from "node:path";
 import { listPlayable, partLocations, playableSet, type PartLocation } from "./catalog";
 import { planReads, totalSize, type PartSpan, type Step } from "./range";
 import { contentType, planResponse } from "./response";
@@ -41,6 +43,37 @@ export interface PlayerResponse {
 }
 
 const STREAM_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/stream$/;
+
+/** The page and its script, served from `web/public`. */
+const PUBLIC_DIR = new URL("../public/", import.meta.url).pathname;
+
+const CONTENT_TYPES: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".svg": "image/svg+xml",
+};
+
+/**
+ * Reads a file from the public directory, or `null`.
+ *
+ * The path is normalized and then checked to still start with the public
+ * directory, so `..` cannot walk out of it and serve, say, the session file
+ * sitting two levels up.
+ */
+function staticFile(urlPath: string): { body: Uint8Array; type: string } | null {
+  const relative = urlPath === "/" ? "index.html" : decodeURIComponent(urlPath).replace(/^\/+/, "");
+  const resolved = normalize(join(PUBLIC_DIR, relative));
+  if (!resolved.startsWith(PUBLIC_DIR)) return null;
+
+  const dot = resolved.lastIndexOf(".");
+  const type = CONTENT_TYPES[resolved.slice(dot)] ?? "application/octet-stream";
+  try {
+    return { body: new Uint8Array(readFileSync(resolved)), type };
+  } catch {
+    return null;
+  }
+}
 
 /**
  * A response with the status and nothing else. `Content-Length: 0` is stated
@@ -70,6 +103,20 @@ export function createRouter(db: Database, source: ByteSource) {
 
     const streaming = STREAM_PATH.exec(request.path);
     if (streaming) return streamSet(db, source, request, streaming[1]!);
+
+    if (!request.path.startsWith("/api/")) {
+      const file = staticFile(request.path);
+      if (file !== null) {
+        return {
+          status: 200,
+          headers: {
+            "content-type": file.type,
+            "content-length": String(file.body.byteLength),
+          },
+          body: request.method === "HEAD" ? null : file.body,
+        };
+      }
+    }
 
     return empty(404);
   };
