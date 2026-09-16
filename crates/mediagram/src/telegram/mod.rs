@@ -3,3 +3,4 @@
 pub mod client;
 pub mod document;
 pub mod retry;
+pub mod string_session;

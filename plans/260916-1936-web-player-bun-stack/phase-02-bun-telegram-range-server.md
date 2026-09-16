@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: "Bun Telegram client and Range server"
-status: pending
+status: in-progress
 priority: P1
 effort: "2d"
 dependencies: [1]
@@ -29,7 +29,7 @@ Measured against the live channel on 2026-09-16, with the real
 | Claim | Result |
 |---|---|
 | `teleproto@1.229.0` runs on Bun 1.4.2 | imports, constructs a client, connects, authorizes |
-| The uploader's session is portable | a 369-character `StringSession` built from `session.sqlite`'s auth key connected and authorized with **no second login** |
+| The uploader's session is portable | a 369-character `StringSession` built from `session.sqlite`'s auth key connected and authorized with no second login — but see "What the live run found": it cannot be used *while* the uploader runs |
 | Arbitrary byte ranges come back correct | five reads (part 0 byte 0, unaligned mid-part, part 0 tail, part 1 byte 0, deep unaligned) all byte-identical to the local source file |
 | Seek cost | 46-152 ms, against 150-210 ms through the Rust server |
 
@@ -47,6 +47,40 @@ granularity instead of 512 KiB.
 
 `client.iterDownload(file, params)` takes two arguments, not GramJS's single
 options object.
+
+## What the live run found
+
+Three things, all from running it against the channel rather than reasoning
+about it. The first two are fixed; the third changes the design.
+
+**`channels.getMessages` takes an `InputChannel`, not an `InputPeer`.** The
+convenience wrapper accepts either without complaint, serializes the request
+wrong, and the failure surfaces as a parse error deep in the *response* —
+"a TLObject was trying to be read when it should not be read", naming a
+constructor teleproto does not know. That reads exactly like a stale TL
+schema, and is not: the same account, the same channel and the same library
+parse it correctly when the request is right. Invoke `channels.GetMessages`
+directly and the whole class of confusion disappears.
+
+**One auth key does not survive two concurrent MTProto clients.** Measured
+with one player process throughout: 3/3 range requests succeeded alone, 0/3
+from the moment `mediagram serve` started, 0/3 after it stopped. It does not
+recover — the player has to be restarted. teleproto logs a wall of response
+parse failures while this happens.
+
+That kills the "export the uploader's session and skip the second login"
+convenience as a general answer. It works only where no other client of the
+account ever runs at the same time, and "the uploader is idle" is not a
+property anyone can rely on — a single `mediagram add` breaks a running
+player. **The player needs its own login**, which is also the better security
+answer: its own session terminates independently, and on a dedicated account
+its blast radius is the library rather than the account.
+
+**Fetching the message per request costs about 400 ms.** Seeks measured
+46-152 ms when the message was resolved once up front, and 430-470 ms when
+`channels.getMessages` runs on every request. A file reference does expire,
+so caching it forever is wrong, but caching it for a minute or two is not.
+Worth doing before this is used in anger.
 
 ## Requirements
 - Functional: `GET /api/sets` and `GET /api/sets/:id/stream` match phase 1's
@@ -100,17 +134,23 @@ at most 4 KiB, so a small seek costs almost nothing.
    and it is why phase 1 is not being deleted.
 
 ## Success Criteria
-- [ ] Byte-for-byte agreement with `mediagram serve` across at least a dozen
-      ranges, including both part boundaries and the file's last byte
-- [ ] A range crossing the part boundary is correct
-- [ ] Every response carries `Content-Length`; a 206 carries a well-formed
-      `Content-Range`
-- [ ] 416 on unsatisfiable, 400 on malformed, 404 on not playable
+- [x] Byte-for-byte agreement with `mediagram serve`, and with the local
+      source file, across eight ranges including the byte before the split,
+      the range across it, and the file's tail — 8/8 three-way
+- [x] A range crossing the part boundary is correct
+- [x] Every response carries `Content-Length`; a 206 carries a well-formed
+      `Content-Range`. `Bun.serve` cannot do this — it replaces a manual
+      `Content-Length` with `Transfer-Encoding: chunked` for any streamed body
+      it cannot buffer, at every stream shape tried. The server is `node:http`
+      for that reason, and the tests read the raw socket because `fetch` hides
+      the header too
+- [x] 416 on unsatisfiable, 400 on malformed, 404 on not playable
 - [ ] Memory flat while streaming several hundred MB
-- [ ] Seeks anywhere in a 6.5 GiB set stay under about 250 ms
+- [ ] Seeks anywhere in a 6.5 GiB set stay under about 250 ms — currently
+      430-470 ms, because the part's message is fetched on every request
 - [ ] The backend runs on a machine that has no `library.db` of its own,
       given a package (phase 3) and a session string
-- [ ] No route's response body or headers contain the channel id, a message
+- [x] No route's response body or headers contain the channel id, a message
       id, or session material — asserted, not assumed
 
 ## Security
@@ -147,16 +187,16 @@ Consequences to decide before running the backend anywhere exposed:
   security decision, not just a convenience one.
 
 ## Risk Assessment
-- **Two clients, one auth key.** MTProto allows several sessions per auth
-  key, and the live probe ran while `serve` was stopped. Concurrent use by
-  both is untested and could surface as dropped connections. Prove it, or
-  give the player its own login.
+- **Two clients, one auth key — confirmed broken, not a risk any more.** See
+  "What the live run found". The player needs its own login; `export-session`
+  stays only for a player that runs where no other client of the account
+  does, and says so on stderr.
 - **teleproto is a one-maintainer fork.** Mitigated by the client surface
   being small and behind `telegram/client.ts`; the rest of the app does not
   know what speaks MTProto. If the fork dies, that file is the port.
-- **Type definitions that lie.** Two found already, both by running it
-  against Telegram. Treat the `.d.ts` as a hint and the server as the
-  authority.
+- **Type definitions that lie.** Three found now — the two alignment claims
+  and a wrapper that accepts an `InputPeer` where only an `InputChannel`
+  works. Treat the `.d.ts` as a hint and the server as the authority.
 - **Bandwidth doubles off-host.** Telegram to the player, then player to the
   viewer. At home that second hop is the LAN. On a VPS it is paid egress, and
   a 13.9 Mbit/s film is about 6 GB an hour in each direction.

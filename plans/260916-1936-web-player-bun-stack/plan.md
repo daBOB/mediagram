@@ -42,7 +42,7 @@ TypeScript port is checked against, byte for byte.
 | # | Phase | Status | Priority | Effort | Depends on |
 |---|-------|--------|----------|--------|------------|
 | 1 | [Range server over a set (Rust)](phase-01-range-server-over-a-set.md) | complete | P1 | 1.5d | - |
-| 2 | [Bun Telegram client and Range server](phase-02-bun-telegram-range-server.md) | pending | P1 | 2d | 1 |
+| 2 | [Bun Telegram client and Range server](phase-02-bun-telegram-range-server.md) | in progress | P1 | 2d | 1 |
 | 3 | [Catalog anywhere: the package reader](phase-03-package-reader.md) | pending | P1 | 1d | - |
 | 4 | [Minimal web UI, direct play](phase-04-web-ui-direct-play.md) | pending | P1 | 1d | 2,3 |
 | 5 | [Disk cache](phase-05-disk-cache.md) | pending | P1 | 1d | 2 |
@@ -72,6 +72,9 @@ Checked in the codebase and against the live channel, not assumed:
 | `teleproto` runs on Bun and reads arbitrary byte ranges correctly | Five reads of the live 7,011,563,463-byte film under Bun 1.4.2, all byte-identical to the local source file, seeks 46-152 ms |
 | The player needs no Telegram login of its own | A `StringSession` built from the uploader's `session.sqlite` auth key connected and authorized |
 | `upload.getFile` demands 4 KiB alignment | `OFFSET_INVALID` and `LIMIT_INVALID` from the live API, contradicting teleproto's own type documentation |
+| The TypeScript port returns the same bytes as the Rust server | 8/8 ranges of the live 7 GB film agree three ways: player, `mediagram serve`, and the local source file |
+| One auth key cannot serve two MTProto clients | One player process: 3/3 range requests alone, 0/3 once `mediagram serve` started, 0/3 after it stopped. It does not recover |
+| `Bun.serve` cannot send `Content-Length` on a streamed body | Replaced by `Transfer-Encoding: chunked` at every stream shape tried on Bun 1.4.2; `node:http` sends what it is given |
 
 ## Decisions
 
@@ -101,9 +104,11 @@ Checked in the codebase and against the live channel, not assumed:
   MTProto authenticates every file call and has no scoped credential, so
   whichever process fetches bytes is the account. That process is the Bun
   backend. The web UI is an ordinary HTTP client of it and never receives a
-  session string, the channel id, or a message id. Whether the backend gets a
-  copy of the uploader's session or a login of its own — ideally on a
-  dedicated account — is decided in phase 2.
+  session string, the channel id, or a message id.
+- **The backend gets its own Telegram login**, decided by measurement rather
+  than taste: two clients sharing one auth key break each other permanently.
+  A dedicated account is the better form of it, since the blast radius then
+  stops at the library.
 
 ## Scope note
 

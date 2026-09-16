@@ -1,0 +1,91 @@
+/**
+ * The only file that knows what speaks MTProto.
+ *
+ * Everything else in the player deals in parts, ranges and bytes. If
+ * `teleproto` — a single-maintainer fork of the archived GramJS — ever needs
+ * replacing, this is the file to port.
+ */
+
+import { Api, TelegramClient, sessions } from "teleproto";
+import type { Config } from "../config";
+
+/** Bot-API dialog ids are `-100` followed by the bare channel id. */
+export function bareChannelId(chatId: number): number {
+  const bare = -chatId - 1_000_000_000_000;
+  if (bare <= 0) {
+    throw new Error(`chat id ${chatId} is not a -100-prefixed channel id`);
+  }
+  return bare;
+}
+
+export class Telegram {
+  private constructor(
+    readonly client: TelegramClient,
+    private readonly channel: Api.InputChannel,
+  ) {}
+
+  static async connect(config: Config): Promise<Telegram> {
+    const client = new TelegramClient(
+      new sessions.StringSession(config.session),
+      config.apiId,
+      config.apiHash,
+      { connectionRetries: 3 },
+    );
+    await client.connect();
+
+    // Fail loudly rather than prompting: the player may have no terminal, and
+    // a half-open login would look like an empty library.
+    if (!(await client.isUserAuthorized())) {
+      throw new Error(
+        "the configured session is not authorized; produce a fresh one with `mediagram export-session`",
+      );
+    }
+
+    // Built, not resolved. `getEntity` would cost a round trip on every start
+    // and can fail on a channel the account has never opened in a client; the
+    // uploader exported the access hash precisely so this needs no lookup.
+    const channel = new Api.InputChannel({
+      channelId: BigInt(bareChannelId(config.chatId)) as never,
+      accessHash: config.channelAccessHash as never,
+    });
+    return new Telegram(client, channel);
+  }
+
+  /**
+   * The document media of a part's message.
+   *
+   * Invoked directly rather than through `client.getMessages`, because
+   * `channels.getMessages` takes an `InputChannel` and the convenience
+   * wrapper is happy to be handed an `InputPeer` instead. The request then
+   * serializes wrong, and the failure surfaces as a parse error deep in the
+   * *response* — "a TLObject was trying to be read when it should not be
+   * read" — which reads like a stale schema and is not.
+   *
+   * Fetched per stream rather than cached: a document handle carries a file
+   * reference that Telegram expires, and a stale one fails mid-download
+   * rather than at the start.
+   */
+  async partMedia(messageId: number): Promise<Api.TypeMessageMedia> {
+    const result = await this.client.invoke(
+      new Api.channels.GetMessages({
+        channel: this.channel,
+        id: [new Api.InputMessageID({ id: messageId })],
+      }),
+    );
+
+    const messages = (result as { messages?: Api.TypeMessage[] }).messages ?? [];
+    const message = messages[0];
+    if (!message || !(message instanceof Api.Message)) {
+      throw new Error(`message ${messageId} no longer exists`);
+    }
+    if (!message.media || !(message.media instanceof Api.MessageMediaDocument)) {
+      throw new Error(`message ${messageId} carries no downloadable document`);
+    }
+    return message.media;
+  }
+
+  async disconnect(): Promise<void> {
+    await this.client.disconnect();
+    await this.client.destroy();
+  }
+}
