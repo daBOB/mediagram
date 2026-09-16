@@ -7,13 +7,14 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { groupLibrary } from "../public/lib/library.js";
+import { groupLibrary, type CatalogSet } from "../public/lib/library.js";
 
-const set = (over: Record<string, unknown> = {}) => ({
+const set = (over: Record<string, unknown> = {}): CatalogSet => ({
   setId: `01SET${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
   kind: "movie",
   title: "A Title",
   show: null,
+  path: null,
   chap: null,
   season: null,
   episode: null,
@@ -115,5 +116,58 @@ describe("shelves", () => {
     expect(library.movies).toEqual([]);
     expect(library.series).toEqual([]);
     expect(library.tutorials).toEqual([]);
+  });
+});
+
+describe("folders, when a course carries them", () => {
+  const lesson = (path: string | null, episode: string, title: string) => ({
+    ...set({ kind: "tut", show: "Geldhochschule", chap: null, season: 1 }),
+    path,
+    episode,
+    title,
+  });
+
+  /** The real course: uneven depth, and a folder holding videos beside one. */
+  test("a course's folders become its divisions, at any depth", () => {
+    const library = groupLibrary([
+      lesson("Basislektionen/1. Start", "1", "Begrüßung"),
+      lesson("Ausbildung Trading/1. Grundlagen/1. Trading", "1", "Einführung"),
+      lesson("Ausbildung Trading/1. Grundlagen/1. Trading", "2", "Definition"),
+      lesson("Der erleuchtete Investor", "1", "Teil 1"),
+    ]);
+
+    const course = library.tutorials[0]!;
+    expect(course.seasons.map((s) => s.title)).toEqual([
+      "Ausbildung Trading/1. Grundlagen/1. Trading",
+      "Basislektionen/1. Start",
+      "Der erleuchtete Investor",
+    ]);
+    expect(course.count).toBe(4);
+  });
+
+  test("the path wins over the chapter number, which no longer describes the shape", () => {
+    const library = groupLibrary([
+      { ...lesson("Section A/Chapter 1", "1", "One"), season: 7 },
+      { ...lesson("Section B/Chapter 1", "1", "Two"), season: 2 },
+    ]);
+
+    expect(library.tutorials[0]!.seasons.map((s) => s.title)).toEqual([
+      "Section A/Chapter 1",
+      "Section B/Chapter 1",
+    ]);
+  });
+
+  test("a course uploaded before paths existed still divides by its numbers", () => {
+    const library = groupLibrary([lesson(null, "1", "Old")]);
+
+    expect(library.tutorials[0]!.seasons[0]!.title).toBe("Chapter 1");
+  });
+
+  test("episodes use their folders too, when a show has them", () => {
+    const library = groupLibrary([
+      { ...set({ kind: "ep", show: "Widow's Bay", season: 1, episode: "1" }), path: "Season 1" },
+    ]);
+
+    expect(library.series[0]!.seasons[0]!.title).toBe("Season 1");
   });
 });

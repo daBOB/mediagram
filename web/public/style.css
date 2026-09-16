@@ -101,6 +101,8 @@ h1 { font-size: 22px; margin: 0 0 4px; font-weight: 640; }
   font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em;
   color: var(--dim); margin: 0 0 9px;
 }
+/* The folders above this one: present, but not competing with the heading. */
+.season h2 .crumb { color: #6b7684; font-weight: 400; }
 .row {
   display: flex; align-items: center; gap: 13px; width: 100%;
   padding: 11px 14px; margin-bottom: 7px;

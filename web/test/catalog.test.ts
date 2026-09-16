@@ -11,7 +11,7 @@
 
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { listPlayable, partLocations, playableSet } from "../src/catalog";
+import { EXPECTED_SCHEMA, assertSchema, listPlayable, partLocations, playableSet } from "../src/catalog";
 
 /** The subset of the uploader's schema the player reads. */
 function fixture(): Database {
@@ -19,7 +19,7 @@ function fixture(): Database {
   db.run(`CREATE TABLE sets(
       set_id TEXT PRIMARY KEY, kind TEXT NOT NULL,
       tmdb INTEGER, tvdb INTEGER, imdb TEXT,
-      show TEXT, title TEXT, year INTEGER,
+      show TEXT, path TEXT, title TEXT, year INTEGER,
       season INTEGER, episode TEXT, abs INTEGER,
       quality TEXT, hdr TEXT, container TEXT NOT NULL,
       vcodec TEXT, acodec TEXT,
@@ -192,5 +192,42 @@ describe("part locations", () => {
 
   test("are empty for an unknown set", () => {
     expect(partLocations(fixture(), "01NOSUCHSET00000000000001")).toEqual([]);
+  });
+});
+
+describe("the schema the player expects", () => {
+  /**
+   * The player opens the index read-only, so it cannot migrate what the
+   * uploader owns — and must not try. What it can do is say so plainly
+   * instead of failing inside a query with "no such column".
+   */
+  test("an index older than this build is reported, not queried", () => {
+    const db = new Database(":memory:");
+    db.run("CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL)");
+    db.run("INSERT INTO meta VALUES ('schema_version', '2')");
+
+    expect(() => assertSchema(db)).toThrow(/schema v2/);
+    expect(() => assertSchema(db)).toThrow(/mediagram/);
+  });
+
+  test("a current index passes", () => {
+    const db = new Database(":memory:");
+    db.run("CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL)");
+    db.run(`INSERT INTO meta VALUES ('schema_version', '${EXPECTED_SCHEMA}')`);
+
+    expect(() => assertSchema(db)).not.toThrow();
+  });
+
+  /** A newer index is the uploader being ahead; reading it is still fine. */
+  test("a newer index is allowed through", () => {
+    const db = new Database(":memory:");
+    db.run("CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL)");
+    db.run(`INSERT INTO meta VALUES ('schema_version', '${EXPECTED_SCHEMA + 1}')`);
+
+    expect(() => assertSchema(db)).not.toThrow();
+  });
+
+  test("a database with no meta table at all is reported", () => {
+    expect(() => assertSchema(new Database(":memory:"))).toThrow();
   });
 });

@@ -29,4 +29,15 @@ fn the_player_holds_the_uploader_s_definition_of_playable() {
         path.display(),
         mlib_spec::schema::PLAYABLE_SQL
     );
+
+    // The player opens the index read-only and refuses one older than it
+    // understands. That number has to be this one, or it refuses a database
+    // it could read, or reads one it cannot.
+    let expected = format!("EXPECTED_SCHEMA = {}", mlib_spec::schema::SCHEMA_VERSION);
+    assert!(
+        source.contains(&expected),
+        "{} should declare `{}`; the schema moved and the player was not told.",
+        path.display(),
+        expected
+    );
 }

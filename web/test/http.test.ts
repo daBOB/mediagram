@@ -53,7 +53,7 @@ class FakeSource implements ByteSource {
 function index(): Database {
   const db = new Database(":memory:");
   db.run(`CREATE TABLE sets(
-      set_id TEXT PRIMARY KEY, kind TEXT NOT NULL, title TEXT, show TEXT, chap TEXT,
+      set_id TEXT PRIMARY KEY, kind TEXT NOT NULL, title TEXT, show TEXT, chap TEXT, path TEXT,
       season INTEGER, episode TEXT, year INTEGER, container TEXT NOT NULL,
       vcodec TEXT, acodec TEXT, duration INTEGER,
       total INTEGER NOT NULL, part_count INTEGER NOT NULL,
@@ -63,9 +63,12 @@ function index(): Database {
       byte_offset INTEGER NOT NULL, byte_length INTEGER NOT NULL,
       chat_id INTEGER, message_id INTEGER, status TEXT NOT NULL,
       PRIMARY KEY(set_id, idx))`);
+  // Columns named, not positional: a positional insert breaks silently the
+  // next time the schema gains one.
   db.run(
-    `INSERT INTO sets VALUES (?, 'movie', 'The Matrix', NULL, NULL, NULL, NULL, 1999,
-      'mkv', 'hevc', 'ac3', 8160, ?, 2, 'complete', 1700000000)`,
+    `INSERT INTO sets(set_id, kind, title, year, container, vcodec, acodec,
+                      duration, total, part_count, status, created_at)
+     VALUES (?, 'movie', 'The Matrix', 1999, 'mkv', 'hevc', 'ac3', 8160, ?, 2, 'complete', 1700000000)`,
     [SET, TOTAL],
   );
   db.run(`INSERT INTO parts VALUES (?, 0, 0, ?, -1001, 100, 'done')`, [SET, P0]);

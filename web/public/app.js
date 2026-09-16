@@ -168,7 +168,17 @@ function viewCollection(section, name) {
 
   for (const division of collection.seasons) {
     const block = el("section", "season");
-    block.append(el("h2", null, `${division.title} · ${division.items.length}`));
+    // A folder path reads badly as a heading. Show the folder itself, with
+    // the ones above it in smaller type, so the shelf still says where the
+    // lesson sat without shouting the whole path.
+    const parts = division.title.split("/");
+    const leaf = parts[parts.length - 1];
+    const heading = el("h2");
+    if (parts.length > 1) {
+      heading.append(el("span", "crumb", parts.slice(0, -1).join(" / ") + " / "));
+    }
+    heading.append(document.createTextNode(`${leaf} · ${division.items.length}`));
+    block.append(heading);
 
     for (const set of division.items) {
       const row = el("button", "row");

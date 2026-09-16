@@ -8,7 +8,7 @@
 
 import { Database } from "bun:sqlite";
 import { describe, load } from "./config";
-import { listPlayable } from "./catalog";
+import { assertSchema, listPlayable } from "./catalog";
 import { startServer } from "./server";
 import { Telegram } from "./telegram/client";
 import { TelegramSource } from "./telegram/source";
@@ -19,6 +19,7 @@ console.log("player:", describe(config));
 // Read-only: the player never writes, and a writable handle would let it
 // checkpoint or migrate an index the uploader owns.
 const db = new Database(config.libraryDb, { readonly: true });
+assertSchema(db);
 console.log(`catalog: ${listPlayable(db).length} playable sets`);
 
 const telegram = await Telegram.connect(config);

@@ -14,6 +14,36 @@
 import type { Database } from "bun:sqlite";
 import type { PartSpan } from "./range";
 
+/**
+ * The index layout this build reads.
+ *
+ * Kept in step with `mlib_spec::schema::SCHEMA_VERSION` by
+ * `crates/mediagram/tests/shared_playable_sql.rs`, which fails if the two
+ * drift — the player reads the uploader's database and cannot migrate it.
+ */
+export const EXPECTED_SCHEMA = 3;
+
+/**
+ * Refuses an index written by an older uploader.
+ *
+ * The player opens the index read-only and must not migrate what the uploader
+ * owns. Saying so beats failing three calls later inside a query with "no
+ * such column", which is what a missing migration actually looks like.
+ */
+export function assertSchema(db: Database): void {
+  const row = db
+    .query("SELECT value FROM meta WHERE key = 'schema_version'")
+    .get() as { value: string } | null;
+  const found = Number(row?.value ?? 0);
+
+  if (!Number.isFinite(found) || found < EXPECTED_SCHEMA) {
+    throw new Error(
+      `this index is at schema v${found || "unknown"}, and the player needs v${EXPECTED_SCHEMA}. ` +
+        "Run any writing mediagram command once (`mediagram verify --all` will do) to migrate it.",
+    );
+  }
+}
+
 export const PLAYABLE_SQL = `s.status = 'complete'
     AND s.part_count = (SELECT COUNT(*) FROM parts p WHERE p.set_id = s.set_id AND p.status = 'done')
     AND s.total = (SELECT COALESCE(SUM(byte_length), 0) FROM parts p WHERE p.set_id = s.set_id)`;
@@ -31,6 +61,8 @@ export interface PlayableSet {
   title: string | null;
   show: string | null;
   chap: string | null;
+  /** Folders within the collection, `/`-separated. See the caption spec. */
+  path: string | null;
   season: number | null;
   episode: string | null;
   year: number | null;
@@ -49,7 +81,7 @@ export interface PartLocation {
   messageId: number;
 }
 
-const COLUMNS = `set_id AS setId, kind, title, show, chap, season, episode, year,
+const COLUMNS = `set_id AS setId, kind, title, show, chap, path, season, episode, year,
      container, vcodec, acodec, duration, total, part_count AS partCount`;
 
 export function listPlayable(db: Database): PlayableSet[] {

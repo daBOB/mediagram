@@ -58,6 +58,29 @@ function collections(sets, divisionOf, fallbackName) {
 }
 
 /**
+ * Which division of its collection a set belongs to.
+ *
+ * Sorted by path when there is one, so folders read in the order someone
+ * browsing the course on disk would see them; by number otherwise.
+ */
+function divisionOf(set) {
+  if (set.path) {
+    return { key: set.path, title: set.path, season: null };
+  }
+  if (set.chap) {
+    return { key: set.chap, title: set.chap, season: null };
+  }
+  if (set.kind === "ep") {
+    return {
+      key: `s${set.season ?? 0}`,
+      title: set.season != null ? `Season ${set.season}` : "Episodes",
+      season: set.season ?? null,
+    };
+  }
+  return { key: `c${set.season ?? 0}`, title: `Chapter ${set.season ?? 1}`, season: set.season ?? 1 };
+}
+
+/**
  * Splits a catalog into films, shows and courses.
  *
  * A kind this does not recognise is shelved with the films rather than
@@ -74,26 +97,12 @@ export function groupLibrary(sets) {
   return {
     movies: [...rest].sort(byTitle),
 
-    series: collections(
-      episodes,
-      (set) => ({
-        key: `s${set.season ?? 0}`,
-        title: set.season != null ? `Season ${set.season}` : "Episodes",
-        season: set.season ?? null,
-      }),
-      "Unknown show",
-    ),
+    series: collections(episodes, divisionOf, "Unknown show"),
 
-    // A chapter title is the good case; a course uploaded before chapter
-    // titles existed has only the number, which still divides it usefully.
-    tutorials: collections(
-      lessons,
-      (set) => ({
-        key: set.chap ?? `c${set.season ?? 0}`,
-        title: set.chap ?? `Chapter ${set.season ?? 1}`,
-        season: set.chap ? null : (set.season ?? 1),
-      }),
-      "Unknown course",
-    ),
+    // The folder path is the good case: a course nests unevenly and its
+    // chapter numbers are made unique across the whole course, so they stop
+    // describing any shape a person recognises. A chapter title comes next,
+    // and a course uploaded before either existed still has its number.
+    tutorials: collections(lessons, divisionOf, "Unknown course"),
   };
 }
