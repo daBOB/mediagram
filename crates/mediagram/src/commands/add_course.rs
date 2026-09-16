@@ -34,6 +34,18 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
         return Ok(());
     }
 
+    // Defence in depth: identity is what decides whether a lesson is skipped,
+    // so two lessons sharing one would make the second unreachable forever.
+    // The walker guarantees uniqueness; this refuses to upload if that ever
+    // stops being true, rather than silently dropping content.
+    if let Some((chapter, lesson)) = duplicate_identity(&lessons) {
+        bail!(
+            "two lessons would share chapter {chapter} lesson {lesson}, so one \
+             would be skipped as already uploaded; this is a bug in the walk, \
+             please report the folder layout"
+        );
+    }
+
     if args.dry_run {
         for line in dry_run_table(&course, &cid, &lessons) {
             println!("{line}");
@@ -130,4 +142,13 @@ fn course_title(args: &AddCourseArgs) -> Result<String> {
         .and_then(|n| n.to_str())
         .map(|n| n.to_string())
         .with_context(|| format!("cannot read a course title from {}", args.dir.display()))
+}
+
+/// The first `(chapter, lesson)` pair claimed twice, if any.
+fn duplicate_identity(lessons: &[crate::course::walk::Lesson]) -> Option<(u32, u32)> {
+    let mut seen = std::collections::BTreeSet::new();
+    lessons
+        .iter()
+        .find(|l| !seen.insert((l.chapter, l.lesson)))
+        .map(|l| (l.chapter, l.lesson))
 }

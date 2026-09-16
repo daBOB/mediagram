@@ -78,3 +78,29 @@ pub fn is_video(name: &str) -> bool {
         None => false,
     }
 }
+
+/// [`assign_numbers`], with the numbers guaranteed distinct.
+///
+/// Declared numbers are honoured while they are unique. They stop being
+/// unique as soon as a course repeats them across folders, which real ones do
+/// constantly: several sections each numbering their own chapters from 1, or
+/// several chapters each numbering their own lessons from 1. When that
+/// happens the whole group is renumbered in order, because a mix of honoured
+/// and invented numbers is harder to predict than a clean sequence, and the
+/// dry-run table shows the result either way.
+///
+/// This matters beyond tidiness: the number is half of a lesson's identity,
+/// and two lessons sharing an identity would make the second unreachable,
+/// skipped forever as already uploaded.
+pub fn assign_unique_numbers<T: Clone>(entries: &[(String, T)]) -> Vec<(u32, Option<String>, T)> {
+    let assigned = assign_numbers(entries);
+    let mut seen = std::collections::BTreeSet::new();
+    if assigned.iter().all(|(n, _, _)| seen.insert(*n)) {
+        return assigned;
+    }
+    assigned
+        .into_iter()
+        .enumerate()
+        .map(|(i, (_, title, payload))| (i as u32 + 1, title, payload))
+        .collect()
+}
