@@ -12,9 +12,11 @@
 
 import { Api, TelegramClient, sessions } from "teleproto";
 import { createInterface } from "node:readline/promises";
-import { stdin, stdout } from "node:process";
+import { stderr, stdin } from "node:process";
 
-const rl = createInterface({ input: stdin, output: stdout });
+// Prompts go to stderr so that `bun run login > .env` captures the settings
+// and still lets you answer the questions.
+const rl = createInterface({ input: stdin, output: stderr });
 
 function ask(question: string): Promise<string> {
   return rl.question(question);
@@ -24,7 +26,7 @@ function ask(question: string): Promise<string> {
 async function askHidden(question: string): Promise<string> {
   const ETX = "\u0003"; // Ctrl-C
   const DEL = "\u007f"; // backspace
-  stdout.write(question);
+  stderr.write(question);
   const wasRaw = stdin.isRaw ?? false;
   stdin.setRawMode?.(true);
   let value = "";
@@ -32,7 +34,7 @@ async function askHidden(question: string): Promise<string> {
     const text = chunk.toString();
     if (text === "\r" || text === "\n") break;
     if (text === ETX) {
-      stdout.write("\n");
+      stderr.write("\n");
       process.exit(130);
     }
     if (text === DEL) {
@@ -42,7 +44,7 @@ async function askHidden(question: string): Promise<string> {
     value += text;
   }
   stdin.setRawMode?.(wasRaw);
-  stdout.write("\n");
+  stderr.write("\n");
   return value;
 }
 
@@ -55,7 +57,7 @@ const client = new TelegramClient(new sessions.StringSession(""), apiId, apiHash
   connectionRetries: 3,
 });
 
-console.log("\nLogging in. This creates a session separate from the uploader's.\n");
+console.error("\nLogging in. This creates a session separate from the uploader's.\n");
 
 await client.start({
   phoneNumber: () => ask("phone number (e.g. +49…): "),
