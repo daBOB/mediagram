@@ -131,6 +131,7 @@ impl SetRow {
         let t = match self.kind.as_str() {
             "movie" => Kind::Movie,
             "ep" => Kind::Ep,
+            "tut" => Kind::Tut,
             other => bail!("set {} has unknown kind `{other}`", self.set_id),
         };
         let e = self
@@ -139,8 +140,11 @@ impl SetRow {
             .map(serde_json::from_str)
             .transpose()?;
         Ok(Caption {
-            cid: None,
-            chap: None,
+            // The pipeline builds every part's caption from this template, so
+            // dropping these would publish a course with no collection id and
+            // no chapter, and `rescan` would have nothing to rebuild from.
+            cid: self.group_key.clone(),
+            chap: self.chap.clone(),
             t,
             ids: ProviderIds {
                 tmdb: self.tmdb,

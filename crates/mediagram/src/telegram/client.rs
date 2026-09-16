@@ -62,6 +62,34 @@ impl Tg {
 
 /// Opens the persisted session and starts its sender pool, without logging
 /// in or resolving a channel. Callers must run [`ensure_login`] before
+/// Lets the session store configure SQLite before anything else touches it.
+///
+/// This binary links a single SQLite library used by two crates. `libsql`,
+/// under the session store, calls `sqlite3_config(SERIALIZED)` the first time
+/// it opens a database and asserts the call succeeded. `sqlite3_config`
+/// returns MISUSE once SQLite has been initialized, and `rusqlite`
+/// initializes it the moment it opens `library.db`.
+///
+/// Every command reads the index before it reaches Telegram, so without this
+/// the second of the two to start would abort the process. Calling it once at
+/// startup makes the order irrelevant, rather than leaving a rule that every
+/// future command has to remember.
+pub async fn preinit_session_store(data_dir: &Path) -> Result<()> {
+    std::fs::create_dir_all(data_dir)
+        .with_context(|| format!("creating data dir {}", data_dir.display()))?;
+    std::fs::set_permissions(data_dir, std::fs::Permissions::from_mode(0o700))
+        .with_context(|| format!("restricting permissions on {}", data_dir.display()))?;
+    let path = data_dir.join("session.sqlite");
+    // Opening and dropping is enough: the configuration happens once, inside
+    // libsql, on first open.
+    let session = SqliteSession::open(&path)
+        .await
+        .with_context(|| format!("cannot open session {}", path.display()))?;
+    drop(session);
+    restrict_session_permissions(&path)?;
+    Ok(())
+}
+
 /// issuing authenticated requests.
 pub async fn open_client(cfg: &Config) -> Result<(Client, SenderPoolFatHandle, JoinHandle<()>)> {
     let path = session_path(cfg)?;

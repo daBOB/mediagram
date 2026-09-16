@@ -137,3 +137,44 @@ fn the_dry_run_table_shows_the_id_that_identity_is_built_from() {
     assert!(table.contains("Install"));
     assert!(table.contains("1 lesson(s) across 1 chapter(s)"));
 }
+
+/// The upload pipeline rebuilds each part's caption from the stored row, so
+/// anything the row cannot express never reaches the channel. A course lesson
+/// must survive that trip with its collection id and chapter intact.
+#[test]
+fn a_lesson_row_rebuilds_the_caption_it_came_from() {
+    let original = lesson_caption("01SET0000000000000000001", "rust-course", 2, 2);
+    let row = SetRow::from_caption(&original, 1_700_000_000).unwrap();
+
+    let rebuilt = row.caption_template().unwrap();
+
+    assert_eq!(rebuilt.t, Kind::Tut, "the kind must round-trip");
+    assert_eq!(
+        rebuilt.cid.as_deref(),
+        Some("rust-course"),
+        "collection id lost"
+    );
+    assert_eq!(
+        rebuilt.chap.as_deref(),
+        Some("Ownership"),
+        "chapter title lost"
+    );
+    assert_eq!(rebuilt.show, original.show);
+    assert_eq!(rebuilt.s, original.s);
+    assert_eq!(rebuilt.e, original.e);
+}
+
+#[test]
+fn a_movie_row_still_rebuilds_without_course_fields() {
+    let mut movie = lesson_caption("01SET0000000000000000002", "x", 1, 1);
+    movie.t = Kind::Movie;
+    movie.cid = None;
+    movie.chap = None;
+    let row = SetRow::from_caption(&movie, 1_700_000_000).unwrap();
+
+    let rebuilt = row.caption_template().unwrap();
+
+    assert_eq!(rebuilt.t, Kind::Movie);
+    assert_eq!(rebuilt.cid, None);
+    assert_eq!(rebuilt.chap, None);
+}

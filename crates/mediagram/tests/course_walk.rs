@@ -249,3 +249,38 @@ fn a_course_mixing_loose_files_and_folders_still_works() {
         assert!(seen.insert((l.chapter, l.lesson)));
     }
 }
+
+/// The faststart remux writes `X.faststart.mp4` beside the source, and a
+/// crashed run leaves one behind. A later walk picked those up as extra
+/// lessons, which both uploaded the same video twice and shifted every
+/// following lesson number — and a lesson number is half of its identity.
+#[test]
+fn our_own_remux_temporaries_are_not_lessons() {
+    let dir = tree(&[
+        "Kapitel/1. Überblick.mp4",
+        "Kapitel/1. Überblick.faststart.mp4",
+        "Kapitel/2. Trading.mp4",
+    ]);
+
+    let lessons = walk_course(dir.path()).unwrap();
+
+    let titles: Vec<&str> = lessons.iter().filter_map(|l| l.title.as_deref()).collect();
+    assert_eq!(titles, ["Überblick", "Trading"], "{titles:?}");
+}
+
+/// Numbering must not depend on whether a previous run crashed.
+#[test]
+fn a_leftover_temporary_does_not_shift_lesson_numbers() {
+    let clean = tree(&["K/1. A.mp4", "K/2. B.mp4"]);
+    let dirty = tree(&["K/1. A.mp4", "K/1. A.faststart.mp4", "K/2. B.mp4"]);
+
+    let a = walk_course(clean.path()).unwrap();
+    let b = walk_course(dirty.path()).unwrap();
+
+    let ids = |ls: &[Lesson]| -> Vec<(u32, u32, Option<String>)> {
+        ls.iter()
+            .map(|l| (l.chapter, l.lesson, l.title.clone()))
+            .collect()
+    };
+    assert_eq!(ids(&a), ids(&b));
+}

@@ -72,7 +72,16 @@ pub fn stem(file_name: &str) -> &str {
 /// notes, subtitles or artwork, and is not uploaded.
 pub const VIDEO_EXTENSIONS: &[&str] = &["mkv", "mp4", "m4v", "webm", "mov", "avi", "ts"];
 
+/// Marker the faststart remux puts in its output name. Those files sit beside
+/// the source and a crashed run leaves them behind, so a walk that counted
+/// them would upload the same video twice and shift every later lesson
+/// number — and a lesson number is half of its identity.
+pub const REMUX_MARKER: &str = ".faststart.";
+
 pub fn is_video(name: &str) -> bool {
+    if name.contains(REMUX_MARKER) {
+        return false;
+    }
     match name.rsplit_once('.') {
         Some((_, ext)) => VIDEO_EXTENSIONS.contains(&ext.to_ascii_lowercase().as_str()),
         None => false,
