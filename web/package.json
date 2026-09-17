@@ -12,6 +12,7 @@
     "login": "bun run src/login.ts"
   },
   "dependencies": {
+    "hls.js": "^1.7.3",
     "teleproto": "1.229.0"
   },
   "devDependencies": {

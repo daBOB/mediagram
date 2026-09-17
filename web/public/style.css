@@ -150,6 +150,16 @@ video { display: block; max-width: 94vw; max-height: 78vh; background: #000; }
   border-radius: 7px; padding: 5px 13px; cursor: pointer; font: inherit;
 }
 .bar button:hover { border-color: var(--accent); }
+/* The conversion's own scrub bar. Sits above the note because the note
+   explains why it is there. */
+.jump {
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 15px 4px; background: var(--panel); font-size: 12.5px;
+}
+.jump label { color: var(--dim); white-space: nowrap; }
+.jump input { flex: 1; min-width: 0; accent-color: var(--accent); }
+.jump .at { color: var(--dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
 .note { color: var(--warn); font-size: 12.5px; padding: 0 15px 11px; background: var(--panel); }
 .summary {
   background: var(--panel);

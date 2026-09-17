@@ -1,0 +1,116 @@
+/**
+ * Serving what a transcode has produced so far.
+ *
+ * Reading from the session's directory rather than from ffmpeg's output
+ * stream: HLS is files, and a segment is only readable once it is complete.
+ * A request for something not yet written is answered as not-ready rather
+ * than missing, because a player retries the first and abandons the second.
+ */
+
+import { readFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
+
+import type { HlsServer } from "../routes";
+import type { TranscodeRegistry } from "./registry";
+
+const TYPES: Record<string, string> = {
+  ".m3u8": "application/vnd.apple.mpegurl",
+  ".ts": "video/mp2t",
+  ".m4s": "video/iso.segment",
+};
+
+export interface TranscodeFilesOptions {
+  /** How long a first segment may take before the title is called failed. */
+  readyTimeoutMs?: number;
+  pollMs?: number;
+}
+
+/**
+ * Long enough for a cold set at a large offset: the bytes have to come from
+ * Telegram before ffmpeg can encode a frame of them.
+ */
+const DEFAULT_READY_TIMEOUT_MS = 45_000;
+const DEFAULT_POLL_MS = 100;
+
+export class TranscodeFiles implements HlsServer {
+  private readonly readyTimeoutMs: number;
+  private readonly pollMs: number;
+
+  constructor(
+    private readonly registry: TranscodeRegistry,
+    options: TranscodeFilesOptions = {},
+  ) {
+    this.readyTimeoutMs = options.readyTimeoutMs ?? DEFAULT_READY_TIMEOUT_MS;
+    this.pollMs = options.pollMs ?? DEFAULT_POLL_MS;
+  }
+
+  /**
+   * Starts, or joins, the transcode for this title at this offset.
+   *
+   * Joining is the point: two viewers of the same thing share one encoder
+   * session rather than racing for the hardware.
+   */
+  async begin(setId: string, seekSeconds: number): Promise<string> {
+    const session = await this.registry.sessionFor(setId, seekSeconds);
+
+    // Not returned until there is something to play. hls.js gives a manifest
+    // one retry and then reports a fatal error, so a URL handed over early is
+    // not "the player waits" — it is a title that fails to start.
+    try {
+      await this.waitForFirstSegment(session.directory);
+    } catch (error) {
+      // A session that never produced anything is an ffmpeg holding the
+      // encoder for nothing, and a directory that would be reaped in five
+      // minutes rather than now.
+      await this.registry.stop(session.id);
+      throw error;
+    }
+    return `/hls/${session.id}/index.m3u8`;
+  }
+
+  /** Resolves when the playlist lists a segment, or throws having waited. */
+  private async waitForFirstSegment(directory: string): Promise<void> {
+    const playlist = join(directory, "index.m3u8");
+    const deadline = Date.now() + this.readyTimeoutMs;
+
+    for (;;) {
+      const text = await readFile(playlist, "utf8").catch(() => null);
+      // The header alone is written before anything is encoded; a segment
+      // line is the first evidence that there is a picture.
+      if (text !== null && /^[^#\r\n]+\.(?:ts|m4s)\s*$/m.test(text)) return;
+      if (Date.now() >= deadline) {
+        throw new Error(
+          `the conversion produced no segment within ${Math.round(this.readyTimeoutMs / 1000)}s`,
+        );
+      }
+      await Bun.sleep(this.pollMs);
+    }
+  }
+
+  /** Idempotent: a viewer saying goodbye to a reaped session is not an error. */
+  async end(sessionId: string): Promise<void> {
+    await this.registry.stop(sessionId);
+  }
+
+  async file(sessionId: string, name: string): Promise<{ body: Uint8Array; type: string } | null> {
+    const session = this.registry.get(sessionId);
+    if (!session) return null;
+
+    const path = join(session.directory, name);
+    // The route already constrains the name, but this is the last point
+    // before a filesystem read, and the cost of checking twice is nothing.
+    if (!resolve(path).startsWith(resolve(session.directory))) return null;
+
+    const file = Bun.file(path);
+    if (!(await file.exists())) return null;
+
+    // Someone is watching; do not reap this session out from under them.
+    this.registry.touch(sessionId);
+
+    const dot = name.lastIndexOf(".");
+    return {
+      body: new Uint8Array(await file.arrayBuffer()),
+      type: TYPES[name.slice(dot)] ?? "application/octet-stream",
+    };
+  }
+}

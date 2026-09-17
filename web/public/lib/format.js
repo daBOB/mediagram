@@ -39,3 +39,19 @@ export function episodeLabel(set) {
 export function codecLine(set) {
   return [set.container, set.vcodec, set.acodec].filter(Boolean).join(" · ");
 }
+
+/**
+ * A position on a scrub bar: `1:23`, or `1:23:45` once past an hour.
+ *
+ * Distinct from `humanDuration`, which rounds to whole minutes and is right
+ * for a card but useless as a clock: a running position that says "2h 2m"
+ * never appears to move.
+ */
+export function clockTime(seconds) {
+  const total = Number.isFinite(seconds) && seconds > 0 ? Math.floor(seconds) : 0;
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const rest = String(total % 60).padStart(2, "0");
+  if (hours === 0) return `${minutes}:${rest}`;
+  return `${hours}:${String(minutes).padStart(2, "0")}:${rest}`;
+}

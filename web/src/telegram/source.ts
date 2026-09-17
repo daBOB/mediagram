@@ -6,7 +6,14 @@
  * dividing 1 MiB (`LIMIT_INVALID`) — both verified against the live API,
  * both contradicting teleproto's own type documentation. So a read starts at
  * the aligned offset the plan chose and discards the head.
+ *
+ * Offsets go in through `returnBigInt` rather than as a native `bigint`: the
+ * client advances the offset between requests with big-integer arithmetic,
+ * so a native one serves the first request and then throws. Anything larger
+ * than one request size takes several, which is nearly everything.
  */
+
+import { helpers } from "teleproto";
 
 import type { CachedReader } from "../cache/reader";
 import type { PartLocation } from "../catalog";
@@ -58,7 +65,10 @@ export class TelegramSource implements ByteSource {
       if (this.reader) {
         // Through the cache: it fetches what it lacks and keeps what it
         // fetches, so a second pass over the same bytes costs nothing.
-        const bytes = await this.reader.read(
+        // Streamed, not collected: the response has already promised a
+        // length and must start sending immediately, and a whole-file request
+        // would otherwise be held in memory.
+        yield* this.reader.readStream(
           setId,
           step.partIdx,
           step.offset + step.headDrop,
@@ -66,7 +76,6 @@ export class TelegramSource implements ByteSource {
           location.span.len,
           partFetcher(this.telegram, location.messageId),
         );
-        yield bytes;
         continue;
       }
 
@@ -75,7 +84,7 @@ export class TelegramSource implements ByteSource {
       let owed = step.take;
 
       for await (const chunk of this.telegram.client.iterDownload(media as never, {
-        offset: BigInt(step.offset) as never,
+        offset: helpers.returnBigInt(step.offset) as never,
         requestSize: requestSizeFor(headDrop + step.take),
       })) {
         let piece: Uint8Array = chunk;
@@ -114,7 +123,7 @@ export function partFetcher(telegram: Telegram, messageId: number) {
     const out: Uint8Array[] = [];
     let got = 0;
     for await (const chunk of telegram.client.iterDownload(media as never, {
-      offset: BigInt(offset) as never,
+      offset: helpers.returnBigInt(offset) as never,
       requestSize: requestSizeFor(length),
     })) {
       out.push(chunk);

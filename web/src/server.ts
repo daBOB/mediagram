@@ -15,7 +15,7 @@
 
 import type { Database } from "bun:sqlite";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { createRouter, type ByteSource, type PlayerRequest } from "./routes";
+import { createRouter, type ByteSource, type HlsServer, type PlayerRequest } from "./routes";
 
 export interface RunningServer {
   port: number;
@@ -24,11 +24,12 @@ export interface RunningServer {
 
 function describe(request: IncomingMessage): PlayerRequest {
   const rawRange = request.headers.range;
+  const url = new URL(request.url ?? "/", "http://localhost");
   return {
     method: request.method ?? "GET",
-    // The path only; a query string is not part of any route here.
-    path: (request.url ?? "/").split("?")[0]!,
+    path: url.pathname,
     range: typeof rawRange === "string" ? rawRange : null,
+    seek: url.searchParams.get("seek"),
   };
 }
 
@@ -51,13 +52,15 @@ function write(response: ServerResponse, chunk: Uint8Array): Promise<void> {
 export function startServer(options: {
   db: Database;
   source: ByteSource;
+  hls?: HlsServer;
   port?: number;
   hostname?: string;
 }): Promise<RunningServer> {
-  const route = createRouter(options.db, options.source);
+  const route = createRouter(options.db, options.source, options.hls);
 
   const server = createServer((request, response) => {
-    const planned = route(describe(request));
+    void (async () => {
+    const planned = await route(describe(request));
     response.writeHead(planned.status, planned.headers);
 
     if (planned.body === null) {
@@ -70,6 +73,13 @@ export function startServer(options: {
     }
 
     void pump(planned.body, response);
+    })().catch((error) => {
+      // Logged, not swallowed: a request that fails silently is a bug that
+      // presents as an empty response with no explanation anywhere.
+      console.error(`request failed: ${request.method} ${request.url}`, error);
+      if (!response.headersSent) response.writeHead(500, { "content-length": "0" });
+      response.end();
+    });
   });
 
   return new Promise((resolve) => {
@@ -103,10 +113,13 @@ async function pump(body: ReadableStream<Uint8Array>, response: ServerResponse):
       await write(response, value);
     }
     response.end();
-  } catch {
+  } catch (error) {
     // The headers already promised a length we can no longer deliver, so the
     // only honest signal left is an incomplete response: destroy the socket
     // rather than end it cleanly and have the client believe it has the file.
+    // Logged too: a truncated download with nothing in the log is a bug that
+    // can only be found by guessing.
+    console.error("stream aborted mid-body", error);
     response.destroy();
   } finally {
     response.off("close", abandon);

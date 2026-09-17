@@ -19,6 +19,14 @@
 
     <dialog id="player">
       <video id="video" controls preload="metadata" crossorigin="anonymous"></video>
+      <!-- A converted title is encoded as it plays, so the video's own scrub
+           bar only reaches as far as the conversion has got. This one covers
+           the whole running time and restarts the conversion where it lands. -->
+      <div class="jump" id="jump" hidden>
+        <label for="jump-to">Jump to</label>
+        <input type="range" id="jump-to" min="0" step="10" value="0" />
+        <span class="at" id="jump-at"></span>
+      </div>
       <p class="note" id="note" hidden></p>
       <div class="summary" id="summary" hidden></div>
       <div class="bar">

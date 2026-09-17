@@ -12,6 +12,10 @@ import { assertSchema, listPlayable } from "./catalog";
 import { startServer } from "./server";
 import { isExposed, reachableUrls } from "./listen-address";
 import { CachedReader } from "./cache/reader";
+import { detectEncoder } from "./transcode/encoders";
+import { FfmpegRunner } from "./transcode/ffmpeg";
+import { TranscodeRegistry } from "./transcode/registry";
+import { TranscodeFiles } from "./transcode/server";
 import { ChunkCache } from "./cache/store";
 import { Telegram } from "./telegram/client";
 import { TelegramSource } from "./telegram/source";
@@ -40,8 +44,27 @@ if (cache) {
   console.log("cache: disabled");
 }
 
+// Probed once here rather than at first play: `ffmpeg -encoders` lists what
+// was compiled in, not what initialises, and discovering that when someone
+// presses play is too late.
+const encoder = await detectEncoder();
+console.log(`encoder: ${encoder.name}${encoder.kind === "vaapi" ? ` on ${encoder.device}` : ""}`);
+
+const transcodes = new TranscodeRegistry(
+  config.transcodeDir,
+  new FfmpegRunner({
+    encoder,
+    baseUrl: `http://127.0.0.1:${config.port}`,
+    maxrateBits: config.transcodeMaxrate,
+    segmentSeconds: 2,
+  }),
+);
+// Idle sessions hold an encoder and write segments nobody reads.
+const reaper = setInterval(() => void transcodes.reapIdle(), 60_000);
+
 const server = await startServer({
   db,
+  hls: new TranscodeFiles(transcodes),
   source: new TelegramSource(
     telegram,
     cache ? new CachedReader(cache, config.cacheReadahead) : undefined,
@@ -70,6 +93,10 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
     void (async () => {
       console.log("\nstopping");
+      clearInterval(reaper);
+      // Before the server: an ffmpeg outlives its parent otherwise, and keeps
+      // a hardware encoder session with it.
+      await transcodes.stopAll();
       await server.close();
       await telegram.disconnect();
       db.close();

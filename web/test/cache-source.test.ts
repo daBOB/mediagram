@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { CACHE_CHUNK } from "../src/cache/key";
+import { MAX_RUN_BYTES } from "../src/cache/reader";
 import { ChunkCache } from "../src/cache/store";
 import { CachedReader } from "../src/cache/reader";
 
@@ -163,5 +164,164 @@ describe("reading ahead", () => {
     for (const ask of part.asked) {
       expect(ask.offset).toBeLessThan(length);
     }
+  });
+});
+
+describe("filling misses efficiently", () => {
+  /**
+   * The cache turned one streaming download into one request per 512 KiB
+   * chunk, each a Telegram round trip of a few hundred milliseconds. A 20 MB
+   * read became forty of them in series, which is slower than having no cache
+   * at all — and slow enough that ffmpeg cannot get through a file.
+   */
+  test("consecutive missing chunks are fetched in one request", async () => {
+    const part = upstream(CACHE_CHUNK * 20);
+    const reader = new CachedReader(new ChunkCache(root, 10_000_000));
+
+    await reader.read(SET, 0, 0, CACHE_CHUNK * 8, part.bytes.length, part.fetch);
+
+    expect(part.asked).toHaveLength(1);
+    expect(part.asked[0]!.length).toBe(CACHE_CHUNK * 8);
+  });
+
+  test("the bytes are still exactly right", async () => {
+    const part = upstream(CACHE_CHUNK * 6);
+    const reader = new CachedReader(new ChunkCache(root, 10_000_000));
+
+    const got = await reader.read(SET, 0, 1234, CACHE_CHUNK * 4, part.bytes.length, part.fetch);
+
+    expect(got).toEqual(part.bytes.subarray(1234, 1234 + CACHE_CHUNK * 4));
+  });
+
+  test("each chunk of a run is cached separately, so a later read hits", async () => {
+    const part = upstream(CACHE_CHUNK * 10);
+    const reader = new CachedReader(new ChunkCache(root, 10_000_000));
+
+    await reader.read(SET, 0, 0, CACHE_CHUNK * 5, part.bytes.length, part.fetch);
+    const after = part.asked.length;
+    // A read wholly inside what was just fetched must cost nothing.
+    await reader.read(SET, 0, CACHE_CHUNK * 2, CACHE_CHUNK, part.bytes.length, part.fetch);
+
+    expect(part.asked.length).toBe(after);
+  });
+
+  /** A hit in the middle splits the run; both sides still batch. */
+  test("a cached chunk between misses does not force one request per chunk", async () => {
+    const part = upstream(CACHE_CHUNK * 10);
+    const reader = new CachedReader(new ChunkCache(root, 10_000_000));
+
+    // Warm chunk 2 alone.
+    await reader.read(SET, 0, CACHE_CHUNK * 2, CACHE_CHUNK, part.bytes.length, part.fetch);
+    const after = part.asked.length;
+
+    // Chunks 0-4: 0,1 missing, 2 cached, 3,4 missing => two requests.
+    await reader.read(SET, 0, 0, CACHE_CHUNK * 5, part.bytes.length, part.fetch);
+
+    expect(part.asked.length).toBe(after + 2);
+  });
+
+  test("a run stops at the end of the part", async () => {
+    const length = CACHE_CHUNK * 3 + 77;
+    const part = upstream(length);
+    const reader = new CachedReader(new ChunkCache(root, 10_000_000));
+
+    await reader.read(SET, 0, 0, length, length, part.fetch);
+
+    for (const ask of part.asked) {
+      expect(ask.offset + ask.length).toBeLessThanOrEqual(length);
+    }
+  });
+});
+
+describe("streaming rather than buffering", () => {
+  /**
+   * The first version returned the whole range as one array, which meant the
+   * response could not begin until the last byte had been fetched — headers
+   * delayed by seconds, and a request without a Range would have tried to
+   * hold an entire film in memory.
+   */
+  test("bytes arrive progressively, not all at the end", async () => {
+    const part = upstream(CACHE_CHUNK * 8);
+    const reader = new CachedReader(new ChunkCache(root, 10_000_000));
+
+    const pieces: number[] = [];
+    for await (const piece of reader.readStream(
+      SET, 0, 0, CACHE_CHUNK * 4, part.bytes.length, part.fetch,
+    )) {
+      pieces.push(piece.length);
+    }
+
+    expect(pieces.length).toBeGreaterThan(1);
+    expect(pieces.reduce((a, b) => a + b, 0)).toBe(CACHE_CHUNK * 4);
+  });
+
+  test("the streamed bytes are exactly the range asked for", async () => {
+    const part = upstream(CACHE_CHUNK * 5);
+    const reader = new CachedReader(new ChunkCache(root, 10_000_000));
+
+    const out: number[] = [];
+    for await (const piece of reader.readStream(
+      SET, 0, 777, 3333, part.bytes.length, part.fetch,
+    )) {
+      out.push(...piece);
+    }
+
+    expect(new Uint8Array(out)).toEqual(part.bytes.subarray(777, 777 + 3333));
+  });
+
+  /**
+   * A whole-file request over a cold cache is one unbroken run of misses. Left
+   * unbounded, the run is the rest of the film: one fetch of several
+   * gigabytes, held in memory, yielding nothing until it finishes. ffmpeg
+   * stops after the segments it already has and waits forever.
+   */
+  test("a long run of misses is fetched in bounded pieces", async () => {
+    const part = upstream(CACHE_CHUNK * 64);
+    const reader = new CachedReader(new ChunkCache(root, 100_000_000));
+
+    for await (const _ of reader.readStream(
+      SET, 0, 0, CACHE_CHUNK * 64, part.bytes.length, part.fetch,
+    )) { /* drain */ }
+
+    expect(part.asked.length).toBeGreaterThan(1);
+    for (const ask of part.asked) expect(ask.length).toBeLessThanOrEqual(MAX_RUN_BYTES);
+  });
+
+  test("the first bytes arrive after one fetch, not after all of them", async () => {
+    const part = upstream(CACHE_CHUNK * 64);
+    const reader = new CachedReader(new ChunkCache(root, 100_000_000));
+
+    for await (const _ of reader.readStream(
+      SET, 0, 0, CACHE_CHUNK * 64, part.bytes.length, part.fetch,
+    )) {
+      break;
+    }
+
+    expect(part.asked).toHaveLength(1);
+  });
+
+  test("a long streamed range is still byte-exact", async () => {
+    const part = upstream(CACHE_CHUNK * 40);
+    const reader = new CachedReader(new ChunkCache(root, 100_000_000));
+
+    const out: number[] = [];
+    for await (const piece of reader.readStream(
+      SET, 0, 100, CACHE_CHUNK * 39, part.bytes.length, part.fetch,
+    )) {
+      out.push(...piece);
+    }
+
+    expect(new Uint8Array(out)).toEqual(part.bytes.subarray(100, 100 + CACHE_CHUNK * 39));
+  });
+
+  test("streaming still batches consecutive misses into one request", async () => {
+    const part = upstream(CACHE_CHUNK * 10);
+    const reader = new CachedReader(new ChunkCache(root, 10_000_000));
+
+    for await (const _ of reader.readStream(
+      SET, 0, 0, CACHE_CHUNK * 6, part.bytes.length, part.fetch,
+    )) { /* drain */ }
+
+    expect(part.asked).toHaveLength(1);
   });
 });

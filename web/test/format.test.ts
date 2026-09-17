@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { codecLine, episodeLabel, humanDuration, humanSize } from "../public/lib/format.js";
+import { clockTime, codecLine, episodeLabel, humanDuration, humanSize } from "../public/lib/format.js";
 
 describe("sizes", () => {
   test("scale to the unit that reads best", () => {
@@ -42,5 +42,31 @@ describe("labels", () => {
   test("the codec line omits what the index does not know", () => {
     expect(codecLine({ container: "mkv", vcodec: "hevc", acodec: "ac3" })).toBe("mkv · hevc · ac3");
     expect(codecLine({ container: "mp4", vcodec: null, acodec: "aac" })).toBe("mp4 · aac");
+  });
+});
+
+describe("a position on a scrub bar", () => {
+  test("under an hour, minutes and seconds", () => {
+    expect(clockTime(0)).toBe("0:00");
+    expect(clockTime(9)).toBe("0:09");
+    expect(clockTime(83)).toBe("1:23");
+    expect(clockTime(599)).toBe("9:59");
+  });
+
+  test("an hour or more gains an hours field", () => {
+    expect(clockTime(3600)).toBe("1:00:00");
+    expect(clockTime(5025)).toBe("1:23:45");
+  });
+
+  test("seconds are truncated, not rounded", () => {
+    // Rounding up shows a position the viewer has not reached yet, which on a
+    // running clock reads as the time jumping.
+    expect(clockTime(59.9)).toBe("0:59");
+  });
+
+  test("nothing sensible still reads as a time", () => {
+    expect(clockTime(null)).toBe("0:00");
+    expect(clockTime(-5)).toBe("0:00");
+    expect(clockTime(Number.NaN)).toBe("0:00");
   });
 });

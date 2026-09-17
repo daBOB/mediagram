@@ -38,6 +38,16 @@ export interface Config {
    * of lookahead, comfortably ahead of a 4 Mbit/s stream.
    */
   cacheReadahead: number;
+  /** Where HLS segments are written while a transcode runs. */
+  transcodeDir: string;
+  /**
+   * Ceiling for a transcode's output, in bits per second.
+   *
+   * A 13.9 Mbit/s source does not fit a 25 Mbit/s uplink with room for
+   * anything else, so remote viewing transcodes for bitrate as well as for
+   * codecs.
+   */
+  transcodeMaxrate: number;
   hostname: string;
   port: number;
 }
@@ -81,6 +91,8 @@ export function load(): Config {
     cacheDir: process.env.MEDIAGRAM_CACHE_DIR ?? `${process.env.HOME}/.cache/mediagram-player`,
     cacheMaxBytes: parseSize(process.env.MEDIAGRAM_CACHE_MAX ?? "8G"),
     cacheReadahead: Number(process.env.MEDIAGRAM_CACHE_READAHEAD ?? "4"),
+    transcodeDir: process.env.MEDIAGRAM_TRANSCODE_DIR ?? `${process.env.HOME}/.cache/mediagram-hls`,
+    transcodeMaxrate: parseSize(process.env.MEDIAGRAM_TRANSCODE_MAXRATE ?? "8000000"),
     hostname: addr.slice(0, colon) || "127.0.0.1",
     port: Number(addr.slice(colon + 1)),
   };
@@ -101,6 +113,8 @@ export function describe(config: Config): Record<string, unknown> {
     cacheDir: config.cacheDir,
     cacheMaxBytes: config.cacheMaxBytes,
     cacheReadahead: config.cacheReadahead,
+    transcodeDir: config.transcodeDir,
+    transcodeMaxrate: config.transcodeMaxrate,
     address: `${config.hostname}:${config.port}`,
   };
 }

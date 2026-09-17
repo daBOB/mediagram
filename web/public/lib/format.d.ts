@@ -12,3 +12,6 @@ export function codecLine(set: {
   vcodec?: string | null;
   acodec?: string | null;
 }): string;
+
+/** A position on a scrub bar: `1:23`, or `1:23:45` once past an hour. */
+export function clockTime(seconds: number | null): string;

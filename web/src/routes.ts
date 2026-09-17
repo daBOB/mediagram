@@ -18,6 +18,7 @@
 
 import type { Database } from "bun:sqlite";
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { join, normalize } from "node:path";
 import { subtitle, subtitleLanguages, summary } from "./assets";
 import { listPlayable, partLocations, playableSet, type PartLocation } from "./catalog";
@@ -34,6 +35,34 @@ export interface PlayerRequest {
   method: string;
   path: string;
   range: string | null;
+  /** `?seek=` on a transcode request, in seconds. */
+  seek?: string | null;
+}
+
+/** Serves HLS playlists and segments for a transcode in progress. */
+export interface HlsServer {
+  /**
+   * Starts (or joins) a transcode and returns its playlist URL.
+   *
+   * Joining rather than always starting is what stops two viewers of the same
+   * title running two encoders.
+   */
+  begin(setId: string, seekSeconds: number): Promise<string>;
+
+  /**
+   * The file for a session, or `null` when it is not ready.
+   *
+   * Not-ready is a real answer rather than an error: the playlist does not
+   * exist until ffmpeg has written a first segment, and a player handed an
+   * empty playlist treats it as a failure instead of waiting.
+   */
+  file(sessionId: string, name: string): Promise<{ body: Uint8Array; type: string } | null>;
+
+  /**
+   * Stops a session and forgets it. A session that is not running is not an
+   * error: the viewer's browser may be saying goodbye to one already reaped.
+   */
+  end(sessionId: string): Promise<void>;
 }
 
 export interface PlayerResponse {
@@ -48,9 +77,36 @@ const SUMMARY_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/summary$/;
 // The language is spelled out rather than captured loosely: it ends up in no
 // path, but a route that accepts `../` invites someone to make it one.
 const SUBTITLE_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/subtitles\/([A-Za-z]{2,8})\.vtt$/;
+// A session id is a hex digest and a segment is what ffmpeg names them. Both
+// reach a filesystem path, so both are spelled out rather than captured
+// loosely: a route that accepts `../` invites someone to use it.
+const HLS_PATH = /^\/hls\/([a-f0-9]{16})\/([A-Za-z0-9_-]{1,64}\.(?:m3u8|ts|m4s))$/;
+/** The session itself, which `DELETE` stops. */
+const HLS_SESSION_PATH = /^\/hls\/([a-f0-9]{16})\/?$/;
 
 /** The page and its script, served from `web/public`. */
 const PUBLIC_DIR = new URL("../public/", import.meta.url).pathname;
+
+/**
+ * hls.js, served out of the installed package rather than copied into
+ * `public`.
+ *
+ * Only Safari plays an HLS playlist from a plain `<video src>`; in Chrome and
+ * Firefox the transcode route would be unreachable without this. Reading it
+ * from the dependency keeps one copy of it and ties its version to the
+ * lockfile instead of to whenever someone last re-copied the file.
+ */
+const HLS_LIBRARY_PATH = "/lib/hls.mjs";
+
+let hlsLibrary: Uint8Array | null = null;
+
+function hlsLibraryBytes(): Uint8Array {
+  if (hlsLibrary === null) {
+    const resolve = createRequire(import.meta.url).resolve;
+    hlsLibrary = new Uint8Array(readFileSync(resolve("hls.js/dist/hls.min.mjs")));
+  }
+  return hlsLibrary;
+}
 
 const CONTENT_TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -102,8 +158,21 @@ function empty(status: number): PlayerResponse {
   return { status, headers: { "content-length": "0" }, body: null };
 }
 
-export function createRouter(db: Database, source: ByteSource) {
-  return function route(request: PlayerRequest): PlayerResponse {
+export function createRouter(db: Database, source: ByteSource, hls?: HlsServer) {
+  return async function route(request: PlayerRequest): Promise<PlayerResponse> {
+    // The one thing a viewer may change: a transcode they no longer want.
+    // It holds the hardware encoder, and waiting for the idle reaper means a
+    // second one starts while the abandoned one is still running.
+    if (request.method === "DELETE") {
+      // Anything else under `/hls/` is simply not a session, which is a 404;
+      // `DELETE` anywhere else is a method this server does not have.
+      if (!request.path.startsWith("/hls/")) return empty(405);
+      const session = HLS_SESSION_PATH.exec(request.path);
+      if (!session || !hls) return empty(404);
+      await hls.end(session[1]!);
+      return empty(204);
+    }
+
     const readOnlyMethod = request.method === "GET" || request.method === "HEAD";
     if (!readOnlyMethod) return empty(405);
 
@@ -145,6 +214,56 @@ export function createRouter(db: Database, source: ByteSource) {
       return request.method === "HEAD" ? { ...response, body: null } : response;
     }
 
+    const beginMatch = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/transcode$/.exec(request.path);
+    if (beginMatch) {
+      if (!hls) return empty(501);
+      if (playableSet(db, beginMatch[1]!) === null) return empty(404);
+      const seek = Math.max(0, Math.floor(Number(request.seek ?? 0)) || 0);
+
+      // A conversion that produces nothing is a 503 carrying the reason
+      // rather than a 500: it is a title that could not be started now, and
+      // the page has somewhere to show why.
+      let playlist: string;
+      try {
+        playlist = await hls.begin(beginMatch[1]!, seek);
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : "the conversion did not start";
+        return { ...text(JSON.stringify({ error: reason }), "application/json"), status: 503 };
+      }
+      const body = JSON.stringify({ playlist });
+      return {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+          "content-length": String(Buffer.byteLength(body)),
+        },
+        body: request.method === "HEAD" ? null : new TextEncoder().encode(body),
+      };
+    }
+
+    const hlsMatch = HLS_PATH.exec(request.path);
+    if (hlsMatch) {
+      if (!hls) return empty(404);
+      return hlsResponse(hls, hlsMatch[1]!, hlsMatch[2]!, request.method);
+    }
+    // Anything under /hls that did not match the shape above is refused
+    // rather than falling through to the static files below.
+    if (request.path.startsWith("/hls/")) return empty(404);
+
+    if (request.path === HLS_LIBRARY_PATH) {
+      const body = hlsLibraryBytes();
+      return {
+        status: 200,
+        headers: {
+          "content-type": "text/javascript; charset=utf-8",
+          "content-length": String(body.byteLength),
+          // Half a megabyte that changes only when the dependency does.
+          "cache-control": "public, max-age=86400",
+        },
+        body: request.method === "HEAD" ? null : body,
+      };
+    }
+
     if (!request.path.startsWith("/api/")) {
       const file = staticFile(request.path);
       if (file !== null) {
@@ -153,6 +272,10 @@ export function createRouter(db: Database, source: ByteSource) {
           headers: {
             "content-type": file.type,
             "content-length": String(file.body.byteLength),
+            // The page and its scripts are small and change whenever the
+            // server is updated. A browser holding yesterday's copy of one of
+            // them against today's API is a bug with no visible cause.
+            "cache-control": "no-cache",
           },
           body: request.method === "HEAD" ? null : file.body,
         };
@@ -160,6 +283,36 @@ export function createRouter(db: Database, source: ByteSource) {
     }
 
     return empty(404);
+  };
+}
+
+const HLS_TYPES: Record<string, string> = {
+  m3u8: "application/vnd.apple.mpegurl",
+  ts: "video/mp2t",
+  m4s: "video/iso.segment",
+};
+
+async function hlsResponse(
+  hls: HlsServer,
+  sessionId: string,
+  name: string,
+  method: string,
+): Promise<PlayerResponse> {
+  const found = await hls.file(sessionId, name);
+  // 503: the transcode exists but has not produced this yet. A player retries
+  // a 503 and gives up on a 404.
+  if (found === null) return empty(503);
+
+  return {
+    status: 200,
+    headers: {
+      "content-type": found.type,
+      "content-length": String(found.body.byteLength),
+      // A playlist grows while encoding; a cached one stops at whatever
+      // length it had when it was first read.
+      "cache-control": "no-store",
+    },
+    body: method === "HEAD" ? null : found.body,
   };
 }
 

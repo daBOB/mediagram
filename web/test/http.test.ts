@@ -278,3 +278,104 @@ describe("the page", () => {
     }
   });
 });
+
+describe("the HLS routes", () => {
+  /**
+   * A player asking for a playlist must not get an empty one: hls.js treats
+   * a playlist with no segments as a failure rather than as "wait".
+   */
+  test("a playlist is not served until it has a segment", async () => {
+    const response = await request(`/hls/${"0".repeat(16)}/index.m3u8`);
+
+    expect([404, 503]).toContain(response.status);
+  });
+
+  /** A segment name reaches a path, so it must be inert. */
+  test("a segment name that looks like a path is refused", async () => {
+    for (const name of ["..%2f..%2fetc%2fpasswd", "a%2fb.ts", "....%2f.env"]) {
+      const response = await request(`/hls/${"0".repeat(16)}/${name}`);
+      expect([400, 404]).toContain(response.status);
+    }
+  });
+
+  test("a session id that is not a session id is refused", async () => {
+    const response = await request("/hls/..%2f..%2fetc/index.m3u8");
+
+    expect([400, 404]).toContain(response.status);
+  });
+
+  test("every HLS response states its length", async () => {
+    const response = await request(`/hls/${"0".repeat(16)}/index.m3u8`);
+
+    expect(lengthOf(response)).toBe(response.body.byteLength);
+  });
+});
+
+/**
+ * A transcode holds the hardware encoder, so a viewer who stops watching has
+ * to be able to say so. Waiting for the idle reaper means a machine with one
+ * encoder runs two of them for minutes after a seek.
+ */
+describe("releasing a transcode", () => {
+  const SESSION = "a".repeat(16);
+  let ended: string[] = [];
+  let hlsServer: RunningServer;
+
+  const hls = {
+    begin: async () => `/hls/${SESSION}/index.m3u8`,
+    file: async () => null,
+    end: async (sessionId: string) => {
+      ended.push(sessionId);
+    },
+  };
+
+  beforeAll(async () => {
+    hlsServer = await startServer({ db: index(), source: new FakeSource(), hls });
+  });
+  afterAll(async () => {
+    await hlsServer.close();
+  });
+
+  test("DELETE on a session stops it", async () => {
+    ended = [];
+    const response = await rawRequest(hlsServer.port, `/hls/${SESSION}`, { method: "DELETE" });
+
+    expect(response.status).toBe(204);
+    expect(ended).toEqual([SESSION]);
+  });
+
+  test("a session id that is not one is refused without reaching the registry", async () => {
+    ended = [];
+    for (const id of ["..%2f..%2fetc", "short", "A".repeat(16)]) {
+      const response = await rawRequest(hlsServer.port, `/hls/${id}`, { method: "DELETE" });
+      expect([400, 404]).toContain(response.status);
+    }
+
+    expect(ended).toEqual([]);
+  });
+
+  test("a conversion that cannot start says so, and is not a server error", async () => {
+    const failing = {
+      begin: async () => {
+        throw new Error("the conversion produced no segment within 45s");
+      },
+      file: async () => null,
+      end: async () => {},
+    };
+    const server = await startServer({ db: index(), source: new FakeSource(), hls: failing });
+    try {
+      const response = await rawRequest(server.port, `/api/sets/${SET}/transcode`);
+
+      expect(response.status).toBe(503);
+      expect(new TextDecoder().decode(response.body)).toContain("no segment");
+    } finally {
+      await server.close();
+    }
+  });
+
+  test("other methods on a session are still refused", async () => {
+    const response = await rawRequest(hlsServer.port, `/hls/${SESSION}`, { method: "PUT" });
+
+    expect(response.status).toBe(405);
+  });
+});
