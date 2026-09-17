@@ -1,0 +1,148 @@
+/**
+ * Chunks on disk, under a quota.
+ *
+ * A media cache with no ceiling fills whatever it is given, and this library
+ * is tens of gigabytes on a machine with other work to do. The budget is the
+ * point of the thing: eviction is least-recently-used, driven by each file's
+ * access time, so a series being watched stays resident while last month's
+ * film falls out.
+ *
+ * Writes go to a temporary name and are renamed into place, which is atomic
+ * on the same filesystem. A reader therefore never sees a half-written chunk,
+ * and an interrupted write leaves a stray temporary rather than a plausible
+ * lie.
+ */
+
+import { mkdir, readdir, rename, rm, stat, utimes, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+
+import { chunkPath } from "./key";
+
+interface Entry {
+  path: string;
+  size: number;
+  usedAt: number;
+}
+
+export class ChunkCache {
+  /** Chunks being written right now, so two viewers do not race one file. */
+  private readonly inFlight = new Map<string, Promise<void>>();
+
+  constructor(
+    private readonly root: string,
+    private readonly maxBytes: number,
+  ) {}
+
+  /**
+   * A chunk's bytes, or `null` on a miss.
+   *
+   * `expectedSize` is checked when the caller knows it: a file of the wrong
+   * length is a partial write, not data, and is removed rather than served.
+   * The last chunk of a part is legitimately short, so callers only pass a
+   * size when they know a full chunk was stored.
+   */
+  async get(
+    setId: string,
+    partIdx: number,
+    index: number,
+    expectedSize?: number,
+  ): Promise<Uint8Array | null> {
+    const path = chunkPath(this.root, setId, partIdx, index);
+    try {
+      const bytes = new Uint8Array(await Bun.file(path).arrayBuffer());
+      if (expectedSize !== undefined && bytes.byteLength !== expectedSize) {
+        await rm(path, { force: true });
+        return null;
+      }
+      // Mark the use, which is what eviction orders by. Best effort: a cache
+      // that cannot record a touch is still a working cache.
+      const now = new Date();
+      void utimes(path, now, now).catch(() => {});
+      return bytes;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Stores a chunk, then brings the cache back under its budget. */
+  async put(setId: string, partIdx: number, index: number, bytes: Uint8Array): Promise<void> {
+    const path = chunkPath(this.root, setId, partIdx, index);
+
+    const existing = this.inFlight.get(path);
+    if (existing) return existing;
+
+    const write = this.writeChunk(path, bytes).finally(() => this.inFlight.delete(path));
+    this.inFlight.set(path, write);
+    return write;
+  }
+
+  private async writeChunk(path: string, bytes: Uint8Array): Promise<void> {
+    try {
+      await mkdir(dirname(path), { recursive: true });
+      // Renamed into place so a reader never sees a partial file.
+      const temporary = `${path}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
+      await writeFile(temporary, bytes);
+      await rename(temporary, path);
+    } catch {
+      // A cache that cannot write is a slow cache, not a broken player.
+      return;
+    }
+    await this.evict();
+  }
+
+  /** Total bytes currently held. */
+  async sizeOnDisk(): Promise<number> {
+    return (await this.entries()).reduce((total, entry) => total + entry.size, 0);
+  }
+
+  /**
+   * Removes least-recently-used chunks until the cache fits its budget.
+   *
+   * Returns the bytes freed. Scanning on each write is affordable because a
+   * cache of this size holds thousands of files, not millions, and it keeps
+   * the truth on disk rather than in an index that can drift from it.
+   */
+  async evict(): Promise<number> {
+    const entries = await this.entries();
+    let total = entries.reduce((sum, entry) => sum + entry.size, 0);
+    if (total <= this.maxBytes) return 0;
+
+    entries.sort((a, b) => a.usedAt - b.usedAt);
+    let freed = 0;
+    for (const entry of entries) {
+      if (total <= this.maxBytes) break;
+      await rm(entry.path, { force: true });
+      total -= entry.size;
+      freed += entry.size;
+    }
+    return freed;
+  }
+
+  /** Every chunk file, with its size and last use. */
+  private async entries(): Promise<Entry[]> {
+    const found: Entry[] = [];
+    const walk = async (directory: string): Promise<void> => {
+      let listing;
+      try {
+        listing = await readdir(directory, { withFileTypes: true });
+      } catch {
+        return;
+      }
+      for (const item of listing) {
+        const path = join(directory, item.name);
+        if (item.isDirectory()) {
+          await walk(path);
+        } else if (!item.name.endsWith(".tmp")) {
+          try {
+            const info = await stat(path);
+            found.push({ path, size: info.size, usedAt: info.atimeMs });
+          } catch {
+            // Evicted by someone else between the listing and the stat.
+          }
+        }
+      }
+    };
+    await walk(this.root);
+    return found;
+  }
+}

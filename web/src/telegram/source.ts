@@ -8,16 +8,24 @@
  * the aligned offset the plan chose and discards the head.
  */
 
+import type { CachedReader } from "../cache/reader";
 import type { PartLocation } from "../catalog";
 import { requestSizeFor, type Step } from "../range";
 import type { ByteSource } from "../routes";
 import type { Telegram } from "./client";
 
 export class TelegramSource implements ByteSource {
-  constructor(private readonly telegram: Telegram) {}
+  /**
+   * `reader` is optional: without it every byte comes from Telegram, which is
+   * correct but pays for the same bytes on every replay and every seek back.
+   */
+  constructor(
+    private readonly telegram: Telegram,
+    private readonly reader?: CachedReader,
+  ) {}
 
-  stream(locations: PartLocation[], steps: Step[]): ReadableStream<Uint8Array> {
-    const bytes = this.bytesOf(locations, steps);
+  stream(locations: PartLocation[], steps: Step[], setId: string): ReadableStream<Uint8Array> {
+    const bytes = this.bytesOf(setId, locations, steps);
     // Pull-based, so a slow viewer slows the download rather than filling
     // memory with a set that may be several gigabytes.
     return new ReadableStream<Uint8Array>({
@@ -39,12 +47,28 @@ export class TelegramSource implements ByteSource {
   }
 
   private async *bytesOf(
+    setId: string,
     locations: PartLocation[],
     steps: Step[],
   ): AsyncGenerator<Uint8Array, void, unknown> {
     for (const step of steps) {
       const location = locations.find((l) => l.span.idx === step.partIdx);
       if (!location) throw new Error(`part ${step.partIdx} has no message`);
+
+      if (this.reader) {
+        // Through the cache: it fetches what it lacks and keeps what it
+        // fetches, so a second pass over the same bytes costs nothing.
+        const bytes = await this.reader.read(
+          setId,
+          step.partIdx,
+          step.offset + step.headDrop,
+          step.take,
+          location.span.len,
+          partFetcher(this.telegram, location.messageId),
+        );
+        yield bytes;
+        continue;
+      }
 
       const media = await this.telegram.partMedia(location.messageId);
       let headDrop = step.headDrop;
@@ -76,4 +100,33 @@ export class TelegramSource implements ByteSource {
       }
     }
   }
+}
+
+/**
+ * Fetches one aligned range of a part straight from Telegram.
+ *
+ * Handed to the cache as its way of filling a miss, so the cache knows
+ * nothing about MTProto and this file stays the only place that does.
+ */
+export function partFetcher(telegram: Telegram, messageId: number) {
+  return async (offset: number, length: number): Promise<Uint8Array> => {
+    const media = await telegram.partMedia(messageId);
+    const out: Uint8Array[] = [];
+    let got = 0;
+    for await (const chunk of telegram.client.iterDownload(media as never, {
+      offset: BigInt(offset) as never,
+      requestSize: requestSizeFor(length),
+    })) {
+      out.push(chunk);
+      got += chunk.length;
+      if (got >= length) break;
+    }
+    const joined = new Uint8Array(got);
+    let at = 0;
+    for (const piece of out) {
+      joined.set(piece, at);
+      at += piece.length;
+    }
+    return joined.subarray(0, Math.min(length, got));
+  };
 }

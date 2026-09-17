@@ -34,7 +34,7 @@ const FILE = synthetic(TOTAL);
 
 /** Resolves planned reads against bytes we hold, as Telegram would. */
 class FakeSource implements ByteSource {
-  stream(locations: PartLocation[], steps: Step[]): ReadableStream<Uint8Array> {
+  stream(locations: PartLocation[], steps: Step[], _setId: string): ReadableStream<Uint8Array> {
     const chunks: Uint8Array[] = [];
     for (const step of steps) {
       const span = locations.find((l) => l.span.idx === step.partIdx)!.span;

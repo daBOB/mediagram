@@ -21,8 +21,33 @@ export interface Config {
    */
   channelAccessHash: bigint;
   libraryDb: string;
+  /** Where cached chunks live. */
+  cacheDir: string;
+  /**
+   * Ceiling for the chunk cache, in bytes.
+   *
+   * A media cache with no ceiling fills whatever it is given, and this
+   * library is tens of gigabytes. 0 disables caching entirely.
+   */
+  cacheMaxBytes: number;
   hostname: string;
   port: number;
+}
+
+/**
+ * A size with an optional unit: `8G`, `512M`, `1024`. Plain bytes without one.
+ *
+ * Spelled out rather than taking raw bytes because a quota is a number a
+ * person sets by hand, and "8589934592" invites a typo that silently becomes
+ * a different order of magnitude.
+ */
+export function parseSize(text: string): number {
+  const match = /^(\d+(?:\.\d+)?)\s*([KMGT])?B?$/i.exec(text.trim());
+  if (!match) throw new Error(`not a size: ${text}`);
+  const scale = { k: 1024, m: 1024 ** 2, g: 1024 ** 3, t: 1024 ** 4 }[
+    (match[2] ?? "").toLowerCase()
+  ];
+  return Math.floor(Number(match[1]) * (scale ?? 1));
 }
 
 function required(name: string): string {
@@ -45,6 +70,8 @@ export function load(): Config {
     chatId: Number(required("MEDIAGRAM_CHAT_ID")),
     channelAccessHash: BigInt(required("MEDIAGRAM_CHANNEL_ACCESS_HASH")),
     libraryDb: required("MEDIAGRAM_LIBRARY_DB"),
+    cacheDir: process.env.MEDIAGRAM_CACHE_DIR ?? `${process.env.HOME}/.cache/mediagram-player`,
+    cacheMaxBytes: parseSize(process.env.MEDIAGRAM_CACHE_MAX ?? "8G"),
     hostname: addr.slice(0, colon) || "127.0.0.1",
     port: Number(addr.slice(colon + 1)),
   };
@@ -62,6 +89,8 @@ export function describe(config: Config): Record<string, unknown> {
     chatId: config.chatId,
     channelAccessHash: String(config.channelAccessHash),
     libraryDb: config.libraryDb,
+    cacheDir: config.cacheDir,
+    cacheMaxBytes: config.cacheMaxBytes,
     address: `${config.hostname}:${config.port}`,
   };
 }

@@ -10,6 +10,8 @@ import { Database } from "bun:sqlite";
 import { describe, load } from "./config";
 import { assertSchema, listPlayable } from "./catalog";
 import { startServer } from "./server";
+import { CachedReader } from "./cache/reader";
+import { ChunkCache } from "./cache/store";
 import { Telegram } from "./telegram/client";
 import { TelegramSource } from "./telegram/source";
 
@@ -23,9 +25,22 @@ assertSchema(db);
 console.log(`catalog: ${listPlayable(db).length} playable sets`);
 
 const telegram = await Telegram.connect(config);
+
+// A budget of zero turns caching off, which is a legitimate choice on a
+// machine with no disk to spare.
+const cache = config.cacheMaxBytes > 0 ? new ChunkCache(config.cacheDir, config.cacheMaxBytes) : null;
+if (cache) {
+  const held = await cache.sizeOnDisk();
+  console.log(
+    `cache: ${(held / 1024 ** 3).toFixed(2)} GB of ${(config.cacheMaxBytes / 1024 ** 3).toFixed(2)} GB in ${config.cacheDir}`,
+  );
+} else {
+  console.log("cache: disabled");
+}
+
 const server = await startServer({
   db,
-  source: new TelegramSource(telegram),
+  source: new TelegramSource(telegram, cache ? new CachedReader(cache) : undefined),
   port: config.port,
   hostname: config.hostname,
 });

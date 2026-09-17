@@ -32,3 +32,10 @@ tmdb_key = ""                      # https://www.themoviedb.org/settings/api
 # Where those files end up being served from, used to build the URL inside
 # latest.json. Not verified against where publish_cmd actually puts them.
 # publish_base_url = "https://example.com/pkgs"
+
+# --- the web player's chunk cache (web/.env, not this file) ---------------
+# The player keeps fetched 512 KiB chunks on disk so a seek back, or a second
+# viewing, costs nothing upstream. A media cache with no ceiling fills
+# whatever it is given, so it has one.
+#   MEDIAGRAM_CACHE_DIR=~/.cache/mediagram-player
+#   MEDIAGRAM_CACHE_MAX=8G     # 0 turns caching off

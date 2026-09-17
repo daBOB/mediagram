@@ -27,7 +27,7 @@ import { contentType, planResponse } from "./response";
 /** Where a stream's bytes come from. */
 export interface ByteSource {
   /** The bytes of `steps`, in order, for a set whose parts are `locations`. */
-  stream(locations: PartLocation[], steps: Step[]): ReadableStream<Uint8Array>;
+  stream(locations: PartLocation[], steps: Step[], setId: string): ReadableStream<Uint8Array>;
 }
 
 export interface PlayerRequest {
@@ -191,7 +191,7 @@ function streamSet(
   // probe, and players probe often.
   const body =
     plan.range !== null && request.method !== "HEAD"
-      ? source.stream(locations, planReads(spans, plan.range))
+      ? source.stream(locations, planReads(spans, plan.range), setId)
       : null;
 
   return { status: plan.status, headers, body };
