@@ -91,7 +91,9 @@ function convert(set, seconds, warning) {
   base = seconds;
   note.textContent = `${warning} Starting at ${clockTime(seconds)}…`;
 
-  playTranscoded(video, set.setId, seconds)
+  playTranscoded(video, set.setId, seconds, (error) => {
+    note.textContent = `The conversion stopped: ${error.message}. Pick a position to start it again.`;
+  })
     .then((release) => {
       detach = release;
       note.textContent = warning;

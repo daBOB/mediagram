@@ -270,6 +270,14 @@ describe("the page", () => {
     expect(response.headers.get("content-type")).toContain("javascript");
   });
 
+  /** A malformed escape is a path that does not exist, not a server fault. */
+  test("an undecodable path is a 404", async () => {
+    for (const path of ["/%zz", "/%", "/a%2"]) {
+      const response = await request(path);
+      expect(response.status).toBe(404);
+    }
+  });
+
   /** A path that climbs out of the public directory must not be served. */
   test("a traversal attempt is refused", async () => {
     for (const path of ["/../src/config.ts", "/..%2fsrc%2fconfig.ts", "/../../.env"]) {
@@ -368,6 +376,33 @@ describe("releasing a transcode", () => {
 
       expect(response.status).toBe(503);
       expect(new TextDecoder().decode(response.body)).toContain("no segment");
+    } finally {
+      await server.close();
+    }
+  });
+
+  test("a seek that is not a number of seconds never reaches ffmpeg", async () => {
+    const asked: number[] = [];
+    const recording = {
+      begin: async (_setId: string, seek: number) => {
+        asked.push(seek);
+        return `/hls/${SESSION}/index.m3u8`;
+      },
+      file: async () => null,
+      end: async () => {},
+    };
+    const server = await startServer({ db: index(), source: new FakeSource(), hls: recording });
+    try {
+      // `Infinity` passes a NaN check and reaches the command line as `-ss
+      // Infinity`, which ffmpeg exits on immediately.
+      for (const seek of ["Infinity", "-Infinity", "1e400", "NaN", "abc", "-5"]) {
+        await rawRequest(server.port, `/api/sets/${SET}/transcode?seek=${seek}`);
+      }
+
+      for (const seek of asked) {
+        expect(Number.isFinite(seek)).toBe(true);
+        expect(seek).toBeGreaterThanOrEqual(0);
+      }
     } finally {
       await server.close();
     }

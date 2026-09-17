@@ -74,6 +74,34 @@ describe("starting a transcode", () => {
     await registry.stopAll();
   });
 
+  /**
+   * ffmpeg dies on a bad argument or a missing encoder within milliseconds.
+   * Polling the filesystem for a segment it will never write makes the viewer
+   * wait out the whole readiness timeout for a failure already known.
+   */
+  test("an ffmpeg that exits is reported at once, not after the timeout", async () => {
+    const registry = new TranscodeRegistry(work, {
+      start() {
+        return { stop: async () => {}, exited: Promise.resolve(1) };
+      },
+    });
+    const files = new TranscodeFiles(registry, { readyTimeoutMs: 10_000, pollMs: 10 });
+
+    const began = Date.now();
+    await expect(files.begin("01SET", 0)).rejects.toThrow(/stopped|exit/i);
+
+    expect(Date.now() - began).toBeLessThan(2000);
+    await registry.stopAll();
+  });
+
+  test("a runner that cannot say whether it exited still times out", async () => {
+    const registry = new TranscodeRegistry(work, runnerWriting(null, 0));
+    const files = new TranscodeFiles(registry, { readyTimeoutMs: 150, pollMs: 10 });
+
+    await expect(files.begin("01SET", 0)).rejects.toThrow(/no segment/i);
+    await registry.stopAll();
+  });
+
   test("a failed start leaves no session behind", async () => {
     const registry = new TranscodeRegistry(work, runnerWriting(null, 0));
     const files = new TranscodeFiles(registry, { readyTimeoutMs: 150, pollMs: 10 });

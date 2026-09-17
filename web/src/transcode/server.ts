@@ -57,27 +57,38 @@ export class TranscodeFiles implements HlsServer {
     // one retry and then reports a fatal error, so a URL handed over early is
     // not "the player waits" — it is a title that fails to start.
     try {
-      await this.waitForFirstSegment(session.directory);
+      await this.waitForFirstSegment(session.directory, session.exited);
     } catch (error) {
       // A session that never produced anything is an ffmpeg holding the
-      // encoder for nothing, and a directory that would be reaped in five
-      // minutes rather than now.
-      await this.registry.stop(session.id);
+      // encoder for nothing. Released rather than stopped: another viewer may
+      // be watching the same one and getting segments perfectly well.
+      await this.registry.release(session.id);
       throw error;
     }
     return `/hls/${session.id}/index.m3u8`;
   }
 
   /** Resolves when the playlist lists a segment, or throws having waited. */
-  private async waitForFirstSegment(directory: string): Promise<void> {
+  private async waitForFirstSegment(directory: string, exited?: Promise<number>): Promise<void> {
     const playlist = join(directory, "index.m3u8");
     const deadline = Date.now() + this.readyTimeoutMs;
+
+    // ffmpeg dies on a bad argument within milliseconds. Watching for that is
+    // the difference between saying so at once and polling for output that is
+    // never coming until the timeout runs out.
+    let stopped = false;
+    void exited?.then(() => {
+      stopped = true;
+    });
 
     for (;;) {
       const text = await readFile(playlist, "utf8").catch(() => null);
       // The header alone is written before anything is encoded; a segment
       // line is the first evidence that there is a picture.
       if (text !== null && /^[^#\r\n]+\.(?:ts|m4s)\s*$/m.test(text)) return;
+      if (stopped) {
+        throw new Error(`the conversion stopped before it produced anything; see ffmpeg.log`);
+      }
       if (Date.now() >= deadline) {
         throw new Error(
           `the conversion produced no segment within ${Math.round(this.readyTimeoutMs / 1000)}s`,
@@ -87,9 +98,15 @@ export class TranscodeFiles implements HlsServer {
     }
   }
 
-  /** Idempotent: a viewer saying goodbye to a reaped session is not an error. */
+  /**
+   * One viewer is finished with a session.
+   *
+   * A release, not a stop: sessions are shared, so the first viewer to close
+   * the dialog must not end the encode the other one is watching. Idempotent,
+   * because a browser saying goodbye to a session already reaped is normal.
+   */
   async end(sessionId: string): Promise<void> {
-    await this.registry.stop(sessionId);
+    await this.registry.release(sessionId);
   }
 
   async file(sessionId: string, name: string): Promise<{ body: Uint8Array; type: string } | null> {
@@ -101,16 +118,19 @@ export class TranscodeFiles implements HlsServer {
     // before a filesystem read, and the cost of checking twice is nothing.
     if (!resolve(path).startsWith(resolve(session.directory))) return null;
 
-    const file = Bun.file(path);
-    if (!(await file.exists())) return null;
+    // Read straight out, rather than asking whether it exists first: between
+    // the two, a session being stopped takes the directory away, and the read
+    // then fails out of the route as a 500 instead of the not-ready this is.
+    const body = await Bun.file(path)
+      .arrayBuffer()
+      .then((bytes) => new Uint8Array(bytes))
+      .catch(() => null);
+    if (body === null) return null;
 
     // Someone is watching; do not reap this session out from under them.
     this.registry.touch(sessionId);
 
     const dot = name.lastIndexOf(".");
-    return {
-      body: new Uint8Array(await file.arrayBuffer()),
-      type: TYPES[name.slice(dot)] ?? "application/octet-stream",
-    };
+    return { body, type: TYPES[name.slice(dot)] ?? "application/octet-stream" };
   }
 }

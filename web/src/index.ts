@@ -7,6 +7,7 @@
  */
 
 import { Database } from "bun:sqlite";
+import { rm } from "node:fs/promises";
 import { describe, load } from "./config";
 import { assertSchema, listPlayable } from "./catalog";
 import { startServer } from "./server";
@@ -49,6 +50,11 @@ if (cache) {
 // presses play is too late.
 const encoder = await detectEncoder();
 console.log(`encoder: ${encoder.name}${encoder.kind === "vaapi" ? ` on ${encoder.device}` : ""}`);
+
+// Cleared on startup. ffmpeg dies with this process, so anything here is a
+// previous run's segments: stale playlists that a restarted session would
+// otherwise be handed, and directories nobody will ever delete.
+await rm(config.transcodeDir, { recursive: true, force: true });
 
 const transcodes = new TranscodeRegistry(
   config.transcodeDir,

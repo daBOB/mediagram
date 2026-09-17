@@ -50,6 +50,25 @@ async function beginTranscode(setId, seekSeconds) {
 }
 
 /**
+ * How often an open player reminds the server it is still watching.
+ *
+ * A paused viewer fetches no segments, and the server reaps a session nobody
+ * has read for five minutes — so without this, pausing for a coffee ends the
+ * conversion and playback never resumes. Comfortably inside that window.
+ */
+const KEEPALIVE_MS = 60_000;
+
+/** Keeps a session alive while the player is open. Returns a way to stop. */
+function keepAlive(playlist) {
+  const timer = setInterval(() => {
+    // The playlist itself: fetching it is what marks a session as watched, so
+    // this needs no endpoint of its own.
+    void fetch(playlist, { cache: "no-store" }).catch(() => {});
+  }, KEEPALIVE_MS);
+  return () => clearInterval(timer);
+}
+
+/**
  * Tells the server this transcode is finished with.
  *
  * Worth doing rather than leaving to the idle reaper: a transcode holds the
@@ -71,13 +90,18 @@ function releaseTranscode(playlist) {
  * Detaching matters more than it looks: hls.js holds a MediaSource and a
  * fetch loop, and one left running behind a closed dialog keeps the server
  * encoding for a viewer who has gone.
+ *
+ * `onFatal` is called if playback dies after it started — a session reaped, a
+ * conversion that failed — so the page can say so instead of just stopping.
  */
-export async function playTranscoded(video, setId, seekSeconds = 0) {
+export async function playTranscoded(video, setId, seekSeconds = 0, onFatal) {
   const playlist = await beginTranscode(setId, seekSeconds);
 
   if (needsNativeHls()) {
     video.src = playlist;
+    const stopKeepAlive = keepAlive(playlist);
     return () => {
+      stopKeepAlive();
       video.removeAttribute("src");
       video.load();
       releaseTranscode(playlist);
@@ -91,9 +115,17 @@ export async function playTranscoded(video, setId, seekSeconds = 0) {
   // still writing it, and hls.js reads a playlist without one as live: left
   // alone it opens a film several minutes in, wherever encoding had reached.
   const hls = new Hls({ enableWorker: true, startPosition: 0 });
+  // Without a handler, a session that has gone away presents as a player that
+  // simply stops, with the explanation only in the console.
+  hls.on(Hls.Events.ERROR, (_event, data) => {
+    if (data.fatal) onFatal?.(new Error(data.details ?? "the conversion stopped"));
+  });
+
   hls.loadSource(playlist);
   hls.attachMedia(video);
+  const stopKeepAlive = keepAlive(playlist);
   return () => {
+    stopKeepAlive();
     hls.destroy();
     releaseTranscode(playlist);
   };

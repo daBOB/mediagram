@@ -113,7 +113,10 @@ export class CachedReader {
       for (let i = at; i <= end; i++) {
         const piece = slices[i]!;
         const chunk = chunks.get(piece.index);
-        if (!chunk) break;
+        // `fillRun` throws on a short answer, so this cannot happen; breaking
+        // here instead of saying so is what turned a failed fetch into a hole
+        // in the middle of a file.
+        if (!chunk) throw new Error(`chunk ${piece.index} of part ${partIdx} did not arrive`);
         yield chunk.subarray(piece.skip, piece.skip + piece.take);
       }
       at = end + 1;
@@ -164,7 +167,8 @@ export class CachedReader {
     const out = new Uint8Array(length);
     let written = 0;
     for (const slice of slices) {
-      const chunk = chunks.get(slice.index)!;
+      const chunk = chunks.get(slice.index);
+      if (!chunk) throw new Error(`chunk ${slice.index} of part ${partIdx} did not arrive`);
       out.set(chunk.subarray(slice.skip, slice.skip + slice.take), written);
       written += slice.take;
     }
@@ -173,7 +177,15 @@ export class CachedReader {
     return out;
   }
 
-  /** Fetches one run in a single request and caches each chunk of it. */
+  /**
+   * Fetches one run in a single request and caches each chunk of it.
+   *
+   * A short answer throws rather than caching what arrived. The end of a part
+   * is already accounted for by clamping to `partLength`, so anything shorter
+   * than that is bytes that did not come back — and a reader that carried on
+   * would serve the next run's bytes where these belong, which is a corrupt
+   * video under a Content-Length that says it is whole.
+   */
   private async fillRun(
     setId: string,
     partIdx: number,
@@ -184,7 +196,13 @@ export class CachedReader {
   ): Promise<void> {
     const offset = run.first * CACHE_CHUNK;
     const end = Math.min((run.last + 1) * CACHE_CHUNK, partLength);
-    const bytes = await fetch(offset, end - offset);
+    const wanted = end - offset;
+    const bytes = await fetch(offset, wanted);
+    if (bytes.length < wanted) {
+      throw new Error(
+        `short read of part ${partIdx}: asked for ${wanted} bytes at ${offset}, got ${bytes.length}`,
+      );
+    }
 
     for (let index = run.first; index <= run.last; index++) {
       const at = (index - run.first) * CACHE_CHUNK;

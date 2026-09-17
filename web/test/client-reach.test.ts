@@ -59,8 +59,22 @@ describe("the address to judge a request by", () => {
     expect(clientAddress("203.0.113.9", "127.0.0.1", false)).toBe("203.0.113.9");
   });
 
-  test("with a trusted proxy, the first forwarded address wins", () => {
-    expect(clientAddress("127.0.0.1", "203.0.113.9, 70.41.3.18", true)).toBe("203.0.113.9");
+  /**
+   * The last entry, not the first. A proxy that replaces the header writes one
+   * entry, so both readings agree. A proxy that *appends* — Cloudflare does —
+   * leaves whatever the caller sent in front of the address it observed, and
+   * reading the first entry would believe the caller.
+   */
+  test("with a trusted proxy, the address the proxy itself observed wins", () => {
+    expect(clientAddress("127.0.0.1", "203.0.113.9", true)).toBe("203.0.113.9");
+    expect(clientAddress("127.0.0.1", "10.0.0.1, 203.0.113.9", true)).toBe("203.0.113.9");
+  });
+
+  test("a caller cannot claim the local network by sending a chain", () => {
+    // What a remote viewer would send to be offered the original file.
+    const spoofed = clientAddress("127.0.0.1", "192.168.0.10, 203.0.113.9", true);
+
+    expect(isLocalAddress(spoofed)).toBe(false);
   });
 
   test("a trusted proxy that forwards nothing falls back to the socket", () => {

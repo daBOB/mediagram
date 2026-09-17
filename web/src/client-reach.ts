@@ -48,9 +48,16 @@ function isOctet(text: string): boolean {
 /**
  * The address to judge a request by.
  *
- * `forwarded` is the `X-Forwarded-For` header, which is a list with the
- * original client first. It is used only when a proxy is trusted, because
- * otherwise it is whatever the caller decided to send.
+ * `forwarded` is the `X-Forwarded-For` header, and the **last** entry is the
+ * one to read, not the first. A proxy that replaces the header writes a single
+ * entry and both readings agree; a proxy that appends — Cloudflare does —
+ * leaves whatever the caller sent in front of the address it observed itself,
+ * so reading the first entry would believe the caller. A remote viewer sending
+ * `192.168.0.10` would then be handed the original file and stall on it.
+ *
+ * This assumes exactly one proxy in front, which is what the operating
+ * document describes. It is read at all only when one is trusted, because
+ * otherwise the header is whatever the caller decided to send.
  */
 export function clientAddress(
   socketAddress: string | null,
@@ -58,8 +65,9 @@ export function clientAddress(
   trustProxy: boolean,
 ): string {
   if (trustProxy && forwarded) {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first) return first;
+    const chain = forwarded.split(",").map((part) => part.trim()).filter(Boolean);
+    const observed = chain.at(-1);
+    if (observed) return observed;
   }
   // An unknown address is not a local one: a caller the server cannot place
   // gets the treatment that assumes the worst about the link.

@@ -325,3 +325,67 @@ describe("streaming rather than buffering", () => {
     expect(part.asked).toHaveLength(1);
   });
 });
+
+/**
+ * A short read is the one failure that must never be quiet. The response has
+ * already promised a length, so bytes that do not arrive are either a file
+ * the viewer believes is complete, or — worse, once a read spans two runs —
+ * later bytes served where earlier ones belong, which is a corrupt video
+ * under a valid Content-Length.
+ */
+describe("upstream giving back less than it was asked for", () => {
+  /** Returns `short` fewer bytes than asked, once. */
+  function stingy(partLength: number, short: number) {
+    const bytes = new Uint8Array(partLength);
+    for (let i = 0; i < partLength; i++) bytes[i] = i % 251;
+    let first = true;
+    return {
+      bytes,
+      fetch: async (offset: number, length: number) => {
+        const give = first ? length - short : length;
+        first = false;
+        return bytes.subarray(offset, Math.min(offset + give, partLength));
+      },
+    };
+  }
+
+  test("a streamed read fails rather than yielding a hole", async () => {
+    const part = stingy(CACHE_CHUNK * 20, CACHE_CHUNK * 2);
+    const reader = new CachedReader(new ChunkCache(root, 100_000_000));
+
+    const attempt = async () => {
+      for await (const _ of reader.readStream(
+        SET, 0, 0, CACHE_CHUNK * 20, part.bytes.length, part.fetch,
+      )) { /* drain */ }
+    };
+
+    await expect(attempt()).rejects.toThrow(/short|owed|incomplete/i);
+  });
+
+  test("a collected read fails too", async () => {
+    const part = stingy(CACHE_CHUNK * 4, 1000);
+    const reader = new CachedReader(new ChunkCache(root, 100_000_000));
+
+    await expect(
+      reader.read(SET, 0, 0, CACHE_CHUNK * 4, part.bytes.length, part.fetch),
+    ).rejects.toThrow(/short|owed|incomplete/i);
+  });
+
+  test("a short read leaves no truncated chunk in the cache to be trusted later", async () => {
+    const part = stingy(CACHE_CHUNK * 20, CACHE_CHUNK * 2);
+    const cache = new ChunkCache(root, 100_000_000);
+    const reader = new CachedReader(cache);
+
+    await reader
+      .read(SET, 0, 0, CACHE_CHUNK * 20, part.bytes.length, part.fetch)
+      .catch(() => {});
+
+    // Whatever survived must be a full chunk of the right bytes, never a
+    // partial one that a later read would serve as complete.
+    for (let index = 0; index < 20; index++) {
+      const held = await cache.get(SET, 0, index, CACHE_CHUNK);
+      if (held === null) continue;
+      expect(held).toEqual(part.bytes.subarray(index * CACHE_CHUNK, (index + 1) * CACHE_CHUNK));
+    }
+  });
+});

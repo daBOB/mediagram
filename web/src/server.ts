@@ -48,14 +48,38 @@ function describe(request: IncomingMessage, trustProxy: boolean): PlayerRequest 
  *
  * Without waiting for drain, a fast download into a slow connection queues
  * the whole set in memory, which is exactly what streaming is meant to avoid.
+ *
+ * A socket that dies while full never drains, so the close and error events
+ * settle the wait too. Without them the handler stayed suspended for the life
+ * of the process: the download it was driving was never cancelled, and every
+ * seek or closed tab on a slow link left another one behind.
  */
-function write(response: ServerResponse, chunk: Uint8Array): Promise<void> {
+export function write(response: ServerResponse, chunk: Uint8Array): Promise<void> {
   return new Promise((resolve, reject) => {
     const flushed = response.write(chunk, (error) => {
       if (error) reject(error);
     });
-    if (flushed) resolve();
-    else response.once("drain", resolve);
+    if (flushed) {
+      resolve();
+      return;
+    }
+
+    const done = () => {
+      response.off("drain", onDrain);
+      response.off("close", onGone);
+      response.off("error", onGone);
+    };
+    const onDrain = () => {
+      done();
+      resolve();
+    };
+    const onGone = () => {
+      done();
+      reject(new Error("the reader went away"));
+    };
+    response.once("drain", onDrain);
+    response.once("close", onGone);
+    response.once("error", onGone);
   });
 }
 
@@ -142,9 +166,14 @@ async function pump(body: ReadableStream<Uint8Array>, response: ServerResponse):
     // The headers already promised a length we can no longer deliver, so the
     // only honest signal left is an incomplete response: destroy the socket
     // rather than end it cleanly and have the client believe it has the file.
-    // Logged too: a truncated download with nothing in the log is a bug that
-    // can only be found by guessing.
-    console.error("stream aborted mid-body", error);
+    //
+    // Logged only when this end failed. A viewer who seeks or closes the tab
+    // lands here too, and that is what is supposed to happen; a truncated
+    // download caused by an actual fault, though, is a bug that can only be
+    // found by guessing if nothing says so.
+    if (!response.destroyed && !response.writableEnded) {
+      console.error("stream aborted mid-body", error);
+    }
     response.destroy();
   } finally {
     response.off("close", abandon);

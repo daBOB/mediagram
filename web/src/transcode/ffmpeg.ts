@@ -61,6 +61,9 @@ export class FfmpegRunner implements Runner {
     })();
 
     return {
+      // Surfaced so a wait for a first segment can give up the moment ffmpeg
+      // dies, rather than polling for output that is never coming.
+      exited: proc.exited,
       stop: async () => {
         try {
           // SIGTERM lets ffmpeg finish the segment it is writing and close

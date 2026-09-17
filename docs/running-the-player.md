@@ -37,13 +37,25 @@ Everything is environment variables. `web/.env` is read at startup and is in
 | `MEDIAGRAM_TRUST_PROXY` | `0` | Believe `X-Forwarded-For`. Set to `1` **only** behind a proxy |
 | `MEDIAGRAM_CACHE_DIR`, `MEDIAGRAM_CACHE_MAX` | `~/.cache/mediagram-player`, `8G` | Chunk cache and its quota |
 | `MEDIAGRAM_CACHE_READAHEAD` | `4` | Chunks fetched ahead of a sequential read |
-| `MEDIAGRAM_TRANSCODE_DIR` | `~/.cache/mediagram-hls` | Where HLS segments are written |
+| `MEDIAGRAM_TRANSCODE_DIR` | `~/.cache/mediagram-hls` | Where HLS segments are written. Cleared at startup |
 | `MEDIAGRAM_TRANSCODE_MAXRATE` | `8000000` | The uplink budget, in bits per second |
 
 `MEDIAGRAM_TRANSCODE_MAXRATE` does two jobs: it caps what ffmpeg produces, and
 it decides which titles a remote viewer may play as they are. Set it to what
 the uplink really carries with room for the rest of the house. A 25 Mbit/s
 upstream comfortably serves one viewer at 8 Mbit/s.
+
+### Disk
+
+Two directories grow, and only one of them has a quota.
+
+`MEDIAGRAM_CACHE_DIR` is bounded by `MEDIAGRAM_CACHE_MAX` and evicts by last
+use. `MEDIAGRAM_TRANSCODE_DIR` is not: a conversion keeps every segment it has
+written so the viewer can seek back through them, which is about 2 MB per
+second of film — some 7 GB for a feature watched to the end. A session's
+directory goes when the session stops, the whole directory is cleared at
+startup, and at most four conversions run at once, so the ceiling is roughly
+four films' worth. Put it somewhere that can take ~30 GB, or lower the cap.
 
 ### `MEDIAGRAM_TRUST_PROXY`
 
@@ -56,6 +68,13 @@ Set it only when a proxy is genuinely in front. On a player anyone can reach
 directly, the header is whatever the caller chose to send, and a remote
 viewer could set it to `192.168.0.10` to be offered the original 13.9 Mbit/s
 file — a stall for them and a saturated uplink for everyone else.
+
+The **last** entry in the header is the one read, not the first. A proxy that
+replaces the header writes a single entry and the distinction does not arise;
+a proxy that *appends* — Cloudflare does — leaves whatever the caller sent in
+front of the address it observed itself, and reading the first entry would
+believe the caller. This assumes exactly one proxy in front, which is what
+both setups below are.
 
 ## Caddy
 
@@ -111,8 +130,10 @@ ingress:
 ```
 
 Put a Cloudflare Access policy on `player.example.com` **before** creating the
-DNS route. `cloudflared` sets `X-Forwarded-For` too, so
-`MEDIAGRAM_TRUST_PROXY=1` applies the same way.
+DNS route. Cloudflare sets `X-Forwarded-For` too, so
+`MEDIAGRAM_TRUST_PROXY=1` applies the same way — it *appends* the address it
+observed rather than replacing the header, which is why the player reads the
+last entry. Put another hop in front of it and that stops being true.
 
 ## Bringing it up
 

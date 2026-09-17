@@ -127,13 +127,16 @@ const CONTENT_TYPES: Record<string, string> = {
  * sitting two levels up.
  */
 function staticFile(urlPath: string): { body: Uint8Array; type: string } | null {
-  const relative = urlPath === "/" ? "index.html" : decodeURIComponent(urlPath).replace(/^\/+/, "");
-  const resolved = normalize(join(PUBLIC_DIR, relative));
-  if (!resolved.startsWith(PUBLIC_DIR)) return null;
-
-  const dot = resolved.lastIndexOf(".");
-  const type = CONTENT_TYPES[resolved.slice(dot)] ?? "application/octet-stream";
   try {
+    // Decoding is inside the try because a malformed escape throws, and a
+    // path that cannot be decoded is one that does not exist — not a fault of
+    // this server's worth a 500 and a stack in the log.
+    const relative = urlPath === "/" ? "index.html" : decodeURIComponent(urlPath).replace(/^\/+/, "");
+    const resolved = normalize(join(PUBLIC_DIR, relative));
+    if (!resolved.startsWith(PUBLIC_DIR)) return null;
+
+    const dot = resolved.lastIndexOf(".");
+    const type = CONTENT_TYPES[resolved.slice(dot)] ?? "application/octet-stream";
     return { body: new Uint8Array(readFileSync(resolved)), type };
   } catch {
     return null;
@@ -247,7 +250,11 @@ export function createRouter(options: RouterOptions) {
     if (beginMatch) {
       if (!hls) return empty(501);
       if (playableSet(db, beginMatch[1]!) === null) return empty(404);
-      const seek = Math.max(0, Math.floor(Number(request.seek ?? 0)) || 0);
+      // `Number.isFinite`, not a NaN check: `Infinity` survives one of those
+      // and reaches the command line as `-ss Infinity`, which ffmpeg exits on
+      // at once while the request waits out the whole readiness timeout.
+      const asked = Number(request.seek ?? 0);
+      const seek = Number.isFinite(asked) ? Math.max(0, Math.floor(asked)) : 0;
 
       // A conversion that produces nothing is a 503 carrying the reason
       // rather than a 500: it is a title that could not be started now, and

@@ -147,3 +147,135 @@ describe("session ids", () => {
     expect(session.id).toMatch(/^[a-f0-9]+$/);
   });
 });
+
+describe("two viewers arriving at once", () => {
+  /**
+   * `sessionFor` awaits a mkdir between reading the map and writing to it. Two
+   * callers that overlap in that window both started an ffmpeg, and only one
+   * of them was ever tracked: the other wrote over the same segments and
+   * survived stop, reapIdle and shutdown, holding the encoder for good.
+   */
+  test("concurrent starts of the same title produce one transcode", async () => {
+    const registry = new TranscodeRegistry(work, fakeRunner());
+
+    const [a, b] = await Promise.all([
+      registry.sessionFor("01SET", 0),
+      registry.sessionFor("01SET", 0),
+    ]);
+
+    expect(a.id).toBe(b.id);
+    expect(started).toHaveLength(1);
+    expect(registry.count()).toBe(1);
+  });
+
+  test("everything started is stopped by stopAll", async () => {
+    const registry = new TranscodeRegistry(work, fakeRunner());
+    await Promise.all([registry.sessionFor("01SET", 0), registry.sessionFor("01SET", 0)]);
+
+    await registry.stopAll();
+
+    expect(registry.count()).toBe(0);
+  });
+
+  test("a start that fails is not left in the map", async () => {
+    const registry = new TranscodeRegistry(work, {
+      start() {
+        throw new Error("ffmpeg is not installed");
+      },
+    });
+
+    await expect(registry.sessionFor("01SET", 0)).rejects.toThrow(/ffmpeg/);
+    expect(registry.count()).toBe(0);
+  });
+});
+
+describe("a session that is watched by more than one viewer", () => {
+  /**
+   * Sessions are shared on purpose, so the first viewer to close the dialog
+   * must not stop the encode the other one is watching.
+   */
+  test("one viewer leaving does not stop the other's playback", async () => {
+    const registry = new TranscodeRegistry(work, fakeRunner());
+    await registry.sessionFor("01SET", 0);
+    await registry.sessionFor("01SET", 0);
+
+    await registry.release(sessionIdOf(registry));
+
+    expect(registry.count()).toBe(1);
+  });
+
+  test("the last viewer leaving stops it", async () => {
+    const registry = new TranscodeRegistry(work, fakeRunner());
+    await registry.sessionFor("01SET", 0);
+    await registry.sessionFor("01SET", 0);
+    const id = sessionIdOf(registry);
+
+    await registry.release(id);
+    await registry.release(id);
+
+    expect(registry.count()).toBe(0);
+  });
+
+  test("releasing a session nobody holds is not an error", async () => {
+    const registry = new TranscodeRegistry(work, fakeRunner());
+
+    await registry.release("0".repeat(16));
+
+    expect(registry.count()).toBe(0);
+  });
+
+  test("a rejoined session is watched again, so an earlier release is not fatal", async () => {
+    const registry = new TranscodeRegistry(work, fakeRunner());
+    await registry.sessionFor("01SET", 0);
+    const id = sessionIdOf(registry);
+
+    await registry.release(id);
+    // Someone else opens the same title: a fresh session, watched by one.
+    await registry.sessionFor("01SET", 0);
+
+    expect(registry.count()).toBe(1);
+  });
+});
+
+/** The id of the one session in the registry. */
+function sessionIdOf(registry: TranscodeRegistry): string {
+  const session = registry.get(started[0]!);
+  if (!session) throw new Error("no session");
+  return session.id;
+}
+
+describe("how many transcodes may run at once", () => {
+  /**
+   * Each session holds an encoder and writes about 2 MB per second of film to
+   * disk — some 7 GB for a feature. Without a ceiling, a caller asking for a
+   * different offset each time starts one per request.
+   */
+  test("a new session past the limit is refused rather than started", async () => {
+    const registry = new TranscodeRegistry(work, fakeRunner(), { maxSessions: 2 });
+    await registry.sessionFor("01SET", 0);
+    await registry.sessionFor("01SET", 60);
+
+    await expect(registry.sessionFor("01SET", 120)).rejects.toThrow(/too many|at once|limit/i);
+    expect(registry.count()).toBe(2);
+  });
+
+  test("joining a session that is already running is never refused", async () => {
+    const registry = new TranscodeRegistry(work, fakeRunner(), { maxSessions: 1 });
+    await registry.sessionFor("01SET", 0);
+
+    const again = await registry.sessionFor("01SET", 0);
+
+    expect(again.seekSeconds).toBe(0);
+    expect(started).toHaveLength(1);
+  });
+
+  test("room freed by a release can be used again", async () => {
+    const registry = new TranscodeRegistry(work, fakeRunner(), { maxSessions: 1 });
+    const first = await registry.sessionFor("01SET", 0);
+    await registry.release(first.id);
+
+    await registry.sessionFor("01SET", 60);
+
+    expect(registry.count()).toBe(1);
+  });
+});
