@@ -12,10 +12,11 @@
 
 import { el } from "./lib/dom.js";
 import { renderSearch } from "./lib/search-view.js";
-import { groupLibrary } from "./lib/library.js";
-import { loadLink, playbackFor } from "./lib/link.js";
+import { firstItemOf, groupLibrary } from "./lib/library.js";
+import { loadLink } from "./lib/link.js";
 import { openPlayer } from "./lib/player.js";
-import { codecLine, episodeLabel, humanDuration, humanSize } from "./lib/format.js";
+import { divisionBlock } from "./lib/course-view.js";
+import { SECTIONS, collectionGrid, emptyState, movieGrid } from "./lib/shelf-view.js";
 
 const main = document.getElementById("main");
 const searchBox = document.getElementById("search");
@@ -23,108 +24,29 @@ const searchBox = document.getElementById("search");
 /** @type {{movies: any[], series: any[], tutorials: any[]}} */
 let library = { movies: [], series: [], tutorials: [] };
 
-const SECTIONS = {
-  movies: { label: "Movies", empty: "No films yet." },
-  series: { label: "Series", empty: "No series yet." },
-  tutorials: { label: "Tutorials", empty: "No courses yet." },
-};
-
-/** A card for a film, a show or a course. */
-function card({ name, meta, initials, onClick, badge, poster }) {
-  const button = el("button", "card");
-  const thumb = el("div", "thumb", poster ? undefined : initials);
-  if (poster) {
-    // The initials stay underneath as the alt text, so a poster that fails to
-    // load leaves a card that still says what it is.
-    const image = el("img");
-    image.src = `/api/posters/${encodeURIComponent(poster)}.jpg`;
-    image.alt = name;
-    image.loading = "lazy";
-    thumb.append(image);
-  }
-  const body = el("div", "body");
-  body.append(el("div", "name", name));
-  if (meta) body.append(el("div", "meta", meta));
-  if (badge) body.append(badge);
-  button.append(thumb, body);
-  button.addEventListener("click", onClick);
-  return button;
-}
-
-function initialsOf(text) {
-  return (text ?? "?")
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((word) => word[0] ?? "")
-    .join("")
-    .toUpperCase();
-}
-
-function transcodeBadge(set) {
-  return playbackFor(set).kind === "direct" ? null : el("span", "badge", "needs transcode");
-}
-
 function heading(title, subtitle) {
   main.append(el("h1", null, title));
   if (subtitle) main.append(el("p", "sub", subtitle));
 }
 
-function emptyState(section) {
-  const p = el("p", "empty");
-  p.append(SECTIONS[section].empty + " ");
-  if (section === "movies") p.append("Upload one with "), p.append(el("code", null, "mediagram add <file> --tmdb <id>"));
-  if (section === "series") p.append("Upload episodes with "), p.append(el("code", null, "mediagram add <file> --season 1 --episode 1"));
-  if (section === "tutorials") p.append("Upload a course with "), p.append(el("code", null, "mediagram add-course <folder>"));
-  p.append(".");
-  main.append(p);
-}
-
 /** Films: a flat grid, since a film is one thing. */
 function viewMovies() {
   heading("Movies", `${library.movies.length} in the library`);
-  if (library.movies.length === 0) return emptyState("movies");
-
-  const grid = el("div", "grid");
-  for (const set of library.movies) {
-    grid.append(
-      card({
-        name: set.title ?? set.setId,
-        meta: [set.year, humanDuration(set.duration), humanSize(set.total)].filter(Boolean).join(" · "),
-        initials: initialsOf(set.title),
-        poster: set.poster ?? null,
-        badge: transcodeBadge(set),
-        onClick: () => openPlayer(set),
-      }),
-    );
-  }
-  main.append(grid);
+  if (library.movies.length === 0) return main.append(emptyState("movies"));
+  main.append(movieGrid(library.movies, openPlayer));
 }
 
 /** Shows and courses: a grid of collections, each opening its own view. */
 function viewCollections(section) {
   const collections = library[section];
   heading(SECTIONS[section].label, `${collections.length} in the library`);
-  if (collections.length === 0) return emptyState(section);
+  if (collections.length === 0) return main.append(emptyState(section));
 
-  const grid = el("div", "grid");
-  for (const collection of collections) {
-    const divisions = collection.seasons.length;
-    grid.append(
-      card({
-        name: collection.name,
-        meta: `${collection.count} ${section === "series" ? "episodes" : "lessons"} · ${divisions} ${
-          section === "series" ? (divisions === 1 ? "season" : "seasons") : divisions === 1 ? "chapter" : "chapters"
-        }`,
-        initials: initialsOf(collection.name),
-        // A show's artwork is the one its episodes share.
-        poster: collection.seasons[0]?.items[0]?.poster ?? null,
-        onClick: () => {
-          location.hash = `#/${section}/${encodeURIComponent(collection.name)}`;
-        },
-      }),
-    );
-  }
-  main.append(grid);
+  main.append(
+    collectionGrid(section, collections, firstItemOf, (name) => {
+      location.hash = `#/${section}/${encodeURIComponent(name)}`;
+    }),
+  );
 }
 
 /** One show or course: its divisions, each a list of numbered items. */
@@ -142,41 +64,7 @@ function viewCollection(section, name) {
   main.append(back);
   heading(collection.name, `${collection.count} ${section === "series" ? "episodes" : "lessons"}`);
 
-  for (const division of collection.seasons) {
-    const block = el("section", "season");
-    // A folder path reads badly as a heading. Show the folder itself, with
-    // the ones above it in smaller type, so the shelf still says where the
-    // lesson sat without shouting the whole path.
-    const parts = division.title.split("/");
-    const leaf = parts[parts.length - 1];
-    const heading = el("h2");
-    if (parts.length > 1) {
-      heading.append(el("span", "crumb", parts.slice(0, -1).join(" / ") + " / "));
-    }
-    heading.append(document.createTextNode(`${leaf} · ${division.items.length}`));
-    block.append(heading);
-
-    for (const set of division.items) {
-      const row = el("button", "row");
-      row.append(el("div", "num", episodeLabel(set)));
-
-      const title = el("div", "title");
-      title.append(el("b", null, set.title ?? set.setId));
-      title.append(el("span", null, codecLine(set)));
-      row.append(title);
-
-      const badge = transcodeBadge(set);
-      if (badge) row.append(badge);
-      if (set.hasSummary) row.append(el("span", "has-summary", "notes"));
-
-      row.append(
-        el("div", "meta", [humanDuration(set.duration), humanSize(set.total)].filter(Boolean).join(" · ")),
-      );
-      row.addEventListener("click", () => openPlayer(set));
-      block.append(row);
-    }
-    main.append(block);
-  }
+  for (const division of collection.divisions) main.append(divisionBlock(division, 0, openPlayer));
 }
 
 /** Asks the server, because summaries live there and are not in the catalog. */

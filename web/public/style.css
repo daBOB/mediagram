@@ -139,8 +139,25 @@ h1 { font-size: 22px; margin: 0 0 4px; font-weight: 640; }
   font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em;
   color: var(--dim); margin: 0 0 9px;
 }
-/* The folders above this one: present, but not competing with the heading. */
-.season h2 .crumb { color: #6b7684; font-weight: 400; }
+/* How many lessons sit in this folder, not in the ones under it. */
+.season h2 .count { color: #6b7684; font-weight: 400; }
+
+/*
+ * A course nests, so its folders indent. The top level reads as headings of
+ * the page; the ones below sit progressively inside, with a rule down the
+ * left so a long chapter still shows what it belongs to once its heading has
+ * scrolled away.
+ */
+.season.depth-0 > h2 {
+  font-size: 14px; color: var(--text); letter-spacing: 0.03em;
+  margin-top: 34px;
+}
+.season.depth-1, .season.depth-2, .season.depth-3 {
+  margin-top: 16px; margin-left: 14px;
+  padding-left: 14px; border-left: 1px solid var(--line);
+}
+/* Past the fourth level the indent costs more width than it explains. */
+.season.depth-3 .season { margin-left: 0; }
 .row {
   display: flex; align-items: center; gap: 13px; width: 100%;
   padding: 11px 14px; margin-bottom: 7px;

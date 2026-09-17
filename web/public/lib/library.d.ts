@@ -25,18 +25,27 @@ export interface CatalogSet {
   partCount: number;
 }
 
-/** One division of a collection: a season, a chapter, or a folder. */
+/**
+ * One division of a collection: a season, a chapter, or a folder.
+ *
+ * `items` and `children` can both be non-empty: a chapter that holds lessons
+ * beside a subfolder must show both, since the lessons are not in it.
+ */
 export interface Division {
-  key: string;
+  /** This folder's own name, not the path leading to it. */
   title: string;
   /** Present only when the division is numbered rather than named. */
   season: number | null;
   items: CatalogSet[];
+  children: Division[];
 }
 
 export interface Collection {
   name: string;
-  seasons: Division[];
+  /** The top-level folders; the rest of the course hangs off them. */
+  divisions: Division[];
+  /** Folders that actually hold lessons, however deep they sit. */
+  chapters: number;
   count: number;
 }
 
@@ -47,3 +56,6 @@ export interface Library {
 }
 
 export function groupLibrary(sets: CatalogSet[]): Library;
+
+/** The first set anywhere under these divisions, in display order. */
+export function firstItemOf(divisions: Division[]): CatalogSet | null;

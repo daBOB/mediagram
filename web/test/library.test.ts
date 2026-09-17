@@ -49,8 +49,8 @@ describe("shelves", () => {
     const show = library.series[0]!;
     expect(show.name).toBe("Widow's Bay");
     expect(show.count).toBe(3);
-    expect(show.seasons.map((s) => s.season)).toEqual([1, 2]);
-    expect(show.seasons[0]!.items.map((e) => e.title)).toEqual(["One", "Two"]);
+    expect(show.divisions.map((s) => s.season)).toEqual([1, 2]);
+    expect(show.divisions[0]!.items.map((e) => e.title)).toEqual(["One", "Two"]);
   });
 
   test("lessons gather under their course, then their chapter", () => {
@@ -63,8 +63,8 @@ describe("shelves", () => {
     expect(library.tutorials).toHaveLength(1);
     const course = library.tutorials[0]!;
     expect(course.name).toBe("Geldhochschule");
-    expect(course.seasons.map((c) => c.title)).toEqual(["Basics", "Later"]);
-    expect(course.seasons[0]!.items.map((i) => i.title)).toEqual(["A", "B"]);
+    expect(course.divisions.map((c) => c.title)).toEqual(["Basics", "Later"]);
+    expect(course.divisions[0]!.items.map((i) => i.title)).toEqual(["A", "B"]);
   });
 
   /** The live library: no chapter titles, only a season number. */
@@ -74,8 +74,8 @@ describe("shelves", () => {
       set({ kind: "tut", show: "Geldhochschule", chap: null, season: 1, episode: "2" }),
     ]);
 
-    expect(library.tutorials[0]!.seasons[0]!.title).toBe("Chapter 1");
-    expect(library.tutorials[0]!.seasons[0]!.items).toHaveLength(2);
+    expect(library.tutorials[0]!.divisions[0]!.title).toBe("Chapter 1");
+    expect(library.tutorials[0]!.divisions[0]!.items).toHaveLength(2);
   });
 
   test("episode numbers sort numerically, not as text", () => {
@@ -85,7 +85,7 @@ describe("shelves", () => {
       ),
     );
 
-    expect(library.series[0]!.seasons[0]!.items.map((i) => i.title)).toEqual(["1", "9", "10"]);
+    expect(library.series[0]!.divisions[0]!.items.map((i) => i.title)).toEqual(["1", "9", "10"]);
   });
 
   test("shows and courses are listed alphabetically", () => {
@@ -127,22 +127,86 @@ describe("folders, when a course carries them", () => {
     title,
   });
 
+  /** Titles of a division and everything under it, as an indented outline. */
+  const outline = (divisions: any[], depth = 0): string[] =>
+    divisions.flatMap((d) => [
+      "  ".repeat(depth) + d.title,
+      ...outline(d.children, depth + 1),
+    ]);
+
   /** The real course: uneven depth, and a folder holding videos beside one. */
-  test("a course's folders become its divisions, at any depth", () => {
+  test("a course's folders nest, rather than flattening into one long list", () => {
     const library = groupLibrary([
       lesson("Basislektionen/1. Start", "1", "Begrüßung"),
       lesson("Ausbildung Trading/1. Grundlagen/1. Trading", "1", "Einführung"),
       lesson("Ausbildung Trading/1. Grundlagen/1. Trading", "2", "Definition"),
+      lesson("Ausbildung Trading/1. Grundlagen/3. Signal", "1", "Muster"),
       lesson("Der erleuchtete Investor", "1", "Teil 1"),
     ]);
 
     const course = library.tutorials[0]!;
-    expect(course.seasons.map((s) => s.title)).toEqual([
-      "Ausbildung Trading/1. Grundlagen/1. Trading",
-      "Basislektionen/1. Start",
+    expect(outline(course.divisions)).toEqual([
+      "Ausbildung Trading",
+      "  1. Grundlagen",
+      "    1. Trading",
+      "    3. Signal",
+      "Basislektionen",
+      "  1. Start",
       "Der erleuchtete Investor",
     ]);
-    expect(course.count).toBe(4);
+    expect(course.count).toBe(5);
+  });
+
+  test("a folder names itself, not the whole path it sits at the end of", () => {
+    // The old shape titled every division with its full path, so a course
+    // read as twenty-one repetitions of "Ausbildung Trading / Grundlagen /".
+    const library = groupLibrary([lesson("Ausbildung Trading/1. Grundlagen", "1", "Einführung")]);
+
+    const top = library.tutorials[0]!.divisions[0]!;
+    expect(top.title).toBe("Ausbildung Trading");
+    expect(top.children[0]!.title).toBe("1. Grundlagen");
+  });
+
+  test("a folder holding lessons beside a subfolder keeps both", () => {
+    // "3. Signal" holds fourteen lessons and a folder. Neither may hide the
+    // other: the lessons are not in the subfolder, and the subfolder is not a
+    // lesson.
+    const library = groupLibrary([
+      lesson("Ausbildung Trading/3. Signal", "1", "Muster"),
+      lesson("Ausbildung Trading/3. Signal/14. Exkurs TWS", "1", "Exkurs"),
+    ]);
+
+    const signal = library.tutorials[0]!.divisions[0]!.children[0]!;
+    expect(signal.title).toBe("3. Signal");
+    expect(signal.items.map((i: any) => i.title)).toEqual(["Muster"]);
+    expect(signal.children.map((c: any) => c.title)).toEqual(["14. Exkurs TWS"]);
+    expect(signal.children[0]!.items.map((i: any) => i.title)).toEqual(["Exkurs"]);
+  });
+
+  test("a course counts the folders that actually hold lessons", () => {
+    // What the shelf card means by "chapters". A parent that only contains
+    // other folders is structure, not a chapter someone can open.
+    const library = groupLibrary([
+      lesson("A/1. One", "1", "First"),
+      lesson("A/2. Two", "1", "Second"),
+      lesson("B", "1", "Third"),
+    ]);
+
+    expect(library.tutorials[0]!.chapters).toBe(3);
+  });
+
+  test("folders sort by number where they have one, at every level", () => {
+    const library = groupLibrary([
+      lesson("Ausbildung/10. Zehn", "1", "a"),
+      lesson("Ausbildung/2. Zwei", "1", "b"),
+      lesson("Ausbildung/1. Eins", "1", "c"),
+    ]);
+
+    expect(library.tutorials[0]!.divisions[0]!.children.map((c: any) => c.title)).toEqual([
+      "1. Eins",
+      "2. Zwei",
+      "10. Zehn",
+    ]);
   });
 
   test("the path wins over the chapter number, which no longer describes the shape", () => {
@@ -151,16 +215,18 @@ describe("folders, when a course carries them", () => {
       { ...lesson("Section B/Chapter 1", "1", "Two"), season: 2 },
     ]);
 
-    expect(library.tutorials[0]!.seasons.map((s) => s.title)).toEqual([
-      "Section A/Chapter 1",
-      "Section B/Chapter 1",
+    expect(library.tutorials[0]!.divisions.map((d: any) => d.title)).toEqual([
+      "Section A",
+      "Section B",
     ]);
   });
 
   test("a course uploaded before paths existed still divides by its numbers", () => {
     const library = groupLibrary([lesson(null, "1", "Old")]);
 
-    expect(library.tutorials[0]!.seasons[0]!.title).toBe("Chapter 1");
+    const only = library.tutorials[0]!.divisions[0]!;
+    expect(only.title).toBe("Chapter 1");
+    expect(only.children).toEqual([]);
   });
 
   test("episodes use their folders too, when a show has them", () => {
@@ -168,6 +234,6 @@ describe("folders, when a course carries them", () => {
       { ...set({ kind: "ep", show: "Widow's Bay", season: 1, episode: "1" }), path: "Season 1" },
     ]);
 
-    expect(library.series[0]!.seasons[0]!.title).toBe("Season 1");
+    expect(library.series[0]!.divisions[0]!.title).toBe("Season 1");
   });
 });
