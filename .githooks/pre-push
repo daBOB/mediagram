@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+#
+# Refuses a push that does not pass scripts/check.sh.
+#
+# Tracked in the repo rather than left in git's own hook directory, so it
+# survives a fresh clone. Enabled by scripts/install-hooks.sh, which points
+# core.hooksPath here.
+#
+# To push anyway, once: git push --no-verify
+set -euo pipefail
+
+exec "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/scripts/check.sh"
