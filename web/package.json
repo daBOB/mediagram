@@ -7,7 +7,7 @@
   },
   "scripts": {
     "start": "bun run src/index.ts",
-    "dev": "bun --watch run src/index.ts",
+    "dev": "MEDIAGRAM_PLAYER_ADDR=0.0.0.0:8770 bun --watch run src/index.ts",
     "test": "bun test",
     "login": "bun run src/login.ts"
   },

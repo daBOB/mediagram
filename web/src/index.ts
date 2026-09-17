@@ -10,6 +10,7 @@ import { Database } from "bun:sqlite";
 import { describe, load } from "./config";
 import { assertSchema, listPlayable } from "./catalog";
 import { startServer } from "./server";
+import { isExposed, reachableUrls } from "./listen-address";
 import { CachedReader } from "./cache/reader";
 import { ChunkCache } from "./cache/store";
 import { Telegram } from "./telegram/client";
@@ -49,7 +50,21 @@ const server = await startServer({
   hostname: config.hostname,
 });
 
-console.log(`serving on http://${config.hostname}:${server.port}`);
+const urls = reachableUrls(config.hostname, server.port);
+console.log(`serving on ${urls[0]}`);
+for (const url of urls.slice(1)) console.log(`          ${url}`);
+
+if (isExposed(config.hostname)) {
+  // This API has no authentication of its own. Anyone who can reach the port
+  // can browse and stream the whole library, so say so rather than leaving it
+  // to be discovered.
+  console.log(
+    "\n  ! Reachable from the network, and this API has no authentication.\n" +
+      "    Anyone who can reach this port can stream the whole library.\n" +
+      "    Put a reverse proxy in front of it before exposing it beyond a\n" +
+      "    network you trust.\n",
+  );
+}
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
