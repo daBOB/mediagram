@@ -54,7 +54,7 @@ function index(): Database {
   const db = new Database(":memory:");
   db.run(`CREATE TABLE sets(
       set_id TEXT PRIMARY KEY, kind TEXT NOT NULL, title TEXT, show TEXT, chap TEXT, path TEXT,
-      season INTEGER, episode TEXT, year INTEGER, container TEXT NOT NULL,
+      tmdb INTEGER, season INTEGER, episode TEXT, year INTEGER, container TEXT NOT NULL,
       vcodec TEXT, acodec TEXT, duration INTEGER,
       total INTEGER NOT NULL, part_count INTEGER NOT NULL,
       status TEXT NOT NULL, created_at INTEGER NOT NULL)`);

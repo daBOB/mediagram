@@ -43,7 +43,7 @@ TypeScript port is checked against, byte for byte.
 |---|-------|--------|----------|--------|------------|
 | 1 | [Range server over a set (Rust)](phase-01-range-server-over-a-set.md) | complete | P1 | 1.5d | - |
 | 2 | [Bun Telegram client and Range server](phase-02-bun-telegram-range-server.md) | complete | P1 | 2d | 1 |
-| 3 | [Catalog anywhere: the package reader](phase-03-package-reader.md) | pending | P1 | 1d | - |
+| 3 | [Catalog anywhere: the package reader](phase-03-package-reader.md) | complete | P1 | 1d | - |
 | 4 | [Minimal web UI, direct play](phase-04-web-ui-direct-play.md) | complete | P1 | 1d | 2,3 |
 | 5 | [Disk cache](phase-05-disk-cache.md) | complete | P1 | 1d | 2 |
 | 6 | [Transcoding to HLS](phase-06-transcoding-to-hls.md) | complete | P2 | 2d | 4,5 |

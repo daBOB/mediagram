@@ -72,6 +72,8 @@ export interface PlayableSet {
   duration: number | null;
   total: number;
   partCount: number;
+  /** The provider id the artwork is filed under. Server-side only. */
+  tmdb: number | null;
 }
 
 /** Where one part lives. Server-side only. */
@@ -82,7 +84,7 @@ export interface PartLocation {
 }
 
 const COLUMNS = `set_id AS setId, kind, title, show, chap, path, season, episode, year,
-     container, vcodec, acodec, duration, total, part_count AS partCount`;
+     container, vcodec, acodec, duration, total, part_count AS partCount, tmdb`;
 
 export function listPlayable(db: Database): PlayableSet[] {
   return db

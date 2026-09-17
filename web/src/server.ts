@@ -16,6 +16,7 @@
 import type { Database } from "bun:sqlite";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { clientAddress } from "./client-reach";
+import type { PosterStore } from "./package/posters";
 import { createRouter, type ByteSource, type HlsServer, type PlayerRequest } from "./routes";
 
 export interface RunningServer {
@@ -87,6 +88,7 @@ export function startServer(options: {
   db: Database;
   source: ByteSource;
   hls?: HlsServer;
+  posters?: PosterStore;
   port?: number;
   hostname?: string;
   /**
@@ -103,6 +105,7 @@ export function startServer(options: {
     db: options.db,
     source: options.source,
     hls: options.hls,
+    posters: options.posters,
     maxBitrate: options.maxBitrate,
   });
   const trustProxy = options.trustProxy ?? false;

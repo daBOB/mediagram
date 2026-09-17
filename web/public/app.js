@@ -35,9 +35,18 @@ function el(tag, className, text) {
 }
 
 /** A card for a film, a show or a course. */
-function card({ name, meta, initials, onClick, badge }) {
+function card({ name, meta, initials, onClick, badge, poster }) {
   const button = el("button", "card");
-  const thumb = el("div", "thumb", initials);
+  const thumb = el("div", "thumb", poster ? undefined : initials);
+  if (poster) {
+    // The initials stay underneath as the alt text, so a poster that fails to
+    // load leaves a card that still says what it is.
+    const image = el("img");
+    image.src = `/api/posters/${encodeURIComponent(poster)}.jpg`;
+    image.alt = name;
+    image.loading = "lazy";
+    thumb.append(image);
+  }
   const body = el("div", "body");
   body.append(el("div", "name", name));
   if (meta) body.append(el("div", "meta", meta));
@@ -87,6 +96,7 @@ function viewMovies() {
         name: set.title ?? set.setId,
         meta: [set.year, humanDuration(set.duration), humanSize(set.total)].filter(Boolean).join(" · "),
         initials: initialsOf(set.title),
+        poster: set.poster ?? null,
         badge: transcodeBadge(set),
         onClick: () => openPlayer(set),
       }),
@@ -111,6 +121,8 @@ function viewCollections(section) {
           section === "series" ? (divisions === 1 ? "season" : "seasons") : divisions === 1 ? "chapter" : "chapters"
         }`,
         initials: initialsOf(collection.name),
+        // A show's artwork is the one its episodes share.
+        poster: collection.seasons[0]?.items[0]?.poster ?? null,
         onClick: () => {
           location.hash = `#/${section}/${encodeURIComponent(collection.name)}`;
         },

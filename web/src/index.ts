@@ -8,8 +8,9 @@
 
 import { Database } from "bun:sqlite";
 import { rm } from "node:fs/promises";
+import { join } from "node:path";
 import { describe, load } from "./config";
-import { assertSchema, listPlayable } from "./catalog";
+import { EXPECTED_SCHEMA, assertSchema, listPlayable } from "./catalog";
 import { startServer } from "./server";
 import { isExposed, reachableUrls } from "./listen-address";
 import { CachedReader } from "./cache/reader";
@@ -18,17 +19,61 @@ import { FfmpegRunner } from "./transcode/ffmpeg";
 import { TranscodeRegistry } from "./transcode/registry";
 import { TranscodeFiles } from "./transcode/server";
 import { ChunkCache } from "./cache/store";
+import { parseKey } from "./package/open";
+import { PosterStore } from "./package/posters";
+import { refreshCatalog } from "./package/refresh";
 import { Telegram } from "./telegram/client";
 import { TelegramSource } from "./telegram/source";
 
 const config = load();
 console.log("player:", describe(config));
 
+/**
+ * Refreshes the published catalog, and says which directory to read.
+ *
+ * `null` means there is no package configured and the index on this machine
+ * is the catalog. A refresh that fails never stops the player: it keeps the
+ * catalog it already had, and only a first run with nothing held is fatal.
+ */
+async function openCatalog(cfg: ReturnType<typeof load>): Promise<string | null> {
+  if (cfg.packageUrl === null || cfg.packageKey === null) return null;
+
+  const result = await refreshCatalog({
+    baseUrl: cfg.packageUrl,
+    key: parseKey(cfg.packageKey),
+    root: cfg.catalogDir,
+    supportedSchema: [EXPECTED_SCHEMA],
+  });
+  if (result.status === "kept") {
+    console.log(`catalog: ${result.reason}`);
+    if (result.dir === null) {
+      throw new Error("no catalog: the package could not be read and none was held");
+    }
+    console.log("catalog: keeping the one already held");
+  } else {
+    console.log(`catalog: ${result.status} from ${cfg.packageUrl}`);
+  }
+  return result.dir;
+}
+
+// Where the catalog comes from. A published package makes the player
+// independent of the uploader's filesystem: it fetches `latest.json`,
+// decrypts what it names, and reads the index out of it. Without one it falls
+// back to reading the index off this machine's disk, which is what a player
+// running beside the uploader does.
+const catalogDir = await openCatalog(config);
+
 // Read-only: the player never writes, and a writable handle would let it
 // checkpoint or migrate an index the uploader owns.
-const db = new Database(config.libraryDb, { readonly: true });
+const db = new Database(catalogDir ? join(catalogDir, "library.db") : config.libraryDb, {
+  readonly: true,
+});
 assertSchema(db);
-console.log(`catalog: ${listPlayable(db).length} playable sets`);
+const posters = new PosterStore(catalogDir);
+console.log(
+  `catalog: ${listPlayable(db).length} playable sets` +
+    (catalogDir ? `, ${posters.count()} poster(s)` : ""),
+);
 
 const telegram = await Telegram.connect(config);
 
@@ -75,6 +120,7 @@ const server = await startServer({
     telegram,
     cache ? new CachedReader(cache, config.cacheReadahead) : undefined,
   ),
+  posters,
   port: config.port,
   hostname: config.hostname,
   trustProxy: config.trustProxy,

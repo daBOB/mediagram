@@ -1,7 +1,7 @@
 ---
 phase: 3
 title: "Catalog anywhere: the package reader"
-status: pending
+status: completed
 priority: P1
 effort: "1d"
 dependencies: []
@@ -81,15 +81,33 @@ differently.
    implementations must agree or one of them is wrong.
 
 ## Success Criteria
-- [ ] A package exported by `mediagram export-package` opens, unpacks, and its
-      `library.db` answers `PLAYABLE_SQL`
-- [ ] A tampered ciphertext byte fails to open
-- [ ] A pointer with any of the five identifying fields altered fails to open
-- [ ] A pointer whose `sha256` matches the held copy but whose `created_at`
+- [x] A package exported by `mediagram export-package` opens, unpacks, and its
+      `library.db` answers `PLAYABLE_SQL` — `test/package-round-trip.test.ts`,
+      against a fixture the real exporter wrote
+- [x] A tampered ciphertext byte fails to open
+- [x] A pointer with any of the five identifying fields altered fails to open,
+      at the cipher rather than at a shape check
+- [x] A pointer whose `sha256` matches the held copy but whose `created_at`
       is older does not short-circuit the check
-- [ ] A package over the ceiling is refused before download
-- [ ] A tar member pointing outside the target is refused
-- [ ] A failed refresh leaves the previous catalog intact and queryable
+- [x] A package over the ceiling is refused before download, and one larger
+      than its pointer promised is refused after it
+- [x] A tar member pointing outside the target is refused, as is an absolute
+      one, a symlink, and a size running past the end of the archive
+- [x] A failed refresh leaves the previous catalog intact and queryable —
+      verified live by stopping the package host and restarting the player
+
+## Divergence from the plan
+
+The package is fetched from the configured base joined to the pointer's
+`file`, not from the pointer's `url`. `url` is one of the four unauthenticated
+fields, so following it means fetching whatever address the last person to
+write the pointer chose — a player on a home network making arbitrary requests
+on command. The exporter builds `url` as exactly that join, so nothing
+published normally is fetched from anywhere different.
+
+Also delivered, because "posters it can show" needs somewhere to show them:
+`/api/posters/tmdb-{movie,tv}-<id>.jpg` serves the artwork out of the current
+catalog, and a shelf card uses it in place of its initials.
 
 ## Risk Assessment
 - **The key is the only protection.** The package carries the private channel

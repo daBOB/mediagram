@@ -32,7 +32,10 @@ Everything is environment variables. `web/.env` is read at startup and is in
 | `MEDIAGRAM_API_ID`, `MEDIAGRAM_API_HASH` | — | Telegram application credentials |
 | `MEDIAGRAM_SESSION` | — | The auth key. Treat as a password for the account |
 | `MEDIAGRAM_CHAT_ID`, `MEDIAGRAM_CHANNEL_ACCESS_HASH` | — | The library channel |
-| `MEDIAGRAM_LIBRARY_DB` | `~/.local/share/mediagram/library.db` | The published index, opened read-only |
+| `MEDIAGRAM_LIBRARY_DB` | `~/.local/share/mediagram/library.db` | The index on this machine, opened read-only. Ignored when a package is configured |
+| `MEDIAGRAM_PACKAGE_URL` | — | Base URL of a published package, the directory holding `latest.json` |
+| `MEDIAGRAM_PACKAGE_KEY` | — | 32 bytes, base64. The only thing protecting the package |
+| `MEDIAGRAM_CATALOG_DIR` | `~/.cache/mediagram-catalog` | Where decrypted catalogs are kept |
 | `MEDIAGRAM_PLAYER_ADDR` | `127.0.0.1:8770` | Where to listen. **Leave it on loopback in production** |
 | `MEDIAGRAM_TRUST_PROXY` | `0` | Believe `X-Forwarded-For`. Set to `1` **only** behind a proxy |
 | `MEDIAGRAM_CACHE_DIR`, `MEDIAGRAM_CACHE_MAX` | `~/.cache/mediagram-player`, `8G` | Chunk cache and its quota |
@@ -56,6 +59,40 @@ second of film — some 7 GB for a feature watched to the end. A session's
 directory goes when the session stops, the whole directory is cleared at
 startup, and at most four conversions run at once, so the ceiling is roughly
 four films' worth. Put it somewhere that can take ~30 GB, or lower the cap.
+
+### Where the catalog comes from
+
+Two ways, and the second is what makes the player independent of the machine
+that did the uploading.
+
+**The index on this machine.** The default. `MEDIAGRAM_LIBRARY_DB` points at
+the `library.db` that `mediagram` writes, and the player opens it read-only.
+Only useful where the player runs beside the uploader.
+
+**A published package.** Set `MEDIAGRAM_PACKAGE_URL` and
+`MEDIAGRAM_PACKAGE_KEY`, and at startup the player fetches `latest.json`,
+downloads the package it names, verifies it, decrypts it, and reads the
+`library.db` and the artwork inside. Nothing from the uploader's filesystem is
+needed. Publish with `mediagram export-package --publish`; the format is
+[`docs/mlib-package-v1.md`](mlib-package-v1.md).
+
+```
+MEDIAGRAM_PACKAGE_URL=https://packages.example.com/mediagram
+MEDIAGRAM_PACKAGE_KEY=<the same package_key the uploader has, base64>
+```
+
+A refresh that fails — host down, edited pointer, wrong key — leaves the
+player with the catalog it already had and says why. Only a first run with
+nothing held is fatal, because there is then nothing to serve.
+
+The key is the whole of the protection. The package carries the private
+channel id and every message id, so treat it exactly as the Telegram session
+is treated: mode 600, never in git, never in a log. The URL is not a secret
+and must not be treated as one; a leaked URL yields ciphertext.
+
+Catalogs are kept per version under `MEDIAGRAM_CATALOG_DIR`, with `current` a
+symlink to the live one. The swap is a single rename, so a player that dies
+mid-refresh is looking at one whole catalog or the other.
 
 ### `MEDIAGRAM_TRUST_PROXY`
 

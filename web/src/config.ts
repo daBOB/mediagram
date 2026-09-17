@@ -49,6 +49,19 @@ export interface Config {
    */
   transcodeMaxrate: number;
   /**
+   * Where a published package's `latest.json` lives, or `null` to read the
+   * index straight off this machine's disk.
+   *
+   * With it the player needs nothing from the uploader's filesystem: it
+   * fetches the catalog, decrypts it, and serves what it finds. See
+   * `docs/mlib-package-v1.md`.
+   */
+  packageUrl: string | null;
+  /** 32 bytes, base64. The only thing protecting a published package. */
+  packageKey: string | null;
+  /** Where decrypted catalogs are kept, one directory per version. */
+  catalogDir: string;
+  /**
    * Whether `X-Forwarded-For` may be believed.
    *
    * Set it only where a reverse proxy really is in front. Anywhere else the
@@ -110,6 +123,10 @@ export function load(): Config {
     cacheReadahead: Number(process.env.MEDIAGRAM_CACHE_READAHEAD ?? "4"),
     transcodeDir: process.env.MEDIAGRAM_TRANSCODE_DIR ?? `${process.env.HOME}/.cache/mediagram-hls`,
     transcodeMaxrate: parseSize(process.env.MEDIAGRAM_TRANSCODE_MAXRATE ?? String(DEFAULT_MAX_BITRATE)),
+    packageUrl: process.env.MEDIAGRAM_PACKAGE_URL || null,
+    packageKey: process.env.MEDIAGRAM_PACKAGE_KEY || null,
+    catalogDir:
+      process.env.MEDIAGRAM_CATALOG_DIR ?? `${process.env.HOME}/.cache/mediagram-catalog`,
     trustProxy: /^(1|true|yes)$/i.test(process.env.MEDIAGRAM_TRUST_PROXY ?? ""),
     hostname: addr.slice(0, colon) || "127.0.0.1",
     port: Number(addr.slice(colon + 1)),
@@ -134,6 +151,11 @@ export function describe(config: Config): Record<string, unknown> {
     transcodeDir: config.transcodeDir,
     transcodeMaxrate: config.transcodeMaxrate,
     trustProxy: config.trustProxy,
+    packageUrl: config.packageUrl,
+    // The key is the only thing protecting a published package; it never
+    // reaches a log, the same way the Telegram session does not.
+    packageKey: config.packageKey === null ? null : "<redacted>",
+    catalogDir: config.catalogDir,
     address: `${config.hostname}:${config.port}`,
   };
 }

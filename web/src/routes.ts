@@ -24,6 +24,7 @@ import { subtitle, subtitleLanguages, summary } from "./assets";
 import { listPlayable, partLocations, playableSet, type PartLocation } from "./catalog";
 import { planReads, totalSize, type PartSpan, type Step } from "./range";
 import { isLocalAddress } from "./client-reach";
+import { PosterStore, posterKeyFor, posterKeyIsValid } from "./package/posters";
 import { DEFAULT_MAX_BITRATE } from "./config";
 import { contentType, planResponse } from "./response";
 
@@ -78,6 +79,9 @@ export interface PlayerResponse {
 
 const STREAM_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/stream$/;
 const SUMMARY_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/summary$/;
+// Spelled out for the same reason as everything else that reaches a file
+// name: the key comes from a caption, and `posterKeyIsValid` checks it again.
+const POSTER_PATH = /^\/api\/posters\/(tmdb-(?:movie|tv)-\d{1,12})\.jpg$/;
 // The language is spelled out rather than captured loosely: it ends up in no
 // path, but a route that accepts `../` invites someone to make it one.
 const SUBTITLE_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/subtitles\/([A-Za-z]{2,8})\.vtt$/;
@@ -169,6 +173,8 @@ export interface RouterOptions {
   db: Database;
   source: ByteSource;
   hls?: HlsServer;
+  /** The artwork the current catalog carries, if any. */
+  posters?: PosterStore;
   /**
    * What a remote link is assumed to carry, in bits per second.
    *
@@ -181,6 +187,7 @@ export interface RouterOptions {
 export function createRouter(options: RouterOptions) {
   const { db, source, hls } = options;
   const maxBitrate = options.maxBitrate ?? DEFAULT_MAX_BITRATE;
+  const posters = options.posters ?? new PosterStore(null);
 
   return async function route(request: PlayerRequest): Promise<PlayerResponse> {
     // The one thing a viewer may change: a transcode they no longer want.
@@ -211,11 +218,18 @@ export function createRouter(options: RouterOptions) {
     if (request.path === "/api/sets") {
       // What a set has, so the page can offer a summary or a subtitle track
       // without asking per title.
-      const sets = listPlayable(db).map((set) => ({
-        ...set,
-        hasSummary: summary(db, set.setId) !== null,
-        subtitles: subtitleLanguages(db, set.setId),
-      }));
+      const sets = listPlayable(db).map(({ tmdb, ...set }) => {
+        // The key rather than the id: the page asks for artwork this server
+        // has, instead of guessing a URL and collecting 404s for every title
+        // whose poster the package did not carry.
+        const key = posterKeyFor(set.kind, tmdb);
+        return {
+          ...set,
+          poster: posters.has(key) ? key : null,
+          hasSummary: summary(db, set.setId) !== null,
+          subtitles: subtitleLanguages(db, set.setId),
+        };
+      });
       const body = new TextEncoder().encode(JSON.stringify(sets));
       return {
         status: 200,
@@ -229,6 +243,24 @@ export function createRouter(options: RouterOptions) {
 
     const streaming = STREAM_PATH.exec(request.path);
     if (streaming) return streamSet(db, source, request, streaming[1]!);
+
+    const wantsPoster = POSTER_PATH.exec(request.path);
+    if (wantsPoster) {
+      const key = wantsPoster[1]!;
+      const body = posterKeyIsValid(key) ? posters.read(key) : null;
+      if (body === null) return empty(404);
+      return {
+        status: 200,
+        headers: {
+          "content-type": "image/jpeg",
+          "content-length": String(body.byteLength),
+          // Named after the title it shows, and replaced only when a whole
+          // new catalog arrives, so a day is comfortably safe.
+          "cache-control": "public, max-age=86400",
+        },
+        body: request.method === "HEAD" ? null : body,
+      };
+    }
 
     const wantsSummary = SUMMARY_PATH.exec(request.path);
     if (wantsSummary) {
