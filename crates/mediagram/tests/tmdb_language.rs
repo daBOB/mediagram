@@ -13,10 +13,13 @@ use std::cell::RefCell;
 use mediagram::metadata::tmdb_client::{Localized, TmdbApi};
 use serde_json::{Value, json};
 
+/// One call: the path asked for, and the query it was asked with.
+type Call = (String, Vec<(String, String)>);
+
 /// Records what its caller asked for.
 #[derive(Default)]
 struct Recorder {
-    seen: RefCell<Vec<(String, Vec<(String, String)>)>>,
+    seen: RefCell<Vec<Call>>,
 }
 
 impl TmdbApi for Recorder {
@@ -32,7 +35,7 @@ impl TmdbApi for Recorder {
     }
 }
 
-fn language_of(seen: &[(String, Vec<(String, String)>)]) -> Option<String> {
+fn language_of(seen: &[Call]) -> Option<String> {
     seen.first()?
         .1
         .iter()
