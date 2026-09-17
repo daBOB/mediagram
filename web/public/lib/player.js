@@ -12,6 +12,7 @@ import { playbackFor } from "./link.js";
 import { playTranscoded } from "./hls-playback.js";
 import { sourceBitrate, watchPlayback } from "./adapt-playback.js";
 import { clockTime, episodeLabel } from "./format.js";
+import { subtitleLabel } from "./subtitle-label.js";
 
 const dialog = document.getElementById("player");
 const video = document.getElementById("video");
@@ -49,7 +50,7 @@ function attachSubtitles(set) {
     const track = document.createElement("track");
     track.kind = "subtitles";
     track.srclang = lang;
-    track.label = lang;
+    track.label = subtitleLabel(lang);
     track.src = `/api/sets/${encodeURIComponent(set.setId)}/subtitles/${lang}.vtt`;
     if (index === 0) track.default = true;
     video.append(track);
