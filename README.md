@@ -133,6 +133,28 @@ mediagram add <file>
 An explicit `--tmdb`/`--tvdb`/`--imdb` never prompts; without one, an
 ambiguous filename match prompts interactively unless `--manual` is given.
 
+## The web player
+
+`web/` is a Bun server that reads the published index, serves any set as one
+seekable HTTP file assembled from its parts, and converts on the fly what a
+browser will not decode — Matroska, HEVC, AC-3 — into HLS. It runs anywhere
+the account's Telegram session can be given to it, not only on the machine
+that did the uploading.
+
+```
+cd web
+bun install
+bun run login > .env      # once: issues a session for this player
+bun run dev               # listens on the network, and says so
+bun run start             # loopback only, for running behind a proxy
+```
+
+It has no authentication of its own, so on anything but a network you trust
+it belongs behind a reverse proxy that does.
+[`docs/running-the-player.md`](docs/running-the-player.md) covers that end to
+end: Caddy, TLS, what `MEDIAGRAM_TRUST_PROXY` is for, and how to revoke
+access.
+
 ## The 3.5 GiB part rule
 
 Files are split into raw, contiguous byte-range parts — never re-encoded —

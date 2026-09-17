@@ -23,6 +23,8 @@ import { join, normalize } from "node:path";
 import { subtitle, subtitleLanguages, summary } from "./assets";
 import { listPlayable, partLocations, playableSet, type PartLocation } from "./catalog";
 import { planReads, totalSize, type PartSpan, type Step } from "./range";
+import { isLocalAddress } from "./client-reach";
+import { DEFAULT_MAX_BITRATE } from "./config";
 import { contentType, planResponse } from "./response";
 
 /** Where a stream's bytes come from. */
@@ -37,6 +39,8 @@ export interface PlayerRequest {
   range: string | null;
   /** `?seek=` on a transcode request, in seconds. */
   seek?: string | null;
+  /** The address the request came from, already resolved through any proxy. */
+  client?: string;
 }
 
 /** Serves HLS playlists and segments for a transcode in progress. */
@@ -158,7 +162,23 @@ function empty(status: number): PlayerResponse {
   return { status, headers: { "content-length": "0" }, body: null };
 }
 
-export function createRouter(db: Database, source: ByteSource, hls?: HlsServer) {
+export interface RouterOptions {
+  db: Database;
+  source: ByteSource;
+  hls?: HlsServer;
+  /**
+   * What a remote link is assumed to carry, in bits per second.
+   *
+   * The page needs it to decide whether a title can be played as it is: the
+   * browser cannot know how it reached this server, and the server can.
+   */
+  maxBitrate?: number;
+}
+
+export function createRouter(options: RouterOptions) {
+  const { db, source, hls } = options;
+  const maxBitrate = options.maxBitrate ?? DEFAULT_MAX_BITRATE;
+
   return async function route(request: PlayerRequest): Promise<PlayerResponse> {
     // The one thing a viewer may change: a transcode they no longer want.
     // It holds the hardware encoder, and waiting for the idle reaper means a
@@ -175,6 +195,15 @@ export function createRouter(db: Database, source: ByteSource, hls?: HlsServer) 
 
     const readOnlyMethod = request.method === "GET" || request.method === "HEAD";
     if (!readOnlyMethod) return empty(405);
+
+    if (request.path === "/api/player") {
+      // Which link this viewer is on, which the page cannot work out for
+      // itself. Deliberately says nothing about the host or the proxy.
+      return text(
+        JSON.stringify({ remote: !isLocalAddress(request.client ?? ""), maxBitrate }),
+        "application/json",
+      );
+    }
 
     if (request.path === "/api/sets") {
       // What a set has, so the page can offer a summary or a subtitle track

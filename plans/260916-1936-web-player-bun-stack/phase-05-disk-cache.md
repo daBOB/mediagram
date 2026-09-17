@@ -1,7 +1,7 @@
 ---
 phase: 5
 title: "Disk cache"
-status: pending
+status: completed
 priority: P1
 effort: "1d"
 dependencies: [2]

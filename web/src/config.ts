@@ -48,6 +48,14 @@ export interface Config {
    * codecs.
    */
   transcodeMaxrate: number;
+  /**
+   * Whether `X-Forwarded-For` may be believed.
+   *
+   * Set it only where a reverse proxy really is in front. Anywhere else the
+   * header is whatever the caller chose to send, and believing it would let
+   * anyone claim to be on the local network and ask for the original file.
+   */
+  trustProxy: boolean;
   hostname: string;
   port: number;
 }
@@ -76,6 +84,15 @@ function required(name: string): string {
   return value;
 }
 
+/**
+ * What a remote link is assumed to carry, in bits per second.
+ *
+ * Comfortably under a 25 Mbit/s household uplink with room for everything
+ * else in the house. It caps a transcode's output and, for the same reason,
+ * decides which titles may be played as they are from outside.
+ */
+export const DEFAULT_MAX_BITRATE = 8_000_000;
+
 export function load(): Config {
   const addr = process.env.MEDIAGRAM_PLAYER_ADDR ?? "127.0.0.1:8770";
   const colon = addr.lastIndexOf(":");
@@ -92,7 +109,8 @@ export function load(): Config {
     cacheMaxBytes: parseSize(process.env.MEDIAGRAM_CACHE_MAX ?? "8G"),
     cacheReadahead: Number(process.env.MEDIAGRAM_CACHE_READAHEAD ?? "4"),
     transcodeDir: process.env.MEDIAGRAM_TRANSCODE_DIR ?? `${process.env.HOME}/.cache/mediagram-hls`,
-    transcodeMaxrate: parseSize(process.env.MEDIAGRAM_TRANSCODE_MAXRATE ?? "8000000"),
+    transcodeMaxrate: parseSize(process.env.MEDIAGRAM_TRANSCODE_MAXRATE ?? String(DEFAULT_MAX_BITRATE)),
+    trustProxy: /^(1|true|yes)$/i.test(process.env.MEDIAGRAM_TRUST_PROXY ?? ""),
     hostname: addr.slice(0, colon) || "127.0.0.1",
     port: Number(addr.slice(colon + 1)),
   };
@@ -115,6 +133,7 @@ export function describe(config: Config): Record<string, unknown> {
     cacheReadahead: config.cacheReadahead,
     transcodeDir: config.transcodeDir,
     transcodeMaxrate: config.transcodeMaxrate,
+    trustProxy: config.trustProxy,
     address: `${config.hostname}:${config.port}`,
   };
 }

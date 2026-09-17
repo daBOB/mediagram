@@ -45,11 +45,14 @@ function parseHead(head: string): { status: number; headers: Map<string, string>
 export async function rawRequest(
   port: number,
   path: string,
-  options: { method?: string; range?: string } = {},
+  options: { method?: string; range?: string; headers?: Record<string, string> } = {},
 ): Promise<RawResponse> {
   const method = options.method ?? "GET";
   const lines = [`${method} ${path} HTTP/1.1`, `Host: 127.0.0.1:${port}`];
   if (options.range !== undefined) lines.push(`Range: ${options.range}`);
+  for (const [name, value] of Object.entries(options.headers ?? {})) {
+    lines.push(`${name}: ${value}`);
+  }
   lines.push("Connection: close", "", "");
 
   let buffer = new Uint8Array(0);

@@ -42,12 +42,12 @@ TypeScript port is checked against, byte for byte.
 | # | Phase | Status | Priority | Effort | Depends on |
 |---|-------|--------|----------|--------|------------|
 | 1 | [Range server over a set (Rust)](phase-01-range-server-over-a-set.md) | complete | P1 | 1.5d | - |
-| 2 | [Bun Telegram client and Range server](phase-02-bun-telegram-range-server.md) | in progress | P1 | 2d | 1 |
+| 2 | [Bun Telegram client and Range server](phase-02-bun-telegram-range-server.md) | complete | P1 | 2d | 1 |
 | 3 | [Catalog anywhere: the package reader](phase-03-package-reader.md) | pending | P1 | 1d | - |
-| 4 | [Minimal web UI, direct play](phase-04-web-ui-direct-play.md) | pending | P1 | 1d | 2,3 |
-| 5 | [Disk cache](phase-05-disk-cache.md) | pending | P1 | 1d | 2 |
-| 6 | [Transcoding to HLS](phase-06-transcoding-to-hls.md) | pending | P2 | 2d | 4,5 |
-| 7 | [Remote access, auth and TLS](phase-07-remote-access.md) | pending | P2 | 0.5d | 4 |
+| 4 | [Minimal web UI, direct play](phase-04-web-ui-direct-play.md) | complete | P1 | 1d | 2,3 |
+| 5 | [Disk cache](phase-05-disk-cache.md) | complete | P1 | 1d | 2 |
+| 6 | [Transcoding to HLS](phase-06-transcoding-to-hls.md) | complete | P2 | 2d | 4,5 |
+| 7 | [Remote access, auth and TLS](phase-07-remote-access.md) | complete | P2 | 0.5d | 4 |
 | 8 | [Docs and operating notes](phase-08-docs.md) | pending | P3 | 0.5d | 7 |
 
 Phases 2 through 4 are the first useful thing: the 162 course lessons play in

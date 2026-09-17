@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: "Bun Telegram client and Range server"
-status: in-progress
+status: completed
 priority: P1
 effort: "2d"
 dependencies: [1]

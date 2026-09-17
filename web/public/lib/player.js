@@ -8,7 +8,7 @@
  * for a viewer who has gone.
  */
 
-import { decidePlayback } from "./playable.js";
+import { playbackFor } from "./link.js";
 import { playTranscoded } from "./hls-playback.js";
 import { clockTime, episodeLabel } from "./format.js";
 
@@ -27,11 +27,16 @@ let detach = null;
 let playing = null;
 let base = 0;
 
+/**
+ * Worded to cover both reasons a title is converted. It may be a codec the
+ * browser will not decode, or a bitrate the link will not carry, and saying
+ * "your browser cannot play this" about the second one is simply untrue.
+ */
 function noteFor(set) {
-  const decision = decidePlayback(set);
+  const decision = playbackFor(set);
   return decision.kind === "direct"
     ? null
-    : `Your browser cannot decode this (${decision.reason}), so the server is converting it as you watch.`;
+    : `Converting as you watch: ${decision.reason}.`;
 }
 
 /** Attaches whatever subtitle tracks the catalog said this set has. */

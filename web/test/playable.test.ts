@@ -69,3 +69,42 @@ describe("what the index does not say", () => {
     expect(decidePlayback(set("avi", "mpeg4", "mp3")).kind).toBe("transcode");
   });
 });
+
+describe("playing over a link that has to carry it", () => {
+  /** An mp4 a browser would play directly, at ~14 Mbit/s. */
+  const film = {
+    container: "mp4",
+    vcodec: "h264",
+    acodec: "aac",
+    total: 12_800_000_000,
+    duration: 7_200,
+  };
+
+  test("on the local network a big file is still played as it is", () => {
+    expect(decidePlayback(film, { remote: false, maxBitrate: 8_000_000 }).kind).toBe("direct");
+  });
+
+  test("from outside, a file that will not fit the uplink is converted", () => {
+    const decision = decidePlayback(film, { remote: true, maxBitrate: 8_000_000 });
+
+    expect(decision.kind).toBe("transcode");
+    if (decision.kind !== "transcode") throw new Error("unreachable");
+    expect(decision.reason).toMatch(/connection|uplink|Mbit/i);
+  });
+
+  test("from outside, a file that does fit is still played as it is", () => {
+    const lesson = { ...film, total: 500_000_000, duration: 1_800 };
+
+    expect(decidePlayback(lesson, { remote: true, maxBitrate: 8_000_000 }).kind).toBe("direct");
+  });
+
+  test("a set with no duration cannot be measured, so it is not refused for size", () => {
+    const unknown = { ...film, duration: null };
+
+    expect(decidePlayback(unknown, { remote: true, maxBitrate: 8_000_000 }).kind).toBe("direct");
+  });
+
+  test("said nothing about the link, the decision is the codec one", () => {
+    expect(decidePlayback(film).kind).toBe("direct");
+  });
+});

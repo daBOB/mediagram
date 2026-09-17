@@ -379,3 +379,46 @@ describe("releasing a transcode", () => {
     expect(response.status).toBe(405);
   });
 });
+
+/**
+ * A remote viewer is offered a conversion rather than the original file: the
+ * page cannot tell where it is, and the server can.
+ */
+describe("how the player is being reached", () => {
+  test("a request from this machine is local", async () => {
+    const response = await request("/api/player");
+    const said = JSON.parse(new TextDecoder().decode(response.body));
+
+    expect(response.status).toBe(200);
+    expect(said.remote).toBe(false);
+    expect(said.maxBitrate).toBeGreaterThan(0);
+  });
+
+  test("a forwarded address is ignored when no proxy is trusted", async () => {
+    // Otherwise anyone can claim to be on the LAN and ask for the original.
+    const response = await rawRequest(server.port, "/api/player", {
+      headers: { "x-forwarded-for": "203.0.113.9" },
+    });
+    const said = JSON.parse(new TextDecoder().decode(response.body));
+
+    expect(said.remote).toBe(false);
+  });
+
+  test("with a trusted proxy, a forwarded internet address is remote", async () => {
+    const proxied = await startServer({
+      db: index(),
+      source: new FakeSource(),
+      trustProxy: true,
+    });
+    try {
+      const response = await rawRequest(proxied.port, "/api/player", {
+        headers: { "x-forwarded-for": "203.0.113.9" },
+      });
+      const said = JSON.parse(new TextDecoder().decode(response.body));
+
+      expect(said.remote).toBe(true);
+    } finally {
+      await proxied.close();
+    }
+  });
+});

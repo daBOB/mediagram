@@ -71,6 +71,8 @@ const server = await startServer({
   ),
   port: config.port,
   hostname: config.hostname,
+  trustProxy: config.trustProxy,
+  maxBitrate: config.transcodeMaxrate,
 });
 
 const urls = reachableUrls(config.hostname, server.port);

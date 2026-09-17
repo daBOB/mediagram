@@ -9,6 +9,11 @@
  * reported as needing a transcode. Being wrong that way costs a transcode
  * that was not required; being wrong the other way costs a viewer staring at
  * a player that never starts.
+ *
+ * Codecs are not the only reason to convert. Direct play hands over the
+ * original file, and a film at 13.9 Mbit/s does not fit a household uplink.
+ * On the LAN that is free; from outside it is a stall, so the link matters as
+ * much as the container.
  */
 
 /** Containers a browser will open. Matroska is not one of them. */
@@ -25,11 +30,21 @@ const PRETTY = { hevc: "HEVC", h265: "HEVC" };
 
 const normalize = (codec) => (codec ?? "").toLowerCase().trim();
 
+/** The set's average bitrate in bits per second, or `null` if unmeasurable. */
+function bitrateOf(profile) {
+  const bytes = Number(profile.total);
+  const seconds = Number(profile.duration);
+  if (!Number.isFinite(bytes) || !Number.isFinite(seconds) || seconds <= 0) return null;
+  return (bytes * 8) / seconds;
+}
+
 /**
- * @param {{container: string, vcodec: string|null, acodec: string|null}} profile
+ * @param {{container: string, vcodec: string|null, acodec: string|null,
+ *          total?: number, duration?: number|null}} profile
+ * @param {{remote?: boolean, maxBitrate?: number}} [link] how it will travel
  * @returns {{kind: "direct"} | {kind: "transcode", reason: string}}
  */
-export function decidePlayback(profile) {
+export function decidePlayback(profile, link = {}) {
   const container = normalize(profile.container);
   const video = normalize(profile.vcodec);
   const audio = normalize(profile.acodec);
@@ -40,6 +55,13 @@ export function decidePlayback(profile) {
   }
   if (!VIDEO.has(video)) reasons.push(`${PRETTY[video] ?? (video || "unknown")} video`);
   if (!AUDIO.has(audio)) reasons.push(`${PRETTY[audio] ?? (audio || "unknown")} audio`);
+
+  // A set whose duration is unknown cannot be measured, and refusing it on a
+  // guess would convert things that were fine.
+  const bitrate = link.remote && link.maxBitrate ? bitrateOf(profile) : null;
+  if (bitrate !== null && bitrate > link.maxBitrate) {
+    reasons.push(`${(bitrate / 1e6).toFixed(1)} Mbit/s over a remote connection`);
+  }
 
   return reasons.length === 0
     ? { kind: "direct" }

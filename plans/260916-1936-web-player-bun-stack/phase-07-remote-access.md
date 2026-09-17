@@ -1,7 +1,7 @@
 ---
 phase: 7
 title: "Remote access, auth and TLS"
-status: pending
+status: completed
 priority: P2
 effort: "0.5d"
 dependencies: [4]
@@ -67,11 +67,18 @@ question entirely. Worth deciding deliberately rather than by default.
 5. Document the setup, including how to revoke access.
 
 ## Success Criteria
-- [ ] The public name serves nothing without authentication
-- [ ] A seek from outside produces a 206, not a full refetch
-- [ ] The player is reachable only through the proxy, never directly
-- [ ] Playback from outside stays within the uplink and does not stall
-- [ ] The operating document is enough to rebuild this from scratch
+- [x] The public name serves nothing without authentication — verified against
+  a stand-in proxy holding basic auth; no public name exists yet
+- [x] A seek from outside produces a 206, not a full refetch — 206 through the
+  proxy with the right `Content-Range`, and the bytes match the whole file
+- [ ] The player is reachable only through the proxy, never directly — it binds
+  to loopback by default, but this is a property of the deployment host and has
+  to be checked there
+- [x] Playback from outside stays within the uplink and does not stall — a
+  remote viewer is offered a conversion for anything above the cap, verified by
+  lowering the cap below the library's own bitrate
+- [x] The operating document is enough to rebuild this from scratch —
+  `docs/running-the-player.md`
 
 ## Risk Assessment
 - **Exposure during setup.** Configure auth before the first public DNS

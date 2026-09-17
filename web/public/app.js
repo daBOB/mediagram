@@ -11,7 +11,7 @@
  */
 
 import { groupLibrary } from "./lib/library.js";
-import { decidePlayback } from "./lib/playable.js";
+import { loadLink, playbackFor } from "./lib/link.js";
 import { openPlayer } from "./lib/player.js";
 import { codecLine, episodeLabel, humanDuration, humanSize } from "./lib/format.js";
 
@@ -57,8 +57,7 @@ function initialsOf(text) {
 }
 
 function transcodeBadge(set) {
-  const decision = decidePlayback(set);
-  return decision.kind === "direct" ? null : el("span", "badge", "needs transcode");
+  return playbackFor(set).kind === "direct" ? null : el("span", "badge", "needs transcode");
 }
 
 function heading(title, subtitle) {
@@ -190,6 +189,9 @@ function route() {
 window.addEventListener("hashchange", route);
 
 try {
+  // Asked for first: every shelf badge depends on whether this page is being
+  // watched from the sofa or from somewhere with an uplink in between.
+  await loadLink();
   const response = await fetch("/api/sets");
   if (!response.ok) throw new Error(`the catalog answered ${response.status}`);
   const sets = await response.json();
