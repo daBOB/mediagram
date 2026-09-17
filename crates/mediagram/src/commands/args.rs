@@ -110,3 +110,34 @@ pub struct PrepareArgs {
     #[arg(long)]
     pub limit: Option<u64>,
 }
+
+/// Arguments for `mediagram edit`.
+#[derive(Args, Debug, Clone)]
+pub struct EditArgs {
+    /// The set to correct
+    pub set_id: String,
+    /// Ask the provider again, in the configured `tmdb_language`. What the
+    /// ids point at is right; the words may be in the wrong language
+    #[arg(long)]
+    pub refresh: bool,
+    #[arg(long)]
+    pub title: Option<String>,
+    /// Show title, or course title for a lesson
+    #[arg(long)]
+    pub show: Option<String>,
+    #[arg(long)]
+    pub year: Option<u16>,
+    #[arg(long)]
+    pub season: Option<u32>,
+    #[arg(long)]
+    pub episode: Option<u32>,
+    /// Chapter title
+    #[arg(long)]
+    pub chap: Option<String>,
+    /// Folders within the collection, `/`-separated
+    #[arg(long)]
+    pub path: Option<String>,
+    /// Show what would change and stop
+    #[arg(long)]
+    pub dry_run: bool,
+}

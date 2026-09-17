@@ -1,6 +1,6 @@
 //! `sets` table queries. The row type lives in `index::set_row`.
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use rusqlite::{Connection, OptionalExtension, params};
 
@@ -66,6 +66,38 @@ pub fn set_status(conn: &Connection, set_id: &str, status: &str) -> Result<()> {
         "UPDATE sets SET status = ?1 WHERE set_id = ?2",
         params![status, set_id],
     )?;
+    Ok(())
+}
+
+/// Writes a corrected row's metadata, and only its metadata.
+///
+/// The columns left out are deliberate: `total`, `part_count`, `set_hash`,
+/// `status`, `container` and the codec fields describe the bytes sitting in
+/// the channel. `verify` checks them and a player seeks with them, so a
+/// correction that could touch them would turn a fixed title into a broken
+/// set. The guard is here rather than at the call site because a row is an
+/// easy thing to hand over with the wrong numbers in it.
+pub fn update_metadata(conn: &Connection, row: &SetRow) -> Result<()> {
+    conn.execute(
+        "UPDATE sets SET show = ?1, chap = ?2, path = ?3, title = ?4, year = ?5,
+                         season = ?6, episode = ?7, abs = ?8, tmdb = ?9, tvdb = ?10, imdb = ?11
+         WHERE set_id = ?12",
+        params![
+            row.show,
+            row.chap,
+            row.path,
+            row.title,
+            row.year,
+            row.season,
+            row.episode,
+            row.abs,
+            row.tmdb.map(|v| v as i64),
+            row.tvdb.map(|v| v as i64),
+            row.imdb,
+            row.set_id,
+        ],
+    )
+    .with_context(|| format!("updating metadata for {}", row.set_id))?;
     Ok(())
 }
 

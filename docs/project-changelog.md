@@ -5,6 +5,34 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 2026-09-17
+
+**Shipped**
+
+- `mediagram edit <set-id>`: correct a set's metadata without re-uploading
+  its bytes. Every part carries the whole record, so a correction rewrites one
+  caption per part; `--refresh` asks the provider again in the configured
+  language, and `--dry-run` shows the change first. The channel is written
+  before the index, so a run that dies between them leaves `rescan` able to
+  reconcile from the side that now holds the truth.
+- `tmdb_language`: TMDB answers in English unless asked, so a German library
+  got "Forsaken" where the file said "Verlassen". Added ahead of the disk
+  cache, since the cache keys on the query and a language behind it would
+  leave two languages sharing one entry.
+- TMDB v4 read tokens (`Authorization: Bearer`) alongside v3 API keys. Sent
+  the wrong way a read token answers 401 with nothing to say why.
+- Caption v4 carries the folders a set came from, so a course nesting one to
+  four levels deep keeps its shape. Schema v3 stores it; schema v4 adds an
+  assets table for subtitles and summaries.
+- A Bun player backend and web UI: catalog, HTTP Range streaming over a set's
+  concatenated parts, and shelves for Movies, Series and Tutorials.
+
+**Fixed**
+
+- `SPEC_VERSION` had drifted from the caption marker, which would have put the
+  wrong version in every published package. A test now pins them together, as
+  another pins the player's expected schema to the uploader's.
+
 ## 2026-09-16
 
 **Shipped**

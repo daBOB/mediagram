@@ -1,7 +1,7 @@
 //! `parts` table: one row per byte-range part of a set, tracking upload
 //! progress and the identifiers needed to find the message again.
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use mlib_spec::part_plan::PartRange;
 use rusqlite::{Connection, params};
 
@@ -52,12 +52,14 @@ pub fn insert_parts(conn: &Connection, set_id: &str, parts: &[PartRange]) -> Res
 }
 
 /// Every `pending` part of a set, in upload order.
+/// Every column `from_row` reads, named once so two queries cannot drift.
+const PART_COLUMNS: &str = "set_id, idx, byte_offset, byte_length, chat_id, message_id, doc_id,
+     sha256, status, verified_at";
+
 pub fn pending_parts(conn: &Connection, set_id: &str) -> Result<Vec<PartRow>> {
-    let mut stmt = conn.prepare(
-        "SELECT set_id, idx, byte_offset, byte_length, chat_id, message_id, doc_id, sha256,
-                status, verified_at
-         FROM parts WHERE set_id = ?1 AND status = 'pending' ORDER BY idx",
-    )?;
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {PART_COLUMNS} FROM parts WHERE set_id = ?1 AND status = 'pending' ORDER BY idx"
+    ))?;
     let rows = stmt
         .query_map([set_id], from_row)?
         .collect::<rusqlite::Result<Vec<_>>>()?;
@@ -81,6 +83,23 @@ pub fn mark_done(
         params![chat_id, message_id, doc_id, sha256, set_id, idx],
     )?;
     Ok(())
+}
+
+/// Every part of a set, in idx order, whatever its status.
+///
+/// Used by `edit`, which rewrites one caption per uploaded part and needs to
+/// see them all to know which have a message.
+pub fn all_parts(conn: &Connection, set_id: &str) -> Result<Vec<PartRow>> {
+    let mut stmt = conn
+        .prepare(&format!(
+            "SELECT {PART_COLUMNS} FROM parts WHERE set_id = ?1 ORDER BY idx"
+        ))
+        .context("preparing the part query")?;
+    let rows = stmt
+        .query_map([set_id], from_row)
+        .with_context(|| format!("listing parts of {set_id}"))?;
+    rows.collect::<rusqlite::Result<Vec<_>>>()
+        .context("reading a part row")
 }
 
 /// Sha256 hex of every `done` part, in idx order; the input to `set_hash`.

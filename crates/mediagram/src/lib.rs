@@ -4,6 +4,7 @@
 pub mod commands;
 pub mod config;
 pub mod course;
+pub mod edit;
 pub mod export;
 pub mod index;
 pub mod media;

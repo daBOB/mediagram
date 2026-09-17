@@ -4,6 +4,7 @@ pub mod accept_login;
 pub mod add;
 pub mod add_course;
 pub mod args;
+pub mod edit;
 pub mod export_package;
 pub mod export_session;
 pub mod login;
