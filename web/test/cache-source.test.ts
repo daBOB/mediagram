@@ -108,3 +108,60 @@ describe("reading through the cache", () => {
     }
   });
 });
+
+describe("reading ahead", () => {
+  /** Playback walks forward; the chunk after the one being served should
+   *  already be arriving by the time the browser asks for it. */
+  test("a sequential read warms the chunks after it", async () => {
+    const part = upstream(CACHE_CHUNK * 10);
+    const reader = new CachedReader(new ChunkCache(root, 10_000_000), 3);
+
+    await reader.read(SET, 0, 0, CACHE_CHUNK, part.bytes.length, part.fetch);
+    await reader.read(SET, 0, CACHE_CHUNK, CACHE_CHUNK, part.bytes.length, part.fetch);
+    await reader.settle();
+
+    const asked = part.asked.length;
+    // Chunk 2 was read ahead, so serving it costs nothing upstream.
+    await reader.read(SET, 0, CACHE_CHUNK * 2, CACHE_CHUNK, part.bytes.length, part.fetch);
+
+    expect(part.asked.length).toBe(asked);
+  });
+
+  test("a scattered read does not warm anything", async () => {
+    const part = upstream(CACHE_CHUNK * 100);
+    const reader = new CachedReader(new ChunkCache(root, 10_000_000), 3);
+
+    await reader.read(SET, 0, 0, 1000, part.bytes.length, part.fetch);
+    await reader.read(SET, 0, CACHE_CHUNK * 50, 1000, part.bytes.length, part.fetch);
+    await reader.settle();
+
+    // Exactly the two chunks asked for, nothing speculative.
+    expect(part.asked.length).toBe(2);
+  });
+
+  test("readahead never changes the bytes returned", async () => {
+    const part = upstream(CACHE_CHUNK * 6);
+    const reader = new CachedReader(new ChunkCache(root, 10_000_000), 3);
+
+    const a = await reader.read(SET, 0, 0, CACHE_CHUNK, part.bytes.length, part.fetch);
+    const b = await reader.read(SET, 0, CACHE_CHUNK, 777, part.bytes.length, part.fetch);
+    await reader.settle();
+
+    expect(a).toEqual(part.bytes.subarray(0, CACHE_CHUNK));
+    expect(b).toEqual(part.bytes.subarray(CACHE_CHUNK, CACHE_CHUNK + 777));
+  });
+
+  test("readahead stops at the end of a part", async () => {
+    const length = CACHE_CHUNK * 2 + 10;
+    const part = upstream(length);
+    const reader = new CachedReader(new ChunkCache(root, 10_000_000), 5);
+
+    await reader.read(SET, 0, 0, CACHE_CHUNK, length, part.fetch);
+    await reader.read(SET, 0, CACHE_CHUNK, CACHE_CHUNK, length, part.fetch);
+    await reader.settle();
+
+    for (const ask of part.asked) {
+      expect(ask.offset).toBeLessThan(length);
+    }
+  });
+});

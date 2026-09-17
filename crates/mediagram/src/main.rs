@@ -83,6 +83,17 @@ enum Cmd {
         #[arg(long)]
         addr: Option<String>,
     },
+    /// Permanently delete a set: its channel messages and its index rows
+    Remove {
+        /// One or more set ids
+        set_id: Vec<String>,
+        /// Show what would be deleted and stop
+        #[arg(long)]
+        dry_run: bool,
+        /// Required to actually delete; there is no undo
+        #[arg(long)]
+        yes: bool,
+    },
     /// Rebuild library.db from channel captions (additive: never demotes local sets; use verify for that)
     Rescan,
     /// Upload one small file with a smoke caption, print the message id, delete it
@@ -126,6 +137,11 @@ async fn main() -> Result<()> {
         Cmd::LoginCode => commands::login_code::run(&cfg).await,
         Cmd::ExportSession => commands::export_session::run(&cfg).await,
         Cmd::Serve { addr } => commands::serve::run(&cfg, addr).await,
+        Cmd::Remove {
+            set_id,
+            dry_run,
+            yes,
+        } => commands::remove::run(&cfg, set_id, dry_run, yes).await,
         Cmd::Rescan => commands::rescan::run(&cfg).await,
         Cmd::SmokeUpload { file } => commands::smoke_upload::run(&cfg, &file).await,
     }

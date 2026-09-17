@@ -38,4 +38,6 @@ tmdb_key = ""                      # https://www.themoviedb.org/settings/api
 # viewing, costs nothing upstream. A media cache with no ceiling fills
 # whatever it is given, so it has one.
 #   MEDIAGRAM_CACHE_DIR=~/.cache/mediagram-player
-#   MEDIAGRAM_CACHE_MAX=8G     # 0 turns caching off
+#   MEDIAGRAM_CACHE_MAX=8G        # 0 turns caching off
+#   MEDIAGRAM_CACHE_READAHEAD=4   # chunks fetched ahead once reads look
+#                                 # sequential; 0 caches only what was asked

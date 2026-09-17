@@ -30,6 +30,14 @@ export interface Config {
    * library is tens of gigabytes. 0 disables caching entirely.
    */
   cacheMaxBytes: number;
+  /**
+   * Chunks to fetch ahead once reads look sequential. 0 turns it off.
+   *
+   * Playback walks forward, so without this every chunk is a miss the first
+   * time through and each miss is a Telegram round trip. Four chunks is 2 MB
+   * of lookahead, comfortably ahead of a 4 Mbit/s stream.
+   */
+  cacheReadahead: number;
   hostname: string;
   port: number;
 }
@@ -72,6 +80,7 @@ export function load(): Config {
     libraryDb: required("MEDIAGRAM_LIBRARY_DB"),
     cacheDir: process.env.MEDIAGRAM_CACHE_DIR ?? `${process.env.HOME}/.cache/mediagram-player`,
     cacheMaxBytes: parseSize(process.env.MEDIAGRAM_CACHE_MAX ?? "8G"),
+    cacheReadahead: Number(process.env.MEDIAGRAM_CACHE_READAHEAD ?? "4"),
     hostname: addr.slice(0, colon) || "127.0.0.1",
     port: Number(addr.slice(colon + 1)),
   };
@@ -91,6 +100,7 @@ export function describe(config: Config): Record<string, unknown> {
     libraryDb: config.libraryDb,
     cacheDir: config.cacheDir,
     cacheMaxBytes: config.cacheMaxBytes,
+    cacheReadahead: config.cacheReadahead,
     address: `${config.hostname}:${config.port}`,
   };
 }

@@ -12,13 +12,28 @@
  */
 
 import { CACHE_CHUNK, chunksCovering } from "./key";
+import { ReadaheadTracker } from "./strategy";
 import type { ChunkCache } from "./store";
 
 /** Fetches `length` bytes at `offset` within a part, from upstream. */
 export type FetchRange = (offset: number, length: number) => Promise<Uint8Array>;
 
 export class CachedReader {
-  constructor(private readonly cache: ChunkCache) {}
+  private readonly tracker: ReadaheadTracker;
+  /** Readahead fetches in flight, so tests and shutdown can wait for them. */
+  private readonly warming = new Set<Promise<void>>();
+
+  constructor(
+    private readonly cache: ChunkCache,
+    maxAhead = 0,
+  ) {
+    this.tracker = new ReadaheadTracker(maxAhead);
+  }
+
+  /** Resolves once speculative fetches have finished. For tests. */
+  async settle(): Promise<void> {
+    await Promise.all([...this.warming]);
+  }
 
   /**
    * `length` bytes at `start` within one part.
@@ -59,6 +74,44 @@ export class CachedReader {
       out.set(chunk.subarray(slice.skip, slice.skip + slice.take), written);
       written += slice.take;
     }
+
+    this.warm(setId, partIdx, start, length, partLength, fetch);
     return out;
+  }
+
+  /**
+   * Fetches the chunks after a sequential read, in the background.
+   *
+   * Deliberately not awaited: the point is that the next chunk is already
+   * arriving when the browser asks, not that this read waits for it. Failures
+   * are ignored — a speculative fetch that does not arrive costs a cache miss
+   * later and nothing else.
+   */
+  private warm(
+    setId: string,
+    partIdx: number,
+    start: number,
+    length: number,
+    partLength: number,
+    fetch: FetchRange,
+  ): void {
+    const ahead = this.tracker.aheadFor(setId, partIdx, start, length);
+    if (ahead === 0) return;
+
+    const firstAfter = Math.floor((start + length - 1) / CACHE_CHUNK) + 1;
+    const lastInPart = Math.floor((partLength - 1) / CACHE_CHUNK);
+
+    for (let index = firstAfter; index < firstAfter + ahead && index <= lastInPart; index++) {
+      const offset = index * CACHE_CHUNK;
+      const expected = Math.min(CACHE_CHUNK, partLength - offset);
+      const task = (async () => {
+        if ((await this.cache.get(setId, partIdx, index, expected)) !== null) return;
+        const bytes = await fetch(offset, expected);
+        await this.cache.put(setId, partIdx, index, bytes);
+      })()
+        .catch(() => {})
+        .finally(() => this.warming.delete(task));
+      this.warming.add(task);
+    }
   }
 }

@@ -32,7 +32,8 @@ const cache = config.cacheMaxBytes > 0 ? new ChunkCache(config.cacheDir, config.
 if (cache) {
   const held = await cache.sizeOnDisk();
   console.log(
-    `cache: ${(held / 1024 ** 3).toFixed(2)} GB of ${(config.cacheMaxBytes / 1024 ** 3).toFixed(2)} GB in ${config.cacheDir}`,
+    `cache: ${(held / 1024 ** 3).toFixed(2)} GB of ${(config.cacheMaxBytes / 1024 ** 3).toFixed(2)} GB in ${config.cacheDir}` +
+      `, readahead ${config.cacheReadahead} chunk(s)`,
   );
 } else {
   console.log("cache: disabled");
@@ -40,7 +41,10 @@ if (cache) {
 
 const server = await startServer({
   db,
-  source: new TelegramSource(telegram, cache ? new CachedReader(cache) : undefined),
+  source: new TelegramSource(
+    telegram,
+    cache ? new CachedReader(cache, config.cacheReadahead) : undefined,
+  ),
   port: config.port,
   hostname: config.hostname,
 });

@@ -11,6 +11,7 @@ pub mod login;
 pub mod login_code;
 pub mod prepare;
 pub mod push_index;
+pub mod remove;
 pub mod rescan;
 pub mod resume;
 pub mod serve;
