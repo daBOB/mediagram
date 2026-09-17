@@ -70,6 +70,12 @@ to `main`. Full phase-by-phase detail lives in
 
 **Shipped**
 
+- 162 lesson summaries imported from `video_tutor`'s database into the
+  library's `assets` table, matched to their sets by folder and lesson number
+  with a folded-title fallback for the chapter whose files carry no number.
+  All 162 matched, none left over. They are searchable immediately; they did
+  not need re-uploading because an asset lives in `library.db` rather than in
+  the channel — which is also why `rescan` would lose them.
 - Search, at `GET /api/search?q=…` and a box in the sidebar. Matches titles,
   show and course names, chapters, folder paths and summary bodies, folding
   case and diacritics so `uberblick` finds "Überblick". Ranked by which field

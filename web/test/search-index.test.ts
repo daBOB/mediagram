@@ -144,6 +144,20 @@ describe("showing why a summary matched", () => {
     expect(hit?.excerpt!.length).toBeLessThan(260);
   });
 
+  test("markdown in a summary reads as prose in the excerpt", () => {
+    // Some summaries are markdown. An excerpt is a sentence shown to a
+    // person, not a document, so the markers are noise.
+    const index = new SearchIndex([
+      set({ summary: "Ein Satz. **Optionen:** geben dem *Käufer* das ## Recht dazu." }),
+    ]);
+
+    const [hit] = index.search("optionen");
+
+    expect(hit?.excerpt).toContain("Optionen:");
+    expect(hit?.excerpt).not.toContain("**");
+    expect(hit?.excerpt).not.toContain("##");
+  });
+
   test("a title hit needs no excerpt, because the title is already shown", () => {
     const index = new SearchIndex([set({ title: "Broker Vergleich" })]);
 

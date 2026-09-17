@@ -117,6 +117,22 @@ export class SearchIndex<T extends Searchable = Searchable> {
 }
 
 /**
+ * Markdown markers out, because an excerpt is a sentence shown to a person.
+ *
+ * Deliberately crude: the window is cut mid-document, so any real parse would
+ * be handed unbalanced markers anyway. Only the characters that read as noise
+ * are dropped, and the words between them are left alone.
+ */
+function plain(text: string): string {
+  return text
+    .replace(/[*_`~]{1,3}/g, "")
+    .replace(/^#{1,6}\s*/gm, "")
+    .replace(/\s*#{1,6}\s+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
  * The words around the first matching term, from the original text.
  *
  * Taken from the unfolded summary so the reader sees their own language back,
@@ -137,6 +153,6 @@ function excerpt(summary: string | null, wanted: string[]): string | null {
 
   const from = Math.max(0, at - EXCERPT_PAD);
   const to = Math.min(summary.length, at + EXCERPT_PAD);
-  const body = summary.slice(from, to).trim();
+  const body = plain(summary.slice(from, to));
   return `${from > 0 ? "…" : ""}${body}${to < summary.length ? "…" : ""}`;
 }
