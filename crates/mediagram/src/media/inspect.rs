@@ -159,26 +159,3 @@ struct FfprobeTags {
 struct FfprobeSideData {
     side_data_type: Option<String>,
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::media::test_fixtures::{ffmpeg_available, make_trailing_moov_mp4};
-
-    #[tokio::test]
-    async fn inspect_reports_container_codecs_and_duration() {
-        if !ffmpeg_available() {
-            eprintln!("skipping inspect_reports_container_codecs_and_duration: ffmpeg not on PATH");
-            return;
-        }
-        let dir = tempfile::tempdir().unwrap();
-        let path = make_trailing_moov_mp4(dir.path());
-
-        let info = inspect(&path).await.unwrap();
-        assert_eq!(info.container, "mp4");
-        assert_eq!(info.vcodec.as_deref(), Some("h264"));
-        assert_eq!(info.acodec.as_deref(), Some("aac"));
-        assert_eq!(info.duration_s, Some(1));
-        assert_eq!(info.quality.as_deref(), Some("SD"));
-    }
-}

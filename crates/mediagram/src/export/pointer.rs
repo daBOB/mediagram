@@ -9,8 +9,8 @@
 use mlib_spec::package::{CIPHER, LatestPointer, PACKAGE_FORMAT, key_id};
 use sha2::{Digest, Sha256};
 
-/// A pointer carrying only the authenticated fields. Phase 3 completes it
-/// once the encrypted file exists.
+/// A pointer carrying only the authenticated fields. [`super::latest::complete`]
+/// fills in the download fields once the encrypted file exists.
 pub fn draft(created_at: i64, key: &[u8; 32]) -> LatestPointer {
     LatestPointer {
         format: PACKAGE_FORMAT,

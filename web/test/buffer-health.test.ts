@@ -1,17 +1,6 @@
 /**
- * Noticing that the download cannot keep up, before the stalls start.
- *
- * The signal is the buffer: how many seconds of video are ready ahead of the
- * playhead, and whether that number is growing or shrinking. Shrinking while
- * playing means every second of watching costs more than a second of
- * downloading, and the only question left is when it runs out.
- *
- * The trap this module exists to avoid: **a full buffer looks exactly like a
- * slow download.** A browser that has buffered as much as it wants stops
- * fetching, so the buffer stops growing — identical, from outside, to a link
- * that cannot keep up. Judging that as "falling behind" would convert every
- * title that was playing perfectly. So nothing is judged unless the player is
- * still hungry.
+ * Covers `buffer-health`: when a link is judged to be falling behind, and the
+ * states in which nothing may be judged at all.
  */
 
 import { describe, expect, test } from "bun:test";

@@ -9,17 +9,9 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import { subtitle, subtitleLanguages, summary } from "../src/assets";
+import { emptyIndex as fixture } from "./index-fixture";
 
 const SET = "01SET0000000000000000001";
-
-function fixture(): Database {
-  const db = new Database(":memory:");
-  db.run(`CREATE TABLE assets(
-      set_id TEXT NOT NULL, kind TEXT NOT NULL,
-      lang TEXT NOT NULL DEFAULT '', body TEXT NOT NULL,
-      PRIMARY KEY(set_id, kind, lang))`);
-  return db;
-}
 
 function put(db: Database, kind: string, lang: string, body: string) {
   db.run("INSERT INTO assets(set_id, kind, lang, body) VALUES (?, ?, ?, ?)", [

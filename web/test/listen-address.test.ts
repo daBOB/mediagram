@@ -1,11 +1,4 @@
-/**
- * What to print when the player starts listening.
- *
- * Binding to every interface is what makes the player reachable from a phone
- * or a TV, and it is also the moment an unauthenticated library becomes
- * visible to everyone on the network. Both facts belong on screen: the
- * addresses that actually work, and the warning that they are open.
- */
+/** Covers `listen-address`: which binds count as exposed, and which URLs are shown. */
 
 import { describe, expect, test } from "bun:test";
 import { isExposed, reachableUrls } from "../src/listen-address";

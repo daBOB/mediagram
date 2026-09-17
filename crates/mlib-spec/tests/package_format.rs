@@ -1,4 +1,4 @@
-//! Phase 1 of the prebuilt package: the manifest carried inside the archive,
+//! The on-disk shape of the prebuilt package: the manifest carried inside the archive,
 //! the plaintext pointer published beside it, and the rule that binds the two
 //! together so an edited pointer cannot be used with a replayed archive.
 

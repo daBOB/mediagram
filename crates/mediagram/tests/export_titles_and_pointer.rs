@@ -3,59 +3,10 @@
 
 use mediagram::export::pointer;
 use mediagram::export::titles::{counts, distinct_titles};
-use mediagram::index::db;
-use mediagram::index::set_row::SetRow;
-use mediagram::index::sets;
-use mlib_spec::caption::{Caption, Kind, Part};
-use mlib_spec::ids::ProviderIds;
+use mlib_spec::caption::Kind;
 
-fn caption(set: &str, kind: Kind, tmdb: Option<u64>) -> Caption {
-    Caption {
-        cid: None,
-        chap: None,
-        path: None,
-        t: kind,
-        ids: ProviderIds {
-            tmdb,
-            tvdb: None,
-            imdb: None,
-        },
-        show: None,
-        title: Some("Title".into()),
-        year: Some(2024),
-        s: None,
-        e: None,
-        abs: None,
-        q: None,
-        hdr: None,
-        container: "mkv".into(),
-        vcodec: None,
-        acodec: None,
-        alang: vec![],
-        slang: vec![],
-        dur: None,
-        variant: None,
-        set: set.into(),
-        part: Part {
-            i: 0,
-            n: 1,
-            off: 0,
-            len: 10,
-            sha256: String::new(),
-        },
-        total: 10,
-    }
-}
-
-fn db_with(rows: &[(&str, Kind, Option<u64>)]) -> (tempfile::TempDir, rusqlite::Connection) {
-    let dir = tempfile::tempdir().unwrap();
-    let conn = db::open(dir.path()).unwrap();
-    for (set, kind, tmdb) in rows {
-        let row = SetRow::from_caption(&caption(set, *kind, *tmdb), 1_700_000_000).unwrap();
-        sets::insert_set(&conn, &row).unwrap();
-    }
-    (dir, conn)
-}
+mod support;
+use support::export::db_with;
 
 #[test]
 fn titles_are_distinct_and_carry_their_kind() {

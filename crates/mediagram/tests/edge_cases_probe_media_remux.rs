@@ -1,4 +1,4 @@
-//! Edge case probes for media remux and inspect operations (Phase 3)
+//! Edge case probes for media remux and inspect operations.
 //! Tests edge cases in ensure_faststart and bytelevel preservation.
 
 use std::fs;

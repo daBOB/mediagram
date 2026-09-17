@@ -29,8 +29,3 @@ export async function loadLink() {
 export function playbackFor(set) {
   return decidePlayback(set, link);
 }
-
-/** True when the viewer is not on this machine's own network. */
-export function isRemote() {
-  return link.remote;
-}

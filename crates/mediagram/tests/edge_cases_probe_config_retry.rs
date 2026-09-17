@@ -1,4 +1,4 @@
-//! Edge case probes for phases 2-4: Config + Retry + MP4 atoms/remux/inspect/classify/resolve
+//! Edge case probes for config, retry, and MP4 atoms/remux/inspect/classify/resolve.
 //! Tests invalid configurations, retry edge cases, and MP4/media file edge cases.
 
 use std::env;

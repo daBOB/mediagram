@@ -1,5 +1,5 @@
 //! `mediagram export-package`: assemble the prebuilt metadata package, then
-//! archive and encrypt it. Publishing is phase 3.
+//! archive and encrypt it. Publishing is opt-in and happens afterwards.
 //!
 //! The command never writes to `library.db`, including in `--dry-run`: it
 //! copies the index through the side-effect-free path and reads everything
@@ -119,9 +119,9 @@ pub async fn run(
     let dest_dir = out.unwrap_or_else(|| data_dir.join("export"));
     let written = write_package(&dest_dir, created_at, &sealed)?;
     // Written beside the package because these are the exact fields the
-    // cipher authenticated. Phase 3 completes this pointer; recomputing
-    // `created_at` there would produce a package every reader rejects with a
-    // tag failure that looks like an attack.
+    // cipher authenticated. `latest::complete` fills in the rest at publish
+    // time; recomputing `created_at` there would produce a package every
+    // reader rejects with a tag failure that looks like an attack.
     let draft_path = written.with_extension("pointer.json");
     std::fs::write(&draft_path, serde_json::to_vec(&pointer)?)
         .with_context(|| format!("writing {}", draft_path.display()))?;

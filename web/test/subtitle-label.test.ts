@@ -1,10 +1,4 @@
-/**
- * Naming a subtitle track in the menu a viewer actually reads.
- *
- * The catalog carries language codes, because that is what the files are
- * tagged with. A menu showing "und" tells a viewer nothing, and "de" barely
- * more, so the code is turned into a name on the way to the screen.
- */
+/** Covers `subtitle-label`: turning a track's language code into a menu row. */
 
 import { describe, expect, test } from "bun:test";
 

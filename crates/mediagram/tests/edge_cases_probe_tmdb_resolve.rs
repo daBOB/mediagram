@@ -1,4 +1,4 @@
-//! Edge case probes for TMDB resolution (Phase 4)
+//! Edge case probes for TMDB resolution.
 //! Tests edge cases in metadata resolution: zero search hits, similarity thresholds,
 //! out-of-range prompter responses, cache key variations, and more.
 

@@ -13,14 +13,13 @@ import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { gzipSync } from "node:zlib";
 
 import { refreshCatalog, type Pointer } from "../src/package/refresh";
 import { NONCE_LEN } from "../src/package/open";
+import { archive, member, text } from "./tar-fixture";
 
 const KEY = Buffer.alloc(32, 3);
 const KEY_ID = createHash("sha256").update(KEY).digest("hex").slice(0, 8);
-const BLOCK = 512;
 
 let root: string;
 
@@ -30,26 +29,6 @@ beforeEach(async () => {
 afterEach(async () => {
   await rm(root, { recursive: true, force: true });
 });
-
-function member(name: string, body: Uint8Array): Uint8Array {
-  const header = Buffer.alloc(BLOCK);
-  header.write(name, 0, 100, "utf8");
-  header.write("000644 \0", 100, 8, "utf8");
-  header.write(body.length.toString(8).padStart(11, "0") + " ", 124, 12, "utf8");
-  header.write("00000000000 ", 136, 12, "utf8");
-  header.write("0", 156, 1, "utf8");
-  header.write("ustar\0", 257, 6, "utf8");
-  header.write("00", 263, 2, "utf8");
-  header.write(" ".repeat(8), 148, 8, "utf8");
-  let sum = 0;
-  for (const byte of header) sum += byte;
-  header.write(sum.toString(8).padStart(6, "0") + "\0 ", 148, 8, "utf8");
-  const padded = Buffer.alloc(Math.ceil(body.length / BLOCK) * BLOCK);
-  Buffer.from(body).copy(padded);
-  return new Uint8Array(Buffer.concat([header, padded]));
-}
-
-const text = (s: string) => new TextEncoder().encode(s);
 
 /** A package as the exporter would write it, and the pointer naming it. */
 function build(options: { createdAt: number; dbBody?: string; manifestCreatedAt?: number }) {
@@ -63,12 +42,11 @@ function build(options: { createdAt: number; dbBody?: string; manifestCreatedAt?
     parts: 1,
     posters: [{ key: "tmdb-movie-36648", file: "posters/tmdb-movie-36648.jpg" }],
   });
-  const tar = Buffer.concat([
-    Buffer.from(member("manifest.json", text(manifest))),
-    Buffer.from(member("library.db", text(options.dbBody ?? "SQLite format 3"))),
-    Buffer.from(member("posters/tmdb-movie-36648.jpg", text("jpeg"))),
-    Buffer.alloc(BLOCK * 2),
-  ]);
+  const packed = archive(
+    member("manifest.json", text(manifest)),
+    member("library.db", text(options.dbBody ?? "SQLite format 3")),
+    member("posters/tmdb-movie-36648.jpg", text("jpeg")),
+  );
 
   const pointer: Pointer = {
     format: 1,
@@ -95,7 +73,6 @@ function build(options: { createdAt: number; dbBody?: string; manifestCreatedAt?
   const nonce = randomBytes(NONCE_LEN);
   const cipher = createCipheriv("aes-256-gcm", KEY, nonce);
   cipher.setAAD(aad);
-  const packed = gzipSync(tar);
   const body = Buffer.concat([cipher.update(packed), cipher.final()]);
   const sealed = Buffer.concat([nonce, body, cipher.getAuthTag()]);
 

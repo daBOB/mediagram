@@ -10,11 +10,12 @@
  * wrong byte shows up as a wrong byte.
  */
 
-import { Database } from "bun:sqlite";
+import type { Database } from "bun:sqlite";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { startServer, type RunningServer } from "../src/server";
 import type { ByteSource, HlsFile, HlsServer } from "../src/routes";
 import { rawRequest } from "./raw-http";
+import { emptyIndex } from "./index-fixture";
 import { ALIGN, type Step } from "../src/range";
 import type { PartLocation } from "../src/catalog";
 
@@ -51,34 +52,21 @@ class FakeSource implements ByteSource {
 }
 
 function index(): Database {
-  const db = new Database(":memory:");
-  db.run(`CREATE TABLE sets(
-      set_id TEXT PRIMARY KEY, kind TEXT NOT NULL, title TEXT, show TEXT, chap TEXT, path TEXT,
-      tmdb INTEGER, season INTEGER, episode TEXT, year INTEGER, container TEXT NOT NULL,
-      vcodec TEXT, acodec TEXT, duration INTEGER,
-      total INTEGER NOT NULL, part_count INTEGER NOT NULL,
-      status TEXT NOT NULL, created_at INTEGER NOT NULL)`);
-  db.run(`CREATE TABLE assets(
-      set_id TEXT NOT NULL, kind TEXT NOT NULL,
-      lang TEXT NOT NULL DEFAULT '', body TEXT NOT NULL,
-      PRIMARY KEY(set_id, kind, lang))`);
+  const db = emptyIndex();
   db.run("INSERT INTO assets VALUES (?, 'summary', '', 'Worum es geht.')", [SET]);
   db.run("INSERT INTO assets VALUES (?, 'subtitle', 'deu', 'WEBVTT\n\nhallo')", [SET]);
-  db.run(`CREATE TABLE parts(
-      set_id TEXT NOT NULL, idx INTEGER NOT NULL,
-      byte_offset INTEGER NOT NULL, byte_length INTEGER NOT NULL,
-      chat_id INTEGER, message_id INTEGER, status TEXT NOT NULL,
-      PRIMARY KEY(set_id, idx))`);
   // Columns named, not positional: a positional insert breaks silently the
   // next time the schema gains one.
   db.run(
     `INSERT INTO sets(set_id, kind, title, year, container, vcodec, acodec,
-                      duration, total, part_count, status, created_at)
-     VALUES (?, 'movie', 'The Matrix', 1999, 'mkv', 'hevc', 'ac3', 8160, ?, 2, 'complete', 1700000000)`,
+                      duration, total, part_count, status, created_at, spec_version)
+     VALUES (?, 'movie', 'The Matrix', 1999, 'mkv', 'hevc', 'ac3', 8160, ?, 2, 'complete', 1700000000, 3)`,
     [SET, TOTAL],
   );
-  db.run(`INSERT INTO parts VALUES (?, 0, 0, ?, -1001, 100, 'done')`, [SET, P0]);
-  db.run(`INSERT INTO parts VALUES (?, 1, ?, ?, -1001, 101, 'done')`, [SET, P0, P1]);
+  const part = `INSERT INTO parts(set_id, idx, byte_offset, byte_length, chat_id, message_id, status)
+                VALUES (?, ?, ?, ?, -1001, ?, 'done')`;
+  db.run(part, [SET, 0, 0, P0, 100]);
+  db.run(part, [SET, 1, P0, P1, 101]);
   return db;
 }
 

@@ -4,78 +4,10 @@
 
 use mediagram::index::{db, rescan, snapshot};
 use mediagram::upload::transport::Seen;
-use mlib_spec::caption::{Caption, Kind, Part};
-use mlib_spec::ids::ProviderIds;
+use mlib_spec::caption::Part;
 
-const CHAT_ID: i64 = -1001234567890;
-
-fn open_db() -> (tempfile::TempDir, rusqlite::Connection) {
-    let dir = tempfile::tempdir().unwrap();
-    let conn = db::open(dir.path()).unwrap();
-    (dir, conn)
-}
-
-fn template(set_id: &str, part_count: u32, total: u64) -> Caption {
-    Caption {
-        cid: None,
-        chap: None,
-        path: None,
-        t: Kind::Movie,
-        ids: ProviderIds {
-            tmdb: Some(42),
-            tvdb: None,
-            imdb: None,
-        },
-        show: None,
-        title: Some("Test Movie".into()),
-        year: Some(2024),
-        s: None,
-        e: None,
-        abs: None,
-        q: Some("1080p".into()),
-        hdr: Some("SDR".into()),
-        container: "mkv".into(),
-        vcodec: Some("hevc".into()),
-        acodec: Some("aac".into()),
-        alang: vec!["en".into()],
-        slang: vec![],
-        dur: Some(9000),
-        variant: None,
-        set: set_id.into(),
-        part: Part {
-            i: 0,
-            n: part_count,
-            off: 0,
-            len: 0,
-            sha256: String::new(),
-        },
-        total,
-    }
-}
-
-fn part_seen(
-    template: &Caption,
-    idx: u32,
-    off: u64,
-    len: u64,
-    sha: &str,
-    message_id: i64,
-    doc_id: i64,
-) -> Seen {
-    let caption = template.with_part(Part {
-        i: idx,
-        n: template.part.n,
-        off,
-        len,
-        sha256: sha.into(),
-    });
-    let text = mlib_spec::to_text(&caption, "").unwrap();
-    Seen {
-        message_id,
-        doc_id: Some(doc_id),
-        caption: text,
-    }
-}
+mod support;
+use support::rescan::{CHAT_ID, open_db, part_seen, template};
 
 // ============================================================================
 // Probe 1: apply_seen with empty slice

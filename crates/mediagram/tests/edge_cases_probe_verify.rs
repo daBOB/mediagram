@@ -1,4 +1,4 @@
-//! Edge case probes for verify command (Phase 7)
+//! Edge case probes for the verify command.
 //! Tests boundary conditions, overflow scenarios, hash validation, and verdict precedence.
 
 use mediagram::verify::render::{render_rows, summary_line};

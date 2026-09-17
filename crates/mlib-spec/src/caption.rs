@@ -106,10 +106,6 @@ pub struct Caption {
 }
 
 impl Caption {
-    pub fn is_movie(&self) -> bool {
-        self.t == Kind::Movie
-    }
-
     /// Same record with a different part block.
     pub fn with_part(&self, part: Part) -> Caption {
         Caption {

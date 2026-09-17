@@ -7,12 +7,12 @@
  */
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { gzipSync } from "node:zlib";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { unpackTo } from "../src/package/unpack";
+import { archive, member, text } from "./tar-fixture";
 
 let dest: string;
 
@@ -22,40 +22,6 @@ beforeEach(async () => {
 afterEach(async () => {
   await rm(dest, { recursive: true, force: true });
 });
-
-const BLOCK = 512;
-
-/** One tar member, as the exporter writes them: ustar, mode 644, mtime 0. */
-function member(name: string, body: Uint8Array, typeflag = "0"): Uint8Array {
-  const header = Buffer.alloc(BLOCK);
-  header.write(name, 0, 100, "utf8");
-  header.write("000644 \0", 100, 8, "utf8");
-  header.write("000000 \0", 108, 8, "utf8");
-  header.write("000000 \0", 116, 8, "utf8");
-  header.write(body.length.toString(8).padStart(11, "0") + " ", 124, 12, "utf8");
-  header.write("00000000000 ", 136, 12, "utf8");
-  header.write(typeflag, 156, 1, "utf8");
-  header.write("ustar\0", 257, 6, "utf8");
-  header.write("00", 263, 2, "utf8");
-
-  // The checksum is computed with its own field read as spaces.
-  header.write(" ".repeat(8), 148, 8, "utf8");
-  let sum = 0;
-  for (const byte of header) sum += byte;
-  header.write(sum.toString(8).padStart(6, "0") + "\0 ", 148, 8, "utf8");
-
-  const padded = Buffer.alloc(Math.ceil(body.length / BLOCK) * BLOCK);
-  Buffer.from(body).copy(padded);
-  return new Uint8Array(Buffer.concat([header, padded]));
-}
-
-/** A gzipped tar of the given members, with the two-block end marker. */
-function archive(...members: Uint8Array[]): Uint8Array {
-  const end = Buffer.alloc(BLOCK * 2);
-  return new Uint8Array(gzipSync(Buffer.concat([...members.map(Buffer.from), end])));
-}
-
-const text = (s: string) => new TextEncoder().encode(s);
 
 describe("unpacking an archive", () => {
   test("members are written where they say", async () => {
@@ -109,8 +75,7 @@ describe("unpacking an archive", () => {
     const one = Buffer.from(member("library.db", text("short")));
     // Claim 8 KB of body where 512 bytes were written.
     one.write((8192).toString(8).padStart(11, "0") + " ", 124, 12, "utf8");
-    const end = Buffer.alloc(BLOCK * 2);
-    const packed = new Uint8Array(gzipSync(Buffer.concat([one, end])));
+    const packed = archive(one);
 
     await expect(unpackTo(packed, dest)).rejects.toThrow(/truncat|short|incomplete/i);
   });

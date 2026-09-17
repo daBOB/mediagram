@@ -9,40 +9,30 @@
  */
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { Database } from "bun:sqlite";
+import type { Database } from "bun:sqlite";
 import { EventEmitter } from "node:events";
 import type { ServerResponse } from "node:http";
 
 import { startServer, write, type RunningServer } from "../src/server";
 import type { ByteSource } from "../src/routes";
+import { emptyIndex } from "./index-fixture";
 
 const SET = "01SET0000000000000000009";
 const SIZE = 64 * 1024 * 1024;
 
 function index(): Database {
-  const db = new Database(":memory:");
-  db.run(`CREATE TABLE sets(
-      set_id TEXT PRIMARY KEY, kind TEXT NOT NULL, title TEXT, show TEXT, chap TEXT, path TEXT,
-      tmdb INTEGER, season INTEGER, episode TEXT, year INTEGER, container TEXT NOT NULL,
-      vcodec TEXT, acodec TEXT, duration INTEGER,
-      total INTEGER NOT NULL, part_count INTEGER NOT NULL,
-      status TEXT NOT NULL, created_at INTEGER NOT NULL)`);
-  db.run(`CREATE TABLE assets(
-      set_id TEXT NOT NULL, kind TEXT NOT NULL,
-      lang TEXT NOT NULL DEFAULT '', body TEXT NOT NULL,
-      PRIMARY KEY(set_id, kind, lang))`);
-  db.run(`CREATE TABLE parts(
-      set_id TEXT NOT NULL, idx INTEGER NOT NULL,
-      byte_offset INTEGER NOT NULL, byte_length INTEGER NOT NULL,
-      chat_id INTEGER, message_id INTEGER, status TEXT NOT NULL,
-      PRIMARY KEY(set_id, idx))`);
+  const db = emptyIndex();
   db.run(
     `INSERT INTO sets(set_id, kind, title, year, container, vcodec, acodec,
-                      duration, total, part_count, status, created_at)
-     VALUES (?, 'movie', 'Big', 1999, 'mp4', 'h264', 'aac', 3600, ?, 1, 'complete', 1700000000)`,
+                      duration, total, part_count, status, created_at, spec_version)
+     VALUES (?, 'movie', 'Big', 1999, 'mp4', 'h264', 'aac', 3600, ?, 1, 'complete', 1700000000, 3)`,
     [SET, SIZE],
   );
-  db.run(`INSERT INTO parts VALUES (?, 0, 0, ?, -1001, 100, 'done')`, [SET, SIZE]);
+  db.run(
+    `INSERT INTO parts(set_id, idx, byte_offset, byte_length, chat_id, message_id, status)
+     VALUES (?, 0, 0, ?, -1001, 100, 'done')`,
+    [SET, SIZE],
+  );
   return db;
 }
 
