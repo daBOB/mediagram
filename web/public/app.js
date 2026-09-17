@@ -10,12 +10,15 @@
  *   #/series/Widow%27s%20Bay     #/tutorials/Geldhochschule
  */
 
+import { el } from "./lib/dom.js";
+import { renderSearch } from "./lib/search-view.js";
 import { groupLibrary } from "./lib/library.js";
 import { loadLink, playbackFor } from "./lib/link.js";
 import { openPlayer } from "./lib/player.js";
 import { codecLine, episodeLabel, humanDuration, humanSize } from "./lib/format.js";
 
 const main = document.getElementById("main");
+const searchBox = document.getElementById("search");
 
 /** @type {{movies: any[], series: any[], tutorials: any[]}} */
 let library = { movies: [], series: [], tutorials: [] };
@@ -25,14 +28,6 @@ const SECTIONS = {
   series: { label: "Series", empty: "No series yet." },
   tutorials: { label: "Tutorials", empty: "No courses yet." },
 };
-
-/** Cleared and rebuilt per view; every node is created, never interpolated. */
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text !== undefined) node.textContent = text;
-  return node;
-}
 
 /** A card for a film, a show or a course. */
 function card({ name, meta, initials, onClick, badge, poster }) {
@@ -184,19 +179,63 @@ function viewCollection(section, name) {
   }
 }
 
+/** Asks the server, because summaries live there and are not in the catalog. */
+async function viewSearch(query) {
+  main.append(el("p", "empty", "Searching…"));
+  try {
+    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+    if (!response.ok) throw new Error(`the server answered ${response.status}`);
+    const { hits } = await response.json();
+    main.textContent = "";
+    renderSearch(main, query, hits, openPlayer);
+  } catch (error) {
+    main.textContent = "";
+    main.append(el("p", "error", `Search failed: ${error.message}`));
+  }
+}
+
 function route() {
   const [section = "movies", name] = location.hash.replace(/^#\/?/, "").split("/");
-  const known = SECTIONS[section] ? section : "movies";
+  const known = SECTIONS[section] ? section : section === "search" ? "search" : "movies";
 
   for (const link of document.querySelectorAll("nav a")) {
     link.classList.toggle("active", link.dataset.section === known);
   }
 
   main.textContent = "";
+  if (known === "search") {
+    const query = decodeURIComponent(name ?? "");
+    searchBox.value = query;
+    void viewSearch(query);
+    return;
+  }
+  // Leaving a search clears the box, so the shelf and the field agree.
+  if (searchBox.value !== "") searchBox.value = "";
   if (name) viewCollection(known, decodeURIComponent(name));
   else if (known === "movies") viewMovies();
   else viewCollections(known);
 }
+
+/**
+ * Typing searches, with a pause.
+ *
+ * The hash carries the query so a result list can be linked and the back
+ * button leaves it, but writing the hash on every keystroke would fill the
+ * history with half-typed words — so the address is replaced while typing and
+ * only pushed when the typing stops.
+ */
+let typing = null;
+searchBox.addEventListener("input", () => {
+  clearTimeout(typing);
+  typing = setTimeout(() => {
+    const query = searchBox.value.trim();
+    if (query === "") {
+      location.hash = "#/movies";
+      return;
+    }
+    location.hash = `#/search/${encodeURIComponent(query)}`;
+  }, 200);
+});
 
 window.addEventListener("hashchange", route);
 

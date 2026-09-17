@@ -86,6 +86,23 @@ export interface PartLocation {
 const COLUMNS = `set_id AS setId, kind, title, show, chap, path, season, episode, year,
      container, vcodec, acodec, duration, total, part_count AS partCount, tmdb`;
 
+/**
+ * Every playable set with the text a search reads, summaries included.
+ *
+ * Built once: the catalog is read-only for the life of the process, so the
+ * search index this feeds can be folded at startup and never invalidated.
+ */
+export function listSearchable(db: Database): Array<PlayableSet & { summary: string | null }> {
+  return db
+    .query(
+      `SELECT ${COLUMNS},
+              (SELECT body FROM assets a
+                WHERE a.set_id = s.set_id AND a.kind = 'summary' AND a.lang = '') AS summary
+         FROM sets s WHERE ${PLAYABLE_SQL}`,
+    )
+    .all() as Array<PlayableSet & { summary: string | null }>;
+}
+
 export function listPlayable(db: Database): PlayableSet[] {
   return db
     .query(`SELECT ${COLUMNS} FROM sets s WHERE ${PLAYABLE_SQL} ORDER BY created_at DESC`)

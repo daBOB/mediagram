@@ -500,3 +500,89 @@ describe("how the player is being reached", () => {
     }
   });
 });
+
+/**
+ * A library of a hundred and seventy lessons called things like "Definition"
+ * is not browsable, only searchable.
+ */
+describe("the search route", () => {
+  const find = async (query: string) => {
+    const response = await request(`/api/search?q=${encodeURIComponent(query)}`);
+    return {
+      status: response.status,
+      body: JSON.parse(new TextDecoder().decode(response.body)) as {
+        query: string;
+        hits: Array<{ title: string; matched: string; excerpt: string | null }>;
+      },
+    };
+  };
+
+  test("finds a title", async () => {
+    const { status, body } = await find("matrix");
+
+    expect(status).toBe(200);
+    expect(body.hits.map((h) => h.title)).toContain("The Matrix");
+    expect(body.hits[0]?.matched).toBe("title");
+  });
+
+  test("folds case and diacritics, because the library is German", async () => {
+    // The fixture title has none, so this checks the query side folds too.
+    const { body } = await find("MATRIX");
+
+    expect(body.hits.map((h) => h.title)).toContain("The Matrix");
+  });
+
+  test("searches summary text", async () => {
+    // The fixture set carries a summary reading "Worum es geht."
+    const { body } = await find("worum");
+
+    expect(body.hits[0]?.matched).toBe("summary");
+    expect(body.hits[0]?.excerpt).toContain("Worum");
+  });
+
+  test("an empty query is not an error and finds nothing", async () => {
+    for (const query of ["", "   "]) {
+      const { status, body } = await find(query);
+
+      expect(status).toBe(200);
+      expect(body.hits).toEqual([]);
+    }
+  });
+
+  test("a query matching nothing is an empty list, not a 404", async () => {
+    const { status, body } = await find("kryptowahrung");
+
+    expect(status).toBe(200);
+    expect(body.hits).toEqual([]);
+  });
+
+  test("results carry no channel or message identifiers", async () => {
+    const { body } = await find("matrix");
+
+    const text = JSON.stringify(body);
+    for (const leak of ["chatId", "messageId", "docId", "chat_id", "message_id"]) {
+      expect(text).not.toContain(leak);
+    }
+  });
+
+  /**
+   * A hit is played by the same dialog a shelf row is, so it has to carry the
+   * same fields. Missing `subtitles` loses the tracks; missing `hasSummary`
+   * loses the notes panel; a stray `tmdb` is a field the catalog route is
+   * careful not to send.
+   */
+  test("a hit carries what a catalog row carries, and nothing more", async () => {
+    const catalog = await request("/api/sets");
+    const rows = JSON.parse(new TextDecoder().decode(catalog.body)) as Array<Record<string, unknown>>;
+    const { body } = await find("matrix");
+
+    const expected = [...Object.keys(rows[0]!), "matched", "excerpt"].sort();
+    expect(Object.keys(body.hits[0]!).sort()).toEqual(expected);
+  });
+
+  test("every response states its length", async () => {
+    const response = await request("/api/search?q=matrix");
+
+    expect(lengthOf(response)).toBe(response.body.byteLength);
+  });
+});

@@ -21,9 +21,17 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join, normalize } from "node:path";
 import { subtitle, subtitleLanguages, summary } from "./assets";
-import { listPlayable, partLocations, playableSet, type PartLocation } from "./catalog";
+import {
+  listPlayable,
+  listSearchable,
+  partLocations,
+  playableSet,
+  type PartLocation,
+  type PlayableSet,
+} from "./catalog";
 import { planReads, totalSize, type PartSpan, type Step } from "./range";
 import { isLocalAddress } from "./client-reach";
+import { SearchIndex } from "./search/index";
 import { PosterStore, posterKeyFor, posterKeyIsValid } from "./package/posters";
 import { DEFAULT_MAX_BITRATE } from "./config";
 import { contentType, planResponse } from "./response";
@@ -42,6 +50,8 @@ export interface PlayerRequest {
   seek?: string | null;
   /** `?maxrate=` on a transcode request, in bits per second. */
   maxrate?: string | null;
+  /** `?q=` on a search request. */
+  query?: string | null;
   /** The address the request came from, already resolved through any proxy. */
   client?: string;
 }
@@ -213,6 +223,27 @@ export function createRouter(options: RouterOptions) {
   const { db, source, hls } = options;
   const maxBitrate = options.maxBitrate ?? DEFAULT_MAX_BITRATE;
   const posters = options.posters ?? new PosterStore(null);
+  // Folded once here rather than per request: the catalog cannot change while
+  // the process runs, and folding 170 sets on every keystroke would be work
+  // done again for an answer that cannot differ.
+  const index = new SearchIndex(listSearchable(db));
+
+  /**
+   * One catalog row as the browser gets it.
+   *
+   * Shared by the catalog and the search routes so the two cannot drift: a
+   * hit is opened by the same player dialog a shelf row is. `tmdb` is dropped
+   * — the page asks for artwork by key, so the id buys it nothing.
+   */
+  function forBrowser({ tmdb, ...set }: PlayableSet) {
+    const key = posterKeyFor(set.kind, tmdb);
+    return {
+      ...set,
+      poster: posters.has(key) ? key : null,
+      hasSummary: summary(db, set.setId) !== null,
+      subtitles: subtitleLanguages(db, set.setId),
+    };
+  }
 
   return async function route(request: PlayerRequest): Promise<PlayerResponse> {
     // The one thing a viewer may change: a transcode they no longer want.
@@ -240,21 +271,24 @@ export function createRouter(options: RouterOptions) {
       );
     }
 
+    if (request.path === "/api/search") {
+      // Enriched exactly as a catalog row is: a hit is opened by the same
+      // dialog, so a missing `subtitles` would silently lose the tracks and a
+      // missing `hasSummary` the notes panel.
+      const hits = index
+        .search(request.query ?? "")
+        .map(({ summary: _summary, matched, excerpt, ...set }) => ({
+          ...forBrowser(set),
+          matched,
+          excerpt,
+        }));
+      return text(JSON.stringify({ query: request.query ?? "", hits }), "application/json");
+    }
+
     if (request.path === "/api/sets") {
       // What a set has, so the page can offer a summary or a subtitle track
       // without asking per title.
-      const sets = listPlayable(db).map(({ tmdb, ...set }) => {
-        // The key rather than the id: the page asks for artwork this server
-        // has, instead of guessing a URL and collecting 404s for every title
-        // whose poster the package did not carry.
-        const key = posterKeyFor(set.kind, tmdb);
-        return {
-          ...set,
-          poster: posters.has(key) ? key : null,
-          hasSummary: summary(db, set.setId) !== null,
-          subtitles: subtitleLanguages(db, set.setId),
-        };
-      });
+      const sets = listPlayable(db).map(forBrowser);
       const body = new TextEncoder().encode(JSON.stringify(sets));
       return {
         status: 200,

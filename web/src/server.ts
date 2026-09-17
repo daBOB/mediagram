@@ -34,6 +34,7 @@ function describe(request: IncomingMessage, trustProxy: boolean): PlayerRequest 
     range: typeof rawRange === "string" ? rawRange : null,
     seek: url.searchParams.get("seek"),
     maxrate: url.searchParams.get("maxrate"),
+    query: url.searchParams.get("q"),
     // Resolved here, once, rather than left for a route to work out: behind a
     // proxy every request arrives from loopback, and whether the forwarded
     // address may be believed is a property of how this server was started.

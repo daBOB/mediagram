@@ -1,0 +1,79 @@
+/**
+ * The search results view.
+ *
+ * A flat, ranked list rather than the shelves' grouping: the point of
+ * searching a hundred and seventy lessons named "Definition" and "Mobile App"
+ * is that the best answer is first, and grouping by shelf would bury it under
+ * a heading.
+ *
+ * Every row says *where* it sits and *why* it matched, because the title
+ * alone rarely distinguishes one lesson from the next.
+ */
+
+import { el } from "./dom.js";
+import { codecLine, episodeLabel, humanDuration, humanSize } from "./format.js";
+
+/** How a hit earned its place, in words rather than a field name. */
+const WHY = {
+  title: null,
+  show: "matched the series or course",
+  chap: "matched the chapter",
+  path: "matched the folder",
+  summary: "found in the summary",
+};
+
+/** Where a hit sits, as a person would say it. */
+function locationOf(hit) {
+  if (hit.kind === "ep") {
+    return [hit.show, episodeLabel(hit)].filter(Boolean).join(" · ");
+  }
+  if (hit.kind === "tut") {
+    // The folder path reads better than the generated chapter label, and is
+    // what the shelves show too.
+    const where = hit.path ?? hit.chap;
+    return [hit.show, where].filter(Boolean).join(" · ");
+  }
+  return [hit.year].filter(Boolean).join(" · ");
+}
+
+/**
+ * Renders `hits` into `main`.
+ *
+ * `onPlay` rather than a link: a hit is a set, and opening one is the same
+ * dialog the shelves open.
+ */
+export function renderSearch(main, query, hits, onPlay) {
+  main.append(el("h1", null, "Search"));
+  main.append(
+    el("p", "sub", hits.length === 0 ? `Nothing matches “${query}”` : `${hits.length} result(s) for “${query}”`),
+  );
+  if (hits.length === 0) return;
+
+  const block = el("section", "season");
+  for (const hit of hits) {
+    const row = el("button", "row");
+    row.append(el("div", "num", episodeLabel(hit) || ""));
+
+    const title = el("div", "title");
+    title.append(el("b", null, hit.title ?? hit.setId));
+    const where = locationOf(hit);
+    if (where) title.append(el("span", null, where));
+    // The excerpt is the reason a summary hit is worth showing at all.
+    if (hit.excerpt) title.append(el("span", "excerpt", hit.excerpt));
+    row.append(title);
+
+    const why = WHY[hit.matched];
+    if (why) row.append(el("span", "badge", why));
+
+    row.append(
+      el(
+        "div",
+        "meta",
+        [codecLine(hit), humanDuration(hit.duration), humanSize(hit.total)].filter(Boolean).join(" · "),
+      ),
+    );
+    row.addEventListener("click", () => onPlay(hit));
+    block.append(row);
+  }
+  main.append(block);
+}

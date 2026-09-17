@@ -68,6 +68,15 @@ to `main`. Full phase-by-phase detail lives in
   with TLS and authentication, what to check when playback stalls, and what
   the player deliberately does not do.
 
+**Shipped**
+
+- Search, at `GET /api/search?q=…` and a box in the sidebar. Matches titles,
+  show and course names, chapters, folder paths and summary bodies, folding
+  case and diacritics so `uberblick` finds "Überblick". Ranked by which field
+  matched, with a summary hit carrying the words around it. A hundred and
+  sixty-two lessons named "Definition" and "Mobile App" are not browsable,
+  only searchable.
+
 **Verified live**
 
 The uploader's phase 5/6/7 acceptance gates, run against the real channel

@@ -206,6 +206,34 @@ connection is too slow for this title rather than restarting the same encode
 forever. A viewer who wants a specific quality can still pick a position with
 the slider, which keeps whatever rate was last found to work.
 
+### Searching
+
+`GET /api/search?q=…`, and the box in the sidebar. It matches titles, show and
+course names, chapter and folder paths, and the body of any summary — so a
+lesson called "Interpretation" is findable by the chapter it sits in or by a
+word in its notes, which is the only way a course of a hundred and seventy
+terse titles is navigable at all.
+
+Two things it does deliberately:
+
+- **Folds case and diacritics.** `uberblick` finds "Überblick", `qualitat`
+  finds "Qualität", and `ss` finds `ß`. A German library searched by someone
+  without an umlaut key is the normal case, not the edge one.
+- **Ranks by where the match was.** Title, then show or course, then chapter,
+  then folder, then summary. Every term has to match somewhere on a set, but
+  they may match different fields: `signal interpretation` finds the lesson
+  called Interpretation inside the Signal chapter.
+
+Results carry the same fields a catalog row does, so opening one is the same
+player dialog with the same subtitles and notes. Summaries are per lesson —
+drop a `<video-name>.summary.md` beside a video before `add-course` and it
+travels. There is no course-level summary yet.
+
+The whole index is folded once at startup, because the catalog cannot change
+while the process runs. At a few hundred sets that is faster than a database
+index and needs no schema; a library of thousands would want SQLite's FTS5
+instead.
+
 ### Where the catalog comes from
 
 Two ways, and the second is what makes the player independent of the machine
