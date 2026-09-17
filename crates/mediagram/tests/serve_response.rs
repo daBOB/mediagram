@@ -72,13 +72,26 @@ fn a_multi_range_request_is_refused_as_unsatisfiable() {
     assert_eq!(plan.range, None);
 }
 
+/// RFC 9110 14.2: an origin server MUST ignore a Range header field that
+/// contains a range unit it does not understand. Ignoring it means serving the
+/// whole representation, which every client can use; refusing it means breaking
+/// playback over a header the client did not need us to honour.
 #[test]
-fn a_malformed_range_is_a_bad_request() {
+fn a_range_in_units_we_do_not_speak_is_ignored_not_refused() {
     let plan = plan_response(Some("kilometres=0-99"), TOTAL);
 
-    assert_eq!(plan.status, 400);
-    assert_eq!(plan.range, None);
+    assert_eq!(plan, plan_response(None, TOTAL), "answered as if no Range");
+    assert_eq!(plan.status, 200);
+    assert_eq!(plan.content_length, TOTAL);
     assert_eq!(plan.content_range, None);
+}
+
+#[test]
+fn a_byte_range_we_cannot_parse_is_ignored_the_same_way() {
+    let plan = plan_response(Some("bytes=abc-def"), TOTAL);
+
+    assert_eq!(plan.status, 200);
+    assert_eq!(plan.content_length, TOTAL);
 }
 
 /// Whatever the outcome, the length of the body we intend to send is known

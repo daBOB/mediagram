@@ -46,11 +46,11 @@ pub fn plan_response(range_header: Option<&str>, total: u64) -> ResponsePlan {
             content_length: 0,
             content_range: Some(format!("bytes */{total}")),
         },
-        Err(RangeError::Malformed) => ResponsePlan {
-            status: 400,
-            range: None,
-            content_length: 0,
-            content_range: None,
-        },
+        // Anything we could not parse is ignored, as RFC 9110 14.2 requires of
+        // a unit we do not understand — which is to say, answered exactly as a
+        // request carrying no Range at all. The client asked for less than we
+        // sent, which every client copes with; refusing outright would break
+        // playback over a header it did not need us to honour.
+        Err(RangeError::Malformed) => plan_response(None, total),
     }
 }

@@ -261,8 +261,12 @@ async fn an_unsatisfiable_range_is_refused_with_the_total_size() {
     assert_eq!(length_of(&response), 0);
 }
 
+/// RFC 9110 14.2: an origin server MUST ignore a Range header field that
+/// contains a range unit it does not understand. Ignoring it means serving the
+/// whole representation, which every client can use; refusing it means breaking
+/// playback over a header the client did not need us to honour.
 #[tokio::test]
-async fn a_malformed_range_is_a_bad_request() {
+async fn a_range_in_units_we_do_not_speak_is_ignored_not_refused() {
     let (_d, base, _file) = start().await;
 
     let response = reqwest::Client::new()
@@ -272,8 +276,24 @@ async fn a_malformed_range_is_a_bad_request() {
         .await
         .unwrap();
 
-    assert_eq!(response.status(), 400);
-    assert_eq!(length_of(&response), 0);
+    assert_eq!(response.status(), 200);
+    assert_eq!(length_of(&response), TOTAL);
+    assert!(!response.headers().contains_key("content-range"));
+}
+
+#[tokio::test]
+async fn a_byte_range_we_cannot_parse_is_ignored_the_same_way() {
+    let (_d, base, _file) = start().await;
+
+    let response = reqwest::Client::new()
+        .get(format!("{base}/sets/{SET}/stream"))
+        .header("Range", "bytes=abc-def")
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), 200);
+    assert_eq!(length_of(&response), TOTAL);
 }
 
 /// What a player asks before it asks for bytes.
