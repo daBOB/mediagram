@@ -109,6 +109,11 @@ export class TranscodeFiles implements HlsServer {
     await this.registry.release(sessionId);
   }
 
+  /** Whether this session is one we are running. */
+  has(sessionId: string): boolean {
+    return this.registry.has(sessionId);
+  }
+
   async file(sessionId: string, name: string): Promise<{ body: Uint8Array; type: string } | null> {
     const session = this.registry.get(sessionId);
     if (!session) return null;

@@ -332,6 +332,45 @@ describe("the HLS routes", () => {
 });
 
 /**
+ * A player retries a 503 and gives up on a 404, so the two have to mean what
+ * they say. A session still starting is worth retrying; one that was stopped
+ * or reaped is never coming back, and a player told to wait for it waits
+ * forever instead of falling back to direct play.
+ */
+describe("telling a starting transcode from a gone one", () => {
+  const LIVE = "b".repeat(16);
+  const GONE = "c".repeat(16);
+  let server: RunningServer;
+
+  const hls = {
+    begin: async () => `/hls/${LIVE}/index.m3u8`,
+    has: (sessionId: string) => sessionId === LIVE,
+    // Never ready: this is the window between starting and the first segment.
+    file: async () => null,
+    end: async () => {},
+  };
+
+  beforeAll(async () => {
+    server = await startServer({ db: index(), source: new FakeSource(), hls });
+  });
+  afterAll(async () => {
+    await server.close();
+  });
+
+  test("a session that exists but has written nothing yet says wait", async () => {
+    const response = await rawRequest(server.port, `/hls/${LIVE}/index.m3u8`);
+
+    expect(response.status).toBe(503);
+  });
+
+  test("a session nobody is running says gone, so the player stops asking", async () => {
+    const response = await rawRequest(server.port, `/hls/${GONE}/index.m3u8`);
+
+    expect(response.status).toBe(404);
+  });
+});
+
+/**
  * A transcode holds the hardware encoder, so a viewer who stops watching has
  * to be able to say so. Waiting for the idle reaper means a machine with one
  * encoder runs two of them for minutes after a seek.
@@ -343,6 +382,7 @@ describe("releasing a transcode", () => {
 
   const hls = {
     begin: async () => `/hls/${SESSION}/index.m3u8`,
+    has: () => true,
     file: async () => null,
     end: async (sessionId: string) => {
       ended.push(sessionId);
@@ -379,6 +419,7 @@ describe("releasing a transcode", () => {
       begin: async () => {
         throw new Error("the conversion produced no segment within 45s");
       },
+      has: () => true,
       file: async () => null,
       end: async () => {},
     };
@@ -407,6 +448,7 @@ describe("releasing a transcode", () => {
         asked.push(maxrateBits);
         return `/hls/${SESSION}/index.m3u8`;
       },
+      has: () => true,
       file: async () => null,
       end: async () => {},
     };
@@ -443,6 +485,7 @@ describe("releasing a transcode", () => {
         asked.push(seek);
         return `/hls/${SESSION}/index.m3u8`;
       },
+      has: () => true,
       file: async () => null,
       end: async () => {},
     };

@@ -67,6 +67,9 @@ export interface HlsServer {
    */
   begin(setId: string, seekSeconds: number, maxrateBits: number): Promise<string>;
 
+  /** Whether this session is one we are running. */
+  has(sessionId: string): boolean;
+
   /**
    * The file for a session, or `null` when it is not ready.
    *
@@ -426,9 +429,14 @@ async function hlsResponse(
   name: string,
   method: string,
 ): Promise<PlayerResponse> {
+  // A player retries a 503 and gives up on a 404, so the two have to mean
+  // what they say: still starting is worth waiting for, stopped or reaped is
+  // not, and a player told to wait for a session that is never coming back
+  // waits instead of falling back to direct play.
+  if (!hls.has(sessionId)) return empty(404);
+
+  // 503: the transcode exists but has not produced this yet.
   const found = await hls.file(sessionId, name);
-  // 503: the transcode exists but has not produced this yet. A player retries
-  // a 503 and gives up on a 404.
   if (found === null) return empty(503);
 
   return {
