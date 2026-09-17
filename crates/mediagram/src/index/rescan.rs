@@ -30,6 +30,9 @@ pub struct RescanSummary {
     pub duplicates_skipped: usize,
     /// Captions carrying the mlib marker that failed to parse (e.g. a newer spec version).
     pub unparsed: usize,
+    /// Index snapshots found in the channel. More than one means more than
+    /// one is pinned, which the next push resolves.
+    pub index_messages: usize,
 }
 
 /// Folds every mlib-captioned message in `seen` into `sets`/`parts`, then
@@ -98,6 +101,9 @@ pub fn apply_seen(conn: &Connection, chat_id: i64, seen: &[Seen]) -> Result<Resc
         sets_incomplete,
         duplicates_skipped,
         unparsed,
+        // Counted by the caller, which is the only place that sees the index
+        // snapshots: this function is given part captions only.
+        index_messages: 0,
     })
 }
 

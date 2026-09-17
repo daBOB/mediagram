@@ -14,9 +14,14 @@ use crate::index::{db, snapshot};
 use crate::telegram::client::Tg;
 use crate::telegram::retry::{with_flood_wait_only, with_retry};
 
-const INDEX_CAPTION_MARKER: &str = "#mlib-index v=2";
+/// The marker on the index snapshot's caption. `rescan` matches on the
+/// version-less prefix so a future `v=3` snapshot is still recognised as one.
+pub const INDEX_CAPTION_MARKER: &str = "#mlib-index v=2";
+pub const INDEX_CAPTION_PREFIX: &str = "#mlib-index";
 const META_INDEX_MESSAGE_ID: &str = "index_message_id";
-/// A previous index message whose unpin failed; retried on every later push.
+/// Index messages still pinned that should not be: the one this push
+/// replaces, plus any a previous push failed to unpin or a `rescan`
+/// rediscovered. Stored comma-separated, newest first.
 const META_STALE_INDEX_ID: &str = "stale_index_message_id";
 const INDEX_DOCUMENT_NAME: &str = "library.db";
 const INDEX_MIME_TYPE: &str = "application/vnd.sqlite3";
@@ -140,24 +145,19 @@ async fn send_and_pin(
     Ok(new_id)
 }
 
-/// Unpins the previously recorded index message and any pin a past push
-/// failed to remove. Best-effort: a failure only leaves a stale pin next to
-/// the new one (readers pick the newest `#mlib-index` pin), and the id is
-/// kept under `stale_index_message_id` so the next push tries again.
+/// Unpins every index message that should no longer be pinned.
+///
+/// Best-effort: one that will not unpin is kept on the list so the next push
+/// tries again, because the alternative is a channel with two pinned indexes
+/// and a reader with no way to tell which is current.
 async fn unpin_previous(
     tg: &Tg,
     max_attempts: u32,
     conn: &Connection,
     channel: grammers_session::types::PeerRef,
 ) {
-    for key in [META_STALE_INDEX_ID, META_INDEX_MESSAGE_ID] {
-        let Ok(Some(raw)) = db::get_meta(conn, key) else {
-            continue;
-        };
-        let Ok(old_id) = raw.parse::<i32>() else {
-            tracing::warn!(key, value = %raw, "recorded index message id is not valid");
-            continue;
-        };
+    let mut unresolved: Vec<i32> = Vec::new();
+    for old_id in pending_unpins(conn) {
         let client = tg.client.clone();
         let result = with_retry(max_attempts, move || {
             let client = client.clone();
@@ -165,22 +165,80 @@ async fn unpin_previous(
         })
         .await;
         match result {
-            Ok(_) => {
-                let _ = db::delete_meta(conn, META_STALE_INDEX_ID);
-            }
+            Ok(_) => {}
             Err(err) if message_is_gone(&err) => {
                 tracing::info!(
                     old_id,
                     "previous index message no longer exists; nothing to unpin"
                 );
-                let _ = db::delete_meta(conn, META_STALE_INDEX_ID);
             }
             Err(err) => {
-                tracing::warn!(old_id, error = %err, "failed to unpin previous index message; will retry on the next push");
-                let _ = db::set_meta(conn, META_STALE_INDEX_ID, &old_id.to_string());
+                tracing::warn!(old_id, error = %err, "failed to unpin index message; will retry on the next push");
+                unresolved.push(old_id);
             }
         }
     }
+    let _ = db::delete_meta(conn, META_INDEX_MESSAGE_ID);
+    if unresolved.is_empty() {
+        let _ = db::delete_meta(conn, META_STALE_INDEX_ID);
+    } else {
+        let _ = db::set_meta(conn, META_STALE_INDEX_ID, &join_ids(&unresolved));
+    }
+}
+
+/// The index messages this push should unpin, newest first.
+///
+/// Both keys hold comma-separated ids: `index_message_id` the snapshot this
+/// push replaces, `stale_index_message_id` anything a previous push could not
+/// clear or a `rescan` rediscovered.
+pub fn pending_unpins(conn: &Connection) -> Vec<i32> {
+    let mut ids: Vec<i32> = Vec::new();
+    for key in [META_INDEX_MESSAGE_ID, META_STALE_INDEX_ID] {
+        let Ok(Some(raw)) = db::get_meta(conn, key) else {
+            continue;
+        };
+        for piece in raw.split(',').map(str::trim).filter(|p| !p.is_empty()) {
+            match piece.parse::<i32>() {
+                Ok(id) if !ids.contains(&id) => ids.push(id),
+                Ok(_) => {}
+                Err(_) => tracing::warn!(key, value = %piece, "recorded index message id is not valid"),
+            }
+        }
+    }
+    ids
+}
+
+/// Records the index snapshots a `rescan` found in the channel.
+///
+/// The memory of which snapshot is current lives in `library.db`, and
+/// `rescan` exists because that file gets lost — so without this the first
+/// push after a rescan pins a new index and leaves the old one pinned beside
+/// it. Found by the phase-6 live gate, which is what it is for.
+pub fn record_index_messages(conn: &Connection, ids: &[i32]) -> Result<()> {
+    if ids.is_empty() {
+        return Ok(());
+    }
+    let mut sorted: Vec<i32> = ids.to_vec();
+    sorted.sort_unstable_by(|a, b| b.cmp(a));
+    sorted.dedup();
+
+    let (newest, older) = sorted.split_first().expect("checked non-empty");
+    db::set_meta(conn, META_INDEX_MESSAGE_ID, &newest.to_string())
+        .context("recording the current index message id")?;
+    if older.is_empty() {
+        let _ = db::delete_meta(conn, META_STALE_INDEX_ID);
+    } else {
+        db::set_meta(conn, META_STALE_INDEX_ID, &join_ids(older))
+            .context("recording stale index message ids")?;
+    }
+    Ok(())
+}
+
+fn join_ids(ids: &[i32]) -> String {
+    ids.iter()
+        .map(i32::to_string)
+        .collect::<Vec<_>>()
+        .join(",")
 }
 
 /// Telegram answers a client error (4xx) when the message id is unknown or

@@ -68,8 +68,32 @@ to `main`. Full phase-by-phase detail lives in
   with TLS and authentication, what to check when playback stalls, and what
   the player deliberately does not do.
 
+**Verified live**
+
+The uploader's phase 5/6/7 acceptance gates, run against the real channel
+with `MEDIAGRAM_PART_SIZE=10485760` so ordinary files make several parts:
+
+- A 3-part `add` (25,537,985 bytes), then `verify --full` → 3/3 hash matches.
+- One `parts.sha256` row overwritten → `verify` exits 1, names `part 1`,
+  prints the expected and actual digests, and still reports the other two ok.
+- `kill -9` with 3 of 12 parts done, then `resume` → 12 parts across message
+  ids 49-60. A span of exactly twelve for twelve parts: the part in flight
+  when the process died was adopted, not re-uploaded.
+- Peak RSS during the 12-part upload: 35.6 MB against a 200 MB budget.
+- A push pinned a new `library.db` whose caption said `sets: 18`, matching
+  local, and unpinned the one it replaced.
+- `rm library.db && rescan` → all 18 sets and 32 parts identical across every
+  column the captions carry.
+
 **Fixed**
 
+- The id of the pinned index lives in `library.db`, so the first
+  `push-index` after `rm library.db && rescan` pinned a new snapshot and left
+  the previous one pinned beside it — a reader listing pins then had two
+  indexes and no way to tell which was current. `rescan` now asks Telegram
+  which messages are pinned and records the index snapshots among them, so
+  the next push clears them. Found by the phase-6 live gate, in the one path
+  that gate had never been run against.
 - `SPEC_VERSION` had drifted from the caption marker, which would have put the
   wrong version in every published package. A test now pins them together, as
   another pins the player's expected schema to the uploader's, and a third

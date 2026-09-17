@@ -1,7 +1,7 @@
 ---
 phase: 7
 title: "Verify command and project docs"
-status: code-complete (live gate)
+status: completed
 priority: P2
 effort: "1d"
 dependencies: [6]
@@ -42,10 +42,10 @@ README.md                       # install, config.example.toml, login, add, resu
 6. `cargo clippy --all-targets -- -D warnings`, `cargo fmt --check`, line-count check script for the 200-line rule.
 
 ## Success Criteria
-- [ ] `verify --full` on a 3-part set reports 3/3 hash matches — pending live gate (needs a real Telegram channel + session; see Completion notes for the unit-level equivalent)
-- [ ] Tampered `parts.sha256` row → verify exits non-zero and names the part — pending live gate (same; `report::apply_hash` hash-mismatch path is unit-tested in isolation)
+- [x] `verify --full` on a 3-part set reports 3/3 hash matches — set `01M2R68…`, 25,537,985 bytes across 3 parts, 2026-09-17
+- [x] Tampered `parts.sha256` row → verify exits non-zero and names the part — exit 1, `part 1 … hash FAIL`, expected and actual digests both printed, the other two parts still `hash ok`
 - [x] `docs/mlib-spec-v2.md` is sufficient for someone to write a parser without reading Rust
-- [ ] Whole-plan acceptance checklist passes and is recorded in the changelog — pending live gate (needs `tmdb_key` + a real channel; see `plan.md` → "Open live gates" in `docs/development-roadmap.md`)
+- [x] Whole-plan acceptance checklist passes and is recorded in the changelog — run 2026-09-17, recorded in `docs/project-changelog.md`
 
 ## Risk Assessment
 - `--full` on a 60 GB set is slow and download-throttled → default mode is metadata-only; warn with byte total.

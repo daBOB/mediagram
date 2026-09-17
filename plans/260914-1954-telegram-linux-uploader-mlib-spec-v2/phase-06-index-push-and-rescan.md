@@ -38,9 +38,9 @@ Playable invariant: `count(parts where status='done') == part_count AND sum(byte
 4. Tests: fixture captions incl. one incomplete set → status `pending`; duplicate part message (same set+idx twice) → keep highest message_id, warn.
 
 ## Success Criteria
-- [ ] After `add`, channel shows a pinned `library.db` whose `sets` count matches local (pending live gate)
+- [x] After `add`, channel shows a pinned `library.db` whose `sets` count matches local — message 61 carried `{"sets":18}` against 18 local, 2026-09-17
 - [x] `rm library.db && mediagram rescan` reproduces sets/parts rows equal to the previous DB minus timestamps
-- [ ] Old index message is no longer pinned after a push (pending live gate)
+- [x] Old index message is no longer pinned after a push — 44 unpinned when 61 replaced it. **The gate found a bug in the path it does not cover**: after `rm library.db && rescan` the id to unpin is gone with the database, so the next push left two indexes pinned. `rescan` now asks Telegram which messages are pinned and records the index snapshots among them
 
 ## Risk Assessment
 - Rescan cost on large channels → paged iteration, only documents; acceptable for DR-only use.

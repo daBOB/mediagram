@@ -4,6 +4,7 @@
 use anyhow::{Context, Result};
 use rusqlite::Connection;
 
+use crate::commands::push_index::{INDEX_CAPTION_PREFIX, record_index_messages};
 use crate::config::Config;
 use crate::index::db;
 use crate::index::rescan::{self, RescanSummary};
@@ -32,6 +33,12 @@ pub async fn run(cfg: &Config) -> Result<()> {
         summary.parts_seen,
         summary.duplicates_skipped,
     );
+    if summary.index_messages > 1 {
+        println!(
+            "{} index snapshots are pinned in the channel; the next `push-index` unpins them and pins its own",
+            summary.index_messages,
+        );
+    }
     Ok(())
 }
 
@@ -70,7 +77,33 @@ async fn rescan_all(conn: &mut Connection, tg: &Tg, chat_id: i64) -> Result<Resc
     totals.sets_complete = count("SELECT COUNT(*) FROM sets WHERE status = 'complete'")?;
     totals.sets_incomplete = count("SELECT COUNT(*) FROM sets WHERE status != 'complete'")?;
 
+    let pinned = pinned_index_messages(tg).await?;
+    record_index_messages(conn, &pinned)?;
+    totals.index_messages = pinned.len();
+
     Ok(totals)
+}
+
+/// The index snapshots currently pinned in the channel.
+///
+/// Asked of Telegram rather than inferred from the history walk, which sees
+/// every snapshot ever pushed: unpinning all of those would be a dozen calls
+/// and a flood wait to remove pins that were never there. Their ids live only
+/// in `library.db` — the file this command exists to rebuild — so without
+/// this the first push after a rescan pins a new index and leaves the old one
+/// pinned beside it.
+async fn pinned_index_messages(tg: &Tg) -> Result<Vec<i32>> {
+    let mut found = Vec::new();
+    let mut pinned = tg
+        .client
+        .search_messages(tg.channel)
+        .filter(grammers_tl_types::enums::MessagesFilter::InputMessagesFilterPinned);
+    while let Some(message) = pinned.next().await.context("listing pinned messages")? {
+        if message.text().starts_with(INDEX_CAPTION_PREFIX) {
+            found.push(message.id());
+        }
+    }
+    Ok(found)
 }
 
 /// Applies one batch inside a single transaction and folds its summary into

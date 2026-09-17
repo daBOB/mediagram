@@ -17,30 +17,37 @@ against the real channel; `plan.md` is the source of truth for that state:
 | 2 | Config + Telegram auth (grammers 0.10 client, session, login/whoami) | Complete |
 | 3 | Media inspect + faststart remux | Complete |
 | 4 | TMDB metadata resolution | Complete |
-| 5 | Streaming part upload with resume | Code-complete, live gate pending |
-| 6 | Index push + rescan | Code-complete, live gate pending |
-| 7 | `verify` command + this documentation set | Code-complete, live gate pending |
+| 5 | Streaming part upload with resume | Complete |
+| 6 | Index push + rescan | Complete |
+| 7 | `verify` command + this documentation set | Complete |
 
 `cargo test` is green (240 passing tests across both crates, plus 1
 `#[ignore]`d live test) and every file under `src/` is within the 200-line
 limit.
 
-### Open live gates
+### Live gates
 
-These require a real Telegram account and an admin-owned private channel,
-so they were not run in this environment and are not yet checked off. They
-do not require a TMDB key: `add --manual` enters metadata by hand, so the
-acceptance run needs an interactive terminal rather than an API key:
+These needed a real Telegram account and an admin-owned private channel, so
+they waited until there was one. All have now been run.
 
 - **Phase 1 gate — PASSED 2026-09-15**: a live 3,758,096,384-byte (3.5 GiB)
   smoke upload to a real Premium account's private channel succeeded with
   no `FLOOD_WAIT` and no throttling; see `plan.md`'s "Phase-1 gate" section
   for the full measurement.
-- **Phase 5/6/7 live gates — pending**: a live 3-part `add`, `kill -9` mid-part followed by `resume` producing no
-  duplicate parts, `verify --full` matching all hashes on that set (and
-  failing loudly on a deliberately tampered `parts.sha256` row), and
-  `rm library.db && rescan` reproducing the same rows. Whole-plan success
-  criteria are listed in `plan.md` and get checked off there once run.
+- **Phase 5/6/7 live gates — PASSED 2026-09-17**: run against the real
+  channel with 10 MiB parts, so a 24 MB file made three and a 118 MB file
+  twelve. A 3-part `add` then `verify --full` reported 3/3; a tampered
+  `parts.sha256` row made `verify` exit 1 naming the part and printing both
+  digests. `kill -9` with 3 of 12 parts done, then `resume`, produced 12 parts
+  across message ids 49-60 — a span of exactly twelve, so the part in flight
+  when the process died was adopted rather than re-uploaded. Peak RSS was
+  35.6 MB. `rm library.db && rescan` reproduced all 18 sets and 32 parts
+  byte-identically across every column the captions carry.
+
+  The gate also found a bug it was not looking for: the id of the pinned
+  index lives in `library.db`, so the first push after a rescan left the
+  previous index pinned beside the new one. `rescan` now asks Telegram for
+  the pinned messages and records the index snapshots among them.
 
 ## Tutorials and courses
 
