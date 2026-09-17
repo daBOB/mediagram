@@ -26,12 +26,66 @@ to `main`. Full phase-by-phase detail lives in
   assets table for subtitles and summaries.
 - A Bun player backend and web UI: catalog, HTTP Range streaming over a set's
   concatenated parts, and shelves for Movies, Series and Tutorials.
+- A disk cache in front of Telegram: 512 KiB chunks, a quota that evicts by
+  last use, and readahead for sequential playback.
+- `mediagram remove`: delete a set's messages and then its rows, in that
+  order, so a run that dies between them leaves `rescan` able to reconcile.
+- Conversion to HLS for what a browser will not decode. ffmpeg reads the
+  player's own Range route, writes segments, and the page plays them through
+  hls.js — or natively where Media Source Extensions are missing. A
+  conversion has only encoded as far as it has got, so the dialog carries a
+  second scrub bar covering the whole running time that restarts it where it
+  lands. Blade: Trinity (mkv/HEVC/AC-3, 2h 2m) plays from cold in 1.7 s,
+  6.2 s seeked ninety minutes in, at 5.1 Mbit/s against an 8 Mbit/s cap.
+- The player tells a viewer on the LAN from one on the internet, and offers a
+  conversion rather than the original file for anything above the uplink
+  budget. `MEDIAGRAM_TRUST_PROXY` decides whether `X-Forwarded-For` may be
+  believed; the last hop is read, not the first, because Cloudflare appends
+  to whatever the caller sent.
+- The `mlib-package-v1` reader, the half of the format that has been
+  published since 2026-09-15 and never read. `MEDIAGRAM_PACKAGE_URL` and
+  `MEDIAGRAM_PACKAGE_KEY` are enough to run a player with no access to the
+  uploader's filesystem: it fetches the pointer, verifies and opens the
+  package, and reads the index and artwork inside. Freshness comes from the
+  five authenticated fields, never from `sha256`, which anyone who can
+  rewrite the pointer can set to the digest of the copy the reader holds.
+  Posters travel with it and appear on the shelf cards.
+- `MEDIAGRAM_LIBRARY_DB` is no longer required when a package supplies the
+  catalog. A player with no uploader filesystem to read refused to start
+  without a path to a file it would never open.
+- `docs/running-the-player.md`: issuing a session for a player host, the
+  configuration, which profiles play directly and why the rest do not, Caddy
+  with TLS and authentication, what to check when playback stalls, and what
+  the player deliberately does not do.
 
 **Fixed**
 
 - `SPEC_VERSION` had drifted from the caption marker, which would have put the
   wrong version in every published package. A test now pins them together, as
-  another pins the player's expected schema to the uploader's.
+  another pins the player's expected schema to the uploader's, and a third
+  pins the documented codec table to the code that decides.
+- `mediagram edit` rewrote a set's captions but left the index saying what it
+  said before, so moving a set to another shelf was undone by the next
+  listing. The year went missing for the same reason: a refresh asked TMDB for
+  the title and threw the release date away.
+- Byte offsets went to the Telegram client as native bigints, which it
+  advances between requests with big-integer arithmetic — so the first
+  request succeeded and the second threw. Anything larger than one request
+  size needs several, which is nearly everything.
+- A run of missing cache chunks was fetched in one call. Over a cold cache
+  that run is the rest of the film, so the reader held gigabytes in memory and
+  yielded nothing; and a short answer was cached as it arrived, which put the
+  next run's bytes where the missing ones belonged. Runs are capped and a
+  short read now fails.
+- Left to ffmpeg's own stream selection, a forced subtitle track with eight
+  cues across two hours stalled the muxer outright: it held the video back
+  waiting for the next cue and the encode stopped dead.
+- Two viewers pressing play together both got past the "already running?"
+  check while the session directory was being made, and the second ffmpeg was
+  never tracked — surviving stop, reaping and shutdown, holding the encoder
+  for good. Stopping a session also deleted the directory of one restarted in
+  the same three seconds. Sessions are shared, so they are reference counted:
+  the first viewer to close the dialog no longer ends the other's playback.
 
 ## 2026-09-16
 

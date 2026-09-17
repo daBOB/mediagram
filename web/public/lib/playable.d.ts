@@ -18,3 +18,8 @@ export function decidePlayback(
     maxBitrate?: number;
   },
 ): Playback;
+
+/** The containers, video codecs and audio codecs that direct-play. */
+export const CONTAINERS: ReadonlySet<string>;
+export const VIDEO: ReadonlySet<string>;
+export const AUDIO: ReadonlySet<string>;

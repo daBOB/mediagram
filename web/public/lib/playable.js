@@ -14,16 +14,20 @@
  * original file, and a film at 13.9 Mbit/s does not fit a household uplink.
  * On the LAN that is free; from outside it is a stall, so the link matters as
  * much as the container.
+ *
+ * The three sets below are the policy, and the only copy of it. The table in
+ * `docs/running-the-player.md` is checked against them by a test, so prose
+ * and behaviour cannot drift apart.
  */
 
 /** Containers a browser will open. Matroska is not one of them. */
-const CONTAINERS = new Set(["mp4", "m4v", "webm"]);
+export const CONTAINERS = new Set(["mp4", "m4v", "webm"]);
 
 /** Video codecs that play essentially everywhere. */
-const VIDEO = new Set(["h264", "avc", "avc1", "vp8", "vp9", "av1"]);
+export const VIDEO = new Set(["h264", "avc", "avc1", "vp8", "vp9", "av1"]);
 
 /** Audio codecs that play essentially everywhere. */
-const AUDIO = new Set(["aac", "mp4a", "opus", "vorbis", "mp3"]);
+export const AUDIO = new Set(["aac", "mp4a", "opus", "vorbis", "mp3"]);
 
 /** Names worth reporting back in the viewer's own words. */
 const PRETTY = { hevc: "HEVC", h265: "HEVC" };

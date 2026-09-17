@@ -1,7 +1,7 @@
 ---
 phase: 8
 title: "Docs and operating notes"
-status: pending
+status: completed
 priority: P3
 effort: "0.5d"
 dependencies: [7]
@@ -41,11 +41,37 @@ system.
    for hosts the reader does not control.
 
 ## Success Criteria
-- [ ] Someone can run the player from the document alone
-- [ ] The architecture document describes every index consumer, and explains
-      why Telegram is spoken in two languages
-- [ ] The codec policy is written down with its reasoning
-- [ ] Docs stay within the 800-line guidance per file
+- [x] Someone can run the player from the document alone — issuing a session,
+      starting it, the settings, what converts and why, putting it behind a
+      proxy, and what to check when it stalls
+- [x] The architecture document describes every index consumer, and explains
+      why Telegram is spoken in two languages — §7, with the module map and
+      the consumer table
+- [x] The codec policy is written down with its reasoning
+- [x] Docs stay within the 800-line guidance per file — the largest is 450
+
+## How drift is prevented
+
+The risk section's answer was "keep the codec table in one place and have the
+code read from it". The code already had it in one place; what was missing was
+anything that notices when the prose stops matching. So the three sets in
+`web/public/lib/playable.js` are exported, and `web/test/codec-policy-doc.test.ts`
+reads the table out of the rendered markdown and compares. It fails on drift
+rather than rotting quietly.
+
+The same problem in a form no test can catch — a list of files that grows —
+was removed rather than maintained: the architecture document now states the
+grammers confinement as the negative that has to hold, with the `grep` that
+checks it, instead of enumerating the Telegram-facing files.
+
+## What the accuracy pass found
+
+An independent check of every claim against the source found seven. Six were
+documentation errors, fixed here. The seventh was a defect the documentation
+had surfaced: `MEDIAGRAM_LIBRARY_DB` was required even when a package supplied
+the catalog, so a player with no uploader filesystem to read still refused to
+start without a path to a file it would never open. `web/src/config.ts` now
+requires it only when no package is configured, with tests for both.
 
 ## Risk Assessment
 - Documentation drift. Keep the codec table in one place and have the code

@@ -144,16 +144,21 @@ that did the uploading.
 ```
 cd web
 bun install
-bun run login > .env      # once: issues a session for this player
+bun run login             # once: issues a session and writes web/.env, mode 600
 bun run dev               # listens on the network, and says so
 bun run start             # loopback only, for running behind a proxy
 ```
 
+Its catalog comes either from the `library.db` on this machine or, given
+`MEDIAGRAM_PACKAGE_URL` and `MEDIAGRAM_PACKAGE_KEY`, from a package published
+by `export-package` — which is what lets it run somewhere the uploader does
+not.
+
 It has no authentication of its own, so on anything but a network you trust
 it belongs behind a reverse proxy that does.
-[`docs/running-the-player.md`](docs/running-the-player.md) covers that end to
-end: Caddy, TLS, what `MEDIAGRAM_TRUST_PROXY` is for, and how to revoke
-access.
+[`docs/running-the-player.md`](docs/running-the-player.md) covers it end to
+end: issuing a session, which titles convert and why, Caddy with TLS, what to
+check when playback stalls, and how to revoke access.
 
 ## The 3.5 GiB part rule
 

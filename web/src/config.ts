@@ -20,7 +20,14 @@ export interface Config {
    * trip on every start.
    */
   channelAccessHash: bigint;
-  libraryDb: string;
+  /**
+   * The index on this machine, or `null` when a package supplies the catalog.
+   *
+   * Required only in the second case: a player given a package never opens a
+   * local index, and demanding a path to a file it will not touch turns a
+   * working configuration into a startup failure for no reason.
+   */
+  libraryDb: string | null;
   /** Where cached chunks live. */
   cacheDir: string;
   /**
@@ -108,6 +115,10 @@ export const DEFAULT_MAX_BITRATE = 8_000_000;
 
 export function load(): Config {
   const addr = process.env.MEDIAGRAM_PLAYER_ADDR ?? "127.0.0.1:8770";
+  // Both, or neither: a URL without a key cannot open anything, so a
+  // half-configured package reads the local index rather than serving nothing.
+  const fromPackage =
+    Boolean(process.env.MEDIAGRAM_PACKAGE_URL) && Boolean(process.env.MEDIAGRAM_PACKAGE_KEY);
   const colon = addr.lastIndexOf(":");
   if (colon < 0) throw new Error(`MEDIAGRAM_PLAYER_ADDR should be host:port, got ${addr}`);
 
@@ -117,7 +128,10 @@ export function load(): Config {
     session: required("MEDIAGRAM_SESSION"),
     chatId: Number(required("MEDIAGRAM_CHAT_ID")),
     channelAccessHash: BigInt(required("MEDIAGRAM_CHANNEL_ACCESS_HASH")),
-    libraryDb: required("MEDIAGRAM_LIBRARY_DB"),
+    // Read before the package settings below so both are decided together.
+    libraryDb: fromPackage
+      ? (process.env.MEDIAGRAM_LIBRARY_DB || null)
+      : required("MEDIAGRAM_LIBRARY_DB"),
     cacheDir: process.env.MEDIAGRAM_CACHE_DIR ?? `${process.env.HOME}/.cache/mediagram-player`,
     cacheMaxBytes: parseSize(process.env.MEDIAGRAM_CACHE_MAX ?? "8G"),
     cacheReadahead: Number(process.env.MEDIAGRAM_CACHE_READAHEAD ?? "4"),

@@ -63,11 +63,15 @@ async function openCatalog(cfg: ReturnType<typeof load>): Promise<string | null>
 // running beside the uploader does.
 const catalogDir = await openCatalog(config);
 
+// One or the other is always set: `load()` requires a local index unless a
+// package supplies the catalog, and `openCatalog` throws rather than return
+// null when a configured package cannot be read and none is held.
+const indexPath = catalogDir ? join(catalogDir, "library.db") : config.libraryDb;
+if (indexPath === null) throw new Error("no catalog: neither a package nor a local index");
+
 // Read-only: the player never writes, and a writable handle would let it
 // checkpoint or migrate an index the uploader owns.
-const db = new Database(catalogDir ? join(catalogDir, "library.db") : config.libraryDb, {
-  readonly: true,
-});
+const db = new Database(indexPath, { readonly: true });
 assertSchema(db);
 const posters = new PosterStore(catalogDir);
 console.log(

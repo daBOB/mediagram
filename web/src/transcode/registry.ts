@@ -49,8 +49,8 @@ const DEFAULT_IDLE_MS = 5 * 60 * 1000;
 /**
  * How many transcodes may run at once.
  *
- * Each holds an encoder and writes about 2 MB per second of film to disk —
- * some 7 GB for a feature. Without a ceiling, a caller asking for a different
+ * Each holds an encoder and, at the default cap, writes about 1 MB per second
+ * of film to disk — some 7 GB for a feature. Without a ceiling, a caller asking for a different
  * offset every time starts one per request.
  */
 const DEFAULT_MAX_SESSIONS = 4;

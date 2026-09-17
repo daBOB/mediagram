@@ -3,7 +3,7 @@
 `mediagram` is a Rust CLI (edition 2024) that uploads a personal video
 library into one private Telegram channel and keeps a local SQLite index of
 it. It is split into two crates so the wire format can be reused by other
-clients (see [§7](#7-backend-portability)).
+clients (see [§8](#8-backend-portability)).
 
 ## 1. Crates
 
@@ -15,7 +15,9 @@ crates/
                  upload pipeline, local index, verify
 ```
 
-`mediagram` depends on `mlib-spec`; nothing depends on `mediagram`. The
+`mediagram` depends on `mlib-spec`; nothing depends on `mediagram`. The web
+player ([§7](#7-playback-the-web-player)) lives in `web/` and depends on
+neither: it reimplements what it needs of the format in TypeScript. The
 wire format itself is documented normatively in
 [`docs/mlib-spec.md`](mlib-spec.md); this document covers how the CLI
 is put together around it.
@@ -141,7 +143,113 @@ unit-tested directly; `verify::download_hash` is the only piece that talks
 to Telegram. See [`docs/code-standards.md`](code-standards.md) for why that
 split matters for testing.
 
-## 7. Backend portability
+## 7. Playback: the web player
+
+`web/` is a second program in a second language, and the first question a
+reader will have is why.
+
+`mediagram serve` (Rust, `serve/`) answers Range requests over a set's
+concatenated parts and is complete and verified, but it can only run where
+the uploader runs: it needs the uploader's `library.db` and the uploader's
+session file, both on local disk. A player is wanted on a phone, on a
+television, on a small host somewhere else. So the player is a separate
+process that needs nothing from the uploader's filesystem — and that means it
+has to speak MTProto itself.
+
+```
+browser ──HTTP──> Bun (web/src) ──MTProto──> the channel
+                    │
+                    ├─ catalog:  a published package, or a local library.db
+                    ├─ bytes:    Range over the parts, through a disk cache
+                    └─ ffmpeg:   HLS, for what the browser will not decode
+```
+
+**Two MTProto implementations, on purpose.** Rust uses `grammers`; the player
+uses `teleproto` (the maintained fork of the archived GramJS) on Bun. They are
+not a port of one another and never share code — what they share is the wire
+format in `mlib-spec` and the index schema, which is exactly the boundary
+[§8](#8-backend-portability) says a second client reuses. The Rust
+implementation stays as the reference, and the player's bytes are checked
+against ground truth rather than against it agreeing with itself: a set
+streamed out of the player hashes to the `parts.sha256` the uploader recorded,
+whether fetched whole or reassembled from separate ranges. That check is run
+by hand against the live channel rather than in the test suite — there is no
+channel in CI — and its results are recorded in
+[`docs/project-changelog.md`](project-changelog.md).
+
+The consequence to keep in mind is that a player holds an **auth key for an
+account with access to the channel**. Not a read token, not a scoped
+credential — the account. One auth key also cannot serve two clients at once,
+so a host running both needs two. Both facts are why the player binds to
+loopback and belongs behind something that authenticates:
+[`docs/running-the-player.md`](running-the-player.md).
+
+### Module map (`web/src`)
+
+```
+index.ts           startup: catalog, Telegram, cache, encoder, server, signals
+config.ts          MEDIAGRAM_* environment, with secrets redacted in the log
+server.ts          the listener, on node:http rather than Bun.serve
+routes.ts          request description in, response description out — pure
+response.ts        status and headers for a Range request (RFC 9110)
+range.ts           byte ranges to per-part reads, and the 4 KiB alignment
+listen-address.ts  which addresses a bind actually reaches, and the warning
+login.ts           issues this host's session; writes web/.env, mode 600
+catalog.ts         library.db queries; PLAYABLE_SQL, mirrored from mlib-spec
+assets.ts          summaries and subtitle tracks out of the assets table
+client-reach.ts    a viewer on this network, or one across an uplink
+
+telegram/          teleproto client, and turning planned reads into bytes
+cache/             512 KiB chunks on disk: keys, store with quota, reader,
+                   and the readahead tracker behind MEDIAGRAM_CACHE_READAHEAD
+package/           the mlib-package-v1 reader: pointer, cipher, tar, refresh,
+                   and the artwork a package carries
+transcode/         ffmpeg arguments, encoder probe, session registry, the
+                   runner and its supervision, and serving what it produced
+public/            the page: shelves, the player dialog, hls.js when needed
+```
+
+The 200-line rule [§2](#2-module-map-cratesmediagramsrc) states holds here
+too, with one exception worth naming rather than hiding: `routes.ts` is over
+twice that, having collected the catalog, stream, asset, poster, transcode and
+static-file routes as each was added. Splitting the asset and static routes out
+of the byte path is the obvious cut and has not been made yet.
+
+`routes.ts` deliberately builds a description rather than a `Response`:
+`Bun.serve` replaces a manually set `Content-Length` with chunked encoding for
+any streamed body, and ffmpeg cannot seek an HTTP source without one — it
+reads from byte zero instead, which would quietly make every conversion start
+at the beginning of the film. Framing is therefore stated in one place and
+written verbatim by `server.ts`.
+
+Nothing the browser is served ever carries a `chat_id`, a `message_id` or a
+`doc_id`. The browser is told what it may play, never where the bytes live.
+
+### Consumers of the index
+
+Four now, which is the reason the schema and the caption format are specified
+rather than implied:
+
+| Consumer | Reads | Writes |
+|---|---|---|
+| `mediagram` (add, resume, edit, remove, rescan, verify) | `library.db` | `library.db` |
+| `mediagram export-package` | `library.db`, read-only | the package |
+| `mediagram serve` | `library.db`, read-only | nothing |
+| the web player | a package's `library.db`, or a local one, read-only | nothing |
+
+Every read-only consumer opens SQLite with `SQLITE_OPEN_READ_ONLY` rather
+than merely not issuing writes: a writable handle would let it checkpoint the
+WAL or replay a migration on an index the uploader owns.
+
+### The codec policy
+
+Which profiles are handed to the browser as they are, and which are converted
+first, is in
+[`docs/running-the-player.md`](running-the-player.md#what-plays-directly-and-what-is-converted).
+The lists live once, in `web/public/lib/playable.js`, and a test fails if the
+document stops matching them.
+
+## 8. Backend portability
 
 The index (`library.db`, described fully in
 [`docs/mlib-spec.md`](mlib-spec.md#6-local-index-librarydb)) and the
@@ -155,18 +263,32 @@ Telegram not at all: the only network it touches is TMDB's image CDN, and a
 configured command does the uploading. See
 [`docs/mlib-package-v1.md`](mlib-package-v1.md).
 
-`grammers_*` imports are confined to the Telegram-facing layer —
-`telegram/`, `upload/transport.rs`, `verify/download_hash.rs`,
-`verify/session.rs` and the `commands/*` files that drive them — and never
-appear in `index/`, `media/`, `metadata/` or the `mlib-spec` crate, which
-are the parts a second client would reuse. A future Android TV player (or any other
-client) can read `library.db` and the caption spec directly; the planned
+That boundary is no longer hypothetical: the web player ([§7](#7-playback-the-web-player))
+is the second client, and it reuses the schema and the caption format while
+sharing no code at all.
+
+The property that makes that possible is stated as a negative, because the
+negative is the one that has to hold: `grammers_*` appears **nowhere** in
+`index/`, `media/`, `metadata/` or the `mlib-spec` crate. Those are the parts
+a second client reuses, and nothing in them knows Telegram exists. Which
+Telegram-facing files import grammers changes as commands are added — `edit/`,
+`remove/` and `serve/` all do now — and is not worth enumerating; that no
+reusable module does is worth enforcing, and
+
+```sh
+grep -rl grammers crates/mediagram/src/{index,media,metadata} crates/mlib-spec/
+```
+
+is how to check it.
+
+A future Android TV app can read `library.db` and the caption spec the same
+way the web player does; the planned
 `UniFFI` binding over `mlib-spec` would need a UniFFI-friendly shape for
 `Episode::Range([u32; 2])` (UniFFI does not support fixed-size array
 enum payloads) — tracked in
 [`docs/development-roadmap.md`](development-roadmap.md).
 
-## 8. On-disk layout
+## 9. On-disk layout
 
 All paths come from `directories::ProjectDirs::from("", "", "mediagram")`
 (XDG on Linux):
@@ -181,7 +303,23 @@ All paths come from `directories::ProjectDirs::from("", "", "mediagram")`
 Both `config.toml` and `data_dir` can be overridden (`--config`,
 `MEDIAGRAM_DATA_DIR`, or the config's `data_dir` key).
 
-## 9. Telegram limits relied on
+The player keeps its own, on whatever host it runs on, all overridable by
+`MEDIAGRAM_*`:
+
+| Path | Contents |
+|---|---|
+| `web/.env` | The player's configuration, including its session string. Mode 0600; gitignored. |
+| `~/.cache/mediagram-player/` | Chunk cache, bounded by `MEDIAGRAM_CACHE_MAX`. |
+| `~/.cache/mediagram-hls/` | Segments of running conversions. Cleared at startup. |
+| `~/.cache/mediagram-catalog/` | Decrypted packages, one directory per version, `current` a symlink to the live one. |
+
+The three cache directories hold nothing canonical: delete any of them and the
+player rebuilds what it needs on the next start, more slowly. `web/.env` is
+not like that — losing it means logging in again or exporting a session from
+the uploader, because a session string cannot be recovered from anywhere
+else.
+
+## 10. Telegram limits relied on
 
 - 4 GB per-message document cap on Telegram Premium; parts default to 3.5
   GiB to stay comfortably clear of it however the cap is actually enforced

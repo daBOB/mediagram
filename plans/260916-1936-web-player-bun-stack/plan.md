@@ -48,7 +48,7 @@ TypeScript port is checked against, byte for byte.
 | 5 | [Disk cache](phase-05-disk-cache.md) | complete | P1 | 1d | 2 |
 | 6 | [Transcoding to HLS](phase-06-transcoding-to-hls.md) | complete | P2 | 2d | 4,5 |
 | 7 | [Remote access, auth and TLS](phase-07-remote-access.md) | complete | P2 | 0.5d | 4 |
-| 8 | [Docs and operating notes](phase-08-docs.md) | pending | P3 | 0.5d | 7 |
+| 8 | [Docs and operating notes](phase-08-docs.md) | complete | P3 | 0.5d | 7 |
 
 Phases 2 through 4 are the first useful thing: the 162 course lessons play in
 a browser with no transcoding, no cache and no auth, from a player that does

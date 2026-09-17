@@ -70,7 +70,7 @@ hostile or stale host can withhold updates though it cannot pass off stale
 content as fresh; key rotation is manual; and the package is capped at 48 MB
 on export because a reader must hold it whole to verify it.
 
-## Next: web player, then Android
+## Web player: complete
 
 A web player comes first, decided 2026-09-16. Design:
 `plans/reports/brainstorm-to-planner-260916-1936-web-player-bun-stack-report.md`.
@@ -91,11 +91,30 @@ to the reversal: `teleproto` on Bun 1.4.2 read five byte ranges of the live
 session string exported from the uploader's own auth key — so the player needs
 no second Telegram login.
 
-Phase 1 is complete: `mediagram serve` answers Range requests over a set's
-concatenated parts, verified live byte-for-byte against the local source file.
-Phase 2 is the same thing in TypeScript over `teleproto`, and phase 3 is the
-package reader that gives an off-host player its catalog — the half of
-`mlib-package-v1` that has been published since 2026-09-15 and never read.
+All eight phases are complete as of 2026-09-17. Plan:
+`plans/260916-1936-web-player-bun-stack/`.
+
+| Phase | Scope | Status |
+|---|---|---|
+| 1 | `mediagram serve`: Range over a set's concatenated parts (Rust) | Complete |
+| 2 | The same in TypeScript over `teleproto`, so it runs anywhere | Complete |
+| 3 | The `mlib-package-v1` reader: catalog from a published package | Complete |
+| 4 | The page: shelves for Movies, Series and Tutorials; direct play | Complete |
+| 5 | Disk cache with a quota and readahead | Complete |
+| 6 | ffmpeg to HLS for what browsers will not decode | Complete |
+| 7 | Loopback binding, proxy-aware reach, bitrate-aware direct play | Complete |
+| 8 | This documentation set | Complete |
+
+Verified live against the channel throughout: byte-exact Range reads of a
+7 GB two-part film including across the part boundary, a full season uploaded
+and corrected, and a 2h 2m HEVC/AC-3 film converted and played in a browser
+that had refused it — 1.7 s to first frame, 5.1 Mbit/s against an 8 Mbit/s
+cap, no encoder left running afterwards.
+
+What remains for the player is operational rather than structural: nothing is
+signed in `mlib-package-v1` format 1 (a hostile host can withhold updates, not
+forge one), a conversion produces one rendition rather than an adaptive
+ladder, and the transcode directory has no quota of its own.
 
 Android is not cancelled, only no longer first. The UniFFI notes below still
 apply when that round starts.
