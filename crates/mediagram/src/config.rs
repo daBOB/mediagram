@@ -16,6 +16,13 @@ pub struct Config {
     /// Channel id (`-100…`) or exact channel title.
     pub channel: String,
     pub tmdb_key: Option<String>,
+    /// Which language TMDB should answer in, as a BCP-47 tag like `de-DE`.
+    ///
+    /// TMDB answers in English unless asked, so a German library gets
+    /// "Forsaken" where the file says "Verlassen". Defaults to `en-US`, which
+    /// is what TMDB does anyway, so an existing install is unaffected.
+    #[serde(default = "default_tmdb_language")]
+    pub tmdb_language: String,
     /// 32 random bytes, base64, shared with the player. Encrypts the
     /// prebuilt package; see `mediagram export-package`.
     pub package_key: Option<String>,
@@ -53,6 +60,7 @@ impl std::fmt::Debug for Config {
             .field("api_hash", &"<redacted>")
             .field("channel", &self.channel)
             .field("tmdb_key", &self.tmdb_key.as_ref().map(|_| "<redacted>"))
+            .field("tmdb_language", &self.tmdb_language)
             .field(
                 "package_key",
                 &self.package_key.as_ref().map(|_| "<redacted>"),
@@ -67,6 +75,10 @@ impl std::fmt::Debug for Config {
             .field("serve_addr", &self.serve_addr)
             .finish()
     }
+}
+
+fn default_tmdb_language() -> String {
+    "en-US".to_string()
 }
 
 fn default_part_size() -> u64 {
@@ -129,6 +141,9 @@ fn apply_env(cfg: &mut Config) -> Result<()> {
     }
     if let Some(v) = env("TMDB_KEY") {
         cfg.tmdb_key = Some(v);
+    }
+    if let Some(v) = env("TMDB_LANGUAGE") {
+        cfg.tmdb_language = v;
     }
     if let Some(v) = env("PACKAGE_KEY") {
         cfg.package_key = Some(v);

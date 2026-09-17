@@ -4,6 +4,10 @@ api_id = 12345                      # from https://my.telegram.org
 api_hash = "0123456789abcdef"
 channel = "Mediagram"             # channel id like -1001234567890, or exact title
 tmdb_key = ""                      # https://www.themoviedb.org/settings/api
+                                   # a v3 API key or a v4 read token; either works
+# tmdb_language = "en-US"          # BCP-47. TMDB answers in English unless asked,
+                                   # so a German library wants "de-DE" or its
+                                   # episode titles arrive translated
 # part_size = 3758096384           # 3.5 GiB, must be a multiple of 1 MiB
 # throttle_ms = 0                  # pause between part uploads
 # max_attempts = 5

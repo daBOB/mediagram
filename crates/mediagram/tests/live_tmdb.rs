@@ -27,7 +27,12 @@ async fn the_configured_credential_resolves_a_real_show() {
     let key = cfg.tmdb_key.expect("tmdb_key to be set");
     eprintln!("credential form: {:?}", classify(&key));
 
-    let client = TmdbClient::new(key);
+    // Through `with_cache`, which is what `add` uses: it is the wrapper that
+    // asks for the configured language, so building the client bare would
+    // test a path nothing runs.
+    let cache = tempfile::tempdir().expect("a cache dir");
+    let client = TmdbClient::with_cache(&key, cache.path(), &cfg.tmdb_language);
+    eprintln!("language: {}", cfg.tmdb_language);
     let found = client
         .get_json(
             "/search/tv",
@@ -53,7 +58,13 @@ async fn a_seasons_episodes_come_back_named() {
         return;
     }
     let cfg = config::load(None).expect("a config to load");
-    let client = TmdbClient::new(cfg.tmdb_key.expect("tmdb_key to be set"));
+    let cache = tempfile::tempdir().expect("a cache dir");
+    let client = TmdbClient::with_cache(
+        &cfg.tmdb_key.clone().expect("tmdb_key to be set"),
+        cache.path(),
+        &cfg.tmdb_language,
+    );
+    eprintln!("language: {}", cfg.tmdb_language);
 
     let season = client
         .get_json("/tv/240459/season/1", &[])
