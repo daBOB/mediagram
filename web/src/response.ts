@@ -48,7 +48,13 @@ export function planResponse(rangeHeader: string | null, total: number): Respons
   if (result.error === "unsatisfiable" || result.error === "multi-range") {
     return { status: 416, range: null, contentLength: 0, contentRange: `bytes */${total}` };
   }
-  return { status: 400, range: null, contentLength: 0, contentRange: null };
+
+  // Anything we could not parse is ignored, and the whole file answered, as
+  // RFC 9110 14.2 requires of a unit we do not understand. The client asked
+  // for less than we sent, which every client copes with; refusing outright
+  // would break playback over a header it did not need us to honour.
+  const whole = total > 0 ? { start: 0, end: total - 1 } : null;
+  return { status: 200, range: whole, contentLength: total, contentRange: null };
 }
 
 /**

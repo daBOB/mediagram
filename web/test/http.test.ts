@@ -179,11 +179,23 @@ describe("the stream route", () => {
     expect(lengthOf(response)).toBe(0);
   });
 
-  test("a malformed range is a bad request", async () => {
+  test("a range in units we do not speak is ignored, not refused", async () => {
+    // RFC 9110 14.2: an origin server MUST ignore a Range header field that
+    // contains a range unit it does not understand. Ignoring it means serving
+    // the whole representation, which every client can use; refusing it means
+    // breaking playback over a header the client did not need us to honour.
     const response = await request(`/api/sets/${SET}/stream`, { range: "kilometres=0-99" });
 
-    expect(response.status).toBe(400);
-    expect(lengthOf(response)).toBe(0);
+    expect(response.status).toBe(200);
+    expect(lengthOf(response)).toBe(TOTAL);
+    expect(response.headers.get("content-range")).toBeUndefined();
+  });
+
+  test("a byte range we cannot parse is ignored the same way", async () => {
+    const response = await request(`/api/sets/${SET}/stream`, { range: "bytes=abc-def" });
+
+    expect(response.status).toBe(200);
+    expect(lengthOf(response)).toBe(TOTAL);
   });
 
   test("a multi-range request is refused rather than answered partly", async () => {
