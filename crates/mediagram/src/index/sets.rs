@@ -71,6 +71,9 @@ pub fn set_status(conn: &Connection, set_id: &str, status: &str) -> Result<()> {
 
 /// Writes a corrected row's metadata, and only its metadata.
 ///
+/// `kind` is included: which shelf a set belongs on is metadata, and a film
+/// uploaded through the course path is filed as a lesson until this fixes it.
+///
 /// The columns left out are deliberate: `total`, `part_count`, `set_hash`,
 /// `status`, `container` and the codec fields describe the bytes sitting in
 /// the channel. `verify` checks them and a player seeks with them, so a
@@ -79,10 +82,11 @@ pub fn set_status(conn: &Connection, set_id: &str, status: &str) -> Result<()> {
 /// easy thing to hand over with the wrong numbers in it.
 pub fn update_metadata(conn: &Connection, row: &SetRow) -> Result<()> {
     conn.execute(
-        "UPDATE sets SET show = ?1, chap = ?2, path = ?3, title = ?4, year = ?5,
-                         season = ?6, episode = ?7, abs = ?8, tmdb = ?9, tvdb = ?10, imdb = ?11
-         WHERE set_id = ?12",
+        "UPDATE sets SET kind = ?1, show = ?2, chap = ?3, path = ?4, title = ?5, year = ?6,
+                         season = ?7, episode = ?8, abs = ?9, tmdb = ?10, tvdb = ?11, imdb = ?12
+         WHERE set_id = ?13",
         params![
+            row.kind,
             row.show,
             row.chap,
             row.path,

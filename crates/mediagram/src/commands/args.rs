@@ -120,6 +120,16 @@ pub struct EditArgs {
     /// ids point at is right; the words may be in the wrong language
     #[arg(long)]
     pub refresh: bool,
+    /// Move the set to another shelf: movie, ep or tut
+    #[arg(long)]
+    pub kind: Option<String>,
+    /// Set the TMDB id, so `--refresh` has something to ask about
+    #[arg(long)]
+    pub tmdb: Option<u64>,
+    /// Empty a field, comma separated: show,chap,path,year,season,episode.
+    /// The wrong kind leaves fields behind that no value would fix
+    #[arg(long, value_delimiter = ',')]
+    pub clear: Vec<String>,
     #[arg(long)]
     pub title: Option<String>,
     /// Show title, or course title for a lesson

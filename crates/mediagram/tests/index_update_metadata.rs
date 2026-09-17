@@ -148,3 +148,25 @@ fn an_unknown_set_has_no_parts() {
             .is_empty()
     );
 }
+
+/// Which shelf a set belongs on is metadata, and a film uploaded through the
+/// course path is on the wrong one. If the update does not write `kind`, the
+/// correction appears to work and silently does not.
+#[test]
+fn the_kind_is_written_too() {
+    let (_d, conn) = seeded();
+    let mut row = sets::get_set(&conn, SET).unwrap().unwrap();
+    assert_eq!(row.kind, "ep");
+
+    row.kind = "movie".into();
+    row.show = None;
+    row.season = None;
+    row.episode = None;
+    sets::update_metadata(&conn, &row).unwrap();
+
+    let after = sets::get_set(&conn, SET).unwrap().unwrap();
+    assert_eq!(after.kind, "movie");
+    assert_eq!(after.show, None);
+    assert_eq!(after.season, None);
+    assert_eq!(after.episode, None);
+}

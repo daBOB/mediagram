@@ -118,6 +118,7 @@ fn every_field_a_person_would_want_to_fix_can_be_fixed() {
             episode: Some(7),
             chap: Some("Kapitel".into()),
             path: Some("Staffel 1".into()),
+            ..Edits::default()
         },
     );
 
@@ -212,4 +213,128 @@ fn an_edit_that_would_overflow_the_caption_budget_is_refused() {
     );
 
     assert!(captions(&edited, &two_parts()).is_err());
+}
+
+/// Moving a set between shelves.
+///
+/// A film uploaded through the course path is filed as a lesson: it carries a
+/// course name, a chapter number and a lesson number, none of which mean
+/// anything for a film. Correcting that means changing the kind *and*
+/// removing what the wrong kind left behind, so an edit has to be able to
+/// clear a field, not only overwrite one.
+mod reshelving {
+    use super::*;
+    use mediagram::edit::plan::{Clearable, apply_checked};
+
+    #[test]
+    fn the_kind_can_be_corrected() {
+        let edited = apply_checked(
+            &row(),
+            &Edits {
+                kind: Some("movie".into()),
+                ..Edits::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(edited.kind, "movie");
+    }
+
+    #[test]
+    fn a_kind_the_spec_does_not_have_is_refused() {
+        for bad in ["film", "MOVIE", "", "episode"] {
+            let refused = apply_checked(
+                &row(),
+                &Edits {
+                    kind: Some(bad.into()),
+                    ..Edits::default()
+                },
+            );
+            assert!(refused.is_err(), "kind {bad:?} should be refused");
+        }
+    }
+
+    #[test]
+    fn a_field_can_be_cleared_rather_than_only_overwritten() {
+        let edited = apply_checked(
+            &row(),
+            &Edits {
+                clear: vec![Clearable::Show, Clearable::Season, Clearable::Episode],
+                ..Edits::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(edited.show, None);
+        assert_eq!(edited.season, None);
+        assert_eq!(edited.episode, None);
+        assert_eq!(edited.title.as_deref(), Some("Forsaken"), "untouched");
+    }
+
+    #[test]
+    fn a_provider_id_can_be_set() {
+        let edited = apply_checked(
+            &row(),
+            &Edits {
+                tmdb: Some(36647),
+                ..Edits::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(edited.tmdb, Some(36647));
+    }
+
+    /// Setting and clearing the same field in one command is a contradiction,
+    /// and guessing which was meant is worse than refusing.
+    #[test]
+    fn setting_and_clearing_the_same_field_is_refused() {
+        let refused = apply_checked(
+            &row(),
+            &Edits {
+                show: Some("A Show".into()),
+                clear: vec![Clearable::Show],
+                ..Edits::default()
+            },
+        );
+
+        assert!(refused.is_err());
+    }
+
+    /// The whole correction Blade 3 needs, in one edit.
+    #[test]
+    fn a_lesson_becomes_a_film_in_one_go() {
+        let edited = apply_checked(
+            &row(),
+            &Edits {
+                kind: Some("movie".into()),
+                title: Some("Blade: Trinity".into()),
+                year: Some(2004),
+                tmdb: Some(36647),
+                clear: vec![
+                    Clearable::Show,
+                    Clearable::Season,
+                    Clearable::Episode,
+                    Clearable::Chap,
+                ],
+                ..Edits::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(edited.kind, "movie");
+        assert_eq!(edited.title.as_deref(), Some("Blade: Trinity"));
+        assert_eq!(edited.year, Some(2004));
+        assert_eq!(edited.tmdb, Some(36647));
+        assert_eq!(edited.show, None);
+        assert_eq!(edited.season, None);
+        assert_eq!(edited.episode, None);
+
+        // And it must still render a caption the codec accepts.
+        let written = captions(&edited, &two_parts()).unwrap();
+        let parsed = mlib_spec::caption_codec::parse(&written[0].text).unwrap();
+        assert_eq!(parsed.t, Kind::Movie);
+        assert_eq!(parsed.title.as_deref(), Some("Blade: Trinity"));
+        assert_eq!(parsed.show, None);
+    }
 }

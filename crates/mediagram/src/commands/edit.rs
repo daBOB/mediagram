@@ -14,7 +14,7 @@ use anyhow::{Context, Result, bail};
 use crate::commands::args::EditArgs;
 use crate::config::Config;
 use crate::edit::apply::write_captions;
-use crate::edit::plan::{Edits, apply, captions};
+use crate::edit::plan::{Clearable, Edits, apply_checked, captions};
 use crate::index::{db, parts, sets};
 use crate::metadata::tmdb_client::{TmdbApi, TmdbClient};
 use crate::telegram::client::Tg;
@@ -26,7 +26,19 @@ pub async fn run(cfg: &Config, args: EditArgs) -> Result<()> {
     let row = sets::get_set(&conn, &args.set_id)?
         .with_context(|| format!("no set {} in the index", args.set_id))?;
 
+    let clear = args
+        .clear
+        .iter()
+        .map(|name| {
+            Clearable::parse(name.trim())
+                .with_context(|| format!("cannot clear {name:?}; see --help for the field names"))
+        })
+        .collect::<Result<Vec<_>>>()?;
+
     let mut edits = Edits {
+        kind: args.kind.clone(),
+        tmdb: args.tmdb,
+        clear,
         title: args.title.clone(),
         show: args.show.clone(),
         year: args.year,
@@ -39,16 +51,20 @@ pub async fn run(cfg: &Config, args: EditArgs) -> Result<()> {
     // `--refresh` asks the provider again, which is the whole point after
     // changing `tmdb_language`: the ids are right, the words were not.
     if args.refresh {
-        let fetched = refresh_from_tmdb(cfg, &data_dir, &row).await?;
+        // Against the row as it will be, not as it was: a set being moved to
+        // another shelf must be looked up on that shelf's endpoint.
+        let provisional = apply_checked(&row, &edits)?;
+        let fetched = refresh_from_tmdb(cfg, &data_dir, &provisional).await?;
         edits.title = edits.title.or(fetched.title);
         edits.show = edits.show.or(fetched.show);
+        edits.year = edits.year.or(fetched.year);
     }
 
     if edits.is_empty() {
         bail!("nothing to change; pass --title/--show/--year/… or --refresh");
     }
 
-    let edited = apply(&row, &edits);
+    let edited = apply_checked(&row, &edits)?;
     if edited == row {
         println!("set {} already says that; nothing to do", args.set_id);
         return Ok(());
@@ -60,6 +76,7 @@ pub async fn run(cfg: &Config, args: EditArgs) -> Result<()> {
     let writes = captions(&edited, &part_rows)?;
 
     println!("set {}", args.set_id);
+    describe_change("kind", Some(&row.kind), Some(&edited.kind));
     describe_change("title", row.title.as_deref(), edited.title.as_deref());
     describe_change("show", row.show.as_deref(), edited.show.as_deref());
     describe_change("chap", row.chap.as_deref(), edited.chap.as_deref());
@@ -75,6 +92,11 @@ pub async fn run(cfg: &Config, args: EditArgs) -> Result<()> {
         edited.season.map(|s| s.to_string()).as_deref(),
     );
     describe_change("episode", row.episode.as_deref(), edited.episode.as_deref());
+    describe_change(
+        "tmdb",
+        row.tmdb.map(|v| v.to_string()).as_deref(),
+        edited.tmdb.map(|v| v.to_string()).as_deref(),
+    );
     println!("  {} caption(s) to rewrite", writes.len());
 
     if args.dry_run {
@@ -108,6 +130,8 @@ fn describe_change(field: &str, before: Option<&str>, after: Option<&str>) {
 struct Fetched {
     title: Option<String>,
     show: Option<String>,
+    /// A release year the row may be missing, taken from the same answer.
+    year: Option<u16>,
 }
 
 /// Asks TMDB again, in the configured language, for what this set already
@@ -130,11 +154,13 @@ async fn refresh_from_tmdb(
         return Ok(Fetched {
             title: movie["title"].as_str().map(str::to_string),
             show: None,
+            year: year_of(movie["release_date"].as_str()),
         });
     }
 
     let show = api.get_json(&format!("/tv/{tmdb}"), &[]).await?;
     let show_name = show["name"].as_str().map(str::to_string);
+    let first_aired = year_of(show["first_air_date"].as_str());
 
     // An episode title needs both numbers; without them the show name is
     // still worth correcting on its own.
@@ -142,6 +168,7 @@ async fn refresh_from_tmdb(
         return Ok(Fetched {
             title: None,
             show: show_name,
+            year: first_aired,
         });
     };
     let number: u32 = episode
@@ -157,5 +184,11 @@ async fn refresh_from_tmdb(
     Ok(Fetched {
         title: detail["name"].as_str().map(str::to_string),
         show: show_name,
+        year: first_aired,
     })
+}
+
+/// The year from a TMDB date like `2004-12-08`.
+fn year_of(date: Option<&str>) -> Option<u16> {
+    date?.get(..4)?.parse().ok()
 }
