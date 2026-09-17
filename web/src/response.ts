@@ -49,12 +49,12 @@ export function planResponse(rangeHeader: string | null, total: number): Respons
     return { status: 416, range: null, contentLength: 0, contentRange: `bytes */${total}` };
   }
 
-  // Anything we could not parse is ignored, and the whole file answered, as
-  // RFC 9110 14.2 requires of a unit we do not understand. The client asked
-  // for less than we sent, which every client copes with; refusing outright
-  // would break playback over a header it did not need us to honour.
-  const whole = total > 0 ? { start: 0, end: total - 1 } : null;
-  return { status: 200, range: whole, contentLength: total, contentRange: null };
+  // Anything we could not parse is ignored, as RFC 9110 14.2 requires of a
+  // unit we do not understand — which is to say, answered exactly as a
+  // request carrying no Range at all. The client asked for less than we sent,
+  // which every client copes with; refusing outright would break playback
+  // over a header it did not need us to honour.
+  return planResponse(null, total);
 }
 
 /**

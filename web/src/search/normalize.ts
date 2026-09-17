@@ -39,6 +39,14 @@ const UMLAUTS: Array<[RegExp, string]> = [
   [/ü/g, "ue"],
 ];
 
+/**
+ * Text already in the folded alphabet, which most German words are and nearly
+ * all English ones. Lower-casing such a string *is* folding it: there is no
+ * diacritic to strip, no punctuation run to collapse, and nothing to trim, so
+ * the expensive passes below can be skipped entirely.
+ */
+const PLAIN = /^[A-Za-z0-9]+$/;
+
 /** Lower case, no diacritics, single-spaced, nothing but letters and digits. */
 function flatten(text: string): string {
   return (
@@ -61,6 +69,7 @@ function flatten(text: string): string {
  */
 export function fold(text: string | null | undefined): string {
   if (!text) return "";
+  if (PLAIN.test(text)) return text.toLowerCase();
 
   let folded = text.toLowerCase();
   for (const [pattern, replacement] of SPELLED_OUT) folded = folded.replace(pattern, replacement);
@@ -78,12 +87,29 @@ export function fold(text: string | null | undefined): string {
  */
 export function spellOut(text: string | null | undefined): string {
   if (!text) return "";
+  if (PLAIN.test(text)) return text.toLowerCase();
 
   let spelled = text.toLowerCase().normalize("NFC");
   for (const [pattern, replacement] of UMLAUTS) spelled = spelled.replace(pattern, replacement);
-  for (const [pattern, replacement] of SPELLED_OUT) spelled = spelled.replace(pattern, replacement);
 
-  return flatten(spelled);
+  // Folded rather than flattened, so the two functions cannot drift: whatever
+  // `fold` does beyond dropping diacritics happens here too. There is nothing
+  // left for its diacritic strip to remove — the umlauts are already letters.
+  return fold(spelled);
+}
+
+/**
+ * The forms `text` can be searched as: one string, or two when spelling the
+ * umlauts out reads differently from dropping them.
+ *
+ * The single place that answers "how many ways can this be typed", so a
+ * matcher and an excerpt cannot disagree about it, and a third convention
+ * would be added here rather than in every caller.
+ */
+export function variants(text: string | null | undefined): string[] {
+  const folded = fold(text);
+  const spelled = spellOut(text);
+  return spelled === folded ? [folded] : [folded, spelled];
 }
 
 /** The folded words of a query. An empty query yields no terms. */

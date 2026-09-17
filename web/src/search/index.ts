@@ -15,7 +15,7 @@
  */
 
 import { excerpt } from "./excerpt";
-import { fold, spellOut, terms } from "./normalize";
+import { terms, variants } from "./normalize";
 
 /** A set as the search sees it: its text, and nothing else. */
 export interface Searchable {
@@ -51,24 +51,16 @@ const MAX_HITS = 50;
 
 interface Entry<T> {
   set: T;
-  /** The folded text of each field, in `FIELDS` order. */
-  folded: string[];
   /**
-   * The same fields with umlauts spelled out, and `null` where that reads
-   * identically to `folded` — which is most fields, so most entries carry
-   * almost nothing extra.
+   * Each field's searchable forms, in `FIELDS` order: how it reads folded,
+   * and how it reads with the umlauts spelled out when that differs.
    *
    * Both spellings are kept on the *text* side rather than collapsing `ue`
    * back to `u` on the query side, which would be cheaper and wrong: it would
-   * make "steuer" match "Fenster".
+   * make "steuer" match "Fenster". Summaries are the bulk of it — a second
+   * copy of every German summary, which is megabytes rather than nothing.
    */
-  spelled: Array<string | null>;
-}
-
-/** The spelled-out copy of a field, or `null` when it adds nothing. */
-function variant(text: string | null): string | null {
-  const spelled = spellOut(text);
-  return spelled === fold(text) ? null : spelled;
+  forms: string[][];
 }
 
 export class SearchIndex<T extends Searchable = Searchable> {
@@ -77,14 +69,7 @@ export class SearchIndex<T extends Searchable = Searchable> {
   constructor(sets: T[]) {
     this.entries = sets.map((set) => ({
       set,
-      folded: [fold(set.title), fold(set.show), fold(set.chap), fold(set.path), fold(set.summary)],
-      spelled: [
-        variant(set.title),
-        variant(set.show),
-        variant(set.chap),
-        variant(set.path),
-        variant(set.summary),
-      ],
+      forms: FIELDS.map((field) => variants(set[field])),
     }));
   }
 
@@ -99,16 +84,14 @@ export class SearchIndex<T extends Searchable = Searchable> {
     const wanted = terms(query);
     if (wanted.length === 0) return [];
 
-    const hits: Array<{ hit: Hit<T>; rank: number }> = [];
+    const hits: Array<{ set: T; rank: number; field: Field }> = [];
     for (const entry of this.entries) {
       // The strongest field any term matched, as an index into FIELDS.
       let best: number = FIELDS.length;
       let matchedAll = true;
 
       for (const term of wanted) {
-        const at = entry.folded.findIndex(
-          (text, field) => text.includes(term) || (entry.spelled[field]?.includes(term) ?? false),
-        );
+        const at = entry.forms.findIndex((forms) => forms.some((text) => text.includes(term)));
         if (at === -1) {
           matchedAll = false;
           break;
@@ -121,20 +104,20 @@ export class SearchIndex<T extends Searchable = Searchable> {
       // Unreachable: `best` only moves down from FIELDS.length when a term
       // matched, and a set with no match was skipped above.
       if (field === undefined) continue;
-      hits.push({
-        rank: best,
-        hit: {
-          ...entry.set,
-          matched: field,
-          excerpt: field === "summary" ? excerpt(entry.set.summary, wanted) : null,
-        },
-      });
+      hits.push({ set: entry.set, rank: best, field });
     }
 
     // Field first, then title, so repeated runs of the same query agree.
-    hits.sort(
-      (a, b) => a.rank - b.rank || (a.hit.title ?? "").localeCompare(b.hit.title ?? "", "de"),
-    );
-    return hits.slice(0, MAX_HITS).map((entry) => entry.hit);
+    hits.sort((a, b) => a.rank - b.rank || (a.set.title ?? "").localeCompare(b.set.title ?? "", "de"));
+
+    // Cut to what is returned before building anything, because an excerpt
+    // costs a walk of the whole summary and a common word matches every
+    // lesson in the course. Ranking needs only the field, which is already
+    // known, so nothing here changes the order.
+    return hits.slice(0, MAX_HITS).map(({ set, field }) => ({
+      ...set,
+      matched: field,
+      excerpt: field === "summary" ? excerpt(set.summary, wanted) : null,
+    }));
   }
 }

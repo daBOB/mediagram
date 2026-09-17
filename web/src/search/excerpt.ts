@@ -6,7 +6,7 @@
  * earned the hit, and it has to read as prose rather than as markup.
  */
 
-import { fold, spellOut } from "./normalize";
+import { variants } from "./normalize";
 
 /** Characters of summary either side of a match. */
 const EXCERPT_PAD = 90;
@@ -40,22 +40,18 @@ function plain(text: string): string {
  * match — far enough, in a real summary, to slide the window clean past the
  * word it was supposed to show.
  *
- * Matching word by word sidesteps that entirely, and costs nothing in reach:
- * a term is a run of letters and digits, because that is all `terms` can
- * produce, so a term that matches at all matches inside a single word.
+ * Matching word by word sidesteps that entirely, and costs no reach: a term
+ * is a run of letters and digits, because that is all `terms` can produce, so
+ * a term that matches at all matches inside a single word. `variants` is the
+ * same function the index matched with, so the two cannot disagree about a
+ * hit and leave a result with no reason shown beside it.
  */
 function anchor(summary: string, wanted: string[]): number {
-  let at = -1;
   for (const match of summary.matchAll(WORD)) {
-    const word = match[0];
-    const folded = fold(word);
-    const spelled = spellOut(word);
-    if (!wanted.some((term) => folded.includes(term) || spelled.includes(term))) continue;
-
-    at = match.index;
-    break;
+    const forms = variants(match[0]);
+    if (wanted.some((term) => forms.some((form) => form.includes(term)))) return match.index;
   }
-  return at;
+  return -1;
 }
 
 /**

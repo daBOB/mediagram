@@ -9,7 +9,7 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { fold, spellOut, terms } from "../src/search/normalize";
+import { fold, spellOut, terms, variants } from "../src/search/normalize";
 
 describe("folding a string", () => {
   test("case goes", () => {
@@ -83,6 +83,23 @@ describe("spelling a string out", () => {
     expect(spellOut("")).toBe("");
     expect(spellOut(null)).toBe("");
     expect(spellOut(undefined)).toBe("");
+  });
+});
+
+describe("the forms a string can be searched as", () => {
+  test("text with an umlaut can be typed two ways", () => {
+    expect(variants("Überblick")).toEqual(["uberblick", "ueberblick"]);
+  });
+
+  test("text without one has a single form, not a duplicate pair", () => {
+    // What keeps the index from storing a second identical copy of every
+    // English title and every folder called "Start".
+    expect(variants("Broker Vergleich")).toEqual(["broker vergleich"]);
+    expect(variants("Straße")).toEqual(["strasse"]);
+  });
+
+  test("nothing at all has one empty form", () => {
+    expect(variants(null)).toEqual([""]);
   });
 });
 

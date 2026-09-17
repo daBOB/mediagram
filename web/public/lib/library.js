@@ -16,20 +16,9 @@
  * import the same file, so there is one copy rather than two that drift.
  */
 
-/** @typedef {import("./types.js").PlayableSet} PlayableSet */
-
 /**
- * A folder of a course, or a season of a show.
- *
- * `items` are the sets directly inside it and `children` the folders below.
- * Both can be non-empty at once: a chapter that holds lessons and a subfolder
- * must show both, since the lessons are not in the subfolder.
- *
- * @typedef {Object} Division
- * @property {string} title
- * @property {number|null} season
- * @property {PlayableSet[]} items
- * @property {Division[]} children
+ * @typedef {import("./library.js").CatalogSet} CatalogSet
+ * @typedef {import("./library.js").Division} Division
  */
 
 /** Episode numbers are text in the index ("1", "1-2"); sort by the number. */
@@ -81,25 +70,25 @@ function sortDivision(division) {
   for (const child of division.children) sortDivision(child);
 }
 
-/** Every set under these divisions. */
-function countIn(divisions) {
-  return divisions.reduce((n, d) => n + d.items.length + countIn(d.children), 0);
-}
-
-/** How many folders actually hold something: what a shelf card calls chapters. */
-function chaptersIn(divisions) {
-  return divisions.reduce(
-    (n, d) => n + (d.items.length > 0 ? 1 : 0) + chaptersIn(d.children),
-    0,
-  );
+/**
+ * Every division under these, each before the ones beneath it.
+ *
+ * The one descent through the tree. Counting sets, counting the folders that
+ * hold them and finding the first of them are the same walk with different
+ * questions asked of it, and answering them separately meant three places to
+ * change the day a division earns a reason to be skipped.
+ */
+function* walk(divisions) {
+  for (const division of divisions) {
+    yield division;
+    yield* walk(division.children);
+  }
 }
 
 /** The first set anywhere under these divisions, in the order they display. */
 export function firstItemOf(divisions) {
-  for (const division of divisions) {
+  for (const division of walk(divisions)) {
     if (division.items.length > 0) return division.items[0];
-    const found = firstItemOf(division.children);
-    if (found) return found;
   }
   return null;
 }
@@ -121,11 +110,14 @@ function collections(sets, fallbackName) {
   return [...byName.values()]
     .map((root) => {
       sortDivision(root);
+      const divisions = [...walk(root.children)];
       return {
         name: root.title,
         divisions: root.children,
-        chapters: chaptersIn(root.children),
-        count: countIn(root.children),
+        // Folders that actually hold lessons, however deep: what a shelf card
+        // means by a chapter. A folder of folders is structure, not a chapter.
+        chapters: divisions.filter((d) => d.items.length > 0).length,
+        count: divisions.reduce((n, d) => n + d.items.length, 0),
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
@@ -138,7 +130,7 @@ function collections(sets, fallbackName) {
  * dropped: a viewer noticing something in the wrong place can act on it,
  * whereas a title that silently vanishes looks like a failed upload.
  *
- * @param {PlayableSet[]} sets
+ * @param {CatalogSet[]} sets
  */
 export function groupLibrary(sets) {
   const episodes = sets.filter((set) => set.kind === "ep");

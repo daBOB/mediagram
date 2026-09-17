@@ -10,7 +10,7 @@
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
-import type { HlsServer } from "../routes";
+import type { HlsFile, HlsServer } from "../routes";
 import type { TranscodeRegistry } from "./registry";
 
 const TYPES: Record<string, string> = {
@@ -109,19 +109,14 @@ export class TranscodeFiles implements HlsServer {
     await this.registry.release(sessionId);
   }
 
-  /** Whether this session is one we are running. */
-  has(sessionId: string): boolean {
-    return this.registry.has(sessionId);
-  }
-
-  async file(sessionId: string, name: string): Promise<{ body: Uint8Array; type: string } | null> {
+  async file(sessionId: string, name: string): Promise<HlsFile> {
     const session = this.registry.get(sessionId);
-    if (!session) return null;
+    if (!session) return "gone";
 
     const path = join(session.directory, name);
     // The route already constrains the name, but this is the last point
     // before a filesystem read, and the cost of checking twice is nothing.
-    if (!resolve(path).startsWith(resolve(session.directory))) return null;
+    if (!resolve(path).startsWith(resolve(session.directory))) return "gone";
 
     // Read straight out, rather than asking whether it exists first: between
     // the two, a session being stopped takes the directory away, and the read
@@ -130,7 +125,7 @@ export class TranscodeFiles implements HlsServer {
       .arrayBuffer()
       .then((bytes) => new Uint8Array(bytes))
       .catch(() => null);
-    if (body === null) return null;
+    if (body === null) return "not-ready";
 
     // Someone is watching; do not reap this session out from under them.
     this.registry.touch(sessionId);

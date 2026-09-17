@@ -13,7 +13,7 @@
 import { Database } from "bun:sqlite";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { startServer, type RunningServer } from "../src/server";
-import type { ByteSource } from "../src/routes";
+import type { ByteSource, HlsFile, HlsServer } from "../src/routes";
 import { rawRequest } from "./raw-http";
 import { ALIGN, type Step } from "../src/range";
 import type { PartLocation } from "../src/catalog";
@@ -299,6 +299,20 @@ describe("the page", () => {
   });
 });
 
+/**
+ * A transcode that is running and has produced nothing yet, which is the
+ * uninteresting case. A test overrides only the method it is about, so a
+ * method added to `HlsServer` costs one edit here rather than one per stub.
+ */
+function fakeHls(over: Partial<HlsServer> = {}): HlsServer {
+  return {
+    begin: async () => `/hls/${"a".repeat(16)}/index.m3u8`,
+    file: async () => "not-ready",
+    end: async () => {},
+    ...over,
+  };
+}
+
 describe("the HLS routes", () => {
   /**
    * A player asking for a playlist must not get an empty one: hls.js treats
@@ -342,13 +356,12 @@ describe("telling a starting transcode from a gone one", () => {
   const GONE = "c".repeat(16);
   let server: RunningServer;
 
-  const hls = {
+  // LIVE is running but has written nothing yet — the window between
+  // starting and the first segment. GONE is no session at all.
+  const hls = fakeHls({
     begin: async () => `/hls/${LIVE}/index.m3u8`,
-    has: (sessionId: string) => sessionId === LIVE,
-    // Never ready: this is the window between starting and the first segment.
-    file: async () => null,
-    end: async () => {},
-  };
+    file: async (sessionId: string): Promise<HlsFile> => (sessionId === LIVE ? "not-ready" : "gone"),
+  });
 
   beforeAll(async () => {
     server = await startServer({ db: index(), source: new FakeSource(), hls });
@@ -380,14 +393,12 @@ describe("releasing a transcode", () => {
   let ended: string[] = [];
   let hlsServer: RunningServer;
 
-  const hls = {
+  const hls = fakeHls({
     begin: async () => `/hls/${SESSION}/index.m3u8`,
-    has: () => true,
-    file: async () => null,
     end: async (sessionId: string) => {
       ended.push(sessionId);
     },
-  };
+  });
 
   beforeAll(async () => {
     hlsServer = await startServer({ db: index(), source: new FakeSource(), hls });
@@ -415,14 +426,11 @@ describe("releasing a transcode", () => {
   });
 
   test("a conversion that cannot start says so, and is not a server error", async () => {
-    const failing = {
+    const failing = fakeHls({
       begin: async () => {
         throw new Error("the conversion produced no segment within 45s");
       },
-      has: () => true,
-      file: async () => null,
-      end: async () => {},
-    };
+    });
     const server = await startServer({ db: index(), source: new FakeSource(), hls: failing });
     try {
       const response = await rawRequest(server.port, `/api/sets/${SET}/transcode`);
@@ -443,15 +451,12 @@ describe("releasing a transcode", () => {
    */
   test("a requested bitrate is honoured between the floor and the configured cap", async () => {
     const asked: number[] = [];
-    const recording = {
+    const recording = fakeHls({
       begin: async (_setId: string, _seek: number, maxrateBits: number) => {
         asked.push(maxrateBits);
         return `/hls/${SESSION}/index.m3u8`;
       },
-      has: () => true,
-      file: async () => null,
-      end: async () => {},
-    };
+    });
     const server = await startServer({
       db: index(),
       source: new FakeSource(),
@@ -480,15 +485,12 @@ describe("releasing a transcode", () => {
 
   test("a seek that is not a number of seconds never reaches ffmpeg", async () => {
     const asked: number[] = [];
-    const recording = {
+    const recording = fakeHls({
       begin: async (_setId: string, seek: number, _maxrate: number) => {
         asked.push(seek);
         return `/hls/${SESSION}/index.m3u8`;
       },
-      has: () => true,
-      file: async () => null,
-      end: async () => {},
-    };
+    });
     const server = await startServer({ db: index(), source: new FakeSource(), hls: recording });
     try {
       // `Infinity` passes a NaN check and reaches the command line as `-ss

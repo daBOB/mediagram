@@ -8,7 +8,8 @@
 
 import { el } from "./dom.js";
 import { humanDuration, humanSize } from "./format.js";
-import { transcodeBadge } from "./course-view.js";
+import { firstItemOf } from "./library.js";
+import { transcodeBadge } from "./set-badge.js";
 
 export const SECTIONS = {
   movies: { label: "Movies", empty: "No films yet." },
@@ -77,24 +78,19 @@ export function movieGrid(movies, onPlay) {
 }
 
 /** Shows and courses: a grid of collections, each opening its own view. */
-export function collectionGrid(section, collections, firstItemOf, onOpen) {
+export function collectionGrid(section, collections, onOpen) {
+  const series = section === "series";
   const grid = el("div", "grid");
   for (const collection of collections) {
-    // Folders that hold something, however deep. A course's top-level folders
-    // are too few to describe it and its total folders too many.
-    const divisions = collection.chapters;
-    const unit =
-      section === "series"
-        ? divisions === 1
-          ? "season"
-          : "seasons"
-        : divisions === 1
-          ? "chapter"
-          : "chapters";
+    // `chapters` counts the folders that hold something, however deep: a
+    // course's top-level folders are too few to describe it, its total
+    // folders too many.
+    const { count, chapters } = collection;
+    const unit = `${series ? "season" : "chapter"}${chapters === 1 ? "" : "s"}`;
     grid.append(
       card({
         name: collection.name,
-        meta: `${collection.count} ${section === "series" ? "episodes" : "lessons"} · ${divisions} ${unit}`,
+        meta: `${count} ${series ? "episodes" : "lessons"} · ${chapters} ${unit}`,
         initials: initialsOf(collection.name),
         // A show's artwork is the one its episodes share.
         poster: firstItemOf(collection.divisions)?.poster ?? null,

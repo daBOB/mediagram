@@ -56,6 +56,14 @@ export interface PlayerRequest {
   client?: string;
 }
 
+/** A session's answer: the file, or the reason there is none. */
+export type HlsFile =
+  | { body: Uint8Array; type: string }
+  /** Running, but has not written this yet. Worth asking again. */
+  | "not-ready"
+  /** No such session: stopped, reaped, or never started. */
+  | "gone";
+
 /** Serves HLS playlists and segments for a transcode in progress. */
 export interface HlsServer {
   /**
@@ -67,17 +75,16 @@ export interface HlsServer {
    */
   begin(setId: string, seekSeconds: number, maxrateBits: number): Promise<string>;
 
-  /** Whether this session is one we are running. */
-  has(sessionId: string): boolean;
-
   /**
-   * The file for a session, or `null` when it is not ready.
+   * The file for a session, or why there isn't one.
    *
    * Not-ready is a real answer rather than an error: the playlist does not
    * exist until ffmpeg has written a first segment, and a player handed an
-   * empty playlist treats it as a failure instead of waiting.
+   * empty playlist treats it as a failure instead of waiting. It is kept
+   * apart from `gone` because a player retries one and gives up on the other,
+   * and only the session itself knows which it is.
    */
-  file(sessionId: string, name: string): Promise<{ body: Uint8Array; type: string } | null>;
+  file(sessionId: string, name: string): Promise<HlsFile>;
 
   /**
    * Stops a session and forgets it. A session that is not running is not an
@@ -429,15 +436,13 @@ async function hlsResponse(
   name: string,
   method: string,
 ): Promise<PlayerResponse> {
+  const found = await hls.file(sessionId, name);
   // A player retries a 503 and gives up on a 404, so the two have to mean
   // what they say: still starting is worth waiting for, stopped or reaped is
   // not, and a player told to wait for a session that is never coming back
   // waits instead of falling back to direct play.
-  if (!hls.has(sessionId)) return empty(404);
-
-  // 503: the transcode exists but has not produced this yet.
-  const found = await hls.file(sessionId, name);
-  if (found === null) return empty(503);
+  if (found === "gone") return empty(404);
+  if (found === "not-ready") return empty(503);
 
   return {
     status: 200,

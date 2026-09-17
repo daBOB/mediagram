@@ -39,7 +39,7 @@ export interface ByteRange {
 }
 
 export type RangeFailure =
-  /** Not a byte range this server understands: 400. */
+  /** Not a byte range this server understands, so it is ignored entirely. */
   | "malformed"
   /** Understood, but outside the file: 416. */
   | "unsatisfiable"

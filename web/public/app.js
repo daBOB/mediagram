@@ -12,7 +12,7 @@
 
 import { el } from "./lib/dom.js";
 import { renderSearch } from "./lib/search-view.js";
-import { firstItemOf, groupLibrary } from "./lib/library.js";
+import { groupLibrary } from "./lib/library.js";
 import { loadLink } from "./lib/link.js";
 import { openPlayer } from "./lib/player.js";
 import { divisionBlock } from "./lib/course-view.js";
@@ -43,7 +43,7 @@ function viewCollections(section) {
   if (collections.length === 0) return main.append(emptyState(section));
 
   main.append(
-    collectionGrid(section, collections, firstItemOf, (name) => {
+    collectionGrid(section, collections, (name) => {
       location.hash = `#/${section}/${encodeURIComponent(name)}`;
     }),
   );

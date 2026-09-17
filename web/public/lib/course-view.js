@@ -10,19 +10,14 @@
  */
 
 import { el } from "./dom.js";
-import { playbackFor } from "./link.js";
 import { codecLine, episodeLabel, humanDuration, humanSize } from "./format.js";
+import { transcodeBadge } from "./set-badge.js";
 
 /**
  * How far a folder may indent. The real course reaches four levels; past
  * that the indent costs more width than the nesting is worth saying.
  */
 const MAX_INDENT = 3;
-
-/** Whether this set will have to be converted before it plays. */
-export function transcodeBadge(set) {
-  return playbackFor(set).kind === "direct" ? null : el("span", "badge", "needs transcode");
-}
 
 /** One playable row. */
 function lessonRow(set, onPlay) {
