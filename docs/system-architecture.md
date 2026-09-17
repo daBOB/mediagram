@@ -206,7 +206,8 @@ package/           the mlib-package-v1 reader: pointer, cipher, tar, refresh,
                    and the artwork a package carries
 transcode/         ffmpeg arguments, encoder probe, session registry, the
                    runner and its supervision, and serving what it produced
-public/            the page: shelves, the player dialog, hls.js when needed
+public/            the page: shelves, the player dialog, hls.js when needed,
+                   and the buffer watch that converts down on a slow link
 ```
 
 The 200-line rule [§2](#2-module-map-cratesmediagramsrc) states holds here
@@ -240,6 +241,35 @@ rather than implied:
 Every read-only consumer opens SQLite with `SQLITE_OPEN_READ_ONLY` rather
 than merely not issuing writes: a writable handle would let it checkpoint the
 WAL or replay a migration on an index the uploader owns.
+
+### Adapting to the link
+
+Which titles are converted is decided twice. Once before playback, from the
+catalog: codecs a browser cannot decode, and — for a viewer the server places
+outside the local network — a bitrate above the uplink budget. That decision
+is made from numbers, and numbers about a link are frequently wrong.
+
+So the page also measures, in `public/lib/`:
+
+```
+buffer-health.js   seconds buffered ahead, and the rate it is filling at
+adapt-bitrate.js   given a measurement, what to switch to — or nothing
+adapt-playback.js  the loop: watch the element, act, do not thrash
+```
+
+Split three ways because the parts fail differently. A measurement is wrong
+when it misreads a satisfied player as a starving one; a decision is wrong
+when it restarts playback for a gain nobody would notice; a loop is wrong when
+it does either of those every few seconds. Each is pure enough to test on its
+own, and the two properties that took a live run to find are written down in
+`buffer-health.js`: a full buffer looks exactly like a slow download, and a
+stalled player looks exactly like a healthy one unless the rate is measured
+against the wall clock.
+
+The switch is a conversion at a requested bitrate — `?maxrate=` on the
+transcode route, clamped between a floor and the configured cap, and part of
+what identifies a session, since two viewers wanting different rates want
+different encodes.
 
 ### The codec policy
 

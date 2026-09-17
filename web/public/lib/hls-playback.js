@@ -35,8 +35,12 @@ function loadHls() {
  * playlist URL. The server does not answer until a first segment exists, so a
  * player handed this URL has something to play.
  */
-async function beginTranscode(setId, seekSeconds) {
-  const url = `/api/sets/${encodeURIComponent(setId)}/transcode?seek=${Math.max(0, Math.floor(seekSeconds))}`;
+async function beginTranscode(setId, seekSeconds, maxrateBits) {
+  const seek = `seek=${Math.max(0, Math.floor(seekSeconds))}`;
+  // Sent only when the player has measured something. The server clamps it to
+  // its own cap either way, so this is a request, not an instruction.
+  const rate = maxrateBits ? `&maxrate=${Math.floor(maxrateBits)}` : "";
+  const url = `/api/sets/${encodeURIComponent(setId)}/transcode?${seek}${rate}`;
   const response = await fetch(url);
   if (!response.ok) {
     // The server says why a conversion would not start; repeating its status
@@ -91,11 +95,13 @@ function releaseTranscode(playlist) {
  * fetch loop, and one left running behind a closed dialog keeps the server
  * encoding for a viewer who has gone.
  *
- * `onFatal` is called if playback dies after it started — a session reaped, a
+ * `options.maxrateBits` asks for an encode that fits a link the page has
+ * measured; without it the server uses its configured cap. `options.onFatal`
+ * is called if playback dies after it started — a session reaped, a
  * conversion that failed — so the page can say so instead of just stopping.
  */
-export async function playTranscoded(video, setId, seekSeconds = 0, onFatal) {
-  const playlist = await beginTranscode(setId, seekSeconds);
+export async function playTranscoded(video, setId, options = {}) {
+  const playlist = await beginTranscode(setId, options.seekSeconds ?? 0, options.maxrateBits);
 
   if (needsNativeHls()) {
     video.src = playlist;
@@ -114,11 +120,23 @@ export async function playTranscoded(video, setId, seekSeconds = 0, onFatal) {
   // `startPosition: 0` because the playlist has no end marker while ffmpeg is
   // still writing it, and hls.js reads a playlist without one as live: left
   // alone it opens a film several minutes in, wherever encoding had reached.
-  const hls = new Hls({ enableWorker: true, startPosition: 0 });
+  //
+  // The buffer targets are raised well above the defaults for the same reason
+  // this file's caller measures the link at all: a deep cushion is what turns
+  // a bad thirty seconds into nothing the viewer notices. It costs only
+  // memory in the browser — a minute at 2 Mbit/s is some 15 MB — and the
+  // server is encoding ahead of playback anyway, so there is usually
+  // something there to fetch.
+  const hls = new Hls({
+    enableWorker: true,
+    startPosition: 0,
+    maxBufferLength: 60,
+    maxMaxBufferLength: 120,
+  });
   // Without a handler, a session that has gone away presents as a player that
   // simply stops, with the explanation only in the console.
   hls.on(Hls.Events.ERROR, (_event, data) => {
-    if (data.fatal) onFatal?.(new Error(data.details ?? "the conversion stopped"));
+    if (data.fatal) options.onFatal?.(new Error(data.details ?? "the conversion stopped"));
   });
 
   hls.loadSource(playlist);

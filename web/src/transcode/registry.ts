@@ -14,7 +14,13 @@ import { join } from "node:path";
 
 /** A running transcode, however it is actually run. */
 export interface Runner {
-  start(sessionId: string, directory: string, setId: string, seekSeconds: number): Running;
+  start(
+    sessionId: string,
+    directory: string,
+    setId: string,
+    seekSeconds: number,
+    maxrateBits: number,
+  ): Running;
 }
 
 export interface Running {
@@ -31,6 +37,8 @@ export interface Session {
   directory: string;
   setId: string;
   seekSeconds: number;
+  /** What this encode was told to stay under, in bits per second. */
+  maxrateBits: number;
   /** Resolves if the transcode stops, so a wait for output can give up. */
   exited?: Promise<number>;
 }
@@ -77,8 +85,8 @@ export class TranscodeRegistry {
    * Identified by what it transcodes rather than by a random id, so two
    * viewers of the same thing share one encode instead of racing.
    */
-  async sessionFor(setId: string, seekSeconds: number): Promise<Session> {
-    const id = sessionId(setId, seekSeconds);
+  async sessionFor(setId: string, seekSeconds: number, maxrateBits: number): Promise<Session> {
+    const id = sessionId(setId, seekSeconds, maxrateBits);
     const existing = this.sessions.get(id);
     if (existing) {
       existing.lastUsed = Date.now();
@@ -108,12 +116,19 @@ export class TranscodeRegistry {
       throw new Error(`too many conversions at once (${this.maxSessions}); try again shortly`);
     }
 
-    const starting = this.start(id, setId, seekSeconds).finally(() => this.starting.delete(id));
+    const starting = this.start(id, setId, seekSeconds, maxrateBits).finally(() =>
+      this.starting.delete(id),
+    );
     this.starting.set(id, starting);
     return starting;
   }
 
-  private async start(id: string, setId: string, seekSeconds: number): Promise<Session> {
+  private async start(
+    id: string,
+    setId: string,
+    seekSeconds: number,
+    maxrateBits: number,
+  ): Promise<Session> {
     const directory = join(this.workDir, id);
     // Emptied rather than reused. A directory left by a killed server holds
     // that run's playlist, and a new session would be reported ready
@@ -121,12 +136,13 @@ export class TranscodeRegistry {
     await rm(directory, { recursive: true, force: true });
     await mkdir(directory, { recursive: true });
 
-    const process = this.runner.start(id, directory, setId, seekSeconds);
+    const process = this.runner.start(id, directory, setId, seekSeconds, maxrateBits);
     const tracked: Tracked = {
       id,
       directory,
       setId,
       seekSeconds,
+      maxrateBits,
       process,
       exited: process.exited,
       lastUsed: Date.now(),
@@ -206,17 +222,24 @@ export class TranscodeRegistry {
 let discardCount = 0;
 
 /**
- * A stable id for one title at one offset.
+ * A stable id for one title, at one offset, at one bitrate.
+ *
+ * The bitrate is part of the identity because it is part of what the session
+ * *is*: a viewer whose link cannot carry the default needs a different
+ * encode, and an id that ignored the cap would hand them the one already
+ * failing.
  *
  * Hashed rather than composed from the set id: this reaches a URL and then a
  * path, and a set id comes from a caption, so it must not be able to carry a
  * separator or a `..` into either.
  */
-function sessionId(setId: string, seekSeconds: number): string {
+function sessionId(setId: string, seekSeconds: number, maxrateBits: number): string {
   return createHash("sha256")
     .update(setId)
     .update(new Uint8Array([0]))
     .update(String(seekSeconds))
+    .update(new Uint8Array([0]))
+    .update(String(maxrateBits))
     .digest("hex")
     .slice(0, 16);
 }

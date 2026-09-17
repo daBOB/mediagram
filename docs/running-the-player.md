@@ -174,6 +174,38 @@ above `MEDIAGRAM_TRANSCODE_MAXRATE`, whatever its codecs.
 [`MEDIAGRAM_TRUST_PROXY`](#mediagram_trust_proxy) is how that judgement is
 made.
 
+### When the link turns out to be slower than expected
+
+All of the above is decided before a single byte moves, from numbers in the
+catalog. Reality disagrees often enough — a phone on a weak signal, Telegram
+in a flood wait, someone else in the house starting a download — and the
+symptom is the one nobody tolerates: play, stall, play a few seconds, stall,
+with nothing changing in between to make the next attempt go better.
+
+So the page also watches. It samples how many seconds of video are buffered
+ahead of the playhead and how fast that is growing against the wall clock,
+and when the link is sustainably delivering less than playback consumes it
+moves to a conversion the link can actually carry — keeping the viewer's
+place, and saying so in the note under the player.
+
+Two things make that measurement harder than it sounds, and both are worth
+knowing if you ever change it:
+
+- **A full buffer looks exactly like a slow download.** A browser that has
+  buffered all it wants stops fetching, so the buffer stops growing. Nothing
+  is judged while more than 45 seconds are buffered.
+- **A stalled player looks exactly like a healthy one**, if the rate is
+  measured against playback. With an empty buffer the playhead advances
+  precisely as fast as bytes arrive, so "buffered seconds gained per second
+  played" is exactly 1.0 while the viewer watches a spinner. The rate is
+  measured against the wall clock instead.
+
+It only ever converts downward, waits 25 seconds between switches, and stops
+when there is nothing lower left to try — at which point it says the
+connection is too slow for this title rather than restarting the same encode
+forever. A viewer who wants a specific quality can still pick a position with
+the slider, which keeps whatever rate was last found to work.
+
 ### Where the catalog comes from
 
 Two ways, and the second is what makes the player independent of the machine
@@ -343,12 +375,18 @@ that is not remote, the forwarded address is wrong: either
 `MEDIAGRAM_TRUST_PROXY` is set without a proxy in front, or the proxy is not
 setting `X-Forwarded-For`, or there are two hops where the player assumes one.
 
-**Playback starts and then stops.** Almost always the uplink rather than the
-player. Compare the source's bitrate against what the link carries; the
-catalog's `total` and `duration` give the first, and a conversion caps the
-second at `MEDIAGRAM_TRANSCODE_MAXRATE`. A direct-played 13.9 Mbit/s film over
-a 25 Mbit/s uplink shared with a household is a stall, and the fix is to lower
-the cap rather than to debug the player.
+**Playback starts, stalls, and then converts itself.** That is the player
+noticing the link cannot carry what it was sent — see
+[when the link turns out to be slower than expected](#when-the-link-turns-out-to-be-slower-than-expected).
+The note under the player says what rate it settled on. If it settles
+somewhere far below what the link should manage, the link is the thing to
+look at; if it happens on every title, `MEDIAGRAM_TRANSCODE_MAXRATE` is set
+above what the uplink really carries.
+
+**Playback starts and then stops, repeatedly, without converting.** The page
+only watches a source it started. A stall with no note under the player means
+the measurement is not running — an old page still open in a tab is the usual
+reason, since the watch arrived with a later version. Reload it.
 
 **Everything is slow, including the first seconds.** Time a ranged read
 directly, which takes the browser out of it:

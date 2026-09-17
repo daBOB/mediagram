@@ -40,6 +40,8 @@ export interface PlayerRequest {
   range: string | null;
   /** `?seek=` on a transcode request, in seconds. */
   seek?: string | null;
+  /** `?maxrate=` on a transcode request, in bits per second. */
+  maxrate?: string | null;
   /** The address the request came from, already resolved through any proxy. */
   client?: string;
 }
@@ -50,9 +52,10 @@ export interface HlsServer {
    * Starts (or joins) a transcode and returns its playlist URL.
    *
    * Joining rather than always starting is what stops two viewers of the same
-   * title running two encoders.
+   * title running two encoders — but only when they want the same encode, so
+   * the bitrate is part of what identifies one.
    */
-  begin(setId: string, seekSeconds: number): Promise<string>;
+  begin(setId: string, seekSeconds: number, maxrateBits: number): Promise<string>;
 
   /**
    * The file for a session, or `null` when it is not ready.
@@ -145,6 +148,28 @@ function staticFile(urlPath: string): { body: Uint8Array; type: string } | null 
   } catch {
     return null;
   }
+}
+
+/**
+ * The lowest a conversion may be asked to aim for.
+ *
+ * Below this the picture is no longer worth the encoder it costs; a viewer on
+ * a link this slow is better told so than handed a smear.
+ */
+const MIN_BITRATE = 600_000;
+
+/**
+ * The bitrate to encode at, given what a player asked for.
+ *
+ * Clamped rather than trusted: the number comes from a browser that measured
+ * its own link, and a browser is free to say anything. Above the configured
+ * cap it would saturate the uplink that cap exists to protect; absent or
+ * nonsensical, the cap is the answer.
+ */
+function requestedBitrate(asked: string | null | undefined, cap: number): number {
+  const wanted = Number(asked);
+  if (!Number.isFinite(wanted) || wanted <= 0) return cap;
+  return Math.min(cap, Math.max(MIN_BITRATE, Math.floor(wanted)));
 }
 
 /** A text response, with its length stated as every response states one. */
@@ -287,13 +312,14 @@ export function createRouter(options: RouterOptions) {
       // at once while the request waits out the whole readiness timeout.
       const asked = Number(request.seek ?? 0);
       const seek = Number.isFinite(asked) ? Math.max(0, Math.floor(asked)) : 0;
+      const rate = requestedBitrate(request.maxrate, maxBitrate);
 
       // A conversion that produces nothing is a 503 carrying the reason
       // rather than a 500: it is a title that could not be started now, and
       // the page has somewhere to show why.
       let playlist: string;
       try {
-        playlist = await hls.begin(beginMatch[1]!, seek);
+        playlist = await hls.begin(beginMatch[1]!, seek, rate);
       } catch (error) {
         const reason = error instanceof Error ? error.message : "the conversion did not start";
         return { ...text(JSON.stringify({ error: reason }), "application/json"), status: 503 };

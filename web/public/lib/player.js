@@ -10,6 +10,7 @@
 
 import { playbackFor } from "./link.js";
 import { playTranscoded } from "./hls-playback.js";
+import { sourceBitrate, watchPlayback } from "./adapt-playback.js";
 import { clockTime, episodeLabel } from "./format.js";
 
 const dialog = document.getElementById("player");
@@ -26,6 +27,8 @@ let detach = null;
 /** The set being played, and where in it the current conversion started. */
 let playing = null;
 let base = 0;
+/** The cap the running conversion was given, or `null` while playing direct. */
+let capBits = null;
 
 /**
  * Worded to cover both reasons a title is converted. It may be a codec the
@@ -86,13 +89,22 @@ function stop() {
  * film means starting the conversion again there, which is what the slider
  * above the note does.
  */
-function convert(set, seconds, warning) {
+function convert(set, seconds, warning, maxrateBits) {
   stop();
   base = seconds;
+  capBits = maxrateBits ?? null;
+  watch.begin({ capBits, sourceBits: sourceBitrate(set) });
+  // Shown unconditionally: a title that was playing directly has its note
+  // hidden, and a switch that explains itself invisibly explains nothing.
   note.textContent = `${warning} Starting at ${clockTime(seconds)}…`;
+  note.hidden = false;
 
-  playTranscoded(video, set.setId, seconds, (error) => {
-    note.textContent = `The conversion stopped: ${error.message}. Pick a position to start it again.`;
+  playTranscoded(video, set.setId, {
+    seekSeconds: seconds,
+    maxrateBits,
+    onFatal: (error) => {
+      note.textContent = `The conversion stopped: ${error.message}. Pick a position to start it again.`;
+    },
   })
     .then((release) => {
       detach = release;
@@ -140,6 +152,10 @@ export function openPlayer(set) {
 
   if (warning === null) {
     jump.hidden = true;
+    capBits = null;
+    // Watched too: the original is the stream most likely to be too much for
+    // a link, since nothing caps what it was mastered at.
+    watch.begin({ capBits: null, sourceBits: sourceBitrate(set) });
     video.src = `/api/sets/${encodeURIComponent(set.setId)}/stream`;
     start();
     return;
@@ -164,7 +180,34 @@ jumpTo.addEventListener("input", () => {
 // start dozens of them and finish none.
 jumpTo.addEventListener("change", () => {
   if (!playing) return;
-  convert(playing, Number(jumpTo.value), noteFor(playing));
+  // Keeps whatever cap the link was found to need; a seek is not new evidence
+  // that the connection got better.
+  convert(playing, Number(jumpTo.value), noteFor(playing), capBits ?? undefined);
+});
+
+/**
+ * The link is losing ground: move to something it can carry.
+ *
+ * Deliberately keeps the viewer's place — `filmTime()`, not zero — so the
+ * interruption costs seconds rather than the film starting again.
+ */
+const watch = watchPlayback({
+  video,
+  onSwitch: (targetBits) => {
+    if (!playing) return;
+    showJump(playing);
+    convert(
+      playing,
+      filmTime(),
+      `The connection is slower than this title needs, so it is being converted` +
+        ` to ${(targetBits / 1e6).toFixed(1)} Mbit/s.`,
+      targetBits,
+    );
+  },
+  onExhausted: () => {
+    note.textContent = "This connection is too slow for this title, even at the lowest quality.";
+    note.hidden = false;
+  },
 });
 
 // Closing the tab never fires the dialog's `close`, and a transcode nobody
@@ -180,4 +223,6 @@ dialog.addEventListener("close", () => {
   summaryBox.hidden = true;
   jump.hidden = true;
   playing = null;
+  capBits = null;
+  watch.begin({ capBits: null, sourceBits: null });
 });

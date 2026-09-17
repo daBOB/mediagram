@@ -110,7 +110,6 @@ const transcodes = new TranscodeRegistry(
   new FfmpegRunner({
     encoder,
     baseUrl: `http://127.0.0.1:${config.port}`,
-    maxrateBits: config.transcodeMaxrate,
     segmentSeconds: 2,
   }),
 );

@@ -50,8 +50,8 @@ export class TranscodeFiles implements HlsServer {
    * Joining is the point: two viewers of the same thing share one encoder
    * session rather than racing for the hardware.
    */
-  async begin(setId: string, seekSeconds: number): Promise<string> {
-    const session = await this.registry.sessionFor(setId, seekSeconds);
+  async begin(setId: string, seekSeconds: number, maxrateBits: number): Promise<string> {
+    const session = await this.registry.sessionFor(setId, seekSeconds, maxrateBits);
 
     // Not returned until there is something to play. hls.js gives a manifest
     // one retry and then reports a fatal error, so a URL handed over early is

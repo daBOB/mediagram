@@ -17,20 +17,25 @@ export interface FfmpegOptions {
   encoder: Encoder;
   /** Where this server answers its own Range requests. */
   baseUrl: string;
-  maxrateBits: number;
   segmentSeconds: number;
 }
 
 export class FfmpegRunner implements Runner {
   constructor(private readonly options: FfmpegOptions) {}
 
-  start(_sessionId: string, directory: string, setId: string, seekSeconds: number): Running {
+  start(
+    _sessionId: string,
+    directory: string,
+    setId: string,
+    seekSeconds: number,
+    maxrateBits: number,
+  ): Running {
     const args = transcodeArgs({
       input: `${this.options.baseUrl}/api/sets/${encodeURIComponent(setId)}/stream`,
       output: join(directory, "index.m3u8"),
       encoder: this.options.encoder,
       seekSeconds,
-      maxrateBits: this.options.maxrateBits,
+      maxrateBits,
       segmentSeconds: this.options.segmentSeconds,
       // Left to ffmpeg: it reads the real rate from the source, and
       // `-force_key_frames` holds the segment boundaries regardless.

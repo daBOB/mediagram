@@ -381,10 +381,53 @@ describe("releasing a transcode", () => {
     }
   });
 
+  /**
+   * A player that has measured a link too slow for the default asks for an
+   * encode that fits. The number is a hint from a browser, so it is clamped
+   * rather than trusted: above the configured cap it would saturate the very
+   * uplink the cap exists to protect, and below a floor it would produce
+   * something not worth watching.
+   */
+  test("a requested bitrate is honoured between the floor and the configured cap", async () => {
+    const asked: number[] = [];
+    const recording = {
+      begin: async (_setId: string, _seek: number, maxrateBits: number) => {
+        asked.push(maxrateBits);
+        return `/hls/${SESSION}/index.m3u8`;
+      },
+      file: async () => null,
+      end: async () => {},
+    };
+    const server = await startServer({
+      db: index(),
+      source: new FakeSource(),
+      hls: recording,
+      maxBitrate: 8_000_000,
+    });
+    try {
+      for (const rate of ["3000000", "99000000", "1", "", "abc", "-5", "Infinity"]) {
+        await rawRequest(server.port, `/api/sets/${SET}/transcode?maxrate=${rate}`);
+      }
+
+      // Asked for, clamped, clamped, clamped, then the default four times.
+      expect(asked[0]).toBe(3_000_000);
+      expect(asked[1]).toBe(8_000_000);
+      expect(asked[2]).toBeGreaterThan(1);
+      for (const rate of asked) {
+        expect(rate).toBeLessThanOrEqual(8_000_000);
+        expect(rate).toBeGreaterThan(0);
+        expect(Number.isFinite(rate)).toBe(true);
+      }
+      expect(asked.slice(3)).toEqual([8_000_000, 8_000_000, 8_000_000, 8_000_000]);
+    } finally {
+      await server.close();
+    }
+  });
+
   test("a seek that is not a number of seconds never reaches ffmpeg", async () => {
     const asked: number[] = [];
     const recording = {
-      begin: async (_setId: string, seek: number) => {
+      begin: async (_setId: string, seek: number, _maxrate: number) => {
         asked.push(seek);
         return `/hls/${SESSION}/index.m3u8`;
       },

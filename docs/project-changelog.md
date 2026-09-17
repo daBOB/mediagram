@@ -50,6 +50,16 @@ to `main`. Full phase-by-phase detail lives in
   five authenticated fields, never from `sha256`, which anyone who can
   rewrite the pointer can set to the digest of the copy the reader holds.
   Posters travel with it and appear on the shelf cards.
+- The player watches its own buffer and converts down when the link cannot
+  keep up, instead of stalling every few seconds forever. It measures seconds
+  buffered ahead of the playhead against the wall clock, and on a sustained
+  shortfall restarts at a bitrate the link was observed to carry — keeping the
+  viewer's place and saying so under the player. Only ever downward, 25
+  seconds between switches, and it stops when there is nothing lower left
+  rather than restarting the same encode forever. `?maxrate=` on the transcode
+  route carries the request, clamped between a floor and the configured cap.
+  Verified over a deliberately throttled 2.4 Mbit/s link: a 4.3 Mbit/s episode
+  that had been stalling continuously converted itself to 1.96 Mbit/s.
 - `MEDIAGRAM_LIBRARY_DB` is no longer required when a package supplies the
   catalog. A player with no uploader filesystem to read refused to start
   without a path to a file it would never open.
