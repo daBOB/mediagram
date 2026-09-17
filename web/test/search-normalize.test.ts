@@ -9,7 +9,7 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { fold, terms } from "../src/search/normalize";
+import { fold, spellOut, terms } from "../src/search/normalize";
 
 describe("folding a string", () => {
   test("case goes", () => {
@@ -49,6 +49,40 @@ describe("folding a string", () => {
     expect(fold("")).toBe("");
     expect(fold(null)).toBe("");
     expect(fold(undefined)).toBe("");
+  });
+});
+
+describe("spelling a string out", () => {
+  test("umlauts become the two letters people type instead", () => {
+    // The other half of the same problem `fold` solves. A keyboard without
+    // umlauts offers two conventions, and Germans use both: drop the dots, or
+    // spell them out. "ueberblick" is as common as "uberblick".
+    expect(spellOut("Überblick")).toBe("ueberblick");
+    expect(spellOut("Qualität")).toBe("qualitaet");
+    expect(spellOut("Börse")).toBe("boerse");
+  });
+
+  test("the sharp s spells out the same way it folds", () => {
+    expect(spellOut("Straße")).toBe("strasse");
+  });
+
+  test("it agrees with fold on text that has nothing to spell out", () => {
+    // Worth stating: the index skips storing a second copy when the two
+    // agree, so this equality is what keeps that optimisation honest.
+    expect(spellOut("Broker Vergleich")).toBe(fold("Broker Vergleich"));
+    expect(spellOut("Produkte ⁄ Instrumente")).toBe("produkte instrumente");
+  });
+
+  test("a diacritic that is not a German umlaut folds rather than spelling out", () => {
+    // "Café" has no two-letter convention; nobody types "cafee".
+    expect(spellOut("Café")).toBe("cafe");
+    expect(spellOut("Señor")).toBe("senor");
+  });
+
+  test("an empty or absent string spells out to nothing", () => {
+    expect(spellOut("")).toBe("");
+    expect(spellOut(null)).toBe("");
+    expect(spellOut(undefined)).toBe("");
   });
 });
 

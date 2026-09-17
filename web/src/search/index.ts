@@ -14,7 +14,8 @@
  * would want SQLite's FTS5 instead, and would need the schema to carry it.
  */
 
-import { fold, terms } from "./normalize";
+import { excerpt } from "./excerpt";
+import { fold, spellOut, terms } from "./normalize";
 
 /** A set as the search sees it: its text, and nothing else. */
 export interface Searchable {
@@ -48,13 +49,26 @@ export type Hit<T extends Searchable = Searchable> = T & Why;
 /** More than a screenful is not a result list, it is the library again. */
 const MAX_HITS = 50;
 
-/** Characters of summary either side of a match. */
-const EXCERPT_PAD = 90;
-
 interface Entry<T> {
   set: T;
   /** The folded text of each field, in `FIELDS` order. */
   folded: string[];
+  /**
+   * The same fields with umlauts spelled out, and `null` where that reads
+   * identically to `folded` — which is most fields, so most entries carry
+   * almost nothing extra.
+   *
+   * Both spellings are kept on the *text* side rather than collapsing `ue`
+   * back to `u` on the query side, which would be cheaper and wrong: it would
+   * make "steuer" match "Fenster".
+   */
+  spelled: Array<string | null>;
+}
+
+/** The spelled-out copy of a field, or `null` when it adds nothing. */
+function variant(text: string | null): string | null {
+  const spelled = spellOut(text);
+  return spelled === fold(text) ? null : spelled;
 }
 
 export class SearchIndex<T extends Searchable = Searchable> {
@@ -64,6 +78,13 @@ export class SearchIndex<T extends Searchable = Searchable> {
     this.entries = sets.map((set) => ({
       set,
       folded: [fold(set.title), fold(set.show), fold(set.chap), fold(set.path), fold(set.summary)],
+      spelled: [
+        variant(set.title),
+        variant(set.show),
+        variant(set.chap),
+        variant(set.path),
+        variant(set.summary),
+      ],
     }));
   }
 
@@ -85,7 +106,9 @@ export class SearchIndex<T extends Searchable = Searchable> {
       let matchedAll = true;
 
       for (const term of wanted) {
-        const at = entry.folded.findIndex((text) => text.includes(term));
+        const at = entry.folded.findIndex(
+          (text, field) => text.includes(term) || (entry.spelled[field]?.includes(term) ?? false),
+        );
         if (at === -1) {
           matchedAll = false;
           break;
@@ -114,45 +137,4 @@ export class SearchIndex<T extends Searchable = Searchable> {
     );
     return hits.slice(0, MAX_HITS).map((entry) => entry.hit);
   }
-}
-
-/**
- * Markdown markers out, because an excerpt is a sentence shown to a person.
- *
- * Deliberately crude: the window is cut mid-document, so any real parse would
- * be handed unbalanced markers anyway. Only the characters that read as noise
- * are dropped, and the words between them are left alone.
- */
-function plain(text: string): string {
-  return text
-    .replace(/[*_`~]{1,3}/g, "")
-    .replace(/^#{1,6}\s*/gm, "")
-    .replace(/\s*#{1,6}\s+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/**
- * The words around the first matching term, from the original text.
- *
- * Taken from the unfolded summary so the reader sees their own language back,
- * which means finding the offset in the folded copy and trusting the two to
- * line up. They do: folding replaces characters one for one or collapses runs
- * of punctuation, and a small drift only moves the window, never breaks it.
- */
-function excerpt(summary: string | null, wanted: string[]): string | null {
-  if (!summary) return null;
-  const folded = fold(summary);
-
-  let at = -1;
-  for (const term of wanted) {
-    const found = folded.indexOf(term);
-    if (found !== -1 && (at === -1 || found < at)) at = found;
-  }
-  if (at === -1) return null;
-
-  const from = Math.max(0, at - EXCERPT_PAD);
-  const to = Math.min(summary.length, at + EXCERPT_PAD);
-  const body = plain(summary.slice(from, to));
-  return `${from > 0 ? "…" : ""}${body}${to < summary.length ? "…" : ""}`;
 }

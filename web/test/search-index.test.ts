@@ -34,6 +34,28 @@ describe("what matches", () => {
     expect(index.search("UBERBLICK")).toHaveLength(1);
   });
 
+  test("an umlaut spelled out the way a keyboard without one forces", () => {
+    // Two conventions, both in daily use: drop the dots ("uberblick") or
+    // spell them out ("ueberblick"). A search that answers only the first is
+    // a search half the people who try it give up on.
+    const index = new SearchIndex([set({ title: "Überblick" })]);
+
+    expect(index.search("ueberblick")).toHaveLength(1);
+    expect(index.search("uberblick")).toHaveLength(1);
+    expect(index.search("Überblick")).toHaveLength(1);
+  });
+
+  test("a summary found by a spelled-out umlaut still shows its excerpt", () => {
+    const index = new SearchIndex([
+      set({ title: "Interpretation", summary: "Die Volatilität steigt im Chart." }),
+    ]);
+
+    const [hit] = index.search("volatilitaet");
+
+    expect(hit?.matched).toBe("summary");
+    expect(hit?.excerpt).toContain("Volatilität");
+  });
+
   test("part of a word, not only the start of one", () => {
     // "Kontoeröffnung" should be findable by someone who only remembers
     // "eroffnung".
@@ -156,6 +178,21 @@ describe("showing why a summary matched", () => {
     expect(hit?.excerpt).toContain("Optionen:");
     expect(hit?.excerpt).not.toContain("**");
     expect(hit?.excerpt).not.toContain("##");
+  });
+
+  test("the window lands on the match however far into the summary it sits", () => {
+    // The searched copy is not the original: umlauts spell out one character
+    // longer, and every run of markup and blank lines collapses to a single
+    // space. An offset taken from it drifts further the more text precedes
+    // the match, so the window has to be anchored on the word itself.
+    const before = "**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n".repeat(30);
+    const index = new SearchIndex([
+      set({ summary: before + "Die Volatilität entscheidet. " + "Schluss. ".repeat(20) }),
+    ]);
+
+    const [hit] = index.search("volatilitaet");
+
+    expect(hit?.excerpt).toContain("Volatilität");
   });
 
   test("a title hit needs no excerpt, because the title is already shown", () => {
