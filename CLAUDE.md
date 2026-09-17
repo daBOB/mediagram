@@ -53,11 +53,11 @@ This file provides instructions and context for AI coding agents working on this
 - Go fix failing CI tests without being told how
 
 ## Task Management
-1. **Plan First**: Write plan to `tasks/todo.md` with checkable items
+1. **Plan First**: Write plan to a dated dir under `plans/` (`plan.md` + `phase-NN-*.md`) with checkable items
 2. **Verify Plan**: Check in before starting implementation
 3. **Track Progress**: Mark items complete as you go
 4. **Explain Changes**: High-level summary at each step
-5. **Document Results**: Add review section to `tasks/todo.md`
+5. **Document Results**: Add review section to the plan's `plan.md`, or a report under its `reports/`
 6. **Capture Lessons**: Update `tasks/lessons.md` after corrections
 7. **Evolve Rules**: When lessons recur, propose CLAUDE.md updates (see §4)
 
@@ -69,3 +69,4 @@ This file provides instructions and context for AI coding agents working on this
 
 ## Changelog
 - 2025-01-XX: Added §4 Meta Self-Improvement loop; CLAUDE.md now updates itself with user approval. Fixed typos ("Plan Node" → "Plan Mode", "One tack" → "One task", "Minimat" → "Minimal").
+- 2026-09-18: Task Management steps 1 and 5 now name `plans/`, which is where planning has actually happened since the first phase; `tasks/todo.md` never existed and duplicated it. Lessons stay at `tasks/lessons.md`, which now exists — it was the half of the rule with no home.
