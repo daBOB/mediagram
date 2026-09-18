@@ -4,7 +4,7 @@
 //! running — so the queries are the whole of the answer and each one is worth
 //! pinning.
 
-use mediagram::commands::status::{ago, count, episodes_of, label, progress_of};
+use mediagram::commands::status::{ago, count, episodes_of, heading, label, progress_of};
 use mediagram::index::progress::{ShowProgress, Unfinished, library, shows, unfinished};
 use rusqlite::{Connection, params};
 
@@ -175,12 +175,12 @@ fn a_set_with_no_name_falls_back_to_its_id() {
 
 #[test]
 fn progress_states_parts_bytes_and_age() {
-    let line = progress_of(&waiting(Some("S"), Some("T")), 1000 + 1380);
+    let mut half = waiting(Some("S"), Some("T"));
+    half.parts_done = 1;
 
-    assert_eq!(
-        line,
-        "part 2 of 2 · 3.50 of 6.28 GB sent · started 23 min ago"
-    );
+    let line = progress_of(&half, 1000 + 1380);
+
+    assert_eq!(line, "1 of 2 parts sent · 3.50 of 6.28 GB · added 23 min ago");
 }
 
 #[test]
@@ -206,23 +206,38 @@ fn a_number_and_its_noun_agree() {
     assert_eq!(count(177, "set"), "177 sets");
 }
 
-/// The first part takes minutes, and for all of them nothing has finished.
-/// Reporting "0 of 2 parts" there says the upload has done nothing when it
-/// is most of the way through the first.
+/// A set nobody has picked up must not claim a part is in flight: three
+/// queued files each saying "part 1 of N" read as three uploads at once,
+/// which is the one thing the upload lock exists to prevent.
 #[test]
-fn an_upload_is_named_by_the_part_it_is_working_on() {
+fn a_set_with_nothing_sent_claims_no_part_in_flight() {
     let mut fresh = waiting(Some("S"), Some("T"));
     fresh.parts_done = 0;
     fresh.bytes_done = 0;
 
-    assert!(progress_of(&fresh, 1000).starts_with("part 1 of 2 · 0.00 of 6.28 GB sent"));
+    assert_eq!(
+        progress_of(&fresh, 1000),
+        "nothing sent yet · 6.28 GB in 2 parts · added 0 sec ago"
+    );
 }
 
-/// The last part finishing must not claim a part that does not exist.
+/// A single-part set says "1 part", not "1 parts".
 #[test]
-fn a_set_whose_parts_are_all_done_does_not_name_a_third_part() {
-    let mut done = waiting(Some("S"), Some("T"));
-    done.parts_done = 2;
+fn a_one_part_set_says_part_once() {
+    let mut single = waiting(Some("S"), Some("T"));
+    single.parts_done = 0;
+    single.bytes_done = 0;
+    single.parts_total = 1;
 
-    assert!(progress_of(&done, 1000).starts_with("part 2 of 2"));
+    assert!(progress_of(&single, 1000).contains("6.28 GB in 1 part ·"));
+}
+
+/// Only the set the uploader is actually sending is uploading. The others
+/// are queued behind it while it runs, and nothing at all is happening to
+/// them once it stops.
+#[test]
+fn only_the_set_on_the_wire_is_called_uploading() {
+    assert_eq!(heading(true, true), "uploading");
+    assert_eq!(heading(false, true), "waiting");
+    assert_eq!(heading(false, false), "unfinished");
 }

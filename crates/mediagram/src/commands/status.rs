@@ -12,6 +12,7 @@ use anyhow::{Context, Result, bail};
 
 use crate::config::Config;
 use crate::index::progress::{self, ShowProgress, Unfinished};
+use crate::upload::lock;
 use crate::upload::progress::{self as upload_progress, Progress};
 
 pub async fn run(cfg: &Config) -> Result<()> {
@@ -82,21 +83,27 @@ pub async fn run(cfg: &Config) -> Result<()> {
         }
     }
 
-    // Every unfinished set, said the same way. Splitting them by whether a
-    // part had finished put an upload three minutes into its first part —
-    // a 3.5 GiB part takes about seven — under a heading that said none of
-    // it had been sent, which reads as idle when it is working hardest.
-    // The uploader leaves a note saying how far it has got inside the part
-    // it is on, which the index cannot know: a part is recorded when it
-    // lands, and a 3.5 GiB part takes minutes to land.
+    // Every unfinished set, each under the heading that is true of it. Only
+    // one of them can be going up — uploads take turns on `upload.lock` —
+    // and calling all of them "uploading" said three files were sharing the
+    // line when two were queued behind the first, which is the opposite of
+    // what the lock is for.
+    //
+    // The one that is moving is the one the uploader left a fresh note
+    // about: a part is recorded in the index when it lands, and a 3.5 GiB
+    // part takes minutes to land, so the index alone cannot tell a set
+    // three minutes into its first part from one that has not begun.
     let live = upload_progress::read(&data_dir).filter(|p| p.is_fresh(now));
+    // A hint, and only about now: with nobody holding the lock, nothing is
+    // uploading and nothing is queued — what is left is waiting for someone
+    // to run `resume`.
+    let running = lock::is_held(&data_dir);
     for set in &unfinished {
+        let moving = live.as_ref().filter(|p| p.set_id == set.set_id);
         println!();
-        println!("uploading      {}", label(set));
-        match live.as_ref().filter(|p| p.set_id == set.set_id) {
-            Some(live) => {
-                println!("               {}", live_progress(live, set, now));
-            }
+        println!("{:<14} {}", heading(moving.is_some(), running), label(set));
+        match moving {
+            Some(live) => println!("               {}", live_progress(live, set, now)),
             None => println!("               {}", progress_of(set, now)),
         }
         println!("               {}", set.set_id);
@@ -104,9 +111,15 @@ pub async fn run(cfg: &Config) -> Result<()> {
 
     if !unfinished.is_empty() {
         println!();
-        println!(
-            "               `mediagram resume` uploads these, `mediagram remove <id>` discards one"
-        );
+        if running {
+            println!(
+                "               the rest go up as the one ahead finishes, `mediagram remove <id>` discards one"
+            );
+        } else {
+            println!(
+                "               `mediagram resume` uploads these, `mediagram remove <id>` discards one"
+            );
+        }
     }
     Ok(())
 }
@@ -171,20 +184,44 @@ pub fn label(set: &Unfinished) -> String {
     parts.join("  ")
 }
 
-/// `part 2 of 2 · 3.50 of 6.28 GB sent · started 23 min ago`.
+/// What a set that is not moving has behind it: `2 of 2 parts sent · 3.50
+/// of 6.28 GB · added 23 min ago`.
 ///
-/// Named by the part being worked on rather than by the parts finished: for
-/// most of a part's life nothing has finished, and "0 of 2 parts" says the
-/// upload has done nothing when it is most of the way through the first.
+/// Counted in parts that landed, not in the part being worked on, because
+/// nothing is being worked on here — a set only reaches this line when the
+/// uploader's note is about some other set, or there is no uploader. Saying
+/// "part 1 of 3" of a queued set claimed a part was in flight that no
+/// process had picked up.
+///
+/// The age is when the set was added, which is all the index records; the
+/// set that is actually going up is described by [`live_progress`] instead.
 pub fn progress_of(set: &Unfinished, now: i64) -> String {
-    let in_flight = (set.parts_done + 1).min(set.parts_total.max(1));
+    let age = ago(now.saturating_sub(set.created_at));
+    if set.parts_done == 0 {
+        return format!(
+            "nothing sent yet · {:.2} GB in {} · added {age}",
+            set.bytes_total as f64 / 1e9,
+            count(u64::from(set.parts_total), "part")
+        );
+    }
     format!(
-        "part {in_flight} of {} · {:.2} of {:.2} GB sent · started {}",
+        "{} of {} parts sent · {:.2} of {:.2} GB · added {age}",
+        set.parts_done,
         set.parts_total,
         set.bytes_done as f64 / 1e9,
         set.bytes_total as f64 / 1e9,
-        ago(now.saturating_sub(set.created_at))
     )
+}
+
+/// The word for what is happening to a set: the one holding the line is
+/// uploading, anything else is waiting its turn while an upload runs, and
+/// with none running the rest are simply unfinished.
+pub fn heading(moving: bool, running: bool) -> &'static str {
+    match (moving, running) {
+        (true, _) => "uploading",
+        (false, true) => "waiting",
+        (false, false) => "unfinished",
+    }
 }
 
 /// How long ago, in the largest unit that still says something.

@@ -86,7 +86,9 @@ and `tracing` is the record.
 
 Uploads take turns. A file added while another is going up waits for it, the
 way a show's episodes wait for each other, so two of them never halve each
-other's bandwidth — `add` says which of the two happened when it returns.
+other's bandwidth — `add` says which of the two happened when it returns, and
+`mediagram status` shows the one on the wire as `uploading` and the queue
+behind it as `waiting`.
 
 Then, only if a player will read *this machine's* index rather than a
 published package, fill in the parts `add` does not:
@@ -150,7 +152,7 @@ expect, and adding continues as on any other machine.
 | `mediagram verify <set-id> \| --all [--full] [--since <unix>]` | Check a set (or every set): default mode compares each part's message/document against the index; `--full` re-downloads and hashes every part, and `--since` skips parts already verified at or after that timestamp so an interrupted sweep resumes. `--all` skips sets that are still uploading. |
 | `mediagram add-course <dir> [--dry-run]` | Walk a course folder and upload every lesson: subdirectories are chapters, video files inside them are lessons. Re-running skips lessons already finished. |
 | `mediagram add-show <dir> --tmdb <id> [--dry-run] [--yes]` | Walk a series folder and upload every episode, one set each. Season and episode come from the file name; the show comes from `--tmdb`, which is required because release prefixes defeat the title guess. Prints what it would file where, says which files the player would convert on every play and whether `prepare` can fix it, then asks. Re-running skips episodes already complete. |
-| `mediagram status` | What the library holds and what is still going in: the set currently uploading with its part and byte progress, how far each show has got against what the provider says exists, and anything left unfinished. Read-only, so it is safe to run in another terminal while an upload is working. |
+| `mediagram status` | What the library holds and what is still going in: the one set uploading with its part and byte progress, any sets waiting their turn behind it, how far each show has got against what the provider says exists, and anything left unfinished. Read-only, so it is safe to run in another terminal while an upload is working. |
 | `mediagram metadata` | Record what TMDB says about each film and series — synopsis, genres, rating, network, status, and how many seasons and episodes exist — into the `shows` table. Reads the payloads `add` already cached, so a library that predates the table fills in with no API key and no network. |
 | `mediagram posters` | Fetch cover art for the films and series in the index into `<data dir>/posters/`, where a player reading this machine's index finds it. Paths come from the TMDB payloads `add` already cached, so it usually needs no key and no network. Re-running skips what is already held; delete the directory to fetch it again. A course has no provider id and so has no poster. |
 | `mediagram prepare <path> [--replace \| --out <dir>] [--mp4] [--audio a,b] [--subs a,b]` | Drop unwanted audio and subtitle tracks. `--mp4` also converts to a browser-playable mp4 — Matroska becomes mp4 and the audio becomes AAC, with the picture copied untouched — so the player stops converting it on every play. Warns when the video codec means that cannot help. `--out` writes a parallel tree; `--replace` rewrites in place, and only after the result passes every check. |
