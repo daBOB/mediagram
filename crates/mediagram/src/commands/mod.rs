@@ -18,6 +18,7 @@ pub mod remove;
 pub mod rescan;
 pub mod resume;
 pub mod serve;
+pub mod setup;
 pub mod smoke_upload;
 pub mod status;
 pub mod verify;

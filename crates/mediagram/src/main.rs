@@ -118,7 +118,19 @@ async fn main() -> Result<()> {
         .with_writer(std::io::stderr)
         .init();
     let cli = Cli::parse();
-    let cfg = config::load(cli.config.as_deref())?;
+    let cfg_path = match &cli.config {
+        Some(p) => p.clone(),
+        None => mediagram::paths::config_file()?,
+    };
+    // First run: `login` asks for api_id, api_hash and the channel and writes
+    // the config itself, rather than failing and sending the user off to copy
+    // the example. Every other command still expects a config to exist, so a
+    // non-interactive one never stalls on a prompt.
+    let cfg = if matches!(cli.cmd, Cmd::Login) && !cfg_path.exists() {
+        commands::setup::run(&cfg_path)?
+    } else {
+        config::load(Some(&cfg_path))?
+    };
     // Before anything opens library.db: the session store has to configure
     // SQLite first, and that configuration fails once SQLite is initialized.
     // See `telegram::client::preinit_session_store`.

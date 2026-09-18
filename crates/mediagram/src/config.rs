@@ -105,7 +105,7 @@ pub fn load(path: Option<&Path>) -> Result<Config> {
     };
     let text = std::fs::read_to_string(&path).with_context(|| {
         format!(
-            "cannot read config {}; copy config.example.toml there first",
+            "cannot read config {}; run `mediagram login` to create one, or copy config.example.toml there",
             path.display()
         )
     })?;

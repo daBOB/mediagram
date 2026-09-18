@@ -36,6 +36,7 @@ commands/          one module per subcommand, each exposing `run(...)`
   push_index.rs       snapshot + upload + pin library.db
   rescan.rs          rebuild the index from channel captions (disaster recovery)
   verify.rs          metadata check, or (--full) re-download + hash
+  setup.rs           first-run config: prompts for api_id/api_hash/channel
   login.rs / whoami.rs / smoke_upload.rs
   args.rs            `add`'s clap argument struct
 
@@ -325,7 +326,7 @@ All paths come from `directories::ProjectDirs::from("", "", "mediagram")`
 
 | Path | Contents |
 |---|---|
-| `$XDG_CONFIG_HOME/mediagram/config.toml` | User config (see `config.example.toml`). |
+| `$XDG_CONFIG_HOME/mediagram/config.toml` | User config (see `config.example.toml`). Written by `mediagram login` on first run — api_id, api_hash, channel — with the directory `chmod 0700` and the file `chmod 0600`, since it holds api_hash. |
 | `$XDG_DATA_HOME/mediagram/session.sqlite` | Telegram auth session (grammers `SqliteSession`). Directory `chmod 0700`, file `chmod 0600` — it holds the account's auth key. |
 | `$XDG_DATA_HOME/mediagram/library.db` | The canonical index (WAL mode). |
 | `$XDG_DATA_HOME/mediagram/tmdb-cache/*.json` | Disk-cached TMDB responses, keyed by `sha256(path + sorted query)`. |

@@ -28,14 +28,104 @@ cargo build --release
 
 ## Config
 
-Copy `config.example.toml` to `$XDG_CONFIG_HOME/mediagram/config.toml`
-(usually `~/.config/mediagram/config.toml`) and fill in `api_id`,
-`api_hash`, `channel` (a `-100…` channel id or the exact channel title),
-and `tmdb_key`. Every key can be overridden with a `MEDIAGRAM_<KEY>`
+With no config file, `mediagram login` asks for `api_id`, `api_hash` (both
+from https://my.telegram.org) and `channel` (a `-100…` channel id or the
+exact channel title), writes `$XDG_CONFIG_HOME/mediagram/config.toml`
+(usually `~/.config/mediagram/config.toml`, mode 600), and goes on to the
+phone number, login code and 2FA password. Every other command expects that
+file to exist. `tmdb_key` is not asked for: add it to the file before the
+first `add`, or pass `--manual`.
+
+To set it up by hand instead, copy `config.example.toml` to that path and
+fill in the same keys. Every key can be overridden with a `MEDIAGRAM_<KEY>`
 environment variable (e.g. `MEDIAGRAM_API_HASH`), and a different config
 path can be passed with `--config`. See `config.example.toml` for the full
 list of optional keys (`part_size`, `throttle_ms`, `max_attempts`,
 `tmp_dir`, `data_dir`).
+
+## Getting started
+
+```sh
+cargo build --release
+./target/release/mediagram login    # config prompts, then phone → code → 2FA
+./target/release/mediagram whoami   # proves the session works and the channel resolves
+```
+
+If `whoami` cannot find the channel it prints every channel and group the
+account can see, which is usually enough to spot a typo or a title that does
+not match exactly. Put `tmdb_key` in the config before the first `add`, or
+pass `--manual` to every one of them.
+
+What comes after login depends on whether this channel already holds a
+library.
+
+### A fresh start
+
+Nothing is in the channel yet, and there is no `library.db`. Just start
+adding:
+
+```sh
+mediagram add ~/Films/Arrival\ (2016).mkv
+mediagram add-show ~/Shows/Severance --tmdb <tmdb-id> --dry-run
+mediagram add-course ~/Courses/Rust\ Course --dry-run
+```
+
+`library.db` is created on the first `add`, and a snapshot of it is uploaded
+to the channel and pinned after every completed set unless `--no-push` says
+otherwise — so the channel stays enough to rebuild from on its own.
+`mediagram status` reports progress and is safe to run in a second terminal
+while an upload works; it needs a `library.db`, so it has nothing to say
+until the first `add`.
+
+Then, only if a player will read *this machine's* index rather than a
+published package, fill in the parts `add` does not:
+
+```sh
+mediagram metadata    # synopsis, genres, rating into the index
+mediagram posters     # cover art into <data dir>/posters/
+```
+
+Both read the TMDB payloads `add` already cached, so on the uploading
+machine they normally need neither key nor network.
+
+### An existing library
+
+**Same machine, index intact.** Nothing to do — the data dir
+(`$XDG_DATA_HOME/mediagram`, or `data_dir`) already holds `library.db`, the
+session and the TMDB cache. Check what state it is in, finish anything an
+interrupted run left behind, and carry on adding:
+
+```sh
+mediagram status
+mediagram resume       # completes every `pending` set, adopting parts already uploaded
+mediagram verify --all # metadata-only check; --full re-downloads and hashes
+```
+
+**New machine, library already in the channel.** Log in as above, then get
+an index. Copying it across is the better path when the old machine is
+reachable, because it keeps what the channel does not record — `verified_at`
+timestamps, the TMDB cache:
+
+```sh
+# with nothing uploading on the old host; the -wal sidecar holds recent writes
+scp old-host:'~/.local/share/mediagram/library.db*' ~/.local/share/mediagram/
+```
+
+Otherwise rebuild it from the channel's own captions:
+
+```sh
+mediagram rescan
+```
+
+`rescan` is additive: it inserts what it finds and recomputes each touched
+set's status, but never demotes or deletes a set the local index already
+had, and never re-uploads anything. On a machine that has never run `add`
+the TMDB cache is cold, so `metadata` and `posters` do need a real
+`tmdb_key` there. Copy the data dir's `tmdb-cache/` too if you want to avoid
+that; do not copy `session.sqlite` around casually — it is the account.
+
+Either way, `mediagram status` afterwards should show the library you
+expect, and adding continues as on any other machine.
 
 ## Commands
 
