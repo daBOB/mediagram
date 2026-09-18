@@ -15,17 +15,28 @@ anyhow = "1"
 # once grammers-crypto builds against rc1.
 glass_pumpkin = "=2.0.0-rc0"
 grammers-client = "0.10"
-# default-features = false drops "sqlite-storage", and with it libsql's
-# statically-linked sqlite3. The session is held as a MemorySession rebuilt
-# from the stored auth key instead, leaving exactly one sqlite in the binary.
-grammers-session = { version = "0.10", default-features = false }
 grammers-tl-types = "0.10"
 hex = { workspace = true }
 mlib-spec = { path = "../mlib-spec" }
-# "bundled", unlike the CLI crate: the Android NDK sysroot ships no
-# libsqlite3, so the index has to carry its own. It is safe here only because
-# the session store above no longer brings a second one — two static copies in
-# one binary collide on duplicate `sqlite3_*` symbols.
-rusqlite = { version = "0.40.2", features = ["bundled"] }
 sha2 = { workspace = true }
 tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "io-util", "net", "time"] }
+
+# Exactly one sqlite3 may end up in the binary, and which crate supplies it
+# differs by platform. Both shapes are spelled per-target so that a host build
+# never sees the Android one: the workspace resolver ignores features on
+# target-specific dependencies whose target is not being built, so the CLI,
+# which shares these crates, keeps linking as it always has.
+
+# The NDK sysroot ships no libsqlite3, so the index has to carry its own. That
+# is safe only because the session store drops libsql's copy in the same
+# breath — two static sqlite3 in one binary collide on duplicate symbols. The
+# session is held as a MemorySession rebuilt from the stored auth key instead.
+[target.'cfg(target_os = "android")'.dependencies]
+grammers-session = { version = "0.10", default-features = false }
+rusqlite = { version = "0.40.2", features = ["bundled"] }
+
+# Off Android there is a system libsqlite3 to link against, so rusqlite needs
+# no copy of its own and the session store keeps its sqlite-backed storage.
+[target.'cfg(not(target_os = "android"))'.dependencies]
+grammers-session = "0.10"
+rusqlite = "0.40.2"
