@@ -4,4 +4,5 @@
 pub mod adopt;
 pub mod part_reader;
 pub mod pipeline;
+pub mod progress;
 pub mod transport;

@@ -18,6 +18,10 @@ pub struct PartReader {
     inner: Take<File>,
     hasher: Sha256,
     bytes_read: u64,
+    /// Shared with whoever wants to watch. Written on every poll, which is
+    /// why it is an atomic and not a callback: this sits in the path every
+    /// chunk takes, and must cost nothing.
+    watcher: Option<std::sync::Arc<std::sync::atomic::AtomicU64>>,
 }
 
 impl PartReader {
@@ -29,7 +33,14 @@ impl PartReader {
             inner: file.take(len),
             hasher: Sha256::new(),
             bytes_read: 0,
+            watcher: None,
         })
+    }
+
+    /// Reports progress into `counter` as bytes pass through.
+    pub fn watched_by(mut self, counter: std::sync::Arc<std::sync::atomic::AtomicU64>) -> Self {
+        self.watcher = Some(counter);
+        self
     }
 
     /// Bytes handed to the consumer so far; equals the planned length only if
@@ -57,6 +68,9 @@ impl AsyncRead for PartReader {
         if let Poll::Ready(Ok(())) = &result {
             this.hasher.update(&buf.filled()[before..]);
             this.bytes_read += (buf.filled().len() - before) as u64;
+            if let Some(watcher) = &this.watcher {
+                watcher.store(this.bytes_read, std::sync::atomic::Ordering::Relaxed);
+            }
         }
         result
     }

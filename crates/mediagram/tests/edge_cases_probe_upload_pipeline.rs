@@ -145,7 +145,7 @@ async fn run_set_transport_send_fails_on_part_1() {
     let transport = FakeTransport::new();
     transport.set_fail_on_part(1);
 
-    let result = run_set(&conn, &transport, 0, &set_row, &src).await;
+    let result = run_set(&conn, &transport, 0, &set_row, &src, None).await;
     assert!(result.is_err(), "Expected failure on part 1");
 
     // Check database state: part 0 marked done, parts 1-2 still pending
@@ -188,7 +188,9 @@ async fn run_set_duplicate_adopt_first_wins() {
     transport.seed(text0.clone());
     transport.seed(text0.clone());
 
-    run_set(&conn, &transport, 0, &set_row, &src).await.unwrap();
+    run_set(&conn, &transport, 0, &set_row, &src, None)
+        .await
+        .unwrap();
 
     // Verify: part 0 was adopted (not re-uploaded), so send_count should be 1 (just part 1)
     assert_eq!(transport.send_count(), 1);
@@ -222,7 +224,9 @@ async fn run_set_caption_from_different_set_not_adopted() {
     let transport = FakeTransport::new();
     transport.seed(text);
 
-    run_set(&conn, &transport, 0, &set_row, &src).await.unwrap();
+    run_set(&conn, &transport, 0, &set_row, &src, None)
+        .await
+        .unwrap();
 
     // All parts should be uploaded (not adopted from different set)
     assert_eq!(transport.send_count(), 2);
@@ -242,7 +246,9 @@ async fn run_set_malformed_caption_ignored() {
     // Seed with a caption that cannot be parsed (not mlib format)
     transport.seed("This is not an mlib caption at all".to_string());
 
-    run_set(&conn, &transport, 0, &set_row, &src).await.unwrap();
+    run_set(&conn, &transport, 0, &set_row, &src, None)
+        .await
+        .unwrap();
 
     // Should upload all parts since the message was unparseable
     assert_eq!(transport.send_count(), 2);
@@ -268,7 +274,9 @@ async fn run_set_already_complete_is_noop() {
     sets::set_hash_and_complete(&conn, &set_row.set_id, &set_hash).unwrap();
 
     let transport = FakeTransport::new();
-    run_set(&conn, &transport, 0, &set_row, &src).await.unwrap();
+    run_set(&conn, &transport, 0, &set_row, &src, None)
+        .await
+        .unwrap();
 
     // No uploads should have happened (already complete)
     assert_eq!(transport.send_count(), 0);
@@ -284,7 +292,7 @@ async fn run_set_deleted_source_file_error() {
 
     // Don't create the source file, so it's "deleted"
     let transport = FakeTransport::new();
-    let result = run_set(&conn, &transport, 0, &set_row, &src).await;
+    let result = run_set(&conn, &transport, 0, &set_row, &src, None).await;
 
     assert!(result.is_err(), "Expected error when source file missing");
 }

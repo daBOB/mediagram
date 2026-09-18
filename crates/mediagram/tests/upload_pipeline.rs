@@ -22,7 +22,9 @@ async fn uploads_all_parts_and_completes_set() {
     assert_eq!(plan.len(), 3);
 
     let transport = FakeTransport::new();
-    run_set(&conn, &transport, 0, &set_row, &src).await.unwrap();
+    run_set(&conn, &transport, 0, &set_row, &src, None)
+        .await
+        .unwrap();
 
     assert_eq!(transport.send_count(), 3);
     assert!(
@@ -86,7 +88,9 @@ async fn resumes_via_adoption_without_duplicate_upload() {
     let transport = FakeTransport::new();
     transport.seed(text1);
 
-    run_set(&conn, &transport, 0, &set_row, &src).await.unwrap();
+    run_set(&conn, &transport, 0, &set_row, &src, None)
+        .await
+        .unwrap();
 
     // Only part 2 needed an actual upload; part 1 was adopted.
     assert_eq!(transport.send_count(), 1);
@@ -118,7 +122,9 @@ async fn playable_sql_reflects_set_completeness() {
     assert!(!playable(&conn, &set_row.set_id));
 
     let transport = FakeTransport::new();
-    run_set(&conn, &transport, 0, &set_row, &src).await.unwrap();
+    run_set(&conn, &transport, 0, &set_row, &src, None)
+        .await
+        .unwrap();
 
     assert!(playable(&conn, &set_row.set_id));
 }

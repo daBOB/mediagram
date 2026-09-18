@@ -15,7 +15,8 @@ use crate::upload::transport::TelegramTransport;
 /// (unless `no_push`) rather than after each individual set, since a bulk
 /// resume session is typically followed by one manual push anyway.
 pub async fn run(cfg: &Config, no_push: bool) -> Result<()> {
-    let conn = db::open(&cfg.data_dir()?)?;
+    let data_dir = cfg.data_dir()?;
+    let conn = db::open(&data_dir)?;
     let pending_sets = sets::list_pending(&conn)?;
     if pending_sets.is_empty() {
         println!("no pending sets");
@@ -27,7 +28,7 @@ pub async fn run(cfg: &Config, no_push: bool) -> Result<()> {
 
     let mut result = Ok(());
     for set in &pending_sets {
-        result = resume_one(&conn, &transport, cfg.throttle_ms, set).await;
+        result = resume_one(&conn, &transport, cfg.throttle_ms, set, &data_dir).await;
         if result.is_err() {
             break;
         }
@@ -48,6 +49,7 @@ async fn resume_one(
     transport: &TelegramTransport,
     throttle_ms: u64,
     set: &sets::SetRow,
+    data_dir: &std::path::Path,
 ) -> Result<()> {
     let source_key = format!("source:{}", set.set_id);
     let source_path = db::get_meta(conn, &source_key)?.ok_or_else(|| {
@@ -73,9 +75,16 @@ async fn resume_one(
         );
     }
 
-    run_set(conn, transport, throttle_ms, set, &source_path)
-        .await
-        .with_context(|| format!("resuming set {}", set.set_id))?;
+    run_set(
+        conn,
+        transport,
+        throttle_ms,
+        set,
+        &source_path,
+        Some(data_dir),
+    )
+    .await
+    .with_context(|| format!("resuming set {}", set.set_id))?;
 
     if parts::pending_parts(conn, &set.set_id)?.is_empty() {
         db::delete_meta(conn, &source_key)?;

@@ -11,6 +11,7 @@ use mlib_spec::caption::{Caption, Part};
 use rusqlite::Connection;
 
 use super::part_reader::PartReader;
+use super::progress;
 use super::transport::Transport;
 use crate::index::sets::SetRow;
 use crate::index::{db, parts, sets};
@@ -25,6 +26,7 @@ pub async fn run_set<T: Transport>(
     throttle_ms: u64,
     set: &SetRow,
     source_path: &Path,
+    data_dir: Option<&Path>,
 ) -> Result<()> {
     let template = set.caption_template()?;
     let total_parts = set.part_count;
@@ -38,6 +40,9 @@ pub async fn run_set<T: Transport>(
     };
 
     let started = Instant::now();
+    // Parts already in the channel before this run, so a resumed upload
+    // reports against the whole set rather than against what it did today.
+    let mut bytes_done: u64 = parts::done_bytes(conn, &set.set_id).unwrap_or(0);
     for part in pending {
         let (message_id, doc_id, sha256) = match adopted.get(&part.idx) {
             Some(found) => {
@@ -53,6 +58,8 @@ pub async fn run_set<T: Transport>(
                     total_parts,
                     source_path,
                     started,
+                    data_dir,
+                    bytes_done,
                 )
                 .await?
             }
@@ -67,6 +74,7 @@ pub async fn run_set<T: Transport>(
             &sha256,
         )?;
 
+        bytes_done = bytes_done.saturating_add(part.byte_length);
         if throttle_ms > 0 {
             tokio::time::sleep(Duration::from_millis(throttle_ms)).await;
         }
@@ -76,6 +84,11 @@ pub async fn run_set<T: Transport>(
         let hash = mlib_spec::set_hash::set_hash(&parts::done_hashes(conn, &set.set_id)?);
         sets::set_hash_and_complete(conn, &set.set_id, &hash)?;
         remove_recorded_tmp(conn, &set.set_id).await;
+        // Nothing is being uploaded any more, and a note left behind would
+        // describe a set that is finished.
+        if let Some(dir) = data_dir {
+            progress::clear(dir);
+        }
     }
 
     Ok(())
@@ -92,8 +105,10 @@ async fn upload_one<T: Transport>(
     total_parts: u32,
     source_path: &Path,
     started: Instant,
+    data_dir: Option<&Path>,
+    bytes_done: u64,
 ) -> Result<(i64, i64, String)> {
-    let mut reader = PartReader::open(source_path, part.byte_offset, part.byte_length)
+    let reader = PartReader::open(source_path, part.byte_offset, part.byte_length)
         .await
         .map_err(|err| {
             anyhow::anyhow!(
@@ -102,6 +117,27 @@ async fn upload_one<T: Transport>(
                 source_path.display()
             )
         })?;
+    // Watched while it is read, so another process can see a part move
+    // rather than waiting for it to land. The reporter stops when it drops
+    // at the end of this function, whether the part succeeded or not.
+    let counter = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
+    let _reporter = data_dir.map(|dir| {
+        progress::Reporter::start(
+            dir,
+            std::sync::Arc::clone(&counter),
+            progress::Progress {
+                set_id: set.set_id.clone(),
+                part: part.idx,
+                parts: total_parts,
+                bytes_sent: 0,
+                part_bytes: part.byte_length,
+                bytes_done,
+                set_bytes: set.total,
+                updated_at: progress::now_unix(),
+            },
+        )
+    });
+    let mut reader = reader.watched_by(std::sync::Arc::clone(&counter));
     let base_name = mlib_spec::part_name::base_name(template);
     let name =
         mlib_spec::part_name::part_file_name(&base_name, &set.container, part.idx, total_parts);
