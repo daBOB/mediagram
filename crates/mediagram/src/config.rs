@@ -171,6 +171,8 @@ fn apply_env(cfg: &mut Config) -> Result<()> {
 mod tests {
     use super::*;
 
+    use crate::test_env::EnvGuard;
+
     #[test]
     fn parses_minimal_toml_with_defaults() {
         let cfg: Config =
@@ -182,6 +184,7 @@ mod tests {
 
     #[test]
     fn empty_tmdb_key_in_file_loads_as_absent() {
+        let _env_guard = EnvGuard::new();
         // A commented-out or blanked key must reach `add` as None so the
         // "set a key or pass --manual" guard fires instead of a TMDB 401.
         let mut f = tempfile::NamedTempFile::new().unwrap();
@@ -196,6 +199,7 @@ mod tests {
 
     #[test]
     fn non_empty_tmdb_key_in_file_is_kept() {
+        let _env_guard = EnvGuard::new();
         let mut f = tempfile::NamedTempFile::new().unwrap();
         std::io::Write::write_all(
             f.as_file_mut(),
@@ -208,6 +212,7 @@ mod tests {
 
     #[test]
     fn package_key_is_redacted_and_empty_loads_as_absent() {
+        let _env_guard = EnvGuard::new();
         let mut f = tempfile::NamedTempFile::new().unwrap();
         std::io::Write::write_all(
             f.as_file_mut(),

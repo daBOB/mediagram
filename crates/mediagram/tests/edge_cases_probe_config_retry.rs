@@ -16,9 +16,43 @@ use mediagram::media;
 /// through `config::load`, and the process environment is shared.
 static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
+/// Holds [`ENV_LOCK`] and hides whatever MEDIAGRAM_* variables the developer
+/// happens to have exported, putting them back when the test ends.
+///
+/// `config::load` consults those variables by design and applies them before it
+/// validates, so a shell that has a real api_hash exported in it would satisfy
+/// the very field a test blanked out to prove the check fires. Clearing them
+/// keeps the file under test the only input. A test that wants an override sets
+/// it itself after taking the guard.
+struct EnvGuard {
+    _lock: std::sync::MutexGuard<'static, ()>,
+    saved: Vec<(String, String)>,
+}
+
+impl EnvGuard {
+    fn new() -> Self {
+        let lock = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let saved: Vec<(String, String)> = env::vars()
+            .filter(|(k, _)| k.starts_with("MEDIAGRAM_"))
+            .collect();
+        for (k, _) in &saved {
+            unsafe { env::remove_var(k) };
+        }
+        Self { _lock: lock, saved }
+    }
+}
+
+impl Drop for EnvGuard {
+    fn drop(&mut self) {
+        for (k, v) in &self.saved {
+            unsafe { env::set_var(k, v) };
+        }
+    }
+}
+
 #[test]
 fn config_env_override_invalid_part_size_non_numeric() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // MEDIAGRAM_PART_SIZE with non-numeric value should error at parse time
     let toml_content = r#"
 api_id = 123456
@@ -43,7 +77,7 @@ channel = "test_channel"
 
 #[test]
 fn config_env_override_part_size_not_mib_aligned() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // part_size 1048575 (1 MiB - 1) should fail alignment check
     let toml_content = r#"
 api_id = 123456
@@ -74,7 +108,7 @@ channel = "test_channel"
 
 #[test]
 fn config_missing_file_error_suggests_example_toml() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // Loading from non-existent path should mention config.example.toml
     let result = config::load(Some(Path::new("/nonexistent/fake_config.toml")));
     assert!(result.is_err());
@@ -84,7 +118,7 @@ fn config_missing_file_error_suggests_example_toml() {
 
 #[test]
 fn config_requires_api_hash_and_channel() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // Empty api_hash or channel should be rejected
     let toml_content = r#"
 api_id = 123456
@@ -105,7 +139,7 @@ channel = "test_channel"
 
 #[test]
 fn retry_max_attempts_zero() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // max_attempts = 0 should fail immediately (but config default is 5, so this
     // tests the boundary in config parsing, not retry logic itself)
     let toml_content = r#"
@@ -126,7 +160,7 @@ max_attempts = 0
 
 #[test]
 fn retry_max_attempts_one() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // max_attempts = 1 means a single attempt (no retry)
     let toml_content = r#"
 api_id = 123456
@@ -148,7 +182,7 @@ max_attempts = 1
 
 #[test]
 fn mp4_atoms_empty_file() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // needs_faststart on a 0-byte file should not panic
     let temp = NamedTempFile::new().unwrap();
     // File is already empty, just get its path
@@ -162,7 +196,7 @@ fn mp4_atoms_empty_file() {
 
 #[test]
 fn mp4_atoms_file_shorter_than_8_bytes() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // A file < 8 bytes (box header size) should be handled gracefully
     let temp = NamedTempFile::new().unwrap();
     std::fs::write(temp.path(), b"short").unwrap();
@@ -174,7 +208,7 @@ fn mp4_atoms_file_shorter_than_8_bytes() {
 
 #[test]
 fn mp4_atoms_uppercase_mp4_extension() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // .MP4 (uppercase) should still be recognized as MP4-family
     let temp = NamedTempFile::with_suffix(".MP4").unwrap();
     // Write a minimal valid MP4 with moov then mdat
@@ -194,7 +228,7 @@ fn mp4_atoms_uppercase_mp4_extension() {
 
 #[test]
 fn mp4_atoms_mkv_extension_short_circuits() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // .mkv should return false without reading file content
     let path = Path::new("/nonexistent/fake.mkv");
     let result = media::mp4_atoms::needs_faststart(path);
@@ -204,7 +238,7 @@ fn mp4_atoms_mkv_extension_short_circuits() {
 
 #[test]
 fn mp4_atoms_webm_extension_short_circuits() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // .webm should return false without reading file content
     let path = Path::new("/nonexistent/fake.webm");
     let result = media::mp4_atoms::needs_faststart(path);
@@ -214,7 +248,7 @@ fn mp4_atoms_webm_extension_short_circuits() {
 
 #[test]
 fn mp4_atoms_atom_size_larger_than_file() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // A box claiming a size larger than the file should be handled gracefully
     let temp = NamedTempFile::with_suffix(".mp4").unwrap();
     // Box: size=1000 (claiming 1000 bytes but file is only 8)
@@ -231,7 +265,7 @@ fn mp4_atoms_atom_size_larger_than_file() {
 
 #[test]
 fn mp4_atoms_largesize_box_truncated() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // A box with size=1 (indicating 64-bit largesize follows) but no largesize
     // should trigger an error
     let temp = NamedTempFile::with_suffix(".mp4").unwrap();
@@ -250,7 +284,7 @@ fn mp4_atoms_largesize_box_truncated() {
 
 #[test]
 fn mp4_atoms_mdat_before_moov() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // Create a file with mdat first, then moov → needs_faststart should return true
     let temp = NamedTempFile::with_suffix(".mp4").unwrap();
     let mdat_then_moov = vec![
@@ -272,7 +306,7 @@ fn mp4_atoms_mdat_before_moov() {
 
 #[test]
 fn classify_quality_boundary_heights() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // Boundaries of each bucket, given 16:9 frames where the height alone
     // already decides. Thresholds: >=2000 2160p, >=1300 1440p, >=900 1080p,
     // >=600 720p, >=400 480p, else SD.
@@ -289,7 +323,7 @@ fn classify_quality_boundary_heights() {
 
 #[test]
 fn classify_hdr_precedence_dovi_over_smpte2084() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // When both DOVI side data and smpte2084 are present,
     // DOVI should win (return "DV", not "HDR10")
     let result =
@@ -299,7 +333,7 @@ fn classify_hdr_precedence_dovi_over_smpte2084() {
 
 #[test]
 fn classify_hdr_precedence_dolby_vision_string() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // "Dolby Vision" side data type (case insensitive) should also trigger DV
     let result = media::classify::hdr_from_stream(Some("smpte2084"), &["Dolby Vision"]);
     assert_eq!(result, "DV");
@@ -307,7 +341,7 @@ fn classify_hdr_precedence_dolby_vision_string() {
 
 #[test]
 fn classify_lang_code_already_2_char() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // A 2-character code like "en" should pass through unchanged (lowercase)
     let result = media::classify::lang_code(Some("EN"));
     assert_eq!(result, Some("en".into()));
@@ -315,7 +349,7 @@ fn classify_lang_code_already_2_char() {
 
 #[test]
 fn classify_lang_code_unknown_3_char() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // An unknown 3-character code should pass through unchanged
     let result = media::classify::lang_code(Some("xyz"));
     assert_eq!(result, Some("xyz".into()));
@@ -323,7 +357,7 @@ fn classify_lang_code_unknown_3_char() {
 
 #[test]
 fn classify_lang_code_empty_string() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // Empty string should map to None
     let result = media::classify::lang_code(Some(""));
     assert_eq!(result, None);
@@ -331,7 +365,7 @@ fn classify_lang_code_empty_string() {
 
 #[test]
 fn classify_lang_code_whitespace_only() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // Whitespace-only tag should map to None
     let result = media::classify::lang_code(Some("   "));
     assert_eq!(result, None);
@@ -339,7 +373,7 @@ fn classify_lang_code_whitespace_only() {
 
 #[test]
 fn classify_container_no_extension() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // File with no extension should return empty string
     let result = media::classify::container_from_ext(Path::new("movie"));
     assert_eq!(result, "");
@@ -347,7 +381,7 @@ fn classify_container_no_extension() {
 
 #[test]
 fn classify_container_mixed_case_extension() {
-    let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env_guard = EnvGuard::new();
     // Mixed case extension should be lowercased
     let result = media::classify::container_from_ext(Path::new("movie.MpEg"));
     assert_eq!(result, "mpeg");

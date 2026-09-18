@@ -13,5 +13,7 @@ pub mod paths;
 pub mod remove;
 pub mod serve;
 pub mod telegram;
+#[cfg(test)]
+pub(crate) mod test_env;
 pub mod upload;
 pub mod verify;

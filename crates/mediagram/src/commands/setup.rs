@@ -113,9 +113,11 @@ fn write(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_env::EnvGuard;
 
     #[test]
     fn written_config_loads_back() {
+        let _env_guard = EnvGuard::new();
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("mediagram/config.toml");
         write(&path, 12345, "0123456789abcdef", "-1001234567890", "k3y").unwrap();
@@ -131,6 +133,7 @@ mod tests {
 
     #[test]
     fn channel_title_with_quotes_survives_the_round_trip() {
+        let _env_guard = EnvGuard::new();
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("config.toml");
         write(&path, 1, "h", r#"Andre's "Backup\Films""#, "").unwrap();
@@ -151,6 +154,7 @@ mod tests {
 
     #[test]
     fn a_skipped_tmdb_key_is_written_empty_and_loads_as_absent() {
+        let _env_guard = EnvGuard::new();
         // The key stays in the file so it is obvious where to put one later,
         // and `add`'s "set one or pass --manual" guard still fires.
         let dir = tempfile::tempdir().unwrap();
@@ -162,6 +166,7 @@ mod tests {
 
     #[test]
     fn refuses_to_overwrite_an_existing_config() {
+        let _env_guard = EnvGuard::new();
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("config.toml");
         write(&path, 1, "h", "c", "").unwrap();
