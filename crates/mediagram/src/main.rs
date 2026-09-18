@@ -56,6 +56,8 @@ enum Cmd {
         #[arg(long)]
         since: Option<i64>,
     },
+    /// Show what the library holds and what is still being uploaded
+    Status,
     /// Record what the provider says about each film and series: synopsis,
     /// genres, rating. Reads payloads `add` already cached
     Metadata,
@@ -136,6 +138,7 @@ async fn main() -> Result<()> {
             full,
             since,
         } => commands::verify::run(&cfg, set_id, all, full, since).await,
+        Cmd::Status => commands::status::run(&cfg).await,
         Cmd::Metadata => commands::metadata::run(&cfg).await,
         Cmd::Posters => commands::posters::run(&cfg).await,
         Cmd::ExportPackage {

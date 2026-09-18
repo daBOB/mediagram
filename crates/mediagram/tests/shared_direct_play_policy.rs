@@ -74,3 +74,109 @@ fn codec_names_are_compared_the_way_ffprobe_spells_them() {
     assert!(!direct_play::known(&direct_play::AUDIO, "eac3"));
     assert!(!direct_play::known(&direct_play::CONTAINERS, "mkv"));
 }
+
+// What the lists mean when applied to a real file. The uploader warns from
+// this and `prepare --mp4` decides from it, so the two cannot answer
+// differently the way two hand-written copies did.
+
+use mediagram::media::direct_play::{Blocker, blockers, plays_directly};
+use mediagram::media::prepare_plan::{Stream, StreamKind};
+use std::path::Path;
+
+fn stream(kind: StreamKind, codec: &str) -> Stream {
+    Stream {
+        index: 0,
+        kind,
+        language: None,
+        bit_rate: None,
+        codec: Some(codec.into()),
+    }
+}
+
+#[test]
+fn an_mp4_of_h264_and_aac_plays_as_it_is() {
+    let streams = [
+        stream(StreamKind::Video, "h264"),
+        stream(StreamKind::Audio, "aac"),
+    ];
+
+    assert!(blockers(Path::new("a.mp4"), &streams).is_empty());
+    assert!(plays_directly(Path::new("a.mp4"), &streams));
+}
+
+#[test]
+fn matroska_is_reported_in_the_words_the_player_uses() {
+    let streams = [stream(StreamKind::Video, "h264")];
+
+    assert_eq!(
+        blockers(Path::new("a.mkv"), &streams),
+        vec![Blocker::Container("mkv".into())]
+    );
+    assert_eq!(
+        blockers(Path::new("a.mkv"), &streams)[0].reason(),
+        "Matroska container"
+    );
+}
+
+/// The bug this function exists to prevent: checking only the first audio
+/// track calls a file fine and leaves every other track unplayable.
+#[test]
+fn every_audio_track_is_judged_not_only_the_first() {
+    let streams = [
+        stream(StreamKind::Video, "h264"),
+        stream(StreamKind::Audio, "aac"),
+        stream(StreamKind::Audio, "eac3"),
+    ];
+
+    assert_eq!(
+        blockers(Path::new("a.mp4"), &streams),
+        vec![Blocker::Audio("eac3".into())]
+    );
+}
+
+#[test]
+fn a_reason_is_given_once_however_many_tracks_share_it() {
+    let streams = [
+        stream(StreamKind::Audio, "ac3"),
+        stream(StreamKind::Audio, "ac3"),
+        stream(StreamKind::Audio, "ac3"),
+    ];
+
+    assert_eq!(
+        blockers(Path::new("a.mp4"), &streams),
+        vec![Blocker::Audio("ac3".into())]
+    );
+}
+
+/// The distinction the warning turns on: a wrapper and an audio track are
+/// rewritten in seconds, a picture has to be re-encoded.
+#[test]
+fn only_the_picture_is_beyond_what_prepare_can_fix() {
+    assert!(Blocker::Container("mkv".into()).fixable_by_prepare());
+    assert!(Blocker::Audio("eac3".into()).fixable_by_prepare());
+    assert!(!Blocker::Video("hevc".into()).fixable_by_prepare());
+}
+
+/// An HEVC file in a Matroska wrapper has both kinds of problem, and saying
+/// only one of them would send someone to run a command that cannot help.
+#[test]
+fn a_file_can_be_blocked_by_both_kinds_at_once() {
+    let streams = [
+        stream(StreamKind::Video, "hevc"),
+        stream(StreamKind::Audio, "ac3"),
+    ];
+
+    let found = blockers(Path::new("a.mkv"), &streams);
+
+    assert_eq!(found.len(), 3);
+    assert_eq!(found.iter().filter(|b| b.fixable_by_prepare()).count(), 2);
+    assert_eq!(found.iter().filter(|b| !b.fixable_by_prepare()).count(), 1);
+}
+
+#[test]
+fn a_file_with_no_extension_is_not_a_container_anyone_knows() {
+    assert_eq!(
+        blockers(Path::new("nameless"), &[])[0].reason(),
+        "unknown container"
+    );
+}

@@ -4,6 +4,7 @@
 pub mod assets;
 pub mod db;
 pub mod parts;
+pub mod progress;
 pub mod rescan;
 pub mod rescan_parts;
 pub mod set_row;

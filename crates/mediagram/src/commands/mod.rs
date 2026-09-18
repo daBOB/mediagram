@@ -19,5 +19,6 @@ pub mod rescan;
 pub mod resume;
 pub mod serve;
 pub mod smoke_upload;
+pub mod status;
 pub mod verify;
 pub mod whoami;

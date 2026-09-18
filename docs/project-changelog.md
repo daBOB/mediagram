@@ -9,6 +9,26 @@ to `main`. Full phase-by-phase detail lives in
 
 **Shipped**
 
+- `mediagram status` names a set before describing it, prints the id the
+  advice below it refers to, and makes its numbers agree with their nouns.
+  "waiting 1 set(s)" invited the question it was meant to answer.
+- `mediagram status`: the set currently uploading and how far it has got, each
+  show against what the provider says exists, and whatever is left unfinished.
+  Inferred from the index rather than from any record of a running job, because
+  a bulk add is a sequence of `add` calls and nothing durable says how many are
+  meant to follow — which is what a real queue would record later.
+- `add --delete-source` deletes the file once every part of it is in the
+  channel, and `add-show --delete-source` frees a season's disk as it goes
+  rather than all at the end. The index is what says a set is complete; this
+  trusts the upload rather than reading the parts back, which is what `verify`
+  is for and what to run first when the local copy is the only other one.
+- `prepare --delete-source` removes each original once its replacement has been
+  written and passed every check. Refused without `--out`, where the source is
+  the destination and deleting it would delete the result.
+- `prepare --mp4` copies audio that a browser already plays instead of
+  re-encoding it. Turning AAC into AAC cost a generation of quality to change
+  nothing.
+
 - A series says how much of it is here: `8 of 10 episodes`, `1 of 2 seasons`.
   The index can count what it holds and only the provider knows what exists,
   so schema v6 records both totals. Holding all of a show says nothing about

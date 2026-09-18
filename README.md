@@ -43,12 +43,13 @@ list of optional keys (`part_size`, `throttle_ms`, `max_attempts`,
 |---|---|
 | `mediagram login` | Sign in with phone + code (+ 2FA password) and persist the session. **Must be run in a real, interactive terminal** — it prompts for input and there is no TTY when invoked from a non-interactive context. |
 | `mediagram whoami` | Print the signed-in account and the resolved library channel. |
-| `mediagram add <file>` | Split, upload, caption and index one media file. See flags below. |
+| `mediagram add <file>` | Split, upload, caption and index one media file. `--delete-source` removes the file once every part of it is in the channel. See flags below. |
 | `mediagram resume [--no-push]` | Finish every set left `pending` by an interrupted `add` (adopts already-uploaded parts instead of re-uploading them). |
 | `mediagram push-index` | Snapshot `library.db` and upload it to the channel as a pinned document. |
 | `mediagram verify <set-id> \| --all [--full] [--since <unix>]` | Check a set (or every set): default mode compares each part's message/document against the index; `--full` re-downloads and hashes every part, and `--since` skips parts already verified at or after that timestamp so an interrupted sweep resumes. `--all` skips sets that are still uploading. |
 | `mediagram add-course <dir> [--dry-run]` | Walk a course folder and upload every lesson: subdirectories are chapters, video files inside them are lessons. Re-running skips lessons already finished. |
 | `mediagram add-show <dir> --tmdb <id> [--dry-run] [--yes]` | Walk a series folder and upload every episode, one set each. Season and episode come from the file name; the show comes from `--tmdb`, which is required because release prefixes defeat the title guess. Prints what it would file where, says which files the player would convert on every play and whether `prepare` can fix it, then asks. Re-running skips episodes already complete. |
+| `mediagram status` | What the library holds and what is still going in: the set currently uploading with its part and byte progress, how far each show has got against what the provider says exists, and anything left unfinished. Read-only, so it is safe to run in another terminal while an upload is working. |
 | `mediagram metadata` | Record what TMDB says about each film and series — synopsis, genres, rating, network, status, and how many seasons and episodes exist — into the `shows` table. Reads the payloads `add` already cached, so a library that predates the table fills in with no API key and no network. |
 | `mediagram posters` | Fetch cover art for the films and series in the index into `<data dir>/posters/`, where a player reading this machine's index finds it. Paths come from the TMDB payloads `add` already cached, so it usually needs no key and no network. Re-running skips what is already held; delete the directory to fetch it again. A course has no provider id and so has no poster. |
 | `mediagram prepare <path> [--replace \| --out <dir>] [--mp4] [--audio a,b] [--subs a,b]` | Drop unwanted audio and subtitle tracks. `--mp4` also converts to a browser-playable mp4 — Matroska becomes mp4 and the audio becomes AAC, with the picture copied untouched — so the player stops converting it on every play. Warns when the video codec means that cannot help. `--out` writes a parallel tree; `--replace` rewrites in place, and only after the result passes every check. |
@@ -132,6 +133,7 @@ mediagram add <file>
   --slang a,b,c       Override detected subtitle languages
   --hdr <label>       Override detected HDR format (SDR, HDR10, HLG, DV)
   --no-push          Do not push the index after this set completes
+  --delete-source    Delete the file once every part is in the channel
 ```
 
 An explicit `--tmdb`/`--tvdb`/`--imdb` never prompts; without one, an
