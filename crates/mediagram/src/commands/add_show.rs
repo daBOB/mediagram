@@ -88,7 +88,7 @@ pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
             ep.episode,
             name(&ep.path)
         );
-        match upload_one(cfg, tmdb, ep).await {
+        match upload_one(cfg, tmdb, ep, args.delete_source).await {
             Ok(()) => uploaded += 1,
             // One unreadable file must not abandon the rest of the show.
             Err(err) => {
@@ -111,7 +111,7 @@ pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
     Ok(())
 }
 
-async fn upload_one(cfg: &Config, tmdb: u64, ep: &Episode) -> Result<()> {
+async fn upload_one(cfg: &Config, tmdb: u64, ep: &Episode, delete: bool) -> Result<()> {
     super::add::run(
         cfg,
         AddArgs {
@@ -121,6 +121,7 @@ async fn upload_one(cfg: &Config, tmdb: u64, ep: &Episode) -> Result<()> {
             episode: Some(ep.episode),
             // The index is pushed once when the show is done.
             no_push: true,
+            delete_source: delete,
             ..Default::default()
         },
     )
@@ -180,45 +181,60 @@ pub fn duplicate_episode(episodes: &[Episode]) -> Option<(u32, u32, Vec<String>)
 ///
 /// Probes run together: each spawns an ffprobe, and a season of them one at a
 /// time is a minute of nothing happening before the question is even asked.
-async fn survey(episodes: &[Episode]) -> Vec<Blocker> {
+async fn survey(episodes: &[Episode]) -> Vec<Vec<Blocker>> {
     stream::iter(episodes)
         .map(|ep| async move {
             let probed = streams::probe(&ep.path).await.ok()?;
-            Some(direct_play::blockers(&ep.path, &probed.streams))
+            let found = direct_play::blockers(&ep.path, &probed.streams);
+            // Files with nothing wrong are dropped here, so what comes back
+            // is one entry per file that will be converted — which is what
+            // the count reported to the viewer means.
+            (!found.is_empty()).then_some(found)
         })
         .buffered(PROBE_CONCURRENCY)
         .filter_map(|found| async move { found })
-        .flat_map(stream::iter)
         .collect()
         .await
 }
 
-fn report_blockers(blockers: &[Blocker], dir: &Path) {
-    if blockers.is_empty() {
+fn report_blockers(by_file: &[Vec<Blocker>], dir: &Path) {
+    if by_file.is_empty() {
         return;
     }
     println!();
-    // Split by what the viewer can do about it, not by what is wrong: one
-    // group has a command to run and the other does not.
-    let (fixable, stuck): (Vec<&Blocker>, Vec<&Blocker>) =
-        blockers.iter().partition(|b| b.fixable_by_prepare());
+    // Counted by file, not by reason: one file with three things wrong with
+    // it is still one file the viewer has to do something about. Split by
+    // what they can do — one group has a command to run and the other does
+    // not — and a file can appear in both.
+    let group = |fixable: bool| -> (usize, Vec<String>) {
+        let matching: Vec<&Blocker> = by_file
+            .iter()
+            .flatten()
+            .filter(|b| b.fixable_by_prepare() == fixable)
+            .collect();
+        let files = by_file
+            .iter()
+            .filter(|found| found.iter().any(|b| b.fixable_by_prepare() == fixable))
+            .count();
+        (files, reasons(&matching))
+    };
+    let (fixable_files, fixable_why) = group(true);
+    let (stuck_files, stuck_why) = group(false);
 
-    if !fixable.is_empty() {
+    if fixable_files > 0 {
         println!(
-            "{} file(s) will be converted on every play: {}",
-            fixable.len(),
-            reasons(&fixable).join("; ")
+            "{fixable_files} file(s) will be converted on every play: {}",
+            fixable_why.join("; ")
         );
         println!(
             "   mediagram prepare \"{}\" --mp4 --out <dir> would fix that",
             dir.display()
         );
     }
-    if !stuck.is_empty() {
+    if stuck_files > 0 {
         println!(
-            "{} file(s) will be converted on every play: {}",
-            stuck.len(),
-            reasons(&stuck).join(" / ")
+            "{stuck_files} file(s) will be converted on every play: {}",
+            stuck_why.join(" / ")
         );
         println!("   prepare cannot fix that — the picture itself would have to be re-encoded");
     }
