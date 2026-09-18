@@ -10,7 +10,7 @@
  * from reading a path the package never named.
  */
 
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const KEY = /^tmdb-(?:movie|tv)-\d{1,12}$/;
@@ -30,43 +30,53 @@ export function posterKeyIsValid(key: string): boolean {
 /**
  * The posters in one catalog directory.
  *
- * The listing is taken once, when the catalog is opened: the directory only
- * changes when a refresh replaces the whole catalog, and that builds a new
- * store. A missing poster is a blank card, never an error.
+ * Asked of the filesystem each time rather than listed once. A package's
+ * artwork arrives all at once and never moves, which is what a cached listing
+ * was built for — but the same store now serves a local library, where
+ * `mediagram posters` adds artwork to a directory a player is already running
+ * against, and a listing taken at startup would hide it until a restart.
+ *
+ * Caching bought nothing here anyway: `has` is asked once per title when the
+ * catalog is built, so a cache guarded by the directory's mtime costs one
+ * `stat` per title to save one `readdir` per request. A missing poster is a
+ * blank card, never an error.
  */
 export class PosterStore {
-  private readonly available: Set<string>;
+  constructor(private readonly dir: string | null) {}
 
-  constructor(private readonly dir: string | null) {
-    this.available = new Set();
-    if (dir === null) return;
-    let names: string[];
-    try {
-      names = readdirSync(join(dir, "posters"));
-    } catch {
-      // A package without artwork is a normal package.
-      return;
-    }
-    for (const name of names) {
-      const key = name.replace(/\.jpg$/, "");
-      if (name.endsWith(".jpg") && posterKeyIsValid(key)) this.available.add(key);
-    }
+  /** Where one poster would be, or `null` when there is nowhere to look. */
+  private pathOf(key: string): string | null {
+    if (this.dir === null || !posterKeyIsValid(key)) return null;
+    return join(this.dir, "posters", `${key}.jpg`);
   }
 
   has(key: string | null): boolean {
-    return key !== null && this.available.has(key);
+    if (key === null) return false;
+    const path = this.pathOf(key);
+    return path !== null && existsSync(path);
   }
 
+  /** How many are held. Asked once, for the line the player logs at startup. */
   count(): number {
-    return this.available.size;
+    if (this.dir === null) return 0;
+    try {
+      return readdirSync(join(this.dir, "posters")).filter(
+        (name) => name.endsWith(".jpg") && posterKeyIsValid(name.slice(0, -4)),
+      ).length;
+    } catch {
+      // A library with no artwork is a normal library.
+      return 0;
+    }
   }
 
   /** The bytes of one poster, or `null`. */
   read(key: string): Uint8Array | null {
-    if (this.dir === null || !this.has(key)) return null;
+    const path = this.pathOf(key);
+    if (path === null) return null;
     try {
-      return new Uint8Array(readFileSync(join(this.dir, "posters", `${key}.jpg`)));
+      return new Uint8Array(readFileSync(path));
     } catch {
+      // Absent, or removed between the check and the read.
       return null;
     }
   }

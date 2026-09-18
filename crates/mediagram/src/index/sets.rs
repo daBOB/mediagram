@@ -166,6 +166,28 @@ pub fn complete_lesson_exists(
     Ok(found.is_some())
 }
 
+/// The status of an episode already recorded for this show, if any.
+///
+/// Identity is the show plus the two numbers, so a bulk add re-run after an
+/// interruption skips what finished without caring where the file sits.
+pub fn episode_status(
+    conn: &Connection,
+    tmdb: u64,
+    season: u32,
+    episode: u32,
+) -> Result<Option<String>> {
+    let episode = serde_json::to_string(&mlib_spec::caption::Episode::Single(episode))?;
+    let status: Option<String> = conn
+        .query_row(
+            "SELECT status FROM sets
+             WHERE tmdb = ?1 AND season = ?2 AND episode = ?3 AND kind = 'ep'",
+            params![tmdb as i64, season, episode],
+            |row| row.get(0),
+        )
+        .optional()?;
+    Ok(status)
+}
+
 /// The status of a lesson already in the index, if any, so a caller can tell
 /// "finished" from "interrupted" and route the second to `resume`.
 pub fn lesson_status(

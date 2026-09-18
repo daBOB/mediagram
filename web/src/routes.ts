@@ -33,6 +33,10 @@ import { planReads, totalSize, type PartSpan, type Step } from "./range";
 import { isLocalAddress } from "./client-reach";
 import { SearchIndex } from "./search/index";
 import { PosterStore, posterKeyFor, posterKeyIsValid } from "./package/posters";
+import { showMeta } from "./shows";
+import type { AudioTrackReader } from "./audio-tracks";
+import { createStateRouter } from "./state/routes";
+import type { WatchState } from "./state/store";
 import { DEFAULT_MAX_BITRATE } from "./config";
 import { contentType, planResponse } from "./response";
 
@@ -50,10 +54,20 @@ export interface PlayerRequest {
   seek?: string | null;
   /** `?maxrate=` on a transcode request, in bits per second. */
   maxrate?: string | null;
+  /** `?audio=` on a transcode request: which audio stream, as `0:a:N`. */
+  audio?: string | null;
   /** `?q=` on a search request. */
   query?: string | null;
   /** The address the request came from, already resolved through any proxy. */
   client?: string;
+  /** The body of a write, already read and bounded. `null` for a read. */
+  body?: string | null;
+  /** `content-type`, lowercased, without parameters. */
+  contentType?: string | null;
+  /** `Origin`, where the browser sent one. */
+  origin?: string | null;
+  /** `Host`, to compare an `Origin` against. */
+  host?: string | null;
 }
 
 /** A session's answer: the file, or the reason there is none. */
@@ -71,9 +85,14 @@ export interface HlsServer {
    *
    * Joining rather than always starting is what stops two viewers of the same
    * title running two encoders — but only when they want the same encode, so
-   * the bitrate is part of what identifies one.
+   * the bitrate and the chosen audio stream are part of what identifies one.
    */
-  begin(setId: string, seekSeconds: number, maxrateBits: number): Promise<string>;
+  begin(
+    setId: string,
+    seekSeconds: number,
+    maxrateBits: number,
+    audioTrack?: number,
+  ): Promise<string>;
 
   /**
    * The file for a session, or why there isn't one.
@@ -102,9 +121,12 @@ export interface PlayerResponse {
 
 const STREAM_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/stream$/;
 const SUMMARY_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/summary$/;
+const AUDIO_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/audio$/;
 // Spelled out for the same reason as everything else that reaches a file
 // name: the key comes from a caption, and `posterKeyIsValid` checks it again.
 const POSTER_PATH = /^\/api\/posters\/(tmdb-(?:movie|tv)-\d{1,12})\.jpg$/;
+// The same key names the show itself, which is what a series page asks about.
+const SHOW_PATH = /^\/api\/shows\/(tmdb-(?:movie|tv)-\d{1,12})$/;
 // The language is spelled out rather than captured loosely: it ends up in no
 // path, but a route that accepts `../` invites someone to make it one.
 const SUBTITLE_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/subtitles\/([A-Za-z]{2,8})\.vtt$/;
@@ -144,6 +166,7 @@ const CONTENT_TYPES: Record<string, string> = {
   ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".svg": "image/svg+xml",
+  ".woff2": "font/woff2",
 };
 
 /**
@@ -192,6 +215,21 @@ function requestedBitrate(asked: string | null | undefined, cap: number): number
   return Math.min(cap, Math.max(MIN_BITRATE, Math.floor(wanted)));
 }
 
+/**
+ * Which audio stream a transcode request asked for, as `0:a:N`.
+ *
+ * Floored and clamped at zero for the same reason the seek position is: the
+ * number comes from a browser and reaches an ffmpeg command line. A negative
+ * or fractional one would become `-map 0:a:-1`, which ffmpeg exits on while
+ * the request waits out the whole readiness timeout. A track past the end of
+ * the file is left to ffmpeg, which fails cleanly and says so.
+ */
+function requestedAudioTrack(asked: string | null | undefined): number {
+  const wanted = Number(asked);
+  if (!Number.isFinite(wanted) || wanted <= 0) return 0;
+  return Math.floor(wanted);
+}
+
 /** A text response, with its length stated as every response states one. */
 function text(body: string, contentType: string): PlayerResponse {
   const bytes = new TextEncoder().encode(body);
@@ -221,6 +259,21 @@ export interface RouterOptions {
   /** The artwork the current catalog carries, if any. */
   posters?: PosterStore;
   /**
+   * Reads which audio streams a title holds, for the player's chooser.
+   *
+   * Absent when the player was built without one, in which case every title
+   * answers with no tracks and the page simply offers no choice.
+   */
+  audio?: AudioTrackReader;
+  /**
+   * Where watch positions, the watchlist and collections are kept.
+   *
+   * Absent when the player was built without one, in which case the state
+   * routes answer as a player that remembers nothing — which is also what a
+   * present-but-unwritable store answers.
+   */
+  state?: WatchState;
+  /**
    * What a remote link is assumed to carry, in bits per second.
    *
    * The page needs it to decide whether a title can be played as it is: the
@@ -230,7 +283,16 @@ export interface RouterOptions {
 }
 
 export function createRouter(options: RouterOptions) {
-  const { db, source, hls } = options;
+  const { db, source, hls, audio } = options;
+  // Built once: it closes over the store and over the catalog's own answer to
+  // "will this play", so state can never accumulate rows for titles that are
+  // not in the library.
+  const stateRoute = options.state
+    ? createStateRouter({
+        state: options.state,
+        isPlayable: (setId) => playableSet(db, setId) !== null,
+      })
+    : null;
   const maxBitrate = options.maxBitrate ?? DEFAULT_MAX_BITRATE;
   const posters = options.posters ?? new PosterStore(null);
   // Folded once here rather than per request: the catalog cannot change while
@@ -249,6 +311,9 @@ export function createRouter(options: RouterOptions) {
     const key = posterKeyFor(set.kind, tmdb);
     return {
       ...set,
+      // The show's identity, whether or not artwork exists for it: a page
+      // asks about the show by this even when the shelf has nothing to show.
+      showKey: key,
       poster: posters.has(key) ? key : null,
       hasSummary: summary(db, set.setId) !== null,
       subtitles: subtitleLanguages(db, set.setId),
@@ -256,6 +321,14 @@ export function createRouter(options: RouterOptions) {
   }
 
   return async function route(request: PlayerRequest): Promise<PlayerResponse> {
+    // Before the method gate below, because this is the one part of the API
+    // that answers to more than `GET`. It returns `null` for a path that is
+    // not its own, so everything else falls through unchanged.
+    if (stateRoute) {
+      const answered = stateRoute(request);
+      if (answered) return answered;
+    }
+
     // The one thing a viewer may change: a transcode they no longer want.
     // It holds the hardware encoder, and waiting for the idle reaper means a
     // second one starts while the abandoned one is still running.
@@ -313,6 +386,17 @@ export function createRouter(options: RouterOptions) {
     const streaming = STREAM_PATH.exec(request.path);
     if (streaming) return streamSet(db, source, request, streaming[1]!);
 
+    const wantsShow = SHOW_PATH.exec(request.path);
+    if (wantsShow) {
+      // The path pattern already constrains the key, and `showMeta` answers
+      // `null` for anything it cannot parse, so there is nothing to check
+      // here that is not checked twice already.
+      const meta = showMeta(db, wantsShow[1]!);
+      if (meta === null) return empty(404);
+      const described = text(JSON.stringify(meta), "application/json");
+      return request.method === "HEAD" ? { ...described, body: null } : described;
+    }
+
     const wantsPoster = POSTER_PATH.exec(request.path);
     if (wantsPoster) {
       const key = wantsPoster[1]!;
@@ -339,6 +423,16 @@ export function createRouter(options: RouterOptions) {
       return request.method === "HEAD" ? { ...response, body: null } : response;
     }
 
+    // Which audio streams this title holds. Answered from the file rather
+    // than the index — see `audio-tracks.ts` for why the index cannot say.
+    const wantsAudio = AUDIO_PATH.exec(request.path);
+    if (wantsAudio) {
+      if (playableSet(db, wantsAudio[1]!) === null) return empty(404);
+      const tracks = audio ? await audio.read(wantsAudio[1]!) : [];
+      const response = text(JSON.stringify({ tracks }), "application/json");
+      return request.method === "HEAD" ? { ...response, body: null } : response;
+    }
+
     const wantsSubtitle = SUBTITLE_PATH.exec(request.path);
     if (wantsSubtitle) {
       const body = subtitle(db, wantsSubtitle[1]!, wantsSubtitle[2]!);
@@ -357,13 +451,14 @@ export function createRouter(options: RouterOptions) {
       const asked = Number(request.seek ?? 0);
       const seek = Number.isFinite(asked) ? Math.max(0, Math.floor(asked)) : 0;
       const rate = requestedBitrate(request.maxrate, maxBitrate);
+      const track = requestedAudioTrack(request.audio);
 
       // A conversion that produces nothing is a 503 carrying the reason
       // rather than a 500: it is a title that could not be started now, and
       // the page has somewhere to show why.
       let playlist: string;
       try {
-        playlist = await hls.begin(beginMatch[1]!, seek, rate);
+        playlist = await hls.begin(beginMatch[1]!, seek, rate, track);
       } catch (error) {
         const reason = error instanceof Error ? error.message : "the conversion did not start";
         return { ...text(JSON.stringify({ error: reason }), "application/json"), status: 503 };

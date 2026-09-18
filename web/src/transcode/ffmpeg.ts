@@ -29,6 +29,7 @@ export class FfmpegRunner implements Runner {
     setId: string,
     seekSeconds: number,
     maxrateBits: number,
+    audioTrack = 0,
   ): Running {
     const args = transcodeArgs({
       input: `${this.options.baseUrl}/api/sets/${encodeURIComponent(setId)}/stream`,
@@ -36,6 +37,7 @@ export class FfmpegRunner implements Runner {
       encoder: this.options.encoder,
       seekSeconds,
       maxrateBits,
+      audioTrack,
       segmentSeconds: this.options.segmentSeconds,
       // Left to ffmpeg: it reads the real rate from the source, and
       // `-force_key_frames` holds the segment boundaries regardless.

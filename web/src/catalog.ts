@@ -21,7 +21,7 @@ import type { PartSpan } from "./range";
  * `crates/mediagram/tests/shared_playable_sql.rs`, which fails if the two
  * drift — the player reads the uploader's database and cannot migrate it.
  */
-export const EXPECTED_SCHEMA = 4;
+export const EXPECTED_SCHEMA = 6;
 
 /**
  * Refuses an index written by an older uploader.
@@ -69,6 +69,14 @@ export interface PlayableSet {
   container: string;
   vcodec: string | null;
   acodec: string | null;
+  /** Resolution label, e.g. `1080p`. */
+  quality: string | null;
+  /** `SDR`, `HDR10`, `HLG` or `DV`. */
+  hdr: string | null;
+  /** Audio languages as a JSON array, the way the index stores them. */
+  alang: string | null;
+  /** Subtitle languages the file itself carries, as a JSON array. */
+  slang: string | null;
   duration: number | null;
   total: number;
   partCount: number;
@@ -84,7 +92,8 @@ export interface PartLocation {
 }
 
 const COLUMNS = `set_id AS setId, kind, title, show, chap, path, season, episode, year,
-     container, vcodec, acodec, duration, total, part_count AS partCount, tmdb`;
+     container, vcodec, acodec, quality, hdr, alang, slang, duration, total,
+     part_count AS partCount, tmdb`;
 
 /**
  * Every playable set with the text a search reads, summaries included.

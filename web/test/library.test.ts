@@ -7,7 +7,14 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { groupLibrary, type CatalogSet } from "../public/lib/library.js";
+import {
+  divisionAt,
+  groupLibrary,
+  lessonsUnder,
+  levelEntries,
+  nextAfter,
+  type CatalogSet,
+} from "../public/lib/library.js";
 
 const set = (over: Record<string, unknown> = {}): CatalogSet => ({
   setId: `01SET${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
@@ -235,5 +242,158 @@ describe("folders, when a course carries them", () => {
     ]);
 
     expect(library.series[0]!.divisions[0]!.title).toBe("Season 1");
+  });
+});
+
+/**
+ * Walking into a course one floor at a time.
+ *
+ * Built to the shape the real course has: "Ausbildung Trading" holds
+ * "1. Grundlagen" holds "3. Signal" holds lessons beside one more folder.
+ */
+describe("levels", () => {
+  const course = () =>
+    groupLibrary([
+      set({ kind: "tut", show: "Kurs", path: "Ausbildung/1. Grundlagen/3. Signal", title: "A" }),
+      set({ kind: "tut", show: "Kurs", path: "Ausbildung/1. Grundlagen/3. Signal", title: "B" }),
+      set({
+        kind: "tut",
+        show: "Kurs",
+        path: "Ausbildung/1. Grundlagen/3. Signal/14. Exkurs",
+        title: "C",
+      }),
+      set({ kind: "tut", show: "Kurs", path: "Ausbildung/2. Fortgeschritten", title: "D" }),
+      set({ kind: "tut", show: "Kurs", path: "Basis", title: "E" }),
+    ]).tutorials[0]!;
+
+  test("an empty trail stands in for the course itself", () => {
+    const top = divisionAt(course().divisions, [])!;
+
+    expect(top.title).toBeNull();
+    expect(top.items).toHaveLength(0);
+    expect(top.children.map((c) => c.title)).toEqual(["Ausbildung", "Basis"]);
+  });
+
+  test("a trail walks to the folder it names, and no further", () => {
+    const level = divisionAt(course().divisions, ["Ausbildung", "1. Grundlagen"])!;
+
+    expect(level.title).toBe("1. Grundlagen");
+    // One floor down, not everything underneath.
+    expect(level.children.map((c) => c.title)).toEqual(["3. Signal"]);
+    expect(level.items).toHaveLength(0);
+  });
+
+  test("a folder holding lessons beside a folder shows both", () => {
+    const level = divisionAt(course().divisions, ["Ausbildung", "1. Grundlagen", "3. Signal"])!;
+
+    expect(level.items.map((i) => i.title)).toEqual(["A", "B"]);
+    expect(level.children.map((c) => c.title)).toEqual(["14. Exkurs"]);
+  });
+
+  test("a folder that is not there is null, not an empty level", () => {
+    expect(divisionAt(course().divisions, ["Nope"])).toBeNull();
+    expect(divisionAt(course().divisions, ["Ausbildung", "Nope"])).toBeNull();
+    // A real folder reached through one that is not.
+    expect(divisionAt(course().divisions, ["Nope", "1. Grundlagen"])).toBeNull();
+  });
+
+  test("a folder counts every lesson beneath it, not just its own", () => {
+    const divisions = course().divisions;
+
+    expect(lessonsUnder(divisionAt(divisions, ["Ausbildung"])!)).toBe(4);
+    expect(lessonsUnder(divisionAt(divisions, ["Ausbildung", "1. Grundlagen"])!)).toBe(3);
+    // Two of its own, plus the one in the folder below it.
+    expect(lessonsUnder(divisionAt(divisions, ["Ausbildung", "1. Grundlagen", "3. Signal"])!)).toBe(3);
+    expect(lessonsUnder(divisionAt(divisions, ["Basis"])!)).toBe(1);
+  });
+
+  test("the stand-in counts the whole course, as the shelf card does", () => {
+    const collection = course();
+    expect(lessonsUnder(divisionAt(collection.divisions, [])!)).toBe(collection.count);
+  });
+});
+
+describe("the order a level reads in", () => {
+  /** The real shape: lessons 1..3 with 2 missing, and a folder called "2.". */
+  const level = () => ({
+    items: [
+      set({ kind: "tut", episode: "1", title: "Definition" }),
+      set({ kind: "tut", episode: "3", title: "Umsetzung" }),
+    ],
+    children: [{ title: "2. Exkurs", season: null, items: [], children: [] }],
+  });
+
+  test("a numbered folder sits where its number puts it, not at the end", () => {
+    expect(levelEntries(level()).map((e) => (e.kind === "lesson" ? e.set.title : e.division.title)))
+      .toEqual(["Definition", "2. Exkurs", "Umsetzung"]);
+  });
+
+  test("what is unnumbered goes last, lessons before folders", () => {
+    const entries = levelEntries({
+      items: [set({ kind: "tut", episode: null, title: "Intro" })],
+      children: [
+        { title: "Anhang", season: null, items: [], children: [] },
+        { title: "1. Grundlagen", season: null, items: [], children: [] },
+      ],
+    });
+
+    expect(entries.map((e) => (e.kind === "lesson" ? e.set.title : e.division.title))).toEqual([
+      "1. Grundlagen",
+      "Intro",
+      "Anhang",
+    ]);
+  });
+
+  test("a level of only lessons is left exactly as it came", () => {
+    const entries = levelEntries({
+      items: [
+        set({ kind: "tut", episode: "1", title: "One" }),
+        set({ kind: "tut", episode: "2", title: "Two" }),
+      ],
+      children: [],
+    });
+
+    expect(entries.every((e) => e.kind === "lesson")).toBe(true);
+    expect(entries.map((e) => (e.kind === "lesson" ? e.set.title : null))).toEqual(["One", "Two"]);
+  });
+});
+
+describe("what comes next", () => {
+  // Built once and shared: `set()` mints a random id each call, so rebuilding
+  // between the lookup and the question asks about a different library.
+  const show = groupLibrary([
+    set({ kind: "ep", show: "Star City", season: 1, episode: "1", title: "S1E1" }),
+    set({ kind: "ep", show: "Star City", season: 1, episode: "2", title: "S1E2" }),
+    set({ kind: "ep", show: "Star City", season: 2, episode: "1", title: "S2E1" }),
+  ]).series[0]!;
+
+  test("the next episode of the season", () => {
+    expect(nextAfter(show, show.divisions[0]!.items[0]!.setId)?.title).toBe("S1E2");
+  });
+
+  test("crosses into the next season without being told there was one", () => {
+    expect(nextAfter(show, show.divisions[0]!.items[1]!.setId)?.title).toBe("S2E1");
+  });
+
+  test("the last episode of the last season has nothing after it", () => {
+    expect(nextAfter(show, show.divisions[1]!.items[0]!.setId)).toBeNull();
+  });
+
+  test("a set that is not in this collection has no next", () => {
+    expect(nextAfter(show, "01NOTHERE")).toBeNull();
+  });
+
+  test("a course walks out of a folder and on to the next one", () => {
+    const course = groupLibrary([
+      set({ kind: "tut", show: "Kurs", path: "A", episode: "1", title: "A1" }),
+      set({ kind: "tut", show: "Kurs", path: "A/Tiefer", episode: "2", title: "A2" }),
+      set({ kind: "tut", show: "Kurs", path: "B", episode: "1", title: "B1" }),
+    ]).tutorials[0]!;
+
+    const a1 = course.divisions[0]!.items[0]!;
+    // Into the nested folder, then out of it and into the sibling.
+    expect(nextAfter(course, a1.setId)?.title).toBe("A2");
+    const a2 = course.divisions[0]!.children[0]!.items[0]!;
+    expect(nextAfter(course, a2.setId)?.title).toBe("B1");
   });
 });

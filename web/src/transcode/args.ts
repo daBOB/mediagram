@@ -23,6 +23,14 @@ export interface TranscodeRequest {
   seekSeconds: number;
   /** Ceiling for the output, in bits per second. */
   maxrateBits: number;
+  /**
+   * Which audio stream to take, as ffmpeg's `0:a:N` ordinal.
+   *
+   * Chosen by the viewer, defaulting to the first. It stays a single explicit
+   * stream for the reason spelled out at the `-map` below; what changed is
+   * only who decides which one.
+   */
+  audioTrack: number;
   segmentSeconds: number;
   /** The source's frame rate, or `null` when it could not be read. */
   frameRate: number | null;
@@ -58,11 +66,13 @@ export function transcodeArgs(request: TranscodeRequest): string[] {
 
   // Spelled out rather than left to ffmpeg's default selection, for two
   // reasons. "Best" audio means the track with the most channels, which on a
-  // film is routinely a commentary or another language. And a subtitle track
-  // muxed alongside stalls the encode outright: a forced track carries a
-  // handful of cues across two hours, and the HLS muxer holds the video back
-  // waiting for the next one. Subtitles reach the player by their own route.
-  args.push("-map", "0:v:0", "-map", "0:a:0", "-sn", "-dn");
+  // film is routinely a commentary or another language, so the stream is
+  // always named — either the first or the one the viewer chose. And a
+  // subtitle track muxed alongside stalls the encode outright: a forced track
+  // carries a handful of cues across two hours, and the HLS muxer holds the
+  // video back waiting for the next one. Subtitles reach the player by their
+  // own route.
+  args.push("-map", "0:v:0", "-map", `0:a:${request.audioTrack}`, "-sn", "-dn");
 
   if (request.encoder.kind === "vaapi") {
     args.push("-vf", "format=nv12,hwupload");

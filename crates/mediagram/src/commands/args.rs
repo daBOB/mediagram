@@ -1,11 +1,12 @@
-//! Arguments for `mediagram add`. Kept separate so the CLI surface is stable
+//! Arguments for the commands that take more than a flag or two. Kept
+//! separate so the CLI surface is stable
 //! while the command body is implemented.
 
 use std::path::PathBuf;
 
 use clap::Args;
 
-#[derive(Args, Debug, Clone)]
+#[derive(Args, Debug, Clone, Default)]
 pub struct AddArgs {
     pub file: PathBuf,
     /// TMDB id (movie or show)
@@ -109,6 +110,15 @@ pub struct PrepareArgs {
     /// Size a file must fit in; defaults to the configured part size
     #[arg(long)]
     pub limit: Option<u64>,
+    /// Also convert to a browser-playable mp4: Matroska becomes mp4, the
+    /// audio becomes AAC, and the index moves to the front. The picture is
+    /// still copied untouched
+    #[arg(long)]
+    pub mp4: bool,
+    /// Write the results under this directory, mirroring the source tree,
+    /// instead of replacing the originals
+    #[arg(long)]
+    pub out: Option<PathBuf>,
 }
 
 /// Arguments for `mediagram edit`.
@@ -150,4 +160,25 @@ pub struct EditArgs {
     /// Show what would change and stop
     #[arg(long)]
     pub dry_run: bool,
+}
+
+/// `mediagram add-show`: upload a series folder, one set per episode.
+#[derive(Args, Debug, Clone)]
+pub struct AddShowArgs {
+    /// Folder holding the show; season subfolders are walked
+    pub dir: PathBuf,
+    /// TMDB series id. Required: without it every episode would be resolved
+    /// separately, and a release prefix in the file names means answering the
+    /// same prompt once per file
+    #[arg(long)]
+    pub tmdb: Option<u64>,
+    /// Report what would be uploaded without uploading it
+    #[arg(long)]
+    pub dry_run: bool,
+    /// Do not push the index when the show is done
+    #[arg(long)]
+    pub no_push: bool,
+    /// Skip the confirmation when files would be converted on every play
+    #[arg(long)]
+    pub yes: bool,
 }

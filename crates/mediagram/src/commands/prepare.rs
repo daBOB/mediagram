@@ -1,10 +1,17 @@
 //! `mediagram prepare`: drop unwanted audio and subtitle tracks so a file
-//! fits in a single upload part.
+//! fits in a single upload part, and optionally convert it to something a
+//! browser can open without the player converting it on every play.
 //!
-//! The video is copied untouched, so the picture is bit-identical and a season
-//! takes minutes. Replacing the original is irreversible, so it happens only
-//! with `--replace`, and only after the new file passes every check in
-//! [`crate::media::prepare_check`].
+//! The video is copied untouched either way, so the picture is bit-identical
+//! and a season takes minutes. What `--mp4` changes is the wrapper and the
+//! audio codec, which is what actually blocks direct play: a Matroska file
+//! with E-AC-3 is converted for every viewer, every time, and re-encodes a
+//! perfectly good H.264 picture to do it.
+//!
+//! Replacing the original is irreversible, so it happens only with
+//! `--replace`; `--out` writes a parallel tree instead and leaves the sources
+//! alone. Either way the new file must pass every check in
+//! [`crate::media::prepare_check`] before it is kept.
 
 use std::path::{Path, PathBuf};
 
@@ -14,6 +21,7 @@ use tokio::process::Command;
 use super::args::PrepareArgs;
 use crate::config::Config;
 use crate::course::plan::is_video;
+use crate::media::direct_play;
 use crate::media::prepare_check::check_prepared;
 use crate::media::prepare_plan::{PreparePlan, Verdict, plan_prepare};
 use crate::media::streams;
@@ -24,6 +32,9 @@ use crate::media::streams;
 const WORKING_SUFFIX: &str = ".prepared.mkv";
 
 pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
+    if args.replace && args.out.is_some() {
+        bail!("--replace rewrites the originals and --out leaves them alone; pick one");
+    }
     let keep_audio = split_languages(&args.audio);
     let keep_subs = split_languages(&args.subs);
     let limit = args.limit.unwrap_or(cfg.part_size);
@@ -52,9 +63,14 @@ pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
 
     print_table(&planned, limit);
 
-    if !args.replace {
+    if args.mp4 {
+        warn_about_video_codecs(&planned);
+    }
+
+    if !args.replace && args.out.is_none() {
         println!(
-            "\ndry run: nothing was changed. Re-run with --replace to rewrite these files in place."
+            "\ndry run: nothing was changed. Re-run with --replace to rewrite these files in \
+             place, or --out <dir> to write them elsewhere."
         );
         return Ok(());
     }
@@ -62,13 +78,32 @@ pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
     let mut rewritten = 0usize;
     let mut failed = 0usize;
     for (file, size, duration, plan) in &planned {
-        if !matches!(
+        // Size is not the only reason to rewrite. `--mp4` exists to make a
+        // file playable, and a file already small enough still plays badly if
+        // it is Matroska with E-AC-3 inside.
+        let oversized = matches!(
             plan.verdict,
             Verdict::Prepare | Verdict::PrepareStillOversized
-        ) {
+        );
+        let unplayable = args.mp4 && !direct_play::plays_directly(file, &plan.keep);
+        if !oversized && !unplayable {
             continue;
         }
-        match rewrite(file, *size, *duration, plan, &keep_audio).await {
+        let dest = match &args.out {
+            Some(root) => Some(mirrored(file, &args.path, root, args.mp4)?),
+            None => None,
+        };
+        match rewrite(
+            file,
+            *size,
+            *duration,
+            plan,
+            &keep_audio,
+            dest.as_deref(),
+            args.mp4,
+        )
+        .await
+        {
             Ok(new_size) => {
                 rewritten += 1;
                 println!(
@@ -84,29 +119,65 @@ pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
             }
         }
     }
-    println!("\n{rewritten} rewritten, {failed} left unchanged");
+    let verb = if args.out.is_some() {
+        "written"
+    } else {
+        "rewritten"
+    };
+    println!("\n{rewritten} {verb}, {failed} left unchanged");
     if failed > 0 {
         bail!("{failed} file(s) could not be prepared");
     }
     Ok(())
 }
 
-/// Writes the pruned copy, checks it, and only then replaces the original.
+/// Writes the pruned copy, checks it, and only then puts it where it belongs.
+///
+/// `dest` of `None` means replacing the source, which is why the working file
+/// always sits beside the source: the rename that finishes the job is only
+/// atomic within one filesystem.
 async fn rewrite(
     source: &Path,
     source_size: u64,
     source_duration: f64,
     plan: &PreparePlan,
     keep_audio: &[String],
+    dest: Option<&Path>,
+    to_mp4: bool,
 ) -> Result<u64> {
-    let working = working_path(source);
+    let final_path = dest.unwrap_or(source);
+    let working = working_path(final_path);
+    if let Some(parent) = working.parent() {
+        std::fs::create_dir_all(parent)
+            .with_context(|| format!("creating {}", parent.display()))?;
+    }
     let _ = std::fs::remove_file(&working);
 
     let mut command = Command::new("ffmpeg");
     command.args(["-nostdin", "-v", "error", "-y", "-i"]);
     command.arg(source);
     command.args(plan.map_args());
-    command.args(["-c", "copy"]);
+    if to_mp4 {
+        // The picture is still copied; only the wrapper and the audio change.
+        // `-f mp4` is explicit because the working name ends in `.prepared`,
+        // which tells ffmpeg nothing about the format wanted.
+        command.args([
+            "-c:v",
+            "copy",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "384k",
+            "-c:s",
+            "mov_text",
+            "-movflags",
+            "+faststart",
+            "-f",
+            "mp4",
+        ]);
+    } else {
+        command.args(["-c", "copy"]);
+    }
     command.arg(&working);
     let status = command
         .status()
@@ -143,15 +214,72 @@ async fn rewrite(
         source_size,
         source_duration,
         &expected,
+        // Re-encoding the audio can round upwards on a file that had little
+        // to drop, so growth is only suspicious when tracks were merely cut.
+        to_mp4,
     ) {
         let _ = std::fs::remove_file(&working);
         bail!("prepared file rejected: {rejection:?}");
     }
 
-    // Same directory, so this is atomic: either the original or the prepared
-    // file is in place, never a half-written one.
-    std::fs::rename(&working, source).with_context(|| format!("replacing {}", source.display()))?;
+    // Same directory as the destination, so this is atomic: either the old
+    // file or the finished one is in place, never a half-written one.
+    std::fs::rename(&working, final_path)
+        .with_context(|| format!("writing {}", final_path.display()))?;
     Ok(new_size)
+}
+
+/// Where a source file lands under `--out`, keeping the tree it came from.
+///
+/// A file named directly has no tree to mirror — stripping the root off it
+/// leaves nothing — so it lands at the top of the output directory under its
+/// own name. Without that case the output directory is itself renamed into
+/// the result.
+fn mirrored(file: &Path, root: &Path, out: &Path, to_mp4: bool) -> Result<PathBuf> {
+    let relative = match file.strip_prefix(root) {
+        Ok(rest) if !rest.as_os_str().is_empty() => rest.to_path_buf(),
+        _ => PathBuf::from(
+            file.file_name()
+                .with_context(|| format!("{} has no file name", file.display()))?,
+        ),
+    };
+    let mut dest = out.join(relative);
+    if to_mp4 {
+        dest.set_extension("mp4");
+    }
+    if dest == file {
+        bail!(
+            "{} would be written over its own source; give --out a different directory",
+            dest.display()
+        );
+    }
+    Ok(dest)
+}
+
+/// Says which files `--mp4` cannot make direct-playable, and why.
+///
+/// Converting the wrapper of an HEVC file is wasted work: the player converts
+/// it on every play regardless, because the picture itself is what a browser
+/// will not open. Better to say so before an hour of encoding than after.
+fn warn_about_video_codecs(planned: &[(PathBuf, u64, f64, PreparePlan)]) {
+    let mut names: Vec<String> = planned
+        .iter()
+        .flat_map(|(file, _, _, plan)| direct_play::blockers(file, &plan.keep))
+        .filter(|blocker| !blocker.fixable_by_prepare())
+        .map(|blocker| blocker.reason())
+        .collect();
+    let count = names.len();
+    if count == 0 {
+        return;
+    }
+    names.sort_unstable();
+    names.dedup();
+    println!(
+        "\nwarning: {count} file(s) carry {}, which a browser will not open. \
+         Changing the wrapper does not change that — the picture itself would \
+         have to be re-encoded, so these will still be converted on every play.",
+        names.join(" / ")
+    );
 }
 
 fn print_table(planned: &[(PathBuf, u64, f64, PreparePlan)], limit: u64) {
@@ -193,7 +321,7 @@ fn print_table(planned: &[(PathBuf, u64, f64, PreparePlan)], limit: u64) {
     );
 }
 
-fn collect(path: &Path) -> Result<Vec<PathBuf>> {
+pub fn collect(path: &Path) -> Result<Vec<PathBuf>> {
     if path.is_file() {
         return Ok(vec![path.to_path_buf()]);
     }

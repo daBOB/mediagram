@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { clockTime, codecLine, episodeLabel, humanDuration, humanSize } from "../public/lib/format.js";
+import { clockTime, codecLine, countOf, endsAt, episodeLabel, humanDuration, humanSize, spellCount } from "../public/lib/format.js";
 
 describe("sizes", () => {
   test("scale to the unit that reads best", () => {
@@ -68,5 +68,56 @@ describe("a position on a scrub bar", () => {
     expect(clockTime(null)).toBe("0:00");
     expect(clockTime(-5)).toBe("0:00");
     expect(clockTime(Number.NaN)).toBe("0:00");
+  });
+});
+
+describe("extents", () => {
+  test("spell a count while it is short enough to read as a word", () => {
+    expect(spellCount(1)).toBe("one");
+    expect(spellCount(12)).toBe("twelve");
+    expect(spellCount(20)).toBe("twenty");
+  });
+
+  test("give up on words once the figure is quicker", () => {
+    expect(spellCount(21)).toBe("21");
+    expect(spellCount(170)).toBe("170");
+  });
+
+  test("refuse to spell something that is not a count", () => {
+    expect(spellCount(-1)).toBe("");
+    expect(spellCount(1.5)).toBe("");
+    expect(spellCount(Number.NaN)).toBe("");
+  });
+
+  test("agree with the noun they count", () => {
+    expect(countOf(1, "show")).toBe("one show");
+    expect(countOf(3, "show")).toBe("three shows");
+    expect(countOf(0, "film")).toBe("zero films");
+    expect(countOf(170, "lesson")).toBe("170 lessons");
+  });
+});
+
+describe("when it ends", () => {
+  const at = (hour: number, minute: number) => new Date(2026, 8, 18, hour, minute, 0);
+
+  test("adds what is left to the clock", () => {
+    // 1h 59m of Blade left at 20:42.
+    expect(endsAt(7142, at(20, 42))).toBe("22:41");
+    expect(endsAt(0, at(20, 42))).toBe("20:42");
+  });
+
+  test("rolls over midnight rather than counting past it", () => {
+    expect(endsAt(3600, at(23, 30))).toBe("00:30");
+    expect(endsAt(7200, at(23, 10))).toBe("01:10");
+  });
+
+  test("pads, so the figures line up with the ones beside them", () => {
+    expect(endsAt(60, at(9, 4))).toBe("09:05");
+  });
+
+  test("says nothing rather than guessing when the runtime is unknown", () => {
+    expect(endsAt(Number.NaN, at(20, 0))).toBe("");
+    expect(endsAt(-1, at(20, 0))).toBe("");
+    expect(endsAt(Number.POSITIVE_INFINITY, at(20, 0))).toBe("");
   });
 });

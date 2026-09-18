@@ -273,16 +273,18 @@ fn mp4_atoms_mdat_before_moov() {
 #[test]
 fn classify_quality_boundary_heights() {
     let _env_guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
-    // Test exact boundary heights: 2159/2160/1440/1081/720/479
-    // Thresholds: >=2000→2160p, >=1300→1440p, >=900→1080p, >=600→720p, >=400→480p, else→SD
-    assert_eq!(media::classify::quality_from_height(2159), "2160p"); // >= 2000
-    assert_eq!(media::classify::quality_from_height(2160), "2160p"); // >= 2000
-    assert_eq!(media::classify::quality_from_height(1440), "1440p"); // >= 1300
-    assert_eq!(media::classify::quality_from_height(1081), "1080p"); // >= 900
-    assert_eq!(media::classify::quality_from_height(720), "720p"); // >= 600
-    assert_eq!(media::classify::quality_from_height(479), "480p"); // >= 400
-    assert_eq!(media::classify::quality_from_height(399), "SD"); // < 400
-    assert_eq!(media::classify::quality_from_height(600), "720p"); // >= 600
+    // Boundaries of each bucket, given 16:9 frames where the height alone
+    // already decides. Thresholds: >=2000 2160p, >=1300 1440p, >=900 1080p,
+    // >=600 720p, >=400 480p, else SD.
+    let q = |h: u32| media::classify::quality_from_frame(h * 16 / 9, h);
+    assert_eq!(q(2159), "2160p");
+    assert_eq!(q(2160), "2160p");
+    assert_eq!(q(1440), "1440p");
+    assert_eq!(q(1081), "1080p");
+    assert_eq!(q(720), "720p");
+    assert_eq!(q(479), "480p");
+    assert_eq!(q(399), "SD");
+    assert_eq!(q(600), "720p");
 }
 
 #[test]

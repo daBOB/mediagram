@@ -1,17 +1,20 @@
-// Not wired into any command yet; the add command calls these once inspect
-// results are available.
-
-//! Pure classification helpers: pixel height to a caption `q` label, HDR
+//! Pure classification helpers: frame size to a caption `q` label, HDR
 //! transfer/side-data to a `hdr` label, ISO 639-2 to 639-1 language codes,
 //! and file extension to a container name. No I/O, easy to unit test.
 
 use std::path::Path;
 
-/// Maps a video stream's pixel height to the closest standard quality label.
-/// Uses the nearest common bucket rather than exact equality so odd
-/// encodes (e.g. 1076p) still classify sensibly.
-pub fn quality_from_height(h: u32) -> &'static str {
-    match h {
+/// The quality label for a frame, from whichever dimension carries the format.
+///
+/// Height alone undersells anything wider than 16:9. A 2.39:1 film is stored
+/// 1920x804, and 804 reads as 720p though every pixel across is 1080p. Width
+/// alone gets 4:3 wrong the same way, so the label comes from the greater of
+/// the real height and the height a 16:9 frame this wide would have.
+///
+/// Buckets are nearest-common rather than exact, so an odd encode (1076p)
+/// still classifies sensibly.
+pub fn quality_from_frame(width: u32, height: u32) -> &'static str {
+    match height.max(width * 9 / 16) {
         h if h >= 2000 => "2160p",
         h if h >= 1300 => "1440p",
         h if h >= 900 => "1080p",
@@ -91,15 +94,27 @@ mod tests {
 
     #[test]
     fn quality_thresholds() {
-        assert_eq!(quality_from_height(2160), "2160p");
-        assert_eq!(quality_from_height(2000), "2160p");
-        assert_eq!(quality_from_height(1440), "1440p");
-        assert_eq!(quality_from_height(1080), "1080p");
-        assert_eq!(quality_from_height(900), "1080p");
-        assert_eq!(quality_from_height(720), "720p");
-        assert_eq!(quality_from_height(480), "480p");
-        assert_eq!(quality_from_height(360), "SD");
-        assert_eq!(quality_from_height(64), "SD");
+        // 16:9, where height alone was always right.
+        assert_eq!(quality_from_frame(3840, 2160), "2160p");
+        assert_eq!(quality_from_frame(2560, 1440), "1440p");
+        assert_eq!(quality_from_frame(1920, 1080), "1080p");
+        assert_eq!(quality_from_frame(1280, 720), "720p");
+        assert_eq!(quality_from_frame(854, 480), "480p");
+        assert_eq!(quality_from_frame(640, 360), "SD");
+
+        // Scope ratios: every pixel across is 1080p, and the label must say so.
+        // These are real frames from the library — 2.20:1 and 2.39:1.
+        assert_eq!(quality_from_frame(1918, 872), "1080p");
+        assert_eq!(quality_from_frame(1920, 804), "1080p");
+        assert_eq!(quality_from_frame(3840, 1600), "2160p");
+
+        // 4:3 is the other direction: narrow for its height, and judging on
+        // width alone would call this 720p.
+        assert_eq!(quality_from_frame(1440, 1080), "1080p");
+
+        // Width unknown falls back to height.
+        assert_eq!(quality_from_frame(0, 1080), "1080p");
+        assert_eq!(quality_from_frame(0, 64), "SD");
     }
 
     #[test]

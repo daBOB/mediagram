@@ -11,6 +11,7 @@ fn stream(index: u32, kind: StreamKind, lang: Option<&str>) -> Stream {
         kind,
         language: lang.map(String::from),
         bit_rate: None,
+        codec: None,
     }
 }
 
@@ -35,7 +36,8 @@ fn a_good_prepared_file_is_accepted() {
             2547.1,
             4_426_249_518,
             2547.136,
-            &expected()
+            &expected(),
+            false
         ),
         Ok(())
     );
@@ -44,7 +46,15 @@ fn a_good_prepared_file_is_accepted() {
 #[test]
 fn an_empty_output_is_rejected() {
     assert_eq!(
-        check_prepared(&good(), 0, 2547.1, 4_426_249_518, 2547.136, &expected()),
+        check_prepared(
+            &good(),
+            0,
+            2547.1,
+            4_426_249_518,
+            2547.136,
+            &expected(),
+            false
+        ),
         Err(Rejection::Empty)
     );
     assert_eq!(
@@ -54,7 +64,8 @@ fn an_empty_output_is_rejected() {
             2547.1,
             4_426_249_518,
             2547.136,
-            &expected()
+            &expected(),
+            false
         ),
         Err(Rejection::Empty)
     );
@@ -74,7 +85,8 @@ fn an_output_with_no_video_is_rejected() {
             2547.1,
             4_426_249_518,
             2547.136,
-            &expected()
+            &expected(),
+            false
         ),
         Err(Rejection::NoVideo)
     );
@@ -93,7 +105,8 @@ fn an_output_missing_a_language_we_meant_to_keep_is_rejected() {
             2547.1,
             4_426_249_518,
             2547.136,
-            &expected()
+            &expected(),
+            false
         ),
         Err(Rejection::MissingLanguage("ger".into()))
     );
@@ -109,6 +122,7 @@ fn a_truncated_output_is_rejected() {
         4_426_249_518,
         2547.136,
         &expected(),
+        false,
     );
     assert!(
         matches!(err, Err(Rejection::DurationChanged { .. })),
@@ -125,7 +139,8 @@ fn a_sub_second_duration_difference_is_tolerated() {
             2547.9,
             4_426_249_518,
             2547.136,
-            &expected()
+            &expected(),
+            false
         ),
         Ok(())
     );
@@ -140,6 +155,7 @@ fn an_output_that_grew_is_rejected() {
         4_426_249_518,
         2547.136,
         &expected(),
+        false,
     );
     assert!(matches!(err, Err(Rejection::NotSmaller { .. })), "{err:?}");
 }
@@ -152,7 +168,15 @@ fn language_matching_is_case_insensitive() {
         stream(2, StreamKind::Audio, Some("GER")),
     ];
     assert_eq!(
-        check_prepared(&upper, 100, 2547.1, 4_426_249_518, 2547.136, &expected()),
+        check_prepared(
+            &upper,
+            100,
+            2547.1,
+            4_426_249_518,
+            2547.136,
+            &expected(),
+            false
+        ),
         Ok(())
     );
 }

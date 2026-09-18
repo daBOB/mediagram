@@ -1,6 +1,7 @@
 //! ffprobe inspection, HDR/quality classification, faststart detection and remux.
 
 pub mod classify;
+pub mod direct_play;
 pub mod inspect;
 pub mod mp4_atoms;
 pub mod prepare_check;

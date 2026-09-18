@@ -11,7 +11,7 @@
  */
 
 import { el } from "./dom.js";
-import { codecLine, episodeLabel, humanDuration, humanSize } from "./format.js";
+import { codecLine, countOf, episodeLabel, humanDuration, humanSize } from "./format.js";
 
 /** How a hit earned its place, in words rather than a field name. */
 const WHY = {
@@ -43,11 +43,16 @@ function locationOf(hit) {
  * dialog the shelves open.
  */
 export function renderSearch(main, query, hits, onPlay) {
-  main.append(el("h1", null, "Search"));
-  main.append(
-    el("p", "sub", hits.length === 0 ? `Nothing matches “${query}”` : `${hits.length} result(s) for “${query}”`),
-  );
-  if (hits.length === 0) return;
+  const head = el("header", "shelf-head");
+  head.append(el("h1", null, `“${query}”`));
+  // The same block the shelves use, so a result list is a page of the
+  // catalogue rather than a different screen.
+  head.append(el("p", "sub", hits.length === 0 ? "nothing found" : countOf(hits.length, "result")));
+  main.append(head);
+  if (hits.length === 0) {
+    main.append(el("p", "empty", "No title, folder or summary in the library mentions that."));
+    return;
+  }
 
   const block = el("section", "season");
   for (const hit of hits) {

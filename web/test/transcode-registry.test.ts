@@ -64,6 +64,39 @@ describe("sessions", () => {
     expect(started).toHaveLength(2);
   });
 
+  test("a different audio track is a different session", async () => {
+    const registry = new TranscodeRegistry(work, fakeRunner());
+
+    // Sharing here would hand the second viewer the first one's language.
+    const a = await registry.sessionFor("01SET", 0, 8_000_000, 0);
+    const b = await registry.sessionFor("01SET", 0, 8_000_000, 2);
+
+    expect(a.id).not.toBe(b.id);
+    expect(a.directory).not.toBe(b.directory);
+    expect(started).toHaveLength(2);
+  });
+
+  test("the same audio track joins the session already running", async () => {
+    const registry = new TranscodeRegistry(work, fakeRunner());
+
+    const a = await registry.sessionFor("01SET", 0, 8_000_000, 2);
+    const b = await registry.sessionFor("01SET", 0, 8_000_000, 2);
+
+    expect(a.id).toBe(b.id);
+    expect(started).toHaveLength(1);
+  });
+
+  test("an unstated track is the first one, and joins a session that said so", async () => {
+    const registry = new TranscodeRegistry(work, fakeRunner());
+
+    const a = await registry.sessionFor("01SET", 0, 8_000_000);
+    const b = await registry.sessionFor("01SET", 0, 8_000_000, 0);
+
+    expect(a.id).toBe(b.id);
+    expect(a.audioTrack).toBe(0);
+    expect(started).toHaveLength(1);
+  });
+
   test("a different set is a different session", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner());
 

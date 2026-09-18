@@ -7,10 +7,11 @@ use super::args::AddArgs;
 use super::push_index;
 use crate::config::Config;
 use crate::index::sets::SetRow;
-use crate::index::{assets, db, parts, sets};
+use crate::index::{assets, db, parts, sets, shows};
 use crate::media::{classify, inspect, remux};
 use crate::metadata::prompt::DialoguerPrompter;
 use crate::metadata::resolve::{self, ResolveInput};
+use crate::metadata::show_details;
 use crate::metadata::tmdb_client::TmdbClient;
 use crate::telegram::client::Tg;
 use crate::upload::pipeline::run_set;
@@ -59,6 +60,10 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
             .await
             .context("resolving metadata")?,
     };
+
+    // Kept before the caption takes ownership of the resolved ids.
+    let show_id = course.is_none().then_some(resolved.ids.tmdb).flatten();
+    let show_kind = resolved.kind;
 
     let source_path = remux::ensure_faststart(&args.file, cfg.tmp_dir.as_deref(), args.no_remux)
         .await
@@ -123,6 +128,16 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
     let set_row = SetRow::from_caption(&caption, created_at)?;
 
     let mut conn = db::open(&data_dir)?;
+    // What the provider says about the show this belongs to. The payload is
+    // already cached from resolving the title, so this is a read of disk.
+    // A failure costs the show its description and nothing else — the upload
+    // is the point, and a synopsis is not worth failing it for.
+    if let Some(id) = show_id {
+        match show_details::fetch(&api, show_kind, id, &cfg.tmdb_language).await {
+            Ok(row) => shows::upsert(&conn, &row)?,
+            Err(err) => tracing::warn!(id, error = %err, "no description recorded for this title"),
+        }
+    }
     let source_key = format!("source:{set_id}");
     let source_value = source_path
         .canonicalize()

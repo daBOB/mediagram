@@ -84,6 +84,35 @@ pub struct DetailsResponse {
     /// already exist on disk usable with no network access.
     #[serde(default)]
     pub poster_path: Option<String>,
+
+    // What a provider says about the title rather than about the file. Every
+    // one of these is already in the cached payload `add` fetched to resolve
+    // the title, so reading them back costs no request and no API key.
+    #[serde(default)]
+    pub overview: Option<String>,
+    #[serde(default)]
+    pub tagline: Option<String>,
+    #[serde(default)]
+    pub genres: Vec<NamedRef>,
+    #[serde(default)]
+    pub vote_average: Option<f64>,
+    #[serde(default)]
+    pub networks: Vec<NamedRef>,
+    #[serde(default)]
+    pub status: Option<String>,
+    #[serde(default)]
+    pub last_air_date: Option<String>,
+    /// How many the provider says exist, which the index cannot know.
+    #[serde(default)]
+    pub number_of_seasons: Option<u32>,
+    #[serde(default)]
+    pub number_of_episodes: Option<u32>,
+}
+
+/// TMDB spells a genre, a network and a company all the same way.
+#[derive(Debug, Clone, serde::Deserialize, PartialEq, Eq)]
+pub struct NamedRef {
+    pub name: String,
 }
 
 impl DetailsResponse {

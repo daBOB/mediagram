@@ -31,6 +31,7 @@ struct RawProbe {
 struct RawStream {
     index: u32,
     codec_type: Option<String>,
+    codec_name: Option<String>,
     // ffprobe reports numbers as strings.
     bit_rate: Option<String>,
     #[serde(default)]
@@ -67,6 +68,7 @@ pub fn parse_probe(json: &str) -> Result<Probed> {
             },
             language: s.tags.and_then(|t| t.language),
             bit_rate: s.bit_rate.and_then(|b| b.parse().ok()),
+            codec: s.codec_name,
         })
         .collect();
     let format = raw.format;

@@ -4,39 +4,119 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>mediagram</title>
+    <!-- The two faces the first screen sets text in, asked for before the
+         stylesheet has been parsed. Self-hosted rather than fetched from a
+         font CDN: this page is often opened on a link with no way out to the
+         internet, and a catalogue that renders in Times because the house
+         wifi is down is a catalogue that looks broken. -->
+    <link rel="preload" href="/font/fraunces-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/font/newsreader-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
-    <nav>
+    <!-- A masthead rather than a column down the left: there are three
+         shelves, and a sidebar would spend a fifth of the page's width
+         saying so. -->
+    <header class="masthead">
       <div class="brand">mediagram</div>
-      <a href="#/movies" data-section="movies">Movies <span class="n" id="n-movies"></span></a>
-      <a href="#/series" data-section="series">Series <span class="n" id="n-series"></span></a>
-      <a href="#/tutorials" data-section="tutorials">Tutorials <span class="n" id="n-tutorials"></span></a>
+      <nav>
+        <a href="#/movies" data-section="movies">Movies<span class="n" id="n-movies"></span></a>
+        <a href="#/series" data-section="series">Series<span class="n" id="n-series"></span></a>
+        <a href="#/tutorials" data-section="tutorials">Tutorials<span class="n" id="n-tutorials"></span></a>
+        <!-- The three that come from what has been watched rather than from
+             the catalog. Set apart, because a shelf you filled and a shelf the
+             library filled are different kinds of thing. -->
+        <a href="#/continue" data-section="continue" class="kept">Continue<span class="n" id="n-continue"></span></a>
+        <a href="#/watchlist" data-section="watchlist" class="kept">Watchlist<span class="n" id="n-watchlist"></span></a>
+        <a href="#/collections" data-section="collections" class="kept">Collections<span class="n" id="n-collections"></span></a>
+      </nav>
+      <!-- Whose shelves these are. A profile is a convenience, not a login:
+           it keeps two people's places and lists apart and checks nothing. -->
+      <button id="who" class="who-button" hidden></button>
+
       <!-- A hundred and seventy lessons named "Definition" and "Interpretation"
            are not browsable, only searchable. -->
       <input type="search" id="search" class="search" placeholder="Search titles and summaries"
              autocomplete="off" spellcheck="false" />
-      <div class="foot" id="foot"></div>
-    </nav>
+    </header>
 
     <main id="main"><p class="empty">Loading…</p></main>
 
+    <!-- What the whole library adds up to, set where a book prints the same
+         kind of fact. -->
+    <footer class="colophon" id="foot"></footer>
+
+    <!-- The catalogue is paper; this is the screening room, and it is dark.
+         A poster reads best against a page and a picture reads best against
+         black, so the dialog does not inherit the page's palette.
+
+         Fullscreen: the picture takes the whole window and everything else
+         floats over it, fading once the pointer has rested. `preload="auto"`
+         with no autoplay anywhere — opening a title fills the buffer and then
+         waits for the viewer. -->
     <dialog id="player">
-      <video id="video" controls preload="metadata" crossorigin="anonymous"></video>
-      <!-- A converted title is encoded as it plays, so the video's own scrub
-           bar only reaches as far as the conversion has got. This one covers
-           the whole running time and restarts the conversion where it lands. -->
-      <div class="jump" id="jump" hidden>
-        <label for="jump-to">Jump to</label>
-        <input type="range" id="jump-to" min="0" step="10" value="0" />
-        <span class="at" id="jump-at"></span>
-      </div>
-      <p class="note" id="note" hidden></p>
-      <div class="summary" id="summary" hidden></div>
-      <div class="bar">
+      <video id="video" controls preload="auto" crossorigin="anonymous"></video>
+
+      <div class="hud hud-top">
         <span class="what" id="now"></span>
-        <button id="close">Close</button>
+        <button id="close" class="ghost">Close</button>
       </div>
+
+      <!-- Sits above the video's own controls rather than replacing them: the
+           native bar carries play, volume, speed and the subtitle menu, and a
+           hand-built copy of all that would be a worse one. -->
+      <div class="hud hud-bottom">
+        <!-- A converted title is encoded as it plays, so the video's own scrub
+             bar only reaches as far as the conversion has got. This one covers
+             the whole running time and restarts the conversion where it lands. -->
+        <div class="jump" id="jump" hidden>
+          <label for="jump-to">Jump to</label>
+          <input type="range" id="jump-to" min="0" step="10" value="0" />
+          <span class="at" id="jump-at"></span>
+        </div>
+
+        <div class="rail">
+          <span class="ends" id="ends"></span>
+          <!-- Preloading without playing means a still frame and no sign of
+               life; this is the sign of life. -->
+          <span class="preload" id="preload"></span>
+          <span class="spacer"></span>
+          <span class="picker" id="audio" hidden>
+            <label for="audio-track">Audio</label>
+            <select id="audio-track"></select>
+          </span>
+          <button id="watchlist" class="ghost" aria-pressed="false">Watchlist</button>
+          <button id="add-to" class="ghost">Add to…</button>
+          <button id="notes" class="ghost" hidden aria-expanded="false">Notes</button>
+        </div>
+
+        <p class="note" id="note" hidden></p>
+      </div>
+
+      <!-- Appears as a title runs out. Counts down and goes on its own unless
+           stopped, which is what a run of episodes wants; cancelling is
+           remembered for that title so rewatching the last minute does not
+           start the countdown again. -->
+      <div class="up-next" id="up-next" hidden>
+        <span class="up-next-label">Up next</span>
+        <span class="up-next-title" id="up-next-title"></span>
+        <span class="up-next-in" id="up-next-in"></span>
+        <div class="up-next-buttons">
+          <button id="up-next-cancel" class="ghost">Cancel</button>
+          <button id="up-next-play" class="ghost">Play now</button>
+        </div>
+      </div>
+
+      <!-- A column beside the picture rather than a panel over it: a lesson's
+           notes are several screens of text, and text laid over a video is
+           something in the way. The video gives up the width. -->
+      <aside class="notes" id="notes-panel" hidden>
+        <header class="notes-head">
+          <span>Notes</span>
+          <button id="notes-close" class="ghost" aria-label="Close notes">✕</button>
+        </header>
+        <div class="notes-body" id="summary"></div>
+      </aside>
     </dialog>
 
     <script type="module" src="/app.js"></script>

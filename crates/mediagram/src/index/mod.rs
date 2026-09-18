@@ -8,4 +8,5 @@ pub mod rescan;
 pub mod rescan_parts;
 pub mod set_row;
 pub mod sets;
+pub mod shows;
 pub mod snapshot;

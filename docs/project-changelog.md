@@ -5,6 +5,252 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 2026-09-18
+
+**Shipped**
+
+- A series says how much of it is here: `8 of 10 episodes`, `1 of 2 seasons`.
+  The index can count what it holds and only the provider knows what exists,
+  so schema v6 records both totals. Holding all of a show says nothing about
+  totals — "16 of 16" is a fact about arithmetic, not about the show.
+- The years are the show's run, from the provider's first and last air dates,
+  falling back to the years of the episodes held. One season of a show that
+  ran seven should still say when the show ran. A show still running has no
+  end date and is not given one.
+- Schema v5 adds a `shows` table, and a series page leads with what the
+  provider says about the show: synopsis, genres, rating, network, status.
+  A show was not an entity in this index — it is what you get by grouping sets
+  on a provider id — so there was nowhere a synopsis belonging to the whole of
+  it could live. It is keyed the way a poster key is, because TMDB numbers
+  films and series independently.
+- `mediagram metadata` fills that table from payloads `add` already cached, so
+  a library recorded before it existed needs no API key and no network to
+  catch up. `add` records the show it just identified, from the same payload
+  it used to identify it.
+- The player asks for a description on a separate route rather than carrying
+  one on every catalog row: it is a page's worth of text that a shelf never
+  shows, and 171 rows would each have carried a copy.
+- A v4 index still works. The player accepts either schema and reads the table
+  only if it is there, so nothing has to be upgraded in step.
+
+- A show says what it is. Opening a series now leads with its own facts —
+  episodes, seasons, runtime, size, years, resolution, HDR, codecs and the
+  audio and subtitle languages — all derived from the episodes already in the
+  index, so a show describes itself as soon as one episode of it exists.
+  Nothing is fetched and nothing new is stored.
+- A field nobody recorded is left out rather than printed empty, and a show
+  that is not all one resolution shows the span. Half a show in 720p is worth
+  knowing; picking either value to display would hide it.
+- Subtitle languages come from the file's own tracks, like audio already did.
+  Reading them from the `assets` table instead reported no subtitles for a
+  show whose files carry them — that table answers a different question, which
+  track the player can serve separately.
+- `PosterStore` re-reads its directory when it changes. Listing once was right
+  for a package, whose artwork arrives all at once; it was wrong as soon as
+  the same store served a local library, where `mediagram posters` adds
+  artwork to a directory a player is already running against. A poster fetched
+  at noon was invisible until a restart.
+
+- `mediagram add-show <dir> --tmdb <id>`: a series folder, uploaded. Only
+  `add-course` walked a directory before, and it marks everything a course, so
+  a series meant a shell loop. Two such loops were written by hand and both
+  were wrong — one filed a show under another show's id, the other converted a
+  show nobody asked for. The command prints what it would file where before it
+  moves a byte, which is what made both mistakes visible.
+- `add-show` refuses when two files claim one episode rather than picking by
+  sort order. A folder holding an original and its converted copy is the
+  ordinary way that happens.
+- `add-show` says which episodes the player would convert on every play, and
+  separates what `prepare` can fix — the wrapper, the audio — from what it
+  cannot. Telling someone to convert an HEVC show would cost them hours and
+  change nothing.
+- `prepare --mp4`: converts to a browser-playable mp4 alongside dropping
+  tracks, copying the picture untouched. `--out <dir>` writes a parallel tree
+  instead of replacing the originals. `--mp4` rewrites a file that already
+  fits its part limit, because playability is not a size question.
+- Direct-play policy lives in `media::direct_play`, and
+  `tests/shared_direct_play_policy.rs` fails when it and the player's copy
+  disagree — the same guard `PLAYABLE_SQL` already has.
+- Quality labels come from the frame, not its height. A 2.39:1 film is stored
+  1920x804, and 804 read as 720p though every pixel across is 1080p. Width
+  alone would have broken 4:3 the same way, so the label takes the greater of
+  the height and the height a 16:9 frame that wide would have.
+
+- `mediagram posters`: cover art for the films and series in the index,
+  written to `<data dir>/posters/`. Artwork had only ever shipped inside the
+  published package, so a player reading the local index showed initials on
+  every card and had no way not to. Posters now live beside the index
+  whichever index that is — the catalog a package unpacked, or the library on
+  this machine — which is one expression in the player and no second code
+  path. Re-running skips what is already held.
+- The download loop moved from `Staging` into `export::posters`, which is
+  where it belonged: staging borrowed it, and a local directory needs the same
+  limits, the same key check and the same refusal to fail a run over an
+  unreachable image. `Staging::fetch_posters` now only adds the archive paths
+  the manifest names.
+- The player page was redesigned as a printed catalogue: warm uncoated stock,
+  Fraunces over Newsreader, hairline rules in place of cards, and a masthead
+  where a 220px sidebar used to spend a fifth of the width naming three
+  shelves. Artwork is now set as a plate at the 2:3 a poster is actually drawn
+  at — the old tile was 16:10 and cropped the bottom third off every one of
+  them — with the title and its figures on one baseline beside it. The player
+  dialog keeps its own dark palette: a poster reads best against a page and a
+  picture reads best against black.
+- Both faces are self-hosted from `web/public/font/`. The page is routinely
+  opened on a link with no way out to the internet, and a catalogue that falls
+  back to Times because the house wifi is down looks broken. `web/src/routes.ts`
+  serves `.woff2` as `font/woff2`.
+- A show holding a single episode said "1 episodes · 1 season". Counts now go
+  through `countOf`, which spells a number while it is small enough to read as
+  a word and agrees with the noun it counts: "one episode · one season".
+
+- The player is fullscreen. The picture fills the window and everything else
+  floats over it on two rails that fade once the pointer rests, return on
+  movement, and never hide while playback is paused or while focus is inside
+  them. Notes stopped opening by themselves — over a picture, a page of text
+  is in the way until it is asked for — and are a button now.
+- Opening a title preloads it and stops there. `preload="auto"` with no
+  `play()` anywhere, and a readout that says what the buffer holds and whether
+  the browser thinks it is enough, because a still first frame otherwise looks
+  identical to nothing happening.
+- The bottom rail projects when the title will finish, from the catalog's
+  runtime rather than `video.duration`: a conversion's duration is only as far
+  as it has encoded, so a film would claim to end four minutes from now and
+  keep moving. Divided by the playback rate, and blank when no runtime is
+  known rather than guessing.
+- An audio track chooser, for the 26 sets in this library holding more than
+  one. The list is probed off the file, not read from `sets.alang`: that column
+  holds *distinct* codes with untagged streams dropped, so its positions are
+  not the ordinals `-map 0:a:N` selects by, and a file running
+  `[und, en, en-commentary, de]` would have sent "German" to the untagged
+  stream. The chosen ordinal joins the seek and the bitrate in identifying a
+  transcode session, so two viewers watching one film in two languages do not
+  share one encode.
+- A title playing directly converts when a non-default track is picked, and
+  says so. Chrome and Firefox do not implement `HTMLMediaElement.audioTracks`;
+  there is no other way to honour the choice.
+
+- A course is browsed one level at a time. Geldhochschule is 162 lessons
+  across four levels, and the whole tree on one page meant scrolling past a
+  hundred things to reach the folder you wanted. The course now opens on its
+  three top-level folders, each saying how much is behind it, and every level
+  is its own URL — linkable, and the back button walks out the way you came.
+  A breadcrumb replaces the back button, which only ever went one place.
+- A folder sits where its number puts it. "3. Signal" holds lessons numbered
+  1 to 21 with 14 missing, and the folder filling that gap is called
+  "14. Exkurs TWS": it belongs between 13 and 15, not after 21. `levelEntries`
+  in `library.js` interleaves lessons and folders by their leading number, and
+  is tested there rather than inside a render loop.
+- A show is unchanged. Its seasons are one flat level with episodes under
+  them, so there is nothing to walk into and a screen per season would be a
+  click that bought nothing.
+
+- A lesson's notes are a column beside the picture, not a panel over it. The
+  video gives up the width and letterboxes into what is left, so nothing is
+  covered and nothing has to be dismissed to read. Open already for a lesson,
+  because notes are the point of a course; behind the button for a film.
+- The notes render as markdown. These summaries are written in it — `###`
+  sections, bullet lists whose items lead with a bold run-in, ordered lists
+  nested four spaces under them — and were being shown with the markers
+  visible. `markdown.js` parses to a tree and `notes-view.js` builds nodes
+  from it. Not one string of HTML between them: the text comes from a file
+  beside a video, and `dom.js` already says where that road ends. A link
+  whose scheme is not `http`, `https`, `mailto` or a local path keeps its
+  words and loses its link, because `javascript:` in an `href` is the same
+  hole as a script tag.
+- Checked against all 162 summaries in the library: every one parses, and no
+  block marker survives into rendered text.
+
+- The player writes something for the first time. Watch positions, the
+  watchlist and hand-built collections live in its own database at
+  `MEDIAGRAM_STATE_DB`, defaulting under `~/.local/share` — a data directory,
+  not a cache. It could not go in the index: that one is opened read-only,
+  belongs to the uploader, and is replaced wholesale when a package refresh
+  lands. Keyed by `set_id`, a ULID that survives every catalog refresh.
+- Resume across devices, which needed nothing beyond the above. The player is
+  a server, so a phone and a laptop pointed at it read the same rows; putting
+  a film down on one and picking it up on the other is not a sync problem.
+- A `Continue` shelf, the landing when it has anything in it, with a rule
+  across the foot of each plate. Not every position is a place to go back to:
+  the first half minute was looking rather than watching, and the last 5% or
+  last minute is the credits — both start again from the top.
+- `Up next` over the end of a title, counting down and advancing unless
+  cancelled. What follows is derived from the tree `library.js` already
+  builds, so it crosses a season or a folder boundary without being told
+  there was one. Cancelling is remembered for that title.
+- The next title's first 8 MB are fetched and dropped while the current one
+  plays, once its buffer is comfortable. The point is the server's chunk
+  cache, which the transcoder reads through as well.
+- A watchlist, and collections: named lists, any title in any of them, made
+  and renamed and deleted from their own shelf.
+- Profiles. Positions, watchlist and lists are each a profile's own; the
+  chooser is answered per device and kept in that browser. A profile is a
+  convenience and not a login — anyone who can reach the port can pick any of
+  them, and the chooser says so.
+- The API takes writes for the first time. It still has no authentication, so
+  a proxy in front remains the answer; what is checked is that a write carries
+  a JSON content type and a same-origin `Origin` where the browser sends one,
+  which stops a form on another page from deleting a collection.
+
+**Fixed**
+
+- A title was counted finished far too early, which deleted its position every
+  time one was saved and kept it off the Continue shelf for good. The rule read
+  "past 95% **or** within a minute of the end", which takes whichever of the
+  two is more generous — so a one-minute lesson was finished before it started
+  and a two-minute one a few seconds in. 155 of the 197 titles in this library
+  are short enough to have been affected, three of them fatally. The tail is
+  now the **smaller** of the two: the last minute of anything over twenty
+  minutes, a proportionate sliver of anything below. The test describing the
+  intended behaviour predated the code that contradicted it.
+- The same scaling applies to the other end. Half a minute is a glance at a
+  film and half of a sixty-four-second lesson, so "opened rather than watched"
+  is now the first half minute or the first tenth, whichever is shorter.
+- A conversion's `video.duration` is no longer mistaken for the title's
+  runtime. It is the length of what has been encoded so far and grows as it
+  goes, so for a set the index never measured it put the end of the film a few
+  seconds ahead of the viewer for the whole film — read as finished, and the
+  position deleted on every save. The rule is `trustedRuntime` in
+  `resume-point.js`, which answers "nobody knows" instead, and everything
+  downstream already refuses to judge without a runtime.
+- The state store replayed every migration on every open. Version 1 survived
+  that because every statement was `CREATE TABLE IF NOT EXISTS`; version 2
+  rebuilds three tables to add `profile_id`, and a second open copied the live
+  rows into a fresh table under an invented profile, dropped the original and
+  renamed the copy over it. It read as working. Only groups above the recorded
+  version run now, each in its own transaction.
+- `hidden` did nothing to the transcode scrub bar or the audio chooser. The
+  attribute is a user-agent rule of the lowest specificity there is, and both
+  elements are `display: flex`, so they stayed on screen while the script that
+  set `hidden` was convinced they were gone — the jump bar showed on titles
+  that were playing directly and had nothing to jump. `[hidden]` is now
+  enforced for the whole page.
+
+**Unchanged on purpose**
+
+- `inspect` still reads a file's length from the format header alone. A
+  fallback to a stream's own duration, and then to frames over frame rate, was
+  written and then reverted: tracing found `add` to be the only place a
+  duration is ever created, and no file that reaches it benefits. MKV, MPEG-TS,
+  fragmented MP4 and WebM all carry a format duration; a truncated MKV reports
+  one from its header and a truncated MP4 makes ffprobe fail, which aborts the
+  add rather than recording a null. The one file that lacks a format duration —
+  a raw elementary stream with no container — lacks the stream duration and
+  frame count the fallback would have used. A null reaching the index is far
+  likelier to arrive in a caption written by another build or another
+  implementation of the spec, which `rescan` trusts and never re-probes, and
+  which no amount of probing here would have caught.
+- `-map` still names exactly one audio stream. The reasoning in
+  `transcode/args.ts` is unchanged: letting ffmpeg pick "best" means the track
+  with the most channels, which on a film is routinely a commentary. What
+  changed is only who names it.
+- No schema change. The player opens the index read-only and must not migrate
+  what the uploader owns, so `EXPECTED_SCHEMA` stays at 4 and the track list
+  comes from the file instead.
+- Only films and series get artwork. `titles::distinct_titles` already selects
+  `kind IN (movie, ep) AND tmdb IS NOT NULL`, so a course is excluded by
+  having no provider id rather than by a rule written somewhere about courses.
+
 ## 2026-09-17
 
 **Shipped**

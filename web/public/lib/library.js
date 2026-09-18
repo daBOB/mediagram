@@ -93,6 +93,99 @@ export function firstItemOf(divisions) {
   return null;
 }
 
+/** How many lessons sit under `division`, at whatever depth. */
+export function lessonsUnder(division) {
+  let count = 0;
+  for (const node of walk([division])) count += node.items.length;
+  return count;
+}
+
+/**
+ * The division `names` leads to, as folders from the top down.
+ *
+ * An empty trail is the collection itself, which is not a division and has to
+ * be stood in for: a synthetic one holding the top-level folders, so that
+ * every level of a course — including the first — is one object with `items`
+ * and `children` and the view has a single shape to render.
+ *
+ * `null` means the trail names a folder that is not there, which is what a
+ * hand-edited or stale URL produces.
+ */
+export function divisionAt(divisions, names) {
+  let here = { title: null, season: null, items: [], children: divisions };
+  for (const name of names) {
+    const next = here.children.find((child) => child.title === name);
+    if (!next) return null;
+    here = next;
+  }
+  return here;
+}
+
+/** The number a lesson or a folder leads with, or `null` for neither. */
+function leadingNumber(text) {
+  const match = /^\s*(\d+)/.exec(text ?? "");
+  return match ? Number(match[1]) : null;
+}
+
+/**
+ * One level's lessons and folders, in the order the course puts them.
+ *
+ * Interleaved rather than lessons-then-folders, because a folder is numbered
+ * in the same sequence as the lessons around it. "3. Signal" holds lessons
+ * numbered 1 to 21 with 14 missing, and the folder standing in that gap is
+ * called "14. Exkurs TWS" — it belongs between 13 and 15, which is where the
+ * course put it and where someone working through it will look for it.
+ *
+ * Anything unnumbered sorts to the end, lessons before folders. The sort is
+ * stable, so each keeps the order `sortDivision` already gave it.
+ */
+export function levelEntries(level) {
+  const entries = [
+    ...level.items.map((set) => ({ kind: "lesson", set, order: leadingNumber(set.episode) })),
+    ...level.children.map((division) => ({
+      kind: "folder",
+      division,
+      order: leadingNumber(division.title),
+    })),
+  ];
+  return entries.sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
+}
+
+/**
+ * Every set in a collection, in the order its pages walk them.
+ *
+ * One rule for a show and for a course, because `levelEntries` already covers
+ * both: a season holds episodes and no folders, so its order is the episodes;
+ * a course folder holds lessons beside folders, so its order is the two
+ * interleaved by number. Flattening with the same function the pages render
+ * with is what stops "next" from meaning something different to the button
+ * and to the list it came from.
+ */
+export function flattenCollection(collection) {
+  const out = [];
+  const descend = (level) => {
+    for (const entry of levelEntries(level)) {
+      if (entry.kind === "lesson") out.push(entry.set);
+      else descend(entry.division);
+    }
+  };
+  descend({ items: [], children: collection.divisions });
+  return out;
+}
+
+/**
+ * What follows `setId` in its collection, or `null` at the end of one.
+ *
+ * Crosses a season or folder boundary without being told to, because the
+ * flattening does not know there was one — which is the behaviour wanted:
+ * the last episode of a season is followed by the first of the next.
+ */
+export function nextAfter(collection, setId) {
+  const all = flattenCollection(collection);
+  const at = all.findIndex((set) => set.setId === setId);
+  return at === -1 || at === all.length - 1 ? null : all[at + 1];
+}
+
 /** Groups one kind's sets by container (show or course), then by folder. */
 function collections(sets, fallbackName) {
   const byName = new Map();

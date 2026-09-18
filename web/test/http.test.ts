@@ -496,6 +496,96 @@ describe("releasing a transcode", () => {
     }
   });
 
+  test("the audio route reports what the file holds", async () => {
+    const reader = {
+      read: async () => [
+        { index: 0, lang: "deu", codec: "ac3", channels: 6, title: null, isDefault: true },
+        { index: 1, lang: "eng", codec: "aac", channels: 2, title: null, isDefault: false },
+      ],
+    };
+    const server = await startServer({
+      db: index(),
+      source: new FakeSource(),
+      audio: reader as never,
+    });
+    try {
+      const response = await rawRequest(server.port, `/api/sets/${SET}/audio`);
+      expect(response.status).toBe(200);
+      const { tracks } = JSON.parse(new TextDecoder().decode(response.body));
+      expect(tracks).toHaveLength(2);
+      expect(tracks[1]).toMatchObject({ index: 1, lang: "eng" });
+    } finally {
+      await server.close();
+    }
+  });
+
+  test("a player built without a prober offers no choice rather than failing", async () => {
+    const server = await startServer({ db: index(), source: new FakeSource() });
+    try {
+      const response = await rawRequest(server.port, `/api/sets/${SET}/audio`);
+      expect(response.status).toBe(200);
+      expect(JSON.parse(new TextDecoder().decode(response.body))).toEqual({ tracks: [] });
+    } finally {
+      await server.close();
+    }
+  });
+
+  test("audio for a set the catalog will not play is a 404", async () => {
+    const server = await startServer({ db: index(), source: new FakeSource() });
+    try {
+      const response = await rawRequest(server.port, "/api/sets/01NOPE/audio");
+      expect(response.status).toBe(404);
+    } finally {
+      await server.close();
+    }
+  });
+
+  /**
+   * The ordinal reaches an ffmpeg command line as `-map 0:a:N`, so it gets the
+   * same treatment the seek does: anything that is not a whole count of
+   * streams becomes the first one.
+   */
+  test("an audio track that is not a stream number never reaches ffmpeg", async () => {
+    const asked: number[] = [];
+    const recording = fakeHls({
+      begin: async (_setId: string, _seek: number, _maxrate: number, audioTrack?: number) => {
+        asked.push(audioTrack ?? -1);
+        return `/hls/${SESSION}/index.m3u8`;
+      },
+    });
+    const server = await startServer({ db: index(), source: new FakeSource(), hls: recording });
+    try {
+      for (const track of ["2", "0", "-1", "1.7", "abc", "Infinity", "", "1e400"]) {
+        await rawRequest(server.port, `/api/sets/${SET}/transcode?audio=${track}`);
+      }
+      // Asked for, then the first stream for everything that was not a count.
+      expect(asked).toEqual([2, 0, 0, 1, 0, 0, 0, 0]);
+      for (const track of asked) {
+        expect(Number.isInteger(track)).toBe(true);
+        expect(track).toBeGreaterThanOrEqual(0);
+      }
+    } finally {
+      await server.close();
+    }
+  });
+
+  test("a transcode with no audio asked for takes the first stream", async () => {
+    const asked: (number | undefined)[] = [];
+    const recording = fakeHls({
+      begin: async (_setId: string, _seek: number, _maxrate: number, audioTrack?: number) => {
+        asked.push(audioTrack);
+        return `/hls/${SESSION}/index.m3u8`;
+      },
+    });
+    const server = await startServer({ db: index(), source: new FakeSource(), hls: recording });
+    try {
+      await rawRequest(server.port, `/api/sets/${SET}/transcode?seek=0`);
+      expect(asked).toEqual([0]);
+    } finally {
+      await server.close();
+    }
+  });
+
   test("other methods on a session are still refused", async () => {
     const response = await rawRequest(hlsServer.port, `/hls/${SESSION}`, { method: "PUT" });
 

@@ -11,6 +11,7 @@ fn video() -> Stream {
         kind: StreamKind::Video,
         language: Some("eng".into()),
         bit_rate: None,
+        codec: None,
     }
 }
 fn audio(index: u32, lang: &str, bit_rate: u64) -> Stream {
@@ -19,6 +20,7 @@ fn audio(index: u32, lang: &str, bit_rate: u64) -> Stream {
         kind: StreamKind::Audio,
         language: Some(lang.into()),
         bit_rate: Some(bit_rate),
+        codec: None,
     }
 }
 fn subtitle(index: u32, lang: &str) -> Stream {
@@ -27,6 +29,7 @@ fn subtitle(index: u32, lang: &str) -> Stream {
         kind: StreamKind::Subtitle,
         language: Some(lang.into()),
         bit_rate: None,
+        codec: None,
     }
 }
 
@@ -109,6 +112,7 @@ fn a_track_with_no_language_tag_is_kept() {
             kind: StreamKind::Audio,
             language: None,
             bit_rate: Some(768_000),
+            codec: None,
         },
         audio(2, "spa", 384_000),
     ];
@@ -173,6 +177,7 @@ fn a_dropped_track_with_no_bitrate_contributes_nothing_to_the_estimate() {
             kind: StreamKind::Audio,
             language: Some("spa".into()),
             bit_rate: None,
+            codec: None,
         },
     ];
     let plan = plan_prepare(&streams, 4_400_000_000, 2547.136, KEEP, KEEP, LIMIT);

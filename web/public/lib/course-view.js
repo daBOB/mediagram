@@ -2,15 +2,23 @@
  * Rendering a course the shape it actually has.
  *
  * A course nests, and nests unevenly: "Ausbildung Trading" holds
- * "Grundlagen" holds "Signal" holds fourteen lessons and one more folder.
- * Rendering that as one flat list of folders produces twenty-one headings
- * that each repeat the same two parents and say nothing about how the course
- * is built, so this walks the tree `library.js` derived and lets the nesting
- * show.
+ * "1. Grundlagen" holds "3. Signal" holds twenty lessons and one more folder.
+ * There are two ways to show that, and this module holds both because the two
+ * containers that nest do not nest alike.
+ *
+ * `levelBlock` is one floor of the building: the lessons in this folder and
+ * the doors to the ones below it. A course is 162 lessons across four levels,
+ * and putting all of it on one page means a viewer scrolls past a hundred
+ * things they did not ask for to reach the folder they did.
+ *
+ * `divisionBlock` is the whole tree at once, indented. A show's seasons are
+ * one flat level with nothing under them, so there is nothing to walk into
+ * and a drill-down would only add a click.
  */
 
 import { el } from "./dom.js";
-import { codecLine, episodeLabel, humanDuration, humanSize } from "./format.js";
+import { codecLine, countOf, episodeLabel, humanDuration, humanSize } from "./format.js";
+import { lessonsUnder, levelEntries } from "./library.js";
 import { transcodeBadge } from "./set-badge.js";
 
 /**
@@ -38,6 +46,46 @@ function lessonRow(set, onPlay) {
   );
   row.addEventListener("click", () => onPlay(set));
   return row;
+}
+
+/** One folder: a door, with the size of the room behind it. */
+function folderRow(division, onOpen) {
+  const row = el("button", "row folder");
+  // Empty, but present: it holds the call-number column so a folder and a
+  // lesson in the same list start their titles at the same place.
+  row.append(el("div", "num", ""));
+
+  const title = el("div", "title");
+  title.append(el("b", null, division.title));
+  // Only when there is another floor below this one. "Twelve lessons" is
+  // already said on the right; "three folders" is the thing it cannot say.
+  if (division.children.length > 0) {
+    title.append(el("span", null, countOf(division.children.length, "folder")));
+  }
+  row.append(title);
+
+  row.append(el("div", "meta", countOf(lessonsUnder(division), "lesson")));
+  row.append(el("span", "chevron", "\u203a"));
+
+  row.addEventListener("click", () => onOpen(division.title));
+  return row;
+}
+
+/**
+ * One level of a course: its lessons and its folders, in the course's order.
+ *
+ * The order itself is `levelEntries`, in `library.js`, with the rest of the
+ * shapes derived from the catalog — a render loop is the one place a rule
+ * like that cannot be tested.
+ */
+export function levelBlock(level, onOpen, onPlay) {
+  const block = el("section", "level");
+  for (const entry of levelEntries(level)) {
+    block.append(
+      entry.kind === "lesson" ? lessonRow(entry.set, onPlay) : folderRow(entry.division, onOpen),
+    );
+  }
+  return block;
 }
 
 /**

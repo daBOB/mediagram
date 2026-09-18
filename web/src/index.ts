@@ -8,7 +8,7 @@
 
 import { Database } from "bun:sqlite";
 import { rm } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { describe, load } from "./config";
 import { EXPECTED_SCHEMA, assertSchema, listPlayable } from "./catalog";
 import { startServer } from "./server";
@@ -19,6 +19,8 @@ import { FfmpegRunner } from "./transcode/ffmpeg";
 import { TranscodeRegistry } from "./transcode/registry";
 import { TranscodeFiles } from "./transcode/server";
 import { ChunkCache } from "./cache/store";
+import { AudioTrackReader } from "./audio-tracks";
+import { WatchState } from "./state/store";
 import { parseKey } from "./package/open";
 import { PosterStore } from "./package/posters";
 import { refreshCatalog } from "./package/refresh";
@@ -73,11 +75,12 @@ if (indexPath === null) throw new Error("no catalog: neither a package nor a loc
 // checkpoint or migrate an index the uploader owns.
 const db = new Database(indexPath, { readonly: true });
 assertSchema(db);
-const posters = new PosterStore(catalogDir);
-console.log(
-  `catalog: ${listPlayable(db).length} playable sets` +
-    (catalogDir ? `, ${posters.count()} poster(s)` : ""),
-);
+// Artwork lives beside the index, whichever index this is: inside the
+// catalog a package unpacked, or next to the library on this machine, where
+// `mediagram posters` puts it. A player reading a local index used to have no
+// artwork at all, because posters only ever shipped inside a package.
+const posters = new PosterStore(dirname(indexPath));
+console.log(`catalog: ${listPlayable(db).length} playable sets, ${posters.count()} poster(s)`);
 
 const telegram = await Telegram.connect(config);
 
@@ -116,9 +119,22 @@ const transcodes = new TranscodeRegistry(
 // Idle sessions hold an encoder and write segments nobody reads.
 const reaper = setInterval(() => void transcodes.reapIdle(), 60_000);
 
+// Reads a title's audio streams off the file, through this server's own Range
+// route, the first time a viewer opens it. The index cannot answer this: it
+// stores distinct language codes, not stream ordinals.
+const audio = new AudioTrackReader(`http://127.0.0.1:${config.port}`);
+
+// The one thing this process writes. A store that cannot be opened says so
+// and the player carries on without a memory, because a watch position is
+// not worth refusing to play a library over.
+const state = new WatchState(config.stateDb);
+console.log(state.remembers ? `state: ${config.stateDb}` : "state: not remembered");
+
 const server = await startServer({
   db,
+  state,
   hls: new TranscodeFiles(transcodes),
+  audio,
   source: new TelegramSource(
     telegram,
     cache ? new CachedReader(cache, config.cacheReadahead) : undefined,
@@ -155,6 +171,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
       // a hardware encoder session with it.
       await transcodes.stopAll();
       await server.close();
+      state.close();
       await telegram.disconnect();
       db.close();
       process.exit(0);

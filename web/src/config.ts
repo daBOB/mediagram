@@ -48,6 +48,14 @@ export interface Config {
   /** Where HLS segments are written while a transcode runs. */
   transcodeDir: string;
   /**
+   * Where watch positions, the watchlist and collections are kept.
+   *
+   * Under `~/.local/share`, not `~/.cache`, and that distinction is the whole
+   * point: every other directory here holds something the player can fetch
+   * again, and this one holds the only thing it cannot.
+   */
+  stateDb: string;
+  /**
    * Ceiling for a transcode's output, in bits per second.
    *
    * A 13.9 Mbit/s source does not fit a 25 Mbit/s uplink with room for
@@ -136,6 +144,9 @@ export function load(): Config {
     cacheMaxBytes: parseSize(process.env.MEDIAGRAM_CACHE_MAX ?? "8G"),
     cacheReadahead: Number(process.env.MEDIAGRAM_CACHE_READAHEAD ?? "4"),
     transcodeDir: process.env.MEDIAGRAM_TRANSCODE_DIR ?? `${process.env.HOME}/.cache/mediagram-hls`,
+    stateDb:
+      process.env.MEDIAGRAM_STATE_DB ??
+      `${process.env.HOME}/.local/share/mediagram-player/state.db`,
     transcodeMaxrate: parseSize(process.env.MEDIAGRAM_TRANSCODE_MAXRATE ?? String(DEFAULT_MAX_BITRATE)),
     packageUrl: process.env.MEDIAGRAM_PACKAGE_URL || null,
     packageKey: process.env.MEDIAGRAM_PACKAGE_KEY || null,
@@ -163,6 +174,7 @@ export function describe(config: Config): Record<string, unknown> {
     cacheMaxBytes: config.cacheMaxBytes,
     cacheReadahead: config.cacheReadahead,
     transcodeDir: config.transcodeDir,
+    stateDb: config.stateDb,
     transcodeMaxrate: config.transcodeMaxrate,
     trustProxy: config.trustProxy,
     packageUrl: config.packageUrl,

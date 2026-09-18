@@ -7,18 +7,22 @@
  */
 
 import { el } from "./dom.js";
-import { humanDuration, humanSize } from "./format.js";
+import { countOf, episodeLabel, humanDuration, humanSize } from "./format.js";
+import { progressOf } from "./watch-state.js";
+import { watchedFraction } from "./resume-point.js";
 import { firstItemOf } from "./library.js";
 import { transcodeBadge } from "./set-badge.js";
 
+// `extent` is what the shelf counts in, for the line under its title: a
+// catalogue says "twelve films", not "12 items".
 export const SECTIONS = {
-  movies: { label: "Movies", empty: "No films yet." },
-  series: { label: "Series", empty: "No series yet." },
-  tutorials: { label: "Tutorials", empty: "No courses yet." },
+  movies: { label: "Movies", empty: "No films yet.", extent: "film" },
+  series: { label: "Series", empty: "No series yet.", extent: "show" },
+  tutorials: { label: "Tutorials", empty: "No courses yet.", extent: "course" },
 };
 
 /** A card for a film, a show or a course. */
-function card({ name, meta, initials, onClick, badge, poster }) {
+function card({ name, meta, initials, onClick, badge, poster, progress }) {
   const button = el("button", "card");
   const thumb = el("div", "thumb", poster ? undefined : initials);
   if (poster) {
@@ -30,6 +34,16 @@ function card({ name, meta, initials, onClick, badge, poster }) {
     image.loading = "lazy";
     thumb.append(image);
   }
+  // Across the foot of the plate, where a library sticker would be, and only
+  // when there is a runtime to measure against — see `watchedFraction`.
+  if (typeof progress === "number") {
+    const rule = el("div", "watched");
+    const done = el("div", "watched-at");
+    done.style.width = `${Math.round(progress * 100)}%`;
+    rule.append(done);
+    thumb.append(rule);
+  }
+
   const body = el("div", "body");
   body.append(el("div", "name", name));
   if (meta) body.append(el("div", "meta", meta));
@@ -70,6 +84,34 @@ export function movieGrid(movies, onPlay) {
         initials: initialsOf(set.title),
         poster: set.poster ?? null,
         badge: transcodeBadge(set),
+        progress: watchedFraction(progressOf(set.setId)),
+        onClick: () => onPlay(set),
+      }),
+    );
+  }
+  return grid;
+}
+
+/**
+ * Any set at all, as plates: what the shelves built from watch state hold.
+ *
+ * A film, an episode and a lesson end up side by side here, which the three
+ * catalog shelves never have to deal with — so the caption says where a title
+ * came from rather than assuming everything on the shelf is one kind of thing.
+ */
+export function setGrid(sets, onPlay) {
+  const grid = el("div", "grid");
+  for (const set of sets) {
+    grid.append(
+      card({
+        name: set.title ?? set.setId,
+        meta: [set.show, episodeLabel(set), set.year, humanDuration(set.duration)]
+          .filter(Boolean)
+          .join(" · "),
+        initials: initialsOf(set.title ?? set.show),
+        poster: set.poster ?? null,
+        badge: transcodeBadge(set),
+        progress: watchedFraction(progressOf(set.setId)),
         onClick: () => onPlay(set),
       }),
     );
@@ -86,11 +128,13 @@ export function collectionGrid(section, collections, onOpen) {
     // course's top-level folders are too few to describe it, its total
     // folders too many.
     const { count, chapters } = collection;
-    const unit = `${series ? "season" : "chapter"}${chapters === 1 ? "" : "s"}`;
     grid.append(
       card({
         name: collection.name,
-        meta: `${count} ${series ? "episodes" : "lessons"} · ${chapters} ${unit}`,
+        meta: [
+          countOf(count, series ? "episode" : "lesson"),
+          countOf(chapters, series ? "season" : "chapter"),
+        ].join(" · "),
         initials: initialsOf(collection.name),
         // A show's artwork is the one its episodes share.
         poster: firstItemOf(collection.divisions)?.poster ?? null,

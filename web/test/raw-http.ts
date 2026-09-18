@@ -45,7 +45,13 @@ function parseHead(head: string): { status: number; headers: Map<string, string>
 export async function rawRequest(
   port: number,
   path: string,
-  options: { method?: string; range?: string; headers?: Record<string, string> } = {},
+  options: {
+    method?: string;
+    range?: string;
+    headers?: Record<string, string>;
+    /** A request body. `Content-Length` is stated, as the server requires. */
+    body?: string;
+  } = {},
 ): Promise<RawResponse> {
   const method = options.method ?? "GET";
   const lines = [`${method} ${path} HTTP/1.1`, `Host: 127.0.0.1:${port}`];
@@ -53,7 +59,11 @@ export async function rawRequest(
   for (const [name, value] of Object.entries(options.headers ?? {})) {
     lines.push(`${name}: ${value}`);
   }
-  lines.push("Connection: close", "", "");
+  const body = options.body ?? null;
+  if (body !== null) {
+    lines.push(`Content-Length: ${new TextEncoder().encode(body).byteLength}`);
+  }
+  lines.push("Connection: close", "", body ?? "");
 
   let buffer = new Uint8Array(0);
   const append = (chunk: Uint8Array) => {

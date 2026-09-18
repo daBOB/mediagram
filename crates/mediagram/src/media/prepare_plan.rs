@@ -20,6 +20,9 @@ pub struct Stream {
     pub kind: StreamKind,
     pub language: Option<String>,
     pub bit_rate: Option<u64>,
+    /// ffprobe's `codec_name`, which decides whether a browser can open the
+    /// result without the player converting it first.
+    pub codec: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -59,3 +59,29 @@ export function groupLibrary(sets: CatalogSet[]): Library;
 
 /** The first set anywhere under these divisions, in display order. */
 export function firstItemOf(divisions: Division[]): CatalogSet | null;
+
+/** How many lessons sit under `division`, at whatever depth. */
+export function lessonsUnder(division: Division): number;
+
+/**
+ * The division `names` leads to, or `null` when it names one that is not
+ * there. An empty trail gives a stand-in for the collection itself, whose
+ * `title` is `null` and whose `children` are the top-level folders.
+ */
+/** One level's lessons and folders, in the order the course puts them. */
+export type LevelEntry =
+  | { kind: "lesson"; set: CatalogSet; order: number | null }
+  | { kind: "folder"; division: Division; order: number | null };
+
+export function levelEntries(level: Pick<Division, "items" | "children">): LevelEntry[];
+
+/** Every set in a collection, in the order its pages walk them. */
+export function flattenCollection(collection: Collection): CatalogSet[];
+
+/** What follows `setId` in its collection, or `null` at the end of one. */
+export function nextAfter(collection: Collection, setId: string): CatalogSet | null;
+
+export function divisionAt(
+  divisions: Division[],
+  names: string[],
+): (Division & { title: string | null }) | null;

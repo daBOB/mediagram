@@ -11,8 +11,8 @@ use mlib_spec::caption::Kind;
 use std::io::Write;
 
 mod support;
-use support::export::db_with;
 use std::os::unix::fs::PermissionsExt;
+use support::export::db_with;
 
 // =============================================================================
 // ENCRYPT: Edge cases

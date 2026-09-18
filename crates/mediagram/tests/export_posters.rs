@@ -1,9 +1,11 @@
-//! Poster resolution for the package export. Posters come from the TMDB
-//! responses already cached on disk, so a normal export needs no API key and
-//! no network: the paths are in payloads `add` fetched when it resolved the
-//! title.
+//! Posters: resolving which artwork a title has, and filling a directory
+//! with it. Paths come from the TMDB responses already cached on disk, so a
+//! normal run needs no API key and no network — `add` cached those payloads
+//! when it resolved each title.
 
-use mediagram::export::posters::{PosterRef, poster_url, resolve_posters};
+use mediagram::export::posters::{
+    PosterRef, already_held, download_into, poster_url, resolve_posters,
+};
 use mediagram::metadata::tmdb_client::TmdbApi;
 use mlib_spec::Kind;
 
@@ -151,4 +153,87 @@ async fn duplicate_ids_are_requested_once() {
 async fn no_titles_means_no_requests_and_no_posters() {
     let api = FakeApi::default();
     assert!(resolve_posters(&api, &[]).await.is_empty());
+}
+
+// Filling a directory. The download itself talks to TMDB's CDN and is
+// exercised by the export path; what is worth pinning here is everything
+// that decides whether a request happens at all, which is where a local
+// poster directory differs from a staged one.
+
+#[tokio::test]
+async fn no_posters_means_no_directory() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path().join("posters");
+
+    let written = download_into(&reqwest::Client::new(), &[], &dir)
+        .await
+        .unwrap();
+
+    assert!(written.is_empty());
+    assert!(
+        !dir.exists(),
+        "a library with nothing to illustrate leaves no empty directory behind"
+    );
+}
+
+/// The key becomes a file name, so a malformed one is refused before it can
+/// name anything. Nothing about it reaches the filesystem.
+#[tokio::test]
+async fn a_malformed_key_is_refused_without_a_request() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path().join("posters");
+    let refs = vec![PosterRef {
+        key: "../../etc/passwd".into(),
+        path: "/whatever.jpg".into(),
+    }];
+
+    let written = download_into(&reqwest::Client::new(), &refs, &dir)
+        .await
+        .unwrap();
+
+    assert!(written.is_empty());
+    assert_eq!(
+        std::fs::read_dir(&dir).unwrap().count(),
+        0,
+        "a rejected key writes nothing"
+    );
+}
+
+/// Re-running after the library grows must not refetch what is already held,
+/// or the ordinary case becomes the slow one.
+#[tokio::test]
+async fn a_poster_already_on_disk_is_kept_and_not_requested_again() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path().join("posters");
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("tmdb-movie-550.jpg"), b"held").unwrap();
+
+    let refs = vec![PosterRef {
+        key: "tmdb-movie-550".into(),
+        path: "/five-fifty.jpg".into(),
+    }];
+    assert_eq!(already_held(&refs, &dir), 1);
+
+    // The bytes are the proof: had the skip failed, the CDN response would
+    // have replaced this placeholder with a real image.
+    let written = download_into(&reqwest::Client::new(), &refs, &dir)
+        .await
+        .unwrap();
+
+    assert_eq!(written, vec!["tmdb-movie-550".to_string()]);
+    assert_eq!(
+        std::fs::read(dir.join("tmdb-movie-550.jpg")).unwrap(),
+        b"held"
+    );
+}
+
+#[test]
+fn nothing_is_held_in_a_directory_that_does_not_exist_yet() {
+    let tmp = tempfile::tempdir().unwrap();
+    let refs = vec![PosterRef {
+        key: "tmdb-tv-1396".into(),
+        path: "/breaking.jpg".into(),
+    }];
+
+    assert_eq!(already_held(&refs, &tmp.path().join("posters")), 0);
 }

@@ -20,6 +20,8 @@ export interface Runner {
     setId: string,
     seekSeconds: number,
     maxrateBits: number,
+    /** `0:a:N`. Absent means the first stream, which is the default. */
+    audioTrack?: number,
   ): Running;
 }
 
@@ -39,6 +41,8 @@ export interface Session {
   seekSeconds: number;
   /** What this encode was told to stay under, in bits per second. */
   maxrateBits: number;
+  /** Which audio stream this encode carries, as `0:a:N`. */
+  audioTrack: number;
   /** Resolves if the transcode stops, so a wait for output can give up. */
   exited?: Promise<number>;
 }
@@ -85,8 +89,13 @@ export class TranscodeRegistry {
    * Identified by what it transcodes rather than by a random id, so two
    * viewers of the same thing share one encode instead of racing.
    */
-  async sessionFor(setId: string, seekSeconds: number, maxrateBits: number): Promise<Session> {
-    const id = sessionId(setId, seekSeconds, maxrateBits);
+  async sessionFor(
+    setId: string,
+    seekSeconds: number,
+    maxrateBits: number,
+    audioTrack = 0,
+  ): Promise<Session> {
+    const id = sessionId(setId, seekSeconds, maxrateBits, audioTrack);
     const existing = this.sessions.get(id);
     if (existing) {
       existing.lastUsed = Date.now();
@@ -116,7 +125,7 @@ export class TranscodeRegistry {
       throw new Error(`too many conversions at once (${this.maxSessions}); try again shortly`);
     }
 
-    const starting = this.start(id, setId, seekSeconds, maxrateBits).finally(() =>
+    const starting = this.start(id, setId, seekSeconds, maxrateBits, audioTrack).finally(() =>
       this.starting.delete(id),
     );
     this.starting.set(id, starting);
@@ -128,6 +137,7 @@ export class TranscodeRegistry {
     setId: string,
     seekSeconds: number,
     maxrateBits: number,
+    audioTrack: number,
   ): Promise<Session> {
     const directory = join(this.workDir, id);
     // Emptied rather than reused. A directory left by a killed server holds
@@ -136,13 +146,14 @@ export class TranscodeRegistry {
     await rm(directory, { recursive: true, force: true });
     await mkdir(directory, { recursive: true });
 
-    const process = this.runner.start(id, directory, setId, seekSeconds, maxrateBits);
+    const process = this.runner.start(id, directory, setId, seekSeconds, maxrateBits, audioTrack);
     const tracked: Tracked = {
       id,
       directory,
       setId,
       seekSeconds,
       maxrateBits,
+      audioTrack,
       process,
       exited: process.exited,
       lastUsed: Date.now(),
@@ -233,13 +244,23 @@ let discardCount = 0;
  * path, and a set id comes from a caption, so it must not be able to carry a
  * separator or a `..` into either.
  */
-function sessionId(setId: string, seekSeconds: number, maxrateBits: number): string {
+function sessionId(
+  setId: string,
+  seekSeconds: number,
+  maxrateBits: number,
+  audioTrack: number,
+): string {
   return createHash("sha256")
     .update(setId)
     .update(new Uint8Array([0]))
     .update(String(seekSeconds))
     .update(new Uint8Array([0]))
     .update(String(maxrateBits))
+    .update(new Uint8Array([0]))
+    // Part of the identity, not a detail of it: two viewers watching the same
+    // film in different languages want different encodes, and sharing one
+    // would hand the second viewer the first one's audio.
+    .update(String(audioTrack))
     .digest("hex")
     .slice(0, 16);
 }

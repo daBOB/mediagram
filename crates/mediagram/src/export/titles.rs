@@ -36,6 +36,20 @@ pub fn distinct_titles(conn: &Connection) -> Result<Vec<(Kind, u64)>> {
     Ok(out)
 }
 
+/// The same, opening the live index read-only for a command that only reads.
+///
+/// Read-only at the SQLite level rather than by convention: a command that
+/// describes a library has no business migrating its schema or checkpointing
+/// a WAL the uploader owns.
+pub fn distinct_titles_in(live: &std::path::Path) -> Result<Vec<(Kind, u64)>> {
+    let conn = Connection::open_with_flags(
+        live,
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_URI,
+    )
+    .with_context(|| format!("opening {} read-only", live.display()))?;
+    distinct_titles(&conn)
+}
+
 /// Set and part counts, for the manifest.
 pub fn counts(conn: &Connection) -> Result<(u64, u64)> {
     let sets: i64 = conn

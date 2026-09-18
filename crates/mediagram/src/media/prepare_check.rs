@@ -35,6 +35,10 @@ pub fn check_prepared(
     source_size: u64,
     source_duration: f64,
     expected_languages: &[String],
+    // Whether the result may be no smaller than the source. Dropping tracks
+    // can only shrink a file, but re-encoding the audio can round the other
+    // way on one that had little to drop.
+    allow_growth: bool,
 ) -> Result<(), Rejection> {
     if prepared_size == 0 || prepared_streams.is_empty() {
         return Err(Rejection::Empty);
@@ -59,7 +63,7 @@ pub fn check_prepared(
             prepared: prepared_duration,
         });
     }
-    if prepared_size >= source_size {
+    if !allow_growth && prepared_size >= source_size {
         return Err(Rejection::NotSmaller {
             source: source_size,
             prepared: prepared_size,

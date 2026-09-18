@@ -18,10 +18,33 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { clientAddress } from "./client-reach";
 import type { PosterStore } from "./package/posters";
 import { createRouter, type ByteSource, type HlsServer, type PlayerRequest } from "./routes";
+import type { AudioTrackReader } from "./audio-tracks";
+import type { WatchState } from "./state/store";
 
 export interface RunningServer {
   port: number;
   close(): Promise<void>;
+}
+
+/**
+ * The most a write may carry.
+ *
+ * Everything this API accepts is a position, a name or an id. A body larger
+ * than this is not one of those, and reading it would be a way to make the
+ * player hold megabytes on behalf of anyone who can reach the port.
+ */
+const MAX_BODY_BYTES = 64 * 1024;
+
+/** The body of a write, or `null`. Refuses rather than truncates when over. */
+async function readBody(request: IncomingMessage): Promise<string | null> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > MAX_BODY_BYTES) return null;
+    chunks.push(chunk as Buffer);
+  }
+  return Buffer.concat(chunks).toString("utf8");
 }
 
 function describe(request: IncomingMessage, trustProxy: boolean): PlayerRequest {
@@ -34,7 +57,13 @@ function describe(request: IncomingMessage, trustProxy: boolean): PlayerRequest 
     range: typeof rawRange === "string" ? rawRange : null,
     seek: url.searchParams.get("seek"),
     maxrate: url.searchParams.get("maxrate"),
+    audio: url.searchParams.get("audio"),
     query: url.searchParams.get("q"),
+    // Both read here so a route compares them rather than reaching for
+    // headers it would have to be handed anyway.
+    contentType: (request.headers["content-type"] ?? null)?.split(";")[0]?.trim().toLowerCase() ?? null,
+    origin: typeof request.headers.origin === "string" ? request.headers.origin : null,
+    host: typeof request.headers.host === "string" ? request.headers.host : null,
     // Resolved here, once, rather than left for a route to work out: behind a
     // proxy every request arrives from loopback, and whether the forwarded
     // address may be believed is a property of how this server was started.
@@ -91,6 +120,8 @@ export function startServer(options: {
   source: ByteSource;
   hls?: HlsServer;
   posters?: PosterStore;
+  audio?: AudioTrackReader;
+  state?: WatchState;
   port?: number;
   hostname?: string;
   /**
@@ -108,13 +139,21 @@ export function startServer(options: {
     source: options.source,
     hls: options.hls,
     posters: options.posters,
+    audio: options.audio,
+    state: options.state,
     maxBitrate: options.maxBitrate,
   });
   const trustProxy = options.trustProxy ?? false;
 
   const server = createServer((request, response) => {
     void (async () => {
-    const planned = await route(describe(request, trustProxy));
+    const described = describe(request, trustProxy);
+    // Read only for the methods that carry one, so a GET is never held up
+    // waiting on a stream that will not produce anything.
+    const carriesBody = !["GET", "HEAD", "DELETE"].includes(described.method);
+    const planned = await route(
+      carriesBody ? { ...described, body: await readBody(request) } : described,
+    );
     response.writeHead(planned.status, planned.headers);
 
     if (planned.body === null) {

@@ -6,16 +6,14 @@
 //! session file is already protected, and it is removed whether the export
 //! succeeds or fails.
 
-use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
-use std::time::Duration;
-
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result};
 use mlib_spec::package::{PackageManifest, PosterEntry};
 use rusqlite::Connection;
 
-use crate::export::posters::{PosterRef, poster_url};
+use crate::export::posters::{PosterRef, download_into};
+use crate::export::{restrict, restrict_dir};
 use crate::index::snapshot;
 
 pub const INDEX_FILE: &str = "library.db";
@@ -38,8 +36,7 @@ impl Staging {
         }
         std::fs::create_dir_all(&path)
             .with_context(|| format!("creating staging dir {}", path.display()))?;
-        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700))
-            .with_context(|| format!("restricting {}", path.display()))?;
+        restrict_dir(&path)?;
         Ok(Staging { path })
     }
 
@@ -63,41 +60,24 @@ impl Staging {
             .len())
     }
 
-    /// Downloads each poster into `posters/`. A poster that will not download
-    /// is skipped: the catalog is the product, the artwork is a convenience.
+    /// Stages the artwork, and says where each poster ended up.
+    ///
+    /// The manifest names files by their path inside the archive, so the
+    /// directory prefix is added here: `download_into` knows about keys and
+    /// bytes, and nothing about the package layout.
     pub async fn fetch_posters(
         &self,
         http: &reqwest::Client,
         refs: &[PosterRef],
     ) -> Result<Vec<PosterEntry>> {
-        if refs.is_empty() {
-            return Ok(Vec::new());
-        }
-        let dir = self.path.join(POSTER_DIR);
-        std::fs::create_dir_all(&dir).with_context(|| format!("creating {}", dir.display()))?;
-        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700))
-            .with_context(|| format!("restricting {}", dir.display()))?;
-
-        let mut entries = Vec::new();
-        for poster in refs {
-            // The key becomes a file name, a manifest path and a tar member
-            // name, so it is checked here rather than trusted from upstream.
-            if !mlib_spec::package::poster_key_is_valid(&poster.key) {
-                tracing::warn!(key = %poster.key, "poster key rejected");
-                continue;
-            }
-            let file = format!("{}/{}.jpg", POSTER_DIR, poster.key);
-            match download(http, &poster_url(&poster.path), &self.path.join(&file)).await {
-                Ok(()) => entries.push(PosterEntry {
-                    key: poster.key.clone(),
-                    file,
-                }),
-                Err(err) => {
-                    tracing::warn!(key = %poster.key, error = %err, "poster skipped");
-                }
-            }
-        }
-        Ok(entries)
+        let keys = download_into(http, refs, &self.path.join(POSTER_DIR)).await?;
+        Ok(keys
+            .into_iter()
+            .map(|key| PosterEntry {
+                file: format!("{POSTER_DIR}/{key}.jpg"),
+                key,
+            })
+            .collect())
     }
 
     /// Writes the manifest last, once the counts are known.
@@ -117,37 +97,4 @@ impl Drop for Staging {
             }
         }
     }
-}
-
-/// A poster that will not arrive promptly is not worth stalling an export
-/// for, and a body that keeps coming is not worth buffering.
-const POSTER_TIMEOUT: Duration = Duration::from_secs(20);
-const POSTER_MAX_BYTES: u64 = 4 * 1024 * 1024;
-
-async fn download(http: &reqwest::Client, url: &str, dest: &Path) -> Result<()> {
-    let response = http
-        .get(url)
-        .timeout(POSTER_TIMEOUT)
-        .send()
-        .await
-        .context("requesting poster")?;
-    let response = response
-        .error_for_status()
-        .context("poster request failed")?;
-    if let Some(len) = response.content_length()
-        && len > POSTER_MAX_BYTES
-    {
-        bail!("poster is {len} bytes, over the {POSTER_MAX_BYTES} byte limit");
-    }
-    let bytes = response.bytes().await.context("reading poster body")?;
-    if bytes.len() as u64 > POSTER_MAX_BYTES {
-        bail!("poster body exceeded the {POSTER_MAX_BYTES} byte limit");
-    }
-    std::fs::write(dest, &bytes).with_context(|| format!("writing {}", dest.display()))?;
-    restrict(dest)
-}
-
-fn restrict(path: &Path) -> Result<()> {
-    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))
-        .with_context(|| format!("restricting {}", path.display()))
 }

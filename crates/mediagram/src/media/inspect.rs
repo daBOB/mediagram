@@ -100,9 +100,10 @@ pub async fn inspect(path: &Path) -> Result<MediaInfo> {
         acodec: audio.and_then(|s| s.codec_name.clone()),
         width: video.and_then(|v| v.width),
         height: video.and_then(|v| v.height),
+        // Both dimensions: `quality_from_frame` reads the format from whichever
+        // of them carries it, and height alone undersells a scope ratio.
         quality: video
-            .and_then(|v| v.height)
-            .map(|h| classify::quality_from_height(h).to_string()),
+            .and_then(|v| Some(classify::quality_from_frame(v.width?, v.height?).to_string())),
         hdr,
         alang: collect_langs(&parsed.streams, "audio"),
         slang: collect_langs(&parsed.streams, "subtitle"),

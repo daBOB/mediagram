@@ -201,7 +201,9 @@ pub fn pending_unpins(conn: &Connection) -> Vec<i32> {
             match piece.parse::<i32>() {
                 Ok(id) if !ids.contains(&id) => ids.push(id),
                 Ok(_) => {}
-                Err(_) => tracing::warn!(key, value = %piece, "recorded index message id is not valid"),
+                Err(_) => {
+                    tracing::warn!(key, value = %piece, "recorded index message id is not valid")
+                }
             }
         }
     }
@@ -235,10 +237,7 @@ pub fn record_index_messages(conn: &Connection, ids: &[i32]) -> Result<()> {
 }
 
 fn join_ids(ids: &[i32]) -> String {
-    ids.iter()
-        .map(i32::to_string)
-        .collect::<Vec<_>>()
-        .join(",")
+    ids.iter().map(i32::to_string).collect::<Vec<_>>().join(",")
 }
 
 /// Telegram answers a client error (4xx) when the message id is unknown or

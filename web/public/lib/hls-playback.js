@@ -35,12 +35,15 @@ function loadHls() {
  * playlist URL. The server does not answer until a first segment exists, so a
  * player handed this URL has something to play.
  */
-async function beginTranscode(setId, seekSeconds, maxrateBits) {
+async function beginTranscode(setId, seekSeconds, maxrateBits, audioTrack) {
   const seek = `seek=${Math.max(0, Math.floor(seekSeconds))}`;
   // Sent only when the player has measured something. The server clamps it to
   // its own cap either way, so this is a request, not an instruction.
   const rate = maxrateBits ? `&maxrate=${Math.floor(maxrateBits)}` : "";
-  const url = `/api/sets/${encodeURIComponent(setId)}/transcode?${seek}${rate}`;
+  // Left off for the first stream, so the common request is the short one and
+  // a server that predates the chooser still answers it.
+  const track = audioTrack ? `&audio=${Math.floor(audioTrack)}` : "";
+  const url = `/api/sets/${encodeURIComponent(setId)}/transcode?${seek}${rate}${track}`;
   const response = await fetch(url);
   if (!response.ok) {
     // The server says why a conversion would not start; repeating its status
@@ -96,12 +99,18 @@ function releaseTranscode(playlist) {
  * encoding for a viewer who has gone.
  *
  * `options.maxrateBits` asks for an encode that fits a link the page has
- * measured; without it the server uses its configured cap. `options.onFatal`
+ * measured; without it the server uses its configured cap. `options.audioTrack`
+ * is the `0:a:N` the viewer chose, defaulting to the first. `options.onFatal`
  * is called if playback dies after it started — a session reaped, a
  * conversion that failed — so the page can say so instead of just stopping.
  */
 export async function playTranscoded(video, setId, options = {}) {
-  const playlist = await beginTranscode(setId, options.seekSeconds ?? 0, options.maxrateBits);
+  const playlist = await beginTranscode(
+    setId,
+    options.seekSeconds ?? 0,
+    options.maxrateBits,
+    options.audioTrack ?? 0,
+  );
 
   if (needsNativeHls()) {
     video.src = playlist;

@@ -17,6 +17,7 @@ const base: TranscodeRequest = {
   encoder: { kind: "software", name: "libx264" },
   seekSeconds: 0,
   maxrateBits: 8_000_000,
+  audioTrack: 0,
   segmentSeconds: 2,
   frameRate: 24,
 };
@@ -187,5 +188,23 @@ describe("which streams are transcoded", () => {
     const args = argsFor();
 
     expect(args.indexOf("-map")).toBeGreaterThan(args.indexOf("-i"));
+  });
+});
+
+describe("audio", () => {
+  test("the chosen stream is named, and the first one is the default", () => {
+    // `-map 0:a` without an ordinal lets ffmpeg pick "best", which on a film
+    // means the most channels — routinely a commentary or another language.
+    expect(argsFor()).toContain("0:a:0");
+    expect(argsFor({ audioTrack: 3 })).toContain("0:a:3");
+  });
+
+  test("only ever one audio stream, whichever it is", () => {
+    const args = argsFor({ audioTrack: 2 });
+    expect(args.filter((arg) => arg.startsWith("0:a:"))).toEqual(["0:a:2"]);
+  });
+
+  test("the video mapping is untouched by the audio choice", () => {
+    expect(argsFor({ audioTrack: 5 })).toContain("0:v:0");
   });
 });

@@ -11,5 +11,7 @@ import { playbackFor } from "./link.js";
 
 /** Whether this set will have to be converted before it plays. */
 export function transcodeBadge(set) {
-  return playbackFor(set).kind === "direct" ? null : el("span", "badge", "needs transcode");
+  // `warn` because a shelf tag and a search tag share the badge shape, and
+  // only this one is telling the viewer something might go wrong.
+  return playbackFor(set).kind === "direct" ? null : el("span", "badge warn", "needs transcode");
 }

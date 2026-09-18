@@ -68,15 +68,22 @@ It prints what it decided, and reading that line is most of the diagnosis when
 something is wrong later:
 
 ```
-catalog: 16 playable sets
+catalog: 16 playable sets, 2 poster(s)
 cache: 0.45 GB of 8.00 GB in /home/andre/.cache/mediagram-player, readahead 4 chunk(s)
 encoder: h264_vaapi on /dev/dri/renderD128
 serving on http://127.0.0.1:8770
 ```
 
 With a package configured, one more line above it says where the catalog came
-from (`catalog: updated from …`, or `unchanged`), and the count of playable
-sets gains a poster count. A refusal says why instead, on two lines.
+from (`catalog: updated from …`, or `unchanged`). A refusal says why instead,
+on two lines.
+
+The poster count is artwork found in `posters/` beside whichever index was
+opened: inside the catalog a package unpacked, or next to `library.db` on this
+machine. A package carries its own; a local index is filled by running
+[`mediagram posters`](../README.md#commands) on the uploader. Zero is not an
+error — cards fall back to the title's initials, which is also what a course
+shows, having no provider id to key a poster by.
 
 `bun run dev` also prints a warning saying, in as many words, that anyone who
 can reach the port can stream the whole library. That is fine on a network you
@@ -150,6 +157,68 @@ ffmpeg, out as HLS.
 
 The lists live in `web/public/lib/playable.js` and a test fails if this table
 stops matching them.
+
+### What the player remembers
+
+Watch positions, the watchlist and collections live in the player's own
+database, at `MEDIAGRAM_STATE_DB`, defaulting to
+`~/.local/share/mediagram-player/state.db`. Note the directory: every other
+path this process uses is a cache holding something it can fetch again, and
+this one holds the only thing it cannot. Back it up or do not, but do not put
+it under `~/.cache`.
+
+It is not the index. That belongs to the uploader, is opened read-only, and is
+replaced whole when a package refresh lands — a position written there would
+be destroyed by the next catalog update.
+
+A player whose state directory cannot be written says so at startup and runs
+without a memory. Films still play; positions are not kept.
+
+**Resume across devices needs nothing.** The player is a server. A phone, a
+laptop and a television pointed at it are reading and writing the same rows,
+so a film put down on one is where you left it on the next. There is nothing
+to sync, and syncing the database file between hosts would be worse than
+nothing: it is WAL-mode, so the three files are consistent only as a set, and
+two hosts writing means one silently overwriting the other.
+
+### Profiles
+
+Profiles keep two people's positions and lists apart. The page asks who is
+watching and remembers the answer in that browser, so a television stays on
+the television's profile.
+
+**A profile is not a login.** This API has no authentication — the sentence
+this whole document is built around — and a profile does not add any. Anyone
+who can reach the port can pick any profile, exactly as they can already
+stream the whole library. It is a convenience for a household, not a boundary.
+
+The API takes writes now. They require a JSON content type and, where the
+browser sends one, a same-origin `Origin`. Neither is authentication; together
+they stop a page on another origin from submitting a form at your player. The
+answer to everything else is still a proxy in front.
+
+### Choosing an audio track
+
+A title holding more than one audio stream gets a chooser in the player. The
+list is read off the file by `ffprobe` the first time a viewer opens it, and
+held for the life of the process.
+
+It is **not** read from the index. `sets.alang` stores the *distinct* language
+codes of a set with untagged streams dropped, so a file whose streams run
+`[und, en, en-commentary, de]` is recorded as `["en","de"]` — a list whose
+positions are not the ordinals ffmpeg selects by. Choosing "German" from that
+would have played the commentary, and nothing about the result would look
+wrong. The ordinal has to come from the file.
+
+Picking a track always converts, including for a title that was playing
+directly. Chrome and Firefox do not implement `HTMLMediaElement.audioTracks`,
+so there is no way to tell a `<video>` to use a different stream of the file it
+already has. The conversion restarts where the viewer was, and the note under
+the scrub bar says why it started.
+
+This needs `ffprobe` on the player host. It ships with ffmpeg, which the
+converter already requires, so a host that can convert can also probe. Where
+it is missing, a probe fails quietly and every title simply offers no choice.
 
 Why those three are where the line falls:
 

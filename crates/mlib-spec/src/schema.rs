@@ -1,7 +1,7 @@
 //! SQLite DDL for `library.db`. The uploader keeps this file locally as the
 //! canonical index and pushes a snapshot to the channel as a pinned document.
 
-pub const SCHEMA_VERSION: i64 = 4;
+pub const SCHEMA_VERSION: i64 = 6;
 
 /// Statements grouped by the version they produce: `GROUPS[0]` takes a
 /// database from nothing to version 1, `GROUPS[1]` from 1 to 2, and so on.
@@ -10,7 +10,7 @@ pub const SCHEMA_VERSION: i64 = 4;
 /// what lets a migration do something other than `CREATE ... IF NOT EXISTS`.
 /// SQLite has no `ADD COLUMN IF NOT EXISTS`, so an idempotent-by-wording list
 /// could never gain a column.
-pub const GROUPS: &[&[&str]] = &[V1, V2, V3, V4];
+pub const GROUPS: &[&[&str]] = &[V1, V2, V3, V4, V5, V6];
 
 /// Every statement needed to reach `version` from an empty database. Used by
 /// tests and by anyone reconstructing an older layout.
@@ -83,6 +83,36 @@ const V4: &[&str] = &["CREATE TABLE IF NOT EXISTS assets(
         body TEXT NOT NULL,
         PRIMARY KEY(set_id, kind, lang)
     )"];
+
+/// v4 → v5: what a provider says about a show, as opposed to about a file.
+///
+/// A show is not otherwise an entity here — it is what you get by grouping
+/// sets on their provider id — so there was nowhere to put a synopsis that
+/// belongs to the whole of it. Keyed the way a poster key is, because TMDB
+/// numbers films and series independently and 550 means two different things.
+///
+/// `lang` records which language the text is in rather than keying by it: a
+/// library fetches one language at a time, so asking again in another should
+/// replace the text, not accumulate beside it.
+const V5: &[&str] = &["CREATE TABLE IF NOT EXISTS shows(
+        source TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        id INTEGER NOT NULL,
+        lang TEXT NOT NULL DEFAULT '',
+        overview TEXT, tagline TEXT, genres TEXT, rating REAL,
+        network TEXT, status TEXT, first_air TEXT, last_air TEXT,
+        PRIMARY KEY(source, kind, id)
+    )"];
+
+/// v5 → v6: how much of a show exists, as against how much is held.
+///
+/// The index can count what it has; only the provider knows what there is.
+/// Without these a library cannot tell a complete show from the first season
+/// of one, which is the question anyone browsing a shelf actually has.
+const V6: &[&str] = &[
+    "ALTER TABLE shows ADD COLUMN total_seasons INTEGER",
+    "ALTER TABLE shows ADD COLUMN total_episodes INTEGER",
+];
 
 /// Playable invariant, as SQL usable in a WHERE clause on `sets s`.
 pub const PLAYABLE_SQL: &str = "s.status = 'complete'

@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use mediagram::commands::args::{AddArgs, AddCourseArgs, EditArgs, PrepareArgs};
+use mediagram::commands::args::{AddArgs, AddCourseArgs, AddShowArgs, EditArgs, PrepareArgs};
 use mediagram::{commands, config};
 
 #[derive(Parser)]
@@ -32,6 +32,8 @@ enum Cmd {
     Add(AddArgs),
     /// Walk a course folder and upload every lesson in it
     AddCourse(AddCourseArgs),
+    /// Walk a series folder and upload every episode in it
+    AddShow(AddShowArgs),
     /// Correct a set's metadata, rewriting its captions in the channel
     Edit(EditArgs),
     /// Finish every set left pending by an interrupted `add`
@@ -54,6 +56,12 @@ enum Cmd {
         #[arg(long)]
         since: Option<i64>,
     },
+    /// Record what the provider says about each film and series: synopsis,
+    /// genres, rating. Reads payloads `add` already cached
+    Metadata,
+    /// Fetch cover art for the films and series in the index, for a player
+    /// reading this machine's index rather than a published package
+    Posters,
     /// Assemble the encrypted prebuilt metadata package for a player
     ExportPackage {
         /// Where to write the package (default: <data dir>/export)
@@ -118,6 +126,7 @@ async fn main() -> Result<()> {
         Cmd::Whoami => commands::whoami::run(&cfg).await,
         Cmd::Add(args) => commands::add::run(&cfg, args).await,
         Cmd::AddCourse(args) => commands::add_course::run(&cfg, args).await,
+        Cmd::AddShow(args) => commands::add_show::run(&cfg, args).await,
         Cmd::Edit(args) => commands::edit::run(&cfg, args).await,
         Cmd::Resume { no_push } => commands::resume::run(&cfg, no_push).await,
         Cmd::PushIndex => commands::push_index::run(&cfg).await,
@@ -127,6 +136,8 @@ async fn main() -> Result<()> {
             full,
             since,
         } => commands::verify::run(&cfg, set_id, all, full, since).await,
+        Cmd::Metadata => commands::metadata::run(&cfg).await,
+        Cmd::Posters => commands::posters::run(&cfg).await,
         Cmd::ExportPackage {
             out,
             dry_run,
