@@ -12,6 +12,7 @@ import { progressOf } from "./watch-state.js";
 import { watchedFraction } from "./resume-point.js";
 import { firstItemOf } from "./library.js";
 import { transcodeBadge } from "./set-badge.js";
+import { GRID } from "./shelf-mode.js";
 
 // `extent` is what the shelf counts in, for the line under its title: a
 // catalogue says "twelve films", not "12 items".
@@ -20,6 +21,39 @@ export const SECTIONS = {
   series: { label: "Series", empty: "No series yet.", extent: "show" },
   tutorials: { label: "Tutorials", empty: "No courses yet.", extent: "course" },
 };
+
+/**
+ * The container the cards go in, in whichever of the two shapes.
+ *
+ * One class rather than two renderers: a plate and a row hold the same
+ * nodes, and the difference is entirely how they are laid out. Building the
+ * grid twice would be two places for a badge or a progress rule to be
+ * forgotten.
+ */
+function container(mode) {
+  return el("div", mode === GRID ? "grid plates" : "grid");
+}
+
+/**
+ * The caption under a film, which is shorter on a plate than in a row.
+ *
+ * A row has the width of the page and sets its figures against the right
+ * edge; a plate has the width of a poster. Five facts do not fit that, and
+ * the ones to drop are the ones the poster and the list already answer — a
+ * wall is for finding the film, not for comparing encodes.
+ *
+ * Resolution and HDR sit between the year and the runtime because that is the
+ * order a viewer reads them in: what it is, then how long it is. `SDR` is
+ * left out — see `technicalLine`.
+ */
+function filmMeta(set, mode) {
+  const hdr = set.hdr && set.hdr !== "SDR" ? set.hdr : null;
+  const facts =
+    mode === GRID
+      ? [set.year, set.quality, humanDuration(set.duration)]
+      : [set.year, set.quality, hdr, humanDuration(set.duration), humanSize(set.total)];
+  return facts.filter(Boolean).join(" · ");
+}
 
 /** A card for a film, a show or a course. */
 function card({ name, meta, initials, onClick, badge, poster, progress }) {
@@ -74,24 +108,13 @@ export function emptyState(section) {
 }
 
 /** Films: a flat grid, since a film is one thing. */
-export function movieGrid(movies, onPlay) {
-  const grid = el("div", "grid");
+export function movieGrid(movies, onPlay, mode) {
+  const grid = container(mode);
   for (const set of movies) {
     grid.append(
       card({
         name: set.title ?? set.setId,
-        // Resolution and HDR sit between the year and the runtime because
-        // that is the order a viewer reads them in: what it is, then how
-        // long it is. `SDR` is left out — see `technicalLine`.
-        meta: [
-          set.year,
-          set.quality,
-          set.hdr && set.hdr !== "SDR" ? set.hdr : null,
-          humanDuration(set.duration),
-          humanSize(set.total),
-        ]
-          .filter(Boolean)
-          .join(" · "),
+        meta: filmMeta(set, mode),
         initials: initialsOf(set.title),
         poster: set.poster ?? null,
         badge: transcodeBadge(set),
@@ -131,9 +154,9 @@ export function setGrid(sets, onPlay) {
 }
 
 /** Shows and courses: a grid of collections, each opening its own view. */
-export function collectionGrid(section, collections, onOpen) {
+export function collectionGrid(section, collections, onOpen, mode) {
   const series = section === "series";
-  const grid = el("div", "grid");
+  const grid = container(mode);
   for (const collection of collections) {
     // `chapters` counts the folders that hold something, however deep: a
     // course's top-level folders are too few to describe it, its total

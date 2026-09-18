@@ -393,6 +393,44 @@ main {
   border-bottom: 1px solid var(--rule);
   margin-bottom: 0.5rem;
 }
+
+/* The count and the control, kept together so the header reads as a line with
+   two ends rather than three things spread across it. */
+.shelf-aside {
+  display: flex;
+  align-items: baseline;
+  gap: 1.5rem;
+}
+
+.shelf-modes {
+  display: flex;
+  align-items: baseline;
+  gap: 0.9rem;
+}
+
+.shelf-modes .mode {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border-bottom: 1px solid transparent;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+
+.shelf-modes .mode:hover { color: var(--ink); }
+
+/* The one you are on, marked the way the masthead marks the shelf you are
+   on. Not `disabled`: it keeps its focus when the shelf rebuilds beneath it. */
+.shelf-modes .mode.on {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  cursor: default;
+}
 .shelf-head h1 {
   font-family: var(--display);
   font-size: clamp(1.9rem, 4.2vw, 2.6rem);
@@ -446,6 +484,58 @@ main {
  * artwork at the shape it was drawn in.
  */
 .grid { display: flex; flex-direction: column; }
+
+/* ---- plates ----
+ *
+ * The same cards, laid out as a wall rather than an index. Nothing about a
+ * card changes: `.thumb` already carries the 2/3 of a poster and already
+ * loads one, so a plate is that thumb given a whole column instead of
+ * 4.75rem of one.
+ *
+ * `auto-fill` rather than `auto-fit`: with `auto-fit` three films would
+ * stretch across the whole width as three enormous posters, which says
+ * something untrue about how much is on the shelf. Empty tracks left in
+ * place keep a plate the size of a plate. */
+.grid.plates {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 2.4rem 1.75rem;
+  padding: 1.4rem 0 0.5rem;
+}
+
+.grid.plates .card {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.7rem;
+  align-items: start;
+  padding: 0;
+  /* The rule belongs to the index, where it separates one row from the next.
+     Between plates there is already space. */
+  border-bottom: none;
+}
+
+/* Name over caption, both from the left: the two-ended row that sets a title
+   against its figures is a property of the list, not of the card. */
+.grid.plates .card .body {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.28rem;
+}
+
+.grid.plates .card .meta {
+  text-align: left;
+}
+
+.grid.plates .card .name {
+  font-size: 1.02rem;
+}
+
+/* Quieter on a wall than in an index. Twelve rows carry one badge each and
+   read as a column of exceptions; twelve plates carry twelve at once, and at
+   full weight they compete with the artwork they sit under. The reason is
+   still on the tooltip either way. */
+.grid.plates .card .badge {
+  font-size: 0.6rem;
+  padding: 0.12rem 0.4rem;
+}
 
 .card {
   display: grid;
@@ -1187,9 +1277,25 @@ dialog.with-notes .hud { right: var(--notes-width); }
     gap: 0.6rem 1.4rem;
   }
   .brand { font-size: 1.5rem; flex: 1 0 100%; margin-right: 0; }
-  .masthead nav { gap: 1.2rem; flex: 1 1 auto; }
+  /* Wraps rather than running off the side. Seven entries at 1.2rem apart are
+     wider than a phone, and a nav that overflows takes the whole page with it:
+     the document scrolls sideways and every other view inherits it. */
+  .masthead nav { gap: 0.55rem 1.2rem; flex: 1 1 100%; flex-wrap: wrap; }
   .search { flex: 1 0 100%; }
   main { padding-top: 1.8rem; }
+  /* The count and the control drop to their own line rather than squeezing
+     the title, which a flex row otherwise breaks mid-word. */
+  .shelf-head { flex-wrap: wrap; gap: 0.3rem 1rem; }
+  .shelf-aside { width: 100%; justify-content: space-between; gap: 1rem; }
+
+  /* Two to a row, stated rather than fitted: `auto-fill` against an 11rem
+     minimum lands on a single column at phone width, which is a bigger list
+     rather than a wall. Two plates is the narrowest thing that still reads as
+     a grid. */
+  .grid.plates {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.7rem 1.1rem;
+  }
   .card {
     grid-template-columns: 4.1rem minmax(0, 1fr);
     gap: 0 1.1rem;

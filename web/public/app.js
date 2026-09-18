@@ -21,6 +21,7 @@ import { openPlayer } from "./lib/player.js";
 import { divisionBlock, levelBlock } from "./lib/course-view.js";
 import { describeSeries, seriesHeader } from "./lib/series-header.js";
 import { SECTIONS, collectionGrid, emptyState, movieGrid, setGrid } from "./lib/shelf-view.js";
+import { GRID, LIST, setShelfMode, shelfMode } from "./lib/shelf-mode.js";
 import * as state from "./lib/watch-state.js";
 import { resumeAt } from "./lib/resume-point.js";
 import { listControls, listsView, listView } from "./lib/collections-view.js";
@@ -58,30 +59,95 @@ const setsFor = (ids) => ids.map((id) => byId.get(id)).filter(Boolean);
  * shared baseline with the extent flush right, which two separate children
  * of `main` could not do.
  */
-function heading(title, subtitle) {
+function heading(title, subtitle, control) {
   const head = el("header", "shelf-head");
   head.append(el("h1", null, title));
-  if (subtitle) head.append(el("p", "sub", subtitle));
+  // The count and the control travel together on the right, so the header
+  // stays a two-ended line rather than becoming three things spread across
+  // the page.
+  const aside = el("div", "shelf-aside");
+  if (subtitle) aside.append(el("p", "sub", subtitle));
+  if (control) aside.append(control);
+  if (aside.childElementCount > 0) head.append(aside);
   main.append(head);
+}
+
+/**
+ * List or plates, for the two shelves that have artwork worth showing.
+ *
+ * Two buttons rather than a select: there are two states, and a menu that
+ * opens to offer a choice of two is a menu that should have been the choice.
+ * Re-renders through `route()` so the shelf is rebuilt the same way it is
+ * built on arrival — the mode is read at render time, not passed around.
+ */
+function shelfToggle() {
+  const current = shelfMode();
+  const control = el("div", "shelf-modes");
+  control.setAttribute("role", "group");
+  control.setAttribute("aria-label", "How to show this shelf");
+
+  for (const [mode, label] of [
+    [LIST, "List"],
+    [GRID, "Grid"],
+  ]) {
+    const button = el("button", "mode", label);
+    button.type = "button";
+    if (mode === current) {
+      button.classList.add("on");
+      // The pressed state rather than `disabled`: a viewer reading with a
+      // screen reader is told which they are on, and the control does not
+      // lose focus when the shelf rebuilds under it.
+      button.setAttribute("aria-pressed", "true");
+    } else {
+      button.setAttribute("aria-pressed", "false");
+      button.addEventListener("click", () => {
+        setShelfMode(mode);
+        route();
+      });
+    }
+    control.append(button);
+  }
+  return control;
 }
 
 /** Films: a flat grid, since a film is one thing. */
 function viewMovies() {
-  heading(SECTIONS.movies.label, countOf(library.movies.length, SECTIONS.movies.extent));
+  const mode = shelfMode();
+  heading(
+    SECTIONS.movies.label,
+    countOf(library.movies.length, SECTIONS.movies.extent),
+    // No control over an empty shelf: there is nothing to lay out either way,
+    // and offering the choice would be offering it about nothing.
+    library.movies.length > 0 ? shelfToggle() : null,
+  );
   if (library.movies.length === 0) return main.append(emptyState("movies"));
-  main.append(movieGrid(library.movies, play));
+  main.append(movieGrid(library.movies, play, mode));
 }
 
 /** Shows and courses: a grid of collections, each opening its own view. */
 function viewCollections(section) {
   const collections = library[section];
-  heading(SECTIONS[section].label, countOf(collections.length, SECTIONS[section].extent));
+  // Series only. A course has no artwork — `posterKeyFor` files everything
+  // under a TMDB id and a course has none — so a wall of plates would be a
+  // wall of initials, and a hundred and seventy lessons are a list anyway.
+  const offersModes = section === "series" && collections.length > 0;
+  const mode = offersModes ? shelfMode() : LIST;
+  heading(
+    SECTIONS[section].label,
+    countOf(collections.length, SECTIONS[section].extent),
+    offersModes ? shelfToggle() : null,
+  );
   if (collections.length === 0) return main.append(emptyState(section));
 
   main.append(
-    collectionGrid(section, collections, (name) => {
-      location.hash = `#/${section}/${encodeURIComponent(name)}`;
-    }),
+    collectionGrid(
+      section,
+      collections,
+      (name) => {
+        location.hash = `#/${section}/${encodeURIComponent(name)}`;
+      },
+      mode,
+    ),
   );
 }
 

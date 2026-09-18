@@ -9,6 +9,13 @@ to `main`. Full phase-by-phase detail lives in
 
 **Shipped**
 
+- A poster grid for Movies and Series, toggled from the shelf header and
+  remembered per device. The same cards in both shapes — `.thumb` already
+  carried a poster's 2/3 and already loaded one, so a plate is that thumb
+  given a whole column instead of 4.75rem of one. The list stays the default.
+  Tutorials keeps the list: a course has no TMDB id and therefore no artwork,
+  and a hundred and seventy lessons are a list anyway.
+
 - The web player says what it is doing. A `#/status` panel reports the
   catalogue's origin and age, whether the last refresh actually succeeded,
   what the cache holds and how much of it is being hit, which encoder is in
