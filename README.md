@@ -28,13 +28,15 @@ cargo build --release
 
 ## Config
 
-With no config file, `mediagram login` asks for `api_id`, `api_hash` (both
-from https://my.telegram.org) and `channel` (a `-100…` channel id or the
-exact channel title), writes `$XDG_CONFIG_HOME/mediagram/config.toml`
-(usually `~/.config/mediagram/config.toml`, mode 600), and goes on to the
-phone number, login code and 2FA password. Every other command expects that
-file to exist. `tmdb_key` is not asked for: add it to the file before the
-first `add`, or pass `--manual`.
+With no config file, `mediagram login` asks for `api_id` and `api_hash`
+(both from https://my.telegram.org), `channel` (a `-100…` channel id or the
+exact channel title) and `tmdb_key`, writes
+`$XDG_CONFIG_HOME/mediagram/config.toml` (usually
+`~/.config/mediagram/config.toml`, mode 600), and goes on to the phone
+number, login code and 2FA password. Every other command expects that file
+to exist. The TMDB key is the one optional answer: press Enter to skip it
+and the key is written empty, ready to fill in before the first `add` that
+does not pass `--manual`.
 
 To set it up by hand instead, copy `config.example.toml` to that path and
 fill in the same keys. Every key can be overridden with a `MEDIAGRAM_<KEY>`
@@ -53,8 +55,8 @@ cargo build --release
 
 If `whoami` cannot find the channel it prints every channel and group the
 account can see, which is usually enough to spot a typo or a title that does
-not match exactly. Put `tmdb_key` in the config before the first `add`, or
-pass `--manual` to every one of them.
+not match exactly. If the TMDB key was skipped at login, put it in the
+config before the first `add`, or pass `--manual` to every one of them.
 
 What comes after login depends on whether this channel already holds a
 library.
