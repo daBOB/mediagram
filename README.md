@@ -75,9 +75,12 @@ mediagram add-course ~/Courses/Rust\ Course --dry-run
 `library.db` is created on the first `add`, and a snapshot of it is uploaded
 to the channel and pinned after every completed set unless `--no-push` says
 otherwise — so the channel stays enough to rebuild from on its own.
-`mediagram status` reports progress and is safe to run in a second terminal
-while an upload works; it needs a `library.db`, so it has nothing to say
-until the first `add`.
+An upload says what it is sending and keeps a line showing how far it has
+got — part, bytes, percentage, rate and an estimate — whenever it is run on
+a terminal; piped or logged, it stays quiet and `tracing` is the record.
+`mediagram status` answers the same question from another terminal, and is
+safe to run while an upload works; it needs a `library.db`, so it has
+nothing to say until the first `add`.
 
 Then, only if a player will read *this machine's* index rather than a
 published package, fill in the parts `add` does not:

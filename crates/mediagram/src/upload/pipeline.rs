@@ -12,6 +12,7 @@ use rusqlite::Connection;
 
 use super::part_reader::PartReader;
 use super::progress;
+use super::progress_line;
 use super::transport::Transport;
 use crate::index::sets::SetRow;
 use crate::index::{db, parts, sets};
@@ -38,6 +39,22 @@ pub async fn run_set<T: Transport>(
         let scan_limit = 3 * total_parts as usize;
         adoption_map(&set.set_id, &transport.recent_messages(scan_limit).await?)
     };
+
+    // Said before the first byte moves: connecting, resolving and hashing all
+    // happen before anything visible would otherwise, and a command that
+    // prints nothing for minutes looks wedged rather than busy.
+    if !pending.is_empty() {
+        println!(
+            "uploading {} · {:.2} GB in {}",
+            template.display_name(),
+            set.total as f64 / 1e9,
+            if total_parts == 1 {
+                "1 part".to_string()
+            } else {
+                format!("{total_parts} parts")
+            },
+        );
+    }
 
     let started = Instant::now();
     // Parts already in the channel before this run, so a resumed upload
@@ -121,22 +138,21 @@ async fn upload_one<T: Transport>(
     // rather than waiting for it to land. The reporter stops when it drops
     // at the end of this function, whether the part succeeded or not.
     let counter = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
-    let _reporter = data_dir.map(|dir| {
-        progress::Reporter::start(
-            dir,
-            std::sync::Arc::clone(&counter),
-            progress::Progress {
-                set_id: set.set_id.clone(),
-                part: part.idx,
-                parts: total_parts,
-                bytes_sent: 0,
-                part_bytes: part.byte_length,
-                bytes_done,
-                set_bytes: set.total,
-                updated_at: progress::now_unix(),
-            },
-        )
-    });
+    let shape = progress::Progress {
+        set_id: set.set_id.clone(),
+        part: part.idx,
+        parts: total_parts,
+        bytes_sent: 0,
+        part_bytes: part.byte_length,
+        bytes_done,
+        set_bytes: set.total,
+        updated_at: progress::now_unix(),
+    };
+    let _reporter = data_dir
+        .map(|dir| progress::Reporter::start(dir, std::sync::Arc::clone(&counter), shape.clone()));
+    // The same counter also drives the line on the terminal, for whoever is
+    // sitting in front of this one; it draws only when there is a terminal.
+    let _line = progress_line::Line::start(std::sync::Arc::clone(&counter), shape);
     let mut reader = reader.watched_by(std::sync::Arc::clone(&counter));
     let base_name = mlib_spec::part_name::base_name(template);
     let name =
