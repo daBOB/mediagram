@@ -66,6 +66,10 @@ pub struct AddArgs {
     /// Do not push the index after this set completes
     #[arg(long)]
     pub no_push: bool,
+    /// Delete the file once every part of it is in the channel. The index
+    /// is what says so; this does not read the parts back to check
+    #[arg(long)]
+    pub delete_source: bool,
 }
 
 /// Arguments for `mediagram add-course`.
@@ -119,6 +123,10 @@ pub struct PrepareArgs {
     /// instead of replacing the originals
     #[arg(long)]
     pub out: Option<PathBuf>,
+    /// Delete each source file once its replacement has been written and
+    /// checked. Only with --out, and only ever after the check passes
+    #[arg(long)]
+    pub delete_source: bool,
 }
 
 /// Arguments for `mediagram edit`.
@@ -181,4 +189,8 @@ pub struct AddShowArgs {
     /// Skip the confirmation when files would be converted on every play
     #[arg(long)]
     pub yes: bool,
+    /// Delete each episode once every part of it is in the channel, so a
+    /// season frees its disk as it goes rather than all at the end
+    #[arg(long)]
+    pub delete_source: bool,
 }

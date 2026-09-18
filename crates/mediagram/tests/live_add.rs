@@ -59,6 +59,7 @@ async fn add_uploads_a_three_part_file() {
         slang: None,
         hdr: Some("SDR".to_string()),
         no_push: true,
+        delete_source: false,
     };
 
     add::run(&cfg, args).await.expect("add should complete");

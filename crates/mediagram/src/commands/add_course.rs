@@ -121,6 +121,8 @@ async fn upload_one(
             hdr: None,
             // Pushed once when the walk finishes, not per lesson.
             no_push: true,
+            // A course is walked from a folder the caller still wants.
+            delete_source: false,
             course: Some(course.to_string()),
             cid: Some(cid.to_string()),
             chapter: Some(lesson.chapter),

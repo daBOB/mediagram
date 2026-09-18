@@ -23,7 +23,7 @@ use crate::config::Config;
 use crate::course::plan::is_video;
 use crate::media::direct_play;
 use crate::media::prepare_check::check_prepared;
-use crate::media::prepare_plan::{PreparePlan, Verdict, plan_prepare};
+use crate::media::prepare_plan::{PreparePlan, StreamKind, Verdict, plan_prepare};
 use crate::media::streams;
 
 /// Suffix of the file written beside the original before it is renamed over
@@ -34,6 +34,11 @@ const WORKING_SUFFIX: &str = ".prepared.mkv";
 pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
     if args.replace && args.out.is_some() {
         bail!("--replace rewrites the originals and --out leaves them alone; pick one");
+    }
+    // With `--replace` the source *is* the destination, so deleting it would
+    // delete the result. The flag only means anything when the two differ.
+    if args.delete_source && args.out.is_none() {
+        bail!("--delete-source needs --out: with --replace the original is already gone");
     }
     let keep_audio = split_languages(&args.audio);
     let keep_subs = split_languages(&args.subs);
@@ -77,6 +82,7 @@ pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
 
     let mut rewritten = 0usize;
     let mut failed = 0usize;
+    let mut freed = 0u64;
     for (file, size, duration, plan) in &planned {
         // Size is not the only reason to rewrite. `--mp4` exists to make a
         // file playable, and a file already small enough still plays badly if
@@ -112,6 +118,15 @@ pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
                     *size as f64 / 1e9,
                     new_size as f64 / 1e9
                 );
+                // Only here: `rewrite` returns `Ok` after the replacement
+                // has passed every check and been renamed into place, so
+                // there is something to delete the original in favour of.
+                if args.delete_source {
+                    match std::fs::remove_file(file) {
+                        Ok(()) => freed += *size,
+                        Err(err) => println!("  {} kept: {err}", name(file)),
+                    }
+                }
             }
             Err(err) => {
                 failed += 1;
@@ -125,6 +140,9 @@ pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
         "rewritten"
     };
     println!("\n{rewritten} {verb}, {failed} left unchanged");
+    if freed > 0 {
+        println!("{:.1} GB freed by deleting the sources", freed as f64 / 1e9);
+    }
     if failed > 0 {
         bail!("{failed} file(s) could not be prepared");
     }
@@ -158,23 +176,18 @@ async fn rewrite(
     command.arg(source);
     command.args(plan.map_args());
     if to_mp4 {
-        // The picture is still copied; only the wrapper and the audio change.
-        // `-f mp4` is explicit because the working name ends in `.prepared`,
-        // which tells ffmpeg nothing about the format wanted.
-        command.args([
-            "-c:v",
-            "copy",
-            "-c:a",
-            "aac",
-            "-b:a",
-            "384k",
-            "-c:s",
-            "mov_text",
-            "-movflags",
-            "+faststart",
-            "-f",
-            "mp4",
-        ]);
+        // The picture is always copied. The audio is re-encoded only when it
+        // has to be: a track a browser already plays is copied too, because
+        // turning AAC into AAC costs a generation of quality to change
+        // nothing. `-f mp4` is explicit because the working name ends in
+        // `.prepared`, which tells ffmpeg nothing about the format wanted.
+        command.args(["-c:v", "copy"]);
+        if audio_needs_encoding(plan) {
+            command.args(["-c:a", "aac", "-b:a", "384k"]);
+        } else {
+            command.args(["-c:a", "copy"]);
+        }
+        command.args(["-c:s", "mov_text", "-movflags", "+faststart", "-f", "mp4"]);
     } else {
         command.args(["-c", "copy"]);
     }
@@ -254,6 +267,21 @@ fn mirrored(file: &Path, root: &Path, out: &Path, to_mp4: bool) -> Result<PathBu
         );
     }
     Ok(dest)
+}
+
+/// Whether any audio track being kept is one a browser would refuse.
+///
+/// Asked of the tracks that survive the plan, not of the file: dropping the
+/// E-AC-3 commentary and keeping the AAC is a file that needs no encoding.
+fn audio_needs_encoding(plan: &PreparePlan) -> bool {
+    plan.keep
+        .iter()
+        .filter(|s| s.kind == StreamKind::Audio)
+        .any(|s| {
+            s.codec
+                .as_deref()
+                .is_none_or(|codec| !direct_play::known(&direct_play::AUDIO, codec))
+        })
 }
 
 /// Says which files `--mp4` cannot make direct-playable, and why.

@@ -159,7 +159,15 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
 
     let tg = Tg::connect(cfg).await.context("connecting to Telegram")?;
     let transport = TelegramTransport::new(&tg, cfg.max_attempts);
-    let upload_result = run_set(&conn, &transport, cfg.throttle_ms, &set_row, &source_path).await;
+    let upload_result = run_set(
+        &conn,
+        &transport,
+        cfg.throttle_ms,
+        &set_row,
+        &source_path,
+        Some(&data_dir),
+    )
+    .await;
     tg.shutdown().await;
     upload_result.context("uploading set")?;
 
@@ -169,6 +177,25 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
     }
 
     println!("set {set_id} added");
+    // Only once every part is in the channel. The index is what says so —
+    // this trusts the upload rather than reading the parts back, which is
+    // what `verify` is for and what a caller should run first if the local
+    // copy is the only other one.
+    if args.delete_source && completed {
+        match std::fs::remove_file(&args.file) {
+            Ok(()) => println!(
+                "  {} deleted, {:.2} GB freed",
+                name_of(&args.file),
+                total as f64 / 1e9
+            ),
+            Err(err) => println!("  {} kept: {err}", name_of(&args.file)),
+        }
+    } else if args.delete_source {
+        println!(
+            "  {} kept: not every part reached the channel",
+            name_of(&args.file)
+        );
+    }
     if completed && !args.no_push {
         push_index::push_after_set(cfg).await.with_context(|| {
             format!(
@@ -177,6 +204,13 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
         })?;
     }
     Ok(())
+}
+
+/// A path as the viewer named it, for a line about it.
+fn name_of(path: &std::path::Path) -> String {
+    path.file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| path.display().to_string())
 }
 
 /// Stores the subtitle and summary sitting beside a video, if any.
