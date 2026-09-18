@@ -1497,6 +1497,7 @@ version = "0.38.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1d20bef17f513b9b3004532233187769cd072d790971f4e4da0e346eb6401e8"
 dependencies = [
+ "cc",
  "pkg-config",
  "vcpkg",
 ]
@@ -1606,6 +1607,22 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ulid",
+]
+
+[[package]]
+name = "mediagram-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "glass_pumpkin",
+ "grammers-client",
+ "grammers-session",
+ "grammers-tl-types",
+ "hex",
+ "mlib-spec",
+ "rusqlite",
+ "sha2 0.10.9",
+ "tokio",
 ]
 
 [[package]]
