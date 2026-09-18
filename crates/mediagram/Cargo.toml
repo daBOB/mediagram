@@ -17,6 +17,12 @@ directories = "6.0.0"
 flate2 = "1.1.10"
 futures = "0.3.34"
 getrandom = "0.3"
+# Pinned, not used directly: grammers-crypto 0.10 calls glass_pumpkin's rc0
+# `safe_prime::check` (returns bool, takes num-bigint 0.4). rc1 returns a
+# Result and moved to num-bigint 0.5, so a plain `cargo update` picks it up
+# — both are prereleases of 2.0.0 — and grammers stops compiling. Drop this
+# once grammers-crypto builds against rc1.
+glass_pumpkin = "=2.0.0-rc0"
 grammers-client = "0.10"
 grammers-mtsender = "0.10"
 grammers-session = "0.10"
