@@ -14,7 +14,9 @@ import { el } from "./lib/dom.js";
 import { countOf } from "./lib/format.js";
 import { renderSearch } from "./lib/search-view.js";
 import { divisionAt, firstItemOf, groupLibrary, lessonsUnder, nextAfter } from "./lib/library.js";
-import { loadLink } from "./lib/link.js";
+import { catalogOf, loadLink } from "./lib/link.js";
+import { colophonLine } from "./lib/colophon.js";
+import { watchStatus } from "./lib/status-view.js";
 import { openPlayer } from "./lib/player.js";
 import { divisionBlock, levelBlock } from "./lib/course-view.js";
 import { describeSeries, seriesHeader } from "./lib/series-header.js";
@@ -282,7 +284,56 @@ async function viewSearch(query) {
   }
 }
 
+/** What the whole library adds up to, across the foot of the page. */
+function renderColophon(sets) {
+  document.getElementById("foot").textContent = colophonLine(sets, catalogOf());
+}
+
+/**
+ * Shows the System entry, but only to a viewer `/api/status` will answer.
+ *
+ * A `HEAD` is enough to find out and costs nothing. A remote viewer gets a
+ * 404 and the entry stays hidden — which is the point: a menu item leading to
+ * a page they cannot open would advertise that the page is there.
+ */
+async function offerSystem() {
+  try {
+    const response = await fetch("/api/status", { method: "HEAD" });
+    if (!response.ok) return;
+  } catch {
+    return;
+  }
+  document.getElementById("nav-system").hidden = false;
+}
+
+/**
+ * Stops the status panel polling, if one is open.
+ *
+ * Held here rather than inside the view because only the router knows the
+ * panel has been left: `hashchange` is the event, and the panel cannot see it.
+ */
+let stopStatus = null;
+
+/**
+ * What this player is doing. Local viewers only — `/api/status` is a 404
+ * from anywhere else, and the poller renders that as the error it is.
+ */
+function viewSystem() {
+  heading("System", "What this player is doing, refreshed as it happens");
+  const panel = el("div", "status-panel");
+  main.append(panel);
+  stopStatus = watchStatus(panel);
+}
+
 function route() {
+  // A panel left polling after the viewer has gone is the failure mode of
+  // every panel like this. Stopped on the way out of *any* route, so there is
+  // one place it can happen rather than one per way of leaving.
+  if (stopStatus) {
+    stopStatus();
+    stopStatus = null;
+  }
+
   // Everything after the collection is the trail of folders into a course.
   // Each segment is encoded on the way out, so a folder whose name contains a
   // slash survives the split rather than becoming two folders.
@@ -292,7 +343,11 @@ function route() {
     .filter((part) => part !== "");
   const [section = "movies", name, ...folders] = parts;
   const known =
-    SECTIONS[section] || KEPT[section] ? section : section === "search" ? "search" : "movies";
+    SECTIONS[section] || KEPT[section]
+      ? section
+      : section === "search" || section === "system"
+        ? section
+        : "movies";
 
   for (const link of document.querySelectorAll("nav a")) {
     link.classList.toggle("active", link.dataset.section === known);
@@ -309,6 +364,7 @@ function route() {
   // Leaving a search clears the box, so the shelf and the field agree.
   if (searchBox.value !== "") searchBox.value = "";
 
+  if (known === "system") return viewSystem();
   if (known === "continue") return viewContinue();
   if (known === "watchlist") return viewWatchlist();
   if (known === "collections") {
@@ -365,7 +421,8 @@ try {
   document.getElementById("n-movies").textContent = String(library.movies.length);
   document.getElementById("n-series").textContent = String(library.series.length);
   document.getElementById("n-tutorials").textContent = String(library.tutorials.length);
-  document.getElementById("foot").textContent = `${sets.length} playable sets`;
+  renderColophon(sets);
+  void offerSystem();
   refreshKept();
 
   if (!location.hash) {

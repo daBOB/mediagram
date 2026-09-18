@@ -23,6 +23,17 @@ import type { Telegram } from "./client";
 
 export class TelegramSource implements ByteSource {
   /**
+   * Reads that ended in an error rather than in bytes.
+   *
+   * Counted because this is the one failure a viewer feels and cannot see:
+   * a stream that errors mid-film looks to the browser like the file ended,
+   * and to the viewer like the player stopped for no reason. A cancel is not
+   * one of these — a seek cancels a read every time, and that is the system
+   * working.
+   */
+  private failedReads = 0;
+
+  /**
    * `reader` is optional: without it every byte comes from Telegram, which is
    * correct but pays for the same bytes on every replay and every seek back.
    */
@@ -31,8 +42,18 @@ export class TelegramSource implements ByteSource {
     private readonly reader?: CachedReader,
   ) {}
 
+  /** What has gone wrong upstream since startup. */
+  stats(): { failedReads: number } {
+    return { failedReads: this.failedReads };
+  }
+
   stream(locations: PartLocation[], steps: Step[], setId: string): ReadableStream<Uint8Array> {
     const bytes = this.bytesOf(setId, locations, steps);
+    // Captured rather than `this`: the stream's callbacks are plain functions
+    // and are not called with this instance as their receiver.
+    const failed = () => {
+      this.failedReads += 1;
+    };
     // Pull-based, so a slow viewer slows the download rather than filling
     // memory with a set that may be several gigabytes.
     return new ReadableStream<Uint8Array>({
@@ -42,6 +63,7 @@ export class TelegramSource implements ByteSource {
           if (done) controller.close();
           else controller.enqueue(value);
         } catch (error) {
+          failed();
           controller.error(error);
         }
       },

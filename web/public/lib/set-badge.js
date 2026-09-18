@@ -11,7 +11,16 @@ import { playbackFor } from "./link.js";
 
 /** Whether this set will have to be converted before it plays. */
 export function transcodeBadge(set) {
+  const decision = playbackFor(set);
+  if (decision.kind === "direct") return null;
+
   // `warn` because a shelf tag and a search tag share the badge shape, and
   // only this one is telling the viewer something might go wrong.
-  return playbackFor(set).kind === "direct" ? null : el("span", "badge warn", "needs transcode");
+  const badge = el("span", "badge warn", "needs transcode");
+  // The reason as a tooltip rather than as more text: a shelf of forty cards
+  // each carrying "Matroska container, HEVC video" is a wall, and the reason
+  // is a question a viewer asks about one card at a time. The player states
+  // it in full once the title is open.
+  badge.title = decision.reason;
+  return badge;
 }

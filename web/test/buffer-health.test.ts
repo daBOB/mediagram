@@ -188,3 +188,34 @@ describe("what to do about it", () => {
     expect(new BufferHealth().fittingBitrate(13_900_000)).toBeNull();
   });
 });
+
+describe("whether a sample measured anything", () => {
+  test("says no before there is a previous sample to compare against", () => {
+    const health = new BufferHealth();
+    const first = health.sample({ now: 0, currentTime: 0, bufferedEnd: 10, paused: false });
+    expect(first.measured).toBe(false);
+  });
+
+  test("says no while paused, when nothing is being consumed", () => {
+    const health = new BufferHealth();
+    health.sample({ now: 0, currentTime: 0, bufferedEnd: 10, paused: true });
+    const next = health.sample({ now: 1000, currentTime: 0, bufferedEnd: 12, paused: true });
+    expect(next.measured).toBe(false);
+  });
+
+  test("says no once the buffer is full, when the browser has stopped fetching", () => {
+    const health = new BufferHealth();
+    health.sample({ now: 0, currentTime: 0, bufferedEnd: 60, paused: false });
+    const next = health.sample({ now: 1000, currentTime: 1, bufferedEnd: 60, paused: false });
+    expect(next.bufferAhead).toBeGreaterThan(45);
+    expect(next.measured).toBe(false);
+  });
+
+  test("says yes while playing and still hungry, which is when the rate means something", () => {
+    const health = new BufferHealth();
+    health.sample({ now: 0, currentTime: 0, bufferedEnd: 10, paused: false });
+    const next = health.sample({ now: 1000, currentTime: 1, bufferedEnd: 11.5, paused: false });
+    expect(next.measured).toBe(true);
+    expect(next.ratio).toBeGreaterThan(0);
+  });
+});

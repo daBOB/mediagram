@@ -80,7 +80,18 @@ export function movieGrid(movies, onPlay) {
     grid.append(
       card({
         name: set.title ?? set.setId,
-        meta: [set.year, humanDuration(set.duration), humanSize(set.total)].filter(Boolean).join(" · "),
+        // Resolution and HDR sit between the year and the runtime because
+        // that is the order a viewer reads them in: what it is, then how
+        // long it is. `SDR` is left out — see `technicalLine`.
+        meta: [
+          set.year,
+          set.quality,
+          set.hdr && set.hdr !== "SDR" ? set.hdr : null,
+          humanDuration(set.duration),
+          humanSize(set.total),
+        ]
+          .filter(Boolean)
+          .join(" · "),
         initials: initialsOf(set.title),
         poster: set.poster ?? null,
         badge: transcodeBadge(set),

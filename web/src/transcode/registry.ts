@@ -191,6 +191,30 @@ export class TranscodeRegistry {
     return this.sessions.get(id);
   }
 
+  /**
+   * Every session running now, with how many viewers each has.
+   *
+   * A copy rather than the tracked objects: a caller reading this must not be
+   * able to reach the process handle or change the watcher count by holding
+   * the row it was told about.
+   */
+  list(): Array<Session & { watchers: number }> {
+    return [...this.sessions.values()].map((tracked) => ({
+      id: tracked.id,
+      directory: tracked.directory,
+      setId: tracked.setId,
+      seekSeconds: tracked.seekSeconds,
+      maxrateBits: tracked.maxrateBits,
+      audioTrack: tracked.audioTrack,
+      watchers: tracked.watchers,
+    }));
+  }
+
+  /** How many sessions may run at once. */
+  get capacity(): number {
+    return this.maxSessions;
+  }
+
   count(): number {
     return this.sessions.size;
   }

@@ -13,6 +13,24 @@ export function codecLine(set: {
   acodec?: string | null;
 }): string;
 
+/** The average bitrate over a whole set, as `9.4 Mbps`. Empty without both. */
+export function bitrateLabel(set: {
+  total?: number | null;
+  duration?: number | null;
+}): string;
+
+/** Everything the index knows about a file, for a card or the player HUD. */
+export function technicalLine(set: {
+  quality?: string | null;
+  hdr?: string | null;
+  container?: string | null;
+  vcodec?: string | null;
+  acodec?: string | null;
+  total?: number | null;
+  partCount?: number | null;
+  duration?: number | null;
+}): string;
+
 /** A position on a scrub bar: `1:23`, or `1:23:45` once past an hour. */
 export function clockTime(seconds: number | null): string;
 

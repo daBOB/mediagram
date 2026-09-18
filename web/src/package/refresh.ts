@@ -73,6 +73,14 @@ export interface RefreshResult {
   dir: string | null;
   /** Why, when the answer is `kept`. */
   reason?: string;
+  /**
+   * What the catalog being opened actually is, or `null` when there is none.
+   *
+   * Deliberately the identity of the catalog in **use**, not of the pointer
+   * just read: after a `kept` those are different, and the one worth
+   * reporting is the one the queries will run against.
+   */
+  identity: Identity | null;
 }
 
 function identityOf(pointer: Pointer): Identity {
@@ -118,7 +126,12 @@ async function heldDir(root: string): Promise<string | null> {
 
 /** A refusal that keeps whatever catalog is already there. */
 async function keep(root: string, reason: string): Promise<RefreshResult> {
-  return { status: "kept", dir: await heldDir(root), reason };
+  return {
+    status: "kept",
+    dir: await heldDir(root),
+    reason,
+    identity: await heldIdentity(root),
+  };
 }
 
 /**
@@ -161,7 +174,7 @@ export async function refreshCatalog(options: RefreshOptions): Promise<RefreshRe
   const held = await heldIdentity(root);
   if (held) {
     if (sameIdentity(held, identityOf(pointer))) {
-      return { status: "unchanged", dir: await heldDir(root) };
+      return { status: "unchanged", dir: await heldDir(root), identity: held };
     }
     if (pointer.created_at <= held.created_at) {
       return keep(root, "the package offered is older than the one already held");
@@ -223,7 +236,7 @@ export async function refreshCatalog(options: RefreshOptions): Promise<RefreshRe
   await swapCurrent(root, `v-${pointer.created_at}`);
   await removeOtherVersions(root, `v-${pointer.created_at}`);
 
-  return { status: "updated", dir: join(root, CURRENT) };
+  return { status: "updated", dir: join(root, CURRENT), identity: identityOf(pointer) };
 }
 
 /** The manifest is inside the ciphertext, so it and the pointer must agree. */

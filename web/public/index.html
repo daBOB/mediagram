@@ -29,6 +29,11 @@
         <a href="#/continue" data-section="continue" class="kept">Continue<span class="n" id="n-continue"></span></a>
         <a href="#/watchlist" data-section="watchlist" class="kept">Watchlist<span class="n" id="n-watchlist"></span></a>
         <a href="#/collections" data-section="collections" class="kept">Collections<span class="n" id="n-collections"></span></a>
+        <!-- Not a shelf: what the player itself is doing. Hidden until
+             `/api/status` answers, which it does only for a viewer on this
+             network — a remote viewer is never shown a way in to a page they
+             would get a 404 from. -->
+        <a href="#/system" data-section="system" class="apart" id="nav-system" hidden>System</a>
       </nav>
       <!-- Whose shelves these are. A profile is a convenience, not a login:
            it keeps two people's places and lists apart and checks nothing. -->
@@ -59,6 +64,10 @@
 
       <div class="hud hud-top">
         <span class="what" id="now"></span>
+        <!-- What the file is, which the catalogue says nowhere else at this
+             length. Set quieter than the title: it answers a question a
+             viewer only sometimes has. -->
+        <span class="tech" id="tech"></span>
         <button id="close" class="ghost">Close</button>
       </div>
 

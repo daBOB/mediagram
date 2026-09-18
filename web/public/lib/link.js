@@ -13,16 +13,34 @@ import { decidePlayback } from "./playable.js";
  *  one where being wrong only costs a conversion nobody needed. */
 let link = { remote: false, maxBitrate: 0 };
 
+/**
+ * What the server said about the catalogue, or `null` before it answered.
+ *
+ * Kept beside the link because it arrives in the same answer: the route is
+ * "facts about this session", and which catalogue is open is one of them.
+ */
+let catalog = null;
+
 export async function loadLink() {
   try {
     const response = await fetch("/api/player");
     if (!response.ok) return;
     const said = await response.json();
     link = { remote: said.remote === true, maxBitrate: Number(said.maxBitrate) || 0 };
+    catalog = {
+      origin: said.catalog?.origin === "package" ? "package" : "local",
+      publishedAt: Number.isFinite(said.catalog?.publishedAt) ? said.catalog.publishedAt : null,
+      schema: Number(said.schema) || null,
+    };
   } catch {
     // A player that cannot ask still works; it just offers direct play to a
     // remote viewer who may not be able to keep up with it.
   }
+}
+
+/** Which catalogue is open, or `null` if the server was never reached. */
+export function catalogOf() {
+  return catalog;
 }
 
 /** Whether `set` plays as it is over this link, or has to be converted. */

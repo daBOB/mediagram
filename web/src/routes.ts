@@ -22,6 +22,7 @@ import { createRequire } from "node:module";
 import { join, normalize } from "node:path";
 import { subtitle, subtitleLanguages, summary } from "./assets";
 import {
+  EXPECTED_SCHEMA,
   listPlayable,
   listSearchable,
   partLocations,
@@ -252,9 +253,33 @@ function empty(status: number): PlayerResponse {
   return { status, headers: { "content-length": "0" }, body: null };
 }
 
+/**
+ * Where the catalog being served came from.
+ *
+ * Says when a package was published, never where it lives: the URL and the
+ * key are the secret the package format exists around, and the age is the
+ * part a viewer can act on — a catalogue that stopped refreshing a fortnight
+ * ago looks exactly like a current one until something says so.
+ */
+export interface CatalogOrigin {
+  origin: "package" | "local";
+  /** When the package was built, in milliseconds. `null` for a local index. */
+  publishedAt: number | null;
+}
+
 export interface RouterOptions {
   db: Database;
   source: ByteSource;
+  /** Absent in tests and wherever it does not matter; the page copes. */
+  catalog?: CatalogOrigin;
+  /**
+   * Answers `/api/status`, to a viewer on this network only.
+   *
+   * Absent when the player was built without one — in a test, say — in which
+   * case the path is simply not a route and falls through to a 404 like any
+   * other unknown one.
+   */
+  status?: (request: PlayerRequest) => Promise<PlayerResponse | null>;
   hls?: HlsServer;
   /** The artwork the current catalog carries, if any. */
   posters?: PosterStore;
@@ -329,6 +354,13 @@ export function createRouter(options: RouterOptions) {
       if (answered) return answered;
     }
 
+    // Beside the state router and for the same reason: its own module, its
+    // own access rule, and `null` for anything that is not its path.
+    if (options.status) {
+      const answered = await options.status(request);
+      if (answered) return answered;
+    }
+
     // The one thing a viewer may change: a transcode they no longer want.
     // It holds the hardware encoder, and waiting for the idle reaper means a
     // second one starts while the abandoned one is still running.
@@ -349,7 +381,15 @@ export function createRouter(options: RouterOptions) {
       // Which link this viewer is on, which the page cannot work out for
       // itself. Deliberately says nothing about the host or the proxy.
       return text(
-        JSON.stringify({ remote: !isLocalAddress(request.client ?? ""), maxBitrate }),
+        JSON.stringify({
+          remote: !isLocalAddress(request.client ?? ""),
+          maxBitrate,
+          // Folded in here rather than given a route of its own: the page
+          // already fetches this once at startup, and the colophon wants
+          // three fields, not a second round trip.
+          catalog: options.catalog ?? { origin: "local", publishedAt: null },
+          schema: EXPECTED_SCHEMA,
+        }),
         "application/json",
       );
     }

@@ -24,6 +24,9 @@ import { WatchState } from "./state/store";
 import { parseKey } from "./package/open";
 import { PosterStore } from "./package/posters";
 import { refreshCatalog } from "./package/refresh";
+import { createStatusRouter } from "./status/routes";
+import { dirBytes } from "./status/dir-bytes";
+import type { StartupFacts } from "./status/facts";
 import { Telegram } from "./telegram/client";
 import { TelegramSource } from "./telegram/source";
 
@@ -31,14 +34,34 @@ const config = load();
 console.log("player:", describe(config));
 
 /**
+ * Which catalog is open, and where it came from.
+ *
+ * A `dir` of `null` means there is no package configured and the index on
+ * this machine is the catalog. The rest is what the player is asked about
+ * afterwards — by the colophon, which says how old the catalogue is, and by
+ * the status route, which says whether the last refresh actually worked.
+ */
+interface OpenedCatalog {
+  dir: string | null;
+  origin: "package" | "local";
+  /** When the package was built, in milliseconds. `null` for a local index. */
+  publishedAt: number | null;
+  /** The verdict of this run's refresh, or `null` when none was attempted. */
+  refresh: "updated" | "unchanged" | "kept" | null;
+  /** Why a refresh was refused, when it was. */
+  reason: string | null;
+}
+
+/**
  * Refreshes the published catalog, and says which directory to read.
  *
- * `null` means there is no package configured and the index on this machine
- * is the catalog. A refresh that fails never stops the player: it keeps the
- * catalog it already had, and only a first run with nothing held is fatal.
+ * A refresh that fails never stops the player: it keeps the catalog it
+ * already had, and only a first run with nothing held is fatal.
  */
-async function openCatalog(cfg: ReturnType<typeof load>): Promise<string | null> {
-  if (cfg.packageUrl === null || cfg.packageKey === null) return null;
+async function openCatalog(cfg: ReturnType<typeof load>): Promise<OpenedCatalog> {
+  if (cfg.packageUrl === null || cfg.packageKey === null) {
+    return { dir: null, origin: "local", publishedAt: null, refresh: null, reason: null };
+  }
 
   const result = await refreshCatalog({
     baseUrl: cfg.packageUrl,
@@ -55,7 +78,14 @@ async function openCatalog(cfg: ReturnType<typeof load>): Promise<string | null>
   } else {
     console.log(`catalog: ${result.status} from ${cfg.packageUrl}`);
   }
-  return result.dir;
+  return {
+    dir: result.dir,
+    origin: "package",
+    // Seconds in the package, milliseconds everywhere a browser will read it.
+    publishedAt: result.identity ? result.identity.created_at * 1000 : null,
+    refresh: result.status,
+    reason: result.reason ?? null,
+  };
 }
 
 // Where the catalog comes from. A published package makes the player
@@ -63,7 +93,8 @@ async function openCatalog(cfg: ReturnType<typeof load>): Promise<string | null>
 // decrypts what it names, and reads the index out of it. Without one it falls
 // back to reading the index off this machine's disk, which is what a player
 // running beside the uploader does.
-const catalogDir = await openCatalog(config);
+const catalog = await openCatalog(config);
+const catalogDir = catalog.dir;
 
 // One or the other is always set: `load()` requires a local index unless a
 // package supplies the catalog, and `openCatalog` throws rather than return
@@ -80,7 +111,10 @@ assertSchema(db);
 // `mediagram posters` puts it. A player reading a local index used to have no
 // artwork at all, because posters only ever shipped inside a package.
 const posters = new PosterStore(dirname(indexPath));
-console.log(`catalog: ${listPlayable(db).length} playable sets, ${posters.count()} poster(s)`);
+// Counted once: the catalog is read-only for the life of the process, so the
+// startup line and the status route are reporting the same unchanging number.
+const playableCount = listPlayable(db).length;
+console.log(`catalog: ${playableCount} playable sets, ${posters.count()} poster(s)`);
 
 const telegram = await Telegram.connect(config);
 
@@ -130,20 +164,72 @@ const audio = new AudioTrackReader(`http://127.0.0.1:${config.port}`);
 const state = new WatchState(config.stateDb);
 console.log(state.remembers ? `state: ${config.stateDb}` : "state: not remembered");
 
+// The same facts the lines above printed, kept this time. Everything here was
+// already decided; none of it is worked out twice.
+const reader = cache ? new CachedReader(cache, config.cacheReadahead) : null;
+const bytes = new TelegramSource(telegram, reader ?? undefined);
+const facts: StartupFacts = {
+  catalog: {
+    origin: catalog.origin,
+    publishedAt: catalog.publishedAt,
+    refresh: catalog.refresh,
+    reason: catalog.reason,
+    schema: EXPECTED_SCHEMA,
+    sets: playableCount,
+    posters: posters.count(),
+  },
+  encoder: {
+    name: encoder.name,
+    kind: encoder.kind,
+    device: encoder.kind === "vaapi" ? encoder.device : null,
+  },
+  transcodeDir: config.transcodeDir,
+  cache: cache
+    ? { dir: config.cacheDir, budget: cache.budget, readahead: config.cacheReadahead }
+    : null,
+  state: { remembered: state.remembers, path: state.remembers ? config.stateDb : null },
+  startedAt: Date.now(),
+};
+
 const server = await startServer({
   db,
   state,
   hls: new TranscodeFiles(transcodes),
   audio,
-  source: new TelegramSource(
-    telegram,
-    cache ? new CachedReader(cache, config.cacheReadahead) : undefined,
-  ),
+  source: bytes,
   posters,
   port: config.port,
   hostname: config.hostname,
   trustProxy: config.trustProxy,
   maxBitrate: config.transcodeMaxrate,
+  catalog: { origin: catalog.origin, publishedAt: catalog.publishedAt },
+  status: createStatusRouter({
+    facts,
+    live: () => ({
+      cacheHits: cache?.stats().hits ?? 0,
+      cacheMisses: cache?.stats().misses ?? 0,
+      cacheEvicted: cache?.stats().evicted ?? 0,
+      fetchedBytes: reader?.stats().fetchedBytes ?? 0,
+      transcodes: {
+        running: transcodes.count(),
+        capacity: transcodes.capacity,
+        sessions: transcodes.list().map(({ setId, seekSeconds, maxrateBits, audioTrack, watchers }) => ({
+          setId,
+          seekSeconds,
+          maxrateBits,
+          audioTrack,
+          watchers,
+        })),
+      },
+      telegramConnected: telegram.connected,
+      failedReads: bytes.stats().failedReads,
+      // Resident set size: the figure that says whether a player left running
+      // for a week is still the size it started at.
+      memoryBytes: process.memoryUsage.rss(),
+    }),
+    heldBytes: cache ? () => cache.sizeOnDisk() : undefined,
+    transcodeBytes: () => dirBytes(config.transcodeDir),
+  }),
 });
 
 const urls = reachableUrls(config.hostname, server.port);
