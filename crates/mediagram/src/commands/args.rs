@@ -70,6 +70,11 @@ pub struct AddArgs {
     /// is what says so; this does not read the parts back to check
     #[arg(long)]
     pub delete_source: bool,
+    /// Stay and show the upload. Without it the upload is handed to a
+    /// background process and the command returns as soon as the set is
+    /// planned
+    #[arg(long)]
+    pub watch: bool,
 }
 
 /// Arguments for `mediagram add-course`.

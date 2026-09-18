@@ -109,6 +109,17 @@ enum Cmd {
     /// Upload one small file with a smoke caption, print the message id, delete it
     #[command(hide = true)]
     SmokeUpload { file: PathBuf },
+    /// Finish a set `add` has already planned. This is what `add` starts in
+    /// the background; `resume` is the one to reach for by hand
+    #[command(hide = true)]
+    FinishSet {
+        set_id: String,
+        /// Delete this file once every part of the set is in the channel
+        #[arg(long)]
+        delete: Option<PathBuf>,
+        #[arg(long)]
+        no_push: bool,
+    },
 }
 
 #[tokio::main]
@@ -170,5 +181,10 @@ async fn main() -> Result<()> {
         } => commands::remove::run(&cfg, set_id, dry_run, yes).await,
         Cmd::Rescan => commands::rescan::run(&cfg).await,
         Cmd::SmokeUpload { file } => commands::smoke_upload::run(&cfg, &file).await,
+        Cmd::FinishSet {
+            set_id,
+            delete,
+            no_push,
+        } => commands::finish_set::run(&cfg, &set_id, delete.as_deref(), no_push).await,
     }
 }

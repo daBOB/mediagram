@@ -122,6 +122,8 @@ async fn upload_one(cfg: &Config, tmdb: u64, ep: &Episode, delete: bool) -> Resu
             // The index is pushed once when the show is done.
             no_push: true,
             delete_source: delete,
+            // A show is uploaded episode by episode, in this process.
+            watch: true,
             ..Default::default()
         },
     )

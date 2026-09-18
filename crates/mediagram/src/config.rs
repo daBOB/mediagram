@@ -49,6 +49,11 @@ pub struct Config {
     /// Where `mediagram serve` listens; default: loopback, see
     /// `commands::serve::DEFAULT_ADDR`.
     pub serve_addr: Option<String>,
+    /// The file this was read from. Not a key: `load` records it so a
+    /// process this one starts can be given the same config, which the
+    /// environment alone does not carry.
+    #[serde(skip)]
+    pub loaded_from: Option<PathBuf>,
 }
 
 /// Manual Debug so api_hash, tmdb_key and package_key can never reach logs
@@ -73,6 +78,7 @@ impl std::fmt::Debug for Config {
             .field("tmp_dir", &self.tmp_dir)
             .field("data_dir", &self.data_dir)
             .field("serve_addr", &self.serve_addr)
+            .field("loaded_from", &self.loaded_from)
             .finish()
     }
 }
@@ -111,6 +117,7 @@ pub fn load(path: Option<&Path>) -> Result<Config> {
     })?;
     let mut cfg: Config =
         toml::from_str(&text).with_context(|| format!("invalid config {}", path.display()))?;
+    cfg.loaded_from = Some(path.clone());
     apply_env(&mut cfg)?;
     // An empty `tmdb_key = ""` in the file means "not configured", same as an
     // empty MEDIAGRAM_TMDB_KEY; without this the add command's "set a key or

@@ -60,6 +60,9 @@ async fn add_uploads_a_three_part_file() {
         hdr: Some("SDR".to_string()),
         no_push: true,
         delete_source: false,
+        // The assertions below are about the upload, so it happens here
+        // rather than in a process this test would have to wait for.
+        watch: true,
     };
 
     add::run(&cfg, args).await.expect("add should complete");

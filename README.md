@@ -75,12 +75,18 @@ mediagram add-course ~/Courses/Rust\ Course --dry-run
 `library.db` is created on the first `add`, and a snapshot of it is uploaded
 to the channel and pinned after every completed set unless `--no-push` says
 otherwise — so the channel stays enough to rebuild from on its own.
-An upload says what it is sending and keeps a line showing how far it has
-got — part, bytes, percentage, rate and an estimate — whenever it is run on
-a terminal; piped or logged, it stays quiet and `tracing` is the record.
-`mediagram status` answers the same question from another terminal, and is
-safe to run while an upload works; it needs a `library.db`, so it has
-nothing to say until the first `add`.
+`add` returns once the set is planned — inspected, identified, split and
+written to the index — and leaves the bytes to a background process that
+outlives the terminal. `mediagram status` says how far that has got, from
+anywhere; the process's own output goes to `<data dir>/background.log`.
+Pass `--watch` to keep the upload in the foreground instead, where it prints
+a line showing part, bytes, percentage, rate and an estimate, redrawn as it
+goes. Piped or logged rather than shown on a terminal, an upload stays quiet
+and `tracing` is the record.
+
+Uploads take turns. A file added while another is going up waits for it, the
+way a show's episodes wait for each other, so two of them never halve each
+other's bandwidth — `add` says which of the two happened when it returns.
 
 Then, only if a player will read *this machine's* index rather than a
 published package, fill in the parts `add` does not:
@@ -138,7 +144,7 @@ expect, and adding continues as on any other machine.
 |---|---|
 | `mediagram login` | Sign in with phone + code (+ 2FA password) and persist the session. **Must be run in a real, interactive terminal** — it prompts for input and there is no TTY when invoked from a non-interactive context. |
 | `mediagram whoami` | Print the signed-in account and the resolved library channel. |
-| `mediagram add <file>` | Split, upload, caption and index one media file. `--delete-source` removes the file once every part of it is in the channel. See flags below. |
+| `mediagram add <file>` | Split, upload, caption and index one media file. Returns as soon as the set is planned and leaves the upload to a background process; `--watch` stays and shows it instead. `--delete-source` removes the file once every part of it is in the channel. See flags below. |
 | `mediagram resume [--no-push]` | Finish every set left `pending` by an interrupted `add` (adopts already-uploaded parts instead of re-uploading them). |
 | `mediagram push-index` | Snapshot `library.db` and upload it to the channel as a pinned document. |
 | `mediagram verify <set-id> \| --all [--full] [--since <unix>]` | Check a set (or every set): default mode compares each part's message/document against the index; `--full` re-downloads and hashes every part, and `--since` skips parts already verified at or after that timestamp so an interrupted sweep resumes. `--all` skips sets that are still uploading. |
@@ -229,6 +235,7 @@ mediagram add <file>
   --hdr <label>       Override detected HDR format (SDR, HDR10, HLG, DV)
   --no-push          Do not push the index after this set completes
   --delete-source    Delete the file once every part is in the channel
+  --watch            Stay and show the upload instead of backgrounding it
 ```
 
 An explicit `--tmdb`/`--tvdb`/`--imdb` never prompts; without one, an

@@ -28,6 +28,9 @@ grammers-mtsender = "0.10"
 grammers-session = "0.10"
 grammers-tl-types = "0.10"
 hex.workspace = true
+# setsid, so a backgrounded upload gets a session of its own and survives
+# the terminal it was started from closing.
+libc = "0.2"
 mlib-spec = { path = "../mlib-spec" }
 reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "json"] }
 # Not "bundled": grammers-session already statically links its own copy of

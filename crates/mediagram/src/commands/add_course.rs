@@ -123,6 +123,8 @@ async fn upload_one(
             no_push: true,
             // A course is walked from a folder the caller still wants.
             delete_source: false,
+            // A course is uploaded lesson by lesson, in this process.
+            watch: true,
             course: Some(course.to_string()),
             cid: Some(cid.to_string()),
             chapter: Some(lesson.chapter),

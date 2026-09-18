@@ -31,7 +31,11 @@ config.rs          TOML config + MEDIAGRAM_* env overrides, secret redaction
 paths.rs           XDG config/data directory resolution
 
 commands/          one module per subcommand, each exposing `run(...)`
-  add.rs             inspect → resolve → remux → plan → upload → index → push
+  add.rs             inspect → resolve → remux → plan → index, then hand the
+                     upload to finish_set (--watch) or to a background process
+  finish_set.rs      upload one planned set: the half that is only bytes
+  background.rs      re-runs this binary detached, so an upload outlives the
+                     terminal that started it
   resume.rs          finish every set left `pending`
   push_index.rs       snapshot + upload + pin library.db
   rescan.rs          rebuild the index from channel captions (disaster recovery)
@@ -46,7 +50,9 @@ metadata/          TMDB search/lookup, disk-cached HTTP, interactive prompt
                    for ambiguous matches
 upload/            hashing byte-range reader (part_reader), the Transport
                    trait + its Telegram implementation, the resumable
-                   per-set pipeline, and adoption (resume-without-reupload)
+                   per-set pipeline, adoption (resume-without-reupload), the
+                   progress note and terminal line, and the flock that makes
+                   uploads take turns across processes
 index/             library.db: schema open/migrate, sets/parts CRUD,
                    rescan folding, snapshot/vacuum
 telegram/          grammers client construction + login flow, retry policy
@@ -330,6 +336,9 @@ All paths come from `directories::ProjectDirs::from("", "", "mediagram")`
 | `$XDG_DATA_HOME/mediagram/session.sqlite` | Telegram auth session (grammers `SqliteSession`). Directory `chmod 0700`, file `chmod 0600` — it holds the account's auth key. |
 | `$XDG_DATA_HOME/mediagram/library.db` | The canonical index (WAL mode). |
 | `$XDG_DATA_HOME/mediagram/tmdb-cache/*.json` | Disk-cached TMDB responses, keyed by `sha256(path + sorted query)`. |
+| `$XDG_DATA_HOME/mediagram/upload.lock` | Held (`flock`) by whichever process is uploading, so the others queue behind it. |
+| `$XDG_DATA_HOME/mediagram/upload-progress.json` | How far the part in flight has got, for `status` to read. Rewritten every 2s, meaningless once stale. |
+| `$XDG_DATA_HOME/mediagram/background.log` | Output of the detached uploads `add` starts. |
 
 Both `config.toml` and `data_dir` can be overridden (`--config`,
 `MEDIAGRAM_DATA_DIR`, or the config's `data_dir` key).
