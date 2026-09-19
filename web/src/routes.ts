@@ -32,6 +32,7 @@ import {
 } from "./catalog";
 import { planReads, totalSize, type PartSpan, type Step } from "./range";
 import { isLocalAddress } from "./client-reach";
+import type { HeldSets } from "./cache/held";
 import { SearchIndex } from "./search/index";
 import { PosterStore, posterKeyFor, posterKeyIsValid } from "./package/posters";
 import { showMeta } from "./shows";
@@ -273,6 +274,13 @@ export interface RouterOptions {
   /** Absent in tests and wherever it does not matter; the page copes. */
   catalog?: CatalogOrigin;
   /**
+   * Which sets are on this machine in full, for the offline badge.
+   *
+   * Absent when the player has no cache, in which case nothing is held and
+   * every title is reported as needing the network — which is true.
+   */
+  held?: HeldSets;
+  /**
    * Answers `/api/status`, to a viewer on this network only.
    *
    * Absent when the player was built without one — in a test, say — in which
@@ -336,6 +344,9 @@ export function createRouter(options: RouterOptions) {
     const key = posterKeyFor(set.kind, tmdb);
     return {
       ...set,
+      // Whether this plays with no Telegram at all. The claim only, never the
+      // chunk counts behind it or where they sit.
+      offline: options.held?.has(set.setId) ?? false,
       // The show's identity, whether or not artwork exists for it: a page
       // asks about the show by this even when the shelf has nothing to show.
       showKey: key,
@@ -398,6 +409,7 @@ export function createRouter(options: RouterOptions) {
       // Enriched exactly as a catalog row is: a hit is opened by the same
       // dialog, so a missing `subtitles` would silently lose the tracks and a
       // missing `hasSummary` the notes panel.
+      options.held?.refreshIfStale();
       const hits = index
         .search(request.query ?? "")
         .map(({ summary: _summary, matched, excerpt, ...set }) => ({
@@ -411,6 +423,7 @@ export function createRouter(options: RouterOptions) {
     if (request.path === "/api/sets") {
       // What a set has, so the page can offer a summary or a subtitle track
       // without asking per title.
+      options.held?.refreshIfStale();
       const sets = listPlayable(db).map(forBrowser);
       const body = new TextEncoder().encode(JSON.stringify(sets));
       return {

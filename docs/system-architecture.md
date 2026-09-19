@@ -211,7 +211,8 @@ status/            what the player is doing: the startup facts worth keeping,
                    is answered on
 telegram/          teleproto client, and turning planned reads into bytes
 cache/             512 KiB chunks on disk: keys, store with quota, reader,
-                   and the readahead tracker behind MEDIAGRAM_CACHE_READAHEAD
+                   the readahead tracker behind MEDIAGRAM_CACHE_READAHEAD, and
+                   which sets are held in full, for the offline badge
 package/           the mlib-package-v1 reader: pointer, cipher, tar, refresh,
                    and the artwork a package carries
 transcode/         ffmpeg arguments, encoder probe, session registry, the

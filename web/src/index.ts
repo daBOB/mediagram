@@ -19,6 +19,7 @@ import { FfmpegRunner } from "./transcode/ffmpeg";
 import { TranscodeRegistry } from "./transcode/registry";
 import { TranscodeFiles } from "./transcode/server";
 import { ChunkCache } from "./cache/store";
+import { HeldSets, expectedChunks } from "./cache/held";
 import { AudioTrackReader } from "./audio-tracks";
 import { WatchState } from "./state/store";
 import { parseKey } from "./package/open";
@@ -168,6 +169,15 @@ console.log(state.remembers ? `state: ${config.stateDb}` : "state: not remembere
 // already decided; none of it is worked out twice.
 const reader = cache ? new CachedReader(cache, config.cacheReadahead) : null;
 const bytes = new TelegramSource(telegram, reader ?? undefined);
+
+// Which titles are on this disk in full, for the shelf's offline badge. The
+// expectation is folded once — the catalog cannot change while we run — and
+// the first scan is awaited so the first page load is already right.
+const held = cache ? new HeldSets(config.cacheDir, expectedChunks(db)) : null;
+if (held) {
+  await held.refresh();
+  console.log(`held: ${held.count} title(s) cached in full`);
+}
 const facts: StartupFacts = {
   catalog: {
     origin: catalog.origin,
@@ -203,6 +213,7 @@ const server = await startServer({
   trustProxy: config.trustProxy,
   maxBitrate: config.transcodeMaxrate,
   catalog: { origin: catalog.origin, publishedAt: catalog.publishedAt },
+  held: held ?? undefined,
   status: createStatusRouter({
     facts,
     live: () => ({

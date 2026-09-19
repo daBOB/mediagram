@@ -12,6 +12,7 @@
 
 import { el } from "./dom.js";
 import { codecLine, countOf, episodeLabel, humanDuration, humanSize } from "./format.js";
+import { offlineBadge } from "./set-badge.js";
 
 /** How a hit earned its place, in words rather than a field name. */
 const WHY = {
@@ -69,6 +70,9 @@ export function renderSearch(main, query, hits, onPlay) {
 
     const why = WHY[hit.matched];
     if (why) row.append(el("span", "badge", why));
+    // After the reason it matched, which is what the viewer came here for.
+    const held = offlineBadge(hit);
+    if (held) row.append(held);
 
     row.append(
       el(

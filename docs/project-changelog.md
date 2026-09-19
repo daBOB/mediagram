@@ -9,6 +9,14 @@ to `main`. Full phase-by-phase detail lives in
 
 **Shipped**
 
+- A green **offline** badge on any title held on the player's disk in full —
+  every chunk of every part present, so it plays with Telegram unreachable.
+  Worked out by counting chunk files against what the index implies each set
+  needs, which is a few milliseconds for four hundred sets. Counting proves
+  presence rather than integrity; a truncated chunk would pass it, and
+  `ChunkCache.get` already removes one on read, so the cost of being wrong is
+  a refetch rather than a failed play.
+
 - A poster grid for Movies and Series, toggled from the shelf header and
   remembered per device. The same cards in both shapes — `.thumb` already
   carried a poster's 2/3 and already loaded one, so a plate is that thumb

@@ -11,7 +11,7 @@ import { countOf, episodeLabel, humanDuration, humanSize } from "./format.js";
 import { progressOf } from "./watch-state.js";
 import { watchedFraction } from "./resume-point.js";
 import { firstItemOf } from "./library.js";
-import { transcodeBadge } from "./set-badge.js";
+import { offlineBadge, transcodeBadge } from "./set-badge.js";
 import { GRID } from "./shelf-mode.js";
 
 // `extent` is what the shelf counts in, for the line under its title: a
@@ -56,7 +56,7 @@ function filmMeta(set, mode) {
 }
 
 /** A card for a film, a show or a course. */
-function card({ name, meta, initials, onClick, badge, poster, progress }) {
+function card({ name, meta, initials, onClick, badges, poster, progress }) {
   const button = el("button", "card");
   const thumb = el("div", "thumb", poster ? undefined : initials);
   if (poster) {
@@ -81,7 +81,10 @@ function card({ name, meta, initials, onClick, badge, poster, progress }) {
   const body = el("div", "body");
   body.append(el("div", "name", name));
   if (meta) body.append(el("div", "meta", meta));
-  if (badge) body.append(badge);
+  // Two at most, and both may be true at once: a title already on this disk
+  // that still has to be converted plays offline all the same, because the
+  // conversion reads from the same cache.
+  for (const badge of badges ?? []) if (badge) body.append(badge);
   button.append(thumb, body);
   button.addEventListener("click", onClick);
   return button;
@@ -117,7 +120,7 @@ export function movieGrid(movies, onPlay, mode) {
         meta: filmMeta(set, mode),
         initials: initialsOf(set.title),
         poster: set.poster ?? null,
-        badge: transcodeBadge(set),
+        badges: [offlineBadge(set), transcodeBadge(set)],
         progress: watchedFraction(progressOf(set.setId)),
         onClick: () => onPlay(set),
       }),
@@ -144,7 +147,7 @@ export function setGrid(sets, onPlay) {
           .join(" · "),
         initials: initialsOf(set.title ?? set.show),
         poster: set.poster ?? null,
-        badge: transcodeBadge(set),
+        badges: [offlineBadge(set), transcodeBadge(set)],
         progress: watchedFraction(progressOf(set.setId)),
         onClick: () => onPlay(set),
       }),

@@ -27,6 +27,7 @@ import {
 } from "./routes";
 import type { AudioTrackReader } from "./audio-tracks";
 import type { WatchState } from "./state/store";
+import type { HeldSets } from "./cache/held";
 
 export interface RunningServer {
   port: number;
@@ -144,6 +145,8 @@ export function startServer(options: {
   catalog?: CatalogOrigin;
   /** Answers `/api/status`, for a viewer on this network. */
   status?: (request: PlayerRequest) => Promise<PlayerResponse | null>;
+  /** Which sets are held in full, for the offline badge. */
+  held?: HeldSets;
 }): Promise<RunningServer> {
   const route = createRouter({
     db: options.db,
@@ -155,6 +158,7 @@ export function startServer(options: {
     maxBitrate: options.maxBitrate,
     catalog: options.catalog,
     status: options.status,
+    held: options.held,
   });
   const trustProxy = options.trustProxy ?? false;
 

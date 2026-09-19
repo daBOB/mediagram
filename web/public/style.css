@@ -71,6 +71,11 @@
   /* Ochre, for the one thing the page ever warns about: a title the link or
      the browser cannot take as it is. */
   --warn: #866021;
+  /* The counterpart, and the only good news the page has to give: a title
+     already on the disk. A sage green rather than a signal one — the palette
+     is uncoated stock and a UI green would sit on top of it rather than in
+     it. */
+  --held: #4a6741;
 
   /* The screening room. */
   --stage: #0d0c0b;
@@ -763,9 +768,11 @@ main {
 
 /* ---- tags ----
  *
- * Two different statements share this shape: why a search hit matched, and
- * whether a title has to be converted before it plays. Only the second is a
- * warning, and only it is coloured.
+ * Three statements share this shape: why a search hit matched, whether a
+ * title has to be converted before it plays, and whether it is already on
+ * this disk. The first is plain; the other two are the page's only two
+ * colours for a fact about a title, and they are a pair — ochre for what
+ * will cost something, green for what will not.
  */
 .badge, .has-summary {
   flex: none;
@@ -781,6 +788,7 @@ main {
   white-space: nowrap;
 }
 .badge.warn { color: var(--warn); border-color: rgba(134, 96, 33, 0.45); }
+.badge.held { color: var(--held); border-color: rgba(74, 103, 65, 0.45); }
 
 /* ---- the states nobody wants but everybody hits ---- */
 .empty {
