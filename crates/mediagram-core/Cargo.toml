@@ -25,9 +25,11 @@ grammers-tl-types = "0.10"
 hex = { workspace = true }
 mlib-spec = { path = "../mlib-spec" }
 serde = { workspace = true }
+serde_json = { workspace = true }
 sha2 = { workspace = true }
 tar = "0.4.46"
 thiserror = { workspace = true }
+uniffi = "0.32.0"
 tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "io-util", "net", "sync", "time"] }
 
 # Exactly one sqlite3 may end up in the binary, and which crate supplies it
