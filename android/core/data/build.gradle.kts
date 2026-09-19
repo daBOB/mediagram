@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.app.android.library)
     alias(libs.plugins.app.hilt)
+    alias(libs.plugins.app.android.security.crypto)
 }
 
 android {

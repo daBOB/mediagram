@@ -48,6 +48,10 @@ gradlePlugin {
             id = "app.android.library.compose"
             implementationClass = "AndroidLibraryComposeConventionPlugin"
         }
+        register("androidSecurityCrypto") {
+            id = "app.android.security.crypto"
+            implementationClass = "AndroidSecurityCryptoConventionPlugin"
+        }
         register("androidFeature") {
             id = "app.android.feature"
             implementationClass = "AndroidFeatureConventionPlugin"
