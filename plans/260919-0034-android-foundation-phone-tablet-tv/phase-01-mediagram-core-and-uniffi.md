@@ -303,6 +303,25 @@ impl Core {
 `#[derive(uniffi::Error)] thiserror` enum with variants `Network`,
 `NotAuthorized`, `NotFound`, `Cipher`, `Io` — each carrying a `String`.
 
+**The core must persist its own session.** Android has no `SqliteSession` —
+the target-gated manifest drops it so only one sqlite ends up in the binary —
+and `MemorySession` persists nothing, so without this every launch is a fresh
+login and grammers warns that re-login costs flood waits. The auth key is the
+whole authorization, so persistence is just storing those 256 bytes under
+`data_dir` and seeding a `MemorySession` from them on start;
+`crates/mediagram/src/telegram/string_session.rs` shows the encode side of the
+same operation. Write it to a file that is `0600`, never into the package
+cache, and never into a log.
+
+This client authenticates by logging in itself. It never accepts an auth key
+exported from the uploader: `crates/mediagram/src/commands/export_session.rs`
+records a measured case where two clients sharing one key broke each other and
+did not recover until restart.
+
+**No `CoreError` string may carry a `chat_id`, `message_id` or `doc_id`** —
+those strings cross into Kotlin, and `docs/system-architecture.md` §7 holds for
+this client too: the UI is told what it may play, never where the bytes live.
+
 - [ ] **Step 1:** Add `uniffi` to `crates/mediagram-core/Cargo.toml` at the current stable release, with the `build`, `cli` and `tokio` features; add `[lib] crate-type = ["cdylib", "staticlib", "rlib"]`; record the version chosen in the commit message. Add a `build.rs` calling `uniffi::generate_scaffolding`.
 - [ ] **Step 2: Write the failing test**
 

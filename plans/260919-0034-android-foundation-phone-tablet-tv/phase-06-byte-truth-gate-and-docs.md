@@ -42,8 +42,8 @@ set -euo pipefail
 set_id="$1"
 db="${MEDIAGRAM_DATA_DIR:-$HOME/.local/share/mediagram}/library.db"
 sqlite3 -readonly -json "$db" \
-  "SELECT i, byte_offset AS offset, byte_length AS length, sha256
-     FROM parts WHERE set_id = '$set_id' ORDER BY i;"
+  "SELECT idx AS i, byte_offset AS offset, byte_length AS length, sha256
+     FROM parts WHERE set_id = '$set_id' ORDER BY idx;"
 ```
 
 Read-only, like every other non-uploader consumer of the index.
