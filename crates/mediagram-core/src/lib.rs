@@ -3,6 +3,7 @@
 
 uniffi::setup_scaffolding!();
 
+pub mod api;
 pub mod catalog;
 pub mod document;
 pub mod dto;

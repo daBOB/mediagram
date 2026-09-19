@@ -13,7 +13,7 @@ use crate::catalog::PlayableSet;
 
 /// One title, flattened for a player that never sees `Episode`, `set_id`
 /// internals, or where the bytes live.
-#[derive(Debug, Clone, uniffi::Record)]
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
 pub struct SetSummary {
     pub set_id: String,
     pub kind: String,
