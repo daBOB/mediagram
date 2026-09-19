@@ -9,6 +9,16 @@ to `main`. Full phase-by-phase detail lives in
 
 **Shipped**
 
+- A collection is a run you can play. **Play all** starts at the top, every
+  row plays into the rest of the list, and a title that ends hands over to the
+  next one with the same countdown a series uses — the up-next machinery was
+  already general, and only needed a different answer to "what follows this".
+  The run is a snapshot taken when playback starts, so removing a title
+  halfway through does not change the run.
+- Collection rows carry artwork, a runtime and the offline badge. A run of
+  unrelated films is told apart by the picture, where a numbered lesson is
+  told apart by its number.
+
 - **Add titles** on a collection: a search picker at the head of the list,
   because until now the only way to file anything was to open it in the
   player and answer a numbered `prompt` — which meant starting playback of a

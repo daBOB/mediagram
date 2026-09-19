@@ -13,6 +13,7 @@ import {
   lessonsUnder,
   levelEntries,
   nextAfter,
+  nextInQueue,
   type CatalogSet,
 } from "../public/lib/library.js";
 
@@ -395,5 +396,29 @@ describe("what comes next", () => {
     expect(nextAfter(course, a1.setId)?.title).toBe("A2");
     const a2 = course.divisions[0]!.children[0]!.items[0]!;
     expect(nextAfter(course, a2.setId)?.title).toBe("B1");
+  });
+});
+
+describe("what follows in a hand-built run", () => {
+  const run = [{ setId: "a" }, { setId: "b" }, { setId: "c" }];
+
+  test("is the next one along", () => {
+    expect(nextInQueue(run, "a")?.setId).toBe("b");
+    expect(nextInQueue(run, "b")?.setId).toBe("c");
+  });
+
+  test("is nothing at the end, which is what stops a run", () => {
+    expect(nextInQueue(run, "c")).toBeNull();
+  });
+
+  test("is nothing for a title that is not in the run", () => {
+    // A title removed from the list while it was playing: the run it started
+    // is a snapshot, and it ends rather than guessing where to go next.
+    expect(nextInQueue(run, "gone")).toBeNull();
+  });
+
+  test("copes with a run of one and with no run at all", () => {
+    expect(nextInQueue([{ setId: "only" }], "only")).toBeNull();
+    expect(nextInQueue([], "a")).toBeNull();
   });
 });

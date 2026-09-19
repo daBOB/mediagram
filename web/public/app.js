@@ -13,7 +13,14 @@
 import { el } from "./lib/dom.js";
 import { countOf } from "./lib/format.js";
 import { renderSearch } from "./lib/search-view.js";
-import { divisionAt, firstItemOf, groupLibrary, lessonsUnder, nextAfter } from "./lib/library.js";
+import {
+  divisionAt,
+  firstItemOf,
+  groupLibrary,
+  lessonsUnder,
+  nextAfter,
+  nextInQueue,
+} from "./lib/library.js";
 import { catalogOf, loadLink } from "./lib/link.js";
 import { colophonLine } from "./lib/colophon.js";
 import { watchStatus } from "./lib/status-view.js";
@@ -261,7 +268,26 @@ function viewCourseLevel(collection, folders) {
  * opener along too means the title after *that* one is found the same way,
  * however many the viewer sits through.
  */
-function play(set) {
+/**
+ * Opens a title, and says what follows it.
+ *
+ * `queue` is a hand-built list being played through, in which case what
+ * follows is the next thing on it. Without one, what follows is the next
+ * episode or lesson of whatever the title belongs to, which is the ordinary
+ * case of pressing play on a shelf.
+ *
+ * A snapshot, deliberately: a title removed from the list halfway through a
+ * run does not change the run. Re-reading the list under a viewer who is
+ * watching it would be the stranger behaviour.
+ */
+function play(set, queue = null) {
+  if (queue) {
+    openPlayer(set, {
+      next: nextInQueue(queue, set.setId),
+      onOpenNext: (following) => play(following, queue),
+    });
+    return;
+  }
   const collection = [...library.series, ...library.tutorials].find((entry) =>
     entry.name === set.show,
   );
@@ -325,14 +351,24 @@ function viewList(id) {
 
   main.append(crumbs("collections", null, []));
   heading(list.name, countOf(list.items.length, "title"));
-  main.append(listControls(list, route, () => (location.hash = "#/collections")));
 
+  // Read before the controls are built: "Play all" needs the run it would
+  // start, and the same run is what each row plays into.
   const sets = setsFor(list.items);
+  main.append(
+    listControls(
+      list,
+      route,
+      () => (location.hash = "#/collections"),
+      sets.length > 0 ? () => play(sets[0], sets) : null,
+    ),
+  );
+
   if (sets.length === 0) {
     main.append(el("p", "empty", "Nothing in this list yet. Use Add titles above, or Add to\u2026 in the player."));
     return;
   }
-  main.append(listView(list, sets, play, route));
+  main.append(listView(list, sets, (set) => play(set, sets), route));
 }
 
 /** Asks the server, because summaries live there and are not in the catalog. */

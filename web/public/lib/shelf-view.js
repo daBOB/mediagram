@@ -7,6 +7,7 @@
  */
 
 import { el } from "./dom.js";
+import { initialsOf, plate } from "./plate.js";
 import { countOf, episodeLabel, humanDuration, humanSize } from "./format.js";
 import { progressOf } from "./watch-state.js";
 import { watchedFraction } from "./resume-point.js";
@@ -58,25 +59,7 @@ function filmMeta(set, mode) {
 /** A card for a film, a show or a course. */
 function card({ name, meta, initials, onClick, badges, poster, progress }) {
   const button = el("button", "card");
-  const thumb = el("div", "thumb", poster ? undefined : initials);
-  if (poster) {
-    // The initials stay underneath as the alt text, so a poster that fails to
-    // load leaves a card that still says what it is.
-    const image = el("img");
-    image.src = `/api/posters/${encodeURIComponent(poster)}.jpg`;
-    image.alt = name;
-    image.loading = "lazy";
-    thumb.append(image);
-  }
-  // Across the foot of the plate, where a library sticker would be, and only
-  // when there is a runtime to measure against — see `watchedFraction`.
-  if (typeof progress === "number") {
-    const rule = el("div", "watched");
-    const done = el("div", "watched-at");
-    done.style.width = `${Math.round(progress * 100)}%`;
-    rule.append(done);
-    thumb.append(rule);
-  }
+  const thumb = plate({ poster, name, initials, progress });
 
   const body = el("div", "body");
   body.append(el("div", "name", name));
@@ -88,15 +71,6 @@ function card({ name, meta, initials, onClick, badges, poster, progress }) {
   button.append(thumb, body);
   button.addEventListener("click", onClick);
   return button;
-}
-
-function initialsOf(text) {
-  return (text ?? "?")
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((word) => word[0] ?? "")
-    .join("")
-    .toUpperCase();
 }
 
 /** What to say when a shelf is empty: the command that would fill it. */
