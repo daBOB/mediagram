@@ -2,6 +2,7 @@
 // this module's state independently.
 plugins {
     alias(libs.plugins.app.android.library)
+    alias(libs.plugins.app.hilt)
 }
 
 android {

@@ -10,6 +10,7 @@ fun bundle(name: String) = catalog.findBundle(name).get()
 plugins {
     alias(libs.plugins.app.android.application)
     alias(libs.plugins.app.android.application.compose)
+    alias(libs.plugins.app.hilt)
 }
 
 android {
