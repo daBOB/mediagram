@@ -8,8 +8,7 @@
 
 # Android
 android/**/build/
-android/build-logic/**/build/
-android/.gradle/
+android/**/.gradle/
 android/local.properties
 android/*.hprof
 android/captures/
