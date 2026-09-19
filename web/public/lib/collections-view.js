@@ -9,6 +9,7 @@
 import { el } from "./dom.js";
 import { countOf } from "./format.js";
 import * as state from "./watch-state.js";
+import { addTitles } from "./collection-add.js";
 
 /** The lists, each a door to its own view, with a way to make another. */
 export function listsView(onOpen, onChanged) {
@@ -42,9 +43,15 @@ export function listsView(onOpen, onChanged) {
   return block;
 }
 
-/** The controls at the head of one list: rename it, or delete it. */
+/** The controls at the head of one list: fill it, rename it, or delete it. */
 export function listControls(list, onChanged, onGone) {
+  const head = el("div", "list-head");
   const bar = el("div", "list-controls");
+
+  // First, because it is the one a viewer opening an empty list is looking
+  // for. Rename and delete are things you do to a list you already have.
+  const { trigger, panel } = addTitles(list, onChanged);
+  bar.append(trigger);
 
   const rename = el("button", "quiet", "Rename");
   rename.addEventListener("click", () => {
@@ -62,7 +69,8 @@ export function listControls(list, onChanged, onGone) {
   });
 
   bar.append(rename, remove);
-  return bar;
+  head.append(bar, panel);
+  return head;
 }
 
 /** One list's titles, each with a way off the list. */

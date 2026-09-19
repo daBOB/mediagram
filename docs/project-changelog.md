@@ -9,6 +9,13 @@ to `main`. Full phase-by-phase detail lives in
 
 **Shipped**
 
+- **Add titles** on a collection: a search picker at the head of the list,
+  because until now the only way to file anything was to open it in the
+  player and answer a numbered `prompt` — which meant starting playback of a
+  film in order to put it in a list, and left the collection page, the one
+  place a viewer looks, with no way in at all. Clicking a title already on
+  the list takes it off again, so the same row is the way in and the way out.
+
 - A green **offline** badge on any title held on the player's disk in full —
   every chunk of every part present, so it plays with Telegram unreachable.
   Worked out by counting chunk files against what the index implies each set

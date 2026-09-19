@@ -329,7 +329,7 @@ function viewList(id) {
 
   const sets = setsFor(list.items);
   if (sets.length === 0) {
-    main.append(el("p", "empty", "Nothing in this list yet. Add titles from the player."));
+    main.append(el("p", "empty", "Nothing in this list yet. Use Add titles above, or Add to\u2026 in the player."));
     return;
   }
   main.append(listView(list, sets, play, route));

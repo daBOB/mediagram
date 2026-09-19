@@ -330,6 +330,94 @@ body {
 .list-controls { margin: -0.4rem 0 1.2rem; }
 .list-controls .quiet:first-child { margin-left: 0; }
 
+/* ---- filling a list ----
+ *
+ * A library of several hundred titles cannot be offered as a menu, so the
+ * picker is the search the shelf already has, set into the page rather than
+ * over it: adding six things in a row is the ordinary case, and a dialog that
+ * has to be dismissed between each one would be in the way five times. */
+.add-panel {
+  margin: -0.6rem 0 1.4rem;
+  padding: 1rem 1.1rem 0.6rem;
+  background: var(--paper-sunk);
+  border: 1px solid var(--rule-soft);
+  border-radius: 2px;
+}
+
+.add-search {
+  width: 100%;
+  padding: 0.4rem 0 0.45rem;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink);
+  font-family: var(--text);
+  /* Never below 16px: anything smaller and a phone zooms the page on focus. */
+  font-size: 1rem;
+}
+.add-search:focus { outline: none; border-bottom-color: var(--accent); }
+
+/* Chromium draws its own blue clear button inside a search field, which is
+   the one thing on this page that came from somewhere else. Both search
+   fields are ruled lines to write on; neither wants a widget in it. */
+.add-search::-webkit-search-cancel-button,
+.search::-webkit-search-cancel-button {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* Bounded, because a common word matches most of the library and the list
+   being filled must not be pushed off the screen by the thing filling it. */
+.add-results {
+  max-height: 21rem;
+  overflow-y: auto;
+  margin-top: 0.3rem;
+}
+
+.add-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: 1rem;
+  width: 100%;
+  padding: 0.5rem 0.1rem;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--rule-soft);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.add-row:last-child { border-bottom: none; }
+.add-row b { font-family: var(--display); font-weight: 500; }
+/* Where it comes from, under the title rather than beside it: a lesson's
+   folder and a show's name are both long. */
+.add-row span:not(.add-mark) {
+  grid-column: 1;
+  display: block;
+  color: var(--ink-3);
+  font-size: 0.82rem;
+}
+
+.add-mark {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.add-row:hover { color: var(--accent); }
+.add-row:hover .add-mark { color: var(--accent); }
+
+/* Already filed. Green, the same green the offline badge uses: both say the
+   thing you were about to ask for has already happened. */
+.add-row.on .add-mark { color: var(--held); }
+.add-row.on b { color: var(--ink-2); }
+
+.add-none { color: var(--ink-3); padding: 0.7rem 0.1rem; margin: 0; }
+
 /* Makes a list. Set as a row, because it sits at the end of a list of them. */
 .make {
   display: block;
