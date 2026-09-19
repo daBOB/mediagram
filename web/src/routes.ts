@@ -22,6 +22,7 @@ import { createRequire } from "node:module";
 import { join, normalize } from "node:path";
 import { subtitle, subtitleLanguages, summary } from "./assets";
 import {
+  EXPECTED_SCHEMA,
   listPlayable,
   listSearchable,
   partLocations,
@@ -31,6 +32,7 @@ import {
 } from "./catalog";
 import { planReads, totalSize, type PartSpan, type Step } from "./range";
 import { isLocalAddress } from "./client-reach";
+import type { HeldSets } from "./cache/held";
 import { SearchIndex } from "./search/index";
 import { PosterStore, posterKeyFor, posterKeyIsValid } from "./package/posters";
 import { showMeta } from "./shows";
@@ -252,9 +254,40 @@ function empty(status: number): PlayerResponse {
   return { status, headers: { "content-length": "0" }, body: null };
 }
 
+/**
+ * Where the catalog being served came from.
+ *
+ * Says when a package was published, never where it lives: the URL and the
+ * key are the secret the package format exists around, and the age is the
+ * part a viewer can act on — a catalogue that stopped refreshing a fortnight
+ * ago looks exactly like a current one until something says so.
+ */
+export interface CatalogOrigin {
+  origin: "package" | "local";
+  /** When the package was built, in milliseconds. `null` for a local index. */
+  publishedAt: number | null;
+}
+
 export interface RouterOptions {
   db: Database;
   source: ByteSource;
+  /** Absent in tests and wherever it does not matter; the page copes. */
+  catalog?: CatalogOrigin;
+  /**
+   * Which sets are on this machine in full, for the offline badge.
+   *
+   * Absent when the player has no cache, in which case nothing is held and
+   * every title is reported as needing the network — which is true.
+   */
+  held?: HeldSets;
+  /**
+   * Answers `/api/status`, to a viewer on this network only.
+   *
+   * Absent when the player was built without one — in a test, say — in which
+   * case the path is simply not a route and falls through to a 404 like any
+   * other unknown one.
+   */
+  status?: (request: PlayerRequest) => Promise<PlayerResponse | null>;
   hls?: HlsServer;
   /** The artwork the current catalog carries, if any. */
   posters?: PosterStore;
@@ -311,6 +344,9 @@ export function createRouter(options: RouterOptions) {
     const key = posterKeyFor(set.kind, tmdb);
     return {
       ...set,
+      // Whether this plays with no Telegram at all. The claim only, never the
+      // chunk counts behind it or where they sit.
+      offline: options.held?.has(set.setId) ?? false,
       // The show's identity, whether or not artwork exists for it: a page
       // asks about the show by this even when the shelf has nothing to show.
       showKey: key,
@@ -326,6 +362,13 @@ export function createRouter(options: RouterOptions) {
     // not its own, so everything else falls through unchanged.
     if (stateRoute) {
       const answered = stateRoute(request);
+      if (answered) return answered;
+    }
+
+    // Beside the state router and for the same reason: its own module, its
+    // own access rule, and `null` for anything that is not its path.
+    if (options.status) {
+      const answered = await options.status(request);
       if (answered) return answered;
     }
 
@@ -349,7 +392,15 @@ export function createRouter(options: RouterOptions) {
       // Which link this viewer is on, which the page cannot work out for
       // itself. Deliberately says nothing about the host or the proxy.
       return text(
-        JSON.stringify({ remote: !isLocalAddress(request.client ?? ""), maxBitrate }),
+        JSON.stringify({
+          remote: !isLocalAddress(request.client ?? ""),
+          maxBitrate,
+          // Folded in here rather than given a route of its own: the page
+          // already fetches this once at startup, and the colophon wants
+          // three fields, not a second round trip.
+          catalog: options.catalog ?? { origin: "local", publishedAt: null },
+          schema: EXPECTED_SCHEMA,
+        }),
         "application/json",
       );
     }
@@ -358,6 +409,7 @@ export function createRouter(options: RouterOptions) {
       // Enriched exactly as a catalog row is: a hit is opened by the same
       // dialog, so a missing `subtitles` would silently lose the tracks and a
       // missing `hasSummary` the notes panel.
+      options.held?.refreshIfStale();
       const hits = index
         .search(request.query ?? "")
         .map(({ summary: _summary, matched, excerpt, ...set }) => ({
@@ -371,6 +423,7 @@ export function createRouter(options: RouterOptions) {
     if (request.path === "/api/sets") {
       // What a set has, so the page can offer a summary or a subtitle track
       // without asking per title.
+      options.held?.refreshIfStale();
       const sets = listPlayable(db).map(forBrowser);
       const body = new TextEncoder().encode(JSON.stringify(sets));
       return {

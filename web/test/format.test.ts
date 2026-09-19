@@ -1,5 +1,16 @@
 import { describe, expect, test } from "bun:test";
-import { clockTime, codecLine, countOf, endsAt, episodeLabel, humanDuration, humanSize, spellCount } from "../public/lib/format.js";
+import {
+  bitrateLabel,
+  clockTime,
+  codecLine,
+  countOf,
+  endsAt,
+  episodeLabel,
+  humanDuration,
+  humanSize,
+  spellCount,
+  technicalLine,
+} from "../public/lib/format.js";
 
 describe("sizes", () => {
   test("scale to the unit that reads best", () => {
@@ -119,5 +130,60 @@ describe("when it ends", () => {
     expect(endsAt(Number.NaN, at(20, 0))).toBe("");
     expect(endsAt(-1, at(20, 0))).toBe("");
     expect(endsAt(Number.POSITIVE_INFINITY, at(20, 0))).toBe("");
+  });
+});
+
+describe("average bitrate", () => {
+  test("is the whole file over its running time", () => {
+    // 14.2 GB of Blade Runner 2049 over 2h 44m.
+    expect(bitrateLabel({ total: 15_247_000_000, duration: 9_840 })).toBe("12 Mbps");
+  });
+
+  test("keeps a decimal while the first one still decides anything", () => {
+    expect(bitrateLabel({ total: 1_175_000_000, duration: 1_000 })).toBe("9.4 Mbps");
+  });
+
+  test("says nothing rather than NaN when either number is missing", () => {
+    expect(bitrateLabel({ total: 1_000_000 })).toBe("");
+    expect(bitrateLabel({ duration: 100 })).toBe("");
+    expect(bitrateLabel({ total: 1_000_000, duration: 0 })).toBe("");
+    expect(bitrateLabel({})).toBe("");
+  });
+});
+
+describe("the technical line", () => {
+  const blade = {
+    quality: "1080p",
+    hdr: "HDR10",
+    container: "mkv",
+    vcodec: "hevc",
+    acodec: "eac3",
+    total: 15_247_000_000,
+    partCount: 5,
+    duration: 9_840,
+  };
+
+  test("says everything the index knows, in reading order", () => {
+    expect(technicalLine(blade)).toBe(
+      "1080p · HDR10 · mkv · hevc · eac3 · 14 GB · 5 parts · 12 Mbps",
+    );
+  });
+
+  test("leaves SDR out: it is the absence of a fact, not a fact", () => {
+    expect(technicalLine({ ...blade, hdr: "SDR" })).not.toContain("SDR");
+    expect(technicalLine({ ...blade, hdr: null })).toBe(technicalLine({ ...blade, hdr: "SDR" }));
+  });
+
+  test("says nothing about a single part, which is the ordinary case", () => {
+    expect(technicalLine({ ...blade, partCount: 1 })).not.toContain("part");
+  });
+
+  test("drops whatever is missing rather than printing a gap", () => {
+    expect(technicalLine({ container: "mp4", vcodec: "h264" })).toBe("mp4 · h264");
+    expect(technicalLine({})).toBe("");
+  });
+
+  test("leaves codecLine alone, which the compact views still use", () => {
+    expect(codecLine(blade)).toBe("mkv · hevc · eac3");
   });
 });

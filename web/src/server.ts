@@ -17,9 +17,17 @@ import type { Database } from "bun:sqlite";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { clientAddress } from "./client-reach";
 import type { PosterStore } from "./package/posters";
-import { createRouter, type ByteSource, type HlsServer, type PlayerRequest } from "./routes";
+import {
+  createRouter,
+  type ByteSource,
+  type CatalogOrigin,
+  type HlsServer,
+  type PlayerRequest,
+  type PlayerResponse,
+} from "./routes";
 import type { AudioTrackReader } from "./audio-tracks";
 import type { WatchState } from "./state/store";
+import type { HeldSets } from "./cache/held";
 
 export interface RunningServer {
   port: number;
@@ -133,6 +141,12 @@ export function startServer(options: {
    */
   trustProxy?: boolean;
   maxBitrate?: number;
+  /** Where the catalog came from, for the colophon. */
+  catalog?: CatalogOrigin;
+  /** Answers `/api/status`, for a viewer on this network. */
+  status?: (request: PlayerRequest) => Promise<PlayerResponse | null>;
+  /** Which sets are held in full, for the offline badge. */
+  held?: HeldSets;
 }): Promise<RunningServer> {
   const route = createRouter({
     db: options.db,
@@ -142,6 +156,9 @@ export function startServer(options: {
     audio: options.audio,
     state: options.state,
     maxBitrate: options.maxBitrate,
+    catalog: options.catalog,
+    status: options.status,
+    held: options.held,
   });
   const trustProxy = options.trustProxy ?? false;
 

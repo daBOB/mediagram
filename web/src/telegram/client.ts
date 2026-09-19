@@ -84,6 +84,19 @@ export class Telegram {
     return message.media;
   }
 
+  /**
+   * Whether the MTProto connection is up right now.
+   *
+   * Asked rather than remembered: the library reconnects on its own, so a
+   * flag set at startup would keep saying "connected" through an outage. The
+   * property is optional on the client, so an implementation that does not
+   * offer it reports `null` rather than a confident guess.
+   */
+  get connected(): boolean | null {
+    const said = (this.client as { connected?: boolean }).connected;
+    return typeof said === "boolean" ? said : null;
+  }
+
   async disconnect(): Promise<void> {
     await this.client.disconnect();
     await this.client.destroy();

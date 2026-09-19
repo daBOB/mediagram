@@ -27,14 +27,30 @@ investigative with decision points, and the gate at the end is go/no-go.
   as a portable string, which proves the key is extractable from grammers'
   storage — a hint for resolutions that drop `SqliteSession` entirely.
 
-## Safety
+## Steps 8 and 9 are cancelled
 
-The probe uses the account's auth key. Before running it:
+Decided 2026-09-19: **the Android client logs in itself, in the app.** It never
+borrows the uploader's auth key, so steps 8 and 9 — which pushed that key to a
+device — are withdrawn rather than deferred.
 
-- Stop any upload (`mediagram status` must show nothing uploading).
-- Do **not** run the web player at the same time. One auth key cannot serve
-  two clients (`docs/system-architecture.md` §7), and starting the player
-  breaks in-flight uploads.
+What settled it is measured, and already in this codebase.
+`crates/mediagram/src/commands/export_session.rs` records that a player on an
+exported session answered 3/3 range requests alone, then 0/3 from the moment
+`mediagram serve` started, "and never recovered — not when the other client
+stopped, not at all, until the player was restarted". The same file's `run`
+calls `Tg::connect`, so `export-session` is itself a client, not a passive
+read of a local file. `docs/running-the-player.md` states the rule plainly: a
+host running the uploader and a player "needs two keys, not one shared", and
+`bun run login` is run "once per player host".
+
+So the runtime proof moves into the app, where it belongs: it happens once the
+client can authenticate on its own — the surface in
+[phase 1](phase-01-mediagram-core-and-uniffi.md) task 7, the flow in
+[phase 3](phase-03-login-and-catalog-mobile.md) task 4. That is the better
+test, because it exercises the real client rather than a harness.
+
+This phase therefore answers the linking question only, which was its
+architectural purpose. Nothing on the developer's machine needs stopping.
 
 ## Related code files
 

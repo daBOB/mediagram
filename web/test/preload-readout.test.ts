@@ -48,3 +48,41 @@ describe("the readout", () => {
     expect(preloadReadout(4, -5)).toBe("ready");
   });
 });
+
+describe("the fill rate", () => {
+  test("is shown when the buffer is filling faster than it drains", () => {
+    expect(preloadReadout(2, 12, 1.4)).toBe("buffering · 0:12 ahead, filling 1.4×");
+  });
+
+  test("is shown when it is falling behind, which is the whole point", () => {
+    expect(preloadReadout(2, 4, 0.5)).toBe("buffering · 0:04 ahead, filling 0.5×");
+  });
+
+  test("stays quiet near 1.0, where it would only flicker", () => {
+    expect(preloadReadout(2, 12, 1.0)).toBe("buffering · 0:12 ahead");
+    expect(preloadReadout(2, 12, 0.92)).toBe("buffering · 0:12 ahead");
+    expect(preloadReadout(2, 12, 1.1)).toBe("buffering · 0:12 ahead");
+  });
+
+  test("is absent when nothing measured one, which is most of the time", () => {
+    // The signature grew; every call that predates it must read as it did.
+    expect(preloadReadout(2, 12)).toBe("buffering · 0:12 ahead");
+    expect(preloadReadout(2, 12, null)).toBe("buffering · 0:12 ahead");
+    expect(preloadReadout(4, 0)).toBe("ready");
+  });
+});
+
+describe("dropped frames", () => {
+  test("are reported once there are some", () => {
+    expect(preloadReadout(4, 30, null, 12)).toBe("ready · 0:30 ahead, 12 dropped");
+  });
+
+  test("are not reported when there are none, which is the ordinary case", () => {
+    expect(preloadReadout(4, 30, null, 0)).toBe("ready · 0:30 ahead");
+    expect(preloadReadout(4, 30)).toBe("ready · 0:30 ahead");
+  });
+
+  test("sit after the rate when both have something to say", () => {
+    expect(preloadReadout(2, 4, 0.5, 9)).toBe("buffering · 0:04 ahead, filling 0.5×, 9 dropped");
+  });
+});

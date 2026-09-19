@@ -174,6 +174,18 @@ export function flattenCollection(collection) {
 }
 
 /**
+ * What follows `setId` in an ordered run of sets, or `null` at the end.
+ *
+ * The one definition of "the one after this", shared by a show's episodes and
+ * by a hand-built list. Both are a flat run by the time they get here; only
+ * the flattening differs.
+ */
+export function nextInQueue(sets, setId) {
+  const at = sets.findIndex((set) => set.setId === setId);
+  return at === -1 || at === sets.length - 1 ? null : sets[at + 1];
+}
+
+/**
  * What follows `setId` in its collection, or `null` at the end of one.
  *
  * Crosses a season or folder boundary without being told to, because the
@@ -181,9 +193,7 @@ export function flattenCollection(collection) {
  * the last episode of a season is followed by the first of the next.
  */
 export function nextAfter(collection, setId) {
-  const all = flattenCollection(collection);
-  const at = all.findIndex((set) => set.setId === setId);
-  return at === -1 || at === all.length - 1 ? null : all[at + 1];
+  return nextInQueue(flattenCollection(collection), setId);
 }
 
 /** Groups one kind's sets by container (show or course), then by folder. */

@@ -50,6 +50,13 @@ const HEADROOM = 0.8;
  * @property {"ok"|"behind"|"starving"} state
  * @property {number|null} ratio media-seconds delivered per second of wall clock
  * @property {number} bufferAhead seconds of video ready beyond the playhead
+ * @property {boolean} measured whether *this* sample recomputed `ratio`
+ *
+ * `measured` is what separates a live rate from a remembered one. `ratio` is
+ * carried through every verdict so a caller never sees it flicker to null on
+ * one paused frame — but a full buffer stops the browser fetching, and a rate
+ * from before that happened describes a situation that has since ended.
+ * Anything *showing* the rate rather than acting on it wants this.
  */
 
 export class BufferHealth {
@@ -86,20 +93,20 @@ export class BufferHealth {
     const played = previous ? at.currentTime - previous.currentTime : 0;
     if (played < 0 || played > SEEK_SECONDS) {
       this.reset();
-      return { state: "ok", ratio: null, bufferAhead };
+      return { state: "ok", ratio: null, bufferAhead, measured: false };
     }
     // A paused player consumes nothing, so there is nothing to fall behind.
     // Note this is not the same as a *stalled* one, which is trying to play
     // and failing — that is the case this whole module is about.
     if (at.paused || previous === null || elapsed <= 0) {
-      return { state: "ok", ratio: this.ratio, bufferAhead };
+      return { state: "ok", ratio: this.ratio, bufferAhead, measured: false };
     }
 
     // Only while the player still wants more. Above the mark it has what it
     // asked for and has stopped fetching, which is not a shortfall.
     if (bufferAhead >= this.hungrySeconds) {
       this.shortfallSince = null;
-      return { state: "ok", ratio: this.ratio, bufferAhead };
+      return { state: "ok", ratio: this.ratio, bufferAhead, measured: false };
     }
 
     // Against the wall clock, not against playback. See the file comment:
@@ -112,17 +119,18 @@ export class BufferHealth {
 
     if (this.ratio >= KEEPING_UP) {
       this.shortfallSince = null;
-      return { state: "ok", ratio: this.ratio, bufferAhead };
+      return { state: "ok", ratio: this.ratio, bufferAhead, measured: true };
     }
 
     if (this.shortfallSince === null) this.shortfallSince = at.now;
     const sustained = at.now - this.shortfallSince >= this.sustainedMs;
-    if (!sustained) return { state: "ok", ratio: this.ratio, bufferAhead };
+    if (!sustained) return { state: "ok", ratio: this.ratio, bufferAhead, measured: true };
 
     return {
       state: bufferAhead <= this.starvingSeconds ? "starving" : "behind",
       ratio: this.ratio,
       bufferAhead,
+      measured: true,
     };
   }
 

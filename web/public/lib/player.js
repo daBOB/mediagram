@@ -11,7 +11,7 @@
 import { playbackFor } from "./link.js";
 import { playTranscoded } from "./hls-playback.js";
 import { sourceBitrate, watchPlayback } from "./adapt-playback.js";
-import { clockTime, endsAt, episodeLabel } from "./format.js";
+import { clockTime, endsAt, episodeLabel, technicalLine } from "./format.js";
 import { languageLabel } from "./language-label.js";
 import { defaultTrack, fillChooser, loadAudioTracks } from "./audio-chooser.js";
 import { bufferedAhead, preloadReadout } from "./preload-readout.js";
@@ -22,6 +22,7 @@ import { isFinished, resumeAt, trustedRuntime } from "./resume-point.js";
 const dialog = document.getElementById("player");
 const video = document.getElementById("video");
 const note = document.getElementById("note");
+const tech = document.getElementById("tech");
 const summaryBox = document.getElementById("summary");
 const now = document.getElementById("now");
 const jump = document.getElementById("jump");
@@ -315,9 +316,17 @@ function playNext() {
 
 /** How much is held, and whether the browser thinks that is enough. */
 function refreshPreload() {
+  // `getVideoPlaybackQuality` is absent on older engines and on an element
+  // with no video track at all, so it is asked for rather than assumed.
+  const quality = video.getVideoPlaybackQuality?.();
   preload.textContent = preloadReadout(
     video.readyState,
     bufferedAhead(video.buffered, video.currentTime),
+    // The watch is the only thing measuring the link, and it measures whether
+    // or not it ever decides to switch. Reading its rate here is what turns a
+    // decision the viewer never sees into one they can.
+    watch.fillRate(),
+    quality?.droppedVideoFrames,
   );
 }
 
@@ -332,6 +341,7 @@ export function openPlayer(set, options = {}) {
   void showSummary(set);
   void offerAudioTracks(set);
   now.textContent = [set.show, episodeLabel(set), set.title].filter(Boolean).join(" · ");
+  tech.textContent = technicalLine(set);
 
   const warning = noteFor(set);
   note.textContent = warning ?? "";

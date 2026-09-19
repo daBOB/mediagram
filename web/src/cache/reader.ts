@@ -42,12 +42,26 @@ export class CachedReader {
   private readonly tracker: ReadaheadTracker;
   /** Readahead fetches in flight, so tests and shutdown can wait for them. */
   private readonly warming = new Set<Promise<void>>();
+  /**
+   * Bytes that actually crossed the wire, as opposed to coming off disk.
+   *
+   * The number the cache's hit count cannot give: hits are counted in chunks,
+   * and what matters upstream is bytes. Together they are the difference
+   * between "this is coming off disk" and "every byte of this is being
+   * fetched again".
+   */
+  private fetchedBytes = 0;
 
   constructor(
     private readonly cache: ChunkCache,
     maxAhead = 0,
   ) {
     this.tracker = new ReadaheadTracker(maxAhead);
+  }
+
+  /** Bytes fetched upstream since startup, readahead included. */
+  stats(): { fetchedBytes: number } {
+    return { fetchedBytes: this.fetchedBytes };
   }
 
   /** Resolves once speculative fetches have finished. For tests. */
@@ -198,6 +212,7 @@ export class CachedReader {
     const end = Math.min((run.last + 1) * CACHE_CHUNK, partLength);
     const wanted = end - offset;
     const bytes = await fetch(offset, wanted);
+    this.fetchedBytes += bytes.length;
     if (bytes.length < wanted) {
       throw new Error(
         `short read of part ${partIdx}: asked for ${wanted} bytes at ${offset}, got ${bytes.length}`,

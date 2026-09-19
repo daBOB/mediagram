@@ -5,6 +5,74 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 2026-09-19
+
+**Shipped**
+
+- A collection is a run you can play. **Play all** starts at the top, every
+  row plays into the rest of the list, and a title that ends hands over to the
+  next one with the same countdown a series uses — the up-next machinery was
+  already general, and only needed a different answer to "what follows this".
+  The run is a snapshot taken when playback starts, so removing a title
+  halfway through does not change the run.
+- Collection rows carry artwork, a runtime and the offline badge. A run of
+  unrelated films is told apart by the picture, where a numbered lesson is
+  told apart by its number.
+
+- **Add titles** on a collection: a search picker at the head of the list,
+  because until now the only way to file anything was to open it in the
+  player and answer a numbered `prompt` — which meant starting playback of a
+  film in order to put it in a list, and left the collection page, the one
+  place a viewer looks, with no way in at all. Clicking a title already on
+  the list takes it off again, so the same row is the way in and the way out.
+
+- A green **offline** badge on any title held on the player's disk in full —
+  every chunk of every part present, so it plays with Telegram unreachable.
+  Worked out by counting chunk files against what the index implies each set
+  needs, which is a few milliseconds for four hundred sets. Counting proves
+  presence rather than integrity; a truncated chunk would pass it, and
+  `ChunkCache.get` already removes one on read, so the cost of being wrong is
+  a refetch rather than a failed play.
+
+- A poster grid for Movies and Series, toggled from the shelf header and
+  remembered per device. The same cards in both shapes — `.thumb` already
+  carried a poster's 2/3 and already loaded one, so a plate is that thumb
+  given a whole column instead of 4.75rem of one. The list stays the default.
+  Tutorials keeps the list: a course has no TMDB id and therefore no artwork,
+  and a hundred and seventy lessons are a list anyway.
+
+- The web player says what it is doing. A `#/status` panel reports the
+  catalogue's origin and age, whether the last refresh actually succeeded,
+  what the cache holds and how much of it is being hit, which encoder is in
+  use, how many conversions are running and for whom, the Telegram connection
+  and the uptime — all of it facts the process already had and only ever
+  printed to a terminal usually on another machine.
+- The panel also reports what is crossing the wire now (derived by the page
+  from two readings, because an average since startup is not the number
+  anyone watching a stall wants), failed upstream reads, what the conversions
+  are holding on disk — which has no budget and no eviction beyond the idle
+  reaper — and resident memory.
+- `/api/status` answers a viewer on this network and 404s anyone else. A 403
+  would confirm there is something there, and this API has no authentication
+  of its own. The only link to the panel is in the colophon, rendered only
+  after the route answers a `HEAD`, so a remote viewer never learns it exists.
+- **System** in the masthead, shown only to a viewer `/api/status` will
+  answer. A menu entry leading to a page that 404s would advertise the page
+  is there, which is the thing the 404 exists to avoid.
+- The colophon says what the library adds up to — counts by kind, total
+  runtime, total bytes, where the catalogue came from and how old it is —
+  instead of "N playable sets".
+- A technical line under a title: resolution, HDR, container, codecs, size,
+  part count and average bitrate. The bitrate is what makes the
+  "needs transcode" badge legible, and had never been shown.
+- The shelf badge carries the reason a title has to be converted, as a
+  tooltip. The player already said it; the shelf did not.
+- The player HUD reports the buffer's fill rate and any dropped frames.
+  `buffer-health.js` was already measuring the rate against the wall clock and
+  the readout was discarding it — and depth alone cannot tell a satisfied
+  player from a starving one, which is the whole reason that measurement
+  exists.
+
 ## 2026-09-18
 
 **Shipped**

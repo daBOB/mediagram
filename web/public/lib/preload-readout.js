@@ -35,18 +35,56 @@ export function bufferedAhead(buffered, currentTime) {
 }
 
 /**
+ * How close to 1.0 counts as simply keeping up.
+ *
+ * Inside this band the rate is the uninteresting answer, and a readout that
+ * flickers between "1.0×" and "1.1×" every second is worse than one that
+ * says nothing: it draws the eye to a number that is not telling anyone
+ * anything.
+ */
+const UNREMARKABLE = 0.15;
+
+/**
  * The readout itself.
  *
  * `readyState` is the browser's own verdict and worth repeating because it is
  * the one thing the buffer length cannot say: four seconds buffered means
  * something different on a thirty-second clip and on a two-hour film, and
  * `HAVE_ENOUGH_DATA` is the browser saying it has done that arithmetic.
+ *
+ * `fillRate` is the third fact and the one the other two cannot give. Depth
+ * alone cannot separate a player that has all it wants from one that is
+ * falling behind — both stop growing — and it is the rate that says which.
+ * Optional because it is unknowable more often than not: see `fillRate()` in
+ * `adapt-playback.js`.
+ *
+ * @param {number} readyState the element's own `readyState`
+ * @param {number} aheadSeconds seconds buffered beyond the playhead
+ * @param {number|null} [fillRate] buffered seconds gained per second of clock
+ * @param {number} [droppedFrames] frames the decoder gave up on
  */
-export function preloadReadout(readyState, aheadSeconds) {
+export function preloadReadout(readyState, aheadSeconds, fillRate, droppedFrames) {
   const ready = Number(readyState) || 0;
   const ahead = Number.isFinite(aheadSeconds) && aheadSeconds > 0 ? aheadSeconds : 0;
 
   // 4 is HAVE_ENOUGH_DATA: it could play to the end without stopping.
   const state = ready >= 4 ? "ready" : ready >= 1 ? "buffering" : "opening";
-  return ahead > 0 ? `${state} · ${clockTime(ahead)} ahead` : state;
+  const parts = [ahead > 0 ? `${state} · ${clockTime(ahead)} ahead` : state];
+
+  // `Number(null)` is 0, and 0 is a rate worth showing — it is a dead stall.
+  // So an absent measurement is separated from a measured zero here rather
+  // than left to coercion, which cannot tell them apart.
+  const rate = fillRate === null || fillRate === undefined ? Number.NaN : Number(fillRate);
+  if (Number.isFinite(rate) && rate >= 0 && Math.abs(rate - 1) > UNREMARKABLE) {
+    parts.push(`filling ${rate.toFixed(1)}×`);
+  }
+
+  // Only when there are some. A zero is the ordinary case, and a readout that
+  // reports the ordinary case has spent a viewer's attention on nothing.
+  const dropped = Number(droppedFrames);
+  if (Number.isFinite(dropped) && dropped > 0) {
+    parts.push(`${dropped} dropped`);
+  }
+
+  return parts.join(", ");
 }

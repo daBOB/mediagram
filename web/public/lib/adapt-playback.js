@@ -65,6 +65,14 @@ export function watchPlayback(options) {
   let exhausted = false;
   /** Whether the source about to be attached is one this watch asked for. */
   let ours = false;
+  /**
+   * The fill rate as of the last sample that actually measured one.
+   *
+   * Kept for the readout rather than for the decision: `null` while the
+   * buffer is full, because the browser has stopped fetching and a rate from
+   * before it did describes a situation that has ended.
+   */
+  let liveRate = null;
 
   /**
    * Starts measuring a newly attached source.
@@ -77,6 +85,7 @@ export function watchPlayback(options) {
    */
   function begin(attached) {
     health.reset();
+    liveRate = null;
     capBits = attached.capBits ?? null;
     sourceBits = attached.sourceBits ?? null;
     exhausted = false;
@@ -97,6 +106,7 @@ export function watchPlayback(options) {
       bufferedEnd: buffered.end(buffered.length - 1),
       paused: video.paused,
     });
+    liveRate = verdict.measured ? verdict.ratio : null;
     if (verdict.state === "ok") return;
     if (now() < eligibleAt) return;
 
@@ -132,6 +142,15 @@ export function watchPlayback(options) {
 
   return {
     begin,
+    /**
+     * Buffered seconds gained per second of wall clock, or `null`.
+     *
+     * The same number the switch decision is made from, offered to whatever
+     * wants to *show* it. Null is the honest answer far more often than it
+     * looks: before playback starts, while paused, and whenever the buffer is
+     * full enough that the browser has stopped asking for more.
+     */
+    fillRate: () => liveRate,
     stop() {
       for (const name of EVENTS) video.removeEventListener(name, look);
     },

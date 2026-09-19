@@ -7,11 +7,13 @@
  */
 
 import { el } from "./dom.js";
+import { initialsOf, plate } from "./plate.js";
 import { countOf, episodeLabel, humanDuration, humanSize } from "./format.js";
 import { progressOf } from "./watch-state.js";
 import { watchedFraction } from "./resume-point.js";
 import { firstItemOf } from "./library.js";
-import { transcodeBadge } from "./set-badge.js";
+import { offlineBadge, transcodeBadge } from "./set-badge.js";
+import { GRID } from "./shelf-mode.js";
 
 // `extent` is what the shelf counts in, for the line under its title: a
 // catalogue says "twelve films", not "12 items".
@@ -21,45 +23,54 @@ export const SECTIONS = {
   tutorials: { label: "Tutorials", empty: "No courses yet.", extent: "course" },
 };
 
+/**
+ * The container the cards go in, in whichever of the two shapes.
+ *
+ * One class rather than two renderers: a plate and a row hold the same
+ * nodes, and the difference is entirely how they are laid out. Building the
+ * grid twice would be two places for a badge or a progress rule to be
+ * forgotten.
+ */
+function container(mode) {
+  return el("div", mode === GRID ? "grid plates" : "grid");
+}
+
+/**
+ * The caption under a film, which is shorter on a plate than in a row.
+ *
+ * A row has the width of the page and sets its figures against the right
+ * edge; a plate has the width of a poster. Five facts do not fit that, and
+ * the ones to drop are the ones the poster and the list already answer — a
+ * wall is for finding the film, not for comparing encodes.
+ *
+ * Resolution and HDR sit between the year and the runtime because that is the
+ * order a viewer reads them in: what it is, then how long it is. `SDR` is
+ * left out — see `technicalLine`.
+ */
+function filmMeta(set, mode) {
+  const hdr = set.hdr && set.hdr !== "SDR" ? set.hdr : null;
+  const facts =
+    mode === GRID
+      ? [set.year, set.quality, humanDuration(set.duration)]
+      : [set.year, set.quality, hdr, humanDuration(set.duration), humanSize(set.total)];
+  return facts.filter(Boolean).join(" · ");
+}
+
 /** A card for a film, a show or a course. */
-function card({ name, meta, initials, onClick, badge, poster, progress }) {
+function card({ name, meta, initials, onClick, badges, poster, progress }) {
   const button = el("button", "card");
-  const thumb = el("div", "thumb", poster ? undefined : initials);
-  if (poster) {
-    // The initials stay underneath as the alt text, so a poster that fails to
-    // load leaves a card that still says what it is.
-    const image = el("img");
-    image.src = `/api/posters/${encodeURIComponent(poster)}.jpg`;
-    image.alt = name;
-    image.loading = "lazy";
-    thumb.append(image);
-  }
-  // Across the foot of the plate, where a library sticker would be, and only
-  // when there is a runtime to measure against — see `watchedFraction`.
-  if (typeof progress === "number") {
-    const rule = el("div", "watched");
-    const done = el("div", "watched-at");
-    done.style.width = `${Math.round(progress * 100)}%`;
-    rule.append(done);
-    thumb.append(rule);
-  }
+  const thumb = plate({ poster, name, initials, progress });
 
   const body = el("div", "body");
   body.append(el("div", "name", name));
   if (meta) body.append(el("div", "meta", meta));
-  if (badge) body.append(badge);
+  // Two at most, and both may be true at once: a title already on this disk
+  // that still has to be converted plays offline all the same, because the
+  // conversion reads from the same cache.
+  for (const badge of badges ?? []) if (badge) body.append(badge);
   button.append(thumb, body);
   button.addEventListener("click", onClick);
   return button;
-}
-
-function initialsOf(text) {
-  return (text ?? "?")
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((word) => word[0] ?? "")
-    .join("")
-    .toUpperCase();
 }
 
 /** What to say when a shelf is empty: the command that would fill it. */
@@ -74,16 +85,16 @@ export function emptyState(section) {
 }
 
 /** Films: a flat grid, since a film is one thing. */
-export function movieGrid(movies, onPlay) {
-  const grid = el("div", "grid");
+export function movieGrid(movies, onPlay, mode) {
+  const grid = container(mode);
   for (const set of movies) {
     grid.append(
       card({
         name: set.title ?? set.setId,
-        meta: [set.year, humanDuration(set.duration), humanSize(set.total)].filter(Boolean).join(" · "),
+        meta: filmMeta(set, mode),
         initials: initialsOf(set.title),
         poster: set.poster ?? null,
-        badge: transcodeBadge(set),
+        badges: [offlineBadge(set), transcodeBadge(set)],
         progress: watchedFraction(progressOf(set.setId)),
         onClick: () => onPlay(set),
       }),
@@ -110,7 +121,7 @@ export function setGrid(sets, onPlay) {
           .join(" · "),
         initials: initialsOf(set.title ?? set.show),
         poster: set.poster ?? null,
-        badge: transcodeBadge(set),
+        badges: [offlineBadge(set), transcodeBadge(set)],
         progress: watchedFraction(progressOf(set.setId)),
         onClick: () => onPlay(set),
       }),
@@ -120,9 +131,9 @@ export function setGrid(sets, onPlay) {
 }
 
 /** Shows and courses: a grid of collections, each opening its own view. */
-export function collectionGrid(section, collections, onOpen) {
+export function collectionGrid(section, collections, onOpen, mode) {
   const series = section === "series";
-  const grid = el("div", "grid");
+  const grid = container(mode);
   for (const collection of collections) {
     // `chapters` counts the folders that hold something, however deep: a
     // course's top-level folders are too few to describe it, its total

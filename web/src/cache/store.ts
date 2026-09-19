@@ -24,14 +24,52 @@ interface Entry {
   usedAt: number;
 }
 
+/** What the cache has done since the process started. */
+export interface CacheStats {
+  hits: number;
+  misses: number;
+  /** Chunks discarded to stay under the budget. */
+  evicted: number;
+  /** Bytes those evictions freed. */
+  evictedBytes: number;
+}
+
 export class ChunkCache {
   /** Chunks being written right now, so two viewers do not race one file. */
   private readonly inFlight = new Map<string, Promise<void>>();
+
+  /**
+   * Counters, kept in memory and only ever incremented.
+   *
+   * Plain integers rather than anything structured: `get` is on the byte path
+   * and runs for every 512 KiB of every stream, so the bookkeeping has to
+   * cost nothing. They are a running total since startup, not a rate — a
+   * reader that wants a rate can take two readings.
+   */
+  private hits = 0;
+  private misses = 0;
+  private evicted = 0;
+  private evictedBytes = 0;
 
   constructor(
     private readonly root: string,
     private readonly maxBytes: number,
   ) {}
+
+  /** What this cache has done so far, and what it is allowed to hold. */
+  stats(): CacheStats {
+    return {
+      hits: this.hits,
+      misses: this.misses,
+      evicted: this.evicted,
+      evictedBytes: this.evictedBytes,
+    };
+  }
+
+  /** The budget this cache was given, in bytes. */
+  get budget(): number {
+    return this.maxBytes;
+  }
 
   /**
    * A chunk's bytes, or `null` on a miss.
@@ -51,15 +89,20 @@ export class ChunkCache {
     try {
       const bytes = new Uint8Array(await Bun.file(path).arrayBuffer());
       if (expectedSize !== undefined && bytes.byteLength !== expectedSize) {
+        // A partial write is a miss, not a hit: the caller has to fetch it
+        // either way, and counting it as a hit would flatter the cache.
         await rm(path, { force: true });
+        this.misses += 1;
         return null;
       }
       // Mark the use, which is what eviction orders by. Best effort: a cache
       // that cannot record a touch is still a working cache.
       const now = new Date();
       void utimes(path, now, now).catch(() => {});
+      this.hits += 1;
       return bytes;
     } catch {
+      this.misses += 1;
       return null;
     }
   }
@@ -114,7 +157,9 @@ export class ChunkCache {
       await rm(entry.path, { force: true });
       total -= entry.size;
       freed += entry.size;
+      this.evicted += 1;
     }
+    this.evictedBytes += freed;
     return freed;
   }
 

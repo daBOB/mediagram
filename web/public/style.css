@@ -71,6 +71,11 @@
   /* Ochre, for the one thing the page ever warns about: a title the link or
      the browser cannot take as it is. */
   --warn: #866021;
+  /* The counterpart, and the only good news the page has to give: a title
+     already on the disk. A sage green rather than a signal one — the palette
+     is uncoated stock and a UI green would sit on top of it rather than in
+     it. */
+  --held: #4a6741;
 
   /* The screening room. */
   --stage: #0d0c0b;
@@ -177,7 +182,11 @@ body {
 .masthead nav a.active .n { color: var(--accent); }
 
 .search {
-  flex: 0 1 19rem;
+  /* 17rem rather than 19: the masthead wraps on its items' *base* sizes, not
+     on their shrunk ones, so the field has to start narrow enough for the
+     whole row to fit or it drops to a second line while still at full width.
+     A search field's width is arbitrary; the masthead's single line is not. */
+  flex: 0 1 17rem;
   min-width: 11rem;
   padding: 0.42rem 0 0.42rem 0.1rem;
   background: none;
@@ -203,6 +212,17 @@ body {
   margin-left: 0.5rem;
   padding-left: 1.5rem;
   border-left: 1px solid var(--rule);
+}
+
+/* A third run, of one: not a shelf at all, but what the player itself is
+   doing. Ruled off like the second run and set quieter, because it is the one
+   entry nobody is here for. Present only for a viewer on this network — see
+   `offerSystem`. */
+.masthead nav a.apart {
+  margin-left: 0.5rem;
+  padding-left: 1.5rem;
+  border-left: 1px solid var(--rule);
+  color: var(--ink-3);
 }
 
 .who-button {
@@ -308,7 +328,99 @@ body {
 }
 .quiet:hover { color: var(--accent); border-bottom-color: var(--accent); }
 .list-controls { margin: -0.4rem 0 1.2rem; }
+/* The one thing in this row that does something rather than changes
+   something. Set in the imprint red the masthead uses for where you are. */
+.list-controls .play-all { color: var(--accent); }
+
 .list-controls .quiet:first-child { margin-left: 0; }
+
+/* ---- filling a list ----
+ *
+ * A library of several hundred titles cannot be offered as a menu, so the
+ * picker is the search the shelf already has, set into the page rather than
+ * over it: adding six things in a row is the ordinary case, and a dialog that
+ * has to be dismissed between each one would be in the way five times. */
+.add-panel {
+  margin: -0.6rem 0 1.4rem;
+  padding: 1rem 1.1rem 0.6rem;
+  background: var(--paper-sunk);
+  border: 1px solid var(--rule-soft);
+  border-radius: 2px;
+}
+
+.add-search {
+  width: 100%;
+  padding: 0.4rem 0 0.45rem;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink);
+  font-family: var(--text);
+  /* Never below 16px: anything smaller and a phone zooms the page on focus. */
+  font-size: 1rem;
+}
+.add-search:focus { outline: none; border-bottom-color: var(--accent); }
+
+/* Chromium draws its own blue clear button inside a search field, which is
+   the one thing on this page that came from somewhere else. Both search
+   fields are ruled lines to write on; neither wants a widget in it. */
+.add-search::-webkit-search-cancel-button,
+.search::-webkit-search-cancel-button {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* Bounded, because a common word matches most of the library and the list
+   being filled must not be pushed off the screen by the thing filling it. */
+.add-results {
+  max-height: 21rem;
+  overflow-y: auto;
+  margin-top: 0.3rem;
+}
+
+.add-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: 1rem;
+  width: 100%;
+  padding: 0.5rem 0.1rem;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--rule-soft);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.add-row:last-child { border-bottom: none; }
+.add-row b { font-family: var(--display); font-weight: 500; }
+/* Where it comes from, under the title rather than beside it: a lesson's
+   folder and a show's name are both long. */
+.add-row span:not(.add-mark) {
+  grid-column: 1;
+  display: block;
+  color: var(--ink-3);
+  font-size: 0.82rem;
+}
+
+.add-mark {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.add-row:hover { color: var(--accent); }
+.add-row:hover .add-mark { color: var(--accent); }
+
+/* Already filed. Green, the same green the offline badge uses: both say the
+   thing you were about to ask for has already happened. */
+.add-row.on .add-mark { color: var(--held); }
+.add-row.on b { color: var(--ink-2); }
+
+.add-none { color: var(--ink-3); padding: 0.7rem 0.1rem; margin: 0; }
 
 /* Makes a list. Set as a row, because it sits at the end of a list of them. */
 .make {
@@ -339,6 +451,16 @@ body {
   color: inherit;
   cursor: pointer;
 }
+/* A list's rows carry artwork, which a course's numbered rows do not: a run of
+   unrelated films is told apart by the picture, a numbered lesson by its
+   number. Centred rather than baselined, because a plate has no baseline. */
+.row.listed {
+  align-items: center;
+  gap: 1.3rem;
+  padding: 0.85rem 0.4rem;
+}
+.row.listed .thumb { flex: none; width: 3.4rem; }
+
 .row-open b { display: block; font-weight: 500; font-size: 1.02rem; }
 .row-open span { display: block; color: var(--ink-3); font-size: 0.83rem; }
 .row-open:hover b { color: var(--accent); }
@@ -377,6 +499,44 @@ main {
   padding-bottom: 0.7rem;
   border-bottom: 1px solid var(--rule);
   margin-bottom: 0.5rem;
+}
+
+/* The count and the control, kept together so the header reads as a line with
+   two ends rather than three things spread across it. */
+.shelf-aside {
+  display: flex;
+  align-items: baseline;
+  gap: 1.5rem;
+}
+
+.shelf-modes {
+  display: flex;
+  align-items: baseline;
+  gap: 0.9rem;
+}
+
+.shelf-modes .mode {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border-bottom: 1px solid transparent;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+
+.shelf-modes .mode:hover { color: var(--ink); }
+
+/* The one you are on, marked the way the masthead marks the shelf you are
+   on. Not `disabled`: it keeps its focus when the shelf rebuilds beneath it. */
+.shelf-modes .mode.on {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  cursor: default;
 }
 .shelf-head h1 {
   font-family: var(--display);
@@ -431,6 +591,58 @@ main {
  * artwork at the shape it was drawn in.
  */
 .grid { display: flex; flex-direction: column; }
+
+/* ---- plates ----
+ *
+ * The same cards, laid out as a wall rather than an index. Nothing about a
+ * card changes: `.thumb` already carries the 2/3 of a poster and already
+ * loads one, so a plate is that thumb given a whole column instead of
+ * 4.75rem of one.
+ *
+ * `auto-fill` rather than `auto-fit`: with `auto-fit` three films would
+ * stretch across the whole width as three enormous posters, which says
+ * something untrue about how much is on the shelf. Empty tracks left in
+ * place keep a plate the size of a plate. */
+.grid.plates {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 2.4rem 1.75rem;
+  padding: 1.4rem 0 0.5rem;
+}
+
+.grid.plates .card {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.7rem;
+  align-items: start;
+  padding: 0;
+  /* The rule belongs to the index, where it separates one row from the next.
+     Between plates there is already space. */
+  border-bottom: none;
+}
+
+/* Name over caption, both from the left: the two-ended row that sets a title
+   against its figures is a property of the list, not of the card. */
+.grid.plates .card .body {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.28rem;
+}
+
+.grid.plates .card .meta {
+  text-align: left;
+}
+
+.grid.plates .card .name {
+  font-size: 1.02rem;
+}
+
+/* Quieter on a wall than in an index. Twelve rows carry one badge each and
+   read as a column of exceptions; twelve plates carry twelve at once, and at
+   full weight they compete with the artwork they sit under. The reason is
+   still on the tooltip either way. */
+.grid.plates .card .badge {
+  font-size: 0.6rem;
+  padding: 0.12rem 0.4rem;
+}
 
 .card {
   display: grid;
@@ -658,9 +870,11 @@ main {
 
 /* ---- tags ----
  *
- * Two different statements share this shape: why a search hit matched, and
- * whether a title has to be converted before it plays. Only the second is a
- * warning, and only it is coloured.
+ * Three statements share this shape: why a search hit matched, whether a
+ * title has to be converted before it plays, and whether it is already on
+ * this disk. The first is plain; the other two are the page's only two
+ * colours for a fact about a title, and they are a pair — ochre for what
+ * will cost something, green for what will not.
  */
 .badge, .has-summary {
   flex: none;
@@ -676,6 +890,7 @@ main {
   white-space: nowrap;
 }
 .badge.warn { color: var(--warn); border-color: rgba(134, 96, 33, 0.45); }
+.badge.held { color: var(--held); border-color: rgba(74, 103, 65, 0.45); }
 
 /* ---- the states nobody wants but everybody hits ---- */
 .empty {
@@ -707,6 +922,67 @@ main {
   text-transform: uppercase;
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+
+
+/* ---- the status panel ----
+ *
+ * Readings, set as a printed table would set them: label in the margin,
+ * figure beside it, ruled between. The alternative is a dark grid of
+ * monospace numbers, which is what every other tool does and what this page
+ * would stop looking like itself if it did. */
+.status {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: 1.6rem 2.8rem;
+  padding: 0 var(--gutter) 3rem;
+}
+
+.status-block h3 {
+  margin: 0 0 0.6rem;
+  font-family: var(--display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.status-list {
+  margin: 0;
+}
+
+.status-row {
+  display: flex;
+  gap: 1.2rem;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0.42rem 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.status-row dt {
+  flex: none;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.status-row dd {
+  margin: 0;
+  text-align: right;
+  font-size: 0.92rem;
+  color: var(--ink-2);
+  /* Figures that change every two seconds must not move the words beside
+     them, which tabular figures are exactly what stops. */
+  font-variant-numeric: tabular-nums;
+  /* A cache path and a refusal are both long and neither may push the
+     label off the row. */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* ---- the screening room ----
@@ -823,6 +1099,20 @@ dialog.resting .hud .picker { pointer-events: none; }
   font-size: 1.15rem;
   font-weight: 500;
   color: var(--stage-ink);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* What the file is, beside what it is called. Quieter than the title and
+   never competing with it for room: the title grows, this does not, and on a
+   phone it goes away entirely rather than pushing the title into an
+   ellipsis. */
+.hud .tech {
+  flex: none;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  color: var(--stage-ink);
+  opacity: 0.62;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
@@ -1097,9 +1387,25 @@ dialog.with-notes .hud { right: var(--notes-width); }
     gap: 0.6rem 1.4rem;
   }
   .brand { font-size: 1.5rem; flex: 1 0 100%; margin-right: 0; }
-  .masthead nav { gap: 1.2rem; flex: 1 1 auto; }
+  /* Wraps rather than running off the side. Seven entries at 1.2rem apart are
+     wider than a phone, and a nav that overflows takes the whole page with it:
+     the document scrolls sideways and every other view inherits it. */
+  .masthead nav { gap: 0.55rem 1.2rem; flex: 1 1 100%; flex-wrap: wrap; }
   .search { flex: 1 0 100%; }
   main { padding-top: 1.8rem; }
+  /* The count and the control drop to their own line rather than squeezing
+     the title, which a flex row otherwise breaks mid-word. */
+  .shelf-head { flex-wrap: wrap; gap: 0.3rem 1rem; }
+  .shelf-aside { width: 100%; justify-content: space-between; gap: 1rem; }
+
+  /* Two to a row, stated rather than fitted: `auto-fill` against an 11rem
+     minimum lands on a single column at phone width, which is a bigger list
+     rather than a wall. Two plates is the narrowest thing that still reads as
+     a grid. */
+  .grid.plates {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.7rem 1.1rem;
+  }
   .card {
     grid-template-columns: 4.1rem minmax(0, 1fr);
     gap: 0 1.1rem;
@@ -1122,6 +1428,7 @@ dialog.with-notes .hud { right: var(--notes-width); }
      padding, and a row that is allowed to become two rather than squeezing a
      language menu down to nothing. */
   .hud-top { padding: 0.9rem 1rem 2.2rem; }
+  .hud .tech { display: none; }
   .hud-bottom { padding: 2.5rem 1rem 3.4rem; }
   .hud .what { font-size: 1rem; }
   .rail { flex-wrap: wrap; gap: 0.6rem 0.9rem; }
@@ -1136,6 +1443,7 @@ dialog.with-notes .hud { right: var(--notes-width); }
   .who-initial { width: 4.2rem; height: 4.2rem; font-size: 1.5rem; }
   .who-tiles { gap: 1rem; }
   .masthead nav a.kept:first-of-type { margin-left: 0; padding-left: 0; border-left: none; }
+  .masthead nav a.apart { margin-left: 0; padding-left: 0; border-left: none; }
   .up-next { left: 1rem; right: 1rem; bottom: 6.5rem; max-width: none; }
   dialog.with-notes .up-next { right: 1rem; }
 }

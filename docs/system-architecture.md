@@ -206,9 +206,13 @@ catalog.ts         library.db queries; PLAYABLE_SQL, mirrored from mlib-spec
 assets.ts          summaries and subtitle tracks out of the assets table
 client-reach.ts    a viewer on this network, or one across an uplink
 
+status/            what the player is doing: the startup facts worth keeping,
+                   a pure snapshot builder, and a route only a local viewer
+                   is answered on
 telegram/          teleproto client, and turning planned reads into bytes
 cache/             512 KiB chunks on disk: keys, store with quota, reader,
-                   and the readahead tracker behind MEDIAGRAM_CACHE_READAHEAD
+                   the readahead tracker behind MEDIAGRAM_CACHE_READAHEAD, and
+                   which sets are held in full, for the offline badge
 package/           the mlib-package-v1 reader: pointer, cipher, tar, refresh,
                    and the artwork a package carries
 transcode/         ffmpeg arguments, encoder probe, session registry, the
@@ -277,6 +281,55 @@ The switch is a conversion at a requested bitrate — `?maxrate=` on the
 transcode route, clamped between a floor and the configured cap, and part of
 what identifies a session, since two viewers wanting different rates want
 different encodes.
+
+### Saying what it is doing
+
+The player works a great deal out at startup and only ever printed it: which
+catalog opened and whether the refresh actually succeeded, which encoder
+initialises, what the cache may hold. That terminal is usually on another
+machine, in another room, or gone. `status/` keeps those facts instead
+(`facts.ts`), folds them with what has to be read at the moment of asking
+(`snapshot.ts`), and serves the result at `/api/status`.
+
+The one fact worth naming is the refresh verdict. A player quietly serving a
+package it could not refresh looks exactly like one serving a current package,
+and nothing else the page shows would say otherwise.
+
+**The route answers a local viewer and 404s everyone else** — 404 rather than
+403, because a 403 confirms to a caller from outside that there is something
+here worth a second request, and this API has no authentication of its own.
+The address is checked before the method, so "wrong method" and "nothing here"
+are indistinguishable from outside. The page follows the same rule: the only
+link to `#/status` is in the colophon, and it is rendered only after
+`/api/status` has answered a `HEAD`. A remote viewer never learns the page is
+there.
+
+What it reports beyond the startup facts: the cache's hits, misses and
+evictions; bytes fetched upstream, and the failed reads that are the one
+upstream problem a viewer feels and cannot see; what the conversions are
+holding on disk, which unlike the cache has no budget and no eviction beyond
+the idle reaper; resident memory; and the uptime. The *rate* upstream is not
+in the snapshot: the server does not know how often it is being asked, and an
+average since startup is not the number anyone watching a stall wants. Two
+readings and the seconds between them go to the page, which subtracts.
+
+The panel polls every two seconds, which is why both directory measurements
+sit behind a fifteen-second memo (`status/dir-bytes.ts` for the transcodes,
+`ChunkCache.sizeOnDisk` for the cache): counting bytes on disk means statting
+every file, and a twenty-gigabyte cache is some forty thousand of them. The
+two scans run together rather than one after the other, so the slow case is
+the longer of them and not their sum.
+
+What a reading *says* is in `public/lib/status-lines.js`, apart from where its
+nodes go in `status-view.js`, for the reason `buffer-health.js` is apart from
+`adapt-playback.js`: only the first can be tested without a browser.
+
+Three smaller readings come from measurements that were already being taken
+and thrown away — the buffer's fill rate in the HUD (`buffer-health.js`
+measured it; `preload-readout.js` showed only the depth), the reason a title
+is being converted, now on the shelf badge as well as in the player, and the
+technical line under a title, whose average bitrate is what makes the
+`needs transcode` badge legible.
 
 ### The codec policy
 

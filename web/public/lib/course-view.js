@@ -19,7 +19,7 @@
 import { el } from "./dom.js";
 import { codecLine, countOf, episodeLabel, humanDuration, humanSize } from "./format.js";
 import { lessonsUnder, levelEntries } from "./library.js";
-import { transcodeBadge } from "./set-badge.js";
+import { offlineBadge, transcodeBadge } from "./set-badge.js";
 
 /**
  * How far a folder may indent. The real course reaches four levels; past
@@ -37,8 +37,12 @@ function lessonRow(set, onPlay) {
   title.append(el("span", null, codecLine(set)));
   row.append(title);
 
-  const badge = transcodeBadge(set);
-  if (badge) row.append(badge);
+  // Lessons get the badge too. A course has no artwork and the least to say
+  // for itself on a shelf, and it is also the thing most likely to be held in
+  // full — a lesson is a few hundred megabytes, so one watch caches all of it.
+  for (const badge of [offlineBadge(set), transcodeBadge(set)]) {
+    if (badge) row.append(badge);
+  }
   if (set.hasSummary) row.append(el("span", "has-summary", "notes"));
 
   row.append(
