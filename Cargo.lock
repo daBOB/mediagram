@@ -1592,6 +1592,7 @@ dependencies = [
  "grammers-tl-types",
  "hex",
  "libc",
+ "mediagram-core",
  "mlib-spec",
  "reqwest",
  "rusqlite",
