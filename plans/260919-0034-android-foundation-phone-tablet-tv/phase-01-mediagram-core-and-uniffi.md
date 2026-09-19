@@ -204,27 +204,50 @@ Decrypt whole-file, never streamed — `open()` already enforces this, and
 
 **Files:** Create `crates/mediagram-core/src/dto.rs` · Test `crates/mediagram-core/tests/dto_mapping.rs`
 
-**Interfaces — Consumes:** `mlib_spec::caption::Episode`, Task 3's `PlayableSet`. **Produces:** `SetSummary`, and `summary_from(set: &PlayableSet) -> SetSummary`.
+**Interfaces — Consumes:** Task 3's `PlayableSet`. **Produces:** `SetSummary`, and `summary_from(set: &PlayableSet) -> SetSummary`.
 
 This is the task that makes the roadmap's UniFFI blocker irrelevant:
 `Episode` never crosses the boundary.
+
+**Read this before writing the test — the obvious assumption is wrong.**
+`PlayableSet` has no `Episode`. Its `episode` field is `Option<String>`, and
+that string is the **JSON encoding** of `mlib_spec::caption::Episode`, as
+`crates/mediagram/src/index/sets.rs:154` states: a lone number for a single
+episode, a two-element array for a range. So this task deserializes with
+`serde_json::from_str::<Episode>` and flattens the result. The enum stays
+internal either way, which is the point.
+
+`SetSummary`'s fields must match `PlayableSet` as it actually is — check
+`crates/mediagram-core/src/catalog.rs` rather than trusting any list: `title`
+is `Option<String>`, `year` is `Option<u16>`, the duration field is named
+`duration`, and the byte total is named `total`.
+
+**One non-breaking widening is required.** `poster_key` is derived from kind
+plus the TMDB id (the web player's `posterKeyFor(kind, tmdb)` does exactly
+this), but `PlayableSet` does not select `tmdb` today. Add `tmdb: Option<i64>`
+to the struct and to `list_playable`/`playable_set`'s SELECT. This is safe:
+`crates/mediagram/tests/serve_catalog.rs` constructs no `PlayableSet` literals
+and asserts field by field, so it stays green **unchanged** — verify that it
+does rather than assuming, and if it needs editing, stop and say so.
 
 - [ ] **Step 1: Write the failing test**
 
 ```rust
 use mediagram_core::dto::summary_from;
-use mlib_spec::caption::Episode;
+
+// `playable_with` builds a PlayableSet whose `episode` is the given JSON,
+// leaving every other field at a harmless default.
 
 #[test]
 fn a_single_episode_flattens_to_one_number_twice() {
-    let s = summary_from(&playable_with(Some(Episode::Single(4))));
+    let s = summary_from(&playable_with(Some("4")));
     assert_eq!(s.episode_first, Some(4));
     assert_eq!(s.episode_last, Some(4));
 }
 
 #[test]
 fn a_range_flattens_to_its_bounds() {
-    let s = summary_from(&playable_with(Some(Episode::Range([11, 12]))));
+    let s = summary_from(&playable_with(Some("[11,12]")));
     assert_eq!(s.episode_first, Some(11));
     assert_eq!(s.episode_last, Some(12));
 }
@@ -234,6 +257,21 @@ fn a_film_has_no_episode_at_all() {
     let s = summary_from(&playable_with(None));
     assert_eq!(s.episode_first, None);
     assert_eq!(s.episode_last, None);
+}
+
+// An index written by a newer uploader, or corrupted, must not take the
+// catalog down: the set still lists, with no episode numbers.
+#[test]
+fn an_unparseable_episode_degrades_instead_of_failing() {
+    let s = summary_from(&playable_with(Some("{\"unexpected\":true}")));
+    assert_eq!(s.episode_first, None);
+    assert_eq!(s.episode_last, None);
+}
+
+#[test]
+fn a_poster_key_is_derived_from_kind_and_tmdb() {
+    assert_eq!(summary_from(&movie_with_tmdb(603)).poster_key.as_deref(), Some("tmdb-movie-603"));
+    assert_eq!(summary_from(&movie_with_tmdb(None)).poster_key, None);
 }
 ```
 
@@ -245,28 +283,38 @@ fn a_film_has_no_episode_at_all() {
 pub struct SetSummary {
     pub set_id: String,
     pub kind: String,
-    pub title: String,
+    pub title: Option<String>,
     pub show: Option<String>,
+    pub chap: Option<String>,
     pub season: Option<u32>,
     pub episode_first: Option<u32>,
     pub episode_last: Option<u32>,
     pub year: Option<u32>,
-    pub duration_secs: Option<u32>,
+    pub duration: Option<u32>,
     pub poster_key: Option<String>,
-    pub total_bytes: u64,
+    pub total: u64,
+    pub part_count: u32,
 }
 
 pub fn summary_from(set: &PlayableSet) -> SetSummary {
-    let (first, last) = match set.episode {
-        Some(e) => (Some(e.first()), Some(e.last())),
-        None => (None, None),
-    };
-    // …remaining fields copied straight across
+    // The index stores the caption's episode field as JSON. An index written
+    // by a newer uploader may carry a shape this build does not know, and a
+    // set that cannot be numbered is still a set worth listing.
+    let (first, last) = set
+        .episode
+        .as_deref()
+        .and_then(|json| serde_json::from_str::<Episode>(json).ok())
+        .map_or((None, None), |e| (Some(e.first()), Some(e.last())));
+
+    // …remaining fields copied across, widening `year` from u16 to u32
 }
 ```
 
 `Episode::first()` and `Episode::last()` already exist at
-`crates/mlib-spec/src/caption.rs:29`.
+`crates/mlib-spec/src/caption.rs:29`. `poster_key` mirrors the web player's
+`posterKeyFor`: `tmdb-movie-<id>` or `tmdb-tv-<id>`, and `None` without a TMDB
+id — `mlib_spec::package::poster_key_is_valid` is the shape it must satisfy,
+so assert against that rather than hand-rolling the format twice.
 
 - [ ] **Step 4:** Run the test. Expected: PASS, three tests.
 - [ ] **Step 5:** Commit — `feat(core): flatten set metadata for the binding surface`.
