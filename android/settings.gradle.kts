@@ -1,0 +1,40 @@
+// settings.gradle.kts
+pluginManagement {
+    includeBuild("build-logic")
+    repositories {
+        google {
+            content {
+                includeGroupByRegex("com\\.android.*")
+                includeGroupByRegex("com\\.google.*")
+                includeGroupByRegex("androidx.*")
+            }
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google {
+            content {
+                includeGroupByRegex("com\\.android.*")
+                includeGroupByRegex("com\\.google.*")
+                includeGroupByRegex("androidx.*")
+            }
+        }
+        mavenCentral()
+    }
+
+    // Gradle 9.5 auto-wires gradle/libs.versions.toml as the "libs" catalog for
+    // both plugin-version resolution (libs.plugins.* in plugins{} blocks) and,
+    // via each project's VersionCatalogsExtension, for dependencies{} blocks.
+    // Declaring versionCatalogs.create("libs") { from(...) } here as well makes
+    // Gradle import the same file into the same catalog a second time, which
+    // 9.5 rejects ("from() called more than once") — see the phase-02 report.
+}
+
+rootProject.name = "mediagram-android"
+
+include(":app")

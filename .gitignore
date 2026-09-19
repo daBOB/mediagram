@@ -5,3 +5,18 @@
 /.claude/
 .gstack/
 /graphify-out/
+
+# Android
+android/**/build/
+android/build-logic/**/build/
+android/.gradle/
+android/local.properties
+android/*.hprof
+android/captures/
+android/.cxx/
+android/**/jniLibs/
+*.apk
+*.aab
+*.jks
+*.keystore
+
