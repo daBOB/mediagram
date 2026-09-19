@@ -21,6 +21,59 @@
 
 ---
 
+### Task 0: Build-logic hygiene, before seven modules grow dependencies
+
+**Files:** Modify `android/build-logic/convention/**`, `android/app/build.gradle.kts`, `android/settings.gradle.kts`
+
+This task exists because the next four tasks add real dependencies to modules
+that currently have none. Both problems below get worse the moment that
+happens, and neither is worth fixing twice.
+
+- [ ] **Step 1: Stop the version-catalog workaround from spreading**
+
+Gradle 9.5 auto-wires `gradle/libs.versions.toml` as a catalog named `libs`
+unconditionally, so an explicit `versionCatalogs.create("libs") { from(...) }`
+fails with *"you can only call the 'from' method a single time"*. But the
+type-safe accessors that auto-wiring provides are **not** available inside an
+ordinary build script's `dependencies { }` block — only in `plugins { }` and
+inside precompiled convention plugins. `:app` therefore reaches the catalog
+through an untyped `VersionCatalogsExtension` lookup.
+
+That is correct, and it must not be copied into seven more build files.
+`android/build-logic/convention/src/main/kotlin/config/ProjectExtensions.kt`
+already exposes `Project.libs: VersionCatalog`, which every convention plugin
+uses. Move per-module dependency declarations into the convention plugins so
+each module's `build.gradle.kts` stays declarative, and delete the lookup
+boilerplate from `:app`.
+
+- [ ] **Step 2: Drop the convention plugins this project does not use**
+
+`FirebaseConventionPlugin`, `SentryConventionPlugin`,
+`PlayVitalsReportingConventionPlugin` (and its task),
+`AndroidRoomConventionPlugin`, both Jacoco plugins, and the baseline-profile
+plugin are registered but applied by nothing. They were copied wholesale from
+the skill's assets. Their classpath — Firebase Crashlytics, Google Services,
+the Room Gradle plugin — is resolved on every build for no benefit, and this
+project stores its catalog in SQLite through Rust, so Room will never apply.
+
+Delete the plugin sources and their `register` blocks. Keep anything a later
+round plausibly wants and say why in the commit message.
+
+- [ ] **Step 3: Remove the plan reference from a code comment**
+
+`android/settings.gradle.kts` ends a comment with a pointer to a plan report.
+Report files move and are archived; the invariant the comment describes does
+not. State the reason, drop the reference.
+
+- [ ] **Step 4: Verify**
+
+Run `./gradlew help`, then `./gradlew :app:assembleDebug`, then
+`./gradlew projects`. All three must succeed and still list nine modules.
+
+- [ ] **Step 5: Commit** — `build(android): declare dependencies in convention plugins`
+
+---
+
 ### Task 1: Settings storage for the package credentials
 
 **Files:** Create `android/core/data/src/main/kotlin/settings/PackageSettings.kt` · Test `android/core/data/src/test/kotlin/settings/PackageSettingsTest.kt`
