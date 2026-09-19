@@ -4,7 +4,7 @@
 
 pub use mediagram_core::catalog;
 pub use mediagram_core::range;
+pub use mediagram_core::stream;
+pub use mediagram_core::telegram;
 pub mod response;
 pub mod routes;
-pub mod stream;
-pub mod telegram;

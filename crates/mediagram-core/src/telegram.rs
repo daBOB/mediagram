@@ -6,15 +6,14 @@
 
 use std::sync::Arc;
 
-use axum::body::Bytes;
+use bytes::Bytes;
 use grammers_client::Client;
 use grammers_session::types::PeerRef;
 use tokio::sync::mpsc;
 
 use super::catalog::PartLocation;
 use super::range::Step;
-use super::routes::{ByteSource, ByteStream};
-use super::stream::{part_document, pump_step};
+use super::stream::{ByteSource, ByteStream, part_document, pump_step};
 
 /// Chunks held between the download and the socket. Four 512 KiB chunks is
 /// enough to keep the download busy across a slow write without letting the

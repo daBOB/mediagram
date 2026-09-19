@@ -8,6 +8,8 @@ rust-version.workspace = true
 
 [dependencies]
 anyhow = "1"
+bytes = "1"
+futures = "0.3.34"
 # Pinned, not used directly: grammers-crypto 0.10 calls glass_pumpkin's rc0
 # `safe_prime::check` (returns bool, takes num-bigint 0.4). rc1 returns a
 # Result and moved to num-bigint 0.5, so a plain `cargo update` picks it up
@@ -20,7 +22,7 @@ hex = { workspace = true }
 mlib-spec = { path = "../mlib-spec" }
 serde = { workspace = true }
 sha2 = { workspace = true }
-tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "io-util", "net", "time"] }
+tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "io-util", "net", "sync", "time"] }
 
 # Exactly one sqlite3 may end up in the binary, and which crate supplies it
 # differs by platform. Both shapes are spelled per-target so that a host build

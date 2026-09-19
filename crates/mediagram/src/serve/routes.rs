@@ -5,29 +5,21 @@
 //! testable without Telegram. [`super::telegram::TelegramSource`] is the real
 //! implementation; a test supplies a known file instead.
 
-use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 
-use axum::body::{Body, Bytes};
+use axum::body::Body;
 use axum::extract::{Path, State};
 use axum::http::{HeaderMap, Method, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{Json, Router};
-use futures::Stream;
 use rusqlite::Connection;
 
-use super::catalog::{self, PartLocation};
-use super::range::{PartSpan, Step, plan_reads, total_size};
+use super::catalog;
+use super::range::{PartSpan, plan_reads, total_size};
 use super::response::plan_response;
 
-pub type ByteStream = Pin<Box<dyn Stream<Item = Result<Bytes, std::io::Error>> + Send>>;
-
-/// Where a stream's bytes come from.
-pub trait ByteSource: Send + Sync + 'static {
-    /// The bytes of `steps`, in order, for a set whose parts are `locations`.
-    fn stream(&self, locations: Vec<PartLocation>, steps: Vec<Step>) -> ByteStream;
-}
+pub use mediagram_core::stream::{ByteSource, ByteStream};
 
 #[derive(Clone)]
 pub struct ServeState {

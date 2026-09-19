@@ -1615,6 +1615,8 @@ name = "mediagram-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bytes",
+ "futures",
  "glass_pumpkin",
  "grammers-client",
  "grammers-session",
