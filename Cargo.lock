@@ -1575,7 +1575,6 @@ checksum = "7ebb8d8732c6a6df3d8f032a82911cfc747e00efb95cc46e8d0acd5b5b88570c"
 name = "mediagram"
 version = "0.1.0"
 dependencies = [
- "aes-gcm",
  "anyhow",
  "axum",
  "base64 0.23.1",
@@ -1584,7 +1583,6 @@ dependencies = [
  "directories",
  "flate2",
  "futures",
- "getrandom 0.3.4",
  "glass_pumpkin",
  "grammers-client",
  "grammers-mtsender",
@@ -1614,9 +1612,13 @@ dependencies = [
 name = "mediagram-core"
 version = "0.1.0"
 dependencies = [
+ "aes-gcm",
  "anyhow",
+ "base64 0.23.1",
  "bytes",
+ "flate2",
  "futures",
+ "getrandom 0.3.4",
  "glass_pumpkin",
  "grammers-client",
  "grammers-session",
@@ -1626,6 +1628,9 @@ dependencies = [
  "rusqlite",
  "serde",
  "sha2 0.10.9",
+ "tar",
+ "tempfile",
+ "thiserror 2.0.20",
  "tokio",
 ]
 

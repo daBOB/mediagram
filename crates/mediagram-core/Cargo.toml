@@ -7,9 +7,13 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+aes-gcm = "0.11.1"
 anyhow = "1"
+base64 = "0.23.1"
 bytes = "1"
+flate2 = "1.1.10"
 futures = "0.3.34"
+getrandom = "0.3"
 # Pinned, not used directly: grammers-crypto 0.10 calls glass_pumpkin's rc0
 # `safe_prime::check` (returns bool, takes num-bigint 0.4). rc1 returns a
 # Result and moved to num-bigint 0.5, so a plain `cargo update` picks it up
@@ -22,6 +26,8 @@ hex = { workspace = true }
 mlib-spec = { path = "../mlib-spec" }
 serde = { workspace = true }
 sha2 = { workspace = true }
+tar = "0.4.46"
+thiserror = { workspace = true }
 tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "io-util", "net", "sync", "time"] }
 
 # Exactly one sqlite3 may end up in the binary, and which crate supplies it
@@ -43,3 +49,6 @@ rusqlite = { version = "0.40.2", features = ["bundled"] }
 [target.'cfg(not(target_os = "android"))'.dependencies]
 grammers-session = "0.10"
 rusqlite = "0.40.2"
+
+[dev-dependencies]
+tempfile = "3.27.0"

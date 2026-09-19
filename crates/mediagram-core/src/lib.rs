@@ -3,6 +3,7 @@
 
 pub mod catalog;
 pub mod document;
+pub mod package;
 pub mod range;
 pub mod stream;
 pub mod telegram;
