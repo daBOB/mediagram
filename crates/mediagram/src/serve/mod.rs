@@ -3,7 +3,7 @@
 //! ffmpeg) is a client of this, and nothing else talks to Telegram.
 
 pub mod catalog;
-pub mod range;
+pub use mediagram_core::range;
 pub mod response;
 pub mod routes;
 pub mod stream;
