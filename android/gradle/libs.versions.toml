@@ -251,21 +251,14 @@ spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 
 # Convention plugins (no version, resolved from build-logic)
 app-android-application = { id = "app.android.application" }
-app-android-application-baseline = { id = "app.android.application.baseline" }
 app-android-application-compose = { id = "app.android.application.compose" }
-app-android-application-jacoco = { id = "app.android.application.jacoco" }
 app-android-feature = { id = "app.android.feature" }
 app-android-library = { id = "app.android.library" }
 app-android-library-compose = { id = "app.android.library.compose" }
-app-android-library-jacoco = { id = "app.android.library.jacoco" }
 app-android-lint = { id = "app.android.lint" }
-app-android-room = { id = "app.android.room" }
 app-android-test = { id = "app.android.test" }
 app-detekt = { id = "app.detekt" }
-app-firebase = { id = "app.firebase" }
 app-hilt = { id = "app.hilt" }
 app-jvm-library = { id = "app.jvm.library" }
 app-kotlin-serialization = { id = "app.kotlin.serialization" }
-app-play-vitals = { id = "app.play.vitals" }
-app-sentry = { id = "app.sentry" }
 app-spotless = { id = "app.spotless" }

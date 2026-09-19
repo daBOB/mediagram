@@ -25,9 +25,6 @@ dependencies {
     compileOnly(buildLogicLibs.kotlin.gradlePlugin)
     compileOnly(buildLogicLibs.kotlin.composeGradlePlugin)
     compileOnly(buildLogicLibs.ksp.gradlePlugin)
-    compileOnly(buildLogicLibs.room3.gradlePlugin)
-    compileOnly(buildLogicLibs.firebase.crashlytics.gradlePlugin)
-    compileOnly(buildLogicLibs.google.services.gradlePlugin)
     compileOnly(buildLogicLibs.spotless.gradlePlugin)
     implementation(buildLogicLibs.plugin.detekt)
     implementation(buildLogicLibs.kotlinx.coroutines.core)
@@ -43,14 +40,6 @@ gradlePlugin {
             id = "app.android.application.compose"
             implementationClass = "AndroidApplicationComposeConventionPlugin"
         }
-        register("androidApplicationBaselineProfile") {
-            id = "app.android.application.baseline"
-            implementationClass = "AndroidApplicationBaselineProfileConventionPlugin"
-        }
-        register("androidApplicationJacoco") {
-            id = "app.android.application.jacoco"
-            implementationClass = "AndroidApplicationJacocoConventionPlugin"
-        }
         register("androidLibrary") {
             id = "app.android.library"
             implementationClass = "AndroidLibraryConventionPlugin"
@@ -59,10 +48,6 @@ gradlePlugin {
             id = "app.android.library.compose"
             implementationClass = "AndroidLibraryComposeConventionPlugin"
         }
-        register("androidLibraryJacoco") {
-            id = "app.android.library.jacoco"
-            implementationClass = "AndroidLibraryJacocoConventionPlugin"
-        }
         register("androidFeature") {
             id = "app.android.feature"
             implementationClass = "AndroidFeatureConventionPlugin"
@@ -70,10 +55,6 @@ gradlePlugin {
         register("androidTest") {
             id = "app.android.test"
             implementationClass = "AndroidTestConventionPlugin"
-        }
-        register("androidRoom") {
-            id = "app.android.room"
-            implementationClass = "AndroidRoomConventionPlugin"
         }
         register("androidLint") {
             id = "app.android.lint"
@@ -98,18 +79,6 @@ gradlePlugin {
         register("kotlinSerialization") {
             id = "app.kotlin.serialization"
             implementationClass = "KotlinSerializationConventionPlugin"
-        }
-        register("firebase") {
-            id = "app.firebase"
-            implementationClass = "FirebaseConventionPlugin"
-        }
-        register("sentry") {
-            id = "app.sentry"
-            implementationClass = "SentryConventionPlugin"
-        }
-        register("playVitals") {
-            id = "app.play.vitals"
-            implementationClass = "PlayVitalsReportingConventionPlugin"
         }
     }
 }

@@ -1,12 +1,3 @@
-import org.gradle.api.artifacts.VersionCatalogsExtension
-
-// Gradle 9.5's implicit "libs" catalog (see settings.gradle.kts) does not wire
-// type-safe `libs.xxx` accessors into this script for dependencies{}, only for
-// plugins{}. Look library/bundle entries up through the catalog API directly.
-val catalog = extensions.getByType(VersionCatalogsExtension::class.java).named("libs")
-fun lib(alias: String) = catalog.findLibrary(alias).get()
-fun bundle(name: String) = catalog.findBundle(name).get()
-
 plugins {
     alias(libs.plugins.app.android.application)
     alias(libs.plugins.app.android.application.compose)
@@ -33,16 +24,12 @@ android {
     }
 }
 
+// androidx-core, lifecycle-runtime-ktx, the compose bundle and the unit-test
+// deps live in the app.android.application / app.android.application.compose
+// convention plugins applied above. Only this module's own project graph
+// belongs here.
 dependencies {
     implementation(project(":ui-mobile"))
     implementation(project(":ui-tv"))
     implementation(project(":core:model"))
-
-    implementation(lib("androidx-core"))
-    implementation(lib("androidx-activity-compose"))
-    implementation(lib("androidx-lifecycle-runtime-ktx"))
-    implementation(bundle("compose"))
-
-    testImplementation(bundle("unit-test"))
-    testImplementation(lib("mockk"))
 }
