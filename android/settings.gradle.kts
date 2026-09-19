@@ -32,7 +32,7 @@ dependencyResolutionManagement {
     // via each project's VersionCatalogsExtension, for dependencies{} blocks.
     // Declaring versionCatalogs.create("libs") { from(...) } here as well makes
     // Gradle import the same file into the same catalog a second time, which
-    // 9.5 rejects ("from() called more than once") — see the phase-02 report.
+    // 9.5 rejects ("from() called more than once").
 }
 
 rootProject.name = "mediagram-android"

@@ -10,6 +10,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.dependencies
 
 class AndroidApplicationConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -19,21 +20,28 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
 
             extensions.configure<ApplicationExtension> {
                 configureKotlinAndroid(this)
-                
+
                 defaultConfig {
                     targetSdk = libs.findVersion("targetSdk").get().toString().toInt()
                     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
                 }
-                
+
                 testOptions {
                     animationsDisabled = true
                 }
-                
+
                 configureGradleManagedDevices(this)
             }
-            
+
             extensions.configure<ApplicationAndroidComponentsExtension> {
                 configurePrintApksTask(this)
+            }
+
+            dependencies {
+                add("implementation", libs.findLibrary("androidx.core").get())
+                add("implementation", libs.findLibrary("androidx.lifecycle.runtime.ktx").get())
+                libs.findBundle("unit.test").ifPresent { add("testImplementation", it) }
+                add("testImplementation", libs.findLibrary("mockk").get())
             }
         }
     }
