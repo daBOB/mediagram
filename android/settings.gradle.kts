@@ -37,4 +37,19 @@ dependencyResolutionManagement {
 
 rootProject.name = "mediagram-android"
 
+// App module - picks touch or television surface at launch
 include(":app")
+
+// Surface modules - Compose UI per form factor, both render feature UiState
+include(":ui-mobile")
+include(":ui-tv")
+
+// Feature modules - ViewModels and UiState only, no composables, no feature-to-feature deps
+include(":feature:catalog")
+include(":feature:player")
+
+// Core modules - shared library code, direction is feature/ui -> core:data -> core:rust
+include(":core:designsystem")
+include(":core:data")
+include(":core:rust")
+include(":core:model")
