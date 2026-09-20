@@ -48,6 +48,10 @@ gradlePlugin {
             id = "app.android.library.compose"
             implementationClass = "AndroidLibraryComposeConventionPlugin"
         }
+        register("androidMobileScreen") {
+            id = "app.android.mobile.screen"
+            implementationClass = "AndroidMobileScreenConventionPlugin"
+        }
         register("androidSecurityCrypto") {
             id = "app.android.security.crypto"
             implementationClass = "AndroidSecurityCryptoConventionPlugin"

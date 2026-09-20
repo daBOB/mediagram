@@ -12,30 +12,39 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
+import settings.PackageSettings
+import ui.MobileApp
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var packageSettings: PackageSettings
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val onTelevision = isTelevision(this)
         setContent {
-            MaterialTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    if (onTelevision) TvPlaceholder() else TouchPlaceholder()
+            if (onTelevision) {
+                MaterialTheme {
+                    Surface(modifier = Modifier.fillMaxSize()) { TvPlaceholder() }
                 }
+            } else {
+                MobileApp(hasApiCredentials = hasApiCredentials(), packageSettings = packageSettings)
             }
         }
     }
 }
 
-@Composable
-private fun TouchPlaceholder() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = "Mediagram — touch surface")
-    }
-}
+/**
+ * The Telegram *application* identity, populated at build time from
+ * `local.properties`. Never logged: a blank value means the human hasn't
+ * supplied it yet, not that anything is broken.
+ */
+private fun hasApiCredentials(): Boolean =
+    BuildConfig.MEDIAGRAM_API_ID.toIntOrNull() != null && BuildConfig.MEDIAGRAM_API_HASH.isNotBlank()
 
 @Composable
 private fun TvPlaceholder() {

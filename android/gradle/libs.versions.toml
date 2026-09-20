@@ -225,6 +225,7 @@ app-android-application-compose = { id = "app.android.application.compose" }
 app-android-library = { id = "app.android.library" }
 app-android-library-compose = { id = "app.android.library.compose" }
 app-android-lint = { id = "app.android.lint" }
+app-android-mobile-screen = { id = "app.android.mobile.screen" }
 app-android-security-crypto = { id = "app.android.security.crypto" }
 app-android-test = { id = "app.android.test" }
 app-detekt = { id = "app.detekt" }
