@@ -684,6 +684,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_check_password(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_fetch_posters(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_is_authorized(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_list_libraries(
@@ -735,6 +737,8 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_catalog_facts(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_mediagram_core_fn_method_core_check_password(`ptr`: Long,`password`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_fetch_posters(`ptr`: Long,`tmdbKey`: RustBuffer.ByValue,`language`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_is_authorized(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Byte
@@ -881,6 +885,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_check_password() and 0xFFFF) != 18803) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_fetch_posters() and 0xFFFF) != 13826) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_is_authorized() and 0xFFFF) != 30182) {
@@ -1427,6 +1434,13 @@ public interface CoreInterface {
     suspend fun `checkPassword`(`password`: kotlin.String)
     
     /**
+     * Fetches poster artwork for every title in the catalog TMDB can
+     * answer about. The key is used for this call only and never stored —
+     * Kotlin owns holding it, this crate only ever spends it.
+     */
+    suspend fun `fetchPosters`(`tmdbKey`: kotlin.String, `language`: kotlin.String): PosterReport
+    
+    /**
      * Whether a login has ever completed. Reads the persisted auth key
      * only: cheap, and needs no connection.
      */
@@ -1633,6 +1647,34 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         // lift function
         { Unit },
         
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Fetches poster artwork for every title in the catalog TMDB can
+     * answer about. The key is used for this call only and never stored —
+     * Kotlin owns holding it, this crate only ever spends it.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `fetchPosters`(`tmdbKey`: kotlin.String, `language`: kotlin.String) : PosterReport {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_fetch_posters(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`tmdbKey`),
+        FfiConverterString.lower(`language`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypePosterReport.lift(it) },
         // Error FFI converter
         CoreException.ErrorHandler,
     )
@@ -2001,6 +2043,61 @@ public object FfiConverterTypeLibraryChoice: FfiConverterRustBuffer<LibraryChoic
     override fun write(value: LibraryChoice, buf: ByteBuffer) {
             FfiConverterString.write(value.`handle`, buf)
             FfiConverterString.write(value.`title`, buf)
+    }
+}
+
+
+
+/**
+ * What one artwork fetch did, for the screen that reports it.
+ *
+ * A title with no provider id is not a failure, and artwork already on
+ * disk is not fetched again — the four counts keep those apart so a viewer
+ * reads what actually happened rather than a single pass/fail verdict.
+ */
+data class PosterReport (
+    var `fetched`: kotlin.UInt
+    , 
+    var `alreadyHeld`: kotlin.UInt
+    , 
+    var `noProviderId`: kotlin.UInt
+    , 
+    var `failed`: kotlin.UInt
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePosterReport: FfiConverterRustBuffer<PosterReport> {
+    override fun read(buf: ByteBuffer): PosterReport {
+        return PosterReport(
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: PosterReport) = (
+            FfiConverterUInt.allocationSize(value.`fetched`) +
+            FfiConverterUInt.allocationSize(value.`alreadyHeld`) +
+            FfiConverterUInt.allocationSize(value.`noProviderId`) +
+            FfiConverterUInt.allocationSize(value.`failed`)
+    )
+
+    override fun write(value: PosterReport, buf: ByteBuffer) {
+            FfiConverterUInt.write(value.`fetched`, buf)
+            FfiConverterUInt.write(value.`alreadyHeld`, buf)
+            FfiConverterUInt.write(value.`noProviderId`, buf)
+            FfiConverterUInt.write(value.`failed`, buf)
     }
 }
 

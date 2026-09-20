@@ -5,6 +5,7 @@ import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.LibraryChoice
+import uniffi.mediagram_core.PosterReport
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.ShowInfo
 
@@ -44,6 +45,9 @@ class FakeCore(
         val clampedLen = minOf(len.toLong(), totalSize - offset).toInt()
         return bytesOf(offset, clampedLen)
     }
+
+    override suspend fun fetchPosters(tmdbKey: String, language: String): PosterReport =
+        PosterReport(0u, 0u, 0u, 0u)
 
     override fun close() = Unit
 }

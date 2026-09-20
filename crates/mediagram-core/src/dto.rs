@@ -120,3 +120,16 @@ pub struct CatalogFacts {
     pub posters: u64,
     pub schema: u32,
 }
+
+/// What one artwork fetch did, for the screen that reports it.
+///
+/// A title with no provider id is not a failure, and artwork already on
+/// disk is not fetched again — the four counts keep those apart so a viewer
+/// reads what actually happened rather than a single pass/fail verdict.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, uniffi::Record)]
+pub struct PosterReport {
+    pub fetched: u32,
+    pub already_held: u32,
+    pub no_provider_id: u32,
+    pub failed: u32,
+}

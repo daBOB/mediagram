@@ -4,6 +4,7 @@ import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.Core
 import uniffi.mediagram_core.LibraryChoice
+import uniffi.mediagram_core.PosterReport
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.ShowInfo
 
@@ -37,6 +38,9 @@ class DefaultCoreClient(private val core: Core) : CoreClient {
 
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray =
         core.read(setId, offset.toULong(), len.toUInt())
+
+    override suspend fun fetchPosters(tmdbKey: String, language: String): PosterReport =
+        core.fetchPosters(tmdbKey, language)
 
     // The generated object is a handle on a Rust value; closing it releases
     // that value and every connection inside it. A later call on a closed

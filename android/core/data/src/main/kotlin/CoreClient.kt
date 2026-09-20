@@ -3,6 +3,7 @@ package data
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.LibraryChoice
+import uniffi.mediagram_core.PosterReport
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.ShowInfo
 
@@ -55,6 +56,14 @@ interface CoreClient {
      */
     fun catalogFacts(): CatalogFacts
     suspend fun read(setId: String, offset: Long, len: Int): ByteArray
+
+    /**
+     * Fetches poster artwork for every title in the catalog TMDB can answer
+     * about. The key is spent on this call and never stored by the core —
+     * Kotlin owns holding it, so the start-over dialog's promise to clear it
+     * stays true from exactly one place.
+     */
+    suspend fun fetchPosters(tmdbKey: String, language: String): PosterReport
 
     /**
      * Drops the native core and, with it, the authenticated connection it

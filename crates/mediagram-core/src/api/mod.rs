@@ -9,6 +9,7 @@
 //! carry one, because the player is told what it may play, never where the
 //! bytes live.
 
+pub mod artwork;
 mod auth;
 mod catalog;
 mod channel;
@@ -213,6 +214,17 @@ impl Core {
 
     pub async fn read(&self, set_id: String, offset: u64, len: u32) -> Result<Vec<u8>, CoreError> {
         read::read(self, set_id, offset, len).await
+    }
+
+    /// Fetches poster artwork for every title in the catalog TMDB can
+    /// answer about. The key is used for this call only and never stored —
+    /// Kotlin owns holding it, this crate only ever spends it.
+    pub async fn fetch_posters(
+        &self,
+        tmdb_key: String,
+        language: String,
+    ) -> Result<crate::dto::PosterReport, CoreError> {
+        artwork::fetch_posters(self, tmdb_key, language).await
     }
 }
 
