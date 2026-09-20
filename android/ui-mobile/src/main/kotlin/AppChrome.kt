@@ -1,12 +1,14 @@
 package ui
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -28,6 +30,7 @@ sealed interface Destination {
     data object Catalog : Destination
     data class Collection(val name: String) : Destination
     data object System : Destination
+    data object TmdbKey : Destination
 }
 
 /**
@@ -39,6 +42,7 @@ internal fun barTitleFor(destination: Destination): String = when (destination) 
     Destination.Catalog -> "Mediagram"
     is Destination.Collection -> destination.name
     Destination.System -> "System"
+    Destination.TmdbKey -> "TMDB key"
 }
 
 /**
@@ -50,6 +54,7 @@ internal fun backLabelFor(destination: Destination): String? = when (destination
     Destination.Catalog -> null
     is Destination.Collection -> "Back"
     Destination.System -> "Back"
+    Destination.TmdbKey -> "Back"
 }
 
 /**
@@ -57,12 +62,18 @@ internal fun backLabelFor(destination: Destination): String? = when (destination
  * the TMDB key — are named with an ellipsis because they open something
  * rather than doing it outright, which is the difference between a menu
  * item and a button that starts a network run without warning.
+ *
+ * [fetchPostersDisabledReason] is `null` when the action is available and
+ * a sentence when it is not — no key stored, or a run already in flight.
+ * An item that silently does nothing is worse than one that says why it
+ * cannot, so the reason is shown, not just the disabled state.
  */
 data class MenuActions(
     val onSystem: () -> Unit,
     val onFetchPosters: () -> Unit,
     val onTmdbKey: () -> Unit,
     val onStartOver: () -> Unit,
+    val fetchPostersDisabledReason: String? = null,
 )
 
 /**
@@ -117,7 +128,15 @@ fun LibraryScaffold(
                             onClick = { menuExpanded = false; menu.onSystem() },
                         )
                         DropdownMenuItem(
-                            text = { Text("Fetch posters…") },
+                            text = {
+                                Column {
+                                    Text("Fetch posters…")
+                                    menu.fetchPostersDisabledReason?.let { reason ->
+                                        Text(reason, style = MaterialTheme.typography.bodySmall)
+                                    }
+                                }
+                            },
+                            enabled = menu.fetchPostersDisabledReason == null,
                             onClick = { menuExpanded = false; menu.onFetchPosters() },
                         )
                         DropdownMenuItem(

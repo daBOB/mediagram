@@ -1,6 +1,9 @@
 package ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -10,13 +13,15 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogViewModel
 import catalog.collection
+import system.PostersViewModel
+import uniffi.mediagram_core.PosterReport
 
 /**
  * The catalog, whichever show or course it opened, whichever set that
- * played, and the system screen — the first screens here with a real
- * back-stack need.
+ * played, the system screen, and the TMDB key screen — the first screens
+ * here with a real back-stack need.
  *
- * All three positions are saved rather than remembered: the Activity is
+ * All four positions are saved rather than remembered: the Activity is
  * fully destroyed and recreated on rotation (there is no
  * `android:configChanges`), and the singleton player survives that
  * regardless — without this, rotating away from an open set would drop
@@ -30,9 +35,12 @@ import catalog.collection
 internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
     val catalogViewModel: CatalogViewModel = hiltViewModel()
     val catalogState by catalogViewModel.state.collectAsStateWithLifecycle()
+    val postersViewModel: PostersViewModel = hiltViewModel()
+    val postersState by postersViewModel.state.collectAsStateWithLifecycle()
     var openedSetId by rememberSaveable { mutableStateOf<String?>(null) }
     var openedCollection by rememberSaveable { mutableStateOf<String?>(null) }
     var showingSystem by rememberSaveable { mutableStateOf(false) }
+    var showingTmdbKey by rememberSaveable { mutableStateOf(false) }
 
     val setId = openedSetId
     // Derived from the collected state, so the collection appears of its
@@ -40,14 +48,12 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
     // restored position back to the course it was in.
     val collection = openedCollection?.let(catalogState::collection)
 
-    // Fetch posters and the TMDB key are wired to real behaviour by later
-    // phases; the menu carries their slot from the start so those phases
-    // add behaviour rather than UI.
     val menuActions = MenuActions(
         onSystem = { showingSystem = true },
-        onFetchPosters = {},
-        onTmdbKey = {},
+        onFetchPosters = postersViewModel::fetch,
+        onTmdbKey = { showingTmdbKey = true },
         onStartOver = onStartOver,
+        fetchPostersDisabledReason = fetchPostersDisabledReason(postersState.running, postersState.hasKey),
     )
 
     when {
@@ -65,6 +71,17 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
                 onBack = { showingSystem = false },
                 menu = menuActions,
             ) { SystemScreen() }
+        }
+
+        showingTmdbKey -> {
+            BackHandler { showingTmdbKey = false }
+            LibraryScaffold(
+                destination = Destination.TmdbKey,
+                onBack = { showingTmdbKey = false },
+                menu = menuActions,
+            ) {
+                TmdbKeyScreen(hasKey = postersState.hasKey, onSave = postersViewModel::saveKey)
+            }
         }
 
         collection != null -> {
@@ -99,4 +116,41 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
             }
         }
     }
+
+    PosterFetchResultDialog(
+        message = posterFetchResultMessage(postersState.report, postersState.error),
+        onDismiss = postersViewModel::dismissResult,
+    )
+}
+
+/** Why "Fetch posters…" cannot be tapped right now, or `null` when it can. */
+private fun fetchPostersDisabledReason(running: Boolean, hasKey: Boolean): String? = when {
+    running -> "Fetching…"
+    !hasKey -> "No TMDB key stored"
+    else -> null
+}
+
+/** The sentence a finished or failed fetch leaves behind, or `null` while there is nothing to say. */
+private fun posterFetchResultMessage(report: PosterReport?, error: String?): String? = when {
+    error != null -> error
+    report != null -> posterReportLine(
+        fetched = report.fetched.toInt(),
+        alreadyHeld = report.alreadyHeld.toInt(),
+        noProviderId = report.noProviderId.toInt(),
+        failed = report.failed.toInt(),
+    )
+    else -> null
+}
+
+/** What a fetch reported, or what stopped it — shown over whichever screen the menu action was reached from. */
+@Composable
+private fun PosterFetchResultDialog(message: String?, onDismiss: () -> Unit) {
+    if (message == null) return
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Fetch posters") },
+        text = { Text(message) },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } },
+    )
 }
