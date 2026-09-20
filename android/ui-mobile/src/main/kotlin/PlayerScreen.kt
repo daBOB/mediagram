@@ -1,6 +1,8 @@
 package ui
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -42,7 +44,7 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
     val viewModel: PlayerViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val player by viewModel.player.collectAsStateWithLifecycle()
-    val activity = LocalContext.current as? Activity
+    val activity = LocalContext.current.findActivity()
 
     LaunchedEffect(setId) { viewModel.open(setId) }
     DisposableEffect(Unit) {
@@ -77,6 +79,20 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
  * turns, which is worse than the drop-to-catalog bug this replaced.
  */
 internal fun shouldStopOnDispose(isChangingConfigurations: Boolean): Boolean = !isChangingConfigurations
+
+/**
+ * `LocalContext.current` is not necessarily the Activity itself — a
+ * `ContextThemeWrapper` or a dialog host wraps it, and a naive
+ * `as? Activity` cast would silently see neither and always stop. This
+ * unwraps `ContextWrapper.baseContext` until it finds one, matching how
+ * `MainActivity` (no such wrapper today) and any future one both resolve
+ * correctly.
+ */
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
 
 @Composable
 private fun KeepScreenOnWhile(isPlaying: Boolean) {
