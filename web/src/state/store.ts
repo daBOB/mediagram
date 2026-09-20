@@ -17,6 +17,8 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 
 import { GROUPS } from "./schema";
+import { normalName, SYNC_FORMAT, type SyncRecord } from "./sync-record";
+import type { MergedState } from "./merge";
 
 export interface Progress {
   setId: string;
@@ -286,6 +288,115 @@ export class WatchState {
         .run(profileId, at, called, held, Date.now()),
     );
     return true;
+  }
+
+  /**
+   * What this player has to say about where things were left off.
+   *
+   * Every profile, because a document belongs to a device rather than to
+   * whoever happens to be watching on it; and with timestamps, which
+   * `snapshot` drops — it is built for a page that only needs to know *what*,
+   * and a merge has to know *when*.
+   */
+  exportRecord(device: string): SyncRecord {
+    const profiles = this.profiles().map((profile) => ({
+      name: profile.name,
+      localId: profile.id,
+      progress: (this.db
+        ?.query(
+          `SELECT set_id AS setId, at_seconds AS at, duration, updated_at AS updatedAt
+             FROM progress WHERE profile_id = ?1`,
+        )
+        .all(profile.id) ?? []) as SyncRecord["profiles"][number]["progress"],
+      watched: (this.db
+        ?.query("SELECT set_id AS setId, finished_at AS updatedAt FROM watched WHERE profile_id = ?1")
+        .all(profile.id) ?? []) as SyncRecord["profiles"][number]["watched"],
+    }));
+    return { format: SYNC_FORMAT, device, writtenAt: Date.now(), profiles };
+  }
+
+  /**
+   * Takes in what the devices agreed on.
+   *
+   * **Corrective, never wholesale.** A row absent from the merge is left
+   * alone rather than deleted: a sync that reached only some of the devices
+   * would otherwise erase everything the missing ones knew. The only thing
+   * that removes a position is a completion that supersedes it, which is the
+   * one removal the format can actually express.
+   *
+   * Returns how many rows it changed, so a caller can tell a merge that did
+   * something from one that did not.
+   */
+  importMerged(merged: MergedState): number {
+    if (!this.db) return 0;
+    let changed = 0;
+
+    for (const profile of merged.profiles) {
+      // The identity to match on, and the spelling to create with.
+      const profileId = this.profileNamed(profile.name, profile.displayName);
+      if (profileId === null) continue;
+
+      for (const row of profile.progress) {
+        const standing = this.db
+          .query("SELECT updated_at AS updatedAt FROM progress WHERE profile_id = ?1 AND set_id = ?2")
+          .get(profileId, row.setId) as { updatedAt: number } | null;
+        if (standing !== null && standing.updatedAt >= row.updatedAt) continue;
+        tolerate(() =>
+          this.db
+            ?.query(
+              `INSERT INTO progress(profile_id, set_id, at_seconds, duration, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5)
+                 ON CONFLICT(profile_id, set_id) DO UPDATE SET
+                   at_seconds = excluded.at_seconds,
+                   duration = excluded.duration,
+                   updated_at = excluded.updated_at`,
+            )
+            .run(profileId, row.setId, row.at, row.duration, row.updatedAt),
+        );
+        changed += 1;
+      }
+
+      for (const row of profile.watched) {
+        const standing = this.db
+          .query("SELECT finished_at AS updatedAt FROM watched WHERE profile_id = ?1 AND set_id = ?2")
+          .get(profileId, row.setId) as { updatedAt: number } | null;
+        // The position goes whether or not the completion itself is news: a
+        // device that learns of a completion it already had may still be
+        // holding the position another device has only now told it about.
+        const dropped = this.db
+          .query("DELETE FROM progress WHERE profile_id = ?1 AND set_id = ?2 AND updated_at <= ?3")
+          .run(profileId, row.setId, row.updatedAt);
+        changed += dropped.changes;
+        if (standing !== null && standing.updatedAt >= row.updatedAt) continue;
+        tolerate(() =>
+          this.db
+            ?.query(
+              `INSERT INTO watched(profile_id, set_id, finished_at) VALUES (?1, ?2, ?3)
+                 ON CONFLICT(profile_id, set_id) DO UPDATE SET finished_at = excluded.finished_at`,
+            )
+            .run(profileId, row.setId, row.updatedAt),
+        );
+        changed += 1;
+      }
+    }
+    return changed;
+  }
+
+  /**
+   * This player's id for a viewer, made if it has never seen them.
+   *
+   * Made rather than skipped, because the first thing a second machine knows
+   * about a viewer is a document written by the first — refusing to create
+   * one would mean the sync could only ever flow towards a machine that had
+   * already met them.
+   */
+  private profileNamed(name: string, displayName?: string): string | null {
+    const wanted = normalName(name);
+    if (wanted === null) return null;
+    const found = this.profiles().find((profile) => normalName(profile.name) === wanted);
+    // Created from the spelling somebody typed, never from the normalised
+    // identity — that would greet a viewer as "andré" on every new machine.
+    return found ? found.id : (this.createProfile(displayName ?? name)?.id ?? null);
   }
 
   /**

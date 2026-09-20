@@ -11,6 +11,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { WatchState } from "../src/state/store";
+import { mergeStates } from "../src/state/merge";
 
 const dirs: string[] = [];
 
@@ -406,5 +407,127 @@ describe("what a viewer chose", () => {
     expect(held!.scope.length).toBe(200);
     expect(held!.name.length).toBe(200);
     expect(held!.value.length).toBe(200);
+  });
+});
+
+describe("what this player tells other devices", () => {
+  test("exports every profile, with the times a merge needs", () => {
+    const { state, me } = stateIn();
+    state.setProgress(me, "01SET", 742, 1204);
+    state.setWatched(me, "01DONE", true);
+
+    const record = state.exportRecord("laptop");
+
+    expect(record.device).toBe("laptop");
+    expect(record.profiles[0]!.progress[0]).toMatchObject({ setId: "01SET", at: 742 });
+    expect(record.profiles[0]!.progress[0]!.updatedAt).toBeGreaterThan(0);
+    expect(record.profiles[0]!.watched[0]!.setId).toBe("01DONE");
+  });
+
+  test("and a second profile is in the same document", () => {
+    // A document belongs to a device, not to whoever happens to be watching.
+    const { state } = stateIn();
+    state.createProfile("Sam");
+    expect(state.exportRecord("laptop").profiles).toHaveLength(2);
+  });
+});
+
+describe("what this player takes back", () => {
+  test("a position it has never seen arrives", () => {
+    const { state, me } = stateIn();
+    const name = state.profiles().find((p) => p.id === me)!.name;
+
+    state.importMerged({
+      profiles: [
+        { name, progress: [{ setId: "01NEW", at: 500, duration: 1204, updatedAt: 9000 }], watched: [] },
+      ],
+    });
+
+    expect(state.snapshot(me).progress[0]).toMatchObject({ setId: "01NEW", at: 500 });
+  });
+
+  test("a newer local position is not overwritten by an older one", () => {
+    const { state, me } = stateIn();
+    const name = state.profiles().find((p) => p.id === me)!.name;
+    state.setProgress(me, "01SET", 900, 1204);
+
+    state.importMerged({
+      profiles: [
+        { name, progress: [{ setId: "01SET", at: 10, duration: 1204, updatedAt: 1 }], watched: [] },
+      ],
+    });
+
+    expect(state.snapshot(me).progress[0]!.at).toBe(900);
+  });
+
+  test("a completion elsewhere clears the position here", () => {
+    // The laptop finished it; this machine still held where it had got to.
+    const { state, me } = stateIn();
+    const name = state.profiles().find((p) => p.id === me)!.name;
+    state.setProgress(me, "01SET", 900, 1204);
+
+    state.importMerged({
+      profiles: [{ name, progress: [], watched: [{ setId: "01SET", updatedAt: Date.now() + 5000 }] }],
+    });
+
+    expect(state.snapshot(me).progress).toEqual([]);
+    expect(state.snapshot(me).watched).toEqual(["01SET"]);
+  });
+
+  test("a position this player has and the merge does not is left alone", () => {
+    // Corrective, never wholesale: a sync that reached only some devices must
+    // not erase what the missing ones knew.
+    const { state, me } = stateIn();
+    const name = state.profiles().find((p) => p.id === me)!.name;
+    state.setProgress(me, "01MINE", 300, 1204);
+
+    state.importMerged({ profiles: [{ name, progress: [], watched: [] }] });
+
+    expect(state.snapshot(me).progress[0]!.setId).toBe("01MINE");
+  });
+
+  test("a viewer this player has never met gets a profile", () => {
+    // The first thing a second machine knows about someone is a document the
+    // first one wrote; refusing to create would make the sync one-way.
+    const { state } = stateIn();
+    const before = state.profiles().length;
+
+    state.importMerged({
+      profiles: [
+        { name: "Sam", progress: [{ setId: "01A", at: 1, duration: null, updatedAt: 9000 }], watched: [] },
+      ],
+    });
+
+    const sam = state.profiles().find((p) => p.name === "Sam");
+    expect(state.profiles()).toHaveLength(before + 1);
+    expect(state.snapshot(sam!.id).progress[0]!.setId).toBe("01A");
+  });
+
+  test("and the same viewer typed differently is not a second profile", () => {
+    const { state, me } = stateIn();
+    const name = state.profiles().find((p) => p.id === me)!.name;
+    const before = state.profiles().length;
+
+    state.importMerged({
+      profiles: [
+        {
+          name: ` ${name.toUpperCase()} `,
+          progress: [{ setId: "01A", at: 1, duration: null, updatedAt: 9000 }],
+          watched: [],
+        },
+      ],
+    });
+
+    expect(state.profiles()).toHaveLength(before);
+    expect(state.snapshot(me).progress[0]!.setId).toBe("01A");
+  });
+
+  test("importing a merge of this player's own document changes nothing", () => {
+    const { state, me } = stateIn();
+    state.setProgress(me, "01SET", 742, 1204);
+    const before = state.snapshot(me);
+
+    expect(state.importMerged(mergeStates([state.exportRecord("self")]))).toBe(0);
+    expect(state.snapshot(me)).toEqual(before);
   });
 });
