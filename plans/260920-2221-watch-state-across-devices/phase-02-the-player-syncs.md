@@ -1,6 +1,6 @@
 # Phase 02 — The player syncs
 
-**Status:** built and off by default. The MTProto adapter has never run against the real channel — that is the outstanding item.
+**Status:** done. The adapter is proved against the real channel: 14 checks, 0 failures.
 **Needs authorisation:** this is the phase that writes to the channel.
 
 ## Context
@@ -78,3 +78,32 @@ different device, and two devices sharing a name would share a message.
 | A bug uploads rubbish to the channel | Phase 01 is proved first; the first real push is authorised by hand |
 | Two devices push at once | They write different messages; the merge does not care about order |
 | The document grows without bound | It is one row per title watched, not per event; measured before it ships |
+
+
+## What the real channel taught
+
+Two bugs no test could have found, and one design reversed on measurement.
+
+**`teleproto` rejects a web `File`** — "Cannot use [object Blob] as file". It
+is a fork of GramJS, which predates `File` existing in Node. In-memory data
+goes through `CustomFile`, which is also the only way to name a document with
+no path on disk to take a name from.
+
+**Caption search cannot find a new message.** Not slowly — a probe polled for
+a full minute and it never appeared, while the same search returned index
+messages days old immediately. Worse, the search was matching the wrong
+messages the whole time: Telegram parses `#mlib-state` as the hashtag
+`#mlib`, so it returned every `#mlib v=4` part document in the channel.
+`deviceFromCaption` being strict is the only reason that presented as "found
+nothing" rather than as something worse.
+
+So discovery is the **pin list**, which is exact and immediate because it is
+not full text. That reverses the original decision not to pin, and the
+original reasoning does not survive contact with the code: both readers of the
+pin list — `rescan.rs` and the Android core's `pick_index` — filter on
+`#mlib-index` before counting anything, and core reads up to a hundred pins. A
+handful of devices cannot crowd out an index. Pinning is silent and happens
+once per device, on the first send; every later write edits in place.
+
+`scratchpad/probe-state-channel.ts` is the proof, and it cleans up after
+itself.

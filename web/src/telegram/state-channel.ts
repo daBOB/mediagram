@@ -7,14 +7,32 @@
  * changed, what to do with what comes back — is on the other side of the
  * `StateChannel` interface and is tested against a fake.
  *
- * The caption convention follows `push_index.rs`: a marker a search can find,
- * a version, and then what distinguishes one message from another. Unlike the
- * index these are **not pinned** — a pin is how a reader finds *the* index,
- * and a handful of state messages competing for that space would make the
- * index harder to find rather than the state easier.
+ * The caption convention follows `push_index.rs`: a marker, a version, and
+ * then what distinguishes one message from another.
+ *
+ * **These are pinned, and discovery is the pin list.** The first version of
+ * this searched for the caption instead, on the reasoning that a pin is how a
+ * reader finds *the* index and extra pins would get in its way. Measuring it
+ * killed that idea twice over:
+ *
+ *  - A freshly sent message is **never** found by search. Not slowly — a
+ *    probe polled for a full minute and it never appeared, while the same
+ *    search returned index messages days old immediately.
+ *  - The search was returning the wrong messages anyway. Telegram parses
+ *    `#mlib-state` as the hashtag `#mlib`, so it matched every `#mlib v=4`
+ *    part document in the channel. `deviceFromCaption` rejected them all,
+ *    which is the only reason this looked like "found nothing" rather than
+ *    something worse.
+ *
+ * A pin list is not full text: it is exact and immediate. And the worry that
+ * prompted the original decision does not survive contact with the code —
+ * both readers of the pin list, `rescan.rs` and the Android core's
+ * `pick_index`, filter on `#mlib-index` before counting anything, and core
+ * reads up to a hundred pins. A handful of devices cannot crowd out an index.
  */
 
 import { Api } from "teleproto";
+import { CustomFile } from "teleproto/client/uploads";
 import type { ChannelDocument, StateChannel } from "../state/sync";
 import type { Telegram } from "./client";
 
@@ -22,10 +40,9 @@ import type { Telegram } from "./client";
 export const STATE_MARKER = "#mlib-state";
 const STATE_VERSION = 1;
 const STATE_DOCUMENT_NAME = "watch-state.json";
-const STATE_MIME_TYPE = "application/json";
 
-/** How many state messages to consider. One per device; this is not close. */
-const MOST = 50;
+/** How many pins to read. One state message per device; this is not close. */
+const MOST = 100;
 
 /** `#mlib-state v=1 device=…`, which is also how a reader knows whose it is. */
 export function stateCaption(device: string): string {
@@ -50,7 +67,7 @@ export class TelegramStateChannel implements StateChannel {
 
   async list(): Promise<ChannelDocument[]> {
     const messages = await this.telegram.client.getMessages(this.telegram.peer, {
-      search: STATE_MARKER,
+      filter: new Api.InputMessagesFilterPinned(),
       limit: MOST,
     });
 
@@ -73,8 +90,13 @@ export class TelegramStateChannel implements StateChannel {
   }
 
   async put(body: string, messageId: number | null): Promise<number> {
-    const file = new File([body], STATE_DOCUMENT_NAME, { type: STATE_MIME_TYPE });
     const caption = stateCaption(JSON.parse(body).device as string);
+    // `CustomFile`, not a web `File`. teleproto is a fork of GramJS, which
+    // predates `File` being a thing in Node and rejects one outright —
+    // "Cannot use [object Blob] as file". In-memory data goes through this,
+    // which is also the only way to give the document a name without a path
+    // on disk to take one from.
+    const file = new CustomFile(STATE_DOCUMENT_NAME, Buffer.byteLength(body), "", Buffer.from(body));
 
     if (messageId !== null) {
       // Edited, never re-sent. A device writes one message for ever; a second
@@ -90,9 +112,17 @@ export class TelegramStateChannel implements StateChannel {
     const sent = await this.telegram.client.sendFile(this.telegram.peer, {
       file,
       caption,
+      // Sent as a document rather than letting Telegram decide: a `.json` is
+      // not media, and anything it guessed would be wrong.
       forceDocument: true,
       attributes: [new Api.DocumentAttributeFilename({ fileName: STATE_DOCUMENT_NAME })],
     });
+
+    // Pinned once, when the message is first sent — every later write edits it
+    // in place, so the pin stays and this costs one service message per device
+    // for the life of the install. Silent, because nobody wants a notification
+    // that a machine has recorded where a film got to.
+    await this.telegram.client.pinMessage(this.telegram.peer, sent.id, { notify: false });
     return sent.id;
   }
 }
