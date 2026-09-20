@@ -56,7 +56,7 @@ fn a_summary_carries_what_the_file_is() {
         ..playable_set_fixture()
     };
 
-    let summary = SetSummary::from(&set);
+    let summary = summary_from(&set);
 
     assert_eq!(summary.container, "mkv");
     assert_eq!(summary.vcodec.as_deref(), Some("hevc"));
@@ -73,7 +73,7 @@ fn a_summary_carries_what_the_file_is() {
 fn an_sdr_title_still_reports_its_dynamic_range() {
     let set = PlayableSet { hdr: Some("SDR".into()), ..playable_set_fixture() };
 
-    assert_eq!(SetSummary::from(&set).hdr.as_deref(), Some("SDR"));
+    assert_eq!(summary_from(&set).hdr.as_deref(), Some("SDR"));
 }
 ```
 
