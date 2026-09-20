@@ -1,7 +1,7 @@
 # Phase 01 — One timeline, whichever way it plays
 
 **Priority:** first — everything else attaches to it
-**Status:** not started
+**Status:** done
 
 ## Context
 

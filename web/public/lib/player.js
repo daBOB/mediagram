@@ -17,6 +17,7 @@ import { defaultTrack, fillChooser, loadAudioTracks } from "./audio-chooser.js";
 import { bufferedAhead, preloadReadout } from "./preload-readout.js";
 import { seekModel, skipTo } from "./seek-model.js";
 import { mountTransport } from "./transport.js";
+import { keyAction, wantsKeys } from "./player-keys.js";
 import { renderNotes } from "./notes-view.js";
 import { COUNTDOWN_SECONDS, upNextPhase } from "./up-next.js";
 import { autoplayReady } from "./autoplay.js";
@@ -785,6 +786,33 @@ function showHud() {
 for (const event of ["pointermove", "pointerdown", "focusin", "focusout"]) {
   dialog.addEventListener(event, showHud);
 }
+
+/**
+ * The keyboard, which the native controls used to bring with them.
+ *
+ * `player-keys.js` decides what a keystroke means; this does it and puts the
+ * rails back up, because a viewer who just skipped ten seconds wants to see
+ * where they landed.
+ */
+dialog.addEventListener("keydown", (event) => {
+  const target = event.target;
+  const action = keyAction({
+    key: event.key,
+    ctrlKey: event.ctrlKey,
+    altKey: event.altKey,
+    metaKey: event.metaKey,
+    // The notes column counts as a field of its own: it is several screens of
+    // text, and space is how a reader gets down a page of it.
+    inControl: wantsKeys(target) || notesPanel.contains(target),
+    onButton: target?.tagName === "BUTTON",
+  });
+  if (action === null) return;
+  // Only what is actually taken. A blanket `preventDefault` here would stop
+  // every key this player has no opinion about, including the browser's.
+  event.preventDefault();
+  transport.act(action);
+  showHud();
+});
 // These do not bubble — they are media events on the element itself, and a
 // listener on the dialog would never hear one.
 for (const event of ["play", "pause", "ratechange"]) {

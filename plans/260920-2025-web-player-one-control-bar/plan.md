@@ -40,9 +40,9 @@ control on the bar that no one asked for.
 
 | | Phase | Status |
 |---|---|---|
-| 01 | [One timeline, whichever way it plays](phase-01-one-timeline-either-way.md) | not started |
-| 02 | [The transport, and the four choices beside it](phase-02-transport-and-choices.md) | not started |
-| 03 | [Take the native bar away, keep the keyboard](phase-03-native-bar-away.md) | not started |
+| 01 | [One timeline, whichever way it plays](phase-01-one-timeline-either-way.md) | done — `fab5913` |
+| 02 | [The transport, and the four choices beside it](phase-02-transport-and-choices.md) | done — `cb4363a` |
+| 03 | [Take the native bar away, keep the keyboard](phase-03-native-bar-away.md) | done |
 
 ## Dependencies
 

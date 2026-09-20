@@ -1044,8 +1044,8 @@ a.row { text-decoration: none; }
 
 /* ---- the screening room ----
  *
- * Its own palette, and its own `color-scheme` so the video's native controls
- * and the summary's scrollbar come up dark rather than as light furniture
+ * Its own palette, and its own `color-scheme` so the summary's scrollbar and
+ * the menus of its pickers come up dark rather than as light furniture
  * sitting on a black picture.
  *
  * Fullscreen: the dialog is the window. Everything except the picture floats
@@ -1092,9 +1092,9 @@ video {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  /* The scrim is not a click target; only what sits on it is. Without this
-     the whole bottom of the picture would swallow a click meant for the
-     video's own controls. */
+  /* The scrim is not a click target; only what sits on it is. It covers the
+     top and bottom of the picture, and a gradient that ate every click
+     landing on it would be a wide invisible dead zone over the film. */
   pointer-events: none;
   transition: opacity 260ms ease;
 }
@@ -1119,7 +1119,7 @@ video {
     rgba(0, 0, 0, 0) 100%
   );
 }
-/* Clear of the video's own control bar, which owns the very bottom.
+/* The bottom rail, which now owns the bottom outright.
  *
  * A container, so the transport can answer to its own width. The window is
  * the wrong thing to ask: opening the notes column takes a third of the rail
@@ -1128,7 +1128,7 @@ video {
 .hud-bottom {
   container: hudbar / inline-size;
   bottom: 0;
-  padding: 3.5rem 1.5rem 3.9rem;
+  padding: 3.5rem 1.5rem 1.6rem;
   background: linear-gradient(
     to top,
     rgba(0, 0, 0, 0.94) 0%,
@@ -1197,31 +1197,12 @@ dialog.resting .hud .picker { pointer-events: none; }
 
 /* The conversion's own scrub bar. Above the rail because the rail's note
    explains why it is there. */
-/* ---- the one timeline ----
- *
- * The video element's own bar and its two clocks are taken away for every
- * title, not only converted ones, because the player now draws a timeline of
- * its own and two of them side by side is what a viewer had to tell apart.
- *
- * A conversion is the case where they also disagree: it is encoded as it
- * plays, so the element's bar reaches only as far as ffmpeg has written and
- * its clock counts from wherever the encode began. Both are true about the
- * conversion and untrue about the film.
- *
- * Chromium only — Firefox keeps its bar until the element stops being asked
- * to draw one at all. */
-video::-webkit-media-controls-timeline,
-video::-webkit-media-controls-current-time-display,
-video::-webkit-media-controls-time-remaining-display {
-  display: none;
-}
 
 .seek {
   display: flex;
   align-items: center;
   gap: 0.9rem;
   font-size: 0.75rem;
-  /* Clear of the native strip below, which still carries the buttons. */
   margin-bottom: 0.35rem;
 }
 /* The label names the control for anyone who cannot see it; on screen the bar

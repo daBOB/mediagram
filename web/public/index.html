@@ -60,11 +60,13 @@
          black, so the dialog does not inherit the page's palette.
 
          Fullscreen: the picture takes the whole window and everything else
-         floats over it, fading once the pointer has rested. `preload="auto"`
-         with no autoplay anywhere — opening a title fills the buffer and then
-         waits for the viewer. -->
+         floats over it, fading once the pointer has rested. -->
     <dialog id="player">
-      <video id="video" controls preload="auto" crossorigin="anonymous"></video>
+      <!-- No `controls`. This player draws its own, and the browser's were a
+           second bar underneath them in a second typeface on a second fade
+           timer. `preload="auto"` with no autoplay anywhere — opening a title
+           fills the buffer and then waits for the viewer. -->
+      <video id="video" preload="auto" crossorigin="anonymous"></video>
 
       <div class="hud hud-top">
         <span class="what" id="now"></span>
@@ -75,16 +77,11 @@
         <button id="close" class="ghost">Close</button>
       </div>
 
-      <!-- The player's own rail. The video element's timeline and its two
-           clocks are hidden in the stylesheet, so there is one scrub bar on
-           screen and this is it. -->
+      <!-- The bottom rail, in three rows: what is true of the title, where in
+           it the viewer is, and the controls. The only controls there are. -->
       <div class="hud hud-bottom">
-        <!-- One bar for both ways a title plays, scaled to the film's running
-             time and never to the media element's: a conversion is encoded as
-             it plays, so its clock counts from wherever ffmpeg began and its
-             duration reaches only as far as ffmpeg has got. -->
         <!-- What is true of the title, and what can be done with it. Above the
-             controls rather than beside them: none of it acts on the picture. -->
+             transport rather than beside it: none of it acts on the picture. -->
         <div class="rail">
           <span class="ends" id="ends"></span>
           <!-- Preloading without playing means a still frame and no sign of
@@ -100,6 +97,10 @@
           <button id="notes" class="ghost" hidden aria-expanded="false">Notes</button>
         </div>
 
+        <!-- One bar for both ways a title plays, scaled to the film's running
+             time and never to the media element's: a conversion is encoded as
+             it plays, so its clock counts from wherever ffmpeg began and its
+             duration reaches only as far as ffmpeg has got. -->
         <div class="seek" id="seek" hidden>
           <label for="seek-to">Position</label>
           <input type="range" id="seek-to" min="0" step="1" value="0" />

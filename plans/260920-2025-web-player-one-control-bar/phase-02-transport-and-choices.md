@@ -1,7 +1,7 @@
 # Phase 02 — The transport, and the four choices beside it
 
 **Priority:** second
-**Status:** not started
+**Status:** done
 
 ## Context
 

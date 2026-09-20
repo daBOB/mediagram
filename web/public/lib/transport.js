@@ -139,10 +139,29 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime }) {
   video.muted = held.muted;
   volume.value = String(held.volume);
 
-  playPause.addEventListener("click", () => {
+  /**
+   * What the controls do, named once.
+   *
+   * The buttons call these and so does the keyboard, because they are the
+   * same acts — a viewer who presses space and a viewer who clicks play are
+   * asking for one thing, and two implementations of it would be two chances
+   * to disagree.
+   */
+  function togglePlay() {
     if (video.paused) void video.play();
     else video.pause();
-  });
+  }
+
+  function setVolume(to) {
+    const level = Math.min(1, Math.max(0, Number(to)));
+    if (!Number.isFinite(level)) return;
+    video.volume = level;
+    // Turning it up from silence is how a viewer unmutes without having to go
+    // looking for the mute button.
+    if (level > 0) video.muted = false;
+  }
+
+  playPause.addEventListener("click", togglePlay);
   skipButton(back, ICONS.back, SKIP_SECONDS);
   skipButton(forward, ICONS.forward, SKIP_SECONDS);
   back.addEventListener("click", () => onSeekTo(filmTime() - SKIP_SECONDS));
@@ -151,12 +170,7 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime }) {
   mute.addEventListener("click", () => {
     video.muted = !video.muted;
   });
-  volume.addEventListener("input", () => {
-    video.volume = Number(volume.value);
-    // Dragging away from silence is how a viewer unmutes without meaning to
-    // find the mute button.
-    if (video.volume > 0) video.muted = false;
-  });
+  volume.addEventListener("input", () => setVolume(volume.value));
   video.addEventListener("volumechange", () => {
     writeVolume({ volume: video.volume, muted: video.muted });
   });
@@ -178,12 +192,27 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime }) {
     if (video.playbackRate !== chosenRate) video.playbackRate = chosenRate;
   });
 
-  subPicker.addEventListener("change", () => {
+  /** Puts the element's tracks where the picker says they should be. */
+  function applySubtitles() {
     const chosen = subPicker.value;
     for (const [index, track] of [...video.textTracks].entries()) {
       track.mode = String(index) === chosen ? "showing" : "disabled";
     }
-  });
+  }
+  subPicker.addEventListener("change", applySubtitles);
+
+  /**
+   * `c`, which turns them off and back on to whatever they were.
+   *
+   * Never a cycle through every language: a viewer reaching for a key wants
+   * the subtitles gone, or back, and stepping them through four tracks to get
+   * where they started is not that.
+   */
+  function toggleSubtitles() {
+    if (subs.hidden) return;
+    subPicker.value = subPicker.value === "off" ? "0" : "off";
+    applySubtitles();
+  }
 
   /**
    * The page, not the dialog and not the picture.
@@ -194,10 +223,11 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime }) {
    * is already `fixed; inset: 0`, so a fullscreen page is a fullscreen
    * player with everything still on it.
    */
-  full.addEventListener("click", () => {
+  function toggleFullscreen() {
     if (document.fullscreenElement) void document.exitFullscreen();
     else void document.documentElement.requestFullscreen().catch(() => {});
-  });
+  }
+  full.addEventListener("click", toggleFullscreen);
   document.addEventListener("fullscreenchange", () => refresh());
 
   /** Everything the bar shows, from what the element and the film both say. */
@@ -245,5 +275,37 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime }) {
     video.addEventListener(event, refresh);
   }
 
-  return { refresh, offerSubtitles };
+  /**
+   * Does what `keyAction` decided, whatever that was.
+   *
+   * Here rather than in the player because every one of these is a control on
+   * this bar, and the bar is where they already live.
+   */
+  function act(action) {
+    switch (action?.do) {
+      case "playPause":
+        return togglePlay();
+      case "skip":
+        return onSeekTo(filmTime() + action.by);
+      case "seekFraction": {
+        // A tenth of a runtime nobody knows is not a place.
+        const length = runtime();
+        if (length > 0) onSeekTo(length * action.by);
+        return undefined;
+      }
+      case "volume":
+        return setVolume((video.muted ? 0 : video.volume) + action.by);
+      case "mute":
+        video.muted = !video.muted;
+        return undefined;
+      case "fullscreen":
+        return toggleFullscreen();
+      case "subtitles":
+        return toggleSubtitles();
+      default:
+        return undefined;
+    }
+  }
+
+  return { refresh, offerSubtitles, act };
 }

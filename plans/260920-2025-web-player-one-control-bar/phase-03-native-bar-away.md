@@ -1,7 +1,7 @@
 # Phase 03 — Take the native bar away, keep the keyboard
 
 **Priority:** last — it is the only phase that removes anything
-**Status:** not started
+**Status:** done
 
 ## Context
 
