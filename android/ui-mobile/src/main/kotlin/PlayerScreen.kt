@@ -75,7 +75,7 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
     var controlsShown by remember { mutableStateOf(true) }
     LaunchedEffect(controlsShown, state) {
         if (!controlsShown) return@LaunchedEffect
-        if (!controlsShouldFade(isPlaying = state is PlayerUiState.Playing)) return@LaunchedEffect
+        if (!controlsShouldFade(isPlaying = state is PlayerUiState.Playing, isScrubbing = false)) return@LaunchedEffect
         delay(CONTROLS_LINGER_MS)
         controlsShown = false
     }

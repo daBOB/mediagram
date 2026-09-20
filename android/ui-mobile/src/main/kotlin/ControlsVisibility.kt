@@ -29,6 +29,8 @@ internal fun controlsMayShow(state: PlayerUiState): Boolean =
  *
  * A running film gets its picture back; a paused one keeps its controls,
  * because nothing else on screen offers a way to start again and the tap that
- * would bring them back is invisible.
+ * would bring them back is invisible. A drag in progress keeps them too — the
+ * slider cannot be pulled out from under the thumb holding it.
  */
-internal fun controlsShouldFade(isPlaying: Boolean): Boolean = isPlaying
+internal fun controlsShouldFade(isPlaying: Boolean, isScrubbing: Boolean): Boolean =
+    isPlaying && !isScrubbing
