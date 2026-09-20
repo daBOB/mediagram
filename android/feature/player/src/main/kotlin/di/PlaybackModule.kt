@@ -7,7 +7,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import data.CoreClient
+import data.CoreProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +26,12 @@ import javax.inject.Singleton
  * main — only ever starts the work and hands back a handle to it; nothing
  * in this module blocks waiting for the result. [DefaultPlayerHandle]
  * awaits the [Deferred] itself, off main, before touching the player.
+ *
+ * The same `async` now also absorbs a second wait: the core it reads
+ * through does not exist until the device has been set up, so on a first
+ * run this deferred stays pending rather than failing. Nothing can reach a
+ * player before then, and the handle already renders a pending player as
+ * "preparing".
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -43,9 +49,10 @@ object PlaybackModule {
     @Singleton
     fun provideExoPlayerDeferred(
         @ApplicationContext context: Context,
-        core: CoreClient,
+        coreProvider: CoreProvider,
         scope: CoroutineScope,
-    ): @JvmSuppressWildcards Deferred<ExoPlayer> = scope.async { buildPlayer(context, core) }
+    ): @JvmSuppressWildcards Deferred<ExoPlayer> =
+        scope.async { buildPlayer(context, coreProvider.awaitCore()) }
 
     @Provides
     @Singleton

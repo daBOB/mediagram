@@ -16,7 +16,7 @@ class LoginViewModelTest {
 
     @Test
     fun aCodeThatNeedsTwoFactorAsksForThePassword() = runTest {
-        val vm = LoginViewModel(FakeCore(signInOutcome = AuthOutcome.PASSWORD_NEEDED))
+        val vm = LoginViewModel(ResolvedCoreProvider(FakeCore(signInOutcome = AuthOutcome.PASSWORD_NEEDED)))
         vm.submitPhone("+49...")
         vm.submitCode("12345")
         assertEquals(LoginUiState.NeedsPassword, vm.state.value)
@@ -24,13 +24,13 @@ class LoginViewModelTest {
 
     @Test
     fun anAlreadyAuthorizedCoreSkipsStraightToAuthorized() = runTest {
-        val vm = LoginViewModel(FakeCore(authorized = true))
+        val vm = LoginViewModel(ResolvedCoreProvider(FakeCore(authorized = true)))
         assertEquals(LoginUiState.Authorized, vm.state.value)
     }
 
     @Test
     fun aFailedCodeRequestSurfacesAsFailed() = runTest {
-        val vm = LoginViewModel(FakeCore(requestCodeFails = true))
+        val vm = LoginViewModel(ResolvedCoreProvider(FakeCore(requestCodeFails = true)))
         vm.submitPhone("+49...")
         assertTrue(vm.state.value is LoginUiState.Failed)
         // Nothing is in flight to retry, so the phone number is genuinely
@@ -41,7 +41,7 @@ class LoginViewModelTest {
     @Test
     fun aRejectedCodeIsRetypedWithoutAskingTelegramForAnotherOne() = runTest {
         val core = FakeCore(signInFailures = 1)
-        val vm = LoginViewModel(core)
+        val vm = LoginViewModel(ResolvedCoreProvider(core))
         vm.submitPhone("+49...")
 
         vm.submitCode("00000")
@@ -55,7 +55,7 @@ class LoginViewModelTest {
     @Test
     fun aRejectedPasswordIsRetypedWithoutRestartingTheSignIn() = runTest {
         val core = FakeCore(signInOutcome = AuthOutcome.PASSWORD_NEEDED, passwordFailures = 1)
-        val vm = LoginViewModel(core)
+        val vm = LoginViewModel(ResolvedCoreProvider(core))
         vm.submitPhone("+49...")
         vm.submitCode("12345")
 

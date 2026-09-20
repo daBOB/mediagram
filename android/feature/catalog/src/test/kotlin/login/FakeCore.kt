@@ -1,6 +1,7 @@
 package login
 
 import data.CoreClient
+import data.CoreProvider
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.SetSummary
 
@@ -49,4 +50,16 @@ class FakeCore(
     override fun posterPath(posterKey: String): String? = null
     override fun totalSize(setId: String): Long = 0
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray = ByteArray(0)
+}
+
+/**
+ * The sign-in screen is only ever reached once the Telegram application
+ * identity is stored, so the core is there before the ViewModel asks —
+ * which is what this stands in for.
+ */
+class ResolvedCoreProvider(private val core: CoreClient) : CoreProvider {
+    override suspend fun awaitCore(): CoreClient = core
+    override suspend fun coreOrNull(): CoreClient = core
+    override suspend fun supply(apiId: Int, apiHash: String) = Unit
+    override suspend fun forget() = Unit
 }

@@ -7,10 +7,14 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import data.CatalogRepository
-import data.CoreClient
+import data.CoreProvider
+import data.CoreStorage
 import data.DefaultCatalogRepository
+import data.FileCoreStorage
 import settings.EncryptedPackageSettings
+import settings.EncryptedTelegramSettings
 import settings.PackageSettings
+import settings.TelegramSettings
 import javax.inject.Singleton
 
 @Module
@@ -24,6 +28,20 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun provideCatalogRepository(core: CoreClient, settings: PackageSettings): CatalogRepository =
-        DefaultCatalogRepository(core, settings)
+    fun provideTelegramSettings(@ApplicationContext context: Context): TelegramSettings =
+        EncryptedTelegramSettings(context)
+
+    // The same directory the core is constructed with, so clearing it
+    // clears the state that core wrote.
+    @Provides
+    @Singleton
+    fun provideCoreStorage(@ApplicationContext context: Context): CoreStorage =
+        FileCoreStorage(context.filesDir)
+
+    @Provides
+    @Singleton
+    fun provideCatalogRepository(
+        coreProvider: CoreProvider,
+        settings: PackageSettings,
+    ): CatalogRepository = DefaultCatalogRepository(coreProvider, settings)
 }

@@ -3,7 +3,7 @@ package login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import data.CoreClient
+import data.CoreProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,22 +23,31 @@ import javax.inject.Inject
  * after one fails. Every failure therefore names the step it happened at,
  * so a surface can ask for that one credential again instead of restarting
  * the flow and spending a code request the person did not need.
+ *
+ * The core is awaited rather than injected: it is built from credentials
+ * read out of encrypted storage, which on a first run have only just been
+ * typed in. Whether a session already exists is therefore answered a beat
+ * after construction, not during it.
  */
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val core: CoreClient,
+    private val coreProvider: CoreProvider,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(
-        if (core.isAuthorized()) LoginUiState.Authorized else LoginUiState.NeedsPhone,
-    )
+    private val _state = MutableStateFlow<LoginUiState>(LoginUiState.NeedsPhone)
     val state: StateFlow<LoginUiState> = _state.asStateFlow()
 
     private var signInToken: String? = null
 
+    init {
+        viewModelScope.launch {
+            if (coreProvider.awaitCore().isAuthorized()) _state.value = LoginUiState.Authorized
+        }
+    }
+
     fun submitPhone(phone: String) {
         viewModelScope.launch {
-            runCatching { core.requestCode(phone) }
+            runCatching { coreProvider.awaitCore().requestCode(phone) }
                 .onSuccess {
                     signInToken = it
                     _state.value = LoginUiState.NeedsCode
@@ -50,7 +59,7 @@ class LoginViewModel @Inject constructor(
     fun submitCode(code: String) {
         val token = signInToken ?: return
         viewModelScope.launch {
-            runCatching { core.signIn(token, code) }
+            runCatching { coreProvider.awaitCore().signIn(token, code) }
                 .onSuccess { outcome ->
                     _state.value = when (outcome) {
                         AuthOutcome.DONE -> LoginUiState.Authorized
@@ -63,7 +72,7 @@ class LoginViewModel @Inject constructor(
 
     fun submitPassword(password: String) {
         viewModelScope.launch {
-            runCatching { core.checkPassword(password) }
+            runCatching { coreProvider.awaitCore().checkPassword(password) }
                 .onSuccess { _state.value = LoginUiState.Authorized }
                 .onFailure { _state.value = it.failedAt(LoginStep.PASSWORD) }
         }

@@ -21,6 +21,18 @@ class FakeCore(
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray = ByteArray(0)
 }
 
+/**
+ * A provider whose core is already there. These tests are about what the
+ * repository does with a core, not about waiting for one; [CoreProviderTest]
+ * covers the waiting.
+ */
+class ResolvedCoreProvider(private val core: CoreClient) : CoreProvider {
+    override suspend fun awaitCore(): CoreClient = core
+    override suspend fun coreOrNull(): CoreClient = core
+    override suspend fun supply(apiId: Int, apiHash: String) = Unit
+    override suspend fun forget() = Unit
+}
+
 /** A [SetSummary] with sensible defaults, so a test only names what it cares about. */
 fun summary(
     setId: String = "set-1",
