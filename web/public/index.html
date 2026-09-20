@@ -83,22 +83,14 @@
              time and never to the media element's: a conversion is encoded as
              it plays, so its clock counts from wherever ffmpeg began and its
              duration reaches only as far as ffmpeg has got. -->
-        <div class="seek" id="seek" hidden>
-          <label for="seek-to">Position</label>
-          <input type="range" id="seek-to" min="0" step="1" value="0" />
-          <span class="at" id="seek-at"></span>
-        </div>
-
+        <!-- What is true of the title, and what can be done with it. Above the
+             controls rather than beside them: none of it acts on the picture. -->
         <div class="rail">
           <span class="ends" id="ends"></span>
           <!-- Preloading without playing means a still frame and no sign of
                life; this is the sign of life. -->
           <span class="preload" id="preload"></span>
           <span class="spacer"></span>
-          <span class="picker" id="audio" hidden>
-            <label for="audio-track">Audio</label>
-            <select id="audio-track"></select>
-          </span>
           <!-- Survives cancelling the countdown, which is the point: saying
                "not automatically" must not mean "not at all". -->
           <button id="play-next" class="ghost" hidden>Play next</button>
@@ -106,6 +98,52 @@
           <button id="kids" class="ghost" aria-pressed="false">Kids</button>
           <button id="add-to" class="ghost">Add to…</button>
           <button id="notes" class="ghost" hidden aria-expanded="false">Notes</button>
+        </div>
+
+        <div class="seek" id="seek" hidden>
+          <label for="seek-to">Position</label>
+          <input type="range" id="seek-to" min="0" step="1" value="0" />
+        </div>
+
+        <!-- The transport, in the shape the phone already shipped: skip ten,
+             play, skip ten, with elapsed at one end and the running time at
+             the other. Centred by a three-column grid rather than by the
+             widths of what flanks it, so it does not drift when a picker
+             appears. -->
+        <div class="bar">
+          <span class="bar-side">
+            <span class="at" id="at-now">0:00</span>
+            <span class="picker" id="audio" hidden>
+              <label for="audio-track">Audio</label>
+              <select id="audio-track"></select>
+            </span>
+            <!-- Beside the audio picker, which is the whole point of moving
+                 it here: they are the same kind of choice. -->
+            <span class="picker" id="subs" hidden>
+              <label for="sub-track">Subtitles</label>
+              <select id="sub-track"></select>
+            </span>
+            <span class="picker" id="speed">
+              <label for="speed-rate">Speed</label>
+              <select id="speed-rate"></select>
+            </span>
+          </span>
+
+          <span class="transport">
+            <button id="skip-back" class="tsp" aria-label="Back ten seconds">10</button>
+            <button id="play-pause" class="tsp big" aria-label="Play"></button>
+            <button id="skip-forward" class="tsp" aria-label="Forward ten seconds">10</button>
+          </span>
+
+          <span class="bar-side end">
+            <span class="volume">
+              <button id="mute" class="tsp" aria-label="Mute"></button>
+              <label for="volume">Volume</label>
+              <input type="range" id="volume" min="0" max="1" step="0.01" value="1" />
+            </span>
+            <button id="fullscreen" class="tsp" aria-label="Fullscreen"></button>
+            <span class="at" id="at-end"></span>
+          </span>
         </div>
 
         <p class="note" id="note" hidden></p>

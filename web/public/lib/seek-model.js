@@ -41,6 +41,8 @@ export function seekModel(facts = {}) {
       usable: false,
       max: 0,
       value: 0,
+      elapsed: "",
+      total: "",
       label: "",
       played: 0,
       buffered: 0,
@@ -56,6 +58,11 @@ export function seekModel(facts = {}) {
     usable: true,
     max: Math.floor(runtime),
     value: Math.floor(at),
+    // Given apart as well as together: the bar prints them at either end of
+    // the transport, the way the phone does, and reads them out as one line
+    // to anyone who cannot see where they were printed.
+    elapsed: clockTime(at),
+    total: clockTime(runtime),
     label: `${clockTime(at)} / ${clockTime(runtime)}`,
     played: at / runtime,
     // What is played is also buffered; the paint is one band from nought, not

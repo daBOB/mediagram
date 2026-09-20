@@ -9,6 +9,8 @@ describe("a bar there is something to draw", () => {
     expect(bar.usable).toBe(true);
     expect(bar.max).toBe(1204);
     expect(bar.value).toBe(359);
+    expect(bar.elapsed).toBe("5:59");
+    expect(bar.total).toBe("20:04");
     expect(bar.label).toBe("5:59 / 20:04");
   });
 
@@ -34,6 +36,8 @@ describe("nothing worth drawing a bar for", () => {
     const bar = seekModel({ runtime: null, at: 30 });
     expect(bar.max).toBe(0);
     expect(bar.label).toBe("");
+    expect(bar.elapsed).toBe("");
+    expect(bar.total).toBe("");
     expect(bar.played).toBe(0);
   });
 });

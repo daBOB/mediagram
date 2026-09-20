@@ -15,7 +15,8 @@ import { clockTime, endsAt, episodeLabel, technicalLine } from "./format.js";
 import { languageLabel } from "./language-label.js";
 import { defaultTrack, fillChooser, loadAudioTracks } from "./audio-chooser.js";
 import { bufferedAhead, preloadReadout } from "./preload-readout.js";
-import { seekModel } from "./seek-model.js";
+import { seekModel, skipTo } from "./seek-model.js";
+import { mountTransport } from "./transport.js";
 import { renderNotes } from "./notes-view.js";
 import { COUNTDOWN_SECONDS, upNextPhase } from "./up-next.js";
 import { autoplayReady } from "./autoplay.js";
@@ -30,7 +31,8 @@ const summaryBox = document.getElementById("summary");
 const now = document.getElementById("now");
 const seek = document.getElementById("seek");
 const seekTo = document.getElementById("seek-to");
-const seekAt = document.getElementById("seek-at");
+const atNow = document.getElementById("at-now");
+const atEnd = document.getElementById("at-end");
 const ends = document.getElementById("ends");
 const audio = document.getElementById("audio");
 const audioTrackPicker = document.getElementById("audio-track");
@@ -236,7 +238,11 @@ function refreshSeek() {
     converting,
   });
   seek.hidden = !bar.usable;
-  if (!bar.usable) return;
+  if (!bar.usable) {
+    atNow.textContent = "";
+    atEnd.textContent = "";
+    return;
+  }
   seekTo.max = String(bar.max);
   // A bar the viewer is holding belongs to the viewer: it is theirs to move
   // and its own `input` listener says what it reads while they move it.
@@ -250,15 +256,30 @@ function refreshSeek() {
   showSeekAt(bar);
 }
 
-/** The clock beside the bar, and the same words for anyone who cannot see it. */
+/** The clocks at either end of the transport, and the paint on the track. */
 function showSeekAt(bar) {
-  seekAt.textContent = bar.label;
+  atNow.textContent = bar.elapsed;
+  atEnd.textContent = bar.total;
   // A range's own value is a number of seconds, which is not how anybody says
-  // where they are in a film.
+  // where they are in a film. The two ends as one line, because they are read
+  // out together and printed apart.
   seekTo.setAttribute("aria-valuetext", bar.label);
   seekTo.style.setProperty("--played", `${(bar.played * 100).toFixed(3)}%`);
   seekTo.style.setProperty("--buffered", `${(bar.buffered * 100).toFixed(3)}%`);
 }
+
+/**
+ * The buttons the browser used to lend us. Mounted once; it holds no title.
+ *
+ * Asks rather than reaches: `filmTime` and `runtimeSeconds` are the film's
+ * answers, and a conversion's own clock is not.
+ */
+const transport = mountTransport({
+  video,
+  onSeekTo: (seconds) => seekFilmTo(skipTo(seconds, 0, runtimeSeconds())),
+  filmTime,
+  runtime: runtimeSeconds,
+});
 
 /**
  * Go to `seconds` of the film, by whichever route this title plays.
@@ -552,6 +573,9 @@ export function openPlayer(set, options = {}) {
   onOpenNext = options.onOpenNext ?? null;
   preloaded = null;
   attachSubtitles(set);
+  // After the tracks are attached, because the picker is built from them.
+  transport.offerSubtitles();
+  transport.refresh();
   void showSummary(set);
   void offerAudioTracks(set);
   now.textContent = titleLine(set);
