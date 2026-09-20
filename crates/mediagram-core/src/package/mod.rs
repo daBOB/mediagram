@@ -9,4 +9,4 @@
 pub mod cipher;
 mod reader;
 
-pub use reader::{PackageError, read_package};
+pub use reader::{PackageError, SUPPORTED_SCHEMA, read_package};

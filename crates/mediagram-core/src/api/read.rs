@@ -42,16 +42,19 @@ pub(super) async fn read(
         .min(total - 1);
     let steps = range::plan_reads(&spans, &ByteRange { start: offset, end });
 
-    let (api_id, _) = super::api_credentials()?;
     let client = {
         let mut state = core.state.lock().await;
         if state.client.is_none() {
-            state.client = Some(session::connect(&core.data_dir, api_id));
+            state.client = Some(session::connect(&core.data_dir, core.api_id));
         }
         state.client.as_ref().expect("just set").client.clone()
     };
 
-    let mut out = Vec::with_capacity(len as usize);
+    // Clamped to what this read can actually return, not to the caller's
+    // raw `len`: an out-of-range `UInt` from Kotlin must not become an
+    // attempt to reserve up to 4 GiB before a single byte is read.
+    let capacity = usize::try_from(end - offset + 1).unwrap_or(usize::MAX);
+    let mut out = Vec::with_capacity(capacity);
     for step in steps {
         let location = locations
             .iter()

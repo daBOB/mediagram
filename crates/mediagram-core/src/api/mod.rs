@@ -11,7 +11,10 @@
 
 mod auth;
 mod catalog;
+mod http;
 mod read;
+mod refresh;
+mod refresh_fetch;
 mod session;
 
 use std::path::PathBuf;
@@ -55,18 +58,28 @@ struct State {
 
 /// One player's whole Telegram surface, kept alive by Kotlin for the life of
 /// the app.
+///
+/// `api_id`/`api_hash` identify the *application* to Telegram, not the
+/// account — leaking them lets someone impersonate the app, never sign in as
+/// a user. An Android process has no settable environment to read them from,
+/// so Kotlin passes them in from `BuildConfig`, itself populated at build
+/// time from `local.properties`.
 #[derive(uniffi::Object)]
 pub struct Core {
     data_dir: PathBuf,
+    api_id: i32,
+    api_hash: String,
     state: AsyncMutex<State>,
 }
 
 #[uniffi::export(async_runtime = "tokio")]
 impl Core {
     #[uniffi::constructor]
-    pub fn new(data_dir: String) -> Arc<Self> {
+    pub fn new(data_dir: String, api_id: i32, api_hash: String) -> Arc<Self> {
         Arc::new(Core {
             data_dir: PathBuf::from(data_dir),
+            api_id,
+            api_hash,
             state: AsyncMutex::new(State::default()),
         })
     }
@@ -94,7 +107,7 @@ impl Core {
         pointer_url: String,
         key_b64: String,
     ) -> Result<u64, CoreError> {
-        catalog::refresh_catalog(self, pointer_url, key_b64).await
+        refresh::refresh_catalog(self, pointer_url, key_b64).await
     }
 
     pub fn list_sets(&self) -> Result<Vec<crate::dto::SetSummary>, CoreError> {
@@ -112,18 +125,4 @@ impl Core {
     pub async fn read(&self, set_id: String, offset: u64, len: u32) -> Result<Vec<u8>, CoreError> {
         read::read(self, set_id, offset, len).await
     }
-}
-
-/// The Telegram application's own identity, distinct from a user's session:
-/// leaking these lets someone impersonate the application, never sign in as
-/// an account. A personal build sets them once in its environment; there is
-/// no on-device config file to read them from.
-fn api_credentials() -> Result<(i32, String), CoreError> {
-    let id = std::env::var("MEDIAGRAM_API_ID")
-        .ok()
-        .and_then(|v| v.parse::<i32>().ok())
-        .ok_or_else(|| CoreError::Io("MEDIAGRAM_API_ID is not configured".into()))?;
-    let hash = std::env::var("MEDIAGRAM_API_HASH")
-        .map_err(|_| CoreError::Io("MEDIAGRAM_API_HASH is not configured".into()))?;
-    Ok((id, hash))
 }

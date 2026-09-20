@@ -8,6 +8,12 @@
 //! measured case (`commands::export_session`, on the Linux side of this
 //! project) is two clients sharing one key breaking each other until a
 //! restart.
+//!
+//! A wrong code or password must never cost the flood-wait budget of a
+//! fresh `request_code`: Telegram still accepts another attempt against the
+//! same login token, so every rejection below hands the pending state back
+//! rather than discarding it, and a caller can just ask the person to
+//! retype what they typed.
 
 use grammers_client::SignInError;
 use grammers_client::client::{LoginToken, PasswordToken};
@@ -30,16 +36,15 @@ fn opaque_id() -> String {
 }
 
 pub(super) async fn request_code(core: &Core, phone: String) -> Result<String, CoreError> {
-    let (api_id, api_hash) = super::api_credentials()?;
     let mut state = core.state.lock().await;
     if state.client.is_none() {
-        state.client = Some(session::connect(&core.data_dir, api_id));
+        state.client = Some(session::connect(&core.data_dir, core.api_id));
     }
     let client = state.client.as_ref().expect("just set").client.clone();
     drop(state);
 
     let token = client
-        .request_login_code(&phone, &api_hash)
+        .request_login_code(&phone, &core.api_hash)
         .await
         .map_err(|err| CoreError::Network(err.to_string()))?;
 
@@ -58,11 +63,15 @@ pub(super) async fn sign_in(
     code: String,
 ) -> Result<AuthOutcome, CoreError> {
     let mut state = core.state.lock().await;
-    let pending = state
-        .pending_login
-        .take()
-        .filter(|p| p.id == token)
-        .ok_or_else(|| CoreError::NotAuthorized("no matching login is in progress".into()))?;
+    // Checked before taking: an id that does not match must leave a genuine
+    // pending login untouched, so a caller who mistypes the token can still
+    // retry with the right one instead of having to start over.
+    if !state.pending_login.as_ref().is_some_and(|p| p.id == token) {
+        return Err(CoreError::NotAuthorized(
+            "no matching login is in progress".into(),
+        ));
+    }
+    let pending = state.pending_login.take().expect("checked above");
     let handle = state
         .client
         .as_ref()
@@ -81,7 +90,14 @@ pub(super) async fn sign_in(
             core.state.lock().await.pending_password = Some(PendingPassword(password_token));
             Ok(AuthOutcome::PasswordNeeded)
         }
-        Err(err) => Err(CoreError::Network(err.to_string())),
+        Err(SignInError::InvalidCode) => {
+            // The token's `phone`/`phone_code_hash` are still good for
+            // another attempt; only the code itself was wrong.
+            core.state.lock().await.pending_login = Some(pending);
+            Err(CoreError::NotAuthorized("the code was not accepted".into()))
+        }
+        Err(SignInError::Other(err)) => Err(CoreError::Network(err.to_string())),
+        Err(_other) => Err(CoreError::NotAuthorized("sign-in was rejected".into())),
     }
 }
 
@@ -98,12 +114,21 @@ pub(super) async fn check_password(core: &Core, password: String) -> Result<(), 
     let client = handle.client.clone();
     drop(state);
 
-    client
-        .check_password(pending.0, password.into_bytes())
-        .await
-        .map_err(|err| CoreError::Network(err.to_string()))?;
-
-    let state = core.state.lock().await;
-    let handle = state.client.as_ref().expect("connected above");
-    session::persist(&handle.handle, &core.data_dir)
+    match client.check_password(pending.0, password.into_bytes()).await {
+        Ok(_user) => {
+            let state = core.state.lock().await;
+            let handle = state.client.as_ref().expect("connected above");
+            session::persist(&handle.handle, &core.data_dir)
+        }
+        Err(SignInError::InvalidPassword(retry_token)) => {
+            // Telegram hands the same password step back specifically so a
+            // wrong entry can be retried without a fresh login.
+            core.state.lock().await.pending_password = Some(PendingPassword(retry_token));
+            Err(CoreError::NotAuthorized(
+                "the password was not accepted".into(),
+            ))
+        }
+        Err(SignInError::Other(err)) => Err(CoreError::Network(err.to_string())),
+        Err(_other) => Err(CoreError::NotAuthorized("password check was rejected".into())),
+    }
 }

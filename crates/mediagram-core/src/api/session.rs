@@ -7,7 +7,8 @@
 //! wait. The auth key is the whole authorization, so persistence is just two
 //! numbers: which datacentre it belongs to, and the 256 bytes themselves.
 
-use std::os::unix::fs::PermissionsExt;
+use std::io::Write;
+use std::os::unix::fs::OpenOptionsExt;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -54,6 +55,12 @@ pub(super) fn load_auth_key(data_dir: &Path) -> Option<(i32, [u8; AUTH_KEY_LEN])
 }
 
 /// Writes the pair, owner-only: this file is the whole authorization.
+///
+/// `create_new` with the mode baked into the open call, not a plain `write`
+/// followed by a `chmod`: the latter has a window, however short, where the
+/// file exists at the process's default (world-readable) mode. A relogin
+/// removes the old file first rather than truncating it in place, so that
+/// window never opens on a second write either.
 fn store_auth_key(data_dir: &Path, dc_id: i32, key: &[u8; AUTH_KEY_LEN]) -> Result<(), CoreError> {
     std::fs::create_dir_all(data_dir)
         .map_err(|_| CoreError::Io("creating the data directory".into()))?;
@@ -61,9 +68,25 @@ fn store_auth_key(data_dir: &Path, dc_id: i32, key: &[u8; AUTH_KEY_LEN]) -> Resu
     let mut bytes = Vec::with_capacity(4 + AUTH_KEY_LEN);
     bytes.extend_from_slice(&dc_id.to_be_bytes());
     bytes.extend_from_slice(key);
-    std::fs::write(&path, &bytes).map_err(|_| CoreError::Io("writing the session".into()))?;
-    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600))
-        .map_err(|_| CoreError::Io("restricting the session".into()))
+
+    let open = || {
+        std::fs::OpenOptions::new()
+            .write(true)
+            .mode(0o600)
+            .create_new(true)
+            .open(&path)
+    };
+    let mut file = match open() {
+        Ok(file) => file,
+        Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => {
+            std::fs::remove_file(&path)
+                .map_err(|_| CoreError::Io("replacing the session".into()))?;
+            open().map_err(|_| CoreError::Io("writing the session".into()))?
+        }
+        Err(_) => return Err(CoreError::Io("writing the session".into())),
+    };
+    file.write_all(&bytes)
+        .map_err(|_| CoreError::Io("writing the session".into()))
 }
 
 /// A fresh bootstrap session before any login, or one seeded with the
@@ -107,4 +130,50 @@ pub(super) fn persist(handle: &SenderPoolFatHandle, data_dir: &Path) -> Result<(
         .and_then(|option| option.auth_key)
         .ok_or_else(|| CoreError::NotAuthorized("sign-in did not yield an auth key".into()))?;
     store_auth_key(data_dir, dc_id, &key)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_stored_key_reads_back_exactly() {
+        let dir = tempfile::tempdir().unwrap();
+        let key = [7u8; AUTH_KEY_LEN];
+        store_auth_key(dir.path(), 2, &key).unwrap();
+        assert_eq!(load_auth_key(dir.path()), Some((2, key)));
+    }
+
+    #[test]
+    fn the_session_file_is_never_group_or_world_readable() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        store_auth_key(dir.path(), 2, &[1u8; AUTH_KEY_LEN]).unwrap();
+        let mode = std::fs::metadata(dir.path().join(SESSION_FILE))
+            .unwrap()
+            .permissions()
+            .mode();
+        assert_eq!(mode & 0o777, 0o600);
+    }
+
+    /// A relogin, or simply calling twice, must overwrite rather than fail
+    /// on the file already existing.
+    #[test]
+    fn storing_a_key_twice_replaces_it() {
+        let dir = tempfile::tempdir().unwrap();
+        store_auth_key(dir.path(), 2, &[1u8; AUTH_KEY_LEN]).unwrap();
+        store_auth_key(dir.path(), 3, &[9u8; AUTH_KEY_LEN]).unwrap();
+        assert_eq!(load_auth_key(dir.path()), Some((3, [9u8; AUTH_KEY_LEN])));
+    }
+
+    /// A first launch and a corrupted file must look identical: both mean
+    /// "log in", never a different kind of error.
+    #[test]
+    fn a_missing_or_truncated_file_reads_back_as_no_session() {
+        let dir = tempfile::tempdir().unwrap();
+        assert_eq!(load_auth_key(dir.path()), None);
+
+        std::fs::write(dir.path().join(SESSION_FILE), [0u8; 10]).unwrap();
+        assert_eq!(load_auth_key(dir.path()), None);
+    }
 }

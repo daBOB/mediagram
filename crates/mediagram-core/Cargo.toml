@@ -36,7 +36,24 @@ grammers-mtsender = "0.10"
 grammers-tl-types = "0.10"
 hex = { workspace = true }
 mlib-spec = { path = "../mlib-spec" }
-reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "json"] }
+# `rustls-no-provider`, not `rustls`: the latter pulls in `rustls-platform-verifier`
+# on the same code path this crate would actually exercise, and that crate
+# panics on Android ("expect rustls-platform-verifier to be initialized")
+# without a Kotlin companion component and a JNI init call neither of which
+# this project has. `api::http` builds its own `rustls::ClientConfig` — a
+# plain webpki-roots verifier, never the platform one — and installs it via
+# `tls_backend_preconfigured`, so `rustls-platform-verifier` stays linked
+# (reqwest requires the dependency to exist) but its verifier is never
+# reached.
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls-no-provider", "json"] }
+# `ring`, not the default `aws_lc_rs`: `aws-lc-rs` compiles a BoringSSL-derived
+# C library (`aws-lc-sys`) via cmake, a second native crypto stack beside
+# grammers' pure-Rust RustCrypto and a standing Android cross-compile hazard.
+# `ring` also embeds C/assembly, but is the long-established, widely
+# cross-compiled-for-Android choice; a pure-Rust rustls provider
+# (`rustls-rustcrypto`) exists but is 0.0.2-alpha and not something to trust
+# with TLS.
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
@@ -44,9 +61,12 @@ tar = "0.4.46"
 thiserror = { workspace = true }
 # The version reaching Android: chosen because it is the newest release
 # already exercised by this workspace's lockfile at the time this surface
-# was built.
-uniffi = { version = "0.32.0", features = ["cli", "tokio"] }
+# was built. `cli` is deliberately not enabled here — see the crate's own
+# `cli` feature below; enabling it unconditionally would make Android builds
+# compile the whole bindings code generator into the app's dependency graph.
+uniffi = { version = "0.32.0", features = ["tokio"] }
 tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "io-util", "net", "sync", "time"] }
+webpki-roots = "1"
 
 # Exactly one sqlite3 may end up in the binary, and which crate supplies it
 # differs by platform. Both shapes are spelled per-target so that a host build

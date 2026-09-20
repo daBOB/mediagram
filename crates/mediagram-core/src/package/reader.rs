@@ -6,6 +6,7 @@
 //! is checked first, ahead of the cipher, so a corrupt download is rejected
 //! before it reaches AES-GCM at all.
 
+use std::io::Read;
 use std::path::{Component, Path, PathBuf};
 
 use mlib_spec::package::{LatestPointer, PointerError, associated_data, pointer_is_readable};
@@ -15,7 +16,7 @@ use thiserror::Error;
 use super::cipher::{self, EncryptError};
 
 /// Schema versions this build's catalog code can read.
-const SUPPORTED_SCHEMA: &[i64] = &[mlib_spec::schema::SCHEMA_VERSION];
+pub const SUPPORTED_SCHEMA: &[i64] = &[mlib_spec::schema::SCHEMA_VERSION];
 
 #[derive(Debug, Error)]
 pub enum PackageError {
@@ -63,16 +64,34 @@ pub fn read_package(
     Ok(db)
 }
 
+/// A gzip stream can expand far past its compressed size — arbitrarily far,
+/// for adversarial input — so the *decompressed* total is bounded
+/// independently of `MAX_PACKAGE_BYTES`, which only bounds the ciphertext.
+/// A real package is a `library.db` and a handful of poster JPEGs; this
+/// ceiling is generous for that and nowhere near what a bomb needs to hurt.
+const MAX_UNPACKED_BYTES: u64 = 256 * 1024 * 1024;
+
 /// Gunzips and untars `plaintext` into `dest`, refusing any member whose
-/// path would land outside it.
+/// path would land outside it, that is not a regular file, or that would
+/// push the decompressed total past [`MAX_UNPACKED_BYTES`].
 fn unpack(plaintext: &[u8], dest: &Path) -> Result<(), PackageError> {
     let decoder = flate2::read::GzDecoder::new(plaintext);
     let mut archive = tar::Archive::new(decoder);
     let entries = archive
         .entries()
         .map_err(|e| PackageError::Archive(e.to_string()))?;
+    let mut budget = MAX_UNPACKED_BYTES;
     for entry in entries {
         let mut entry = entry.map_err(|e| PackageError::Archive(e.to_string()))?;
+        if !entry
+            .header()
+            .entry_type()
+            .is_file()
+        {
+            return Err(PackageError::Archive(
+                "archive member is not a regular file".into(),
+            ));
+        }
         let path = entry
             .path()
             .map_err(|e| PackageError::Archive(e.to_string()))?
@@ -88,7 +107,18 @@ fn unpack(plaintext: &[u8], dest: &Path) -> Result<(), PackageError> {
         }
         let mut out =
             std::fs::File::create(&target).map_err(|e| PackageError::Io(e.to_string()))?;
-        std::io::copy(&mut entry, &mut out).map_err(|e| PackageError::Io(e.to_string()))?;
+        // `take(budget + 1)`: if the real member has more than `budget`
+        // bytes left to give, this copies exactly `budget + 1` of them
+        // rather than silently truncating, so the overflow is detected
+        // instead of accepted as a short file.
+        let copied = std::io::copy(&mut (&mut entry).take(budget + 1), &mut out)
+            .map_err(|e| PackageError::Io(e.to_string()))?;
+        if copied > budget {
+            return Err(PackageError::Archive(
+                "archive expands past the size limit once decompressed".into(),
+            ));
+        }
+        budget -= copied;
     }
     Ok(())
 }
