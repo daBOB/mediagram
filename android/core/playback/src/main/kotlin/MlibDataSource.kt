@@ -41,6 +41,10 @@ class MlibDataSource(private val core: CoreClient?) : BaseDataSource(true) {
     private var remaining = 0L
     private var uri: Uri? = null
 
+    // What one fetch brought back, and how much of it has been handed out.
+    private var held = EMPTY
+    private var handedOut = 0
+
     @Suppress("DEPRECATION") // POSITION_OUT_OF_RANGE has no replacement constant; still the documented reason for this exact case.
     override fun open(dataSpec: DataSpec): Long {
         val client = core ?: throw IOException("this device is not set up to read the library")
@@ -57,19 +61,51 @@ class MlibDataSource(private val core: CoreClient?) : BaseDataSource(true) {
         setId = id
         position = dataSpec.position
         remaining = if (dataSpec.length == C.LENGTH_UNSET.toLong()) total - position else dataSpec.length
+        // Whatever was held belonged to the previous position; a seek lands
+        // here and must not be served stale bytes.
+        held = EMPTY
+        handedOut = 0
         transferStarted(dataSpec)
         return remaining
     }
 
+    /**
+     * Serves from what is already held, fetching more only when it runs out.
+     *
+     * ExoPlayer asks in buffer segments — 64 KiB at most — and every fetch
+     * below costs a round trip to resolve the part plus a whole 512 KiB
+     * chunk from Telegram, of which a 64 KiB answer keeps an eighth and
+     * throws the rest away. Asking per segment therefore spends sixteen
+     * round trips and eight megabytes for every megabyte played, which is
+     * slower than a film runs and is why one would never start.
+     *
+     * So a fetch asks for [READ_AHEAD] and hands it out a segment at a
+     * time. It is a whole number of Telegram's chunks, so nothing is
+     * downloaded that is not kept.
+     */
     override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
         if (length == 0) return 0
         if (remaining == 0L) return C.RESULT_END_OF_INPUT
-        val want = minOf(length.toLong(), remaining).toInt()
+        if (handedOut == held.size) {
+            held = fetch(minOf(READ_AHEAD.toLong(), remaining).toInt())
+            handedOut = 0
+            if (held.isEmpty()) return C.RESULT_END_OF_INPUT
+        }
+        val served = minOf(length, held.size - handedOut)
+        held.copyInto(buffer, offset, handedOut, handedOut + served)
+        handedOut += served
+        position += served
+        remaining -= served
+        bytesTransferred(served)
+        return served
+    }
+
+    private fun fetch(want: Int): ByteArray =
         // Blocking is correct here: ExoPlayer calls read() on its loader
         // thread and expects it to block until bytes arrive or the input
         // ends. This is the one place in :core:playback runBlocking is
         // allowed — everywhere else it would risk landing on main.
-        val bytes = try {
+        try {
             runBlocking { core!!.read(setId!!, position, want) }
         } catch (e: CoreException) {
             // Wrapped so ExoPlayer's Loader can retry an IOException (a
@@ -79,13 +115,6 @@ class MlibDataSource(private val core: CoreClient?) : BaseDataSource(true) {
             // playback outright.
             throw IOException("could not read from the set", e)
         }
-        if (bytes.isEmpty()) return C.RESULT_END_OF_INPUT
-        bytes.copyInto(buffer, offset)
-        position += bytes.size
-        remaining -= bytes.size
-        bytesTransferred(bytes.size)
-        return bytes.size
-    }
 
     override fun getUri(): Uri? = uri
 
@@ -94,8 +123,24 @@ class MlibDataSource(private val core: CoreClient?) : BaseDataSource(true) {
             setId = null
             uri = null
             remaining = 0L
+            held = EMPTY
+            handedOut = 0
             transferEnded()
         }
+    }
+
+    private companion object {
+        /**
+         * How much one fetch asks for: two of the 512 KiB chunks Telegram
+         * serves, so a fetch keeps every byte it pays for.
+         *
+         * Bigger would mean fewer round trips still, but the first read of a
+         * set blocks for the whole of it, and that wait is the gap between
+         * pressing a title and seeing a picture.
+         */
+        const val READ_AHEAD = 1024 * 1024
+
+        val EMPTY = ByteArray(0)
     }
 }
 

@@ -18,6 +18,11 @@ class FakeCore(
     private val totalSize: Long = 0L,
     private val bytesOf: (offset: Long, len: Int) -> ByteArray = { _, len -> ByteArray(len) },
 ) : CoreClient {
+
+    /** How many times the core was actually asked, which is the cost being counted. */
+    var reads = 0
+        private set
+
     override fun isAuthorized(): Boolean = true
     override suspend fun requestCode(phone: String): String = "token"
     override suspend fun signIn(token: String, code: String): AuthOutcome = AuthOutcome.DONE
@@ -30,6 +35,7 @@ class FakeCore(
     override fun totalSize(setId: String): Long = totalSize
 
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray {
+        reads++
         if (offset >= totalSize) throw CoreException.NotFound("offset $offset is at or past the end")
         val clampedLen = minOf(len.toLong(), totalSize - offset).toInt()
         return bytesOf(offset, clampedLen)

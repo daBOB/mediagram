@@ -102,18 +102,59 @@ class MlibDataSourceTest {
         assertEquals(0, source.read(ByteArray(0), 0, 0))
     }
 
+    /**
+     * A fetch that comes back short is handed out in full and the next one
+     * resumes where it ended. Counting bytes that never arrived would serve
+     * the wrong part of the file from then on, silently.
+     */
     @Test
-    fun aShortReadAdvancesOnlyByWhatArrived() {
+    fun bytesStayContiguousAcrossAFetchThatCameBackShort() {
         val source = MlibDataSource(coreWithShortReads())
         source.open(DataSpec(setUri("s1")))
-        val first = source.read(ByteArray(64), 0, 64)
-        // Absolute expectation, not derived from the value under test:
-        // coreWithShortReads() always returns exactly half of what a
-        // 64-byte request asks for.
-        assertEquals(32, first)
-        val buf = ByteArray(4)
-        source.read(buf, 0, 4)
-        assertEquals((first % 251).toByte(), buf[0])
+
+        // Past 500, which is all the first fetch of this 1,000-byte set
+        // returns, so the run crosses a short fetch's boundary.
+        val seen = ByteArray(600)
+        var got = 0
+        while (got < seen.size) {
+            got += source.read(seen, got, seen.size - got)
+        }
+
+        for (i in seen.indices) {
+            assertEquals((i % 251).toByte(), seen[i], "byte at $i")
+        }
+    }
+
+    /**
+     * The reason this class holds anything at all. A Matroska parser reads
+     * its header a few bytes at a time, and every fetch costs a round trip
+     * to resolve the part plus a whole chunk from Telegram — so asking per
+     * read spends minutes where it should spend one request, and a film
+     * never starts.
+     */
+    @Test
+    fun aParserReadingAFewBytesAtATimeCostsOneFetch() {
+        val core = coreWithBytes(1_000_000)
+        val source = MlibDataSource(core)
+        source.open(DataSpec(setUri("s1")))
+
+        repeat(200) { source.read(ByteArray(8), 0, 8) }
+
+        assertEquals(1, core.reads, "200 small reads must not be 200 round trips")
+    }
+
+    /** What was held belongs to the old position and must not outlive a seek. */
+    @Test
+    fun aSeekIsNotServedBytesHeldForWhereItCameFrom() {
+        val source = MlibDataSource(coreWithBytes(1_000_000))
+        source.open(DataSpec(setUri("s1")))
+        source.read(ByteArray(8), 0, 8)
+
+        source.open(DataSpec.Builder().setUri(setUri("s1")).setPosition(500_000).build())
+
+        val buf = ByteArray(1)
+        source.read(buf, 0, 1)
+        assertEquals((500_000 % 251).toByte(), buf[0])
     }
 
     @Test
