@@ -241,7 +241,14 @@ function saveProgress(final = false) {
   const runtime = runtimeOf(playing);
   const at = filmTime();
   if (isFinished(at, runtime)) {
+    // The position goes, because a finished title has nowhere to resume to.
+    // The fact that it finished stays, because otherwise nothing anywhere
+    // would remember it was ever watched.
     state.clearProgress(playing.setId);
+    if (!state.isWatched(playing.setId)) {
+      state.setWatched(playing.setId, true);
+      keptChanged();
+    }
     return;
   }
   if (final) state.flushProgress(playing.setId, at, runtime || null);
@@ -497,8 +504,19 @@ function refreshWatchlist() {
  * about playing a title needs to know a number on a shelf is stale.
  */
 function keptChanged() {
+  markedWhileOpen = true;
   document.dispatchEvent(new CustomEvent("mediagram:kept-changed"));
 }
+
+/**
+ * Whether anything a shelf draws changed while the player was open.
+ *
+ * The counts can be refreshed at the moment of the change, but the view
+ * behind the dialog cannot: rebuilding it would tear down the shelf under an
+ * open player. So the change is remembered and announced again on the way
+ * out, when there is something to rebuild into.
+ */
+let markedWhileOpen = false;
 
 /** Whether this title is a child's, and the way to say it is or is not. */
 function refreshKids() {
@@ -709,6 +727,13 @@ dialog.addEventListener("close", () => {
   // The offer goes with the title it was an offer about.
   refreshPlayNext();
   preloaded = null;
+
+  // Now the shelf behind can be rebuilt: a tick earned during playback, or a
+  // title marked from the rail, is on it the moment the dialog is shut.
+  if (markedWhileOpen) {
+    markedWhileOpen = false;
+    document.dispatchEvent(new CustomEvent("mediagram:kept-changed"));
+  }
 
   showNotes(false);
   summaryBox.textContent = "";

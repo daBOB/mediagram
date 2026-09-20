@@ -42,6 +42,8 @@ export interface StateSnapshot {
   progress: Progress[];
   watchlist: string[];
   collections: Collection[];
+  /** Watched to the end. Kept because finishing clears the position. */
+  watched: string[];
 }
 
 /** How long a name may be. Long enough for a sentence, short enough to show. */
@@ -106,7 +108,7 @@ export class WatchState {
 
   /** One profile's everything, in one read. The page asks once and holds it. */
   snapshot(profileId: string): StateSnapshot {
-    if (!this.db) return { progress: [], watchlist: [], collections: [] };
+    if (!this.db) return { progress: [], watchlist: [], collections: [], watched: [] };
 
     const progress = this.db
       .query(
@@ -139,7 +141,13 @@ export class WatchState {
       ).map((item) => item.setId),
     }));
 
-    return { progress, watchlist, collections };
+    const watched = (
+      this.db
+        .query("SELECT set_id AS setId FROM watched WHERE profile_id = ?1")
+        .all(profileId) as { setId: string }[]
+    ).map((row) => row.setId);
+
+    return { progress, watchlist, collections, watched };
   }
 
   /** Where this profile is in `setId`. */
@@ -173,6 +181,31 @@ export class WatchState {
     } else {
       this.db
         ?.query("DELETE FROM watchlist WHERE profile_id = ?1 AND set_id = ?2")
+        .run(profileId, setId);
+    }
+  }
+
+  /**
+   * Records that a title was watched to the end, or takes it back.
+   *
+   * The position is cleared at the same moment — a finished title has no
+   * resume point — so this is the only thing that survives it. Without it the
+   * Continue shelf would be right and everything else would believe the title
+   * had never been opened.
+   */
+  setWatched(profileId: string, setId: string, finished: boolean): void {
+    if (finished) {
+      tolerate(() =>
+        this.db
+          ?.query(
+            `INSERT INTO watched(profile_id, set_id, finished_at) VALUES (?1, ?2, ?3)
+               ON CONFLICT(profile_id, set_id) DO UPDATE SET finished_at = excluded.finished_at`,
+          )
+          .run(profileId, setId, Date.now()),
+      );
+    } else {
+      this.db
+        ?.query("DELETE FROM watched WHERE profile_id = ?1 AND set_id = ?2")
         .run(profileId, setId);
     }
   }

@@ -27,6 +27,8 @@ const PROFILE = new RegExp(`^/api/profiles/${P}$`);
 const STATE = new RegExp(`^/api/profiles/${P}/state$`);
 const PROGRESS = new RegExp(`^/api/profiles/${P}/progress/([A-Za-z0-9]{1,64})$`);
 const WATCHLIST = new RegExp(`^/api/profiles/${P}/watchlist/([A-Za-z0-9]{1,64})$`);
+/** Watched to the end — a fact about the viewer, so scoped to one. */
+const WATCHED = new RegExp(`^/api/profiles/${P}/watched/([A-Za-z0-9]{1,64})$`);
 const COLLECTIONS = new RegExp(`^/api/profiles/${P}/collections$`);
 const COLLECTION = new RegExp(`^/api/profiles/${P}/collections/${P}$`);
 const COLLECTION_ITEM = new RegExp(
@@ -146,6 +148,15 @@ export function createStateRouter(options: StateRouterOptions) {
       if (!state.has(profileId) || !isPlayable(setId)) return status(404);
       if (method !== "PUT" && method !== "DELETE") return status(405);
       state.setWatchlisted(profileId, setId, method === "PUT");
+      return status(204);
+    }
+
+    const watched = WATCHED.exec(path);
+    if (watched) {
+      const [, profileId, setId] = watched as unknown as [string, string, string];
+      if (!state.has(profileId) || !isPlayable(setId)) return status(404);
+      if (method !== "PUT" && method !== "DELETE") return status(405);
+      state.setWatched(profileId, setId, method === "PUT");
       return status(204);
     }
 

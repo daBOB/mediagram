@@ -313,3 +313,34 @@ describe("marking a title as a child's", () => {
     expect((await send("/api/kids", "PUT", {})).status).toBe(405);
   });
 });
+
+describe("recording that a title was watched to the end", () => {
+  const watched = async (profile = me) => (await snapshot(profile)).watched;
+
+  test("is kept and can be taken back", async () => {
+    expect((await send(mine(`/watched/${SET}`), "PUT", {})).status).toBe(204);
+    expect(await watched()).toContain(SET);
+    expect((await send(mine(`/watched/${SET}`), "DELETE")).status).toBe(204);
+    expect(await watched()).not.toContain(SET);
+  });
+
+  test("refuses a title the catalog cannot play", async () => {
+    expect((await send(mine("/watched/01SETNOTINTHELIBRARY1"), "PUT", {})).status).toBe(404);
+  });
+
+  test("refuses a profile that is not there", async () => {
+    const path = `/api/profiles/00000000-0000-0000-0000-000000000000/watched/${SET}`;
+    expect((await send(path, "PUT", {})).status).toBe(404);
+  });
+
+  test("refuses a write from another origin", async () => {
+    const response = await send(mine(`/watched/${SET}`), "PUT", {}, {
+      origin: "https://elsewhere.example",
+    });
+    expect(response.status).toBe(403);
+  });
+
+  test("is not readable or writable by GET", async () => {
+    expect((await rawRequest(server.port, mine(`/watched/${SET}`))).status).toBe(405);
+  });
+});

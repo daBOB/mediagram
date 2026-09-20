@@ -8,7 +8,7 @@
  */
 
 import { el } from "./dom.js";
-import { progressOf } from "./watch-state.js";
+import { isWatched, progressOf } from "./watch-state.js";
 import { watchedFraction } from "./resume-point.js";
 
 /** Two letters to stand in for artwork that is not there. */
@@ -23,9 +23,9 @@ export function initialsOf(text) {
 
 /**
  * @param {{poster: string|null, name: string, initials: string,
- *          progress?: number}} options
+ *          progress?: number, watched?: boolean}} options
  */
-export function plate({ poster, name, initials, progress }) {
+export function plate({ poster, name, initials, progress, watched }) {
   const thumb = el("div", "thumb", poster ? undefined : initials);
 
   if (poster) {
@@ -48,6 +48,15 @@ export function plate({ poster, name, initials, progress }) {
     thumb.append(rule);
   }
 
+  // A finished title has no progress rule, because finishing clears the
+  // position that would have drawn one — so without this a plate watched to
+  // the end is indistinguishable from one never opened.
+  if (watched) {
+    const tick = el("div", "plate-tick", "✓");
+    tick.title = "Watched";
+    thumb.append(tick);
+  }
+
   return thumb;
 }
 
@@ -59,5 +68,6 @@ export function plateOf(set) {
     name,
     initials: initialsOf(set.title ?? set.show),
     progress: watchedFraction(progressOf(set.setId)),
+    watched: isWatched(set.setId),
   });
 }

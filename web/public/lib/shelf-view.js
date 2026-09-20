@@ -9,7 +9,7 @@
 import { el } from "./dom.js";
 import { initialsOf, plate } from "./plate.js";
 import { countOf, episodeLabel, humanDuration, humanSize } from "./format.js";
-import { progressOf } from "./watch-state.js";
+import { isWatched, progressOf } from "./watch-state.js";
 import { watchedFraction } from "./resume-point.js";
 import { firstItemOf } from "./library.js";
 import { offlineBadge, transcodeBadge } from "./set-badge.js";
@@ -57,9 +57,9 @@ function filmMeta(set, mode) {
 }
 
 /** A card for a film, a show or a course. */
-function card({ name, meta, initials, onClick, badges, poster, progress }) {
+function card({ name, meta, initials, onClick, badges, poster, progress, watched }) {
   const button = el("button", "card");
-  const thumb = plate({ poster, name, initials, progress });
+  const thumb = plate({ poster, name, initials, progress, watched });
 
   const body = el("div", "body");
   body.append(el("div", "name", name));
@@ -96,6 +96,7 @@ export function movieGrid(movies, onPlay, mode) {
         poster: set.poster ?? null,
         badges: [offlineBadge(set), transcodeBadge(set)],
         progress: watchedFraction(progressOf(set.setId)),
+        watched: isWatched(set.setId),
         onClick: () => onPlay(set),
       }),
     );
@@ -123,6 +124,7 @@ export function setGrid(sets, onPlay) {
         poster: set.poster ?? null,
         badges: [offlineBadge(set), transcodeBadge(set)],
         progress: watchedFraction(progressOf(set.setId)),
+        watched: isWatched(set.setId),
         onClick: () => onPlay(set),
       }),
     );

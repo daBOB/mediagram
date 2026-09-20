@@ -12,7 +12,7 @@
 
 import { el } from "./dom.js";
 import { codecLine, countOf, episodeLabel, humanDuration, humanSize } from "./format.js";
-import { offlineBadge } from "./set-badge.js";
+import { offlineBadge, watchedTick } from "./set-badge.js";
 
 /** How a hit earned its place, in words rather than a field name. */
 const WHY = {
@@ -61,7 +61,10 @@ export function renderSearch(main, query, hits, onPlay) {
     row.append(el("div", "num", episodeLabel(hit) || ""));
 
     const title = el("div", "title");
-    title.append(el("b", null, hit.title ?? hit.setId));
+    const name = el("b", null, hit.title ?? hit.setId);
+    const tick = watchedTick(hit);
+    if (tick) name.prepend(tick);
+    title.append(name);
     const where = locationOf(hit);
     if (where) title.append(el("span", null, where));
     // The excerpt is the reason a summary hit is worth showing at all.

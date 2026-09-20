@@ -305,7 +305,13 @@ function play(set, queue = null) {
 // The player marks a title; the masthead counts them. Without this the count
 // beside Watchlist or Kids stays as it was until the next navigation, which
 // is exactly when nobody is looking at it.
-document.addEventListener("mediagram:kept-changed", () => refreshKept());
+document.addEventListener("mediagram:kept-changed", () => {
+  refreshKept();
+  // Only once the player is shut. While it is open the shelf behind it is not
+  // being looked at, and rebuilding it would throw away where the viewer had
+  // scrolled to for a change they cannot see.
+  if (!document.getElementById("player").open) route();
+});
 
 function refreshKept() {
   const started = state.inProgress().filter((row) => resumeAt(row) !== null && byId.has(row.setId));

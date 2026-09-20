@@ -155,3 +155,59 @@ describe("v2 to v3", () => {
     second.close();
   });
 });
+
+describe("v3 to v4", () => {
+  /** A database at version 3: kids marked, nothing recorded as finished. */
+  function v3With(path: string, rows: () => string[]): void {
+    const db = new Database(path, { create: true });
+    for (const statement of [...GROUPS[0]!, ...GROUPS[1]!, ...GROUPS[2]!]) db.exec(statement);
+    db.query("INSERT OR REPLACE INTO state_meta(key, value) VALUES ('schema_version', '3')").run();
+    for (const statement of rows()) db.exec(statement);
+    db.close();
+  }
+
+  test("carries profiles, lists and kids marks across untouched", () => {
+    const path = tempPath();
+    v3With(path, () => [
+      `INSERT INTO profiles(id, name, created_at) VALUES ('p1', 'André', 1)`,
+      `INSERT INTO watchlist(profile_id, set_id, added_at) VALUES ('p1', 'aset', 1)`,
+      `INSERT INTO kids(set_id, marked_at) VALUES ('kset', 1)`,
+    ]);
+
+    const state = new WatchState(path);
+    expect(state.profiles().map((p) => p.name)).toEqual(["André"]);
+    expect(state.snapshot("p1").watchlist).toEqual(["aset"]);
+    expect(state.kids()).toEqual(["kset"]);
+    // Starting from nothing was the decision: no history is invented for
+    // titles finished before there was anywhere to record it.
+    expect(state.snapshot("p1").watched).toEqual([]);
+    state.close();
+  });
+
+  test("gives what was finished to the profile that finished it", () => {
+    const path = tempPath();
+    v3With(path, () => [
+      `INSERT INTO profiles(id, name, created_at) VALUES ('p1', 'A', 1)`,
+      `INSERT INTO profiles(id, name, created_at) VALUES ('p2', 'B', 2)`,
+    ]);
+
+    const state = new WatchState(path);
+    state.setWatched("p1", "aset", true);
+    expect(state.snapshot("p1").watched).toEqual(["aset"]);
+    expect(state.snapshot("p2").watched).toEqual([]);
+    state.close();
+  });
+
+  test("opening again changes nothing at all", () => {
+    const path = tempPath();
+    v3With(path, () => [`INSERT INTO profiles(id, name, created_at) VALUES ('p1', 'A', 1)`]);
+
+    const first = new WatchState(path);
+    first.setWatched("p1", "aset", true);
+    first.close();
+
+    const second = new WatchState(path);
+    expect(second.snapshot("p1").watched).toEqual(["aset"]);
+    second.close();
+  });
+});

@@ -23,6 +23,9 @@ const held = {
   progress: new Map(),
   watchlist: new Set(),
   collections: [],
+  /** Watched to the end. Held because finishing clears the position, so this
+   *  is the only thing that remembers a title was ever completed. */
+  watched: new Set(),
   /** Marked as a child's. Shared by everyone on this player, not held per
    *  profile — a mark is about the title, not about who is watching. */
   kids: new Set(),
@@ -131,6 +134,7 @@ export async function useProfile(id) {
   held.progress = new Map();
   held.watchlist = new Set();
   held.collections = [];
+  held.watched = new Set();
   if (id === null) return;
 
   try {
@@ -145,6 +149,7 @@ export async function useProfile(id) {
     );
     held.watchlist = new Set(said.watchlist ?? []);
     held.collections = said.collections ?? [];
+    held.watched = new Set(said.watched ?? []);
   } catch {
     // A profile whose state cannot be read is one with none yet.
   }
@@ -204,6 +209,21 @@ export function setWatchlisted(setId, listed) {
   if (listed) held.watchlist.add(setId);
   else held.watchlist.delete(setId);
   void write(under(`/watchlist/${encodeURIComponent(setId)}`), listed ? "PUT" : "DELETE");
+}
+
+export const isWatched = (setId) => held.watched.has(setId);
+
+/**
+ * Records that a title reached its end.
+ *
+ * Called from the same branch that clears the position, because a finished
+ * title has no resume point and this is the only thing left that remembers
+ * it happened.
+ */
+export function setWatched(setId, finished) {
+  if (finished) held.watched.add(setId);
+  else held.watched.delete(setId);
+  void write(under(`/watched/${encodeURIComponent(setId)}`), finished ? "PUT" : "DELETE", finished ? {} : undefined);
 }
 
 /**

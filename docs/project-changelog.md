@@ -7,6 +7,16 @@ to `main`. Full phase-by-phase detail lives in
 
 ## 2026-09-20
 
+**Shipped**
+
+- A tick on titles watched to the end — on episode and lesson rows, search
+  hits, and the corner of a plate. It needed recording rather than deriving:
+  finishing a title *clears* its position, which is right for the Continue
+  shelf and left "watched it all" and "never opened it" identical everywhere
+  else. State schema v4, scoped to a profile — the opposite call to `kids`,
+  because having watched something is a fact about the viewer.
+- Nothing is backfilled. The tick only ever claims what it actually saw.
+
 **Fixed**
 
 - The next episode no longer starts before the current one has finished. The

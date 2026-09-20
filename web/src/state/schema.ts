@@ -11,7 +11,7 @@
  * different database and the two must never be confused.
  */
 
-export const STATE_SCHEMA = 3;
+export const STATE_SCHEMA = 4;
 
 /**
  * Statements grouped by the version they produce, the same shape the index's
@@ -124,6 +124,25 @@ export const GROUPS: readonly (readonly string[])[] = [
     `CREATE TABLE IF NOT EXISTS kids(
        set_id TEXT PRIMARY KEY,
        marked_at INTEGER NOT NULL
+     )`,
+  ],
+
+  // v3 -> v4: what has been watched to the end.
+  //
+  // Recorded because finishing a title *erases* it otherwise: the position is
+  // cleared on completion, which is right for the Continue shelf and leaves
+  // "watched it all" and "never opened it" identical everywhere else.
+  //
+  // Scoped to a profile, unlike `kids` and for the opposite reason. A
+  // children's film is a fact about the title; having watched something is a
+  // fact about the viewer, and two people sharing a television must not tick
+  // each other's episodes off.
+  [
+    `CREATE TABLE IF NOT EXISTS watched(
+       profile_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+       set_id TEXT NOT NULL,
+       finished_at INTEGER NOT NULL,
+       PRIMARY KEY(profile_id, set_id)
      )`,
   ],
 ];

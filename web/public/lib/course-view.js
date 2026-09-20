@@ -19,7 +19,7 @@
 import { el } from "./dom.js";
 import { codecLine, countOf, episodeLabel, humanDuration, humanSize } from "./format.js";
 import { lessonsUnder, levelEntries } from "./library.js";
-import { offlineBadge, transcodeBadge } from "./set-badge.js";
+import { offlineBadge, transcodeBadge, watchedTick } from "./set-badge.js";
 
 /**
  * How far a folder may indent. The real course reaches four levels; past
@@ -33,7 +33,12 @@ function lessonRow(set, onPlay) {
   row.append(el("div", "num", episodeLabel(set)));
 
   const title = el("div", "title");
-  title.append(el("b", null, set.title ?? set.setId));
+  const name = el("b", null, set.title ?? set.setId);
+  // Before the title rather than after it: a column of ticks down the left of
+  // a season reads at a glance, where one trailing each name does not.
+  const tick = watchedTick(set);
+  if (tick) name.prepend(tick);
+  title.append(name);
   title.append(el("span", null, codecLine(set)));
   row.append(title);
 

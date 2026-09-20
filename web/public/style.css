@@ -892,6 +892,39 @@ main {
 .badge.warn { color: var(--warn); border-color: rgba(134, 96, 33, 0.45); }
 .badge.held { color: var(--held); border-color: rgba(74, 103, 65, 0.45); }
 
+/* Watched to the end. A mark rather than a tag: it sits inside a title, and a
+   column of them down the left of a season is read at a glance where a row of
+   the word "watched" would just be more text to skip. Green, because it is
+   the other thing on this page that says "already dealt with". */
+.tick {
+  color: var(--held);
+  font-size: 0.82em;
+  margin-right: 0.45em;
+  /* Lifted a hair: a tick sits low against a serif capital. */
+  vertical-align: 0.05em;
+}
+
+/* `.row .title span` makes every other span in a row its own line — that is
+   what puts a codec line under a title. The tick belongs *in* the title, so
+   it needs a rule of the same weight to stay there. */
+.row .title span.tick {
+  display: inline;
+}
+
+/* The same mark on a plate, where there is no title to sit inside. In the
+   corner the progress rule does not use, so a half-watched title and a
+   finished one never draw over each other. */
+.plate-tick {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.08rem 0.3rem 0.12rem;
+  background: var(--held);
+  color: var(--paper);
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
 /* ---- the states nobody wants but everybody hits ---- */
 .empty {
   color: var(--ink-2);

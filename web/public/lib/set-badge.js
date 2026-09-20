@@ -8,6 +8,22 @@
 
 import { el } from "./dom.js";
 import { playbackFor } from "./link.js";
+import { isWatched } from "./watch-state.js";
+
+/**
+ * Whether this has been watched to the end.
+ *
+ * A mark rather than a word: it sits in a row beside a title, and every row
+ * that is not ticked would otherwise have to carry the absence of one. The
+ * label is on the tooltip for anyone who cannot see a glyph.
+ */
+export function watchedTick(set) {
+  if (!isWatched(set.setId)) return null;
+  const tick = el("span", "tick", "✓");
+  tick.title = "Watched";
+  tick.setAttribute("aria-label", "Watched");
+  return tick;
+}
 
 /**
  * Whether this set is on the player's disk in full.

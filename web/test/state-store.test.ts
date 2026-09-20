@@ -148,7 +148,12 @@ describe("a player that cannot remember", () => {
     expect(state.remembers).toBe(false);
     expect(state.profiles()).toEqual([]);
     expect(state.createProfile("A")).toBeNull();
-    expect(state.snapshot("nobody")).toEqual({ progress: [], watchlist: [], collections: [] });
+    expect(state.snapshot("nobody")).toEqual({
+      progress: [],
+      watchlist: [],
+      collections: [],
+      watched: [],
+    });
     // None of these may throw: they are called from a request handler.
     state.setProgress("nobody", "01SET", 10, 20);
     state.clearProgress("nobody", "01SET");
@@ -221,9 +226,18 @@ describe("one profile cannot see another", () => {
     const mine = state.createCollection(me, "Weg")!;
     state.addToCollection(me, mine.id, "01SET");
 
+    state.setWatched(me, "01SET", true);
+
     expect(state.deleteProfile(me)).toBe(true);
     expect(state.profiles()).toEqual([]);
-    expect(state.snapshot(me)).toEqual({ progress: [], watchlist: [], collections: [] });
+    // Everything of theirs, which now includes what they finished: `watched`
+    // cascades from `profiles` like the rest of it.
+    expect(state.snapshot(me)).toEqual({
+      progress: [],
+      watchlist: [],
+      collections: [],
+      watched: [],
+    });
   });
 
   test("a profile that is not there cannot be written for", () => {
@@ -278,5 +292,53 @@ describe("titles marked as a child's", () => {
     const state = new WatchState(null);
     expect(() => state.setKids("01SET0000000000000000001", true)).not.toThrow();
     expect(state.kids()).toEqual([]);
+  });
+});
+
+describe("titles watched to the end", () => {
+  test("are remembered, because finishing clears the position", () => {
+    const { state, me } = stateIn();
+    state.setWatched(me, "01SET0000000000000000001", true);
+    expect(state.snapshot(me).watched).toEqual(["01SET0000000000000000001"]);
+  });
+
+  test("belong to the viewer, not to the library", () => {
+    // The opposite call to `kids`, deliberately: a children's film is a fact
+    // about the title, having watched something is a fact about the person.
+    const { state, me } = stateIn();
+    const other = state.createProfile("Someone else")!;
+    state.setWatched(me, "01SET0000000000000000001", true);
+    expect(state.snapshot(me).watched).toEqual(["01SET0000000000000000001"]);
+    expect(state.snapshot(other.id).watched).toEqual([]);
+  });
+
+  test("can be taken back", () => {
+    const { state, me } = stateIn();
+    state.setWatched(me, "01SET0000000000000000001", true);
+    state.setWatched(me, "01SET0000000000000000001", false);
+    expect(state.snapshot(me).watched).toEqual([]);
+  });
+
+  test("finishing twice records once, not twice", () => {
+    // Re-watching an episode and reaching the end again must not duplicate it.
+    const { state, me } = stateIn();
+    state.setWatched(me, "01SET0000000000000000001", true);
+    state.setWatched(me, "01SET0000000000000000001", true);
+    expect(state.snapshot(me).watched).toEqual(["01SET0000000000000000001"]);
+  });
+
+  test("survive keeping a position again, which is what re-watching does", () => {
+    const { state, me } = stateIn();
+    state.setWatched(me, "01SET0000000000000000001", true);
+    state.setProgress(me, "01SET0000000000000000001", 30, 1800);
+    const held = state.snapshot(me);
+    expect(held.watched).toEqual(["01SET0000000000000000001"]);
+    expect(held.progress.map((p) => p.setId)).toEqual(["01SET0000000000000000001"]);
+  });
+
+  test("are nothing rather than fatal on a player that cannot remember", () => {
+    const state = new WatchState(null);
+    expect(() => state.setWatched("p", "01SET0000000000000000001", true)).not.toThrow();
+    expect(state.snapshot("p").watched).toEqual([]);
   });
 });
