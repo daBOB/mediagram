@@ -1,5 +1,6 @@
 package data
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -50,6 +51,14 @@ class DefaultCatalogRepository(
      * between them, so the second costs nothing worth avoiding. Nothing
      * installed before and a time after is the first run, and that is
      * [RefreshOutcome.Updated] rather than a mistake.
+     *
+     * A cancellation is not a refusal and is rethrown rather than recorded.
+     * `runCatching` catches every [Throwable], the network call it wraps is
+     * genuinely cancellable, and the catalog's flow is dropped five seconds
+     * after its last subscriber — so a viewer who leaves mid-refresh would
+     * otherwise come back to a screen quoting the coroutine machinery's own
+     * words at them. Rethrowing also leaves the cancelled caller cancelled,
+     * which is what everything above here expects.
      */
     override suspend fun refresh(): Result<Int> = runCatching {
         val handle = settings.read() ?: error("No library has been chosen on this device")
@@ -59,7 +68,10 @@ class DefaultCatalogRepository(
         val after = core.catalogFacts().publishedAt
         refreshes.record(if (after == before) RefreshOutcome.AlreadyCurrent else RefreshOutcome.Updated)
         sets
-    }.onFailure { refreshes.record(RefreshOutcome.Refused(it.refreshSentence())) }
+    }.onFailure {
+        if (it is CancellationException) throw it
+        refreshes.record(RefreshOutcome.Refused(it.refreshSentence()))
+    }
 
     override suspend fun sets(): List<MediaSet> {
         val core = coreProvider.awaitCore()

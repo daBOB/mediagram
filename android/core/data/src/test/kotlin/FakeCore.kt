@@ -1,5 +1,6 @@
 package data
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
@@ -26,6 +27,8 @@ class FakeCore(
     private val publishedAt: List<Long?> = listOf(null),
     /** The sentence [refreshLibrary] raises with, or `null` when it succeeds. */
     private val refreshFails: String? = null,
+    /** Whether [refreshLibrary] is cancelled rather than finishing or failing. */
+    private val refreshCancels: Boolean = false,
 ) : CoreClient {
 
     /** Which handle the last refresh was asked for, or `null` if none was. */
@@ -42,6 +45,7 @@ class FakeCore(
 
     override suspend fun refreshLibrary(handle: String): Long {
         refreshedHandle = handle
+        if (refreshCancels) throw CancellationException("the flow that asked was dropped")
         refreshFails?.let { error(it) }
         return refreshResult
     }

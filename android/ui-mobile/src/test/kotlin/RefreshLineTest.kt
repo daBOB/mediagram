@@ -65,6 +65,20 @@ class RefreshLineTest {
         assertEquals("published 3 months ago", refreshLine(now - 100L * 86_400_000L, null, now))
     }
 
+    /**
+     * The exact days the unit changes on. Sampling 20 and 100 days above
+     * would pass just as well with either threshold a day out, and a
+     * threshold that has drifted from the web's is the kind of difference
+     * nobody notices until the two surfaces are read side by side.
+     */
+    @Test
+    fun theUnitChangesOnTheSameDaysTheWebChangesItOn() {
+        assertEquals("published 13 days ago", refreshLine(now - 13L * 86_400_000L, null, now))
+        assertEquals("published 2 weeks ago", refreshLine(now - 14L * 86_400_000L, null, now))
+        assertEquals("published 8 weeks ago", refreshLine(now - 59L * 86_400_000L, null, now))
+        assertEquals("published 2 months ago", refreshLine(now - 60L * 86_400_000L, null, now))
+    }
+
     /** Nothing installed is not a date; the row is left out rather than shown blank. */
     @Test
     fun aCatalogueWithNoPushTimeHasNoRow() {

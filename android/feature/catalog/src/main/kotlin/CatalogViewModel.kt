@@ -30,6 +30,15 @@ class CatalogViewModel @Inject constructor(
     // later value is somebody pressing for it.
     private val reloads = MutableStateFlow(0)
 
+    // The last shelves that were built, so a reload can leave them up
+    // instead of replacing a whole library with a spinner for as long as
+    // the network takes. Held here rather than read back out of [state]:
+    // a flow that read the StateFlow it is building would be feeding on
+    // its own output. Touched only from the collecting coroutine, which is
+    // one coroutine — flatMapLatest cancels the old inner flow inside the
+    // same collection — so a plain field is enough.
+    private var lastReady: CatalogUiState.Ready? = null
+
     /** Re-reads the library from the channel and re-groups it. */
     fun reload() {
         reloads.update { it + 1 }
@@ -41,7 +50,11 @@ class CatalogViewModel @Inject constructor(
     val state: StateFlow<CatalogUiState> = reloads
         .flatMapLatest {
             flow {
-                emit(CatalogUiState.Loading)
+                // Loading only when there is nothing yet to keep. Every
+                // later read of the channel is said over the shelves it is
+                // about to replace, which are a whole library until it
+                // answers.
+                emit(lastReady?.copy(refreshing = true) ?: CatalogUiState.Loading)
                 // The refresh is tried first and judged last. A catalog is a file on
                 // this device, and it goes on being a whole library when the channel
                 // cannot be reached — on a train, or while whoever uploads is midway
@@ -49,13 +62,16 @@ class CatalogViewModel @Inject constructor(
                 // round trip would be the one failure a viewer cannot work around.
                 val failure = repository.refresh().exceptionOrNull()
                 val shelves = shelvesOf(runCatching { repository.sets() }.getOrDefault(emptyList()))
-                emit(
-                    when {
-                        shelves.isNotEmpty() -> CatalogUiState.Ready(shelves, failure?.refreshSentence())
-                        failure != null -> CatalogUiState.Failed(failure.refreshSentence())
-                        else -> CatalogUiState.Empty
-                    },
-                )
+                val answer = when {
+                    shelves.isNotEmpty() -> CatalogUiState.Ready(shelves, failure?.refreshSentence())
+                    failure != null -> CatalogUiState.Failed(failure.refreshSentence())
+                    else -> CatalogUiState.Empty
+                }
+                // Cleared, not just overwritten, when the answer is not a
+                // library: a device that has emptied out has no shelves for
+                // the next reload to keep up.
+                lastReady = answer as? CatalogUiState.Ready
+                emit(answer)
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CatalogUiState.Loading)

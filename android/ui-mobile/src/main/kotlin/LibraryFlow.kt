@@ -47,16 +47,16 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
 
     val menuActions = MenuActions(
         onSystem = { at.system = true },
-        onFetchPosters = postersViewModel::fetch,
-        onTmdbKey = { at.tmdbKey = true },
         // The menu is the same wherever it opens, so this is reachable from
         // the system and key screens, where a reloading catalog is
         // invisible. You asked for the library; the library is what you are
         // shown.
         onRefresh = { at.toCatalog(); catalogViewModel.reload() },
+        onFetchPosters = postersViewModel::fetch,
+        onTmdbKey = { at.tmdbKey = true },
         onStartOver = onStartOver,
-        fetchPostersDisabledReason = fetchPostersDisabledReason(postersState.running, postersState.hasKey),
         refreshDisabledReason = refreshDisabledReason(catalogState),
+        fetchPostersDisabledReason = fetchPostersDisabledReason(postersState.running, postersState.hasKey),
     )
 
     when {
@@ -133,13 +133,16 @@ private fun fetchPostersDisabledReason(running: Boolean, hasKey: Boolean): Strin
 /**
  * Why "Refresh library" cannot be tapped right now, or `null` when it can.
  *
- * Loading is the whole answer: the catalog's flow emits it for as long as a
- * read of the channel is in flight, whether that read was the automatic one
- * at startup or one somebody asked for. A second flag counting the same
- * thing could disagree with it.
+ * Read off the catalog's own state rather than a flag beside it, so the two
+ * cannot disagree. A read of the channel in flight looks like one of two
+ * things: [CatalogUiState.Loading] when there were no shelves to keep, and
+ * a [CatalogUiState.Ready] that says it is refreshing when there were.
  */
-private fun refreshDisabledReason(state: CatalogUiState): String? =
-    if (state is CatalogUiState.Loading) "Refreshing…" else null
+private fun refreshDisabledReason(state: CatalogUiState): String? = when {
+    state is CatalogUiState.Loading -> "Refreshing…"
+    state is CatalogUiState.Ready && state.refreshing -> "Refreshing…"
+    else -> null
+}
 
 /** The sentence a finished or failed fetch leaves behind, or `null` while there is nothing to say. */
 private fun posterFetchResultMessage(report: PosterReport?, error: String?): String? = when {

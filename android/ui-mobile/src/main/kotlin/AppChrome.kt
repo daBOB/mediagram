@@ -62,11 +62,19 @@ internal fun backLabelFor(destination: Destination): String? = when (destination
 }
 
 /**
- * The five things the overflow menu can do. Two of them — fetch posters and
- * the TMDB key — are named with an ellipsis because they open something
- * rather than doing it outright, which is the difference between a menu
- * item and a button that starts a network run without warning. Refreshing
- * the library has none, because it does the thing.
+ * The five things the overflow menu can do, in the order they are shown.
+ *
+ * Two of them — fetch posters and the TMDB key, which sits directly under
+ * the fetch it configures — are named with an ellipsis because they open
+ * something rather than doing it outright, which is the difference between
+ * a menu item and a button that starts a network run without warning.
+ * Refreshing the library has none, because it does the thing.
+ *
+ * Refreshing is second and start over last, three items apart: refreshing
+ * is the most-used of the five and starting over discards this device's
+ * Telegram session, and the most frequent should not sit beside the most
+ * destructive. The confirmation dialog is a backstop, not a reason to
+ * invite the mis-tap.
  *
  * The two disabled reasons are `null` when their action is available and a
  * sentence when it is not — no key stored, or a run already in flight. An
@@ -75,12 +83,12 @@ internal fun backLabelFor(destination: Destination): String? = when (destination
  */
 data class MenuActions(
     val onSystem: () -> Unit,
+    val onRefresh: () -> Unit,
     val onFetchPosters: () -> Unit,
     val onTmdbKey: () -> Unit,
-    val onRefresh: () -> Unit,
     val onStartOver: () -> Unit,
-    val fetchPostersDisabledReason: String? = null,
     val refreshDisabledReason: String? = null,
+    val fetchPostersDisabledReason: String? = null,
 )
 
 /**
@@ -135,6 +143,11 @@ fun LibraryScaffold(
                             onClick = { menuExpanded = false; menu.onSystem() },
                         )
                         MenuItem(
+                            label = "Refresh library",
+                            disabledReason = menu.refreshDisabledReason,
+                            onClick = { menuExpanded = false; menu.onRefresh() },
+                        )
+                        MenuItem(
                             label = "Fetch posters…",
                             disabledReason = menu.fetchPostersDisabledReason,
                             onClick = { menuExpanded = false; menu.onFetchPosters() },
@@ -142,11 +155,6 @@ fun LibraryScaffold(
                         DropdownMenuItem(
                             text = { Text("TMDB key…") },
                             onClick = { menuExpanded = false; menu.onTmdbKey() },
-                        )
-                        MenuItem(
-                            label = "Refresh library",
-                            disabledReason = menu.refreshDisabledReason,
-                            onClick = { menuExpanded = false; menu.onRefresh() },
                         )
                         DropdownMenuItem(
                             text = { Text("Start over") },

@@ -5,9 +5,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
@@ -31,7 +33,17 @@ fun CatalogScreen(
         CatalogUiState.Loading -> CenteredMessage("Loading your library…")
         CatalogUiState.Empty -> CenteredMessage("The library is empty.")
         is CatalogUiState.Failed -> CenteredMessage(state.message)
-        is CatalogUiState.Ready -> ShelfList(state, onOpenTitle, onOpenCollection)
+        is CatalogUiState.Ready -> Column(modifier = Modifier.fillMaxSize()) {
+            // Pinned above the list rather than scrolling inside it: it
+            // reports on the whole library, not on a row of it, and a
+            // viewer who has scrolled down is exactly the one who would
+            // otherwise watch the shelves change under their thumb with
+            // nothing having said why.
+            if (state.refreshing) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+            ShelfList(state, onOpenTitle, onOpenCollection)
+        }
     }
 }
 

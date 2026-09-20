@@ -60,7 +60,12 @@ fun SystemScreen() {
 private fun CatalogueBlock(state: SystemUiState) = Block(
     heading = "Catalogue",
     rows = listOf(
-        "Source" to if (state.origin == "package") "published package" else "this machine",
+        // Not "this machine" for the other case, which is what the web
+        // player says: nothing here is ever assembled on the device it is
+        // read on. Every catalogue this app holds was pushed to a channel
+        // and pulled back down — which is what the Refresh row two lines
+        // below is reporting the age of.
+        "Source" to if (state.origin == "package") "published package" else "the library's channel",
         "Holds" to "${state.sets} playable sets, ${state.posters} posters",
         // Read against the wall clock at the moment this block is composed
         // rather than when the facts were taken: the state is re-read on

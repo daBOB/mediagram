@@ -10,6 +10,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -90,18 +91,26 @@ class CatalogViewModelTest {
         }
     }
 
-    /** A reload puts the shelves back to loading, so the screen is not left showing a stale library as current. */
+    /**
+     * A reload is said over the shelves rather than instead of them. Only
+     * the first load has nothing to show, and taking a whole library away
+     * for as long as a network round trip takes would be a worse answer to
+     * "refresh this" than the wait it was reporting.
+     */
     @Test
-    fun askingAgainSaysItIsLoadingBeforeItAnswers() = runTest {
+    fun askingAgainKeepsTheShelvesItIsAboutToReplace() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val vm = CatalogViewModel(FakeCatalogRepository(movies = 2))
         vm.state.test {
-            awaitItem()
-            awaitItem() as CatalogUiState.Ready
+            assertEquals(CatalogUiState.Loading, awaitItem())
+            val before = awaitItem() as CatalogUiState.Ready
+            assertFalse(before.refreshing)
 
             vm.reload()
 
-            assertEquals(CatalogUiState.Loading, awaitItem())
+            val during = awaitItem() as CatalogUiState.Ready
+            assertTrue(during.refreshing)
+            assertEquals(before.shelves, during.shelves)
             cancelAndIgnoreRemainingEvents()
         }
     }

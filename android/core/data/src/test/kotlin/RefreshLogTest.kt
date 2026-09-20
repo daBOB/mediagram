@@ -1,8 +1,10 @@
 package data
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
 /**
@@ -65,6 +67,24 @@ class RefreshLogTest {
         repositoryOver(core, log).refresh()
 
         assertEquals(RefreshOutcome.Refused("the channel could not be reached"), log.last())
+    }
+
+    /**
+     * A refresh nobody waited for is not a refresh that was refused. The
+     * catalog's flow is dropped five seconds after its last subscriber,
+     * which cancels a read still in flight — and a cancellation carries no
+     * sentence written to be read, so recording it would put the coroutine
+     * machinery's own words on the System screen.
+     */
+    @Test
+    fun aCancelledRefreshIsNotRecordedAsARefusal() = runTest {
+        val log = RefreshLog()
+
+        assertFailsWith<CancellationException> {
+            repositoryOver(FakeCore(refreshCancels = true), log).refresh()
+        }
+
+        assertNull(log.last())
     }
 
     /** Before anything has been asked, there is nothing to report. */

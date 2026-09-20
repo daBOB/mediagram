@@ -11,8 +11,18 @@ sealed interface CatalogUiState {
      * already on disk. Said rather than swallowed, because otherwise a
      * viewer has no way to tell a library that is current from one that
      * stopped updating days ago.
+     *
+     * [refreshing] is a read of the channel in flight over shelves that are
+     * still whole. A reload replaces the library rather than building the
+     * first one, so it has something to show throughout, and blanking the
+     * shelves to a spinner would take a library away from whoever is
+     * looking at it for as long as the network takes.
      */
-    data class Ready(val shelves: List<Shelf>, val notice: String? = null) : CatalogUiState
+    data class Ready(
+        val shelves: List<Shelf>,
+        val notice: String? = null,
+        val refreshing: Boolean = false,
+    ) : CatalogUiState
     data object Empty : CatalogUiState
     data class Failed(val message: String) : CatalogUiState
 }
