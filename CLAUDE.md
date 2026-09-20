@@ -90,13 +90,20 @@ viewer who uses both should not have to learn them twice.
 
 ## Versioning
 
-After any code changes, bump the `version` field in both manifests, in step:
+After any code changes, bump the version in every manifest, in step:
 
 - `Cargo.toml` (workspace root) — the uploader and `mlib-spec`, which inherit it
 - `web/package.json` — the player
+- `android/app/build.gradle.kts` — `versionName`, the Android app
 
-Both carry the same number: they are two programs of one project, and a reader
-who finds them disagreeing has no way to tell which is the project's version.
+All three carry the same number: they are three programs of one project, and a
+reader who finds them disagreeing has no way to tell which is the project's
+version.
+
+`versionCode` beside it is not part of this. It counts builds for Android's
+own upgrade check and only ever goes up by one; tying it to semver would mean
+inventing an integer from a dotted string, and the two answer different
+questions.
 
 Following semver:
 
@@ -108,10 +115,16 @@ Following semver:
 Bump before committing so the commit reflects the new version.
 
 ## Changelog
+- 2025-01-XX: Added §4 Meta Self-Improvement loop; CLAUDE.md now updates itself with user approval. Fixed typos ("Plan Node" → "Plan Mode", "One tack" → "One task", "Minimat" → "Minimal").
+- 2026-09-18: Task Management steps 1 and 5 now name `plans/`, which is where planning has actually happened since the first phase; `tasks/todo.md` never existed and duplicated it. Lessons stay at `tasks/lessons.md`, which now exists — it was the half of the rule with no home.
+- 2026-09-20: Added Surface Parity, at the user's request. The Android catalog was listing every episode and lesson as its own card while the web player had long grouped them into shows and courses; it also dropped kinds it did not recognise where the web player deliberately keeps them visible. Both were the same mistake — deciding separately what had already been decided — so the web player is now named as the reference.
 - 2026-09-20: Added § Versioning: bump the version after any code change, before committing.
   Names both manifests, because the version lived only in the workspace `Cargo.toml` and
   `web/package.json` had no `version` field at all — the rule as first written had nothing to
   bump. The player's manifest now carries `0.1.0` to match, so the two start in step.
-- 2025-01-XX: Added §4 Meta Self-Improvement loop; CLAUDE.md now updates itself with user approval. Fixed typos ("Plan Node" → "Plan Mode", "One tack" → "One task", "Minimat" → "Minimal").
-- 2026-09-18: Task Management steps 1 and 5 now name `plans/`, which is where planning has actually happened since the first phase; `tasks/todo.md` never existed and duplicated it. Lessons stay at `tasks/lessons.md`, which now exists — it was the half of the rule with no home.
-- 2026-09-20: Added Surface Parity, at the user's request. The Android catalog was listing every episode and lesson as its own card while the web player had long grouped them into shows and courses; it also dropped kinds it did not recognise where the web player deliberately keeps them visible. Both were the same mistake — deciding separately what had already been decided — so the web player is now named as the reference.
+- 2026-09-20: § Versioning now names three manifests, not two. The Android app landed on `main`
+  carrying its own `versionName`, which the rule did not mention — so the surface most likely to
+  be installed and reported on by a viewer was the one that would silently sit at an old number
+  while the other two moved. That is the disagreement the rule exists to prevent. `versionCode`
+  is explicitly excluded: it counts builds for Android's upgrade check, not releases. Entries
+  also re-ordered oldest-first, which the merge had scrambled.
