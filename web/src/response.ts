@@ -75,6 +75,10 @@ export function contentType(container: string): string {
       return "video/x-msvideo";
     case "ts":
       return "video/mp2t";
+    // A course document. Named here so a browser opens it in its own viewer
+    // rather than downloading `stream` with no extension on it.
+    case "pdf":
+      return "application/pdf";
     default:
       return "application/octet-stream";
   }

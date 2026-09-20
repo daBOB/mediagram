@@ -28,9 +28,9 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
         }
     };
 
-    let lessons = walk_course(&args.dir)?;
-    if lessons.is_empty() {
-        println!("no video files under {}", args.dir.display());
+    let walked = walk_course(&args.dir)?;
+    if walked.is_empty() {
+        println!("nothing to upload under {}", args.dir.display());
         return Ok(());
     }
 
@@ -38,7 +38,7 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
     // so two lessons sharing one would make the second unreachable forever.
     // The walker guarantees uniqueness; this refuses to upload if that ever
     // stops being true, rather than silently dropping content.
-    if let Some((chapter, lesson)) = duplicate_identity(&lessons) {
+    if let Some((chapter, lesson)) = duplicate_identity(&walked.lessons) {
         bail!(
             "two lessons would share chapter {chapter} lesson {lesson}, so one \
              would be skipped as already uploaded; this is a bug in the walk, \
@@ -47,7 +47,7 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
     }
 
     if args.dry_run {
-        for line in dry_run_table(&course, &cid, &lessons) {
+        for line in dry_run_table(&course, &cid, &walked) {
             println!("{line}");
         }
         return Ok(());
@@ -55,7 +55,7 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
 
     let conn = db::open(&cfg.data_dir()?)?;
     let mut summary = Summary::default();
-    for lesson in &lessons {
+    for lesson in &walked.lessons {
         // Identity is the collection id plus the two numbers, so a re-run
         // after an interruption skips what finished without depending on
         // where the folder happens to live.
@@ -71,7 +71,25 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
                 }
             },
         };
-        summary.record(outcome, lesson);
+        summary.record_lesson(outcome);
+    }
+
+    // Documents after the lessons: the videos are what someone is waiting
+    // for, and a handout is worth having a minute later.
+    for document in &walked.documents {
+        let outcome = match sets::document_status(&conn, &cid, document.chapter, document.number)? {
+            Some(status) if status == "complete" => Outcome::AlreadyDone,
+            Some(_) => Outcome::Pending,
+            None => match upload_document(cfg, &args, &course, &cid, document).await {
+                Ok(()) => Outcome::Uploaded,
+                // One unreadable handout must not abandon the rest.
+                Err(err) => {
+                    println!("  document {}: {err:#}", document.number);
+                    Outcome::Failed
+                }
+            },
+        };
+        summary.record_document(outcome);
     }
     drop(conn);
 
@@ -79,13 +97,13 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
         println!("{line}");
     }
 
-    if summary.uploaded > 0 && !args.no_push {
+    if summary.uploaded_anything() && !args.no_push {
         super::push_index::push_after_set(cfg)
             .await
             .context("pushing the index after the course")?;
     }
-    if summary.failed > 0 {
-        bail!("{} lesson(s) failed", summary.failed);
+    if summary.failed() > 0 {
+        bail!("{} set(s) failed", summary.failed());
     }
     Ok(())
 }
@@ -133,6 +151,40 @@ async fn upload_one(
             // caption spells as absent rather than as an empty string.
             path: Some(lesson.rel_path.clone()).filter(|p| !p.is_empty()),
             lesson: Some(lesson.lesson),
+        },
+    )
+    .await
+}
+
+/// Uploads one document: the same parts and captions a lesson gets, with
+/// none of the probing or remuxing a video needs.
+async fn upload_document(
+    cfg: &Config,
+    args: &AddCourseArgs,
+    course: &str,
+    cid: &str,
+    document: &crate::course::walk::Document,
+) -> Result<()> {
+    println!(
+        "uploading c{:02}d{:02} {}",
+        document.chapter,
+        document.number,
+        document.title.as_deref().unwrap_or("")
+    );
+    super::add_document::run(
+        cfg,
+        &super::add_document::Document {
+            file: document.path.clone(),
+            course: course.to_string(),
+            cid: cid.to_string(),
+            chapter: document.chapter,
+            chapter_title: document.chapter_title.clone(),
+            // Empty means the document sat at the course root, which the
+            // caption spells as absent rather than as an empty string.
+            path: Some(document.rel_path.clone()).filter(|p| !p.is_empty()),
+            number: document.number,
+            title: document.title.clone(),
+            variant: args.variant.clone(),
         },
     )
     .await

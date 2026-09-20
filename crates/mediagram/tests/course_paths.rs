@@ -28,6 +28,7 @@ fn course(files: &[&str]) -> tempfile::TempDir {
 fn paths_of(root: &Path) -> Vec<String> {
     walk_course(root)
         .unwrap()
+        .lessons
         .into_iter()
         .map(|lesson| lesson.rel_path)
         .collect()
@@ -106,7 +107,7 @@ fn every_path_the_walk_produces_is_a_valid_caption_path() {
         "Der erleuchtete Investor/Teil 1.mp4",
     ]);
 
-    for lesson in walk_course(dir.path()).unwrap() {
+    for lesson in walk_course(dir.path()).unwrap().lessons {
         if lesson.rel_path.is_empty() {
             continue;
         }

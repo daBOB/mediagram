@@ -46,7 +46,10 @@ export interface Collection {
   divisions: Division[];
   /** Folders that actually hold lessons, however deep they sit. */
   chapters: number;
+  /** Lessons, not counting documents. */
   count: number;
+  /** Documents anywhere in the collection. */
+  documents: number;
 }
 
 export interface Library {
@@ -57,11 +60,17 @@ export interface Library {
 
 export function groupLibrary(sets: CatalogSet[]): Library;
 
-/** The first set anywhere under these divisions, in display order. */
+/** The first *playable* set under these divisions, in display order. */
 export function firstItemOf(divisions: Division[]): CatalogSet | null;
 
 /** How many lessons sit under `division`, at whatever depth. */
 export function lessonsUnder(division: Division): number;
+
+/** How many documents sit under `division`, at whatever depth. */
+export function documentsUnder(division: Division): number;
+
+/** True for a set that is a document rather than something to play. */
+export function isDocument(set: CatalogSet): boolean;
 
 /**
  * The division `names` leads to, or `null` when it names one that is not
@@ -71,11 +80,12 @@ export function lessonsUnder(division: Division): number;
 /** One level's lessons and folders, in the order the course puts them. */
 export type LevelEntry =
   | { kind: "lesson"; set: CatalogSet; order: number | null }
+  | { kind: "document"; set: CatalogSet; order: number | null }
   | { kind: "folder"; division: Division; order: number | null };
 
 export function levelEntries(level: Pick<Division, "items" | "children">): LevelEntry[];
 
-/** Every set in a collection, in the order its pages walk them. */
+/** Every playable set in a collection, in the order its pages walk them. */
 export function flattenCollection(collection: Collection): CatalogSet[];
 
 /** What follows `setId` in its collection, or `null` at the end of one. */

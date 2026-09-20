@@ -45,7 +45,7 @@ pub fn kind_key(kind: Kind) -> &'static str {
     match kind {
         Kind::Movie => "movie",
         // A course has no provider entry; it never reaches this table.
-        Kind::Ep | Kind::Tut => "tv",
+        Kind::Ep | Kind::Tut | Kind::Doc => "tv",
     }
 }
 

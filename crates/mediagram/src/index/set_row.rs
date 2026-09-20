@@ -53,6 +53,7 @@ impl SetRow {
                 Kind::Movie => "movie".to_string(),
                 Kind::Ep => "ep".to_string(),
                 Kind::Tut => "tut".to_string(),
+                Kind::Doc => "doc".to_string(),
             },
             tmdb: caption.ids.tmdb,
             tvdb: caption.ids.tvdb,
@@ -136,6 +137,7 @@ impl SetRow {
             "movie" => Kind::Movie,
             "ep" => Kind::Ep,
             "tut" => Kind::Tut,
+            "doc" => Kind::Doc,
             other => bail!("set {} has unknown kind `{other}`", self.set_id),
         };
         let e = self

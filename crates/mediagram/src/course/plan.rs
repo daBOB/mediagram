@@ -68,8 +68,9 @@ pub fn stem(file_name: &str) -> &str {
     file_name.rsplit_once('.').map_or(file_name, |(s, _)| s)
 }
 
-/// Extensions treated as lesson video. Anything else in a course folder is
-/// notes, subtitles or artwork, and is not uploaded.
+/// Extensions treated as lesson video. Anything that is neither this nor a
+/// document is subtitles, artwork or a transcriber's working file, and is
+/// not uploaded.
 pub const VIDEO_EXTENSIONS: &[&str] = &["mkv", "mp4", "m4v", "webm", "mov", "avi", "ts"];
 
 /// Marker the faststart remux puts in its output name. Those files sit beside
@@ -79,11 +80,27 @@ pub const VIDEO_EXTENSIONS: &[&str] = &["mkv", "mp4", "m4v", "webm", "mov", "avi
 pub const REMUX_MARKER: &str = ".faststart.";
 
 pub fn is_video(name: &str) -> bool {
+    has_extension(name, VIDEO_EXTENSIONS)
+}
+
+/// Extensions uploaded as a course document rather than ignored.
+///
+/// PDF alone, deliberately. A course folder also holds subtitles, artwork and
+/// a transcriber's working files, none of which anyone wants as a row in a
+/// player, and every format added here is a format the player then has to
+/// know how to offer.
+pub const DOC_EXTENSIONS: &[&str] = &["pdf"];
+
+pub fn is_document(name: &str) -> bool {
+    has_extension(name, DOC_EXTENSIONS)
+}
+
+fn has_extension(name: &str, extensions: &[&str]) -> bool {
     if name.contains(REMUX_MARKER) {
         return false;
     }
     match name.rsplit_once('.') {
-        Some((_, ext)) => VIDEO_EXTENSIONS.contains(&ext.to_ascii_lowercase().as_str()),
+        Some((_, ext)) => extensions.contains(&ext.to_ascii_lowercase().as_str()),
         None => false,
     }
 }

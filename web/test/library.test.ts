@@ -325,7 +325,7 @@ describe("the order a level reads in", () => {
   });
 
   test("a numbered folder sits where its number puts it, not at the end", () => {
-    expect(levelEntries(level()).map((e) => (e.kind === "lesson" ? e.set.title : e.division.title)))
+    expect(levelEntries(level()).map((e) => (e.kind === "folder" ? e.division.title : e.set.title)))
       .toEqual(["Definition", "2. Exkurs", "Umsetzung"]);
   });
 
@@ -338,7 +338,7 @@ describe("the order a level reads in", () => {
       ],
     });
 
-    expect(entries.map((e) => (e.kind === "lesson" ? e.set.title : e.division.title))).toEqual([
+    expect(entries.map((e) => (e.kind === "folder" ? e.division.title : e.set.title))).toEqual([
       "1. Grundlagen",
       "Intro",
       "Anhang",

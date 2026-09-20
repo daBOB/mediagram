@@ -122,6 +122,34 @@ than player work.
   the readout was discarding it — and depth alone cannot tell a satisfied
   player from a starving one, which is the whole reason that measurement
   exists.
+- A course is no longer only video. PDFs found while walking a course folder
+  are uploaded as documents: a new caption kind (`doc`), numbered inside its
+  chapter the way a lesson is, so a handout named `03 Signal.pdf` lands on
+  the row beside `03 Signal.mp4` without anything having to pair the two, and
+  a `Ressourcen/` folder — which the walk never even visited before, having
+  no video in it — becomes an ordinary folder whose rows open the file.
+- Chapter numbers are still computed from the folders holding video and only
+  those. A document-only folder that joined the numbering would shift every
+  chapter after it, and chapter plus lesson *is* a lesson's identity, so a
+  re-run of `add-course` would have matched nothing and uploaded the whole
+  course a second time. Documents take numbers continuing after the last
+  video chapter; a player places a folder by its path, not by that number.
+- The dry-run table marks each row `L` or `D` and counts the two apart, as
+  does the closing summary — a course whose videos all went up and whose
+  handouts all failed is a different situation from the reverse.
+- The player serves a PDF as `application/pdf` and shows it as a row that
+  opens rather than plays. Documents are kept out of the playback order, so
+  reaching the end of a lesson never advances into a workbook, and out of the
+  film shelf, where the rule that saves an unrecognised kind would have put
+  them.
+
+**Not changed**
+
+- No schema migration: `kind` and `container` are TEXT and every video-only
+  column was already nullable, so `SCHEMA_VERSION` stays 6 and no index in
+  the wild needs migrating. The caption marker stays `v=4` for the same
+  reason — the field set did not change — which keeps old builds reading
+  every movie, episode and lesson caption as before.
 
 ## 2026-09-18
 

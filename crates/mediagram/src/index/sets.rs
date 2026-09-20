@@ -188,6 +188,31 @@ pub fn episode_status(
     Ok(status)
 }
 
+/// The status of a document already in the index, if any.
+///
+/// Identity is the collection id plus the chapter and the number within it,
+/// the same three things that identify a lesson. The `kind` is what keeps the
+/// two apart: a handout deliberately carries its lesson's number, so without
+/// it a document would be mistaken for the lesson it sits beside and neither
+/// would ever be uploaded twice — or at all.
+pub fn document_status(
+    conn: &Connection,
+    cid: &str,
+    chapter: u32,
+    number: u32,
+) -> Result<Option<String>> {
+    let number = serde_json::to_string(&mlib_spec::caption::Episode::Single(number))?;
+    let status: Option<String> = conn
+        .query_row(
+            "SELECT status FROM sets
+             WHERE group_key = ?1 AND season = ?2 AND episode = ?3 AND kind = 'doc'",
+            params![cid, chapter, number],
+            |row| row.get(0),
+        )
+        .optional()?;
+    Ok(status)
+}
+
 /// The status of a lesson already in the index, if any, so a caller can tell
 /// "finished" from "interrupted" and route the second to `resume`.
 pub fn lesson_status(

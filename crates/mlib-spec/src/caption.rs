@@ -15,6 +15,18 @@ pub enum Kind {
     /// `s`/`chap` and `e`/`title`, so ordering, resume and the playable
     /// invariant work without a second set of rules.
     Tut,
+    /// A document belonging to a course: a handout beside a lesson, or a
+    /// workbook in a folder holding no video at all.
+    ///
+    /// Numbered within its chapter exactly as a lesson is, because a course
+    /// page orders a level by the number each entry leads with. A handout
+    /// named `03 Signal.pdf` therefore lands on the row beside lesson 3
+    /// without anything having to pair the two.
+    ///
+    /// Carries no `dur`, `vcodec`, `acodec`, `q` or `hdr`: none of them mean
+    /// anything about a document, and a reader that finds them absent is
+    /// looking at something it must not try to play.
+    Doc,
 }
 
 /// Episode number: a single episode or an inclusive range for multi-episode files.
@@ -137,6 +149,13 @@ impl Caption {
                     _ => course.to_string(),
                 }
             }
+            Kind::Doc => {
+                let course = self.show.as_deref().unwrap_or("?");
+                match (self.s, self.e) {
+                    (Some(c), Some(d)) => format!("{course} {}", document_code(c, d)),
+                    _ => course.to_string(),
+                }
+            }
         }
     }
 }
@@ -145,6 +164,13 @@ impl Caption {
 /// never reads as a television series.
 pub fn lesson_code(chapter: u32, lesson: Episode) -> String {
     format!("C{chapter:02}L{:02}", lesson.first())
+}
+
+/// `C02D03`. A document is numbered inside its chapter the way a lesson is,
+/// so `D` rather than `L` is the only thing that says which of the two a row
+/// is before anything reads the container.
+pub fn document_code(chapter: u32, document: Episode) -> String {
+    format!("C{chapter:02}D{:02}", document.first())
 }
 
 /// `S02E01` or `S02E01-E02`.

@@ -3,6 +3,7 @@
 pub mod accept_login;
 pub mod add;
 pub mod add_course;
+pub mod add_document;
 pub mod add_show;
 pub mod args;
 pub mod background;

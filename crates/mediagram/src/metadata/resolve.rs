@@ -127,7 +127,9 @@ pub(super) async fn fetch_details(api: &impl TmdbApi, id: u64, kind: Kind) -> Re
     let path = match kind {
         Kind::Movie => format!("/movie/{id}"),
         Kind::Ep => format!("/tv/{id}"),
-        Kind::Tut => bail!("a tutorial has no TMDB entry; courses are described by hand"),
+        Kind::Tut | Kind::Doc => {
+            bail!("a course has no TMDB entry; courses are described by hand")
+        }
     };
     let query = [("append_to_response", "external_ids".to_string())];
     let value = api.get_json(&path, &query).await?;
@@ -135,12 +137,12 @@ pub(super) async fn fetch_details(api: &impl TmdbApi, id: u64, kind: Kind) -> Re
         .with_context(|| format!("invalid tmdb response for {path}"))?;
     let ext = details.external_ids.clone().unwrap_or_default();
 
-    if kind == Kind::Tut {
-        bail!("a tutorial has no TMDB entry; courses are described by hand");
+    if matches!(kind, Kind::Tut | Kind::Doc) {
+        bail!("a course has no TMDB entry; courses are described by hand");
     }
     Ok(match kind {
         // Guarded immediately above; a course never reaches TMDB.
-        Kind::Tut => bail!("a tutorial has no TMDB entry"),
+        Kind::Tut | Kind::Doc => bail!("a course has no TMDB entry"),
         Kind::Movie => ResolvedItem {
             kind,
             ids: ProviderIds {
@@ -181,7 +183,9 @@ async fn find_by_external(api: &impl TmdbApi, id: &str, source: &str, kind: Kind
     let hit = match kind {
         Kind::Movie => found.movie_results.into_iter().next(),
         Kind::Ep => found.tv_results.into_iter().next(),
-        Kind::Tut => bail!("a tutorial has no TMDB entry; courses are described by hand"),
+        Kind::Tut | Kind::Doc => {
+            bail!("a course has no TMDB entry; courses are described by hand")
+        }
     };
     hit.map(|h| h.id)
         .ok_or_else(|| anyhow::anyhow!("no tmdb match found for {source} {id}"))

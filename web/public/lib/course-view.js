@@ -18,7 +18,7 @@
 
 import { el } from "./dom.js";
 import { codecLine, countOf, episodeLabel, humanDuration, humanSize } from "./format.js";
-import { lessonsUnder, levelEntries } from "./library.js";
+import { documentsUnder, lessonsUnder, levelEntries } from "./library.js";
 import { offlineBadge, transcodeBadge, watchedTick } from "./set-badge.js";
 
 /**
@@ -57,6 +57,37 @@ function lessonRow(set, onPlay) {
   return row;
 }
 
+/**
+ * One document row: a link rather than a button.
+ *
+ * A link because that is what a document is — the browser opens a PDF in its
+ * own viewer, and a viewer who wants it on disk already knows how to ask a
+ * link for that. Routing it through the player instead would mean building a
+ * second viewer for a thing browsers already display.
+ *
+ * `target` and `rel` together: the course page keeps its place, and the new
+ * tab gets no handle back onto it.
+ */
+function documentRow(set) {
+  const row = el("a", "row document");
+  row.href = `/api/sets/${encodeURIComponent(set.setId)}/stream`;
+  row.target = "_blank";
+  row.rel = "noopener";
+
+  row.append(el("div", "num", episodeLabel(set)));
+
+  const title = el("div", "title");
+  title.append(el("b", null, set.title ?? set.setId));
+  title.append(el("span", null, set.container.toUpperCase()));
+  row.append(title);
+
+  // The word, not an icon: this row sits among lessons that look almost
+  // exactly like it, and the one thing a viewer needs is which is which.
+  row.append(el("span", "is-document", "document"));
+  row.append(el("div", "meta", humanSize(set.total)));
+  return row;
+}
+
 /** One folder: a door, with the size of the room behind it. */
 function folderRow(division, onOpen) {
   const row = el("button", "row folder");
@@ -73,7 +104,19 @@ function folderRow(division, onOpen) {
   }
   row.append(title);
 
-  row.append(el("div", "meta", countOf(lessonsUnder(division), "lesson")));
+  const documents = documentsUnder(division);
+  row.append(
+    el(
+      "div",
+      "meta",
+      [
+        countOf(lessonsUnder(division), "lesson"),
+        documents > 0 ? countOf(documents, "document") : null,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    ),
+  );
   row.append(el("span", "chevron", "\u203a"));
 
   row.addEventListener("click", () => onOpen(division.title));
@@ -90,9 +133,9 @@ function folderRow(division, onOpen) {
 export function levelBlock(level, onOpen, onPlay) {
   const block = el("section", "level");
   for (const entry of levelEntries(level)) {
-    block.append(
-      entry.kind === "lesson" ? lessonRow(entry.set, onPlay) : folderRow(entry.division, onOpen),
-    );
+    if (entry.kind === "lesson") block.append(lessonRow(entry.set, onPlay));
+    else if (entry.kind === "document") block.append(documentRow(entry.set));
+    else block.append(folderRow(entry.division, onOpen));
   }
   return block;
 }
@@ -116,7 +159,9 @@ export function divisionBlock(division, depth, onPlay) {
   }
   block.append(head);
 
-  for (const set of division.items) block.append(lessonRow(set, onPlay));
+  for (const set of division.items) {
+    block.append(set.kind === "doc" ? documentRow(set) : lessonRow(set, onPlay));
+  }
   // Lessons first, then the folders below them: a lesson sitting in this
   // folder comes before a subfolder in every course this reads.
   for (const child of division.children) block.append(divisionBlock(child, depth + 1, onPlay));

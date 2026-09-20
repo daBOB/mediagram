@@ -15,6 +15,7 @@ import { countOf } from "./lib/format.js";
 import { renderSearch } from "./lib/search-view.js";
 import {
   divisionAt,
+  documentsUnder,
   firstItemOf,
   groupLibrary,
   lessonsUnder,
@@ -249,7 +250,18 @@ function viewCourseLevel(collection, folders) {
   main.append(crumbs("tutorials", collection.name, folders));
   // `title` is null only for the stand-in at the top, where the course's own
   // name is the heading.
-  heading(level.title ?? collection.name, countOf(lessonsUnder(level), "lesson"));
+  // Both counts, because a folder of workbooks holds no lessons at all and
+  // "zero lessons" is a worse description of it than "two documents".
+  const documents = documentsUnder(level);
+  heading(
+    level.title ?? collection.name,
+    [
+      countOf(lessonsUnder(level), "lesson"),
+      documents > 0 ? countOf(documents, "document") : null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+  );
 
   main.append(
     levelBlock(

@@ -150,7 +150,7 @@ expect, and adding continues as on any other machine.
 | `mediagram resume [--no-push]` | Finish every set left `pending` by an interrupted `add` (adopts already-uploaded parts instead of re-uploading them). |
 | `mediagram push-index` | Snapshot `library.db` and upload it to the channel as a pinned document. |
 | `mediagram verify <set-id> \| --all [--full] [--since <unix>]` | Check a set (or every set): default mode compares each part's message/document against the index; `--full` re-downloads and hashes every part, and `--since` skips parts already verified at or after that timestamp so an interrupted sweep resumes. `--all` skips sets that are still uploading. |
-| `mediagram add-course <dir> [--dry-run]` | Walk a course folder and upload every lesson: subdirectories are chapters, video files inside them are lessons. Re-running skips lessons already finished. |
+| `mediagram add-course <dir> [--dry-run]` | Walk a course folder and upload every lesson and document: subdirectories are chapters, video files inside them are lessons, PDFs beside them are documents. Re-running skips what already finished. |
 | `mediagram add-show <dir> --tmdb <id> [--dry-run] [--yes]` | Walk a series folder and upload every episode, one set each. Season and episode come from the file name; the show comes from `--tmdb`, which is required because release prefixes defeat the title guess. Prints what it would file where, says which files the player would convert on every play and whether `prepare` can fix it, then asks. Re-running skips episodes already complete. |
 | `mediagram status` | What the library holds and what is still going in: the one set uploading with its part and byte progress, any sets waiting their turn behind it, how far each show has got against what the provider says exists, and anything left unfinished. Read-only, so it is safe to run in another terminal while an upload is working. |
 | `mediagram metadata` | Record what TMDB says about each film and series — synopsis, genres, rating, network, status, and how many seasons and episodes exist — into the `shows` table. Reads the payloads `add` already cached, so a library that predates the table fills in with no API key and no network. |
@@ -178,8 +178,22 @@ mediagram add-course ~/Courses/Rust\ Course
 
 The walk treats each subdirectory as a chapter and each video inside it as a
 lesson, reading the leading number as the number and the rest as the title.
-A flat folder is one chapter. Files that are not video are ignored. The
-dry-run table shows every inferred number and title before anything uploads.
+A flat folder is one chapter. The dry-run table shows every inferred number
+and title before anything uploads, with `L` marking a lesson and `D` a
+document.
+
+PDFs are uploaded too, as documents rather than lessons — a handout sitting
+beside its lesson, or a workbook in a folder holding no video at all, which
+the walk did not even visit before. A document is numbered inside its chapter
+the way a lesson is, so `03 Signal.pdf` lands on the row beside
+`03 Signal.mp4` in the player and a `Ressourcen/` folder becomes an ordinary
+folder whose rows open the file instead of playing it. Nothing else is
+uploaded: subtitles, artwork and a transcriber's working files are still
+ignored.
+
+Adding PDFs to a course already uploaded moves nothing. Chapter numbers are
+computed from the folders holding video and only those, so a re-run uploads
+the documents and skips every lesson that finished.
 
 Courses never touch TMDB, which has no entry for them, so no API key is
 needed on this path. Identity is the collection id plus the chapter and

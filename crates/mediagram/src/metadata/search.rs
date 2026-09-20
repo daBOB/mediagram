@@ -30,7 +30,9 @@ pub(super) async fn search_and_resolve(
     let path = match kind {
         Kind::Movie => "/search/movie",
         Kind::Ep => "/search/tv",
-        Kind::Tut => bail!("a tutorial has no TMDB entry; courses are described by hand"),
+        Kind::Tut | Kind::Doc => {
+            bail!("a course has no TMDB entry; courses are described by hand")
+        }
     };
 
     let value = api.get_json(path, &query).await?;

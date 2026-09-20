@@ -38,7 +38,7 @@ fn chapters_are_subdirectories_and_lessons_are_the_files_inside() {
         "02 Ownership/01 Moves.mp4",
     ]);
 
-    let lessons = walk_course(dir.path()).unwrap();
+    let lessons = walk_course(dir.path()).unwrap().lessons;
 
     assert_eq!(
         summary(&lessons),
@@ -53,14 +53,16 @@ fn chapters_are_subdirectories_and_lessons_are_the_files_inside() {
 #[test]
 fn a_flat_folder_is_one_chapter() {
     let dir = tree(&["01 First.mp4", "02 Second.mp4"]);
-    let lessons = walk_course(dir.path()).unwrap();
+    let lessons = walk_course(dir.path()).unwrap().lessons;
     assert_eq!(lessons.len(), 2);
     assert!(lessons.iter().all(|l| l.chapter == 1));
     assert_eq!(lessons[1].lesson, 2);
 }
 
+/// A PDF is a document, and everything else here is a transcriber's working
+/// file or artwork that nobody wants as a row in a player.
 #[test]
-fn non_video_files_are_ignored() {
+fn a_pdf_is_a_document_and_the_rest_is_ignored() {
     let dir = tree(&[
         "01 Intro.mp4",
         "notes.pdf",
@@ -68,9 +70,13 @@ fn non_video_files_are_ignored() {
         "cover.jpg",
         "archive.zip",
     ]);
-    let lessons = walk_course(dir.path()).unwrap();
-    assert_eq!(lessons.len(), 1);
-    assert_eq!(lessons[0].title.as_deref(), Some("Intro"));
+
+    let course = walk_course(dir.path()).unwrap();
+
+    assert_eq!(course.lessons.len(), 1);
+    assert_eq!(course.lessons[0].title.as_deref(), Some("Intro"));
+    assert_eq!(course.documents.len(), 1);
+    assert_eq!(course.documents[0].title.as_deref(), Some("notes"));
 }
 
 /// Unnumbered entries still need stable numbers, and they must not collide
@@ -79,7 +85,7 @@ fn non_video_files_are_ignored() {
 fn unnumbered_entries_are_numbered_after_the_explicit_ones() {
     let dir = tree(&["02 Second.mp4", "Appendix.mp4", "01 First.mp4"]);
 
-    let lessons = walk_course(dir.path()).unwrap();
+    let lessons = walk_course(dir.path()).unwrap().lessons;
 
     assert_eq!(
         summary(&lessons)
@@ -106,7 +112,7 @@ fn two_walks_of_the_same_tree_agree() {
 #[test]
 fn separators_and_extensions_are_stripped_from_titles() {
     let dir = tree(&["01 - Getting_Started.the.basics.mp4"]);
-    let lessons = walk_course(dir.path()).unwrap();
+    let lessons = walk_course(dir.path()).unwrap().lessons;
     assert_eq!(
         lessons[0].title.as_deref(),
         Some("Getting Started the basics")
@@ -122,7 +128,7 @@ fn separators_and_extensions_are_stripped_from_titles() {
 fn a_nested_folder_becomes_its_own_chapter() {
     let dir = tree(&["01 Basics/extras/01 Bonus.mp4", "01 Basics/01 Main.mp4"]);
 
-    let lessons = walk_course(dir.path()).unwrap();
+    let lessons = walk_course(dir.path()).unwrap().lessons;
 
     assert_eq!(lessons.len(), 2);
     let chapters: std::collections::BTreeSet<u32> = lessons.iter().map(|l| l.chapter).collect();
@@ -152,7 +158,7 @@ fn a_missing_folder_is_an_error_not_an_empty_course() {
 #[test]
 fn a_title_that_is_only_a_number_keeps_a_usable_title() {
     let dir = tree(&["01.mp4", "02.mp4"]);
-    let lessons = walk_course(dir.path()).unwrap();
+    let lessons = walk_course(dir.path()).unwrap().lessons;
     assert_eq!(lessons.len(), 2);
     assert_eq!(lessons[0].lesson, 1);
     assert_eq!(
@@ -173,7 +179,7 @@ fn the_directory_holding_the_videos_is_the_chapter_however_deep() {
         "Basis/1. Start/01 Hallo.mp4",
     ]);
 
-    let lessons = walk_course(dir.path()).unwrap();
+    let lessons = walk_course(dir.path()).unwrap().lessons;
 
     let chapters: std::collections::BTreeSet<u32> = lessons.iter().map(|l| l.chapter).collect();
     assert_eq!(chapters.len(), 3, "three leaf folders, three chapters");
@@ -185,7 +191,7 @@ fn the_directory_holding_the_videos_is_the_chapter_however_deep() {
 #[test]
 fn a_chapter_title_keeps_the_path_that_gives_it_meaning() {
     let dir = tree(&["Ausbildung/1. Grundlagen/3. Signal/01 Einstieg.mp4"]);
-    let lessons = walk_course(dir.path()).unwrap();
+    let lessons = walk_course(dir.path()).unwrap().lessons;
     let title = lessons[0].chapter_title.clone().unwrap();
     assert!(
         title.contains("Grundlagen") && title.contains("Signal"),
@@ -204,7 +210,7 @@ fn lesson_numbers_are_unique_within_a_chapter() {
         "Kapitel/2. Varianten.mp4",
     ]);
 
-    let lessons = walk_course(dir.path()).unwrap();
+    let lessons = walk_course(dir.path()).unwrap().lessons;
 
     let numbers: Vec<u32> = lessons.iter().map(|l| l.lesson).collect();
     let unique: std::collections::BTreeSet<u32> = numbers.iter().copied().collect();
@@ -224,7 +230,7 @@ fn no_two_lessons_in_a_course_share_an_identity() {
         "B/sub/1. one.mp4",
     ]);
 
-    let lessons = walk_course(dir.path()).unwrap();
+    let lessons = walk_course(dir.path()).unwrap().lessons;
 
     let mut seen = std::collections::BTreeSet::new();
     for l in &lessons {
@@ -242,7 +248,7 @@ fn no_two_lessons_in_a_course_share_an_identity() {
 #[test]
 fn a_course_mixing_loose_files_and_folders_still_works() {
     let dir = tree(&["intro.mp4", "Kapitel/01 Erste.mp4"]);
-    let lessons = walk_course(dir.path()).unwrap();
+    let lessons = walk_course(dir.path()).unwrap().lessons;
     assert_eq!(lessons.len(), 2);
     let mut seen = std::collections::BTreeSet::new();
     for l in &lessons {
@@ -262,7 +268,7 @@ fn our_own_remux_temporaries_are_not_lessons() {
         "Kapitel/2. Trading.mp4",
     ]);
 
-    let lessons = walk_course(dir.path()).unwrap();
+    let lessons = walk_course(dir.path()).unwrap().lessons;
 
     let titles: Vec<&str> = lessons.iter().filter_map(|l| l.title.as_deref()).collect();
     assert_eq!(titles, ["Überblick", "Trading"], "{titles:?}");
@@ -274,8 +280,8 @@ fn a_leftover_temporary_does_not_shift_lesson_numbers() {
     let clean = tree(&["K/1. A.mp4", "K/2. B.mp4"]);
     let dirty = tree(&["K/1. A.mp4", "K/1. A.faststart.mp4", "K/2. B.mp4"]);
 
-    let a = walk_course(clean.path()).unwrap();
-    let b = walk_course(dirty.path()).unwrap();
+    let a = walk_course(clean.path()).unwrap().lessons;
+    let b = walk_course(dirty.path()).unwrap().lessons;
 
     let ids = |ls: &[Lesson]| -> Vec<(u32, u32, Option<String>)> {
         ls.iter()

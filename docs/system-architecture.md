@@ -33,6 +33,11 @@ paths.rs           XDG config/data directory resolution
 commands/          one module per subcommand, each exposing `run(...)`
   add.rs             inspect → resolve → remux → plan → index, then hand the
                      upload to finish_set (--watch) or to a background process
+  add_course.rs      walk a course folder, upload each lesson then each
+                     document, push the index once at the end
+  add_document.rs    upload one course document: the same parts, captions and
+                     finish_set a lesson gets, with no probe and no remux —
+                     a PDF has no duration, codecs or languages to read
   finish_set.rs      upload one planned set: the half that is only bytes
   background.rs      re-runs this binary detached, so an upload outlives the
                      terminal that started it
@@ -57,6 +62,13 @@ upload/            hashing byte-range reader (part_reader), the Transport
 term.rs            drawing a line that rewrites itself, and the percentages
                    and durations on it; a no-op off a terminal, so `prepare`
                    and `upload` stay readable in a pipe
+course/            reading a course folder: which files are lessons and which
+                   are documents, the numbers and titles inferred from their
+                   names, the sidecars beside a lesson, and the dry-run table.
+                   Chapter numbers come from the folders holding video and
+                   only those — a document-only folder that joined the
+                   numbering would shift every lesson's identity and make a
+                   re-run upload the whole course again
 index/             library.db: schema open/migrate, sets/parts CRUD,
                    rescan folding, snapshot/vacuum
 telegram/          grammers client construction + login flow, retry policy

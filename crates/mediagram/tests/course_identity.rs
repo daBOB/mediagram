@@ -114,15 +114,36 @@ fn the_summary_tells_the_user_what_to_do_about_unfinished_lessons() {
         lesson: 1,
         title: None,
     };
+    let _ = &lesson;
     let mut summary = Summary::default();
-    summary.record(Outcome::Uploaded, &lesson);
-    summary.record(Outcome::AlreadyDone, &lesson);
-    summary.record(Outcome::Pending, &lesson);
-    summary.record(Outcome::Failed, &lesson);
+    summary.record_lesson(Outcome::Uploaded);
+    summary.record_lesson(Outcome::AlreadyDone);
+    summary.record_lesson(Outcome::Pending);
+    summary.record_lesson(Outcome::Failed);
 
     let lines = summary.lines().join("\n");
-    assert!(lines.contains("1 uploaded, 1 already done, 1 failed"));
+    assert!(lines.contains("1 lesson(s) uploaded, 1 already done, 1 failed"));
     assert!(lines.contains("resume"), "{lines}");
+    assert!(
+        !lines.contains("document"),
+        "a course with no documents says nothing about them: {lines}"
+    );
+}
+
+/// Documents are counted apart from lessons, because they fail apart: which
+/// of the two went wrong is the first thing anyone needs to know.
+#[test]
+fn the_summary_counts_documents_separately() {
+    let mut summary = Summary::default();
+    summary.record_lesson(Outcome::Uploaded);
+    summary.record_document(Outcome::Uploaded);
+    summary.record_document(Outcome::Failed);
+
+    let lines = summary.lines().join("\n");
+    assert!(lines.contains("1 lesson(s) uploaded"), "{lines}");
+    assert!(lines.contains("1 document(s) uploaded, 0 already done, 1 failed"), "{lines}");
+    assert_eq!(summary.failed(), 1);
+    assert!(summary.uploaded_anything());
 }
 
 #[test]
@@ -135,7 +156,11 @@ fn the_dry_run_table_shows_the_id_that_identity_is_built_from() {
         lesson: 1,
         title: Some("Install".into()),
     }];
-    let table = dry_run_table("Rust Course", "rust-course", &lessons).join("\n");
+    let walked = mediagram::course::walk::Course {
+        lessons,
+        documents: vec![],
+    };
+    let table = dry_run_table("Rust Course", "rust-course", &walked).join("\n");
     assert!(table.contains("rust-course"));
     assert!(table.contains("Install"));
     // Folders, not chapter numbers: the numbers are made unique across a

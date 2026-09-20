@@ -22,10 +22,16 @@ pub fn base_name(c: &Caption) -> String {
                 _ => show,
             }
         }
-        Kind::Tut => {
+        Kind::Tut | Kind::Doc => {
             let course = with_year(c.show.as_deref().unwrap_or(&c.set));
             let code = match (c.s, c.e) {
-                (Some(ch), Some(l)) => Some(crate::caption::lesson_code(ch, l).to_lowercase()),
+                (Some(ch), Some(n)) => Some(
+                    match c.t {
+                        Kind::Doc => crate::caption::document_code(ch, n),
+                        _ => crate::caption::lesson_code(ch, n),
+                    }
+                    .to_lowercase(),
+                ),
                 _ => None,
             };
             match (code, c.title.as_deref()) {

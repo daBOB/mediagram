@@ -21,6 +21,17 @@
  * @typedef {import("./library.js").Division} Division
  */
 
+/**
+ * True for a set that is a document rather than something to play.
+ *
+ * The kind, and nothing else. Going by container would mean teaching this
+ * every format a course folder might ever hold; the uploader already decided
+ * and said so.
+ */
+export function isDocument(set) {
+  return set.kind === "doc";
+}
+
 /** Episode numbers are text in the index ("1", "1-2"); sort by the number. */
 function episodeOrder(set) {
   const match = /\d+/.exec(set.episode ?? "");
@@ -85,10 +96,16 @@ function* walk(divisions) {
   }
 }
 
-/** The first set anywhere under these divisions, in the order they display. */
+/**
+ * The first playable set anywhere under these divisions, in display order.
+ *
+ * What a collection's play button starts with, so it skips documents: a
+ * course whose first folder is its workbooks would otherwise open a PDF.
+ */
 export function firstItemOf(divisions) {
   for (const division of walk(divisions)) {
-    if (division.items.length > 0) return division.items[0];
+    const playable = division.items.find((set) => !isDocument(set));
+    if (playable) return playable;
   }
   return null;
 }
@@ -96,7 +113,16 @@ export function firstItemOf(divisions) {
 /** How many lessons sit under `division`, at whatever depth. */
 export function lessonsUnder(division) {
   let count = 0;
-  for (const node of walk([division])) count += node.items.length;
+  for (const node of walk([division])) {
+    count += node.items.filter((set) => !isDocument(set)).length;
+  }
+  return count;
+}
+
+/** How many documents sit under `division`, at whatever depth. */
+export function documentsUnder(division) {
+  let count = 0;
+  for (const node of walk([division])) count += node.items.filter(isDocument).length;
   return count;
 }
 
@@ -141,7 +167,11 @@ function leadingNumber(text) {
  */
 export function levelEntries(level) {
   const entries = [
-    ...level.items.map((set) => ({ kind: "lesson", set, order: leadingNumber(set.episode) })),
+    ...level.items.map((set) => ({
+      kind: isDocument(set) ? "document" : "lesson",
+      set,
+      order: leadingNumber(set.episode),
+    })),
     ...level.children.map((division) => ({
       kind: "folder",
       division,
@@ -166,7 +196,9 @@ export function flattenCollection(collection) {
   const descend = (level) => {
     for (const entry of levelEntries(level)) {
       if (entry.kind === "lesson") out.push(entry.set);
-      else descend(entry.division);
+      // Skipped, not descended into: a document has nothing below it, and
+      // "next" means the next thing that plays.
+      else if (entry.kind === "folder") descend(entry.division);
     }
   };
   descend({ items: [], children: collection.divisions });
@@ -219,8 +251,17 @@ function collections(sets, fallbackName) {
         divisions: root.children,
         // Folders that actually hold lessons, however deep: what a shelf card
         // means by a chapter. A folder of folders is structure, not a chapter.
-        chapters: divisions.filter((d) => d.items.length > 0).length,
-        count: divisions.reduce((n, d) => n + d.items.length, 0),
+        // A folder of documents alone is structure too — "3 chapters" should
+        // not count the one holding the workbooks.
+        chapters: divisions.filter((d) => d.items.some((set) => !isDocument(set))).length,
+        count: divisions.reduce(
+          (n, d) => n + d.items.filter((set) => !isDocument(set)).length,
+          0,
+        ),
+        documents: divisions.reduce(
+          (n, d) => n + d.items.filter(isDocument).length,
+          0,
+        ),
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
@@ -233,16 +274,22 @@ function collections(sets, fallbackName) {
  * dropped: a viewer noticing something in the wrong place can act on it,
  * whereas a title that silently vanishes looks like a failed upload.
  *
+ * Documents are the one kind that must not fall through to that rule. A
+ * course handout on the film shelf reads as a broken film, so they go into
+ * the course tree beside the lessons they were found with.
+ *
  * @param {CatalogSet[]} sets
  */
 export function groupLibrary(sets) {
   const episodes = sets.filter((set) => set.kind === "ep");
-  const lessons = sets.filter((set) => set.kind === "tut");
-  const rest = sets.filter((set) => set.kind !== "ep" && set.kind !== "tut");
+  const course = sets.filter((set) => set.kind === "tut" || isDocument(set));
+  const rest = sets.filter(
+    (set) => set.kind !== "ep" && set.kind !== "tut" && !isDocument(set),
+  );
 
   return {
     movies: [...rest].sort(byTitle),
     series: collections(episodes, "Unknown show"),
-    tutorials: collections(lessons, "Unknown course"),
+    tutorials: collections(course, "Unknown course"),
   };
 }

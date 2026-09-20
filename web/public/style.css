@@ -799,6 +799,11 @@ main {
 .row:hover { background: rgba(140, 59, 46, 0.045); }
 .row:hover .title b { color: var(--accent); }
 
+/* A document row is an anchor, not a button: it opens the file itself. The
+   rest of the row styling already fits; only what an anchor brings with it
+   has to go. */
+a.row { text-decoration: none; }
+
 /* The call number, set the way a library card sets one. */
 .row .num {
   flex: none;
@@ -876,7 +881,7 @@ main {
  * colours for a fact about a title, and they are a pair — ochre for what
  * will cost something, green for what will not.
  */
-.badge, .has-summary {
+.badge, .has-summary, .is-document {
   flex: none;
   align-self: center;
   display: inline-block;
