@@ -24,9 +24,22 @@ prominent control on the screen, for that reason.
 
 **Files:**
 - Create: `android/ui-mobile/src/main/kotlin/TechnicalLine.kt`
+- Modify: `android/core/model/src/main/kotlin/MediaSet.kt` — add `container`, `vcodec`, `acodec`, `quality`, `hdr`, `partCount`, `posterKey`
+- Modify: `android/core/data/src/main/kotlin/CatalogRepository.kt` — carry them from `SetSummary`
 - Test: `android/ui-mobile/src/test/kotlin/TechnicalLineTest.kt`
 
-**Interfaces — Consumes:** `MediaSet` carrying the five fields phase 2 task 1 added.
+**Interfaces — Consumes:** `SetSummary`'s five technical fields, added to the core earlier in
+this plan.
+
+**First, widen `MediaSet` — this task cannot compile otherwise.** `android/core/model/src/main/kotlin/MediaSet.kt`
+today carries no `container`, `vcodec`, `acodec`, `quality`, `hdr` or `partCount`, and the tests
+below construct all six. Add them, and carry them through
+`DefaultCatalogRepository.toMediaSetOrNull` from the `SetSummary` fields that already exist.
+Add `posterKey: String?` at the same time — task 2 needs it to ask `showInfo(posterKey)`, and
+deriving a poster key a second time in Kotlin would duplicate a rule that already lives in Rust.
+
+`humanSize` already exists at `android/ui-mobile/src/main/kotlin/SystemRows.kt:22`, `internal`
+and in the same `ui` package, so it needs no import and must not be written a second time.
 **Produces:** `internal fun technicalLine(set: MediaSet): String`, `internal fun hdrLabel(hdr: String?): String?`, `internal fun bitrateLabel(totalBytes: Long, durationSeconds: Int?): String?`.
 Task 2 renders the first; phase 6 renders the third.
 
@@ -160,13 +173,13 @@ git commit -m "feat(android): describe a file the way the web player describes i
 
 **Interfaces — Consumes:** `technicalLine` (Task 1), `CoreClient.showInfo` (phase 2 task 2), `CoreClient.posterPath` and the artwork phase 4 fetches, `LibraryScaffold(destination, onBack, menu, content)` (phase 3 task 2 — takes a `Destination`, not a title string).
 
-- [ ] **Step 1: Carry the new fields through**
+- [ ] **Step 1: The fields are already carried**
 
-`MediaSet` gains `container`, `vcodec`, `acodec`, `quality`, `hdr` and
-`posterKey`, and `DefaultCatalogRepository.toMediaSetOrNull` carries them from
-`SetSummary`. `posterKey` is needed because the detail screen asks
-`showInfo(posterKey)`, and deriving it a second time in the UI would be a
-second copy of a rule that already exists in Rust.
+Task 1 widened `MediaSet` with `container`, `vcodec`, `acodec`, `quality`,
+`hdr`, `partCount` and `posterKey`, and carried them through
+`DefaultCatalogRepository.toMediaSetOrNull` — it had to, because
+`technicalLine` reads all of them. Confirm they are there rather than adding
+them again.
 
 - [ ] **Step 2: Build the screen**
 
