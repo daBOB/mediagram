@@ -24,21 +24,21 @@ import designsystem.Spacing
 @Composable
 fun CatalogScreen(
     state: CatalogUiState,
-    onPlay: (setId: String) -> Unit,
+    onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
 ) {
     when (state) {
         CatalogUiState.Loading -> CenteredMessage("Loading your library…")
         CatalogUiState.Empty -> CenteredMessage("The library is empty.")
         is CatalogUiState.Failed -> CenteredMessage(state.message)
-        is CatalogUiState.Ready -> ShelfList(state, onPlay, onOpenCollection)
+        is CatalogUiState.Ready -> ShelfList(state, onOpenTitle, onOpenCollection)
     }
 }
 
 @Composable
 private fun ShelfList(
     state: CatalogUiState.Ready,
-    onPlay: (setId: String) -> Unit,
+    onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
 ) {
     val columns = posterColumnsFor(currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass)
@@ -60,7 +60,7 @@ private fun ShelfList(
             }
         }
         items(state.shelves, key = { it.title }) { shelf ->
-            ShelfRow(shelf, columns, onPlay, onOpenCollection)
+            ShelfRow(shelf, columns, onOpenTitle, onOpenCollection)
         }
     }
 }
@@ -69,7 +69,7 @@ private fun ShelfList(
 private fun ShelfRow(
     shelf: Shelf,
     columns: Int,
-    onPlay: (setId: String) -> Unit,
+    onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
 ) {
     Column {
@@ -78,15 +78,16 @@ private fun ShelfRow(
             items(shelf.entries, key = ::keyOf) { entry ->
                 val modifier = Modifier.fillParentMaxWidth(1f / columns)
                 when (entry) {
-                    // A film plays; a show or a course opens, because the
-                    // card stands for everything inside it and there is no
-                    // one thing it could sensibly start.
+                    // A film opens the screen that describes it; a show or a
+                    // course opens what is inside it, because the card
+                    // stands for everything there and there is no one thing
+                    // it could sensibly start.
                     is Entry.Film -> PosterCard(
                         posterPath = entry.set.posterPath,
                         title = entry.set.title,
                         caption = null,
                         modifier = modifier,
-                        onClick = { onPlay(entry.set.setId) },
+                        onClick = { onOpenTitle(entry.set.setId) },
                     )
 
                     is Entry.Collection -> PosterCard(

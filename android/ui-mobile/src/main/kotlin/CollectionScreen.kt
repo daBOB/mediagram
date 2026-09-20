@@ -21,6 +21,7 @@ import catalog.Division
 import catalog.Entry
 import designsystem.Spacing
 import model.MediaSet
+import uniffi.mediagram_core.ShowInfo
 
 /**
  * What is inside one show or course: its seasons or chapters, and the
@@ -29,9 +30,21 @@ import model.MediaSet
  * The nesting is kept rather than flattened. A course runs from one folder
  * deep to four, and flattening it gives a row of headings that each repeat
  * their parents; a viewer reads the indent instead.
+ *
+ * [info] describes the show or the course itself, not an episode of it —
+ * the whole series shares one row in the index, which is why it can be
+ * asked for with the key every episode under it carries. A course has
+ * neither a provider entry nor artwork, so the block that would describe it
+ * is left out entirely and the screen is the name and the tree, as it has
+ * always been. An empty block would claim the library looked and found
+ * nothing, when the truth is that nobody recorded it.
  */
 @Composable
-fun CollectionScreen(collection: Entry.Collection, onPlay: (setId: String) -> Unit) {
+fun CollectionScreen(
+    collection: Entry.Collection,
+    info: ShowInfo?,
+    onOpenTitle: (setId: String) -> Unit,
+) {
     // Flattened once per collection, not on every recomposition: the depth
     // becomes an indent here because a lazy list cannot nest, and a viewer
     // still has to see which folder holds what.
@@ -48,7 +61,21 @@ fun CollectionScreen(collection: Entry.Collection, onPlay: (setId: String) -> Un
                 modifier = Modifier.padding(bottom = Spacing.medium),
             )
         }
-        items(rows, onPlay)
+        if (info != null || collection.posterPath != null) {
+            item(key = "header") {
+                TitleHeader(
+                    posterPath = collection.posterPath,
+                    title = collection.name,
+                    // A show is not a file: it has no one year and no one
+                    // runtime, and the seasons below already say how much
+                    // of it there is.
+                    facts = null,
+                    info = info,
+                    modifier = Modifier.padding(bottom = Spacing.medium),
+                )
+            }
+        }
+        items(rows, onOpenTitle)
     }
 }
 
@@ -79,7 +106,7 @@ private fun rowsOf(divisions: List<Division>, depth: Int = 0): List<Row> =
 
 private fun LazyListScope.items(
     rows: List<Row>,
-    onPlay: (setId: String) -> Unit,
+    onOpenTitle: (setId: String) -> Unit,
 ) {
     items(
         count = rows.size,
@@ -100,7 +127,7 @@ private fun LazyListScope.items(
                         .fillMaxWidth()
                         // The whole line is the target, and the role is what
                         // tells a screen reader it is one.
-                        .clickable(role = Role.Button) { onPlay(row.set.setId) }
+                        .clickable(role = Role.Button) { onOpenTitle(row.set.setId) }
                         .padding(vertical = Spacing.small),
                 )
                 HorizontalDivider()

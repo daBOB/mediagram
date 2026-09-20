@@ -22,6 +22,11 @@ class AppChromeTest {
     }
 
     @Test
+    fun aTitleIsNamedAfterItself() {
+        assertEquals("Blade: Trinity", barTitleFor(Destination.Title("Blade: Trinity")))
+    }
+
+    @Test
     fun theSystemScreenSaysWhatItIs() {
         assertEquals("System", barTitleFor(Destination.System))
     }
@@ -34,5 +39,6 @@ class AppChromeTest {
     fun onlyASubScreenOffersAWayBack() {
         assertNull(backLabelFor(Destination.Catalog))
         assertEquals("Back", backLabelFor(Destination.System))
+        assertEquals("Back", backLabelFor(Destination.Title("Blade: Trinity")))
     }
 }

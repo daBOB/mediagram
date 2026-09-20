@@ -1,5 +1,7 @@
 package catalog
 
+import model.MediaSet
+
 /** What the catalog screen renders; the television surface renders the same states. */
 sealed interface CatalogUiState {
     data object Loading : CatalogUiState
@@ -39,3 +41,28 @@ fun CatalogUiState.collection(key: String): Entry.Collection? = (this as? Catalo
     ?.flatMap { it.entries }
     ?.filterIsInstance<Entry.Collection>()
     ?.find { it.key == key }
+
+/**
+ * The set an id names, wherever it sits — a film on a shelf, or an episode
+ * or lesson somewhere inside a collection.
+ *
+ * Kept as a lookup for the same reason [collection] is: a screen that has
+ * opened a title saves the id, which is a short string, and resolves it
+ * again from whatever the library currently holds. `null` while the shelves
+ * are still loading is the useful half — the same id resolves a moment
+ * later, which is what brings a killed process back to the title it was on.
+ */
+fun CatalogUiState.mediaSet(setId: String): MediaSet? = (this as? CatalogUiState.Ready)
+    ?.shelves
+    ?.asSequence()
+    ?.flatMap { it.entries }
+    ?.flatMap { entry ->
+        when (entry) {
+            is Entry.Film -> sequenceOf(entry.set)
+            is Entry.Collection -> entry.divisions
+                .asSequence()
+                .flatMap(Division::walk)
+                .flatMap { it.items.asSequence() }
+        }
+    }
+    ?.find { it.setId == setId }

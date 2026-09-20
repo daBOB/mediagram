@@ -37,25 +37,11 @@ internal fun PosterCard(
     onClick: () -> Unit,
 ) {
     Column(modifier = modifier) {
-        Card(modifier = Modifier.aspectRatio(2f / 3f).clickable(onClick = onClick)) {
-            if (posterPath != null) {
-                AsyncImage(
-                    model = File(posterPath),
-                    contentDescription = title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            } else {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = initialsOf(title),
-                        style = MaterialTheme.typography.headlineMedium,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(Spacing.small),
-                    )
-                }
-            }
-        }
+        PosterArt(
+            posterPath = posterPath,
+            title = title,
+            modifier = Modifier.clickable(onClick = onClick),
+        )
         Text(
             text = title,
             style = MaterialTheme.typography.bodyMedium,
@@ -69,6 +55,38 @@ internal fun PosterCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+    }
+}
+
+/**
+ * The artwork alone, at a poster's proportions, with initials where there
+ * is no artwork.
+ *
+ * Split out of [PosterCard] because the title detail screen shows the same
+ * art without a name beneath it — the name is already in the bar above. One
+ * `AsyncImage` over one `File`, in one place: a second image path would be
+ * free to load, scale and fall back differently from the shelves.
+ */
+@Composable
+internal fun PosterArt(posterPath: String?, title: String, modifier: Modifier = Modifier) {
+    Card(modifier = modifier.aspectRatio(2f / 3f)) {
+        if (posterPath != null) {
+            AsyncImage(
+                model = File(posterPath),
+                contentDescription = title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    text = initialsOf(title),
+                    style = MaterialTheme.typography.headlineMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(Spacing.small),
+                )
+            }
         }
     }
 }

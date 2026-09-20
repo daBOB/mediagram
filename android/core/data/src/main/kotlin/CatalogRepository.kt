@@ -1,13 +1,25 @@
 package data
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import model.Kind
 import model.MediaSet
 import settings.LibrarySettings
 import uniffi.mediagram_core.SetSummary
+import uniffi.mediagram_core.ShowInfo
 
 interface CatalogRepository {
     suspend fun refresh(): Result<Int>
     suspend fun sets(): List<MediaSet>
+
+    /**
+     * What the index records about the title a poster key names, or nothing.
+     *
+     * Nothing is ordinary rather than exceptional: a course has no provider
+     * entry, and a library assembled without a TMDB key has no rows at all.
+     */
+    suspend fun showInfo(posterKey: String): ShowInfo?
 }
 
 /**
@@ -22,6 +34,7 @@ interface CatalogRepository {
 class DefaultCatalogRepository(
     private val coreProvider: CoreProvider,
     private val settings: LibrarySettings,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : CatalogRepository {
 
     /**
@@ -38,6 +51,17 @@ class DefaultCatalogRepository(
     override suspend fun sets(): List<MediaSet> {
         val core = coreProvider.awaitCore()
         return core.listSets().mapNotNull { toMediaSetOrNull(core, it) }
+    }
+
+    /**
+     * The core is awaited here rather than captured, as everywhere else, and
+     * the query itself runs on [dispatcher]: `showInfo` is not one of the
+     * generated suspend bindings, so it reads the catalog database on
+     * whichever thread calls it, and the caller is a composition on main.
+     */
+    override suspend fun showInfo(posterKey: String): ShowInfo? {
+        val core = coreProvider.awaitCore()
+        return withContext(dispatcher) { core.showInfo(posterKey) }
     }
 
     private fun toMediaSetOrNull(core: CoreClient, summary: SetSummary): MediaSet? {

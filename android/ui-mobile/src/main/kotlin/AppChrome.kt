@@ -23,12 +23,14 @@ import androidx.compose.ui.semantics.semantics
 
 /**
  * Where in the library a viewer currently is. The catalog is the root; a
- * collection is named after whatever course or show it opened; the system
- * screen sits alongside both rather than under either.
+ * collection is named after whatever course or show it opened; a title is
+ * named after itself, and is reachable from either; the system screen sits
+ * alongside all of them rather than under any.
  */
 sealed interface Destination {
     data object Catalog : Destination
     data class Collection(val name: String) : Destination
+    data class Title(val name: String) : Destination
     data object System : Destination
     data object TmdbKey : Destination
 }
@@ -41,6 +43,7 @@ sealed interface Destination {
 internal fun barTitleFor(destination: Destination): String = when (destination) {
     Destination.Catalog -> "Mediagram"
     is Destination.Collection -> destination.name
+    is Destination.Title -> destination.name
     Destination.System -> "System"
     Destination.TmdbKey -> "TMDB key"
 }
@@ -53,6 +56,7 @@ internal fun barTitleFor(destination: Destination): String = when (destination) 
 internal fun backLabelFor(destination: Destination): String? = when (destination) {
     Destination.Catalog -> null
     is Destination.Collection -> "Back"
+    is Destination.Title -> "Back"
     Destination.System -> "Back"
     Destination.TmdbKey -> "Back"
 }

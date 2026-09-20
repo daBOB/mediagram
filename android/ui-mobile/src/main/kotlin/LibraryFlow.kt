@@ -13,23 +13,33 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogViewModel
 import catalog.collection
+import catalog.mediaSet
 import system.PostersViewModel
 import uniffi.mediagram_core.PosterReport
 
 /**
- * The catalog, whichever show or course it opened, whichever set that
- * played, the system screen, and the TMDB key screen — the first screens
- * here with a real back-stack need.
+ * The catalog, whichever show or course it opened, whichever title that
+ * described, whichever set that played, the system screen, and the TMDB key
+ * screen — the first screens here with a real back-stack need.
  *
- * All four positions are saved rather than remembered: the Activity is
+ * All five positions are saved rather than remembered: the Activity is
  * fully destroyed and recreated on rotation (there is no
  * `android:configChanges`), and the singleton player survives that
  * regardless — without this, rotating away from an open set would drop
  * back to the catalog while the film kept playing underneath it.
  *
- * The collection is held as its key and looked up again, not kept as a tree:
- * a saved position has to survive the process being killed, and a key is a
- * short string where a course is a few hundred sets.
+ * The collection and the opened title are held as keys and looked up again,
+ * not kept as trees or sets: a saved position has to survive the process
+ * being killed, and a key is a short string where a course is a few hundred
+ * sets.
+ *
+ * The library branches below run from the top of the stack down: the player
+ * sits over a title, a title over the collection it was opened from, and
+ * that over the shelves — so clearing one position falls back to the one it
+ * was reached through, which is what makes back from the player land on the
+ * description rather than on the catalog. The system and key screens are
+ * not positions in that stack; they are reached from the menu over whatever
+ * is showing, and are left where they are among the branches.
  */
 @Composable
 internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
@@ -38,6 +48,7 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
     val postersViewModel: PostersViewModel = hiltViewModel()
     val postersState by postersViewModel.state.collectAsStateWithLifecycle()
     var openedSetId by rememberSaveable { mutableStateOf<String?>(null) }
+    var openedTitleId by rememberSaveable { mutableStateOf<String?>(null) }
     var openedCollection by rememberSaveable { mutableStateOf<String?>(null) }
     var showingSystem by rememberSaveable { mutableStateOf(false) }
     var showingTmdbKey by rememberSaveable { mutableStateOf(false) }
@@ -45,8 +56,10 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
     val setId = openedSetId
     // Derived from the collected state, so the collection appears of its
     // own accord when the library finishes loading — which is what brings a
-    // restored position back to the course it was in.
+    // restored position back to the course it was in. The opened title is
+    // resolved the same way and for the same reason.
     val collection = openedCollection?.let(catalogState::collection)
+    val title = openedTitleId?.let(catalogState::mediaSet)
 
     val menuActions = MenuActions(
         onSystem = { showingSystem = true },
@@ -84,6 +97,21 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
             }
         }
 
+        title != null -> {
+            BackHandler { openedTitleId = null }
+            LibraryScaffold(
+                destination = Destination.Title(title.title),
+                onBack = { openedTitleId = null },
+                menu = menuActions,
+            ) {
+                TitleDetailScreen(
+                    set = title,
+                    info = rememberShowInfo(title.posterKey, catalogViewModel::showInfo),
+                    onPlay = { openedSetId = title.setId },
+                )
+            }
+        }
+
         collection != null -> {
             BackHandler { openedCollection = null }
             LibraryScaffold(
@@ -91,7 +119,11 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
                 onBack = { openedCollection = null },
                 menu = menuActions,
             ) {
-                CollectionScreen(collection = collection, onPlay = { openedSetId = it })
+                CollectionScreen(
+                    collection = collection,
+                    info = rememberShowInfo(collection.posterKey, catalogViewModel::showInfo),
+                    onOpenTitle = { openedTitleId = it },
+                )
             }
         }
 
@@ -110,7 +142,7 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
             ) {
                 CatalogScreen(
                     state = catalogState,
-                    onPlay = { openedSetId = it },
+                    onOpenTitle = { openedTitleId = it },
                     onOpenCollection = { openedCollection = it },
                 )
             }

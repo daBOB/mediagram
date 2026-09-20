@@ -56,9 +56,14 @@ private fun collectionOf(root: Division, kind: CollectionKind): Entry.Collection
         kind = kind,
         name = root.title,
         // Every set in a show shares its poster, so the first one that has
-        // one stands for the whole of it.
+        // one stands for the whole of it. The key is taken the same way and
+        // for the same reason: the shows table holds one row per series, so
+        // whichever episode carries the key carries the whole show's.
         posterPath = divisions.firstNotNullOfOrNull { level ->
             level.items.firstNotNullOfOrNull(MediaSet::posterPath)
+        },
+        posterKey = divisions.firstNotNullOfOrNull { level ->
+            level.items.firstNotNullOfOrNull(MediaSet::posterKey)
         },
         count = divisions.sumOf { it.items.size },
         chapters = divisions.count { it.items.isNotEmpty() },

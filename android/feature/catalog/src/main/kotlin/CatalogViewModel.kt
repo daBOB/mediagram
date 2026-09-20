@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
+import uniffi.mediagram_core.ShowInfo
 import javax.inject.Inject
 
 /** Refreshes the catalog once, then groups it into shelves for the screen to render. */
@@ -34,6 +35,17 @@ class CatalogViewModel @Inject constructor(
             },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CatalogUiState.Loading)
+
+    /**
+     * What the index says about one title, for the screen that describes it
+     * before playing it.
+     *
+     * Asked for on demand rather than carried in [state]: the shelves hold
+     * a few hundred sets and a viewer opens one of them, so joining every
+     * synopsis into the catalog would do a few hundred queries to render
+     * one screen.
+     */
+    suspend fun showInfo(posterKey: String): ShowInfo? = repository.showInfo(posterKey)
 }
 
 /**
