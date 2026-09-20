@@ -1,5 +1,7 @@
 package data
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import settings.InMemoryPackageSettings
 import settings.PackageSettings
@@ -19,6 +21,13 @@ class FakeCore(
     override fun posterPath(posterKey: String): String? = null
     override fun totalSize(setId: String): Long = 0
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray = ByteArray(0)
+
+    var closed: Boolean = false
+        private set
+
+    override fun close() {
+        closed = true
+    }
 }
 
 /**
@@ -26,9 +35,10 @@ class FakeCore(
  * repository does with a core, not about waiting for one; [CoreProviderTest]
  * covers the waiting.
  */
-class ResolvedCoreProvider(private val core: CoreClient) : CoreProvider {
-    override suspend fun awaitCore(): CoreClient = core
-    override suspend fun coreOrNull(): CoreClient = core
+class ResolvedCoreProvider(private val client: CoreClient) : CoreProvider {
+    override val core: StateFlow<CoreClient?> = MutableStateFlow(client)
+    override suspend fun awaitCore(): CoreClient = client
+    override suspend fun coreOrNull(): CoreClient = client
     override suspend fun supply(apiId: Int, apiHash: String) = Unit
     override suspend fun forget() = Unit
 }

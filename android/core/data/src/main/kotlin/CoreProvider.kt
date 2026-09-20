@@ -1,10 +1,15 @@
 package data
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import settings.TelegramCredentials
 import settings.TelegramSettings
 
@@ -21,6 +26,18 @@ import settings.TelegramSettings
  */
 interface CoreProvider {
 
+    /**
+     * Which core is current, for callers that cannot suspend to ask — a
+     * data source being created on a loader thread, a ViewModel deciding
+     * whether the sign-in it is showing still refers to this identity.
+     *
+     * It is a flow rather than a getter because the answer changes: a
+     * start-over replaces the core, and anything holding the previous one
+     * would otherwise go on using an identity the person was told had been
+     * signed out.
+     */
+    val core: StateFlow<CoreClient?>
+
     /** The core, once there are credentials to build it from. Suspends until then. */
     suspend fun awaitCore(): CoreClient
 
@@ -30,12 +47,17 @@ interface CoreProvider {
     /** Stores an identity and builds the core from it. */
     suspend fun supply(apiId: Int, apiHash: String)
 
-    /** Forgets the stored identity and the core built from it. */
+    /** Closes the core and forgets the identity it was built from. */
     suspend fun forget()
 }
 
 /**
- * Builds at most one core per stored identity, on first demand.
+ * Builds at most one core per stored identity, on first demand, on
+ * [dispatcher].
+ *
+ * Never on the calling thread: the first build loads the native library,
+ * decrypts the stored identity through the keystore and stats the auth key
+ * file, and both callers reach this from the main dispatcher.
  *
  * [build] is passed in rather than called directly because the generated
  * `Core` class is final and belongs behind the dependency-injection seam;
@@ -45,6 +67,7 @@ interface CoreProvider {
  */
 class StoredCoreProvider(
     private val settings: TelegramSettings,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val build: (TelegramCredentials) -> CoreClient,
 ) : CoreProvider {
 
@@ -53,24 +76,40 @@ class StoredCoreProvider(
     private val mutex = Mutex()
 
     private val built = MutableStateFlow<CoreClient?>(null)
+    override val core: StateFlow<CoreClient?> = built.asStateFlow()
 
     override suspend fun awaitCore(): CoreClient = coreOrNull() ?: built.filterNotNull().first()
 
     override suspend fun coreOrNull(): CoreClient? = mutex.withLock {
-        built.value ?: settings.read()?.let { credentials ->
-            build(credentials).also { built.value = it }
+        built.value ?: withContext(dispatcher) {
+            settings.read()?.let { credentials -> build(credentials) }
+        }?.also { built.value = it }
+    }
+
+    /**
+     * Built before it is stored, so an identity that cannot produce a core
+     * is not left behind to be retried on every launch: a construction
+     * failure that had already been written would turn one bad entry into a
+     * crash loop with no way back to the first step.
+     */
+    override suspend fun supply(apiId: Int, apiHash: String) = mutex.withLock {
+        val credentials = TelegramCredentials(apiId, apiHash)
+        val client = withContext(dispatcher) {
+            build(credentials).also { settings.write(apiId, apiHash) }
         }
+        // Assigning last is what resumes whoever is parked in awaitCore().
+        built.value = client
     }
 
-    override suspend fun supply(apiId: Int, apiHash: String) {
-        settings.write(apiId, apiHash)
-        // Building here, rather than leaving it to the next caller, is what
-        // resumes whoever is already parked in awaitCore().
-        coreOrNull()
-    }
-
-    override suspend fun forget() = mutex.withLock {
-        settings.clear()
+    override suspend fun forget(): Unit = mutex.withLock {
+        val previous = built.value
         built.value = null
+        withContext(dispatcher) {
+            settings.clear()
+            // Closing, not just dropping: the core holds a live, authorised
+            // Telegram connection, and deleting the auth key file on disk
+            // does nothing to one that is already open.
+            previous?.close()
+        }
     }
 }

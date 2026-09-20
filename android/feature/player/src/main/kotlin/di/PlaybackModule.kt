@@ -51,8 +51,13 @@ object PlaybackModule {
         @ApplicationContext context: Context,
         coreProvider: CoreProvider,
         scope: CoroutineScope,
-    ): @JvmSuppressWildcards Deferred<ExoPlayer> =
-        scope.async { buildPlayer(context, coreProvider.awaitCore()) }
+    ): @JvmSuppressWildcards Deferred<ExoPlayer> = scope.async {
+        // Awaited once so the cache is not built on a device that has never
+        // been set up, then read per data source rather than captured: the
+        // player outlives a start-over, the core it reads through does not.
+        coreProvider.awaitCore()
+        buildPlayer(context) { coreProvider.core.value }
+    }
 
     @Provides
     @Singleton

@@ -20,4 +20,13 @@ interface CoreClient {
     fun posterPath(posterKey: String): String?
     fun totalSize(setId: String): Long
     suspend fun read(setId: String, offset: Long, len: Int): ByteArray
+
+    /**
+     * Drops the native core and, with it, the authenticated connection it
+     * holds open. Deleting the auth key file does not close a connection
+     * that is already up — it stays authorised as the account it signed in
+     * as, for as long as anything can still reach it. Signing a device out
+     * has to mean this as well.
+     */
+    fun close()
 }

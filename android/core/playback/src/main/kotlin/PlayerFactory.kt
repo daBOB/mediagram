@@ -18,10 +18,12 @@ import data.CoreClient
  * because building the cache does real disk/database I/O — see
  * [CacheProvider.get].
  */
-suspend fun cacheDataSourceFactory(context: Context, core: CoreClient): DataSource.Factory =
-    CacheDataSource.Factory()
-        .setCache(CacheProvider.get(context))
-        .setUpstreamDataSourceFactory(MlibDataSourceFactory(core))
+suspend fun cacheDataSourceFactory(
+    context: Context,
+    currentCore: () -> CoreClient?,
+): DataSource.Factory = CacheDataSource.Factory()
+    .setCache(CacheProvider.get(context))
+    .setUpstreamDataSourceFactory(MlibDataSourceFactory(currentCore))
 
 /**
  * An [ExoPlayer] that reads every set through the cache. No format hints
@@ -36,9 +38,10 @@ suspend fun cacheDataSourceFactory(context: Context, core: CoreClient): DataSour
  * call back on its own (main) thread once the cache's I/O — the only real
  * work here — has finished on whatever dispatcher [CacheProvider.get] used.
  */
-suspend fun buildPlayer(context: Context, core: CoreClient): ExoPlayer =
+suspend fun buildPlayer(context: Context, currentCore: () -> CoreClient?): ExoPlayer =
     ExoPlayer.Builder(context)
         .setMediaSourceFactory(
-            DefaultMediaSourceFactory(context).setDataSourceFactory(cacheDataSourceFactory(context, core)),
+            DefaultMediaSourceFactory(context)
+                .setDataSourceFactory(cacheDataSourceFactory(context, currentCore)),
         )
         .build()

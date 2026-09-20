@@ -26,4 +26,9 @@ class DefaultCoreClient(private val core: Core) : CoreClient {
 
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray =
         core.read(setId, offset.toULong(), len.toUInt())
+
+    // The generated object is a handle on a Rust value; closing it releases
+    // that value and every connection inside it. A later call on a closed
+    // handle throws rather than quietly working, which is the point.
+    override fun close() = core.close()
 }

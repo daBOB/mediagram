@@ -31,4 +31,6 @@ class FakeCore(
         val clampedLen = minOf(len.toLong(), totalSize - offset).toInt()
         return bytesOf(offset, clampedLen)
     }
+
+    override fun close() = Unit
 }

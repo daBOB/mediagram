@@ -27,7 +27,7 @@ class PlayerFactoryTest {
     fun theCacheWrapsTheMlibSource() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
 
-        val factory = cacheDataSourceFactory(context, FakeCore())
+        val factory = cacheDataSourceFactory(context) { FakeCore() }
 
         assertTrue(factory.createDataSource() is CacheDataSource)
     }
