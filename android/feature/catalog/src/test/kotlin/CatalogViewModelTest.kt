@@ -3,6 +3,7 @@ package catalog
 import app.cash.turbine.test
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -62,6 +63,46 @@ class CatalogViewModelTest {
         vm.state.test {
             awaitItem()
             assertEquals("refresh failed", (awaitItem() as CatalogUiState.Ready).notice)
+        }
+    }
+
+    /**
+     * The whole point of the menu action. The state flow used to be a cold
+     * flow handed straight to `stateIn`, so it ran once per subscription
+     * and never again — asking for the library a second time was something
+     * only a force-stop could do.
+     */
+    @Test
+    fun askingAgainReadsTheChannelAgain() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val repository = FakeCatalogRepository(movies = 2)
+        val vm = CatalogViewModel(repository)
+        vm.state.test {
+            awaitItem()
+            awaitItem() as CatalogUiState.Ready
+            assertEquals(1, repository.refreshes)
+
+            vm.reload()
+            advanceUntilIdle()
+
+            assertEquals(2, repository.refreshes)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /** A reload puts the shelves back to loading, so the screen is not left showing a stale library as current. */
+    @Test
+    fun askingAgainSaysItIsLoadingBeforeItAnswers() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val vm = CatalogViewModel(FakeCatalogRepository(movies = 2))
+        vm.state.test {
+            awaitItem()
+            awaitItem() as CatalogUiState.Ready
+
+            vm.reload()
+
+            assertEquals(CatalogUiState.Loading, awaitItem())
+            cancelAndIgnoreRemainingEvents()
         }
     }
 

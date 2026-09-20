@@ -19,12 +19,18 @@ class FakeCatalogRepository(
             (0 until episodes).map { fakeSet(Kind.EPISODE, "episode-$it") } +
             (0 until tutorials).map { fakeSet(Kind.TUTORIAL, "tutorial-$it") }
 
-    override suspend fun refresh(): Result<Int> =
-        if (refreshFails) {
+    /** How many times the channel has been asked, which is what a reload has to move. */
+    var refreshes: Int = 0
+        private set
+
+    override suspend fun refresh(): Result<Int> {
+        refreshes += 1
+        return if (refreshFails) {
             Result.failure(IllegalStateException("refresh failed"))
         } else {
             Result.success(allSets.size)
         }
+    }
 
     override suspend fun sets(): List<MediaSet> = if (onDisk) allSets else emptyList()
 

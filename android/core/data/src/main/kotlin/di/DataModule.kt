@@ -11,6 +11,7 @@ import data.CoreProvider
 import data.CoreStorage
 import data.DefaultCatalogRepository
 import data.FileCoreStorage
+import data.RefreshLog
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import settings.EncryptedLibrarySettings
@@ -58,10 +59,19 @@ object DataModule {
         dispatcher: CoroutineDispatcher,
     ): CoreStorage = FileCoreStorage(context.filesDir, dispatcher)
 
+    // One per process, like the counters it is shaped after: the catalog
+    // writes what a refresh did and the System screen reads it back, and a
+    // second instance would leave the screen reporting on refreshes that
+    // never happened.
+    @Provides
+    @Singleton
+    fun provideRefreshLog(): RefreshLog = RefreshLog()
+
     @Provides
     @Singleton
     fun provideCatalogRepository(
         coreProvider: CoreProvider,
         settings: LibrarySettings,
-    ): CatalogRepository = DefaultCatalogRepository(coreProvider, settings)
+        refreshes: RefreshLog,
+    ): CatalogRepository = DefaultCatalogRepository(coreProvider, settings, refreshes)
 }

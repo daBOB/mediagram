@@ -1195,6 +1195,29 @@ public object FfiConverterULong: FfiConverter<ULong, Long> {
 /**
  * @suppress
  */
+public object FfiConverterLong: FfiConverter<Long, Long> {
+    override fun lift(value: Long): Long {
+        return value
+    }
+
+    override fun read(buf: ByteBuffer): Long {
+        return buf.getLong()
+    }
+
+    override fun lower(value: Long): Long {
+        return value
+    }
+
+    override fun allocationSize(value: Long) = 8UL
+
+    override fun write(value: Long, buf: ByteBuffer) {
+        buf.putLong(value)
+    }
+}
+
+/**
+ * @suppress
+ */
 public object FfiConverterDouble: FfiConverter<Double, Double> {
     override fun lift(value: Double): Double {
         return value
@@ -1962,6 +1985,13 @@ data class CatalogFacts (
     var `posters`: kotlin.ULong
     , 
     var `schema`: kotlin.UInt
+    , 
+    /**
+     * Seconds since the epoch when the installed catalogue was pushed,
+     * read from the installed version's own name. `None` when nothing is
+     * installed, or the name cannot be read.
+     */
+    var `publishedAt`: kotlin.Long?
     
 ){
     
@@ -1982,6 +2012,7 @@ public object FfiConverterTypeCatalogFacts: FfiConverterRustBuffer<CatalogFacts>
             FfiConverterULong.read(buf),
             FfiConverterULong.read(buf),
             FfiConverterUInt.read(buf),
+            FfiConverterOptionalLong.read(buf),
         )
     }
 
@@ -1989,7 +2020,8 @@ public object FfiConverterTypeCatalogFacts: FfiConverterRustBuffer<CatalogFacts>
             FfiConverterString.allocationSize(value.`origin`) +
             FfiConverterULong.allocationSize(value.`sets`) +
             FfiConverterULong.allocationSize(value.`posters`) +
-            FfiConverterUInt.allocationSize(value.`schema`)
+            FfiConverterUInt.allocationSize(value.`schema`) +
+            FfiConverterOptionalLong.allocationSize(value.`publishedAt`)
     )
 
     override fun write(value: CatalogFacts, buf: ByteBuffer) {
@@ -1997,6 +2029,7 @@ public object FfiConverterTypeCatalogFacts: FfiConverterRustBuffer<CatalogFacts>
             FfiConverterULong.write(value.`sets`, buf)
             FfiConverterULong.write(value.`posters`, buf)
             FfiConverterUInt.write(value.`schema`, buf)
+            FfiConverterOptionalLong.write(value.`publishedAt`, buf)
     }
 }
 
@@ -2535,6 +2568,38 @@ public object FfiConverterOptionalUInt: FfiConverterRustBuffer<kotlin.UInt?> {
         } else {
             buf.put(1)
             FfiConverterUInt.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalLong: FfiConverterRustBuffer<kotlin.Long?> {
+    override fun read(buf: ByteBuffer): kotlin.Long? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterLong.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.Long?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterLong.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.Long?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterLong.write(value, buf)
         }
     }
 }

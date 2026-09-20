@@ -16,11 +16,23 @@ class FakeCore(
     private val sets: List<SetSummary> = emptyList(),
     private val refreshResult: Long = 0L,
     private val libraries: List<LibraryChoice> = emptyList(),
+    /**
+     * What each reading of [catalogFacts] says the installed snapshot was
+     * pushed at, in order. A refresh takes one reading either side of
+     * itself, so two entries are a push that landed; the last entry stands
+     * for every reading after it, so one entry is a library that never
+     * changes.
+     */
+    private val publishedAt: List<Long?> = listOf(null),
+    /** The sentence [refreshLibrary] raises with, or `null` when it succeeds. */
+    private val refreshFails: String? = null,
 ) : CoreClient {
 
     /** Which handle the last refresh was asked for, or `null` if none was. */
     var refreshedHandle: String? = null
         private set
+
+    private var readings = 0
 
     override fun isAuthorized(): Boolean = true
     override suspend fun requestCode(phone: String): String = "token"
@@ -30,6 +42,7 @@ class FakeCore(
 
     override suspend fun refreshLibrary(handle: String): Long {
         refreshedHandle = handle
+        refreshFails?.let { error(it) }
         return refreshResult
     }
 
@@ -38,7 +51,8 @@ class FakeCore(
     override fun posterPath(posterKey: String): String? = null
     override fun showInfo(posterKey: String): ShowInfo? = null
     override fun totalSize(setId: String): Long = 0
-    override fun catalogFacts(): CatalogFacts = CatalogFacts("channel", 0uL, 0uL, 0u)
+    override fun catalogFacts(): CatalogFacts =
+        CatalogFacts("channel", 0uL, 0uL, 0u, publishedAt[minOf(readings++, publishedAt.lastIndex)])
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray = ByteArray(0)
     override suspend fun fetchPosters(tmdbKey: String, language: String): PosterReport =
         PosterReport(0u, 0u, 0u, 0u)

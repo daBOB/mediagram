@@ -62,27 +62,30 @@ internal fun backLabelFor(destination: Destination): String? = when (destination
 }
 
 /**
- * The four things the overflow menu can do. Two of them — fetch posters and
+ * The five things the overflow menu can do. Two of them — fetch posters and
  * the TMDB key — are named with an ellipsis because they open something
  * rather than doing it outright, which is the difference between a menu
- * item and a button that starts a network run without warning.
+ * item and a button that starts a network run without warning. Refreshing
+ * the library has none, because it does the thing.
  *
- * [fetchPostersDisabledReason] is `null` when the action is available and
- * a sentence when it is not — no key stored, or a run already in flight.
- * An item that silently does nothing is worse than one that says why it
+ * The two disabled reasons are `null` when their action is available and a
+ * sentence when it is not — no key stored, or a run already in flight. An
+ * item that silently does nothing is worse than one that says why it
  * cannot, so the reason is shown, not just the disabled state.
  */
 data class MenuActions(
     val onSystem: () -> Unit,
     val onFetchPosters: () -> Unit,
     val onTmdbKey: () -> Unit,
+    val onRefresh: () -> Unit,
     val onStartOver: () -> Unit,
     val fetchPostersDisabledReason: String? = null,
+    val refreshDisabledReason: String? = null,
 )
 
 /**
  * The app's one piece of chrome: a bar with a title, a way back where the
- * destination has one, and an overflow menu that is the same four items
+ * destination has one, and an overflow menu that is the same five items
  * wherever it is opened from. Every non-player screen renders its content
  * through this.
  *
@@ -131,21 +134,19 @@ fun LibraryScaffold(
                             text = { Text("System") },
                             onClick = { menuExpanded = false; menu.onSystem() },
                         )
-                        DropdownMenuItem(
-                            text = {
-                                Column {
-                                    Text("Fetch posters…")
-                                    menu.fetchPostersDisabledReason?.let { reason ->
-                                        Text(reason, style = MaterialTheme.typography.bodySmall)
-                                    }
-                                }
-                            },
-                            enabled = menu.fetchPostersDisabledReason == null,
+                        MenuItem(
+                            label = "Fetch posters…",
+                            disabledReason = menu.fetchPostersDisabledReason,
                             onClick = { menuExpanded = false; menu.onFetchPosters() },
                         )
                         DropdownMenuItem(
                             text = { Text("TMDB key…") },
                             onClick = { menuExpanded = false; menu.onTmdbKey() },
+                        )
+                        MenuItem(
+                            label = "Refresh library",
+                            disabledReason = menu.refreshDisabledReason,
+                            onClick = { menuExpanded = false; menu.onRefresh() },
                         )
                         DropdownMenuItem(
                             text = { Text("Start over") },
@@ -163,5 +164,24 @@ fun LibraryScaffold(
         asking = askingStartOver,
         onDismiss = { askingStartOver = false },
         onConfirm = menu.onStartOver,
+    )
+}
+
+/**
+ * An item that can be unavailable, and says why underneath its own label
+ * when it is. A greyed row with nothing under it leaves a viewer tapping at
+ * it to find out what is wrong.
+ */
+@Composable
+private fun MenuItem(label: String, disabledReason: String?, onClick: () -> Unit) {
+    DropdownMenuItem(
+        text = {
+            Column {
+                Text(label)
+                disabledReason?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            }
+        },
+        enabled = disabledReason == null,
+        onClick = onClick,
     )
 }

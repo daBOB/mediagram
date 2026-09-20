@@ -34,6 +34,7 @@ interface CatalogRepository {
 class DefaultCatalogRepository(
     private val coreProvider: CoreProvider,
     private val settings: LibrarySettings,
+    private val refreshes: RefreshLog,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : CatalogRepository {
 
@@ -42,11 +43,23 @@ class DefaultCatalogRepository(
      * is read per call rather than held, for the same reason the core is:
      * a "start over" replaces both, and a repository that had captured
      * either would go on refreshing a library the person had given back.
+     *
+     * What it did is recorded on the way through. The installed snapshot's
+     * push time is read either side of the call and compared: both reads
+     * are local — a symlink's own name — against a network round trip
+     * between them, so the second costs nothing worth avoiding. Nothing
+     * installed before and a time after is the first run, and that is
+     * [RefreshOutcome.Updated] rather than a mistake.
      */
     override suspend fun refresh(): Result<Int> = runCatching {
         val handle = settings.read() ?: error("No library has been chosen on this device")
-        coreProvider.awaitCore().refreshLibrary(handle).toInt()
-    }
+        val core = coreProvider.awaitCore()
+        val before = core.catalogFacts().publishedAt
+        val sets = core.refreshLibrary(handle).toInt()
+        val after = core.catalogFacts().publishedAt
+        refreshes.record(if (after == before) RefreshOutcome.AlreadyCurrent else RefreshOutcome.Updated)
+        sets
+    }.onFailure { refreshes.record(RefreshOutcome.Refused(it.refreshSentence())) }
 
     override suspend fun sets(): List<MediaSet> {
         val core = coreProvider.awaitCore()

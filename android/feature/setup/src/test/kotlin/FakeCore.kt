@@ -56,7 +56,7 @@ class FakeCore(
     override fun posterPath(posterKey: String): String? = null
     override fun showInfo(posterKey: String): ShowInfo? = null
     override fun totalSize(setId: String): Long = 0
-    override fun catalogFacts(): CatalogFacts = CatalogFacts("channel", 0uL, 0uL, 0u)
+    override fun catalogFacts(): CatalogFacts = CatalogFacts("channel", 0uL, 0uL, 0u, null)
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray = ByteArray(0)
     override suspend fun fetchPosters(tmdbKey: String, language: String): PosterReport =
         PosterReport(0u, 0u, 0u, 0u)

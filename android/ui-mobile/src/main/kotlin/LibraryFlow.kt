@@ -6,11 +6,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.collection
 import catalog.mediaSet
@@ -20,18 +18,8 @@ import uniffi.mediagram_core.PosterReport
 /**
  * The catalog, whichever show or course it opened, whichever title that
  * described, whichever set that played, the system screen, and the TMDB key
- * screen — the first screens here with a real back-stack need.
- *
- * All five positions are saved rather than remembered: the Activity is
- * fully destroyed and recreated on rotation (there is no
- * `android:configChanges`), and the singleton player survives that
- * regardless — without this, rotating away from an open set would drop
- * back to the catalog while the film kept playing underneath it.
- *
- * The collection and the opened title are held as keys and looked up again,
- * not kept as trees or sets: a saved position has to survive the process
- * being killed, and a key is a short string where a course is a few hundred
- * sets.
+ * screen — the first screens here with a real back-stack need. Where those
+ * positions are kept, and why, is [LibraryPositions].
  *
  * The library branches below run from the top of the stack down: the player
  * sits over a title, a title over the collection it was opened from, and
@@ -47,84 +35,64 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
     val catalogState by catalogViewModel.state.collectAsStateWithLifecycle()
     val postersViewModel: PostersViewModel = hiltViewModel()
     val postersState by postersViewModel.state.collectAsStateWithLifecycle()
-    var openedSetId by rememberSaveable { mutableStateOf<String?>(null) }
-    var openedTitleId by rememberSaveable { mutableStateOf<String?>(null) }
-    var openedCollection by rememberSaveable { mutableStateOf<String?>(null) }
-    var showingSystem by rememberSaveable { mutableStateOf(false) }
-    var showingTmdbKey by rememberSaveable { mutableStateOf(false) }
+    val at = rememberLibraryPositions()
 
-    val setId = openedSetId
+    val setId = at.setId
     // Derived from the collected state, so the collection appears of its
     // own accord when the library finishes loading — which is what brings a
     // restored position back to the course it was in. The opened title is
     // resolved the same way and for the same reason.
-    val collection = openedCollection?.let(catalogState::collection)
-    val title = openedTitleId?.let(catalogState::mediaSet)
+    val collection = at.collection?.let(catalogState::collection)
+    val title = at.titleId?.let(catalogState::mediaSet)
 
     val menuActions = MenuActions(
-        onSystem = { showingSystem = true },
+        onSystem = { at.system = true },
         onFetchPosters = postersViewModel::fetch,
-        onTmdbKey = { showingTmdbKey = true },
+        onTmdbKey = { at.tmdbKey = true },
+        // The menu is the same wherever it opens, so this is reachable from
+        // the system and key screens, where a reloading catalog is
+        // invisible. You asked for the library; the library is what you are
+        // shown.
+        onRefresh = { at.toCatalog(); catalogViewModel.reload() },
         onStartOver = onStartOver,
         fetchPostersDisabledReason = fetchPostersDisabledReason(postersState.running, postersState.hasKey),
+        refreshDisabledReason = refreshDisabledReason(catalogState),
     )
 
     when {
         setId != null -> {
             // The player gets the whole window; a film is the one thing here
             // that wants the space under the system bars.
-            BackHandler { openedSetId = null }
-            PlayerScreen(setId = setId, onBack = { openedSetId = null })
+            BackHandler { at.setId = null }
+            PlayerScreen(setId = setId, onBack = { at.setId = null })
         }
 
-        showingSystem -> {
-            BackHandler { showingSystem = false }
-            LibraryScaffold(
-                destination = Destination.System,
-                onBack = { showingSystem = false },
-                menu = menuActions,
-            ) { SystemScreen() }
+        at.system -> LibraryBranch(Destination.System, menuActions, { at.system = false }) {
+            SystemScreen()
         }
 
-        showingTmdbKey -> {
-            BackHandler { showingTmdbKey = false }
-            LibraryScaffold(
-                destination = Destination.TmdbKey,
-                onBack = { showingTmdbKey = false },
-                menu = menuActions,
-            ) {
-                TmdbKeyScreen(hasKey = postersState.hasKey, onSave = postersViewModel::saveKey)
-            }
+        at.tmdbKey -> LibraryBranch(Destination.TmdbKey, menuActions, { at.tmdbKey = false }) {
+            TmdbKeyScreen(hasKey = postersState.hasKey, onSave = postersViewModel::saveKey)
         }
 
-        title != null -> {
-            BackHandler { openedTitleId = null }
-            LibraryScaffold(
-                destination = Destination.Title(title.title),
-                onBack = { openedTitleId = null },
-                menu = menuActions,
-            ) {
-                TitleDetailScreen(
-                    set = title,
-                    info = rememberShowInfo(title.posterKey, catalogViewModel::showInfo),
-                    onPlay = { openedSetId = title.setId },
-                )
-            }
+        title != null -> LibraryBranch(Destination.Title(title.title), menuActions, { at.titleId = null }) {
+            TitleDetailScreen(
+                set = title,
+                info = rememberShowInfo(title.posterKey, catalogViewModel::showInfo),
+                onPlay = { at.setId = title.setId },
+            )
         }
 
-        collection != null -> {
-            BackHandler { openedCollection = null }
-            LibraryScaffold(
-                destination = Destination.Collection(collection.name),
-                onBack = { openedCollection = null },
-                menu = menuActions,
-            ) {
-                CollectionScreen(
-                    collection = collection,
-                    info = rememberShowInfo(collection.posterKey, catalogViewModel::showInfo),
-                    onOpenTitle = { openedTitleId = it },
-                )
-            }
+        collection != null -> LibraryBranch(
+            destination = Destination.Collection(collection.name),
+            menu = menuActions,
+            onLeave = { at.collection = null },
+        ) {
+            CollectionScreen(
+                collection = collection,
+                info = rememberShowInfo(collection.posterKey, catalogViewModel::showInfo),
+                onOpenTitle = { at.titleId = it },
+            )
         }
 
         // Also where a saved key lands while the library is still loading,
@@ -132,7 +100,7 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
         // the right thing to show in both cases, and clearing the key here
         // would throw away a position that is about to resolve.
         else -> {
-            // Never invoked: LibraryScaffold only wires this up when
+            // onBack is never invoked: LibraryScaffold only wires it up when
             // backLabelFor(Destination.Catalog) says there is a way back,
             // and there is not — the catalog is the top of the tree.
             LibraryScaffold(
@@ -142,8 +110,8 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
             ) {
                 CatalogScreen(
                     state = catalogState,
-                    onOpenTitle = { openedTitleId = it },
-                    onOpenCollection = { openedCollection = it },
+                    onOpenTitle = { at.titleId = it },
+                    onOpenCollection = { at.collection = it },
                 )
             }
         }
@@ -161,6 +129,17 @@ private fun fetchPostersDisabledReason(running: Boolean, hasKey: Boolean): Strin
     !hasKey -> "No TMDB key stored"
     else -> null
 }
+
+/**
+ * Why "Refresh library" cannot be tapped right now, or `null` when it can.
+ *
+ * Loading is the whole answer: the catalog's flow emits it for as long as a
+ * read of the channel is in flight, whether that read was the automatic one
+ * at startup or one somebody asked for. A second flag counting the same
+ * thing could disagree with it.
+ */
+private fun refreshDisabledReason(state: CatalogUiState): String? =
+    if (state is CatalogUiState.Loading) "Refreshing…" else null
 
 /** The sentence a finished or failed fetch leaves behind, or `null` while there is nothing to say. */
 private fun posterFetchResultMessage(report: PosterReport?, error: String?): String? = when {
