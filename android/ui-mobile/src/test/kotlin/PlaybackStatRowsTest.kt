@@ -35,6 +35,16 @@ class PlaybackStatRowsTest {
         assertEquals("1920×800 VP9", videoStatLine(width = 1920, height = 800, codec = "video/x-vnd.on2.vp9", bitrate = null))
     }
 
+    /**
+     * Most MIME names are already the codec's own name once stripped and
+     * upper-cased, so only the exceptions need a map entry — a table of
+     * every name media3 can emit is work nobody asked for.
+     */
+    @Test
+    fun aCodecAbsentFromTheMapGoesThroughTheFallbackUnchanged() {
+        assertEquals("1920×800 AVC", videoStatLine(width = 1920, height = 800, codec = "video/avc", bitrate = null))
+    }
+
     @Test
     fun audioNamesItsChannelsAndLanguage() {
         assertEquals("EAC3 5.1 German", audioStatLine(codec = "audio/eac3", channels = 6, language = "de"))
