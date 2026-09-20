@@ -9,6 +9,16 @@ to `main`. Full phase-by-phase detail lives in
 
 **Shipped**
 
+- One scrub bar and one clock, whichever way a title plays. A conversion is
+  encoded as it plays, so the video element's own bar covered only what ffmpeg
+  had written and its clock counted from wherever the encode began — two
+  timelines beside each other, disagreeing by more the longer a title ran. The
+  native timeline and its time displays are now hidden while converting, and
+  this player's own bar is the only one; play, volume, fullscreen and the
+  subtitle menu stay native, which they were always right for. A title that
+  plays directly is untouched: its native bar has the real duration and is
+  fully seekable.
+
 - The next episode now actually starts when the countdown ends — nothing in
   the page had ever called `play()`, so "starting in 8…" opened the next
   title and left it paused. It waits for a minute buffered before it begins,

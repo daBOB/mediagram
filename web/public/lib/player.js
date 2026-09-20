@@ -190,9 +190,24 @@ function filmTime() {
   return base + (Number.isFinite(video.currentTime) ? video.currentTime : 0);
 }
 
+/**
+ * Shows this player's own timeline, and takes the native one away.
+ *
+ * A conversion is encoded as it plays, so the video element's own bar covers
+ * only what ffmpeg has written so far and its clock counts from wherever the
+ * encode started — both of which say something untrue about the film. Left
+ * beside this one they were two scrub bars and two clocks disagreeing, and
+ * disagreeing by more the longer a title ran.
+ *
+ * So exactly one of them is on screen at a time, from this one decision:
+ * `converting` hides the native timeline and its two time displays, leaving
+ * play, volume, fullscreen and the subtitle menu, which are right either way
+ * and which a hand-built copy would only do worse.
+ */
 function showJump(set) {
   const runtime = Number(set.duration) || 0;
   jump.hidden = runtime === 0;
+  dialog.classList.toggle("converting", !jump.hidden);
   if (jump.hidden) return;
   jumpTo.max = String(Math.floor(runtime));
   jumpTo.value = "0";
@@ -508,6 +523,7 @@ export function openPlayer(set, options = {}) {
 
   if (warning === null) {
     jump.hidden = true;
+    dialog.classList.remove("converting");
     capBits = null;
     // Watched too: the original is the stream most likely to be too much for
     // a link, since nothing caps what it was mastered at.
@@ -817,6 +833,9 @@ dialog.addEventListener("close", () => {
   summaryBox.textContent = "";
   notesButton.hidden = true;
   jump.hidden = true;
+  // The native bar is right again for whatever opens next, until something
+  // converting says otherwise.
+  dialog.classList.remove("converting");
   audio.hidden = true;
   ends.textContent = "";
   preload.textContent = "";

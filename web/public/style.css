@@ -1166,22 +1166,48 @@ dialog.resting .hud .picker { pointer-events: none; }
 
 /* The conversion's own scrub bar. Above the rail because the rail's note
    explains why it is there. */
+/* ---- the one timeline ----
+ *
+ * A converted title is encoded as it plays, so the video element's own bar
+ * reaches only as far as ffmpeg has written and its clock counts from
+ * wherever the encode began. Both are untrue about the film, so while
+ * `converting` the native timeline and its two time displays are taken away
+ * and this is the only scrub bar on screen.
+ *
+ * Only those three parts: play, volume, fullscreen and the subtitle menu are
+ * right either way, and a hand-built copy of them would be a worse one. */
+.converting video::-webkit-media-controls-timeline,
+.converting video::-webkit-media-controls-current-time-display,
+.converting video::-webkit-media-controls-time-remaining-display {
+  display: none;
+}
+
 .jump {
   display: flex;
   align-items: center;
   gap: 0.9rem;
   font-size: 0.75rem;
+  /* Clear of the native strip below, which still carries the buttons. */
+  margin-bottom: 0.35rem;
 }
+/* The label names the control for anyone who cannot see it; on screen the bar
+   is the only timeline there is and does not need telling apart from another. */
 .jump label {
-  color: var(--stage-ink-2);
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
   white-space: nowrap;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
 }
 .jump input {
   flex: 1;
   min-width: 0;
   accent-color: var(--stage-accent);
+  /* A film's length, not a slider's: wider than a form control, so it reads
+     as the thing you scrub rather than a setting you adjust. */
+  height: 1.1rem;
+  cursor: pointer;
 }
 .jump .at,
 .ends,
@@ -1199,6 +1225,14 @@ dialog.resting .hud .picker { pointer-events: none; }
 .preload { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); }
 /* Dimmer than the end time: it is a progress note, not a fact about the film. */
 .preload { color: var(--stage-rule); filter: brightness(2.1); }
+
+/* The film's clock, and while converting the only one on screen — so it is
+   set brighter than the notes beside it. After the rule it shares, because
+   both name `.jump .at` and the later one wins. */
+.jump .at {
+  color: var(--stage-ink);
+  font-size: 0.82rem;
+}
 
 .rail {
   display: flex;
