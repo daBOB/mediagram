@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Nothing this app stores may leave the device by any route Android offers.
+
+  android:allowBackup="false" alone stops cloud backup, and on API 30 and
+  below that was the whole story. From API 31 device-to-device transfer is a
+  separate channel with its own opt-out, so a phone migration would otherwise
+  copy the app's private directory to the new handset: session.key, which is
+  the Telegram authorization in the clear, and catalog/current/library.db,
+  which holds a chat id and a message id for every part of every set in the
+  library. Those locators are exactly what the core exists to keep inside
+  itself.
+
+  Both sections exclude every storage domain rather than the app root alone:
+  the backup engine walks file, database, sharedpref and external as domains
+  of their own, so excluding "root" would leave those subtrees included. An
+  <exclude> with no matching <include> means everything else is still backed
+  up, so the list has to be exhaustive.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+        <exclude domain="device_root" />
+        <exclude domain="device_file" />
+        <exclude domain="device_database" />
+        <exclude domain="device_sharedpref" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+        <exclude domain="device_root" />
+        <exclude domain="device_file" />
+        <exclude domain="device_database" />
+        <exclude domain="device_sharedpref" />
+    </device-transfer>
+</data-extraction-rules>

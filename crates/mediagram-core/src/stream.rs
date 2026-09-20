@@ -4,15 +4,29 @@
 //! the requested range. [`pump`] drives the transport and is deliberately thin
 //! around it, so the part that can corrupt a video is the part under test.
 
+use std::pin::Pin;
+
 use anyhow::{Context, Result, anyhow, bail};
+use bytes::Bytes;
+use futures::Stream;
 use grammers_client::Client;
 use grammers_client::media::Document;
 use grammers_session::types::PeerRef;
 use tokio::sync::mpsc;
 
-use crate::telegram::document::message_document;
-
+use super::catalog::PartLocation;
+use super::document::message_document;
 use super::range::Step;
+
+/// The bytes of a set's stream, in the order a viewer reads them.
+pub type ByteStream = Pin<Box<dyn Stream<Item = Result<Bytes, std::io::Error>> + Send>>;
+
+/// Where a stream's bytes come from. [`crate::telegram::TelegramSource`] is
+/// the real implementation; a test can supply a known file instead.
+pub trait ByteSource: Send + Sync + 'static {
+    /// The bytes of `steps`, in order, for a set whose parts are `locations`.
+    fn stream(&self, locations: Vec<PartLocation>, steps: Vec<Step>) -> ByteStream;
+}
 
 /// Trims one part's chunk stream to the bytes a [`Step`] asked for.
 ///

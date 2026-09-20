@@ -4,7 +4,7 @@
 
 pub mod archive;
 pub mod budget;
-pub mod encrypt;
+pub use mediagram_core::package::cipher as encrypt;
 pub mod latest;
 pub mod pointer;
 pub mod posters;

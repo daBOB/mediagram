@@ -1,0 +1,60 @@
+// media3 marks its extension surface @UnstableApi and may change it in any
+// minor release; see CacheProvider for why the version is pinned rather
+// than floored, and why this is androidx's opt-in and not Kotlin's.
+@file:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+
+package playback
+
+import android.content.Context
+import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.cache.CacheDataSource
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import data.CoreClient
+
+/**
+ * Wraps [MlibDataSourceFactory] in the process-wide disk cache: a cache hit
+ * never reaches the core, a miss falls through to [MlibDataSource]. `suspend`
+ * because building the cache does real disk/database I/O — see
+ * [CacheProvider.get].
+ */
+suspend fun cacheDataSourceFactory(
+    context: Context,
+    currentCore: () -> CoreClient?,
+): DataSource.Factory = CacheDataSource.Factory()
+    .setCache(CacheProvider.get(context))
+    .setUpstreamDataSourceFactory(MlibDataSourceFactory(currentCore))
+
+/**
+ * An [ExoPlayer] that reads every set through the cache. No format hints
+ * are given to [DefaultMediaSourceFactory] — its default
+ * `DefaultExtractorsFactory` sniffs the container, so Matroska, MP4 and
+ * whatever else the uploader wrote all work without per-title
+ * configuration, and nothing here transcodes anything.
+ *
+ * `suspend`, not because building an `ExoPlayer` itself is slow, but
+ * because [cacheDataSourceFactory] is: a caller that awaits this from a
+ * main-dispatched coroutine resumes the cheap `ExoPlayer.Builder().build()`
+ * call back on its own (main) thread once the cache's I/O — the only real
+ * work here — has finished on whatever dispatcher [CacheProvider.get] used.
+ */
+suspend fun buildPlayer(context: Context, currentCore: () -> CoreClient?): ExoPlayer =
+    ExoPlayer.Builder(context)
+        .setMediaSourceFactory(
+            DefaultMediaSourceFactory(context)
+                .setDataSourceFactory(cacheDataSourceFactory(context, currentCore)),
+        )
+        // Set in both directions because media3's defaults are not
+        // symmetrical — five seconds back, fifteen forward. A control that
+        // offers the same jump each way has to say so here; the buttons read
+        // their labels back off the player rather than carry their own copy.
+        .setSeekBackIncrementMs(SKIP_MS)
+        .setSeekForwardIncrementMs(SKIP_MS)
+        .build()
+
+/**
+ * How far one skip moves. Ten seconds is long enough to clear a line of
+ * dialogue that was missed and short enough that two of them are not a
+ * scene.
+ */
+private const val SKIP_MS = 10_000L

@@ -61,6 +61,27 @@ This file provides instructions and context for AI coding agents working on this
 6. **Capture Lessons**: Update `tasks/lessons.md` after corrections
 7. **Evolve Rules**: When lessons recur, propose CLAUDE.md updates (see §4)
 
+## Surface Parity
+
+The web player and the Android app are two surfaces over one library. A
+viewer who uses both should not have to learn them twice.
+
+- **Parity is the default.** A feature on one surface is owed to the other.
+  Shipping it once is half the job, not the whole of it.
+- **The web player is the reference.** It is further along and its behaviour
+  is already decided. Before building an Android surface that has a web
+  counterpart, read the web implementation and match the decisions it made —
+  how a shelf is grouped, what a card stands for, what happens to something
+  unrecognised. Re-deciding it separately is how the two drift.
+- **A deliberate difference is fine; a silent one is not.** Where a surface
+  must differ, write down why, where someone will find it: the Android
+  catalog has no posters because the pinned channel index carries none, and
+  the phase that chose that says so.
+- **Divergence is a defect in the newer surface.** "The categories are not
+  correct" was the Android catalog listing every episode as its own card
+  while the web player had long grouped them into shows. Treat a gap between
+  the two as a bug until shown otherwise.
+
 ## Core Principles
 - **Simplicity First**: Make every change as simple as possible. Impact minimal code.
 - **No Laziness**: Find root causes. No temporary fixes. Senior developer standards.
@@ -93,3 +114,4 @@ Bump before committing so the commit reflects the new version.
   bump. The player's manifest now carries `0.1.0` to match, so the two start in step.
 - 2025-01-XX: Added §4 Meta Self-Improvement loop; CLAUDE.md now updates itself with user approval. Fixed typos ("Plan Node" → "Plan Mode", "One tack" → "One task", "Minimat" → "Minimal").
 - 2026-09-18: Task Management steps 1 and 5 now name `plans/`, which is where planning has actually happened since the first phase; `tasks/todo.md` never existed and duplicated it. Lessons stay at `tasks/lessons.md`, which now exists — it was the half of the rule with no home.
+- 2026-09-20: Added Surface Parity, at the user's request. The Android catalog was listing every episode and lesson as its own card while the web player had long grouped them into shows and courses; it also dropped kinds it did not recognise where the web player deliberately keeps them visible. Both were the same mistake — deciding separately what had already been decided — so the web player is now named as the reference.

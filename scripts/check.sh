@@ -2,9 +2,9 @@
 #
 # Everything that must be true before work leaves this machine.
 #
-# One script rather than a list inside a hook, so the same three commands run
-# from a terminal, from the pre-push hook, and from CI if this repo ever gains
-# a remote. The whole thing takes a few seconds; there is no fast subset worth
+# One script rather than a list inside a hook, so the same commands run from a
+# terminal, from the pre-push hook, and from CI if this repo ever gains a
+# remote. The whole thing takes a few seconds; there is no fast subset worth
 # maintaining separately.
 set -euo pipefail
 
@@ -27,6 +27,17 @@ if [ -d web/node_modules ]; then
   (cd web && bun test)
 else
   echo "skipping: web dependencies are not installed (run 'cd web && bun install')"
+fi
+
+step "gradle test and lint"
+# Skipped rather than failed when there is no Android SDK: the uploader and
+# the player are usable without one, and an absent SDK is a setup state, not
+# a broken change. Neither task needs the cross-compiled native core, so this
+# stays a Kotlin-only build with no Rust toolchain in it.
+if [ -n "${ANDROID_HOME:-}" ]; then
+  (cd android && ./gradlew testDebugUnitTest lint)
+else
+  echo "skipping: no Android SDK (set ANDROID_HOME to run the Android checks)"
 fi
 
 printf '\n\033[1;32m==> all checks passed\033[0m\n'

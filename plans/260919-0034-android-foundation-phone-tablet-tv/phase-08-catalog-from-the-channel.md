@@ -5,7 +5,7 @@
 ## Overview
 
 - **Priority:** Blocking. The wizard's last step cannot be completed without it.
-- **Status:** Not started.
+- **Status:** Complete.
 - **Deliverable:** a signed-in device picks its library from a list and gets a catalog, with nothing hosted and nothing pasted.
 
 ## Why
@@ -101,7 +101,28 @@ URL and a key. Do not delete it, and do not wire it into the new flow.
 | An account in hundreds of channels | The list is what the account can see. Order it usefully and say what the ordering is. |
 | Silently picking the wrong pinned message | More than one pinned index is a real state the CLI warns about. Say it plainly. |
 
+## What the live gate showed
+
+Run against the real account and channel on the connected phone:
+
+1. The step came up as a list of channel titles — `Mediagram`, then the
+   series channels — with no text field anywhere on it.
+2. Picking `Mediagram` installed 514 playable sets. `mediagram status`
+   reports 514 for the same channel.
+3. 129 log lines from the run hold no dialog id, no message id and no
+   number long enough to be either.
+4. A force-stop and relaunch went straight to the Movies shelf.
+5. The first pick failed, and usefully: the channel had two index
+   snapshots pinned, and the screen said so and said which command unpins
+   the extras, with the list still there to pick from. `mediagram
+   push-index` resolved it, and the next pick succeeded.
+6. `files/libraries.json` exists, owner-only, at the path the reset
+   deletes. Signing the real device out was not run; the behaviour is
+   covered by the ViewModel and storage tests.
+7. The package reader and its tests are untouched and green.
+
 ## Next steps
 
-The TV surface renders this same list later — keep the selection logic in
-`feature/` with no composables, so `ui-tv` reuses it.
+The TV surface renders this same list later. The selection logic is in
+`feature/setup/Libraries.kt`, with no composables in it, so `ui-tv` reuses
+it as it stands.
