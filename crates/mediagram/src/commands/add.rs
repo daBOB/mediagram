@@ -37,6 +37,7 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
 
     let data_dir = cfg.data_dir()?;
     let api = TmdbClient::with_cache(
+        reqwest::Client::new(),
         cfg.tmdb_key.as_deref().unwrap_or(""),
         &data_dir,
         &cfg.tmdb_language,

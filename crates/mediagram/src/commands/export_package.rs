@@ -156,15 +156,18 @@ async fn fetch_posters(
     staging: &Staging,
     titles: &[(mlib_spec::Kind, u64)],
 ) -> Result<Vec<mlib_spec::package::PosterEntry>> {
+    // Built once and used for both the lookup and the download below —
+    // `TmdbClient` takes this same client rather than building its own.
+    let http = reqwest::Client::new();
     // Works with no key at all when the cache is warm, which is the normal
     // case: `add` cached these payloads when it resolved each title.
     let api = TmdbClient::with_cache(
+        http.clone(),
         cfg.tmdb_key.as_deref().unwrap_or(""),
         data_dir,
         &cfg.tmdb_language,
     );
     let refs = resolve_posters(&api, titles).await;
-    let http = reqwest::Client::new();
     staging.fetch_posters(&http, &refs).await
 }
 

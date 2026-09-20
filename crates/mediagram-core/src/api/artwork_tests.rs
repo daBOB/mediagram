@@ -38,18 +38,22 @@ fn a_transport_failure_is_not_mistaken_for_a_rejected_key() {
     assert!(!rejected_the_key(&err));
 }
 
-/// `TmdbClient::new` — inside a crate this one does not control — builds a
-/// bare `reqwest::Client` at construction time and panics immediately with
-/// no crypto provider installed, before a request is ever sent. `cargo
-/// test -p mediagram-core` (what this runs under, and what
-/// `scripts/build-android-core.sh` actually cross-compiles) has no wider
-/// workspace crate pulling a provider in for free the way a whole-workspace
-/// `cargo test --all` does, so this is the scope that would have shown the
-/// panic. No network is reached: the panic happens before any request, so
-/// proving construction alone succeeds once `install_provider` has run is
-/// the whole test.
+/// `TmdbClient::new` used to build a bare `reqwest::Client` of its own at
+/// construction time, inside a crate this one does not control — and it
+/// panicked immediately with no crypto provider installed, before a
+/// request was ever sent. `cargo test -p mediagram-core` (what this runs
+/// under, and what `scripts/build-android-core.sh` actually cross-compiles)
+/// has no wider workspace crate pulling a provider in for free the way a
+/// whole-workspace `cargo test --all` does, so this is the scope that would
+/// have shown the panic.
+///
+/// `TmdbClient` no longer builds a client of its own — it takes the one
+/// `http::client()` builds, which installs the provider itself — so this
+/// now proves the injected-client path construction succeeds end to end,
+/// with no separate `install_provider` call of this test's own needed
+/// first. No network is reached: `with_cache` only constructs.
 #[test]
-fn the_real_tmdb_client_builds_once_the_provider_is_installed() {
-    http::install_provider();
-    let _ = TmdbClient::with_cache("fake-key", Path::new("/tmp"), "en-US");
+fn the_real_tmdb_client_builds_from_this_crates_own_client() {
+    let client = http::client().expect("this crate's own client builds");
+    let _ = TmdbClient::with_cache(client, "fake-key", Path::new("/tmp"), "en-US");
 }

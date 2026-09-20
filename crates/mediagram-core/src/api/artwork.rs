@@ -62,13 +62,6 @@ pub(super) async fn fetch_posters(
     tmdb_key: String,
     language: String,
 ) -> Result<PosterReport, CoreError> {
-    // Every `reqwest::Client` built below — including the one
-    // `TmdbClient::new` builds for itself, inside a crate this one does not
-    // control — needs a crypto provider already installed, or it panics at
-    // construction rather than failing a request. This must run before the
-    // first client of any kind is built.
-    http::install_provider();
-
     let dir = std::fs::canonicalize(catalog::current_dir(core))
         .map_err(|_| CoreError::NotFound("no catalog is loaded yet".into()))?;
     let conn = Connection::open_with_flags(dir.join("library.db"), OpenFlags::SQLITE_OPEN_READ_ONLY)
@@ -85,8 +78,12 @@ pub(super) async fn fetch_posters(
     }
 
     let posters_dir = dir.join("posters");
+    // Built once, before either use: `TmdbClient` takes this same instance
+    // rather than building its own (see `mediagram_tmdb::tmdb_client`'s doc
+    // comment), so there is one client here, not two, and only `client()`'s
+    // own call to `install_provider` to account for.
     let client = http::client()?;
-    let api = TmdbClient::with_cache(&tmdb_key, &dir, &language);
+    let api = TmdbClient::with_cache(client.clone(), &tmdb_key, &dir, &language);
     verify_key(&api).await?;
     Ok(fetch_into(&api, &client, &posters_dir, &titles, without_id).await)
 }
