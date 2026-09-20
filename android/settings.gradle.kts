@@ -47,6 +47,7 @@ include(":ui-tv")
 // Feature modules - ViewModels and UiState only, no composables, no feature-to-feature deps
 include(":feature:catalog")
 include(":feature:player")
+include(":feature:setup")
 
 // Core modules - shared library code, direction is feature/ui -> core:data -> core:rust
 include(":core:designsystem")

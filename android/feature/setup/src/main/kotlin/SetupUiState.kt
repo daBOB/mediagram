@@ -1,0 +1,30 @@
+package setup
+
+/**
+ * Which of the three first-run questions is still outstanding.
+ *
+ * Derived every time from what is actually stored and what the core
+ * actually reports — never from a remembered position in the flow. A
+ * counter would be a second source of truth, and the two drift the moment
+ * Telegram invalidates a session from somewhere else: the counter would
+ * still say "done" while the core says "not signed in". Recomputing has no
+ * such failure, and it is also what makes the flow resumable, because a
+ * process killed halfway through leaves nothing to remember.
+ */
+sealed interface SetupUiState {
+
+    /** Storage has not answered yet — distinct from having answered "nothing stored". */
+    data object Checking : SetupUiState
+
+    /** Step one: the Telegram application identity, from my.telegram.org. */
+    data class NeedsApplication(val error: String? = null) : SetupUiState
+
+    /** Step two: phone, code and any two-factor password, through the login flow. */
+    data object NeedsSignIn : SetupUiState
+
+    /** Step three: the package address and the key that decrypts it. */
+    data class NeedsLibrary(val error: String? = null) : SetupUiState
+
+    /** Everything is stored and the session is live; the catalog can open. */
+    data object Ready : SetupUiState
+}
