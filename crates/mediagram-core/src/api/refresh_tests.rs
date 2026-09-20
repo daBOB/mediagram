@@ -15,8 +15,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 
 use super::*;
-use crate::api::identity;
-use crate::package::cipher;
+use crate::{api::identity, package::cipher};
 
 const KEY: [u8; 32] = [3u8; 32];
 
