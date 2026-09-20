@@ -26,8 +26,9 @@ import uniffi.mediagram_core.PosterReport
  * that over the shelves — so clearing one position falls back to the one it
  * was reached through, which is what makes back from the player land on the
  * description rather than on the catalog. The system and key screens are
- * not positions in that stack; they are reached from the menu over whatever
- * is showing, and are left where they are among the branches.
+ * not positions in that stack; they are one [MenuScreen] laid over whatever
+ * is showing, so leaving either uncovers the library screen underneath it
+ * and asking for one from the other is a move between them.
  */
 @Composable
 internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
@@ -38,6 +39,7 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
     val at = rememberLibraryPositions()
 
     val setId = at.setId
+    val menuScreen = at.menuScreen
     // Derived from the collected state, so the collection appears of its
     // own accord when the library finishes loading — which is what brings a
     // restored position back to the course it was in. The opened title is
@@ -46,14 +48,14 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
     val title = at.titleId?.let(catalogState::mediaSet)
 
     val menuActions = MenuActions(
-        onSystem = { at.system = true },
+        onSystem = { at.menuScreen = MenuScreen.System },
         // The menu is the same wherever it opens, so this is reachable from
         // the system and key screens, where a reloading catalog is
         // invisible. You asked for the library; the library is what you are
         // shown.
         onRefresh = { at.toCatalog(); catalogViewModel.reload() },
         onFetchPosters = postersViewModel::fetch,
-        onTmdbKey = { at.tmdbKey = true },
+        onTmdbKey = { at.menuScreen = MenuScreen.TmdbKey },
         onStartOver = onStartOver,
         refreshDisabledReason = refreshDisabledReason(catalogState),
         fetchPostersDisabledReason = fetchPostersDisabledReason(postersState.running, postersState.hasKey),
@@ -67,12 +69,21 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
             PlayerScreen(setId = setId, onBack = { at.setId = null })
         }
 
-        at.system -> LibraryBranch(Destination.System, menuActions, { at.system = false }) {
-            SystemScreen()
-        }
-
-        at.tmdbKey -> LibraryBranch(Destination.TmdbKey, menuActions, { at.tmdbKey = false }) {
-            TmdbKeyScreen(hasKey = postersState.hasKey, onSave = postersViewModel::saveKey)
+        // One branch for both, over the whole enum: a screen the menu
+        // opened is left the same way whichever it was, and a second
+        // branch here is what let one of them hide the other.
+        menuScreen != null -> LibraryBranch(
+            destination = menuScreen.destination,
+            menu = menuActions,
+            onLeave = { at.menuScreen = null },
+        ) {
+            when (menuScreen) {
+                MenuScreen.System -> SystemScreen()
+                MenuScreen.TmdbKey -> TmdbKeyScreen(
+                    hasKey = postersState.hasKey,
+                    onSave = postersViewModel::saveKey,
+                )
+            }
         }
 
         title != null -> LibraryBranch(Destination.Title(title.title), menuActions, { at.titleId = null }) {

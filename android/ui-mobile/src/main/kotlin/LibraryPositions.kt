@@ -9,11 +9,28 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 
 /**
+ * A screen the overflow menu opens, over whatever the library is showing,
+ * and the name the bar gives it.
+ *
+ * One value rather than a flag each, because only one of them is ever on
+ * screen and the menu that opens them is reachable from both of them. As
+ * two independent flags, asking for the key screen from the system screen
+ * set a flag the branch below never reached — nothing happened, and back
+ * then cleared the system screen and landed on a key screen the viewer had
+ * long since stopped asking for. A slot that holds one thing cannot do
+ * that: asking for a screen is a move, not an addition.
+ */
+internal enum class MenuScreen(val destination: Destination) {
+    System(Destination.System),
+    TmdbKey(Destination.TmdbKey),
+}
+
+/**
  * Where in the library a viewer currently is: whichever show or course the
  * catalog opened, whichever title that described, whichever set that
- * played, the system screen, and the TMDB key screen.
+ * played, and whichever screen the menu opened over them.
  *
- * All five are saved rather than remembered: the Activity is fully
+ * All four are saved rather than remembered: the Activity is fully
  * destroyed and recreated on rotation (there is no `android:configChanges`),
  * and the singleton player survives that regardless — without this,
  * rotating away from an open set would drop back to the catalog while the
@@ -28,14 +45,12 @@ internal class LibraryPositions(
     setId: MutableState<String?>,
     titleId: MutableState<String?>,
     collection: MutableState<String?>,
-    system: MutableState<Boolean>,
-    tmdbKey: MutableState<Boolean>,
+    menuScreen: MutableState<MenuScreen?>,
 ) {
     var setId: String? by setId
     var titleId: String? by titleId
     var collection: String? by collection
-    var system: Boolean by system
-    var tmdbKey: Boolean by tmdbKey
+    var menuScreen: MenuScreen? by menuScreen
 
     /**
      * Back to the shelves from wherever, all at once. Asked for by an
@@ -46,8 +61,7 @@ internal class LibraryPositions(
         setId = null
         titleId = null
         collection = null
-        system = false
-        tmdbKey = false
+        menuScreen = null
     }
 }
 
@@ -56,8 +70,7 @@ internal fun rememberLibraryPositions(): LibraryPositions = LibraryPositions(
     setId = rememberSaveable { mutableStateOf<String?>(null) },
     titleId = rememberSaveable { mutableStateOf<String?>(null) },
     collection = rememberSaveable { mutableStateOf<String?>(null) },
-    system = rememberSaveable { mutableStateOf(false) },
-    tmdbKey = rememberSaveable { mutableStateOf(false) },
+    menuScreen = rememberSaveable { mutableStateOf<MenuScreen?>(null) },
 )
 
 /**
