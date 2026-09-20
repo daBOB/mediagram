@@ -1,6 +1,7 @@
 package data
 
 import uniffi.mediagram_core.AuthOutcome
+import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.Core
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SetSummary
@@ -31,6 +32,8 @@ class DefaultCoreClient(private val core: Core) : CoreClient {
     override fun showInfo(posterKey: String): ShowInfo? = core.showInfo(posterKey)
 
     override fun totalSize(setId: String): Long = core.totalSize(setId).toLong()
+
+    override fun catalogFacts(): CatalogFacts = core.catalogFacts()
 
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray =
         core.read(setId, offset.toULong(), len.toUInt())

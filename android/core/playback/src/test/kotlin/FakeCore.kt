@@ -2,6 +2,7 @@ package playback
 
 import data.CoreClient
 import uniffi.mediagram_core.AuthOutcome
+import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SetSummary
@@ -35,6 +36,7 @@ class FakeCore(
     override fun posterPath(posterKey: String): String? = null
     override fun showInfo(posterKey: String): ShowInfo? = null
     override fun totalSize(setId: String): Long = totalSize
+    override fun catalogFacts(): CatalogFacts = CatalogFacts("channel", 0uL, 0uL, 0u)
 
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray {
         reads++

@@ -107,3 +107,16 @@ impl From<ShowRecord> for ShowInfo {
         }
     }
 }
+
+/// What the installed catalog is, for the System screen's "Catalogue" block:
+/// where it came from, how much it holds, and which schema it was written
+/// with. `schema` is this build's own `SCHEMA_VERSION`, not a value read out
+/// of the database — it says what the reader understands, not what any one
+/// file happens to claim.
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct CatalogFacts {
+    pub origin: String,
+    pub sets: u64,
+    pub posters: u64,
+    pub schema: u32,
+}

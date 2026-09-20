@@ -1,6 +1,7 @@
 package data
 
 import uniffi.mediagram_core.AuthOutcome
+import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.ShowInfo
@@ -44,6 +45,15 @@ interface CoreClient {
      */
     fun showInfo(posterKey: String): ShowInfo?
     fun totalSize(setId: String): Long
+
+    /**
+     * What the installed catalog is, for the System screen's "Catalogue"
+     * block: where it came from, how much it holds, and which schema it
+     * was written with. Never fails — a count that could not be taken
+     * reads back as zero, because a screen that cannot draw is worse than
+     * one that says a library is empty.
+     */
+    fun catalogFacts(): CatalogFacts
     suspend fun read(setId: String, offset: Long, len: Int): ByteArray
 
     /**

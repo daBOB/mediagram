@@ -10,15 +10,16 @@
 use std::path::{Path, PathBuf};
 
 use rusqlite::{Connection, OpenFlags};
-use serde::{Deserialize, Serialize};
 
 use crate::catalog as queries;
 use crate::dto::{self, SetSummary};
 
+use super::identity;
 use super::{Core, CoreError};
 
+pub(super) use identity::{identity_of, read_identity, write_identity};
+
 pub(super) const CURRENT: &str = "current";
-pub(super) const IDENTITY_FILE: &str = "identity.json";
 pub(super) const MANIFEST_FILE: &str = "manifest.json";
 
 pub(super) fn dir(core: &Core) -> PathBuf {
@@ -31,56 +32,6 @@ pub(super) fn current_dir(core: &Core) -> PathBuf {
 
 fn library_db(dir: &Path) -> PathBuf {
     dir.join("library.db")
-}
-
-/// The five fields the cipher authenticates — what "already held" means.
-/// Recorded only after a successful decrypt, never from `sha256`: that field
-/// is not authenticated, and a reader that treats it as identity can have an
-/// update suppressed by whoever last wrote the pointer.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub(super) struct Identity {
-    pub format: u32,
-    pub created_at: i64,
-    pub key_id: String,
-    pub schema: i64,
-    pub spec: u32,
-}
-
-pub(super) fn identity_of(pointer: &mlib_spec::package::LatestPointer) -> Identity {
-    Identity {
-        format: pointer.format,
-        created_at: pointer.created_at,
-        key_id: pointer.key_id.clone(),
-        schema: pointer.schema,
-        spec: pointer.spec,
-    }
-}
-
-/// The identity recorded when the version at `dir` was last decrypted.
-///
-/// `Ok(None)` means the file is simply absent — a legitimate first run, with
-/// nothing held yet. An existing file that cannot be read or parsed is
-/// `Err`, never folded into the same "nothing held" case: doing that would
-/// let deleting or corrupting this one file silently defeat the replay
-/// check that reads it, by making an old package look like the first one
-/// ever seen.
-pub(super) fn read_identity(dir: &Path) -> Result<Option<Identity>, CoreError> {
-    let path = dir.join(IDENTITY_FILE);
-    let text = match std::fs::read_to_string(&path) {
-        Ok(text) => text,
-        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-        Err(_) => return Err(CoreError::Io("reading the package identity".into())),
-    };
-    serde_json::from_str(&text)
-        .map(Some)
-        .map_err(|_| CoreError::Io("the package identity record is corrupt".into()))
-}
-
-pub(super) fn write_identity(dir: &Path, identity: &Identity) -> Result<(), CoreError> {
-    let text = serde_json::to_string(identity)
-        .map_err(|_| CoreError::Io("recording the package identity".into()))?;
-    std::fs::write(dir.join(IDENTITY_FILE), text)
-        .map_err(|_| CoreError::Io("recording the package identity".into()))
 }
 
 /// Opens a database read-only: nothing under `<data_dir>/catalog/` is this
@@ -141,39 +92,35 @@ pub(super) fn count_playable(dir: &Path) -> Result<u64, CoreError> {
     Ok(sets.len() as u64)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// `*.jpg` entries under `<current>/posters/`. An absent directory is zero
+/// posters, not a failure — the ordinary state before any artwork is fetched.
+fn count_posters(dir: &Path) -> u64 {
+    std::fs::read_dir(dir.join("posters"))
+        .map(|entries| {
+            entries
+                .filter_map(Result::ok)
+                .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "jpg"))
+                .count() as u64
+        })
+        .unwrap_or(0)
+}
 
-    fn identity() -> Identity {
-        Identity {
-            format: 1,
-            created_at: 1_781_568_000,
-            key_id: "9f2c41ab".into(),
-            schema: 6,
-            spec: 4,
-        }
+/// What the installed catalog is, for the System screen. Every count is
+/// collapsed to zero on any failure — opening the database, reading the
+/// posters directory — because this is read to draw a screen, and a screen
+/// that cannot draw is worse than one that says a library is empty.
+pub(super) fn facts(core: &Core) -> dto::CatalogFacts {
+    let dir = current_dir(core);
+    let origin = match read_identity(&dir) {
+        Ok(Some(_)) => "package",
+        _ => "channel",
     }
+    .to_string();
 
-    #[test]
-    fn a_written_identity_reads_back_equal() {
-        let dir = tempfile::tempdir().unwrap();
-        write_identity(dir.path(), &identity()).unwrap();
-        assert_eq!(read_identity(dir.path()).unwrap(), Some(identity()));
-    }
-
-    #[test]
-    fn no_identity_file_reads_back_as_nothing_held() {
-        let dir = tempfile::tempdir().unwrap();
-        assert_eq!(read_identity(dir.path()).unwrap(), None);
-    }
-
-    /// The case an absent file must never be confused with: corruption is a
-    /// refusal, not a silent "nothing held yet".
-    #[test]
-    fn a_corrupt_identity_file_is_refused_not_treated_as_absent() {
-        let dir = tempfile::tempdir().unwrap();
-        std::fs::write(dir.path().join(IDENTITY_FILE), b"not json").unwrap();
-        assert!(read_identity(dir.path()).is_err());
+    dto::CatalogFacts {
+        origin,
+        sets: count_playable(&dir).unwrap_or(0),
+        posters: count_posters(&dir),
+        schema: mlib_spec::schema::SCHEMA_VERSION as u32,
     }
 }

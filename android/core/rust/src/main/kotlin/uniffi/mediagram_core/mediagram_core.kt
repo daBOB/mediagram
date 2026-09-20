@@ -680,6 +680,8 @@ internal object IntegrityCheckingUniffiLib {
         uniffiCheckContractApiVersion(this)
         uniffiCheckApiChecksums(this)
     }
+    external fun uniffi_mediagram_core_checksum_method_core_catalog_facts(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_check_password(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_is_authorized(
@@ -730,6 +732,8 @@ internal object UniffiLib {
     ): Unit
     external fun uniffi_mediagram_core_fn_constructor_core_new(`dataDir`: RustBuffer.ByValue,`apiId`: Int,`apiHash`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
+    external fun uniffi_mediagram_core_fn_method_core_catalog_facts(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_mediagram_core_fn_method_core_check_password(`ptr`: Long,`password`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_is_authorized(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -873,6 +877,9 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 }
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_catalog_facts() and 0xFFFF) != 50153) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if ((lib.uniffi_mediagram_core_checksum_method_core_check_password() and 0xFFFF) != 18803) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1408,6 +1415,15 @@ public object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
  */
 public interface CoreInterface {
     
+    /**
+     * What the installed catalog is, for the screen that says so.
+     *
+     * Total failure is reported as zeroes rather than an error: this is
+     * read to draw a screen, and a screen that cannot draw because a count
+     * failed is worse than one that says a library is empty.
+     */
+    fun `catalogFacts`(): CatalogFacts
+    
     suspend fun `checkPassword`(`password`: kotlin.String)
     
     /**
@@ -1578,6 +1594,26 @@ open class Core: Disposable, AutoCloseable, CoreInterface
             UniffiLib.uniffi_mediagram_core_fn_clone_core(handle, status)
         }
     }
+
+    
+    /**
+     * What the installed catalog is, for the screen that says so.
+     *
+     * Total failure is reported as zeroes rather than an error: this is
+     * read to draw a screen, and a screen that cannot draw because a count
+     * failed is worse than one that says a library is empty.
+     */override fun `catalogFacts`(): CatalogFacts {
+            return FfiConverterTypeCatalogFacts.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_mediagram_core_fn_method_core_catalog_facts(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
     
     @Throws(CoreException::class)
@@ -1864,6 +1900,61 @@ public object FfiConverterTypeCore: FfiConverter<Core, Long> {
 
     override fun write(value: Core, buf: ByteBuffer) {
         buf.putLong(lower(value))
+    }
+}
+
+
+
+/**
+ * What the installed catalog is, for the System screen's "Catalogue" block:
+ * where it came from, how much it holds, and which schema it was written
+ * with. `schema` is this build's own `SCHEMA_VERSION`, not a value read out
+ * of the database — it says what the reader understands, not what any one
+ * file happens to claim.
+ */
+data class CatalogFacts (
+    var `origin`: kotlin.String
+    , 
+    var `sets`: kotlin.ULong
+    , 
+    var `posters`: kotlin.ULong
+    , 
+    var `schema`: kotlin.UInt
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCatalogFacts: FfiConverterRustBuffer<CatalogFacts> {
+    override fun read(buf: ByteBuffer): CatalogFacts {
+        return CatalogFacts(
+            FfiConverterString.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterUInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: CatalogFacts) = (
+            FfiConverterString.allocationSize(value.`origin`) +
+            FfiConverterULong.allocationSize(value.`sets`) +
+            FfiConverterULong.allocationSize(value.`posters`) +
+            FfiConverterUInt.allocationSize(value.`schema`)
+    )
+
+    override fun write(value: CatalogFacts, buf: ByteBuffer) {
+            FfiConverterString.write(value.`origin`, buf)
+            FfiConverterULong.write(value.`sets`, buf)
+            FfiConverterULong.write(value.`posters`, buf)
+            FfiConverterUInt.write(value.`schema`, buf)
     }
 }
 

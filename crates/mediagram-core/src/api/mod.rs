@@ -14,6 +14,7 @@ mod catalog;
 mod channel;
 mod channel_index;
 mod http;
+mod identity;
 mod library;
 mod read;
 mod refresh;
@@ -199,6 +200,15 @@ impl Core {
 
     pub fn total_size(&self, set_id: String) -> Result<u64, CoreError> {
         catalog::total_size(self, set_id)
+    }
+
+    /// What the installed catalog is, for the screen that says so.
+    ///
+    /// Total failure is reported as zeroes rather than an error: this is
+    /// read to draw a screen, and a screen that cannot draw because a count
+    /// failed is worse than one that says a library is empty.
+    pub fn catalog_facts(&self) -> crate::dto::CatalogFacts {
+        catalog::facts(self)
     }
 
     pub async fn read(&self, set_id: String, offset: u64, len: u32) -> Result<Vec<u8>, CoreError> {

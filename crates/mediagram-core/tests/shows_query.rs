@@ -62,3 +62,31 @@ fn a_malformed_key_is_refused_before_it_is_queried() {
 
     assert!(core.show_info("'; DROP TABLE shows; --".into()).is_none());
 }
+
+/// A key that begins with `tmdb-` and still carries an injection payload in
+/// its `kind` segment must be refused too, even when a row exists that
+/// would otherwise answer the query the parsed pieces describe. A row is
+/// planted under the exact malicious `kind` on purpose: if the key were let
+/// through unchecked, the query would find it and answer with its text,
+/// which is what proves the key never reached the query at all rather than
+/// merely matching nothing.
+#[test]
+fn a_key_carrying_an_injection_payload_is_refused_even_when_a_matching_row_exists() {
+    let dir = tempfile::tempdir().unwrap();
+    let current = dir.path().join("catalog").join("current");
+    std::fs::create_dir_all(&current).unwrap();
+    let conn = Connection::open(current.join("library.db")).unwrap();
+    for stmt in mlib_spec::schema::migrations_up_to(mlib_spec::schema::SCHEMA_VERSION) {
+        conn.execute(stmt, []).unwrap();
+    }
+    let malicious_kind = "movie'; DROP TABLE shows;";
+    conn.execute(
+        "INSERT INTO shows(source, kind, id, lang, overview)
+         VALUES ('tmdb', ?1, 11225, 'en-US', 'should never be read')",
+        rusqlite::params![malicious_kind],
+    )
+    .unwrap();
+    let core = mediagram_core::api::Core::new(dir.path().display().to_string(), 1, "test-hash".into());
+
+    assert!(core.show_info(format!("tmdb-{malicious_kind}-11225")).is_none());
+}
