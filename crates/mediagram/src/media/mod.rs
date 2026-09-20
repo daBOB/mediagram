@@ -1,7 +1,9 @@
-//! ffprobe inspection, HDR/quality classification, faststart detection and remux.
+//! ffprobe inspection, HDR/quality classification, faststart detection, remux,
+//! and the progress ffmpeg reports while it works.
 
 pub mod classify;
 pub mod direct_play;
+pub mod ffmpeg_progress;
 pub mod inspect;
 pub mod mp4_atoms;
 pub mod prepare_check;

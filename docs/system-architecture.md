@@ -45,7 +45,8 @@ commands/          one module per subcommand, each exposing `run(...)`
   args.rs            `add`'s clap argument struct
 
 media/             ffprobe inspection, HDR/quality classification,
-                   MP4 trailing-moov detection and faststart remux
+                   MP4 trailing-moov detection and faststart remux, and the
+                   reader that turns `ffmpeg -progress` into a terminal line
 metadata/          TMDB search/lookup, disk-cached HTTP, interactive prompt
                    for ambiguous matches
 upload/            hashing byte-range reader (part_reader), the Transport
@@ -53,6 +54,9 @@ upload/            hashing byte-range reader (part_reader), the Transport
                    per-set pipeline, adoption (resume-without-reupload), the
                    progress note and terminal line, and the flock that makes
                    uploads take turns across processes
+term.rs            drawing a line that rewrites itself, and the percentages
+                   and durations on it; a no-op off a terminal, so `prepare`
+                   and `upload` stay readable in a pipe
 index/             library.db: schema open/migrate, sets/parts CRUD,
                    rescan folding, snapshot/vacuum
 telegram/          grammers client construction + login flow, retry policy

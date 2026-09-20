@@ -127,6 +127,11 @@ than player work.
 
 **Shipped**
 
+- `prepare` says what it is doing while it does it: a count while it probes,
+  then one line per file carrying its position, size, speed and eta, read
+  from `ffmpeg -progress`. A season of remuxes was an hour of a cursor not
+  moving. ffmpeg's own complaint goes into the error now too, rather than
+  only its exit status.
 - `mediagram status` names a set before describing it, prints the id the
   advice below it refers to, and makes its numbers agree with their nouns.
   "waiting 1 set(s)" invited the question it was meant to answer.

@@ -10,12 +10,12 @@
 //! into a pipe or a log file produces one long unreadable line, so there the
 //! upload stays quiet and `tracing` remains the record.
 
-use std::io::{IsTerminal, Write};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 use super::progress::Progress;
+use crate::term;
 
 /// How often the line is redrawn. Fast enough to look alive, slow enough
 /// that a scrollback recording of the run stays readable.
@@ -29,7 +29,7 @@ pub struct Line {
 impl Line {
     /// Starts drawing, or returns `None` when stdout is not a terminal.
     pub fn start(counter: Arc<AtomicU64>, shape: Progress) -> Option<Line> {
-        if !std::io::stdout().is_terminal() {
+        if !term::watching() {
             return None;
         }
         let task = tokio::spawn(async move {
@@ -41,7 +41,7 @@ impl Line {
                     bytes_sent: counter.load(Ordering::Relaxed),
                     ..shape.clone()
                 };
-                draw(&render(&current, started.elapsed()));
+                term::redraw(&render(&current, started.elapsed()));
             }
         });
         Some(Line { task })
@@ -53,16 +53,8 @@ impl Drop for Line {
         self.task.abort();
         // Leave the cursor on a blank line, so whatever prints next — the
         // next part's line, or what the command has to say — starts clean.
-        draw("");
+        term::redraw("");
     }
-}
-
-/// Carriage return, then erase to end of line: the line is rewritten in
-/// place rather than scrolling a screen full of near-identical lines.
-fn draw(text: &str) {
-    let mut out = std::io::stdout();
-    let _ = write!(out, "\r\x1b[2K{text}");
-    let _ = out.flush();
 }
 
 /// The line itself. Pure, so what it says can be checked without a terminal.
@@ -78,16 +70,16 @@ fn render(p: &Progress, elapsed: Duration) -> String {
     );
     // With one part, the set is the part, and saying so twice says nothing.
     let share = if p.parts == 1 {
-        format!(" ({}%)", percent(sent, p.part_bytes))
+        format!(" ({}%)", term::percent(sent, p.part_bytes))
     } else {
-        format!(" · set {}%", percent(p.set_bytes_sent(), p.set_bytes))
+        format!(" · set {}%", term::percent(p.set_bytes_sent(), p.set_bytes))
     };
     let speed = match rate {
         Some(bytes_per_s) => format!(" · {:.1} MB/s", bytes_per_s / 1e6),
         None => String::new(),
     };
     let eta = match eta_seconds(p, rate) {
-        Some(seconds) => format!(" · eta {}", human_duration(seconds)),
+        Some(seconds) => format!(" · eta {}", term::human_duration(seconds)),
         None => String::new(),
     };
     format!("{part}{share}{speed}{eta}")
@@ -95,13 +87,6 @@ fn render(p: &Progress, elapsed: Duration) -> String {
 
 fn gb(bytes: u64) -> f64 {
     bytes as f64 / 1e9
-}
-
-fn percent(part: u64, whole: u64) -> u64 {
-    if whole == 0 {
-        return 0;
-    }
-    (part.min(whole) as f64 / whole as f64 * 100.0).round() as u64
 }
 
 /// `None` until there is enough of a sample to divide by: a rate quoted off
@@ -120,14 +105,6 @@ fn eta_seconds(p: &Progress, rate: Option<f64>) -> Option<u64> {
     }
     let remaining = p.set_bytes.saturating_sub(p.set_bytes_sent());
     Some((remaining as f64 / rate).round() as u64)
-}
-
-fn human_duration(seconds: u64) -> String {
-    match seconds {
-        s if s < 60 => format!("{s}s"),
-        s if s < 3600 => format!("{}m{:02}s", s / 60, s % 60),
-        s => format!("{}h{:02}m", s / 3600, (s % 3600) / 60),
-    }
 }
 
 #[cfg(test)]
@@ -171,18 +148,5 @@ mod tests {
     fn no_rate_is_quoted_before_there_is_a_second_to_divide_by() {
         let line = render(&progress(0, 1, 40_000_000), Duration::from_millis(200));
         assert_eq!(line, "  part 1/1 · 0.04 of 3.40 GB (1%)");
-    }
-
-    #[test]
-    fn durations_read_as_time() {
-        assert_eq!(human_duration(9), "9s");
-        assert_eq!(human_duration(75), "1m15s");
-        assert_eq!(human_duration(3725), "1h02m");
-    }
-
-    #[test]
-    fn a_percentage_never_runs_past_a_hundred_or_divides_by_zero() {
-        assert_eq!(percent(5, 0), 0);
-        assert_eq!(percent(11, 10), 100);
     }
 }

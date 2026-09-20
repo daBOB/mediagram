@@ -22,9 +22,11 @@ use super::args::PrepareArgs;
 use crate::config::Config;
 use crate::course::plan::is_video;
 use crate::media::direct_play;
+use crate::media::ffmpeg_progress;
 use crate::media::prepare_check::check_prepared;
 use crate::media::prepare_plan::{PreparePlan, StreamKind, Verdict, plan_prepare};
 use crate::media::streams;
+use crate::term;
 
 /// Suffix of the file written beside the original before it is renamed over
 /// it. Shares the `.prepared.` marker so a crashed run leaves something
@@ -50,7 +52,15 @@ pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
     }
 
     let mut planned = Vec::new();
-    for file in &files {
+    for (index, file) in files.iter().enumerate() {
+        // A folder of a season takes a probe each, and until the table
+        // appears there is otherwise nothing to say it is doing anything.
+        term::redraw(&format!(
+            "  probing {}/{} · {}",
+            index + 1,
+            files.len(),
+            truncate(&name(file), 44)
+        ));
         let probed = streams::probe(file).await?;
         let size = probed
             .size
@@ -65,6 +75,7 @@ pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
         );
         planned.push((file.clone(), size, probed.duration, plan));
     }
+    term::redraw("");
 
     print_table(&planned, limit);
 
@@ -80,21 +91,27 @@ pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
         return Ok(());
     }
 
+    // Settled before the first rewrite starts, so the progress line can say
+    // which file of how many rather than counting only the ones left.
+    let todo: Vec<_> = planned
+        .iter()
+        .filter(|(file, _, _, plan)| {
+            // Size is not the only reason to rewrite. `--mp4` exists to make a
+            // file playable, and a file already small enough still plays badly
+            // if it is Matroska with E-AC-3 inside.
+            let oversized = matches!(
+                plan.verdict,
+                Verdict::Prepare | Verdict::PrepareStillOversized
+            );
+            let unplayable = args.mp4 && !direct_play::plays_directly(file, &plan.keep);
+            oversized || unplayable
+        })
+        .collect();
+
     let mut rewritten = 0usize;
     let mut failed = 0usize;
     let mut freed = 0u64;
-    for (file, size, duration, plan) in &planned {
-        // Size is not the only reason to rewrite. `--mp4` exists to make a
-        // file playable, and a file already small enough still plays badly if
-        // it is Matroska with E-AC-3 inside.
-        let oversized = matches!(
-            plan.verdict,
-            Verdict::Prepare | Verdict::PrepareStillOversized
-        );
-        let unplayable = args.mp4 && !direct_play::plays_directly(file, &plan.keep);
-        if !oversized && !unplayable {
-            continue;
-        }
+    for (index, (file, size, duration, plan)) in todo.iter().enumerate() {
         let dest = match &args.out {
             Some(root) => Some(mirrored(file, &args.path, root, args.mp4)?),
             None => None,
@@ -102,11 +119,16 @@ pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
         match rewrite(
             file,
             *size,
-            *duration,
             plan,
             &keep_audio,
             dest.as_deref(),
             args.mp4,
+            ffmpeg_progress::Job {
+                index,
+                total: todo.len(),
+                name: truncate(&name(file), 44),
+                duration: *duration,
+            },
         )
         .await
         {
@@ -157,11 +179,11 @@ pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
 async fn rewrite(
     source: &Path,
     source_size: u64,
-    source_duration: f64,
     plan: &PreparePlan,
     keep_audio: &[String],
     dest: Option<&Path>,
     to_mp4: bool,
+    job: ffmpeg_progress::Job,
 ) -> Result<u64> {
     let final_path = dest.unwrap_or(source);
     let working = working_path(final_path);
@@ -172,7 +194,12 @@ async fn rewrite(
     let _ = std::fs::remove_file(&working);
 
     let mut command = Command::new("ffmpeg");
-    command.args(["-nostdin", "-v", "error", "-y", "-i"]);
+    // `-progress pipe:1` is what makes the copy visible: ffmpeg's own stats
+    // go to stderr and are suppressed here anyway, and a key=value stream on
+    // stdout is something [`ffmpeg_progress`] can read without guessing.
+    command.args([
+        "-nostdin", "-v", "error", "-nostats", "-progress", "pipe:1", "-y", "-i",
+    ]);
     command.arg(source);
     command.args(plan.map_args());
     if to_mp4 {
@@ -192,13 +219,12 @@ async fn rewrite(
         command.args(["-c", "copy"]);
     }
     command.arg(&working);
-    let status = command
-        .status()
+    if let Err(err) = ffmpeg_progress::run(command, &job)
         .await
-        .with_context(|| format!("running ffmpeg on {}", source.display()))?;
-    if !status.success() {
+        .with_context(|| format!("running ffmpeg on {}", source.display()))
+    {
         let _ = std::fs::remove_file(&working);
-        bail!("ffmpeg exited with {status}");
+        return Err(err);
     }
 
     let probed = streams::probe(&working).await?;
@@ -225,7 +251,7 @@ async fn rewrite(
         new_size,
         probed.duration,
         source_size,
-        source_duration,
+        job.duration,
         &expected,
         // Re-encoding the audio can round upwards on a file that had little
         // to drop, so growth is only suspicious when tracks were merely cut.
