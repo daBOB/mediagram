@@ -67,6 +67,29 @@ This file provides instructions and context for AI coding agents working on this
 - **Minimal Impact**: Changes should only touch what's necessary. Avoid introducing bugs.
 - **Living Document**: This file is not static — it evolves with each mistake learned.
 
+## Versioning
+
+After any code changes, bump the `version` field in both manifests, in step:
+
+- `Cargo.toml` (workspace root) — the uploader and `mlib-spec`, which inherit it
+- `web/package.json` — the player
+
+Both carry the same number: they are two programs of one project, and a reader
+who finds them disagreeing has no way to tell which is the project's version.
+
+Following semver:
+
+- **patch** (`0.1.0` → `0.1.1`): bug fixes, docs, refactors with no behavior change
+- **minor** (`0.1.0` → `0.2.0`): new features, backwards-compatible additions
+- **major** (`0.1.0` → `1.0.0`): breaking changes, removed APIs, schema migrations requiring manual
+  steps
+
+Bump before committing so the commit reflects the new version.
+
 ## Changelog
+- 2026-09-20: Added § Versioning: bump the version after any code change, before committing.
+  Names both manifests, because the version lived only in the workspace `Cargo.toml` and
+  `web/package.json` had no `version` field at all — the rule as first written had nothing to
+  bump. The player's manifest now carries `0.1.0` to match, so the two start in step.
 - 2025-01-XX: Added §4 Meta Self-Improvement loop; CLAUDE.md now updates itself with user approval. Fixed typos ("Plan Node" → "Plan Mode", "One tack" → "One task", "Minimat" → "Minimal").
 - 2026-09-18: Task Management steps 1 and 5 now name `plans/`, which is where planning has actually happened since the first phase; `tasks/todo.md` never existed and duplicated it. Lessons stay at `tasks/lessons.md`, which now exists — it was the half of the rule with no home.
