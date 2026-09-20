@@ -1,8 +1,10 @@
 package ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,16 +46,27 @@ fun MobileApp(hasApiCredentials: Boolean, packageSettings: PackageSettings) {
     }
 }
 
+/** Whether the package credentials read has completed, distinct from having completed and found none. */
+private sealed interface CredentialsState {
+    data object Loading : CredentialsState
+    data object Missing : CredentialsState
+    data object Present : CredentialsState
+}
+
 @Composable
 private fun AuthenticatedApp(packageSettings: PackageSettings) {
     val loginViewModel: LoginViewModel = hiltViewModel()
     val loginState by loginViewModel.state.collectAsStateWithLifecycle()
-    var hasPackageCredentials by remember { mutableStateOf<Boolean?>(null) }
+    var credentialsState by remember { mutableStateOf<CredentialsState>(CredentialsState.Loading) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(loginState) {
         if (loginState is LoginUiState.Authorized) {
-            hasPackageCredentials = packageSettings.read() != null
+            credentialsState = if (packageSettings.read() != null) {
+                CredentialsState.Present
+            } else {
+                CredentialsState.Missing
+            }
         }
     }
 
@@ -65,20 +78,41 @@ private fun AuthenticatedApp(packageSettings: PackageSettings) {
             onSubmitPassword = loginViewModel::submitPassword,
         )
 
-        hasPackageCredentials != true -> SettingsScreen(
+        credentialsState is CredentialsState.Loading -> LoadingIndicator()
+
+        credentialsState is CredentialsState.Missing -> SettingsScreen(
             onSave = { url, key ->
                 scope.launch {
                     packageSettings.write(url, key)
-                    hasPackageCredentials = true
+                    credentialsState = CredentialsState.Present
                 }
             },
         )
 
-        else -> {
-            val catalogViewModel: CatalogViewModel = hiltViewModel()
-            val catalogState by catalogViewModel.state.collectAsStateWithLifecycle()
-            CatalogScreen(state = catalogState)
-        }
+        else -> CatalogAndPlayer()
+    }
+}
+
+/** The catalog, and whichever set it opened — the first screen pair with a real back-stack need. */
+@Composable
+private fun CatalogAndPlayer() {
+    val catalogViewModel: CatalogViewModel = hiltViewModel()
+    val catalogState by catalogViewModel.state.collectAsStateWithLifecycle()
+    var openedSetId by remember { mutableStateOf<String?>(null) }
+
+    val setId = openedSetId
+    if (setId != null) {
+        BackHandler { openedSetId = null }
+        PlayerScreen(setId = setId, onBack = { openedSetId = null })
+    } else {
+        CatalogScreen(state = catalogState, onOpen = { openedSetId = it })
+    }
+}
+
+@Composable
+private fun LoadingIndicator() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
     }
 }
 

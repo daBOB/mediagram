@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,42 +27,42 @@ import model.MediaSet
 import java.io.File
 
 @Composable
-fun CatalogScreen(state: CatalogUiState) {
+fun CatalogScreen(state: CatalogUiState, onOpen: (setId: String) -> Unit) {
     when (state) {
         CatalogUiState.Loading -> CenteredMessage("Loading your library…")
         CatalogUiState.Empty -> CenteredMessage("The library is empty.")
         is CatalogUiState.Failed -> CenteredMessage(state.message)
-        is CatalogUiState.Ready -> ShelfList(state.shelves)
+        is CatalogUiState.Ready -> ShelfList(state.shelves, onOpen)
     }
 }
 
 @Composable
-private fun ShelfList(shelves: List<Shelf>) {
+private fun ShelfList(shelves: List<Shelf>, onOpen: (setId: String) -> Unit) {
     val columns = posterColumnsFor(currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass)
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(Spacing.large),
         contentPadding = PaddingValues(Spacing.medium),
     ) {
-        items(shelves, key = { it.title }) { shelf -> ShelfRow(shelf, columns) }
+        items(shelves, key = { it.title }) { shelf -> ShelfRow(shelf, columns, onOpen) }
     }
 }
 
 @Composable
-private fun ShelfRow(shelf: Shelf, columns: Int) {
+private fun ShelfRow(shelf: Shelf, columns: Int, onOpen: (setId: String) -> Unit) {
     Column {
         Text(text = shelf.title, style = MaterialTheme.typography.titleMedium)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
             items(shelf.items, key = { it.setId }) { set ->
-                PosterCard(set, modifier = Modifier.fillParentMaxWidth(1f / columns))
+                PosterCard(set, modifier = Modifier.fillParentMaxWidth(1f / columns), onOpen = onOpen)
             }
         }
     }
 }
 
 @Composable
-private fun PosterCard(set: MediaSet, modifier: Modifier) {
-    Card(modifier = modifier.aspectRatio(2f / 3f)) {
+private fun PosterCard(set: MediaSet, modifier: Modifier, onOpen: (setId: String) -> Unit) {
+    Card(modifier = modifier.aspectRatio(2f / 3f).clickable { onOpen(set.setId) }) {
         val posterPath = set.posterPath
         if (posterPath != null) {
             AsyncImage(

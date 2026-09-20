@@ -14,4 +14,9 @@ dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":core:model"))
     implementation(project(":core:data"))
+    // PlayerScreen renders the ViewModel's own ExoPlayer through
+    // PlayerSurface directly; feature:player exposes the player but keeps
+    // it an implementation dependency, so this module needs its own.
+    implementation(project(":core:playback"))
+    implementation(libs.findLibrary("androidx.activity.compose").get())
 }
