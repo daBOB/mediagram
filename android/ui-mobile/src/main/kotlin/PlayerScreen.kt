@@ -25,9 +25,13 @@ import player.PlayerViewModel
 
 /**
  * Hosts the shared [PlayerViewModel] behind a `PlayerSurface`, keeping the
- * screen awake while a set is actually playing. Touch controls are
- * intentionally minimal for this round: back, and a loading/error overlay
- * — a scrubber is phase 6 work.
+ * screen awake while a set is actually playing and stopping playback when
+ * this leaves composition — the player itself is a process-lifetime
+ * singleton, so nothing else would ever tell it to release its decoder
+ * and audio focus otherwise. Touch controls are intentionally minimal:
+ * back, and a loading/error overlay. There is no scrubber or seek bar yet,
+ * since nothing has verified seeking across a part boundary works; adding
+ * one before that is proven would let a user hit a bug no test caught.
  */
 @Composable
 fun PlayerScreen(setId: String, onBack: () -> Unit) {
@@ -35,6 +39,7 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(setId) { viewModel.open(setId) }
+    DisposableEffect(Unit) { onDispose { viewModel.stop() } }
     KeepScreenOnWhile(isPlaying = state is PlayerUiState.Playing)
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {

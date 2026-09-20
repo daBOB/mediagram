@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -98,7 +99,12 @@ private fun AuthenticatedApp(packageSettings: PackageSettings) {
 private fun CatalogAndPlayer() {
     val catalogViewModel: CatalogViewModel = hiltViewModel()
     val catalogState by catalogViewModel.state.collectAsStateWithLifecycle()
-    var openedSetId by remember { mutableStateOf<String?>(null) }
+    // rememberSaveable, not remember: the Activity is fully destroyed and
+    // recreated on rotation (there is no android:configChanges), and the
+    // singleton player/ViewModel survive that regardless — without this,
+    // rotating away from an open set would drop back to the catalog while
+    // the film kept playing underneath it.
+    var openedSetId by rememberSaveable { mutableStateOf<String?>(null) }
 
     val setId = openedSetId
     if (setId != null) {
