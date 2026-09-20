@@ -59,12 +59,26 @@ internal fun heldOfBudget(held: Long, budget: Long): String {
     return "${sizeAlwaysOneDecimal(held)} of $budgetText ($percent%)"
 }
 
-/** How the reads went: the share served from disk, and the counts behind it. */
-internal fun cacheReadsLine(fromCache: Long, fromUpstream: Long, hits: Int, misses: Int): String {
+/**
+ * How the reads went: the share of bytes served off the disk, and the round
+ * trips to Telegram behind the rest.
+ *
+ * Not hits and misses, which is what the web player's line says. Its cache
+ * counts both; nothing here does. `CacheDataSource.Factory` is built with no
+ * `EventListener`, so the only counts this app has are bytes served from
+ * disk, bytes fetched, and the fetches that carried them — and a round trip
+ * that returned bytes is not a cache miss, it is what a miss costs.
+ *
+ * The reads that raised are the Upstream block's own row and are not said
+ * again here under a second name: one number, on one screen, twice, is how a
+ * person diagnosing something arrives at two different conclusions.
+ */
+internal fun cacheReadsLine(fromCache: Long, fromUpstream: Long, fetches: Int): String {
     val total = fromCache + fromUpstream
     if (total == 0L) return "nothing read yet"
     val percent = Math.round(fromCache * 100.0 / total)
-    return "$percent% from disk ($hits hits, $misses misses)"
+    val trips = if (fetches == 1) "1 fetch" else "$fetches fetches"
+    return "$percent% from disk ($trips upstream)"
 }
 
 /** Whether this device's Telegram session is up, or `null` when the question does not apply. */

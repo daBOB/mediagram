@@ -1,5 +1,6 @@
 package ui
 
+import system.SystemUiState
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -22,14 +23,45 @@ class SystemRowsTest {
     }
 
     @Test
-    fun readsAreAShareAndTheCountsBehindIt() {
-        assertEquals("81% from disk (34 hits, 8 misses)", cacheReadsLine(fromCache = 81, fromUpstream = 19, hits = 34, misses = 8))
+    fun readsAreAShareAndTheRoundTripsBehindIt() {
+        assertEquals(
+            "81% from disk (34 fetches upstream)",
+            cacheReadsLine(fromCache = 81, fromUpstream = 19, fetches = 34),
+        )
+    }
+
+    /** "1 fetches upstream" is the kind of thing that makes a careful app look careless. */
+    @Test
+    fun aSingleRoundTripIsSaidInTheSingular() {
+        assertEquals("50% from disk (1 fetch upstream)", cacheReadsLine(fromCache = 10, fromUpstream = 10, fetches = 1))
     }
 
     /** Before anything has played there is no share to take. */
     @Test
     fun nothingReadYetIsSaidPlainly() {
-        assertEquals("nothing read yet", cacheReadsLine(fromCache = 0, fromUpstream = 0, hits = 0, misses = 0))
+        assertEquals("nothing read yet", cacheReadsLine(fromCache = 0, fromUpstream = 0, fetches = 0))
+    }
+
+    /**
+     * What the screen hands over, not only what the sentence does with it.
+     * These rows called Telegram round trips "hits" and reads that raised
+     * "misses", and said the second of those twice on one screen under two
+     * names — all of it invisible to a test that only called the sentence
+     * with numbers named after what it wanted them to be.
+     */
+    @Test
+    fun theCacheBlockCountsRoundTripsRatherThanCacheHits() {
+        val rows = facts(fromCacheBytes = 81, fromUpstreamBytes = 19, fetches = 34, failedReads = 8)
+
+        assertEquals("81% from disk (34 fetches upstream)", cacheRows(rows).toMap()["Reads"])
+    }
+
+    /** The reads that raised have one name and one row, in the block that owns them. */
+    @Test
+    fun failedReadsAreSaidOnceAndOnlyUpstream() {
+        val state = facts(fromCacheBytes = 81, fromUpstreamBytes = 19, fetches = 34, failedReads = 8)
+
+        assertEquals("8", upstreamRows(state).toMap()["Failed reads"])
     }
 
     /** An absent fact is an omitted row, not an empty one. */
@@ -51,4 +83,30 @@ class SystemRowsTest {
     fun anUnknownUptimeHasNoRow() {
         assertNull(uptimeLine(seconds = null))
     }
+
+    /** Only the counters under test vary; the rest are whatever a working install would report. */
+    private fun facts(
+        heldBytes: Long = 0,
+        budgetBytes: Long = 2_147_483_648,
+        fromCacheBytes: Long = 0,
+        fromUpstreamBytes: Long = 0,
+        fetches: Int = 0,
+        failedReads: Int = 0,
+    ) = SystemUiState(
+        origin = "channel",
+        sets = 540,
+        posters = 0,
+        schema = 1,
+        publishedAt = null,
+        lastRefresh = null,
+        heldBytes = heldBytes,
+        budgetBytes = budgetBytes,
+        fromCacheBytes = fromCacheBytes,
+        fromUpstreamBytes = fromUpstreamBytes,
+        fetches = fetches,
+        failedReads = failedReads,
+        connected = true,
+        versionName = "0.4.0",
+        uptimeSeconds = 0,
+    )
 }
