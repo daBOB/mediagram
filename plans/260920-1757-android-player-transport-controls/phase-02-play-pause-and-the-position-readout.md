@@ -31,7 +31,7 @@ arrangement `shouldStopOnDispose` already chose; these are two more of it.
 **Interfaces — Produces:** `internal fun clockTime(ms: Long): String`. Tasks 3
 uses it for both ends of the readout; phase 3 uses it for the scrub label.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```kotlin
 package ui
@@ -78,7 +78,7 @@ class PlayerClockTest {
 }
 ```
 
-- [ ] **Step 2: Run the test**
+- [x] **Step 2: Run the test**
 
 ```bash
 cd android && ./gradlew :ui-mobile:testDebugUnitTest --tests '*PlayerClockTest*'
@@ -86,7 +86,7 @@ cd android && ./gradlew :ui-mobile:testDebugUnitTest --tests '*PlayerClockTest*'
 
 Expected: FAIL to compile — `unresolved reference: clockTime`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```kotlin
 package ui
@@ -115,7 +115,7 @@ internal fun clockTime(ms: Long): String {
 }
 ```
 
-- [ ] **Step 4: Run the test**
+- [x] **Step 4: Run the test**
 
 ```bash
 cd android && ./gradlew :ui-mobile:testDebugUnitTest --tests '*PlayerClockTest*'
@@ -123,7 +123,7 @@ cd android && ./gradlew :ui-mobile:testDebugUnitTest --tests '*PlayerClockTest*'
 
 Expected: PASS, all five.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add android/ui-mobile/src/main/kotlin/PlayerClock.kt \
@@ -144,7 +144,7 @@ git commit -m "feat(android): print a position the way the web player does"
 `internal const val CONTROLS_LINGER_MS = 4_000L`. Task 3 calls all three.
 Phase 3 adds an `isScrubbing` parameter to `controlsShouldFade`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```kotlin
 package ui
@@ -189,7 +189,7 @@ class ControlsVisibilityTest {
 }
 ```
 
-- [ ] **Step 2: Run the test**
+- [x] **Step 2: Run the test**
 
 ```bash
 cd android && ./gradlew :ui-mobile:testDebugUnitTest --tests '*ControlsVisibilityTest*'
@@ -197,7 +197,7 @@ cd android && ./gradlew :ui-mobile:testDebugUnitTest --tests '*ControlsVisibilit
 
 Expected: FAIL to compile — `unresolved reference: controlsMayShow`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```kotlin
 package ui
@@ -236,7 +236,7 @@ internal fun controlsMayShow(state: PlayerUiState): Boolean =
 internal fun controlsShouldFade(isPlaying: Boolean): Boolean = isPlaying
 ```
 
-- [ ] **Step 4: Run the test**
+- [x] **Step 4: Run the test**
 
 ```bash
 cd android && ./gradlew :ui-mobile:testDebugUnitTest --tests '*ControlsVisibilityTest*'
@@ -244,7 +244,7 @@ cd android && ./gradlew :ui-mobile:testDebugUnitTest --tests '*ControlsVisibilit
 
 Expected: PASS, all six.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add android/ui-mobile/src/main/kotlin/ControlsVisibility.kt \
@@ -270,7 +270,7 @@ These land together because neither is verifiable alone in this module: the bar
 has no test rule to render it, and the wiring has nothing to wire without it.
 The verification is the device, at step 4.
 
-- [ ] **Step 1: Write `PlayerControls.kt`**
+- [x] **Step 1: Write `PlayerControls.kt`**
 
 ```kotlin
 // media3 marks its extension surface @UnstableApi and may change it in any
@@ -382,7 +382,7 @@ private fun TimeText(text: String) {
 }
 ```
 
-- [ ] **Step 2: Wire it into `PlayerScreen.kt`**
+- [x] **Step 2: Wire it into `PlayerScreen.kt`**
 
 Add these imports:
 
@@ -457,7 +457,7 @@ And draw the bar alongside the picture, replacing `player?.let { Video(it) }`:
 The back `IconButton` stays exactly where it is, with its comment. It is a
 child of the `Box`, so it consumes its own taps and does not toggle the bar.
 
-- [ ] **Step 3: Build and check the line budget**
+- [x] **Step 3: Build and check the line budget**
 
 ```bash
 cd android && ./gradlew :ui-mobile:testDebugUnitTest
@@ -469,7 +469,7 @@ over, move `CenteredSpinner` and `CenteredError` into a new
 `ui-mobile/src/main/kotlin/PlayerOverlays.kt` — they are the two pieces with no
 tie to the screen's own state.
 
-- [ ] **Step 4: Prove it on the phone**
+- [x] **Step 4: Prove it on the phone**
 
 ```bash
 cd android && ./gradlew :app:installDebug
@@ -491,7 +491,7 @@ from the terminal — `input tap` is unreliable against Compose.
 Record what happened in the phase's Review section, including anything that
 looked wrong and was accepted.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add android/ui-mobile/src/main/kotlin/PlayerControls.kt \
@@ -501,12 +501,12 @@ git commit -m "feat(android): let a viewer pause the film and see where they are
 
 ## Todo list
 
-- [ ] `clockTime` prints what `format.js` prints
-- [ ] The visibility decisions are pure and proved
-- [ ] The bar draws play/pause and both ends of the clock
-- [ ] A tap toggles it; it fades while playing and stays while paused
-- [ ] Both files under 200 lines
-- [ ] Pause, the advancing clock and a rotation all confirmed on a real phone
+- [x] `clockTime` prints what `format.js` prints
+- [x] The visibility decisions are pure and proved
+- [x] The bar draws play/pause and both ends of the clock
+- [x] A tap toggles it; it fades while playing and stays while paused — the fade is corroborated on the phone, not timed to the second; see the review
+- [x] Both files under 200 lines
+- [x] Pause, the advancing clock and a rotation all confirmed on a real phone
 
 ## Success criteria
 
@@ -529,4 +529,35 @@ Phase 3 adds the two controls that seek, behind the hardware gate.
 
 ## Review
 
-_Filled in when the phase completes — including what step 4 showed._
+Complete, in three commits: `d574707` (the clock), `aa557c6` (the visibility
+decisions) and `f232735` (the bar and the screen that shows it). Eleven unit
+tests — five for `clockTime`, six for `controlsMayShow` and `controlsShouldFade`
+— all passing, all three reviews clean.
+
+`clockTime` was hand-evaluated against `format.js` rather than trusted to a test
+written from the same mental model as the code: 7 082 000 ms gives `1:58:02`,
+the case where the hour appears, and `Long.MIN_VALUE` gives `0:00`.
+
+**What step 4 showed, on the phone, mostly in landscape.** The bar is on screen
+when a set opens and gone afterwards. A tap brings it back; a second tap,
+1.26 s later and well inside the linger, dismissed it — so that was the tap and
+not the timer. Pressing play/pause turned the content description to `Play` and
+the bar then stayed, still there six seconds later, past the four-second
+linger. The elapsed readout climbed 0:01 → 0:03 → 0:15 → 0:45 → 2:46 while
+playing and read `0:03` in two dumps six seconds apart while paused. The
+duration read `1:25:34` — the film's, not the `C.TIME_UNSET` fallback. A real
+rotation to portrait (`ROTATION_0`, confirmed in `dumpsys window`) left the film
+running: 2:46 before, 2:57 after, and no crash in logcat.
+
+Two things were accepted rather than solved, and both are tooling rather than
+code. The fade is corroborated at four seconds, not measured at four seconds: an
+`adb`/`uiautomator` round trip costs 2.5–3 s on this device, which cannot
+bracket a 4 s window. `CONTROLS_LINGER_MS` is read by a pure function with its
+own unit tests, so a device could only ever have agreed with it. And `screencap`
+intermittently returned a frame without the bar's pixels while playing in
+landscape, although `uiautomator dump` had the semantics live and correct at
+every check and the same composable captured cleanly when paused and in
+portrait — read as an overlay-path artefact on this device, not a defect.
+
+`PlayerScreen.kt` ended the phase at 194 lines of 200, which is what put the
+`PlayerOverlays.kt` extraction on standby for phase 3. It was never needed.

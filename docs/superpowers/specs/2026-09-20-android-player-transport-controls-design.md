@@ -146,11 +146,12 @@ anything. Back stays reachable in every state, where it already is.
 
 The scrubber follows the ticker except while it is being dragged, when it
 shows the drag. This is the problem the web player solved at
-`web/public/lib/player.js:751` by refusing to move the slider while it holds
+`web/public/lib/player.js:584` by refusing to move the slider while it holds
 focus; the same fix, in Compose's idiom. The seek fires on release, never
-during — for the web player that mattered because every drag position would
-start an encode, and here it matters because every drag position would be a
-seek into a Telegram read.
+during — `player.js:595` listens for `change` rather than `input` for the same
+reason, which for the web player was that every drag position would start an
+encode, and here is that every drag position would be a seek into a Telegram
+read.
 
 ## 5. Where it can go wrong
 
@@ -241,7 +242,61 @@ conversion happens anywhere. There is no encode to restart and no bitrate to
 step down to. Android's seek is simply a seek.
 
 This is a difference that is meant, which under the Surface Parity rule has to
-be written down where someone will find it. This section is that place.
+be written down where someone will find it. This section is that place, and
+what follows belongs to it as much as the paragraph above does.
+
+**The bar goes away on rules the web's HUD does not use.** Three differences in
+one mechanism:
+
+*It waits longer.* `CONTROLS_LINGER_MS` (`ControlsVisibility.kt:15`) is 4 000
+ms against the web's `HUD_REST_MS` of 2 600 (`web/public/lib/player.js:513`).
+The web can afford the shorter rest because `pointermove` is one of the events
+that brings its HUD back (`web/public/lib/player.js:534`) — the controls return
+for a pointer that twitches. On a phone the only way back is a deliberate tap
+on the picture, so the bar is given longer before it asks for one.
+
+*Using a control does not keep it up.* The web dialog re-arms its hide timer on
+every `pointerdown` and `focusin` inside it (`web/public/lib/player.js:534`),
+so pressing a control is itself a reason for the controls to stay. Android
+re-arms on nothing but a change of `PlayerUiState`: the `LaunchedEffect` at
+`PlayerScreen.kt:76` is keyed on `controlsShown`, `state` and `scrubbing`, and
+a skip changes none of the three. Press ⏪ at 3.9 seconds and the bar goes at
+4.0, out from under the thumb that is using it.
+
+This one is **unresolved, and waiting on a decision** — it is recorded rather
+than fixed, because the fade rule is a design that was chosen and reversing it
+quietly is not a fix. If it is taken up, the shape is small: keep a count of
+interactions in `PlayerScreen`, raise it where the bar's own buttons are
+pressed, and add the count to that `LaunchedEffect`'s key. Six lines or so,
+none of them the hard part.
+
+*A tap on the bar's own scrim hides it.* `PlayerScreen.kt:91` puts
+`detectTapGestures` on the whole screen. Compose's children consume their own
+taps, so the buttons and the slider are safe, but the scrim between two glyphs
+is not a child — it is the screen. A viewer reaching for ⏸ and missing it
+dismisses the bar; the web player, which hears that same press as a reason to
+stay, would have kept it.
+
+**Telling a viewer that it is buffering.** A seek takes ExoPlayer through
+`STATE_BUFFERING`, where `isPlaying` is false, and `DefaultPlayerHandle.kt:57`
+forwards every `onIsPlayingChanged`. So every seek now reports
+`PlayerUiState.Paused` until the first frame at the new position arrives:
+`PlayerScreen.kt:108` draws nothing for that state, the glyph turns to ▶
+although nobody paused, and `KeepScreenOnWhile` (`PlayerScreen.kt:70`) gives up
+its keep-screen-on flag for the duration. Over a byte path where a cold read is
+a Telegram round trip, that is long enough to notice.
+
+The mechanism is not new — it has been there since the player was built. What
+this work changed is that a viewer can now reach it whenever they like, several
+times a minute, instead of once when a set opens. It is not fixed here and no
+spinner is added. §1 gives the buffered-range readout to **B**; the indication
+belongs to the same piece, and `ProgressStateWithTickInterval` already carries
+`bufferedPositionMs` for it.
+
+Worth recording for whoever takes it: the web player has never needed any of
+this, because `<video controls>` draws a spinner of its own — the same free
+inheritance the opening paragraph of this document blames for the gap it was
+written to close.
 
 **Volume and fullscreen.** The hardware keys and the fact that the screen is
 already fullscreen cover both. `MuteButtonState` exists and is not used.
@@ -253,4 +308,6 @@ already fullscreen cover both. `MuteButtonState` exists and is not used.
   becomes work of its own.
 - `android-foundation` is ten commits behind `main`, where the web player's
   next-episode autoplay lives. Nothing here depends on it; D will. The gap
-  should close before D is designed.
+  should close before D is designed. Until it does, every
+  `web/public/lib/player.js` line cited above is that file as this branch has
+  it — the code is identical on `main`, but it has moved down the file.

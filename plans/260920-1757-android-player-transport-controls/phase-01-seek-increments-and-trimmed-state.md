@@ -34,7 +34,7 @@ the fields safe to remove rather than merely unused.
 `10_000L`. Phase 2 reads those properties to label its buttons, so the label
 cannot drift from the behaviour.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `PlayerFactoryTest.kt` (the class already has a
 `@Before resetTheSharedCache` and runs under Robolectric — leave both alone):
@@ -62,7 +62,7 @@ Append to `PlayerFactoryTest.kt` (the class already has a
 
 Add `import kotlin.test.assertEquals` to the file's imports.
 
-- [ ] **Step 2: Run the test**
+- [x] **Step 2: Run the test**
 
 ```bash
 cd android && ./gradlew :core:playback:testDebugUnitTest --tests '*PlayerFactoryTest*'
@@ -70,7 +70,7 @@ cd android && ./gradlew :core:playback:testDebugUnitTest --tests '*PlayerFactory
 
 Expected: FAIL — `expected:<10000> but was:<5000>`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `PlayerFactory.kt`, add the two builder calls and the constant. The
 `setMediaSourceFactory` call and its comment block stay exactly as they are:
@@ -98,7 +98,7 @@ suspend fun buildPlayer(context: Context, currentCore: () -> CoreClient?): ExoPl
 private const val SKIP_MS = 10_000L
 ```
 
-- [ ] **Step 4: Run the test**
+- [x] **Step 4: Run the test**
 
 ```bash
 cd android && ./gradlew :core:playback:testDebugUnitTest --tests '*PlayerFactoryTest*'
@@ -106,7 +106,7 @@ cd android && ./gradlew :core:playback:testDebugUnitTest --tests '*PlayerFactory
 
 Expected: PASS, both cases.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add android/core/playback/src/main/kotlin/PlayerFactory.kt \
@@ -134,7 +134,7 @@ replaces `onPositionChanged(positionMs, durationMs, isPlaying)`.
 `FakePlayerHandle.emitPlaying(isPlaying: Boolean)` replaces `emitPosition(...)`.
 Phase 2 matches on these exact names.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 This is a type change, so the tests move first and the module stops compiling
 until the source follows. That compile failure *is* the red step.
@@ -220,7 +220,7 @@ While in that file, the `every { player.currentPosition } returns 5_000L` and
 `aListenerSetAfterReleaseStillReceivesEventsFromThePlayer` are also dead now —
 delete both. The mock is `relaxed`, so nothing else needs them.
 
-- [ ] **Step 2: Run the tests**
+- [x] **Step 2: Run the tests**
 
 ```bash
 cd android && ./gradlew :feature:player:testDebugUnitTest
@@ -230,7 +230,7 @@ Expected: FAIL to compile — `unresolved reference: emitPlaying`,
 `onPlayingChanged overrides nothing`, and `Playing` used where a constructor is
 expected.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `PlayerUiState.kt` in full:
 
@@ -327,7 +327,7 @@ this phase exists to write down:
 // through here could only be the same number later, or a different one.
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 ```bash
 cd android && ./gradlew :feature:player:testDebugUnitTest :ui-mobile:testDebugUnitTest
@@ -335,7 +335,7 @@ cd android && ./gradlew :feature:player:testDebugUnitTest :ui-mobile:testDebugUn
 
 Expected: PASS — every test in both modules.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add android/feature/player android/ui-mobile/src/main/kotlin/PlayerScreen.kt
@@ -344,12 +344,12 @@ git commit -m "refactor(android): let the player state say only what it knows"
 
 ## Todo list
 
-- [ ] Both seek increments are ten seconds, asserted
-- [ ] `PlayerUiState` carries no position
-- [ ] `onPlayingChanged` replaces `onPositionChanged` everywhere
-- [ ] Dead mock stubs and `DURATION_MS` removed from the tests
-- [ ] The transport/library boundary is written in `feature/player/build.gradle.kts`
-- [ ] `:core:playback`, `:feature:player` and `:ui-mobile` unit tests all pass
+- [x] Both seek increments are ten seconds, asserted
+- [x] `PlayerUiState` carries no position
+- [x] `onPlayingChanged` replaces `onPositionChanged` everywhere
+- [x] Dead mock stubs and `DURATION_MS` removed from the tests
+- [x] The transport/library boundary is written in `feature/player/build.gradle.kts`
+- [x] `:core:playback`, `:feature:player` and `:ui-mobile` unit tests all pass
 
 ## Success criteria
 
@@ -370,3 +370,27 @@ without asking.
 
 Phase 2 builds the bar on top of this state. Nothing in phase 1 is visible to a
 viewer, so it can land on its own.
+
+## Review
+
+Complete, in two commits, both reviewed clean.
+
+`e4b564e` set both increments to `SKIP_MS = 10_000L` and asserts both. The red
+step printed `expected:<10000> but was:<5000>` — media3's asymmetric default,
+seen rather than assumed.
+
+`7935dd6` trimmed `Playing` and `Paused` to `data object`, renamed
+`onPositionChanged(positionMs, durationMs, isPlaying)` to
+`onPlayingChanged(isPlaying)` through `PlayerHandle`, `DefaultPlayerHandle`,
+`PlayerViewModel` and `FakePlayerHandle`, deleted the mock stubs and the
+`DURATION_MS` constant the trim orphaned, and wrote the transport/library
+boundary into `feature/player/build.gradle.kts`. The red step was the test
+sources failing to compile, exactly as the phase predicted.
+
+The rename was swept for rather than eyeballed: repo-wide, `onPositionChanged`,
+`emitPosition` and positional `Playing(` / `Paused(` all return nothing.
+`:core:playback`, `:feature:player` and `:ui-mobile` unit tests pass.
+
+One inaccuracy in this file, worth knowing before `DefaultPlayerHandleTest` is
+edited again: task 2 step 1 names three anonymous listeners, at lines 36, 59 and
+131. There are four. All four were updated.

@@ -26,9 +26,9 @@
 
 | # | Phase | Status |
 |---|---|---|
-| 1 | [Seek increments and the trimmed state](phase-01-seek-increments-and-trimmed-state.md) | Not started |
-| 2 | [Play, pause and the position readout](phase-02-play-pause-and-the-position-readout.md) | Not started |
-| 3 | [Seeking, proven then shipped](phase-03-seeking-proven-then-shipped.md) | Not started |
+| 1 | [Seek increments and the trimmed state](phase-01-seek-increments-and-trimmed-state.md) | Complete |
+| 2 | [Play, pause and the position readout](phase-02-play-pause-and-the-position-readout.md) | Complete |
+| 3 | [Seeking, proven then shipped](phase-03-seeking-proven-then-shipped.md) | Complete — phone only, as phase 3 intends |
 
 ## Key dependencies
 
@@ -56,4 +56,24 @@ next-episode autoplay. §1 and §9 of the spec say why, and where each one goes.
 
 ## Review
 
-_Filled in as phases complete._
+All three phases are complete, in seven commits, `1494fbb..1223d26`.
+
+Phase 1 set both seek increments to ten seconds and trimmed `PlayerUiState`
+down to what it actually knows. Phase 2 gave the phone play/pause, a position
+readout and a bar that takes itself away. Phase 3 built skip and scrub, held
+them out of the history, ran the hardware gate, and committed only once it had
+passed — which is the order the phase exists to enforce.
+
+**The gate passed, on all four probes.** "Blade: Trinity", two parts, boundary
+at byte 3,758,096,384: against a cleared cache, playback ran 1:00:18 → 1:04:02
+untouched at 1.0× while the reads crossed it. Phase 3's review has the rest,
+including the boundary estimate that was two minutes late and the run that was
+discarded because of it.
+
+Found afterwards, none of it blocking. Two were fixed: the bar drew with no
+window-inset padding and sat partly under a three-button navigation bar, and
+`clockTime` formatted against the platform default `Locale`. Two are recorded
+in spec §9 and wait on a decision rather than a fix — pressing a control does
+not re-arm the bar's fade timer, and a seek shows no sign that it is buffering.
+One is follow-up work in another module, written up in phase 3's review: every
+seek logs an `InterruptedException` from `MlibDataSource` as a load failure.

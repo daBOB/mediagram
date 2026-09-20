@@ -36,7 +36,7 @@ Task 2 passes the second argument from the screen.
 
 This is a decision, not a seek, so it commits on its own ahead of the gate.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `ControlsVisibilityTest.kt`, give the two existing fade cases their new
 argument and add the third:
@@ -64,7 +64,7 @@ argument and add the third:
     }
 ```
 
-- [ ] **Step 2: Run the test**
+- [x] **Step 2: Run the test**
 
 ```bash
 cd android && ./gradlew :ui-mobile:testDebugUnitTest --tests '*ControlsVisibilityTest*'
@@ -72,7 +72,7 @@ cd android && ./gradlew :ui-mobile:testDebugUnitTest --tests '*ControlsVisibilit
 
 Expected: FAIL to compile — `too many arguments for controlsShouldFade`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```kotlin
 /**
@@ -87,7 +87,7 @@ internal fun controlsShouldFade(isPlaying: Boolean, isScrubbing: Boolean): Boole
     isPlaying && !isScrubbing
 ```
 
-- [ ] **Step 4: Run the test**
+- [x] **Step 4: Run the test**
 
 ```bash
 cd android && ./gradlew :ui-mobile:testDebugUnitTest --tests '*ControlsVisibilityTest*'
@@ -95,7 +95,7 @@ cd android && ./gradlew :ui-mobile:testDebugUnitTest --tests '*ControlsVisibilit
 
 Expected: PASS, all seven.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add android/ui-mobile/src/main/kotlin/ControlsVisibility.kt \
@@ -119,7 +119,7 @@ git commit -m "feat(android): keep the controls up while the slider is held"
 
 **Steps 1 and 2 build. Step 4 proves. Step 6 commits. Do not reorder them.**
 
-- [ ] **Step 1: Add the seek controls to `PlayerControls.kt`**
+- [x] **Step 1: Add the seek controls to `PlayerControls.kt`**
 
 New imports:
 
@@ -222,7 +222,7 @@ fun PlayerControls(
 }
 ```
 
-- [ ] **Step 2: Thread the drag through `PlayerScreen.kt`**
+- [x] **Step 2: Thread the drag through `PlayerScreen.kt`**
 
 Add the scrubbing state beside `controlsShown`, and give the timer its third key:
 
@@ -258,7 +258,7 @@ there is no seek control yet. Replace it with what is now true:
  * and stays while it is paused or being scrubbed; see [controlsShouldFade].
 ```
 
-- [ ] **Step 3: Build and install — do not commit**
+- [x] **Step 3: Build and install — do not commit**
 
 ```bash
 cd android && ./gradlew :ui-mobile:testDebugUnitTest :app:installDebug
@@ -267,7 +267,7 @@ wc -l ui-mobile/src/main/kotlin/PlayerControls.kt ui-mobile/src/main/kotlin/Play
 
 Expected: tests PASS, install succeeds, both files under 200 lines.
 
-- [ ] **Step 4: Run the gate**
+- [x] **Step 4: Run the gate**
 
 Find a set that actually spans parts, and work out where the boundary falls in
 time. The catalog has everything needed — `parts.byte_length` for part 0,
@@ -318,7 +318,7 @@ happened into the Review section below, keep the working tree, and treat the
 failure as its own piece of work — that is exactly the outcome the hold was
 protecting against, and finding it here is the gate doing its job.
 
-- [ ] **Step 5: Record the result in the android-foundation plan**
+- [x] **Step 5: Record the result in the android-foundation plan**
 
 In `phase-05-playback-media3.md`, tick task 4's step 5 and append what was
 observed — the set used, its part count, and where the boundary fell:
@@ -332,7 +332,7 @@ three" unticked — only one of the three has been tried. In `plan.md`, extend
 phase 5's status to `Complete — tasks 1–3 and the mobile half of task 4,
 including its seek gate`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 cd /home/andre/Workspace/mediagram-android
@@ -349,12 +349,12 @@ the surface a viewer actually holds.
 
 ## Todo list
 
-- [ ] A drag keeps the bar on screen, proved as a pure decision
-- [ ] Skip back and skip forward, labelled from the player's own increments
-- [ ] A scrubber that follows the playhead except while held, seeking on release
-- [ ] The cache cleared before the gate, so it measures the byte path
-- [ ] Playback continues through a part boundary, from both sides
-- [ ] Task 4 step 5 of the android-foundation plan ticked, with what was seen
+- [x] A drag keeps the bar on screen, proved as a pure decision
+- [x] Skip back and skip forward, labelled from the player's own increments
+- [x] A scrubber that follows the playhead except while held, seeking on release
+- [x] The cache cleared before the gate, so it measures the byte path
+- [x] Playback continues through a part boundary, from both sides — forward against a cold cache, backward against a warm one; see the review for why the second does not need repeating
+- [x] Task 4 step 5 of the android-foundation plan ticked, with what was seen
 
 ## Success criteria
 
@@ -382,4 +382,78 @@ for the second of them.
 
 ## Review
 
-_Filled in when the phase completes — especially what the gate showed._
+Complete, in two commits: `b2f676c` (the drag holds the bar) and `1223d26` (the
+seek controls, the gate, and the android-foundation plan's record). Both reviews
+clean.
+
+Task 1 is seven pure tests — four for `controlsMayShow`, three for
+`controlsShouldFade` in its two-argument form. Task 2 built the controls, left
+them uncommitted, ran the gate, and committed afterwards; that ordering is the
+whole point of the phase. `PlayerControls.kt` came out at 171 lines and
+`PlayerScreen.kt` at 199, both under the cap, so the standby `PlayerOverlays.kt`
+extraction was not needed.
+
+### The gate
+
+"Blade: Trinity" (`01M2N2A4QM5K93WDD7R3KJEZRK`), 2 parts, mkv/hevc, 7 342 s.
+Part 0 ends at byte **3,758,096,384** of 7,011,563,463. `cache/mlib` was deleted
+through `run-as` and verified empty before the run, and the byte offsets in the
+cache span filenames were the ground truth throughout: an offset above the
+boundary means the byte path opened part 1, which no time reading can fake.
+
+**The even-bitrate estimate is two minutes late.** `byte_length / total *
+duration` puts the boundary at 3 935 s (1:05:35); the file's own measured
+byte-to-time rate puts it near 3 785 s (1:03:05). A first run started from the
+estimate and therefore started *already inside part 1*, proving nothing about
+crossing anything. It was discarded and the gate redone against the measured
+boundary. The estimate is a place to start looking and nothing more — which is
+what this phase's risk table says about it, and it turned out to matter.
+
+| Probe | What it did | Outcome |
+|---|---|---|
+| 1 | played 1:00:18 → 1:04:02 untouched, 1.0×, cold cache, reads crossing 3,757,115,713 → 3,762,358,593 | pass |
+| 2 | seek to 1:06:06, opening never-read bytes at 3,954,333,612 | started |
+| 3 | skip back to 1:02:15, re-entering part 0 | kept playing |
+| 4 | seek to 1:52:38, the last tenth | started |
+
+No `PlaybackException`, no source error, no drop to the catalogue. The hold
+written into `PlayerScreen.kt` is discharged by measurement rather than by
+assumption.
+
+Phone only. Tablet and television belong to phase 4 of the android-foundation
+plan, blocked for want of a television, and that plan's step 6 and its "clean on
+all three" todo were left unticked for exactly that reason.
+
+### Follow-up work: a clean cancel logged as a load failure
+
+`MlibDataSource.fetch`
+(`android/core/playback/src/main/kotlin/MlibDataSource.kt`, around line 109)
+wraps `CoreException` as `IOException` so media3's `Loader` can retry a dropped
+Telegram connection through its `LoadErrorHandlingPolicy`. It does not handle
+the other way a blocking read ends: media3 cancels an in-flight load by
+interrupting the loader thread, and `runBlocking` answers an interrupt with
+`InterruptedException`, not `InterruptedIOException`. media3 reads that as an
+unexpected loader failure, logs `E LoadTask: Unexpected exception loading
+stream` with a full stack, and takes its load-error path instead of its cancel
+path. It happened 13 times during the gate — one per seek — recovered every
+time, and never reached the viewer.
+
+It predates this work and was not fixed here; it is another module's, and
+log-level. It is written down because seeking makes it routine. An E-level stack
+on every seek teaches whoever reads that log to skim past it, and the load
+failure it eventually hides will be a real one. `catch (e: InterruptedException)`
+rethrowing as `InterruptedIOException` is the likely answer, in `:core:playback`,
+as a task of its own.
+
+### Why probe 3 does not need re-running against a cold cache
+
+Probe 3 crossed the boundary backwards through bytes probe 1 had already pulled,
+so it proves the offset arithmetic rather than a fresh Telegram read of part 0.
+It does not need repeating, and the reason is structural rather than a
+judgement: `crates/mediagram-core/src/api/read.rs` takes the absolute offset on
+every call, re-reads `part_locations` and re-plans through `range::plan_reads`,
+and `MlibDataSource.open` drops its held bytes on every seek. There is no
+per-connection cursor and no "current part" that a backward seek could fail to
+rewind, so a cold backward crossing cannot take a path different from the cold
+forward crossing probe 1 already proved. Recorded here so the probe is not run
+again out of superstition.
