@@ -9,7 +9,10 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:rust"))
+    // `api`, not `implementation`: CoreClient's own signatures (SetSummary,
+    // AuthOutcome) come straight from the generated bindings, so anything
+    // that implements or calls CoreClient needs them on its own classpath.
+    api(project(":core:rust"))
     implementation(project(":core:model"))
 
     androidTestImplementation(libs.findLibrary("kotlinx.coroutines.test").get())

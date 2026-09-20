@@ -1,0 +1,23 @@
+package data
+
+import uniffi.mediagram_core.AuthOutcome
+import uniffi.mediagram_core.SetSummary
+
+/**
+ * The seam between this app and the generated native core. The generated
+ * `Core` class is a concrete wrapper around the native library, so nothing
+ * above this line depends on it directly — every ViewModel and repository
+ * depends on this interface instead. [DefaultCoreClient] wraps the real
+ * thing; a fake stands in for it under test.
+ */
+interface CoreClient {
+    fun isAuthorized(): Boolean
+    suspend fun requestCode(phone: String): String
+    suspend fun signIn(token: String, code: String): AuthOutcome
+    suspend fun checkPassword(password: String)
+    suspend fun refreshCatalog(url: String, keyB64: String): Long
+    fun listSets(): List<SetSummary>
+    fun posterPath(posterKey: String): String?
+    fun totalSize(setId: String): Long
+    suspend fun read(setId: String, offset: Long, len: Int): ByteArray
+}
