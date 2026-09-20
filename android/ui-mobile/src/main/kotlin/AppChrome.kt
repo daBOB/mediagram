@@ -64,11 +64,13 @@ internal fun backLabelFor(destination: Destination): String? = when (destination
 /**
  * The five things the overflow menu can do, in the order they are shown.
  *
- * Two of them — fetch posters and the TMDB key, which sits directly under
- * the fetch it configures — are named with an ellipsis because they open
- * something rather than doing it outright, which is the difference between
- * a menu item and a button that starts a network run without warning.
- * Refreshing the library has none, because it does the thing.
+ * One of them — the TMDB key, which sits directly under the fetch it
+ * configures — is named with an ellipsis, because it opens a screen to fill
+ * in rather than doing anything itself. Fetching posters carried one too,
+ * and it was a promise of a dialog that never came: that tap starts minutes
+ * of HTTP over hundreds of titles there and then. What it owes a viewer is
+ * not a warning but the news that it is running, which it now says where a
+ * reload of the library says it — on the progress line above the shelves.
  *
  * Refreshing is second and start over last, three items apart: refreshing
  * is the most-used of the five and starting over discards this device's
@@ -148,7 +150,7 @@ fun LibraryScaffold(
                             onClick = { menuExpanded = false; menu.onRefresh() },
                         )
                         MenuItem(
-                            label = "Fetch posters…",
+                            label = "Fetch posters",
                             disabledReason = menu.fetchPostersDisabledReason,
                             onClick = { menuExpanded = false; menu.onFetchPosters() },
                         )

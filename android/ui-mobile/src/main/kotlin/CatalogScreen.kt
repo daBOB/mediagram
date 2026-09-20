@@ -23,9 +23,18 @@ import catalog.Entry
 import catalog.Shelf
 import designsystem.Spacing
 
+/**
+ * The shelves, and one line above them while the library is being worked
+ * on. [fetchingPosters] is the other run that changes what is on these
+ * shelves — it fills in the artwork on them — and it is reported here
+ * rather than beside itself, because a viewer watching something happen
+ * should not have to learn a second vocabulary for it depending on which
+ * menu item started it.
+ */
 @Composable
 fun CatalogScreen(
     state: CatalogUiState,
+    fetchingPosters: Boolean,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
 ) {
@@ -39,7 +48,7 @@ fun CatalogScreen(
             // viewer who has scrolled down is exactly the one who would
             // otherwise watch the shelves change under their thumb with
             // nothing having said why.
-            if (state.refreshing) {
+            if (state.refreshing || fetchingPosters) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
             ShelfList(state, onOpenTitle, onOpenCollection)

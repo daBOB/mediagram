@@ -54,7 +54,11 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
         // invisible. You asked for the library; the library is what you are
         // shown.
         onRefresh = { at.toCatalog(); catalogViewModel.reload() },
-        onFetchPosters = postersViewModel::fetch,
+        // To the shelves as well, and for a second reason besides that
+        // one: a fetch is minutes of network over hundreds of titles, the
+        // menu that started it is already closed, and the shelves are both
+        // where the progress line lives and where the artwork lands.
+        onFetchPosters = { at.toCatalog(); postersViewModel.fetch() },
         onTmdbKey = { at.menuScreen = MenuScreen.TmdbKey },
         onStartOver = onStartOver,
         refreshDisabledReason = refreshDisabledReason(catalogState),
@@ -121,6 +125,7 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
             ) {
                 CatalogScreen(
                     state = catalogState,
+                    fetchingPosters = postersState.running,
                     onOpenTitle = { at.titleId = it },
                     onOpenCollection = { at.collection = it },
                 )
