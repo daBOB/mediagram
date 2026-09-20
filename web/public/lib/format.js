@@ -112,6 +112,27 @@ function partsLabel(count) {
 }
 
 /**
+ * Where someone got to in a title, as a share and a position.
+ *
+ * `42% · 12:30`. The share is for deciding — nearly done, or barely begun —
+ * and the position is for recognising the moment you stopped.
+ *
+ * A runtime the index does not know gives the position alone: a percentage of
+ * an unknown length is a number with nothing behind it, and `resume-point.js`
+ * refuses to place one for the same reason.
+ */
+export function resumeLine(progress) {
+  if (!progress) return "";
+  const at = Number(progress.at);
+  if (!Number.isFinite(at) || at < 0) return "";
+
+  const runtime = Number(progress.duration);
+  const measured = Number.isFinite(runtime) && runtime > 0;
+  const share = measured ? `${Math.round(Math.min(1, at / runtime) * 100)}%` : null;
+  return [share, clockTime(at)].filter(Boolean).join(" · ");
+}
+
+/**
  * A position on a scrub bar: `1:23`, or `1:23:45` once past an hour.
  *
  * Distinct from `humanDuration`, which rounds to whole minutes and is right

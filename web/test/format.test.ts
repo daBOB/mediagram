@@ -8,6 +8,7 @@ import {
   episodeLabel,
   humanDuration,
   humanSize,
+  resumeLine,
   spellCount,
   technicalLine,
 } from "../public/lib/format.js";
@@ -185,5 +186,38 @@ describe("the technical line", () => {
 
   test("leaves codecLine alone, which the compact views still use", () => {
     expect(codecLine(blade)).toBe("mkv · hevc · eac3");
+  });
+});
+
+describe("where someone got to", () => {
+  test("gives the share and the position", () => {
+    expect(resumeLine({ at: 750, duration: 1800 })).toBe("42% · 12:30");
+  });
+
+  test("gives the position alone when the runtime is unknown", () => {
+    // A percentage of an unknown length is a number with nothing behind it.
+    expect(resumeLine({ at: 750, duration: null })).toBe("12:30");
+    expect(resumeLine({ at: 750 })).toBe("12:30");
+    expect(resumeLine({ at: 750, duration: 0 })).toBe("12:30");
+  });
+
+  test("does not exceed a hundred per cent", () => {
+    // A position past the runtime is a clock disagreeing, not 140% watched.
+    expect(resumeLine({ at: 2500, duration: 1800 })).toBe("100% · 41:40");
+  });
+
+  test("spells the position as a clock once past an hour", () => {
+    expect(resumeLine({ at: 5025, duration: 7200 })).toBe("70% · 1:23:45");
+  });
+
+  test("says nothing for a title never started", () => {
+    expect(resumeLine(null)).toBe("");
+    expect(resumeLine(undefined)).toBe("");
+    expect(resumeLine({ duration: 1800 })).toBe("");
+  });
+
+  test("says nothing for a position that is not a number", () => {
+    expect(resumeLine({ at: Number.NaN, duration: 1800 })).toBe("");
+    expect(resumeLine({ at: -5, duration: 1800 })).toBe("");
   });
 });

@@ -8,7 +8,7 @@
 
 import { el } from "./dom.js";
 import { initialsOf, plate } from "./plate.js";
-import { countOf, episodeLabel, hdrLabel, humanDuration, humanSize } from "./format.js";
+import { countOf, episodeLabel, hdrLabel, humanDuration, humanSize, resumeLine } from "./format.js";
 import { isWatched, progressOf } from "./watch-state.js";
 import { watchedFraction } from "./resume-point.js";
 import { firstItemOf } from "./library.js";
@@ -56,13 +56,15 @@ function filmMeta(set, mode) {
 }
 
 /** A card for a film, a show or a course. */
-function card({ name, meta, initials, onClick, badges, poster, progress, watched }) {
+function card({ name, meta, resume, initials, onClick, badges, poster, progress, watched }) {
   const button = el("button", "card");
   const thumb = plate({ poster, name, initials, progress, watched });
 
   const body = el("div", "body");
   body.append(el("div", "name", name));
   if (meta) body.append(el("div", "meta", meta));
+  // Under the facts about the film, because it is a fact about the viewer.
+  if (resume) body.append(el("div", "resume", resume));
   // Two at most, and both may be true at once: a title already on this disk
   // that still has to be converted plays offline all the same, because the
   // conversion reads from the same cache.
@@ -123,6 +125,9 @@ export function setGrid(sets, onPlay) {
         poster: set.poster ?? null,
         badges: [offlineBadge(set), transcodeBadge(set)],
         progress: watchedFraction(progressOf(set.setId)),
+        // Where this viewer got to. Empty for a title never started, so a
+        // watchlist of things not yet begun gains no line it cannot fill.
+        resume: resumeLine(progressOf(set.setId)),
         watched: isWatched(set.setId),
         onClick: () => onPlay(set),
       }),

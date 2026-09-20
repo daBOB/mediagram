@@ -728,6 +728,18 @@ main {
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
+
+/* Where this viewer got to, under the facts about the film. In the imprint
+   red the progress rule uses, because they are the same statement twice —
+   one to read, one to glance at. */
+.card .resume {
+  grid-column: 1;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  margin-top: 0.15rem;
+}
 /* Dropped to its own row under the title rather than competing with the
    figures for the right edge. */
 .card .badge, .card .has-summary {
