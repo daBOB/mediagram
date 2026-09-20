@@ -50,13 +50,7 @@ pub(super) async fn read(
         .min(total - 1);
     let steps = range::plan_reads(&spans, &ByteRange { start: offset, end });
 
-    let client = {
-        let mut state = core.state.lock().await;
-        if state.client.is_none() {
-            state.client = Some(session::connect(&core.data_dir, core.api_id));
-        }
-        state.client.as_ref().expect("just set").client.clone()
-    };
+    let client = session::client(core).await;
 
     // Clamped to what this read can actually return, not to the caller's
     // raw `len`: an out-of-range `UInt` from Kotlin must not become an

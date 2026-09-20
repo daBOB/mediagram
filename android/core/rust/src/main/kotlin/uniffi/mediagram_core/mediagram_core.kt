@@ -684,6 +684,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_is_authorized(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_list_libraries(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_list_sets(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_poster_path(
@@ -691,6 +693,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_mediagram_core_checksum_method_core_read(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_refresh_catalog(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_refresh_library(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_request_code(
     ): Int
@@ -728,6 +732,8 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_is_authorized(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Byte
+    external fun uniffi_mediagram_core_fn_method_core_list_libraries(`ptr`: Long,
+    ): Long
     external fun uniffi_mediagram_core_fn_method_core_list_sets(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_mediagram_core_fn_method_core_poster_path(`ptr`: Long,`posterKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -735,6 +741,8 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_read(`ptr`: Long,`setId`: RustBuffer.ByValue,`offset`: Long,`len`: Int,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_refresh_catalog(`ptr`: Long,`pointerUrl`: RustBuffer.ByValue,`keyB64`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_refresh_library(`ptr`: Long,`handle`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_request_code(`ptr`: Long,`phone`: RustBuffer.ByValue,
     ): Long
@@ -867,6 +875,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_is_authorized() and 0xFFFF) != 30182) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_list_libraries() and 0xFFFF) != 41157) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if ((lib.uniffi_mediagram_core_checksum_method_core_list_sets() and 0xFFFF) != 495) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -876,7 +887,10 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_read() and 0xFFFF) != 63462) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_catalog() and 0xFFFF) != 18747) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_catalog() and 0xFFFF) != 17373) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_library() and 0xFFFF) != 44028) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_request_code() and 0xFFFF) != 62780) {
@@ -1372,13 +1386,30 @@ public interface CoreInterface {
      */
     fun `isAuthorized`(): kotlin.Boolean
     
+    /**
+     * The libraries this account could choose from, in the order Telegram
+     * itself lists them: pinned conversations first, then most recent.
+     */
+    suspend fun `listLibraries`(): List<LibraryChoice>
+    
     fun `listSets`(): List<SetSummary>
     
     fun `posterPath`(`posterKey`: kotlin.String): kotlin.String?
     
     suspend fun `read`(`setId`: kotlin.String, `offset`: kotlin.ULong, `len`: kotlin.UInt): kotlin.ByteArray
     
+    /**
+     * The published-package reader, kept whole beside the channel path
+     * above: it is the only one that carries poster art, and nothing in the
+     * first-run flow reaches it any more.
+     */
     suspend fun `refreshCatalog`(`pointerUrl`: kotlin.String, `keyB64`: kotlin.String): kotlin.ULong
+    
+    /**
+     * Installs the index pinned in the chosen library's channel, and answers
+     * how many sets it holds. Also the refresh: it re-reads the same pin.
+     */
+    suspend fun `refreshLibrary`(`handle`: kotlin.String): kotlin.ULong
     
     suspend fun `requestCode`(`phone`: kotlin.String): kotlin.String
     
@@ -1552,6 +1583,31 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     
 
     
+    /**
+     * The libraries this account could choose from, in the order Telegram
+     * itself lists them: pinned conversations first, then most recent.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `listLibraries`() : List<LibraryChoice> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_list_libraries(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypeLibraryChoice.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
     @Throws(CoreException::class)override fun `listSets`(): List<SetSummary> {
             return FfiConverterSequenceTypeSetSummary.lift(
     callWithHandle {
@@ -1604,6 +1660,11 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     }
 
     
+    /**
+     * The published-package reader, kept whole beside the channel path
+     * above: it is the only one that carries poster art, and nothing in the
+     * first-run flow reaches it any more.
+     */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `refreshCatalog`(`pointerUrl`: kotlin.String, `keyB64`: kotlin.String) : kotlin.ULong {
@@ -1614,6 +1675,32 @@ open class Core: Disposable, AutoCloseable, CoreInterface
                 
         FfiConverterString.lower(`pointerUrl`),
         FfiConverterString.lower(`keyB64`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_u64(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_u64(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_u64(future) },
+        // lift function
+        { FfiConverterULong.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Installs the index pinned in the chosen library's channel, and answers
+     * how many sets it holds. Also the refresh: it re-reads the same pin.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `refreshLibrary`(`handle`: kotlin.String) : kotlin.ULong {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_refresh_library(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`handle`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_u64(future, callback, continuation) },
@@ -1721,6 +1808,52 @@ public object FfiConverterTypeCore: FfiConverter<Core, Long> {
 
     override fun write(value: Core, buf: ByteBuffer) {
         buf.putLong(lower(value))
+    }
+}
+
+
+
+/**
+ * One library the signed-in account could choose, as the caller sees it.
+ *
+ * A title to render and a handle to send back, and nothing else. The handle
+ * is a random name this data directory minted for the channel — see
+ * [`library`] — so a caller holding one learns nothing about where the
+ * bytes live, which is the same rule the byte path is held to.
+ */
+data class LibraryChoice (
+    var `handle`: kotlin.String
+    , 
+    var `title`: kotlin.String
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLibraryChoice: FfiConverterRustBuffer<LibraryChoice> {
+    override fun read(buf: ByteBuffer): LibraryChoice {
+        return LibraryChoice(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LibraryChoice) = (
+            FfiConverterString.allocationSize(value.`handle`) +
+            FfiConverterString.allocationSize(value.`title`)
+    )
+
+    override fun write(value: LibraryChoice, buf: ByteBuffer) {
+            FfiConverterString.write(value.`handle`, buf)
+            FfiConverterString.write(value.`title`, buf)
     }
 }
 
@@ -1907,6 +2040,20 @@ sealed class CoreException: kotlin.Exception() {
             get() = "v1=${ v1 }"
     }
     
+    /**
+     * The chosen channel does not hold one readable index. Its own variant
+     * because it is neither a network fault nor a missing file: the channel
+     * answered, and what it holds is not a library yet — which is something
+     * a person can go and fix.
+     */
+    class Library(
+        
+        val v1: kotlin.String
+        ) : CoreException() {
+        override val message
+            get() = "v1=${ v1 }"
+    }
+    
 
     
 
@@ -1941,6 +2088,9 @@ public object FfiConverterTypeCoreError : FfiConverterRustBuffer<CoreException> 
             5 -> CoreException.Io(
                 FfiConverterString.read(buf),
                 )
+            6 -> CoreException.Library(
+                FfiConverterString.read(buf),
+                )
             else -> throw RuntimeException("invalid error enum value, something is very wrong!!")
         }
     }
@@ -1972,6 +2122,11 @@ public object FfiConverterTypeCoreError : FfiConverterRustBuffer<CoreException> 
                 4UL
                 + FfiConverterString.allocationSize(value.v1)
             )
+            is CoreException.Library -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+                + FfiConverterString.allocationSize(value.v1)
+            )
         }
     }
 
@@ -1999,6 +2154,11 @@ public object FfiConverterTypeCoreError : FfiConverterRustBuffer<CoreException> 
             }
             is CoreException.Io -> {
                 buf.putInt(5)
+                FfiConverterString.write(value.v1, buf)
+                Unit
+            }
+            is CoreException.Library -> {
+                buf.putInt(6)
                 FfiConverterString.write(value.v1, buf)
                 Unit
             }
@@ -2067,6 +2227,34 @@ public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?>
         } else {
             buf.put(1)
             FfiConverterString.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeLibraryChoice: FfiConverterRustBuffer<List<LibraryChoice>> {
+    override fun read(buf: ByteBuffer): List<LibraryChoice> {
+        val len = buf.getInt()
+        return List<LibraryChoice>(len) {
+            FfiConverterTypeLibraryChoice.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LibraryChoice>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLibraryChoice.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LibraryChoice>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLibraryChoice.write(it, buf)
         }
     }
 }

@@ -86,14 +86,29 @@ pub(super) async fn refresh_catalog(
     catalog::write_identity(&incoming, &catalog::identity_of(&pointer))?;
 
     let version_name = format!("v-{}", pointer.created_at);
-    let version = root.join(&version_name);
-    let _ = std::fs::remove_dir_all(&version);
-    std::fs::rename(&incoming, &version)
-        .map_err(|_| CoreError::Io("staging the refreshed catalog".into()))?;
-    swap_current(core, &version_name)?;
-    remove_other_versions(core, &version_name)?;
+    install_staged(core, &incoming, &version_name)?;
 
-    catalog::count_playable(&version)
+    catalog::count_playable(&root.join(&version_name))
+}
+
+/// Moves a staged catalog into place under `version_name` and points
+/// `current` at it, clearing every version the swap leaves behind.
+///
+/// The one way a catalog becomes the current one, whichever path assembled
+/// it: the atomicity below is the reason a reader that dies mid-refresh sees
+/// one whole catalog or the other, and a second implementation of it would
+/// be a second chance to get that wrong.
+pub(super) fn install_staged(
+    core: &Core,
+    incoming: &std::path::Path,
+    version_name: &str,
+) -> Result<(), CoreError> {
+    let version = catalog::dir(core).join(version_name);
+    let _ = std::fs::remove_dir_all(&version);
+    std::fs::rename(incoming, &version)
+        .map_err(|_| CoreError::Io("staging the refreshed catalog".into()))?;
+    swap_current(core, version_name)?;
+    remove_other_versions(core, version_name)
 }
 
 /// Points `current` at `version_name`, atomically: a symlink renamed over
@@ -141,7 +156,7 @@ fn package_error(err: PackageError) -> CoreError {
     }
 }
 
-fn now_unix() -> i64 {
+pub(super) fn now_unix() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs() as i64)

@@ -18,7 +18,7 @@ use grammers_session::SessionData;
 use grammers_session::storages::MemorySession;
 use tokio::task::JoinHandle;
 
-use super::CoreError;
+use super::{Core, CoreError};
 
 const SESSION_FILE: &str = "session.key";
 const AUTH_KEY_LEN: usize = 256;
@@ -114,6 +114,20 @@ pub(super) fn connect(data_dir: &Path, api_id: i32) -> ClientHandle {
         handle,
         _pool_task: pool_task,
     }
+}
+
+/// The one connection this `Core` keeps, opening it on first demand.
+///
+/// Every call that talks to Telegram goes through here rather than
+/// connecting for itself: a second connection would be a second sender pool
+/// over the same auth key, and grammers treats one key served to two clients
+/// as the two breaking each other until a restart.
+pub(super) async fn client(core: &Core) -> grammers_client::Client {
+    let mut state = core.state.lock().await;
+    if state.client.is_none() {
+        state.client = Some(connect(&core.data_dir, core.api_id));
+    }
+    state.client.as_ref().expect("just set").client.clone()
 }
 
 /// Persists whatever auth key the session now holds for its home

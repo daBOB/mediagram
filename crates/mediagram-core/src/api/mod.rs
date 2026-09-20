@@ -11,7 +11,10 @@
 
 mod auth;
 mod catalog;
+mod channel;
+mod channel_index;
 mod http;
+mod library;
 mod read;
 mod refresh;
 mod refresh_fetch;
@@ -32,6 +35,18 @@ pub enum AuthOutcome {
     PasswordNeeded,
 }
 
+/// One library the signed-in account could choose, as the caller sees it.
+///
+/// A title to render and a handle to send back, and nothing else. The handle
+/// is a random name this data directory minted for the channel — see
+/// [`library`] — so a caller holding one learns nothing about where the
+/// bytes live, which is the same rule the byte path is held to.
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct LibraryChoice {
+    pub handle: String,
+    pub title: String,
+}
+
 /// Every error this surface can hand to Kotlin.
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum CoreError {
@@ -45,6 +60,12 @@ pub enum CoreError {
     Cipher(String),
     #[error("io error: {0}")]
     Io(String),
+    /// The chosen channel does not hold one readable index. Its own variant
+    /// because it is neither a network fault nor a missing file: the channel
+    /// answered, and what it holds is not a library yet — which is something
+    /// a person can go and fix.
+    #[error("library error: {0}")]
+    Library(String),
 }
 
 /// State a running app keeps between calls: the connection once opened, and
@@ -102,6 +123,21 @@ impl Core {
         auth::check_password(self, password).await
     }
 
+    /// The libraries this account could choose from, in the order Telegram
+    /// itself lists them: pinned conversations first, then most recent.
+    pub async fn list_libraries(&self) -> Result<Vec<LibraryChoice>, CoreError> {
+        channel::list_libraries(self).await
+    }
+
+    /// Installs the index pinned in the chosen library's channel, and answers
+    /// how many sets it holds. Also the refresh: it re-reads the same pin.
+    pub async fn refresh_library(&self, handle: String) -> Result<u64, CoreError> {
+        channel::refresh_library(self, handle).await
+    }
+
+    /// The published-package reader, kept whole beside the channel path
+    /// above: it is the only one that carries poster art, and nothing in the
+    /// first-run flow reaches it any more.
     pub async fn refresh_catalog(
         &self,
         pointer_url: String,
