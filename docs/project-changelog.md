@@ -55,6 +55,23 @@ is a technique, not an audience. Age ratings would be the principled answer
 and are not fetched from TMDB at all, which makes them uploader work rather
 than player work.
 
+**Fixed**
+
+- `push-index` now reads the channel back to see whether an unpin took
+  effect, instead of believing the call. `messages.updatePinnedMessage`
+  returns the updates it produced and grammers maps them through
+  `.map(drop)`, so a request the server accepted and acted on not at all was
+  indistinguishable from one that worked. A push reported success, left its
+  predecessor pinned, and — because `Ok` erased the id from `library.db` — no
+  later push could find it. Only `rescan`, which reads the pins off the
+  channel, could. An id that cannot be proved unpinned now stays on the stale
+  list, and the push tries a second time before giving up on it.
+- An id is dropped only on the errors that mean the message is gone
+  (`MESSAGE_ID_INVALID`, `MESSAGE_NOT_MODIFIED`), not on the whole 400 class.
+  That class also carries `PEER_ID_INVALID`, `CHANNEL_INVALID` and
+  `CHAT_WRITE_FORBIDDEN`, which say nothing about the message; reading one of
+  those as "gone" stranded a pin the same way.
+
 ## 2026-09-19
 
 **Shipped**
