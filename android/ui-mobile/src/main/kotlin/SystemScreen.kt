@@ -20,8 +20,9 @@ import system.SystemViewModel
 
 /**
  * What the app is actually doing, in four blocks: the installed catalog,
- * the disk cache, what has crossed the wire to Telegram, and whether this
- * device's Telegram session is up.
+ * the disk cache, what has crossed the wire to Telegram, and this app
+ * itself — its version, its Telegram session, and how long it has been
+ * running.
  *
  * Rows are label-and-value pairs set in the app's own type, not a
  * monospace grid — the same choice the web player's status panel makes,
@@ -51,7 +52,7 @@ fun SystemScreen() {
         item { CatalogueBlock(current) }
         item { CacheBlock(current) }
         item { UpstreamBlock(current) }
-        item { TelegramBlock(current) }
+        item { ThisAppBlock(current) }
     }
 }
 
@@ -71,7 +72,7 @@ private fun CatalogueBlock(state: SystemUiState) = Block(
 private fun CacheBlock(state: SystemUiState) = Block(
     heading = "Cache",
     rows = listOf(
-        "Held" to heldOfBudget(state.fromCacheBytes, CACHE_BUDGET_BYTES),
+        "Held" to heldOfBudget(state.heldBytes, state.budgetBytes),
         // "hits" is a round trip to Telegram that returned bytes, "misses"
         // one that raised instead — PlaybackCounters keeps no separate
         // count of cache-served reads, only the bytes the percentage ahead
@@ -90,9 +91,13 @@ private fun UpstreamBlock(state: SystemUiState) = Block(
 )
 
 @Composable
-private fun TelegramBlock(state: SystemUiState) = Block(
-    heading = "Telegram",
-    rows = listOf("Session" to telegramLine(state.connected)),
+private fun ThisAppBlock(state: SystemUiState) = Block(
+    heading = "This app",
+    rows = listOf(
+        "Version" to state.versionName,
+        "Telegram" to telegramLine(state.connected),
+        "Uptime" to uptimeLine(state.uptimeSeconds),
+    ),
 )
 
 /** A heading and its label/value rows. A row whose value is null is left out entirely. */
@@ -109,11 +114,3 @@ private fun Block(heading: String, rows: List<Pair<String, String?>>) {
         }
     }
 }
-
-/**
- * The disk cache's own ceiling, mirrored from core:playback's
- * `CacheProvider` (a 2 GiB `LeastRecentlyUsedCacheEvictor`) rather than
- * imported: a feature module reaches the counters it is given, not the
- * cache instance itself.
- */
-private const val CACHE_BUDGET_BYTES = 2L * 1024 * 1024 * 1024

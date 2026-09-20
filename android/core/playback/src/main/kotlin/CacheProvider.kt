@@ -31,6 +31,9 @@ import java.io.File
 private const val CACHE_DIR_NAME = "mlib"
 private const val CACHE_MAX_BYTES = 2L * 1024 * 1024 * 1024 // 2 GiB
 
+/** What the disk cache is actually holding, against what it may hold — the System screen's Held row. */
+data class CacheOccupancy(val heldBytes: Long, val budgetBytes: Long)
+
 /**
  * The one [SimpleCache] for the whole process, over `context.cacheDir/mlib`
  * with a 2 GiB LRU ceiling. `SimpleCache` throws at construction if a
@@ -68,6 +71,16 @@ object CacheProvider {
             }
         }
     }
+
+    /**
+     * The one number [CACHE_MAX_BYTES] is for, read back against what
+     * [SimpleCache] is actually holding right now. `cacheSpace` is a plain
+     * getter over the index's own running total, not disk I/O, so this
+     * needs no dispatch beyond whatever [get] itself needs to open the
+     * cache the first time.
+     */
+    suspend fun occupancy(context: Context, dispatcher: CoroutineDispatcher = Dispatchers.IO): CacheOccupancy =
+        CacheOccupancy(heldBytes = get(context, dispatcher).cacheSpace, budgetBytes = CACHE_MAX_BYTES)
 
     /** Test-only: clears the cached instance so a test can observe a fresh construction. */
     internal fun resetForTest() {

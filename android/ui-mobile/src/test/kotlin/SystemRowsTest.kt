@@ -39,4 +39,16 @@ class SystemRowsTest {
         assertEquals("connected", telegramLine(connected = true))
         assertEquals("disconnected", telegramLine(connected = false))
     }
+
+    @Test
+    fun uptimeIsSaidCoarsely() {
+        assertEquals("14m", uptimeLine(seconds = 840))
+        assertEquals("2h 14m", uptimeLine(seconds = 8_040))
+    }
+
+    /** A process with no start time to measure from has no row either. */
+    @Test
+    fun anUnknownUptimeHasNoRow() {
+        assertNull(uptimeLine(seconds = null))
+    }
 }

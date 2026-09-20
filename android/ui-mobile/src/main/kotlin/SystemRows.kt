@@ -71,3 +71,16 @@ internal fun telegramLine(connected: Boolean?): String? = when (connected) {
     true -> "connected"
     false -> "disconnected"
 }
+
+/** How long this process has been up, coarsely: `2h 14m`, or just `14m` under an hour. */
+internal fun uptimeLine(seconds: Long?): String? {
+    if (seconds == null || seconds < 0) return null
+    val days = seconds / 86_400
+    val hours = (seconds % 86_400) / 3600
+    val minutes = (seconds % 3600) / 60
+    return when {
+        days > 0 -> "${days}d ${hours}h"
+        hours > 0 -> "${hours}h ${minutes}m"
+        else -> "${minutes}m"
+    }
+}
