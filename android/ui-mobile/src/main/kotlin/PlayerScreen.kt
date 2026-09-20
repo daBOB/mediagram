@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
@@ -27,7 +28,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.Player
 import androidx.media3.ui.compose.PlayerSurface
+import androidx.media3.ui.compose.state.rememberPresentationState
 import designsystem.Spacing
 import player.PlayerUiState
 import player.PlayerViewModel
@@ -61,8 +64,11 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
     }
     KeepScreenOnWhile(isPlaying = state is PlayerUiState.Playing)
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        player?.let { PlayerSurface(player = it, modifier = Modifier.fillMaxSize()) }
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color.Black),
+        contentAlignment = Alignment.Center,
+    ) {
+        player?.let { Video(it) }
 
         when (state) {
             PlayerUiState.Preparing -> CenteredSpinner()
@@ -70,9 +76,47 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
             is PlayerUiState.Playing, is PlayerUiState.Paused -> Unit
         }
 
-        IconButton(onClick = onBack, modifier = Modifier.padding(Spacing.medium)) {
+        // Placed explicitly: the box centres its children so the picture
+        // sits in the middle of its letterbox, and back would otherwise be
+        // centred with it, in the middle of the film.
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier.align(Alignment.TopStart).padding(Spacing.medium),
+        ) {
             Text(text = "←", color = Color.White, style = MaterialTheme.typography.headlineSmall)
         }
+    }
+}
+
+/**
+ * The picture, shaped to itself rather than to the screen.
+ *
+ * `PlayerSurface` draws into whatever bounds it is given and applies no
+ * ratio of its own — the old `PlayerView` had a frame layout that did — so
+ * filling the window stretches a 2.4:1 film onto a 3:2 display and makes
+ * everyone in it tall and thin. The black behind is the letterbox.
+ *
+ * The size comes from media3's own presentation state rather than from a
+ * listener written here: it already folds in the pixel shape that makes
+ * anamorphic video 2.4:1 rather than 1.78:1, and it already knows when the
+ * surface is showing a frame that no longer belongs to what is playing.
+ */
+@Composable
+private fun Video(player: Player) {
+    val presentation = rememberPresentationState(player)
+    val size = presentation.videoSizeDp
+    val shaped = if (size != null && size.width > 0f && size.height > 0f) {
+        Modifier.fillMaxSize().aspectRatio(size.width / size.height)
+    } else {
+        Modifier.fillMaxSize()
+    }
+    PlayerSurface(player = player, modifier = shaped)
+    // Between one set and the next the surface still holds the last frame
+    // of the old one. Covering it is what media3 asks callers to do, and
+    // the alternative is a still from the previous film over the new one's
+    // audio.
+    if (presentation.coverSurface) {
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black))
     }
 }
 
