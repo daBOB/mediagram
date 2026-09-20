@@ -37,10 +37,38 @@ class CatalogViewModelTest {
         }
     }
 
+    /**
+     * A catalog is a file on this device and stays a whole library when the
+     * channel cannot be reached. Losing it over a failed round trip is the
+     * one failure a viewer has no way to work around — and the channel is
+     * reachable far less reliably than the file is.
+     */
     @Test
-    fun aFailedRefreshSurfacesAsFailed() = runTest {
+    fun aFailedRefreshKeepsTheLibraryAlreadyOnThisDevice() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-        val vm = CatalogViewModel(FakeCatalogRepository(refreshFails = true))
+        val vm = CatalogViewModel(FakeCatalogRepository(movies = 2, refreshFails = true))
+        vm.state.test {
+            awaitItem()
+            val ready = awaitItem() as CatalogUiState.Ready
+            assertEquals(listOf("Movies"), ready.shelves.map { it.title })
+        }
+    }
+
+    /** Kept, but not quietly: a library that stopped updating has to say so. */
+    @Test
+    fun aRefreshThatFailedIsSaidRatherThanSwallowed() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val vm = CatalogViewModel(FakeCatalogRepository(movies = 1, refreshFails = true))
+        vm.state.test {
+            awaitItem()
+            assertEquals("refresh failed", (awaitItem() as CatalogUiState.Ready).notice)
+        }
+    }
+
+    @Test
+    fun aFailedRefreshWithNothingOnDiskSurfacesAsFailed() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val vm = CatalogViewModel(FakeCatalogRepository(refreshFails = true, onDisk = false))
         vm.state.test {
             awaitItem()
             assertTrue(awaitItem() is CatalogUiState.Failed)

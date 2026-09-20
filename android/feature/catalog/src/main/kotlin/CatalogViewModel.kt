@@ -9,15 +9,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
-import model.Kind
-import model.MediaSet
 import javax.inject.Inject
-
-private val SHELF_ORDER = listOf(
-    Kind.MOVIE to "Movies",
-    Kind.EPISODE to "Series",
-    Kind.TUTORIAL to "Tutorials",
-)
 
 /** Refreshes the catalog once, then groups it into shelves for the screen to render. */
 @HiltViewModel
@@ -27,21 +19,27 @@ class CatalogViewModel @Inject constructor(
 
     val state: StateFlow<CatalogUiState> = flow {
         emit(CatalogUiState.Loading)
+        // The refresh is tried first and judged last. A catalog is a file on
+        // this device, and it goes on being a whole library when the channel
+        // cannot be reached — on a train, or while whoever uploads is midway
+        // through tidying the channel. Losing the library over a failed
+        // round trip would be the one failure a viewer cannot work around.
         val failure = repository.refresh().exceptionOrNull()
-        if (failure != null) {
-            // What the core says about a channel is written to be read —
-            // nothing pinned there, and what to run about it. Its own
-            // message is the bindings' field name and a value.
-            emit(CatalogUiState.Failed(failure.coreSentence() ?: failure.message ?: "Could not refresh the library"))
-            return@flow
-        }
-        val shelves = groupIntoShelves(repository.sets())
-        emit(if (shelves.isEmpty()) CatalogUiState.Empty else CatalogUiState.Ready(shelves))
+        val shelves = shelvesOf(runCatching { repository.sets() }.getOrDefault(emptyList()))
+        emit(
+            when {
+                shelves.isNotEmpty() -> CatalogUiState.Ready(shelves, failure?.sentence())
+                failure != null -> CatalogUiState.Failed(failure.sentence())
+                else -> CatalogUiState.Empty
+            },
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CatalogUiState.Loading)
 }
 
-/** An empty shelf is omitted, not rendered empty. */
-private fun groupIntoShelves(sets: List<MediaSet>): List<Shelf> =
-    SHELF_ORDER.mapNotNull { (kind, title) ->
-        sets.filter { it.kind == kind }.takeIf { it.isNotEmpty() }?.let { Shelf(title, it) }
-    }
+/**
+ * What the core says, which is written to be read: what is wrong with the
+ * channel and what to run about it. The generated exception's own message
+ * is the bindings' field name and a value.
+ */
+private fun Throwable.sentence(): String =
+    coreSentence() ?: message ?: "Could not refresh the library"

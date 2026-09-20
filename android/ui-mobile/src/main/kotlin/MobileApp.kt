@@ -1,6 +1,5 @@
 package ui
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -14,16 +13,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import catalog.CatalogViewModel
 import designsystem.MediagramTheme
 import designsystem.Spacing
 import login.LoginUiState
@@ -130,35 +125,10 @@ private fun SignIn(onAuthorized: () -> Unit) {
  * which has nothing stored yet, goes without.
  */
 @Composable
-private fun WithStartOver(onStartOver: () -> Unit, content: @Composable () -> Unit) {
+internal fun WithStartOver(onStartOver: () -> Unit, content: @Composable () -> Unit) {
     Column(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
         Box(modifier = Modifier.weight(1f)) { content() }
         StartOverAction(onConfirm = onStartOver)
-    }
-}
-
-/** The catalog, and whichever set it opened — the first screen pair with a real back-stack need. */
-@Composable
-private fun CatalogAndPlayer(onStartOver: () -> Unit) {
-    val catalogViewModel: CatalogViewModel = hiltViewModel()
-    val catalogState by catalogViewModel.state.collectAsStateWithLifecycle()
-    // rememberSaveable, not remember: the Activity is fully destroyed and
-    // recreated on rotation (there is no android:configChanges), and the
-    // singleton player/ViewModel survive that regardless — without this,
-    // rotating away from an open set would drop back to the catalog while
-    // the film kept playing underneath it.
-    var openedSetId by rememberSaveable { mutableStateOf<String?>(null) }
-
-    val setId = openedSetId
-    if (setId != null) {
-        // The player gets the whole window; a film is the one thing here
-        // that wants the space under the system bars.
-        BackHandler { openedSetId = null }
-        PlayerScreen(setId = setId, onBack = { openedSetId = null })
-    } else {
-        WithStartOver(onStartOver) {
-            CatalogScreen(state = catalogState, onOpen = { openedSetId = it })
-        }
     }
 }
 

@@ -52,6 +52,8 @@ class DefaultCatalogRepository(
             kind = kind,
             title = summary.title ?: summary.show ?: summary.setId,
             show = summary.show,
+            chapter = summary.chap,
+            path = summary.path,
             season = summary.season?.toInt(),
             episodeFirst = summary.episodeFirst?.toInt(),
             episodeLast = summary.episodeLast?.toInt(),
