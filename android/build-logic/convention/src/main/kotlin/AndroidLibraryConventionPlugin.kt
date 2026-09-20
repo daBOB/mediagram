@@ -50,7 +50,14 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
             }
             
             dependencies {
-                add("androidTestImplementation", libs.findLibrary("kotlin.test").get())
+                // Plain androidx.test JUnit4, not kotlin-test: kotlin-test's bare artifact
+                // only ships the common `expect` annotations, resolved to a real framework
+                // by the Kotlin Gradle plugin's JVM/Android target substitution rule — a
+                // rule that never runs here, since AGP 9's built-in Kotlin support means
+                // that plugin is never applied. androidx.test's JUnit4 runner needs no such
+                // substitution; it is a real implementation on its own.
+                add("androidTestImplementation", libs.findLibrary("androidx.junit").get())
+                add("androidTestImplementation", libs.findLibrary("androidx.test.runner").get())
                 // kotlin-test alone only ships the common `expect` annotations; without the
                 // Kotlin Gradle plugin's JVM/Android target (AGP 9's built-in Kotlin support
                 // means it is never applied here) nothing resolves them to an actual test
