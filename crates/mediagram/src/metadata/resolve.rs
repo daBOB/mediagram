@@ -9,8 +9,8 @@ use mlib_spec::{Episode, Kind, ProviderIds};
 
 use super::prompt::Prompter;
 use super::search::search_and_resolve;
-use super::tmdb_client::TmdbApi;
-use super::tmdb_types::{DetailsResponse, EpisodeDetails, FindResponse};
+use mediagram_tmdb::tmdb_client::TmdbApi;
+use mediagram_tmdb::tmdb_types::{DetailsResponse, EpisodeDetails, FindResponse};
 
 /// Everything `resolve` needs beyond the file name; mirrors `AddArgs`
 /// without depending on the CLI or config types.

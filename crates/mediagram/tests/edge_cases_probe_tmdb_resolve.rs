@@ -5,7 +5,7 @@
 use anyhow::Result;
 use mediagram::metadata::prompt::Prompter;
 use mediagram::metadata::resolve::{ResolveInput, resolve};
-use mediagram::metadata::tmdb_client::TmdbApi;
+use mediagram_tmdb::tmdb_client::TmdbApi;
 use mlib_spec::Kind;
 use mlib_spec::filename::Guess;
 use serde_json::{Value, json};

@@ -9,7 +9,7 @@ use std::rc::Rc;
 use anyhow::Result;
 use metadata::prompt::Prompter;
 use metadata::resolve::ResolvedItem;
-use metadata::tmdb_client::TmdbApi;
+use mediagram_tmdb::tmdb_client::TmdbApi;
 use mlib_spec::filename::Guess;
 use serde_json::Value;
 

@@ -18,7 +18,7 @@ use crate::export::encrypt::{parse_key, seal};
 use crate::export::posters::resolve_posters;
 use crate::export::stage::Staging;
 use crate::export::{archive, latest, pointer, publish};
-use crate::metadata::tmdb_client::TmdbClient;
+use mediagram_tmdb::tmdb_client::TmdbClient;
 
 pub async fn run(
     cfg: &Config,

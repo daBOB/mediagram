@@ -14,7 +14,7 @@ use anyhow::{Context, Result, bail};
 use mlib_spec::Kind;
 
 use crate::export::{restrict, restrict_dir};
-use crate::metadata::tmdb_client::TmdbApi;
+use mediagram_tmdb::tmdb_client::TmdbApi;
 
 /// TMDB's image CDN. `w342` is the smallest width that still looks right on a
 /// television shelf, and keeps a 300-title package near eight megabytes.
@@ -57,7 +57,7 @@ pub async fn resolve_posters(api: &impl TmdbApi, titles: &[(Kind, u64)]) -> Vec<
 async fn poster_path_for(api: &impl TmdbApi, kind: Kind, id: u64) -> Option<String> {
     // A course has no provider id, so it never reaches this lookup and simply
     // has no poster from TMDB.
-    let details = match crate::metadata::details::details(api, kind, id).await {
+    let details = match mediagram_tmdb::details(api, kind, id).await {
         Ok(details) => details,
         Err(err) => {
             tracing::warn!(id, error = %err, "no poster for this title");

@@ -6,7 +6,7 @@
 use mediagram::export::posters::{
     PosterRef, already_held, download_into, poster_url, resolve_posters,
 };
-use mediagram::metadata::tmdb_client::TmdbApi;
+use mediagram_tmdb::tmdb_client::TmdbApi;
 use mlib_spec::Kind;
 
 use anyhow::{Result, bail};

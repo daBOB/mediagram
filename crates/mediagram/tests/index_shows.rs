@@ -1,7 +1,7 @@
 //! The `shows` table: what a provider says about a title, recorded once.
 
 use mediagram::index::shows::{ShowRow, count, from_details, get, kind_key, upsert};
-use mediagram::metadata::tmdb_types::{DetailsResponse, NamedRef};
+use mediagram_tmdb::tmdb_types::{DetailsResponse, NamedRef};
 use mlib_spec::Kind;
 use rusqlite::Connection;
 

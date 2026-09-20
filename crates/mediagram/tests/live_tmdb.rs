@@ -10,7 +10,7 @@
 //! key.
 
 use mediagram::config;
-use mediagram::metadata::tmdb_client::{Credential, TmdbApi, TmdbClient, classify};
+use mediagram_tmdb::tmdb_client::{Credential, TmdbApi, TmdbClient, classify};
 
 fn live() -> bool {
     std::env::var("MEDIAGRAM_LIVE").as_deref() == Ok("1")

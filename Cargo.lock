@@ -1720,6 +1720,7 @@ dependencies = [
  "hex",
  "libc",
  "mediagram-core",
+ "mediagram-tmdb",
  "mlib-spec",
  "reqwest",
  "rusqlite",
@@ -1768,6 +1769,21 @@ dependencies = [
  "uniffi",
  "url",
  "webpki-roots",
+]
+
+[[package]]
+name = "mediagram-tmdb"
+version = "0.4.0"
+dependencies = [
+ "anyhow",
+ "hex",
+ "mlib-spec",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

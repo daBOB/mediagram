@@ -16,7 +16,7 @@ use crate::config::Config;
 use crate::edit::apply::write_captions;
 use crate::edit::plan::{Clearable, Edits, apply_checked, captions};
 use crate::index::{db, parts, sets};
-use crate::metadata::tmdb_client::{TmdbApi, TmdbClient};
+use mediagram_tmdb::tmdb_client::{TmdbApi, TmdbClient};
 use crate::telegram::client::Tg;
 
 pub async fn run(cfg: &Config, args: EditArgs) -> Result<()> {

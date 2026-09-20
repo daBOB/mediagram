@@ -1,0 +1,21 @@
+[package]
+name = "mediagram-tmdb"
+description = "TMDB lookups and poster artwork, shared by the uploader and the mobile core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow = "1.0.104"
+hex.workspace = true
+mlib-spec = { path = "../mlib-spec" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+tokio = { version = "1.53.1", features = ["time"] }
+tracing = "0.1"
+# No TLS provider is named here on purpose. The uploader builds with `rustls`
+# and the mobile core with `rustls-no-provider`, and Cargo unifies features
+# per target — a provider chosen here would be chosen for both.
+reqwest = { version = "0.13.5", default-features = false, features = ["json"] }

@@ -17,7 +17,7 @@ use crate::config::Config;
 use crate::export::posters::{already_held, download_into, resolve_posters};
 use crate::export::stage::POSTER_DIR;
 use crate::export::titles::distinct_titles_in;
-use crate::metadata::tmdb_client::TmdbClient;
+use mediagram_tmdb::tmdb_client::TmdbClient;
 
 pub async fn run(cfg: &Config) -> Result<()> {
     let data_dir = cfg.data_dir()?;
