@@ -12,4 +12,7 @@ android {
 dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:model"))
+    // Only for the ExoPlayer instance behind PlayerHandle and the DI module
+    // that provides it — no composable here ever touches media3 directly.
+    implementation(project(":core:playback"))
 }
