@@ -31,7 +31,7 @@
 | 2 | [Gradle skeleton, module graph, CI](phase-02-gradle-skeleton-and-ci.md) | Complete |
 | 3 | [Login and catalog; the mobile surface](phase-03-login-and-catalog-mobile.md) | Complete |
 | 4 | [The TV surface](phase-04-tv-surface.md) | Blocked — needs a television to develop against |
-| 5 | [Playback on all three](phase-05-playback-media3.md) | Complete — tasks 1–3 and the mobile half of task 4 |
+| 5 | [Playback on all three](phase-05-playback-media3.md) | Complete — tasks 1–3 and the mobile half of task 4, including its seek gate |
 | 6 | [Byte-truth gate and documentation](phase-06-byte-truth-gate-and-docs.md) | Not started |
 | 7 | [First-run setup on the device](phase-07-first-run-setup.md) | Complete |
 | 8 | [The catalog from the channel](phase-08-catalog-from-the-channel.md) | Complete |

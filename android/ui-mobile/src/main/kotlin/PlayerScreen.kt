@@ -50,8 +50,7 @@ import player.PlayerViewModel
  * survive regardless; see [shouldStopOnDispose].
  *
  * A tap toggles the transport bar, which takes itself away while a film runs
- * and stays while it is paused; see [controlsShouldFade]. There is no seek
- * control yet — see [PlayerControls].
+ * and stays while it is paused or being scrubbed; see [controlsShouldFade].
  */
 @Composable
 fun PlayerScreen(setId: String, onBack: () -> Unit) {
@@ -73,9 +72,14 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
     // Shown when the screen opens, so a viewer finds out the bar is there at
     // all, then left to take itself away.
     var controlsShown by remember { mutableStateOf(true) }
-    LaunchedEffect(controlsShown, state) {
+    var scrubbing by remember { mutableStateOf(false) }
+    LaunchedEffect(controlsShown, state, scrubbing) {
         if (!controlsShown) return@LaunchedEffect
-        if (!controlsShouldFade(isPlaying = state is PlayerUiState.Playing, isScrubbing = false)) return@LaunchedEffect
+        val fades = controlsShouldFade(
+            isPlaying = state is PlayerUiState.Playing,
+            isScrubbing = scrubbing,
+        )
+        if (!fades) return@LaunchedEffect
         delay(CONTROLS_LINGER_MS)
         controlsShown = false
     }
@@ -92,6 +96,7 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
             if (controlsShown && controlsMayShow(state)) {
                 PlayerControls(
                     player = current,
+                    onScrubbingChanged = { scrubbing = it },
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
