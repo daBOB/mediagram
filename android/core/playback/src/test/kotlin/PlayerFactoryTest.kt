@@ -8,6 +8,7 @@ import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -30,5 +31,24 @@ class PlayerFactoryTest {
         val factory = cacheDataSourceFactory(context) { FakeCore() }
 
         assertTrue(factory.createDataSource() is CacheDataSource)
+    }
+
+    /**
+     * Both directions, explicitly. media3 defaults to five seconds back and
+     * fifteen forward, so a bar whose buttons both say ten would be telling
+     * a viewer something the player does not do.
+     */
+    @Test
+    fun aSkipMovesTenSecondsInEitherDirection() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        val player = buildPlayer(context) { FakeCore() }
+
+        try {
+            assertEquals(10_000L, player.seekBackIncrement)
+            assertEquals(10_000L, player.seekForwardIncrement)
+        } finally {
+            player.release()
+        }
     }
 }

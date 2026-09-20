@@ -44,4 +44,17 @@ suspend fun buildPlayer(context: Context, currentCore: () -> CoreClient?): ExoPl
             DefaultMediaSourceFactory(context)
                 .setDataSourceFactory(cacheDataSourceFactory(context, currentCore)),
         )
+        // Set in both directions because media3's defaults are not
+        // symmetrical — five seconds back, fifteen forward. A control that
+        // offers the same jump each way has to say so here; the buttons read
+        // their labels back off the player rather than carry their own copy.
+        .setSeekBackIncrementMs(SKIP_MS)
+        .setSeekForwardIncrementMs(SKIP_MS)
         .build()
+
+/**
+ * How far one skip moves. Ten seconds is long enough to clear a line of
+ * dialogue that was missed and short enough that two of them are not a
+ * scene.
+ */
+private const val SKIP_MS = 10_000L
