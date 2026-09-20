@@ -47,41 +47,47 @@ const UNREMARKABLE = 0.15;
 /**
  * The readout itself.
  *
- * `readyState` is the browser's own verdict and worth repeating because it is
- * the one thing the buffer length cannot say: four seconds buffered means
- * something different on a thirty-second clip and on a two-hour film, and
- * `HAVE_ENOUGH_DATA` is the browser saying it has done that arithmetic.
+ * **`starved` is what decides whether this says "buffering", not
+ * `readyState`.** The two are not the same thing and confusing them was a
+ * bug: `readyState` is a *level of readiness*, and its second-highest level,
+ * `HAVE_FUTURE_DATA`, means "I can play forward" — the ordinary, healthy
+ * state of a video playing from a buffer that is deliberately capped. Every
+ * transcoded title is fed by hls.js, which caps its buffer on purpose, so
+ * reading anything below `HAVE_ENOUGH_DATA` as "buffering" labelled a film
+ * that was entirely on local disk, fully encoded and playing perfectly, as
+ * though it were waiting on the network for its whole running time.
  *
- * `fillRate` is the third fact and the one the other two cannot give. Depth
- * alone cannot separate a player that has all it wants from one that is
- * falling behind — both stop growing — and it is the rate that says which.
- * Optional because it is unknowable more often than not: see `fillRate()` in
- * `adapt-playback.js`.
+ * Buffering is a thing that is *happening*, so it is taken from the element
+ * saying so: `waiting` and `stalled` mean starved, `playing` and `canplay`
+ * mean it is not. `readyState` is still what separates a player that has no
+ * frame yet from one that has.
  *
- * @param {number} readyState the element's own `readyState`
- * @param {number} aheadSeconds seconds buffered beyond the playhead
- * @param {number|null} [fillRate] buffered seconds gained per second of clock
- * @param {number} [droppedFrames] frames the decoder gave up on
+ * Described rather than positional because there are five of these now, and
+ * `preloadReadout(3, 12, null, 0, false)` says nothing at its call site.
+ *
+ * @param {{readyState: number, ahead: number, starved?: boolean,
+ *          fillRate?: number|null, dropped?: number}} at
  */
-export function preloadReadout(readyState, aheadSeconds, fillRate, droppedFrames) {
-  const ready = Number(readyState) || 0;
+export function preloadReadout(at = {}) {
+  const ready = Number(at.readyState) || 0;
+  const aheadSeconds = Number(at.ahead);
   const ahead = Number.isFinite(aheadSeconds) && aheadSeconds > 0 ? aheadSeconds : 0;
 
-  // 4 is HAVE_ENOUGH_DATA: it could play to the end without stopping.
-  const state = ready >= 4 ? "ready" : ready >= 1 ? "buffering" : "opening";
+  // Nothing to show yet is its own state: not starved, just not started.
+  const state = ready < 1 ? "opening" : at.starved === true ? "buffering" : "ready";
   const parts = [ahead > 0 ? `${state} · ${clockTime(ahead)} ahead` : state];
 
   // `Number(null)` is 0, and 0 is a rate worth showing — it is a dead stall.
   // So an absent measurement is separated from a measured zero here rather
   // than left to coercion, which cannot tell them apart.
-  const rate = fillRate === null || fillRate === undefined ? Number.NaN : Number(fillRate);
+  const rate = at.fillRate === null || at.fillRate === undefined ? Number.NaN : Number(at.fillRate);
   if (Number.isFinite(rate) && rate >= 0 && Math.abs(rate - 1) > UNREMARKABLE) {
     parts.push(`filling ${rate.toFixed(1)}×`);
   }
 
   // Only when there are some. A zero is the ordinary case, and a readout that
   // reports the ordinary case has spent a viewer's attention on nothing.
-  const dropped = Number(droppedFrames);
+  const dropped = Number(at.dropped);
   if (Number.isFinite(dropped) && dropped > 0) {
     parts.push(`${dropped} dropped`);
   }

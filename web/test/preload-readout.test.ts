@@ -28,61 +28,95 @@ describe("how far ahead", () => {
   });
 });
 
-describe("the readout", () => {
-  test("says what the browser thinks, and how much it holds", () => {
-    expect(preloadReadout(4, 24)).toBe("ready · 0:24 ahead");
-    expect(preloadReadout(2, 6)).toBe("buffering · 0:06 ahead");
+describe("what the readout calls the state", () => {
+  test("says buffering only when the element is actually waiting on data", () => {
+    expect(preloadReadout({ readyState: 3, ahead: 12, starved: true })).toBe(
+      "buffering · 0:12 ahead",
+    );
   });
 
-  test("before there is anything, says only what it is doing", () => {
-    expect(preloadReadout(0, 0)).toBe("opening");
-    expect(preloadReadout(1, 0)).toBe("buffering");
+  test("does not call a capped buffer buffering, which was the bug", () => {
+    // `readyState` 3 is HAVE_FUTURE_DATA: "I can play forward". hls.js caps
+    // its buffer on purpose, so every transcoded title sits here for its whole
+    // running time. Reading it as buffering described a film playing from
+    // local disk, fully encoded, with a minute in hand, as though it were
+    // stuck on the network.
+    expect(preloadReadout({ readyState: 3, ahead: 61 })).toBe("ready · 1:01 ahead");
+    expect(preloadReadout({ readyState: 3, ahead: 61, starved: false })).toBe(
+      "ready · 1:01 ahead",
+    );
   });
 
-  test("a long buffer reads as a clock, like every other figure here", () => {
-    expect(preloadReadout(4, 3661)).toBe("ready · 1:01:01 ahead");
+  test("says opening only before there is a frame to show", () => {
+    expect(preloadReadout({ readyState: 0, ahead: 0 })).toBe("opening");
+    // Starved before the first frame is still opening: nothing has begun, so
+    // there is nothing to have stalled.
+    expect(preloadReadout({ readyState: 0, ahead: 0, starved: true })).toBe("opening");
   });
 
-  test("nonsense from a media element does not produce nonsense on screen", () => {
-    expect(preloadReadout(Number.NaN, Number.NaN)).toBe("opening");
-    expect(preloadReadout(4, -5)).toBe("ready");
+  test("says ready once it can play, whatever readiness level that is", () => {
+    expect(preloadReadout({ readyState: 4, ahead: 30 })).toBe("ready · 0:30 ahead");
+    expect(preloadReadout({ readyState: 1, ahead: 4 })).toBe("ready · 0:04 ahead");
+  });
+
+  test("still reports how far ahead it is while starved", () => {
+    // A stall with a minute buffered somewhere is a different problem from a
+    // stall with nothing, and the readout must not hide which one it is.
+    expect(preloadReadout({ readyState: 2, ahead: 0, starved: true })).toBe("buffering");
   });
 });
 
 describe("the fill rate", () => {
   test("is shown when the buffer is filling faster than it drains", () => {
-    expect(preloadReadout(2, 12, 1.4)).toBe("buffering · 0:12 ahead, filling 1.4×");
+    expect(preloadReadout({ readyState: 2, ahead: 12, fillRate: 1.4 })).toBe(
+      "ready · 0:12 ahead, filling 1.4×",
+    );
   });
 
   test("is shown when it is falling behind, which is the whole point", () => {
-    expect(preloadReadout(2, 4, 0.5)).toBe("buffering · 0:04 ahead, filling 0.5×");
+    expect(preloadReadout({ readyState: 2, ahead: 4, starved: true, fillRate: 0.5 })).toBe(
+      "buffering · 0:04 ahead, filling 0.5×",
+    );
   });
 
   test("stays quiet near 1.0, where it would only flicker", () => {
-    expect(preloadReadout(2, 12, 1.0)).toBe("buffering · 0:12 ahead");
-    expect(preloadReadout(2, 12, 0.92)).toBe("buffering · 0:12 ahead");
-    expect(preloadReadout(2, 12, 1.1)).toBe("buffering · 0:12 ahead");
+    for (const rate of [1.0, 0.92, 1.1]) {
+      expect(preloadReadout({ readyState: 2, ahead: 12, fillRate: rate })).toBe(
+        "ready · 0:12 ahead",
+      );
+    }
   });
 
   test("is absent when nothing measured one, which is most of the time", () => {
-    // The signature grew; every call that predates it must read as it did.
-    expect(preloadReadout(2, 12)).toBe("buffering · 0:12 ahead");
-    expect(preloadReadout(2, 12, null)).toBe("buffering · 0:12 ahead");
-    expect(preloadReadout(4, 0)).toBe("ready");
+    expect(preloadReadout({ readyState: 2, ahead: 12 })).toBe("ready · 0:12 ahead");
+    expect(preloadReadout({ readyState: 2, ahead: 12, fillRate: null })).toBe(
+      "ready · 0:12 ahead",
+    );
   });
 });
 
 describe("dropped frames", () => {
   test("are reported once there are some", () => {
-    expect(preloadReadout(4, 30, null, 12)).toBe("ready · 0:30 ahead, 12 dropped");
+    expect(preloadReadout({ readyState: 4, ahead: 30, dropped: 12 })).toBe(
+      "ready · 0:30 ahead, 12 dropped",
+    );
   });
 
   test("are not reported when there are none, which is the ordinary case", () => {
-    expect(preloadReadout(4, 30, null, 0)).toBe("ready · 0:30 ahead");
-    expect(preloadReadout(4, 30)).toBe("ready · 0:30 ahead");
+    expect(preloadReadout({ readyState: 4, ahead: 30, dropped: 0 })).toBe("ready · 0:30 ahead");
+    expect(preloadReadout({ readyState: 4, ahead: 30 })).toBe("ready · 0:30 ahead");
   });
 
   test("sit after the rate when both have something to say", () => {
-    expect(preloadReadout(2, 4, 0.5, 9)).toBe("buffering · 0:04 ahead, filling 0.5×, 9 dropped");
+    expect(
+      preloadReadout({ readyState: 2, ahead: 4, starved: true, fillRate: 0.5, dropped: 9 }),
+    ).toBe("buffering · 0:04 ahead, filling 0.5×, 9 dropped");
+  });
+});
+
+describe("a call with nothing in it", () => {
+  test("is opening rather than a crash", () => {
+    expect(preloadReadout()).toBe("opening");
+    expect(preloadReadout({})).toBe("opening");
   });
 });

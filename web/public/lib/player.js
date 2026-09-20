@@ -315,20 +315,32 @@ function playNext() {
   else openPlayer(next);
 }
 
-/** How much is held, and whether the browser thinks that is enough. */
+/**
+ * Whether the element is waiting on data right now.
+ *
+ * Taken from the events that mean exactly that, rather than inferred from
+ * `readyState`: see `preloadReadout`. A title fed by hls.js sits below
+ * `HAVE_ENOUGH_DATA` for its whole running time because the buffer is capped
+ * on purpose, and reading that as "buffering" described a film playing from
+ * local disk as though it were stuck.
+ */
+let starved = false;
+
+/** How much is held, and whether the player is waiting on any of it. */
 function refreshPreload() {
   // `getVideoPlaybackQuality` is absent on older engines and on an element
   // with no video track at all, so it is asked for rather than assumed.
   const quality = video.getVideoPlaybackQuality?.();
-  preload.textContent = preloadReadout(
-    video.readyState,
-    bufferedAhead(video.buffered, video.currentTime),
+  preload.textContent = preloadReadout({
+    readyState: video.readyState,
+    ahead: bufferedAhead(video.buffered, video.currentTime),
+    starved,
     // The watch is the only thing measuring the link, and it measures whether
     // or not it ever decides to switch. Reading its rate here is what turns a
     // decision the viewer never sees into one they can.
-    watch.fillRate(),
-    quality?.droppedVideoFrames,
-  );
+    fillRate: watch.fillRate(),
+    dropped: quality?.droppedVideoFrames,
+  });
 }
 
 /** Opens the dialog on `set` and starts it playing, whichever way it plays. */
@@ -353,6 +365,7 @@ export function openPlayer(set, options = {}) {
   // list is still in hand must not start on the previous one's ordinal.
   audioTrack = 0;
   audio.hidden = true;
+  starved = false;
   refreshPreload();
   refreshWatchlist();
   refreshKids();
@@ -562,6 +575,23 @@ video.addEventListener("ended", () => {
 // ordinary request does not survive. See `flushProgress`.
 window.addEventListener("pagehide", () => saveProgress(true));
 
+// Registered before the refresh below, so the flag is already right by the
+// time the readout is rebuilt from it.
+const STARVED_BY = { waiting: true, stalled: true };
+const FED_BY = { playing: true, canplay: true, canplaythrough: true, seeked: true };
+for (const event of [...Object.keys(STARVED_BY), ...Object.keys(FED_BY)]) {
+  video.addEventListener(event, () => {
+    starved = event in STARVED_BY;
+  });
+}
+// A new source is not a starved one: whatever the last title was doing, this
+// one has not begun.
+for (const event of ["loadstart", "emptied"]) {
+  video.addEventListener(event, () => {
+    starved = false;
+  });
+}
+
 for (const event of [
   "progress",
   "loadstart",
@@ -569,6 +599,7 @@ for (const event of [
   "canplay",
   "canplaythrough",
   "waiting",
+  "stalled",
   "playing",
   "seeking",
   "seeked",

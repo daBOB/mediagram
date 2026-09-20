@@ -7,6 +7,17 @@ to `main`. Full phase-by-phase detail lives in
 
 ## 2026-09-20
 
+**Fixed**
+
+- The player said **buffering** for a title's whole running time even when
+  every byte was on local disk and the conversion had finished. The readout
+  inferred it from `readyState`, treating anything below `HAVE_ENOUGH_DATA` as
+  waiting on data — but the level below it, `HAVE_FUTURE_DATA`, means "I can
+  play forward", and a title fed by hls.js sits there by design, because
+  hls.js caps its buffer on purpose. Buffering is now taken from the element
+  saying it is waiting (`waiting`, `stalled`) rather than from a readiness
+  level, which is what the word means.
+
 **Shipped**
 
 - A **Kids** shelf, marked by hand from the player. The mark is the one thing
