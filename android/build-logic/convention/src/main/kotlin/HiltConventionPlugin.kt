@@ -19,6 +19,10 @@ class HiltConventionPlugin : Plugin<Project> {
 
             dependencies {
                 add("implementation", libs.findLibrary("hilt.android").get())
+                // Every module that carries a `@HiltViewModel` needs `ViewModel`
+                // and `viewModelScope`, which is why this lives alongside Hilt
+                // rather than in the plain library convention plugin.
+                add("implementation", libs.findLibrary("androidx.lifecycle.viewmodel.ktx").get())
                 add("ksp", hiltCompiler)
                 
                 // For testing

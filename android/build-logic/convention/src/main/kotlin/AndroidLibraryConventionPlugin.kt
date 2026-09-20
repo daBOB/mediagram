@@ -66,6 +66,8 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                 add("testImplementation", libs.findLibrary("kotlin.test.junit").get())
                 add("testImplementation", libs.findLibrary("junit").get())
                 add("testImplementation", libs.findLibrary("kotlinx.coroutines.test").get())
+                // Every module's tests may need to assert on a Flow/StateFlow in order.
+                add("testImplementation", libs.findLibrary("turbine").get())
             }
         }
     }
