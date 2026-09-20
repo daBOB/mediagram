@@ -9,6 +9,14 @@ to `main`. Full phase-by-phase detail lives in
 
 **Fixed**
 
+- The next episode no longer starts before the current one has finished. The
+  panel appeared thirty seconds from the end carrying a ten second countdown,
+  so every episode was cut off with twenty seconds still to play. It now
+  appears as a heads-up reading "when this ends", and the countdown begins at
+  the end — two decisions that had been one call.
+- **Play next** in the player's rail, which survives cancelling the countdown.
+  Saying "not automatically" should not have meant "not at all".
+
 - The player said **buffering** for a title's whole running time even when
   every byte was on local disk and the conversion had finished. The readout
   inferred it from `readyState`, treating anything below `HAVE_ENOUGH_DATA` as

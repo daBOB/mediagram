@@ -98,6 +98,9 @@
             <label for="audio-track">Audio</label>
             <select id="audio-track"></select>
           </span>
+          <!-- Survives cancelling the countdown, which is the point: saying
+               "not automatically" must not mean "not at all". -->
+          <button id="play-next" class="ghost" hidden>Play next</button>
           <button id="watchlist" class="ghost" aria-pressed="false">Watchlist</button>
           <button id="kids" class="ghost" aria-pressed="false">Kids</button>
           <button id="add-to" class="ghost">Add to…</button>

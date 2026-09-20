@@ -16,6 +16,7 @@ import { languageLabel } from "./language-label.js";
 import { defaultTrack, fillChooser, loadAudioTracks } from "./audio-chooser.js";
 import { bufferedAhead, preloadReadout } from "./preload-readout.js";
 import { renderNotes } from "./notes-view.js";
+import { COUNTDOWN_SECONDS, upNextPhase } from "./up-next.js";
 import * as state from "./watch-state.js";
 import { isFinished, resumeAt, trustedRuntime } from "./resume-point.js";
 
@@ -37,6 +38,7 @@ const notesPanel = document.getElementById("notes-panel");
 const notesClose = document.getElementById("notes-close");
 const watchlistButton = document.getElementById("watchlist");
 const kidsButton = document.getElementById("kids");
+const playNextButton = document.getElementById("play-next");
 const addToButton = document.getElementById("add-to");
 const upNext = document.getElementById("up-next");
 const upNextTitle = document.getElementById("up-next-title");
@@ -281,8 +283,23 @@ function preloadNext() {
 }
 
 /** The card over the end of a title, and the countdown that acts on it. */
-function showUpNext() {
-  if (!nextUp || !playing || cancelled.has(playing.setId) || countdown !== null) return;
+/**
+ * Offers the next title, and — only once this one has ended — starts it.
+ *
+ * The two used to be one call, which is how a ten second countdown came to
+ * expire with twenty seconds of the episode still playing. `upNextPhase`
+ * decides which of them is wanted; this does it.
+ */
+function refreshUpNext({ ended = false } = {}) {
+  const runtime = runtimeOf(playing);
+  const phase = upNextPhase({
+    hasNext: nextUp !== null && playing !== null,
+    cancelled: playing !== null && cancelled.has(playing.setId),
+    remainingSeconds: runtime > 0 ? runtime - filmTime() : null,
+    ended,
+  });
+
+  if (phase === "hidden") return;
 
   upNextTitle.textContent = [nextUp.show, episodeLabel(nextUp), nextUp.title]
     .filter(Boolean)
@@ -290,13 +307,31 @@ function showUpNext() {
   upNext.hidden = false;
   showHud();
 
-  let left = 10;
+  if (phase !== "counting" || countdown !== null) {
+    // Shown without a timer: a heads-up, and a way past the credits for
+    // anyone who wants one. Nothing starts until the title is over.
+    if (countdown === null) upNextIn.textContent = "when this ends";
+    return;
+  }
+
+  let left = COUNTDOWN_SECONDS;
   upNextIn.textContent = `starting in ${left}…`;
   countdown = setInterval(() => {
     left -= 1;
     upNextIn.textContent = `starting in ${left}…`;
     if (left <= 0) playNext();
   }, 1000);
+}
+
+/** The standing offer, which cancelling the countdown does not withdraw. */
+function refreshPlayNext() {
+  const has = nextUp !== null;
+  playNextButton.hidden = !has;
+  // The rail has no room to spell out a title, and the panel is not always
+  // showing, so the name lives on the tooltip.
+  playNextButton.title = has
+    ? [nextUp.show, episodeLabel(nextUp), nextUp.title].filter(Boolean).join(" · ")
+    : "";
 }
 
 function hideUpNext() {
@@ -369,6 +404,7 @@ export function openPlayer(set, options = {}) {
   refreshPreload();
   refreshWatchlist();
   refreshKids();
+  refreshPlayNext();
   startSaving();
   showHud();
   dialog.showModal();
@@ -505,6 +541,7 @@ addToButton.addEventListener("click", () => {
 });
 
 document.getElementById("up-next-play").addEventListener("click", playNext);
+playNextButton.addEventListener("click", playNext);
 document.getElementById("up-next-cancel").addEventListener("click", () => {
   // Remembered for this title, so watching the last minute again does not
   // start the countdown a second time.
@@ -555,20 +592,18 @@ for (const event of ["play", "pause", "ratechange"]) {
 video.addEventListener("ratechange", refreshEnds);
 video.addEventListener("pause", () => saveProgress());
 
-/** The last thirty seconds is where a title is over and the next one begins. */
-const UP_NEXT_SECONDS = 30;
-
 video.addEventListener("timeupdate", () => {
   preloadNext();
-  const runtime = runtimeOf(playing);
-  if (runtime > 0 && runtime - filmTime() <= UP_NEXT_SECONDS) showUpNext();
+  // Whether this is near enough the end to offer anything is `upNextPhase`'s
+  // to decide, not this listener's.
+  refreshUpNext();
 });
 
 // The end, however it arrives: a title that ran out rather than one seeked
-// past its last frame.
+// past its last frame. This is the only thing that may start the next one.
 video.addEventListener("ended", () => {
   saveProgress();
-  showUpNext();
+  refreshUpNext({ ended: true });
 });
 
 // Closing the tab is the moment a position matters most and the moment an
@@ -671,6 +706,8 @@ dialog.addEventListener("close", () => {
   hideUpNext();
   nextUp = null;
   onOpenNext = null;
+  // The offer goes with the title it was an offer about.
+  refreshPlayNext();
   preloaded = null;
 
   showNotes(false);
