@@ -291,6 +291,42 @@ export class WatchState {
   }
 
   /**
+   * This install's name on the channel, minted once and kept.
+   *
+   * Not the hostname. A rebuilt machine with the same name is a different
+   * device and should not inherit the old one's document; two machines that
+   * happened to share a name would write over each other's.
+   */
+  deviceId(): string {
+    const held = this.meta("device_id");
+    if (held !== null) return held;
+    const made = crypto.randomUUID();
+    this.setMeta("device_id", made);
+    // A player with nowhere to write still needs to call itself something for
+    // the length of this run, or its own document looks like a stranger's.
+    return this.meta("device_id") ?? made;
+  }
+
+  private meta(key: string): string | null {
+    try {
+      const row = this.db?.query("SELECT value FROM state_meta WHERE key = ?1").get(key) as
+        | { value?: string }
+        | null;
+      return typeof row?.value === "string" ? row.value : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private setMeta(key: string, value: string): void {
+    tolerate(() =>
+      this.db
+        ?.query("INSERT OR REPLACE INTO state_meta(key, value) VALUES (?1, ?2)")
+        .run(key, value),
+    );
+  }
+
+  /**
    * What this player has to say about where things were left off.
    *
    * Every profile, because a document belongs to a device rather than to

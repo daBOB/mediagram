@@ -56,6 +56,18 @@ export interface Config {
    */
   stateDb: string;
   /**
+   * Whether to share watch state through the channel.
+   *
+   * **Off unless asked for.** Everything this project has put in that channel
+   * has been a deliberate `push-index` run by hand; a player that uploads on
+   * its own is a different kind of thing, and it should be a decision rather
+   * than a default somebody discovers afterwards. A player with this off
+   * behaves exactly as it did before syncing existed.
+   */
+  syncState: boolean;
+  /** How often to reconcile with the channel, in milliseconds. */
+  syncEveryMs: number;
+  /**
    * Ceiling for a transcode's output, in bits per second.
    *
    * A 13.9 Mbit/s source does not fit a 25 Mbit/s uplink with room for
@@ -147,6 +159,12 @@ export function load(): Config {
     stateDb:
       process.env.MEDIAGRAM_STATE_DB ??
       `${process.env.HOME}/.local/share/mediagram-player/state.db`,
+    syncState: /^(1|true|yes)$/i.test(process.env.MEDIAGRAM_SYNC_STATE ?? ""),
+    // Five minutes: often enough that moving from one machine to another feels
+    // immediate, rare enough that a player left open all day is not a burst of
+    // uploads. Nothing is sent when nothing changed, so an idle player is
+    // quiet however short this is.
+    syncEveryMs: Math.max(60_000, Number(process.env.MEDIAGRAM_SYNC_EVERY_MS ?? 300_000)),
     transcodeMaxrate: parseSize(process.env.MEDIAGRAM_TRANSCODE_MAXRATE ?? String(DEFAULT_MAX_BITRATE)),
     packageUrl: process.env.MEDIAGRAM_PACKAGE_URL || null,
     packageKey: process.env.MEDIAGRAM_PACKAGE_KEY || null,

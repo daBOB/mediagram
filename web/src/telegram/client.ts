@@ -24,6 +24,22 @@ export class Telegram {
     private readonly channel: Api.InputChannel,
   ) {}
 
+  /**
+   * The channel as a *peer*, which is what the convenience wrappers want.
+   *
+   * `channels.getMessages` takes an `InputChannel` and everything else —
+   * `getMessages`, `sendFile`, `editMessage` — takes an `InputPeer`. Handing
+   * one where the other is expected serializes wrong and surfaces as a parse
+   * error deep in the response, so the two are kept apart by name rather than
+   * by hoping the right one is passed.
+   */
+  get peer(): Api.InputPeerChannel {
+    return new Api.InputPeerChannel({
+      channelId: this.channel.channelId,
+      accessHash: this.channel.accessHash,
+    });
+  }
+
   static async connect(config: Config): Promise<Telegram> {
     const client = new TelegramClient(
       new sessions.StringSession(config.session),

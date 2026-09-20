@@ -1,6 +1,6 @@
 # Phase 02 — The player syncs
 
-**Status:** not started
+**Status:** built and off by default. The MTProto adapter has never run against the real channel — that is the outstanding item.
 **Needs authorisation:** this is the phase that writes to the channel.
 
 ## Context

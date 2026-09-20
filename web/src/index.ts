@@ -12,6 +12,8 @@ import { dirname, join } from "node:path";
 import { describe, load } from "./config";
 import { EXPECTED_SCHEMA, assertSchema, listPlayable } from "./catalog";
 import { startServer } from "./server";
+import { StateSync } from "./state/sync";
+import { TelegramStateChannel } from "./telegram/state-channel";
 import { isExposed, reachableUrls } from "./listen-address";
 import { CachedReader } from "./cache/reader";
 import { detectEncoder } from "./transcode/encoders";
@@ -165,6 +167,40 @@ const audio = new AudioTrackReader(`http://127.0.0.1:${config.port}`);
 const state = new WatchState(config.stateDb);
 console.log(state.remembers ? `state: ${config.stateDb}` : "state: not remembered");
 
+/**
+ * Sharing that state with this account's other devices, if asked.
+ *
+ * Off unless `MEDIAGRAM_SYNC_STATE` says otherwise. A player that uploads to
+ * the channel on its own is a different kind of thing from one that only ever
+ * reads it, and that should be a decision rather than a default somebody
+ * discovers afterwards.
+ *
+ * Nothing here can stop the player: `StateSync.once` does not throw, and a
+ * round that fails leaves the local database — which remains the source of
+ * truth for this machine — exactly as it was.
+ */
+const sync =
+  config.syncState && state.remembers
+    ? new StateSync(state, new TelegramStateChannel(telegram), state.deviceId())
+    : null;
+
+async function syncOnce(why: string): Promise<void> {
+  if (!sync) return;
+  const outcome = await sync.once();
+  if (outcome.failed !== undefined) console.warn(`sync (${why}): ${outcome.failed}`);
+  else if (outcome.pulled > 0 || outcome.pushed) {
+    console.log(`sync (${why}): took ${outcome.pulled}, ${outcome.pushed ? "sent" : "sent nothing"}`);
+  }
+}
+
+// Awaited, so the first page load already shows what the other devices knew
+// rather than showing this machine's answer and correcting it a moment later.
+if (sync) {
+  console.log(`sync: ${state.deviceId()} every ${Math.round(config.syncEveryMs / 1000)}s`);
+  await syncOnce("start");
+}
+const syncTimer = sync ? setInterval(() => void syncOnce("timer"), config.syncEveryMs) : null;
+
 // The same facts the lines above printed, kept this time. Everything here was
 // already decided; none of it is worked out twice.
 const reader = cache ? new CachedReader(cache, config.cacheReadahead) : null;
@@ -267,6 +303,11 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
     void (async () => {
       console.log("\nstopping");
       clearInterval(reaper);
+      if (syncTimer !== null) clearInterval(syncTimer);
+      // One last round before the session goes: the position from the title
+      // that was playing when this was interrupted is the one most worth
+      // having on the other machine.
+      await syncOnce("stopping");
       // Before the server: an ffmpeg outlives its parent otherwise, and keeps
       // a hardware encoder session with it.
       await transcodes.stopAll();
