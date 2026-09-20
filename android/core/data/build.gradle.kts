@@ -11,4 +11,6 @@ android {
 dependencies {
     implementation(project(":core:rust"))
     implementation(project(":core:model"))
+
+    androidTestImplementation(libs.findLibrary("kotlinx.coroutines.test").get())
 }
