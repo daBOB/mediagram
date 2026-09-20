@@ -389,6 +389,9 @@ git commit -m "feat(android): give the app a bar, and somewhere to put a setting
 
 **Files:**
 - Create: `android/ui-mobile/src/main/kotlin/SystemScreen.kt`, `android/ui-mobile/src/main/kotlin/SystemRows.kt`
+- Modify: `android/ui-mobile/src/main/kotlin/LibraryFlow.kt` — its System branch currently renders a
+  private `SystemPlaceholder()`, because the real screen did not exist when the branch was added.
+  Replace that call with `SystemScreen()` and delete the placeholder.
 - Create: `android/feature/system/` (module: `SystemViewModel.kt`, `SystemUiState.kt`, `build.gradle.kts`)
 - Modify: `android/settings.gradle.kts`, `android/ui-mobile/build.gradle.kts`
 - Test: `android/ui-mobile/src/test/kotlin/SystemRowsTest.kt`
