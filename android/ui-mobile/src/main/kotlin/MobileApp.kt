@@ -3,7 +3,10 @@ package ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -36,25 +39,41 @@ fun MobileApp() {
             val setupViewModel: SetupViewModel = hiltViewModel()
             val setupState by setupViewModel.state.collectAsStateWithLifecycle()
 
-            when (val state = setupState) {
-                SetupUiState.Checking -> LoadingIndicator()
-
-                is SetupUiState.NeedsApplication -> TelegramApplicationScreen(
-                    error = state.error,
-                    onSubmit = setupViewModel::submitApplication,
-                )
-
-                SetupUiState.NeedsSignIn -> WithStartOver(setupViewModel::startOver) {
-                    SignIn(onAuthorized = setupViewModel::recheck)
+            if (setupState is SetupUiState.Ready) {
+                CatalogAndPlayer(onStartOver = setupViewModel::startOver)
+            } else {
+                // The app draws edge to edge. Every setup screen is prose
+                // and controls a person has to read and reach, and without
+                // this the row along the bottom sits underneath the
+                // navigation bar, where it cannot be tapped at all.
+                Box(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
+                    SetupStep(setupState, setupViewModel)
                 }
-
-                is SetupUiState.NeedsLibrary -> WithStartOver(setupViewModel::startOver) {
-                    SettingsScreen(error = state.error, onSave = setupViewModel::submitLibrary)
-                }
-
-                SetupUiState.Ready -> CatalogAndPlayer(onStartOver = setupViewModel::startOver)
             }
         }
+    }
+}
+
+@Composable
+private fun SetupStep(state: SetupUiState, viewModel: SetupViewModel) {
+    when (state) {
+        SetupUiState.Checking -> LoadingIndicator()
+
+        is SetupUiState.NeedsApplication -> TelegramApplicationScreen(
+            error = state.error,
+            onSubmit = viewModel::submitApplication,
+        )
+
+        SetupUiState.NeedsSignIn -> WithStartOver(viewModel::startOver) {
+            SignIn(onAuthorized = viewModel::recheck)
+        }
+
+        is SetupUiState.NeedsLibrary -> WithStartOver(viewModel::startOver) {
+            SettingsScreen(error = state.error, onSave = viewModel::submitLibrary)
+        }
+
+        // Rendered by the caller, which has a whole screen pair to give it.
+        SetupUiState.Ready -> Unit
     }
 }
 
