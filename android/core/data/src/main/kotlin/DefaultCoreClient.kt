@@ -4,6 +4,7 @@ import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.Core
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SetSummary
+import uniffi.mediagram_core.ShowInfo
 
 /** Delegates every call straight through to the generated native core. */
 class DefaultCoreClient(private val core: Core) : CoreClient {
@@ -26,6 +27,8 @@ class DefaultCoreClient(private val core: Core) : CoreClient {
     override fun listSets(): List<SetSummary> = core.listSets()
 
     override fun posterPath(posterKey: String): String? = core.posterPath(posterKey)
+
+    override fun showInfo(posterKey: String): ShowInfo? = core.showInfo(posterKey)
 
     override fun totalSize(setId: String): Long = core.totalSize(setId).toLong()
 

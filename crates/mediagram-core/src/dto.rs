@@ -10,6 +10,7 @@
 use mlib_spec::caption::Episode;
 
 use crate::catalog::PlayableSet;
+use crate::shows::ShowRecord;
 
 /// One title, flattened for a player that never sees `Episode`, `set_id`
 /// internals, or where the bytes live.
@@ -81,4 +82,28 @@ fn poster_key_for(kind: &str, tmdb: Option<i64>) -> Option<String> {
     let key = format!("tmdb-{sub}-{tmdb}");
     debug_assert!(mlib_spec::package::poster_key_is_valid(&key));
     Some(key)
+}
+
+/// What a provider said about a title, flattened for the binding surface.
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct ShowInfo {
+    pub overview: Option<String>,
+    pub tagline: Option<String>,
+    pub genres: Option<String>,
+    pub rating: Option<f64>,
+    pub network: Option<String>,
+    pub status: Option<String>,
+}
+
+impl From<ShowRecord> for ShowInfo {
+    fn from(record: ShowRecord) -> Self {
+        ShowInfo {
+            overview: record.overview,
+            tagline: record.tagline,
+            genres: record.genres,
+            rating: record.rating,
+            network: record.network,
+            status: record.status,
+        }
+    }
 }

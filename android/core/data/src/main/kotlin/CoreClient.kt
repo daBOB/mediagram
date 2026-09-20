@@ -3,6 +3,7 @@ package data
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SetSummary
+import uniffi.mediagram_core.ShowInfo
 
 /**
  * The seam between this app and the generated native core. The generated
@@ -35,6 +36,13 @@ interface CoreClient {
     suspend fun refreshCatalog(url: String, keyB64: String): Long
     fun listSets(): List<SetSummary>
     fun posterPath(posterKey: String): String?
+
+    /**
+     * What the index records about a title, or nothing. A course has no
+     * provider entry and a library assembled without a TMDB key has no rows
+     * at all; both are ordinary, so neither is an error.
+     */
+    fun showInfo(posterKey: String): ShowInfo?
     fun totalSize(setId: String): Long
     suspend fun read(setId: String, offset: Long, len: Int): ByteArray
 

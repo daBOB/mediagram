@@ -8,6 +8,7 @@ import settings.LibrarySettings
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SetSummary
+import uniffi.mediagram_core.ShowInfo
 
 class FakeCore(
     private val sets: List<SetSummary> = emptyList(),
@@ -33,6 +34,7 @@ class FakeCore(
     override suspend fun refreshCatalog(url: String, keyB64: String): Long = refreshResult
     override fun listSets(): List<SetSummary> = sets
     override fun posterPath(posterKey: String): String? = null
+    override fun showInfo(posterKey: String): ShowInfo? = null
     override fun totalSize(setId: String): Long = 0
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray = ByteArray(0)
 
@@ -69,6 +71,11 @@ fun summary(
     episodeFirst: Int? = null,
     episodeLast: Int? = null,
     year: Int? = null,
+    container: String = "mp4",
+    vcodec: String? = null,
+    acodec: String? = null,
+    quality: String? = null,
+    hdr: String? = null,
     duration: Int? = null,
     posterKey: String? = null,
     total: Long = 0L,
@@ -84,6 +91,11 @@ fun summary(
     episodeFirst = episodeFirst?.toUInt(),
     episodeLast = episodeLast?.toUInt(),
     year = year?.toUInt(),
+    container = container,
+    vcodec = vcodec,
+    acodec = acodec,
+    quality = quality,
+    hdr = hdr,
     duration = duration?.toUInt(),
     posterKey = posterKey,
     total = total.toULong(),

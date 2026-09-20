@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SetSummary
+import uniffi.mediagram_core.ShowInfo
 
 /**
  * [signInFailures] and [passwordFailures] reject that many attempts before
@@ -53,6 +54,7 @@ class FakeCore(
     override suspend fun refreshCatalog(url: String, keyB64: String): Long = 0
     override fun listSets(): List<SetSummary> = emptyList()
     override fun posterPath(posterKey: String): String? = null
+    override fun showInfo(posterKey: String): ShowInfo? = null
     override fun totalSize(setId: String): Long = 0
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray = ByteArray(0)
     override fun close() = Unit

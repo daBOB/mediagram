@@ -9,5 +9,6 @@ pub mod document;
 pub mod dto;
 pub mod package;
 pub mod range;
+pub mod shows;
 pub mod stream;
 pub mod telegram;

@@ -189,6 +189,14 @@ impl Core {
         catalog::poster_path(self, poster_key)
     }
 
+    /// What the index records about a title, or nothing. A course has no
+    /// provider entry and a library assembled without a TMDB key has no rows
+    /// at all; both are ordinary, so neither is an error.
+    pub fn show_info(&self, poster_key: String) -> Option<crate::dto::ShowInfo> {
+        let conn = catalog::open(self).ok()?;
+        crate::shows::read(&conn, &poster_key).ok().flatten().map(Into::into)
+    }
+
     pub fn total_size(&self, set_id: String) -> Result<u64, CoreError> {
         catalog::total_size(self, set_id)
     }

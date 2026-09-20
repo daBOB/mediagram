@@ -698,6 +698,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_request_code(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_show_info(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_sign_in(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_total_size(
@@ -746,6 +748,8 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_request_code(`ptr`: Long,`phone`: RustBuffer.ByValue,
     ): Long
+    external fun uniffi_mediagram_core_fn_method_core_show_info(`ptr`: Long,`posterKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_mediagram_core_fn_method_core_sign_in(`ptr`: Long,`token`: RustBuffer.ByValue,`code`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_total_size(`ptr`: Long,`setId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -894,6 +898,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_request_code() and 0xFFFF) != 62780) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_show_info() and 0xFFFF) != 32170) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_sign_in() and 0xFFFF) != 55455) {
@@ -1174,6 +1181,29 @@ public object FfiConverterULong: FfiConverter<ULong, Long> {
 /**
  * @suppress
  */
+public object FfiConverterDouble: FfiConverter<Double, Double> {
+    override fun lift(value: Double): Double {
+        return value
+    }
+
+    override fun read(buf: ByteBuffer): Double {
+        return buf.getDouble()
+    }
+
+    override fun lower(value: Double): Double {
+        return value
+    }
+
+    override fun allocationSize(value: Double) = 8UL
+
+    override fun write(value: Double, buf: ByteBuffer) {
+        buf.putDouble(value)
+    }
+}
+
+/**
+ * @suppress
+ */
 public object FfiConverterBoolean: FfiConverter<Boolean, Byte> {
     override fun lift(value: Byte): Boolean {
         return value.toInt() != 0
@@ -1412,6 +1442,13 @@ public interface CoreInterface {
     suspend fun `refreshLibrary`(`handle`: kotlin.String): kotlin.ULong
     
     suspend fun `requestCode`(`phone`: kotlin.String): kotlin.String
+    
+    /**
+     * What the index records about a title, or nothing. A course has no
+     * provider entry and a library assembled without a TMDB key has no rows
+     * at all; both are ordinary, so neither is an error.
+     */
+    fun `showInfo`(`posterKey`: kotlin.String): ShowInfo?
     
     suspend fun `signIn`(`token`: kotlin.String, `code`: kotlin.String): AuthOutcome
     
@@ -1736,6 +1773,25 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     }
 
     
+    /**
+     * What the index records about a title, or nothing. A course has no
+     * provider entry and a library assembled without a TMDB key has no rows
+     * at all; both are ordinary, so neither is an error.
+     */override fun `showInfo`(`posterKey`: kotlin.String): ShowInfo? {
+            return FfiConverterOptionalTypeShowInfo.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_mediagram_core_fn_method_core_show_info(
+        it,
+        
+        FfiConverterString.lower(`posterKey`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `signIn`(`token`: kotlin.String, `code`: kotlin.String) : AuthOutcome {
@@ -1992,6 +2048,67 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
 
 
 /**
+ * What a provider said about a title, flattened for the binding surface.
+ */
+data class ShowInfo (
+    var `overview`: kotlin.String?
+    , 
+    var `tagline`: kotlin.String?
+    , 
+    var `genres`: kotlin.String?
+    , 
+    var `rating`: kotlin.Double?
+    , 
+    var `network`: kotlin.String?
+    , 
+    var `status`: kotlin.String?
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeShowInfo: FfiConverterRustBuffer<ShowInfo> {
+    override fun read(buf: ByteBuffer): ShowInfo {
+        return ShowInfo(
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalDouble.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: ShowInfo) = (
+            FfiConverterOptionalString.allocationSize(value.`overview`) +
+            FfiConverterOptionalString.allocationSize(value.`tagline`) +
+            FfiConverterOptionalString.allocationSize(value.`genres`) +
+            FfiConverterOptionalDouble.allocationSize(value.`rating`) +
+            FfiConverterOptionalString.allocationSize(value.`network`) +
+            FfiConverterOptionalString.allocationSize(value.`status`)
+    )
+
+    override fun write(value: ShowInfo, buf: ByteBuffer) {
+            FfiConverterOptionalString.write(value.`overview`, buf)
+            FfiConverterOptionalString.write(value.`tagline`, buf)
+            FfiConverterOptionalString.write(value.`genres`, buf)
+            FfiConverterOptionalDouble.write(value.`rating`, buf)
+            FfiConverterOptionalString.write(value.`network`, buf)
+            FfiConverterOptionalString.write(value.`status`, buf)
+    }
+}
+
+
+
+/**
  * Outcome of a completed sign-in step.
  */
 
@@ -2240,6 +2357,38 @@ public object FfiConverterOptionalUInt: FfiConverterRustBuffer<kotlin.UInt?> {
 /**
  * @suppress
  */
+public object FfiConverterOptionalDouble: FfiConverterRustBuffer<kotlin.Double?> {
+    override fun read(buf: ByteBuffer): kotlin.Double? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterDouble.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.Double?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterDouble.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.Double?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterDouble.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?> {
     override fun read(buf: ByteBuffer): kotlin.String? {
         if (buf.get().toInt() == 0) {
@@ -2262,6 +2411,38 @@ public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?>
         } else {
             buf.put(1)
             FfiConverterString.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeShowInfo: FfiConverterRustBuffer<ShowInfo?> {
+    override fun read(buf: ByteBuffer): ShowInfo? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeShowInfo.read(buf)
+    }
+
+    override fun allocationSize(value: ShowInfo?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeShowInfo.allocationSize(value)
+        }
+    }
+
+    override fun write(value: ShowInfo?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeShowInfo.write(value, buf)
         }
     }
 }
