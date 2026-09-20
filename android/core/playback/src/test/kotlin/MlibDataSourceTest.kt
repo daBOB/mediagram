@@ -32,14 +32,14 @@ class MlibDataSourceTest {
 
     @Test
     fun openReportsTheWholeSetWhenNoLengthIsAsked() {
-        val source = MlibDataSource(coreWithBytes(1_000))
+        val source = MlibDataSource(coreWithBytes(1_000), PlaybackCounters())
         val available = source.open(DataSpec(setUri("s1")))
         assertEquals(1_000L, available)
     }
 
     @Test
     fun aSeekStartsReadingAtTheRequestedOffset() {
-        val source = MlibDataSource(coreWithBytes(1_000))
+        val source = MlibDataSource(coreWithBytes(1_000), PlaybackCounters())
         source.open(DataSpec.Builder().setUri(setUri("s1")).setPosition(400).build())
         val buf = ByteArray(4)
         source.read(buf, 0, 4)
@@ -48,14 +48,14 @@ class MlibDataSourceTest {
 
     @Test
     fun openAtANonZeroPositionReturnsOnlyWhatIsLeft() {
-        val source = MlibDataSource(coreWithBytes(1_000))
+        val source = MlibDataSource(coreWithBytes(1_000), PlaybackCounters())
         val available = source.open(DataSpec.Builder().setUri(setUri("s1")).setPosition(400).build())
         assertEquals(600L, available)
     }
 
     @Test
     fun openPastTheEndOfTheSetThrowsRatherThanReturningANegativeLength() {
-        val source = MlibDataSource(coreWithBytes(1_000))
+        val source = MlibDataSource(coreWithBytes(1_000), PlaybackCounters())
         assertFailsWith<DataSourceException> {
             source.open(DataSpec.Builder().setUri(setUri("s1")).setPosition(1_001).build())
         }
@@ -63,14 +63,14 @@ class MlibDataSourceTest {
 
     @Test
     fun openHonoursAnExplicitLengthShorterThanTheSet() {
-        val source = MlibDataSource(coreWithBytes(1_000))
+        val source = MlibDataSource(coreWithBytes(1_000), PlaybackCounters())
         val available = source.open(DataSpec.Builder().setUri(setUri("s1")).setLength(50).build())
         assertEquals(50L, available)
     }
 
     @Test
     fun aBoundedReadNeverReturnsMoreThanTheDataSpecLength() {
-        val source = MlibDataSource(coreWithBytes(1_000))
+        val source = MlibDataSource(coreWithBytes(1_000), PlaybackCounters())
         source.open(DataSpec.Builder().setUri(setUri("s1")).setLength(10).build())
         val read = source.read(ByteArray(64), 0, 64)
         assertEquals(10, read)
@@ -78,7 +78,7 @@ class MlibDataSourceTest {
 
     @Test
     fun aBoundedLengthPastTheRealEndFailsInsteadOfFabricatingBytes() {
-        val source = MlibDataSource(coreWithBytes(1_000))
+        val source = MlibDataSource(coreWithBytes(1_000), PlaybackCounters())
         source.open(DataSpec.Builder().setUri(setUri("s1")).setPosition(990).setLength(100).build())
         // The real 10 bytes between 990 and the set's end arrive normally.
         assertEquals(10, source.read(ByteArray(100), 0, 100))
@@ -89,7 +89,7 @@ class MlibDataSourceTest {
 
     @Test
     fun readingPastTheEndReportsEndOfInput() {
-        val source = MlibDataSource(coreWithBytes(8))
+        val source = MlibDataSource(coreWithBytes(8), PlaybackCounters())
         source.open(DataSpec(setUri("s1")))
         source.read(ByteArray(8), 0, 8)
         assertEquals(C.RESULT_END_OF_INPUT, source.read(ByteArray(1), 0, 1))
@@ -97,7 +97,7 @@ class MlibDataSourceTest {
 
     @Test
     fun aZeroLengthReadReturnsZeroRatherThanEndOfInput() {
-        val source = MlibDataSource(coreWithBytes(1_000))
+        val source = MlibDataSource(coreWithBytes(1_000), PlaybackCounters())
         source.open(DataSpec(setUri("s1")))
         assertEquals(0, source.read(ByteArray(0), 0, 0))
     }
@@ -109,7 +109,7 @@ class MlibDataSourceTest {
      */
     @Test
     fun bytesStayContiguousAcrossAFetchThatCameBackShort() {
-        val source = MlibDataSource(coreWithShortReads())
+        val source = MlibDataSource(coreWithShortReads(), PlaybackCounters())
         source.open(DataSpec(setUri("s1")))
 
         // Past 500, which is all the first fetch of this 1,000-byte set
@@ -135,7 +135,7 @@ class MlibDataSourceTest {
     @Test
     fun aParserReadingAFewBytesAtATimeCostsOneFetch() {
         val core = coreWithBytes(1_000_000)
-        val source = MlibDataSource(core)
+        val source = MlibDataSource(core, PlaybackCounters())
         source.open(DataSpec(setUri("s1")))
 
         repeat(200) { source.read(ByteArray(8), 0, 8) }
@@ -146,7 +146,7 @@ class MlibDataSourceTest {
     /** What was held belongs to the old position and must not outlive a seek. */
     @Test
     fun aSeekIsNotServedBytesHeldForWhereItCameFrom() {
-        val source = MlibDataSource(coreWithBytes(1_000_000))
+        val source = MlibDataSource(coreWithBytes(1_000_000), PlaybackCounters())
         source.open(DataSpec(setUri("s1")))
         source.read(ByteArray(8), 0, 8)
 
@@ -159,7 +159,7 @@ class MlibDataSourceTest {
 
     @Test
     fun readAfterCloseReportsEndOfInputRatherThanCrashing() {
-        val source = MlibDataSource(coreWithBytes(1_000))
+        val source = MlibDataSource(coreWithBytes(1_000), PlaybackCounters())
         source.open(DataSpec(setUri("s1")))
         source.close()
         assertEquals(C.RESULT_END_OF_INPUT, source.read(ByteArray(4), 0, 4))
@@ -167,7 +167,7 @@ class MlibDataSourceTest {
 
     @Test
     fun closeClearsTheReportedUri() {
-        val source = MlibDataSource(coreWithBytes(1_000))
+        val source = MlibDataSource(coreWithBytes(1_000), PlaybackCounters())
         source.open(DataSpec(setUri("s1")))
         source.close()
         assertEquals(null, source.getUri())
@@ -183,7 +183,7 @@ class MlibDataSourceTest {
     @Test
     fun eachReadSessionIsBoundToWhicheverCoreIsCurrentThen() {
         var current: CoreClient? = coreWithBytes(1_000)
-        val factory = MlibDataSourceFactory { current }
+        val factory = MlibDataSourceFactory(PlaybackCounters()) { current }
 
         val before = factory.createDataSource().open(DataSpec(setUri("s1")))
         current = coreWithBytes(4_000)
@@ -195,7 +195,7 @@ class MlibDataSourceTest {
 
     @Test
     fun aReadSessionOpenedWithNoCoreFailsAsIoRatherThanReadingThroughAnOldOne() {
-        val factory = MlibDataSourceFactory { null }
+        val factory = MlibDataSourceFactory(PlaybackCounters()) { null }
 
         assertFailsWith<IOException> { factory.createDataSource().open(DataSpec(setUri("s1"))) }
     }
