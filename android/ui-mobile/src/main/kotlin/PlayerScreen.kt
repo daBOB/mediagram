@@ -1,3 +1,8 @@
+// media3 marks its extension surface @UnstableApi and may change it in any
+// minor release; see CacheProvider for why the version is pinned rather
+// than floored, and why this is androidx's opt-in and not Kotlin's.
+@file:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+
 package ui
 
 import android.app.Activity

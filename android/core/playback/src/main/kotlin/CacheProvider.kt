@@ -1,3 +1,22 @@
+// Every media3 symbol this module touches — SimpleCache, BaseDataSource,
+// CacheDataSource, DefaultMediaSourceFactory — is marked @UnstableApi.
+// That is media3's whole extension surface: writing a custom DataSource or
+// running a disk cache is impossible without it, so opting in is the only
+// way to have this module at all, not a shortcut around a warning.
+//
+// What the annotation actually promises is that these signatures may change
+// in any minor release, which makes the media3 version in
+// gradle/libs.versions.toml a deliberate pin rather than a floor. Raising
+// it changes this module's source compatibility and belongs in a commit
+// that rebuilds and reruns the playback tests, never in a routine
+// dependency sweep.
+//
+// androidx.annotation.OptIn, not kotlin.OptIn: @UnstableApi is marked with
+// androidx.annotation.RequiresOptIn, which Kotlin's own opt-in machinery
+// does not recognise, so the Kotlin annotation compiles and silences
+// nothing.
+@file:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+
 package playback
 
 import android.content.Context
