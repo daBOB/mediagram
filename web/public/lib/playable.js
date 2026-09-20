@@ -53,21 +53,59 @@ export function decidePlayback(profile, link = {}) {
   const video = normalize(profile.vcodec);
   const audio = normalize(profile.acodec);
   const reasons = [];
+  /**
+   * Which of the four is at fault, beside the sentence saying so.
+   *
+   * The sentence is for the viewer and the flags are for the encoder, and
+   * they are produced together here so there is still only one copy of this
+   * policy. A transcode that exists because of the container or the audio
+   * does not have to touch the video — see `video-copy.ts`, which reads
+   * these and nothing else.
+   */
+  const blocking = { container: false, video: false, audio: false, bitrate: false };
 
   if (!CONTAINERS.has(container)) {
+    blocking.container = true;
     reasons.push(container === "mkv" ? "Matroska container" : `${container || "unknown"} container`);
   }
-  if (!VIDEO.has(video)) reasons.push(`${PRETTY[video] ?? (video || "unknown")} video`);
-  if (!AUDIO.has(audio)) reasons.push(`${PRETTY[audio] ?? (audio || "unknown")} audio`);
+  if (!VIDEO.has(video)) {
+    blocking.video = true;
+    reasons.push(`${PRETTY[video] ?? (video || "unknown")} video`);
+  }
+  if (!AUDIO.has(audio)) {
+    blocking.audio = true;
+    reasons.push(`${PRETTY[audio] ?? (audio || "unknown")} audio`);
+  }
 
   // A set whose duration is unknown cannot be measured, and refusing it on a
   // guess would convert things that were fine.
   const bitrate = link.remote && link.maxBitrate ? bitrateOf(profile) : null;
   if (bitrate !== null && bitrate > link.maxBitrate) {
+    blocking.bitrate = true;
     reasons.push(`${(bitrate / 1e6).toFixed(1)} Mbit/s over a remote connection`);
   }
 
   return reasons.length === 0
-    ? { kind: "direct" }
-    : { kind: "transcode", reason: reasons.join(", ") };
+    ? { kind: "direct", blocking }
+    : { kind: "transcode", reason: reasons.join(", "), blocking };
+}
+
+/**
+ * How the page explains a conversion to the person waiting for it.
+ *
+ * Here rather than in the player because the sentence and the decision it
+ * describes are the same thing, and a wording kept somewhere else drifts
+ * away from the rule it is about.
+ *
+ * Two sentences, because there are two quite different things happening.
+ * Re-encoding builds a new picture and takes real time to do it. Re-wrapping
+ * moves the original picture into a box the browser will open — the file is
+ * untouched, nothing is lost, and it runs many times faster. Calling both
+ * "converting" told a viewer to expect the slow one.
+ */
+export function conversionNote(reason, copied = false) {
+  if (!reason) return null;
+  return copied
+    ? `Repackaging as you watch: ${reason} The picture is untouched.`
+    : `Converting as you watch: ${reason}`;
 }

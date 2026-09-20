@@ -34,6 +34,14 @@ export interface TranscodeRequest {
   segmentSeconds: number;
   /** The source's frame rate, or `null` when it could not be read. */
   frameRate: number | null;
+  /**
+   * Carry the video across untouched instead of encoding it.
+   *
+   * `video-copy.ts` decides, from the same policy the player uses to decide
+   * whether a title needs converting at all. Absent means encode, which is
+   * what every caller written before this did.
+   */
+  copyVideo?: boolean;
 }
 
 /**
@@ -51,8 +59,9 @@ export function transcodeArgs(request: TranscodeRequest): string[] {
 
   const args: string[] = ["-hide_banner", "-loglevel", "error", "-y"];
 
-  if (request.encoder.kind === "vaapi") {
-    // The device has to exist before the input that will be uploaded to it.
+  // The device has to exist before the input that will be uploaded to it —
+  // and is pointless for a copy, which never reaches the GPU.
+  if (request.encoder.kind === "vaapi" && request.copyVideo !== true) {
     args.push("-vaapi_device", request.encoder.device);
   }
 
@@ -74,25 +83,45 @@ export function transcodeArgs(request: TranscodeRequest): string[] {
   // own route.
   args.push("-map", "0:v:0", "-map", `0:a:${request.audioTrack}`, "-sn", "-dn");
 
-  if (request.encoder.kind === "vaapi") {
-    args.push("-vf", "format=nv12,hwupload");
+  if (request.copyVideo === true) {
+    /**
+     * The picture goes across as it is.
+     *
+     * Everything the encoding branch does below is about controlling an
+     * encode that is not happening: the VAAPI upload filter, the bitrate cap
+     * and its buffer, the GOP length, the forced keyframes. None of them
+     * apply to bytes being moved, and `-force_key_frames` in particular
+     * cannot apply — there is no encoder to ask for a keyframe.
+     *
+     * So segments break at the keyframes the file already has, which makes
+     * them uneven. hls.js does not mind; `-hls_time` becomes a target rather
+     * than a promise. `-ss` before `-i` lands on the nearest preceding
+     * keyframe for the same reason, which is a second or so early at worst.
+     */
+    args.push("-c:v", "copy");
+  } else {
+    if (request.encoder.kind === "vaapi") {
+      args.push("-vf", "format=nv12,hwupload");
+    }
+    args.push(
+      "-c:v",
+      request.encoder.name,
+      "-maxrate",
+      String(request.maxrateBits),
+      // Twice the cap, so the rate is held across a couple of seconds rather
+      // than instant by instant.
+      "-bufsize",
+      String(request.maxrateBits * 2),
+      "-g",
+      String(gop),
+      // Belt and braces: even if the frame rate was misread, segments still
+      // begin on keyframes, and a segment that does not is one that stalls.
+      "-force_key_frames",
+      `expr:gte(t,n_forced*${request.segmentSeconds})`,
+    );
   }
 
   args.push(
-    "-c:v",
-    request.encoder.name,
-    "-maxrate",
-    String(request.maxrateBits),
-    // Twice the cap, so the rate is held across a couple of seconds rather
-    // than instant by instant.
-    "-bufsize",
-    String(request.maxrateBits * 2),
-    "-g",
-    String(gop),
-    // Belt and braces: even if the frame rate was misread, segments still
-    // begin on keyframes, and a segment that does not is one that stalls.
-    "-force_key_frames",
-    `expr:gte(t,n_forced*${request.segmentSeconds})`,
     // Downmixed on purpose: an AC3 5.1 source folded badly leaves the centre
     // channel dominant and dialogue hard to hear on stereo speakers.
     "-c:a",

@@ -18,6 +18,7 @@ import { rawRequest } from "./raw-http";
 import { emptyIndex } from "./index-fixture";
 import { ALIGN, type Step } from "../src/range";
 import type { PartLocation } from "../src/catalog";
+import type { SessionSpec } from "../src/transcode/registry";
 
 const SET = "01SET0000000000000000009";
 const P0 = 2 * ALIGN + 100;
@@ -440,7 +441,7 @@ describe("releasing a transcode", () => {
   test("a requested bitrate is honoured between the floor and the configured cap", async () => {
     const asked: number[] = [];
     const recording = fakeHls({
-      begin: async (_setId: string, _seek: number, maxrateBits: number) => {
+      begin: async ({ maxrateBits }: SessionSpec) => {
         asked.push(maxrateBits);
         return `/hls/${SESSION}/index.m3u8`;
       },
@@ -474,7 +475,7 @@ describe("releasing a transcode", () => {
   test("a seek that is not a number of seconds never reaches ffmpeg", async () => {
     const asked: number[] = [];
     const recording = fakeHls({
-      begin: async (_setId: string, seek: number, _maxrate: number) => {
+      begin: async ({ seekSeconds: seek }: SessionSpec) => {
         asked.push(seek);
         return `/hls/${SESSION}/index.m3u8`;
       },
@@ -548,8 +549,8 @@ describe("releasing a transcode", () => {
   test("an audio track that is not a stream number never reaches ffmpeg", async () => {
     const asked: number[] = [];
     const recording = fakeHls({
-      begin: async (_setId: string, _seek: number, _maxrate: number, audioTrack?: number) => {
-        asked.push(audioTrack ?? -1);
+      begin: async ({ audioTrack }: SessionSpec) => {
+        asked.push(audioTrack);
         return `/hls/${SESSION}/index.m3u8`;
       },
     });
@@ -572,7 +573,7 @@ describe("releasing a transcode", () => {
   test("a transcode with no audio asked for takes the first stream", async () => {
     const asked: (number | undefined)[] = [];
     const recording = fakeHls({
-      begin: async (_setId: string, _seek: number, _maxrate: number, audioTrack?: number) => {
+      begin: async ({ audioTrack }: SessionSpec) => {
         asked.push(audioTrack);
         return `/hls/${SESSION}/index.m3u8`;
       },

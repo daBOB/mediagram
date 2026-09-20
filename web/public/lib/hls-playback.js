@@ -51,9 +51,11 @@ async function beginTranscode(setId, seekSeconds, maxrateBits, audioTrack) {
     const said = await response.json().catch(() => null);
     throw new Error(said?.error ?? `the server answered ${response.status}`);
   }
-  const { playlist } = await response.json();
+  const { playlist, copied } = await response.json();
   if (typeof playlist !== "string") throw new Error("the server sent no playlist");
-  return playlist;
+  // A server that predates the copy path says nothing, which reads as an
+  // encode — which is what it is doing.
+  return { playlist, copied: copied === true };
 }
 
 /**
@@ -103,14 +105,19 @@ function releaseTranscode(playlist) {
  * is the `0:a:N` the viewer chose, defaulting to the first. `options.onFatal`
  * is called if playback dies after it started — a session reaped, a
  * conversion that failed — so the page can say so instead of just stopping.
+ * `options.onStarted` is told whether the server is re-encoding the picture
+ * or carrying it across, which are different enough to say differently.
  */
 export async function playTranscoded(video, setId, options = {}) {
-  const playlist = await beginTranscode(
+  const { playlist, copied } = await beginTranscode(
     setId,
     options.seekSeconds ?? 0,
     options.maxrateBits,
     options.audioTrack ?? 0,
   );
+  // Before anything is attached: the page asked for a conversion and is
+  // showing a sentence about it, and which sentence depends on this.
+  options.onStarted?.({ copied });
 
   if (needsNativeHls()) {
     video.src = playlist;

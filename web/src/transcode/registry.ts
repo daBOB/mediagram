@@ -12,17 +12,32 @@ import { createHash } from "node:crypto";
 import { mkdir, rename, rm } from "node:fs/promises";
 import { join } from "node:path";
 
+/**
+ * What one transcode is of.
+ *
+ * Described rather than positional. There are five of these now, two of them
+ * numbers and one a boolean, and `start(id, dir, setId, 900, 8000000, 2,
+ * true)` says nothing at its call site about which `true` that is — the same
+ * reason `preloadReadout` stopped taking its five in a row.
+ *
+ * It is also the session's identity: two viewers of the same spec share one
+ * encode, and any field added here has to be part of that identity or the
+ * second viewer silently gets the first one's stream.
+ */
+export interface SessionSpec {
+  setId: string;
+  seekSeconds: number;
+  /** Ceiling for the output, in bits per second. Ignored while copying. */
+  maxrateBits: number;
+  /** `0:a:N`. The first stream unless the viewer chose another. */
+  audioTrack: number;
+  /** Carry the picture across rather than encode it. See `video-copy.ts`. */
+  copyVideo: boolean;
+}
+
 /** A running transcode, however it is actually run. */
 export interface Runner {
-  start(
-    sessionId: string,
-    directory: string,
-    setId: string,
-    seekSeconds: number,
-    maxrateBits: number,
-    /** `0:a:N`. Absent means the first stream, which is the default. */
-    audioTrack?: number,
-  ): Running;
+  start(sessionId: string, directory: string, spec: SessionSpec): Running;
 }
 
 export interface Running {
@@ -34,15 +49,9 @@ export interface Running {
   exited?: Promise<number>;
 }
 
-export interface Session {
+export interface Session extends SessionSpec {
   id: string;
   directory: string;
-  setId: string;
-  seekSeconds: number;
-  /** What this encode was told to stay under, in bits per second. */
-  maxrateBits: number;
-  /** Which audio stream this encode carries, as `0:a:N`. */
-  audioTrack: number;
   /** Resolves if the transcode stops, so a wait for output can give up. */
   exited?: Promise<number>;
 }
@@ -89,13 +98,8 @@ export class TranscodeRegistry {
    * Identified by what it transcodes rather than by a random id, so two
    * viewers of the same thing share one encode instead of racing.
    */
-  async sessionFor(
-    setId: string,
-    seekSeconds: number,
-    maxrateBits: number,
-    audioTrack = 0,
-  ): Promise<Session> {
-    const id = sessionId(setId, seekSeconds, maxrateBits, audioTrack);
+  async sessionFor(spec: SessionSpec): Promise<Session> {
+    const id = sessionId(spec);
     const existing = this.sessions.get(id);
     if (existing) {
       existing.lastUsed = Date.now();
@@ -125,20 +129,12 @@ export class TranscodeRegistry {
       throw new Error(`too many conversions at once (${this.maxSessions}); try again shortly`);
     }
 
-    const starting = this.start(id, setId, seekSeconds, maxrateBits, audioTrack).finally(() =>
-      this.starting.delete(id),
-    );
+    const starting = this.start(id, spec).finally(() => this.starting.delete(id));
     this.starting.set(id, starting);
     return starting;
   }
 
-  private async start(
-    id: string,
-    setId: string,
-    seekSeconds: number,
-    maxrateBits: number,
-    audioTrack: number,
-  ): Promise<Session> {
+  private async start(id: string, spec: SessionSpec): Promise<Session> {
     const directory = join(this.workDir, id);
     // Emptied rather than reused. A directory left by a killed server holds
     // that run's playlist, and a new session would be reported ready
@@ -146,14 +142,11 @@ export class TranscodeRegistry {
     await rm(directory, { recursive: true, force: true });
     await mkdir(directory, { recursive: true });
 
-    const process = this.runner.start(id, directory, setId, seekSeconds, maxrateBits, audioTrack);
+    const process = this.runner.start(id, directory, spec);
     const tracked: Tracked = {
+      ...spec,
       id,
       directory,
-      setId,
-      seekSeconds,
-      maxrateBits,
-      audioTrack,
       process,
       exited: process.exited,
       lastUsed: Date.now(),
@@ -268,23 +261,24 @@ let discardCount = 0;
  * path, and a set id comes from a caption, so it must not be able to carry a
  * separator or a `..` into either.
  */
-function sessionId(
-  setId: string,
-  seekSeconds: number,
-  maxrateBits: number,
-  audioTrack: number,
-): string {
+function sessionId(spec: SessionSpec): string {
   return createHash("sha256")
-    .update(setId)
+    .update(spec.setId)
     .update(new Uint8Array([0]))
-    .update(String(seekSeconds))
+    .update(String(spec.seekSeconds))
     .update(new Uint8Array([0]))
-    .update(String(maxrateBits))
+    .update(String(spec.maxrateBits))
     .update(new Uint8Array([0]))
     // Part of the identity, not a detail of it: two viewers watching the same
     // film in different languages want different encodes, and sharing one
     // would hand the second viewer the first one's audio.
-    .update(String(audioTrack))
+    .update(String(spec.audioTrack))
+    .update(new Uint8Array([0]))
+    // And likewise a copy: the same title, offset and track, copied for one
+    // viewer and encoded for a capped one, are two different streams. An id
+    // that ignored this would hand the capped viewer the uncapped bytes their
+    // cap exists to prevent.
+    .update(spec.copyVideo ? "copy" : "encode")
     .digest("hex")
     .slice(0, 16);
 }

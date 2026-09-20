@@ -15,6 +15,16 @@ import { join } from "node:path";
 import { TranscodeRegistry } from "../src/transcode/registry";
 import { TranscodeFiles } from "../src/transcode/server";
 
+/** A transcode's identity, so a call site says which number is which. */
+const spec = (
+  setId: string,
+  seekSeconds: number,
+  maxrateBits: number,
+  audioTrack = 0,
+  copyVideo = false,
+) => ({ setId, seekSeconds, maxrateBits, audioTrack, copyVideo });
+
+
 let work: string;
 
 beforeEach(async () => {
@@ -46,7 +56,7 @@ describe("starting a transcode", () => {
     const registry = new TranscodeRegistry(work, runnerWriting(ONE_SEGMENT, 40));
     const files = new TranscodeFiles(registry, { readyTimeoutMs: 2000, pollMs: 10 });
 
-    const playlist = await files.begin("01SET", 0, 8_000_000);
+    const playlist = await files.begin(spec("01SET", 0, 8_000_000));
 
     expect(playlist).toMatch(/^\/hls\/[a-f0-9]{16}\/index\.m3u8$/);
     const session = playlist.split("/")[2]!;
@@ -62,7 +72,7 @@ describe("starting a transcode", () => {
     const registry = new TranscodeRegistry(work, runnerWriting(EMPTY_PLAYLIST, 0));
     const files = new TranscodeFiles(registry, { readyTimeoutMs: 150, pollMs: 10 });
 
-    await expect(files.begin("01SET", 0, 8_000_000)).rejects.toThrow(/segment/i);
+    await expect(files.begin(spec("01SET", 0, 8_000_000))).rejects.toThrow(/segment/i);
     await registry.stopAll();
   });
 
@@ -70,7 +80,7 @@ describe("starting a transcode", () => {
     const registry = new TranscodeRegistry(work, runnerWriting(null, 0));
     const files = new TranscodeFiles(registry, { readyTimeoutMs: 150, pollMs: 10 });
 
-    await expect(files.begin("01SET", 0, 8_000_000)).rejects.toThrow();
+    await expect(files.begin(spec("01SET", 0, 8_000_000))).rejects.toThrow();
     await registry.stopAll();
   });
 
@@ -88,7 +98,7 @@ describe("starting a transcode", () => {
     const files = new TranscodeFiles(registry, { readyTimeoutMs: 10_000, pollMs: 10 });
 
     const began = Date.now();
-    await expect(files.begin("01SET", 0, 8_000_000)).rejects.toThrow(/stopped|exit/i);
+    await expect(files.begin(spec("01SET", 0, 8_000_000))).rejects.toThrow(/stopped|exit/i);
 
     expect(Date.now() - began).toBeLessThan(2000);
     await registry.stopAll();
@@ -98,7 +108,7 @@ describe("starting a transcode", () => {
     const registry = new TranscodeRegistry(work, runnerWriting(null, 0));
     const files = new TranscodeFiles(registry, { readyTimeoutMs: 150, pollMs: 10 });
 
-    await expect(files.begin("01SET", 0, 8_000_000)).rejects.toThrow(/no segment/i);
+    await expect(files.begin(spec("01SET", 0, 8_000_000))).rejects.toThrow(/no segment/i);
     await registry.stopAll();
   });
 
@@ -106,7 +116,7 @@ describe("starting a transcode", () => {
     const registry = new TranscodeRegistry(work, runnerWriting(null, 0));
     const files = new TranscodeFiles(registry, { readyTimeoutMs: 150, pollMs: 10 });
 
-    await files.begin("01SET", 0, 8_000_000).catch(() => {});
+    await files.begin(spec("01SET", 0, 8_000_000)).catch(() => {});
 
     expect(registry.count()).toBe(0);
   });

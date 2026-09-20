@@ -12,7 +12,17 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { TranscodeRegistry } from "../src/transcode/registry";
+import { TranscodeRegistry, type SessionSpec } from "../src/transcode/registry";
+
+/** A transcode's identity, so a call site says which number is which. */
+const spec = (
+  setId: string,
+  seekSeconds: number,
+  maxrateBits: number,
+  audioTrack = 0,
+  copyVideo = false,
+) => ({ setId, seekSeconds, maxrateBits, audioTrack, copyVideo });
+
 
 let work: string;
 let started: string[];
@@ -47,8 +57,8 @@ describe("sessions", () => {
   test("a session is identified by what it is transcoding, not by chance", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner());
 
-    const a = await registry.sessionFor("01SET", 0, 8_000_000);
-    const b = await registry.sessionFor("01SET", 0, 8_000_000);
+    const a = await registry.sessionFor(spec("01SET", 0, 8_000_000));
+    const b = await registry.sessionFor(spec("01SET", 0, 8_000_000));
 
     expect(a.id).toBe(b.id);
     expect(started).toHaveLength(1);
@@ -57,8 +67,8 @@ describe("sessions", () => {
   test("a different seek is a different session", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner());
 
-    const a = await registry.sessionFor("01SET", 0, 8_000_000);
-    const b = await registry.sessionFor("01SET", 600, 8_000_000);
+    const a = await registry.sessionFor(spec("01SET", 0, 8_000_000));
+    const b = await registry.sessionFor(spec("01SET", 600, 8_000_000));
 
     expect(a.id).not.toBe(b.id);
     expect(started).toHaveLength(2);
@@ -68,8 +78,8 @@ describe("sessions", () => {
     const registry = new TranscodeRegistry(work, fakeRunner());
 
     // Sharing here would hand the second viewer the first one's language.
-    const a = await registry.sessionFor("01SET", 0, 8_000_000, 0);
-    const b = await registry.sessionFor("01SET", 0, 8_000_000, 2);
+    const a = await registry.sessionFor(spec("01SET", 0, 8_000_000, 0));
+    const b = await registry.sessionFor(spec("01SET", 0, 8_000_000, 2));
 
     expect(a.id).not.toBe(b.id);
     expect(a.directory).not.toBe(b.directory);
@@ -79,8 +89,8 @@ describe("sessions", () => {
   test("the same audio track joins the session already running", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner());
 
-    const a = await registry.sessionFor("01SET", 0, 8_000_000, 2);
-    const b = await registry.sessionFor("01SET", 0, 8_000_000, 2);
+    const a = await registry.sessionFor(spec("01SET", 0, 8_000_000, 2));
+    const b = await registry.sessionFor(spec("01SET", 0, 8_000_000, 2));
 
     expect(a.id).toBe(b.id);
     expect(started).toHaveLength(1);
@@ -89,8 +99,8 @@ describe("sessions", () => {
   test("an unstated track is the first one, and joins a session that said so", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner());
 
-    const a = await registry.sessionFor("01SET", 0, 8_000_000);
-    const b = await registry.sessionFor("01SET", 0, 8_000_000, 0);
+    const a = await registry.sessionFor(spec("01SET", 0, 8_000_000));
+    const b = await registry.sessionFor(spec("01SET", 0, 8_000_000, 0));
 
     expect(a.id).toBe(b.id);
     expect(a.audioTrack).toBe(0);
@@ -100,8 +110,8 @@ describe("sessions", () => {
   test("a different set is a different session", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner());
 
-    await registry.sessionFor("01SETA", 0, 8_000_000);
-    await registry.sessionFor("01SETB", 0, 8_000_000);
+    await registry.sessionFor(spec("01SETA", 0, 8_000_000));
+    await registry.sessionFor(spec("01SETB", 0, 8_000_000));
 
     expect(started).toHaveLength(2);
   });
@@ -109,8 +119,8 @@ describe("sessions", () => {
   test("each session gets its own directory", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner());
 
-    const a = await registry.sessionFor("01SETA", 0, 8_000_000);
-    const b = await registry.sessionFor("01SETB", 0, 8_000_000);
+    const a = await registry.sessionFor(spec("01SETA", 0, 8_000_000));
+    const b = await registry.sessionFor(spec("01SETB", 0, 8_000_000));
 
     expect(a.directory).not.toBe(b.directory);
     expect(a.directory.startsWith(work)).toBe(true);
@@ -120,7 +130,7 @@ describe("sessions", () => {
 describe("stopping", () => {
   test("stopping a session kills its process", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner());
-    const session = await registry.sessionFor("01SET", 0, 8_000_000);
+    const session = await registry.sessionFor(spec("01SET", 0, 8_000_000));
 
     await registry.stop(session.id);
 
@@ -129,8 +139,8 @@ describe("stopping", () => {
 
   test("stopping everything leaves nothing running", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner());
-    await registry.sessionFor("01SETA", 0, 8_000_000);
-    await registry.sessionFor("01SETB", 0, 8_000_000);
+    await registry.sessionFor(spec("01SETA", 0, 8_000_000));
+    await registry.sessionFor(spec("01SETB", 0, 8_000_000));
 
     await registry.stopAll();
 
@@ -148,7 +158,7 @@ describe("stopping", () => {
   /** A viewer who closed the tab an hour ago should not still hold an encoder. */
   test("a session idle past its limit is reaped", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner(), { idleMs: 10 });
-    const session = await registry.sessionFor("01SET", 0, 8_000_000);
+    const session = await registry.sessionFor(spec("01SET", 0, 8_000_000));
 
     await new Promise((r) => setTimeout(r, 25));
     await registry.reapIdle();
@@ -159,7 +169,7 @@ describe("stopping", () => {
 
   test("a session still being read is not reaped", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner(), { idleMs: 50 });
-    const session = await registry.sessionFor("01SET", 0, 8_000_000);
+    const session = await registry.sessionFor(spec("01SET", 0, 8_000_000));
 
     await new Promise((r) => setTimeout(r, 30));
     registry.touch(session.id);
@@ -175,7 +185,7 @@ describe("session ids", () => {
   test("are plain and contain nothing path-like", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner());
 
-    const session = await registry.sessionFor("01SET/../../etc", 0, 8_000_000);
+    const session = await registry.sessionFor(spec("01SET/../../etc", 0, 8_000_000));
 
     expect(session.id).toMatch(/^[a-f0-9]+$/);
   });
@@ -192,8 +202,8 @@ describe("two viewers arriving at once", () => {
     const registry = new TranscodeRegistry(work, fakeRunner());
 
     const [a, b] = await Promise.all([
-      registry.sessionFor("01SET", 0, 8_000_000),
-      registry.sessionFor("01SET", 0, 8_000_000),
+      registry.sessionFor(spec("01SET", 0, 8_000_000)),
+      registry.sessionFor(spec("01SET", 0, 8_000_000)),
     ]);
 
     expect(a.id).toBe(b.id);
@@ -203,7 +213,7 @@ describe("two viewers arriving at once", () => {
 
   test("everything started is stopped by stopAll", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner());
-    await Promise.all([registry.sessionFor("01SET", 0, 8_000_000), registry.sessionFor("01SET", 0, 8_000_000)]);
+    await Promise.all([registry.sessionFor(spec("01SET", 0, 8_000_000)), registry.sessionFor(spec("01SET", 0, 8_000_000))]);
 
     await registry.stopAll();
 
@@ -217,7 +227,7 @@ describe("two viewers arriving at once", () => {
       },
     });
 
-    await expect(registry.sessionFor("01SET", 0, 8_000_000)).rejects.toThrow(/ffmpeg/);
+    await expect(registry.sessionFor(spec("01SET", 0, 8_000_000))).rejects.toThrow(/ffmpeg/);
     expect(registry.count()).toBe(0);
   });
 });
@@ -229,8 +239,8 @@ describe("a session that is watched by more than one viewer", () => {
    */
   test("one viewer leaving does not stop the other's playback", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner());
-    await registry.sessionFor("01SET", 0, 8_000_000);
-    await registry.sessionFor("01SET", 0, 8_000_000);
+    await registry.sessionFor(spec("01SET", 0, 8_000_000));
+    await registry.sessionFor(spec("01SET", 0, 8_000_000));
 
     await registry.release(sessionIdOf(registry));
 
@@ -239,8 +249,8 @@ describe("a session that is watched by more than one viewer", () => {
 
   test("the last viewer leaving stops it", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner());
-    await registry.sessionFor("01SET", 0, 8_000_000);
-    await registry.sessionFor("01SET", 0, 8_000_000);
+    await registry.sessionFor(spec("01SET", 0, 8_000_000));
+    await registry.sessionFor(spec("01SET", 0, 8_000_000));
     const id = sessionIdOf(registry);
 
     await registry.release(id);
@@ -259,12 +269,12 @@ describe("a session that is watched by more than one viewer", () => {
 
   test("a rejoined session is watched again, so an earlier release is not fatal", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner());
-    await registry.sessionFor("01SET", 0, 8_000_000);
+    await registry.sessionFor(spec("01SET", 0, 8_000_000));
     const id = sessionIdOf(registry);
 
     await registry.release(id);
     // Someone else opens the same title: a fresh session, watched by one.
-    await registry.sessionFor("01SET", 0, 8_000_000);
+    await registry.sessionFor(spec("01SET", 0, 8_000_000));
 
     expect(registry.count()).toBe(1);
   });
@@ -285,18 +295,18 @@ describe("how many transcodes may run at once", () => {
    */
   test("a new session past the limit is refused rather than started", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner(), { maxSessions: 2 });
-    await registry.sessionFor("01SET", 0, 8_000_000);
-    await registry.sessionFor("01SET", 60, 8_000_000);
+    await registry.sessionFor(spec("01SET", 0, 8_000_000));
+    await registry.sessionFor(spec("01SET", 60, 8_000_000));
 
-    await expect(registry.sessionFor("01SET", 120, 8_000_000)).rejects.toThrow(/too many|at once|limit/i);
+    await expect(registry.sessionFor(spec("01SET", 120, 8_000_000))).rejects.toThrow(/too many|at once|limit/i);
     expect(registry.count()).toBe(2);
   });
 
   test("joining a session that is already running is never refused", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner(), { maxSessions: 1 });
-    await registry.sessionFor("01SET", 0, 8_000_000);
+    await registry.sessionFor(spec("01SET", 0, 8_000_000));
 
-    const again = await registry.sessionFor("01SET", 0, 8_000_000);
+    const again = await registry.sessionFor(spec("01SET", 0, 8_000_000));
 
     expect(again.seekSeconds).toBe(0);
     expect(started).toHaveLength(1);
@@ -304,10 +314,10 @@ describe("how many transcodes may run at once", () => {
 
   test("room freed by a release can be used again", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner(), { maxSessions: 1 });
-    const first = await registry.sessionFor("01SET", 0, 8_000_000);
+    const first = await registry.sessionFor(spec("01SET", 0, 8_000_000));
     await registry.release(first.id);
 
-    await registry.sessionFor("01SET", 60, 8_000_000);
+    await registry.sessionFor(spec("01SET", 60, 8_000_000));
 
     expect(registry.count()).toBe(1);
   });
@@ -323,8 +333,8 @@ describe("a session at a particular bitrate", () => {
   test("the same title at the same offset but a different cap is a different session", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner());
 
-    const fast = await registry.sessionFor("01SET", 0, 8_000_000);
-    const slow = await registry.sessionFor("01SET", 0, 3_000_000);
+    const fast = await registry.sessionFor(spec("01SET", 0, 8_000_000));
+    const slow = await registry.sessionFor(spec("01SET", 0, 3_000_000));
 
     expect(fast.id).not.toBe(slow.id);
     expect(started).toHaveLength(2);
@@ -333,25 +343,61 @@ describe("a session at a particular bitrate", () => {
   test("the same cap joins the session already running", async () => {
     const registry = new TranscodeRegistry(work, fakeRunner());
 
-    const first = await registry.sessionFor("01SET", 0, 3_000_000);
-    const second = await registry.sessionFor("01SET", 0, 3_000_000);
+    const first = await registry.sessionFor(spec("01SET", 0, 3_000_000));
+    const second = await registry.sessionFor(spec("01SET", 0, 3_000_000));
 
     expect(second.id).toBe(first.id);
     expect(started).toHaveLength(1);
   });
 
   test("the cap reaches the runner", async () => {
-    const caps: number[] = [];
+    const seen: SessionSpec[] = [];
     const registry = new TranscodeRegistry(work, {
-      start(id: string, _dir: string, _setId: string, _seek: number, maxrateBits: number) {
+      start(id: string, _dir: string, asked: SessionSpec) {
         started.push(id);
-        caps.push(maxrateBits);
+        seen.push(asked);
         return { stop: async () => {} };
       },
     });
 
-    await registry.sessionFor("01SET", 0, 2_500_000);
+    await registry.sessionFor(spec("01SET", 0, 2_500_000));
 
-    expect(caps).toEqual([2_500_000]);
+    expect(seen.map((one) => one.maxrateBits)).toEqual([2_500_000]);
+  });
+});
+
+describe("carrying the picture across", () => {
+  test("the decision reaches the runner", async () => {
+    const seen: SessionSpec[] = [];
+    const registry = new TranscodeRegistry(work, {
+      start(id: string, _dir: string, asked: SessionSpec) {
+        started.push(id);
+        seen.push(asked);
+        return { stop: async () => {} };
+      },
+    });
+
+    await registry.sessionFor(spec("01SET", 0, 8_000_000, 0, true));
+
+    expect(seen[0]?.copyVideo).toBe(true);
+  });
+
+  test("a copy and an encode of the same thing are two sessions", async () => {
+    // Otherwise a viewer whose link needed capping would join the session
+    // already running with the original bytes, which is the one thing their
+    // cap exists to prevent.
+    const registry = new TranscodeRegistry(work, fakeRunner());
+    const copied = await registry.sessionFor(spec("01SET", 0, 8_000_000, 0, true));
+    const encoded = await registry.sessionFor(spec("01SET", 0, 8_000_000, 0, false));
+
+    expect(copied.id).not.toBe(encoded.id);
+  });
+
+  test("and two viewers of the same copy still share one", async () => {
+    const registry = new TranscodeRegistry(work, fakeRunner());
+    const a = await registry.sessionFor(spec("01SET", 0, 8_000_000, 0, true));
+    const b = await registry.sessionFor(spec("01SET", 0, 8_000_000, 0, true));
+
+    expect(b.id).toBe(a.id);
   });
 });

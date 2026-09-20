@@ -11,7 +11,7 @@ import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 import type { HlsFile, HlsServer } from "../routes";
-import type { TranscodeRegistry } from "./registry";
+import type { SessionSpec, TranscodeRegistry } from "./registry";
 
 const TYPES: Record<string, string> = {
   ".m3u8": "application/vnd.apple.mpegurl",
@@ -50,13 +50,8 @@ export class TranscodeFiles implements HlsServer {
    * Joining is the point: two viewers of the same thing share one encoder
    * session rather than racing for the hardware.
    */
-  async begin(
-    setId: string,
-    seekSeconds: number,
-    maxrateBits: number,
-    audioTrack = 0,
-  ): Promise<string> {
-    const session = await this.registry.sessionFor(setId, seekSeconds, maxrateBits, audioTrack);
+  async begin(spec: SessionSpec): Promise<string> {
+    const session = await this.registry.sessionFor(spec);
 
     // Not returned until there is something to play. hls.js gives a manifest
     // one retry and then reports a fatal error, so a URL handed over early is

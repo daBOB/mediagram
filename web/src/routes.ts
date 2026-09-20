@@ -32,6 +32,8 @@ import {
 } from "./catalog";
 import { planReads, totalSize, type PartSpan, type Step } from "./range";
 import { isLocalAddress } from "./client-reach";
+import { canCopyVideo } from "./transcode/video-copy";
+import type { SessionSpec } from "./transcode/registry";
 import type { HeldSets } from "./cache/held";
 import { SearchIndex } from "./search/index";
 import { PosterStore, posterKeyFor, posterKeyIsValid } from "./package/posters";
@@ -87,14 +89,9 @@ export interface HlsServer {
    *
    * Joining rather than always starting is what stops two viewers of the same
    * title running two encoders — but only when they want the same encode, so
-   * the bitrate and the chosen audio stream are part of what identifies one.
+   * everything in the spec is part of what identifies one.
    */
-  begin(
-    setId: string,
-    seekSeconds: number,
-    maxrateBits: number,
-    audioTrack?: number,
-  ): Promise<string>;
+  begin(spec: SessionSpec): Promise<string>;
 
   /**
    * The file for a session, or why there isn't one.
@@ -480,7 +477,10 @@ export function createRouter(options: RouterOptions) {
     const beginMatch = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/transcode$/.exec(request.path);
     if (beginMatch) {
       if (!hls) return empty(501);
-      if (playableSet(db, beginMatch[1]!) === null) return empty(404);
+      // Looked up once and kept: this is both the check that the title exists
+      // and the profile the copy decision below is made from.
+      const profile = playableSet(db, beginMatch[1]!);
+      if (profile === null) return empty(404);
       // `Number.isFinite`, not a NaN check: `Infinity` survives one of those
       // and reaches the command line as `-ss Infinity`, which ffmpeg exits on
       // at once while the request waits out the whole readiness timeout.
@@ -489,17 +489,41 @@ export function createRouter(options: RouterOptions) {
       const rate = requestedBitrate(request.maxrate, maxBitrate);
       const track = requestedAudioTrack(request.audio);
 
+      /**
+       * Whether this conversion has to touch the picture at all.
+       *
+       * Decided here rather than taken from the page: the page would only be
+       * repeating what the index already says, and a client that got it wrong
+       * — or was made to say so — would be asking for a stream the browser
+       * then refuses. The index is the same source `decidePlayback` uses, so
+       * both ends still answer from one policy.
+       */
+      const copyVideo = canCopyVideo(profile, {
+        remote: !isLocalAddress(request.client ?? ""),
+        maxBitrate,
+        capAsked: request.maxrate != null && request.maxrate !== "",
+      });
+
       // A conversion that produces nothing is a 503 carrying the reason
       // rather than a 500: it is a title that could not be started now, and
       // the page has somewhere to show why.
       let playlist: string;
       try {
-        playlist = await hls.begin(beginMatch[1]!, seek, rate, track);
+        playlist = await hls.begin({
+          setId: beginMatch[1]!,
+          seekSeconds: seek,
+          maxrateBits: rate,
+          audioTrack: track,
+          copyVideo,
+        });
       } catch (error) {
         const reason = error instanceof Error ? error.message : "the conversion did not start";
         return { ...text(JSON.stringify({ error: reason }), "application/json"), status: 503 };
       }
-      const body = JSON.stringify({ playlist });
+      // `copied` so the page can say what is actually happening. "Converting
+      // as you watch" is a promise about the picture, and when the picture is
+      // being carried across untouched it is the wrong promise.
+      const body = JSON.stringify({ playlist, copied: copyVideo });
       return {
         status: 200,
         headers: {

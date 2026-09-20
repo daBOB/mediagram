@@ -9,6 +9,7 @@
  */
 
 import { playbackFor } from "./link.js";
+import { conversionNote } from "./playable.js";
 import { playTranscoded } from "./hls-playback.js";
 import { sourceBitrate, watchPlayback } from "./adapt-playback.js";
 import { clockTime, endsAt, episodeLabel, technicalLine } from "./format.js";
@@ -93,11 +94,9 @@ let audioTrack = 0;
  * browser will not decode, or a bitrate the link will not carry, and saying
  * "your browser cannot play this" about the second one is simply untrue.
  */
-function noteFor(set) {
+function noteFor(set, copied = false) {
   const decision = playbackFor(set);
-  return decision.kind === "direct"
-    ? null
-    : `Converting as you watch: ${decision.reason}.`;
+  return decision.kind === "direct" ? null : conversionNote(`${decision.reason}.`, copied);
 }
 
 /** Attaches whatever subtitle tracks the catalog said this set has. */
@@ -175,22 +174,37 @@ function convert(set, seconds, warning, maxrateBits) {
   base = seconds;
   capBits = maxrateBits ?? null;
   watch.begin({ capBits, sourceBits: sourceBitrate(set) });
+  /**
+   * The sentence, which the server may correct.
+   *
+   * The catalog can say a title needs converting but not whether the picture
+   * has to be rebuilt to do it — only the server decides that, from the same
+   * policy, once asked. So this starts as what the catalog knows and is
+   * replaced when the answer comes back. Held in a variable because the
+   * `then` below restores it, and restoring the stale one would undo the
+   * correction a moment after making it.
+   */
+  let said = warning;
   // Shown unconditionally: a title that was playing directly has its note
   // hidden, and a switch that explains itself invisibly explains nothing.
-  note.textContent = `${warning} Starting at ${clockTime(seconds)}…`;
+  note.textContent = `${said} Starting at ${clockTime(seconds)}…`;
   note.hidden = false;
 
   playTranscoded(video, set.setId, {
     seekSeconds: seconds,
     maxrateBits,
     audioTrack,
+    onStarted: ({ copied }) => {
+      said = noteFor(set, copied) ?? said;
+      note.textContent = `${said} Starting at ${clockTime(seconds)}…`;
+    },
     onFatal: (error) => {
       note.textContent = `The conversion stopped: ${error.message}. Pick a position to start it again.`;
     },
   })
     .then((release) => {
       detach = release;
-      note.textContent = warning;
+      note.textContent = said;
       refreshEnds();
     })
     .catch((error) => {

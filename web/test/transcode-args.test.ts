@@ -208,3 +208,54 @@ describe("audio", () => {
     expect(argsFor({ audioTrack: 5 })).toContain("0:v:0");
   });
 });
+
+describe("carrying the picture across instead of encoding it", () => {
+  test("the video is copied, and no encoder is named", () => {
+    const args = argsFor({ copyVideo: true });
+    expect(valueOf(args, "-c:v")).toBe("copy");
+    expect(args).not.toContain("libx264");
+    expect(args).not.toContain("h264_vaapi");
+  });
+
+  test("nothing that controls an encode survives", () => {
+    // Every one of these is about an encode that is not happening, and
+    // `-force_key_frames` in particular cannot apply: there is no encoder
+    // left to ask for a keyframe.
+    const args = argsFor({ copyVideo: true });
+    for (const flag of ["-maxrate", "-bufsize", "-g", "-force_key_frames", "-vf"]) {
+      expect(args).not.toContain(flag);
+    }
+  });
+
+  test("a VAAPI device is not set up for a job that never reaches the GPU", () => {
+    const args = argsFor({
+      copyVideo: true,
+      encoder: { kind: "vaapi", name: "h264_vaapi", device: "/dev/dri/renderD128" },
+    });
+    expect(args).not.toContain("-vaapi_device");
+  });
+
+  test("the audio is still chosen, re-encoded and downmixed", () => {
+    // The whole point of a copy is often that the audio had to change.
+    const args = argsFor({ copyVideo: true, audioTrack: 2 });
+    expect(args).toContain("0:a:2");
+    expect(valueOf(args, "-c:a")).toBe("aac");
+    expect(valueOf(args, "-ac")).toBe("2");
+  });
+
+  test("and it is still segmented the same way", () => {
+    const args = argsFor({ copyVideo: true });
+    expect(valueOf(args, "-hls_time")).toBe("2");
+    expect(valueOf(args, "-hls_playlist_type")).toBe("event");
+  });
+
+  test("seeking still happens before the input", () => {
+    const args = argsFor({ copyVideo: true, seekSeconds: 900 });
+    expect(args.indexOf("-ss")).toBeLessThan(args.indexOf("-i"));
+  });
+
+  test("absent means encode, which is what every older caller meant", () => {
+    expect(valueOf(argsFor(), "-c:v")).toBe("libx264");
+    expect(valueOf(argsFor({ copyVideo: false }), "-c:v")).toBe("libx264");
+  });
+});

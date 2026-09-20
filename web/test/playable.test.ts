@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { decidePlayback } from "../public/lib/playable.js";
+import { conversionNote, decidePlayback } from "../public/lib/playable.js";
 
 const set = (container: string, vcodec: string | null, acodec: string | null) => ({
   container,
@@ -24,7 +24,10 @@ function reasonOf(decision: ReturnType<typeof decidePlayback>): string {
 
 describe("direct play", () => {
   test("accepts the course profile: mp4, h264, aac", () => {
-    expect(decidePlayback(set("mp4", "h264", "aac"))).toEqual({ kind: "direct" });
+    expect(decidePlayback(set("mp4", "h264", "aac"))).toEqual({
+      kind: "direct",
+      blocking: { container: false, video: false, audio: false, bitrate: false },
+    });
   });
 
   test("accepts codec strings Telegram and ffprobe spell differently", () => {
@@ -106,5 +109,59 @@ describe("playing over a link that has to carry it", () => {
 
   test("said nothing about the link, the decision is the codec one", () => {
     expect(decidePlayback(film).kind).toBe("direct");
+  });
+});
+
+describe("which reason is at fault", () => {
+  test("a Matroska h264 blames the container and nothing else", () => {
+    // The 146 sets in this library that are h264 in an mkv: the picture is
+    // already what a browser wants and only the box around it is wrong.
+    expect(decidePlayback(set("mkv", "h264", "aac")).blocking).toEqual({
+      container: true,
+      video: false,
+      audio: false,
+      bitrate: false,
+    });
+  });
+
+  test("HEVC blames the video, whatever else is wrong with it", () => {
+    expect(decidePlayback(set("mkv", "hevc", "ac3")).blocking).toMatchObject({
+      video: true,
+      container: true,
+      audio: true,
+    });
+  });
+
+  test("a bitrate over the link blames the bitrate", () => {
+    const heavy = { ...set("mp4", "h264", "aac"), total: 20e9, duration: 3600 };
+    const decision = decidePlayback(heavy, { remote: true, maxBitrate: 8e6 });
+    expect(decision.blocking).toMatchObject({ bitrate: true, video: false });
+  });
+
+  test("and on the LAN the same file blames nothing", () => {
+    const heavy = { ...set("mp4", "h264", "aac"), total: 20e9, duration: 3600 };
+    expect(decidePlayback(heavy, { remote: false, maxBitrate: 8e6 }).kind).toBe("direct");
+  });
+});
+
+describe("what the page says while it waits", () => {
+  test("an encode is a conversion, and says so", () => {
+    expect(conversionNote("Matroska container, HEVC video.")).toBe(
+      "Converting as you watch: Matroska container, HEVC video.",
+    );
+  });
+
+  test("a copy is not, and says that instead", () => {
+    // The two take wildly different amounts of time, and one of them does not
+    // touch the picture at all. Calling both "converting" told a viewer to
+    // expect the slow one.
+    expect(conversionNote("Matroska container.", true)).toBe(
+      "Repackaging as you watch: Matroska container. The picture is untouched.",
+    );
+  });
+
+  test("a title that needs nothing has nothing to explain", () => {
+    expect(conversionNote(null)).toBeNull();
+    expect(conversionNote("", true)).toBeNull();
   });
 });

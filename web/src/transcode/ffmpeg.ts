@@ -11,7 +11,7 @@ import { appendFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { transcodeArgs, type Encoder } from "./args";
-import type { Runner, Running } from "./registry";
+import type { Runner, Running, SessionSpec } from "./registry";
 
 export interface FfmpegOptions {
   encoder: Encoder;
@@ -23,21 +23,15 @@ export interface FfmpegOptions {
 export class FfmpegRunner implements Runner {
   constructor(private readonly options: FfmpegOptions) {}
 
-  start(
-    _sessionId: string,
-    directory: string,
-    setId: string,
-    seekSeconds: number,
-    maxrateBits: number,
-    audioTrack = 0,
-  ): Running {
+  start(_sessionId: string, directory: string, spec: SessionSpec): Running {
     const args = transcodeArgs({
-      input: `${this.options.baseUrl}/api/sets/${encodeURIComponent(setId)}/stream`,
+      input: `${this.options.baseUrl}/api/sets/${encodeURIComponent(spec.setId)}/stream`,
       output: join(directory, "index.m3u8"),
       encoder: this.options.encoder,
-      seekSeconds,
-      maxrateBits,
-      audioTrack,
+      seekSeconds: spec.seekSeconds,
+      maxrateBits: spec.maxrateBits,
+      audioTrack: spec.audioTrack,
+      copyVideo: spec.copyVideo,
       segmentSeconds: this.options.segmentSeconds,
       // Left to ffmpeg: it reads the real rate from the source, and
       // `-force_key_frames` holds the segment boundaries regardless.
