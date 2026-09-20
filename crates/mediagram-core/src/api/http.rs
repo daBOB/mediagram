@@ -14,11 +14,25 @@ use std::sync::Arc;
 
 use super::CoreError;
 
+/// Installs this crate's rustls crypto provider, once per process.
+///
+/// `rustls-no-provider` is enabled precisely so none is chosen for us — see
+/// this module's own doc comment — which means every `reqwest::Client` this
+/// crate or a dependency like `mediagram-tmdb` builds needs one already
+/// installed, or it panics at construction time, before a single byte goes
+/// over the wire. A caller that is about to hand a key to a crate this one
+/// does not control (`TmdbClient::new` builds its own bare client) must call
+/// this first rather than rely on `client()` below having already run.
+/// Installing twice (a second `Core`, a second call in tests, or both this
+/// and `client()` in the same request) is not an error worth surfacing:
+/// whichever provider got there first is fine.
+pub(super) fn install_provider() {
+    let _ = rustls::crypto::ring::default_provider().install_default();
+}
+
 /// Builds the client this crate uses for every outbound HTTPS request.
 pub(super) fn client() -> Result<reqwest::Client, CoreError> {
-    // Installing twice (a second `Core`, or a second call in tests) is not
-    // an error worth surfacing: whichever provider got there first is fine.
-    let _ = rustls::crypto::ring::default_provider().install_default();
+    install_provider();
 
     let mut roots = rustls::RootCertStore::empty();
     roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());

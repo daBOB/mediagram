@@ -4,10 +4,9 @@
 
 use std::path::Path;
 
-use mediagram_core::api::artwork::fetch_into;
+use mediagram_core::api::artwork::{fetch_into, split_titles};
 use mediagram_core::catalog::{PlayableSet, list_playable};
 use mediagram_core::dto::PosterReport;
-use mlib_spec::Kind;
 use rusqlite::Connection;
 
 use mediagram_tmdb::tmdb_client::TmdbApi;
@@ -52,22 +51,11 @@ fn write_existing_poster(dir: &Path, key: &str) {
     std::fs::write(posters.join(format!("{key}.jpg")), b"stub").unwrap();
 }
 
-/// The kind spellings this fixture writes, mirroring `mlib_spec::Kind`'s own
-/// lowercase serde rendering.
-fn kind_of(kind: &str) -> Option<Kind> {
-    match kind {
-        "movie" => Some(Kind::Movie),
-        "ep" => Some(Kind::Ep),
-        "tut" => Some(Kind::Tut),
-        "doc" => Some(Kind::Doc),
-        _ => None,
-    }
-}
-
 /// Reads the catalog `fetch_with` just seeded, splits it into what
-/// `fetch_into` wants, and drives it against `api` — the internal half,
-/// never the public `fetch_posters`, which constructs a real client from a
-/// key this test does not have.
+/// `fetch_into` wants using the same [`split_titles`] production code
+/// drives, and calls `fetch_into` directly — the internal half, never the
+/// public `fetch_posters`, which constructs a real client from a key this
+/// test does not have.
 async fn fetch_with(dir: &Path, api: StubApi) -> PosterReport {
     // `reqwest::Client::new()` panics with no crypto provider installed:
     // this crate builds with `rustls-no-provider`, so nothing pulls one in
@@ -79,18 +67,23 @@ async fn fetch_with(dir: &Path, api: StubApi) -> PosterReport {
 
     let conn = Connection::open(dir.join("catalog").join("current").join("library.db")).unwrap();
     let sets: Vec<PlayableSet> = list_playable(&conn).unwrap();
-
-    let mut titles = Vec::new();
-    let mut without_id = 0u32;
-    for set in &sets {
-        match (kind_of(&set.kind), set.tmdb) {
-            (Some(kind), Some(id)) if id > 0 => titles.push((kind, id as u64)),
-            _ => without_id += 1,
-        }
-    }
+    let (titles, without_id) = split_titles(&sets);
 
     let posters_dir = dir.join("catalog").join("current").join("posters");
-    fetch_into(&api, &reqwest::Client::new(), &posters_dir, &titles, without_id).await
+    fetch_into(&api, &offline_client(), &posters_dir, &titles, without_id).await
+}
+
+/// A client that can never reach the real network: TMDB itself is stubbed,
+/// but the poster CDN is not, and these tests must not depend on this
+/// machine having egress. Pinning `image.tmdb.org` to a closed local port
+/// fails a download the same way a real network problem would — landing in
+/// `failed`, not `fetched` — deterministically and without a real request
+/// ever leaving the process.
+fn offline_client() -> reqwest::Client {
+    reqwest::Client::builder()
+        .resolve("image.tmdb.org", "127.0.0.1:1".parse().unwrap())
+        .build()
+        .unwrap()
 }
 
 #[tokio::test]

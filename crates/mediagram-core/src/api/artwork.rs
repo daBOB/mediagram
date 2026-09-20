@@ -10,6 +10,7 @@
 use std::path::Path;
 
 use mlib_spec::Kind;
+use rusqlite::{Connection, OpenFlags};
 
 use mediagram_tmdb::posters::{already_held, download_into, resolve_posters};
 use mediagram_tmdb::tmdb_client::{TmdbApi, TmdbClient};
@@ -47,18 +48,31 @@ pub async fn fetch_into(
 
 /// Fetches artwork for every title the provider numbers.
 ///
-/// The catalog directory is resolved before the first request and not
-/// looked up again: a refresh landing mid-run swaps `current` underneath
-/// this, and writing into the directory that was current when the run
-/// started wastes the work rather than scattering files across two
-/// installs.
+/// `current` is a symlink a refresh swaps atomically, then deletes the
+/// directory it used to point at. `std::fs::canonicalize` resolves it to
+/// the real directory exactly once, here, before any request — every path
+/// this function touches afterwards (the posters directory, the TMDB disk
+/// cache) is derived from that resolved value, never from `current` again.
+/// A refresh landing mid-fetch therefore leaves this run writing into the
+/// directory that was current when it started, whole, rather than splitting
+/// its output across the old install and the new one — or, worse, into a
+/// directory a cleanup pass deletes out from under it.
 pub(super) async fn fetch_posters(
     core: &Core,
     tmdb_key: String,
     language: String,
 ) -> Result<PosterReport, CoreError> {
-    let dir = catalog::current_dir(core);
-    let conn = catalog::open(core)?;
+    // Every `reqwest::Client` built below — including the one
+    // `TmdbClient::new` builds for itself, inside a crate this one does not
+    // control — needs a crypto provider already installed, or it panics at
+    // construction rather than failing a request. This must run before the
+    // first client of any kind is built.
+    http::install_provider();
+
+    let dir = std::fs::canonicalize(catalog::current_dir(core))
+        .map_err(|_| CoreError::NotFound("no catalog is loaded yet".into()))?;
+    let conn = Connection::open_with_flags(dir.join("library.db"), OpenFlags::SQLITE_OPEN_READ_ONLY)
+        .map_err(|_| CoreError::Io("opening the catalog".into()))?;
     let sets = crate::catalog::list_playable(&conn)
         .map_err(|_| CoreError::Io("reading the catalog".into()))?;
     drop(conn);
@@ -70,18 +84,18 @@ pub(super) async fn fetch_posters(
         return Ok(PosterReport { no_provider_id: without_id, ..PosterReport::default() });
     }
 
-    verify_key(&tmdb_key).await?;
-
     let posters_dir = dir.join("posters");
     let client = http::client()?;
     let api = TmdbClient::with_cache(&tmdb_key, &dir, &language);
+    verify_key(&api).await?;
     Ok(fetch_into(&api, &client, &posters_dir, &titles, without_id).await)
 }
 
 /// Splits the catalog into what the provider can be asked about and what
 /// cannot be asked at all — a course has no provider id, and is counted
-/// rather than looked up.
-fn split_titles(sets: &[PlayableSet]) -> (Vec<(Kind, u64)>, u32) {
+/// rather than looked up. `pub` so a test can drive it directly instead of
+/// keeping its own copy of the same classification.
+pub fn split_titles(sets: &[PlayableSet]) -> (Vec<(Kind, u64)>, u32) {
     let mut titles = Vec::new();
     let mut without_id = 0u32;
     for set in sets {
@@ -107,10 +121,12 @@ fn kind_of(kind: &str) -> Option<Kind> {
 
 /// Validates the key against TMDB before any resolve or download, so a
 /// wrong key is reported once rather than discovered as a report full of
-/// zeroes a viewer might retry forever.
-async fn verify_key(tmdb_key: &str) -> Result<(), CoreError> {
-    let probe = TmdbClient::new(tmdb_key);
-    match probe.get_json("/authentication", &[]).await {
+/// zeroes a viewer might retry forever. Asked through the same client
+/// `fetch_into` goes on to use, rather than a second one built just for
+/// this — one fewer client this module has to keep a crypto provider ahead
+/// of.
+async fn verify_key(api: &impl TmdbApi) -> Result<(), CoreError> {
+    match api.get_json("/authentication", &[]).await {
         Ok(_) => Ok(()),
         Err(err) if rejected_the_key(&err) => {
             Err(CoreError::NotAuthorized("the artwork provider rejected this key".into()))
@@ -121,8 +137,17 @@ async fn verify_key(tmdb_key: &str) -> Result<(), CoreError> {
 
 /// TMDB answers an invalid key with HTTP 401. `TmdbClient::get_json` strips
 /// the request URL — the only place the key appears — before formatting any
-/// error, so this string carries the endpoint path and the numeric status
-/// and never the key itself.
+/// error, so this string carries only the endpoint path and the status,
+/// never the key itself. The status is not a bare number: `StatusCode`'s
+/// `Display` renders `"401 Unauthorized"`, and `"failed with 401"` matches
+/// it as a prefix — pinned by the tests below against the exact `bail!` in
+/// `mediagram_tmdb::tmdb_client::TmdbClient::get_json`, so a reword there
+/// fails a test here instead of silently turning a rejected key into a
+/// retry loop.
 fn rejected_the_key(err: &anyhow::Error) -> bool {
     err.to_string().contains("failed with 401")
 }
+
+#[cfg(test)]
+#[path = "artwork_tests.rs"]
+mod tests;
