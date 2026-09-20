@@ -12,7 +12,9 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.io.IOException
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -82,5 +84,56 @@ class DefaultPlayerHandleTest {
 
         verify(exactly = 1) { player.setMediaItem(any<MediaItem>()) }
         verify(exactly = 1) { player.prepare() }
+    }
+
+    @Test
+    fun reopeningTheSameSetDoesNotResetItsPosition() = runTest {
+        // BasePlayer.setMediaItem(MediaItem) always resets to position
+        // zero; a rotation re-runs PlayerScreen's LaunchedEffect(setId)
+        // with the same id in a brand-new Composition, so open() must not
+        // call it a second time for a set that's already loaded.
+        val player = mockk<ExoPlayer>(relaxed = true)
+        val handle = DefaultPlayerHandle(CompletableDeferred(player), this)
+        advanceUntilIdle()
+
+        handle.open("s1")
+        handle.open("s1")
+
+        verify(exactly = 1) { player.setMediaItem(any<MediaItem>()) }
+        verify(exactly = 1) { player.prepare() }
+    }
+
+    @Test
+    fun stoppingDuringConstructionPreventsThePendingOpenFromStartingPlayback() = runTest {
+        val player = mockk<ExoPlayer>(relaxed = true)
+        val deferred = CompletableDeferred<ExoPlayer>()
+        val handle = DefaultPlayerHandle(deferred, this)
+
+        handle.open("s1") // queued: the player isn't built yet
+        handle.stop() // the screen is left before construction finishes
+
+        deferred.complete(player)
+        advanceUntilIdle()
+
+        verify(exactly = 0) { player.setMediaItem(any<MediaItem>()) }
+        verify(exactly = 0) { player.prepare() }
+    }
+
+    @Test
+    fun aFailedPlayerConstructionSurfacesAsAnErrorRatherThanCrashing() = runTest {
+        val deferred = CompletableDeferred<ExoPlayer>()
+        val handle = DefaultPlayerHandle(deferred, this)
+        var errorMessage: String? = null
+        handle.setListener(object : PlayerHandle.Listener {
+            override fun onPositionChanged(positionMs: Long, durationMs: Long, isPlaying: Boolean) = Unit
+            override fun onError(message: String) {
+                errorMessage = message
+            }
+        })
+
+        deferred.completeExceptionally(IOException("no space left for the cache"))
+        advanceUntilIdle()
+
+        assertEquals("no space left for the cache", errorMessage)
     }
 }

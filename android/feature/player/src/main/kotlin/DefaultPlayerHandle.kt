@@ -4,6 +4,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,6 +43,9 @@ class DefaultPlayerHandle @Inject constructor(
     /** A set requested through [open] before the player finished building. */
     private var pendingSetId: String? = null
 
+    /** Whichever set is currently loaded or queued to load; [stop] clears it. */
+    private var currentSetId: String? = null
+
     private val playerListener = object : Player.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) = notifyPosition(isPlaying)
 
@@ -57,17 +61,35 @@ class DefaultPlayerHandle @Inject constructor(
 
     init {
         scope.launch {
-            val built = playerDeferred.await()
-            built.addListener(playerListener)
-            _player.value = built
-            pendingSetId?.let { setId ->
-                pendingSetId = null
-                openOn(built, setId)
+            try {
+                val built = playerDeferred.await()
+                built.addListener(playerListener)
+                _player.value = built
+                pendingSetId?.let { setId ->
+                    pendingSetId = null
+                    openOn(built, setId)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Corrupt cache index, no disk space for it, and similar
+                // construction failures land here rather than in
+                // Player.Listener.onPlayerError — there is no player yet
+                // to have raised that. Left uncaught, this reaches the
+                // process's default handler, which on a device is a crash.
+                listener?.onError(e.message ?: "Could not prepare the player")
             }
         }
     }
 
     override fun open(setId: String) {
+        // Rotation destroys and recreates the whole Composition, so
+        // PlayerScreen's LaunchedEffect(setId) fires again with the same
+        // id; reopening a set that is already loaded or queued must not
+        // disturb playback — the single-item setMediaItem overload always
+        // resets to position zero.
+        if (setId == currentSetId) return
+        currentSetId = setId
         val current = _player.value
         if (current == null) {
             pendingSetId = setId
@@ -81,6 +103,12 @@ class DefaultPlayerHandle @Inject constructor(
     }
 
     override fun stop() {
+        // Clearing these matters even when the player isn't built yet: a
+        // set requested just before the screen was left must not start
+        // playing the moment construction finishes on a screen the user
+        // has already backed out of.
+        pendingSetId = null
+        currentSetId = null
         _player.value?.stop()
     }
 
