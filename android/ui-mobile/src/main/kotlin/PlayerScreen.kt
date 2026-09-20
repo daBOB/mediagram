@@ -11,6 +11,7 @@ import android.content.ContextWrapper
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.IconButton
@@ -22,6 +23,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,6 +69,9 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
     // all, then left to take itself away.
     var controlsShown by remember { mutableStateOf(true) }
     var scrubbing by remember { mutableStateOf(false) }
+    // Saved, because a rotation destroys this composition and a viewer who
+    // turned the phone to read a wider row did not ask for the numbers back.
+    var statsShown by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(controlsShown, state, scrubbing) {
         if (!controlsShown) return@LaunchedEffect
         val fades = controlsShouldFade(
@@ -91,6 +96,7 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
                 PlayerControls(
                     player = current,
                     onScrubbingChanged = { scrubbing = it },
+                    onToggleStats = { statsShown = !statsShown },
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
@@ -105,11 +111,27 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
         // Placed explicitly: the box centres its children so the picture
         // sits in the middle of its letterbox, and back would otherwise be
         // centred with it, in the middle of the film.
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier.align(Alignment.TopStart).padding(Spacing.medium),
-        ) {
-            Text(text = "←", color = Color.White, style = MaterialTheme.typography.headlineSmall)
+        //
+        // The statistics sit under back in a column rather than at their own
+        // corner, so there is no arithmetic anywhere that has to know how
+        // tall the arrow is in order to clear it.
+        Column(modifier = Modifier.align(Alignment.TopStart)) {
+            IconButton(onClick = onBack, modifier = Modifier.padding(Spacing.medium)) {
+                Text(text = "←", color = Color.White, style = MaterialTheme.typography.headlineSmall)
+            }
+            // Inside the bar's own condition, so no second visibility rule
+            // exists: a viewer who leaves the numbers on gets the picture
+            // back when the bar takes itself away, and keeps them while the
+            // film is paused.
+            if (statsShown && controlsShown && controlsMayShow(state)) {
+                player?.let { current ->
+                    PlaybackStatsOverlay(
+                        player = current,
+                        totals = viewModel.totals,
+                        modifier = Modifier.padding(start = Spacing.medium),
+                    )
+                }
+            }
         }
     }
 }

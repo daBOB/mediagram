@@ -37,11 +37,18 @@ import designsystem.Spacing
 /**
  * How often the readout catches up with the playhead. Twice a second: a clock
  * printing whole seconds needs no more, and a tick is a recomposition.
+ *
+ * Shared with the statistics overlay rather than copied, so the two read the
+ * player on one interval instead of drifting apart on two.
  */
-private const val TICK_MS = 500L
+internal const val TICK_MS = 500L
 
-/** Enough to keep white legible over a bright frame without hiding it. */
-private const val SCRIM_ALPHA = 0.55f
+/**
+ * Enough to keep white legible over a bright frame without hiding it. The
+ * overlay lays the same scrim over the picture, and one film cannot sit
+ * under two different greys.
+ */
+internal const val SCRIM_ALPHA = 0.55f
 
 /**
  * The transport bar.
@@ -53,13 +60,14 @@ private const val SCRIM_ALPHA = 0.55f
  * a timer or removes a listener.
  *
  * Glyphs rather than icons: this module has no Material icons dependency, and
- * `PlayerScreen` already draws its back arrow as text. Four more characters do
+ * `PlayerScreen` already draws its back arrow as text. Five more characters do
  * not earn an artifact.
  */
 @Composable
 fun PlayerControls(
     player: Player,
     onScrubbingChanged: (Boolean) -> Unit,
+    onToggleStats: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val playPause = rememberPlayPauseButtonState(player)
@@ -121,6 +129,16 @@ fun PlayerControls(
                 description = "Skip forward ${seekForward.seekForwardAmountMs / 1_000} seconds",
                 enabled = seekForward.isEnabled,
                 onClick = seekForward::onClick,
+            )
+            // Last, after the three that move the film, because it does not
+            // move it: the transport controls stay a group of three and the
+            // one that only reports sits at the end of the row rather than
+            // in among them.
+            GlyphButton(
+                glyph = "ⓘ",
+                description = "Playback statistics",
+                enabled = true,
+                onClick = onToggleStats,
             )
         }
         Slider(
