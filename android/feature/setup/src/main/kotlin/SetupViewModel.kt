@@ -191,10 +191,3 @@ class SetupViewModel @Inject constructor(
         return SetupUiState.Ready
     }
 }
-
-/** Returns [previous] unchanged when it is the same step with something to say. */
-private fun SetupUiState.keepingWhatIsOnScreenFrom(previous: SetupUiState): SetupUiState = when {
-    this is SetupUiState.NeedsApplication && previous is SetupUiState.NeedsApplication -> previous
-    this is SetupUiState.NeedsLibrary && previous is SetupUiState.NeedsLibrary -> previous
-    else -> this
-}
