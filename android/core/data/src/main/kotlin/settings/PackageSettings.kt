@@ -6,9 +6,13 @@ import androidx.security.crypto.MasterKey
 
 /**
  * The package URL and its decryption key, as pasted in during provisioning.
- * The URL is not a secret (docs/mlib-package-v1.md); the key is.
+ * The URL is not a secret (docs/mlib-package-v1.md); the key is, so
+ * [toString] is overridden — the generated one would print [keyB64] in
+ * full the moment anything interpolates or logs this object.
  */
-data class PackageCredentials(val url: String, val keyB64: String)
+data class PackageCredentials(val url: String, val keyB64: String) {
+    override fun toString(): String = "PackageCredentials(url=$url, keyB64=<redacted>)"
+}
 
 interface PackageSettings {
     suspend fun read(): PackageCredentials?
