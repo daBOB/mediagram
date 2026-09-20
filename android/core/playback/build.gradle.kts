@@ -18,11 +18,14 @@ dependencies {
     api(libs.findLibrary("androidx.media3.exoplayer").get())
     api(libs.findLibrary("androidx.media3.datasource").get())
     api(libs.findLibrary("androidx.media3.ui.compose").get())
+    implementation(libs.findLibrary("androidx.media3.database").get())
 
-    testImplementation(libs.findLibrary("mockk").get())
     // MlibDataSource builds a real android.net.Uri and PlayerFactory builds
-    // a real SimpleCache (which blocks on android.os.ConditionVariable at
-    // construction); the plain unit-test android.jar stub throws for both,
-    // so these tests run under Robolectric rather than the bare JVM.
+    // a real, database-backed SimpleCache; the plain unit-test android.jar
+    // stub throws for both, so these tests run under Robolectric rather
+    // than the bare JVM. androidx-junit brings ApplicationProvider, for a
+    // real Context the database-backed cache can actually open SQLite
+    // against.
     testImplementation(libs.findLibrary("robolectric").get())
+    testImplementation(libs.findLibrary("androidx.junit").get())
 }

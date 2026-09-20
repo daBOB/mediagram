@@ -1,6 +1,7 @@
 package playback
 
 import android.content.Context
+import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import java.io.File
@@ -14,12 +15,18 @@ private const val CACHE_MAX_BYTES = 2L * 1024 * 1024 * 1024 // 2 GiB
  * second instance opens the same directory concurrently, so [get] is the
  * single choke point that guarantees only one is ever built.
  *
- * Uses the legacy, file-only cache index rather than the newer
- * database-backed one on purpose: the database variant needs a
- * `DatabaseProvider` backed by real `android.database.sqlite`, which does
- * not exist on a plain JVM unit test without Robolectric. The legacy index
- * is pure file I/O, which is what lets a JVM test build a real
- * `SimpleCache` against a mocked `Context`.
+ * Backed by [StandaloneDatabaseProvider] rather than the legacy, file-only
+ * index: `SimpleCache`'s constructor blocks the calling thread while it
+ * reads its index, and `get` is first called from `hiltViewModel`'s
+ * injection on the main thread. The legacy index has no
+ * `CacheFileMetadataIndex`, so it must stat every span file in the cache
+ * directory to rebuild itself — on a warm, close-to-full 2 GiB cache made
+ * of many small chunks, that scan is real work to do on main. The
+ * database-backed index persists its own metadata, so a warm open is a
+ * handful of small reads rather than a directory walk, and opening a
+ * legacy-indexed directory this way migrates it in place (media3 loads
+ * the legacy index once and rewrites it), so nothing already cached is
+ * lost by the switch.
  */
 object CacheProvider {
 
@@ -31,9 +38,9 @@ object CacheProvider {
             instance ?: buildCache(context).also { instance = it }
         }
 
-    @Suppress("DEPRECATION")
     private fun buildCache(context: Context): SimpleCache = SimpleCache(
         File(context.cacheDir, CACHE_DIR_NAME),
         LeastRecentlyUsedCacheEvictor(CACHE_MAX_BYTES),
+        StandaloneDatabaseProvider(context),
     )
 }

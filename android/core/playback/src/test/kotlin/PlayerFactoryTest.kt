@@ -2,22 +2,23 @@ package playback
 
 import android.content.Context
 import androidx.media3.datasource.cache.CacheDataSource
-import io.mockk.every
-import io.mockk.mockk
+import androidx.test.core.app.ApplicationProvider
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
+/**
+ * Uses Robolectric's real application [Context], not a mock: the
+ * database-backed cache needs to actually open a SQLite database, which a
+ * mocked `Context` can't provide.
+ */
 @RunWith(RobolectricTestRunner::class)
 class PlayerFactoryTest {
 
     @Test
     fun theCacheWrapsTheMlibSource() {
-        val context = mockk<Context> {
-            every { cacheDir } returns Files.createTempDirectory("mlib-cache-test").toFile()
-        }
+        val context = ApplicationProvider.getApplicationContext<Context>()
 
         val factory = cacheDataSourceFactory(context, FakeCore())
 
