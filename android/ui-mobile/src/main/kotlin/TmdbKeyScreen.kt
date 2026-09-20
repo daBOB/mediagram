@@ -36,15 +36,16 @@ fun TmdbKeyScreen(hasKey: Boolean, onSave: (String) -> Unit) {
     Column(modifier = Modifier.fillMaxSize().padding(Spacing.large)) {
         Text(text = "Fetch poster artwork", style = MaterialTheme.typography.titleMedium)
         Text(
-            text = "Optional. Create a free API key at themoviedb.org and paste its v3 key " +
-                "here to let the catalog show artwork instead of initials.",
+            text = "Optional. Create a free v3 API key or v4 read access token at " +
+                "themoviedb.org and paste it here to let the catalog show artwork instead of " +
+                "initials.",
             modifier = Modifier.padding(vertical = Spacing.small),
         )
         Text(text = if (hasKey) "A key is currently stored." else "No key is stored.")
         OutlinedTextField(
             value = key,
             onValueChange = { key = it },
-            label = { Text("TMDB v3 API key") },
+            label = { Text("TMDB v3 key or v4 token") },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.padding(vertical = Spacing.small),
         )

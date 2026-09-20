@@ -1,5 +1,7 @@
 package system
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import settings.InMemoryTmdbSettings
@@ -55,6 +57,34 @@ class PostersViewModelTest {
         assertEquals("a-fake-key", core.lastKey)
         assertEquals(PosterReport(2u, 7u, 0u, 0u), viewModel.state.value.report)
         assertFalse(viewModel.state.value.running)
+    }
+
+    /**
+     * The real regression this guards against: a fake that returns
+     * immediately can never be caught mid-flight, so [FakeCore.gate] holds
+     * the first call suspended while a second [PostersViewModel.fetch] call
+     * is made against it — the only way to prove the in-flight guard, not
+     * merely the no-key one, actually refuses a second run.
+     */
+    @Test
+    fun aSecondFetchWhileOneIsInFlightIsRefused() = runTest {
+        val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
+        val gate = CompletableDeferred<Unit>()
+        val core = FakeCore(report = PosterReport(1u, 0u, 0u, 0u), gate = gate)
+        val viewModel = PostersViewModel(FakeCoreProvider(core), settings)
+
+        viewModel.fetch()
+        assertTrue(viewModel.state.value.running)
+
+        viewModel.fetch()
+
+        assertEquals(1, core.fetchCalls)
+
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.state.value.running)
+        assertEquals(PosterReport(1u, 0u, 0u, 0u), viewModel.state.value.report)
     }
 
     /** A rejected key is named as such — never quoted back, and never mistaken for a network fault. */
