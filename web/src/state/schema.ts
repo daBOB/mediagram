@@ -11,7 +11,7 @@
  * different database and the two must never be confused.
  */
 
-export const STATE_SCHEMA = 2;
+export const STATE_SCHEMA = 3;
 
 /**
  * Statements grouped by the version they produce, the same shape the index's
@@ -110,6 +110,21 @@ export const GROUPS: readonly (readonly string[])[] = [
     `DROP TABLE collections`,
     `ALTER TABLE collections_next RENAME TO collections`,
     `CREATE INDEX IF NOT EXISTS collections_of ON collections(profile_id, created_at)`,
+  ],
+
+  // v2 -> v3: which titles are for children.
+  //
+  // The one table here with no `profile_id`, and deliberately. Everything
+  // else was given one because a watch position and a list belong to a
+  // person; this belongs to the title. Marking a film as a child's film is
+  // not a statement about who is watching, and a mark that had to be made
+  // again on every profile would be wrong on the second television in the
+  // house as well as tedious on the first.
+  [
+    `CREATE TABLE IF NOT EXISTS kids(
+       set_id TEXT PRIMARY KEY,
+       marked_at INTEGER NOT NULL
+     )`,
   ],
 ];
 

@@ -103,3 +103,55 @@ describe("v1 to v2", () => {
     }
   });
 });
+
+describe("v2 to v3", () => {
+  /** A database at version 2: profiles, but nothing marked for children. */
+  function v2With(path: string, rows: () => string[]): void {
+    const db = new Database(path, { create: true });
+    for (const statement of [...GROUPS[0]!, ...GROUPS[1]!]) db.exec(statement);
+    db.query("INSERT OR REPLACE INTO state_meta(key, value) VALUES ('schema_version', '2')").run();
+    for (const statement of rows()) db.exec(statement);
+    db.close();
+  }
+
+  test("carries an existing player's profiles and lists across untouched", () => {
+    const path = tempPath();
+    v2With(path, () => [
+      `INSERT INTO profiles(id, name, created_at) VALUES ('p1', 'André', 1)`,
+      `INSERT INTO watchlist(profile_id, set_id, added_at) VALUES ('p1', 'aset', 1)`,
+    ]);
+
+    const state = new WatchState(path);
+    expect(state.profiles().map((p) => p.name)).toEqual(["André"]);
+    expect(state.snapshot("p1").watchlist).toEqual(["aset"]);
+    // And the new shelf starts empty rather than absent.
+    expect(state.kids()).toEqual([]);
+    state.close();
+  });
+
+  test("gives a marked title no owner, so it outlives every profile", () => {
+    const path = tempPath();
+    v2With(path, () => [`INSERT INTO profiles(id, name, created_at) VALUES ('p1', 'A', 1)`]);
+
+    const state = new WatchState(path);
+    state.setKids("aset", true);
+    state.deleteProfile("p1");
+    expect(state.kids()).toEqual(["aset"]);
+    state.close();
+  });
+
+  test("opening again changes nothing at all", () => {
+    const path = tempPath();
+    v2With(path, () => [`INSERT INTO profiles(id, name, created_at) VALUES ('p1', 'A', 1)`]);
+
+    const first = new WatchState(path);
+    first.setKids("aset", true);
+    first.close();
+
+    // The replay hazard this file exists for: a migration that rebuilt the
+    // table would lose the mark on the second open.
+    const second = new WatchState(path);
+    expect(second.kids()).toEqual(["aset"]);
+    second.close();
+  });
+});

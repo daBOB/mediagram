@@ -54,6 +54,10 @@ const KEPT = {
   continue: { label: "Continue", empty: "Nothing started yet." },
   watchlist: { label: "Watchlist", empty: "Nothing on the list." },
   collections: { label: "Collections", empty: "No lists yet." },
+  kids: {
+    label: "Kids",
+    empty: "Nothing marked yet. Open a title and press Kids in the player.",
+  },
 };
 
 /** Ids to sets, quietly dropping any the catalog no longer holds. */
@@ -298,11 +302,17 @@ function play(set, queue = null) {
 }
 
 /** The counts beside the shelves that come from watch state. */
+// The player marks a title; the masthead counts them. Without this the count
+// beside Watchlist or Kids stays as it was until the next navigation, which
+// is exactly when nobody is looking at it.
+document.addEventListener("mediagram:kept-changed", () => refreshKept());
+
 function refreshKept() {
   const started = state.inProgress().filter((row) => resumeAt(row) !== null && byId.has(row.setId));
   document.getElementById("n-continue").textContent = String(started.length);
   document.getElementById("n-watchlist").textContent = String(setsFor(state.watchlist()).length);
   document.getElementById("n-collections").textContent = String(state.collections().length);
+  document.getElementById("n-kids").textContent = String(setsFor(state.kids()).length);
 }
 
 /** Whose shelves these are, and the way to become somebody else. */
@@ -332,6 +342,19 @@ function viewWatchlist() {
   heading(KEPT.watchlist.label, countOf(listed.length, "title"));
   if (listed.length === 0) return main.append(el("p", "empty", KEPT.watchlist.empty));
   main.append(setGrid(listed, play));
+}
+
+/**
+ * What has been marked as a child's.
+ *
+ * Played as a run, the way a list is: a child handed a tablet should not have
+ * to come back to the shelf between one film and the next.
+ */
+function viewKids() {
+  const marked = setsFor(state.kids());
+  heading(KEPT.kids.label, countOf(marked.length, "title"));
+  if (marked.length === 0) return main.append(el("p", "empty", KEPT.kids.empty));
+  main.append(setGrid(marked, (set) => play(set, marked)));
 }
 
 /** The lists themselves. */
@@ -469,6 +492,7 @@ function route() {
   if (known === "system") return viewSystem();
   if (known === "continue") return viewContinue();
   if (known === "watchlist") return viewWatchlist();
+  if (known === "kids") return viewKids();
   if (known === "collections") {
     return name ? viewList(decodeURIComponent(name)) : viewLists();
   }
@@ -505,6 +529,9 @@ try {
   // Asked for first: every shelf badge depends on whether this page is being
   // watched from the sofa or from somewhere with an uplink in between.
   await loadLink();
+  // Shared by everyone on this player, so it is read once rather than per
+  // profile — see `loadKids`.
+  await state.loadKids();
   // Who, before anything else: every shelf below is one profile's, and the
   // first render already draws progress rules.
   const [response] = await Promise.all([fetch("/api/sets"), state.loadProfiles()]);

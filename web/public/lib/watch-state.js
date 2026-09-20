@@ -23,6 +23,9 @@ const held = {
   progress: new Map(),
   watchlist: new Set(),
   collections: [],
+  /** Marked as a child's. Shared by everyone on this player, not held per
+   *  profile — a mark is about the title, not about who is watching. */
+  kids: new Set(),
 };
 
 /**
@@ -201,6 +204,34 @@ export function setWatchlisted(setId, listed) {
   if (listed) held.watchlist.add(setId);
   else held.watchlist.delete(setId);
   void write(under(`/watchlist/${encodeURIComponent(setId)}`), listed ? "PUT" : "DELETE");
+}
+
+/**
+ * The titles marked as a child's.
+ *
+ * Read once at startup and not per profile, because the mark belongs to the
+ * library: switching to another profile must not change which films are a
+ * child's. The path has no profile in it for the same reason.
+ */
+export async function loadKids() {
+  try {
+    const response = await fetch("/api/kids");
+    if (!response.ok) return;
+    const said = await response.json();
+    held.kids = new Set(Array.isArray(said.kids) ? said.kids : []);
+  } catch {
+    // A player that cannot ask simply has an empty shelf, which is the same
+    // thing it has before anything is marked.
+  }
+}
+
+export const isKids = (setId) => held.kids.has(setId);
+export const kids = () => [...held.kids];
+
+export function setKids(setId, marked) {
+  if (marked) held.kids.add(setId);
+  else held.kids.delete(setId);
+  void write(`/api/kids/${encodeURIComponent(setId)}`, marked ? "PUT" : "DELETE", marked ? {} : undefined);
 }
 
 export const collections = () => held.collections;
