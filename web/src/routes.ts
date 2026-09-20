@@ -40,7 +40,7 @@ import type { AudioTrackReader } from "./audio-tracks";
 import { createStateRouter } from "./state/routes";
 import type { WatchState } from "./state/store";
 import { DEFAULT_MAX_BITRATE } from "./config";
-import { contentType, planResponse } from "./response";
+import { bodiless, contentType, planResponse, withBody } from "./response";
 
 /** Where a stream's bytes come from. */
 export interface ByteSource {
@@ -233,26 +233,11 @@ function requestedAudioTrack(asked: string | null | undefined): number {
 }
 
 /** A text response, with its length stated as every response states one. */
-function text(body: string, contentType: string): PlayerResponse {
-  const bytes = new TextEncoder().encode(body);
-  return {
-    status: 200,
-    headers: {
-      "content-type": contentType,
-      "content-length": String(bytes.byteLength),
-    },
-    body: bytes,
-  };
-}
+const text = (body: string, contentType: string): PlayerResponse =>
+  withBody(body, contentType);
 
-/**
- * A response with the status and nothing else. `Content-Length: 0` is stated
- * rather than left to the runtime, because every response carrying one is the
- * property the rest of the system relies on.
- */
-function empty(status: number): PlayerResponse {
-  return { status, headers: { "content-length": "0" }, body: null };
-}
+/** A bodiless response: a refusal, or an answer that carries no bytes. */
+const empty = bodiless;
 
 /**
  * Where the catalog being served came from.

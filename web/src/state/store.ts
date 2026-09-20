@@ -106,6 +106,18 @@ export class WatchState {
     return this.db.query("SELECT 1 FROM profiles WHERE id = ?1").get(profileId) !== null;
   }
 
+  /**
+   * The set ids a query of one `set_id AS setId` column answers.
+   *
+   * Four readers wanted the same four lines of cast-and-map ceremony around
+   * their one interesting line of SQL. Empty on a player that cannot
+   * remember, like everything else here.
+   */
+  private setIds(sql: string, ...params: (string | number)[]): string[] {
+    if (!this.db) return [];
+    return (this.db.query(sql).all(...params) as { setId: string }[]).map((row) => row.setId);
+  }
+
   /** One profile's everything, in one read. The page asks once and holds it. */
   snapshot(profileId: string): StateSnapshot {
     if (!this.db) return { progress: [], watchlist: [], collections: [], watched: [] };
@@ -117,11 +129,10 @@ export class WatchState {
       )
       .all(profileId) as Progress[];
 
-    const watchlist = (
-      this.db
-        .query("SELECT set_id AS setId FROM watchlist WHERE profile_id = ?1 ORDER BY added_at DESC")
-        .all(profileId) as { setId: string }[]
-    ).map((row) => row.setId);
+    const watchlist = this.setIds(
+      "SELECT set_id AS setId FROM watchlist WHERE profile_id = ?1 ORDER BY added_at DESC",
+      profileId,
+    );
 
     const collections = (
       this.db
@@ -132,20 +143,16 @@ export class WatchState {
         .all(profileId) as Omit<Collection, "items">[]
     ).map((row) => ({
       ...row,
-      items: (
-        this.db!
-          .query(
-            "SELECT set_id AS setId FROM collection_items WHERE collection_id = ?1 ORDER BY position",
-          )
-          .all(row.id) as { setId: string }[]
-      ).map((item) => item.setId),
+      items: this.setIds(
+        "SELECT set_id AS setId FROM collection_items WHERE collection_id = ?1 ORDER BY position",
+        row.id,
+      ),
     }));
 
-    const watched = (
-      this.db
-        .query("SELECT set_id AS setId FROM watched WHERE profile_id = ?1")
-        .all(profileId) as { setId: string }[]
-    ).map((row) => row.setId);
+    const watched = this.setIds(
+      "SELECT set_id AS setId FROM watched WHERE profile_id = ?1",
+      profileId,
+    );
 
     return { progress, watchlist, collections, watched };
   }
@@ -218,12 +225,7 @@ export class WatchState {
    * shows what was just marked at the top.
    */
   kids(): string[] {
-    if (!this.db) return [];
-    return (
-      this.db.query("SELECT set_id AS setId FROM kids ORDER BY marked_at DESC").all() as {
-        setId: string;
-      }[]
-    ).map((row) => row.setId);
+    return this.setIds("SELECT set_id AS setId FROM kids ORDER BY marked_at DESC");
   }
 
   setKids(setId: string, marked: boolean): void {

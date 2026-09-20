@@ -8,7 +8,7 @@
 
 import { el } from "./dom.js";
 import { initialsOf, plate } from "./plate.js";
-import { countOf, episodeLabel, humanDuration, humanSize } from "./format.js";
+import { countOf, episodeLabel, hdrLabel, humanDuration, humanSize } from "./format.js";
 import { isWatched, progressOf } from "./watch-state.js";
 import { watchedFraction } from "./resume-point.js";
 import { firstItemOf } from "./library.js";
@@ -44,11 +44,10 @@ function container(mode) {
  * wall is for finding the film, not for comparing encodes.
  *
  * Resolution and HDR sit between the year and the runtime because that is the
- * order a viewer reads them in: what it is, then how long it is. `SDR` is
- * left out — see `technicalLine`.
+ * order a viewer reads them in: what it is, then how long it is.
  */
 function filmMeta(set, mode) {
-  const hdr = set.hdr && set.hdr !== "SDR" ? set.hdr : null;
+  const hdr = hdrLabel(set);
   const facts =
     mode === GRID
       ? [set.year, set.quality, humanDuration(set.duration)]

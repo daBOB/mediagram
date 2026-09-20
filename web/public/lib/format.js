@@ -66,16 +66,24 @@ export function bitrateLabel(set) {
  * Longer than `codecLine`, which stays as it is for a search hit and a lesson
  * row — both are one line in a list and a fuller string would wrap.
  *
- * `SDR` is left out on purpose. It is the absence of a fact rather than a
- * fact, and a shelf where every card says `SDR` says nothing at all; the
- * three that are worth naming are `HDR10`, `HLG` and `DV`.
  *
  * The bitrate is last because it is the one that makes the `needs transcode`
  * badge legible: a viewer who sees 13.9 Mbps beside the badge understands
  * it, and a viewer who sees only the badge does not.
  */
+/**
+ * What a title's dynamic range is worth saying, or nothing.
+ *
+ * `SDR` is left out on purpose. It is the absence of a fact rather than a
+ * fact, and a shelf where every card says `SDR` says nothing at all; the
+ * three that are worth naming are `HDR10`, `HLG` and `DV`.
+ */
+export function hdrLabel(set) {
+  return set.hdr && set.hdr !== "SDR" ? set.hdr : null;
+}
+
 export function technicalLine(set) {
-  const hdr = set.hdr && set.hdr !== "SDR" ? set.hdr : null;
+  const hdr = hdrLabel(set);
   return [
     set.quality,
     hdr,

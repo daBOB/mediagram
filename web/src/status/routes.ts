@@ -14,6 +14,7 @@
 
 import type { PlayerRequest, PlayerResponse } from "../routes";
 import { isLocalAddress } from "../client-reach";
+import { bodiless, withBody } from "../response";
 import { buildSnapshot, type LiveFacts } from "./snapshot";
 import type { StartupFacts } from "./facts";
 
@@ -41,23 +42,11 @@ export interface StatusRouterOptions {
   now?: () => number;
 }
 
-function json(body: string, bodiless: boolean): PlayerResponse {
-  const bytes = new TextEncoder().encode(body);
-  return {
-    status: 200,
-    headers: {
-      "content-type": "application/json",
-      "content-length": String(bytes.byteLength),
-      // A reading is true for the instant it was taken and no longer.
-      "cache-control": "no-store",
-    },
-    body: bodiless ? null : bytes,
-  };
-}
+const json = (body: string, headOnly: boolean): PlayerResponse =>
+  // A reading is true for the instant it was taken and no longer.
+  withBody(body, "application/json", { headOnly, headers: { "cache-control": "no-store" } });
 
-function status(code: number): PlayerResponse {
-  return { status: code, headers: { "content-length": "0" }, body: null };
-}
+const status = bodiless;
 
 /**
  * Answers a status request, or `null` when the path is not this one.

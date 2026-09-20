@@ -1,5 +1,5 @@
 /**
- * Deciding the status and headers of a stream response.
+ * Deciding the status and headers of a response.
  *
  * Kept apart from the router because two of these decisions are easy to get
  * subtly wrong and expensive to debug through a video player: an absent
@@ -8,6 +8,7 @@
  */
 
 import { parseRange, rangeLength, type ByteRange } from "./range";
+import type { PlayerResponse } from "./routes";
 
 /** The answer to a stream request, decided before a single byte is fetched. */
 export interface ResponsePlan {
@@ -82,4 +83,45 @@ export function contentType(container: string): string {
     default:
       return "application/octet-stream";
   }
+}
+
+/**
+ * A response carrying a body, with its length stated.
+ *
+ * Stated, never left to the runtime: `Bun.serve` replaces a manually set
+ * `Content-Length` with chunked encoding for anything it cannot buffer, and
+ * ffmpeg cannot seek an HTTP source without one — it reads from byte zero
+ * instead, which would quietly make every conversion start at the beginning
+ * of the film. Every route in this project states its own length, and this is
+ * the one place that does it, so the three routers cannot drift on the
+ * property the rest of the system rests on.
+ *
+ * `headOnly` keeps the headers and drops the body, which is what a `HEAD`
+ * answer is: the same framing, none of the bytes.
+ */
+export function withBody(
+  body: string,
+  contentType: string,
+  options: { status?: number; headOnly?: boolean; headers?: Record<string, string> } = {},
+): PlayerResponse {
+  const bytes = new TextEncoder().encode(body);
+  return {
+    status: options.status ?? 200,
+    headers: {
+      "content-type": contentType,
+      "content-length": String(bytes.byteLength),
+      ...options.headers,
+    },
+    body: options.headOnly === true ? null : bytes,
+  };
+}
+
+/**
+ * A response carrying none — a refusal, or a write that answers 204.
+ *
+ * `content-length: 0` for the same reason: a bodiless response that does not
+ * say so is one a client may sit waiting on.
+ */
+export function bodiless(status: number): PlayerResponse {
+  return { status, headers: { "content-length": "0" }, body: null };
 }

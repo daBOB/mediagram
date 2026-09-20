@@ -10,6 +10,7 @@
  */
 
 import type { PlayerRequest, PlayerResponse } from "../routes";
+import { bodiless, withBody } from "../response";
 import type { WatchState } from "./store";
 
 /**
@@ -229,18 +230,7 @@ function parse(body: string | null | undefined): unknown {
   }
 }
 
-function json(body: string, headOnly: boolean, code = 200): PlayerResponse {
-  const bytes = new TextEncoder().encode(body);
-  return {
-    status: code,
-    headers: {
-      "content-type": "application/json",
-      "content-length": String(bytes.byteLength),
-    },
-    body: headOnly ? null : bytes,
-  };
-}
+const json = (body: string, headOnly: boolean, code = 200): PlayerResponse =>
+  withBody(body, "application/json", { headOnly, status: code });
 
-function status(code: number): PlayerResponse {
-  return { status: code, headers: { "content-length": "0" }, body: null };
-}
+const status = bodiless;

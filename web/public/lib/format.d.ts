@@ -19,6 +19,9 @@ export function bitrateLabel(set: {
   duration?: number | null;
 }): string;
 
+/** What a title's dynamic range is worth saying, or `null` for SDR. */
+export function hdrLabel(set: { hdr?: string | null }): string | null;
+
 /** Everything the index knows about a file, for a card or the player HUD. */
 export function technicalLine(set: {
   quality?: string | null;
