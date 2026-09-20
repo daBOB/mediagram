@@ -64,11 +64,9 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
         }
 
         showingSystem -> {
-            // backLabelFor(Destination.System) is "Back": a sub screen, same
-            // as a collection, always offers a way back.
             BackHandler { showingSystem = false }
             LibraryScaffold(
-                title = barTitleFor(Destination.System),
+                destination = Destination.System,
                 onBack = { showingSystem = false },
                 menu = menuActions,
             ) { SystemPlaceholder() }
@@ -77,7 +75,7 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
         collection != null -> {
             BackHandler { openedCollection = null }
             LibraryScaffold(
-                title = barTitleFor(Destination.Collection(collection.name)),
+                destination = Destination.Collection(collection.name),
                 onBack = { openedCollection = null },
                 menu = menuActions,
             ) {
@@ -90,11 +88,12 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
         // the right thing to show in both cases, and clearing the key here
         // would throw away a position that is about to resolve.
         else -> {
-            // backLabelFor(Destination.Catalog) is null: the catalog is the
-            // top of the tree and offers no way back.
+            // Never invoked: LibraryScaffold only wires this up when
+            // backLabelFor(Destination.Catalog) says there is a way back,
+            // and there is not — the catalog is the top of the tree.
             LibraryScaffold(
-                title = barTitleFor(Destination.Catalog),
-                onBack = null,
+                destination = Destination.Catalog,
+                onBack = {},
                 menu = menuActions,
             ) {
                 CatalogScreen(

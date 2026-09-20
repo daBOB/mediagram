@@ -16,6 +16,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 /**
  * Where in the library a viewer currently is. The catalog is the root; a
@@ -64,9 +66,18 @@ data class MenuActions(
 )
 
 /**
- * The app's one piece of chrome: a bar with a title, an optional way back,
- * and an overflow menu that is the same four items wherever it is opened
- * from. Every non-player screen renders its content through this.
+ * The app's one piece of chrome: a bar with a title, a way back where the
+ * destination has one, and an overflow menu that is the same four items
+ * wherever it is opened from. Every non-player screen renders its content
+ * through this.
+ *
+ * The title and the back affordance are both derived from [destination]
+ * here, in one place, rather than handed in already decided — [barTitleFor]
+ * and [backLabelFor] are the decision, and this is the only caller either
+ * needs. [onBack] is still supplied by the caller because only the caller
+ * knows what "back" means for it (clear a saved id, in every case so far);
+ * whether that lambda is ever reachable is [backLabelFor]'s call, not the
+ * caller's.
  *
  * Start over asks the same confirmation [StartOverAction] always has —
  * [StartOverConfirmation] is the shared dialog behind both.
@@ -74,25 +85,32 @@ data class MenuActions(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScaffold(
-    title: String,
-    onBack: (() -> Unit)?,
+    destination: Destination,
+    onBack: () -> Unit,
     menu: MenuActions,
     content: @Composable () -> Unit,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     var askingStartOver by remember { mutableStateOf(false) }
+    val backLabel = backLabelFor(destination)
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(title) },
+                title = { Text(barTitleFor(destination)) },
                 navigationIcon = {
-                    if (onBack != null) {
-                        IconButton(onClick = onBack) { Text("←") }
+                    if (backLabel != null) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier.semantics { contentDescription = backLabel },
+                        ) { Text("←") }
                     }
                 },
                 actions = {
-                    IconButton(onClick = { menuExpanded = true }) { Text("⋮") }
+                    IconButton(
+                        onClick = { menuExpanded = true },
+                        modifier = Modifier.semantics { contentDescription = "Menu" },
+                    ) { Text("⋮") }
                     DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                         DropdownMenuItem(
                             text = { Text("System") },
