@@ -11,6 +11,7 @@ android {
 dependencies {
     implementation(project(":feature:catalog"))
     implementation(project(":feature:player"))
+    implementation(project(":feature:setup"))
     implementation(project(":core:designsystem"))
     implementation(project(":core:model"))
     implementation(project(":core:data"))

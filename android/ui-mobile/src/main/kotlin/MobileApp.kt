@@ -2,17 +2,14 @@ package ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -21,82 +18,85 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogViewModel
 import designsystem.MediagramTheme
-import designsystem.Spacing
-import kotlinx.coroutines.launch
 import login.LoginUiState
 import login.LoginViewModel
-import settings.PackageSettings
+import setup.SetupUiState
+import setup.SetupViewModel
 
 /**
- * Starts at login when unauthorized, at settings when authorized with no
- * package credentials, and at the catalog otherwise. [hasApiCredentials]
- * gates the whole authenticated tree: when the Telegram application
- * identity itself is missing, this never reaches a screen that would
- * construct the native core.
+ * The whole app hangs off one question — which setup step is outstanding —
+ * and [SetupViewModel] answers it from storage every time it is asked
+ * rather than from a remembered position, so a launch part-way through
+ * setup lands back on the step that is still missing.
  */
 @Composable
-fun MobileApp(hasApiCredentials: Boolean, packageSettings: PackageSettings) {
+fun MobileApp() {
     MediagramTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
-            if (!hasApiCredentials) {
-                MissingCredentialsMessage()
-            } else {
-                AuthenticatedApp(packageSettings)
+            val setupViewModel: SetupViewModel = hiltViewModel()
+            val setupState by setupViewModel.state.collectAsStateWithLifecycle()
+
+            when (val state = setupState) {
+                SetupUiState.Checking -> LoadingIndicator()
+
+                is SetupUiState.NeedsApplication -> TelegramApplicationScreen(
+                    error = state.error,
+                    onSubmit = setupViewModel::submitApplication,
+                )
+
+                SetupUiState.NeedsSignIn -> WithStartOver(setupViewModel::startOver) {
+                    SignIn(onAuthorized = setupViewModel::recheck)
+                }
+
+                is SetupUiState.NeedsLibrary -> WithStartOver(setupViewModel::startOver) {
+                    SettingsScreen(error = state.error, onSave = setupViewModel::submitLibrary)
+                }
+
+                SetupUiState.Ready -> CatalogAndPlayer(onStartOver = setupViewModel::startOver)
             }
         }
     }
 }
 
-/** Whether the package credentials read has completed, distinct from having completed and found none. */
-private sealed interface CredentialsState {
-    data object Loading : CredentialsState
-    data object Missing : CredentialsState
-    data object Present : CredentialsState
-}
-
+/**
+ * Sign-in is its own ViewModel, reused as-is: the per-step retry that keeps
+ * a rejected code on screen lives there, and the setup flow only needs to
+ * know when it is finished so it can ask what is outstanding next.
+ */
 @Composable
-private fun AuthenticatedApp(packageSettings: PackageSettings) {
+private fun SignIn(onAuthorized: () -> Unit) {
     val loginViewModel: LoginViewModel = hiltViewModel()
     val loginState by loginViewModel.state.collectAsStateWithLifecycle()
-    var credentialsState by remember { mutableStateOf<CredentialsState>(CredentialsState.Loading) }
-    val scope = rememberCoroutineScope()
 
     LaunchedEffect(loginState) {
-        if (loginState is LoginUiState.Authorized) {
-            credentialsState = if (packageSettings.read() != null) {
-                CredentialsState.Present
-            } else {
-                CredentialsState.Missing
-            }
-        }
+        if (loginState is LoginUiState.Authorized) onAuthorized()
     }
 
-    when {
-        loginState !is LoginUiState.Authorized -> LoginScreen(
-            state = loginState,
-            onSubmitPhone = loginViewModel::submitPhone,
-            onSubmitCode = loginViewModel::submitCode,
-            onSubmitPassword = loginViewModel::submitPassword,
-        )
+    LoginScreen(
+        state = loginState,
+        onSubmitPhone = loginViewModel::submitPhone,
+        onSubmitCode = loginViewModel::submitCode,
+        onSubmitPassword = loginViewModel::submitPassword,
+    )
+}
 
-        credentialsState is CredentialsState.Loading -> LoadingIndicator()
-
-        credentialsState is CredentialsState.Missing -> SettingsScreen(
-            onSave = { url, key ->
-                scope.launch {
-                    packageSettings.write(url, key)
-                    credentialsState = CredentialsState.Present
-                }
-            },
-        )
-
-        else -> CatalogAndPlayer()
+/**
+ * Every step past the first one has something stored that a person may
+ * need to take back — a session on the wrong account, a library they no
+ * longer have the key for. Step one has nothing to clear, so it carries no
+ * way out.
+ */
+@Composable
+private fun WithStartOver(onStartOver: () -> Unit, content: @Composable () -> Unit) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.weight(1f)) { content() }
+        StartOverAction(onConfirm = onStartOver)
     }
 }
 
 /** The catalog, and whichever set it opened — the first screen pair with a real back-stack need. */
 @Composable
-private fun CatalogAndPlayer() {
+private fun CatalogAndPlayer(onStartOver: () -> Unit) {
     val catalogViewModel: CatalogViewModel = hiltViewModel()
     val catalogState by catalogViewModel.state.collectAsStateWithLifecycle()
     // rememberSaveable, not remember: the Activity is fully destroyed and
@@ -111,7 +111,7 @@ private fun CatalogAndPlayer() {
         BackHandler { openedSetId = null }
         PlayerScreen(setId = setId, onBack = { openedSetId = null })
     } else {
-        CatalogScreen(state = catalogState, onOpen = { openedSetId = it })
+        CatalogScreen(state = catalogState, onOpen = { openedSetId = it }, onStartOver = onStartOver)
     }
 }
 
@@ -119,15 +119,5 @@ private fun CatalogAndPlayer() {
 private fun LoadingIndicator() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator()
-    }
-}
-
-@Composable
-private fun MissingCredentialsMessage() {
-    Box(modifier = Modifier.fillMaxSize().padding(Spacing.large), contentAlignment = Alignment.Center) {
-        Text(
-            text = "Missing Telegram API credentials. Add MEDIAGRAM_API_ID and " +
-                "MEDIAGRAM_API_HASH to local.properties, then rebuild.",
-        )
     }
 }

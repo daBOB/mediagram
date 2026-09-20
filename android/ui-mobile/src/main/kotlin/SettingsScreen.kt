@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,17 +19,21 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import designsystem.Spacing
 
 /**
- * Package URL and key, pasted in during provisioning (crude on purpose;
- * QR is a later round). The key is a secret and is always masked; it is
- * never logged.
+ * The last setup step: package URL and key, pasted in during provisioning
+ * (crude on purpose; QR is a later round). The key is a secret and is
+ * always masked; it is never logged. [error] says why the last attempt was
+ * not stored, and never quotes what was typed.
  */
 @Composable
-fun SettingsScreen(onSave: (url: String, keyB64: String) -> Unit) {
+fun SettingsScreen(error: String?, onSave: (url: String, keyB64: String) -> Unit) {
     var url by remember { mutableStateOf("") }
     var key by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.fillMaxSize().padding(Spacing.large)) {
         Text(text = "Paste your package URL and key")
+        if (error != null) {
+            Text(text = error, color = MaterialTheme.colorScheme.error)
+        }
         OutlinedTextField(value = url, onValueChange = { url = it }, label = { Text("Package URL") })
         OutlinedTextField(
             value = key,

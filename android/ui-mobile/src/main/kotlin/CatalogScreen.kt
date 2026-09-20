@@ -27,12 +27,28 @@ import model.MediaSet
 import java.io.File
 
 @Composable
-fun CatalogScreen(state: CatalogUiState, onOpen: (setId: String) -> Unit) {
+fun CatalogScreen(state: CatalogUiState, onOpen: (setId: String) -> Unit, onStartOver: () -> Unit) {
     when (state) {
         CatalogUiState.Loading -> CenteredMessage("Loading your library…")
         CatalogUiState.Empty -> CenteredMessage("The library is empty.")
-        is CatalogUiState.Failed -> CenteredMessage(state.message)
+        // A refresh that will not work is the one place this screen is a
+        // dead end — a session Telegram invalidated elsewhere still reads
+        // as signed in here, and nothing else on this screen leads back to
+        // signing in again.
+        is CatalogUiState.Failed -> FailedCatalog(state.message, onStartOver)
         is CatalogUiState.Ready -> ShelfList(state.shelves, onOpen)
+    }
+}
+
+@Composable
+private fun FailedCatalog(message: String, onStartOver: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(text = message)
+        StartOverAction(onConfirm = onStartOver)
     }
 }
 
