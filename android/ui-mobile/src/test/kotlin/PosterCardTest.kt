@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
  * mapping is testable here — this module's tests are plain JVM ones with no
  * Compose test rule.
  */
-class CatalogScreenTest {
+class PosterCardTest {
 
     @Test
     fun twoWordsGiveTwoLetters() {
