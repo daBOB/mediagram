@@ -93,6 +93,9 @@ class DefaultPlayerHandleTest {
         // with the same id in a brand-new Composition, so open() must not
         // call it a second time for a set that's already loaded.
         val player = mockk<ExoPlayer>(relaxed = true)
+        // Stated rather than left to the mock's default, which is not any
+        // real playback state: "still loaded" is the whole premise here.
+        every { player.playbackState } returns Player.STATE_READY
         val handle = DefaultPlayerHandle(CompletableDeferred(player), this)
         advanceUntilIdle()
 

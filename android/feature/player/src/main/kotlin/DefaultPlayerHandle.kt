@@ -29,6 +29,10 @@ import javax.inject.Inject
  * from the player itself on [release] would permanently silence every
  * future subscriber, since this setup never runs a second time to
  * re-attach it.
+ *
+ * Subscribers therefore come and go for reasons that have nothing to do
+ * with playback, and ask to [open] sets that are already open; what that
+ * has to mean is worked out at [open].
  */
 class DefaultPlayerHandle @Inject constructor(
     private val playerDeferred: @JvmSuppressWildcards Deferred<ExoPlayer>,
@@ -43,7 +47,7 @@ class DefaultPlayerHandle @Inject constructor(
     /** A set requested through [open] before the player finished building. */
     private var pendingSetId: String? = null
 
-    /** Whichever set is currently loaded or queued to load; [stop] clears it. */
+    /** Whichever set was last handed to the player; [stop] clears it. */
     private var currentSetId: String? = null
 
     /** Set once the player has failed to build; see [failConstruction]. */
@@ -57,6 +61,10 @@ class DefaultPlayerHandle @Inject constructor(
             if (playbackState == Player.STATE_READY) notifyPosition(current.isPlaying)
         }
 
+        // A failed player drops back to STATE_IDLE and then stays silent,
+        // so nothing more arrives on its own to move a subscriber off the
+        // error. That is exactly the state open() reloads from, which is
+        // what makes trying the same set again work rather than hang.
         override fun onPlayerError(error: PlaybackException) {
             listener?.onError(error.message ?: "Playback failed")
         }
@@ -85,6 +93,20 @@ class DefaultPlayerHandle @Inject constructor(
         }
     }
 
+    /**
+     * Asking for a set that is already on screen is routine, not a
+     * mistake: a rotation recreates the Composition that asks. What must
+     * not happen is either half going wrong — reloading media that is
+     * playing (the single-item `setMediaItem` overload always resets to
+     * position zero), or falling silent about media that is not.
+     *
+     * `STATE_IDLE` is the player's own answer to which case this is: it is
+     * the state a player is in before its first `prepare`, after `stop`,
+     * and after a playback error, and `ExoPlayer.prepare()` itself does
+     * nothing unless the player is in it. So a set that is still loaded is
+     * left strictly alone, and anything else — a different set, an errored
+     * player, a stopped one — is loaded for real.
+     */
     override fun open(setId: String) {
         constructionError?.let { message ->
             // There will never be a player to open this on, and the caller
@@ -93,19 +115,16 @@ class DefaultPlayerHandle @Inject constructor(
             listener?.onError(message)
             return
         }
-        // Rotation destroys and recreates the whole Composition, so
-        // PlayerScreen's LaunchedEffect(setId) fires again with the same
-        // id; reopening a set that is already loaded or queued must not
-        // disturb playback — the single-item setMediaItem overload always
-        // resets to position zero.
-        if (setId == currentSetId) return
-        currentSetId = setId
         val current = _player.value
         if (current == null) {
             pendingSetId = setId
-        } else {
-            openOn(current, setId)
+            return
         }
+        if (setId == currentSetId && current.playbackState != Player.STATE_IDLE) {
+            republishPosition(current)
+            return
+        }
+        openOn(current, setId)
     }
 
     override fun setListener(listener: PlayerHandle.Listener?) {
@@ -130,6 +149,19 @@ class DefaultPlayerHandle @Inject constructor(
     }
 
     /**
+     * A settled player does not repeat the event that settled it, so a
+     * subscriber that has just reset itself to "preparing" needs telling
+     * again where playback already is. A player still buffering is the one
+     * case to stay quiet for: its own ready event is still coming, and
+     * reporting a paused zero position ahead of it would replace a truthful
+     * spinner with a false still frame.
+     */
+    private fun republishPosition(player: Player) {
+        if (player.playbackState == Player.STATE_BUFFERING) return
+        notifyPosition(player.isPlaying)
+    }
+
+    /**
      * A construction failure is permanent — the deferred that failed is the
      * only one, and nothing retries it — and whether a subscriber exists to
      * hear it depends on nothing more than how long the cache took to open.
@@ -143,6 +175,7 @@ class DefaultPlayerHandle @Inject constructor(
     }
 
     private fun openOn(player: Player, setId: String) {
+        currentSetId = setId
         player.setMediaItem(MediaItem.fromUri(setUri(setId)))
         player.prepare()
         player.playWhenReady = true
