@@ -39,8 +39,8 @@ internal fun StartOverConfirmation(asking: Boolean, onDismiss: () -> Unit, onCon
         text = {
             Text(
                 "This signs this device out of Telegram and forgets the api_id and " +
-                    "api_hash, the library address and its key, and the library itself. " +
-                    "All of it has to be entered again.",
+                    "api_hash, the library address and its key, the library itself, and " +
+                    "the TMDB key. All of it has to be entered again.",
             )
         },
         confirmButton = {

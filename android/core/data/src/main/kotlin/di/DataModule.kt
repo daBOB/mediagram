@@ -15,8 +15,10 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import settings.EncryptedLibrarySettings
 import settings.EncryptedTelegramSettings
+import settings.EncryptedTmdbSettings
 import settings.LibrarySettings
 import settings.TelegramSettings
+import settings.TmdbSettings
 import javax.inject.Singleton
 
 @Module
@@ -41,6 +43,11 @@ object DataModule {
     @Singleton
     fun provideTelegramSettings(@ApplicationContext context: Context): TelegramSettings =
         EncryptedTelegramSettings(context)
+
+    @Provides
+    @Singleton
+    fun provideTmdbSettings(@ApplicationContext context: Context): TmdbSettings =
+        EncryptedTmdbSettings(context)
 
     // The same directory the core is constructed with, so clearing it
     // clears the state that core wrote.

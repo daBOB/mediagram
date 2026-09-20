@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import settings.TmdbSettings
 import javax.inject.Inject
 
 private const val STORAGE_FAILED = "This device's secure storage could not be read. " +
@@ -40,6 +41,7 @@ private const val RESET_FAILED = "Signing this device out did not finish. " +
 class SetupViewModel @Inject constructor(
     private val coreProvider: CoreProvider,
     private val libraries: Libraries,
+    private val tmdbSettings: TmdbSettings,
     private val coreStorage: CoreStorage,
     private val dispatcher: CoroutineDispatcher,
 ) : ViewModel() {
@@ -123,6 +125,7 @@ class SetupViewModel @Inject constructor(
         settle(onFailure = RESET_FAILED) {
             coreStorage.clear()
             libraries.forget()
+            tmdbSettings.clear()
             coreProvider.forget()
             outstandingStep()
         }
