@@ -24,6 +24,23 @@ class PlayerViewModelTest {
     }
 
     @Test
+    fun openingAgainClearsAPreviousFailure() = runTest {
+        // Unlike preparingIsTheFirstStateForASet, this can't pass by
+        // relying on _state's initial value alone: it fails a previous
+        // set on purpose first, so only an actual reset inside open()
+        // can bring it back to Preparing.
+        val handle = FakePlayerHandle()
+        val vm = PlayerViewModel(handle)
+        vm.open("s1")
+        handle.emitError("decoder init failed")
+        assertTrue(vm.state.value is PlayerUiState.Failed)
+
+        vm.open("s2")
+
+        assertEquals(PlayerUiState.Preparing, vm.state.value)
+    }
+
+    @Test
     fun openIsForwardedToTheHandle() = runTest {
         val handle = FakePlayerHandle()
         val vm = PlayerViewModel(handle)
@@ -42,5 +59,13 @@ class PlayerViewModelTest {
 
         handle.emitPosition(positionMs = 2_000, durationMs = 10_000, isPlaying = false)
         assertEquals(PlayerUiState.Paused(2_000, 10_000), vm.state.value)
+    }
+
+    @Test
+    fun stopIsForwardedToTheHandle() = runTest {
+        val handle = FakePlayerHandle()
+        val vm = PlayerViewModel(handle)
+        vm.stop()
+        assertTrue(handle.stopCalled)
     }
 }

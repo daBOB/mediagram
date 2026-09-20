@@ -14,6 +14,11 @@ interface PlayerHandle {
 
     fun open(setId: String)
     fun setListener(listener: Listener?)
+
+    /** Stops playback and releases the decoder/audio focus the player is holding. */
+    fun stop()
+
+    /** Detaches whichever listener is currently subscribed. Safe to call more than once. */
     fun release()
 
     /** Playback facts; [PlayerViewModel] maps these onto [PlayerUiState]. */

@@ -13,6 +13,14 @@ import javax.inject.Inject
  * core directly: it only sets a `mlib://` media item and lets the cached
  * `DataSource` chain built in [buildPlayer][playback.buildPlayer] do the
  * rest.
+ *
+ * This handle is itself process-lifetime (a `@Singleton`, same as
+ * [player]), so [playerListener] is attached to [player] exactly once, in
+ * [init], and never removed: whichever `PlayerViewModel` is current is
+ * only ever the *subscriber* ([listener]), swapped in and out by
+ * [setListener]/[release]. Removing [playerListener] from [player] itself
+ * on [release] would permanently silence every future subscriber, since a
+ * singleton's `init` never runs a second time to re-attach it.
  */
 class DefaultPlayerHandle @Inject constructor(
     override val player: ExoPlayer,
@@ -46,8 +54,12 @@ class DefaultPlayerHandle @Inject constructor(
         this.listener = listener
     }
 
+    override fun stop() {
+        player.stop()
+    }
+
     override fun release() {
-        player.removeListener(playerListener)
+        listener = null
     }
 
     private fun notifyPosition(isPlaying: Boolean) {

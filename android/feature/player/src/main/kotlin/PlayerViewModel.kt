@@ -28,6 +28,11 @@ class PlayerViewModel @Inject constructor(
         handle.open(setId)
     }
 
+    /** Called when the player screen leaves composition, so codecs and audio focus aren't held idle. */
+    fun stop() {
+        handle.stop()
+    }
+
     override fun onPositionChanged(positionMs: Long, durationMs: Long, isPlaying: Boolean) {
         _state.value = if (isPlaying) {
             PlayerUiState.Playing(positionMs, durationMs)
@@ -41,7 +46,6 @@ class PlayerViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        handle.setListener(null)
         handle.release()
     }
 }

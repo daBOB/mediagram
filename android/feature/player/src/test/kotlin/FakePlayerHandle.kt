@@ -12,12 +12,19 @@ class FakePlayerHandle : PlayerHandle {
     var openedSetId: String? = null
         private set
 
+    var stopCalled: Boolean = false
+        private set
+
     override fun open(setId: String) {
         openedSetId = setId
     }
 
     override fun setListener(listener: PlayerHandle.Listener?) {
         this.listener = listener
+    }
+
+    override fun stop() {
+        stopCalled = true
     }
 
     override fun release() = Unit
