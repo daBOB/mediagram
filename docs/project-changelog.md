@@ -9,6 +9,15 @@ to `main`. Full phase-by-phase detail lives in
 
 **Shipped**
 
+- The next episode now actually starts when the countdown ends — nothing in
+  the page had ever called `play()`, so "starting in 8…" opened the next
+  title and left it paused. It waits for a minute buffered before it begins,
+  because a viewer whose episode ended a minute ago would rather the next one
+  arrive whole than arrive at once and stop ten seconds in. Pressing **Play
+  now** or **Play next** starts as soon as the browser can instead: somebody
+  is looking at the screen. Opening a title from a shelf still waits for you,
+  as it always has.
+
 - A tick on titles watched to the end — on episode and lesson rows, search
   hits, and the corner of a plate. It needed recording rather than deriving:
   finishing a title *clears* its position, which is right for the Continue

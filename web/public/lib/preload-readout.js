@@ -65,8 +65,13 @@ const UNREMARKABLE = 0.15;
  * Described rather than positional because there are five of these now, and
  * `preloadReadout(3, 12, null, 0, false)` says nothing at its call site.
  *
+ * `awaitingStart` is a title that started itself and is holding on until it
+ * has enough in hand. It is the state that would otherwise read "ready" while
+ * nothing happened, which looks broken rather than deliberate.
+ *
  * @param {{readyState: number, ahead: number, starved?: boolean,
- *          fillRate?: number|null, dropped?: number}} at
+ *          awaitingStart?: boolean, fillRate?: number|null,
+ *          dropped?: number}} at
  */
 export function preloadReadout(at = {}) {
   const ready = Number(at.readyState) || 0;
@@ -74,7 +79,14 @@ export function preloadReadout(at = {}) {
   const ahead = Number.isFinite(aheadSeconds) && aheadSeconds > 0 ? aheadSeconds : 0;
 
   // Nothing to show yet is its own state: not starved, just not started.
-  const state = ready < 1 ? "opening" : at.starved === true ? "buffering" : "ready";
+  const state =
+    at.awaitingStart === true
+      ? "getting ready"
+      : ready < 1
+        ? "opening"
+        : at.starved === true
+          ? "buffering"
+          : "ready";
   const parts = [ahead > 0 ? `${state} · ${clockTime(ahead)} ahead` : state];
 
   // `Number(null)` is 0, and 0 is a rate worth showing — it is a dead stall.

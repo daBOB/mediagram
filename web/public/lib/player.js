@@ -17,6 +17,7 @@ import { defaultTrack, fillChooser, loadAudioTracks } from "./audio-chooser.js";
 import { bufferedAhead, preloadReadout } from "./preload-readout.js";
 import { renderNotes } from "./notes-view.js";
 import { COUNTDOWN_SECONDS, upNextPhase } from "./up-next.js";
+import { autoplayReady } from "./autoplay.js";
 import * as state from "./watch-state.js";
 import { isFinished, resumeAt, trustedRuntime } from "./resume-point.js";
 
@@ -326,7 +327,7 @@ function refreshUpNext({ ended = false } = {}) {
   countdown = setInterval(() => {
     left -= 1;
     upNextIn.textContent = `starting in ${left}…`;
-    if (left <= 0) playNext();
+    if (left <= 0) playNext("buffered");
   }, 1000);
 }
 
@@ -347,14 +348,19 @@ function hideUpNext() {
   upNext.hidden = true;
 }
 
-function playNext() {
+/**
+ * @param {"buffered"|"asap"} how the countdown running out waits for a
+ * buffer, because nobody is watching the screen; a viewer who pressed a
+ * button is, and gets the picture as soon as the browser can give it.
+ */
+function playNext(how = "asap") {
   const next = nextUp;
   hideUpNext();
   if (!next) return;
   // Through the page rather than straight into `openPlayer`, so whatever
   // opened this player can work out what follows *that* one.
-  if (onOpenNext) onOpenNext(next);
-  else openPlayer(next);
+  if (onOpenNext) onOpenNext(next, { autoplay: how });
+  else openPlayer(next, { autoplay: how });
 }
 
 /**
@@ -368,6 +374,60 @@ function playNext() {
  */
 let starved = false;
 
+/**
+ * A title that is going to start itself, and the wait before it does.
+ *
+ * `null` while nothing is waiting. Unattended starts hold for a buffer — a
+ * viewer whose episode ended a minute ago would rather the next one arrive
+ * whole than arrive at once and stop again — and an asked-for start goes as
+ * soon as the browser can, because somebody is looking at the screen.
+ */
+let waitingToStart = null;
+
+function stopWaitingToStart() {
+  if (waitingToStart === null) return;
+  clearInterval(waitingToStart.timer);
+  waitingToStart = null;
+  refreshPreload();
+}
+
+/**
+ * Starts `mode` — "buffered" or "asap" — once the title is ready for it.
+ *
+ * Polled rather than driven by events: the condition is a buffer length,
+ * which no single event announces, and half a second is far below what a
+ * viewer notices while nothing is on screen anyway.
+ */
+function startWhenReady(mode) {
+  stopWaitingToStart();
+  const began = Date.now();
+
+  const look = () => {
+    if (!playing || waitingToStart === null) return stopWaitingToStart();
+
+    const ahead = bufferedAhead(video.buffered, video.currentTime);
+    const runtime = runtimeOf(playing);
+    const ready =
+      mode === "asap"
+        ? video.readyState >= 3
+        : autoplayReady({
+            ahead,
+            remaining: runtime > 0 ? runtime - filmTime() : null,
+            waitedMs: Date.now() - began,
+          });
+    if (!ready) return;
+
+    stopWaitingToStart();
+    // A browser that refuses is not an error worth showing: the viewer still
+    // has a play button, and the title is loaded and waiting under it.
+    void video.play().catch(() => {});
+  };
+
+  waitingToStart = { mode, timer: setInterval(look, 500) };
+  refreshPreload();
+  look();
+}
+
 /** How much is held, and whether the player is waiting on any of it. */
 function refreshPreload() {
   // `getVideoPlaybackQuality` is absent on older engines and on an element
@@ -377,6 +437,9 @@ function refreshPreload() {
     readyState: video.readyState,
     ahead: bufferedAhead(video.buffered, video.currentTime),
     starved,
+    // Only the buffered wait is worth announcing. "asap" is over in the time
+    // it takes to say it.
+    awaitingStart: waitingToStart?.mode === "buffered",
     // The watch is the only thing measuring the link, and it measures whether
     // or not it ever decides to switch. Reading its rate here is what turns a
     // decision the viewer never sees into one they can.
@@ -408,6 +471,7 @@ export function openPlayer(set, options = {}) {
   audioTrack = 0;
   audio.hidden = true;
   starved = false;
+  stopWaitingToStart();
   refreshPreload();
   refreshWatchlist();
   refreshKids();
@@ -420,6 +484,9 @@ export function openPlayer(set, options = {}) {
   // `resume-point.js` decides what counts. Announced rather than done
   // silently, because a film that opens 34 minutes in looks broken.
   const resume = resumeAt(state.progressOf(set.setId)) ?? 0;
+  // Armed before the source is attached, so nothing can become ready in the
+  // gap between setting it and starting to watch for it.
+  const autoplay = options.autoplay ?? null;
 
   if (warning === null) {
     jump.hidden = true;
@@ -435,7 +502,10 @@ export function openPlayer(set, options = {}) {
       note.textContent = `Carrying on from ${clockTime(resume)}.`;
       note.hidden = false;
     }
-    // No `play()`. `preload="auto"` fills the buffer; the viewer starts it.
+    // No `play()` unless this title started itself: `preload="auto"` fills
+    // the buffer and the viewer starts it, which is the whole behaviour for
+    // anything opened by hand.
+    if (autoplay) startWhenReady(autoplay);
     refreshEnds();
     return;
   }
@@ -444,6 +514,7 @@ export function openPlayer(set, options = {}) {
   // A conversion resumes by starting there, which it already knows how to do.
   base = resume;
   convert(set, resume, resume > 0 ? `${warning} Carrying on from ${clockTime(resume)}.` : warning);
+  if (autoplay) startWhenReady(autoplay);
 }
 
 /**
@@ -558,8 +629,10 @@ addToButton.addEventListener("click", () => {
   state.setInCollection(chosen.id, playing.setId, true);
 });
 
-document.getElementById("up-next-play").addEventListener("click", playNext);
-playNextButton.addEventListener("click", playNext);
+// Wrapped, not passed: a listener hands its event to the function, and
+// `playNext(MouseEvent)` would take the event for the kind of start wanted.
+document.getElementById("up-next-play").addEventListener("click", () => playNext("asap"));
+playNextButton.addEventListener("click", () => playNext("asap"));
 document.getElementById("up-next-cancel").addEventListener("click", () => {
   // Remembered for this title, so watching the last minute again does not
   // start the countdown a second time.
@@ -630,6 +703,9 @@ window.addEventListener("pagehide", () => saveProgress(true));
 
 // Registered before the refresh below, so the flag is already right by the
 // time the readout is rebuilt from it.
+// A viewer who presses play has done the thing the wait was waiting to do.
+video.addEventListener("play", stopWaitingToStart);
+
 const STARVED_BY = { waiting: true, stalled: true };
 const FED_BY = { playing: true, canplay: true, canplaythrough: true, seeked: true };
 for (const event of [...Object.keys(STARVED_BY), ...Object.keys(FED_BY)]) {
@@ -722,6 +798,7 @@ dialog.addEventListener("close", () => {
   saveProgress(true);
   clearInterval(saveTimer);
   hideUpNext();
+  stopWaitingToStart();
   nextUp = null;
   onOpenNext = null;
   // The offer goes with the title it was an offer about.

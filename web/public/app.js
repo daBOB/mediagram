@@ -296,11 +296,17 @@ function viewCourseLevel(collection, folders) {
  * run does not change the run. Re-reading the list under a viewer who is
  * watching it would be the stranger behaviour.
  */
-function play(set, queue = null) {
+function play(set, queue = null, options = {}) {
+  // `autoplay` is set only by the player handing over to what follows, and
+  // says which kind of start that is. Opening a title from a shelf never
+  // carries one, so it loads and waits for the viewer as it always has.
+  const autoplay = options.autoplay ?? null;
+
   if (queue) {
     openPlayer(set, {
       next: nextInQueue(queue, set.setId),
-      onOpenNext: (following) => play(following, queue),
+      onOpenNext: (following, how) => play(following, queue, how),
+      autoplay,
     });
     return;
   }
@@ -309,7 +315,8 @@ function play(set, queue = null) {
   );
   openPlayer(set, {
     next: collection ? nextAfter(collection, set.setId) : null,
-    onOpenNext: play,
+    onOpenNext: (following, how) => play(following, null, how),
+    autoplay,
   });
 }
 
