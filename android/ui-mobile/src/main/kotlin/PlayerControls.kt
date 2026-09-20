@@ -1,0 +1,107 @@
+// media3 marks its extension surface @UnstableApi and may change it in any
+// minor release; see CacheProvider for why the version is pinned rather
+// than floored, and why this is androidx's opt-in and not Kotlin's.
+@file:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+
+package ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.media3.common.Player
+import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
+import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
+import designsystem.Spacing
+
+/**
+ * How often the readout catches up with the playhead. Twice a second: a clock
+ * printing whole seconds needs no more, and a tick is a recomposition.
+ */
+private const val TICK_MS = 500L
+
+/** Enough to keep white legible over a bright frame without hiding it. */
+private const val SCRIM_ALPHA = 0.55f
+
+/**
+ * The transport bar.
+ *
+ * Everything shown here is a fact ExoPlayer already keeps, read through
+ * media3's own state holders rather than carried through the ViewModel — see
+ * `feature/player/build.gradle.kts` for where that line is drawn and why. The
+ * holders start and stop observing with the composition, so nothing here runs
+ * a timer or removes a listener.
+ *
+ * Glyphs rather than icons: this module has no Material icons dependency, and
+ * `PlayerScreen` already draws its back arrow as text. Four more characters do
+ * not earn an artifact.
+ */
+@Composable
+fun PlayerControls(player: Player, modifier: Modifier = Modifier) {
+    val playPause = rememberPlayPauseButtonState(player)
+    val progress = rememberProgressStateWithTickInterval(player, TICK_MS)
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(Color.Black.copy(alpha = SCRIM_ALPHA))
+            .padding(Spacing.medium),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        GlyphButton(
+            glyph = if (playPause.showPlay) "▶" else "⏸",
+            description = if (playPause.showPlay) "Play" else "Pause",
+            enabled = playPause.isEnabled,
+            onClick = playPause::onClick,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            TimeText(clockTime(progress.currentPositionMs))
+            TimeText(clockTime(progress.durationMs))
+        }
+    }
+}
+
+/**
+ * A control drawn as a character, named for a screen reader.
+ *
+ * The name is not decoration: a glyph has no accessible text of its own, so
+ * without this the button announces itself as nothing at all.
+ */
+@Composable
+private fun GlyphButton(
+    glyph: String,
+    description: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    TextButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.semantics { contentDescription = description },
+    ) {
+        Text(
+            text = glyph,
+            color = Color.White,
+            style = MaterialTheme.typography.headlineMedium,
+        )
+    }
+}
+
+@Composable
+private fun TimeText(text: String) {
+    Text(text = text, color = Color.White, style = MaterialTheme.typography.labelLarge)
+}

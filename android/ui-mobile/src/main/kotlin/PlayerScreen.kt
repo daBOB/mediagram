@@ -9,6 +9,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,9 +22,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -32,6 +37,7 @@ import androidx.media3.common.Player
 import androidx.media3.ui.compose.PlayerSurface
 import androidx.media3.ui.compose.state.rememberPresentationState
 import designsystem.Spacing
+import kotlinx.coroutines.delay
 import player.PlayerUiState
 import player.PlayerViewModel
 
@@ -41,11 +47,11 @@ import player.PlayerViewModel
  * this leaves composition for real — not on a rotation, which destroys
  * and recreates this same composition too (there is no
  * `android:configChanges`) while the singleton player/ViewModel underneath
- * survive regardless; see [shouldStopOnDispose]. Touch controls are
- * intentionally minimal: back, and a loading/error overlay. There is no
- * scrubber or seek bar yet, since nothing has verified seeking across a
- * part boundary works; adding one before that is proven would let a user
- * hit a bug no test caught.
+ * survive regardless; see [shouldStopOnDispose].
+ *
+ * A tap toggles the transport bar, which takes itself away while a film runs
+ * and stays while it is paused; see [controlsShouldFade]. There is no seek
+ * control yet — see [PlayerControls].
  */
 @Composable
 fun PlayerScreen(setId: String, onBack: () -> Unit) {
@@ -64,11 +70,32 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
     }
     KeepScreenOnWhile(isPlaying = state is PlayerUiState.Playing)
 
+    // Shown when the screen opens, so a viewer finds out the bar is there at
+    // all, then left to take itself away.
+    var controlsShown by remember { mutableStateOf(true) }
+    LaunchedEffect(controlsShown, state) {
+        if (!controlsShown) return@LaunchedEffect
+        if (!controlsShouldFade(isPlaying = state is PlayerUiState.Playing)) return@LaunchedEffect
+        delay(CONTROLS_LINGER_MS)
+        controlsShown = false
+    }
+
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .pointerInput(Unit) { detectTapGestures { controlsShown = !controlsShown } },
         contentAlignment = Alignment.Center,
     ) {
-        player?.let { Video(it) }
+        player?.let { current ->
+            Video(current)
+            if (controlsShown && controlsMayShow(state)) {
+                PlayerControls(
+                    player = current,
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
+            }
+        }
 
         when (state) {
             PlayerUiState.Preparing -> CenteredSpinner()
