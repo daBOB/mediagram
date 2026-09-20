@@ -303,7 +303,7 @@ Expected: PASS, all four, plus everything existing.
 
 ```bash
 ./scripts/generate-android-bindings.sh
-cd android && ./gradlew :core:data:compileDebugKotlin
+cd android && ./gradlew :core:data:testDebugUnitTest
 ```
 
 Add `suspend fun fetchPosters(tmdbKey: String, language: String): PosterReport`

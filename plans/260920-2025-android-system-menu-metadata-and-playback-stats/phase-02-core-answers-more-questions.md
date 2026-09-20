@@ -132,7 +132,7 @@ Expected: PASS, including the existing `api_surface` and `package_reader` tests.
 
 ```bash
 ./scripts/generate-android-bindings.sh
-cd android && ./gradlew :core:data:compileDebugKotlin
+cd android && ./gradlew :core:data:testDebugUnitTest
 ```
 
 Expected: succeeds. The generated `SetSummary` gains five properties; nothing
