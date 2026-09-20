@@ -56,9 +56,19 @@ class PlaybackStatRowsTest {
         assertEquals("AAC English", audioStatLine(codec = "audio/mp4a-latm", channels = 0, language = "en"))
     }
 
+    /**
+     * A duration alone. ExoPlayer reports how far ahead it has loaded and no
+     * count of the bytes that came to, so there is no second half to print.
+     */
     @Test
-    fun bufferIsTimeAheadAndBytesHeld() {
-        assertEquals("1:23 ahead · 47 MB", bufferStatLine(aheadMs = 83_000, heldBytes = 49_283_072))
+    fun bufferIsTimeAhead() {
+        assertEquals("1:23 ahead", bufferStatLine(aheadMs = 83_000))
+    }
+
+    /** Nothing loaded past the playhead is a real reading, not a missing one. */
+    @Test
+    fun anEmptyBufferSaysNoTimeAhead() {
+        assertEquals("0:00 ahead", bufferStatLine(aheadMs = 0))
     }
 
     @Test

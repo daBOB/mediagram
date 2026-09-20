@@ -83,6 +83,12 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
         controlsShown = false
     }
 
+    // One predicate, read twice, because the bar and the statistics sit in
+    // different corners and cannot be nested under a single `if`. Both are
+    // the bar being on screen, so both ask the same question rather than two
+    // that could drift apart.
+    val barShown = controlsShown && controlsMayShow(state)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -92,10 +98,11 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
     ) {
         player?.let { current ->
             Video(current)
-            if (controlsShown && controlsMayShow(state)) {
+            if (barShown) {
                 PlayerControls(
                     player = current,
                     onScrubbingChanged = { scrubbing = it },
+                    statsShown = statsShown,
                     onToggleStats = { statsShown = !statsShown },
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
@@ -119,11 +126,11 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
             IconButton(onClick = onBack, modifier = Modifier.padding(Spacing.medium)) {
                 Text(text = "←", color = Color.White, style = MaterialTheme.typography.headlineSmall)
             }
-            // Inside the bar's own condition, so no second visibility rule
-            // exists: a viewer who leaves the numbers on gets the picture
-            // back when the bar takes itself away, and keeps them while the
-            // film is paused.
-            if (statsShown && controlsShown && controlsMayShow(state)) {
+            // Gated on the bar being shown as well as on the toggle, so the
+            // statistics have no visibility rule of their own: a viewer who
+            // leaves the numbers on gets the picture back when the bar takes
+            // itself away, and keeps them while the film is paused.
+            if (statsShown && barShown) {
                 player?.let { current ->
                     PlaybackStatsOverlay(
                         player = current,

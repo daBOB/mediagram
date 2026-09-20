@@ -67,6 +67,7 @@ internal const val SCRIM_ALPHA = 0.55f
 fun PlayerControls(
     player: Player,
     onScrubbingChanged: (Boolean) -> Unit,
+    statsShown: Boolean,
     onToggleStats: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -134,9 +135,14 @@ fun PlayerControls(
             // move it: the transport controls stay a group of three and the
             // one that only reports sits at the end of the row rather than
             // in among them.
+            //
+            // The name says which way the press goes, the way play/pause
+            // beside it does. A glyph that stays put while what it does
+            // reverses tells a screen reader nothing about which it is
+            // about to do.
             GlyphButton(
                 glyph = "ⓘ",
-                description = "Playback statistics",
+                description = if (statsShown) "Hide playback statistics" else "Show playback statistics",
                 enabled = true,
                 onClick = onToggleStats,
             )

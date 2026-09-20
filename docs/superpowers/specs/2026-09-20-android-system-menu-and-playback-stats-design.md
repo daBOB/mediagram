@@ -250,6 +250,18 @@ whoever is holding the phone; a gate would defend nothing.
 
 **Stats report the decoder, not the catalog.** §7. The web cannot do this.
 
+**The buffer row carries no byte figure, against §7's own drawing.** §7 draws
+`buffer  1:23 ahead · 47 MB`, and the bytes had no honest source. ExoPlayer
+reports a buffered *duration* and no count of the bytes behind it; the only
+byte total media3 will answer for is `Cache.getCacheSpace()`, which is the
+whole `SimpleCache` across every title ever played, capped by the 2 GiB
+evictor — so on a well-used device the row would pin at `2.0 GB` and stop
+moving, and it is in any case the figure §5's Cache block already prints as
+`Held`. A per-title `getCachedBytes` would be a smaller version of the same
+category error: a cache fact under a label that says buffer. The row is
+`buffer  1:23 ahead` and nothing else. The overlay's byte volumes are the
+`reads` and `cache` rows, where they are about reads and the cache.
+
 **Posters are fetched by the device, not shipped with the catalog.** A
 published package still carries art for the surfaces that read one. Android
 reads the pinned channel index, which carries none, and fetches its own.

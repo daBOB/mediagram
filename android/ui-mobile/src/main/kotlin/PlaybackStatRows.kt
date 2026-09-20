@@ -64,9 +64,15 @@ internal fun videoStatLine(width: Int?, height: Int?, codec: String?, bitrate: I
 internal fun audioStatLine(codec: String, channels: Int, language: String): String =
     listOfNotNull(codecLabel(codec), CHANNEL_LABELS[channels], languageLabel(language)).joinToString(" ")
 
-/** How far playback is ahead of what has been shown, and how much of it is held: `1:23 ahead · 47 MB`. */
-internal fun bufferStatLine(aheadMs: Long, heldBytes: Long): String =
-    "${clockTime(aheadMs)} ahead · ${humanSize(heldBytes)}"
+/**
+ * How far the loaded data runs past the playhead: `1:23 ahead`.
+ *
+ * A duration and nothing else, because a duration is all there is to report.
+ * ExoPlayer says how far ahead it has loaded but never how many bytes that
+ * came to, and the byte volumes it can answer for — what has been read, and
+ * how much of it came off the disk — are the reads and cache rows' business.
+ */
+internal fun bufferStatLine(aheadMs: Long): String = "${clockTime(aheadMs)} ahead"
 
 /** The share of what has been read that came from disk rather than Telegram. */
 internal fun cacheStatLine(totals: PlaybackTotals): String {
@@ -76,7 +82,13 @@ internal fun cacheStatLine(totals: PlaybackTotals): String {
     return "$percent% from disk"
 }
 
-/** How many round trips to Telegram this title has cost, and what they carried. */
+/**
+ * How many round trips to Telegram have been made since the process started,
+ * and what they carried. Not this title's own cost: the counters behind it run
+ * for the life of the process, deliberately, because "what has this app
+ * fetched" and "what did this film cost" are different questions and only the
+ * first is asked here.
+ */
 internal fun readsStatLine(totals: PlaybackTotals): String {
     val base = "${totals.fetches} fetches · ${humanSize(totals.fromUpstreamBytes)}"
     return if (totals.failedReads > 0) "$base · ${totals.failedReads} failed" else base
