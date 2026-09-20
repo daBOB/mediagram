@@ -16,11 +16,8 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,8 +27,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.media3.common.Player
 import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
@@ -156,35 +151,4 @@ fun PlayerControls(
             TimeText(clockTime(durationMs))
         }
     }
-}
-
-/**
- * A control drawn as a character, named for a screen reader.
- *
- * The name is not decoration: a glyph has no accessible text of its own, so
- * without this the button announces itself as nothing at all.
- */
-@Composable
-private fun GlyphButton(
-    glyph: String,
-    description: String,
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    TextButton(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = Modifier.semantics { contentDescription = description },
-    ) {
-        Text(
-            text = glyph,
-            color = Color.White,
-            style = MaterialTheme.typography.headlineMedium,
-        )
-    }
-}
-
-@Composable
-private fun TimeText(text: String) {
-    Text(text = text, color = Color.White, style = MaterialTheme.typography.labelLarge)
 }

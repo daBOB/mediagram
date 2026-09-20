@@ -11,10 +11,8 @@ import android.content.ContextWrapper
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,12 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.media3.common.Player
-import androidx.media3.ui.compose.PlayerSurface
-import androidx.media3.ui.compose.state.rememberPresentationState
 import designsystem.Spacing
 import kotlinx.coroutines.delay
 import player.PlayerUiState
@@ -121,38 +115,6 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
 }
 
 /**
- * The picture, shaped to itself rather than to the screen.
- *
- * `PlayerSurface` draws into whatever bounds it is given and applies no
- * ratio of its own — the old `PlayerView` had a frame layout that did — so
- * filling the window stretches a 2.4:1 film onto a 3:2 display and makes
- * everyone in it tall and thin. The black behind is the letterbox.
- *
- * The size comes from media3's own presentation state rather than from a
- * listener written here: it already folds in the pixel shape that makes
- * anamorphic video 2.4:1 rather than 1.78:1, and it already knows when the
- * surface is showing a frame that no longer belongs to what is playing.
- */
-@Composable
-private fun Video(player: Player) {
-    val presentation = rememberPresentationState(player)
-    val size = presentation.videoSizeDp
-    val shaped = if (size != null && size.width > 0f && size.height > 0f) {
-        Modifier.fillMaxSize().aspectRatio(size.width / size.height)
-    } else {
-        Modifier.fillMaxSize()
-    }
-    PlayerSurface(player = player, modifier = shaped)
-    // Between one set and the next the surface still holds the last frame
-    // of the old one. Covering it is what media3 asks callers to do, and
-    // the alternative is a still from the previous film over the new one's
-    // audio.
-    if (presentation.coverSurface) {
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black))
-    }
-}
-
-/**
  * A rotation disposes and recreates this screen's whole composition
  * exactly the way leaving it for the catalog does; the two are told apart
  * by whether the Activity itself is mid configuration change. Stopping on
@@ -173,27 +135,4 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
     is ContextWrapper -> baseContext.findActivity()
     else -> null
-}
-
-@Composable
-private fun KeepScreenOnWhile(isPlaying: Boolean) {
-    val view = LocalView.current
-    DisposableEffect(isPlaying) {
-        view.keepScreenOn = isPlaying
-        onDispose { view.keepScreenOn = false }
-    }
-}
-
-@Composable
-private fun CenteredSpinner() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(color = Color.White)
-    }
-}
-
-@Composable
-private fun CenteredError(message: String) {
-    Box(modifier = Modifier.fillMaxSize().padding(Spacing.large), contentAlignment = Alignment.Center) {
-        Text(text = message, color = Color.White, style = MaterialTheme.typography.bodyLarge)
-    }
 }
