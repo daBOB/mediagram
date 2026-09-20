@@ -28,6 +28,18 @@ data class MediaSet(
     val durationSecs: Int?,
     val posterPath: String?,
     val totalBytes: Long,
+    /** As stored, e.g. `mkv`; empty when the index recorded none. */
+    val container: String = "",
+    val vcodec: String? = null,
+    val acodec: String? = null,
+    /** e.g. `1080p`; null when the index did not record a resolution. */
+    val quality: String? = null,
+    /** e.g. `HDR10`, `HLG`, `DV`, or `SDR` for the ordinary case. */
+    val hdr: String? = null,
+    /** How many messages this set is split across; 1 for the ordinary case. */
+    val partCount: Int = 1,
+    /** The raw key a title-detail screen asks the core to resolve a poster for. */
+    val posterKey: String? = null,
 )
 
 enum class Kind { MOVIE, EPISODE, TUTORIAL }

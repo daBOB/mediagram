@@ -61,6 +61,13 @@ class DefaultCatalogRepository(
             durationSecs = summary.duration?.toInt(),
             posterPath = summary.posterKey?.let(core::posterPath),
             totalBytes = summary.total.toLong(),
+            container = summary.container,
+            vcodec = summary.vcodec,
+            acodec = summary.acodec,
+            quality = summary.quality,
+            hdr = summary.hdr,
+            partCount = summary.partCount.toInt(),
+            posterKey = summary.posterKey,
         )
     }
 }
