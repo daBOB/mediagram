@@ -12,9 +12,23 @@ import kotlin.test.assertNull
  */
 class SystemRowsTest {
 
+    /** Against the real ceiling: CacheProvider's budget is a fixed 2 GiB, which is the whole range this is read over. */
     @Test
     fun heldSpaceIsShownAgainstItsBudget() {
-        assertEquals("7.0 GB of 20.0 GB (35%)", heldOfBudget(held = 7_516_192_768, budget = 21_474_836_480))
+        assertEquals("1.0 GB of 2.0 GB (50%)", heldOfBudget(held = 1_073_741_824, budget = 2_147_483_648))
+    }
+
+    /**
+     * Two rows two apart, both byte counts, one spelling. They had two: the
+     * Held row said "500.0 MB" where the Upstream row two lines below said
+     * "500 MB" for the same quantity.
+     */
+    @Test
+    fun bothByteFiguresOnTheScreenAreSpelledTheSameWay() {
+        val state = facts(heldBytes = 524_288_000, fromUpstreamBytes = 524_288_000)
+
+        assertEquals("500 MB", cacheRows(state).toMap()["Held"]?.substringBefore(" of "))
+        assertEquals("500 MB", upstreamRows(state).toMap()["Since starting"])
     }
 
     @Test

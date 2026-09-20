@@ -33,30 +33,21 @@ internal fun humanSize(bytes: Long): String {
 }
 
 /**
- * Bytes, always to one decimal once past the plain-byte unit — unlike
- * [humanSize], which drops the decimal at ten and above. The Held row below
- * is read against its budget from one reading to the next, and a figure
- * that quietly lost its decimal at "10.0 GB" would look like it had
- * changed precision rather than crossed a threshold that means nothing
- * here.
+ * What the cache holds against its ceiling: `1.0 GB of 2.0 GB (50%)`, or
+ * `nothing yet of 2.0 GB` while it is empty.
+ *
+ * [humanSize], the same spelling every other byte count on this screen and
+ * in the playback overlay uses. A second formatter here held its decimal
+ * past ten, on the argument that the Held row is read from one visit to the
+ * next and a figure losing its decimal at "10.0 GB" would look like a
+ * change of precision. That reading cannot happen: the budget is a fixed
+ * 2 GiB, so the two spellings only ever differed above the ceiling.
  */
-private fun sizeAlwaysOneDecimal(bytes: Long): String {
-    var value = bytes.toDouble()
-    var unit = 0
-    while (value >= 1024 && unit < UNITS.size - 1) {
-        value /= 1024
-        unit += 1
-    }
-    val rounded = if (unit > 0) oneDecimal(value) else Math.round(value).toString()
-    return "$rounded ${UNITS[unit]}"
-}
-
-/** What the cache holds against its ceiling: `7.0 GB of 20.0 GB (35%)`, or `nothing yet of 2.0 GB` while it is empty. */
 internal fun heldOfBudget(held: Long, budget: Long): String {
-    val budgetText = sizeAlwaysOneDecimal(budget)
+    val budgetText = humanSize(budget)
     if (held == 0L) return "nothing yet of $budgetText"
     val percent = Math.round(held * 100.0 / budget)
-    return "${sizeAlwaysOneDecimal(held)} of $budgetText ($percent%)"
+    return "${humanSize(held)} of $budgetText ($percent%)"
 }
 
 /**
