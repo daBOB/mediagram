@@ -102,7 +102,7 @@
  * The attribute is styled by a user-agent rule of the lowest specificity
  * there is, so any class here that sets `display` quietly overrides it — and
  * the element stays on screen while the script that set it is convinced it is
- * gone. `.jump` and `.picker` are both `display: flex`, and both are toggled
+ * gone. `.seek` and `.picker` are both `display: flex`, and both are toggled
  * exactly that way.
  */
 [hidden] { display: none !important; }
@@ -1193,21 +1193,24 @@ dialog.resting .hud .picker { pointer-events: none; }
    explains why it is there. */
 /* ---- the one timeline ----
  *
- * A converted title is encoded as it plays, so the video element's own bar
- * reaches only as far as ffmpeg has written and its clock counts from
- * wherever the encode began. Both are untrue about the film, so while
- * `converting` the native timeline and its two time displays are taken away
- * and this is the only scrub bar on screen.
+ * The video element's own bar and its two clocks are taken away for every
+ * title, not only converted ones, because the player now draws a timeline of
+ * its own and two of them side by side is what a viewer had to tell apart.
  *
- * Only those three parts: play, volume, fullscreen and the subtitle menu are
- * right either way, and a hand-built copy of them would be a worse one. */
-.converting video::-webkit-media-controls-timeline,
-.converting video::-webkit-media-controls-current-time-display,
-.converting video::-webkit-media-controls-time-remaining-display {
+ * A conversion is the case where they also disagree: it is encoded as it
+ * plays, so the element's bar reaches only as far as ffmpeg has written and
+ * its clock counts from wherever the encode began. Both are true about the
+ * conversion and untrue about the film.
+ *
+ * Chromium only — Firefox keeps its bar until the element stops being asked
+ * to draw one at all. */
+video::-webkit-media-controls-timeline,
+video::-webkit-media-controls-current-time-display,
+video::-webkit-media-controls-time-remaining-display {
   display: none;
 }
 
-.jump {
+.seek {
   display: flex;
   align-items: center;
   gap: 0.9rem;
@@ -1217,7 +1220,7 @@ dialog.resting .hud .picker { pointer-events: none; }
 }
 /* The label names the control for anyone who cannot see it; on screen the bar
    is the only timeline there is and does not need telling apart from another. */
-.jump label {
+.seek label {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -1225,16 +1228,68 @@ dialog.resting .hud .picker { pointer-events: none; }
   clip-path: inset(50%);
   white-space: nowrap;
 }
-.jump input {
+.seek input {
   flex: 1;
   min-width: 0;
-  accent-color: var(--stage-accent);
   /* A film's length, not a slider's: wider than a form control, so it reads
      as the thing you scrub rather than a setting you adjust. */
   height: 1.1rem;
   cursor: pointer;
+  /* The track is painted by hand below, so the browser's own is taken away
+     rather than left underneath it. */
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  --seek-bands: linear-gradient(
+    to right,
+    var(--stage-accent) var(--played, 0%),
+    var(--stage-ink-2) var(--played, 0%) var(--buffered, 0%),
+    var(--stage-rule) var(--buffered, 0%)
+  );
 }
-.jump .at,
+
+/* ---- what the track says ----
+ *
+ * Three bands, from two custom properties the player sets as it plays: what
+ * has been watched, what is held beyond it, and what is neither. The middle
+ * one is the only thing the native timeline showed that the readouts beside
+ * it do not, and this player has more reason to show it than most — a title
+ * arrives over the network a chunk at a time, and how far ahead it reaches is
+ * the difference between playing on and stopping in a moment.
+ */
+/* Written out twice on purpose. One selector list holding both would be
+   dropped whole by either browser, because neither knows the other's name for
+   the same part — and a rule that silently does not apply is worse than two
+   that do. */
+.seek input::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--seek-bands);
+}
+.seek input::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--seek-bands);
+}
+.seek input::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 0.85rem;
+  height: 0.85rem;
+  border: none;
+  border-radius: 50%;
+  background: var(--stage-accent);
+  /* The track is 4px and the thumb is not, so it is lifted back onto it. */
+  margin-top: -0.3rem;
+}
+.seek input::-moz-range-thumb {
+  width: 0.85rem;
+  height: 0.85rem;
+  border: none;
+  border-radius: 50%;
+  background: var(--stage-accent);
+}
+.seek .at,
 .ends,
 .preload {
   color: var(--stage-ink-2);
@@ -1243,18 +1298,18 @@ dialog.resting .hud .picker { pointer-events: none; }
   white-space: nowrap;
   letter-spacing: 0.04em;
 }
-.hud .jump label,
+.hud .seek label,
 .hud .picker label,
-.jump .at,
+.seek .at,
 .ends,
 .preload { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); }
 /* Dimmer than the end time: it is a progress note, not a fact about the film. */
 .preload { color: var(--stage-rule); filter: brightness(2.1); }
 
-/* The film's clock, and while converting the only one on screen — so it is
-   set brighter than the notes beside it. After the rule it shares, because
-   both name `.jump .at` and the later one wins. */
-.jump .at {
+/* The film's clock, and the only one on screen — so it is set brighter than
+   the notes beside it. After the rule it shares, because both name
+   `.seek .at` and the later one wins. */
+.seek .at {
   color: var(--stage-ink);
   font-size: 0.82rem;
 }

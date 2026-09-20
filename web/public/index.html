@@ -75,17 +75,18 @@
         <button id="close" class="ghost">Close</button>
       </div>
 
-      <!-- Sits above the video's own controls rather than replacing them: the
-           native bar carries play, volume, speed and the subtitle menu, and a
-           hand-built copy of all that would be a worse one. -->
+      <!-- The player's own rail. The video element's timeline and its two
+           clocks are hidden in the stylesheet, so there is one scrub bar on
+           screen and this is it. -->
       <div class="hud hud-bottom">
-        <!-- A converted title is encoded as it plays, so the video's own scrub
-             bar only reaches as far as the conversion has got. This one covers
-             the whole running time and restarts the conversion where it lands. -->
-        <div class="jump" id="jump" hidden>
-          <label for="jump-to">Jump to</label>
-          <input type="range" id="jump-to" min="0" step="10" value="0" />
-          <span class="at" id="jump-at"></span>
+        <!-- One bar for both ways a title plays, scaled to the film's running
+             time and never to the media element's: a conversion is encoded as
+             it plays, so its clock counts from wherever ffmpeg began and its
+             duration reaches only as far as ffmpeg has got. -->
+        <div class="seek" id="seek" hidden>
+          <label for="seek-to">Position</label>
+          <input type="range" id="seek-to" min="0" step="1" value="0" />
+          <span class="at" id="seek-at"></span>
         </div>
 
         <div class="rail">

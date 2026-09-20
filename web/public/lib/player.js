@@ -15,6 +15,7 @@ import { clockTime, endsAt, episodeLabel, technicalLine } from "./format.js";
 import { languageLabel } from "./language-label.js";
 import { defaultTrack, fillChooser, loadAudioTracks } from "./audio-chooser.js";
 import { bufferedAhead, preloadReadout } from "./preload-readout.js";
+import { seekModel } from "./seek-model.js";
 import { renderNotes } from "./notes-view.js";
 import { COUNTDOWN_SECONDS, upNextPhase } from "./up-next.js";
 import { autoplayReady } from "./autoplay.js";
@@ -27,9 +28,9 @@ const note = document.getElementById("note");
 const tech = document.getElementById("tech");
 const summaryBox = document.getElementById("summary");
 const now = document.getElementById("now");
-const jump = document.getElementById("jump");
-const jumpTo = document.getElementById("jump-to");
-const jumpAt = document.getElementById("jump-at");
+const seek = document.getElementById("seek");
+const seekTo = document.getElementById("seek-to");
+const seekAt = document.getElementById("seek-at");
 const ends = document.getElementById("ends");
 const audio = document.getElementById("audio");
 const audioTrackPicker = document.getElementById("audio-track");
@@ -67,6 +68,14 @@ let playing = null;
 let base = 0;
 /** The cap the running conversion was given, or `null` while playing direct. */
 let capBits = null;
+/**
+ * Whether ffmpeg is making what is on screen.
+ *
+ * Decides two things that have no other way of knowing: whether the media
+ * element's own `duration` is the film's or only as much of it as has been
+ * encoded, and whether a seek is a `currentTime` or a new conversion.
+ */
+let converting = false;
 /**
  * Which audio stream the viewer is on, as ffmpeg's `0:a:N`.
  *
@@ -159,6 +168,7 @@ function stop() {
  */
 function convert(set, seconds, warning, maxrateBits) {
   stop();
+  converting = true;
   base = seconds;
   capBits = maxrateBits ?? null;
   watch.begin({ capBits, sourceBits: sourceBitrate(set) });
@@ -191,27 +201,82 @@ function filmTime() {
 }
 
 /**
- * Shows this player's own timeline, and takes the native one away.
+ * The runtime to scale a bar and a finishing time against.
  *
- * A conversion is encoded as it plays, so the video element's own bar covers
- * only what ffmpeg has written so far and its clock counts from wherever the
- * encode started — both of which say something untrue about the film. Left
- * beside this one they were two scrub bars and two clocks disagreeing, and
- * disagreeing by more the longer a title ran.
- *
- * So exactly one of them is on screen at a time, from this one decision:
- * `converting` hides the native timeline and its two time displays, leaving
- * play, volume, fullscreen and the subtitle menu, which are right either way
- * and which a hand-built copy would only do worse.
+ * The catalog's answer first, and the media element's only when playing
+ * directly — a conversion's `duration` is as long as ffmpeg has written and
+ * no longer, so a film would claim to end four minutes from now and keep
+ * moving. Nought when nothing knows, which the callers treat as "say
+ * nothing" rather than as a length.
  */
-function showJump(set) {
-  const runtime = Number(set.duration) || 0;
-  jump.hidden = runtime === 0;
-  dialog.classList.toggle("converting", !jump.hidden);
-  if (jump.hidden) return;
-  jumpTo.max = String(Math.floor(runtime));
-  jumpTo.value = "0";
-  jumpAt.textContent = `0:00 / ${clockTime(runtime)}`;
+function runtimeSeconds() {
+  const catalogued = Number(playing?.duration) || 0;
+  if (catalogued > 0) return catalogued;
+  if (!converting && Number.isFinite(video.duration)) return video.duration;
+  return 0;
+}
+
+/**
+ * Draws the one timeline, whichever way the title is playing.
+ *
+ * Both ways used to have their own. A file played directly had the video
+ * element's bar; a conversion had this one, because the element's covers only
+ * what ffmpeg has written and its clock counts from wherever the encode
+ * started. Two bars, one of them lying, and which one depended on a fact no
+ * viewer could see.
+ *
+ * Now there is one, scaled to the film. The element's timeline and clocks are
+ * hidden in the stylesheet for every title, not only converted ones.
+ */
+function refreshSeek() {
+  const bar = seekModel({
+    runtime: runtimeSeconds(),
+    at: filmTime(),
+    ahead: bufferedAhead(video.buffered, video.currentTime),
+    converting,
+  });
+  seek.hidden = !bar.usable;
+  if (!bar.usable) return;
+  seekTo.max = String(bar.max);
+  // A bar the viewer is holding belongs to the viewer: it is theirs to move
+  // and its own `input` listener says what it reads while they move it.
+  //
+  // Both tests, because either alone has a gap. Focus is how a keyboard holds
+  // it; `:active` is how a pointer does. A drag that satisfied neither would
+  // be fought by `timeupdate` four times a second, snapping the thumb back to
+  // the playhead under the viewer's finger.
+  if (document.activeElement === seekTo || seekTo.matches(":active")) return;
+  seekTo.value = String(bar.value);
+  showSeekAt(bar);
+}
+
+/** The clock beside the bar, and the same words for anyone who cannot see it. */
+function showSeekAt(bar) {
+  seekAt.textContent = bar.label;
+  // A range's own value is a number of seconds, which is not how anybody says
+  // where they are in a film.
+  seekTo.setAttribute("aria-valuetext", bar.label);
+  seekTo.style.setProperty("--played", `${(bar.played * 100).toFixed(3)}%`);
+  seekTo.style.setProperty("--buffered", `${(bar.buffered * 100).toFixed(3)}%`);
+}
+
+/**
+ * Go to `seconds` of the film, by whichever route this title plays.
+ *
+ * The one place that answers it, because the bar, the skip buttons and the
+ * keyboard all ask. A direct file moves its playhead; a conversion has only
+ * encoded what it has encoded, so landing elsewhere means starting ffmpeg
+ * again there.
+ */
+function seekFilmTo(seconds) {
+  if (!playing) return;
+  if (!converting) {
+    video.currentTime = seconds;
+    return;
+  }
+  // Keeps whatever cap the link was found to need; a seek is not new evidence
+  // that the connection got better.
+  convert(playing, seconds, noteFor(playing) ?? "", capBits ?? undefined);
 }
 
 /**
@@ -225,8 +290,7 @@ function showJump(set) {
  * guess wearing the clothes of a fact.
  */
 function refreshEnds() {
-  const catalogued = Number(playing?.duration) || 0;
-  const runtime = catalogued || (Number.isFinite(video.duration) ? video.duration : 0);
+  const runtime = runtimeSeconds();
   if (!runtime) {
     ends.textContent = "";
     return;
@@ -522,8 +586,7 @@ export function openPlayer(set, options = {}) {
   const autoplay = options.autoplay ?? null;
 
   if (warning === null) {
-    jump.hidden = true;
-    dialog.classList.remove("converting");
+    converting = false;
     capBits = null;
     // Watched too: the original is the stream most likely to be too much for
     // a link, since nothing caps what it was mastered at.
@@ -544,7 +607,7 @@ export function openPlayer(set, options = {}) {
     return;
   }
 
-  showJump(set);
+  refreshSeek();
   // A conversion resumes by starting there, which it already knows how to do.
   base = resume;
   convert(set, resume, resume > 0 ? `${warning} Carrying on from ${clockTime(resume)}.` : warning);
@@ -582,7 +645,7 @@ audioTrackPicker.addEventListener("change", () => {
   if (!playing || !Number.isInteger(chosen) || chosen === audioTrack) return;
   audioTrack = chosen;
 
-  showJump(playing);
+  refreshSeek();
   convert(
     playing,
     filmTime(),
@@ -756,31 +819,46 @@ for (const event of [
   "seeking",
   "seeked",
   "emptied",
+  // A runtime can arrive after the title does, and the bar is scaled to it.
+  "durationchange",
 ]) {
-  video.addEventListener(event, refreshPreload);
+  video.addEventListener(event, () => {
+    refreshPreload();
+    refreshSeek();
+  });
 }
 
-// The slider only follows playback while the viewer is not holding it.
+// The slider only follows playback while the viewer is not holding it, which
+// `refreshSeek` decides for itself.
 video.addEventListener("timeupdate", () => {
   refreshEnds();
   refreshPreload();
-  if (jump.hidden || document.activeElement === jumpTo) return;
-  jumpTo.value = String(Math.floor(filmTime()));
-  jumpAt.textContent = `${clockTime(filmTime())} / ${clockTime(Number(jumpTo.max))}`;
+  refreshSeek();
 });
 
-jumpTo.addEventListener("input", () => {
-  jumpAt.textContent = `${clockTime(Number(jumpTo.value))} / ${clockTime(Number(jumpTo.max))}`;
+/**
+ * The viewer is dragging.
+ *
+ * A file the server can seek moves under the thumb, the way the native bar
+ * always did. A conversion does not: landing somewhere means starting ffmpeg
+ * there, and every pixel of a drag would start an encode and finish none. So
+ * it moves the clock and waits for `change`.
+ */
+seekTo.addEventListener("input", () => {
+  const at = Number(seekTo.value);
+  const bar = seekModel({
+    runtime: runtimeSeconds(),
+    at,
+    ahead: bufferedAhead(video.buffered, video.currentTime),
+    converting,
+  });
+  showSeekAt(bar);
+  if (bar.seeksWhileDragging) seekFilmTo(at);
 });
 
-// `change`, not `input`: restarting an encode on every pixel of a drag would
-// start dozens of them and finish none.
-jumpTo.addEventListener("change", () => {
-  if (!playing) return;
-  // Keeps whatever cap the link was found to need; a seek is not new evidence
-  // that the connection got better.
-  convert(playing, Number(jumpTo.value), noteFor(playing), capBits ?? undefined);
-});
+// Letting go. For a direct file this lands where the drag already went; for a
+// conversion it is the whole of the seek.
+seekTo.addEventListener("change", () => seekFilmTo(Number(seekTo.value)));
 
 /**
  * The link is losing ground: move to something it can carry.
@@ -792,7 +870,7 @@ const watch = watchPlayback({
   video,
   onSwitch: (targetBits) => {
     if (!playing) return;
-    showJump(playing);
+    refreshSeek();
     convert(
       playing,
       filmTime(),
@@ -832,10 +910,8 @@ dialog.addEventListener("close", () => {
   showNotes(false);
   summaryBox.textContent = "";
   notesButton.hidden = true;
-  jump.hidden = true;
-  // The native bar is right again for whatever opens next, until something
-  // converting says otherwise.
-  dialog.classList.remove("converting");
+  seek.hidden = true;
+  converting = false;
   audio.hidden = true;
   ends.textContent = "";
   preload.textContent = "";
