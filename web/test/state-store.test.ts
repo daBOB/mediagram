@@ -148,11 +148,13 @@ describe("a player that cannot remember", () => {
     expect(state.remembers).toBe(false);
     expect(state.profiles()).toEqual([]);
     expect(state.createProfile("A")).toBeNull();
+    expect(state.setPreference("nobody", "show:X", "audio", "en")).toBe(false);
     expect(state.snapshot("nobody")).toEqual({
       progress: [],
       watchlist: [],
       collections: [],
       watched: [],
+      preferences: [],
     });
     // None of these may throw: they are called from a request handler.
     state.setProgress("nobody", "01SET", 10, 20);
@@ -227,16 +229,18 @@ describe("one profile cannot see another", () => {
     state.addToCollection(me, mine.id, "01SET");
 
     state.setWatched(me, "01SET", true);
+    state.setPreference(me, "key:tmdb-tv-1399", "audio", "en");
 
     expect(state.deleteProfile(me)).toBe(true);
     expect(state.profiles()).toEqual([]);
-    // Everything of theirs, which now includes what they finished: `watched`
-    // cascades from `profiles` like the rest of it.
+    // Everything of theirs, which now includes what they finished and what
+    // they chose: both cascade from `profiles` like the rest of it.
     expect(state.snapshot(me)).toEqual({
       progress: [],
       watchlist: [],
       collections: [],
       watched: [],
+      preferences: [],
     });
   });
 
@@ -340,5 +344,67 @@ describe("titles watched to the end", () => {
     const state = new WatchState(null);
     expect(() => state.setWatched("p", "01SET0000000000000000001", true)).not.toThrow();
     expect(state.snapshot("p").watched).toEqual([]);
+  });
+});
+
+describe("what a viewer chose", () => {
+  test("is remembered against a scope, not a title", () => {
+    const { state, me } = stateIn();
+
+    state.setPreference(me, "key:tmdb-tv-1399", "audio", "en");
+
+    expect(state.snapshot(me).preferences).toEqual([
+      { scope: "key:tmdb-tv-1399", name: "audio", value: "en" },
+    ]);
+  });
+
+  test("choosing again replaces rather than accumulates", () => {
+    const { state, me } = stateIn();
+
+    state.setPreference(me, "show:Geldhochschule", "speed", "1.25");
+    state.setPreference(me, "show:Geldhochschule", "speed", "1.5");
+
+    expect(state.snapshot(me).preferences).toEqual([
+      { scope: "show:Geldhochschule", name: "speed", value: "1.5" },
+    ]);
+  });
+
+  test("an empty value forgets it", () => {
+    // Rather than storing "" for every reader to recognise as meaning nothing.
+    const { state, me } = stateIn();
+
+    state.setPreference(me, "show:X", "subtitle", "de");
+    state.setPreference(me, "show:X", "subtitle", "");
+
+    expect(state.snapshot(me).preferences).toEqual([]);
+  });
+
+  test("one profile's choice is not another's", () => {
+    const { state, me } = stateIn();
+    const you = state.createProfile("B")!.id;
+
+    state.setPreference(me, "key:tmdb-tv-1399", "audio", "en");
+
+    expect(state.snapshot(you).preferences).toEqual([]);
+  });
+
+  test("a scope or a name that is not a string is refused", () => {
+    const { state, me } = stateIn();
+
+    expect(state.setPreference(me, null, "audio", "en")).toBe(false);
+    expect(state.setPreference(me, "show:X", 5, "en")).toBe(false);
+    expect(state.setPreference(me, "  ", "audio", "en")).toBe(false);
+    expect(state.snapshot(me).preferences).toEqual([]);
+  });
+
+  test("and all three are capped, so one row cannot be a database", () => {
+    const { state, me } = stateIn();
+
+    state.setPreference(me, "x".repeat(5000), "y".repeat(5000), "z".repeat(5000));
+
+    const [held] = state.snapshot(me).preferences;
+    expect(held!.scope.length).toBe(200);
+    expect(held!.name.length).toBe(200);
+    expect(held!.value.length).toBe(200);
   });
 });

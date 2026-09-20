@@ -113,8 +113,12 @@ function skipButton(button, path, seconds) {
  * cannot be seeked by moving a playhead, and the player owns that decision.
  * `filmTime` and `runtime` are asked for the same reason — a conversion's own
  * clock and duration are about the encode, not the film.
+ *
+ * `recall(name)` and `remember(name, value)` are what this viewer chose for
+ * the open show. Both are given rather than reached for, because what "this
+ * show" means is the player's question and not the bar's.
  */
-export function mountTransport({ video, onSeekTo, filmTime, runtime }) {
+export function mountTransport({ video, onSeekTo, filmTime, runtime, recall, remember }) {
   const playPause = document.getElementById("play-pause");
   const back = document.getElementById("skip-back");
   const forward = document.getElementById("skip-forward");
@@ -130,6 +134,19 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime }) {
     option.value = String(rate);
     option.textContent = speedLabel(rate);
     speed.append(option);
+  }
+
+  /**
+   * The speed this show was last watched at.
+   *
+   * Applied per title rather than once at mount: a lecture course watched at
+   * 1.5x and a film watched at 1x are two different answers, and the bar is
+   * mounted once for both.
+   */
+  function recallSpeed() {
+    const asked = Number(recall?.("speed") ?? Number.NaN);
+    chosenRate = SPEEDS.includes(asked) ? asked : 1;
+    video.playbackRate = chosenRate;
   }
 
   // Before the first title, so nothing ever plays at a volume the viewer
@@ -187,6 +204,7 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime }) {
   speed.addEventListener("change", () => {
     chosenRate = Number(speed.value);
     video.playbackRate = chosenRate;
+    remember?.("speed", speed.value);
   });
   video.addEventListener("loadedmetadata", () => {
     if (video.playbackRate !== chosenRate) video.playbackRate = chosenRate;
@@ -199,7 +217,12 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime }) {
       track.mode = String(index) === chosen ? "showing" : "disabled";
     }
   }
-  subPicker.addEventListener("change", applySubtitles);
+  subPicker.addEventListener("change", () => {
+    applySubtitles();
+    // The language, not the ordinal, for the same reason the audio menu does
+    // it: which track is `0` is a fact about this file and not about the show.
+    remember?.("subtitle", subPicker.selectedOptions[0]?.dataset.lang ?? "off");
+  });
 
   /**
    * `c`, which turns them off and back on to whatever they were.
@@ -256,19 +279,41 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime }) {
 
   /** Rebuilt per title: a film's tracks are not the last film's tracks. */
   function offerSubtitles() {
+    const tracks = [...video.textTracks].filter((track) => track.kind === "subtitles");
     const options = subtitleOptions(video.textTracks);
     subPicker.replaceChildren();
-    for (const { value, label } of options) {
+    for (const [at, { value, label }] of options.entries()) {
       const option = document.createElement("option");
       option.value = value;
       option.textContent = label;
+      // `at - 1` because "Off" is first and is not a track.
+      const lang = tracks[at - 1]?.language;
+      if (lang) option.dataset.lang = lang;
       subPicker.append(option);
     }
     // One option is "Off" alone, which is not a choice.
     subs.hidden = options.length < 2;
-    // `attachSubtitles` marks the first track default, so the element shows it
-    // and the picker has to agree rather than claim nothing is on.
-    subPicker.value = options.length > 1 ? "0" : "off";
+
+    /**
+     * What this viewer chose for this show, if the file still offers it.
+     *
+     * `off` is a choice like any other and has to survive: a viewer who turned
+     * subtitles off on episode one meant it for the series, and a fallback
+     * that treated "off" as "nothing remembered" would turn them back on
+     * every episode.
+     */
+    const wanted = recall?.("subtitle") ?? null;
+    if (wanted === "off") subPicker.value = "off";
+    else {
+      const found = tracks.findIndex(
+        (track) => (track.language ?? "").toLowerCase() === String(wanted ?? "").toLowerCase(),
+      );
+      // Nothing remembered, or a language this file no longer carries: the
+      // first track, which is what `default` used to do before this player
+      // took the decision off the browser.
+      subPicker.value = found === -1 ? (options.length > 1 ? "0" : "off") : String(found);
+    }
+    applySubtitles();
   }
 
   for (const event of ["play", "pause", "volumechange", "ratechange", "loadedmetadata", "durationchange"]) {
@@ -307,5 +352,5 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime }) {
     }
   }
 
-  return { refresh, offerSubtitles, act };
+  return { refresh, offerSubtitles, recallSpeed, act };
 }

@@ -11,7 +11,7 @@
  * different database and the two must never be confused.
  */
 
-export const STATE_SCHEMA = 4;
+export const STATE_SCHEMA = 5;
 
 /**
  * Statements grouped by the version they produce, the same shape the index's
@@ -143,6 +143,36 @@ export const GROUPS: readonly (readonly string[])[] = [
        set_id TEXT NOT NULL,
        finished_at INTEGER NOT NULL,
        PRIMARY KEY(profile_id, set_id)
+     )`,
+  ],
+
+  // v4 -> v5: what a viewer chose, so they do not choose it again.
+  //
+  // A German/English series is twenty-two episodes, and picking English was
+  // picking it twenty-two times — each one costing a conversion. The same is
+  // true of a subtitle language, and of a playback speed on a lecture course.
+  //
+  // `scope` is a show, not a set: `preference-scope.js` decides what that
+  // means and files by the same thing the shelves group by, so a preference
+  // never belongs to a group no shelf draws.
+  //
+  // `name`/`value` as rows rather than a column each. A column per preference
+  // is a migration per preference, and these arrive steadily — three land with
+  // this table and four more with the subtitle panel. The cost is that nothing
+  // constrains a value, so the reader that turns one back into a choice is
+  // where validation lives and is written as if the row were hostile.
+  //
+  // Scoped to a profile, like `watched` and unlike `kids`: which language you
+  // watch a series in is a fact about you, and two people sharing a television
+  // should not overwrite each other's.
+  [
+    `CREATE TABLE IF NOT EXISTS preferences(
+       profile_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+       scope TEXT NOT NULL,
+       name TEXT NOT NULL,
+       value TEXT NOT NULL,
+       updated_at INTEGER NOT NULL,
+       PRIMARY KEY(profile_id, scope, name)
      )`,
   ],
 ];

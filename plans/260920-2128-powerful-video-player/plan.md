@@ -22,7 +22,7 @@ the start of the episode, or handle the picture at all.
 | | Phase | Where the work is | Status |
 |---|---|---|---|
 | 01 | [Audio without the wait](phase-01-audio-without-the-wait.md) | transcode args, registry | done |
-| 02 | [What a viewer chose, remembered](phase-02-remembered-choices.md) | state schema v5 | not started |
+| 02 | [What a viewer chose, remembered](phase-02-remembered-choices.md) | state schema v5 | done |
 | 03 | [Subtitles that behave](phase-03-subtitles-that-behave.md) | browser only | not started |
 | 04 | [Handling](phase-04-handling.md) | browser only | not started |
 | 05 | [Real chapters, and skip intro](phase-05-chapters-and-skip-intro.md) | Rust, index, both players | not started |

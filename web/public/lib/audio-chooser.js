@@ -54,6 +54,25 @@ export function defaultTrack(tracks) {
 }
 
 /**
+ * The track in `lang`, or `null` when this file has none.
+ *
+ * A remembered choice is a **language**, never an ordinal. `0:a:1` is German
+ * in one release of an episode and a director's commentary in the next, so a
+ * stored number would silently hand a viewer the wrong thing the first time a
+ * file was replaced. A language tag either matches or it does not.
+ *
+ * Returning `null` rather than falling back is the point: the caller then
+ * uses the file's own default, which is the right answer for a file that no
+ * longer carries the language somebody once chose.
+ */
+export function trackForLanguage(tracks, lang) {
+  if (typeof lang !== "string" || lang.trim() === "") return null;
+  const wanted = lang.trim().toLowerCase();
+  const found = tracks.findIndex((track) => (track.lang ?? "").toLowerCase() === wanted);
+  return found === -1 ? null : tracks[found].index;
+}
+
+/**
  * Asks the server what `setId` holds.
  *
  * An empty list is the normal answer for a title with one stream and for one
@@ -83,6 +102,10 @@ export function fillChooser(select, tracks, chosen) {
   for (const track of tracks) {
     const option = document.createElement("option");
     option.value = String(track.index);
+    // Carried on the option so the page can remember *what was chosen* rather
+    // than where it happened to sit — a preference is a language, and the
+    // ordinal is only how this file happens to number it today.
+    if (track.lang) option.dataset.lang = track.lang;
     option.textContent = trackLabel(track);
     select.append(option);
   }

@@ -211,3 +211,62 @@ describe("v3 to v4", () => {
     second.close();
   });
 });
+
+/** A database at `version`, as a player of that vintage would have left one. */
+function atVersion(path: string, version: number, rows: () => string[]): void {
+  const db = new Database(path, { create: true });
+  db.exec("PRAGMA foreign_keys = OFF");
+  for (const group of GROUPS.slice(0, version)) for (const statement of group) db.exec(statement);
+  db.query("INSERT OR REPLACE INTO state_meta(key, value) VALUES ('schema_version', ?1)").run(
+    String(version),
+  );
+  for (const statement of rows()) db.exec(statement);
+  db.close();
+}
+
+describe("v4 to v5", () => {
+  test("a database with no preferences in it gains somewhere to put them", () => {
+    const path = tempPath();
+    atVersion(path, 4, () => [
+      "INSERT INTO profiles(id, name, created_at) VALUES ('p1', 'André', 1)",
+      "INSERT INTO progress(profile_id, set_id, at_seconds, duration, updated_at) VALUES ('p1', '01SET', 640, 2400, 1)",
+      "INSERT INTO watchlist(profile_id, set_id, added_at) VALUES ('p1', '01OTHER', 1)",
+      "INSERT INTO watched(profile_id, set_id, finished_at) VALUES ('p1', '01DONE', 1)",
+    ]);
+
+    const state = new WatchState(path);
+    const before = state.snapshot("p1");
+
+    // Nothing of theirs was disturbed on the way past.
+    expect(before.progress).toHaveLength(1);
+    expect(before.watchlist).toEqual(["01OTHER"]);
+    expect(before.watched).toEqual(["01DONE"]);
+    expect(before.preferences).toEqual([]);
+
+    state.setPreference("p1", "key:tmdb-tv-1399", "audio", "en");
+    expect(state.snapshot("p1").preferences).toEqual([
+      { scope: "key:tmdb-tv-1399", name: "audio", value: "en" },
+    ]);
+    state.close();
+  });
+
+  test("and a second open keeps what the first one wrote", () => {
+    // The case this whole file exists for: every migration replays on every
+    // open, and one that rebuilt a table would copy the live rows into a new
+    // one and rename it over the original.
+    const path = tempPath();
+    atVersion(path, 4, () => [
+      "INSERT INTO profiles(id, name, created_at) VALUES ('p1', 'André', 1)",
+    ]);
+
+    const first = new WatchState(path);
+    first.setPreference("p1", "show:Geldhochschule", "speed", "1.5");
+    first.close();
+
+    const second = new WatchState(path);
+    expect(second.snapshot("p1").preferences).toEqual([
+      { scope: "show:Geldhochschule", name: "speed", value: "1.5" },
+    ]);
+    second.close();
+  });
+});

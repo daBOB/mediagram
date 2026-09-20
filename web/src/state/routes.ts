@@ -30,6 +30,14 @@ const PROGRESS = new RegExp(`^/api/profiles/${P}/progress/([A-Za-z0-9]{1,64})$`)
 const WATCHLIST = new RegExp(`^/api/profiles/${P}/watchlist/([A-Za-z0-9]{1,64})$`);
 /** Watched to the end — a fact about the viewer, so scoped to one. */
 const WATCHED = new RegExp(`^/api/profiles/${P}/watched/([A-Za-z0-9]{1,64})$`);
+/**
+ * A remembered choice.
+ *
+ * The scope is in the body, not the path: it is a show's name as often as a
+ * key, and a name goes through `encodeURIComponent` into something a route
+ * pattern then has to be careful about. The body has no such problem.
+ */
+const PREFERENCE = new RegExp(`^/api/profiles/${P}/preferences$`);
 const COLLECTIONS = new RegExp(`^/api/profiles/${P}/collections$`);
 const COLLECTION = new RegExp(`^/api/profiles/${P}/collections/${P}$`);
 const COLLECTION_ITEM = new RegExp(
@@ -159,6 +167,23 @@ export function createStateRouter(options: StateRouterOptions) {
       if (method !== "PUT" && method !== "DELETE") return status(405);
       state.setWatchlisted(profileId, setId, method === "PUT");
       return status(204);
+    }
+
+    const preference = PREFERENCE.exec(path);
+    if (preference) {
+      const profileId = preference[1]!;
+      if (!state.has(profileId)) return status(404);
+      if (method !== "PUT" && method !== "POST") return status(405);
+
+      const body = parse(request.body) as
+        | { scope?: unknown; name?: unknown; value?: unknown }
+        | null;
+      // `setPreference` decides what is storable — length, type, and that an
+      // empty value means forget. A 400 here is the request being unusable,
+      // not the choice being unwelcome.
+      return status(
+        state.setPreference(profileId, body?.scope, body?.name, body?.value) ? 204 : 400,
+      );
     }
 
     const watched = WATCHED.exec(path);

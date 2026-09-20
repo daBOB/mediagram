@@ -1,6 +1,6 @@
 # Phase 02 — What a viewer chose, remembered
 
-**Status:** not started
+**Status:** done
 
 ## Context
 

@@ -44,10 +44,34 @@ export interface StateSnapshot {
   collections: Collection[];
   /** Watched to the end. Kept because finishing clears the position. */
   watched: string[];
+  /**
+   * What this viewer chose, by scope and name.
+   *
+   * Sent whole rather than asked for per title: there are a handful of these
+   * per show and the page needs one the instant a title opens, which is
+   * exactly when it has no time to ask.
+   */
+  preferences: Preference[];
+}
+
+/** One remembered choice. See the v5 migration for why it is shaped this way. */
+export interface Preference {
+  scope: string;
+  name: string;
+  value: string;
 }
 
 /** How long a name may be. Long enough for a sentence, short enough to show. */
 const MAX_NAME = 120;
+
+/**
+ * How long a preference's three strings may be.
+ *
+ * A scope is a show's key or its name, a name is a word this player chose,
+ * and a value is a language tag or a number. None of them is prose, and a
+ * cap is what stops a client filling the database with one row.
+ */
+const MAX_PREFERENCE = 200;
 
 export class WatchState {
   private readonly db: Database | null;
@@ -120,7 +144,9 @@ export class WatchState {
 
   /** One profile's everything, in one read. The page asks once and holds it. */
   snapshot(profileId: string): StateSnapshot {
-    if (!this.db) return { progress: [], watchlist: [], collections: [], watched: [] };
+    if (!this.db) {
+      return { progress: [], watchlist: [], collections: [], watched: [], preferences: [] };
+    }
 
     const progress = this.db
       .query(
@@ -154,7 +180,11 @@ export class WatchState {
       profileId,
     );
 
-    return { progress, watchlist, collections, watched };
+    const preferences = this.db
+      .query("SELECT scope, name, value FROM preferences WHERE profile_id = ?1")
+      .all(profileId) as Preference[];
+
+    return { progress, watchlist, collections, watched, preferences };
   }
 
   /** Where this profile is in `setId`. */
@@ -215,6 +245,47 @@ export class WatchState {
         ?.query("DELETE FROM watched WHERE profile_id = ?1 AND set_id = ?2")
         .run(profileId, setId);
     }
+  }
+
+  /**
+   * Remembers a choice, or forgets it.
+   *
+   * An empty value forgets, rather than storing an empty string that every
+   * reader would then have to recognise as meaning nothing.
+   *
+   * Everything is length-capped and nothing is interpreted. This does not
+   * know what an audio track or a subtitle offset is, and should not: a
+   * preference the file no longer supports has to be survivable, so the
+   * meaning lives in the reader that applies it and the failure is a choice
+   * quietly ignored rather than a title that will not open.
+   */
+  setPreference(profileId: string, scope: unknown, name: unknown, value: unknown): boolean {
+    // A player with nowhere to write did not remember it, and saying it did
+    // would have the page show a choice that is gone on the next title.
+    if (!this.db) return false;
+    const at = short(scope);
+    const called = short(name);
+    if (at === null || called === null) return false;
+
+    const held = short(value);
+    if (held === null) {
+      this.db
+        ?.query("DELETE FROM preferences WHERE profile_id = ?1 AND scope = ?2 AND name = ?3")
+        .run(profileId, at, called);
+      return true;
+    }
+
+    tolerate(() =>
+      this.db
+        ?.query(
+          `INSERT INTO preferences(profile_id, scope, name, value, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5)
+             ON CONFLICT(profile_id, scope, name)
+               DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+        )
+        .run(profileId, at, called, held, Date.now()),
+    );
+    return true;
   }
 
   /**
@@ -341,6 +412,19 @@ function tolerate(write: () => void): void {
   } catch {
     /* Nowhere to put it. See above. */
   }
+}
+
+/**
+ * One of a preference's three strings, trimmed and capped.
+ *
+ * Deliberately not `cleanName`: that collapses runs of whitespace, which is
+ * right for something a person typed and wrong for a value this player wrote
+ * and will parse back.
+ */
+function short(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const clean = value.trim().slice(0, MAX_PREFERENCE);
+  return clean === "" ? null : clean;
 }
 
 /** A name with its edges trimmed, or `null` when there is nothing left. */

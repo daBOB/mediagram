@@ -14,7 +14,7 @@ import { playTranscoded } from "./hls-playback.js";
 import { sourceBitrate, watchPlayback } from "./adapt-playback.js";
 import { clockTime, endsAt, episodeLabel, technicalLine } from "./format.js";
 import { languageLabel } from "./language-label.js";
-import { defaultTrack, fillChooser, loadAudioTracks } from "./audio-chooser.js";
+import { defaultTrack, fillChooser, loadAudioTracks, trackForLanguage } from "./audio-chooser.js";
 import { bufferedAhead, preloadReadout } from "./preload-readout.js";
 import { seekModel, skipTo } from "./seek-model.js";
 import { mountTransport } from "./transport.js";
@@ -24,6 +24,7 @@ import { COUNTDOWN_SECONDS, upNextPhase } from "./up-next.js";
 import { autoplayReady } from "./autoplay.js";
 import * as state from "./watch-state.js";
 import { isFinished, resumeAt, trustedRuntime } from "./resume-point.js";
+import { scopeOf } from "./preference-scope.js";
 
 const dialog = document.getElementById("player");
 const video = document.getElementById("video");
@@ -81,6 +82,14 @@ let capBits = null;
  */
 let converting = false;
 /**
+ * What a choice made on the open title is remembered against.
+ *
+ * `preference-scope.js` decides: a series, a course, or the title itself. Held
+ * rather than recomputed because every picker asks for it, and it cannot
+ * change while one title is open.
+ */
+let scope = null;
+/**
  * Which audio stream the viewer is on, as ffmpeg's `0:a:N`.
  *
  * Module state rather than a parameter because every restart — a seek, a
@@ -99,16 +108,24 @@ function noteFor(set, copied = false) {
   return decision.kind === "direct" ? null : conversionNote(`${decision.reason}.`, copied);
 }
 
-/** Attaches whatever subtitle tracks the catalog said this set has. */
+/**
+ * Attaches whatever subtitle tracks the catalog said this set has.
+ *
+ * Deliberately marks none of them `default`. That attribute asks the browser
+ * to pick a track for itself, and it does so during resource selection —
+ * *after* this player has set the modes it wants, so a viewer who turned
+ * subtitles off for a series watched them come back on every episode, with
+ * the picker still saying "Off". The choice is `transport.offerSubtitles`'s
+ * alone now, which is also the only place that knows what was remembered.
+ */
 function attachSubtitles(set) {
   for (const existing of [...video.querySelectorAll("track")]) existing.remove();
-  for (const [index, lang] of (set.subtitles ?? []).entries()) {
+  for (const lang of set.subtitles ?? []) {
     const track = document.createElement("track");
     track.kind = "subtitles";
     track.srclang = lang;
     track.label = languageLabel(lang, "Subtitles");
     track.src = `/api/sets/${encodeURIComponent(set.setId)}/subtitles/${lang}.vtt`;
-    if (index === 0) track.default = true;
     video.append(track);
   }
 }
@@ -294,6 +311,9 @@ const transport = mountTransport({
   onSeekTo: (seconds) => seekFilmTo(skipTo(seconds, 0, runtimeSeconds())),
   filmTime,
   runtime: runtimeSeconds,
+  // What "this show" means is the player's question — the bar only asks.
+  recall: (name) => state.preferenceOf(scope, name),
+  remember: (name, value) => state.setPreference(scope, name, value),
 });
 
 /**
@@ -587,9 +607,14 @@ export function openPlayer(set, options = {}) {
   nextUp = options.next ?? null;
   onOpenNext = options.onOpenNext ?? null;
   preloaded = null;
+  // First of all, because everything below that asks what this viewer chose
+  // asks against it — a scope set later would answer for the previous title.
+  scope = scopeOf(set);
   attachSubtitles(set);
-  // After the tracks are attached, because the picker is built from them.
+  // After the tracks are attached, because the picker is built from them, and
+  // before anything plays, so nothing is heard at the wrong speed.
   transport.offerSubtitles();
+  transport.recallSpeed();
   transport.refresh();
   void showSummary(set);
   void offerAudioTracks(set);
@@ -667,7 +692,15 @@ async function offerAudioTracks(set) {
   // answering at all.
   if (playing?.setId !== set.setId) return;
 
-  audioTrack = defaultTrack(found);
+  /**
+   * The language this viewer chose for this show, if the file still has it.
+   *
+   * Falls back to the file's own default rather than to the first stream, so
+   * a re-upload that dropped a language leaves a title that opens correctly
+   * instead of one that opens in a commentary.
+   */
+  const remembered = trackForLanguage(found, state.preferenceOf(scope, "audio"));
+  audioTrack = remembered ?? defaultTrack(found);
   audio.hidden = !fillChooser(audioTrackPicker, found, audioTrack);
 }
 
@@ -683,6 +716,10 @@ audioTrackPicker.addEventListener("change", () => {
   const chosen = Number(audioTrackPicker.value);
   if (!playing || !Number.isInteger(chosen) || chosen === audioTrack) return;
   audioTrack = chosen;
+  // The language, never the ordinal — see `trackForLanguage`. Taken from the
+  // option's own label rather than kept in a second list beside the menu.
+  const picked = audioTrackPicker.selectedOptions[0]?.dataset.lang;
+  if (picked) state.setPreference(scope, "audio", picked);
 
   refreshSeek();
   convert(

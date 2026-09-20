@@ -29,6 +29,10 @@ const held = {
   /** Marked as a child's. Shared by everyone on this player, not held per
    *  profile — a mark is about the title, not about who is watching. */
   kids: new Set(),
+  /** What this viewer chose, as `scope\u0000name` -> value. Held whole because
+   *  a title needs one the instant it opens, which is when there is no time
+   *  to ask for it. */
+  preferences: new Map(),
 };
 
 /**
@@ -135,6 +139,7 @@ export async function useProfile(id) {
   held.watchlist = new Set();
   held.collections = [];
   held.watched = new Set();
+  held.preferences = new Map();
   if (id === null) return;
 
   try {
@@ -150,6 +155,9 @@ export async function useProfile(id) {
     held.watchlist = new Set(said.watchlist ?? []);
     held.collections = said.collections ?? [];
     held.watched = new Set(said.watched ?? []);
+    held.preferences = new Map(
+      (said.preferences ?? []).map((row) => [preferenceKey(row.scope, row.name), row.value]),
+    );
   } catch {
     // A profile whose state cannot be read is one with none yet.
   }
@@ -289,4 +297,39 @@ export function setInCollection(id, setId, member) {
     member ? "PUT" : "DELETE",
     member ? {} : undefined,
   );
+}
+
+/**
+ * What a viewer chose for this show, or `null` if they never did.
+ *
+ * **Always a hint, never an instruction.** A remembered audio track can point
+ * at a stream a re-uploaded file no longer has, and a remembered subtitle
+ * language at one that was dropped. Every caller checks the answer against
+ * what the file actually offers, and a choice that no longer applies is
+ * quietly ignored — a title that will not open because of a preference would
+ * be far worse than a title that opens in the wrong language.
+ */
+export function preferenceOf(scope, name) {
+  if (scope === null) return null;
+  return held.preferences.get(preferenceKey(scope, name)) ?? null;
+}
+
+/** Remembers a choice for this show. An empty value forgets it. */
+export function setPreference(scope, name, value) {
+  if (scope === null || held.profileId === null) return;
+  const held_ = value === null || value === undefined ? "" : String(value);
+  if (held_ === "") held.preferences.delete(preferenceKey(scope, name));
+  else held.preferences.set(preferenceKey(scope, name), held_);
+  void write(under("/preferences"), "PUT", { scope, name, value: held_ });
+}
+
+/**
+ * The two parts as one map key.
+ *
+ * Joined on a NUL, which is the one byte neither a show's name nor a name
+ * this player chose can contain — `show:A` + `bc` and `show:Ab` + `c` would
+ * otherwise be the same preference.
+ */
+function preferenceKey(scope, name) {
+  return `${scope}\u0000${name}`;
 }
