@@ -119,6 +119,10 @@ pub struct CatalogFacts {
     pub sets: u64,
     pub posters: u64,
     pub schema: u32,
+    /// Seconds since the epoch when the installed catalogue was pushed,
+    /// read from the installed version's own name. `None` when nothing is
+    /// installed, or the name cannot be read.
+    pub published_at: Option<i64>,
 }
 
 /// What one artwork fetch did, for the screen that reports it.

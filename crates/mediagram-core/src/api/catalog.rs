@@ -137,6 +137,17 @@ fn count_posters(version_dir: &Path, artwork_dir: &Path) -> u64 {
     keys.len() as u64
 }
 
+/// When the index in a version directory was pushed, from its name.
+///
+/// `refresh.rs` names every installed version `v-<pushed_at>` and points
+/// `current` at it, so the catalogue's age is already written down and
+/// needs no second record that could disagree with it. A name that is not
+/// one of ours — including `current` itself, read literally rather than
+/// through the symlink — reads as unknown rather than as a wrong date.
+fn pushed_at_of(name: &str) -> Option<i64> {
+    name.strip_prefix("v-")?.parse().ok()
+}
+
 /// What the installed catalog is, for the System screen. Every count is
 /// collapsed to zero on any failure — opening the database, reading the
 /// posters directory — because this is read to draw a screen, and a screen
@@ -149,11 +160,21 @@ pub(super) fn facts(core: &Core) -> dto::CatalogFacts {
     }
     .to_string();
 
+    // `current` is the symlink; reading it (not resolving it) turns its
+    // target's name, `v-<pushed_at>`, back into the timestamp it was named
+    // for.
+    let published_at = std::fs::read_link(&dir)
+        .ok()
+        .and_then(|target| target.file_name().map(|name| name.to_string_lossy().into_owned()))
+        .as_deref()
+        .and_then(pushed_at_of);
+
     dto::CatalogFacts {
         origin,
         sets: count_playable(&dir).unwrap_or(0),
         posters: count_posters(&dir, &artwork_dir(core)),
         schema: mlib_spec::schema::SCHEMA_VERSION as u32,
+        published_at,
     }
 }
 

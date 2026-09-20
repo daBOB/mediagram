@@ -91,3 +91,16 @@ fn an_invalid_key_resolves_to_nothing_in_either_location() {
 
     assert_eq!(poster_path(&core, key.into()), None);
 }
+
+/// The version directory is named for when the index was pushed, so the
+/// catalogue's age needs no separate record. A name that is not one of
+/// ours reads as unknown rather than as a wrong date.
+#[test]
+fn a_version_directory_name_carries_its_push_time() {
+    assert_eq!(pushed_at_of("v-1758300000"), Some(1_758_300_000));
+    assert_eq!(pushed_at_of("v-0"), Some(0));
+    assert_eq!(pushed_at_of("current"), None);
+    assert_eq!(pushed_at_of("v-"), None);
+    assert_eq!(pushed_at_of("v-not-a-number"), None);
+    assert_eq!(pushed_at_of(""), None);
+}
