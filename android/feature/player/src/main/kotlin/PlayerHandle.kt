@@ -30,7 +30,7 @@ interface PlayerHandle {
 
     /** Playback facts; [PlayerViewModel] maps these onto [PlayerUiState]. */
     interface Listener {
-        fun onPositionChanged(positionMs: Long, durationMs: Long, isPlaying: Boolean)
+        fun onPlayingChanged(isPlaying: Boolean)
         fun onError(message: String)
     }
 }

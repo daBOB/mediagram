@@ -38,12 +38,8 @@ class PlayerViewModel @Inject constructor(
         handle.stop()
     }
 
-    override fun onPositionChanged(positionMs: Long, durationMs: Long, isPlaying: Boolean) {
-        _state.value = if (isPlaying) {
-            PlayerUiState.Playing(positionMs, durationMs)
-        } else {
-            PlayerUiState.Paused(positionMs, durationMs)
-        }
+    override fun onPlayingChanged(isPlaying: Boolean) {
+        _state.value = if (isPlaying) PlayerUiState.Playing else PlayerUiState.Paused
     }
 
     override fun onError(message: String) {

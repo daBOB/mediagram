@@ -1,5 +1,14 @@
 // ViewModels and UiState only, no composables — ui-mobile and ui-tv render
 // this module's state independently.
+//
+// What belongs here and what does not: this module owns the library. Which
+// set is open, whether it is preparing or has failed, stopping when a screen
+// is left for good — anything that needs CoreClient. It does not own
+// transport. Whether the player is playing, where the playhead is, how long
+// the set runs, and seeking by an increment are facts ExoPlayer already
+// keeps, and the surfaces read them through media3's own Compose state
+// holders against the Player this module exposes. A copy of them routed
+// through here could only be the same number later, or a different one.
 plugins {
     alias(libs.plugins.app.android.library)
     alias(libs.plugins.app.hilt)

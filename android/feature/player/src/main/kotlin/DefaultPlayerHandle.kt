@@ -54,11 +54,11 @@ class DefaultPlayerHandle @Inject constructor(
     private var constructionError: String? = null
 
     private val playerListener = object : Player.Listener {
-        override fun onIsPlayingChanged(isPlaying: Boolean) = notifyPosition(isPlaying)
+        override fun onIsPlayingChanged(isPlaying: Boolean) = notifyPlaying(isPlaying)
 
         override fun onPlaybackStateChanged(playbackState: Int) {
             val current = _player.value ?: return
-            if (playbackState == Player.STATE_READY) notifyPosition(current.isPlaying)
+            if (playbackState == Player.STATE_READY) notifyPlaying(current.isPlaying)
         }
 
         // A failed player drops back to STATE_IDLE and then stays silent,
@@ -121,7 +121,7 @@ class DefaultPlayerHandle @Inject constructor(
             return
         }
         if (setId == currentSetId && current.playbackState != Player.STATE_IDLE) {
-            republishPosition(current)
+            republishPlaybackState(current)
             return
         }
         openOn(current, setId)
@@ -151,14 +151,14 @@ class DefaultPlayerHandle @Inject constructor(
     /**
      * A settled player does not repeat the event that settled it, so a
      * subscriber that has just reset itself to "preparing" needs telling
-     * again where playback already is. A player still buffering is the one
+     * again that playback is under way. A player still buffering is the one
      * case to stay quiet for: its own ready event is still coming, and
-     * reporting a paused zero position ahead of it would replace a truthful
-     * spinner with a false still frame.
+     * reporting "paused" ahead of it would replace a truthful spinner with a
+     * false still frame.
      */
-    private fun republishPosition(player: Player) {
+    private fun republishPlaybackState(player: Player) {
         if (player.playbackState == Player.STATE_BUFFERING) return
-        notifyPosition(player.isPlaying)
+        notifyPlaying(player.isPlaying)
     }
 
     /**
@@ -181,12 +181,7 @@ class DefaultPlayerHandle @Inject constructor(
         player.playWhenReady = true
     }
 
-    private fun notifyPosition(isPlaying: Boolean) {
-        val current = _player.value ?: return
-        listener?.onPositionChanged(
-            positionMs = current.currentPosition,
-            durationMs = current.duration.coerceAtLeast(0),
-            isPlaying = isPlaying,
-        )
+    private fun notifyPlaying(isPlaying: Boolean) {
+        listener?.onPlayingChanged(isPlaying)
     }
 }

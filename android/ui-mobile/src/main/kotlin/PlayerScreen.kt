@@ -73,7 +73,7 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
         when (state) {
             PlayerUiState.Preparing -> CenteredSpinner()
             is PlayerUiState.Failed -> CenteredError((state as PlayerUiState.Failed).message)
-            is PlayerUiState.Playing, is PlayerUiState.Paused -> Unit
+            PlayerUiState.Playing, PlayerUiState.Paused -> Unit
         }
 
         // Placed explicitly: the box centres its children so the picture

@@ -33,7 +33,7 @@ class DefaultPlayerHandleTest {
         val handle = DefaultPlayerHandle(CompletableDeferred(player), this)
         advanceUntilIdle()
         handle.setListener(object : PlayerHandle.Listener {
-            override fun onPositionChanged(positionMs: Long, durationMs: Long, isPlaying: Boolean) = Unit
+            override fun onPlayingChanged(isPlaying: Boolean) = Unit
             override fun onError(message: String) = Unit
         })
 
@@ -47,8 +47,6 @@ class DefaultPlayerHandleTest {
         val player = mockk<ExoPlayer>(relaxed = true)
         val bridgeSlot = slot<Player.Listener>()
         every { player.addListener(capture(bridgeSlot)) } returns Unit
-        every { player.currentPosition } returns 5_000L
-        every { player.duration } returns 10_000L
 
         val handle = DefaultPlayerHandle(CompletableDeferred(player), this)
         advanceUntilIdle()
@@ -56,7 +54,7 @@ class DefaultPlayerHandleTest {
 
         var delivered = false
         handle.setListener(object : PlayerHandle.Listener {
-            override fun onPositionChanged(positionMs: Long, durationMs: Long, isPlaying: Boolean) {
+            override fun onPlayingChanged(isPlaying: Boolean) {
                 delivered = true
             }
             override fun onError(message: String) = Unit
@@ -128,7 +126,7 @@ class DefaultPlayerHandleTest {
         val handle = DefaultPlayerHandle(deferred, this)
         var errorMessage: String? = null
         handle.setListener(object : PlayerHandle.Listener {
-            override fun onPositionChanged(positionMs: Long, durationMs: Long, isPlaying: Boolean) = Unit
+            override fun onPlayingChanged(isPlaying: Boolean) = Unit
             override fun onError(message: String) {
                 errorMessage = message
             }

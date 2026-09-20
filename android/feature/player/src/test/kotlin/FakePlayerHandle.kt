@@ -34,7 +34,7 @@ class FakePlayerHandle : PlayerHandle {
         listener?.onError(message)
     }
 
-    fun emitPosition(positionMs: Long, durationMs: Long, isPlaying: Boolean) {
-        listener?.onPositionChanged(positionMs, durationMs, isPlaying)
+    fun emitPlaying(isPlaying: Boolean) {
+        listener?.onPlayingChanged(isPlaying)
     }
 }

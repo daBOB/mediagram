@@ -49,16 +49,16 @@ class PlayerViewModelTest {
     }
 
     @Test
-    fun positionUpdatesReflectWhetherThePlayerIsPlaying() = runTest {
+    fun theStateFollowsWhetherThePlayerIsPlaying() = runTest {
         val handle = FakePlayerHandle()
         val vm = PlayerViewModel(handle)
         vm.open("s1")
 
-        handle.emitPosition(positionMs = 1_000, durationMs = 10_000, isPlaying = true)
-        assertEquals(PlayerUiState.Playing(1_000, 10_000), vm.state.value)
+        handle.emitPlaying(isPlaying = true)
+        assertEquals(PlayerUiState.Playing, vm.state.value)
 
-        handle.emitPosition(positionMs = 2_000, durationMs = 10_000, isPlaying = false)
-        assertEquals(PlayerUiState.Paused(2_000, 10_000), vm.state.value)
+        handle.emitPlaying(isPlaying = false)
+        assertEquals(PlayerUiState.Paused, vm.state.value)
     }
 
     @Test
