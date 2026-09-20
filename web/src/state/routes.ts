@@ -69,20 +69,6 @@ export function createStateRouter(options: StateRouterOptions) {
       return status(405);
     }
 
-    const kid = KIDS_ITEM.exec(path);
-    if (kid) {
-      if (reading) return status(405);
-      const refusal = refuseUnsafe(request);
-      if (refusal) return refusal;
-      // The same check the rest of this module makes: state may never
-      // accumulate rows for titles the catalog cannot play.
-      if (!isPlayable(kid[1]!)) return status(404);
-      if (method === "PUT" || method === "DELETE") {
-        state.setKids(kid[1]!, method === "PUT");
-        return status(204);
-      }
-      return status(405);
-    }
 
     // Who watches this library, which is the one question askable before
     // anyone has said who they are.
@@ -139,6 +125,17 @@ export function createStateRouter(options: StateRouterOptions) {
       if (!Number.isFinite(at)) return status(400);
       const runtime = Number((body as { duration?: unknown })?.duration);
       state.setProgress(profileId, setId, at, Number.isFinite(runtime) && runtime > 0 ? runtime : null);
+      return status(204);
+    }
+
+    // Below the check above, with the other writes, rather than carrying its
+    // own copy of it: the whole point of the choke point is that a write
+    // cannot be added without passing through one.
+    const kid = KIDS_ITEM.exec(path);
+    if (kid) {
+      if (!isPlayable(kid[1]!)) return status(404);
+      if (method !== "PUT" && method !== "DELETE") return status(405);
+      state.setKids(kid[1]!, method === "PUT");
       return status(204);
     }
 

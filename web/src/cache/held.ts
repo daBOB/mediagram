@@ -23,6 +23,9 @@ import { CACHE_CHUNK } from "./key";
 /** How long a reading is trusted before another scan is started. */
 const TTL_MS = 30_000;
 
+/** How many sets are looked at concurrently. Enough to overlap the waiting. */
+const SCAN_BATCH = 24;
+
 /**
  * Chunks each set would need, from the index alone.
  *
@@ -75,8 +78,15 @@ export class HeldSets {
     private readonly now: () => number = () => Date.now(),
   ) {}
 
-  /** Whether this set plays without the network, as of the last scan. */
+  /**
+   * Whether this set plays without the network, as of the last scan.
+   *
+   * Starts a rescan when the reading has gone stale, so a caller cannot serve
+   * an indefinitely old badge by forgetting to ask for one. The check is a
+   * timestamp compare and the scan does not block this answer.
+   */
   has(setId: string): boolean {
+    this.refreshIfStale();
     return this.held.has(setId);
   }
 
@@ -118,22 +128,48 @@ export class HeldSets {
     const root = join(this.root, String(CACHE_CHUNK));
     const held = new Set<string>();
 
-    for (const [setId, want] of this.expected) {
-      let have = 0;
-      try {
-        for (const part of await readdir(join(root, setId), { withFileTypes: true })) {
-          if (!part.isDirectory()) continue;
-          have += (await readdir(join(root, setId, part.name))).length;
-        }
-      } catch {
-        // Nothing cached for this set, which is the ordinary case.
-        continue;
-      }
-      // `>=` rather than `===`: a chunk left over from a part layout that has
-      // since changed would make the count exceed what is needed, and every
-      // chunk that is needed is still there.
-      if (have >= want) held.add(setId);
+    // In batches rather than one set after another: nearly four hundred sets,
+    // most of them answering ENOENT because nothing of them is cached, is
+    // four hundred serialised round trips to the disk — and the first of
+    // these scans is awaited before the server listens. Bounded, because the
+    // point is to overlap the waiting, not to open four hundred directories
+    // at once.
+    const sets = [...this.expected];
+    for (let at = 0; at < sets.length; at += SCAN_BATCH) {
+      const batch = sets.slice(at, at + SCAN_BATCH);
+      const answers = await Promise.all(
+        batch.map(([setId, want]) => this.isHeld(root, setId, want)),
+      );
+      batch.forEach(([setId], index) => {
+        if (answers[index]) held.add(setId);
+      });
     }
     return held;
+  }
+
+  /** Whether every chunk of one set is on disk. */
+  private async isHeld(root: string, setId: string, want: number): Promise<boolean> {
+    let have = 0;
+    try {
+      for (const part of await readdir(join(root, setId), { withFileTypes: true })) {
+        if (!part.isDirectory()) continue;
+        for (const chunk of await readdir(join(root, setId, part.name))) {
+          // `.tmp` is a chunk being written, which `ChunkCache` renames into
+          // place only once it is whole. Counting one would claim a title
+          // plays offline while a piece of it was still arriving.
+          if (!chunk.endsWith(".tmp")) have += 1;
+        }
+        // Everything needed is here; the rest of the parts cannot change that,
+        // and a held film is thirteen thousand filenames per scan.
+        if (have >= want) return true;
+      }
+    } catch {
+      // Nothing cached for this set, which is the ordinary case.
+      return false;
+    }
+    // `>=` rather than `===`: a chunk left over from a part layout that has
+    // since changed would make the count exceed what is needed, and every
+    // chunk that is needed is still there.
+    return have >= want;
   }
 }

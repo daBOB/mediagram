@@ -60,7 +60,6 @@ export function buildSnapshot(facts: StartupFacts, live: LiveFacts) {
             hits: live.cacheHits,
             misses: live.cacheMisses,
             evicted: live.cacheEvicted,
-            fetchedBytes: live.fetchedBytes,
             // Stated rather than left to be divided: a hit rate of zero and
             // no reads at all are different things, and only one of them is
             // worth worrying about.

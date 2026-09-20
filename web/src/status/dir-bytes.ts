@@ -30,17 +30,22 @@ export async function dirBytes(root: string): Promise<number> {
     return 0;
   }
 
-  for (const entry of entries) {
-    const path = join(root, entry.name);
-    if (entry.isDirectory()) {
-      total += await dirBytes(path);
-      continue;
-    }
-    try {
-      total += (await stat(path)).size;
-    } catch {
-      // Reaped between the listing and the stat.
-    }
-  }
+  // Together rather than one after another: a two-hour conversion at two
+  // seconds a segment is some three and a half thousand files, and one
+  // serialised `stat` each is thousands of round trips for a figure printed
+  // to one decimal place.
+  const sizes = await Promise.all(
+    entries.map(async (entry) => {
+      const path = join(root, entry.name);
+      if (entry.isDirectory()) return dirBytes(path);
+      try {
+        return (await stat(path)).size;
+      } catch {
+        // Reaped between the listing and the stat.
+        return 0;
+      }
+    }),
+  );
+  for (const size of sizes) total += size;
   return total;
 }

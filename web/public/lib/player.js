@@ -298,6 +298,17 @@ function preloadNext() {
  * expire with twenty seconds of the episode still playing. `upNextPhase`
  * decides which of them is wanted; this does it.
  */
+/**
+ * The phase the panel is currently drawn in, so it is drawn once per change.
+ *
+ * `timeupdate` runs four times a second, and for the last half minute of
+ * every title the phase it reports is the same `waiting` each time. Redrawing
+ * on each of those repeated the card a hundred and twenty times — and, worse,
+ * called `showHud` with it, which re-arms the rest timer: the controls could
+ * never fade for the whole of a title's last thirty seconds.
+ */
+let shownPhase = null;
+
 function refreshUpNext({ ended = false } = {}) {
   const runtime = runtimeOf(playing);
   const phase = upNextPhase({
@@ -307,18 +318,20 @@ function refreshUpNext({ ended = false } = {}) {
     ended,
   });
 
+  if (phase === shownPhase) return;
+  shownPhase = phase;
   if (phase === "hidden") return;
 
-  upNextTitle.textContent = [nextUp.show, episodeLabel(nextUp), nextUp.title]
-    .filter(Boolean)
-    .join(" · ");
+  upNextTitle.textContent = titleLine(nextUp);
   upNext.hidden = false;
   showHud();
 
-  if (phase !== "counting" || countdown !== null) {
-    // Shown without a timer: a heads-up, and a way past the credits for
-    // anyone who wants one. Nothing starts until the title is over.
-    if (countdown === null) upNextIn.textContent = "when this ends";
+  // A running timer owns the line, whatever the phase says.
+  if (countdown !== null) return;
+  if (phase === "waiting") {
+    // A heads-up, and a way past the credits for anyone who wants one.
+    // Nothing starts until the title is over.
+    upNextIn.textContent = "when this ends";
     return;
   }
 
@@ -331,21 +344,25 @@ function refreshUpNext({ ended = false } = {}) {
   }, 1000);
 }
 
+/** How a title is named to the viewer: the HUD, the up-next card, a tooltip. */
+function titleLine(set) {
+  return [set.show, episodeLabel(set), set.title].filter(Boolean).join(" · ");
+}
+
 /** The standing offer, which cancelling the countdown does not withdraw. */
 function refreshPlayNext() {
   const has = nextUp !== null;
   playNextButton.hidden = !has;
   // The rail has no room to spell out a title, and the panel is not always
   // showing, so the name lives on the tooltip.
-  playNextButton.title = has
-    ? [nextUp.show, episodeLabel(nextUp), nextUp.title].filter(Boolean).join(" · ")
-    : "";
+  playNextButton.title = has ? titleLine(nextUp) : "";
 }
 
 function hideUpNext() {
   clearInterval(countdown);
   countdown = null;
   upNext.hidden = true;
+  shownPhase = null;
 }
 
 /**
@@ -458,7 +475,7 @@ export function openPlayer(set, options = {}) {
   attachSubtitles(set);
   void showSummary(set);
   void offerAudioTracks(set);
-  now.textContent = [set.show, episodeLabel(set), set.title].filter(Boolean).join(" · ");
+  now.textContent = titleLine(set);
   tech.textContent = technicalLine(set);
 
   const warning = noteFor(set);
@@ -471,6 +488,7 @@ export function openPlayer(set, options = {}) {
   audioTrack = 0;
   audio.hidden = true;
   starved = false;
+  shownPhase = null;
   stopWaitingToStart();
   refreshPreload();
   refreshWatchlist();
@@ -575,19 +593,8 @@ function refreshWatchlist() {
  * about playing a title needs to know a number on a shelf is stale.
  */
 function keptChanged() {
-  markedWhileOpen = true;
   document.dispatchEvent(new CustomEvent("mediagram:kept-changed"));
 }
-
-/**
- * Whether anything a shelf draws changed while the player was open.
- *
- * The counts can be refreshed at the moment of the change, but the view
- * behind the dialog cannot: rebuilding it would tear down the shelf under an
- * open player. So the change is remembered and announced again on the way
- * out, when there is something to rebuild into.
- */
-let markedWhileOpen = false;
 
 /** Whether this title is a child's, and the way to say it is or is not. */
 function refreshKids() {
@@ -706,11 +713,11 @@ window.addEventListener("pagehide", () => saveProgress(true));
 // A viewer who presses play has done the thing the wait was waiting to do.
 video.addEventListener("play", stopWaitingToStart);
 
-const STARVED_BY = { waiting: true, stalled: true };
-const FED_BY = { playing: true, canplay: true, canplaythrough: true, seeked: true };
-for (const event of [...Object.keys(STARVED_BY), ...Object.keys(FED_BY)]) {
+const STARVED_BY = ["waiting", "stalled"];
+const FED_BY = ["playing", "canplay", "canplaythrough", "seeked"];
+for (const event of [...STARVED_BY, ...FED_BY]) {
   video.addEventListener(event, () => {
-    starved = event in STARVED_BY;
+    starved = STARVED_BY.includes(event);
   });
 }
 // A new source is not a starved one: whatever the last title was doing, this
@@ -805,12 +812,6 @@ dialog.addEventListener("close", () => {
   refreshPlayNext();
   preloaded = null;
 
-  // Now the shelf behind can be rebuilt: a tick earned during playback, or a
-  // title marked from the rail, is on it the moment the dialog is shut.
-  if (markedWhileOpen) {
-    markedWhileOpen = false;
-    document.dispatchEvent(new CustomEvent("mediagram:kept-changed"));
-  }
 
   showNotes(false);
   summaryBox.textContent = "";

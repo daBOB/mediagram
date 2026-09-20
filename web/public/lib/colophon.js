@@ -11,6 +11,7 @@
  */
 
 import { countOf, humanSize } from "./format.js";
+import { isDocument } from "./library.js";
 
 /** A day, in milliseconds. */
 const DAY = 86_400_000;
@@ -23,7 +24,7 @@ const DAY = 86_400_000;
  * to answer a question that is really yes-or-no.
  */
 export function catalogueAge(publishedAt, now) {
-  if (!Number.isFinite(publishedAt) || publishedAt === null) return null;
+  if (!Number.isFinite(publishedAt)) return null;
   const days = Math.floor((now - publishedAt) / DAY);
   // A clock that disagrees with the publisher's is likelier than a package
   // from the future, and "published in -2 days" helps nobody.
@@ -64,17 +65,25 @@ function bytesLabel(sets) {
  * @param {Date} [now]
  */
 export function colophonLine(sets, catalog, now = new Date()) {
-  // `groupLibrary`'s rule, and for its reason: an unrecognised kind is
-  // counted as a film rather than dropped, so nothing silently vanishes from
-  // a total the viewer might check against what they uploaded.
+  // Counted by what each thing is, and `isDocument` rather than a kind string
+  // so there is one answer to that. Subtracting the known kinds from the
+  // total was how a course's PDFs came to be counted as films: they are
+  // neither, and the rule that put them on the courses shelf did not reach
+  // this line.
+  //
+  // An unrecognised kind still counts as a film, which is the shelf it lands
+  // on, so nothing silently vanishes from a total the viewer might check
+  // against what they uploaded.
   const episodes = sets.filter((set) => set.kind === "ep").length;
   const lessons = sets.filter((set) => set.kind === "tut").length;
-  const films = sets.length - episodes - lessons;
+  const documents = sets.filter(isDocument).length;
+  const films = sets.length - episodes - lessons - documents;
 
   const parts = [
     films > 0 ? countOf(films, "film") : "",
     episodes > 0 ? countOf(episodes, "episode") : "",
     lessons > 0 ? countOf(lessons, "lesson") : "",
+    documents > 0 ? countOf(documents, "document") : "",
     runtimeLabel(sets),
     bytesLabel(sets),
   ];

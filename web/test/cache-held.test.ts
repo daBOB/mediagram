@@ -90,6 +90,22 @@ describe("which sets are held", () => {
     expect(held.has(NONE)).toBe(false);
   });
 
+  test("does not count a chunk that is still being written", async () => {
+    // `ChunkCache` writes to `.tmp` and renames into place once whole.
+    // Counting one would claim a title plays offline while a piece of it was
+    // still arriving.
+    const partial = "01SETPARTIAL000000000005";
+    addSet(partial, [{ len: CACHE_CHUNK * 2 }]);
+    const dir = join(root, String(CACHE_CHUNK), partial, "0");
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, "0"), "x");
+    await writeFile(join(dir, "1.12345.abc.tmp"), "x");
+
+    const held = new HeldSets(root, expectedChunks(db));
+    await held.refresh();
+    expect(held.has(partial)).toBe(false);
+  });
+
   test("answers false before the first scan rather than throwing", () => {
     const held = new HeldSets(root, expectedChunks(db));
     expect(held.has(WHOLE)).toBe(false);

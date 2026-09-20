@@ -53,6 +53,9 @@ function whereFrom(set) {
  * @param {() => void} onChanged called once, after the panel closes on changes
  */
 export function addTitles(list, onChanged) {
+  /** The pending debounce, so closing can cancel it. */
+  let timer = null;
+
   const panel = el("div", "add-panel");
   panel.hidden = true;
 
@@ -85,6 +88,10 @@ export function addTitles(list, onChanged) {
       field.focus();
       return;
     }
+    // A keystroke within the last fraction of a second would otherwise fetch
+    // and draw into a panel `onChanged` is about to detach.
+    if (timer !== null) clearTimeout(timer);
+    timer = null;
     if (changed) {
       changed = false;
       onChanged();
@@ -123,7 +130,6 @@ export function addTitles(list, onChanged) {
     }
   }
 
-  let timer = null;
   let sequence = 0;
   field.addEventListener("input", () => {
     if (timer !== null) clearTimeout(timer);

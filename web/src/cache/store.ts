@@ -30,8 +30,6 @@ export interface CacheStats {
   misses: number;
   /** Chunks discarded to stay under the budget. */
   evicted: number;
-  /** Bytes those evictions freed. */
-  evictedBytes: number;
 }
 
 export class ChunkCache {
@@ -49,7 +47,6 @@ export class ChunkCache {
   private hits = 0;
   private misses = 0;
   private evicted = 0;
-  private evictedBytes = 0;
 
   constructor(
     private readonly root: string,
@@ -62,7 +59,6 @@ export class ChunkCache {
       hits: this.hits,
       misses: this.misses,
       evicted: this.evicted,
-      evictedBytes: this.evictedBytes,
     };
   }
 
@@ -159,7 +155,6 @@ export class ChunkCache {
       freed += entry.size;
       this.evicted += 1;
     }
-    this.evictedBytes += freed;
     return freed;
   }
 

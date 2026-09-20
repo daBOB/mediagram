@@ -15,8 +15,6 @@ const KEY = "mediagram.shelfView";
 export const LIST = "list";
 export const GRID = "grid";
 
-/** The two, in the order the control offers them. */
-export const MODES = [LIST, GRID];
 
 /**
  * @param {string|null} stored what was read out of storage

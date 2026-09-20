@@ -7,7 +7,7 @@
  * here is a string or a stop function, and none of it touches the document.
  */
 
-import { humanSize } from "./format.js";
+import { bitrateLabel, humanSize } from "./format.js";
 import { catalogueAge } from "./colophon.js";
 
 /** How often the reading is retaken while the panel is open. */
@@ -72,8 +72,9 @@ export function throughput(previous, current) {
   if (!Number.isFinite(gained) || gained < 0) return null;
   if (gained === 0) return "idle";
 
-  const mbps = (gained * 8) / seconds / 1e6;
-  return `${mbps < 10 ? mbps.toFixed(1) : String(Math.round(mbps))} Mbps`;
+  // The same rule the shelf prints a title's bitrate by, so the two cannot
+  // round differently: bytes over seconds is bytes over seconds.
+  return bitrateLabel({ total: gained, duration: seconds });
 }
 
 /** How the reads went, or that there have not been any. */

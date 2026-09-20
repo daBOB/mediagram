@@ -110,20 +110,34 @@ export function firstItemOf(divisions) {
   return null;
 }
 
+/**
+ * What sits under `division`, at whatever depth, counted in one walk.
+ *
+ * One walk rather than two: both figures are wanted together everywhere they
+ * are wanted at all — a heading and the row that opens a folder each say
+ * "n lessons · m documents" — and walking a three-hundred-lesson course twice
+ * to write one line is work for nothing.
+ */
+export function countsUnder(division) {
+  let lessons = 0;
+  let documents = 0;
+  for (const node of walk([division])) {
+    for (const set of node.items) {
+      if (isDocument(set)) documents += 1;
+      else lessons += 1;
+    }
+  }
+  return { lessons, documents };
+}
+
 /** How many lessons sit under `division`, at whatever depth. */
 export function lessonsUnder(division) {
-  let count = 0;
-  for (const node of walk([division])) {
-    count += node.items.filter((set) => !isDocument(set)).length;
-  }
-  return count;
+  return countsUnder(division).lessons;
 }
 
 /** How many documents sit under `division`, at whatever depth. */
 export function documentsUnder(division) {
-  let count = 0;
-  for (const node of walk([division])) count += node.items.filter(isDocument).length;
-  return count;
+  return countsUnder(division).documents;
 }
 
 /**

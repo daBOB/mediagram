@@ -822,7 +822,7 @@ a.row { text-decoration: none; }
   line-height: 1.3;
   transition: color 120ms ease;
 }
-.row .title span {
+.row .title > span {
   display: block;
   color: var(--ink-3);
   font-size: 0.83rem;
@@ -856,7 +856,7 @@ a.row { text-decoration: none; }
   font-size: 1.1rem;
   font-weight: 500;
 }
-.row.folder .title span {
+.row.folder .title > span {
   letter-spacing: 0.09em;
   text-transform: uppercase;
   font-size: 0.72rem;
@@ -909,12 +909,6 @@ a.row { text-decoration: none; }
   vertical-align: 0.05em;
 }
 
-/* `.row .title span` makes every other span in a row its own line — that is
-   what puts a codec line under a title. The tick belongs *in* the title, so
-   it needs a rule of the same weight to stay there. */
-.row .title span.tick {
-  display: inline;
-}
 
 /* The same mark on a plate, where there is no title to sit inside. In the
    corner the progress rule does not use, so a half-watched title and a

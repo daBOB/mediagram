@@ -15,10 +15,8 @@ import { countOf } from "./lib/format.js";
 import { renderSearch } from "./lib/search-view.js";
 import {
   divisionAt,
-  documentsUnder,
   firstItemOf,
   groupLibrary,
-  lessonsUnder,
   nextAfter,
   nextInQueue,
 } from "./lib/library.js";
@@ -26,7 +24,7 @@ import { catalogOf, loadLink } from "./lib/link.js";
 import { colophonLine } from "./lib/colophon.js";
 import { watchStatus } from "./lib/status-view.js";
 import { openPlayer } from "./lib/player.js";
-import { divisionBlock, levelBlock } from "./lib/course-view.js";
+import { divisionBlock, extentOf, levelBlock } from "./lib/course-view.js";
 import { describeSeries, seriesHeader } from "./lib/series-header.js";
 import { SECTIONS, collectionGrid, emptyState, movieGrid, setGrid } from "./lib/shelf-view.js";
 import { GRID, LIST, setShelfMode, shelfMode } from "./lib/shelf-mode.js";
@@ -36,6 +34,7 @@ import { listControls, listsView, listView } from "./lib/collections-view.js";
 import { chooseProfile } from "./lib/profile-picker.js";
 
 const main = document.getElementById("main");
+const player = document.getElementById("player");
 const searchBox = document.getElementById("search");
 
 /** @type {{movies: any[], series: any[], tutorials: any[]}} */
@@ -49,6 +48,9 @@ let library = { movies: [], series: [], tutorials: [] };
  * show needs one lookup rather than a search of three shelves.
  */
 let byId = new Map();
+
+/** Views that are neither a catalog shelf nor one built from watch state. */
+const PAGES = new Set(["search", "system"]);
 
 /** The shelves that come from what has been watched rather than the catalog. */
 const KEPT = {
@@ -252,16 +254,7 @@ function viewCourseLevel(collection, folders) {
   // name is the heading.
   // Both counts, because a folder of workbooks holds no lessons at all and
   // "zero lessons" is a worse description of it than "two documents".
-  const documents = documentsUnder(level);
-  heading(
-    level.title ?? collection.name,
-    [
-      countOf(lessonsUnder(level), "lesson"),
-      documents > 0 ? countOf(documents, "document") : null,
-    ]
-      .filter(Boolean)
-      .join(" · "),
-  );
+  heading(level.title ?? collection.name, extentOf(level));
 
   main.append(
     levelBlock(
@@ -324,12 +317,31 @@ function play(set, queue = null, options = {}) {
 // The player marks a title; the masthead counts them. Without this the count
 // beside Watchlist or Kids stays as it was until the next navigation, which
 // is exactly when nobody is looking at it.
+/**
+ * Whether a shelf needs rebuilding once the player is out of the way.
+ *
+ * The counts beside the masthead can be refreshed the moment a title is
+ * marked; the shelf behind the dialog cannot, because rebuilding it would
+ * throw away where the viewer had scrolled to for a change they cannot see.
+ * Rebuilding is the router's job, so the deferral is too — the player only
+ * says that something changed.
+ */
+let shelfStale = false;
+
 document.addEventListener("mediagram:kept-changed", () => {
   refreshKept();
-  // Only once the player is shut. While it is open the shelf behind it is not
-  // being looked at, and rebuilding it would throw away where the viewer had
-  // scrolled to for a change they cannot see.
-  if (!document.getElementById("player").open) route();
+  if (player.open) {
+    shelfStale = true;
+    return;
+  }
+  shelfStale = false;
+  route();
+});
+
+player.addEventListener("close", () => {
+  if (!shelfStale) return;
+  shelfStale = false;
+  route();
 });
 
 function refreshKept() {
@@ -492,12 +504,7 @@ function route() {
     .split("/")
     .filter((part) => part !== "");
   const [section = "movies", name, ...folders] = parts;
-  const known =
-    SECTIONS[section] || KEPT[section]
-      ? section
-      : section === "search" || section === "system"
-        ? section
-        : "movies";
+  const known = SECTIONS[section] || KEPT[section] || PAGES.has(section) ? section : "movies";
 
   for (const link of document.querySelectorAll("nav a")) {
     link.classList.toggle("active", link.dataset.section === known);

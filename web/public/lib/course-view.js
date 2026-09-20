@@ -18,7 +18,7 @@
 
 import { el } from "./dom.js";
 import { codecLine, countOf, episodeLabel, humanDuration, humanSize } from "./format.js";
-import { documentsUnder, lessonsUnder, levelEntries } from "./library.js";
+import { countsUnder, isDocument, levelEntries } from "./library.js";
 import { offlineBadge, transcodeBadge, watchedTick } from "./set-badge.js";
 
 /**
@@ -26,6 +26,20 @@ import { offlineBadge, transcodeBadge, watchedTick } from "./set-badge.js";
  * that the indent costs more width than the nesting is worth saying.
  */
 const MAX_INDENT = 3;
+
+/**
+ * `n lessons · m documents`, or just the lessons where there are none.
+ *
+ * Stated once and exported, because the heading of a level and the row that
+ * opens that level both say it and would otherwise drift the first time a
+ * third kind of thing appears in a course.
+ */
+export function extentOf(division) {
+  const { lessons, documents } = countsUnder(division);
+  return [countOf(lessons, "lesson"), documents > 0 ? countOf(documents, "document") : null]
+    .filter(Boolean)
+    .join(" · ");
+}
 
 /** One playable row. */
 function lessonRow(set, onPlay) {
@@ -104,19 +118,7 @@ function folderRow(division, onOpen) {
   }
   row.append(title);
 
-  const documents = documentsUnder(division);
-  row.append(
-    el(
-      "div",
-      "meta",
-      [
-        countOf(lessonsUnder(division), "lesson"),
-        documents > 0 ? countOf(documents, "document") : null,
-      ]
-        .filter(Boolean)
-        .join(" · "),
-    ),
-  );
+  row.append(el("div", "meta", extentOf(division)));
   row.append(el("span", "chevron", "\u203a"));
 
   row.addEventListener("click", () => onOpen(division.title));
@@ -160,7 +162,7 @@ export function divisionBlock(division, depth, onPlay) {
   block.append(head);
 
   for (const set of division.items) {
-    block.append(set.kind === "doc" ? documentRow(set) : lessonRow(set, onPlay));
+    block.append(isDocument(set) ? documentRow(set) : lessonRow(set, onPlay));
   }
   // Lessons first, then the folders below them: a lesson sitting in this
   // folder comes before a subfolder in every course this reads.

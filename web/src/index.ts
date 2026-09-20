@@ -216,10 +216,12 @@ const server = await startServer({
   held: held ?? undefined,
   status: createStatusRouter({
     facts,
-    live: () => ({
-      cacheHits: cache?.stats().hits ?? 0,
-      cacheMisses: cache?.stats().misses ?? 0,
-      cacheEvicted: cache?.stats().evicted ?? 0,
+    live: () => {
+      const stats = cache?.stats();
+      return {
+      cacheHits: stats?.hits ?? 0,
+      cacheMisses: stats?.misses ?? 0,
+      cacheEvicted: stats?.evicted ?? 0,
       fetchedBytes: reader?.stats().fetchedBytes ?? 0,
       transcodes: {
         running: transcodes.count(),
@@ -237,7 +239,8 @@ const server = await startServer({
       // Resident set size: the figure that says whether a player left running
       // for a week is still the size it started at.
       memoryBytes: process.memoryUsage.rss(),
-    }),
+      };
+    },
     heldBytes: cache ? () => cache.sizeOnDisk() : undefined,
     transcodeBytes: () => dirBytes(config.transcodeDir),
   }),

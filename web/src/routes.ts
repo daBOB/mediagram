@@ -409,7 +409,6 @@ export function createRouter(options: RouterOptions) {
       // Enriched exactly as a catalog row is: a hit is opened by the same
       // dialog, so a missing `subtitles` would silently lose the tracks and a
       // missing `hasSummary` the notes panel.
-      options.held?.refreshIfStale();
       const hits = index
         .search(request.query ?? "")
         .map(({ summary: _summary, matched, excerpt, ...set }) => ({
@@ -423,8 +422,7 @@ export function createRouter(options: RouterOptions) {
     if (request.path === "/api/sets") {
       // What a set has, so the page can offer a summary or a subtitle track
       // without asking per title.
-      options.held?.refreshIfStale();
-      const sets = listPlayable(db).map(forBrowser);
+        const sets = listPlayable(db).map(forBrowser);
       const body = new TextEncoder().encode(JSON.stringify(sets));
       return {
         status: 200,

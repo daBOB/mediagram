@@ -36,8 +36,7 @@ export function upNextPhase(at) {
   // `Number(null)` is 0, and 0 seconds left is the one value that would open
   // the panel immediately — so an unknown runtime is separated from a real
   // zero here rather than left to coercion, which cannot tell them apart.
-  const given = at.remainingSeconds;
-  const left = given === null || given === undefined ? Number.NaN : Number(given);
+  const left = Number(at.remainingSeconds ?? Number.NaN);
   // An unknown runtime cannot be counted down from. Nothing is offered early
   // rather than something being offered at the wrong moment; `ended` still
   // catches it.

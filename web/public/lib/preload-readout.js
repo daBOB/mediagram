@@ -34,6 +34,14 @@ export function bufferedAhead(buffered, currentTime) {
   return 0;
 }
 
+/** Which of the four words describes the player right now. */
+function stateOf(at, ready) {
+  if (at.awaitingStart === true) return "getting ready";
+  // Nothing to show yet is its own state: not starved, just not started.
+  if (ready < 1) return "opening";
+  return at.starved === true ? "buffering" : "ready";
+}
+
 /**
  * How close to 1.0 counts as simply keeping up.
  *
@@ -78,21 +86,13 @@ export function preloadReadout(at = {}) {
   const aheadSeconds = Number(at.ahead);
   const ahead = Number.isFinite(aheadSeconds) && aheadSeconds > 0 ? aheadSeconds : 0;
 
-  // Nothing to show yet is its own state: not starved, just not started.
-  const state =
-    at.awaitingStart === true
-      ? "getting ready"
-      : ready < 1
-        ? "opening"
-        : at.starved === true
-          ? "buffering"
-          : "ready";
+  const state = stateOf(at, ready);
   const parts = [ahead > 0 ? `${state} · ${clockTime(ahead)} ahead` : state];
 
   // `Number(null)` is 0, and 0 is a rate worth showing — it is a dead stall.
   // So an absent measurement is separated from a measured zero here rather
   // than left to coercion, which cannot tell them apart.
-  const rate = at.fillRate === null || at.fillRate === undefined ? Number.NaN : Number(at.fillRate);
+  const rate = Number(at.fillRate ?? Number.NaN);
   if (Number.isFinite(rate) && rate >= 0 && Math.abs(rate - 1) > UNREMARKABLE) {
     parts.push(`filling ${rate.toFixed(1)}×`);
   }

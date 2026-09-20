@@ -31,7 +31,7 @@ export function autoplayReady(at) {
 
   // A forty second lesson can never hold a minute ahead of itself. Having all
   // of what is left is the same promise as having a minute of it.
-  const left = at.remaining === null || at.remaining === undefined ? Number.NaN : Number(at.remaining);
+  const left = Number(at.remaining ?? Number.NaN);
   if (Number.isFinite(left) && left > 0 && Number.isFinite(ahead) && ahead >= left - 1) return true;
 
   // Out of patience. Whatever is held is what it starts with.
