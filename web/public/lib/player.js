@@ -25,6 +25,8 @@ import { autoplayReady } from "./autoplay.js";
 import * as state from "./watch-state.js";
 import { isFinished, resumeAt, trustedRuntime } from "./resume-point.js";
 import { scopeOf } from "./preference-scope.js";
+import { placeCues } from "./subtitle-style.js";
+import { subtitlePanel } from "./subtitle-panel.js";
 
 const dialog = document.getElementById("player");
 const video = document.getElementById("video");
@@ -90,6 +92,27 @@ let converting = false;
  */
 let scope = null;
 /**
+ * Where this show's subtitles sit along the clock.
+ *
+ * Held rather than read from the panel each time, because the thing that most
+ * needs it is a `load` event on a track and that fires long after the viewer
+ * set it.
+ */
+let placement = { offset: 0 };
+
+/**
+ * Puts every attached track where the panel says.
+ *
+ * Called far more often than it does anything, on purpose. A cue does not
+ * exist until its file has been fetched, which only happens once a track
+ * stops being `disabled`; a conversion re-attaches every track from scratch;
+ * and turning subtitles back on re-enables a track that may or may not still
+ * hold its cues. `placeCues` is idempotent so all three can simply ask.
+ */
+function placeSubtitles() {
+  for (const track of video.textTracks) placeCues(track, placement);
+}
+/**
  * Which audio stream the viewer is on, as ffmpeg's `0:a:N`.
  *
  * Module state rather than a parameter because every restart — a seek, a
@@ -126,6 +149,7 @@ function attachSubtitles(set) {
     track.srclang = lang;
     track.label = languageLabel(lang, "Subtitles");
     track.src = `/api/sets/${encodeURIComponent(set.setId)}/subtitles/${lang}.vtt`;
+    track.addEventListener("load", placeSubtitles);
     video.append(track);
   }
 }
@@ -133,6 +157,9 @@ function attachSubtitles(set) {
 /** Fetched on open rather than carried in the catalog, which would be large. */
 async function showSummary(set) {
   showNotes(false);
+  // A panel left open belongs to the title it was opened on.
+  cuePanel.panel.hidden = true;
+  cuePanel.trigger.setAttribute("aria-expanded", "false");
   summaryBox.textContent = "";
   notesButton.hidden = true;
   if (!set.hasSummary) return;
@@ -306,6 +333,26 @@ function showSeekAt(bar) {
  * Asks rather than reaches: `filmTime` and `runtimeSeconds` are the film's
  * answers, and a conversion's own clock is not.
  */
+const cuePanel = subtitlePanel({
+  recall: (name) => state.preferenceOf(scope, name),
+  remember: (name, value) => state.setPreference(scope, name, value),
+  onPlacement: (where) => {
+    placement = where;
+    placeSubtitles();
+  },
+});
+document.getElementById("subs").after(cuePanel.trigger);
+document.querySelector(".hud-bottom").prepend(cuePanel.panel);
+
+/**
+ * Cues arriving, or a track being switched on.
+ *
+ * `load` fires on the element when a file has been fetched and parsed;
+ * `change` fires on the list when a mode changes, which is the case `load`
+ * misses — a track that was already loaded, disabled, and turned back on.
+ */
+video.textTracks.addEventListener("change", placeSubtitles);
+
 const transport = mountTransport({
   video,
   onSeekTo: (seconds) => seekFilmTo(skipTo(seconds, 0, runtimeSeconds())),
@@ -613,7 +660,12 @@ export function openPlayer(set, options = {}) {
   attachSubtitles(set);
   // After the tracks are attached, because the picker is built from them, and
   // before anything plays, so nothing is heard at the wrong speed.
+  // Before the tracks are offered, so a cue that is already in hand is placed
+  // rather than shown at the old show's offset for a moment.
+  placement = cuePanel.recallFor();
   transport.offerSubtitles();
+  cuePanel.trigger.hidden = document.getElementById("subs").hidden;
+  placeSubtitles();
   transport.recallSpeed();
   transport.refresh();
   void showSummary(set);
@@ -1011,6 +1063,9 @@ dialog.addEventListener("close", () => {
 
 
   showNotes(false);
+  // A panel left open belongs to the title it was opened on.
+  cuePanel.panel.hidden = true;
+  cuePanel.trigger.setAttribute("aria-expanded", "false");
   summaryBox.textContent = "";
   notesButton.hidden = true;
   seek.hidden = true;

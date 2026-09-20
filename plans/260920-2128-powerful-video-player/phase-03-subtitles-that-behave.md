@@ -1,6 +1,6 @@
 # Phase 03 — Subtitles that behave
 
-**Status:** not started
+**Status:** done, minus the position control
 
 ## Context
 
@@ -71,3 +71,23 @@ file is badly timed for every episode of the series it came with.
 |---|---|
 | Cue times drift by being shifted twice | The offset is held as an absolute, and applying it sets times from the original, not from the current |
 | `::cue` support varies | Size and colour are broadly supported; position falls back to the browser's own placement rather than to nothing |
+
+
+## What shipped, and what did not
+
+Size, backing and sync shipped. **Position did not**, and the attempt is worth
+recording so nobody spends the afternoon again.
+
+Raising subtitles clear of the transport bar needs the cue box's *bottom*
+anchored, which in WebVTT means `snapToLines: false` and a percentage `line`.
+Chromium then stops wrapping: a 226-character cue rendered as a single line
+off the right edge of the picture. Setting `size`, `position`, `positionAlign`
+and `align` explicitly made no difference — tested, twice, with screenshots.
+
+With `snapToLines: true` the text wraps, but a negative `line` anchors the
+cue's *first* row and the rest grow downward, so a three-row cue covers the
+bar anyway and a four-row one runs off the bottom edge.
+
+Neither does what a control called "Position" would have promised, so the
+browser's own placement is left alone: bottom, growing upward, wrapping. The
+bar rests after 2.6s, which is the real mitigation.

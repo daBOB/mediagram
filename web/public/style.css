@@ -1438,6 +1438,70 @@ dialog.resting .hud .picker { pointer-events: none; }
   .bar .picker select { font-size: 0.78rem; padding: 0.25rem 0.3rem; }
 }
 
+/* ---- the subtitle panel ----
+ *
+ * Floating above the rail rather than in it. These four are set once for a
+ * series and then never touched again, and a control adjusted once a month
+ * does not earn permanent space beside play and pause.
+ */
+.cue-panel {
+  position: absolute;
+  left: 1.5rem;
+  bottom: 100%;
+  margin-bottom: 0.6rem;
+  z-index: 2;
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.9rem 1rem;
+  background: rgba(0, 0, 0, 0.92);
+  border: 1px solid var(--stage-rule);
+  border-radius: 3px;
+  pointer-events: auto;
+}
+.cue-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.2rem;
+}
+.cue-row > span:first-child {
+  color: var(--stage-ink-2);
+  font-size: 0.72rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.cue-row select {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--stage-rule);
+  border-radius: 2px;
+  color: var(--stage-ink);
+  font-family: var(--text);
+  font-size: 0.85rem;
+  padding: 0.25rem 0.4rem;
+  cursor: pointer;
+}
+.cue-row select:hover { border-color: var(--stage-accent); }
+
+.cue-sync { gap: 0.4rem; }
+.cue-sync .quiet { margin: 0; }
+/* The reading, between the two buttons that change it. Fixed width so the
+   sign appearing does not shove them sideways. */
+.cue-at {
+  min-width: 3.6rem;
+  text-align: center;
+  color: var(--stage-ink);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* `Aa`, which is what the button does rather than what it is called. */
+#cue-settings {
+  font-family: var(--display);
+  font-size: 0.95rem;
+  letter-spacing: 0;
+}
+
 /* The film's clock, at either end of the transport. */
 .bar .at {
   color: var(--stage-ink);
