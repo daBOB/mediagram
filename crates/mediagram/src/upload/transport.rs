@@ -11,7 +11,7 @@ use mlib_spec::caption::{Caption, Part};
 use super::part_reader::PartReader;
 use crate::telegram::client::Tg;
 use crate::telegram::document;
-use crate::telegram::retry::with_flood_wait_only;
+use crate::telegram::retry::{self, with_flood_wait_only};
 
 /// Result of successfully sending one part as a document message.
 pub struct Sent {
@@ -79,11 +79,37 @@ impl Transport for TelegramTransport {
         reader: &mut PartReader,
         len: u64,
     ) -> Result<Sent> {
-        let uploaded = self
-            .client
-            .upload_stream(reader, len as usize, name)
-            .await
-            .map_err(|err| anyhow::anyhow!("uploading part bytes: {err}"))?;
+        // A dropped connection restarts the part rather than ending the set.
+        // These bytes go into a fresh, unreferenced file on the server, so a
+        // failed attempt leaves nothing behind to clash with — it costs the
+        // bytes already sent and nothing else. Not retrying costs the rest of
+        // the set: the error ends the process, the upload lock passes to
+        // whatever was queued behind it, and this set sits half-sent until
+        // somebody notices and runs `resume`.
+        let attempts = self.max_attempts.max(1);
+        let mut attempt = 0u32;
+        let uploaded = loop {
+            attempt += 1;
+            match self
+                .client
+                .upload_stream(&mut *reader, len as usize, name.clone())
+                .await
+            {
+                Ok(uploaded) => break uploaded,
+                Err(err) if attempt >= attempts => {
+                    return Err(anyhow::anyhow!("uploading part bytes: {err}"));
+                }
+                Err(err) => {
+                    let delay = retry::backoff(attempt);
+                    tracing::warn!(attempt, ?delay, error = %err, "restarting the part upload");
+                    tokio::time::sleep(delay).await;
+                    reader
+                        .rewind()
+                        .await
+                        .map_err(|err| anyhow::anyhow!("rereading the part to retry it: {err}"))?;
+                }
+            }
+        };
         if reader.bytes_read() != len {
             bail!(
                 "source shrank during upload: read {} of {len} planned bytes",

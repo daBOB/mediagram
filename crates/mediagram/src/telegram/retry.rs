@@ -22,6 +22,13 @@ pub fn flood_wait_secs(err: &InvocationError) -> Option<u64> {
     }
 }
 
+/// How long to wait before attempt `attempt + 1`, doubling each time. Capped
+/// so a generous `max_attempts` cannot shift the multiplier past what a `u64`
+/// of milliseconds holds.
+pub fn backoff(attempt: u32) -> Duration {
+    Duration::from_millis(BACKOFF_BASE_MS * 2u64.pow(attempt.saturating_sub(1).min(10)))
+}
+
 /// Flood waits and server-side failures are worth retrying; client errors such
 /// as bad requests or a dead auth key never fix themselves.
 fn is_retryable(err: &InvocationError) -> bool {
@@ -69,7 +76,7 @@ where
             Err(err) => {
                 let delay = match flood_wait_secs(&err) {
                     Some(secs) => Duration::from_secs(secs),
-                    None => Duration::from_millis(BACKOFF_BASE_MS * 2u64.pow(attempt - 1)),
+                    None => backoff(attempt),
                 };
                 tracing::warn!(attempt, ?delay, error = %err, "retrying Telegram request");
                 tokio::time::sleep(delay).await;
@@ -112,6 +119,15 @@ mod tests {
     #[test]
     fn flood_wait_secs_is_none_for_other_rpc_errors() {
         assert_eq!(flood_wait_secs(&other_error()), None);
+    }
+
+    #[test]
+    fn backoff_doubles_per_attempt_and_then_stops_growing() {
+        assert_eq!(backoff(1), Duration::from_millis(200));
+        assert_eq!(backoff(2), Duration::from_millis(400));
+        assert_eq!(backoff(3), Duration::from_millis(800));
+        // A large `max_attempts` must not shift the multiplier out of range.
+        assert_eq!(backoff(u32::MAX), backoff(11));
     }
 
     #[tokio::test]
