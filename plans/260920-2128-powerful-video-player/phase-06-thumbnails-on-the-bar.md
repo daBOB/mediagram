@@ -1,6 +1,6 @@
 # Phase 06 — Thumbnails on the bar
 
-**Status:** not started
+**Status:** done
 
 ## Context
 

@@ -12,6 +12,7 @@ import { dirname, join } from "node:path";
 import { describe, load } from "./config";
 import { EXPECTED_SCHEMA, assertSchema, listPlayable } from "./catalog";
 import { startServer } from "./server";
+import { SheetStore } from "./thumbs/sheets";
 import { StateSync } from "./state/sync";
 import { TelegramStateChannel } from "./telegram/state-channel";
 import { isExposed, reachableUrls } from "./listen-address";
@@ -237,6 +238,22 @@ const facts: StartupFacts = {
   startedAt: Date.now(),
 };
 
+/**
+ * Preview frames for the scrub bar.
+ *
+ * Only ever made from sets `held` reports as complete, so generating one never
+ * reaches Telegram — see `thumbs/sheets.ts`. Without a cache there is nothing
+ * complete to make them from, so there are no previews and the bar is what it
+ * always was.
+ */
+const thumbs = held
+  ? new SheetStore({
+      directory: config.thumbsDir,
+      baseUrl: `http://127.0.0.1:${config.port}`,
+      isHeld: (setId) => held.has(setId),
+    })
+  : undefined;
+
 const server = await startServer({
   db,
   state,
@@ -244,6 +261,7 @@ const server = await startServer({
   audio,
   source: bytes,
   posters,
+  thumbs,
   port: config.port,
   hostname: config.hostname,
   trustProxy: config.trustProxy,

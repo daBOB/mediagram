@@ -1199,6 +1199,7 @@ dialog.resting .hud .picker { pointer-events: none; }
    explains why it is there. */
 
 .seek {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.9rem;
@@ -1436,6 +1437,43 @@ dialog.resting .hud .picker { pointer-events: none; }
 @container hudbar (max-width: 600px) {
   .volume input { display: none; }
   .bar .picker select { font-size: 0.78rem; padding: 0.25rem 0.3rem; }
+}
+
+/* ---- the frame under the pointer ----
+ *
+ * `peek`, not `thumb`: `.thumb` is the poster plate on every card and row, and
+ * a preview that borrowed it came out as a stretched two-row grid.
+ *
+ * Above the bar and centred on it, which is where every player that has ever
+ * had one puts it. `translateX(-50%)` rather than arithmetic in the script:
+ * the script positions the middle and the stylesheet knows how wide it is.
+ */
+.peek {
+  position: absolute;
+  bottom: 100%;
+  margin-bottom: 0.5rem;
+  transform: translateX(-50%);
+  z-index: 2;
+  pointer-events: none;
+}
+.peek-frame {
+  width: 160px;
+  height: 90px;
+  border: 1px solid var(--stage-rule);
+  border-radius: 2px;
+  background-color: #000;
+  /* No repeat, and no size: the sheet is one image and the tile is a window
+     onto it, so the browser fetches it once and every later hover is free. */
+  background-repeat: no-repeat;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+}
+.peek-at {
+  margin-top: 0.25rem;
+  text-align: center;
+  color: var(--stage-ink);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
 
 /* ---- the subtitle panel ----

@@ -26,7 +26,7 @@ the start of the episode, or handle the picture at all.
 | 03 | [Subtitles that behave](phase-03-subtitles-that-behave.md) | browser only | done — size, backing, sync; no position |
 | 04 | [Handling](phase-04-handling.md) | browser only | done |
 | 05 | [Real chapters, and skip intro](phase-05-chapters-and-skip-intro.md) | Rust, index, both players | not started |
-| 06 | [Thumbnails on the bar](phase-06-thumbnails-on-the-bar.md) | ffmpeg, a new asset kind | not started |
+| 06 | [Thumbnails on the bar](phase-06-thumbnails-on-the-bar.md) | ffmpeg, a new asset kind | done |
 
 ## Why this order
 

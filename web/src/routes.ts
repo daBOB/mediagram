@@ -33,6 +33,9 @@ import {
 import { planReads, totalSize, type PartSpan, type Step } from "./range";
 import { isLocalAddress } from "./client-reach";
 import { canCopyVideo } from "./transcode/video-copy";
+import type { SheetStore } from "./thumbs/sheets";
+// @ts-expect-error — plain JS shared with the browser, like `playable.js`.
+import { spritePlan } from "../public/lib/sprite-plan.js";
 import type { SessionSpec } from "./transcode/registry";
 import type { HeldSets } from "./cache/held";
 import { SearchIndex } from "./search/index";
@@ -129,6 +132,8 @@ const SHOW_PATH = /^\/api\/shows\/(tmdb-(?:movie|tv)-\d{1,12})$/;
 // The language is spelled out rather than captured loosely: it ends up in no
 // path, but a route that accepts `../` invites someone to make it one.
 const SUBTITLE_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/subtitles\/([A-Za-z]{2,8})\.vtt$/;
+/** The preview frames for a title's scrub bar, as one image. */
+const THUMBS_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/thumbs\.jpg$/;
 // A session id is a hex digest and a segment is what ffmpeg names them. Both
 // reach a filesystem path, so both are spelled out rather than captured
 // loosely: a route that accepts `../` invites someone to use it.
@@ -273,6 +278,13 @@ export interface RouterOptions {
   hls?: HlsServer;
   /** The artwork the current catalog carries, if any. */
   posters?: PosterStore;
+  /**
+   * Preview frames for the scrub bar, if this player makes them.
+   *
+   * Absent when it does not, in which case every title answers 404 and the bar
+   * behaves exactly as it did before previews existed.
+   */
+  thumbs?: SheetStore;
   /**
    * Reads which audio streams a title holds, for the player's chooser.
    *
@@ -442,6 +454,46 @@ export function createRouter(options: RouterOptions) {
           "content-length": String(body.byteLength),
           // Named after the title it shows, and replaced only when a whole
           // new catalog arrives, so a day is comfortably safe.
+          "cache-control": "public, max-age=86400",
+        },
+        body: request.method === "HEAD" ? null : body,
+      };
+    }
+
+    const wantsThumbs = THUMBS_PATH.exec(request.path);
+    if (wantsThumbs) {
+      const setId = wantsThumbs[1]!;
+      const sheets = options.thumbs;
+      if (!sheets) return empty(404);
+      const set = playableSet(db, setId);
+      if (set === null) return empty(404);
+
+      const size = await sheets.sizeOf(setId);
+      if (size === null) {
+        /**
+         * Nothing yet, so make one — and answer 404 now rather than waiting.
+         *
+         * A sheet takes as long as it takes and nothing is blocked on it: the
+         * bar works without previews, a later hover finds the sheet, and a
+         * viewer who never comes back has cost one background job. Awaiting
+         * here would hold a request open for a minute to decorate a control
+         * that already works.
+         *
+         * `ensure` refuses anything not already on this disk and never throws,
+         * so this is fire-and-forget in the literal sense.
+         */
+        void sheets.ensure(setId, spritePlan(set.duration));
+        return empty(404);
+      }
+
+      const body = await Bun.file(sheets.path(setId)).bytes();
+      return {
+        status: 200,
+        headers: {
+          "content-type": "image/jpeg",
+          "content-length": String(body.byteLength),
+          // Made from the file's own frames, which do not change while the
+          // catalog holds the same set.
           "cache-control": "public, max-age=86400",
         },
         body: request.method === "HEAD" ? null : body,

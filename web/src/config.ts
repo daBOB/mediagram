@@ -68,6 +68,14 @@ export interface Config {
   /** How often to reconcile with the channel, in milliseconds. */
   syncEveryMs: number;
   /**
+   * Where scrub-bar preview sheets are kept.
+   *
+   * Under `~/.cache`, unlike watch state and unlike posters: a sheet is made
+   * from bytes this machine already has and can be made again from them, so
+   * losing the directory costs a minute of ffmpeg and nothing else.
+   */
+  thumbsDir: string;
+  /**
    * Ceiling for a transcode's output, in bits per second.
    *
    * A 13.9 Mbit/s source does not fit a 25 Mbit/s uplink with room for
@@ -159,6 +167,7 @@ export function load(): Config {
     stateDb:
       process.env.MEDIAGRAM_STATE_DB ??
       `${process.env.HOME}/.local/share/mediagram-player/state.db`,
+    thumbsDir: process.env.MEDIAGRAM_THUMBS_DIR ?? `${process.env.HOME}/.cache/mediagram-thumbs`,
     syncState: /^(1|true|yes)$/i.test(process.env.MEDIAGRAM_SYNC_STATE ?? ""),
     // Five minutes: often enough that moving from one machine to another feels
     // immediate, rare enough that a player left open all day is not a burst of

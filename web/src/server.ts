@@ -28,6 +28,7 @@ import {
 import type { AudioTrackReader } from "./audio-tracks";
 import type { WatchState } from "./state/store";
 import type { HeldSets } from "./cache/held";
+import type { SheetStore } from "./thumbs/sheets";
 
 export interface RunningServer {
   port: number;
@@ -147,6 +148,8 @@ export function startServer(options: {
   status?: (request: PlayerRequest) => Promise<PlayerResponse | null>;
   /** Which sets are held in full, for the offline badge. */
   held?: HeldSets;
+  /** Makes and serves scrub-bar preview sheets, where this player makes them. */
+  thumbs?: SheetStore;
 }): Promise<RunningServer> {
   const route = createRouter({
     db: options.db,
@@ -159,6 +162,7 @@ export function startServer(options: {
     catalog: options.catalog,
     status: options.status,
     held: options.held,
+    thumbs: options.thumbs,
   });
   const trustProxy = options.trustProxy ?? false;
 

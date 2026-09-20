@@ -27,6 +27,7 @@ import { isFinished, resumeAt, trustedRuntime } from "./resume-point.js";
 import { scopeOf } from "./preference-scope.js";
 import { placeCues } from "./subtitle-style.js";
 import { subtitlePanel } from "./subtitle-panel.js";
+import { thumbStrip } from "./thumb-strip.js";
 
 const dialog = document.getElementById("player");
 const video = document.getElementById("video");
@@ -353,6 +354,19 @@ document.querySelector(".hud-bottom").prepend(cuePanel.panel);
  */
 video.textTracks.addEventListener("change", placeSubtitles);
 
+/**
+ * The frame under the pointer, above the scrub bar.
+ *
+ * `positionAt` is the player's answer because only it knows whether this
+ * title's clock is the film's or an encode's — the bar is scaled to the film
+ * either way, so a fraction of it is a fraction of the runtime.
+ */
+const thumbs = thumbStrip({
+  bar: seek,
+  slider: seekTo,
+  positionAt: (fraction) => fraction * runtimeSeconds(),
+});
+
 const transport = mountTransport({
   video,
   onSeekTo: (seconds) => seekFilmTo(skipTo(seconds, 0, runtimeSeconds())),
@@ -669,6 +683,7 @@ export function openPlayer(set, options = {}) {
   transport.recallSpeed();
   transport.recallFraming();
   transport.refresh();
+  void thumbs.open(set);
   void showSummary(set);
   void offerAudioTracks(set);
   now.textContent = titleLine(set);
@@ -1070,6 +1085,7 @@ dialog.addEventListener("close", () => {
   summaryBox.textContent = "";
   notesButton.hidden = true;
   seek.hidden = true;
+  thumbs.hide();
   converting = false;
   audio.hidden = true;
   ends.textContent = "";
