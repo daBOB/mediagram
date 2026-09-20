@@ -1,8 +1,6 @@
 package settings
 
 import android.content.Context
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 
 /**
  * The package URL and its decryption key, as pasted in during provisioning.
@@ -17,6 +15,7 @@ data class PackageCredentials(val url: String, val keyB64: String) {
 interface PackageSettings {
     suspend fun read(): PackageCredentials?
     suspend fun write(url: String, keyB64: String)
+    suspend fun clear()
 }
 
 /** In-memory implementation for tests; nothing here ever touches disk. */
@@ -30,6 +29,10 @@ class InMemoryPackageSettings : PackageSettings {
     override suspend fun write(url: String, keyB64: String) {
         stored = PackageCredentials(url, keyB64)
     }
+
+    override suspend fun clear() {
+        stored = null
+    }
 }
 
 /**
@@ -39,13 +42,7 @@ class InMemoryPackageSettings : PackageSettings {
  */
 class EncryptedPackageSettings(context: Context) : PackageSettings {
 
-    private val preferences = EncryptedSharedPreferences.create(
-        context,
-        PREFS_FILE_NAME,
-        MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-    )
+    private val preferences = encryptedPreferences(context, PREFS_FILE_NAME)
 
     override suspend fun read(): PackageCredentials? {
         val url = preferences.getString(KEY_URL, null) ?: return null
@@ -58,6 +55,10 @@ class EncryptedPackageSettings(context: Context) : PackageSettings {
             .putString(KEY_URL, url)
             .putString(KEY_KEY_B64, keyB64)
             .apply()
+    }
+
+    override suspend fun clear() {
+        preferences.edit().clear().apply()
     }
 
     private companion object {

@@ -50,6 +50,13 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
             }
             
             dependencies {
+                // Flows, dispatchers and Mutex are load-bearing in every library
+                // module here — the settings stores, the core holder, the disk
+                // cache, every ViewModel. They arrive transitively through
+                // lifecycle and media3 as well, which is exactly the problem:
+                // declared here, the version is this project's to choose rather
+                // than whichever dependency happens to win the resolution.
+                add("implementation", libs.findLibrary("kotlinx.coroutines.core").get())
                 // Plain androidx.test JUnit4, not kotlin-test: kotlin-test's bare artifact
                 // only ships the common `expect` annotations, resolved to a real framework
                 // by the Kotlin Gradle plugin's JVM/Android target substitution rule — a
