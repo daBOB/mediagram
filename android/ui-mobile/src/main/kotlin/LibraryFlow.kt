@@ -133,10 +133,17 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
         }
     }
 
-    PosterFetchResultDialog(
-        message = posterFetchResultMessage(postersState.report, postersState.error),
-        onDismiss = postersViewModel::dismissResult,
-    )
+    // Every branch but the player, which is the one that fills the window
+    // with a picture. A fetch started before a film began would otherwise
+    // put its tally over the film; the result is held until it is dismissed,
+    // so it is still there when the film is left, which is when there is
+    // somebody to read it.
+    if (setId == null) {
+        PosterFetchResultDialog(
+            message = posterFetchResultMessage(postersState.report, postersState.error),
+            onDismiss = postersViewModel::dismissResult,
+        )
+    }
 }
 
 /** Why "Fetch posters…" cannot be tapped right now, or `null` when it can. */
@@ -172,7 +179,7 @@ private fun posterFetchResultMessage(report: PosterReport?, error: String?): Str
     else -> null
 }
 
-/** What a fetch reported, or what stopped it — shown over whichever screen the menu action was reached from. */
+/** What a fetch reported, or what stopped it — shown over whichever library screen is up when it finishes. */
 @Composable
 private fun PosterFetchResultDialog(message: String?, onDismiss: () -> Unit) {
     if (message == null) return
