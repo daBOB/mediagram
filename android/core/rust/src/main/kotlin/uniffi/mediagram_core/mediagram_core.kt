@@ -1889,6 +1889,16 @@ data class SetSummary (
     , 
     var `year`: kotlin.UInt?
     , 
+    var `container`: kotlin.String
+    , 
+    var `vcodec`: kotlin.String?
+    , 
+    var `acodec`: kotlin.String?
+    , 
+    var `quality`: kotlin.String?
+    , 
+    var `hdr`: kotlin.String?
+    , 
     var `duration`: kotlin.UInt?
     , 
     var `posterKey`: kotlin.String?
@@ -1922,6 +1932,11 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalUInt.read(buf),
             FfiConverterOptionalUInt.read(buf),
             FfiConverterOptionalUInt.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
             FfiConverterOptionalUInt.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterULong.read(buf),
@@ -1940,6 +1955,11 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalUInt.allocationSize(value.`episodeFirst`) +
             FfiConverterOptionalUInt.allocationSize(value.`episodeLast`) +
             FfiConverterOptionalUInt.allocationSize(value.`year`) +
+            FfiConverterString.allocationSize(value.`container`) +
+            FfiConverterOptionalString.allocationSize(value.`vcodec`) +
+            FfiConverterOptionalString.allocationSize(value.`acodec`) +
+            FfiConverterOptionalString.allocationSize(value.`quality`) +
+            FfiConverterOptionalString.allocationSize(value.`hdr`) +
             FfiConverterOptionalUInt.allocationSize(value.`duration`) +
             FfiConverterOptionalString.allocationSize(value.`posterKey`) +
             FfiConverterULong.allocationSize(value.`total`) +
@@ -1957,6 +1977,11 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalUInt.write(value.`episodeFirst`, buf)
             FfiConverterOptionalUInt.write(value.`episodeLast`, buf)
             FfiConverterOptionalUInt.write(value.`year`, buf)
+            FfiConverterString.write(value.`container`, buf)
+            FfiConverterOptionalString.write(value.`vcodec`, buf)
+            FfiConverterOptionalString.write(value.`acodec`, buf)
+            FfiConverterOptionalString.write(value.`quality`, buf)
+            FfiConverterOptionalString.write(value.`hdr`, buf)
             FfiConverterOptionalUInt.write(value.`duration`, buf)
             FfiConverterOptionalString.write(value.`posterKey`, buf)
             FfiConverterULong.write(value.`total`, buf)

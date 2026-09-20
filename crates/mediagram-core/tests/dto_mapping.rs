@@ -21,6 +21,8 @@ fn playable_with(episode: Option<&str>) -> PlayableSet {
         container: "mkv".into(),
         vcodec: None,
         acodec: None,
+        quality: None,
+        hdr: None,
         duration: Some(3000),
         total: 1_000_000,
         part_count: 1,
@@ -81,4 +83,64 @@ fn a_show_s_poster_key_is_filed_under_tv_not_the_episode() {
         ..playable_with(Some("1"))
     };
     assert_eq!(summary_from(&s).poster_key.as_deref(), Some("tmdb-tv-95396"));
+}
+
+/// A minimal `PlayableSet` with every field at its empty value and
+/// `set_id`, `kind`, and `container` filled. Used as a base for building
+/// test fixtures.
+fn playable_set_fixture() -> PlayableSet {
+    PlayableSet {
+        set_id: "01SET0000000000000000001".into(),
+        kind: "ep".into(),
+        title: None,
+        show: None,
+        chap: None,
+        path: None,
+        season: None,
+        episode: None,
+        tmdb: None,
+        year: None,
+        container: "mkv".into(),
+        vcodec: None,
+        acodec: None,
+        quality: None,
+        hdr: None,
+        duration: None,
+        total: 0,
+        part_count: 1,
+    }
+}
+
+/// The detail screen prints what a file is, in the order the web player
+/// prints it. Every one of these columns is in the index already; the DTO
+/// simply did not carry them.
+#[test]
+fn a_summary_carries_what_the_file_is() {
+    let set = PlayableSet {
+        container: "mkv".into(),
+        vcodec: Some("hevc".into()),
+        acodec: Some("eac3".into()),
+        quality: Some("1080p".into()),
+        hdr: Some("HDR10".into()),
+        ..playable_set_fixture()
+    };
+
+    let summary = summary_from(&set);
+
+    assert_eq!(summary.container, "mkv");
+    assert_eq!(summary.vcodec.as_deref(), Some("hevc"));
+    assert_eq!(summary.acodec.as_deref(), Some("eac3"));
+    assert_eq!(summary.quality.as_deref(), Some("1080p"));
+    assert_eq!(summary.hdr.as_deref(), Some("HDR10"));
+}
+
+/// `SDR` is the absence of a fact rather than a fact, and the web player
+/// drops it rather than printing it on every card. The DTO carries whatever
+/// the index holds and lets the surface decide, so this pins that the column
+/// survives the trip — deciding is `hdrLabel`'s job, on the other side.
+#[test]
+fn an_sdr_title_still_reports_its_dynamic_range() {
+    let set = PlayableSet { hdr: Some("SDR".into()), ..playable_set_fixture() };
+
+    assert_eq!(summary_from(&set).hdr.as_deref(), Some("SDR"));
 }

@@ -33,6 +33,10 @@ pub struct PlayableSet {
     pub container: String,
     pub vcodec: Option<String>,
     pub acodec: Option<String>,
+    /// What the index recorded about the picture. `quality` is a label such
+    /// as `1080p`, not a measurement; `hdr` is `HDR10`, `HLG`, `DV` or `SDR`.
+    pub quality: Option<String>,
+    pub hdr: Option<String>,
     pub duration: Option<u32>,
     pub total: u64,
     pub part_count: u32,
@@ -48,7 +52,7 @@ pub struct PartLocation {
 }
 
 const COLUMNS: &str = "set_id, kind, title, show, chap, path, season, episode, tmdb, year, container,
-     vcodec, acodec, duration, total, part_count";
+     vcodec, acodec, quality, hdr, duration, total, part_count";
 
 fn read_set(row: &rusqlite::Row<'_>) -> rusqlite::Result<PlayableSet> {
     let total: i64 = row.get("total")?;
@@ -66,6 +70,8 @@ fn read_set(row: &rusqlite::Row<'_>) -> rusqlite::Result<PlayableSet> {
         container: row.get("container")?,
         vcodec: row.get("vcodec")?,
         acodec: row.get("acodec")?,
+        quality: row.get("quality")?,
+        hdr: row.get("hdr")?,
         duration: row.get("duration")?,
         total: total.max(0) as u64,
         part_count: row.get("part_count")?,
