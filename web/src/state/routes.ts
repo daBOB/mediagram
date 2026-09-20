@@ -119,7 +119,19 @@ export function createStateRouter(options: StateRouterOptions) {
         state.clearProgress(profileId, setId);
         return status(204);
       }
-      if (method !== "PUT") return status(405);
+      // `POST` as well as `PUT`, because `navigator.sendBeacon` can only POST
+      // and a beacon is how a position survives the tab being closed — which
+      // is the moment it matters most. Refusing it lost that write silently:
+      // `sendBeacon` reports success on queueing, so the ordinary `PUT`
+      // written as its fallback never ran.
+      //
+      // Safe for the reason the module header cares about. What keeps a
+      // cross-site form out is not the method — `POST` is the one method a
+      // form can send — but `refuseUnsafe` above, which requires
+      // `application/json`. A form may only send urlencoded, multipart or
+      // text/plain, and anything that could set a JSON type needs a preflight
+      // this server does not answer.
+      if (method !== "PUT" && method !== "POST") return status(405);
 
       const body = parse(request.body);
       const at = Number((body as { at?: unknown })?.at);

@@ -344,3 +344,41 @@ describe("recording that a title was watched to the end", () => {
     expect((await rawRequest(server.port, mine(`/watched/${SET}`))).status).toBe(405);
   });
 });
+
+describe("a position sent as the tab closes", () => {
+  test("is accepted, because that is the shape `sendBeacon` sends", async () => {
+    // `navigator.sendBeacon` can only POST. Refusing POST meant the one write
+    // that exists to survive the page going away was the one write that never
+    // landed — and `sendBeacon` reports success on queueing, so the PUT
+    // fallback beneath it never ran either.
+    expect((await send(mine(`/progress/${SET}`), "POST", { at: 610, duration: 1800 })).status).toBe(
+      204,
+    );
+    const held = (await snapshot()).progress.find((p: { setId: string }) => p.setId === SET);
+    expect(held?.at).toBe(610);
+  });
+
+  test("is still refused from another origin", async () => {
+    // POST is the one method a cross-site form can send, so the guard in front
+    // of it has to keep holding.
+    const response = await send(mine(`/progress/${SET}`), "POST", { at: 1 }, {
+      origin: "https://elsewhere.example",
+    });
+    expect(response.status).toBe(403);
+  });
+
+  test("is still refused when it does not declare itself JSON", async () => {
+    // What actually keeps a cross-site form out: a form can only send
+    // urlencoded, multipart or text/plain, never application/json.
+    const response = await rawRequest(server.port, mine(`/progress/${SET}`), {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "at=1",
+    });
+    expect(response.status).toBe(415);
+  });
+
+  test("still refuses a method the route does not have", async () => {
+    expect((await send(mine(`/progress/${SET}`), "PATCH", { at: 1 })).status).toBe(405);
+  });
+});

@@ -7,6 +7,15 @@ to `main`. Full phase-by-phase detail lives in
 
 ## 2026-09-20
 
+**Fixed**
+
+- A watch position was lost every time a tab was closed mid-title. The write
+  that exists to survive the page goes by `navigator.sendBeacon`, which can
+  only `POST`, and the route took `PUT` — so it answered 405, and because
+  `sendBeacon` reports success on queueing, the ordinary `PUT` written as its
+  fallback never ran either. Nothing was logged and nothing looked wrong.
+  Present since watch state was added on 2026-09-18.
+
 **Shipped**
 
 - One scrub bar and one clock, whichever way a title plays. A conversion is
