@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import data.CoreProvider
+import data.RefreshLog
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flow
@@ -37,6 +38,7 @@ class SystemViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val coreProvider: CoreProvider,
     private val counters: PlaybackCounters,
+    private val refreshes: RefreshLog,
 ) : ViewModel() {
 
     // Read once, not per subscription: the installed package's own version
@@ -58,6 +60,10 @@ class SystemViewModel @Inject constructor(
                 sets = facts.sets.toLong(),
                 posters = facts.posters.toLong(),
                 schema = facts.schema.toInt(),
+                // Seconds at the core's surface, milliseconds here: the
+                // row subtracts it from a wall clock.
+                publishedAt = facts.publishedAt?.times(1_000),
+                lastRefresh = refreshes.last(),
                 heldBytes = occupancy.heldBytes,
                 budgetBytes = occupancy.budgetBytes,
                 fromCacheBytes = totals.fromCacheBytes,

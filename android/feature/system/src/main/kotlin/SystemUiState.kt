@@ -1,5 +1,7 @@
 package system
 
+import data.RefreshOutcome
+
 /**
  * What the System screen has to say, read straight off [data.CoreClient]'s
  * catalog facts, [playback.CacheProvider]'s occupancy, and
@@ -14,6 +16,15 @@ data class SystemUiState(
     val sets: Long,
     val posters: Long,
     val schema: Int,
+    /**
+     * Milliseconds since the epoch when the installed catalogue was pushed,
+     * or `null` when nothing is installed. Milliseconds rather than the
+     * seconds the core reports, because the only thing done with it is to
+     * subtract it from a wall clock, and the two have to agree on a unit.
+     */
+    val publishedAt: Long?,
+    /** What the last refresh this process made did, or `null` before one is made. */
+    val lastRefresh: RefreshOutcome?,
     val heldBytes: Long,
     val budgetBytes: Long,
     val fromCacheBytes: Long,

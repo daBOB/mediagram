@@ -1,5 +1,7 @@
 package ui
 
+import data.RefreshOutcome
+
 /**
  * How the System screen turns raw counters into words. Mirrors the web
  * player's status panel (`status-lines.js`): a row whose value is not
@@ -70,6 +72,66 @@ internal fun telegramLine(connected: Boolean?): String? = when (connected) {
     null -> null
     true -> "connected"
     false -> "disconnected"
+}
+
+/** A day, in milliseconds. */
+private const val DAY_MS = 86_400_000L
+
+/**
+ * How old the installed catalogue is, in the words someone would use.
+ *
+ * Deliberately coarse, as the web player's `catalogueAge` is: the useful
+ * distinction is "current" against "this stopped refreshing a while ago",
+ * and an exact timestamp invites arithmetic to answer a question that is
+ * really yes-or-no. Its thresholds, not new ones.
+ */
+private fun catalogueAge(publishedAt: Long?, now: Long): String? {
+    if (publishedAt == null) return null
+    // Floored rather than truncated, so a catalogue dated a few hours into
+    // the future lands below zero rather than on "today".
+    val days = Math.floorDiv(now - publishedAt, DAY_MS)
+    return when {
+        // A clock that disagrees with the publisher's is likelier than a
+        // catalogue from the future, and "published in -2 days" helps nobody.
+        days < 0 -> "published just now"
+        days == 0L -> "published today"
+        days == 1L -> "published yesterday"
+        days < 14 -> "published $days days ago"
+        days < 60 -> "published ${days / 7} weeks ago"
+        else -> "published ${days / 30} months ago"
+    }
+}
+
+/**
+ * How old the catalogue is and what the last attempt to replace it did, or
+ * `null` when there is neither.
+ *
+ * The refusal is the one reading on this screen that is a warning: a
+ * catalogue that could not be replaced looks exactly like a current one,
+ * and nothing else here would say otherwise.
+ *
+ * The web player's version of this answers "read from this machine"
+ * whenever its index did not arrive in a published package, because an
+ * index built where it is served has no publisher to be older than. This
+ * app has no such case — every catalogue it holds was pushed to a Telegram
+ * channel and pulled back down — so that branch would print something false
+ * on every phone. It is left out, and the age leads instead.
+ *
+ * [now] is a parameter with no default for the reason the web's is: a
+ * function that reads the clock itself cannot be tested against one.
+ */
+internal fun refreshLine(publishedAt: Long?, outcome: RefreshOutcome?, now: Long): String? {
+    val age = catalogueAge(publishedAt, now)
+    if (outcome is RefreshOutcome.Refused) {
+        val serving = if (age == null) "" else ", still serving the one $age"
+        return "refresh refused — ${outcome.reason}$serving"
+    }
+    val did = when (outcome) {
+        RefreshOutcome.Updated -> "refreshed just now"
+        RefreshOutcome.AlreadyCurrent -> "already current"
+        else -> null
+    }
+    return listOfNotNull(age, did).joinToString(" · ").ifEmpty { null }
 }
 
 /** How long this process has been up, coarsely: `2h 14m`, or just `14m` under an hour. */

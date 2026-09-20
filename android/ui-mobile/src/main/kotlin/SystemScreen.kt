@@ -62,6 +62,12 @@ private fun CatalogueBlock(state: SystemUiState) = Block(
     rows = listOf(
         "Source" to if (state.origin == "package") "published package" else "this machine",
         "Holds" to "${state.sets} playable sets, ${state.posters} posters",
+        // Read against the wall clock at the moment this block is composed
+        // rather than when the facts were taken: the state is re-read on
+        // every visit to this screen, so the two are the same moment, and a
+        // clock carried inside the state would be a second thing to keep
+        // current.
+        "Refresh" to refreshLine(state.publishedAt, state.lastRefresh, System.currentTimeMillis()),
         // schema is this build's own compiled constant, not a value read
         // back out of the installed catalog — see CatalogFacts' own doc.
         "Schema" to "v${state.schema}, expected by this build",
