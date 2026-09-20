@@ -36,6 +36,7 @@
 | 4 | [The TMDB key, and fetching posters](phase-04-tmdb-key-and-posters.md) | Not started |
 | 5 | [The title detail screen](phase-05-title-detail-screen.md) | Not started |
 | 6 | [Playback stats](phase-06-playback-stats-overlay.md) | Not started |
+| 7 | [Refreshing the library, safely, from the menu](phase-07-refreshing-the-library.md) | Not started |
 
 ## Key dependencies
 
@@ -51,10 +52,21 @@ Phase 4 needs phase 1's crate and phase 3's menu. Phase 5 needs phase 2's data
 and phase 4's posters to be worth looking at. Phase 6 needs only phase 3's
 counters, so it can run in parallel with 4 and 5 if anyone wants it sooner.
 
+Phase 7 was added after the plan began, at the user's request. It needs phase
+3's menu and the System screen phase 3 built, and nothing else. Its first
+task is a defect fix that phase 4 needs regardless: a refresh deletes the
+posters phase 4 fetches, measured on the device at 0 → 236 → 0 across a
+restart. **Phase 4 does not actually deliver until that task lands.**
+
 ## Out of scope
 
 Watch state, next-episode autoplay, the television surface, and re-fetching
 synopsis text from TMDB. Spec §10 says why for each.
+
+The uploader's `rescan` is also out of scope and is not what phase 7 builds.
+That command rebuilds `library.db` from channel captions on the machine
+holding the uploader session; a phone has neither. Phase 7 is the client
+half — re-reading the pinned snapshot — which the web player calls Refresh.
 
 ## Review
 
