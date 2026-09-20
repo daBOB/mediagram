@@ -15,7 +15,7 @@ use rusqlite::Connection;
 use crate::config::Config;
 use crate::export::budget::{Verdict, estimate_bytes, verdict_for};
 use crate::export::encrypt::{parse_key, seal};
-use crate::export::posters::resolve_posters;
+use mediagram_tmdb::posters::resolve_posters;
 use crate::export::stage::Staging;
 use crate::export::{archive, latest, pointer, publish};
 use mediagram_tmdb::tmdb_client::TmdbClient;

@@ -7,14 +7,14 @@
 //! from the cache is fetched if a key is configured, and skipped otherwise:
 //! a missing poster is a cosmetic loss, never a failed export.
 
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::time::Duration;
 
 use anyhow::{Context, Result, bail};
 use mlib_spec::Kind;
 
-use crate::export::{restrict, restrict_dir};
-use mediagram_tmdb::tmdb_client::TmdbApi;
+use crate::tmdb_client::TmdbApi;
 
 /// TMDB's image CDN. `w342` is the smallest width that still looks right on a
 /// television shelf, and keeps a 300-title package near eight megabytes.
@@ -57,7 +57,7 @@ pub async fn resolve_posters(api: &impl TmdbApi, titles: &[(Kind, u64)]) -> Vec<
 async fn poster_path_for(api: &impl TmdbApi, kind: Kind, id: u64) -> Option<String> {
     // A course has no provider id, so it never reaches this lookup and simply
     // has no poster from TMDB.
-    let details = match mediagram_tmdb::details(api, kind, id).await {
+    let details = match crate::details::details(api, kind, id).await {
         Ok(details) => details,
         Err(err) => {
             tracing::warn!(id, error = %err, "no poster for this title");
@@ -83,7 +83,7 @@ fn is_image_path(path: &str) -> bool {
 }
 
 fn poster_key(kind: Kind, id: u64) -> String {
-    format!("tmdb-{}-{id}", crate::index::shows::kind_key(kind))
+    format!("tmdb-{}-{id}", kind_key(kind))
 }
 
 /// Downloads each poster into `dir` as `<key>.jpg`, returning the keys that
@@ -160,4 +160,26 @@ async fn download(http: &reqwest::Client, url: &str, dest: &Path) -> Result<()> 
     }
     std::fs::write(dest, &bytes).with_context(|| format!("writing {}", dest.display()))?;
     restrict(dest)
+}
+
+/// Artwork is written for one account's library and nobody else's.
+fn restrict(path: &Path) -> Result<()> {
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))
+        .with_context(|| format!("restricting {}", path.display()))
+}
+
+/// The same, for a directory, which needs the execute bit to be enterable.
+fn restrict_dir(path: &Path) -> Result<()> {
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700))
+        .with_context(|| format!("restricting {}", path.display()))
+}
+
+/// How a kind is spelled in the key, matching the poster keys exactly: TMDB
+/// numbers films and series independently, so 550 is two different titles.
+pub fn kind_key(kind: Kind) -> &'static str {
+    match kind {
+        Kind::Movie => "movie",
+        // A course has no provider entry; it never reaches this table.
+        Kind::Ep | Kind::Tut | Kind::Doc => "tv",
+    }
 }

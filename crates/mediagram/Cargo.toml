@@ -51,5 +51,4 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 ulid.workspace = true
 
 [dev-dependencies]
-mediagram-tmdb = { path = "../mediagram-tmdb" }
 tempfile = "3.27.0"

@@ -3,7 +3,7 @@
 //! normal run needs no API key and no network — `add` cached those payloads
 //! when it resolved each title.
 
-use mediagram::export::posters::{
+use mediagram_tmdb::posters::{
     PosterRef, already_held, download_into, poster_url, resolve_posters,
 };
 use mediagram_tmdb::tmdb_client::TmdbApi;

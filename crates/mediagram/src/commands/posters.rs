@@ -14,7 +14,7 @@
 use anyhow::{Result, bail};
 
 use crate::config::Config;
-use crate::export::posters::{already_held, download_into, resolve_posters};
+use mediagram_tmdb::posters::{already_held, download_into, resolve_posters};
 use crate::export::stage::POSTER_DIR;
 use crate::export::titles::distinct_titles_in;
 use mediagram_tmdb::tmdb_client::TmdbClient;
