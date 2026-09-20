@@ -15,15 +15,23 @@ use super::CoreError;
 /// destination to fetch: a phone making requests to an address it does not
 /// control, chosen by whoever last wrote the pointer, is a probe with its
 /// credentials.
+///
+/// Resolved with `Url::join`, not string slicing: a URL's authority and its
+/// path are structurally separate fields to a real URL parser, so a
+/// path-less `pointer_url` (`http://host`, no trailing slash) still joins
+/// onto the path and can never collapse into replacing the host — which is
+/// exactly what slicing at the last `/` did, since `http://host` contains
+/// one in `//`.
 pub(super) fn package_url(pointer_url: &str, file: &str) -> Result<String, CoreError> {
     if !safe_file_name(file) {
         return Err(CoreError::Cipher("the pointer names an unsafe file".into()));
     }
-    let base = pointer_url
-        .rfind('/')
-        .map(|idx| &pointer_url[..idx])
-        .ok_or_else(|| CoreError::Network("pointer_url has no path to join against".into()))?;
-    Ok(format!("{base}/{file}"))
+    let base = url::Url::parse(pointer_url)
+        .map_err(|_| CoreError::Network("pointer_url is not a valid URL".into()))?;
+    let joined = base
+        .join(file)
+        .map_err(|_| CoreError::Network("could not build the package URL".into()))?;
+    Ok(joined.to_string())
 }
 
 /// A package file name and nothing else: it is joined to a URL and, inside
@@ -126,6 +134,17 @@ mod tests {
         assert!(package_url("https://cdn.example.com/latest.json", "../secrets").is_err());
         assert!(package_url("https://cdn.example.com/latest.json", "a/b").is_err());
         assert!(package_url("https://cdn.example.com/latest.json", "").is_err());
+    }
+
+    /// A pointer URL with no path at all must still join onto a path, never
+    /// onto the host: `http://host` contains a `/` (inside `//`), which is
+    /// exactly what made naive slicing at the last `/` collapse the base
+    /// down to the scheme and let the unauthenticated `file` field pick the
+    /// destination host instead.
+    #[test]
+    fn a_host_only_pointer_url_still_joins_onto_a_path_not_the_host() {
+        let url = package_url("http://cdn.example.com", "archive.tar.gz.enc").unwrap();
+        assert_eq!(url, "http://cdn.example.com/archive.tar.gz.enc");
     }
 
     fn pointer(created_at: i64, schema: i64) -> LatestPointer {

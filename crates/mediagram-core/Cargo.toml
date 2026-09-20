@@ -59,6 +59,7 @@ serde_json = { workspace = true }
 sha2 = { workspace = true }
 tar = "0.4.46"
 thiserror = { workspace = true }
+url = "2"
 # The version reaching Android: chosen because it is the newest release
 # already exercised by this workspace's lockfile at the time this surface
 # was built. `cli` is deliberately not enabled here — see the crate's own

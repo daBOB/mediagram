@@ -56,12 +56,24 @@ pub(super) fn identity_of(pointer: &mlib_spec::package::LatestPointer) -> Identi
     }
 }
 
-/// The identity recorded when the version at `dir` was last decrypted, or
-/// `None` if `dir` holds nothing — a first run, or a corrupt record, look
-/// identical from here, and both mean "nothing held yet".
-pub(super) fn read_identity(dir: &Path) -> Option<Identity> {
-    let text = std::fs::read_to_string(dir.join(IDENTITY_FILE)).ok()?;
-    serde_json::from_str(&text).ok()
+/// The identity recorded when the version at `dir` was last decrypted.
+///
+/// `Ok(None)` means the file is simply absent — a legitimate first run, with
+/// nothing held yet. An existing file that cannot be read or parsed is
+/// `Err`, never folded into the same "nothing held" case: doing that would
+/// let deleting or corrupting this one file silently defeat the replay
+/// check that reads it, by making an old package look like the first one
+/// ever seen.
+pub(super) fn read_identity(dir: &Path) -> Result<Option<Identity>, CoreError> {
+    let path = dir.join(IDENTITY_FILE);
+    let text = match std::fs::read_to_string(&path) {
+        Ok(text) => text,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(_) => return Err(CoreError::Io("reading the package identity".into())),
+    };
+    serde_json::from_str(&text)
+        .map(Some)
+        .map_err(|_| CoreError::Io("the package identity record is corrupt".into()))
 }
 
 pub(super) fn write_identity(dir: &Path, identity: &Identity) -> Result<(), CoreError> {
@@ -147,12 +159,21 @@ mod tests {
     fn a_written_identity_reads_back_equal() {
         let dir = tempfile::tempdir().unwrap();
         write_identity(dir.path(), &identity()).unwrap();
-        assert_eq!(read_identity(dir.path()), Some(identity()));
+        assert_eq!(read_identity(dir.path()).unwrap(), Some(identity()));
     }
 
     #[test]
     fn no_identity_file_reads_back_as_nothing_held() {
         let dir = tempfile::tempdir().unwrap();
-        assert_eq!(read_identity(dir.path()), None);
+        assert_eq!(read_identity(dir.path()).unwrap(), None);
+    }
+
+    /// The case an absent file must never be confused with: corruption is a
+    /// refusal, not a silent "nothing held yet".
+    #[test]
+    fn a_corrupt_identity_file_is_refused_not_treated_as_absent() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join(IDENTITY_FILE), b"not json").unwrap();
+        assert!(read_identity(dir.path()).is_err());
     }
 }

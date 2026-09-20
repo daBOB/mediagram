@@ -36,6 +36,14 @@ pub(super) async fn read(
     if total == 0 || offset >= total {
         return Err(CoreError::NotFound("read is past the end of the set".into()));
     }
+    // A zero-length request is trivially satisfied, and must return before
+    // `end` is computed: `end = offset - 1` below is only ever valid because
+    // `len >= 1` guarantees `offset + len - 1 >= offset`. At `len == 0` that
+    // guarantee is gone, `end` can land one below `offset`, and subtracting
+    // `offset` back out of it underflows a `u64`.
+    if len == 0 {
+        return Ok(Vec::new());
+    }
     let end = offset
         .saturating_add(u64::from(len))
         .saturating_sub(1)
@@ -81,4 +89,53 @@ pub(super) async fn read(
             .map_err(|_| CoreError::Network("the download ended before it finished".into()))?;
     }
     Ok(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use rusqlite::Connection;
+
+    use super::*;
+
+    /// A minimal catalog with one done part, just enough for `read` to plan
+    /// against. `read` never queries `sets`, only `parts`, so that table is
+    /// left empty.
+    fn core_with_one_part(dir: &std::path::Path, set_id: &str, part_len: u64) -> std::sync::Arc<Core> {
+        let current = dir.join("catalog").join("current");
+        std::fs::create_dir_all(&current).unwrap();
+        let conn = Connection::open(current.join("library.db")).unwrap();
+        for stmt in mlib_spec::schema::migrations_up_to(mlib_spec::schema::SCHEMA_VERSION) {
+            conn.execute(stmt, []).unwrap();
+        }
+        conn.execute(
+            "INSERT INTO sets(set_id, kind, container, total, part_count, status, created_at, spec_version)
+             VALUES (?1, 'movie', 'mkv', ?2, 1, 'complete', 0, 1)",
+            rusqlite::params![set_id, part_len as i64],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO parts(set_id, idx, byte_offset, byte_length, chat_id, message_id, status)
+             VALUES (?1, 0, 0, ?2, -1001, 100, 'done')",
+            rusqlite::params![set_id, part_len as i64],
+        )
+        .unwrap();
+        Core::new(dir.display().to_string(), 1, "test-hash".into())
+    }
+
+    /// `len == 0` at an in-range, nonzero `offset` is the exact shape that
+    /// underflowed `end - offset` before the early return above existed:
+    /// `end` computed from a zero-length range landed one below `offset`.
+    /// Run under both `cargo test` (a debug-mode underflow panics) and
+    /// `cargo test --release` (it would otherwise wrap to a huge capacity).
+    #[tokio::test]
+    async fn a_zero_length_read_at_a_nonzero_offset_returns_empty() {
+        let dir = tempfile::tempdir().unwrap();
+        let core = core_with_one_part(dir.path(), "01SET0000000000000000001", 1000);
+
+        let bytes = read(&core, "01SET0000000000000000001".into(), 500, 0)
+            .await
+            .unwrap();
+
+        assert!(bytes.is_empty());
+    }
 }

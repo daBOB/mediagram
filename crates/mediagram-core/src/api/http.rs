@@ -43,9 +43,17 @@ mod tests {
     /// The whole point of building our own TLS config: it must actually
     /// complete a handshake, not merely compile and link. `example.com` is
     /// IANA-reserved for exactly this — stable, TLS-terminating, meant to be
-    /// depended on. Needs network egress; there is no way to prove a real
-    /// handshake without one.
+    /// depended on. Needs network egress, so it is not part of the default
+    /// run: `cargo test -p mediagram-core --lib -- --ignored the_client`.
+    ///
+    /// This proves webpki-plus-ring completes a handshake on whatever host
+    /// runs it — nothing more. It says nothing about the platform verifier
+    /// this client is built to avoid: on Linux that verifier is reachable
+    /// and would also pass here, so a green run of this test is not by
+    /// itself evidence that Android's panic is avoided, only that the
+    /// replacement path is not itself broken.
     #[tokio::test]
+    #[ignore = "needs network egress; run with --ignored"]
     async fn the_client_completes_a_real_tls_handshake() {
         let client = client().expect("the client builds");
         let response = client

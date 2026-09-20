@@ -51,7 +51,7 @@ pub(super) async fn refresh_catalog(
     }
 
     let current = catalog::current_dir(core);
-    if let Some(held) = catalog::read_identity(&current) {
+    if let Some(held) = catalog::read_identity(&current)? {
         let offered = catalog::identity_of(&pointer);
         // Never decided from `sha256`: that field is unauthenticated, so a
         // host that wants to suppress an update could set it to the digest
@@ -147,3 +147,7 @@ fn now_unix() -> i64 {
         .map(|d| d.as_secs() as i64)
         .unwrap_or(0)
 }
+
+#[cfg(test)]
+#[path = "refresh_tests.rs"]
+mod tests;
