@@ -52,10 +52,6 @@ gradlePlugin {
             id = "app.android.security.crypto"
             implementationClass = "AndroidSecurityCryptoConventionPlugin"
         }
-        register("androidFeature") {
-            id = "app.android.feature"
-            implementationClass = "AndroidFeatureConventionPlugin"
-        }
         register("androidTest") {
             id = "app.android.test"
             implementationClass = "AndroidTestConventionPlugin"

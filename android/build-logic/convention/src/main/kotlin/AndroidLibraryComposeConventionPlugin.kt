@@ -1,7 +1,7 @@
 /*
  * Convention plugin for Android library with Compose
  * Applies: Compose compiler plugin and configures Compose options
- * Requires: `app.android.library` (or `app.android.feature`) already applied so `com.android.library` runs exactly once.
+ * Requires: `app.android.library` already applied so `com.android.library` runs exactly once.
  */
 
 import com.android.build.api.dsl.LibraryExtension
