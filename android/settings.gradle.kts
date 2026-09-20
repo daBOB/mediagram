@@ -48,6 +48,7 @@ include(":ui-tv")
 include(":feature:catalog")
 include(":feature:player")
 include(":feature:setup")
+include(":feature:system")
 
 // Core modules - shared library code, direction is feature/ui -> core:data -> core:rust
 include(":core:designsystem")

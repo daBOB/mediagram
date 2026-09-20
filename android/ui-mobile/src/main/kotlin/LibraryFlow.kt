@@ -1,16 +1,11 @@
 package ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogViewModel
@@ -69,7 +64,7 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
                 destination = Destination.System,
                 onBack = { showingSystem = false },
                 menu = menuActions,
-            ) { SystemPlaceholder() }
+            ) { SystemScreen() }
         }
 
         collection != null -> {
@@ -103,14 +98,5 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
                 )
             }
         }
-    }
-}
-
-// Stands in for the real system screen until it exists; the destination,
-// the bar and the menu around it are already real.
-@Composable
-private fun SystemPlaceholder() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("System")
     }
 }
