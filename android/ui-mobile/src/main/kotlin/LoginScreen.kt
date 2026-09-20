@@ -16,7 +16,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import designsystem.Spacing
+import login.LoginStep
 import login.LoginUiState
+
+/**
+ * The credential this state asks for, or `null` once there is nothing left
+ * to ask. A rejection re-asks for the step it names rather than the first
+ * one: the core keeps the login and password tokens alive across a wrong
+ * entry, so a retype costs nothing, where dropping back to the phone field
+ * would spend a fresh code request and move the account towards a flood
+ * wait.
+ */
+internal fun promptFor(state: LoginUiState): LoginStep? = when (state) {
+    LoginUiState.NeedsPhone -> LoginStep.PHONE
+    LoginUiState.NeedsCode -> LoginStep.CODE
+    LoginUiState.NeedsPassword -> LoginStep.PASSWORD
+    is LoginUiState.Failed -> state.step
+    LoginUiState.Authorized -> null
+}
 
 @Composable
 fun LoginScreen(
@@ -25,15 +42,18 @@ fun LoginScreen(
     onSubmitCode: (String) -> Unit,
     onSubmitPassword: (String) -> Unit,
 ) {
-    if (state is LoginUiState.Authorized) return
+    val step = promptFor(state) ?: return
 
-    var input by remember(state::class) { mutableStateOf("") }
-    val (label, onSubmit) = when (state) {
-        LoginUiState.NeedsPhone, is LoginUiState.Failed -> "Phone number" to onSubmitPhone
-        LoginUiState.NeedsCode -> "Login code" to onSubmitCode
-        LoginUiState.NeedsPassword -> "Two-factor password" to onSubmitPassword
-        LoginUiState.Authorized -> return
+    // Keyed on the step, not on the state class: a rejection of the code
+    // leaves the step unchanged, so what was typed stays on screen to be
+    // corrected instead of being cleared for a full retype.
+    var input by remember(step) { mutableStateOf("") }
+    val (label, onSubmit) = when (step) {
+        LoginStep.PHONE -> "Phone number" to onSubmitPhone
+        LoginStep.CODE -> "Login code" to onSubmitCode
+        LoginStep.PASSWORD -> "Two-factor password" to onSubmitPassword
     }
+    val isSecret = step == LoginStep.PASSWORD
 
     Column(
         modifier = Modifier.fillMaxSize().padding(Spacing.large),
@@ -46,7 +66,7 @@ fun LoginScreen(
             value = input,
             onValueChange = { input = it },
             label = { Text(label) },
-            visualTransformation = if (state == LoginUiState.NeedsPassword) {
+            visualTransformation = if (isSecret) {
                 PasswordVisualTransformation()
             } else {
                 VisualTransformation.None

@@ -4,20 +4,46 @@ import data.CoreClient
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.SetSummary
 
+/**
+ * [signInFailures] and [passwordFailures] reject that many attempts before
+ * accepting, which is how the real core behaves: it keeps the pending login
+ * and password tokens across a rejection, so the very next call can succeed.
+ * [requestCodeCalls] is counted so a test can prove a retry did not go back
+ * and ask Telegram for another code.
+ */
 class FakeCore(
     private val authorized: Boolean = false,
     private val signInOutcome: AuthOutcome = AuthOutcome.DONE,
     private val requestCodeFails: Boolean = false,
+    private val signInFailures: Int = 0,
+    private val passwordFailures: Int = 0,
 ) : CoreClient {
+
+    var requestCodeCalls = 0
+        private set
+
+    private var signInAttempts = 0
+    private var passwordAttempts = 0
+
     override fun isAuthorized(): Boolean = authorized
 
     override suspend fun requestCode(phone: String): String {
+        requestCodeCalls++
         if (requestCodeFails) error("could not request a code")
         return "token"
     }
 
-    override suspend fun signIn(token: String, code: String): AuthOutcome = signInOutcome
-    override suspend fun checkPassword(password: String) = Unit
+    override suspend fun signIn(token: String, code: String): AuthOutcome {
+        signInAttempts++
+        if (signInAttempts <= signInFailures) error("the code was not accepted")
+        return signInOutcome
+    }
+
+    override suspend fun checkPassword(password: String) {
+        passwordAttempts++
+        if (passwordAttempts <= passwordFailures) error("the password was not accepted")
+    }
+
     override suspend fun refreshCatalog(url: String, keyB64: String): Long = 0
     override fun listSets(): List<SetSummary> = emptyList()
     override fun posterPath(posterKey: String): String? = null

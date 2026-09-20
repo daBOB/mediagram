@@ -16,6 +16,13 @@ import javax.inject.Inject
  * held only for the duration of the call that needs them and are never
  * logged; only the sign-in token, itself not a secret, survives between
  * [submitPhone] and [submitCode].
+ *
+ * A rejection keeps that token: the core deliberately hands the pending
+ * login back on a wrong code and the password step back on a wrong
+ * password, so [submitCode] and [submitPassword] stay callable straight
+ * after one fails. Every failure therefore names the step it happened at,
+ * so a surface can ask for that one credential again instead of restarting
+ * the flow and spending a code request the person did not need.
  */
 @HiltViewModel
 class LoginViewModel @Inject constructor(
@@ -36,7 +43,7 @@ class LoginViewModel @Inject constructor(
                     signInToken = it
                     _state.value = LoginUiState.NeedsCode
                 }
-                .onFailure { _state.value = it.toFailedState() }
+                .onFailure { _state.value = it.failedAt(LoginStep.PHONE) }
         }
     }
 
@@ -50,7 +57,7 @@ class LoginViewModel @Inject constructor(
                         AuthOutcome.PASSWORD_NEEDED -> LoginUiState.NeedsPassword
                     }
                 }
-                .onFailure { _state.value = it.toFailedState() }
+                .onFailure { _state.value = it.failedAt(LoginStep.CODE) }
         }
     }
 
@@ -58,10 +65,10 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { core.checkPassword(password) }
                 .onSuccess { _state.value = LoginUiState.Authorized }
-                .onFailure { _state.value = it.toFailedState() }
+                .onFailure { _state.value = it.failedAt(LoginStep.PASSWORD) }
         }
     }
 }
 
-private fun Throwable.toFailedState(): LoginUiState.Failed =
-    LoginUiState.Failed(message ?: "Sign-in failed")
+private fun Throwable.failedAt(step: LoginStep): LoginUiState.Failed =
+    LoginUiState.Failed(step, message ?: "Sign-in failed")
