@@ -4,19 +4,22 @@ import java.util.Locale
 import model.MediaSet
 
 /**
- * What a file actually is, in one line: `1080p · HDR10 · MKV · HEVC · EAC3
- * · 14.2 GB · 5 parts · 9.4 Mbps`. Mirrors `technicalLine` in the web
- * player's `format.js`, down to the field order and the omissions — a
- * viewer who reads both surfaces should not have to learn two ways of
- * describing one file.
+ * What a file actually is, in one line: `1080p · HDR10 · mkv · hevc · eac3
+ * · 14 GB · 5 parts · 9.4 Mbps`. Mirrors `technicalLine` in the web
+ * player's `format.js`, down to the field order, the omissions, and the
+ * casing — container and codecs are printed as the index stored them, not
+ * uppercased, because a surface that shows `MKV` while the other shows
+ * `mkv` has given a viewer two ways to describe one file. Wherever a
+ * surface wants the shout-case form, it upper-cases at render time, the way
+ * `course-view.js` does — this line stays as stored.
  */
 internal fun technicalLine(set: MediaSet): String =
     listOfNotNull(
         set.quality,
         hdrLabel(set.hdr),
-        set.container.takeIf { it.isNotEmpty() }?.uppercase(Locale.ROOT),
-        set.vcodec?.uppercase(Locale.ROOT),
-        set.acodec?.uppercase(Locale.ROOT),
+        set.container.takeIf { it.isNotEmpty() },
+        set.vcodec?.takeIf { it.isNotEmpty() },
+        set.acodec?.takeIf { it.isNotEmpty() },
         // humanSize(0) is "0 B", a fact about nothing; a set that somehow
         // has no size should stay quiet rather than print it.
         set.totalBytes.takeIf { it > 0 }?.let(::humanSize),
@@ -30,7 +33,7 @@ internal fun technicalLine(set: MediaSet): String =
  * `SDR` is left out on purpose: it is the absence of a fact rather than a
  * fact, and a shelf where every card says `SDR` says nothing at all.
  */
-internal fun hdrLabel(hdr: String?): String? = hdr?.takeIf { it != "SDR" }
+internal fun hdrLabel(hdr: String?): String? = hdr?.takeIf { it.isNotEmpty() && it != "SDR" }
 
 /**
  * The average bitrate of a set, as `9.4 Mbps`.

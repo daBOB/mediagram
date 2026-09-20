@@ -20,7 +20,7 @@ class TechnicalLineTest {
         // (and in `format.js`'s own copy of it) — so this reads "14 GB", not
         // "14.2 GB".
         assertEquals(
-            "1080p · HDR10 · MKV · HEVC · EAC3 · 14 GB · 5 parts · 9.4 Mbps",
+            "1080p · HDR10 · mkv · hevc · eac3 · 14 GB · 5 parts · 9.4 Mbps",
             technicalLine(
                 setFixture(
                     quality = "1080p", hdr = "HDR10", container = "mkv",
@@ -45,9 +45,10 @@ class TechnicalLineTest {
     /** One part is the ordinary case; saying so is noise. */
     @Test
     fun aSinglePartSetDoesNotMentionItsParts() {
-        val line = technicalLine(setFixture(container = "mp4", total = 1_000_000_000, duration = 3_600, partCount = 1))
-
-        assert(!line.contains("part"))
+        assertEquals(
+            "mp4 · 954 MB · 2.2 Mbps",
+            technicalLine(setFixture(container = "mp4", total = 1_000_000_000, duration = 3_600, partCount = 1)),
+        )
     }
 
     /** Under ten the first decimal is the difference between links that carry it. */
@@ -64,20 +65,25 @@ class TechnicalLineTest {
         assertNull(bitrateLabel(totalBytes = 0, durationSeconds = 3_600))
     }
 
-    /** Codecs are printed as a viewer would recognise them, not as stored. */
+    /**
+     * Container and codecs are printed as the index stored them. A surface
+     * that wants the shout-case form upper-cases at render time; this line
+     * does not, so the web and Android read the same file the same way.
+     */
     @Test
-    fun containerAndCodecsAreUpperCased() {
+    fun containerAndCodecsArePrintedAsStored() {
         val line = technicalLine(setFixture(container = "mkv", vcodec = "hevc", acodec = "eac3", total = 1, duration = 1))
 
-        assert(line.contains("MKV · HEVC · EAC3"))
+        assert(line.contains("mkv · hevc · eac3"))
     }
 
     /** A field the index never recorded is left out, not printed empty. */
     @Test
     fun anUnknownFieldIsOmittedRatherThanBlank() {
-        val line = technicalLine(setFixture(container = "mkv", vcodec = null, acodec = null, total = 1, duration = 1))
-
-        assert(!line.contains(" ·  · "))
+        assertEquals(
+            "mkv · 1 B · 0.0 Mbps",
+            technicalLine(setFixture(container = "mkv", vcodec = null, acodec = null, total = 1, duration = 1)),
+        )
     }
 }
 
