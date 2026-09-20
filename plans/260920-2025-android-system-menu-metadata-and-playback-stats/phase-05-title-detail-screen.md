@@ -158,7 +158,7 @@ git commit -m "feat(android): describe a file the way the web player describes i
 - Modify: `android/ui-mobile/src/main/kotlin/LibraryFlow.kt`, `android/ui-mobile/src/main/kotlin/CatalogScreen.kt`, `android/feature/catalog/src/main/kotlin/CatalogViewModel.kt`
 - Modify: `android/core/data/src/main/kotlin/CatalogRepository.kt`, `android/core/model/src/main/kotlin/MediaSet.kt`
 
-**Interfaces — Consumes:** `technicalLine` (Task 1), `CoreClient.showInfo` (phase 2 task 2), `CoreClient.posterPath` and the artwork phase 4 fetches, `LibraryScaffold` (phase 3 task 2).
+**Interfaces — Consumes:** `technicalLine` (Task 1), `CoreClient.showInfo` (phase 2 task 2), `CoreClient.posterPath` and the artwork phase 4 fetches, `LibraryScaffold(destination, onBack, menu, content)` (phase 3 task 2 — takes a `Destination`, not a title string).
 
 - [ ] **Step 1: Carry the new fields through**
 

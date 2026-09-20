@@ -253,7 +253,7 @@ git commit -m "feat(android): count what the byte path actually did"
 - Test: `android/ui-mobile/src/test/kotlin/AppChromeTest.kt`
 
 **Interfaces — Consumes:** nothing from Task 1.
-**Produces:** `@Composable fun LibraryScaffold(title: String, onBack: (() -> Unit)?, menu: MenuActions, content: @Composable () -> Unit)`
+**Produces:** `@Composable fun LibraryScaffold(destination: Destination, onBack: () -> Unit, menu: MenuActions, content: @Composable () -> Unit)` — it derives its title and whether a back arrow appears from the `Destination`, so callers pass the destination rather than a pre-computed title
 and `data class MenuActions(val onSystem: () -> Unit, val onFetchPosters: () -> Unit, val onTmdbKey: () -> Unit, val onStartOver: () -> Unit)`.
 Tasks 3, and phases 4 and 5, all render inside it.
 
