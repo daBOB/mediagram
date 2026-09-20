@@ -134,9 +134,12 @@ class MlibDataSource(private val core: CoreClient?) : BaseDataSource(true) {
          * How much one fetch asks for: two of the 512 KiB chunks Telegram
          * serves, so a fetch keeps every byte it pays for.
          *
-         * Bigger would mean fewer round trips still, but the first read of a
-         * set blocks for the whole of it, and that wait is the gap between
-         * pressing a title and seeing a picture.
+         * Bigger is tempting and was tried. Four megabytes took a 5.8 GB
+         * film from a first frame in three seconds to one in seven, because
+         * the first fetch of a set blocks for the whole of it and nothing
+         * can be decoded until it lands. It bought no throughput in return:
+         * a player buffers ahead and then reads at the speed the film
+         * plays, so the transfer was never what was short.
          */
         const val READ_AHEAD = 1024 * 1024
 

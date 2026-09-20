@@ -66,9 +66,7 @@ pub(super) async fn read(
             .find(|location| location.span.idx == step.part_idx)
             .ok_or_else(|| CoreError::NotFound("set not found".into()))?;
         let channel = channel_ref(&handles, location.chat_id)?;
-        let document = stream::part_document(&client, channel, location.message_id)
-            .await
-            .map_err(|_| CoreError::Network("the part could not be resolved".into()))?;
+        let document = document_for(core, &client, channel, &set_id, location.message_id).await?;
 
         // A separate task drains while `pump_step` runs, so a step whose
         // bytes outgrow the buffer cannot deadlock against a receiver that
@@ -84,6 +82,32 @@ pub(super) async fn read(
             .map_err(|_| CoreError::Network("the download ended before it finished".into()))?;
     }
     Ok(out)
+}
+
+/// The document a part's bytes live in, resolved once per set.
+///
+/// A player reads the same few parts a few hundred times, and resolving is
+/// a round trip every time — a third of the cost of a read that otherwise
+/// fetches two chunks.
+async fn document_for(
+    core: &Core,
+    client: &grammers_client::Client,
+    channel: PeerRef,
+    set_id: &str,
+    message_id: i64,
+) -> Result<grammers_client::media::Document, CoreError> {
+    if let Some(held) = core.state.lock().await.documents.get(set_id, message_id) {
+        return Ok(held);
+    }
+    let document = stream::part_document(client, channel, message_id)
+        .await
+        .map_err(|_| CoreError::Network("the part could not be resolved".into()))?;
+    core.state
+        .lock()
+        .await
+        .documents
+        .put(set_id, message_id, document.clone());
+    Ok(document)
 }
 
 /// How to address the channel a part lives in.
