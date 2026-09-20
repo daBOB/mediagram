@@ -86,6 +86,12 @@ fades, as pure functions. Pure because `ui-mobile` has no Compose test rule:
 Decisions that live in a function can be proved; decisions that live in a
 `LaunchedEffect` cannot, in this module, today.
 
+**`PlayerClock.kt`** — `clockTime(ms)`, the elapsed and total times as a
+viewer reads them. There is no time formatter anywhere in the Kotlin sources
+today, so this is new rather than reused; it mirrors `clockTime` in the web
+player's `format.js` down to dropping the hour when there isn't one, because
+two surfaces over one library should not print a time two ways.
+
 These are separate files rather than more of `PlayerScreen.kt` because that
 file is at 167 lines of the 200 the architecture allows
 (`docs/system-architecture.md` §2), and the bar does not fit in 33.
