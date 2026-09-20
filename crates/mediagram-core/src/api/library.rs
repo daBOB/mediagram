@@ -106,6 +106,22 @@ pub(super) fn handle_for(handles: &mut Handles, entry: LibraryEntry) -> String {
     handle
 }
 
+/// The way to address `chat`, from what this device recorded when it last
+/// listed the account's libraries.
+///
+/// Telegram refuses a channel addressed without an `access_hash` —
+/// `CHANNEL_INVALID`, whoever is asking — and the ambient authority a bare
+/// id carries is only ever enough for a bot or a contact. A channel is
+/// neither. This crate persists the auth key and nothing else, so grammers'
+/// own peer cache is empty on every launch and cannot answer; the map
+/// written beside that key can, and is refreshed every time the list is.
+pub(super) fn peer_for_chat(handles: &Handles, chat: i64) -> Option<PeerRef> {
+    handles
+        .values()
+        .find(|entry| entry.chat == chat)
+        .and_then(LibraryEntry::peer)
+}
+
 pub(super) fn lookup(core: &Core, handle: &str) -> Result<LibraryEntry, CoreError> {
     read(&path(core))?.remove(handle).ok_or_else(|| {
         CoreError::NotFound("this device no longer has that library stored".into())
@@ -246,6 +262,35 @@ mod tests {
 
         let mode = std::fs::metadata(&file).unwrap().permissions().mode();
         assert_eq!(mode & 0o777, 0o600);
+    }
+
+    /// The byte path's whole dependency on this file. Telegram answers a
+    /// channel addressed with its `access_hash` and refuses the same channel
+    /// addressed without one, so a lookup that lost the hash would leave
+    /// every set in the library unplayable while the catalog still listed
+    /// them all.
+    #[test]
+    fn a_recorded_channel_is_addressable_with_the_hash_it_was_recorded_with() {
+        let mut handles = Handles::new();
+        handle_for(&mut handles, entry(-1_001_234_567_890));
+
+        let peer = peer_for_chat(&handles, -1_001_234_567_890).expect("a recorded channel");
+
+        assert_eq!(peer.id.bot_api_dialog_id(), Some(-1_001_234_567_890));
+        assert_eq!(peer.auth.hash(), 7_654_321);
+        assert_ne!(
+            peer.auth,
+            PeerAuth::default(),
+            "ambient authority is refused for a channel, whoever is asking",
+        );
+    }
+
+    #[test]
+    fn a_channel_this_device_never_listed_cannot_be_addressed_from_here() {
+        let mut handles = Handles::new();
+        handle_for(&mut handles, entry(-1_001_234_567_890));
+
+        assert!(peer_for_chat(&handles, -1_001_999_999_999).is_none());
     }
 
     #[test]

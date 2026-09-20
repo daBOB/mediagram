@@ -2,14 +2,14 @@
 //! code `mediagram serve` uses, driving the Telegram transport directly
 //! rather than through an HTTP response body.
 
-use grammers_session::types::PeerId;
+use grammers_session::types::{PeerId, PeerRef};
 use tokio::sync::mpsc;
 
 use crate::catalog as queries;
 use crate::range::{self, ByteRange, PartSpan};
 use crate::stream;
 
-use super::{Core, CoreError, catalog, session};
+use super::{Core, CoreError, catalog, library, session};
 
 /// Chunks buffered between the download and this call's own accumulation.
 /// Matches [`crate::telegram`]'s buffer: enough to keep the download busy
@@ -51,6 +51,9 @@ pub(super) async fn read(
     let steps = range::plan_reads(&spans, &ByteRange { start: offset, end });
 
     let client = session::client(core).await;
+    // Read once, not per part: every part of a set lives in the same
+    // channel, and this is a file on disk.
+    let handles = library::read(&library::path(core))?;
 
     // Clamped to what this read can actually return, not to the caller's
     // raw `len`: an out-of-range `UInt` from Kotlin must not become an
@@ -62,9 +65,7 @@ pub(super) async fn read(
             .iter()
             .find(|location| location.span.idx == step.part_idx)
             .ok_or_else(|| CoreError::NotFound("set not found".into()))?;
-        let channel = PeerId::from_bot_api_dialog_id(location.chat_id)
-            .ok_or_else(|| CoreError::Io("the catalog names an invalid channel".into()))?
-            .to_ambient_ref();
+        let channel = channel_ref(&handles, location.chat_id)?;
         let document = stream::part_document(&client, channel, location.message_id)
             .await
             .map_err(|_| CoreError::Network("the part could not be resolved".into()))?;
@@ -85,11 +86,80 @@ pub(super) async fn read(
     Ok(out)
 }
 
+/// How to address the channel a part lives in.
+///
+/// The recorded `access_hash` is the whole of it. Telegram refuses a channel
+/// addressed without one — `CHANNEL_INVALID` — and the ambient authority a
+/// bare id carries is only ever enough for a bot or a contact, which a
+/// library channel is not. So a channel this device has no record of is said
+/// to be unaddressable here rather than asked for and refused: the answer is
+/// to pick the library again, which is what records it.
+fn channel_ref(handles: &library::Handles, chat_id: i64) -> Result<PeerRef, CoreError> {
+    if PeerId::from_bot_api_dialog_id(chat_id).is_none() {
+        return Err(CoreError::Io("the catalog names an invalid channel".into()));
+    }
+    library::peer_for_chat(handles, chat_id).ok_or_else(|| {
+        CoreError::NotFound(
+            "this device has no way to reach the channel that set is in. \
+             Choose the library again to record it."
+                .into(),
+        )
+    })
+}
+
 #[cfg(test)]
 mod tests {
+    use grammers_session::types::PeerAuth;
     use rusqlite::Connection;
 
     use super::*;
+
+    fn handles_naming(chat: i64, auth: i64) -> library::Handles {
+        let mut handles = library::Handles::new();
+        library::handle_for(
+            &mut handles,
+            library::LibraryEntry {
+                chat,
+                auth,
+                title: "Films".into(),
+            },
+        );
+        handles
+    }
+
+    /// The whole of what makes a set playable. Telegram answers a channel
+    /// addressed with its `access_hash` and refuses the same channel
+    /// addressed without one, so a part resolved against ambient authority
+    /// fails for every set in the library while the catalog still lists
+    /// them all.
+    #[test]
+    fn a_part_is_addressed_with_the_hash_recorded_for_its_channel() {
+        let handles = handles_naming(-1_001_234_567_890, 7_654_321);
+
+        let peer = channel_ref(&handles, -1_001_234_567_890).expect("a recorded channel");
+
+        assert_eq!(peer.auth.hash(), 7_654_321);
+        assert_ne!(peer.auth, PeerAuth::default(), "a channel refuses ambient authority");
+    }
+
+    /// Said plainly, and with the thing to do about it. Asking anyway would
+    /// spend a round trip to be told `CHANNEL_INVALID`, which reaches a
+    /// viewer as "could not be resolved" and names nothing they can act on.
+    #[test]
+    fn a_channel_this_device_never_recorded_says_so_rather_than_asking_anyway() {
+        let handles = handles_naming(-1_001_234_567_890, 7_654_321);
+
+        let refused = channel_ref(&handles, -1_001_999_999_999).unwrap_err();
+
+        assert!(matches!(refused, CoreError::NotFound(_)));
+        assert!(refused.to_string().contains("Choose the library again"));
+    }
+
+    #[test]
+    fn a_chat_id_that_is_not_a_dialog_id_is_a_broken_catalog_not_a_missing_channel() {
+        let refused = channel_ref(&library::Handles::new(), 0).unwrap_err();
+        assert!(matches!(refused, CoreError::Io(_)));
+    }
 
     /// A minimal catalog with one done part, just enough for `read` to plan
     /// against. `read` never queries `sets`, only `parts`, so that table is
