@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import data.CoreProvider
 import data.CoreStorage
+import data.coreSentence
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,7 +13,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import settings.PackageSettings
 import javax.inject.Inject
 
 private const val STORAGE_FAILED = "This device's secure storage could not be read. " +
@@ -39,7 +39,7 @@ private const val RESET_FAILED = "Signing this device out did not finish. " +
 @HiltViewModel
 class SetupViewModel @Inject constructor(
     private val coreProvider: CoreProvider,
-    private val packageSettings: PackageSettings,
+    private val libraries: Libraries,
     private val coreStorage: CoreStorage,
     private val dispatcher: CoroutineDispatcher,
 ) : ViewModel() {
@@ -56,12 +56,13 @@ class SetupViewModel @Inject constructor(
      * ViewModel does not itself run, on every return to the foreground, and
      * after anything else that could have changed what is true on disk.
      *
-     * An error already on screen survives a re-derivation that lands on the
-     * same step: a person coming back to the app has not stopped needing to
-     * know why the last thing they typed was refused.
+     * A step already on screen survives a re-derivation that lands on the
+     * same one: a person coming back to the app has not stopped needing to
+     * know why the last thing they did was refused, and the library step
+     * has a fetched list to lose as well.
      */
     fun recheck() {
-        settle { outstandingStep().keepingTheErrorFrom(_state.value) }
+        settle { outstandingStep().keepingWhatIsOnScreenFrom(_state.value) }
     }
 
     fun submitApplication(apiId: String, apiHash: String) {
@@ -77,16 +78,29 @@ class SetupViewModel @Inject constructor(
         }
     }
 
-    fun submitLibrary(url: String, keyB64: String) {
-        val address = packageUrlOrNull(url)
-        val key = packageKeyOrNull(keyB64)
-        when {
-            address == null -> _state.value = SetupUiState.NeedsLibrary(PACKAGE_URL_ERROR)
-            key == null -> _state.value = SetupUiState.NeedsLibrary(PACKAGE_KEY_ERROR)
-            else -> settle {
-                withContext(dispatcher) { packageSettings.write(address, key) }
-                outstandingStep()
-            }
+    /**
+     * Asks the account which libraries it can read.
+     *
+     * Public because the picker offers it again: unlike every other step,
+     * this one cannot be answered from the device alone, so a network that
+     * was not there a moment ago is a reason to try rather than to start
+     * over. Called once by [settle] when the step first comes up, and after
+     * that only by whoever pressed the button.
+     */
+    fun listLibraries() {
+        settleLibrary(stillListed = null) { SetupUiState.NeedsLibrary(choices = libraries.list()) }
+    }
+
+    /**
+     * Installs the chosen library's catalog and opens it. The list stays in
+     * hand while that happens, because a channel that cannot be installed
+     * sends the person straight back to picking another one.
+     */
+    fun chooseLibrary(handle: String) {
+        val listed = (_state.value as? SetupUiState.NeedsLibrary)?.choices ?: return
+        settleLibrary(stillListed = listed) {
+            libraries.install(handle)
+            outstandingStep()
         }
     }
 
@@ -94,8 +108,9 @@ class SetupViewModel @Inject constructor(
      * Back to step one, and back for real. Three things go together,
      * because leaving any one of them behind leaves the device in a state
      * no first run can produce: the auth key file that is the actual
-     * session plus the catalog decrypted under the old package key, the
-     * package address and key, and the Telegram application identity.
+     * session plus the catalog read out of the chosen channel and the names
+     * this device minted for those channels, the chosen library, and the
+     * Telegram application identity.
      *
      * Files first, credentials last. A Telegram auth key binds to the
      * datacentre, not to the api id it was obtained under, so a session
@@ -107,7 +122,7 @@ class SetupViewModel @Inject constructor(
     fun startOver() {
         settle(onFailure = RESET_FAILED) {
             coreStorage.clear()
-            withContext(dispatcher) { packageSettings.clear() }
+            libraries.forget()
             coreProvider.forget()
             outstandingStep()
         }
@@ -125,6 +140,40 @@ class SetupViewModel @Inject constructor(
                 // provider, and none of that belongs on a setup screen.
                 SetupUiState.Failed(onFailure)
             }
+            // The one step that cannot show itself without asking the
+            // network first starts asking the moment it becomes the
+            // outstanding one. Matched on the freshly derived value — no
+            // list, no error — so a re-derivation that kept a list already
+            // on screen does not go and fetch it again.
+            if (_state.value == SetupUiState.NeedsLibrary()) listLibraries()
+        }
+    }
+
+    /**
+     * Runs one library question, keeping a failure on the step it belongs
+     * to rather than ending the flow.
+     *
+     * A core error is the channel answering something a person can act on —
+     * nothing pinned there, or more than one thing — so it goes back beside
+     * [stillListed] with the list intact. Anything else is this device's
+     * own storage refusing, which no amount of choosing differently fixes,
+     * and that is what [SetupUiState.Failed] and its start-over are for.
+     */
+    private fun settleLibrary(
+        stillListed: List<LibraryOption>?,
+        work: suspend () -> SetupUiState,
+    ) {
+        viewModelScope.launch {
+            _state.value = SetupUiState.NeedsLibrary()
+            _state.value = try {
+                work()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                e.coreSentence()
+                    ?.let { SetupUiState.NeedsLibrary(choices = stillListed, error = it) }
+                    ?: SetupUiState.Failed(STORAGE_FAILED)
+            }
         }
     }
 
@@ -135,13 +184,13 @@ class SetupViewModel @Inject constructor(
         // more, and this is the only way to notice. Off the caller's thread
         // because answering it reads a file.
         if (!withContext(dispatcher) { core.isAuthorized() }) return SetupUiState.NeedsSignIn
-        if (withContext(dispatcher) { packageSettings.read() } == null) return SetupUiState.NeedsLibrary()
+        if (libraries.chosen() == null) return SetupUiState.NeedsLibrary()
         return SetupUiState.Ready
     }
 }
 
-/** Returns [previous] unchanged when it is the same step carrying a message. */
-private fun SetupUiState.keepingTheErrorFrom(previous: SetupUiState): SetupUiState = when {
+/** Returns [previous] unchanged when it is the same step with something to say. */
+private fun SetupUiState.keepingWhatIsOnScreenFrom(previous: SetupUiState): SetupUiState = when {
     this is SetupUiState.NeedsApplication && previous is SetupUiState.NeedsApplication -> previous
     this is SetupUiState.NeedsLibrary && previous is SetupUiState.NeedsLibrary -> previous
     else -> this

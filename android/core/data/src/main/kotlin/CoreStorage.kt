@@ -17,12 +17,14 @@ import java.io.IOException
  */
 interface CoreStorage {
     /**
-     * Deletes the persisted sign-in and the decrypted catalog together.
+     * Deletes the persisted sign-in, the decrypted catalog and the names
+     * this device minted for the channels it could read, all together.
      *
-     * Together on purpose: a catalog is the contents of one library,
-     * decrypted with one key. Keeping it after the key that produced it has
-     * been discarded would show the next person to set this device up a
-     * library they cannot refresh and were never given.
+     * Together on purpose: a catalog is the contents of one library, read
+     * by one account. Keeping it after that account has been signed out
+     * would show the next person to set this device up a library they were
+     * never given, and keeping the names would leave a list of that
+     * account's channels behind on a device it no longer has a session on.
      */
     suspend fun clear()
 }
@@ -67,11 +69,16 @@ class FileCoreStorage(
             if (catalog.exists() && !catalog.deleteRecursively()) {
                 throw IOException("the stored library could not be deleted")
             }
+            val libraries = File(dataDir, LIBRARIES_FILE)
+            if (libraries.exists() && !libraries.delete()) {
+                throw IOException("the stored list of libraries could not be deleted")
+            }
         }
     }
 
     private companion object {
         const val SESSION_FILE = "session.key"
         const val CATALOG_DIR = "catalog"
+        const val LIBRARIES_FILE = "libraries.json"
     }
 }

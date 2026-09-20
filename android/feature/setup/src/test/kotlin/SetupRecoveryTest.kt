@@ -26,9 +26,8 @@ class SetupRecoveryTest {
     @Test
     fun startingOverClearsTheIdentityTheLibraryAndTheSessionTogether() = runTest {
         val fixture = SetupFixture()
-        fixture.telegram.write(1234, WELL_FORMED_HASH)
-        fixture.core.authorized = true
-        fixture.library.write(LIBRARY_URL, WELL_FORMED_KEY)
+        fixture.signedIn()
+        fixture.library.write("a1b2c3")
         val vm = fixture.viewModel()
 
         vm.startOver()
@@ -43,6 +42,26 @@ class SetupRecoveryTest {
     }
 
     /**
+     * Storage refusing is not a channel refusing. A keystore that will not
+     * take the chosen handle is past what picking differently can fix, so
+     * it has to land on the state that offers the way out rather than back
+     * on the list, where every further pick would fail the same way.
+     */
+    @Test
+    fun aChoiceThatCannotBeStoredOffersTheWayOutRatherThanThePickerAgain() = runTest {
+        val fixture = SetupFixture(
+            core = FakeCore(libraries = listOf(choice("Films", handle = "h-films"))),
+            library = RefusingLibrarySettings(),
+        )
+        fixture.signedIn()
+        val vm = fixture.viewModel()
+
+        vm.chooseLibrary("h-films")
+
+        assertIs<SetupUiState.Failed>(vm.state.value)
+    }
+
+    /**
      * A Telegram auth key binds to the datacentre, not to the api id it was
      * obtained under. So a session left on disk with no identity beside it
      * is inherited wholesale by whatever identity is typed in next — which
@@ -52,9 +71,8 @@ class SetupRecoveryTest {
     @Test
     fun aResetThatCannotDeleteTheSessionKeepsTheIdentityAndSaysSo() = runTest {
         val fixture = SetupFixture(storage = InMemoryCoreStorage(failWith = IllegalStateException("read-only")))
-        fixture.telegram.write(1234, WELL_FORMED_HASH)
-        fixture.core.authorized = true
-        fixture.library.write(LIBRARY_URL, WELL_FORMED_KEY)
+        fixture.signedIn()
+        fixture.library.write("a1b2c3")
         val vm = fixture.viewModel()
 
         vm.startOver()

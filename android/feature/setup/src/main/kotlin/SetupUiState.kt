@@ -22,8 +22,26 @@ sealed interface SetupUiState {
     /** Step two: phone, code and any two-factor password, through the login flow. */
     data object NeedsSignIn : SetupUiState
 
-    /** Step three: the package address and the key that decrypts it. */
-    data class NeedsLibrary(val error: String? = null) : SetupUiState
+    /**
+     * Step three: which of this account's libraries the device reads.
+     *
+     * The two fields say between them where the step has got to, because
+     * this is the one question that cannot be answered without asking
+     * Telegram first:
+     *
+     * - no choices and no error — the list is being fetched, or a chosen
+     *   library is being installed; either way there is nothing to do but
+     *   wait.
+     * - no choices and an error — the list could not be fetched, and the
+     *   only way on is to ask again.
+     * - choices — pick one. An error beside them explains why the last
+     *   pick did not take, and the list stays on screen because picking
+     *   again is exactly what the person should do next.
+     */
+    data class NeedsLibrary(
+        val choices: List<LibraryOption>? = null,
+        val error: String? = null,
+    ) : SetupUiState
 
     /** Everything is stored and the session is live; the catalog can open. */
     data object Ready : SetupUiState

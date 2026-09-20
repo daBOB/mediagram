@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import data.CoreProvider
+import data.coreSentence
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -97,5 +98,10 @@ class LoginViewModel @Inject constructor(
     }
 }
 
+/**
+ * The core writes its refusals to be read — "that code was not accepted" —
+ * and the generated exception's own message renders as `v1=` and the field.
+ * The sentence inside it is the one thing worth putting on screen.
+ */
 private fun Throwable.failedAt(step: LoginStep): LoginUiState.Failed =
-    LoginUiState.Failed(step, message ?: "Sign-in failed")
+    LoginUiState.Failed(step, coreSentence() ?: message ?: "Sign-in failed")

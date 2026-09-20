@@ -2,6 +2,7 @@ package data
 
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.Core
+import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SetSummary
 
 /** Delegates every call straight through to the generated native core. */
@@ -14,6 +15,10 @@ class DefaultCoreClient(private val core: Core) : CoreClient {
     override suspend fun signIn(token: String, code: String): AuthOutcome = core.signIn(token, code)
 
     override suspend fun checkPassword(password: String) = core.checkPassword(password)
+
+    override suspend fun listLibraries(): List<LibraryChoice> = core.listLibraries()
+
+    override suspend fun refreshLibrary(handle: String): Long = core.refreshLibrary(handle).toLong()
 
     override suspend fun refreshCatalog(url: String, keyB64: String): Long =
         core.refreshCatalog(url, keyB64).toLong()

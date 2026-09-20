@@ -3,6 +3,7 @@ package playback
 import data.CoreClient
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.CoreException
+import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SetSummary
 
 /**
@@ -21,6 +22,8 @@ class FakeCore(
     override suspend fun requestCode(phone: String): String = "token"
     override suspend fun signIn(token: String, code: String): AuthOutcome = AuthOutcome.DONE
     override suspend fun checkPassword(password: String) = Unit
+    override suspend fun listLibraries(): List<LibraryChoice> = emptyList()
+    override suspend fun refreshLibrary(handle: String): Long = 0
     override suspend fun refreshCatalog(url: String, keyB64: String): Long = 0
     override fun listSets(): List<SetSummary> = emptyList()
     override fun posterPath(posterKey: String): String? = null

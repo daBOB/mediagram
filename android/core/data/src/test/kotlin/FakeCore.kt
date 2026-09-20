@@ -3,19 +3,33 @@ package data
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
-import settings.InMemoryPackageSettings
-import settings.PackageSettings
+import settings.InMemoryLibrarySettings
+import settings.LibrarySettings
 import uniffi.mediagram_core.AuthOutcome
+import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SetSummary
 
 class FakeCore(
     private val sets: List<SetSummary> = emptyList(),
     private val refreshResult: Long = 0L,
+    private val libraries: List<LibraryChoice> = emptyList(),
 ) : CoreClient {
+
+    /** Which handle the last refresh was asked for, or `null` if none was. */
+    var refreshedHandle: String? = null
+        private set
+
     override fun isAuthorized(): Boolean = true
     override suspend fun requestCode(phone: String): String = "token"
     override suspend fun signIn(token: String, code: String): AuthOutcome = AuthOutcome.DONE
     override suspend fun checkPassword(password: String) = Unit
+    override suspend fun listLibraries(): List<LibraryChoice> = libraries
+
+    override suspend fun refreshLibrary(handle: String): Long {
+        refreshedHandle = handle
+        return refreshResult
+    }
+
     override suspend fun refreshCatalog(url: String, keyB64: String): Long = refreshResult
     override fun listSets(): List<SetSummary> = sets
     override fun posterPath(posterKey: String): String? = null
@@ -73,6 +87,5 @@ fun summary(
     partCount = partCount.toUInt(),
 )
 
-fun settingsWithCredentials(): PackageSettings = InMemoryPackageSettings().apply {
-    runBlocking { write("https://example.com/latest.json", "key-material") }
-}
+fun settingsWithAChosenLibrary(handle: String = "a1b2c3"): LibrarySettings =
+    InMemoryLibrarySettings().apply { runBlocking { write(handle) } }

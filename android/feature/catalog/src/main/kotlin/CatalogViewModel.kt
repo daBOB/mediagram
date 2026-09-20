@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import data.CatalogRepository
+import data.coreSentence
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flow
@@ -28,7 +29,10 @@ class CatalogViewModel @Inject constructor(
         emit(CatalogUiState.Loading)
         val failure = repository.refresh().exceptionOrNull()
         if (failure != null) {
-            emit(CatalogUiState.Failed(failure.message ?: "Could not refresh the library"))
+            // What the core says about a channel is written to be read —
+            // nothing pinned there, and what to run about it. Its own
+            // message is the bindings' field name and a value.
+            emit(CatalogUiState.Failed(failure.coreSentence() ?: failure.message ?: "Could not refresh the library"))
             return@flow
         }
         val shelves = groupIntoShelves(repository.sets())

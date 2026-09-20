@@ -2,7 +2,7 @@ package data
 
 import model.Kind
 import model.MediaSet
-import settings.PackageSettings
+import settings.LibrarySettings
 import uniffi.mediagram_core.SetSummary
 
 interface CatalogRepository {
@@ -21,12 +21,18 @@ interface CatalogRepository {
  */
 class DefaultCatalogRepository(
     private val coreProvider: CoreProvider,
-    private val settings: PackageSettings,
+    private val settings: LibrarySettings,
 ) : CatalogRepository {
 
+    /**
+     * Re-reads the index pinned in the chosen library's channel. The handle
+     * is read per call rather than held, for the same reason the core is:
+     * a "start over" replaces both, and a repository that had captured
+     * either would go on refreshing a library the person had given back.
+     */
     override suspend fun refresh(): Result<Int> = runCatching {
-        val credentials = settings.read() ?: error("No package credentials configured")
-        coreProvider.awaitCore().refreshCatalog(credentials.url, credentials.keyB64).toInt()
+        val handle = settings.read() ?: error("No library has been chosen on this device")
+        coreProvider.awaitCore().refreshLibrary(handle).toInt()
     }
 
     override suspend fun sets(): List<MediaSet> {

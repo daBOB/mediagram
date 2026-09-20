@@ -82,7 +82,12 @@ private fun SetupStep(state: SetupUiState, viewModel: SetupViewModel) {
         }
 
         is SetupUiState.NeedsLibrary -> WithStartOver(viewModel::startOver) {
-            SettingsScreen(error = state.error, onSave = viewModel::submitLibrary)
+            LibraryScreen(
+                choices = state.choices,
+                error = state.error,
+                onChoose = viewModel::chooseLibrary,
+                onLookAgain = viewModel::listLibraries,
+            )
         }
 
         // Nothing here can be answered by trying the same thing again, so

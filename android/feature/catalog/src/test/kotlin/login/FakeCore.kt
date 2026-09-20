@@ -5,6 +5,7 @@ import data.CoreProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import uniffi.mediagram_core.AuthOutcome
+import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SetSummary
 
 /**
@@ -47,6 +48,8 @@ class FakeCore(
         if (passwordAttempts <= passwordFailures) error("the password was not accepted")
     }
 
+    override suspend fun listLibraries(): List<LibraryChoice> = emptyList()
+    override suspend fun refreshLibrary(handle: String): Long = 0
     override suspend fun refreshCatalog(url: String, keyB64: String): Long = 0
     override fun listSets(): List<SetSummary> = emptyList()
     override fun posterPath(posterKey: String): String? = null

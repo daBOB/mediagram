@@ -13,9 +13,9 @@ import data.DefaultCatalogRepository
 import data.FileCoreStorage
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import settings.EncryptedPackageSettings
+import settings.EncryptedLibrarySettings
 import settings.EncryptedTelegramSettings
-import settings.PackageSettings
+import settings.LibrarySettings
 import settings.TelegramSettings
 import javax.inject.Singleton
 
@@ -34,8 +34,8 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun providePackageSettings(@ApplicationContext context: Context): PackageSettings =
-        EncryptedPackageSettings(context)
+    fun provideLibrarySettings(@ApplicationContext context: Context): LibrarySettings =
+        EncryptedLibrarySettings(context)
 
     @Provides
     @Singleton
@@ -55,6 +55,6 @@ object DataModule {
     @Singleton
     fun provideCatalogRepository(
         coreProvider: CoreProvider,
-        settings: PackageSettings,
+        settings: LibrarySettings,
     ): CatalogRepository = DefaultCatalogRepository(coreProvider, settings)
 }
