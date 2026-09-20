@@ -3,6 +3,8 @@ package playback
 import android.content.Context
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.test.runTest
+import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import kotlin.test.Test
@@ -16,8 +18,13 @@ import kotlin.test.assertTrue
 @RunWith(RobolectricTestRunner::class)
 class PlayerFactoryTest {
 
+    @Before
+    fun resetTheSharedCache() {
+        CacheProvider.resetForTest()
+    }
+
     @Test
-    fun theCacheWrapsTheMlibSource() {
+    fun theCacheWrapsTheMlibSource() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
 
         val factory = cacheDataSourceFactory(context, FakeCore())

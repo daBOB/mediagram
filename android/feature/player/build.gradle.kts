@@ -17,4 +17,8 @@ dependencies {
     implementation(project(":core:playback"))
 
     testImplementation(libs.findLibrary("mockk").get())
+    // DefaultPlayerHandle.open() builds a real android.net.Uri (via
+    // playback.setUri); the plain unit-test android.jar stub throws for
+    // it, so its test runs under Robolectric rather than the bare JVM.
+    testImplementation(libs.findLibrary("robolectric").get())
 }

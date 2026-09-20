@@ -1,11 +1,12 @@
 package player
 
 import androidx.media3.common.Player
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 class FakePlayerHandle : PlayerHandle {
 
-    override val player: Player
-        get() = throw UnsupportedOperationException("not exercised by this fake")
+    override val player: StateFlow<Player?> = MutableStateFlow(null)
 
     private var listener: PlayerHandle.Listener? = null
 

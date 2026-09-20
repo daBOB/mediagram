@@ -8,15 +8,24 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import data.CoreClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import playback.buildPlayer
 import player.DefaultPlayerHandle
 import player.PlayerHandle
-import playback.buildPlayer
 import javax.inject.Singleton
 
 /**
- * One [ExoPlayer] for the whole process: this is a single-player app, so
- * there is nothing to gain from a per-screen instance, and a shared one
- * means only one decoder and one cache reader are ever alive at once.
+ * `buildPlayer` does real disk/database I/O building the cache. Starting
+ * it here with `async`, rather than calling it directly from a plain
+ * `@Provides` function, means Hilt's synchronous resolution of
+ * [PlayerHandle] — triggered by `hiltViewModel()` during composition on
+ * main — only ever starts the work and hands back a handle to it; nothing
+ * in this module blocks waiting for the result. [DefaultPlayerHandle]
+ * awaits the [Deferred] itself, off main, before touching the player.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -24,10 +33,24 @@ object PlaybackModule {
 
     @Provides
     @Singleton
-    fun provideExoPlayer(@ApplicationContext context: Context, core: CoreClient): ExoPlayer =
-        buildPlayer(context, core)
+    fun providePlaybackScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
+    // Deferred<out T>'s declaration-site variance compiles to Java's
+    // Deferred<? extends ExoPlayer>, which Dagger's binding graph treats
+    // as a different type from the plain Deferred<ExoPlayer> a consumer
+    // asks for; @JvmSuppressWildcards drops the wildcard so the two match.
+    @Provides
+    @Singleton
+    fun provideExoPlayerDeferred(
+        @ApplicationContext context: Context,
+        core: CoreClient,
+        scope: CoroutineScope,
+    ): @JvmSuppressWildcards Deferred<ExoPlayer> = scope.async { buildPlayer(context, core) }
 
     @Provides
     @Singleton
-    fun providePlayerHandle(player: ExoPlayer): PlayerHandle = DefaultPlayerHandle(player)
+    fun providePlayerHandle(
+        playerDeferred: @JvmSuppressWildcards Deferred<ExoPlayer>,
+        scope: CoroutineScope,
+    ): PlayerHandle = DefaultPlayerHandle(playerDeferred, scope)
 }

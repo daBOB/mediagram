@@ -1,6 +1,7 @@
 package player
 
 import androidx.lifecycle.ViewModel
+import androidx.media3.common.Player
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,8 +17,12 @@ class PlayerViewModel @Inject constructor(
     private val _state = MutableStateFlow<PlayerUiState>(PlayerUiState.Preparing)
     val state: StateFlow<PlayerUiState> = _state.asStateFlow()
 
-    /** Handed straight to `PlayerSurface` by the UI layer; not part of [state]. */
-    val player get() = handle.player
+    /**
+     * Handed straight to `PlayerSurface` by the UI layer once non-null;
+     * not part of [state] — [state] stays `Preparing` on its own account
+     * while this is still null.
+     */
+    val player: StateFlow<Player?> = handle.player
 
     init {
         handle.setListener(this)

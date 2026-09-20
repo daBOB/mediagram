@@ -1,6 +1,7 @@
 package player
 
 import androidx.media3.common.Player
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Abstracts a real ExoPlayer so [PlayerViewModel] is testable on the JVM
@@ -9,8 +10,14 @@ import androidx.media3.common.Player
  * test.
  */
 interface PlayerHandle {
-    /** The underlying player, handed straight to `PlayerSurface` by the UI layer. */
-    val player: Player
+    /**
+     * The underlying player, handed straight to `PlayerSurface` by the UI
+     * layer once it's non-null. Null until the player has finished
+     * building on a background thread — the UI layer is expected to
+     * render nothing (the ViewModel's own `Preparing` state already
+     * covers this) until it arrives.
+     */
+    val player: StateFlow<Player?>
 
     fun open(setId: String)
     fun setListener(listener: Listener?)
