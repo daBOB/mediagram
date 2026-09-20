@@ -20,4 +20,5 @@ class FakeCore(var authorized: Boolean = false) : CoreClient {
     override fun posterPath(posterKey: String): String? = null
     override fun totalSize(setId: String): Long = 0
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray = ByteArray(0)
+    override fun close() = Unit
 }

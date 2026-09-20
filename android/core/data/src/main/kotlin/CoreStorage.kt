@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 
 /**
  * The state the native core keeps for itself, under the data directory it
@@ -26,14 +27,20 @@ interface CoreStorage {
     suspend fun clear()
 }
 
-/** In-memory implementation for tests; nothing here ever touches disk. */
-class InMemoryCoreStorage : CoreStorage {
+/**
+ * In-memory implementation for tests; nothing here ever touches disk.
+ * [failWith] stands in for a delete that does not work — a read-only file,
+ * a directory a restore left owned by nobody — which is the case the reset
+ * path has to survive rather than half-finish.
+ */
+class InMemoryCoreStorage(private val failWith: Exception? = null) : CoreStorage {
 
     @Volatile
     var cleared: Boolean = false
         private set
 
     override suspend fun clear() {
+        failWith?.let { throw it }
         cleared = true
     }
 }
@@ -43,10 +50,23 @@ class FileCoreStorage(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : CoreStorage {
 
+    /**
+     * Both deletes report whether they worked, and both answers are
+     * checked. A delete that silently failed would leave the app back at
+     * the first step with a live auth key still on disk, and the next
+     * identity typed in would inherit the previous account's session —
+     * which is the one outcome this whole path exists to prevent.
+     */
     override suspend fun clear() {
         withContext(dispatcher) {
-            File(dataDir, SESSION_FILE).delete()
-            File(dataDir, CATALOG_DIR).deleteRecursively()
+            val session = File(dataDir, SESSION_FILE)
+            if (session.exists() && !session.delete()) {
+                throw IOException("the stored sign-in could not be deleted")
+            }
+            val catalog = File(dataDir, CATALOG_DIR)
+            if (catalog.exists() && !catalog.deleteRecursively()) {
+                throw IOException("the stored library could not be deleted")
+            }
         }
     }
 

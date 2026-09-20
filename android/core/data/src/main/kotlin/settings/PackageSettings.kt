@@ -40,9 +40,11 @@ class InMemoryPackageSettings : PackageSettings {
  * keystore-guarded master key. The URL is stored alongside it for
  * convenience only; it carries no confidentiality requirement of its own.
  */
-class EncryptedPackageSettings(context: Context) : PackageSettings {
+class EncryptedPackageSettings(private val context: Context) : PackageSettings {
 
-    private val preferences = encryptedPreferences(context, PREFS_FILE_NAME)
+    // Opened on first use, not in the constructor: see EncryptedTelegramSettings
+    // for why a keystore failure must not happen where nothing can catch it.
+    private val preferences by lazy { encryptedPreferences(context, PREFS_FILE_NAME) }
 
     override suspend fun read(): PackageCredentials? {
         val url = preferences.getString(KEY_URL, null) ?: return null

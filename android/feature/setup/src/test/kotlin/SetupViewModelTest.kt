@@ -1,21 +1,12 @@
 package setup
 
-import data.InMemoryCoreStorage
-import data.StoredCoreProvider
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
-import settings.InMemoryPackageSettings
-import settings.InMemoryTelegramSettings
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
-
-private const val WELL_FORMED_HASH = "0123456789abcdef0123456789abcdef"
-private const val WELL_FORMED_KEY = "TfDJPK7L9tF2sVQm0aYcXbNrHgEuZiWoS4lKpQdRt1A="
-private const val LIBRARY_URL = "https://example.com/latest.json"
 
 /**
  * A device is one of a handful of arrangements of three stored things, and
@@ -28,76 +19,70 @@ class SetupViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val telegram = InMemoryTelegramSettings()
-    private val library = InMemoryPackageSettings()
-    private val storage = InMemoryCoreStorage()
-    private val core = FakeCore()
-
-    private fun viewModel() =
-        SetupViewModel(StoredCoreProvider(telegram) { core }, library, storage)
+    private val fixture = SetupFixture()
 
     @Test
     fun aFreshInstallAsksForTheTelegramApplication() = runTest {
-        assertIs<SetupUiState.NeedsApplication>(viewModel().state.value)
+        assertIs<SetupUiState.NeedsApplication>(fixture.viewModel().state.value)
     }
 
     @Test
     fun anIdentityWithNoSessionAsksForSignIn() = runTest {
-        telegram.write(1234, WELL_FORMED_HASH)
+        fixture.telegram.write(1234, WELL_FORMED_HASH)
 
-        assertEquals(SetupUiState.NeedsSignIn, viewModel().state.value)
+        assertEquals(SetupUiState.NeedsSignIn, fixture.viewModel().state.value)
     }
 
     @Test
     fun aSignedInDeviceWithNoLibraryAsksForTheLibrary() = runTest {
-        telegram.write(1234, WELL_FORMED_HASH)
-        core.authorized = true
+        fixture.telegram.write(1234, WELL_FORMED_HASH)
+        fixture.core.authorized = true
 
-        assertIs<SetupUiState.NeedsLibrary>(viewModel().state.value)
+        assertIs<SetupUiState.NeedsLibrary>(fixture.viewModel().state.value)
     }
 
     @Test
     fun aDeviceWithEverythingStoredOpensTheCatalog() = runTest {
-        telegram.write(1234, WELL_FORMED_HASH)
-        core.authorized = true
-        library.write(LIBRARY_URL, WELL_FORMED_KEY)
+        fixture.telegram.write(1234, WELL_FORMED_HASH)
+        fixture.core.authorized = true
+        fixture.library.write(LIBRARY_URL, WELL_FORMED_KEY)
 
-        assertEquals(SetupUiState.Ready, viewModel().state.value)
+        assertEquals(SetupUiState.Ready, fixture.viewModel().state.value)
     }
 
     @Test
     fun answeringTheFirstStepMovesOnToSigningIn() = runTest {
-        val vm = viewModel()
+        val vm = fixture.viewModel()
 
         vm.submitApplication("1234", WELL_FORMED_HASH)
 
         assertEquals(SetupUiState.NeedsSignIn, vm.state.value)
-        assertEquals(1234, telegram.read()?.apiId)
+        assertEquals(1234, fixture.telegram.read()?.apiId)
     }
 
     @Test
     fun aMalformedApiHashIsRejectedBeforeAnythingIsStored() = runTest {
-        val vm = viewModel()
+        val vm = fixture.viewModel()
 
         vm.submitApplication("1234", "not a hash")
 
         assertIs<SetupUiState.NeedsApplication>(vm.state.value)
-        assertNull(telegram.read(), "a value that failed its check must not reach storage")
+        assertNull(fixture.telegram.read(), "a value that failed its check must not reach storage")
     }
 
     @Test
     fun anApiIdThatIsNotANumberIsRejectedBeforeAnythingIsStored() = runTest {
-        val vm = viewModel()
+        val vm = fixture.viewModel()
 
         vm.submitApplication("my application", WELL_FORMED_HASH)
 
         assertIs<SetupUiState.NeedsApplication>(vm.state.value)
-        assertNull(telegram.read())
+        assertNull(fixture.telegram.read())
     }
 
     @Test
     fun aRejectedApiHashIsNeverQuotedBackOnScreen() = runTest {
-        val vm = viewModel()
+        val vm = fixture.viewModel()
         val typed = "0123456789abcdef0123456789abcdefTOOLONG"
 
         vm.submitApplication("1234", typed)
@@ -108,54 +93,55 @@ class SetupViewModelTest {
 
     @Test
     fun aMalformedLibraryKeyIsRejectedBeforeAnythingIsStored() = runTest {
-        telegram.write(1234, WELL_FORMED_HASH)
-        core.authorized = true
-        val vm = viewModel()
+        fixture.telegram.write(1234, WELL_FORMED_HASH)
+        fixture.core.authorized = true
+        val vm = fixture.viewModel()
 
         vm.submitLibrary(LIBRARY_URL, "not a key")
 
         assertIs<SetupUiState.NeedsLibrary>(vm.state.value)
-        assertNull(library.read())
+        assertNull(fixture.library.read())
     }
 
     @Test
     fun aLibraryAddressWithNoSchemeIsRejectedBeforeAnythingIsStored() = runTest {
-        telegram.write(1234, WELL_FORMED_HASH)
-        core.authorized = true
-        val vm = viewModel()
+        fixture.telegram.write(1234, WELL_FORMED_HASH)
+        fixture.core.authorized = true
+        val vm = fixture.viewModel()
 
         vm.submitLibrary("example.com/latest.json", WELL_FORMED_KEY)
 
         assertIs<SetupUiState.NeedsLibrary>(vm.state.value)
-        assertNull(library.read())
+        assertNull(fixture.library.read())
     }
 
     @Test
     fun aSessionInvalidatedElsewhereFallsBackToSigningInRatherThanStranding() = runTest {
-        telegram.write(1234, WELL_FORMED_HASH)
-        core.authorized = true
-        library.write(LIBRARY_URL, WELL_FORMED_KEY)
-        val vm = viewModel()
+        fixture.telegram.write(1234, WELL_FORMED_HASH)
+        fixture.core.authorized = true
+        fixture.library.write(LIBRARY_URL, WELL_FORMED_KEY)
+        val vm = fixture.viewModel()
         assertEquals(SetupUiState.Ready, vm.state.value)
 
-        core.authorized = false
+        fixture.core.authorized = false
         vm.recheck()
 
         assertEquals(SetupUiState.NeedsSignIn, vm.state.value)
     }
 
+    /**
+     * Returning to the foreground re-derives the step, and that must not
+     * wipe the reason the last thing typed was refused — a person coming
+     * back has not stopped needing to read it.
+     */
     @Test
-    fun startingOverClearsTheIdentityTheLibraryAndTheSessionTogether() = runTest {
-        telegram.write(1234, WELL_FORMED_HASH)
-        core.authorized = true
-        library.write(LIBRARY_URL, WELL_FORMED_KEY)
-        val vm = viewModel()
+    fun aMessageAlreadyOnScreenSurvivesComingBackToTheApp() = runTest {
+        val vm = fixture.viewModel()
+        vm.submitApplication("1234", "not a hash")
+        val shown = assertIs<SetupUiState.NeedsApplication>(vm.state.value).error
 
-        vm.startOver()
+        vm.recheck()
 
-        assertNull(telegram.read())
-        assertNull(library.read())
-        assertTrue(storage.cleared, "forgetting the credentials leaves a working session behind on its own")
-        assertIs<SetupUiState.NeedsApplication>(vm.state.value)
+        assertEquals(shown, assertIs<SetupUiState.NeedsApplication>(vm.state.value).error)
     }
 }

@@ -9,6 +9,7 @@ import dagger.hilt.components.SingletonComponent
 import data.CoreProvider
 import data.DefaultCoreClient
 import data.StoredCoreProvider
+import kotlinx.coroutines.CoroutineDispatcher
 import settings.TelegramSettings
 import uniffi.mediagram_core.Core
 import javax.inject.Singleton
@@ -29,7 +30,8 @@ object CoreModule {
     fun provideCoreProvider(
         @ApplicationContext context: Context,
         settings: TelegramSettings,
-    ): CoreProvider = StoredCoreProvider(settings) { credentials ->
+        dispatcher: CoroutineDispatcher,
+    ): CoreProvider = StoredCoreProvider(settings, dispatcher) { credentials ->
         DefaultCoreClient(
             Core(
                 dataDir = context.filesDir.absolutePath,

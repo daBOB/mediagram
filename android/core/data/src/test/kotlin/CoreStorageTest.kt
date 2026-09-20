@@ -5,7 +5,9 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
 import java.io.File
+import java.io.IOException
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 
 /**
@@ -45,5 +47,20 @@ class CoreStorageTest {
         storage().clear()
 
         assertFalse(File(dataDir.root, "session.key").exists())
+    }
+
+    /**
+     * `delete()` returns a Boolean and a discarded one is a silent
+     * failure: the app would go back to the first step with a live auth key
+     * still on disk, and the next identity typed in would inherit the
+     * previous account's session. A directory with something in it is the
+     * cheapest way to make the call fail for real.
+     */
+    @Test
+    fun aSessionThatCannotBeDeletedIsReportedRatherThanSwallowed() = runTest {
+        val blocked = File(dataDir.root, "session.key").apply { mkdirs() }
+        File(blocked, "occupied").writeText("in the way")
+
+        assertFailsWith<IOException> { storage().clear() }
     }
 }

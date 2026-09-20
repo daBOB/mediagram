@@ -5,10 +5,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -18,9 +20,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogViewModel
 import designsystem.MediagramTheme
+import designsystem.Spacing
 import login.LoginUiState
 import login.LoginViewModel
 import setup.SetupUiState
@@ -38,6 +43,14 @@ fun MobileApp() {
         Surface(modifier = Modifier.fillMaxSize()) {
             val setupViewModel: SetupViewModel = hiltViewModel()
             val setupState by setupViewModel.state.collectAsStateWithLifecycle()
+
+            // A session can be invalidated while this app is in the
+            // background — signed out from another device, or from
+            // Telegram's own session list — and nothing here would hear
+            // about it. Coming back to the foreground is the moment to ask
+            // again, rather than finding out through a catalog that will
+            // not load.
+            LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { setupViewModel.recheck() }
 
             if (setupState is SetupUiState.Ready) {
                 CatalogAndPlayer(onStartOver = setupViewModel::startOver)
@@ -72,6 +85,12 @@ private fun SetupStep(state: SetupUiState, viewModel: SetupViewModel) {
             SettingsScreen(error = state.error, onSave = viewModel::submitLibrary)
         }
 
+        // Nothing here can be answered by trying the same thing again, so
+        // the only control offered is the one that clears what broke.
+        is SetupUiState.Failed -> WithStartOver(viewModel::startOver) {
+            CentredText(state.message)
+        }
+
         // Rendered by the caller, which has a whole screen pair to give it.
         SetupUiState.Ready -> Unit
     }
@@ -100,14 +119,14 @@ private fun SignIn(onAuthorized: () -> Unit) {
 }
 
 /**
- * Every step past the first one has something stored that a person may
- * need to take back — a session on the wrong account, a library they no
- * longer have the key for. Step one has nothing to clear, so it carries no
- * way out.
+ * Signing this device out is reachable from every screen that has anything
+ * stored to take back — including a catalog that is working perfectly,
+ * because handing a tablet on is not a malfunction. Only the first step,
+ * which has nothing stored yet, goes without.
  */
 @Composable
 private fun WithStartOver(onStartOver: () -> Unit, content: @Composable () -> Unit) {
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
         Box(modifier = Modifier.weight(1f)) { content() }
         StartOverAction(onConfirm = onStartOver)
     }
@@ -127,10 +146,24 @@ private fun CatalogAndPlayer(onStartOver: () -> Unit) {
 
     val setId = openedSetId
     if (setId != null) {
+        // The player gets the whole window; a film is the one thing here
+        // that wants the space under the system bars.
         BackHandler { openedSetId = null }
         PlayerScreen(setId = setId, onBack = { openedSetId = null })
     } else {
-        CatalogScreen(state = catalogState, onOpen = { openedSetId = it }, onStartOver = onStartOver)
+        WithStartOver(onStartOver) {
+            CatalogScreen(state = catalogState, onOpen = { openedSetId = it })
+        }
+    }
+}
+
+@Composable
+private fun CentredText(message: String) {
+    Box(
+        modifier = Modifier.fillMaxSize().padding(Spacing.large),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text = message)
     }
 }
 

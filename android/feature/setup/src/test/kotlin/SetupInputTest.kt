@@ -4,9 +4,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-private const val WELL_FORMED_HASH = "0123456789abcdef0123456789abcdef"
-private const val WELL_FORMED_KEY = "TfDJPK7L9tF2sVQm0aYcXbNrHgEuZiWoS4lKpQdRt1A="
-
 class SetupInputTest {
 
     @Test

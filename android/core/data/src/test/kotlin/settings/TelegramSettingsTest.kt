@@ -42,4 +42,24 @@ class TelegramSettingsTest {
         assertFalse(rendered.contains(WELL_FORMED_HASH))
         assertEquals(true, rendered.contains("1234"))
     }
+
+    /**
+     * Zero is what an absent integer looks like coming back out of
+     * preferences, so it has to read as "nothing stored" rather than as an
+     * identity — and the in-memory store has to agree, or a test passes
+     * against a fake the real store would have rejected.
+     */
+    @Test
+    fun anApiIdOfZeroIsNoIdentityAtAll() = runTest {
+        val settings = InMemoryTelegramSettings()
+        settings.write(0, WELL_FORMED_HASH)
+        assertNull(settings.read())
+    }
+
+    @Test
+    fun aBlankApiHashIsNoIdentityAtAll() = runTest {
+        val settings = InMemoryTelegramSettings()
+        settings.write(1234, "   ")
+        assertNull(settings.read())
+    }
 }

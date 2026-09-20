@@ -11,6 +11,8 @@ import data.CoreProvider
 import data.CoreStorage
 import data.DefaultCatalogRepository
 import data.FileCoreStorage
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import settings.EncryptedPackageSettings
 import settings.EncryptedTelegramSettings
 import settings.PackageSettings
@@ -20,6 +22,15 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object DataModule {
+
+    // The one dispatcher this app's blocking work goes to: keystore
+    // decryption, the native library's first load, and the file reads
+    // behind "is this device signed in". None of it may run on main, and a
+    // ViewModel cannot be handed Dispatchers.IO directly and still be
+    // testable.
+    @Provides
+    @Singleton
+    fun provideIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
 
     @Provides
     @Singleton
@@ -35,8 +46,10 @@ object DataModule {
     // clears the state that core wrote.
     @Provides
     @Singleton
-    fun provideCoreStorage(@ApplicationContext context: Context): CoreStorage =
-        FileCoreStorage(context.filesDir)
+    fun provideCoreStorage(
+        @ApplicationContext context: Context,
+        dispatcher: CoroutineDispatcher,
+    ): CoreStorage = FileCoreStorage(context.filesDir, dispatcher)
 
     @Provides
     @Singleton

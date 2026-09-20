@@ -27,4 +27,17 @@ sealed interface SetupUiState {
 
     /** Everything is stored and the session is live; the catalog can open. */
     data object Ready : SetupUiState
+
+    /**
+     * Storage itself would not answer.
+     *
+     * Its own state rather than a variant of a step, because there is no
+     * step to be on: the keystore this app's secrets live behind throws
+     * after a backup restore onto another device or when the key behind it
+     * has been invalidated, and every question the flow asks goes through
+     * it. Without this the app shows a spinner for ever, or crashes on
+     * every launch. The way out is starting over, which is why that offer
+     * travels with the message.
+     */
+    data class Failed(val message: String) : SetupUiState
 }
