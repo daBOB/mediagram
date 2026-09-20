@@ -9,8 +9,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -77,10 +82,24 @@ fun PlayerControls(
     val durationMs = progress.durationMs.coerceAtLeast(0L)
     val positionMs = scrubbingTo?.toLong() ?: progress.currentPositionMs.coerceAtLeast(0L)
 
+    // The app draws edge to edge, and the route that hosts this bar gives the
+    // whole window to the picture, system bars included — a film is the one
+    // thing here that wants that space. This bar is the exception that
+    // decision has to make: on the bottom edge it would put the clock row
+    // behind a three-button navigation bar and the lower half of the slider
+    // inside it, where a drag meant for the scrubber lands on the navigation
+    // bar instead. Bottom and sides only, because the status bar cannot reach
+    // a bar anchored down here and padding for it would open a band of dead
+    // scrim above the buttons. The background is applied before the padding,
+    // so the scrim still runs to the edge of the screen; only the controls
+    // move in.
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(Color.Black.copy(alpha = SCRIM_ALPHA))
+            .windowInsetsPadding(
+                WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
+            )
             .padding(Spacing.medium),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
