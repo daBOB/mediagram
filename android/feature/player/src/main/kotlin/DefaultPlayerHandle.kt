@@ -46,6 +46,9 @@ class DefaultPlayerHandle @Inject constructor(
     /** Whichever set is currently loaded or queued to load; [stop] clears it. */
     private var currentSetId: String? = null
 
+    /** Set once the player has failed to build; see [failConstruction]. */
+    private var constructionError: String? = null
+
     private val playerListener = object : Player.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) = notifyPosition(isPlaying)
 
@@ -77,12 +80,19 @@ class DefaultPlayerHandle @Inject constructor(
                 // Player.Listener.onPlayerError — there is no player yet
                 // to have raised that. Left uncaught, this reaches the
                 // process's default handler, which on a device is a crash.
-                listener?.onError(e.message ?: "Could not prepare the player")
+                failConstruction(e.message ?: "Could not prepare the player")
             }
         }
     }
 
     override fun open(setId: String) {
+        constructionError?.let { message ->
+            // There will never be a player to open this on, and the caller
+            // has just reset itself to "preparing" expecting one. Nothing
+            // else would ever speak up, so repeat the failure.
+            listener?.onError(message)
+            return
+        }
         // Rotation destroys and recreates the whole Composition, so
         // PlayerScreen's LaunchedEffect(setId) fires again with the same
         // id; reopening a set that is already loaded or queued must not
@@ -100,6 +110,9 @@ class DefaultPlayerHandle @Inject constructor(
 
     override fun setListener(listener: PlayerHandle.Listener?) {
         this.listener = listener
+        // A failure the previous subscriber was told about, or that landed
+        // while there was none, is still true for this one.
+        constructionError?.let { listener?.onError(it) }
     }
 
     override fun stop() {
@@ -114,6 +127,19 @@ class DefaultPlayerHandle @Inject constructor(
 
     override fun release() {
         listener = null
+    }
+
+    /**
+     * A construction failure is permanent — the deferred that failed is the
+     * only one, and nothing retries it — and whether a subscriber exists to
+     * hear it depends on nothing more than how long the cache took to open.
+     * Holding it takes the delivery out of that race: whoever subscribes
+     * next, or asks to open a set next, is told.
+     */
+    private fun failConstruction(message: String) {
+        constructionError = message
+        pendingSetId = null
+        listener?.onError(message)
     }
 
     private fun openOn(player: Player, setId: String) {
