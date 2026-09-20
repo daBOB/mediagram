@@ -10,6 +10,7 @@
 import { el } from "./dom.js";
 import { isWatched, progressOf } from "./watch-state.js";
 import { watchedFraction } from "./resume-point.js";
+import { progressRule } from "./set-badge.js";
 
 /** Two letters to stand in for artwork that is not there. */
 export function initialsOf(text) {
@@ -40,13 +41,8 @@ export function plate({ poster, name, initials, progress, watched }) {
 
   // Across the foot of the plate, where a library sticker would be, and only
   // when there is a runtime to measure against — see `watchedFraction`.
-  if (typeof progress === "number") {
-    const rule = el("div", "watched");
-    const done = el("div", "watched-at");
-    done.style.width = `${Math.round(progress * 100)}%`;
-    rule.append(done);
-    thumb.append(rule);
-  }
+  const rule = progressRule(progress);
+  if (rule) thumb.append(rule);
 
   // A finished title has no progress rule, because finishing clears the
   // position that would have drawn one — so without this a plate watched to

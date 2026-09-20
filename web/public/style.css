@@ -480,6 +480,19 @@ body {
 }
 .watched-at { height: 100%; background: var(--accent); }
 
+/* The same rule along a row, which needs a corner to hang from. */
+.row { position: relative; }
+
+/* On a row it draws over the divider that is already there rather than adding
+   a second line beside it: no track, just the part that has been watched, so a
+   started episode reads as a rule that has been coloured in rather than as an
+   extra bar the other rows are missing. */
+.row .watched {
+  background: none;
+  height: 2px;
+  bottom: -1px;
+}
+
 /* ---- the page ---- */
 main {
   flex: 1;

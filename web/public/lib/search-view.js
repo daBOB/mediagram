@@ -12,7 +12,7 @@
 
 import { el } from "./dom.js";
 import { codecLine, countOf, episodeLabel, humanDuration, humanSize } from "./format.js";
-import { offlineBadge, watchedTick } from "./set-badge.js";
+import { offlineBadge, progressRuleFor, watchedTick } from "./set-badge.js";
 
 /** How a hit earned its place, in words rather than a field name. */
 const WHY = {
@@ -84,6 +84,9 @@ export function renderSearch(main, query, hits, onPlay) {
         [codecLine(hit), humanDuration(hit.duration), humanSize(hit.total)].filter(Boolean).join(" · "),
       ),
     );
+    const progress = progressRuleFor(hit);
+    if (progress) row.append(progress);
+
     row.addEventListener("click", () => onPlay(hit));
     block.append(row);
   }

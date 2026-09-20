@@ -19,7 +19,7 @@
 import { el } from "./dom.js";
 import { codecLine, countOf, episodeLabel, humanDuration, humanSize } from "./format.js";
 import { countsUnder, isDocument, levelEntries } from "./library.js";
-import { offlineBadge, transcodeBadge, watchedTick } from "./set-badge.js";
+import { offlineBadge, progressRuleFor, transcodeBadge, watchedTick } from "./set-badge.js";
 
 /**
  * How far a folder may indent. The real course reaches four levels; past
@@ -67,6 +67,11 @@ function lessonRow(set, onPlay) {
   row.append(
     el("div", "meta", [humanDuration(set.duration), humanSize(set.total)].filter(Boolean).join(" · ")),
   );
+  // Along the foot of the row, where a plate carries the same rule: a season
+  // you are partway through says which episode that is.
+  const progress = progressRuleFor(set);
+  if (progress) row.append(progress);
+
   row.addEventListener("click", () => onPlay(set));
   return row;
 }

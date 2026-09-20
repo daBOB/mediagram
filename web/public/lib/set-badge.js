@@ -8,7 +8,32 @@
 
 import { el } from "./dom.js";
 import { playbackFor } from "./link.js";
-import { isWatched } from "./watch-state.js";
+import { isWatched, progressOf } from "./watch-state.js";
+import { watchedFraction } from "./resume-point.js";
+
+/**
+ * How far into a title someone got, as a rule along its foot.
+ *
+ * Drawn for a plate and for a row alike: the same fact about the same title,
+ * and a season where one episode is half-watched should say so whether it is
+ * being shown as a picture or as a line.
+ *
+ * `null` for a title never started, and for one whose runtime is unknown —
+ * see `watchedFraction`, which refuses to place a position it cannot measure.
+ */
+export function progressRule(fraction) {
+  if (typeof fraction !== "number") return null;
+  const rule = el("div", "watched");
+  const done = el("div", "watched-at");
+  done.style.width = `${Math.round(fraction * 100)}%`;
+  rule.append(done);
+  return rule;
+}
+
+/** The same rule, for a caller holding the set rather than the figure. */
+export function progressRuleFor(set) {
+  return progressRule(watchedFraction(progressOf(set.setId)));
+}
 
 /**
  * Whether this has been watched to the end.
