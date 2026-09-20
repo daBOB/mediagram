@@ -50,13 +50,18 @@ pub async fn fetch_into(
 ///
 /// `current` is a symlink a refresh swaps atomically, then deletes the
 /// directory it used to point at. `std::fs::canonicalize` resolves it to
-/// the real directory exactly once, here, before any request — every path
-/// this function touches afterwards (the posters directory, the TMDB disk
-/// cache) is derived from that resolved value, never from `current` again.
-/// A refresh landing mid-fetch therefore leaves this run writing into the
-/// directory that was current when it started, whole, rather than splitting
-/// its output across the old install and the new one — or, worse, into a
-/// directory a cleanup pass deletes out from under it.
+/// the real directory exactly once, here, before any request, and that
+/// resolved value is used for exactly one thing afterwards: opening
+/// `library.db`, which genuinely belongs to this snapshot of the catalog.
+/// A refresh landing mid-fetch therefore leaves this run reading the
+/// database that was current when it started, whole, rather than reading
+/// out of a directory a cleanup pass deletes out from under it.
+///
+/// The posters this call writes and the TMDB disk cache it reads through
+/// go to `catalog::artwork_dir` instead — a directory no refresh ever
+/// touches. `install_staged` clears a version directory wholesale on every
+/// refresh, and a refresh runs on every catalog load, so artwork kept
+/// inside one would be deleted before it was ever seen.
 pub(super) async fn fetch_posters(
     core: &Core,
     tmdb_key: String,
@@ -77,13 +82,13 @@ pub(super) async fn fetch_posters(
         return Ok(PosterReport { no_provider_id: without_id, ..PosterReport::default() });
     }
 
-    let posters_dir = dir.join("posters");
+    let posters_dir = catalog::artwork_dir(core);
     // Built once, before either use: `TmdbClient` takes this same instance
     // rather than building its own (see `mediagram_tmdb::tmdb_client`'s doc
     // comment), so there is one client here, not two, and only `client()`'s
     // own call to `install_provider` to account for.
     let client = http::client()?;
-    let api = TmdbClient::with_cache(client.clone(), &tmdb_key, &dir, &language);
+    let api = TmdbClient::with_cache(client.clone(), &tmdb_key, &posters_dir, &language);
     verify_key(&api).await?;
     Ok(fetch_into(&api, &client, &posters_dir, &titles, without_id).await)
 }

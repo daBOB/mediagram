@@ -7,6 +7,7 @@
 //! be observed as a half-written database — the symlink swap in `refresh.rs`
 //! is atomic, and an already-open handle keeps the version it opened.
 
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use rusqlite::{Connection, OpenFlags};
@@ -28,6 +29,19 @@ pub(super) fn dir(core: &Core) -> PathBuf {
 
 pub(super) fn current_dir(core: &Core) -> PathBuf {
     dir(core).join(CURRENT)
+}
+
+/// Where fetched poster artwork and the TMDB provider-id cache live.
+///
+/// Deliberately outside `<data_dir>/catalog/`: `install_staged` removes a
+/// version directory wholesale before renaming a fresh download into place,
+/// and `remove_other_versions` clears every version but the one just
+/// published. Both operate strictly inside `catalog::dir`, so anything
+/// stored inside a version directory is storage with a timer on it. Artwork
+/// is a fact about a title, not about a snapshot of the index, and lives
+/// somewhere no refresh ever touches.
+pub(super) fn artwork_dir(core: &Core) -> PathBuf {
+    core.data_dir.join("artwork")
 }
 
 fn library_db(dir: &Path) -> PathBuf {
@@ -66,14 +80,24 @@ pub(super) fn list_sets(core: &Core) -> Result<Vec<SetSummary>, CoreError> {
     Ok(sets.iter().map(dto::summary_from).collect())
 }
 
+/// Looks in the current version's own `posters/` first, then in the
+/// artwork directory a fetch writes to — both behind the same key
+/// validation, so a second lookup location is never a second way past it.
+///
+/// A package ships its own chosen artwork inside the version it arrived
+/// in, so that copy stays authoritative for the keys it covers: a fetch
+/// only ever ran for a title the package had nothing for.
 pub(super) fn poster_path(core: &Core, poster_key: String) -> Option<String> {
     if !mlib_spec::package::poster_key_is_valid(&poster_key) {
         return None;
     }
-    let path = current_dir(core)
-        .join("posters")
-        .join(format!("{poster_key}.jpg"));
-    path.exists().then(|| path.display().to_string())
+    let name = format!("{poster_key}.jpg");
+    let in_version = current_dir(core).join("posters").join(&name);
+    if in_version.exists() {
+        return Some(in_version.display().to_string());
+    }
+    let in_artwork = artwork_dir(core).join(&name);
+    in_artwork.exists().then(|| in_artwork.display().to_string())
 }
 
 pub(super) fn total_size(core: &Core, set_id: String) -> Result<u64, CoreError> {
@@ -92,17 +116,25 @@ pub(super) fn count_playable(dir: &Path) -> Result<u64, CoreError> {
     Ok(sets.len() as u64)
 }
 
-/// `*.jpg` entries under `<current>/posters/`. An absent directory is zero
-/// posters, not a failure — the ordinary state before any artwork is fetched.
-fn count_posters(dir: &Path) -> u64 {
-    std::fs::read_dir(dir.join("posters"))
-        .map(|entries| {
+/// `*.jpg` entries under `<current>/posters/` and the artwork directory,
+/// counted once per key even when a title is held in both — one title held
+/// in both places is one poster, not two. An absent directory contributes
+/// zero, not a failure — the ordinary state before any artwork is fetched.
+fn count_posters(version_dir: &Path, artwork_dir: &Path) -> u64 {
+    let mut keys: HashSet<std::ffi::OsString> = HashSet::new();
+    for base in [version_dir.join("posters"), artwork_dir.to_path_buf()] {
+        let Ok(entries) = std::fs::read_dir(&base) else {
+            continue;
+        };
+        keys.extend(
             entries
                 .filter_map(Result::ok)
-                .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "jpg"))
-                .count() as u64
-        })
-        .unwrap_or(0)
+                .map(|entry| entry.path())
+                .filter(|path| path.extension().is_some_and(|ext| ext == "jpg"))
+                .filter_map(|path| path.file_stem().map(std::ffi::OsStr::to_os_string)),
+        );
+    }
+    keys.len() as u64
 }
 
 /// What the installed catalog is, for the System screen. Every count is
@@ -120,7 +152,11 @@ pub(super) fn facts(core: &Core) -> dto::CatalogFacts {
     dto::CatalogFacts {
         origin,
         sets: count_playable(&dir).unwrap_or(0),
-        posters: count_posters(&dir),
+        posters: count_posters(&dir, &artwork_dir(core)),
         schema: mlib_spec::schema::SCHEMA_VERSION as u32,
     }
 }
+
+#[cfg(test)]
+#[path = "catalog_tests.rs"]
+mod tests;
