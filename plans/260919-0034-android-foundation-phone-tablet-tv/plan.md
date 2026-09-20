@@ -33,6 +33,8 @@
 | 4 | [The TV surface](phase-04-tv-surface.md) | Blocked — needs a television to develop against |
 | 5 | [Playback on all three](phase-05-playback-media3.md) | Complete — tasks 1–3 and the mobile half of task 4 |
 | 6 | [Byte-truth gate and documentation](phase-06-byte-truth-gate-and-docs.md) | Not started |
+| 7 | [First-run setup on the device](phase-07-first-run-setup.md) | Complete |
+| 8 | [The catalog from the channel](phase-08-catalog-from-the-channel.md) | Complete |
 
 `android/ui-tv/` holds a Gradle module and no source: the television half of
 phase 5's task 4 lands with phase 4, on the same hardware, not before it.

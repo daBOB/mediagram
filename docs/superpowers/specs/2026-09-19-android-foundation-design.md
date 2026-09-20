@@ -265,7 +265,10 @@ Named so they are not mistaken for oversights:
    answer may change phase 1's shape.
 2. **Where watch state lives** for a client with no server. Needs its own
    brainstorm before the round that implements it.
-3. **Whether the pinned `library.db` can replace the package** as a catalog
-   source, removing the URL-and-key provisioning step entirely. It carries
-   no posters, which is why the package was chosen — but it needs no
-   secrets, which on a television is worth something.
+3. ~~**Whether the pinned `library.db` can replace the package** as a
+   catalog source~~ — answered yes, and taken. The device lists the
+   channels the account can already see, picks one, and reads the index
+   pinned there; nothing is hosted, typed or decrypted. Posters are the
+   price and are deliberately given up for now. The package reader stays
+   whole for the round that wants them back. See
+   [phase 8](../../../plans/260919-0034-android-foundation-phone-tablet-tv/phase-08-catalog-from-the-channel.md).
