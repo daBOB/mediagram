@@ -273,3 +273,43 @@ describe("profiles", () => {
     expect((await send("/api/profiles/nobody/progress/" + SET, "PUT", { at: 5 })).status).toBe(404);
   });
 });
+
+describe("marking a title as a child's", () => {
+  const read = async () =>
+    JSON.parse(new TextDecoder().decode((await rawRequest(server.port, "/api/kids")).body));
+
+  test("is not under a profile, because the mark is not one", async () => {
+    expect((await send(`/api/kids/${SET}`, "PUT", {})).status).toBe(204);
+    expect((await read()).kids).toContain(SET);
+    expect((await send(`/api/kids/${SET}`, "DELETE")).status).toBe(204);
+    expect((await read()).kids).not.toContain(SET);
+  });
+
+  test("refuses a title the catalog cannot play", async () => {
+    // The same rule as everywhere else here: state may never accumulate rows
+    // for titles that are not in the library.
+    expect((await send("/api/kids/01SETNOTINTHELIBRARY001", "PUT", {})).status).toBe(404);
+  });
+
+  test("refuses a write from another origin", async () => {
+    const response = await send(`/api/kids/${SET}`, "PUT", {}, {
+      origin: "https://elsewhere.example",
+    });
+    expect(response.status).toBe(403);
+  });
+
+  test("refuses a write that did not declare itself JSON", async () => {
+    const response = await rawRequest(server.port, `/api/kids/${SET}`, {
+      method: "PUT",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "{}",
+    });
+    expect(response.status).toBe(415);
+  });
+
+  test("reads with GET and refuses to be written by one", async () => {
+    expect((await rawRequest(server.port, "/api/kids")).status).toBe(200);
+    expect((await rawRequest(server.port, `/api/kids/${SET}`)).status).toBe(405);
+    expect((await send("/api/kids", "PUT", {})).status).toBe(405);
+  });
+});

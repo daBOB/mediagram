@@ -5,6 +5,27 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 2026-09-20
+
+**Shipped**
+
+- A **Kids** shelf, marked by hand from the player. The mark is the one thing
+  in the player's database with no `profile_id`: "this is a child's film" is a
+  fact about the title, not about who is watching, so it holds across
+  profiles and outlives the profile that made it. State schema v3.
+- Marked titles play as a run, so a child handed a tablet does not have to
+  come back to the shelf between one film and the next.
+- The masthead counts beside Watchlist and Kids now update as a title is
+  marked rather than at the next navigation. The watchlist had this all
+  along; adding a third counter made it worth fixing.
+
+**Considered and rejected:** finding children's titles by genre. On this
+library `Animation` + `Familie` returns ten films, of which four are *Akira*,
+*Appleseed Alpha*, *Batman Ninja* and *Batman: The Long Halloween*. Animation
+is a technique, not an audience. Age ratings would be the principled answer
+and are not fetched from TMDB at all, which makes them uploader work rather
+than player work.
+
 ## 2026-09-19
 
 **Shipped**

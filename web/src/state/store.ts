@@ -177,6 +177,34 @@ export class WatchState {
     }
   }
 
+  /**
+   * The titles marked as a child's, for everyone on this player.
+   *
+   * Not scoped to a profile, unlike everything else here: see the v3
+   * migration. Ordered newest first, the way the watchlist is, so the shelf
+   * shows what was just marked at the top.
+   */
+  kids(): string[] {
+    if (!this.db) return [];
+    return (
+      this.db.query("SELECT set_id AS setId FROM kids ORDER BY marked_at DESC").all() as {
+        setId: string;
+      }[]
+    ).map((row) => row.setId);
+  }
+
+  setKids(setId: string, marked: boolean): void {
+    if (marked) {
+      tolerate(() =>
+        this.db
+          ?.query("INSERT OR IGNORE INTO kids(set_id, marked_at) VALUES (?1, ?2)")
+          .run(setId, Date.now()),
+      );
+    } else {
+      this.db?.query("DELETE FROM kids WHERE set_id = ?1").run(setId);
+    }
+  }
+
   /** A new, empty list. Returns it, so the page need not re-read everything. */
   createCollection(profileId: string, name: unknown): Collection | null {
     if (!this.db) return null;

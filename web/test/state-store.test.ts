@@ -232,3 +232,51 @@ describe("one profile cannot see another", () => {
     expect(state.snapshot("nobody").progress).toEqual([]);
   });
 });
+
+describe("titles marked as a child's", () => {
+  test("are remembered, and forgotten again", () => {
+    const { state } = stateIn();
+    state.setKids("01SET0000000000000000001", true);
+    expect(state.kids()).toEqual(["01SET0000000000000000001"]);
+    state.setKids("01SET0000000000000000001", false);
+    expect(state.kids()).toEqual([]);
+  });
+
+  test("belong to the library, not to whoever is watching", () => {
+    // The one table here with no profile_id. Marking a film as a child's is
+    // not a statement about who is watching, so a second profile must see it.
+    const { state } = stateIn();
+    state.setKids("01SET0000000000000000001", true);
+    const second = state.createProfile("Someone else")!;
+    expect(state.snapshot(second.id).watchlist).toEqual([]);
+    expect(state.kids()).toEqual(["01SET0000000000000000001"]);
+  });
+
+  test("survive deleting the profile that marked them", () => {
+    const { state, me } = stateIn();
+    state.setKids("01SET0000000000000000001", true);
+    state.deleteProfile(me);
+    expect(state.kids()).toEqual(["01SET0000000000000000001"]);
+  });
+
+  test("come back newest first, so the shelf leads with what was just marked", () => {
+    const { state } = stateIn();
+    state.setKids("01SET0000000000000000001", true);
+    Bun.sleepSync(2);
+    state.setKids("01SET0000000000000000002", true);
+    expect(state.kids()).toEqual(["01SET0000000000000000002", "01SET0000000000000000001"]);
+  });
+
+  test("marking twice marks once", () => {
+    const { state } = stateIn();
+    state.setKids("01SET0000000000000000001", true);
+    state.setKids("01SET0000000000000000001", true);
+    expect(state.kids()).toEqual(["01SET0000000000000000001"]);
+  });
+
+  test("are empty rather than fatal on a player that cannot remember", () => {
+    const state = new WatchState(null);
+    expect(() => state.setKids("01SET0000000000000000001", true)).not.toThrow();
+    expect(state.kids()).toEqual([]);
+  });
+});

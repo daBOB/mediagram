@@ -36,6 +36,7 @@ const preload = document.getElementById("preload");
 const notesPanel = document.getElementById("notes-panel");
 const notesClose = document.getElementById("notes-close");
 const watchlistButton = document.getElementById("watchlist");
+const kidsButton = document.getElementById("kids");
 const addToButton = document.getElementById("add-to");
 const upNext = document.getElementById("up-next");
 const upNextTitle = document.getElementById("up-next-title");
@@ -354,6 +355,7 @@ export function openPlayer(set, options = {}) {
   audio.hidden = true;
   refreshPreload();
   refreshWatchlist();
+  refreshKids();
   startSaving();
   showHud();
   dialog.showModal();
@@ -438,10 +440,38 @@ function refreshWatchlist() {
   watchlistButton.textContent = listed ? "On the list" : "Watchlist";
 }
 
+/**
+ * Says a shelf built from marks has changed.
+ *
+ * The player owns the buttons; the masthead owns the counts beside them. An
+ * event rather than another callback through `openPlayer`, because nothing
+ * about playing a title needs to know a number on a shelf is stale.
+ */
+function keptChanged() {
+  document.dispatchEvent(new CustomEvent("mediagram:kept-changed"));
+}
+
+/** Whether this title is a child's, and the way to say it is or is not. */
+function refreshKids() {
+  const marked = playing !== null && state.isKids(playing.setId);
+  kidsButton.setAttribute("aria-pressed", String(marked));
+  kidsButton.textContent = marked ? "For kids" : "Kids";
+}
+
 watchlistButton.addEventListener("click", () => {
   if (!playing) return;
   state.setWatchlisted(playing.setId, !state.isWatchlisted(playing.setId));
   refreshWatchlist();
+  keptChanged();
+});
+
+// Marked here rather than on a shelf, because this is where a viewer is when
+// they find out what a film actually is.
+kidsButton.addEventListener("click", () => {
+  if (!playing) return;
+  state.setKids(playing.setId, !state.isKids(playing.setId));
+  refreshKids();
+  keptChanged();
 });
 
 addToButton.addEventListener("click", () => {

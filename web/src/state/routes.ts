@@ -33,6 +33,13 @@ const COLLECTION_ITEM = new RegExp(
   `^/api/profiles/${P}/collections/${P}/items/([A-Za-z0-9]{1,64})$`,
 );
 
+/**
+ * Which titles are a child's. Not under a profile, because the mark is not
+ * one: see the v3 migration in `schema.ts`.
+ */
+const KIDS = /^\/api\/kids$/;
+const KIDS_ITEM = /^\/api\/kids\/([A-Za-z0-9]{1,64})$/;
+
 export interface StateRouterOptions {
   state: WatchState;
   /** Whether the catalog will play this set, so state cannot outlive it. */
@@ -50,8 +57,30 @@ export function createStateRouter(options: StateRouterOptions) {
 
   return function stateRoute(request: PlayerRequest): PlayerResponse | null {
     const { method, path } = request;
-    if (!path.startsWith("/api/profiles")) return null;
+    if (!path.startsWith("/api/profiles") && !path.startsWith("/api/kids")) return null;
     const reading = method === "GET" || method === "HEAD";
+
+    // Answered before the profile routes, and outside them: a mark on a title
+    // belongs to the library, and there is no profile in its path to read.
+    if (KIDS.test(path)) {
+      if (reading) return json(JSON.stringify({ kids: state.kids() }), method === "HEAD");
+      return status(405);
+    }
+
+    const kid = KIDS_ITEM.exec(path);
+    if (kid) {
+      if (reading) return status(405);
+      const refusal = refuseUnsafe(request);
+      if (refusal) return refusal;
+      // The same check the rest of this module makes: state may never
+      // accumulate rows for titles the catalog cannot play.
+      if (!isPlayable(kid[1]!)) return status(404);
+      if (method === "PUT" || method === "DELETE") {
+        state.setKids(kid[1]!, method === "PUT");
+        return status(204);
+      }
+      return status(405);
+    }
 
     // Who watches this library, which is the one question askable before
     // anyone has said who they are.

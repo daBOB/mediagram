@@ -29,6 +29,10 @@
         <a href="#/continue" data-section="continue" class="kept">Continue<span class="n" id="n-continue"></span></a>
         <a href="#/watchlist" data-section="watchlist" class="kept">Watchlist<span class="n" id="n-watchlist"></span></a>
         <a href="#/collections" data-section="collections" class="kept">Collections<span class="n" id="n-collections"></span></a>
+        <!-- Marked by hand rather than found by genre: "Animation" is a
+             technique, not an audience, and a rule built on it files Akira
+             with the picture books. -->
+        <a href="#/kids" data-section="kids" class="kept">Kids<span class="n" id="n-kids"></span></a>
         <!-- Not a shelf: what the player itself is doing. Hidden until
              `/api/status` answers, which it does only for a viewer on this
              network — a remote viewer is never shown a way in to a page they
@@ -95,6 +99,7 @@
             <select id="audio-track"></select>
           </span>
           <button id="watchlist" class="ghost" aria-pressed="false">Watchlist</button>
+          <button id="kids" class="ghost" aria-pressed="false">Kids</button>
           <button id="add-to" class="ghost">Add to…</button>
           <button id="notes" class="ghost" hidden aria-expanded="false">Notes</button>
         </div>
