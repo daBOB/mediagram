@@ -2,6 +2,8 @@ package login
 
 import data.CoreClient
 import data.CoreProvider
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.SetSummary
 
@@ -50,6 +52,7 @@ class FakeCore(
     override fun posterPath(posterKey: String): String? = null
     override fun totalSize(setId: String): Long = 0
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray = ByteArray(0)
+    override fun close() = Unit
 }
 
 /**
@@ -57,9 +60,10 @@ class FakeCore(
  * identity is stored, so the core is there before the ViewModel asks —
  * which is what this stands in for.
  */
-class ResolvedCoreProvider(private val core: CoreClient) : CoreProvider {
-    override suspend fun awaitCore(): CoreClient = core
-    override suspend fun coreOrNull(): CoreClient = core
+class ResolvedCoreProvider(private val client: CoreClient) : CoreProvider {
+    override val core: StateFlow<CoreClient?> = MutableStateFlow(client)
+    override suspend fun awaitCore(): CoreClient = client
+    override suspend fun coreOrNull(): CoreClient = client
     override suspend fun supply(apiId: Int, apiHash: String) = Unit
     override suspend fun forget() = Unit
 }

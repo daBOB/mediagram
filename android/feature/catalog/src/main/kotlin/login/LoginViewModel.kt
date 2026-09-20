@@ -4,10 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import data.CoreProvider
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import uniffi.mediagram_core.AuthOutcome
 import javax.inject.Inject
 
@@ -28,10 +30,19 @@ import javax.inject.Inject
  * read out of encrypted storage, which on a first run have only just been
  * typed in. Whether a session already exists is therefore answered a beat
  * after construction, not during it.
+ *
+ * And answered again whenever the core is replaced. This ViewModel outlives
+ * the screen that shows it — it belongs to the Activity — so after a
+ * start-over it would otherwise still be reporting the sign-in that was
+ * just undone, and the sign-in step would compose with nothing left to ask
+ * for and render an empty screen. Following the core rather than being told
+ * about the reset keeps that answer derived from the same thing every other
+ * part of setup is derived from.
  */
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val coreProvider: CoreProvider,
+    private val dispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<LoginUiState>(LoginUiState.NeedsPhone)
@@ -41,7 +52,14 @@ class LoginViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            if (coreProvider.awaitCore().isAuthorized()) _state.value = LoginUiState.Authorized
+            coreProvider.core.collect { core ->
+                // A token belongs to the core that issued it; a new core
+                // cannot redeem it, and keeping one would let submitCode
+                // spend a login attempt that was never going to work.
+                signInToken = null
+                val authorized = core != null && withContext(dispatcher) { core.isAuthorized() }
+                _state.value = if (authorized) LoginUiState.Authorized else LoginUiState.NeedsPhone
+            }
         }
     }
 

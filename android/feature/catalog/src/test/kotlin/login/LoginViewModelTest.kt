@@ -1,8 +1,11 @@
 package login
 
 import catalog.MainDispatcherRule
+import data.StoredCoreProvider
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
+import settings.InMemoryTelegramSettings
 import uniffi.mediagram_core.AuthOutcome
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,7 +19,10 @@ class LoginViewModelTest {
 
     @Test
     fun aCodeThatNeedsTwoFactorAsksForThePassword() = runTest {
-        val vm = LoginViewModel(ResolvedCoreProvider(FakeCore(signInOutcome = AuthOutcome.PASSWORD_NEEDED)))
+        val vm = LoginViewModel(
+            ResolvedCoreProvider(FakeCore(signInOutcome = AuthOutcome.PASSWORD_NEEDED)),
+            UnconfinedTestDispatcher(),
+        )
         vm.submitPhone("+49...")
         vm.submitCode("12345")
         assertEquals(LoginUiState.NeedsPassword, vm.state.value)
@@ -24,13 +30,13 @@ class LoginViewModelTest {
 
     @Test
     fun anAlreadyAuthorizedCoreSkipsStraightToAuthorized() = runTest {
-        val vm = LoginViewModel(ResolvedCoreProvider(FakeCore(authorized = true)))
+        val vm = LoginViewModel(ResolvedCoreProvider(FakeCore(authorized = true)), UnconfinedTestDispatcher())
         assertEquals(LoginUiState.Authorized, vm.state.value)
     }
 
     @Test
     fun aFailedCodeRequestSurfacesAsFailed() = runTest {
-        val vm = LoginViewModel(ResolvedCoreProvider(FakeCore(requestCodeFails = true)))
+        val vm = LoginViewModel(ResolvedCoreProvider(FakeCore(requestCodeFails = true)), UnconfinedTestDispatcher())
         vm.submitPhone("+49...")
         assertTrue(vm.state.value is LoginUiState.Failed)
         // Nothing is in flight to retry, so the phone number is genuinely
@@ -41,7 +47,7 @@ class LoginViewModelTest {
     @Test
     fun aRejectedCodeIsRetypedWithoutAskingTelegramForAnotherOne() = runTest {
         val core = FakeCore(signInFailures = 1)
-        val vm = LoginViewModel(ResolvedCoreProvider(core))
+        val vm = LoginViewModel(ResolvedCoreProvider(core), UnconfinedTestDispatcher())
         vm.submitPhone("+49...")
 
         vm.submitCode("00000")
@@ -55,7 +61,7 @@ class LoginViewModelTest {
     @Test
     fun aRejectedPasswordIsRetypedWithoutRestartingTheSignIn() = runTest {
         val core = FakeCore(signInOutcome = AuthOutcome.PASSWORD_NEEDED, passwordFailures = 1)
-        val vm = LoginViewModel(ResolvedCoreProvider(core))
+        val vm = LoginViewModel(ResolvedCoreProvider(core), UnconfinedTestDispatcher())
         vm.submitPhone("+49...")
         vm.submitCode("12345")
 
@@ -65,5 +71,30 @@ class LoginViewModelTest {
         vm.submitPassword("right")
         assertEquals(LoginUiState.Authorized, vm.state.value)
         assertEquals(1, core.requestCodeCalls, "a retyped password must not cost a second code request")
+    }
+
+    /**
+     * This ViewModel belongs to the Activity and outlives the screen that
+     * shows it, so after signing this device out it is still the same
+     * instance. Reporting the sign-in that was just undone would leave the
+     * sign-in step with nothing to ask for, and it renders nothing at all
+     * in that state — an empty screen no amount of tapping recovers from.
+     */
+    @Test
+    fun signingThisDeviceOutSendsTheSignInStepBackToThePhoneNumber() = runTest {
+        val dispatcher = UnconfinedTestDispatcher()
+        val settings = InMemoryTelegramSettings()
+        // The second core reports no session because starting over deleted
+        // the auth key file the first one had been reading.
+        val cores = ArrayDeque(listOf(FakeCore(authorized = true), FakeCore(authorized = false)))
+        val provider = StoredCoreProvider(settings, dispatcher) { cores.removeFirst() }
+        provider.supply(1234, "0123456789abcdef0123456789abcdef")
+        val vm = LoginViewModel(provider, dispatcher)
+        assertEquals(LoginUiState.Authorized, vm.state.value)
+
+        provider.forget()
+        provider.supply(5678, "fedcba9876543210fedcba9876543210")
+
+        assertEquals(LoginUiState.NeedsPhone, vm.state.value)
     }
 }
