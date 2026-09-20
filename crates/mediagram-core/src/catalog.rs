@@ -20,6 +20,10 @@ pub struct PlayableSet {
     pub title: Option<String>,
     pub show: Option<String>,
     pub chap: Option<String>,
+    /// Where the set sat inside its collection, as `a/b/c` from the top
+    /// down. A course nests unevenly, so only the path describes its shape;
+    /// `chap` is one rendering of the same thing and cannot be split back.
+    pub path: Option<String>,
     pub season: Option<u32>,
     pub episode: Option<String>,
     /// TMDB id, when the title has one. Lets a binding-surface caller derive
@@ -43,7 +47,7 @@ pub struct PartLocation {
     pub message_id: i64,
 }
 
-const COLUMNS: &str = "set_id, kind, title, show, chap, season, episode, tmdb, year, container,
+const COLUMNS: &str = "set_id, kind, title, show, chap, path, season, episode, tmdb, year, container,
      vcodec, acodec, duration, total, part_count";
 
 fn read_set(row: &rusqlite::Row<'_>) -> rusqlite::Result<PlayableSet> {
@@ -54,6 +58,7 @@ fn read_set(row: &rusqlite::Row<'_>) -> rusqlite::Result<PlayableSet> {
         title: row.get("title")?,
         show: row.get("show")?,
         chap: row.get("chap")?,
+        path: row.get("path")?,
         season: row.get("season")?,
         episode: row.get("episode")?,
         tmdb: row.get("tmdb")?,

@@ -1874,6 +1874,13 @@ data class SetSummary (
     , 
     var `chap`: kotlin.String?
     , 
+    /**
+     * The folder trail inside the collection, `a/b/c` from the top down.
+     * A surface rebuilds a course's tree by splitting it; a set with none
+     * is shelved under its chapter or its season instead.
+     */
+    var `path`: kotlin.String?
+    , 
     var `season`: kotlin.UInt?
     , 
     var `episodeFirst`: kotlin.UInt?
@@ -1910,6 +1917,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
             FfiConverterOptionalUInt.read(buf),
             FfiConverterOptionalUInt.read(buf),
             FfiConverterOptionalUInt.read(buf),
@@ -1927,6 +1935,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.allocationSize(value.`title`) +
             FfiConverterOptionalString.allocationSize(value.`show`) +
             FfiConverterOptionalString.allocationSize(value.`chap`) +
+            FfiConverterOptionalString.allocationSize(value.`path`) +
             FfiConverterOptionalUInt.allocationSize(value.`season`) +
             FfiConverterOptionalUInt.allocationSize(value.`episodeFirst`) +
             FfiConverterOptionalUInt.allocationSize(value.`episodeLast`) +
@@ -1943,6 +1952,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.write(value.`title`, buf)
             FfiConverterOptionalString.write(value.`show`, buf)
             FfiConverterOptionalString.write(value.`chap`, buf)
+            FfiConverterOptionalString.write(value.`path`, buf)
             FfiConverterOptionalUInt.write(value.`season`, buf)
             FfiConverterOptionalUInt.write(value.`episodeFirst`, buf)
             FfiConverterOptionalUInt.write(value.`episodeLast`, buf)

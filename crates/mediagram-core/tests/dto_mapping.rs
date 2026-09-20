@@ -13,6 +13,7 @@ fn playable_with(episode: Option<&str>) -> PlayableSet {
         title: None,
         show: Some("Severance".into()),
         chap: None,
+        path: None,
         season: Some(2),
         episode: episode.map(str::to_string),
         tmdb: None,

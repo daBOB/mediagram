@@ -20,6 +20,10 @@ pub struct SetSummary {
     pub title: Option<String>,
     pub show: Option<String>,
     pub chap: Option<String>,
+    /// The folder trail inside the collection, `a/b/c` from the top down.
+    /// A surface rebuilds a course's tree by splitting it; a set with none
+    /// is shelved under its chapter or its season instead.
+    pub path: Option<String>,
     pub season: Option<u32>,
     pub episode_first: Option<u32>,
     pub episode_last: Option<u32>,
@@ -47,6 +51,7 @@ pub fn summary_from(set: &PlayableSet) -> SetSummary {
         title: set.title.clone(),
         show: set.show.clone(),
         chap: set.chap.clone(),
+        path: set.path.clone(),
         season: set.season,
         episode_first,
         episode_last,
