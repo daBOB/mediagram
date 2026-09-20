@@ -1,7 +1,6 @@
 //! A loopback HTTP fixture proving `refresh_catalog`'s security properties
-//! against real bytes on a real socket: the size cap trips on a body with
-//! no declared length, an older package is refused with `current` left
-//! exactly as it was, and a successful refresh swaps `current` atomically.
+//! against real bytes on a real socket: the size cap, replay refusal, and
+//! the atomic swap of `current`.
 
 use std::io::Write as _;
 use std::time::Duration;
@@ -21,9 +20,8 @@ use crate::package::cipher;
 const KEY: [u8; 32] = [3u8; 32];
 
 /// Serves `responses` in order, one per accepted connection, then stops.
-/// Each response is written in small pieces with a short pause between
-/// them, so a body arrives over several reads rather than one — a real
-/// approximation of a slow or chunked sender, not a single buffered write.
+/// Each is written in small paced pieces, so a body arrives over several
+/// reads rather than one buffered write.
 async fn serve(responses: Vec<Vec<u8>>) -> String {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let base = format!("http://{}", listener.local_addr().unwrap());
@@ -46,9 +44,7 @@ async fn serve(responses: Vec<Vec<u8>>) -> String {
     base
 }
 
-/// A raw HTTP/1.1 response, close-delimited rather than length-prefixed:
-/// no `Content-Length` at all, which is exactly the shape a cap enforced
-/// only against that header would miss entirely.
+/// A raw HTTP/1.1 response, close-delimited: no `Content-Length` at all.
 fn http_response(body: &[u8]) -> Vec<u8> {
     let mut out = b"HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n".to_vec();
     out.extend_from_slice(body);
@@ -59,9 +55,7 @@ fn pointer_response(pointer: &LatestPointer) -> Vec<u8> {
     http_response(&serde_json::to_vec(pointer).unwrap())
 }
 
-/// An empty, real, migrated `library.db` — real enough that
-/// `count_playable` can open and query it, not a placeholder that would
-/// make the "successful refresh" case fail for an unrelated reason.
+/// An empty, real, migrated `library.db` that `count_playable` can open.
 fn empty_library_db_bytes() -> Vec<u8> {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("library.db");
@@ -81,8 +75,8 @@ fn append(builder: &mut tar::Builder<&mut Vec<u8>>, name: &str, data: &[u8]) {
     builder.append_data(&mut header, name, data).unwrap();
 }
 
-/// A genuinely valid sealed package: a real `library.db` and a manifest
-/// that agrees with the pointer, gzipped, tarred, and sealed under `KEY`.
+/// A genuinely valid sealed package: `library.db` plus an agreeing
+/// manifest, gzipped, tarred, and sealed under `KEY`.
 fn fixture_package(created_at: i64) -> (LatestPointer, Vec<u8>) {
     let mut tar_bytes = Vec::new();
     {
@@ -124,8 +118,10 @@ fn core_at(dir: &std::path::Path) -> std::sync::Arc<Core> {
     Core::new(dir.display().to_string(), 1, "test-hash".into())
 }
 
-/// F6: nothing in this response declares a length, so the only thing that
-/// can stop an oversized body is counting the bytes as they arrive.
+/// Neither the pointer's `bytes` field nor a `Content-Length` header is
+/// authenticated, so trusting either gives no real ceiling. This response
+/// declares no length at all; only counting bytes as they arrive can still
+/// stop an oversized body.
 #[tokio::test]
 async fn the_download_cap_trips_against_bytes_actually_received() {
     let (mut pointer, _sealed) = fixture_package(100);
@@ -147,9 +143,11 @@ async fn the_download_cap_trips_against_bytes_actually_received() {
     assert!(matches!(err, CoreError::Network(_)));
 }
 
-/// F7: an older, genuinely valid, correctly keyed package is still refused,
-/// and the identity already held is provably untouched afterwards — not
-/// merely "the call returned an error".
+/// A package that decrypts correctly under the right key is still a
+/// replay if it is older than what is already held — the cipher cannot
+/// catch that, only the identity comparison can — and a replay must be
+/// refused. The identity already held must also be provably untouched
+/// afterwards, not merely "the call returned an error".
 #[tokio::test]
 async fn an_older_package_is_refused_and_current_is_left_untouched() {
     let dir = tempfile::tempdir().unwrap();
@@ -176,8 +174,10 @@ async fn an_older_package_is_refused_and_current_is_left_untouched() {
     assert_eq!(catalog::read_identity(&current).unwrap(), Some(held));
 }
 
-/// F8: a successful refresh actually lands — `current` now resolves to a
-/// new, queryable catalog carrying the offered identity.
+/// A reader must never observe half a catalog: `current` resolves to
+/// either the previous version or the new one in full, never a partially
+/// staged one — checked here from the far side, where it now resolves to a
+/// new, queryable catalog carrying exactly the identity that was offered.
 #[tokio::test]
 async fn a_successful_refresh_swaps_current_atomically() {
     let dir = tempfile::tempdir().unwrap();
