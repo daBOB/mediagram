@@ -667,6 +667,7 @@ export function openPlayer(set, options = {}) {
   cuePanel.trigger.hidden = document.getElementById("subs").hidden;
   placeSubtitles();
   transport.recallSpeed();
+  transport.recallFraming();
   transport.refresh();
   void showSummary(set);
   void offerAudioTracks(set);

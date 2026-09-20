@@ -16,6 +16,9 @@
  */
 
 import { readVolume, writeVolume } from "./volume-store.js";
+import { DEFAULT_FRAMING, framingLabel, framingStyle, nextFraming } from "./framing.js";
+import { isLooping, loopBack, loopLabel, markLoop, NO_LOOP } from "./ab-loop.js";
+import { clockTime } from "./format.js";
 
 /**
  * Drawn rather than typed.
@@ -143,6 +146,20 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime, recall, rem
    * 1.5x and a film watched at 1x are two different answers, and the bar is
    * mounted once for both.
    */
+  /**
+   * How this show was last framed, and where any loop from the last title went.
+   *
+   * A loop belongs to the passage it was marked in, so it is dropped: carrying
+   * one into the next episode would trap a viewer in a stretch of a film they
+   * have not started. A framing is a property of how a show was mastered, so
+   * it is remembered.
+   */
+  function recallFraming() {
+    loop = { ...NO_LOOP };
+    framing = recall?.("framing") ?? DEFAULT_FRAMING;
+    applyFraming();
+  }
+
   function recallSpeed() {
     const asked = Number(recall?.("speed") ?? Number.NaN);
     chosenRate = SPEEDS.includes(asked) ? asked : 1;
@@ -167,6 +184,52 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime, recall, rem
   function togglePlay() {
     if (video.paused) void video.play();
     else video.pause();
+  }
+
+  /**
+   * A frame at a time, which only means anything while paused.
+   *
+   * Pauses first: stepping a playing film is a seek it immediately runs away
+   * from, and a viewer pressing `.` has said they want to look at something.
+   */
+  function step(by) {
+    if (!video.paused) video.pause();
+    onSeekTo(filmTime() + by);
+  }
+
+  /** One rung up or down the speeds the picker already offers. */
+  function stepSpeed(by) {
+    const at = SPEEDS.indexOf(chosenRate);
+    const to = SPEEDS[Math.min(SPEEDS.length - 1, Math.max(0, (at === -1 ? 1 : at) + by))];
+    chosenRate = to;
+    video.playbackRate = to;
+    speed.value = String(to);
+    remember?.("speed", String(to));
+  }
+
+  /**
+   * The picture out of the window and into a corner of the screen.
+   *
+   * The one control left out when this bar was built, on the grounds that
+   * nobody had asked for it. Somebody has.
+   */
+  function togglePictureInPicture() {
+    if (document.pictureInPictureElement) void document.exitPictureInPicture().catch(() => {});
+    else void video.requestPictureInPicture?.().catch(() => {});
+  }
+
+  /** `fit` to `fill` to `16:9` to `4:3` and round again. */
+  function cycleFraming() {
+    framing = nextFraming(framing);
+    applyFraming();
+    remember?.("framing", framing);
+    return framingLabel(framing);
+  }
+
+  function applyFraming() {
+    const style = framingStyle(framing);
+    video.style.objectFit = style.objectFit;
+    video.style.aspectRatio = style.aspectRatio;
   }
 
   function setVolume(to) {
@@ -201,6 +264,10 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime, recall, rem
    * speed. Re-applied per source instead.
    */
   let chosenRate = 1;
+  /** How the picture sits in the window. Per title, not per player. */
+  let framing = DEFAULT_FRAMING;
+  /** The stretch being repeated, if any. */
+  let loop = { ...NO_LOOP };
   speed.addEventListener("change", () => {
     chosenRate = Number(speed.value);
     video.playbackRate = chosenRate;
@@ -320,6 +387,13 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime, recall, rem
     video.addEventListener(event, refresh);
   }
 
+  // The only thing here that runs on every tick. `loopBack` answers `null` for
+  // all but one of them and says so cheaply, which is why it can.
+  video.addEventListener("timeupdate", () => {
+    const back = loopBack(loop, filmTime());
+    if (back !== null) onSeekTo(back);
+  });
+
   /**
    * Does what `keyAction` decided, whatever that was.
    *
@@ -347,10 +421,24 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime, recall, rem
         return toggleFullscreen();
       case "subtitles":
         return toggleSubtitles();
+      case "pictureInPicture":
+        return togglePictureInPicture();
+      case "framing":
+        return cycleFraming();
+      case "step":
+        return step(action.by);
+      case "speed":
+        return stepSpeed(action.by);
+      case "loop": {
+        loop = markLoop(loop, action.end, filmTime());
+        return isLooping(loop) || loop.from !== null
+          ? loopLabel(loop, clockTime)
+          : "";
+      }
       default:
         return undefined;
     }
   }
 
-  return { refresh, offerSubtitles, recallSpeed, act };
+  return { refresh, offerSubtitles, recallSpeed, recallFraming, act };
 }

@@ -32,6 +32,40 @@ describe("the keys the player takes", () => {
   });
 });
 
+describe("the handling keys", () => {
+  test("p and z", () => {
+    expect(keyAction({ key: "p" })).toEqual({ do: "pictureInPicture" });
+    expect(keyAction({ key: "z" })).toEqual({ do: "framing" });
+  });
+
+  test("comma and full stop step a frame either way", () => {
+    // Nominal: the index knows no frame rate, so this is a 24th of a second.
+    expect(keyAction({ key: "," })).toEqual({ do: "step", by: -1 / 24 });
+    expect(keyAction({ key: "." })).toEqual({ do: "step", by: 1 / 24 });
+  });
+
+  test("brackets step the speed the picker already offers", () => {
+    expect(keyAction({ key: "[" })).toEqual({ do: "speed", by: -1 });
+    expect(keyAction({ key: "]" })).toEqual({ do: "speed", by: 1 });
+  });
+
+  test("a and b mark out a loop", () => {
+    expect(keyAction({ key: "a" })).toEqual({ do: "loop", end: "from" });
+    expect(keyAction({ key: "b" })).toEqual({ do: "loop", end: "to" });
+  });
+
+  test("and every one of them is guarded like the rest", () => {
+    // Eight more keys is eight more chances to steal a keystroke. The guard is
+    // one place, so this is a table rather than eight arguments.
+    for (const key of ["p", "z", ",", ".", "[", "]", "a", "b"]) {
+      expect(keyAction({ key, inControl: true })).toBeNull();
+      expect(keyAction({ key, ctrlKey: true })).toBeNull();
+      // A focused button keeps only space and Enter; everything else works.
+      expect(keyAction({ key, onButton: true })).not.toBeNull();
+    }
+  });
+});
+
 describe("the keys it leaves alone", () => {
   test("Escape, which the dialog closes on", () => {
     expect(keyAction({ key: "Escape" })).toBeNull();

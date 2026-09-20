@@ -18,6 +18,19 @@ const SKIP = 10;
 const VOLUME_STEP = 0.1;
 
 /**
+ * A frame, near enough, at an unknown frame rate.
+ *
+ * The index stores no frame rate and probing for one is a round trip this does
+ * not want. A twenty-fourth of a second is a frame on a 24fps film, slightly
+ * less than one at 25 and about half at 50 — so it is a *nominal* frame, and
+ * the readout says so rather than pretending otherwise.
+ *
+ * `requestVideoFrameCallback` would give the true answer, but only while
+ * playing, which is exactly when nobody is stepping.
+ */
+const NOMINAL_FRAME = 1 / 24;
+
+/**
  * What this keystroke asks the player to do, or `null` for "not ours".
  *
  * `inControl` is a field that wants its own keys — a text box, a menu, the
@@ -66,6 +79,25 @@ export function keyAction(press = {}) {
       return { do: "fullscreen" };
     case "c":
       return { do: "subtitles" };
+    case "p":
+      return { do: "pictureInPicture" };
+    case "z":
+      return { do: "framing" };
+    // A frame at a time, the way an editor's keyboard does it.
+    case ",":
+      return { do: "step", by: -NOMINAL_FRAME };
+    case ".":
+      return { do: "step", by: NOMINAL_FRAME };
+    // The speeds the picker already offers, one step at a time.
+    case "[":
+      return { do: "speed", by: -1 };
+    case "]":
+      return { do: "speed", by: 1 };
+    // Marking out a passage worth repeating.
+    case "a":
+      return { do: "loop", end: "from" };
+    case "b":
+      return { do: "loop", end: "to" };
     default:
       break;
   }

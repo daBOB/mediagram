@@ -1,6 +1,6 @@
 # Phase 04 — Handling
 
-**Status:** not started
+**Status:** done
 
 ## Context
 
