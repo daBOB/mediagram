@@ -3,6 +3,7 @@ package ui
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -13,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import designsystem.Spacing
@@ -71,6 +73,14 @@ fun LoginScreen(
             } else {
                 VisualTransformation.None
             },
+            // Masking only hides the glyphs from whoever is looking at the
+            // screen. KeyboardType.Password is what tells the IME this is a
+            // secret, so it stops offering predictions, stops learning the
+            // word, and — for a keyboard that syncs its dictionary — stops
+            // the password leaving the device altogether.
+            keyboardOptions = KeyboardOptions(
+                keyboardType = if (isSecret) KeyboardType.Password else KeyboardType.Text,
+            ),
         )
         Button(onClick = { onSubmit(input) }) { Text("Continue") }
     }
