@@ -1,5 +1,6 @@
 package ui
 
+import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -26,24 +28,34 @@ import player.PlayerViewModel
 /**
  * Hosts the shared [PlayerViewModel] behind a `PlayerSurface`, keeping the
  * screen awake while a set is actually playing and stopping playback when
- * this leaves composition — the player itself is a process-lifetime
- * singleton, so nothing else would ever tell it to release its decoder
- * and audio focus otherwise. Touch controls are intentionally minimal:
- * back, and a loading/error overlay. There is no scrubber or seek bar yet,
- * since nothing has verified seeking across a part boundary works; adding
- * one before that is proven would let a user hit a bug no test caught.
+ * this leaves composition for real — not on a rotation, which destroys
+ * and recreates this same composition too (there is no
+ * `android:configChanges`) while the singleton player/ViewModel underneath
+ * survive regardless; see [shouldStopOnDispose]. Touch controls are
+ * intentionally minimal: back, and a loading/error overlay. There is no
+ * scrubber or seek bar yet, since nothing has verified seeking across a
+ * part boundary works; adding one before that is proven would let a user
+ * hit a bug no test caught.
  */
 @Composable
 fun PlayerScreen(setId: String, onBack: () -> Unit) {
     val viewModel: PlayerViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val player by viewModel.player.collectAsStateWithLifecycle()
+    val activity = LocalContext.current as? Activity
 
     LaunchedEffect(setId) { viewModel.open(setId) }
-    DisposableEffect(Unit) { onDispose { viewModel.stop() } }
+    DisposableEffect(Unit) {
+        onDispose {
+            if (shouldStopOnDispose(activity?.isChangingConfigurations == true)) {
+                viewModel.stop()
+            }
+        }
+    }
     KeepScreenOnWhile(isPlaying = state is PlayerUiState.Playing)
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        PlayerSurface(player = viewModel.player, modifier = Modifier.fillMaxSize())
+        player?.let { PlayerSurface(player = it, modifier = Modifier.fillMaxSize()) }
 
         when (state) {
             PlayerUiState.Preparing -> CenteredSpinner()
@@ -56,6 +68,15 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
         }
     }
 }
+
+/**
+ * A rotation disposes and recreates this screen's whole composition
+ * exactly the way leaving it for the catalog does; the two are told apart
+ * by whether the Activity itself is mid configuration change. Stopping on
+ * a rotation would restart the same set from zero every time the device
+ * turns, which is worse than the drop-to-catalog bug this replaced.
+ */
+internal fun shouldStopOnDispose(isChangingConfigurations: Boolean): Boolean = !isChangingConfigurations
 
 @Composable
 private fun KeepScreenOnWhile(isPlaying: Boolean) {
