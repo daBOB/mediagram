@@ -315,13 +315,31 @@ describe("marking a title as a child's", () => {
 });
 
 describe("recording that a title was watched to the end", () => {
-  const watched = async (profile = me) => (await snapshot(profile)).watched;
+  const watched = async (profile = me) =>
+    ((await snapshot(profile)).watched as { setId: string; finishedAt: number }[]).map(
+      (row) => row.setId,
+    );
 
   test("is kept and can be taken back", async () => {
     expect((await send(mine(`/watched/${SET}`), "PUT", {})).status).toBe(204);
     expect(await watched()).toContain(SET);
     expect((await send(mine(`/watched/${SET}`), "DELETE")).status).toBe(204);
     expect(await watched()).not.toContain(SET);
+  });
+
+  test("says when, which is all a finished show has left to be ranked by", async () => {
+    // Finishing an episode clears its position, so without this timestamp a
+    // show watched to the end of an episode has no date anywhere the page
+    // can see — and the start page orders shows by when they were touched.
+    const before = Date.now();
+    expect((await send(mine(`/watched/${SET}`), "PUT", {})).status).toBe(204);
+
+    const rows = (await snapshot()).watched as { setId: string; finishedAt: number }[];
+    const row = rows.find((entry) => entry.setId === SET);
+
+    expect(row).toBeDefined();
+    expect(row!.finishedAt).toBeGreaterThanOrEqual(before);
+    expect(row!.finishedAt).toBeLessThanOrEqual(Date.now());
   });
 
   test("refuses a title the catalog cannot play", async () => {

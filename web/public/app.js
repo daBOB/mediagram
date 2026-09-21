@@ -32,6 +32,8 @@ import * as state from "./lib/watch-state.js";
 import { resumeAt } from "./lib/resume-point.js";
 import { listControls, listsView, listView } from "./lib/collections-view.js";
 import { chooseProfile } from "./lib/profile-picker.js";
+import { homeShelves } from "./lib/home-shelves.js";
+import { renderHome } from "./lib/home-view.js";
 
 const main = document.getElementById("main");
 const player = document.getElementById("player");
@@ -50,7 +52,7 @@ let library = { movies: [], series: [], tutorials: [] };
 let byId = new Map();
 
 /** Views that are neither a catalog shelf nor one built from watch state. */
-const PAGES = new Set(["search", "system"]);
+const PAGES = new Set(["home", "search", "system"]);
 
 /** The shelves that come from what has been watched rather than the catalog. */
 const KEPT = {
@@ -122,6 +124,38 @@ function shelfToggle() {
     control.append(button);
   }
   return control;
+}
+
+/**
+ * Where the player opens: what is underway, and what arrived.
+ *
+ * The rules are all in `home-shelves.js` and the drawing is all in
+ * `home-view.js`; what is left here is handing one the state and the other
+ * the two things only this module can do — play a title, and open a shelf.
+ *
+ * A library with nothing in it has no rows to draw at all, and falls back to
+ * the one empty state that says how to fill it.
+ */
+function viewHome() {
+  const shelves = homeShelves({
+    library,
+    byId,
+    progress: state.inProgress(),
+    watchedAt: state.watchedAt,
+  });
+
+  const empty = Object.values(shelves).every((row) => row.length === 0);
+  if (empty) {
+    heading(SECTIONS.movies.label, countOf(0, SECTIONS.movies.extent));
+    return main.append(emptyState("movies"));
+  }
+
+  renderHome(main, shelves, {
+    play: (set) => play(set),
+    open: (section, name) => {
+      location.hash = `#/${section}/${encodeURIComponent(name)}`;
+    },
+  });
 }
 
 /** Films: a flat grid, since a film is one thing. */
@@ -521,6 +555,7 @@ function route() {
   // Leaving a search clears the box, so the shelf and the field agree.
   if (searchBox.value !== "") searchBox.value = "";
 
+  if (known === "home") return viewHome();
   if (known === "system") return viewSystem();
   if (known === "continue") return viewContinue();
   if (known === "watchlist") return viewWatchlist();
@@ -586,13 +621,10 @@ try {
   void offerSystem();
   refreshKept();
 
-  if (!location.hash) {
-    // Somewhere half-watched beats a shelf: the reason to open this page at
-    // all is usually the thing that was not finished last time.
-    const unfinished = state.inProgress().some((row) => resumeAt(row) !== null && byId.has(row.setId));
-    const first = ["movies", "series", "tutorials"].find((s) => library[s].length > 0) ?? "movies";
-    location.hash = `#/${unfinished ? "continue" : first}`;
-  }
+  // The start page, which answers both halves of what used to be decided
+  // here: what was left unfinished, and — for a viewer who finished
+  // everything — what has arrived since.
+  if (!location.hash) location.hash = "#/home";
   route();
 } catch (error) {
   main.textContent = "";

@@ -51,6 +51,20 @@ describe("the catalog", () => {
     expect(listed[0]!.acodec).toBe("ac3");
     expect(listed[0]!.total).toBe(1000);
     expect(listed[0]!.duration).toBe(8160);
+    expect(listed[0]!.addedAt).toBe(1_700_000_000);
+  });
+
+  test("lists newest first, by the arrival the page ranks on", () => {
+    // The start page's Latest shelves read `addedAt`, and the order they are
+    // served in has to agree with it — otherwise one of the two is lying.
+    const db = fixture();
+    completeSet(db, "01SET0000000000000000010", [{ off: 0, len: 10 }], 1_000);
+    completeSet(db, "01SET0000000000000000011", [{ off: 0, len: 10 }], 3_000);
+    completeSet(db, "01SET0000000000000000012", [{ off: 0, len: 10 }], 2_000);
+
+    const listed = listPlayable(db);
+
+    expect(listed.map((set) => set.addedAt)).toEqual([3_000, 2_000, 1_000]);
   });
 
   test("does not offer a pending set", () => {

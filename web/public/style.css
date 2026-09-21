@@ -143,6 +143,9 @@ body {
      declaration, three pixels, two lines. */
   border-bottom: 3px double var(--rule);
 }
+/* A link to the front page, drawn as the wordmark it was before: a masthead
+   that underlines its own name on hover is a masthead advertising a link
+   nobody needs told about. */
 .brand {
   font-family: var(--display);
   font-size: 1.85rem;
@@ -150,6 +153,8 @@ body {
   letter-spacing: -0.015em;
   line-height: 1;
   margin-right: auto;
+  color: var(--ink);
+  text-decoration: none;
 }
 
 .masthead nav {
@@ -501,6 +506,62 @@ main {
   margin: 0 auto;
   padding: 2.75rem var(--gutter) 4.5rem;
 }
+
+/* ---- the start page ----
+ *
+ * Rows of six, each a window onto a shelf. The heading is a run-in title in
+ * small caps rather than the display face a shelf page uses: five of those
+ * down one page would be five pages stacked, and the rows are subordinate to
+ * the page rather than being it.
+ */
+
+/* The page's own title, which is not drawn. The rows name themselves, and a
+   heading reading "Home" under the word mediagram says it twice — but a page
+   with no h1 is a page nothing can outline. */
+.page-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.row-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--rule);
+  /* Above its own grid, and well clear of the row before it: the gap is what
+     says where one row ends, since nothing else does. */
+  margin: 2.9rem 0 1.1rem;
+}
+/* The first row sits under the masthead's own rule and needs no second gap. */
+main > .page-title + .row-head { margin-top: 0; }
+
+.row-head h2 {
+  font-family: var(--display);
+  font-size: 1.35rem;
+  font-weight: 500;
+  letter-spacing: -0.008em;
+  line-height: 1.1;
+  margin: 0;
+  min-width: 0;
+}
+
+.see-all {
+  flex: none;
+  color: var(--ink-3);
+  text-decoration: none;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-bottom: 1px solid transparent;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+.see-all:hover { color: var(--accent); border-bottom-color: var(--accent); }
 
 /* Shelf title and its count on one line, the count flush right where a
    catalogue prints an extent. */

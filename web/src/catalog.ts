@@ -80,6 +80,14 @@ export interface PlayableSet {
   duration: number | null;
   total: number;
   partCount: number;
+  /**
+   * When the uploader added this, in epoch milliseconds.
+   *
+   * Arrival, not release: `year` is when a film came out, and the two answer
+   * different questions. What is *new to this library* is a title that
+   * landed this week, whatever year it was made in.
+   */
+  addedAt: number;
   /** The provider id the artwork is filed under. Server-side only. */
   tmdb: number | null;
 }
@@ -93,7 +101,7 @@ export interface PartLocation {
 
 const COLUMNS = `set_id AS setId, kind, title, show, chap, path, season, episode, year,
      container, vcodec, acodec, quality, hdr, alang, slang, duration, total,
-     part_count AS partCount, tmdb`;
+     part_count AS partCount, created_at AS addedAt, tmdb`;
 
 /**
  * Every playable set with the text a search reads, summaries included.

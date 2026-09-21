@@ -233,9 +233,31 @@ package/           the mlib-package-v1 reader: pointer, cipher, tar, refresh,
                    and the artwork a package carries
 transcode/         ffmpeg arguments, encoder probe, session registry, the
                    runner and its supervision, and serving what it produced
-public/            the page: shelves, the player dialog, hls.js when needed,
-                   and the buffer watch that converts down on a slow link
+public/            the page: the start page, shelves, the player dialog,
+                   hls.js when needed, and the buffer watch that converts
+                   down on a slow link
 ```
+
+### Where the player opens
+
+`#/home`, and the rows on it are decided in `public/lib/home-shelves.js` and
+drawn in `public/lib/home-view.js` — the same split every view here has, and
+the reason the rules are testable without a DOM.
+
+Two of those rows answer "what now?" from the two facts the library actually
+has. **Next up** carries one card per show or course underway: the episode in
+progress if there is one, otherwise the first unwatched episode after the one
+finished most recently, shows ordered by when they were last watched. **The
+latest rows** count arrival rather than release, and rank a show by its
+newest episode so a series still being uploaded keeps its place.
+
+Both needed a fact that was being thrown away. A catalog row carries
+`addedAt`, because `groupLibrary()` sorts by title and the arrival order the
+query produced does not survive it. And `/state` serves `watched` as
+`[{setId, finishedAt}]`: finishing an episode *clears* its position, so
+without the completion's date a show watched to the end of an episode has no
+timestamp anywhere the page can see, and would rank behind one glanced at
+months ago.
 
 The 200-line rule [§2](#2-module-map-cratesmediagramsrc) states holds here
 too, with one exception worth naming rather than hiding: `routes.ts` is over
@@ -311,14 +333,22 @@ The one fact worth naming is the refresh verdict. A player quietly serving a
 package it could not refresh looks exactly like one serving a current package,
 and nothing else the page shows would say otherwise.
 
-**The route answers a local viewer and 404s everyone else** — 404 rather than
-403, because a 403 confirms to a caller from outside that there is something
-here worth a second request, and this API has no authentication of its own.
-The address is checked before the method, so "wrong method" and "nothing here"
-are indistinguishable from outside. The page follows the same rule: the only
-link to `#/status` is in the colophon, and it is rendered only after
-`/api/status` has answered a `HEAD`. A remote viewer never learns the page is
-there.
+**The route answers this household's own devices and 404s everyone else** —
+404 rather than 403, because a 403 confirms to a caller from outside that
+there is something here worth a second request, and this API has no
+authentication of its own. The address is checked before the method, so
+"wrong method" and "nothing here" are indistinguishable from outside. The
+page follows the same rule: the only way to `#/system` is the masthead entry,
+and it is unhidden only after `/api/status` has answered a `HEAD`. A viewer
+from outside never learns the page is there.
+
+Own devices, not the local network, and the difference is the tailnet.
+`client-reach.ts` answers two questions about an address, and they part over
+100.64/10: `isLocalAddress` says what the *link* can carry, so a tailnet peer
+is remote there and its titles are converted; `isOwnNetwork` says whose
+device is asking, and a Tailscale peer had to be admitted to the tailnet
+before it could send a packet, so it is the same phone that would be on the
+sofa if it were home. Only this route asks the second question.
 
 What it reports beyond the startup facts: the cache's hits, misses and
 evictions; bytes fetched upstream, and the failed reads that are the one

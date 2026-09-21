@@ -5,6 +5,46 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 2026-09-22
+
+**Shipped**
+
+- A start page, at `#/home`, and the player now opens on it. Five rows, each
+  six cards with a link to the shelf behind them: Continue, Next up, and the
+  latest films, series and courses. It replaces the old landing rule, which
+  picked Continue when anything was half-watched and otherwise the first
+  non-empty shelf — both of them lists of everything, sorted by title.
+
+  **Next up** is the row with rules in it. One card per show or course
+  underway: the episode in progress if there is one, otherwise the first
+  unwatched episode after the one finished most recently, with shows ordered
+  by when they were last watched. An episode seen out of order is skipped
+  rather than offered again, and a show with nothing left leaves the row.
+  Continue does not repeat what Next up is showing, so one title is one card.
+
+  **Latest** counts arrival, not release: a show ranks by its newest episode,
+  so a series still being uploaded keeps its place. Two payloads grew to make
+  that possible — a catalog row now carries `addedAt`, and `/state` serves
+  `watched` as `[{setId, finishedAt}]` rather than bare ids, because
+  finishing an episode clears its position and the completion's date is then
+  the only record that the show was touched at all. A state file written by
+  an older player still loads.
+
+## 2026-09-21
+
+**Fixed**
+
+- The System entry was missing from the masthead for a viewer reaching the
+  player over Tailscale. The entry appears only where `/api/status` answers,
+  and that route asked `isLocalAddress`, which excludes 100.64/10 — the range
+  Tailscale hands its peers. One predicate was answering two questions: what
+  the link can carry, which decides direct play against a conversion, and
+  whose device is on the other end, which decides whether the panel may be
+  seen. The second is now `isOwnNetwork`, which is the local networks plus
+  the tailnet, and only the status route asks it. Playback over a tailnet is
+  unchanged and still converts: the phone is the household's, the uplink is
+  still an uplink. Present since the panel was added on 2026-09-19.
+
 ## 2026-09-20
 
 **Fixed**

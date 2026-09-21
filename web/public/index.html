@@ -18,8 +18,13 @@
          shelves, and a sidebar would spend a fifth of the page's width
          saying so. -->
     <header class="masthead">
-      <div class="brand">mediagram</div>
+      <!-- The wordmark goes where a masthead's does: back to the front
+           page. Nothing else in the header is a way home. -->
+      <a class="brand" href="#/home">mediagram</a>
       <nav>
+        <!-- Not a shelf either: what is underway and what has arrived. It is
+             where the player opens, so it is the first thing in the row. -->
+        <a href="#/home" data-section="home">Home</a>
         <a href="#/movies" data-section="movies">Movies<span class="n" id="n-movies"></span></a>
         <a href="#/series" data-section="series">Series<span class="n" id="n-series"></span></a>
         <a href="#/tutorials" data-section="tutorials">Tutorials<span class="n" id="n-tutorials"></span></a>
@@ -34,9 +39,10 @@
              with the picture books. -->
         <a href="#/kids" data-section="kids" class="kept">Kids<span class="n" id="n-kids"></span></a>
         <!-- Not a shelf: what the player itself is doing. Hidden until
-             `/api/status` answers, which it does only for a viewer on this
-             network — a remote viewer is never shown a way in to a page they
-             would get a 404 from. -->
+             `/api/status` answers, which it does for this household's own
+             devices — this network, or a peer on the tailnet. A viewer from
+             outside is never shown a way in to a page they would get a 404
+             from. -->
         <a href="#/system" data-section="system" class="apart" id="nav-system" hidden>System</a>
       </nav>
       <!-- Whose shelves these are. A profile is a convenience, not a login:

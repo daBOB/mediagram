@@ -27,6 +27,12 @@ export interface Progress {
   updatedAt: number;
 }
 
+/** One title this profile watched to the end, and when it did. */
+export interface Watched {
+  setId: string;
+  finishedAt: number;
+}
+
 export interface Collection {
   id: string;
   name: string;
@@ -44,8 +50,13 @@ export interface StateSnapshot {
   progress: Progress[];
   watchlist: string[];
   collections: Collection[];
-  /** Watched to the end. Kept because finishing clears the position. */
-  watched: string[];
+  /**
+   * Watched to the end, and when. Kept because finishing clears the
+   * position, and dated because that leaves the completion as the only
+   * record that a show was touched at all — which is what the start page
+   * ranks a show by.
+   */
+  watched: Watched[];
   /**
    * What this viewer chose, by scope and name.
    *
@@ -177,10 +188,12 @@ export class WatchState {
       ),
     }));
 
-    const watched = this.setIds(
-      "SELECT set_id AS setId FROM watched WHERE profile_id = ?1",
-      profileId,
-    );
+    const watched = this.db
+      .query(
+        `SELECT set_id AS setId, finished_at AS finishedAt
+           FROM watched WHERE profile_id = ?1 ORDER BY finished_at DESC`,
+      )
+      .all(profileId) as Watched[];
 
     const preferences = this.db
       .query("SELECT scope, name, value FROM preferences WHERE profile_id = ?1")

@@ -105,7 +105,7 @@ describe("finishing on one machine", () => {
     sync(desktop, [publish(laptop)]);
 
     expect(desktop.state.snapshot(desktop.me).progress).toEqual([]);
-    expect(desktop.state.snapshot(desktop.me).watched).toEqual(["01FILM"]);
+    expect(desktop.state.snapshot(desktop.me).watched.map((row) => row.setId)).toEqual(["01FILM"]);
   });
 });
 
@@ -146,6 +146,6 @@ describe("a machine joining late", () => {
     const them = fresh.profiles()[0]!;
     expect(them.name).toBe("André");
     expect(fresh.snapshot(them.id).progress[0]!.setId).toBe("01A");
-    expect(fresh.snapshot(them.id).watched).toEqual(["01B"]);
+    expect(fresh.snapshot(them.id).watched.map((row) => row.setId)).toEqual(["01B"]);
   });
 });

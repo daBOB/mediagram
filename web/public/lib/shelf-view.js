@@ -13,7 +13,7 @@ import { isWatched, progressOf } from "./watch-state.js";
 import { watchedFraction } from "./resume-point.js";
 import { firstItemOf } from "./library.js";
 import { offlineBadge, transcodeBadge } from "./set-badge.js";
-import { GRID } from "./shelf-mode.js";
+import { GRID, LIST } from "./shelf-mode.js";
 
 // `extent` is what the shelf counts in, for the line under its title: a
 // catalogue says "twelve films", not "12 items".
@@ -112,22 +112,35 @@ export function movieGrid(movies, onPlay, mode) {
  * catalog shelves never have to deal with — so the caption says where a title
  * came from rather than assuming everything on the shelf is one kind of thing.
  */
-export function setGrid(sets, onPlay) {
-  const grid = el("div", "grid");
+export function setGrid(sets, onPlay, options = {}) {
+  // Where this viewer got to, unless the caller knows better. The start
+  // page does: an episode offered because the one before it was finished
+  // has no position to report, and "next up" is what that line should say.
+  const caption = options.caption ?? ((set) => resumeLine(progressOf(set.setId)));
+  // An index by default, because a watch-state shelf is a list of what is
+  // outstanding. The start page asks for plates, so its rows are the same
+  // shape as the ones below them.
+  const mode = options.mode ?? LIST;
+  const grid = container(mode);
   for (const set of sets) {
     grid.append(
       card({
         name: set.title ?? set.setId,
-        meta: [set.show, episodeLabel(set), set.year, humanDuration(set.duration)]
+        // Under a plate, what identifies an episode is its show and its
+        // number; the year and the runtime are what a list has room for.
+        meta: (mode === GRID
+          ? [set.show, episodeLabel(set)]
+          : [set.show, episodeLabel(set), set.year, humanDuration(set.duration)]
+        )
           .filter(Boolean)
           .join(" · "),
         initials: initialsOf(set.title ?? set.show),
         poster: set.poster ?? null,
         badges: [offlineBadge(set), transcodeBadge(set)],
         progress: watchedFraction(progressOf(set.setId)),
-        // Where this viewer got to. Empty for a title never started, so a
-        // watchlist of things not yet begun gains no line it cannot fill.
-        resume: resumeLine(progressOf(set.setId)),
+        // Empty for a title never started, so a watchlist of things not yet
+        // begun gains no line it cannot fill.
+        resume: caption(set),
         watched: isWatched(set.setId),
         onClick: () => onPlay(set),
       }),

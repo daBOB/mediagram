@@ -304,7 +304,7 @@ describe("titles watched to the end", () => {
   test("are remembered, because finishing clears the position", () => {
     const { state, me } = stateIn();
     state.setWatched(me, "01SET0000000000000000001", true);
-    expect(state.snapshot(me).watched).toEqual(["01SET0000000000000000001"]);
+    expect(state.snapshot(me).watched.map((row) => row.setId)).toEqual(["01SET0000000000000000001"]);
   });
 
   test("belong to the viewer, not to the library", () => {
@@ -313,15 +313,15 @@ describe("titles watched to the end", () => {
     const { state, me } = stateIn();
     const other = state.createProfile("Someone else")!;
     state.setWatched(me, "01SET0000000000000000001", true);
-    expect(state.snapshot(me).watched).toEqual(["01SET0000000000000000001"]);
-    expect(state.snapshot(other.id).watched).toEqual([]);
+    expect(state.snapshot(me).watched.map((row) => row.setId)).toEqual(["01SET0000000000000000001"]);
+    expect(state.snapshot(other.id).watched.map((row) => row.setId)).toEqual([]);
   });
 
   test("can be taken back", () => {
     const { state, me } = stateIn();
     state.setWatched(me, "01SET0000000000000000001", true);
     state.setWatched(me, "01SET0000000000000000001", false);
-    expect(state.snapshot(me).watched).toEqual([]);
+    expect(state.snapshot(me).watched.map((row) => row.setId)).toEqual([]);
   });
 
   test("finishing twice records once, not twice", () => {
@@ -329,7 +329,7 @@ describe("titles watched to the end", () => {
     const { state, me } = stateIn();
     state.setWatched(me, "01SET0000000000000000001", true);
     state.setWatched(me, "01SET0000000000000000001", true);
-    expect(state.snapshot(me).watched).toEqual(["01SET0000000000000000001"]);
+    expect(state.snapshot(me).watched.map((row) => row.setId)).toEqual(["01SET0000000000000000001"]);
   });
 
   test("survive keeping a position again, which is what re-watching does", () => {
@@ -337,14 +337,14 @@ describe("titles watched to the end", () => {
     state.setWatched(me, "01SET0000000000000000001", true);
     state.setProgress(me, "01SET0000000000000000001", 30, 1800);
     const held = state.snapshot(me);
-    expect(held.watched).toEqual(["01SET0000000000000000001"]);
+    expect(held.watched.map((row) => row.setId)).toEqual(["01SET0000000000000000001"]);
     expect(held.progress.map((p) => p.setId)).toEqual(["01SET0000000000000000001"]);
   });
 
   test("are nothing rather than fatal on a player that cannot remember", () => {
     const state = new WatchState(null);
     expect(() => state.setWatched("p", "01SET0000000000000000001", true)).not.toThrow();
-    expect(state.snapshot("p").watched).toEqual([]);
+    expect(state.snapshot("p").watched.map((row) => row.setId)).toEqual([]);
   });
 });
 
@@ -471,7 +471,7 @@ describe("what this player takes back", () => {
     });
 
     expect(state.snapshot(me).progress).toEqual([]);
-    expect(state.snapshot(me).watched).toEqual(["01SET"]);
+    expect(state.snapshot(me).watched.map((row) => row.setId)).toEqual(["01SET"]);
   });
 
   test("a position this player has and the merge does not is left alone", () => {

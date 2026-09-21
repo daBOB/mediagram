@@ -23,6 +23,8 @@ export interface CatalogSet {
   duration: number | null;
   total: number;
   partCount: number;
+  /** When the uploader added this, in epoch milliseconds. Arrival, not release. */
+  addedAt: number;
 }
 
 /**

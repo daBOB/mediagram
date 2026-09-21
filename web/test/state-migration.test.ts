@@ -180,7 +180,7 @@ describe("v3 to v4", () => {
     expect(state.kids()).toEqual(["kset"]);
     // Starting from nothing was the decision: no history is invented for
     // titles finished before there was anywhere to record it.
-    expect(state.snapshot("p1").watched).toEqual([]);
+    expect(state.snapshot("p1").watched.map((row) => row.setId)).toEqual([]);
     state.close();
   });
 
@@ -193,8 +193,8 @@ describe("v3 to v4", () => {
 
     const state = new WatchState(path);
     state.setWatched("p1", "aset", true);
-    expect(state.snapshot("p1").watched).toEqual(["aset"]);
-    expect(state.snapshot("p2").watched).toEqual([]);
+    expect(state.snapshot("p1").watched.map((row) => row.setId)).toEqual(["aset"]);
+    expect(state.snapshot("p2").watched.map((row) => row.setId)).toEqual([]);
     state.close();
   });
 
@@ -207,7 +207,7 @@ describe("v3 to v4", () => {
     first.close();
 
     const second = new WatchState(path);
-    expect(second.snapshot("p1").watched).toEqual(["aset"]);
+    expect(second.snapshot("p1").watched.map((row) => row.setId)).toEqual(["aset"]);
     second.close();
   });
 });
@@ -240,7 +240,7 @@ describe("v4 to v5", () => {
     // Nothing of theirs was disturbed on the way past.
     expect(before.progress).toHaveLength(1);
     expect(before.watchlist).toEqual(["01OTHER"]);
-    expect(before.watched).toEqual(["01DONE"]);
+    expect(before.watched.map((row) => row.setId)).toEqual(["01DONE"]);
     expect(before.preferences).toEqual([]);
 
     state.setPreference("p1", "key:tmdb-tv-1399", "audio", "en");

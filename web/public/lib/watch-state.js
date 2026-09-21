@@ -23,9 +23,11 @@ const held = {
   progress: new Map(),
   watchlist: new Set(),
   collections: [],
-  /** Watched to the end. Held because finishing clears the position, so this
-   *  is the only thing that remembers a title was ever completed. */
-  watched: new Set(),
+  /** Watched to the end, as set id -> when. Held because finishing clears
+   *  the position, so this is the only thing that remembers a title was ever
+   *  completed — and for a show watched to the end of an episode, the only
+   *  thing that says when the show was last touched. */
+  watched: new Map(),
   /** Marked as a child's. Shared by everyone on this player, not held per
    *  profile — a mark is about the title, not about who is watching. */
   kids: new Set(),
@@ -138,7 +140,7 @@ export async function useProfile(id) {
   held.progress = new Map();
   held.watchlist = new Set();
   held.collections = [];
-  held.watched = new Set();
+  held.watched = new Map();
   held.preferences = new Map();
   if (id === null) return;
 
@@ -154,7 +156,15 @@ export async function useProfile(id) {
     );
     held.watchlist = new Set(said.watchlist ?? []);
     held.collections = said.collections ?? [];
-    held.watched = new Set(said.watched ?? []);
+    // Both shapes: a state file written before completions were dated
+    // serves bare ids, and the first load after an upgrade must not lose
+    // every tick. An undated one keeps 0, which sorts behind anything with
+    // a date and still counts as watched.
+    held.watched = new Map(
+      (said.watched ?? []).map((row) =>
+        typeof row === "string" ? [row, 0] : [row.setId, Number(row.finishedAt) || 0],
+      ),
+    );
     held.preferences = new Map(
       (said.preferences ?? []).map((row) => [preferenceKey(row.scope, row.name), row.value]),
     );
@@ -222,6 +232,16 @@ export function setWatchlisted(setId, listed) {
 export const isWatched = (setId) => held.watched.has(setId);
 
 /**
+ * When `setId` was finished, or `null`.
+ *
+ * The other half of `inProgress`'s `updatedAt`: between them they say when a
+ * title was last touched, whether the viewer stopped in the middle of it or
+ * reached the end. A show ranked without this one falls to the bottom of
+ * the start page the moment its episode is finished.
+ */
+export const watchedAt = (setId) => held.watched.get(setId) ?? null;
+
+/**
  * Records that a title reached its end.
  *
  * Called from the same branch that clears the position, because a finished
@@ -229,7 +249,7 @@ export const isWatched = (setId) => held.watched.has(setId);
  * it happened.
  */
 export function setWatched(setId, finished) {
-  if (finished) held.watched.add(setId);
+  if (finished) held.watched.set(setId, Date.now());
   else held.watched.delete(setId);
   void write(under(`/watched/${encodeURIComponent(setId)}`), finished ? "PUT" : "DELETE", finished ? {} : undefined);
 }
