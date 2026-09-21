@@ -12,8 +12,8 @@ import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.collection
 import catalog.mediaSet
-import system.PostersViewModel
-import uniffi.mediagram_core.PosterReport
+import system.FetchViewModel
+import uniffi.mediagram_core.FetchReport
 
 /**
  * The catalog, whichever show or course it opened, whichever title that
@@ -34,8 +34,8 @@ import uniffi.mediagram_core.PosterReport
 internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
     val catalogViewModel: CatalogViewModel = hiltViewModel()
     val catalogState by catalogViewModel.state.collectAsStateWithLifecycle()
-    val postersViewModel: PostersViewModel = hiltViewModel()
-    val postersState by postersViewModel.state.collectAsStateWithLifecycle()
+    val fetchViewModel: FetchViewModel = hiltViewModel()
+    val fetchState by fetchViewModel.state.collectAsStateWithLifecycle()
     val at = rememberLibraryPositions()
 
     val setId = at.setId
@@ -57,12 +57,13 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
         // To the shelves as well, and for a second reason besides that
         // one: a fetch is minutes of network over hundreds of titles, the
         // menu that started it is already closed, and the shelves are both
-        // where the progress line lives and where the artwork lands.
-        onFetchPosters = { at.toCatalog(); postersViewModel.fetch() },
+        // where the progress line lives and where the artwork it fetches
+        // lands.
+        onFetch = { at.toCatalog(); fetchViewModel.fetch() },
         onTmdbKey = { at.menuScreen = MenuScreen.TmdbKey },
         onStartOver = onStartOver,
         refreshDisabledReason = refreshDisabledReason(catalogState),
-        fetchPostersDisabledReason = fetchPostersDisabledReason(postersState.running, postersState.hasKey),
+        fetchDisabledReason = fetchDisabledReason(fetchState.running, fetchState.hasKey),
     )
 
     when {
@@ -84,8 +85,8 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
             when (menuScreen) {
                 MenuScreen.System -> SystemScreen()
                 MenuScreen.TmdbKey -> TmdbKeyScreen(
-                    hasKey = postersState.hasKey,
-                    onSave = postersViewModel::saveKey,
+                    hasKey = fetchState.hasKey,
+                    onSave = fetchViewModel::saveKey,
                 )
             }
         }
@@ -125,7 +126,7 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
             ) {
                 CatalogScreen(
                     state = catalogState,
-                    fetchingPosters = postersState.running,
+                    fetching = fetchState.running,
                     onOpenTitle = { at.titleId = it },
                     onOpenCollection = { at.collection = it },
                 )
@@ -139,15 +140,15 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
     // so it is still there when the film is left, which is when there is
     // somebody to read it.
     if (setId == null) {
-        PosterFetchResultDialog(
-            message = posterFetchResultMessage(postersState.report, postersState.error),
-            onDismiss = postersViewModel::dismissResult,
+        FetchResultDialog(
+            message = fetchResultMessage(fetchState.report, fetchState.error),
+            onDismiss = fetchViewModel::dismissResult,
         )
     }
 }
 
-/** Why "Fetch posters" cannot be tapped right now, or `null` when it can. */
-private fun fetchPostersDisabledReason(running: Boolean, hasKey: Boolean): String? = when {
+/** Why "Fetch details and artwork" cannot be tapped right now, or `null` when it can. */
+private fun fetchDisabledReason(running: Boolean, hasKey: Boolean): String? = when {
     running -> "Fetching…"
     !hasKey -> "No TMDB key stored"
     else -> null
@@ -168,11 +169,13 @@ private fun refreshDisabledReason(state: CatalogUiState): String? = when {
 }
 
 /** The sentence a finished or failed fetch leaves behind, or `null` while there is nothing to say. */
-private fun posterFetchResultMessage(report: PosterReport?, error: String?): String? = when {
+private fun fetchResultMessage(report: FetchReport?, error: String?): String? = when {
     error != null -> error
-    report != null -> posterReportLine(
-        fetched = report.fetched.toInt(),
-        alreadyHeld = report.alreadyHeld.toInt(),
+    report != null -> fetchSentence(
+        detailsRecorded = report.detailsRecorded.toInt(),
+        postersFetched = report.postersFetched.toInt(),
+        detailsAlreadyKnown = report.detailsAlreadyKnown.toInt(),
+        postersAlreadyHeld = report.postersAlreadyHeld.toInt(),
         noProviderId = report.noProviderId.toInt(),
         failed = report.failed.toInt(),
     )
@@ -181,12 +184,12 @@ private fun posterFetchResultMessage(report: PosterReport?, error: String?): Str
 
 /** What a fetch reported, or what stopped it — shown over whichever library screen is up when it finishes. */
 @Composable
-private fun PosterFetchResultDialog(message: String?, onDismiss: () -> Unit) {
+private fun FetchResultDialog(message: String?, onDismiss: () -> Unit) {
     if (message == null) return
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Fetch posters") },
+        title = { Text("Fetch details and artwork") },
         text = { Text(message) },
         confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } },
     )

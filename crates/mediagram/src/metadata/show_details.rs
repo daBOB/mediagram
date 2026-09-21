@@ -4,8 +4,8 @@ use anyhow::Result;
 use mlib_spec::Kind;
 
 use mediagram_tmdb::details;
+use mediagram_tmdb::details::{ShowRow, from_details};
 use mediagram_tmdb::tmdb_client::TmdbApi;
-use crate::index::shows::{ShowRow, from_details};
 
 /// What a provider says about one title, ready to record.
 ///

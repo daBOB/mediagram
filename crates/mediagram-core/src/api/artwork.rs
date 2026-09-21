@@ -1,54 +1,29 @@
-//! Fetching poster artwork for a catalog a channel index cannot carry.
+//! Deciding what one fetch run will ask a catalog's provider for.
 //!
 //! Split so each part can be driven by a stub in tests, and so the two
 //! decisions worth pinning are readable from outside: [`plan_fetch`] settles
-//! what a run asks for and where its artwork goes, before the key is spent,
-//! and [`verify_then_fetch`] puts the key check ahead of [`fetch_into`] and
-//! the disk cache around it, in that order and for the reason its own
-//! comment gives. [`fetch_posters`] composes them around a real TMDB client
-//! and decides nothing else.
+//! what a run asks for, in which language, and where what comes back goes,
+//! before the key is spent; [`verify_then_fetch`] puts the key check ahead
+//! of [`super::fetch::fetch_into`] and the disk cache around it, for the
+//! reason its own comment gives.
 
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use mlib_spec::Kind;
 use rusqlite::{Connection, OpenFlags};
 
-use mediagram_tmdb::posters::{already_held, download_into, resolve_posters};
+use mediagram_tmdb::posters::kind_key;
 use mediagram_tmdb::tmdb_client::{DiskCachedApi, Localized, TmdbApi, TmdbClient};
 
 use crate::catalog::PlayableSet;
-use crate::dto::PosterReport;
+use crate::dto::FetchReport;
 
 use super::catalog;
+use super::fetch::{fetch_into, language_of};
 use super::{Core, CoreError, http};
 
-/// Everything a fetch does except constructing the client, so a test can
-/// drive a stub in place of a real TMDB key.
-///
-/// `titles` already excludes anything without a provider id — `without_id`
-/// is that count, carried through rather than recomputed, so this function
-/// never has to know what a course is to report on one correctly.
-pub async fn fetch_into(
-    api: &impl TmdbApi,
-    http: &reqwest::Client,
-    posters_dir: &Path,
-    titles: &[(Kind, u64)],
-    without_id: u32,
-) -> PosterReport {
-    let refs = resolve_posters(api, titles).await;
-    let held = already_held(&refs, posters_dir) as u32;
-    // A hard failure here (the posters directory could not even be created)
-    // leaves every resolved ref undownloaded rather than panicking — the
-    // catalog is the product, the artwork a convenience.
-    let written = download_into(http, &refs, posters_dir).await.unwrap_or_default();
-    let fetched = (written.len() as u32).saturating_sub(held);
-    let failed = (refs.len() - written.len()) as u32;
-
-    PosterReport { fetched, already_held: held, no_provider_id: without_id, failed }
-}
-
-/// What a fetch will ask the provider for, and where what comes back is
-/// kept.
+/// What a fetch will ask the provider for, and where what comes back is kept.
 ///
 /// The directory is part of this answer rather than chosen where the writing
 /// happens, so that it is a value a test can read. Where artwork lands is
@@ -57,6 +32,10 @@ pub struct FetchPlan {
     pub artwork_dir: PathBuf,
     pub titles: Vec<(Kind, u64)>,
     pub without_id: u32,
+    /// The language to ask in — see [`language_of`]. Read from the same
+    /// snapshot of the index the titles come from, because it is part of
+    /// what a run asks for and not a detail of how it asks.
+    pub language: String,
 }
 
 /// Reads the installed catalog and works out what a fetch would do with it.
@@ -66,52 +45,55 @@ pub struct FetchPlan {
 /// the real directory exactly once, here, before any request, and that
 /// resolved value is used for exactly one thing afterwards: opening
 /// `library.db`, which genuinely belongs to this snapshot of the catalog.
-/// A refresh landing mid-fetch therefore leaves this run reading the
-/// database that was current when it started, whole, rather than reading
-/// out of a directory a cleanup pass deletes out from under it.
+/// A refresh landing mid-fetch therefore cannot leave the plan half-read out
+/// of a directory a cleanup pass is deleting. The plan, not the whole run:
+/// the description walk re-resolves `current` once per title and may see a
+/// newer index than this one — `super::fetch::record_descriptions` says why
+/// that is the right answer there rather than a missed one.
 ///
 /// The posters a fetch writes and the TMDB disk cache it reads through go
 /// to `catalog::artwork_dir`: beside the version directories, not inside
 /// one, so no refresh reaches them — and inside `catalog/`, so forgetting
-/// the library forgets them too.
-pub fn plan_fetch(core: &Core) -> Result<FetchPlan, CoreError> {
+/// the library forgets them too. `fallback` is the caller's own locale,
+/// used only for a library nothing has described in any language.
+pub fn plan_fetch(core: &Core, fallback: &str) -> Result<FetchPlan, CoreError> {
     let dir = std::fs::canonicalize(catalog::current_dir(core))
         .map_err(|_| CoreError::NotFound("no catalog is loaded yet".into()))?;
     let conn = Connection::open_with_flags(dir.join("library.db"), OpenFlags::SQLITE_OPEN_READ_ONLY)
         .map_err(|_| CoreError::Io("opening the catalog".into()))?;
     let sets = crate::catalog::list_playable(&conn)
         .map_err(|_| CoreError::Io("reading the catalog".into()))?;
+    let language = language_of(&conn, fallback);
     drop(conn);
 
     let (titles, without_id) = split_titles(&sets);
-    Ok(FetchPlan { artwork_dir: catalog::artwork_dir(core), titles, without_id })
+    Ok(FetchPlan { artwork_dir: catalog::artwork_dir(core), titles, without_id, language })
 }
 
-/// Fetches artwork for every title the provider numbers.
-pub(super) async fn fetch_posters(
+/// Fills both gaps a library leaves, for every title the provider numbers:
+/// the artwork an index cannot carry, and descriptions nobody fetched.
+pub(super) async fn fetch_missing(
     core: &Core,
     tmdb_key: String,
     language: String,
-) -> Result<PosterReport, CoreError> {
-    let plan = plan_fetch(core)?;
+) -> Result<FetchReport, CoreError> {
+    let plan = plan_fetch(core, &language)?;
     if plan.titles.is_empty() {
         // Nothing the provider could answer about — no reason to spend a
         // request validating a key that will never be used.
-        return Ok(PosterReport { no_provider_id: plan.without_id, ..PosterReport::default() });
+        return Ok(FetchReport { no_provider_id: plan.without_id, ..FetchReport::default() });
     }
 
-    // Built once, and handed on: `TmdbClient` takes this same instance
-    // rather than building its own (see `mediagram_tmdb::tmdb_client`'s doc
-    // comment), so there is one client here, not two, and only `client()`'s
-    // own call to `install_provider` to account for.
+    // Built once and handed on: `TmdbClient` takes this instance rather than
+    // building its own (see `mediagram_tmdb::tmdb_client`), so there is one
+    // client here, not two, and only `client()`'s `install_provider` to weigh.
     let client = http::client()?;
     let api = TmdbClient::new(client.clone(), tmdb_key);
-    verify_then_fetch(api, &client, &plan.artwork_dir, &language, &plan.titles, plan.without_id)
-        .await
+    let FetchPlan { artwork_dir, titles, without_id, language } = plan;
+    verify_then_fetch(core, api, &client, &artwork_dir, &language, &titles, without_id).await
 }
 
-/// Validates the key against the provider, then resolves and downloads with
-/// it.
+/// Validates the key against the provider, then spends it.
 ///
 /// `api` is the provider itself, and the validation is asked of it directly.
 /// Asked instead through the disk cache built below, a warm cache would
@@ -122,35 +104,54 @@ pub(super) async fn fetch_posters(
 /// that same cache. The run would report a library that is entirely
 /// "already held" and a key that is entirely fine.
 ///
-/// The cache wraps `api` afterwards, for the resolve-and-download half,
-/// where being answered twice out of one request is the whole point of it.
+/// The cache wraps `api` afterwards, where being answered twice out of one
+/// request is the whole point of it: a poster path, then a description.
 pub async fn verify_then_fetch<A: TmdbApi>(
+    core: &Core,
     api: A,
     http: &reqwest::Client,
     artwork_dir: &Path,
     language: &str,
     titles: &[(Kind, u64)],
     without_id: u32,
-) -> Result<PosterReport, CoreError> {
+) -> Result<FetchReport, CoreError> {
     verify_key(&api).await?;
     let cached = Localized::new(DiskCachedApi::new(api, artwork_dir), language);
-    Ok(fetch_into(&cached, http, artwork_dir, titles, without_id).await)
+    Ok(fetch_into(core, &cached, http, artwork_dir, language, titles, without_id).await)
 }
 
 /// Splits the catalog into what the provider can be asked about and what
 /// cannot be asked at all — a course has no provider id, and is counted
 /// rather than looked up. `pub` because the count it returns is part of what
 /// a fetch reports, and a caller needs this classification, not a copy of it.
+///
+/// Both halves are titles, never sets. A title is what a shelf shows as one
+/// card: every episode of a series shares one provider id, every lesson is
+/// shelved under its course. Counted per set — which is how the index holds
+/// them — one half of this answer meant something else than the other, and a
+/// 162-lesson course read as "162 titles" beside "3 posters fetched".
 pub fn split_titles(sets: &[PlayableSet]) -> (Vec<(Kind, u64)>, u32) {
     let mut titles = Vec::new();
-    let mut without_id = 0u32;
+    let mut seen: HashSet<String> = HashSet::new();
+    let mut unaskable: HashSet<(&str, &str)> = HashSet::new();
     for set in sets {
         match (kind_of(&set.kind), set.tmdb) {
-            (Some(kind), Some(id)) if id > 0 => titles.push((kind, id as u64)),
-            _ => without_id += 1,
+            (Some(kind), Some(id)) if id > 0 => {
+                if seen.insert(format!("tmdb-{}-{id}", kind_key(kind))) {
+                    titles.push((kind, id as u64));
+                }
+            }
+            _ => {
+                // A film is its own card; anything else is shelved under its
+                // collection, and the ones naming none share the single card
+                // `Shelves.kt` gives them instead of being counted apart.
+                let held_by = set.show.as_deref().map(str::trim).filter(|s| !s.is_empty());
+                let alone = if set.kind == "movie" { set.set_id.as_str() } else { "" };
+                unaskable.insert((set.kind.as_str(), held_by.unwrap_or(alone)));
+            }
         }
     }
-    (titles, without_id)
+    (titles, unaskable.len() as u32)
 }
 
 /// The `kind` column spells `Kind` exactly as its own serde does — see

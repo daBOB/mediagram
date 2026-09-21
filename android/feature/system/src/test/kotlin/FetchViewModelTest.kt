@@ -6,21 +6,22 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import settings.InMemoryTmdbSettings
 import uniffi.mediagram_core.CoreException
-import uniffi.mediagram_core.PosterReport
+import uniffi.mediagram_core.FetchReport
+import java.util.Locale
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class PostersViewModelTest {
+class FetchViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
     fun aFreshInstallHasNoKeyStored() = runTest {
-        val viewModel = PostersViewModel(FakeCoreProvider(FakeCore()), InMemoryTmdbSettings())
+        val viewModel = FetchViewModel(FakeCoreProvider(FakeCore()), InMemoryTmdbSettings())
 
         assertFalse(viewModel.state.value.hasKey)
     }
@@ -28,7 +29,7 @@ class PostersViewModelTest {
     @Test
     fun savingAKeyIsReflectedWithoutEverBeingHeldItself() = runTest {
         val settings = InMemoryTmdbSettings()
-        val viewModel = PostersViewModel(FakeCoreProvider(FakeCore()), settings)
+        val viewModel = FetchViewModel(FakeCoreProvider(FakeCore()), settings)
 
         viewModel.saveKey("a-fake-key")
 
@@ -38,7 +39,7 @@ class PostersViewModelTest {
     @Test
     fun fetchingWithNoKeyStoredDoesNothing() = runTest {
         val core = FakeCore()
-        val viewModel = PostersViewModel(FakeCoreProvider(core), InMemoryTmdbSettings())
+        val viewModel = FetchViewModel(FakeCoreProvider(core), InMemoryTmdbSettings())
 
         viewModel.fetch()
 
@@ -49,29 +50,46 @@ class PostersViewModelTest {
     @Test
     fun aSuccessfulFetchReportsWhatCameBack() = runTest {
         val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
-        val core = FakeCore(report = PosterReport(2u, 7u, 0u, 0u))
-        val viewModel = PostersViewModel(FakeCoreProvider(core), settings)
+        val core = FakeCore(report = FetchReport(2u, 7u, 5u, 1u, 0u, 0u))
+        val viewModel = FetchViewModel(FakeCoreProvider(core), settings)
 
         viewModel.fetch()
 
         assertEquals("a-fake-key", core.lastKey)
-        assertEquals(PosterReport(2u, 7u, 0u, 0u), viewModel.state.value.report)
+        assertEquals(FetchReport(2u, 7u, 5u, 1u, 0u, 0u), viewModel.state.value.report)
         assertFalse(viewModel.state.value.running)
+    }
+
+    /**
+     * The defect this closes: the fallback language used to be the constant
+     * `en-US`, so a library with nothing to say about its own language was
+     * described to its owner in a language they may not read. The device
+     * knows better, and is the only thing here that does.
+     */
+    @Test
+    fun theFallbackLanguageIsTheDevicesOwn() = runTest {
+        val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
+        val core = FakeCore()
+        val viewModel = FetchViewModel(FakeCoreProvider(core), settings)
+
+        viewModel.fetch()
+
+        assertEquals(Locale.getDefault().toLanguageTag(), core.lastLanguage)
     }
 
     /**
      * The real regression this guards against: a fake that returns
      * immediately can never be caught mid-flight, so [FakeCore.gate] holds
-     * the first call suspended while a second [PostersViewModel.fetch] call
-     * is made against it — the only way to prove the in-flight guard, not
-     * merely the no-key one, actually refuses a second run.
+     * the first call suspended while a second [FetchViewModel.fetch] call is
+     * made against it — the only way to prove the in-flight guard, not merely
+     * the no-key one, actually refuses a second run.
      */
     @Test
     fun aSecondFetchWhileOneIsInFlightIsRefused() = runTest {
         val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
         val gate = CompletableDeferred<Unit>()
-        val core = FakeCore(report = PosterReport(1u, 0u, 0u, 0u), gate = gate)
-        val viewModel = PostersViewModel(FakeCoreProvider(core), settings)
+        val core = FakeCore(report = FetchReport(1u, 0u, 0u, 0u, 0u, 0u), gate = gate)
+        val viewModel = FetchViewModel(FakeCoreProvider(core), settings)
 
         viewModel.fetch()
         assertTrue(viewModel.state.value.running)
@@ -84,7 +102,7 @@ class PostersViewModelTest {
         advanceUntilIdle()
 
         assertFalse(viewModel.state.value.running)
-        assertEquals(PosterReport(1u, 0u, 0u, 0u), viewModel.state.value.report)
+        assertEquals(FetchReport(1u, 0u, 0u, 0u, 0u, 0u), viewModel.state.value.report)
     }
 
     /** A rejected key is named as such — never quoted back, and never mistaken for a network fault. */
@@ -92,7 +110,7 @@ class PostersViewModelTest {
     fun aRejectedKeyNamesTheKeyRatherThanTheNetwork() = runTest {
         val settings = InMemoryTmdbSettings().apply { write("a-wrong-key") }
         val core = FakeCore(failure = CoreException.NotAuthorized("That key was not accepted."))
-        val viewModel = PostersViewModel(FakeCoreProvider(core), settings)
+        val viewModel = FetchViewModel(FakeCoreProvider(core), settings)
 
         viewModel.fetch()
 
@@ -103,7 +121,8 @@ class PostersViewModelTest {
     @Test
     fun dismissingAResultClearsItWithoutTouchingWhetherAKeyIsStored() = runTest {
         val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
-        val viewModel = PostersViewModel(FakeCoreProvider(FakeCore(report = PosterReport(1u, 0u, 0u, 0u))), settings)
+        val core = FakeCore(report = FetchReport(1u, 0u, 0u, 0u, 0u, 0u))
+        val viewModel = FetchViewModel(FakeCoreProvider(core), settings)
         viewModel.fetch()
 
         viewModel.dismissResult()

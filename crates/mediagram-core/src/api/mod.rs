@@ -14,6 +14,8 @@ mod auth;
 mod catalog;
 mod channel;
 mod channel_index;
+pub mod details;
+pub mod fetch;
 mod http;
 mod identity;
 mod library;
@@ -191,12 +193,12 @@ impl Core {
         catalog::poster_path(self, poster_key)
     }
 
-    /// What the index records about a title, or nothing. A course has no
-    /// provider entry and a library assembled without a TMDB key has no rows
-    /// at all; both are ordinary, so neither is an error.
+    /// What is known about a title, or nothing. The index answers first and
+    /// what this device fetched fills the gaps — see [`details::show_info`].
+    /// A course has no provider entry and a library assembled without a TMDB
+    /// key has no rows at all; both are ordinary, so neither is an error.
     pub fn show_info(&self, poster_key: String) -> Option<crate::dto::ShowInfo> {
-        let conn = catalog::open(self).ok()?;
-        crate::shows::read(&conn, &poster_key).ok().flatten().map(Into::into)
+        details::show_info(self, poster_key)
     }
 
     pub fn total_size(&self, set_id: String) -> Result<u64, CoreError> {
@@ -216,15 +218,24 @@ impl Core {
         read::read(self, set_id, offset, len).await
     }
 
-    /// Fetches poster artwork for every title in the catalog TMDB can
-    /// answer about. The key is used for this call only and never stored —
-    /// Kotlin owns holding it, this crate only ever spends it.
-    pub async fn fetch_posters(
+    /// Fills in what the library it was handed does not carry, for every
+    /// title TMDB can answer about: the poster artwork a channel index has
+    /// no room for, and the descriptions of whatever nobody ran `mediagram
+    /// metadata` over before pushing it. One run answers both, because they
+    /// come from one request per title and a viewer who asked for the
+    /// missing pieces did not ask for half of them.
+    ///
+    /// `language` is only a fallback: the library itself says what language
+    /// it was described in, and that is what the provider is asked in.
+    ///
+    /// The key is used for this call only and never stored — Kotlin owns
+    /// holding it, this crate only ever spends it.
+    pub async fn fetch_missing(
         &self,
         tmdb_key: String,
         language: String,
-    ) -> Result<crate::dto::PosterReport, CoreError> {
-        artwork::fetch_posters(self, tmdb_key, language).await
+    ) -> Result<crate::dto::FetchReport, CoreError> {
+        artwork::fetch_missing(self, tmdb_key, language).await
     }
 }
 
