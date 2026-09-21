@@ -12,68 +12,12 @@ use anyhow::{Context, Result};
 use mlib_spec::Kind;
 use rusqlite::{Connection, OptionalExtension, params};
 
+use mediagram_tmdb::details::ShowRow;
 use mediagram_tmdb::posters::kind_key;
-use mediagram_tmdb::tmdb_types::DetailsResponse;
 
 /// The provider this table records. Only TMDB is written today; the column
 /// exists so a second one would not need a migration to sit beside it.
 const SOURCE: &str = "tmdb";
-
-/// What one show's entry holds. Every field is optional because TMDB answers
-/// for an obscure title with a record that is mostly empty.
-#[derive(Debug, Clone, PartialEq)]
-pub struct ShowRow {
-    pub kind: Kind,
-    pub id: u64,
-    pub lang: String,
-    pub overview: Option<String>,
-    pub tagline: Option<String>,
-    /// Comma-separated, in the order TMDB lists them.
-    pub genres: Option<String>,
-    pub rating: Option<f64>,
-    pub network: Option<String>,
-    pub status: Option<String>,
-    pub first_air: Option<String>,
-    pub last_air: Option<String>,
-    /// What the provider says exists, against which a library can be counted.
-    pub total_seasons: Option<u32>,
-    pub total_episodes: Option<u32>,
-}
-
-/// Reads a details payload into a row, keeping only what a viewer would read.
-pub fn from_details(kind: Kind, lang: &str, details: &DetailsResponse) -> ShowRow {
-    let join = |items: &[mediagram_tmdb::tmdb_types::NamedRef]| {
-        let joined = items
-            .iter()
-            .map(|item| item.name.as_str())
-            .collect::<Vec<_>>()
-            .join(", ");
-        (!joined.is_empty()).then_some(joined)
-    };
-    ShowRow {
-        kind,
-        id: details.id,
-        lang: lang.to_string(),
-        // An empty string is TMDB's way of saying it has no synopsis, and is
-        // worth no more than a missing one.
-        overview: details.overview.clone().filter(|t| !t.trim().is_empty()),
-        tagline: details.tagline.clone().filter(|t| !t.trim().is_empty()),
-        genres: join(&details.genres),
-        // Zero is what an unrated title scores, which is not a rating.
-        rating: details.vote_average.filter(|r| *r > 0.0),
-        network: join(&details.networks),
-        status: details.status.clone().filter(|t| !t.trim().is_empty()),
-        first_air: details
-            .first_air_date
-            .clone()
-            .or_else(|| details.release_date.clone())
-            .filter(|t| !t.is_empty()),
-        last_air: details.last_air_date.clone().filter(|t| !t.is_empty()),
-        // Zero seasons is a record nobody has filled in, not a show with none.
-        total_seasons: details.number_of_seasons.filter(|n| *n > 0),
-        total_episodes: details.number_of_episodes.filter(|n| *n > 0),
-    }
-}
 
 /// Writes a show's entry, replacing whatever was there.
 ///
