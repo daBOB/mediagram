@@ -10,7 +10,7 @@
 
 import { playbackFor } from "./link.js";
 import { conversionNote } from "./playable.js";
-import { playTranscoded } from "./hls-playback.js";
+import { playTranscoded, warmTranscode } from "./hls-playback.js";
 import { sourceBitrate, watchPlayback } from "./adapt-playback.js";
 import { clockTime, endsAt, episodeLabel, technicalLine } from "./format.js";
 import { languageLabel } from "./language-label.js";
@@ -68,6 +68,55 @@ const cancelled = new Set();
 let countdown = null;
 /** The set whose start has already been asked for, so it is asked once. */
 let preloaded = null;
+/**
+ * A conversion started for the title that is about to be wanted.
+ *
+ * `{ setId, release }`, or `null`. Held so it can be let go of — a warmed
+ * session holds a hardware encoder exactly like a played one, and one nobody
+ * ever goes on to watch must not keep it.
+ */
+let warm = null;
+
+/** Lets go of a warmed conversion, if there is one. */
+function dropWarm() {
+  warm?.release();
+  warm = null;
+}
+
+/**
+ * Starts the next title converting, while this one finishes.
+ *
+ * Called when the up-next panel appears, which is half a minute out — long
+ * enough to be worth it and short enough that a viewer who wanders off has
+ * cost one session for forty seconds rather than an encoder for an hour.
+ *
+ * Only for a title that needs converting. A direct one has nothing to start:
+ * `preloadNext` already warms its first bytes into the server's chunk cache,
+ * and it does so *earlier* than this, whenever the current title is
+ * comfortably buffered.
+ *
+ * The arguments have to match the ones `openPlayer` will use or the session
+ * ids differ and this warms something nobody asks for — so the offset is
+ * worked out the same way, and the audio track is the first, which is what an
+ * open starts on before the chooser has answered.
+ */
+function warmNext() {
+  if (!nextUp || warm?.setId === nextUp.setId) return;
+  const next = nextUp;
+  if (noteFor(next) === null) return;
+
+  dropWarm();
+  const at = resumeAt(state.progressOf(next.setId)) ?? 0;
+  void warmTranscode(next.setId, { seekSeconds: at })
+    .then((release) => {
+      // The viewer may have moved on, or cancelled, while ffmpeg was starting.
+      if (nextUp?.setId !== next.setId) release();
+      else warm = { setId: next.setId, release };
+    })
+    .catch(() => {
+      /* A conversion that would not start now is one the open will report. */
+    });
+}
 
 /** What the last title left attached, or `null` when it was played directly. */
 let detach = null;
@@ -249,6 +298,9 @@ function convert(set, seconds, warning, maxrateBits) {
   })
     .then((release) => {
       detach = release;
+      // After the join, never before. A release that took the last watcher
+      // would stop the very session this open just joined.
+      if (warm?.setId === set.setId) dropWarm();
       note.textContent = said;
       refreshEnds();
     })
@@ -526,8 +578,10 @@ function refreshUpNext({ ended = false } = {}) {
   if (countdown !== null) return;
   if (phase === "waiting") {
     // A heads-up, and a way past the credits for anyone who wants one.
-    // Nothing starts until the title is over.
+    // Nothing *plays* until the title is over — but the next one can start
+    // converting now, so that when it does there is nothing to wait for.
     upNextIn.textContent = "when this ends";
+    warmNext();
     return;
   }
 
@@ -1073,6 +1127,7 @@ dialog.addEventListener("close", () => {
   stopWaitingToStart();
   nextUp = null;
   onOpenNext = null;
+  dropWarm();
   // The offer goes with the title it was an offer about.
   refreshPlayNext();
   preloaded = null;

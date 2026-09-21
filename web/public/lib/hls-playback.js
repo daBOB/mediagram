@@ -94,6 +94,36 @@ function releaseTranscode(playlist) {
 }
 
 /**
+ * Starts a set's conversion without playing it, and returns a way to let go.
+ *
+ * For the title that is about to be wanted. Starting ffmpeg is the slow half
+ * of opening a converted title — the bytes have to be fetched, the encoder
+ * has to reach a first segment — and none of it depends on anybody watching
+ * yet. Doing it while the current title finishes turns that wait into no wait.
+ *
+ * The session is identified by what it converts, so the player that follows
+ * *joins* this one rather than starting a second: same set, same offset, same
+ * track, same id. Which means the arguments here have to match the ones the
+ * real open will use, or this warms a session nobody ever asks for.
+ *
+ * Kept alive like a played one, because a session nobody reads is reaped in
+ * five minutes and this is deliberately started before it is read.
+ */
+export async function warmTranscode(setId, options = {}) {
+  const { playlist } = await beginTranscode(
+    setId,
+    options.seekSeconds ?? 0,
+    options.maxrateBits,
+    options.audioTrack ?? 0,
+  );
+  const stopKeepAlive = keepAlive(playlist);
+  return () => {
+    stopKeepAlive();
+    releaseTranscode(playlist);
+  };
+}
+
+/**
  * Plays a set through a transcode, and returns a function that stops it.
  *
  * Detaching matters more than it looks: hls.js holds a MediaSource and a
