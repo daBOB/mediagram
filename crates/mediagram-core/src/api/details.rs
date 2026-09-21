@@ -6,14 +6,20 @@
 //! fetches therefore has nowhere to go inside it and needs a store of its
 //! own: the same `shows` table, built from the same migrations, in a database
 //! [`details_db`] puts where a refresh cannot reach it.
+//!
+//! [`show_info`] is the other half, and the only reader: the index answers
+//! first, and what this device fetched fills the gaps.
 
 use std::path::PathBuf;
 
 use mlib_spec::schema;
-use rusqlite::{Connection, params};
+use rusqlite::{Connection, OpenFlags, params};
 
 use mediagram_tmdb::details::ShowRow;
 use mediagram_tmdb::posters::kind_key;
+
+use crate::dto::ShowInfo;
+use crate::shows::{ShowRecord, key_parts, read};
 
 use super::catalog;
 use super::{Core, CoreError};
@@ -116,6 +122,45 @@ pub fn upsert(conn: &Connection, row: &ShowRow) -> Result<(), CoreError> {
     )
     .map_err(|_| CoreError::Io("recording a description".into()))?;
     Ok(())
+}
+
+/// What is known about a title: the index's own row first, whatever this
+/// device fetched after.
+///
+/// The publisher's row wins. It was written in the library's language by
+/// whoever curated it, and a phone that fetched its own copy of the same
+/// title has no better claim on it; a title the index says nothing about is
+/// what a fetch is for.
+///
+/// Neither store holding it is not an error — a course has no provider
+/// entry, and a library assembled without a key has no rows at all.
+pub(super) fn show_info(core: &Core, poster_key: String) -> Option<ShowInfo> {
+    // One gate, both stores, before either is opened. `poster_path` settles
+    // the same question the same way for the two places artwork can sit: a
+    // second lookup location must never become a second way past the check.
+    key_parts(&poster_key)?;
+    in_index(core, &poster_key).or_else(|| fetched(core, &poster_key)).map(Into::into)
+}
+
+/// The row the downloaded index carries, if it carries one.
+fn in_index(core: &Core, poster_key: &str) -> Option<ShowRecord> {
+    let conn = catalog::open(core).ok()?;
+    read(&conn, poster_key).ok().flatten()
+}
+
+/// The row a fetch on this device left, if there has been one.
+///
+/// Absent is the ordinary case — every library nobody has fetched for — so a
+/// missing file is nothing rather than an error. Opened read-only, and only
+/// once the file is known to be there, because a lookup that created the
+/// store would leave one behind on every device that merely opened a title.
+fn fetched(core: &Core, poster_key: &str) -> Option<ShowRecord> {
+    let path = details_db(core);
+    if !path.exists() {
+        return None;
+    }
+    let conn = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY).ok()?;
+    read(&conn, poster_key).ok().flatten()
 }
 
 #[cfg(test)]

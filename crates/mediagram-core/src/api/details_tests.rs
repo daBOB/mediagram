@@ -2,8 +2,6 @@ use std::os::unix::fs::symlink;
 
 use mlib_spec::Kind;
 
-use crate::shows::read;
-
 use super::*;
 
 fn core_at(dir: &std::path::Path) -> std::sync::Arc<Core> {
