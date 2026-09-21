@@ -92,6 +92,32 @@ fn an_invalid_key_resolves_to_nothing_in_either_location() {
     assert_eq!(poster_path(&core, key.into()), None);
 }
 
+/// The whole Refresh row on the System screen rests on this one value, and
+/// it is read through `read_link` rather than from the name of a directory.
+/// Every integration fixture builds `current` as a plain directory, where
+/// `read_link` fails and the date comes back unknown — so `facts` has to be
+/// asked here, against a `current` pointed the way a refresh points it.
+#[test]
+fn the_installed_catalogues_push_time_is_read_off_the_symlink() {
+    let data = tempfile::tempdir().unwrap();
+    let core = core_at(data.path());
+    point_current_at(&core, "v-1758300000");
+
+    assert_eq!(facts(&core).published_at, Some(1_758_300_000));
+}
+
+/// A catalogue installed by a version of this app that did not name its
+/// directories for the push time reads as unknown rather than as a date it
+/// made up. The screen leaves the row out; it does not print a wrong age.
+#[test]
+fn a_catalogue_with_no_push_time_in_its_name_reports_none() {
+    let data = tempfile::tempdir().unwrap();
+    let core = core_at(data.path());
+    point_current_at(&core, "not-one-of-ours");
+
+    assert_eq!(facts(&core).published_at, None);
+}
+
 /// The version directory is named for when the index was pushed, so the
 /// catalogue's age needs no separate record. A name that is not one of
 /// ours reads as unknown rather than as a wrong date.
