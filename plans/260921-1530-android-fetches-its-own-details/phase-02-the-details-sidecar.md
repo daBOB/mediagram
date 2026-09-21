@@ -304,6 +304,30 @@ git add crates/mediagram-core/
 git commit -m "feat(core): answer from the index first, and from what was fetched after"
 ```
 
+## Accepted deviation
+
+**`pub` rather than `pub(super)`, behind `pub mod details`.** The interfaces
+above specify `pub(super)` for `details_db`, `open_or_create` and `upsert`.
+They shipped `pub`, inside a module declared `pub mod details` in
+`crates/mediagram-core/src/api/mod.rs`, and that stands.
+
+`pub(super)` would have put the store out of reach of anything outside
+`crate::api` — including the integration tests that drive a real sidecar over
+a real path, which is the only place the two properties this phase exists for
+are actually checked: that a refresh cannot delete the file, and that a
+sign-out can. A store provable only from inside the module that writes it is
+not provably placed at all.
+
+It is also what `pub mod artwork` next to it already does, for the same
+reason. The boundary this phase defends is the path `details_db` returns, not
+the visibility of the function that returns it: no application code reaches
+either, because `mediagram-core` is consumed through its UniFFI surface, and
+that surface exports neither. The reach is tests —
+`crates/mediagram-core/tests/shows_query.rs`, and since the review,
+`crates/mediagram/tests/shared_shows_upsert.rs`, which writes one row through
+this `upsert` and one through the uploader's and compares them column by
+column. That test could not exist under `pub(super)` either.
+
 ## Todo list
 
 - [x] The sidecar is a sibling of the version directories, inside `catalog/`

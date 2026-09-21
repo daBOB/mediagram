@@ -73,10 +73,15 @@ piece of work established. The overflow menu holds:
 
 ```
 ⋮ ─ System
-  ─ Fetch posters…
+  ─ Refresh library
+  ─ Fetch details and artwork
   ─ TMDB key…
   ─ Start over
 ```
+
+The fetch item carries no ellipsis. One was drawn here and shipped, and it was
+a promise of a dialog that never came — that tap starts minutes of HTTP there
+and then. `AppChrome.kt` says so where the item is built.
 
 `StartOverAction` moves into it unchanged, wording and confirmation dialog
 intact, and `WithStartOver` retires — its one job was hosting that button.
@@ -321,21 +326,28 @@ process happened to be listening, and would reset on every launch while the
 cache on disk does not. A number with those three properties under a label
 reading "Evicted" is worse than no row.
 
-**Posters are fetched in English, whatever language the library is in.** The
-uploader asks TMDB in its configured `tmdb_language` — `de-DE` for the
-library this was built against — and the device asks for `en-US`, a constant
-in `PostersViewModel`. TMDB serves localised artwork where a title has it, so
-a library curated in German gets the English poster for those titles.
+**Resolved: the phone asks in the library's own language, not the device's.**
+This was recorded here as an open question — the device asked for `en-US`, a
+constant, while the uploader asked TMDB in its configured `tmdb_language`, so
+a library curated in German got the English poster and, where it had no
+description at all, would have got an English one. It was the one entry in
+this section that turned out to be a defect rather than a difference, and it
+has since been ruled on.
 
-The core already takes the language as a parameter, so the gap is not in the
-fetch: it is that the phone has nowhere to read an answer from. The
-uploader's `tmdb_language` lives in a config file on the machine that
-publishes, and nothing carries it into the pinned index or onto the device.
-Closing it means deciding where the device's answer comes from — a setting
-beside the TMDB key, or a field in the index the uploader already writes —
-and that is a decision rather than an oversight to patch, so it is recorded
-here and not yet ruled on. It is the one entry in this section that may turn
-out to be a defect rather than a difference.
+The answer comes from the index rather than from a setting beside the TMDB
+key. Every row the uploader writes carries the language it was described in,
+and `language_of` (`crates/mediagram-core/src/api/fetch.rs`) takes the most
+common one across the library and asks in that. A library is described in one
+language by the machine that published it; asking a viewer to name it again
+would be asking them to repeat something the library already says, and to
+keep the two in step by hand.
+
+The device locale, `Locale.getDefault().toLanguageTag()`, is passed down as a
+*fallback* only, for the library that says nothing — one written before the
+column existed, or one nobody ran `mediagram metadata` over. It is read once
+in `FetchViewModel`, because a rotation during a run of minutes must not
+change what that run asked for. Confirmed on the device: a phone set to
+`en-GB` fetched German descriptions for a `de-DE` library.
 
 ## 10. Deliberately out of scope
 
