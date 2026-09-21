@@ -20,9 +20,11 @@ fn write_poster(base: &std::path::Path, key: &str) {
     std::fs::write(base.join(format!("{key}.jpg")), b"fake-poster-bytes").unwrap();
 }
 
-/// Artwork outlives the catalogue it was fetched for. A refresh replaces
-/// the version directory wholesale, and a poster stored inside one would
-/// be thrown away every time the app asked the channel for the index.
+/// Artwork outlives every version of the catalogue it was fetched for. A
+/// refresh replaces the version directory wholesale, and a poster stored
+/// inside one would be thrown away every time the app asked the channel for
+/// the index. Outliving the library itself is a different question, and the
+/// test below answers it the other way.
 #[test]
 fn a_fetched_poster_is_found_after_the_catalogue_is_replaced() {
     let data = tempfile::tempdir().unwrap();

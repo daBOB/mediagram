@@ -71,8 +71,9 @@ pub struct FetchPlan {
 /// out of a directory a cleanup pass deletes out from under it.
 ///
 /// The posters a fetch writes and the TMDB disk cache it reads through go
-/// to `catalog::artwork_dir`, outside the catalogue tree, where no refresh
-/// reaches — that function's own comment says why.
+/// to `catalog::artwork_dir`: beside the version directories, not inside
+/// one, so no refresh reaches them — and inside `catalog/`, so forgetting
+/// the library forgets them too.
 pub fn plan_fetch(core: &Core) -> Result<FetchPlan, CoreError> {
     let dir = std::fs::canonicalize(catalog::current_dir(core))
         .map_err(|_| CoreError::NotFound("no catalog is loaded yet".into()))?;
@@ -138,8 +139,8 @@ pub async fn verify_then_fetch<A: TmdbApi>(
 
 /// Splits the catalog into what the provider can be asked about and what
 /// cannot be asked at all — a course has no provider id, and is counted
-/// rather than looked up. `pub` so a test can drive it directly instead of
-/// keeping its own copy of the same classification.
+/// rather than looked up. `pub` because the count it returns is part of what
+/// a fetch reports, and a caller needs this classification, not a copy of it.
 pub fn split_titles(sets: &[PlayableSet]) -> (Vec<(Kind, u64)>, u32) {
     let mut titles = Vec::new();
     let mut without_id = 0u32;

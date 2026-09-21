@@ -150,10 +150,13 @@ Android decodes natively and never will. See §9.
 **There is no Evicted row**, which this table asked for in its first
 drawing. media3 will not say how much it evicted. See §9.
 
-**Cache hits and misses need a listener nothing currently attaches.**
-`PlayerFactory.cacheDataSourceFactory` builds a `CacheDataSource.Factory`
-without an `EventListener`, so `onCachedBytesRead` and `onCacheIgnored` go
-nowhere. Attaching one is the whole of it, and the same counters feed §7.
+**There are no cache hit and miss counts, and a listener does not supply
+them.** `PlayerFactory.cacheDataSourceFactory` does attach a
+`CacheDataSource.EventListener`, but the interface answers in bytes:
+`onCachedBytesRead` and `onCacheIgnored` are the whole of it, and neither
+counts a read as a hit or a miss. So the Cache block reports the share of
+bytes served from disk and the round trips behind the rest, which is what
+the app can actually know. The same counters feed §7. See §9.
 
 ## 6. The TMDB key, and fetching posters
 

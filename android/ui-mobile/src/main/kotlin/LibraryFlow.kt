@@ -146,7 +146,7 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
     }
 }
 
-/** Why "Fetch posters…" cannot be tapped right now, or `null` when it can. */
+/** Why "Fetch posters" cannot be tapped right now, or `null` when it can. */
 private fun fetchPostersDisabledReason(running: Boolean, hasKey: Boolean): String? = when {
     running -> "Fetching…"
     !hasKey -> "No TMDB key stored"
