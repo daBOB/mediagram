@@ -2,8 +2,11 @@
 //!
 //! Layout under `<data_dir>/catalog/`: version directories (`v-<created_at>`,
 //! one per successful refresh), a `current` symlink pointing at the one in
-//! use, and an `artwork/` sibling that outlives every version — see
-//! [`artwork_dir`]. `refresh.rs` is the only thing that ever writes a
+//! use, and two siblings that outlive every version — `artwork/`, see
+//! [`artwork_dir`], and `details.db`, holding the descriptions this device
+//! fetched for itself, see [`super::details::details_db`]. Anything else
+//! fetched belongs beside those two and for their reasons, never inside a
+//! version. `refresh.rs` is the only thing that ever writes a
 //! version; this module only ever reads one, through `current`, so a refresh
 //! landing mid-query cannot be observed as a half-written database — the
 //! symlink swap in `refresh.rs` is atomic, and an already-open handle keeps

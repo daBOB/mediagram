@@ -200,8 +200,10 @@ the version directories, which neither cleanup pass touches:
 TMDB response cache sits inside it for both reasons.
 
 Both halves are pinned by tests rather than only written down here: one
-plants a poster and drives the real install paths over it, one states the
-containment that makes a sign-out sufficient.
+plants a poster and drives `install_staged` over it — the real rename and
+the real sweep, not a stand-in that deletes the old version directory by
+hand, which would leave `catalog/incoming/` passing as a home for artwork —
+and one states the containment that makes a sign-out sufficient.
 
 `poster_path` reads the version's own `posters/` first and the artwork
 directory second, so a published package keeps its publisher's chosen art for

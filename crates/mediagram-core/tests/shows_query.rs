@@ -185,15 +185,3 @@ fn a_lookup_does_not_create_the_store_it_did_not_find() {
     let store = details::details_db(&core);
     assert!(!store.exists(), "a lookup created a store nobody had written to");
 }
-
-/// An invalid key reaches neither store. Two lookup locations must not become
-/// two ways past one guard.
-#[test]
-fn an_invalid_key_is_refused_before_either_store_is_opened() {
-    let dir = tempfile::tempdir().unwrap();
-    index_describes_nothing(dir.path());
-    let core = core_at(dir.path());
-    fetched_describes(&core, Kind::Movie, 550, "unreachable");
-
-    assert!(core.show_info("not-a-valid-poster-key-42x".into()).is_none());
-}

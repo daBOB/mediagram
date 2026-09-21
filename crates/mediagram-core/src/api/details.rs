@@ -63,21 +63,49 @@ pub fn details_db(core: &Core) -> PathBuf {
 /// applied. SQLite has no `ADD COLUMN IF NOT EXISTS`, so replaying the whole
 /// list over an existing sidecar fails on the first `ALTER TABLE` — which
 /// would leave a device that upgraded unable to open its own store at all.
+///
+/// The directory is whichever one [`details_db`] chose, so a test can move
+/// the sidecar and still drive the real thing over it.
 pub fn open_or_create(core: &Core) -> Result<Connection, CoreError> {
-    std::fs::create_dir_all(catalog::dir(core)).map_err(|_| preparing())?;
-    let conn = Connection::open(details_db(core))
-        .map_err(|_| CoreError::Io("opening the description store".into()))?;
+    let path = details_db(core);
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|_| preparing())?;
+    }
+    let conn =
+        Connection::open(&path).map_err(|_| CoreError::Io("opening the description store".into()))?;
 
     let at: i64 = conn.pragma_query_value(None, "user_version", |row| row.get(0)).unwrap_or(0);
     if at < schema::SCHEMA_VERSION {
-        let applied = schema::migrations_up_to(at).len();
-        for statement in schema::migrations_up_to(schema::SCHEMA_VERSION).into_iter().skip(applied) {
-            conn.execute(statement, []).map_err(|_| preparing())?;
-        }
-        conn.pragma_update(None, "user_version", schema::SCHEMA_VERSION)
-            .map_err(|_| preparing())?;
+        migrate_from(&conn, at)?;
     }
     Ok(conn)
+}
+
+/// Applies every statement past the one the file records, then advances the
+/// recorded version — both in one transaction.
+///
+/// The transaction is the whole point, and the version must move inside it.
+/// A group can be several statements: v6 adds two columns. Killed between
+/// them without one, the file keeps the first column and still records v5,
+/// so every later open replays that `ALTER TABLE` and fails on "duplicate
+/// column name" for good — descriptions silently stop being recorded on that
+/// device until it is set up again. Rolled back instead, the file is exactly
+/// what it was and the next open retries it. `PRAGMA user_version` is
+/// transactional, and `index/db.rs` guards the index the same way.
+fn migrate_from(conn: &Connection, at: i64) -> Result<(), CoreError> {
+    let applied = schema::migrations_up_to(at).len();
+    conn.execute_batch("BEGIN").map_err(|_| preparing())?;
+    for statement in schema::migrations_up_to(schema::SCHEMA_VERSION).into_iter().skip(applied) {
+        if conn.execute(statement, []).is_err() {
+            let _ = conn.execute_batch("ROLLBACK");
+            return Err(preparing());
+        }
+    }
+    if conn.pragma_update(None, "user_version", schema::SCHEMA_VERSION).is_err() {
+        let _ = conn.execute_batch("ROLLBACK");
+        return Err(preparing());
+    }
+    conn.execute_batch("COMMIT").map_err(|_| preparing())
 }
 
 fn preparing() -> CoreError {

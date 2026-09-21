@@ -34,11 +34,16 @@ fn a_fetched_poster_is_found_after_the_catalogue_is_replaced() {
     let key = "tmdb-movie-550";
     write_poster(&artwork_dir(&core), key);
 
-    // A refresh replaces the version directory wholesale, the way
-    // `install_staged` does: the old one is removed, a new one takes its
-    // place, and `current` is repointed.
-    std::fs::remove_dir_all(dir(&core).join("v-1")).unwrap();
-    point_current_at(&core, "v-2");
+    // A real refresh rather than a stand-in for one. `install_staged` is
+    // both destructive passes at once: it renames the staged directory over
+    // the version, repoints `current`, and then sweeps every other version
+    // and any leftover staging directory. Removing the old `v-…` directory
+    // by hand would exercise neither, and would miss artwork kept somewhere
+    // the rename or the sweep reaches — `incoming` above all, which is a
+    // real place to put a file and one no refresh leaves standing.
+    let incoming = dir(&core).join("incoming");
+    std::fs::create_dir_all(&incoming).unwrap();
+    crate::api::refresh::install_staged(&core, &incoming, "v-2").unwrap();
 
     assert!(poster_path(&core, key.into()).is_some());
 }
