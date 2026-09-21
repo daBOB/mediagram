@@ -38,7 +38,7 @@ why it can move at all and why its tests move with it unchanged.
 **Interfaces — Produces:** `mediagram_tmdb::details::{ShowRow, from_details}`.
 **Consumes:** `DetailsResponse` (`tmdb_types.rs`), `Kind` (`mlib-spec`).
 
-- [ ] **Step 1: Read what moves, before moving it**
+- [x] **Step 1: Read what moves, before moving it**
 
 ```bash
 cd /home/andre/Workspace/mediagram-android
@@ -50,7 +50,7 @@ sed -n '1,40p' crates/mediagram-tmdb/src/details.rs
 `kind_key` from `mediagram_tmdb::posters` — already in the destination crate, so
 that import shortens rather than breaking.
 
-- [ ] **Step 2: Move them, byte for byte**
+- [x] **Step 2: Move them, byte for byte**
 
 Cut both into `crates/mediagram-tmdb/src/details.rs` below `details()`, and
 export from `lib.rs` the way `posters`' items already are. Change nothing but
@@ -62,7 +62,7 @@ a move, and the review will say so.
 `crates/mediagram/src/index/shows.rs` keeps `upsert`, `get` and `count`, and
 re-imports `ShowRow` from its new home rather than redefining it.
 
-- [ ] **Step 3: Move the tests that belong to the mapping**
+- [x] **Step 3: Move the tests that belong to the mapping**
 
 Any test in `crates/mediagram/src/index/shows.rs` (or its sibling test file)
 that exercises `from_details` without a `Connection` moves with it. A test that
@@ -71,7 +71,7 @@ opens a database stays — it is testing the SQL, which did not move.
 Move the assertions unchanged. A moved test whose expectations shifted is a
 rewritten test wearing a move's clothes.
 
-- [ ] **Step 4: Build both sides**
+- [x] **Step 4: Build both sides**
 
 ```bash
 cargo test -p mediagram-tmdb
@@ -83,7 +83,7 @@ ANDROID_HOME=/home/andre/android-sdk ./scripts/check.sh
 Expected: green. Nothing behavioural changed, so a failure here is a move that
 was not one.
 
-- [ ] **Step 5: Check the line budget**
+- [x] **Step 5: Check the line budget**
 
 ```bash
 wc -l crates/mediagram-tmdb/src/*.rs crates/mediagram/src/index/shows.rs
@@ -92,7 +92,7 @@ wc -l crates/mediagram-tmdb/src/*.rs crates/mediagram/src/index/shows.rs
 `details.rs` is 29 lines and gains roughly 55; `shows.rs` is 149 and loses
 them. Both land well under 200. Report both counts.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/
@@ -101,11 +101,11 @@ git commit -m "refactor(tmdb): one mapping from a provider payload to a row"
 
 ## Todo list
 
-- [ ] `ShowRow` and `from_details` live in `mediagram-tmdb`
-- [ ] The uploader's `shows.rs` keeps only SQL and imports the row
-- [ ] The mapping's tests moved with it, assertions unchanged
-- [ ] `cargo build -p mediagram-core` alone is clean
-- [ ] Both files under 200 lines
+- [x] `ShowRow` and `from_details` live in `mediagram-tmdb`
+- [x] The uploader's `shows.rs` keeps only SQL and imports the row
+- [x] The mapping's tests moved with it, assertions unchanged
+- [x] `cargo build -p mediagram-core` alone is clean
+- [x] Both files under 200 lines
 
 ## Success criteria
 

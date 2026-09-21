@@ -34,7 +34,7 @@ find anything, and is anything still missing.
 
 **Interfaces — Consumes:** `FetchReport` (phase 3).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```kotlin
     /** A run that filled both gaps says so in one line. */
@@ -73,7 +73,7 @@ find anything, and is anything still missing.
     }
 ```
 
-- [ ] **Step 2: Run it**
+- [x] **Step 2: Run it**
 
 ```bash
 cd /home/andre/Workspace/mediagram-android/android
@@ -82,20 +82,20 @@ cd /home/andre/Workspace/mediagram-android/android
 
 Expected: FAIL to compile.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Lead with what changed, mention what did not, and name the leftovers only when
 there are any — the rule `posterReportLine` already follows. Keep it pure and
 `internal`; the composable is not where a sentence is built.
 
-- [ ] **Step 4: Pass the locale down**
+- [x] **Step 4: Pass the locale down**
 
 The core takes a fallback language for a library with no descriptions yet.
 Kotlin supplies it from the device: `Locale.getDefault().toLanguageTag()`.
 Read it in the view model, not the composable — a screen rotation must not
 change what a running fetch asked for.
 
-- [ ] **Step 5: Run, then commit**
+- [x] **Step 5: Run, then commit**
 
 ```bash
 ./gradlew :ui-mobile:testDebugUnitTest :feature:system:testDebugUnitTest
@@ -110,7 +110,7 @@ git commit -m "feat(android): say what a fetch filled in, and ask in the device'
 **Files:**
 - Modify: `android/ui-mobile/src/main/kotlin/AppChrome.kt`, `android/ui-mobile/src/main/kotlin/LibraryFlow.kt`
 
-- [ ] **Step 1: Rename the action**
+- [x] **Step 1: Rename the action**
 
 `Fetch posters` becomes **`Fetch details and artwork`**, staying third:
 
@@ -126,7 +126,7 @@ Start over
 `AppChrome.kt`'s KDoc names the five items and their ellipsis rule — it must
 still be true afterwards, including about this one.
 
-- [ ] **Step 2: Check the line budget**
+- [x] **Step 2: Check the line budget**
 
 ```bash
 ./gradlew :ui-mobile:testDebugUnitTest
@@ -136,7 +136,7 @@ wc -l ui-mobile/src/main/kotlin/*.kt feature/system/src/main/kotlin/*.kt
 `AppChrome.kt` was 197 at the branch point and a longer label does not change
 that, but measure rather than assume. Everything strictly under 200.
 
-- [ ] **Step 3: Prove it on the phone**
+- [x] **Step 3: Prove it on the phone**
 
 ```bash
 ./gradlew :app:installDebug
@@ -161,7 +161,7 @@ wait for the device; loop inside one command.
 Confirmation 6 is the one this plan exists for. If it fails, the sidecar is in
 the wrong place and phase 2's boundary is wrong.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add android/
@@ -170,11 +170,11 @@ git commit -m "feat(android): ask for the details and the artwork together"
 
 ## Todo list
 
-- [ ] The menu item reads `Fetch details and artwork`, third of five
-- [ ] The sentence reports both halves and names leftovers only when there are any
-- [ ] The device locale reaches the core as the fallback language
-- [ ] Every file under 200 lines
-- [ ] The seven device confirmations made, especially the sixth
+- [x] The menu item reads `Fetch details and artwork`, third of five
+- [x] The sentence reports both halves and names leftovers only when there are any
+- [x] The device locale reaches the core as the fallback language
+- [x] Every file under 200 lines
+- [x] The seven device confirmations made, especially the sixth
 
 ## Success criteria
 

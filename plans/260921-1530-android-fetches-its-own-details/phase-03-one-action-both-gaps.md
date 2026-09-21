@@ -41,7 +41,7 @@ defect" is resolved here — it was a defect.
 
 **Interfaces — Produces:** `pub(super) fn language_of(conn: &Connection, fallback: &str) -> String`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```rust
     /// The library says what language it was described in. Asking a
@@ -67,7 +67,7 @@ defect" is resolved here — it was a defect.
     }
 ```
 
-- [ ] **Step 2: Run it**
+- [x] **Step 2: Run it**
 
 ```bash
 cargo test -p mediagram-core language_
@@ -75,12 +75,12 @@ cargo test -p mediagram-core language_
 
 Expected: FAIL to compile — `cannot find function language_of`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 One `GROUP BY lang ORDER BY COUNT(*) DESC LIMIT 1` over the index's `shows`,
 ignoring empty strings, falling back to the parameter when there is no row.
 
-- [ ] **Step 4: Run it, then commit**
+- [x] **Step 4: Run it, then commit**
 
 ```bash
 cargo test -p mediagram-core
@@ -104,7 +104,7 @@ details_recorded, details_already_known, no_provider_id, failed }` and a core
 method that fills both. **Consumes:** `plan_fetch`, `split_titles`,
 `language_of`, `details::upsert`.
 
-- [ ] **Step 1: Decide the report, and say why in its doc**
+- [x] **Step 1: Decide the report, and say why in its doc**
 
 `PosterReport`'s four counts become six. This is a breaking change to the
 core's exported surface and to every Kotlin caller, which is acceptable
@@ -116,7 +116,7 @@ where the others count deduplicated titles, which makes a 162-lesson course
 read as "162 titles have no provider entry" beside "3 posters fetched". Fix it
 here while the type is being rewritten: count titles throughout, and say so.
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 `crates/mediagram-core/tests/artwork_fetch.rs` already has everything these
 need: `StubApi` and `RejectingApi` (`:15-38`), `catalog_with_kinds(dir, kinds)`
@@ -186,7 +186,7 @@ async fn a_rejected_key_stops_the_run_before_it_starts() {
 for anything, and the third test needs one title it will not answer for.
 **Live TMDB is never called from a test.**
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Extend the existing pass rather than writing a second one: after `verify_key`,
 walk the same title list once, and for each title record its description and
@@ -197,7 +197,7 @@ it there because a warm cache otherwise vouches for a rotated key.
 `artwork.rs` calls; if the caller still crosses 200, the split is the loop, not
 a line count.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 
 ```bash
 cargo test -p mediagram-core
@@ -211,7 +211,7 @@ callers that compile. That is expected and is phase 4's work — **say so in the
 report rather than patching Kotlin here.** Confirm the Rust half is green on
 its own first.
 
-- [ ] **Step 5: Regenerate the bindings**
+- [x] **Step 5: Regenerate the bindings**
 
 ```bash
 ./scripts/generate-android-bindings.sh
@@ -221,7 +221,7 @@ its own first.
 Rust record changed and Kotlin stayed compiled against the old shape. Run it
 whenever a `uniffi::Record` changes, and commit the result.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/ android/core/rust/
@@ -248,12 +248,12 @@ pinned rather than assumed, which is what makes the two walks safe to keep.
 
 ## Todo list
 
-- [ ] The language is read from the index, with the caller's locale as fallback
-- [ ] One pass records descriptions and fetches posters
-- [ ] `FetchReport` counts titles throughout, and says so
-- [ ] Verification still happens off the cached client
-- [ ] Bindings regenerated and committed
-- [ ] Every file under 200 lines
+- [x] The language is read from the index, with the caller's locale as fallback
+- [x] One pass records descriptions and fetches posters
+- [x] `FetchReport` counts titles throughout, and says so
+- [x] Verification still happens off the cached client
+- [x] Bindings regenerated and committed
+- [x] Every file under 200 lines
 
 ## Success criteria
 

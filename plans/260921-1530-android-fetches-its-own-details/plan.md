@@ -59,10 +59,10 @@ diverges.
 
 | # | Phase | Status |
 |---|---|---|
-| 1 | [One row mapping, in the crate both sides share](phase-01-shared-row-mapping.md) | Not started |
-| 2 | [Somewhere to keep what the phone learns](phase-02-the-details-sidecar.md) | Not started |
-| 3 | [One action, both gaps](phase-03-one-action-both-gaps.md) | Not started |
-| 4 | [The phone asks](phase-04-the-phone-asks.md) | Not started |
+| 1 | [One row mapping, in the crate both sides share](phase-01-shared-row-mapping.md) | Complete |
+| 2 | [Somewhere to keep what the phone learns](phase-02-the-details-sidecar.md) | Complete |
+| 3 | [One action, both gaps](phase-03-one-action-both-gaps.md) | Complete |
+| 4 | [The phone asks](phase-04-the-phone-asks.md) | Complete |
 
 ## Key dependencies
 
@@ -93,4 +93,31 @@ fills gaps.
 
 ## Review
 
-_Filled in as phases complete._
+**Delivered.** One menu action, `Fetch details and artwork`, fills in both the
+synopses and the artwork an index left out, asking TMDB in the language the
+library itself records. Proved on a real device: a series that had a title and
+episode list and nothing else came back with a poster, genres, a rating, a
+tagline and a German synopsis — while the fallback language passed in was the
+phone's own `en-GB`. The core read `de-DE` off the index and ignored it.
+
+**The boundary held.** After a full `Refresh library` the fetched descriptions
+are identical and still there. That was the question four phases rested on,
+and it is the defect that destroyed every fetched poster before this work
+started, not repeated.
+
+**Accepted deviations**, each recorded in its phase file: the fetch walks the
+title list twice rather than once, with `tests/fetch_cache.rs` counting real
+provider requests to pin the property that makes it safe; and phase 2's store
+shipped `pub` rather than `pub(super)` so integration tests can reach it.
+
+**Follow-ups, none blocking.** Freshly fetched *artwork* still waits for the
+next reload — descriptions do not, because they are read live. Reusing
+`reload()` would be wrong, not merely heavy: a refresh failure would paint
+"could not reach the channel" over shelves the fetch had just filled, and a
+successful one could install a newer index as a side effect of asking for a
+poster. The lighter path is a `regroup()` beside `reload()`, about fifteen
+lines. Also open: a first run's answers are permanent, since an all-`NULL` row
+counts as already-known and nothing offers to ask again; a `tut` or `doc` set
+carrying a TMDB id now reports as a failure; `toLanguageTag()` can produce
+tags TMDB will not accept on exotic locales; and `split_titles` prefers `show`
+over `set_id` for a film, which is backwards for the parity it claims.

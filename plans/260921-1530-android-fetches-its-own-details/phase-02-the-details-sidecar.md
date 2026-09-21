@@ -40,7 +40,7 @@ there reaches both databases or neither.
 `pub(super) fn open_or_create(core: &Core) -> Result<Connection, CoreError>`,
 `pub(super) fn upsert(conn: &Connection, row: &ShowRow) -> Result<(), CoreError>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```rust
 use super::*;
@@ -139,7 +139,7 @@ in `described` against the crate's own `ShowRow`.
 that would have caught the poster defect, and this one has to catch its
 sibling.
 
-- [ ] **Step 2: Run them**
+- [x] **Step 2: Run them**
 
 ```bash
 cd /home/andre/Workspace/mediagram-android
@@ -148,7 +148,7 @@ cargo test -p mediagram-core details
 
 Expected: FAIL to compile — `cannot find module details`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `details_db(core)` is `catalog::dir(core).join("details.db")` — a sibling of
 the version directories and of `artwork/`, for the same two reasons. Say both
@@ -163,7 +163,7 @@ not copy the DDL.
 `crates/mediagram/src/index/shows.rs:82-116` for the statement's shape and the
 `ON CONFLICT` target, and write the core's own rather than calling across.
 
-- [ ] **Step 4: Run them**
+- [x] **Step 4: Run them**
 
 ```bash
 cargo test -p mediagram-core details
@@ -172,7 +172,7 @@ CARGO_SUB=build cargo $CARGO_SUB -p mediagram-core
 
 Expected: PASS, all four.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/mediagram-core/
@@ -190,7 +190,7 @@ git commit -m "feat(core): keep what a fetch learns where a refresh cannot reach
 
 **Interfaces — Consumes:** `details::open_or_create` (Task 1), `shows::read`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```rust
     /// The publisher's own description wins. It was written in the
@@ -266,7 +266,7 @@ The fourth test is the one that matters most: `poster_path` already validates a
 key once and returns before building any path, and this lookup now has two
 stores behind it. One guard, both stores — never one guard each.
 
-- [ ] **Step 2: Run it**
+- [x] **Step 2: Run it**
 
 ```bash
 cargo test -p mediagram-core show_info
@@ -274,7 +274,7 @@ cargo test -p mediagram-core show_info
 
 Expected: FAIL — the sidecar is not consulted.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `show_info` reads the index first through the existing `shows::read`. On
 `None`, it opens the sidecar and asks the same question. A missing sidecar file
@@ -284,7 +284,7 @@ Keep `key_parts`' validation as the single gate. Two lookup locations behind one
 guard, never one guard each — the rule `poster_path` already follows, and for
 the same reason.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 
 ```bash
 cargo test -p mediagram-core
@@ -297,7 +297,7 @@ Every file strictly under 200. `api/mod.rs` was 286 before this plan and is the
 one to watch — if it crosses, the `show_info` composition is what moves out,
 not an arbitrary split.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/mediagram-core/
@@ -306,12 +306,12 @@ git commit -m "feat(core): answer from the index first, and from what was fetche
 
 ## Todo list
 
-- [ ] The sidecar is a sibling of the version directories, inside `catalog/`
-- [ ] Its schema comes from `mlib_spec`, not a second copy
-- [ ] A refresh cannot delete it; a sign-out does
-- [ ] The index's own row wins; the sidecar fills gaps
-- [ ] One key-validation gate over both lookups
-- [ ] Every file under 200 lines
+- [x] The sidecar is a sibling of the version directories, inside `catalog/`
+- [x] Its schema comes from `mlib_spec`, not a second copy
+- [x] A refresh cannot delete it; a sign-out does
+- [x] The index's own row wins; the sidecar fills gaps
+- [x] One key-validation gate over both lookups
+- [x] Every file under 200 lines
 
 ## Success criteria
 
