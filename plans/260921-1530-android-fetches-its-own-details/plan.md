@@ -25,7 +25,12 @@ diverges.
 ## Global Constraints
 
 - Worktree `mediagram-android`, branch `android-fetches-details`, forked from `main` at `b5775ea`.
-- Every source file stays **strictly under 200 lines**. 200 exactly is over.
+- Every file this work **creates or grows** stays **strictly under 200 lines**. 200 exactly is over.
+  Two core files are already past it and neither is this plan's to fix:
+  `crates/mediagram-core/src/api/mod.rs` (286 at the fork) and
+  `crates/mediagram-core/src/api/library.rs` (307). Adding a line to `mod.rs` is
+  allowed where the alternative is an arbitrary split; adding a function is not.
+  Report their counts, do not chase them.
 - **Fetched rows are never written into the downloaded index.** `catalog.rs`
   opens it read-only on purpose, and a refresh deletes the version directory
   wholesale — that is what destroyed every fetched poster before `0ce5fd2`.
