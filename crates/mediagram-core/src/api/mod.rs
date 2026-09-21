@@ -14,6 +14,7 @@ mod auth;
 mod catalog;
 mod channel;
 mod channel_index;
+pub mod details;
 mod http;
 mod identity;
 mod library;
