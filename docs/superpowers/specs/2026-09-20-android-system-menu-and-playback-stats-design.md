@@ -168,8 +168,24 @@ failed, never the secret that failed to work.
 Fetching is an explicit action, as the uploader's own `mediagram posters`
 command is. For each set with a `poster_key`, the core resolves the TMDB
 payload for that id, reads `poster_path`, downloads `w342`, and writes
-`<current>/posters/<key>.jpg`. Existing files are left alone, so a second run
+`<data_dir>/artwork/<key>.jpg`. Existing files are left alone, so a second run
 fetches only what the first could not.
+
+**Not `<current>/posters/`, which this section first said.** `current` points
+at a version directory, and a version directory is storage with a timer on
+it: `install_staged` removes one wholesale before renaming a fresh download
+into place, `remove_other_versions` clears every version but the one just
+published, and a refresh runs on every catalog load. Artwork written inside
+one was therefore deleted before it was ever shown — counted on a device at
+0, then 236, then 0 again across a restart. A poster is a fact about a title,
+not about a snapshot of the index, so it lives outside the catalogue tree
+where no refresh reaches. The TMDB response cache sits beside it for the same
+reason.
+
+`poster_path` reads the version's own `posters/` first and the artwork
+directory second, so a published package keeps its publisher's chosen art for
+the keys it covers — a fetch only ever ran for a title the package had
+nothing for.
 
 The action reports what happened — fetched, already held, skipped for want of
 a provider id, failed — because "done" over a library of 540 sets tells a
@@ -177,10 +193,13 @@ viewer nothing about the eight that did not work.
 
 **Two failure modes get named rather than swallowed.** A key TMDB rejects is
 reported as a key problem, not a network one, or a viewer retries forever
-against a wrong key. And a refresh landing mid-fetch swaps `current` beneath
-the run; the fetch resolves its directory once at the start and writes only
-there, so the worst case is art written to a catalog that has just been
-replaced — wasted work, not a corrupted install.
+against a wrong key — and that check is asked of TMDB itself rather than
+through the response cache, which holds no credential and would otherwise
+vouch for a rotated key out of a file the previous one paid for. And a
+refresh landing mid-fetch swaps `current` beneath the run; the fetch resolves
+that directory once at the start and reads `library.db` only from there,
+while the art it writes is outside the catalogue tree altogether, so a
+refresh mid-fetch costs nothing at all.
 
 ## 7. Playback stats
 
