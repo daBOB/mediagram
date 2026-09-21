@@ -219,3 +219,112 @@ describe("whether a sample measured anything", () => {
     expect(next.ratio).toBeGreaterThan(0);
   });
 });
+
+/**
+ * Plays out the end of a title: everything is buffered, nothing more is
+ * coming, and the playhead eats into what is left.
+ *
+ * This is what every title does for its last forty seconds, and what used to
+ * be read as a link that had died.
+ */
+function playToTheEnd(
+  health: BufferHealth,
+  options: { duration: number; from: number; seconds: number; growsTo?: number },
+) {
+  let verdict = health.sample({
+    now: 0,
+    currentTime: options.from,
+    bufferedEnd: options.duration,
+    paused: false,
+    duration: options.duration,
+  });
+
+  for (let tick = 1; tick <= options.seconds; tick++) {
+    // A playlist still being written keeps growing; a finished file does not.
+    const duration = options.growsTo ? options.duration + tick : options.duration;
+    verdict = health.sample({
+      now: tick * 1000,
+      currentTime: options.from + tick,
+      bufferedEnd: duration,
+      paused: false,
+      duration,
+    });
+  }
+  return verdict;
+}
+
+describe("the end of a title", () => {
+  test("is not a link that has died", () => {
+    // The buffer cannot grow because there is nothing left to fetch, and the
+    // player is genuinely hungry because it cannot hold 45s of a film with 40
+    // left. Judging that converted every title in its last forty seconds.
+    const health = new BufferHealth();
+
+    const verdict = playToTheEnd(health, { duration: 252, from: 212, seconds: 35 });
+
+    expect(verdict.state).toBe("ok");
+  });
+
+  test("and nothing is measured from it", () => {
+    // A rate of nought taken from a file that has simply ended describes
+    // nothing, and would drag the smoothed rate down for whatever plays next.
+    const health = new BufferHealth();
+
+    expect(playToTheEnd(health, { duration: 252, from: 212, seconds: 35 }).measured).toBe(false);
+  });
+
+  test("however long it is left there", () => {
+    const health = new BufferHealth();
+
+    expect(playToTheEnd(health, { duration: 3539, from: 3490, seconds: 45 }).state).toBe("ok");
+  });
+});
+
+describe("a playlist still being written", () => {
+  test("is still judged, because more really is coming", () => {
+    // A buffer at the end of a *growing* duration means the encoder is the
+    // bottleneck, which is worth acting on and must not be suppressed.
+    const health = new BufferHealth();
+
+    // The duration grows by a second per second, so the player is exactly
+    // keeping pace with the encoder and never gets ahead of it.
+    const verdict = playToTheEnd(health, {
+      duration: 60,
+      from: 40,
+      seconds: 30,
+      growsTo: 90,
+    });
+
+    expect(verdict.measured).toBe(true);
+  });
+});
+
+describe("a duration nothing knows", () => {
+  test("is judged the way it always was", () => {
+    // `video.duration` is NaN before metadata arrives, and Infinity for a
+    // live stream. Neither may switch the end-of-file rule on.
+    const health = new BufferHealth();
+
+    for (const duration of [Number.NaN, Number.POSITIVE_INFINITY, undefined]) {
+      const starving = new BufferHealth();
+      let verdict = starving.sample({
+        now: 0,
+        currentTime: 0,
+        bufferedEnd: 10,
+        paused: false,
+        duration: duration as never,
+      });
+      for (let tick = 1; tick <= 20; tick++) {
+        verdict = starving.sample({
+          now: tick * 1000,
+          currentTime: tick,
+          bufferedEnd: 10,
+          paused: false,
+          duration: duration as never,
+        });
+      }
+      expect(verdict.state).not.toBe("ok");
+    }
+    void health;
+  });
+});

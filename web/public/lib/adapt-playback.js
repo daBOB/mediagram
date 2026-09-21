@@ -105,6 +105,9 @@ export function watchPlayback(options) {
       currentTime: video.currentTime,
       bufferedEnd: buffered.end(buffered.length - 1),
       paused: video.paused,
+      // So the end of a title is not read as a link that has died. See
+      // `buffer-health.js` on the third trap.
+      duration: video.duration,
     });
     liveRate = verdict.measured ? verdict.ratio : null;
     if (verdict.state === "ok") return;

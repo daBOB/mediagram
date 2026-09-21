@@ -16,6 +16,17 @@
  * falling behind would convert titles that were playing perfectly. So nothing
  * is judged unless the player is still hungry, which is `HUNGRY_SECONDS`.
  *
+ * **The end of a file looks exactly like a slow download.** The trap above
+ * again, with a different cause and no `HUNGRY_SECONDS` to catch it: in the
+ * last `HUNGRY_SECONDS` of any title the player is genuinely hungry — it
+ * cannot hold that much ahead of itself, because there is not that much left
+ * — so measurement begins, and the buffer cannot grow because there is
+ * nothing to fetch. The rate falls to nought and the watch concludes the link
+ * has died. Every title, every time, for its last forty seconds. So a buffer
+ * that has reached the end of a media whose duration has stopped moving is
+ * not judged at all; a duration still growing is a playlist still being
+ * written, which is a different situation and still worth watching.
+ *
  * **A stalled player looks exactly like a healthy one**, if you measure the
  * wrong thing. Once the buffer is empty the playhead advances only as fast as
  * bytes arrive, so buffered-seconds-gained per second-played is exactly 1.0 —
@@ -41,6 +52,14 @@ const KEEPING_UP = 0.97;
 
 /** A jump larger than this is a seek, not playback. */
 const SEEK_SECONDS = 3;
+
+/**
+ * How near the end counts as at it.
+ *
+ * A buffered range ends on a frame or a segment boundary rather than exactly
+ * on the duration, and the two disagree by a little in every container.
+ */
+const END_TOLERANCE = 0.5;
 
 /** What the measurement leaves spare when it suggests a bitrate. */
 const HEADROOM = 0.8;
@@ -105,6 +124,24 @@ export class BufferHealth {
     // Only while the player still wants more. Above the mark it has what it
     // asked for and has stopped fetching, which is not a shortfall.
     if (bufferAhead >= this.hungrySeconds) {
+      this.shortfallSince = null;
+      return { state: "ok", ratio: this.ratio, bufferAhead, measured: false };
+    }
+
+    /**
+     * Nor is having everything there is.
+     *
+     * Both halves matter. Reaching the end of what is buffered means there is
+     * nothing left to ask for; the duration standing still means nothing more
+     * is coming. A growing duration is a playlist still being written, where
+     * a buffer at the end really does mean the encoder is the bottleneck and
+     * is worth acting on.
+     */
+    const finished =
+      Number.isFinite(at.duration) &&
+      at.bufferedEnd >= at.duration - END_TOLERANCE &&
+      at.duration === previous.duration;
+    if (finished) {
       this.shortfallSince = null;
       return { state: "ok", ratio: this.ratio, bufferAhead, measured: false };
     }
