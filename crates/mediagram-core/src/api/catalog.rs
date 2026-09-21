@@ -1,11 +1,13 @@
 //! What a refreshed catalog holds, and where it lives on disk.
 //!
 //! Layout under `<data_dir>/catalog/`: version directories (`v-<created_at>`,
-//! one per successful refresh) and a `current` symlink pointing at the one in
-//! use. `refresh.rs` is the only thing that ever writes here; this module
-//! only ever reads, through `current`, so a refresh landing mid-query cannot
-//! be observed as a half-written database — the symlink swap in `refresh.rs`
-//! is atomic, and an already-open handle keeps the version it opened.
+//! one per successful refresh), a `current` symlink pointing at the one in
+//! use, and an `artwork/` sibling that outlives every version — see
+//! [`artwork_dir`]. `refresh.rs` is the only thing that ever writes a
+//! version; this module only ever reads one, through `current`, so a refresh
+//! landing mid-query cannot be observed as a half-written database — the
+//! symlink swap in `refresh.rs` is atomic, and an already-open handle keeps
+//! the version it opened.
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -33,15 +35,24 @@ pub(super) fn current_dir(core: &Core) -> PathBuf {
 
 /// Where fetched poster artwork and the TMDB provider-id cache live.
 ///
-/// Deliberately outside `<data_dir>/catalog/`: `install_staged` removes a
-/// version directory wholesale before renaming a fresh download into place,
-/// and `remove_other_versions` clears every version but the one just
-/// published. Both operate strictly inside `catalog::dir`, so anything
-/// stored inside a version directory is storage with a timer on it. Artwork
-/// is a fact about a title, not about a snapshot of the index, and lives
-/// somewhere no refresh ever touches.
+/// Two things have to be true of this path at once, and naming only the
+/// first is how artwork came to outlive a start-over meant to forget it.
+///
+/// **Out of the version directory**, so a refresh cannot delete it.
+/// `install_staged` removes one wholesale before renaming a fresh download
+/// into place, `remove_other_versions` clears every version but the one just
+/// published, and a refresh runs on every catalog load. Artwork kept there
+/// was counted on a device at 0, then 236, then 0 again across a restart.
+/// Neither pass touches a sibling: both remove only entries named `v-…` or
+/// `incoming`, and a version is always `v-<pushed_at>`.
+///
+/// **Inside `catalog/`**, so forgetting the library forgets its artwork too.
+/// Signing out deletes this directory whole; artwork held anywhere else
+/// would survive it, leaving the next account to set the device up looking
+/// at cached payloads naming the previous one's titles — and growing without
+/// bound, since nothing else ever removes it.
 pub(super) fn artwork_dir(core: &Core) -> PathBuf {
-    core.data_dir.join("artwork")
+    dir(core).join("artwork")
 }
 
 fn library_db(dir: &Path) -> PathBuf {

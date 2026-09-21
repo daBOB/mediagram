@@ -41,6 +41,27 @@ fn a_fetched_poster_is_found_after_the_catalogue_is_replaced() {
     assert!(poster_path(&core, key.into()).is_some());
 }
 
+/// Forgetting the library forgets its artwork with it.
+///
+/// The other half of where this directory lives, and the half that went
+/// unwritten the first time: signing out deletes `catalog/` whole, so
+/// artwork held anywhere else would outlive it and show the next account to
+/// set this device up cached provider payloads naming the previous one's
+/// titles. Stated as a containment rather than by deleting, because the
+/// delete itself is the caller's — this crate only decides what falls inside
+/// it.
+#[test]
+fn artwork_is_deleted_along_with_the_library_it_was_fetched_for() {
+    let data = tempfile::tempdir().unwrap();
+    let core = core_at(data.path());
+
+    assert!(
+        artwork_dir(&core).starts_with(dir(&core)),
+        "artwork at {} would survive being signed out",
+        artwork_dir(&core).display(),
+    );
+}
+
 /// A published package carries its publisher's own chosen art, so it
 /// stays authoritative for the keys it covers — a fetch only ever ran
 /// for a title the package had nothing for.

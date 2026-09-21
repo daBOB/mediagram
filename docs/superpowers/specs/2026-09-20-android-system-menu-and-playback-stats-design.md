@@ -171,19 +171,34 @@ failed, never the secret that failed to work.
 Fetching is an explicit action, as the uploader's own `mediagram posters`
 command is. For each set with a `poster_key`, the core resolves the TMDB
 payload for that id, reads `poster_path`, downloads `w342`, and writes
-`<data_dir>/artwork/<key>.jpg`. Existing files are left alone, so a second run
-fetches only what the first could not.
+`<data_dir>/catalog/artwork/<key>.jpg`. Existing files are left alone, so a
+second run fetches only what the first could not.
 
-**Not `<current>/posters/`, which this section first said.** `current` points
-at a version directory, and a version directory is storage with a timer on
-it: `install_staged` removes one wholesale before renaming a fresh download
-into place, `remove_other_versions` clears every version but the one just
-published, and a refresh runs on every catalog load. Artwork written inside
-one was therefore deleted before it was ever shown — counted on a device at
-0, then 236, then 0 again across a restart. A poster is a fact about a title,
-not about a snapshot of the index, so it lives outside the catalogue tree
-where no refresh reaches. The TMDB response cache sits beside it for the same
-reason.
+**Not `<current>/posters/`, which this section first said.** That path has to
+satisfy two things at once, and naming only the first is how the second was
+missed.
+
+*Out of the version directory, so a refresh cannot delete it.* `current`
+points at a version directory, and a version directory is storage with a
+timer on it: `install_staged` removes one wholesale before renaming a fresh
+download into place, `remove_other_versions` clears every version but the one
+just published, and a refresh runs on every catalog load. Artwork written
+inside one was deleted before it was ever shown — counted on a device at 0,
+then 236, then 0 again across a restart. A poster is a fact about a title,
+not about a snapshot of the index.
+
+*Inside `catalog/`, so forgetting the library forgets its artwork too.*
+Start-over deletes `catalog/` whole. Artwork held outside it would survive a
+sign-out and leave the next account to set the device up looking at cached
+provider payloads naming the previous one's titles — and it would grow
+without bound, since nothing else ever removes it. `artwork/` is a sibling of
+the version directories, which neither cleanup pass touches:
+`remove_other_versions` removes only entries named `v-…` or `incoming`. The
+TMDB response cache sits inside it for both reasons.
+
+Both halves are pinned by tests rather than only written down here: one
+plants a poster and drives the real install paths over it, one states the
+containment that makes a sign-out sufficient.
 
 `poster_path` reads the version's own `posters/` first and the artwork
 directory second, so a published package keeps its publisher's chosen art for

@@ -1,40 +1,52 @@
 use super::*;
 
-/// The emptiest catalog `plan_fetch` will read: no titles, which is all this
-/// needs, since where the artwork goes is not a fact about what is in the
-/// index.
-fn empty_catalog_at(data_dir: &Path) {
-    let current = catalog::dir(&Core::new(data_dir.display().to_string(), 1, "h".into()))
-        .join(catalog::CURRENT);
-    std::fs::create_dir_all(&current).unwrap();
-    let conn = Connection::open(current.join("library.db")).unwrap();
+/// Installs a catalog under `version`, the way a refresh does: an empty but
+/// readable index is staged as `incoming` and handed to the one function
+/// that ever makes a version current.
+fn install_version(core: &Core, version: &str) {
+    let incoming = catalog::dir(core).join("incoming");
+    std::fs::create_dir_all(&incoming).unwrap();
+    let conn = Connection::open(incoming.join("library.db")).unwrap();
     for stmt in mlib_spec::schema::migrations_up_to(mlib_spec::schema::SCHEMA_VERSION) {
         conn.execute(stmt, []).unwrap();
     }
+    drop(conn);
+    super::super::refresh::install_staged(core, &incoming, version).unwrap();
 }
 
-/// A fetch writes outside the catalogue tree, and nothing in the fetch path
-/// may quietly move it back in.
+/// Artwork a fetch wrote outlives the refreshes that follow it.
 ///
-/// It was inside one once: `install_staged` replaces a version directory
-/// wholesale and a refresh runs on every catalog load, so the artwork was
-/// deleted before it was ever shown — counted on a device at 0, then 236,
-/// then 0 again across a restart. `poster_path` reads both locations, so a
-/// poster planted by hand is found either way and every other test here
-/// would go on passing if this one line moved.
+/// Driven through the real removal paths rather than asserted about as a
+/// string, because this is the defect as it actually shipped: the artwork
+/// went inside the version directory, and a refresh runs on every catalog
+/// load, so it was deleted before it was ever shown — counted on a device at
+/// 0, then 236, then 0 again across a restart. `poster_path` reads both the
+/// version's own `posters/` and the artwork directory, so a poster planted
+/// by hand is found either way and nothing else here would notice.
+///
+/// Two passes can take it, and both run on every install, so both are run
+/// here: `install_staged` clears the version directory it is about to write,
+/// and `remove_other_versions` clears every version but the one just
+/// published.
 #[test]
-fn a_fetch_writes_outside_the_catalogue_tree() {
+fn a_fetched_poster_outlives_the_refreshes_that_follow_it() {
     let data = tempfile::tempdir().unwrap();
-    empty_catalog_at(data.path());
     let core = Core::new(data.path().display().to_string(), 1, "h".into());
+    install_version(&core, "v-1");
 
-    let plan = plan_fetch(&core).expect("the catalog is readable");
+    let plan = plan_fetch(&core).expect("the installed catalog is readable");
+    std::fs::create_dir_all(&plan.artwork_dir).unwrap();
+    let poster = plan.artwork_dir.join("tmdb-movie-550.jpg");
+    std::fs::write(&poster, b"fake-poster-bytes").unwrap();
 
-    assert!(
-        !plan.artwork_dir.starts_with(catalog::dir(&core)),
-        "artwork goes in {}, which a refresh clears",
-        plan.artwork_dir.display(),
-    );
+    // The same version installed again: `install_staged` removes what is
+    // already there before renaming the staged copy into its place.
+    install_version(&core, "v-1");
+    assert!(poster.exists(), "reinstalling a version took the artwork with it");
+
+    // A new version: `remove_other_versions` clears the one just replaced.
+    install_version(&core, "v-2");
+    assert!(poster.exists(), "refreshing to a new version took the artwork with it");
 }
 
 /// Builds the same `anyhow::Error` shape
