@@ -6,14 +6,20 @@
  * and a surface with its own access rule is exactly the kind of thing that
  * should not be remembered halfway down it.
  *
- * **The rule is local-only, and the refusal is a 404.** This API has no
- * authentication of its own — anyone who can reach the port can stream the
- * whole library — and a 403 would confirm to a caller from outside that there
- * is something here worth the next request. There is nothing to confirm.
+ * **The rule is this household's own devices, and the refusal is a 404.**
+ * This API has no authentication of its own — anyone who can reach the port
+ * can stream the whole library — and a 403 would confirm to a caller from
+ * outside that there is something here worth the next request. There is
+ * nothing to confirm.
+ *
+ * Own devices rather than the local network: a tailnet peer is the viewer's
+ * own phone, and it was hidden from this page for reaching the player over an
+ * uplink — which is an answer to a question about bandwidth, not about who is
+ * asking. `isOwnNetwork` is the one that belongs here.
  */
 
 import type { PlayerRequest, PlayerResponse } from "../routes";
-import { isLocalAddress } from "../client-reach";
+import { isOwnNetwork } from "../client-reach";
 import { bodiless, withBody } from "../response";
 import { buildSnapshot, type LiveFacts } from "./snapshot";
 import type { StartupFacts } from "./facts";
@@ -99,7 +105,7 @@ export function createStatusRouter(options: StatusRouterOptions) {
 
     // Before the method check, so a caller from outside cannot learn the
     // difference between "wrong method here" and "nothing here".
-    if (!isLocalAddress(request.client ?? "")) return status(404);
+    if (!isOwnNetwork(request.client ?? "")) return status(404);
 
     const reading = request.method === "GET" || request.method === "HEAD";
     if (!reading) return status(405);

@@ -5,6 +5,10 @@
  * Mbit/s film is nothing on a LAN and does not fit a household uplink, so
  * offering it whole to a remote viewer is offering a stall.
  *
+ * Whose device is on the other end is a second question, and the tailnet is
+ * where the two answers part: the household's own phone, on a link that
+ * cannot carry a film.
+ *
  * Behind a proxy every request arrives from loopback, so the forwarded
  * address has to be read — but only where a proxy is actually in front, or a
  * header anyone can set decides what the server believes.
@@ -12,7 +16,7 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { clientAddress, isLocalAddress } from "../src/client-reach";
+import { clientAddress, isLocalAddress, isOwnNetwork } from "../src/client-reach";
 
 describe("recognising a local address", () => {
   test("loopback is local", () => {
@@ -42,8 +46,42 @@ describe("recognising a local address", () => {
   });
 
   test("carrier-grade NAT is not a home network", () => {
-    // 100.64/10 is the ISP's, not the household's: a viewer there is remote.
+    // 100.64/10 reaches this machine over an uplink, whoever is behind it:
+    // the link cannot carry a film, so it is not local. Whether the *viewer*
+    // is the household's own is a different question — see below.
     expect(isLocalAddress("100.64.0.1")).toBe(false);
+    expect(isLocalAddress("100.95.219.10")).toBe(false);
+  });
+});
+
+describe("recognising one of this household's own devices", () => {
+  test("everything local is also its own", () => {
+    for (const ip of ["127.0.0.1", "::1", "192.168.0.118", "10.4.4.4", "fd00::1", "fe80::1"]) {
+      expect(isOwnNetwork(ip)).toBe(true);
+    }
+  });
+
+  test("a tailnet peer is own, though its link is not local", () => {
+    // The address Tailscale hands a peer. It had to be admitted to the
+    // tailnet to send a packet at all, so it is this household's phone.
+    for (const ip of ["100.64.0.1", "100.95.219.10", "100.127.255.254", "::ffff:100.95.219.10"]) {
+      expect(isOwnNetwork(ip)).toBe(true);
+      expect(isLocalAddress(ip)).toBe(false);
+    }
+  });
+
+  test("the octets either side of the tailnet range are not own", () => {
+    // 100.64/10 is 100.64 through 100.127 and nothing else: 100.63 and
+    // 100.128 are ordinary public addresses.
+    for (const ip of ["100.63.255.255", "100.128.0.1", "99.64.0.1", "101.64.0.1"]) {
+      expect(isOwnNetwork(ip)).toBe(false);
+    }
+  });
+
+  test("the internet is not own, and neither is an address that is not one", () => {
+    for (const ip of ["203.0.113.9", "8.8.8.8", "2001:db8::1", "not-an-address", ""]) {
+      expect(isOwnNetwork(ip)).toBe(false);
+    }
   });
 });
 

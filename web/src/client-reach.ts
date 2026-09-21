@@ -1,10 +1,18 @@
 /**
  * Telling a viewer on the sofa from a viewer on the internet.
  *
- * The distinction decides whether a title may be played as it is. Direct play
- * hands over the original file, which for a film is 13.9 Mbit/s: nothing on a
- * LAN, and more than a household uplink carries. Offering it to a remote
- * viewer is offering a stall, so remote viewers get a transcode instead.
+ * Two questions are asked of an address here, and they are not the same one.
+ *
+ * **What can the link carry?** — `isLocalAddress`. Direct play hands over the
+ * original file, which for a film is 13.9 Mbit/s: nothing on a LAN, and more
+ * than a household uplink carries. Offering it to a remote viewer is offering
+ * a stall, so remote viewers get a transcode instead.
+ *
+ * **Whose device is on the other end?** — `isOwnNetwork`. This decides
+ * whether a viewer may be shown what the player itself is doing, and it is a
+ * question about trust rather than bandwidth. The two answers differ for a
+ * tailnet peer: the household's own phone, which may see the panel, reaching
+ * this machine over an uplink that cannot carry a film.
  *
  * Behind a reverse proxy every request arrives from loopback, so the address
  * the proxy forwards is the one that matters — but only where a proxy really
@@ -19,15 +27,17 @@ const LOOPBACK = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
  * True when `address` belongs to a network this machine shares.
  *
  * Carrier-grade NAT (100.64/10) is deliberately absent: it is the ISP's
- * range, not the household's, and a viewer behind it is somewhere else.
+ * range, not the household's, and a viewer behind it reaches this machine
+ * over an uplink. A tailnet peer lives there too — see `isOwnNetwork`, which
+ * is the question that range does belong to.
  */
 export function isLocalAddress(address: string): boolean {
-  const plain = address.startsWith("::ffff:") ? address.slice(7) : address;
+  const plain = plainForm(address);
   if (LOOPBACK.has(address) || LOOPBACK.has(plain)) return true;
 
-  const octets = plain.split(".");
-  if (octets.length === 4 && octets.every(isOctet)) {
-    const [a, b] = octets.map(Number) as [number, number, number, number];
+  const octets = octetsOf(address);
+  if (octets) {
+    const [a, b] = octets;
     if (a === 10) return true;
     if (a === 192 && b === 168) return true;
     if (a === 172 && b >= 16 && b <= 31) return true;
@@ -39,6 +49,46 @@ export function isLocalAddress(address: string): boolean {
   const lower = plain.toLowerCase();
   // fe80::/10 link-local, fc00::/7 unique-local: both mean "this network".
   return /^fe[89ab]/.test(lower) || /^f[cd]/.test(lower);
+}
+
+/**
+ * True when `address` is one of this household's own devices.
+ *
+ * Everything `isLocalAddress` accepts, and the tailnet with it. A Tailscale
+ * peer is handed an address in 100.64/10 and had to be admitted to the
+ * tailnet before it could send a packet at all, so it is the same phone that
+ * would be on the sofa if it were home — not a stranger. Its *link* is still
+ * an uplink, which is why this is a second question and not a wider answer to
+ * the first one.
+ *
+ * Carrier-grade NAT shares that range, so a neighbour behind the same ISP NAT
+ * would read as own-network here. What that costs is bounded: this API has no
+ * authentication, and anyone who can reach the port can already stream the
+ * whole library. Beyond the library, the panel adds the host's paths and its
+ * cache figures.
+ *
+ * Tailscale's IPv6 addresses need no case of their own: `fd7a:115c:a1e0::/48`
+ * sits inside `fc00::/7`, which `isLocalAddress` already accepts.
+ */
+export function isOwnNetwork(address: string): boolean {
+  if (isLocalAddress(address)) return true;
+
+  const octets = octetsOf(address);
+  if (!octets) return false;
+  const [a, b] = octets;
+  return a === 100 && b >= 64 && b <= 127;
+}
+
+/** `address` without the IPv4-mapped prefix Node reports it behind. */
+function plainForm(address: string): string {
+  return address.startsWith("::ffff:") ? address.slice(7) : address;
+}
+
+/** The four octets of a dotted quad, or `null` when it is not one. */
+function octetsOf(address: string): [number, number, number, number] | null {
+  const parts = plainForm(address).split(".");
+  if (parts.length !== 4 || !parts.every(isOctet)) return null;
+  return parts.map(Number) as [number, number, number, number];
 }
 
 function isOctet(text: string): boolean {

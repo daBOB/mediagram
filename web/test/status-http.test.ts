@@ -49,6 +49,13 @@ describe("the status route", () => {
     expect((await route(ask({ client: "192.168.1.40" })))?.status).toBe(200);
   });
 
+  test("answers a viewer on the tailnet, whose phone this also is", async () => {
+    // The link is an uplink, so playback still converts; the panel is about
+    // who is asking, and a Tailscale peer was admitted to the tailnet first.
+    const route = createStatusRouter({ facts, live });
+    expect((await route(ask({ client: "100.95.219.10" })))?.status).toBe(200);
+  });
+
   test("is a 404 from outside, not a 403: there is nothing to confirm", async () => {
     const route = createStatusRouter({ facts, live });
     const answer = await route(ask({ client: "203.0.113.9" }));
