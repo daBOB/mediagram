@@ -6,8 +6,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.CatalogFacts
+import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.LibraryChoice
-import uniffi.mediagram_core.PosterReport
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.ShowInfo
 
@@ -60,8 +60,8 @@ class FakeCore(
     override fun totalSize(setId: String): Long = 0
     override fun catalogFacts(): CatalogFacts = CatalogFacts("channel", 0uL, 0uL, 0u, null)
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray = ByteArray(0)
-    override suspend fun fetchPosters(tmdbKey: String, language: String): PosterReport =
-        PosterReport(0u, 0u, 0u, 0u)
+    override suspend fun fetchMissing(tmdbKey: String, language: String): FetchReport =
+        FetchReport(0u, 0u, 0u, 0u, 0u, 0u)
     override fun close() = Unit
 }
 

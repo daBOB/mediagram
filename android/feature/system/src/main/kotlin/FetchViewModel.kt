@@ -12,30 +12,38 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import settings.TmdbSettings
+import java.util.Locale
 import javax.inject.Inject
-
-private const val LANGUAGE = "en-US"
 
 /**
  * Saves the TMDB key, and runs a fetch with it.
  *
  * The key itself passes through [saveKey] and [fetch] and is never kept in
- * [state] — only [PostersUiState.hasKey], which is all either screen this
- * feeds is allowed to know once a key is stored.
+ * [state] — only [FetchUiState.hasKey], which is all either screen this feeds
+ * is allowed to know once a key is stored.
  *
- * A fetch is spent against whatever core [CoreProvider] currently holds;
- * the generated binding's own suspend function is what keeps this off the
+ * A fetch is spent against whatever core [CoreProvider] currently holds; the
+ * generated binding's own suspend function is what keeps this off the
  * caller's thread, the same way every other core call in this app already
  * relies on it — see [setup.Libraries.install] for the same shape.
  */
 @HiltViewModel
-class PostersViewModel @Inject constructor(
+class FetchViewModel @Inject constructor(
     private val coreProvider: CoreProvider,
     private val tmdbSettings: TmdbSettings,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(PostersUiState())
-    val state: StateFlow<PostersUiState> = _state.asStateFlow()
+    /**
+     * The language to ask the provider in when the library itself does not
+     * say what it was described in. Read once, here, because a fetch takes
+     * minutes and a screen rotation in the middle of one must not change
+     * what it asked for — and because the device is the only thing in this
+     * app that knows which language its owner reads.
+     */
+    private val fallbackLanguage: String = Locale.getDefault().toLanguageTag()
+
+    private val _state = MutableStateFlow(FetchUiState())
+    val state: StateFlow<FetchUiState> = _state.asStateFlow()
 
     init {
         refreshKeyStatus()
@@ -73,7 +81,7 @@ class PostersViewModel @Inject constructor(
                 return@launch
             }
             _state.value = try {
-                val report = coreProvider.awaitCore().fetchPosters(key, LANGUAGE)
+                val report = coreProvider.awaitCore().fetchMissing(key, fallbackLanguage)
                 _state.value.copy(running = false, report = report)
             } catch (e: CancellationException) {
                 throw e
