@@ -15,7 +15,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 
 use super::*;
-use crate::package::cipher;
+use crate::{api::identity, package::cipher};
 
 const KEY: [u8; 32] = [3u8; 32];
 
@@ -154,7 +154,7 @@ async fn an_older_package_is_refused_and_current_is_left_untouched() {
     let core = core_at(dir.path());
     let current = catalog::current_dir(&core);
     std::fs::create_dir_all(&current).unwrap();
-    let held = catalog::Identity {
+    let held = identity::Identity {
         format: PACKAGE_FORMAT,
         created_at: 500,
         key_id: key_id(&KEY),

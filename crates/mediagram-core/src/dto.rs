@@ -10,6 +10,7 @@
 use mlib_spec::caption::Episode;
 
 use crate::catalog::PlayableSet;
+use crate::shows::ShowRecord;
 
 /// One title, flattened for a player that never sees `Episode`, `set_id`
 /// internals, or where the bytes live.
@@ -28,6 +29,11 @@ pub struct SetSummary {
     pub episode_first: Option<u32>,
     pub episode_last: Option<u32>,
     pub year: Option<u32>,
+    pub container: String,
+    pub vcodec: Option<String>,
+    pub acodec: Option<String>,
+    pub quality: Option<String>,
+    pub hdr: Option<String>,
     pub duration: Option<u32>,
     pub poster_key: Option<String>,
     pub total: u64,
@@ -56,6 +62,11 @@ pub fn summary_from(set: &PlayableSet) -> SetSummary {
         episode_first,
         episode_last,
         year: set.year.map(u32::from),
+        container: set.container.clone(),
+        vcodec: set.vcodec.clone(),
+        acodec: set.acodec.clone(),
+        quality: set.quality.clone(),
+        hdr: set.hdr.clone(),
         duration: set.duration,
         poster_key: poster_key_for(&set.kind, set.tmdb),
         total: set.total,
@@ -71,4 +82,58 @@ fn poster_key_for(kind: &str, tmdb: Option<i64>) -> Option<String> {
     let key = format!("tmdb-{sub}-{tmdb}");
     debug_assert!(mlib_spec::package::poster_key_is_valid(&key));
     Some(key)
+}
+
+/// What a provider said about a title, flattened for the binding surface.
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct ShowInfo {
+    pub overview: Option<String>,
+    pub tagline: Option<String>,
+    pub genres: Option<String>,
+    pub rating: Option<f64>,
+    pub network: Option<String>,
+    pub status: Option<String>,
+}
+
+impl From<ShowRecord> for ShowInfo {
+    fn from(record: ShowRecord) -> Self {
+        ShowInfo {
+            overview: record.overview,
+            tagline: record.tagline,
+            genres: record.genres,
+            rating: record.rating,
+            network: record.network,
+            status: record.status,
+        }
+    }
+}
+
+/// What the installed catalog is, for the System screen's "Catalogue" block:
+/// where it came from, how much it holds, and which schema it was written
+/// with. `schema` is this build's own `SCHEMA_VERSION`, not a value read out
+/// of the database — it says what the reader understands, not what any one
+/// file happens to claim.
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct CatalogFacts {
+    pub origin: String,
+    pub sets: u64,
+    pub posters: u64,
+    pub schema: u32,
+    /// Seconds since the epoch when the installed catalogue was pushed,
+    /// read from the installed version's own name. `None` when nothing is
+    /// installed, or the name cannot be read.
+    pub published_at: Option<i64>,
+}
+
+/// What one artwork fetch did, for the screen that reports it.
+///
+/// A title with no provider id is not a failure, and artwork already on
+/// disk is not fetched again — the four counts keep those apart so a viewer
+/// reads what actually happened rather than a single pass/fail verdict.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, uniffi::Record)]
+pub struct PosterReport {
+    pub fetched: u32,
+    pub already_held: u32,
+    pub no_provider_id: u32,
+    pub failed: u32,
 }

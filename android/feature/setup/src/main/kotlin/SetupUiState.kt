@@ -59,3 +59,18 @@ sealed interface SetupUiState {
      */
     data class Failed(val message: String) : SetupUiState
 }
+
+/**
+ * Returns [previous] unchanged when it is the same step with something to
+ * say — the error a person has not read yet, or the fetched list the
+ * library step would otherwise have to ask for again.
+ *
+ * Beside the states it reads rather than inside the ViewModel that calls
+ * it: it is a rule about which of two states wins, and nothing about it
+ * needs the ViewModel's coroutines, its storage or its core.
+ */
+internal fun SetupUiState.keepingWhatIsOnScreenFrom(previous: SetupUiState): SetupUiState = when {
+    this is SetupUiState.NeedsApplication && previous is SetupUiState.NeedsApplication -> previous
+    this is SetupUiState.NeedsLibrary && previous is SetupUiState.NeedsLibrary -> previous
+    else -> this
+}

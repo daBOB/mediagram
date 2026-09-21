@@ -1,6 +1,7 @@
 package player
 
 import kotlinx.coroutines.test.runTest
+import playback.PlaybackCounters
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -9,7 +10,7 @@ class PlayerViewModelTest {
 
     @Test
     fun preparingIsTheFirstStateForASet() = runTest {
-        val vm = PlayerViewModel(FakePlayerHandle())
+        val vm = PlayerViewModel(FakePlayerHandle(), PlaybackCounters())
         vm.open("s1")
         assertEquals(PlayerUiState.Preparing, vm.state.value)
     }
@@ -17,7 +18,7 @@ class PlayerViewModelTest {
     @Test
     fun aPlayerErrorSurfacesAsFailed() = runTest {
         val handle = FakePlayerHandle()
-        val vm = PlayerViewModel(handle)
+        val vm = PlayerViewModel(handle, PlaybackCounters())
         vm.open("s1")
         handle.emitError("decoder init failed")
         assertTrue(vm.state.value is PlayerUiState.Failed)
@@ -30,7 +31,7 @@ class PlayerViewModelTest {
         // set on purpose first, so only an actual reset inside open()
         // can bring it back to Preparing.
         val handle = FakePlayerHandle()
-        val vm = PlayerViewModel(handle)
+        val vm = PlayerViewModel(handle, PlaybackCounters())
         vm.open("s1")
         handle.emitError("decoder init failed")
         assertTrue(vm.state.value is PlayerUiState.Failed)
@@ -43,7 +44,7 @@ class PlayerViewModelTest {
     @Test
     fun openIsForwardedToTheHandle() = runTest {
         val handle = FakePlayerHandle()
-        val vm = PlayerViewModel(handle)
+        val vm = PlayerViewModel(handle, PlaybackCounters())
         vm.open("s1")
         assertEquals("s1", handle.openedSetId)
     }
@@ -51,7 +52,7 @@ class PlayerViewModelTest {
     @Test
     fun theStateFollowsWhetherThePlayerIsPlaying() = runTest {
         val handle = FakePlayerHandle()
-        val vm = PlayerViewModel(handle)
+        val vm = PlayerViewModel(handle, PlaybackCounters())
         vm.open("s1")
 
         handle.emitPlaying(isPlaying = true)
@@ -64,7 +65,7 @@ class PlayerViewModelTest {
     @Test
     fun stopIsForwardedToTheHandle() = runTest {
         val handle = FakePlayerHandle()
-        val vm = PlayerViewModel(handle)
+        val vm = PlayerViewModel(handle, PlaybackCounters())
         vm.stop()
         assertTrue(handle.stopCalled)
     }

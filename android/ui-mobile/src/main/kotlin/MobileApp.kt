@@ -119,13 +119,14 @@ private fun SignIn(onAuthorized: () -> Unit) {
 }
 
 /**
- * Signing this device out is reachable from every screen that has anything
- * stored to take back — including a catalog that is working perfectly,
- * because handing a tablet on is not a malfunction. Only the first step,
- * which has nothing stored yet, goes without.
+ * Signing this device out is reachable from every setup step that has
+ * anything stored to take back. Only the first step, which has nothing
+ * stored yet, goes without. Once the library is ready, the same action sits
+ * behind [LibraryScaffold]'s overflow menu instead — a screen with room for
+ * a bar has room for a menu, and this bottom button was that room's stand-in.
  */
 @Composable
-internal fun WithStartOver(onStartOver: () -> Unit, content: @Composable () -> Unit) {
+private fun WithStartOver(onStartOver: () -> Unit, content: @Composable () -> Unit) {
     Column(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
         Box(modifier = Modifier.weight(1f)) { content() }
         StartOverAction(onConfirm = onStartOver)

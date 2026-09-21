@@ -28,7 +28,7 @@ class PlayerFactoryTest {
     fun theCacheWrapsTheMlibSource() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
 
-        val factory = cacheDataSourceFactory(context) { FakeCore() }
+        val factory = cacheDataSourceFactory(context, PlaybackCounters()) { FakeCore() }
 
         assertTrue(factory.createDataSource() is CacheDataSource)
     }
@@ -42,7 +42,7 @@ class PlayerFactoryTest {
     fun aSkipMovesTenSecondsInEitherDirection() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
 
-        val player = buildPlayer(context) { FakeCore() }
+        val player = buildPlayer(context, PlaybackCounters()) { FakeCore() }
 
         try {
             assertEquals(10_000L, player.seekBackIncrement)

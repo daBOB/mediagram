@@ -2,9 +2,12 @@ package playback
 
 import data.CoreClient
 import uniffi.mediagram_core.AuthOutcome
+import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.LibraryChoice
+import uniffi.mediagram_core.PosterReport
 import uniffi.mediagram_core.SetSummary
+import uniffi.mediagram_core.ShowInfo
 
 /**
  * A [CoreClient] whose [read] and [totalSize] are configurable, so a test
@@ -32,7 +35,9 @@ class FakeCore(
     override suspend fun refreshCatalog(url: String, keyB64: String): Long = 0
     override fun listSets(): List<SetSummary> = emptyList()
     override fun posterPath(posterKey: String): String? = null
+    override fun showInfo(posterKey: String): ShowInfo? = null
     override fun totalSize(setId: String): Long = totalSize
+    override fun catalogFacts(): CatalogFacts = CatalogFacts("channel", 0uL, 0uL, 0u, null)
 
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray {
         reads++
@@ -40,6 +45,9 @@ class FakeCore(
         val clampedLen = minOf(len.toLong(), totalSize - offset).toInt()
         return bytesOf(offset, clampedLen)
     }
+
+    override suspend fun fetchPosters(tmdbKey: String, language: String): PosterReport =
+        PosterReport(0u, 0u, 0u, 0u)
 
     override fun close() = Unit
 }

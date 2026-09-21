@@ -6,9 +6,11 @@ import data.StoredCoreProvider
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import settings.InMemoryLibrarySettings
+import settings.InMemoryTmdbSettings
 import settings.LibrarySettings
 import settings.InMemoryTelegramSettings
 import settings.TelegramSettings
+import settings.TmdbSettings
 
 internal const val WELL_FORMED_HASH = "0123456789abcdef0123456789abcdef"
 
@@ -21,6 +23,7 @@ internal class SetupFixture(
     val core: FakeCore = FakeCore(),
     val telegram: TelegramSettings = InMemoryTelegramSettings(),
     val library: LibrarySettings = InMemoryLibrarySettings(),
+    val tmdb: TmdbSettings = InMemoryTmdbSettings(),
     val storage: CoreStorage = InMemoryCoreStorage(),
     private val build: () -> data.CoreClient = { core },
 ) {
@@ -28,7 +31,7 @@ internal class SetupFixture(
 
     fun viewModel(): SetupViewModel {
         val provider = StoredCoreProvider(telegram, dispatcher) { build() }
-        return SetupViewModel(provider, Libraries(provider, library, dispatcher), storage, dispatcher)
+        return SetupViewModel(provider, Libraries(provider, library, dispatcher), tmdb, storage, dispatcher)
     }
 
     /** A device that has answered everything up to the library question. */

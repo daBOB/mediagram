@@ -9,8 +9,8 @@ use std::collections::VecDeque;
 use std::rc::Rc;
 
 use support::tmdb::metadata::resolve::{ResolveInput, ResolvedItem, resolve};
-use support::tmdb::metadata::tmdb_client::DiskCachedApi;
-use support::tmdb::metadata::tmdb_client::TmdbApi;
+use mediagram_tmdb::tmdb_client::DiskCachedApi;
+use mediagram_tmdb::tmdb_client::TmdbApi;
 use support::tmdb::{FixtureApi, ScriptedPrompter, StubApi};
 
 use mlib_spec::{Episode, Kind, ProviderIds};

@@ -1,5 +1,14 @@
 //! HTTP access to TMDB plus an on-disk cache; kept generic behind `TmdbApi`
 //! so `resolve` and its tests never need a live network connection.
+//!
+//! This crate does not own transport: `TmdbClient` takes an already-built
+//! `reqwest::Client` rather than constructing one of its own. A client this
+//! crate built for itself would be built with whatever `reqwest` feature
+//! this crate happens to compile with, wherever it happens to be linked in —
+//! the uploader wants its ordinary `rustls` client, `mediagram-core` wants
+//! the hand-built webpki one `http::client()` builds to keep clear of
+//! `rustls-platform-verifier`'s Android-only panic, and a crate that built
+//! its own bare client could not tell the two apart or be handed either.
 
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -92,6 +101,11 @@ impl<A: TmdbApi> TmdbApi for Localized<A> {
 /// Direct HTTP access to the TMDB v3 API. Accepts either credential TMDB
 /// issues and sends it the way that one requires. Retries on HTTP 429,
 /// honoring `Retry-After` up to `MAX_RETRIES` times before giving up.
+///
+/// Takes its `reqwest::Client` rather than building one — see this module's
+/// own doc comment for why. A constructor that built its own transport is
+/// exactly the footgun being removed here, so there is no no-client variant
+/// left to reach for.
 pub struct TmdbClient {
     http: reqwest::Client,
     api_key: String,
@@ -99,24 +113,26 @@ pub struct TmdbClient {
 }
 
 impl TmdbClient {
-    pub fn new(api_key: impl Into<String>) -> Self {
+    pub fn new(http: reqwest::Client, api_key: impl Into<String>) -> Self {
         let api_key = api_key.into().trim().to_string();
         Self {
-            http: reqwest::Client::new(),
+            http,
             credential: classify(&api_key),
             api_key,
         }
     }
 
-    /// A real client, cached on disk and asking for one language, ready to
-    /// pass to `resolve`.
+    /// Cached on disk and asking for one language, ready to pass to
+    /// `resolve`. `http` is the caller's own client — see this module's
+    /// doc comment for why this crate never builds one of its own.
     pub fn with_cache(
+        http: reqwest::Client,
         api_key: &str,
         cache_dir: &Path,
         language: &str,
     ) -> Localized<DiskCachedApi<TmdbClient>> {
         Localized::new(
-            DiskCachedApi::new(TmdbClient::new(api_key), cache_dir),
+            DiskCachedApi::new(TmdbClient::new(http, api_key), cache_dir),
             language,
         )
     }

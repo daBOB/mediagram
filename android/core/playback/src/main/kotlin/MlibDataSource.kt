@@ -35,7 +35,7 @@ fun setUri(setId: String): Uri = Uri.Builder().scheme("mlib").authority("set").a
  * loader understands, rather than reading through whatever core happened to
  * be current when the player was built.
  */
-class MlibDataSource(private val core: CoreClient?) : BaseDataSource(true) {
+class MlibDataSource(private val core: CoreClient?, private val counters: PlaybackCounters) : BaseDataSource(true) {
     private var setId: String? = null
     private var position = 0L
     private var remaining = 0L
@@ -106,13 +106,14 @@ class MlibDataSource(private val core: CoreClient?) : BaseDataSource(true) {
         // ends. This is the one place in :core:playback runBlocking is
         // allowed — everywhere else it would risk landing on main.
         try {
-            runBlocking { core!!.read(setId!!, position, want) }
+            runBlocking { core!!.read(setId!!, position, want) }.also { counters.fetched(it.size) }
         } catch (e: CoreException) {
             // Wrapped so ExoPlayer's Loader can retry an IOException (a
             // dropped Telegram connection, most likely) through its
             // LoadErrorHandlingPolicy instead of treating a plain
             // exception as an UnexpectedLoaderException and killing
             // playback outright.
+            counters.readFailed()
             throw IOException("could not read from the set", e)
         }
 
@@ -159,6 +160,9 @@ class MlibDataSource(private val core: CoreClient?) : BaseDataSource(true) {
  * new library's sets and fetch them as the old account, which is the
  * opposite of what signing out is supposed to mean.
  */
-class MlibDataSourceFactory(private val currentCore: () -> CoreClient?) : DataSource.Factory {
-    override fun createDataSource(): DataSource = MlibDataSource(currentCore())
+class MlibDataSourceFactory(
+    private val counters: PlaybackCounters,
+    private val currentCore: () -> CoreClient?,
+) : DataSource.Factory {
+    override fun createDataSource(): DataSource = MlibDataSource(currentCore(), counters)
 }

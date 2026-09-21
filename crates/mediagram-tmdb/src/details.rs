@@ -10,8 +10,8 @@
 use anyhow::{Context, Result, bail};
 use mlib_spec::Kind;
 
-use super::tmdb_client::TmdbApi;
-use super::tmdb_types::DetailsResponse;
+use crate::tmdb_client::TmdbApi;
+use crate::tmdb_types::DetailsResponse;
 
 /// The provider's record for one title.
 pub async fn details(api: &impl TmdbApi, kind: Kind, id: u64) -> Result<DetailsResponse> {

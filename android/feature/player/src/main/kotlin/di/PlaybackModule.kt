@@ -13,6 +13,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import playback.PlaybackCounters
 import playback.buildPlayer
 import player.DefaultPlayerHandle
 import player.PlayerHandle
@@ -41,6 +42,10 @@ object PlaybackModule {
     @Singleton
     fun providePlaybackScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
+    @Provides
+    @Singleton
+    fun playbackCounters(): PlaybackCounters = PlaybackCounters()
+
     // Deferred<out T>'s declaration-site variance compiles to Java's
     // Deferred<? extends ExoPlayer>, which Dagger's binding graph treats
     // as a different type from the plain Deferred<ExoPlayer> a consumer
@@ -50,13 +55,14 @@ object PlaybackModule {
     fun provideExoPlayerDeferred(
         @ApplicationContext context: Context,
         coreProvider: CoreProvider,
+        counters: PlaybackCounters,
         scope: CoroutineScope,
     ): @JvmSuppressWildcards Deferred<ExoPlayer> = scope.async {
         // Awaited once so the cache is not built on a device that has never
         // been set up, then read per data source rather than captured: the
         // player outlives a start-over, the core it reads through does not.
         coreProvider.awaitCore()
-        buildPlayer(context) { coreProvider.core.value }
+        buildPlayer(context, counters) { coreProvider.core.value }
     }
 
     @Provides

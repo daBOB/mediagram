@@ -21,30 +21,40 @@ fun StartOverAction(onConfirm: () -> Unit) {
 
     TextButton(onClick = { asking = true }) { Text("Start over") }
 
-    if (asking) {
-        AlertDialog(
-            onDismissRequest = { asking = false },
-            title = { Text("Start over?") },
-            text = {
-                Text(
-                    "This signs this device out of Telegram and forgets the api_id and " +
-                        "api_hash, the library address and its key, and the library itself. " +
-                        "All of it has to be entered again.",
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        asking = false
-                        onConfirm()
-                    },
-                ) {
-                    Text("Start over")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { asking = false }) { Text("Cancel") }
-            },
-        )
-    }
+    StartOverConfirmation(asking = asking, onDismiss = { asking = false }, onConfirm = onConfirm)
+}
+
+/**
+ * The confirmation on its own, so a trigger other than the button above —
+ * the app bar's overflow menu, for one — asks the same question in the same
+ * words rather than inventing a second warning.
+ */
+@Composable
+internal fun StartOverConfirmation(asking: Boolean, onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    if (!asking) return
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Start over?") },
+        text = {
+            Text(
+                "This signs this device out of Telegram and forgets the api_id and " +
+                    "api_hash, the library address and its key, the library itself, and " +
+                    "the TMDB key. All of it has to be entered again.",
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onDismiss()
+                    onConfirm()
+                },
+            ) {
+                Text("Start over")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
 }

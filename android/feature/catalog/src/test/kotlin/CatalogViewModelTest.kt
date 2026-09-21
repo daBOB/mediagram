@@ -3,12 +3,14 @@ package catalog
 import app.cash.turbine.test
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -62,6 +64,54 @@ class CatalogViewModelTest {
         vm.state.test {
             awaitItem()
             assertEquals("refresh failed", (awaitItem() as CatalogUiState.Ready).notice)
+        }
+    }
+
+    /**
+     * The whole point of the menu action. The state flow used to be a cold
+     * flow handed straight to `stateIn`, so it ran once per subscription
+     * and never again — asking for the library a second time was something
+     * only a force-stop could do.
+     */
+    @Test
+    fun askingAgainReadsTheChannelAgain() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val repository = FakeCatalogRepository(movies = 2)
+        val vm = CatalogViewModel(repository)
+        vm.state.test {
+            awaitItem()
+            awaitItem() as CatalogUiState.Ready
+            assertEquals(1, repository.refreshes)
+
+            vm.reload()
+            advanceUntilIdle()
+
+            assertEquals(2, repository.refreshes)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /**
+     * A reload is said over the shelves rather than instead of them. Only
+     * the first load has nothing to show, and taking a whole library away
+     * for as long as a network round trip takes would be a worse answer to
+     * "refresh this" than the wait it was reporting.
+     */
+    @Test
+    fun askingAgainKeepsTheShelvesItIsAboutToReplace() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val vm = CatalogViewModel(FakeCatalogRepository(movies = 2))
+        vm.state.test {
+            assertEquals(CatalogUiState.Loading, awaitItem())
+            val before = awaitItem() as CatalogUiState.Ready
+            assertFalse(before.refreshing)
+
+            vm.reload()
+
+            val during = awaitItem() as CatalogUiState.Ready
+            assertTrue(during.refreshing)
+            assertEquals(before.shelves, during.shelves)
+            cancelAndIgnoreRemainingEvents()
         }
     }
 

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import settings.TmdbSettings
 import javax.inject.Inject
 
 private const val STORAGE_FAILED = "This device's secure storage could not be read. " +
@@ -40,6 +41,7 @@ private const val RESET_FAILED = "Signing this device out did not finish. " +
 class SetupViewModel @Inject constructor(
     private val coreProvider: CoreProvider,
     private val libraries: Libraries,
+    private val tmdbSettings: TmdbSettings,
     private val coreStorage: CoreStorage,
     private val dispatcher: CoroutineDispatcher,
 ) : ViewModel() {
@@ -123,6 +125,7 @@ class SetupViewModel @Inject constructor(
         settle(onFailure = RESET_FAILED) {
             coreStorage.clear()
             libraries.forget()
+            tmdbSettings.clear()
             coreProvider.forget()
             outstandingStep()
         }
@@ -187,11 +190,4 @@ class SetupViewModel @Inject constructor(
         if (libraries.chosen() == null) return SetupUiState.NeedsLibrary()
         return SetupUiState.Ready
     }
-}
-
-/** Returns [previous] unchanged when it is the same step with something to say. */
-private fun SetupUiState.keepingWhatIsOnScreenFrom(previous: SetupUiState): SetupUiState = when {
-    this is SetupUiState.NeedsApplication && previous is SetupUiState.NeedsApplication -> previous
-    this is SetupUiState.NeedsLibrary && previous is SetupUiState.NeedsLibrary -> previous
-    else -> this
 }

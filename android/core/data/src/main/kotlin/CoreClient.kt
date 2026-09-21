@@ -1,8 +1,11 @@
 package data
 
 import uniffi.mediagram_core.AuthOutcome
+import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.LibraryChoice
+import uniffi.mediagram_core.PosterReport
 import uniffi.mediagram_core.SetSummary
+import uniffi.mediagram_core.ShowInfo
 
 /**
  * The seam between this app and the generated native core. The generated
@@ -35,8 +38,32 @@ interface CoreClient {
     suspend fun refreshCatalog(url: String, keyB64: String): Long
     fun listSets(): List<SetSummary>
     fun posterPath(posterKey: String): String?
+
+    /**
+     * What the index records about a title, or nothing. A course has no
+     * provider entry and a library assembled without a TMDB key has no rows
+     * at all; both are ordinary, so neither is an error.
+     */
+    fun showInfo(posterKey: String): ShowInfo?
     fun totalSize(setId: String): Long
+
+    /**
+     * What the installed catalog is, for the System screen's "Catalogue"
+     * block: where it came from, how much it holds, and which schema it
+     * was written with. Never fails — a count that could not be taken
+     * reads back as zero, because a screen that cannot draw is worse than
+     * one that says a library is empty.
+     */
+    fun catalogFacts(): CatalogFacts
     suspend fun read(setId: String, offset: Long, len: Int): ByteArray
+
+    /**
+     * Fetches poster artwork for every title in the catalog TMDB can answer
+     * about. The key is spent on this call and never stored by the core —
+     * Kotlin owns holding it, so the start-over dialog's promise to clear it
+     * stays true from exactly one place.
+     */
+    suspend fun fetchPosters(tmdbKey: String, language: String): PosterReport
 
     /**
      * Drops the native core and, with it, the authenticated connection it

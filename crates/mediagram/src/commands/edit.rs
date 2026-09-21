@@ -16,7 +16,7 @@ use crate::config::Config;
 use crate::edit::apply::write_captions;
 use crate::edit::plan::{Clearable, Edits, apply_checked, captions};
 use crate::index::{db, parts, sets};
-use crate::metadata::tmdb_client::{TmdbApi, TmdbClient};
+use mediagram_tmdb::tmdb_client::{TmdbApi, TmdbClient};
 use crate::telegram::client::Tg;
 
 pub async fn run(cfg: &Config, args: EditArgs) -> Result<()> {
@@ -147,7 +147,7 @@ async fn refresh_from_tmdb(
     let Some(tmdb) = row.tmdb else {
         bail!("set {} has no tmdb id to refresh from", row.set_id);
     };
-    let api = TmdbClient::with_cache(key, data_dir, &cfg.tmdb_language);
+    let api = TmdbClient::with_cache(reqwest::Client::new(), key, data_dir, &cfg.tmdb_language);
 
     if row.kind == "movie" {
         let movie = api.get_json(&format!("/movie/{tmdb}"), &[]).await?;

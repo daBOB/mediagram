@@ -1,24 +1,28 @@
 //! What a refreshed catalog holds, and where it lives on disk.
 //!
 //! Layout under `<data_dir>/catalog/`: version directories (`v-<created_at>`,
-//! one per successful refresh) and a `current` symlink pointing at the one in
-//! use. `refresh.rs` is the only thing that ever writes here; this module
-//! only ever reads, through `current`, so a refresh landing mid-query cannot
-//! be observed as a half-written database — the symlink swap in `refresh.rs`
-//! is atomic, and an already-open handle keeps the version it opened.
+//! one per successful refresh), a `current` symlink pointing at the one in
+//! use, and an `artwork/` sibling that outlives every version — see
+//! [`artwork_dir`]. `refresh.rs` is the only thing that ever writes a
+//! version; this module only ever reads one, through `current`, so a refresh
+//! landing mid-query cannot be observed as a half-written database — the
+//! symlink swap in `refresh.rs` is atomic, and an already-open handle keeps
+//! the version it opened.
 
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use rusqlite::{Connection, OpenFlags};
-use serde::{Deserialize, Serialize};
 
 use crate::catalog as queries;
 use crate::dto::{self, SetSummary};
 
+use super::identity;
 use super::{Core, CoreError};
 
+pub(super) use identity::{identity_of, read_identity, write_identity};
+
 pub(super) const CURRENT: &str = "current";
-pub(super) const IDENTITY_FILE: &str = "identity.json";
 pub(super) const MANIFEST_FILE: &str = "manifest.json";
 
 pub(super) fn dir(core: &Core) -> PathBuf {
@@ -29,58 +33,30 @@ pub(super) fn current_dir(core: &Core) -> PathBuf {
     dir(core).join(CURRENT)
 }
 
+/// Where fetched poster artwork and the TMDB provider-id cache live.
+///
+/// Two things have to be true of this path at once, and naming only the
+/// first is how artwork came to outlive a start-over meant to forget it.
+///
+/// **Out of the version directory**, so a refresh cannot delete it.
+/// `install_staged` removes one wholesale before renaming a fresh download
+/// into place, `remove_other_versions` clears every version but the one just
+/// published, and a refresh runs on every catalog load. Artwork kept there
+/// was counted on a device at 0, then 236, then 0 again across a restart.
+/// Neither pass touches a sibling: both remove only entries named `v-…` or
+/// `incoming`, and a version is always `v-<pushed_at>`.
+///
+/// **Inside `catalog/`**, so forgetting the library forgets its artwork too.
+/// Signing out deletes this directory whole; artwork held anywhere else
+/// would survive it, leaving the next account to set the device up looking
+/// at cached payloads naming the previous one's titles — and growing without
+/// bound, since nothing else ever removes it.
+pub(super) fn artwork_dir(core: &Core) -> PathBuf {
+    dir(core).join("artwork")
+}
+
 fn library_db(dir: &Path) -> PathBuf {
     dir.join("library.db")
-}
-
-/// The five fields the cipher authenticates — what "already held" means.
-/// Recorded only after a successful decrypt, never from `sha256`: that field
-/// is not authenticated, and a reader that treats it as identity can have an
-/// update suppressed by whoever last wrote the pointer.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub(super) struct Identity {
-    pub format: u32,
-    pub created_at: i64,
-    pub key_id: String,
-    pub schema: i64,
-    pub spec: u32,
-}
-
-pub(super) fn identity_of(pointer: &mlib_spec::package::LatestPointer) -> Identity {
-    Identity {
-        format: pointer.format,
-        created_at: pointer.created_at,
-        key_id: pointer.key_id.clone(),
-        schema: pointer.schema,
-        spec: pointer.spec,
-    }
-}
-
-/// The identity recorded when the version at `dir` was last decrypted.
-///
-/// `Ok(None)` means the file is simply absent — a legitimate first run, with
-/// nothing held yet. An existing file that cannot be read or parsed is
-/// `Err`, never folded into the same "nothing held" case: doing that would
-/// let deleting or corrupting this one file silently defeat the replay
-/// check that reads it, by making an old package look like the first one
-/// ever seen.
-pub(super) fn read_identity(dir: &Path) -> Result<Option<Identity>, CoreError> {
-    let path = dir.join(IDENTITY_FILE);
-    let text = match std::fs::read_to_string(&path) {
-        Ok(text) => text,
-        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-        Err(_) => return Err(CoreError::Io("reading the package identity".into())),
-    };
-    serde_json::from_str(&text)
-        .map(Some)
-        .map_err(|_| CoreError::Io("the package identity record is corrupt".into()))
-}
-
-pub(super) fn write_identity(dir: &Path, identity: &Identity) -> Result<(), CoreError> {
-    let text = serde_json::to_string(identity)
-        .map_err(|_| CoreError::Io("recording the package identity".into()))?;
-    std::fs::write(dir.join(IDENTITY_FILE), text)
-        .map_err(|_| CoreError::Io("recording the package identity".into()))
 }
 
 /// Opens a database read-only: nothing under `<data_dir>/catalog/` is this
@@ -115,14 +91,24 @@ pub(super) fn list_sets(core: &Core) -> Result<Vec<SetSummary>, CoreError> {
     Ok(sets.iter().map(dto::summary_from).collect())
 }
 
+/// Looks in the current version's own `posters/` first, then in the
+/// artwork directory a fetch writes to — both behind the same key
+/// validation, so a second lookup location is never a second way past it.
+///
+/// A package ships its own chosen artwork inside the version it arrived
+/// in, so that copy stays authoritative for the keys it covers: a fetch
+/// only ever ran for a title the package had nothing for.
 pub(super) fn poster_path(core: &Core, poster_key: String) -> Option<String> {
     if !mlib_spec::package::poster_key_is_valid(&poster_key) {
         return None;
     }
-    let path = current_dir(core)
-        .join("posters")
-        .join(format!("{poster_key}.jpg"));
-    path.exists().then(|| path.display().to_string())
+    let name = format!("{poster_key}.jpg");
+    let in_version = current_dir(core).join("posters").join(&name);
+    if in_version.exists() {
+        return Some(in_version.display().to_string());
+    }
+    let in_artwork = artwork_dir(core).join(&name);
+    in_artwork.exists().then(|| in_artwork.display().to_string())
 }
 
 pub(super) fn total_size(core: &Core, set_id: String) -> Result<u64, CoreError> {
@@ -141,39 +127,68 @@ pub(super) fn count_playable(dir: &Path) -> Result<u64, CoreError> {
     Ok(sets.len() as u64)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn identity() -> Identity {
-        Identity {
-            format: 1,
-            created_at: 1_781_568_000,
-            key_id: "9f2c41ab".into(),
-            schema: 6,
-            spec: 4,
-        }
+/// `*.jpg` entries under `<current>/posters/` and the artwork directory,
+/// counted once per key even when a title is held in both — one title held
+/// in both places is one poster, not two. An absent directory contributes
+/// zero, not a failure — the ordinary state before any artwork is fetched.
+fn count_posters(version_dir: &Path, artwork_dir: &Path) -> u64 {
+    let mut keys: HashSet<std::ffi::OsString> = HashSet::new();
+    for base in [version_dir.join("posters"), artwork_dir.to_path_buf()] {
+        let Ok(entries) = std::fs::read_dir(&base) else {
+            continue;
+        };
+        keys.extend(
+            entries
+                .filter_map(Result::ok)
+                .map(|entry| entry.path())
+                .filter(|path| path.extension().is_some_and(|ext| ext == "jpg"))
+                .filter_map(|path| path.file_stem().map(std::ffi::OsStr::to_os_string)),
+        );
     }
+    keys.len() as u64
+}
 
-    #[test]
-    fn a_written_identity_reads_back_equal() {
-        let dir = tempfile::tempdir().unwrap();
-        write_identity(dir.path(), &identity()).unwrap();
-        assert_eq!(read_identity(dir.path()).unwrap(), Some(identity()));
+/// When the index in a version directory was pushed, from its name.
+///
+/// `refresh.rs` names every installed version `v-<pushed_at>` and points
+/// `current` at it, so the catalogue's age is already written down and
+/// needs no second record that could disagree with it. A name that is not
+/// one of ours — including `current` itself, read literally rather than
+/// through the symlink — reads as unknown rather than as a wrong date.
+fn pushed_at_of(name: &str) -> Option<i64> {
+    name.strip_prefix("v-")?.parse().ok()
+}
+
+/// What the installed catalog is, for the System screen. Every count is
+/// collapsed to zero on any failure — opening the database, reading the
+/// posters directory — because this is read to draw a screen, and a screen
+/// that cannot draw is worse than one that says a library is empty.
+pub(super) fn facts(core: &Core) -> dto::CatalogFacts {
+    let dir = current_dir(core);
+    let origin = match read_identity(&dir) {
+        Ok(Some(_)) => "package",
+        _ => "channel",
     }
+    .to_string();
 
-    #[test]
-    fn no_identity_file_reads_back_as_nothing_held() {
-        let dir = tempfile::tempdir().unwrap();
-        assert_eq!(read_identity(dir.path()).unwrap(), None);
-    }
+    // `current` is the symlink; reading it (not resolving it) turns its
+    // target's name, `v-<pushed_at>`, back into the timestamp it was named
+    // for.
+    let published_at = std::fs::read_link(&dir)
+        .ok()
+        .and_then(|target| target.file_name().map(|name| name.to_string_lossy().into_owned()))
+        .as_deref()
+        .and_then(pushed_at_of);
 
-    /// The case an absent file must never be confused with: corruption is a
-    /// refusal, not a silent "nothing held yet".
-    #[test]
-    fn a_corrupt_identity_file_is_refused_not_treated_as_absent() {
-        let dir = tempfile::tempdir().unwrap();
-        std::fs::write(dir.path().join(IDENTITY_FILE), b"not json").unwrap();
-        assert!(read_identity(dir.path()).is_err());
+    dto::CatalogFacts {
+        origin,
+        sets: count_playable(&dir).unwrap_or(0),
+        posters: count_posters(&dir, &artwork_dir(core)),
+        schema: mlib_spec::schema::SCHEMA_VERSION as u32,
+        published_at,
     }
 }
+
+#[cfg(test)]
+#[path = "catalog_tests.rs"]
+mod tests;

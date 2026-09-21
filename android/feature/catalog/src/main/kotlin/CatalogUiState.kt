@@ -1,5 +1,7 @@
 package catalog
 
+import model.MediaSet
+
 /** What the catalog screen renders; the television surface renders the same states. */
 sealed interface CatalogUiState {
     data object Loading : CatalogUiState
@@ -9,8 +11,18 @@ sealed interface CatalogUiState {
      * already on disk. Said rather than swallowed, because otherwise a
      * viewer has no way to tell a library that is current from one that
      * stopped updating days ago.
+     *
+     * [refreshing] is a read of the channel in flight over shelves that are
+     * still whole. A reload replaces the library rather than building the
+     * first one, so it has something to show throughout, and blanking the
+     * shelves to a spinner would take a library away from whoever is
+     * looking at it for as long as the network takes.
      */
-    data class Ready(val shelves: List<Shelf>, val notice: String? = null) : CatalogUiState
+    data class Ready(
+        val shelves: List<Shelf>,
+        val notice: String? = null,
+        val refreshing: Boolean = false,
+    ) : CatalogUiState
     data object Empty : CatalogUiState
     data class Failed(val message: String) : CatalogUiState
 }
@@ -39,3 +51,28 @@ fun CatalogUiState.collection(key: String): Entry.Collection? = (this as? Catalo
     ?.flatMap { it.entries }
     ?.filterIsInstance<Entry.Collection>()
     ?.find { it.key == key }
+
+/**
+ * The set an id names, wherever it sits — a film on a shelf, or an episode
+ * or lesson somewhere inside a collection.
+ *
+ * Kept as a lookup for the same reason [collection] is: a screen that has
+ * opened a title saves the id, which is a short string, and resolves it
+ * again from whatever the library currently holds. `null` while the shelves
+ * are still loading is the useful half — the same id resolves a moment
+ * later, which is what brings a killed process back to the title it was on.
+ */
+fun CatalogUiState.mediaSet(setId: String): MediaSet? = (this as? CatalogUiState.Ready)
+    ?.shelves
+    ?.asSequence()
+    ?.flatMap { it.entries }
+    ?.flatMap { entry ->
+        when (entry) {
+            is Entry.Film -> sequenceOf(entry.set)
+            is Entry.Collection -> entry.divisions
+                .asSequence()
+                .flatMap(Division::walk)
+                .flatMap { it.items.asSequence() }
+        }
+    }
+    ?.find { it.setId == setId }

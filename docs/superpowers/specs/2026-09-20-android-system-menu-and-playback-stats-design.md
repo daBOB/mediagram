@@ -137,7 +137,7 @@ somebody else's tool bolted on.
 | Block | Rows | Source |
 |---|---|---|
 | Catalogue | Source, Holds, Schema | new core call over the installed catalog |
-| Cache | Held of budget, Reads, Evicted | media3 `SimpleCache` + a `CacheDataSource.EventListener` |
+| Cache | Held of budget, Reads | media3 `SimpleCache` + a `CacheDataSource.EventListener` |
 | Upstream | Since starting, Failed reads | counters on `MlibDataSource` |
 | This app | Version, Telegram, Uptime | `BuildConfig`, core, process start |
 
@@ -147,10 +147,16 @@ A row whose value is unknown is omitted rather than shown blank, matching
 **There is no Conversion block.** The web has one because it transcodes;
 Android decodes natively and never will. See §9.
 
-**Cache hits and misses need a listener nothing currently attaches.**
-`PlayerFactory.cacheDataSourceFactory` builds a `CacheDataSource.Factory`
-without an `EventListener`, so `onCachedBytesRead` and `onCacheIgnored` go
-nowhere. Attaching one is the whole of it, and the same counters feed §7.
+**There is no Evicted row**, which this table asked for in its first
+drawing. media3 will not say how much it evicted. See §9.
+
+**There are no cache hit and miss counts, and a listener does not supply
+them.** `PlayerFactory.cacheDataSourceFactory` does attach a
+`CacheDataSource.EventListener`, but the interface answers in bytes:
+`onCachedBytesRead` and `onCacheIgnored` are the whole of it, and neither
+counts a read as a hit or a miss. So the Cache block reports the share of
+bytes served from disk and the round trips behind the rest, which is what
+the app can actually know. The same counters feed §7. See §9.
 
 ## 6. The TMDB key, and fetching posters
 
@@ -168,8 +174,39 @@ failed, never the secret that failed to work.
 Fetching is an explicit action, as the uploader's own `mediagram posters`
 command is. For each set with a `poster_key`, the core resolves the TMDB
 payload for that id, reads `poster_path`, downloads `w342`, and writes
-`<current>/posters/<key>.jpg`. Existing files are left alone, so a second run
-fetches only what the first could not.
+`<data_dir>/catalog/artwork/<key>.jpg`. Existing files are left alone, so a
+second run fetches only what the first could not.
+
+**Not `<current>/posters/`, which this section first said.** That path has to
+satisfy two things at once, and naming only the first is how the second was
+missed.
+
+*Out of the version directory, so a refresh cannot delete it.* `current`
+points at a version directory, and a version directory is storage with a
+timer on it: `install_staged` removes one wholesale before renaming a fresh
+download into place, `remove_other_versions` clears every version but the one
+just published, and a refresh runs on every catalog load. Artwork written
+inside one was deleted before it was ever shown — counted on a device at 0,
+then 236, then 0 again across a restart. A poster is a fact about a title,
+not about a snapshot of the index.
+
+*Inside `catalog/`, so forgetting the library forgets its artwork too.*
+Start-over deletes `catalog/` whole. Artwork held outside it would survive a
+sign-out and leave the next account to set the device up looking at cached
+provider payloads naming the previous one's titles — and it would grow
+without bound, since nothing else ever removes it. `artwork/` is a sibling of
+the version directories, which neither cleanup pass touches:
+`remove_other_versions` removes only entries named `v-…` or `incoming`. The
+TMDB response cache sits inside it for both reasons.
+
+Both halves are pinned by tests rather than only written down here: one
+plants a poster and drives the real install paths over it, one states the
+containment that makes a sign-out sufficient.
+
+`poster_path` reads the version's own `posters/` first and the artwork
+directory second, so a published package keeps its publisher's chosen art for
+the keys it covers — a fetch only ever ran for a title the package had
+nothing for.
 
 The action reports what happened — fetched, already held, skipped for want of
 a provider id, failed — because "done" over a library of 540 sets tells a
@@ -177,10 +214,13 @@ viewer nothing about the eight that did not work.
 
 **Two failure modes get named rather than swallowed.** A key TMDB rejects is
 reported as a key problem, not a network one, or a viewer retries forever
-against a wrong key. And a refresh landing mid-fetch swaps `current` beneath
-the run; the fetch resolves its directory once at the start and writes only
-there, so the worst case is art written to a catalog that has just been
-replaced — wasted work, not a corrupted install.
+against a wrong key — and that check is asked of TMDB itself rather than
+through the response cache, which holds no credential and would otherwise
+vouch for a rotated key out of a file the previous one paid for. And a
+refresh landing mid-fetch swaps `current` beneath the run; the fetch resolves
+that directory once at the start and reads `library.db` only from there,
+while the art it writes goes beside the version directories rather than into
+one, so a refresh mid-fetch costs nothing at all.
 
 ## 7. Playback stats
 
@@ -250,9 +290,50 @@ whoever is holding the phone; a gate would defend nothing.
 
 **Stats report the decoder, not the catalog.** §7. The web cannot do this.
 
+**The buffer row carries no byte figure, against §7's own drawing.** §7 draws
+`buffer  1:23 ahead · 47 MB`, and the bytes had no honest source. ExoPlayer
+reports a buffered *duration* and no count of the bytes behind it; the only
+byte total media3 will answer for is `Cache.getCacheSpace()`, which is the
+whole `SimpleCache` across every title ever played, capped by the 2 GiB
+evictor — so on a well-used device the row would pin at `2.0 GB` and stop
+moving, and it is in any case the figure §5's Cache block already prints as
+`Held`. A per-title `getCachedBytes` would be a smaller version of the same
+category error: a cache fact under a label that says buffer. The row is
+`buffer  1:23 ahead` and nothing else. The overlay's byte volumes are the
+`reads` and `cache` rows, where they are about reads and the cache.
+
 **Posters are fetched by the device, not shipped with the catalog.** A
 published package still carries art for the surfaces that read one. Android
 reads the pinned channel index, which carries none, and fetches its own.
+
+**No Evicted row in the Cache block.** §5. The web player owns its cache
+outright: `web/src/cache/store.ts` performs the eviction itself and counts
+it, and the status panel reports that count. Android's cache is media3's
+`SimpleCache` behind a `LeastRecentlyUsedCacheEvictor`, and media3 surfaces
+no eviction total anywhere the app can read one. The listener the app does
+attach, `CacheDataSource.EventListener`, has exactly two callbacks —
+`onCachedBytesRead` and `onCacheIgnored` — and neither is about eviction.
+What media3 does offer is `Cache.Listener.onSpanRemoved`, which fires per
+cache span rather than per title, sees only the spans removed while this
+process happened to be listening, and would reset on every launch while the
+cache on disk does not. A number with those three properties under a label
+reading "Evicted" is worse than no row.
+
+**Posters are fetched in English, whatever language the library is in.** The
+uploader asks TMDB in its configured `tmdb_language` — `de-DE` for the
+library this was built against — and the device asks for `en-US`, a constant
+in `PostersViewModel`. TMDB serves localised artwork where a title has it, so
+a library curated in German gets the English poster for those titles.
+
+The core already takes the language as a parameter, so the gap is not in the
+fetch: it is that the phone has nowhere to read an answer from. The
+uploader's `tmdb_language` lives in a config file on the machine that
+publishes, and nothing carries it into the pinned index or onto the device.
+Closing it means deciding where the device's answer comes from — a setting
+beside the TMDB key, or a field in the index the uploader already writes —
+and that is a decision rather than an oversight to patch, so it is recorded
+here and not yet ruled on. It is the one entry in this section that may turn
+out to be a defect rather than a difference.
 
 ## 10. Deliberately out of scope
 

@@ -1,53 +1,65 @@
 package ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.window.core.layout.WindowWidthSizeClass
 import catalog.CatalogUiState
 import catalog.CollectionKind
 import catalog.Entry
 import catalog.Shelf
-import coil3.compose.AsyncImage
 import designsystem.Spacing
-import java.io.File
 
+/**
+ * The shelves, and one line above them while the library is being worked
+ * on. [fetchingPosters] is the other run that changes what is on these
+ * shelves — it fills in the artwork on them — and it is reported here
+ * rather than beside itself, because a viewer watching something happen
+ * should not have to learn a second vocabulary for it depending on which
+ * menu item started it.
+ */
 @Composable
 fun CatalogScreen(
     state: CatalogUiState,
-    onPlay: (setId: String) -> Unit,
+    fetchingPosters: Boolean,
+    onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
 ) {
     when (state) {
         CatalogUiState.Loading -> CenteredMessage("Loading your library…")
         CatalogUiState.Empty -> CenteredMessage("The library is empty.")
         is CatalogUiState.Failed -> CenteredMessage(state.message)
-        is CatalogUiState.Ready -> ShelfList(state, onPlay, onOpenCollection)
+        is CatalogUiState.Ready -> Column(modifier = Modifier.fillMaxSize()) {
+            // Pinned above the list rather than scrolling inside it: it
+            // reports on the whole library, not on a row of it, and a
+            // viewer who has scrolled down is exactly the one who would
+            // otherwise watch the shelves change under their thumb with
+            // nothing having said why.
+            if (state.refreshing || fetchingPosters) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+            ShelfList(state, onOpenTitle, onOpenCollection)
+        }
     }
 }
 
 @Composable
 private fun ShelfList(
     state: CatalogUiState.Ready,
-    onPlay: (setId: String) -> Unit,
+    onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
 ) {
     val columns = posterColumnsFor(currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass)
@@ -69,7 +81,7 @@ private fun ShelfList(
             }
         }
         items(state.shelves, key = { it.title }) { shelf ->
-            ShelfRow(shelf, columns, onPlay, onOpenCollection)
+            ShelfRow(shelf, columns, onOpenTitle, onOpenCollection)
         }
     }
 }
@@ -78,7 +90,7 @@ private fun ShelfList(
 private fun ShelfRow(
     shelf: Shelf,
     columns: Int,
-    onPlay: (setId: String) -> Unit,
+    onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
 ) {
     Column {
@@ -87,15 +99,16 @@ private fun ShelfRow(
             items(shelf.entries, key = ::keyOf) { entry ->
                 val modifier = Modifier.fillParentMaxWidth(1f / columns)
                 when (entry) {
-                    // A film plays; a show or a course opens, because the
-                    // card stands for everything inside it and there is no
-                    // one thing it could sensibly start.
+                    // A film opens the screen that describes it; a show or a
+                    // course opens what is inside it, because the card
+                    // stands for everything there and there is no one thing
+                    // it could sensibly start.
                     is Entry.Film -> PosterCard(
                         posterPath = entry.set.posterPath,
                         title = entry.set.title,
                         caption = null,
                         modifier = modifier,
-                        onClick = { onPlay(entry.set.setId) },
+                        onClick = { onOpenTitle(entry.set.setId) },
                     )
 
                     is Entry.Collection -> PosterCard(
@@ -127,71 +140,6 @@ private fun extentOf(collection: Entry.Collection): String = when (collection.ki
 }
 
 private fun plural(count: Int, word: String): String = if (count == 1) word else "${word}s"
-
-/**
- * A card is named underneath rather than across its face.
- *
- * Every episode of a show carries the same artwork, and the index pinned in
- * a channel carries no artwork at all, so the face is the least reliable
- * place to say what something is. Initials stand in for a missing poster —
- * enough to tell two cards apart at a glance, and the name is right below
- * them either way.
- */
-@Composable
-private fun PosterCard(
-    posterPath: String?,
-    title: String,
-    caption: String?,
-    modifier: Modifier,
-    onClick: () -> Unit,
-) {
-    Column(modifier = modifier) {
-        Card(modifier = Modifier.aspectRatio(2f / 3f).clickable(onClick = onClick)) {
-            if (posterPath != null) {
-                AsyncImage(
-                    model = File(posterPath),
-                    contentDescription = title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            } else {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = initialsOf(title),
-                        style = MaterialTheme.typography.headlineMedium,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(Spacing.small),
-                    )
-                }
-            }
-        }
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = Spacing.extraSmall),
-        )
-        if (caption != null) {
-            Text(
-                text = caption,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-/** Two letters to stand in for artwork that is not there. */
-internal fun initialsOf(title: String): String = title
-    .split(WHITESPACE)
-    .take(2)
-    .mapNotNull { word -> word.firstOrNull(Char::isLetterOrDigit) }
-    .joinToString("")
-    .uppercase()
-    .ifEmpty { "?" }
-
-private val WHITESPACE = Regex("\\s+")
 
 /** A tablet shows more posters per visible row than a phone does. */
 internal fun posterColumnsFor(widthSizeClass: WindowWidthSizeClass): Int = when (widthSizeClass) {

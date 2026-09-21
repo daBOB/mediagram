@@ -14,10 +14,10 @@
 use anyhow::{Result, bail};
 
 use crate::config::Config;
-use crate::export::posters::{already_held, download_into, resolve_posters};
+use mediagram_tmdb::posters::{already_held, download_into, resolve_posters};
 use crate::export::stage::POSTER_DIR;
 use crate::export::titles::distinct_titles_in;
-use crate::metadata::tmdb_client::TmdbClient;
+use mediagram_tmdb::tmdb_client::TmdbClient;
 
 pub async fn run(cfg: &Config) -> Result<()> {
     let data_dir = cfg.data_dir()?;
@@ -35,9 +35,13 @@ pub async fn run(cfg: &Config) -> Result<()> {
         return Ok(());
     }
 
+    // Built once and used for both the lookup and the download below —
+    // `TmdbClient` takes this same client rather than building its own.
+    let http = reqwest::Client::new();
     // Works with no key at all when the cache is warm, which is the normal
     // case: `add` cached these payloads when it resolved each title.
     let api = TmdbClient::with_cache(
+        http.clone(),
         cfg.tmdb_key.as_deref().unwrap_or(""),
         &data_dir,
         &cfg.tmdb_language,
@@ -53,7 +57,7 @@ pub async fn run(cfg: &Config) -> Result<()> {
 
     let dir = data_dir.join(POSTER_DIR);
     let held = already_held(&refs, &dir);
-    let written = download_into(&reqwest::Client::new(), &refs, &dir).await?;
+    let written = download_into(&http, &refs, &dir).await?;
 
     let fetched = written.len().saturating_sub(held);
     let missing = refs.len() - written.len();

@@ -14,7 +14,7 @@ use crate::config::Config;
 use crate::export::titles::distinct_titles;
 use crate::index::{db, shows};
 use crate::metadata::show_details;
-use crate::metadata::tmdb_client::TmdbClient;
+use mediagram_tmdb::tmdb_client::TmdbClient;
 
 pub async fn run(cfg: &Config) -> Result<()> {
     let data_dir = cfg.data_dir()?;
@@ -39,6 +39,7 @@ pub async fn run(cfg: &Config) -> Result<()> {
     // Works with no key at all when the cache is warm, which is the normal
     // case: `add` cached these payloads when it resolved each title.
     let api = TmdbClient::with_cache(
+        reqwest::Client::new(),
         cfg.tmdb_key.as_deref().unwrap_or(""),
         &data_dir,
         &cfg.tmdb_language,

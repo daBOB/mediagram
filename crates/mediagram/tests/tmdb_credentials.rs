@@ -9,7 +9,7 @@
 //! first, so the client works out which it was given rather than demanding
 //! one.
 
-use mediagram::metadata::tmdb_client::{Credential, classify};
+use mediagram_tmdb::tmdb_client::{Credential, classify};
 
 /// Shaped like a real token, with nothing real in it.
 const JWT: &str = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJ4In0.c2lnbmF0dXJl";

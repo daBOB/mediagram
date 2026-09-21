@@ -1702,7 +1702,7 @@ checksum = "7ebb8d8732c6a6df3d8f032a82911cfc747e00efb95cc46e8d0acd5b5b88570c"
 
 [[package]]
 name = "mediagram"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -1720,6 +1720,7 @@ dependencies = [
  "hex",
  "libc",
  "mediagram-core",
+ "mediagram-tmdb",
  "mlib-spec",
  "reqwest",
  "rusqlite",
@@ -1739,7 +1740,7 @@ dependencies = [
 
 [[package]]
 name = "mediagram-core"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -1754,6 +1755,7 @@ dependencies = [
  "grammers-session",
  "grammers-tl-types",
  "hex",
+ "mediagram-tmdb",
  "mlib-spec",
  "reqwest",
  "rusqlite",
@@ -1768,6 +1770,21 @@ dependencies = [
  "uniffi",
  "url",
  "webpki-roots",
+]
+
+[[package]]
+name = "mediagram-tmdb"
+version = "0.15.0"
+dependencies = [
+ "anyhow",
+ "hex",
+ "mlib-spec",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -1821,7 +1838,7 @@ dependencies = [
 
 [[package]]
 name = "mlib-spec"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "hex",
  "regex",

@@ -13,7 +13,7 @@ use crate::media::{classify, inspect, remux};
 use crate::metadata::prompt::DialoguerPrompter;
 use crate::metadata::resolve::{self, ResolveInput};
 use crate::metadata::show_details;
-use crate::metadata::tmdb_client::TmdbClient;
+use mediagram_tmdb::tmdb_client::TmdbClient;
 
 pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
     let info = inspect::inspect(&args.file)
@@ -37,6 +37,7 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
 
     let data_dir = cfg.data_dir()?;
     let api = TmdbClient::with_cache(
+        reqwest::Client::new(),
         cfg.tmdb_key.as_deref().unwrap_or(""),
         &data_dir,
         &cfg.tmdb_language,

@@ -12,7 +12,8 @@ use anyhow::{Context, Result};
 use mlib_spec::Kind;
 use rusqlite::{Connection, OptionalExtension, params};
 
-use crate::metadata::tmdb_types::DetailsResponse;
+use mediagram_tmdb::posters::kind_key;
+use mediagram_tmdb::tmdb_types::DetailsResponse;
 
 /// The provider this table records. Only TMDB is written today; the column
 /// exists so a second one would not need a migration to sit beside it.
@@ -39,19 +40,9 @@ pub struct ShowRow {
     pub total_episodes: Option<u32>,
 }
 
-/// How a kind is spelled in the key, matching the poster keys exactly: TMDB
-/// numbers films and series independently, so 550 is two different titles.
-pub fn kind_key(kind: Kind) -> &'static str {
-    match kind {
-        Kind::Movie => "movie",
-        // A course has no provider entry; it never reaches this table.
-        Kind::Ep | Kind::Tut | Kind::Doc => "tv",
-    }
-}
-
 /// Reads a details payload into a row, keeping only what a viewer would read.
 pub fn from_details(kind: Kind, lang: &str, details: &DetailsResponse) -> ShowRow {
-    let join = |items: &[crate::metadata::tmdb_types::NamedRef]| {
+    let join = |items: &[mediagram_tmdb::tmdb_types::NamedRef]| {
         let joined = items
             .iter()
             .map(|item| item.name.as_str())

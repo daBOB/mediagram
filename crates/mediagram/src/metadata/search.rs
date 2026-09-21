@@ -7,8 +7,8 @@ use strsim::normalized_levenshtein;
 
 use super::prompt::Prompter;
 use super::resolve::{ResolvedItem, fetch_details};
-use super::tmdb_client::TmdbApi;
-use super::tmdb_types::{SearchHit, SearchResponse};
+use mediagram_tmdb::tmdb_client::TmdbApi;
+use mediagram_tmdb::tmdb_types::{SearchHit, SearchResponse};
 
 /// A single result is auto-picked when it is the only one whose year falls
 /// within this many years of the filename guess.

@@ -12,7 +12,7 @@ use anyhow::{Context, Result};
 use mlib_spec::package::{PackageManifest, PosterEntry};
 use rusqlite::Connection;
 
-use crate::export::posters::{PosterRef, download_into};
+use mediagram_tmdb::posters::{PosterRef, download_into};
 use crate::export::{restrict, restrict_dir};
 use crate::index::snapshot;
 

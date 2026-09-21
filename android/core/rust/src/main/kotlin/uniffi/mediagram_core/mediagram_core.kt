@@ -680,7 +680,11 @@ internal object IntegrityCheckingUniffiLib {
         uniffiCheckContractApiVersion(this)
         uniffiCheckApiChecksums(this)
     }
+    external fun uniffi_mediagram_core_checksum_method_core_catalog_facts(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_check_password(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_fetch_posters(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_is_authorized(
     ): Int
@@ -697,6 +701,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_mediagram_core_checksum_method_core_refresh_library(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_request_code(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_show_info(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_sign_in(
     ): Int
@@ -728,7 +734,11 @@ internal object UniffiLib {
     ): Unit
     external fun uniffi_mediagram_core_fn_constructor_core_new(`dataDir`: RustBuffer.ByValue,`apiId`: Int,`apiHash`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
+    external fun uniffi_mediagram_core_fn_method_core_catalog_facts(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_mediagram_core_fn_method_core_check_password(`ptr`: Long,`password`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_fetch_posters(`ptr`: Long,`tmdbKey`: RustBuffer.ByValue,`language`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_is_authorized(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Byte
@@ -746,6 +756,8 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_request_code(`ptr`: Long,`phone`: RustBuffer.ByValue,
     ): Long
+    external fun uniffi_mediagram_core_fn_method_core_show_info(`ptr`: Long,`posterKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_mediagram_core_fn_method_core_sign_in(`ptr`: Long,`token`: RustBuffer.ByValue,`code`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_total_size(`ptr`: Long,`setId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -869,7 +881,13 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 }
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_catalog_facts() and 0xFFFF) != 50153) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if ((lib.uniffi_mediagram_core_checksum_method_core_check_password() and 0xFFFF) != 18803) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_fetch_posters() and 0xFFFF) != 13826) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_is_authorized() and 0xFFFF) != 30182) {
@@ -894,6 +912,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_request_code() and 0xFFFF) != 62780) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_show_info() and 0xFFFF) != 32170) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_sign_in() and 0xFFFF) != 55455) {
@@ -1174,6 +1195,52 @@ public object FfiConverterULong: FfiConverter<ULong, Long> {
 /**
  * @suppress
  */
+public object FfiConverterLong: FfiConverter<Long, Long> {
+    override fun lift(value: Long): Long {
+        return value
+    }
+
+    override fun read(buf: ByteBuffer): Long {
+        return buf.getLong()
+    }
+
+    override fun lower(value: Long): Long {
+        return value
+    }
+
+    override fun allocationSize(value: Long) = 8UL
+
+    override fun write(value: Long, buf: ByteBuffer) {
+        buf.putLong(value)
+    }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterDouble: FfiConverter<Double, Double> {
+    override fun lift(value: Double): Double {
+        return value
+    }
+
+    override fun read(buf: ByteBuffer): Double {
+        return buf.getDouble()
+    }
+
+    override fun lower(value: Double): Double {
+        return value
+    }
+
+    override fun allocationSize(value: Double) = 8UL
+
+    override fun write(value: Double, buf: ByteBuffer) {
+        buf.putDouble(value)
+    }
+}
+
+/**
+ * @suppress
+ */
 public object FfiConverterBoolean: FfiConverter<Boolean, Byte> {
     override fun lift(value: Byte): Boolean {
         return value.toInt() != 0
@@ -1378,7 +1445,23 @@ public object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
  */
 public interface CoreInterface {
     
+    /**
+     * What the installed catalog is, for the screen that says so.
+     *
+     * Total failure is reported as zeroes rather than an error: this is
+     * read to draw a screen, and a screen that cannot draw because a count
+     * failed is worse than one that says a library is empty.
+     */
+    fun `catalogFacts`(): CatalogFacts
+    
     suspend fun `checkPassword`(`password`: kotlin.String)
+    
+    /**
+     * Fetches poster artwork for every title in the catalog TMDB can
+     * answer about. The key is used for this call only and never stored —
+     * Kotlin owns holding it, this crate only ever spends it.
+     */
+    suspend fun `fetchPosters`(`tmdbKey`: kotlin.String, `language`: kotlin.String): PosterReport
     
     /**
      * Whether a login has ever completed. Reads the persisted auth key
@@ -1412,6 +1495,13 @@ public interface CoreInterface {
     suspend fun `refreshLibrary`(`handle`: kotlin.String): kotlin.ULong
     
     suspend fun `requestCode`(`phone`: kotlin.String): kotlin.String
+    
+    /**
+     * What the index records about a title, or nothing. A course has no
+     * provider entry and a library assembled without a TMDB key has no rows
+     * at all; both are ordinary, so neither is an error.
+     */
+    fun `showInfo`(`posterKey`: kotlin.String): ShowInfo?
     
     suspend fun `signIn`(`token`: kotlin.String, `code`: kotlin.String): AuthOutcome
     
@@ -1543,6 +1633,26 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     }
 
     
+    /**
+     * What the installed catalog is, for the screen that says so.
+     *
+     * Total failure is reported as zeroes rather than an error: this is
+     * read to draw a screen, and a screen that cannot draw because a count
+     * failed is worse than one that says a library is empty.
+     */override fun `catalogFacts`(): CatalogFacts {
+            return FfiConverterTypeCatalogFacts.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_mediagram_core_fn_method_core_catalog_facts(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `checkPassword`(`password`: kotlin.String) {
@@ -1560,6 +1670,34 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         // lift function
         { Unit },
         
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Fetches poster artwork for every title in the catalog TMDB can
+     * answer about. The key is used for this call only and never stored —
+     * Kotlin owns holding it, this crate only ever spends it.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `fetchPosters`(`tmdbKey`: kotlin.String, `language`: kotlin.String) : PosterReport {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_fetch_posters(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`tmdbKey`),
+        FfiConverterString.lower(`language`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypePosterReport.lift(it) },
         // Error FFI converter
         CoreException.ErrorHandler,
     )
@@ -1736,6 +1874,25 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     }
 
     
+    /**
+     * What the index records about a title, or nothing. A course has no
+     * provider entry and a library assembled without a TMDB key has no rows
+     * at all; both are ordinary, so neither is an error.
+     */override fun `showInfo`(`posterKey`: kotlin.String): ShowInfo? {
+            return FfiConverterOptionalTypeShowInfo.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_mediagram_core_fn_method_core_show_info(
+        it,
+        
+        FfiConverterString.lower(`posterKey`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `signIn`(`token`: kotlin.String, `code`: kotlin.String) : AuthOutcome {
@@ -1814,6 +1971,71 @@ public object FfiConverterTypeCore: FfiConverter<Core, Long> {
 
 
 /**
+ * What the installed catalog is, for the System screen's "Catalogue" block:
+ * where it came from, how much it holds, and which schema it was written
+ * with. `schema` is this build's own `SCHEMA_VERSION`, not a value read out
+ * of the database — it says what the reader understands, not what any one
+ * file happens to claim.
+ */
+data class CatalogFacts (
+    var `origin`: kotlin.String
+    , 
+    var `sets`: kotlin.ULong
+    , 
+    var `posters`: kotlin.ULong
+    , 
+    var `schema`: kotlin.UInt
+    , 
+    /**
+     * Seconds since the epoch when the installed catalogue was pushed,
+     * read from the installed version's own name. `None` when nothing is
+     * installed, or the name cannot be read.
+     */
+    var `publishedAt`: kotlin.Long?
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCatalogFacts: FfiConverterRustBuffer<CatalogFacts> {
+    override fun read(buf: ByteBuffer): CatalogFacts {
+        return CatalogFacts(
+            FfiConverterString.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterOptionalLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: CatalogFacts) = (
+            FfiConverterString.allocationSize(value.`origin`) +
+            FfiConverterULong.allocationSize(value.`sets`) +
+            FfiConverterULong.allocationSize(value.`posters`) +
+            FfiConverterUInt.allocationSize(value.`schema`) +
+            FfiConverterOptionalLong.allocationSize(value.`publishedAt`)
+    )
+
+    override fun write(value: CatalogFacts, buf: ByteBuffer) {
+            FfiConverterString.write(value.`origin`, buf)
+            FfiConverterULong.write(value.`sets`, buf)
+            FfiConverterULong.write(value.`posters`, buf)
+            FfiConverterUInt.write(value.`schema`, buf)
+            FfiConverterOptionalLong.write(value.`publishedAt`, buf)
+    }
+}
+
+
+
+/**
  * One library the signed-in account could choose, as the caller sees it.
  *
  * A title to render and a handle to send back, and nothing else. The handle
@@ -1860,6 +2082,61 @@ public object FfiConverterTypeLibraryChoice: FfiConverterRustBuffer<LibraryChoic
 
 
 /**
+ * What one artwork fetch did, for the screen that reports it.
+ *
+ * A title with no provider id is not a failure, and artwork already on
+ * disk is not fetched again — the four counts keep those apart so a viewer
+ * reads what actually happened rather than a single pass/fail verdict.
+ */
+data class PosterReport (
+    var `fetched`: kotlin.UInt
+    , 
+    var `alreadyHeld`: kotlin.UInt
+    , 
+    var `noProviderId`: kotlin.UInt
+    , 
+    var `failed`: kotlin.UInt
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePosterReport: FfiConverterRustBuffer<PosterReport> {
+    override fun read(buf: ByteBuffer): PosterReport {
+        return PosterReport(
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: PosterReport) = (
+            FfiConverterUInt.allocationSize(value.`fetched`) +
+            FfiConverterUInt.allocationSize(value.`alreadyHeld`) +
+            FfiConverterUInt.allocationSize(value.`noProviderId`) +
+            FfiConverterUInt.allocationSize(value.`failed`)
+    )
+
+    override fun write(value: PosterReport, buf: ByteBuffer) {
+            FfiConverterUInt.write(value.`fetched`, buf)
+            FfiConverterUInt.write(value.`alreadyHeld`, buf)
+            FfiConverterUInt.write(value.`noProviderId`, buf)
+            FfiConverterUInt.write(value.`failed`, buf)
+    }
+}
+
+
+
+/**
  * One title, flattened for a player that never sees `Episode`, `set_id`
  * internals, or where the bytes live.
  */
@@ -1888,6 +2165,16 @@ data class SetSummary (
     var `episodeLast`: kotlin.UInt?
     , 
     var `year`: kotlin.UInt?
+    , 
+    var `container`: kotlin.String
+    , 
+    var `vcodec`: kotlin.String?
+    , 
+    var `acodec`: kotlin.String?
+    , 
+    var `quality`: kotlin.String?
+    , 
+    var `hdr`: kotlin.String?
     , 
     var `duration`: kotlin.UInt?
     , 
@@ -1922,6 +2209,11 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalUInt.read(buf),
             FfiConverterOptionalUInt.read(buf),
             FfiConverterOptionalUInt.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
             FfiConverterOptionalUInt.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterULong.read(buf),
@@ -1940,6 +2232,11 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalUInt.allocationSize(value.`episodeFirst`) +
             FfiConverterOptionalUInt.allocationSize(value.`episodeLast`) +
             FfiConverterOptionalUInt.allocationSize(value.`year`) +
+            FfiConverterString.allocationSize(value.`container`) +
+            FfiConverterOptionalString.allocationSize(value.`vcodec`) +
+            FfiConverterOptionalString.allocationSize(value.`acodec`) +
+            FfiConverterOptionalString.allocationSize(value.`quality`) +
+            FfiConverterOptionalString.allocationSize(value.`hdr`) +
             FfiConverterOptionalUInt.allocationSize(value.`duration`) +
             FfiConverterOptionalString.allocationSize(value.`posterKey`) +
             FfiConverterULong.allocationSize(value.`total`) +
@@ -1957,10 +2254,76 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalUInt.write(value.`episodeFirst`, buf)
             FfiConverterOptionalUInt.write(value.`episodeLast`, buf)
             FfiConverterOptionalUInt.write(value.`year`, buf)
+            FfiConverterString.write(value.`container`, buf)
+            FfiConverterOptionalString.write(value.`vcodec`, buf)
+            FfiConverterOptionalString.write(value.`acodec`, buf)
+            FfiConverterOptionalString.write(value.`quality`, buf)
+            FfiConverterOptionalString.write(value.`hdr`, buf)
             FfiConverterOptionalUInt.write(value.`duration`, buf)
             FfiConverterOptionalString.write(value.`posterKey`, buf)
             FfiConverterULong.write(value.`total`, buf)
             FfiConverterUInt.write(value.`partCount`, buf)
+    }
+}
+
+
+
+/**
+ * What a provider said about a title, flattened for the binding surface.
+ */
+data class ShowInfo (
+    var `overview`: kotlin.String?
+    , 
+    var `tagline`: kotlin.String?
+    , 
+    var `genres`: kotlin.String?
+    , 
+    var `rating`: kotlin.Double?
+    , 
+    var `network`: kotlin.String?
+    , 
+    var `status`: kotlin.String?
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeShowInfo: FfiConverterRustBuffer<ShowInfo> {
+    override fun read(buf: ByteBuffer): ShowInfo {
+        return ShowInfo(
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalDouble.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: ShowInfo) = (
+            FfiConverterOptionalString.allocationSize(value.`overview`) +
+            FfiConverterOptionalString.allocationSize(value.`tagline`) +
+            FfiConverterOptionalString.allocationSize(value.`genres`) +
+            FfiConverterOptionalDouble.allocationSize(value.`rating`) +
+            FfiConverterOptionalString.allocationSize(value.`network`) +
+            FfiConverterOptionalString.allocationSize(value.`status`)
+    )
+
+    override fun write(value: ShowInfo, buf: ByteBuffer) {
+            FfiConverterOptionalString.write(value.`overview`, buf)
+            FfiConverterOptionalString.write(value.`tagline`, buf)
+            FfiConverterOptionalString.write(value.`genres`, buf)
+            FfiConverterOptionalDouble.write(value.`rating`, buf)
+            FfiConverterOptionalString.write(value.`network`, buf)
+            FfiConverterOptionalString.write(value.`status`, buf)
     }
 }
 
@@ -2215,6 +2578,70 @@ public object FfiConverterOptionalUInt: FfiConverterRustBuffer<kotlin.UInt?> {
 /**
  * @suppress
  */
+public object FfiConverterOptionalLong: FfiConverterRustBuffer<kotlin.Long?> {
+    override fun read(buf: ByteBuffer): kotlin.Long? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterLong.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.Long?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterLong.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.Long?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterLong.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalDouble: FfiConverterRustBuffer<kotlin.Double?> {
+    override fun read(buf: ByteBuffer): kotlin.Double? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterDouble.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.Double?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterDouble.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.Double?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterDouble.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?> {
     override fun read(buf: ByteBuffer): kotlin.String? {
         if (buf.get().toInt() == 0) {
@@ -2237,6 +2664,38 @@ public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?>
         } else {
             buf.put(1)
             FfiConverterString.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeShowInfo: FfiConverterRustBuffer<ShowInfo?> {
+    override fun read(buf: ByteBuffer): ShowInfo? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeShowInfo.read(buf)
+    }
+
+    override fun allocationSize(value: ShowInfo?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeShowInfo.allocationSize(value)
+        }
+    }
+
+    override fun write(value: ShowInfo?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeShowInfo.write(value, buf)
         }
     }
 }

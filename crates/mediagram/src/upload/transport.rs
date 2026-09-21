@@ -34,7 +34,7 @@ pub struct Seen {
 /// before rendering and sending the caption text; this is what lets the
 /// upload and the hash share a single read pass over the part's bytes.
 // No `Send` bound is needed: callers always drive this with static dispatch
-// (`impl Transport`), never as a trait object, matching `metadata::tmdb_client::TmdbApi`.
+// (`impl Transport`), never as a trait object, matching `mediagram_tmdb::tmdb_client::TmdbApi`.
 #[allow(async_fn_in_trait)]
 pub trait Transport {
     async fn send_part(

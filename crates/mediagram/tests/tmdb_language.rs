@@ -10,7 +10,7 @@
 
 use std::cell::RefCell;
 
-use mediagram::metadata::tmdb_client::{Localized, TmdbApi};
+use mediagram_tmdb::tmdb_client::{Localized, TmdbApi};
 use serde_json::{Value, json};
 
 /// One call: the path asked for, and the query it was asked with.

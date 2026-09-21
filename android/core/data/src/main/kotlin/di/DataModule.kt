@@ -11,12 +11,15 @@ import data.CoreProvider
 import data.CoreStorage
 import data.DefaultCatalogRepository
 import data.FileCoreStorage
+import data.RefreshLog
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import settings.EncryptedLibrarySettings
 import settings.EncryptedTelegramSettings
+import settings.EncryptedTmdbSettings
 import settings.LibrarySettings
 import settings.TelegramSettings
+import settings.TmdbSettings
 import javax.inject.Singleton
 
 @Module
@@ -42,6 +45,11 @@ object DataModule {
     fun provideTelegramSettings(@ApplicationContext context: Context): TelegramSettings =
         EncryptedTelegramSettings(context)
 
+    @Provides
+    @Singleton
+    fun provideTmdbSettings(@ApplicationContext context: Context): TmdbSettings =
+        EncryptedTmdbSettings(context)
+
     // The same directory the core is constructed with, so clearing it
     // clears the state that core wrote.
     @Provides
@@ -51,10 +59,19 @@ object DataModule {
         dispatcher: CoroutineDispatcher,
     ): CoreStorage = FileCoreStorage(context.filesDir, dispatcher)
 
+    // One per process, like the counters it is shaped after: the catalog
+    // writes what a refresh did and the System screen reads it back, and a
+    // second instance would leave the screen reporting on refreshes that
+    // never happened.
+    @Provides
+    @Singleton
+    fun provideRefreshLog(): RefreshLog = RefreshLog()
+
     @Provides
     @Singleton
     fun provideCatalogRepository(
         coreProvider: CoreProvider,
         settings: LibrarySettings,
-    ): CatalogRepository = DefaultCatalogRepository(coreProvider, settings)
+        refreshes: RefreshLog,
+    ): CatalogRepository = DefaultCatalogRepository(coreProvider, settings, refreshes)
 }

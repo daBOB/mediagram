@@ -9,11 +9,13 @@
 //! carry one, because the player is told what it may play, never where the
 //! bytes live.
 
+pub mod artwork;
 mod auth;
 mod catalog;
 mod channel;
 mod channel_index;
 mod http;
+mod identity;
 mod library;
 mod read;
 mod refresh;
@@ -189,12 +191,40 @@ impl Core {
         catalog::poster_path(self, poster_key)
     }
 
+    /// What the index records about a title, or nothing. A course has no
+    /// provider entry and a library assembled without a TMDB key has no rows
+    /// at all; both are ordinary, so neither is an error.
+    pub fn show_info(&self, poster_key: String) -> Option<crate::dto::ShowInfo> {
+        let conn = catalog::open(self).ok()?;
+        crate::shows::read(&conn, &poster_key).ok().flatten().map(Into::into)
+    }
+
     pub fn total_size(&self, set_id: String) -> Result<u64, CoreError> {
         catalog::total_size(self, set_id)
     }
 
+    /// What the installed catalog is, for the screen that says so.
+    ///
+    /// Total failure is reported as zeroes rather than an error: this is
+    /// read to draw a screen, and a screen that cannot draw because a count
+    /// failed is worse than one that says a library is empty.
+    pub fn catalog_facts(&self) -> crate::dto::CatalogFacts {
+        catalog::facts(self)
+    }
+
     pub async fn read(&self, set_id: String, offset: u64, len: u32) -> Result<Vec<u8>, CoreError> {
         read::read(self, set_id, offset, len).await
+    }
+
+    /// Fetches poster artwork for every title in the catalog TMDB can
+    /// answer about. The key is used for this call only and never stored —
+    /// Kotlin owns holding it, this crate only ever spends it.
+    pub async fn fetch_posters(
+        &self,
+        tmdb_key: String,
+        language: String,
+    ) -> Result<crate::dto::PosterReport, CoreError> {
+        artwork::fetch_posters(self, tmdb_key, language).await
     }
 }
 

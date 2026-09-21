@@ -22,12 +22,18 @@ sealed interface Entry {
      * many folders actually hold something — a folder of folders is
      * structure, not a chapter, and counting it would tell a viewer the
      * course has more parts than it has.
+     *
+     * [posterKey] is the raw key behind [posterPath], kept as well as the
+     * resolved file because the two answer different questions: the path is
+     * artwork that has been downloaded, the key is what the index can be
+     * asked to describe. A collection with no art still has a synopsis.
      */
     data class Collection(
         val key: String,
         val kind: CollectionKind,
         val name: String,
         val posterPath: String?,
+        val posterKey: String?,
         val count: Int,
         val chapters: Int,
         val divisions: List<Division>,

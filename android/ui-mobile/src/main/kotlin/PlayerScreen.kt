@@ -11,10 +11,9 @@ import android.content.ContextWrapper
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,18 +23,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.media3.common.Player
-import androidx.media3.ui.compose.PlayerSurface
-import androidx.media3.ui.compose.state.rememberPresentationState
 import designsystem.Spacing
 import kotlinx.coroutines.delay
 import player.PlayerUiState
@@ -73,6 +69,9 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
     // all, then left to take itself away.
     var controlsShown by remember { mutableStateOf(true) }
     var scrubbing by remember { mutableStateOf(false) }
+    // Saved, because a rotation destroys this composition and a viewer who
+    // turned the phone to read a wider row did not ask for the numbers back.
+    var statsShown by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(controlsShown, state, scrubbing) {
         if (!controlsShown) return@LaunchedEffect
         val fades = controlsShouldFade(
@@ -84,6 +83,12 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
         controlsShown = false
     }
 
+    // One predicate, read twice, because the bar and the statistics sit in
+    // different corners and cannot be nested under a single `if`. Both are
+    // the bar being on screen, so both ask the same question rather than two
+    // that could drift apart.
+    val barShown = controlsShown && controlsMayShow(state)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -93,10 +98,12 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
     ) {
         player?.let { current ->
             Video(current)
-            if (controlsShown && controlsMayShow(state)) {
+            if (barShown) {
                 PlayerControls(
                     player = current,
                     onScrubbingChanged = { scrubbing = it },
+                    statsShown = statsShown,
+                    onToggleStats = { statsShown = !statsShown },
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
@@ -111,44 +118,28 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
         // Placed explicitly: the box centres its children so the picture
         // sits in the middle of its letterbox, and back would otherwise be
         // centred with it, in the middle of the film.
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier.align(Alignment.TopStart).padding(Spacing.medium),
-        ) {
-            Text(text = "←", color = Color.White, style = MaterialTheme.typography.headlineSmall)
+        //
+        // The statistics sit under back in a column rather than at their own
+        // corner, so there is no arithmetic anywhere that has to know how
+        // tall the arrow is in order to clear it.
+        Column(modifier = Modifier.align(Alignment.TopStart)) {
+            IconButton(onClick = onBack, modifier = Modifier.padding(Spacing.medium)) {
+                Text(text = "←", color = Color.White, style = MaterialTheme.typography.headlineSmall)
+            }
+            // Gated on the bar being shown as well as on the toggle, so the
+            // statistics have no visibility rule of their own: a viewer who
+            // leaves the numbers on gets the picture back when the bar takes
+            // itself away, and keeps them while the film is paused.
+            if (statsShown && barShown) {
+                player?.let { current ->
+                    PlaybackStatsOverlay(
+                        player = current,
+                        totals = viewModel.totals,
+                        modifier = Modifier.padding(start = Spacing.medium),
+                    )
+                }
+            }
         }
-    }
-}
-
-/**
- * The picture, shaped to itself rather than to the screen.
- *
- * `PlayerSurface` draws into whatever bounds it is given and applies no
- * ratio of its own — the old `PlayerView` had a frame layout that did — so
- * filling the window stretches a 2.4:1 film onto a 3:2 display and makes
- * everyone in it tall and thin. The black behind is the letterbox.
- *
- * The size comes from media3's own presentation state rather than from a
- * listener written here: it already folds in the pixel shape that makes
- * anamorphic video 2.4:1 rather than 1.78:1, and it already knows when the
- * surface is showing a frame that no longer belongs to what is playing.
- */
-@Composable
-private fun Video(player: Player) {
-    val presentation = rememberPresentationState(player)
-    val size = presentation.videoSizeDp
-    val shaped = if (size != null && size.width > 0f && size.height > 0f) {
-        Modifier.fillMaxSize().aspectRatio(size.width / size.height)
-    } else {
-        Modifier.fillMaxSize()
-    }
-    PlayerSurface(player = player, modifier = shaped)
-    // Between one set and the next the surface still holds the last frame
-    // of the old one. Covering it is what media3 asks callers to do, and
-    // the alternative is a still from the previous film over the new one's
-    // audio.
-    if (presentation.coverSurface) {
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black))
     }
 }
 
@@ -173,27 +164,4 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
     is ContextWrapper -> baseContext.findActivity()
     else -> null
-}
-
-@Composable
-private fun KeepScreenOnWhile(isPlaying: Boolean) {
-    val view = LocalView.current
-    DisposableEffect(isPlaying) {
-        view.keepScreenOn = isPlaying
-        onDispose { view.keepScreenOn = false }
-    }
-}
-
-@Composable
-private fun CenteredSpinner() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(color = Color.White)
-    }
-}
-
-@Composable
-private fun CenteredError(message: String) {
-    Box(modifier = Modifier.fillMaxSize().padding(Spacing.large), contentAlignment = Alignment.Center) {
-        Text(text = message, color = Color.White, style = MaterialTheme.typography.bodyLarge)
-    }
 }

@@ -35,6 +35,7 @@ grammers-client = "0.10"
 grammers-mtsender = "0.10"
 grammers-tl-types = "0.10"
 hex = { workspace = true }
+mediagram-tmdb = { path = "../mediagram-tmdb" }
 mlib-spec = { path = "../mlib-spec" }
 # `rustls-no-provider`, not `rustls`: the latter pulls in `rustls-platform-verifier`
 # on the same code path this crate would actually exercise, and that crate

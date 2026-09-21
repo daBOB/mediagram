@@ -1,23 +1,41 @@
 package data
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import settings.InMemoryLibrarySettings
 import settings.LibrarySettings
 import uniffi.mediagram_core.AuthOutcome
+import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.LibraryChoice
+import uniffi.mediagram_core.PosterReport
 import uniffi.mediagram_core.SetSummary
+import uniffi.mediagram_core.ShowInfo
 
 class FakeCore(
     private val sets: List<SetSummary> = emptyList(),
     private val refreshResult: Long = 0L,
     private val libraries: List<LibraryChoice> = emptyList(),
+    /**
+     * What each reading of [catalogFacts] says the installed snapshot was
+     * pushed at, in order. A refresh takes one reading either side of
+     * itself, so two entries are a push that landed; the last entry stands
+     * for every reading after it, so one entry is a library that never
+     * changes.
+     */
+    private val publishedAt: List<Long?> = listOf(null),
+    /** The sentence [refreshLibrary] raises with, or `null` when it succeeds. */
+    private val refreshFails: String? = null,
+    /** Whether [refreshLibrary] is cancelled rather than finishing or failing. */
+    private val refreshCancels: Boolean = false,
 ) : CoreClient {
 
     /** Which handle the last refresh was asked for, or `null` if none was. */
     var refreshedHandle: String? = null
         private set
+
+    private var readings = 0
 
     override fun isAuthorized(): Boolean = true
     override suspend fun requestCode(phone: String): String = "token"
@@ -27,14 +45,21 @@ class FakeCore(
 
     override suspend fun refreshLibrary(handle: String): Long {
         refreshedHandle = handle
+        if (refreshCancels) throw CancellationException("the flow that asked was dropped")
+        refreshFails?.let { error(it) }
         return refreshResult
     }
 
     override suspend fun refreshCatalog(url: String, keyB64: String): Long = refreshResult
     override fun listSets(): List<SetSummary> = sets
     override fun posterPath(posterKey: String): String? = null
+    override fun showInfo(posterKey: String): ShowInfo? = null
     override fun totalSize(setId: String): Long = 0
+    override fun catalogFacts(): CatalogFacts =
+        CatalogFacts("channel", 0uL, 0uL, 0u, publishedAt[minOf(readings++, publishedAt.lastIndex)])
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray = ByteArray(0)
+    override suspend fun fetchPosters(tmdbKey: String, language: String): PosterReport =
+        PosterReport(0u, 0u, 0u, 0u)
 
     var closed: Boolean = false
         private set
@@ -69,6 +94,11 @@ fun summary(
     episodeFirst: Int? = null,
     episodeLast: Int? = null,
     year: Int? = null,
+    container: String = "mp4",
+    vcodec: String? = null,
+    acodec: String? = null,
+    quality: String? = null,
+    hdr: String? = null,
     duration: Int? = null,
     posterKey: String? = null,
     total: Long = 0L,
@@ -84,6 +114,11 @@ fun summary(
     episodeFirst = episodeFirst?.toUInt(),
     episodeLast = episodeLast?.toUInt(),
     year = year?.toUInt(),
+    container = container,
+    vcodec = vcodec,
+    acodec = acodec,
+    quality = quality,
+    hdr = hdr,
     duration = duration?.toUInt(),
     posterKey = posterKey,
     total = total.toULong(),
