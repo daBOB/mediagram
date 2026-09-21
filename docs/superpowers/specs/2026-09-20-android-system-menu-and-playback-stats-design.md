@@ -219,8 +219,8 @@ through the response cache, which holds no credential and would otherwise
 vouch for a rotated key out of a file the previous one paid for. And a
 refresh landing mid-fetch swaps `current` beneath the run; the fetch resolves
 that directory once at the start and reads `library.db` only from there,
-while the art it writes is outside the catalogue tree altogether, so a
-refresh mid-fetch costs nothing at all.
+while the art it writes goes beside the version directories rather than into
+one, so a refresh mid-fetch costs nothing at all.
 
 ## 7. Playback stats
 
