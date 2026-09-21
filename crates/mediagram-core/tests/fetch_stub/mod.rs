@@ -88,11 +88,12 @@ pub fn catalog_with_kinds(dir: &Path, kinds: &[(&str, Option<i64>)]) {
     catalog_with_sets(dir, &rows);
 }
 
-/// The same, for sets that belong to a named collection: a course's lessons
-/// or a series' episodes, which are one title between them however many
-/// rows the index holds.
-pub fn catalog_with_collection(dir: &Path, kind: &str, show: &str, sets: usize) {
-    let rows: Vec<_> = (0..sets).map(|_| (kind, None, Some(show))).collect();
+/// The same, for sets that belong to a collection: a course's lessons or a
+/// series' episodes, which are one title between them however many rows the
+/// index holds. `show` is `None` for a collection the index never named,
+/// which a shelf still draws as one card.
+pub fn catalog_with_collection(dir: &Path, kind: &str, show: Option<&str>, sets: usize) {
+    let rows: Vec<_> = (0..sets).map(|_| (kind, None, show)).collect();
     catalog_with_sets(dir, &rows);
 }
 

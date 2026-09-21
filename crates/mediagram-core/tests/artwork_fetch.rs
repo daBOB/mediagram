@@ -28,34 +28,20 @@ async fn a_rejected_key_is_still_rejected_after_a_successful_run() {
     catalog_with_kinds(dir.path(), &[("movie", Some(11225))]);
     let core = core_at(dir.path());
     let plan = plan_fetch(&core, "en-US").unwrap();
+    let (http, art) = (offline_client(), &plan.artwork_dir);
     install_crypto_provider();
 
     // A first run with a key the provider accepts, which is what leaves a
     // warm cache behind.
-    verify_then_fetch(
-        &core,
-        StubApi::with_poster("/a.jpg"),
-        &offline_client(),
-        &plan.artwork_dir,
-        "en-US",
-        &plan.titles,
-        0,
-    )
-    .await
-    .expect("a key the provider accepts fetches");
+    let good = StubApi::with_poster("/a.jpg");
+    verify_then_fetch(&core, good, &http, art, "en-US", &plan.titles, 0)
+        .await
+        .expect("a key the provider accepts fetches");
 
     // The same device afterwards, with a key the provider will not take.
-    let err = verify_then_fetch(
-        &core,
-        RejectingApi,
-        &offline_client(),
-        &plan.artwork_dir,
-        "en-US",
-        &plan.titles,
-        0,
-    )
-    .await
-    .expect_err("a rejected key must not be verified out of the cache");
+    let err = verify_then_fetch(&core, RejectingApi, &http, art, "en-US", &plan.titles, 0)
+        .await
+        .expect_err("a rejected key must not be verified out of the cache");
 
     assert!(matches!(err, CoreError::NotAuthorized(_)), "reported as {err:?}");
 }
@@ -141,18 +127,31 @@ async fn a_title_with_no_provider_id_is_counted_rather_than_failed() {
     assert_eq!(report.no_provider_id, 1);
 }
 
-/// A course is one title however many lessons it holds, because that is
-/// what a shelf shows for it and what every other count in the report
-/// means. Counted per set, a 162-lesson course read as "162 titles have no
-/// provider entry" beside "3 posters fetched".
+/// `no_provider_id` counts what a shelf shows, not what the index holds:
+/// a course is one card however many lessons it has, and two films the
+/// provider numbers neither of are two, because only a collection collapses.
+/// Counted per row, a 162-lesson course read as "162 titles have no provider
+/// entry" beside "3 posters fetched".
 #[tokio::test]
-async fn a_course_is_one_title_with_no_provider_entry_not_one_per_lesson() {
-    let dir = tempfile::tempdir().unwrap();
-    catalog_with_collection(dir.path(), "tut", "Rust in Anger", 12);
+async fn titles_with_no_provider_entry_are_counted_as_a_shelf_shows_them() {
+    let named = tempfile::tempdir().unwrap();
+    catalog_with_collection(named.path(), "tut", Some("Rust in Anger"), 12);
 
-    let report = fetch_with(dir.path(), StubApi::default()).await;
+    assert_eq!(fetch_with(named.path(), StubApi::default()).await.no_provider_id, 1);
 
-    assert_eq!(report.no_provider_id, 1);
+    // The same twelve with no course name. `Shelves.kt` draws those as one
+    // card too, under a stand-in title, so a count beside that shelf saying
+    // twelve would be a count of something the viewer cannot see.
+    let bare = tempfile::tempdir().unwrap();
+    catalog_with_collection(bare.path(), "tut", None, 12);
+
+    assert_eq!(fetch_with(bare.path(), StubApi::default()).await.no_provider_id, 1);
+
+    // Films are not collected, so nothing collapses them into each other.
+    let films = tempfile::tempdir().unwrap();
+    catalog_with_kinds(films.path(), &[("movie", None), ("movie", None)]);
+
+    assert_eq!(fetch_with(films.path(), StubApi::default()).await.no_provider_id, 2);
 }
 
 #[tokio::test]

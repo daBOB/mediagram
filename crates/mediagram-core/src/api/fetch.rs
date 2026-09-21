@@ -36,9 +36,14 @@ use super::details as store;
 /// titles; see [`FetchReport`].
 ///
 /// The description half runs second and asks the same questions of the same
-/// client, and costs no second request: `resolve_posters` has just put each
-/// title's payload in the disk cache the caller wrapped this client in, and
-/// a description is read out of the very payload the poster path came from.
+/// client. A title the provider answered for costs no second request:
+/// `resolve_posters` has just put its payload in the disk cache the caller
+/// wrapped this client in, and the description is read out of the very
+/// payload the poster path came from. A title it refused is asked twice —
+/// `DiskCachedApi` stores nothing for a call that failed — and that second
+/// refusal is what puts the title in `failed` rather than leaving it
+/// silently undescribed. Counted in `tests/fetch_cache.rs`, because a doc
+/// comment cannot notice the cache being taken out of the composition.
 pub async fn fetch_into(
     core: &Core,
     api: &impl TmdbApi,
@@ -100,6 +105,18 @@ struct Described {
 /// never before, because a run over a library that is already described
 /// must not leave a database file behind on a device that learned nothing —
 /// the same rule the reading side keeps in `details::fetched`.
+///
+/// `show_info` re-resolves the `current` symlink on every title, so this is
+/// the one reader in a run that is not pinned to the snapshot `plan_fetch`
+/// canonicalised. That is the right answer rather than a missed one, in all
+/// three cases a refresh landing mid-run can produce: a newer index that
+/// describes the title means the title is worth skipping, and its row is
+/// the one `show_info` would prefer anyway; a newer index that does not
+/// means the fetch should happen; and a symlink caught mid-swap reads as
+/// "nothing describes it", costing one redundant fetch whose row the index
+/// outranks on every later read. Pinning it instead would mean carrying the
+/// resolved directory through two signatures and handing this function a
+/// connection it does not otherwise need.
 async fn record_descriptions(
     core: &Core,
     api: &impl TmdbApi,
