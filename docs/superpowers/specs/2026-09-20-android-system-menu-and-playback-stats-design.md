@@ -137,7 +137,7 @@ somebody else's tool bolted on.
 | Block | Rows | Source |
 |---|---|---|
 | Catalogue | Source, Holds, Schema | new core call over the installed catalog |
-| Cache | Held of budget, Reads, Evicted | media3 `SimpleCache` + a `CacheDataSource.EventListener` |
+| Cache | Held of budget, Reads | media3 `SimpleCache` + a `CacheDataSource.EventListener` |
 | Upstream | Since starting, Failed reads | counters on `MlibDataSource` |
 | This app | Version, Telegram, Uptime | `BuildConfig`, core, process start |
 
@@ -146,6 +146,9 @@ A row whose value is unknown is omitted rather than shown blank, matching
 
 **There is no Conversion block.** The web has one because it transcodes;
 Android decodes natively and never will. See §9.
+
+**There is no Evicted row**, which this table asked for in its first
+drawing. media3 will not say how much it evicted. See §9.
 
 **Cache hits and misses need a listener nothing currently attaches.**
 `PlayerFactory.cacheDataSourceFactory` builds a `CacheDataSource.Factory`
@@ -284,6 +287,35 @@ category error: a cache fact under a label that says buffer. The row is
 **Posters are fetched by the device, not shipped with the catalog.** A
 published package still carries art for the surfaces that read one. Android
 reads the pinned channel index, which carries none, and fetches its own.
+
+**No Evicted row in the Cache block.** §5. The web player owns its cache
+outright: `web/src/cache/store.ts` performs the eviction itself and counts
+it, and the status panel reports that count. Android's cache is media3's
+`SimpleCache` behind a `LeastRecentlyUsedCacheEvictor`, and media3 surfaces
+no eviction total anywhere the app can read one. The listener the app does
+attach, `CacheDataSource.EventListener`, has exactly two callbacks —
+`onCachedBytesRead` and `onCacheIgnored` — and neither is about eviction.
+What media3 does offer is `Cache.Listener.onSpanRemoved`, which fires per
+cache span rather than per title, sees only the spans removed while this
+process happened to be listening, and would reset on every launch while the
+cache on disk does not. A number with those three properties under a label
+reading "Evicted" is worse than no row.
+
+**Posters are fetched in English, whatever language the library is in.** The
+uploader asks TMDB in its configured `tmdb_language` — `de-DE` for the
+library this was built against — and the device asks for `en-US`, a constant
+in `PostersViewModel`. TMDB serves localised artwork where a title has it, so
+a library curated in German gets the English poster for those titles.
+
+The core already takes the language as a parameter, so the gap is not in the
+fetch: it is that the phone has nowhere to read an answer from. The
+uploader's `tmdb_language` lives in a config file on the machine that
+publishes, and nothing carries it into the pinned index or onto the device.
+Closing it means deciding where the device's answer comes from — a setting
+beside the TMDB key, or a field in the index the uploader already writes —
+and that is a decision rather than an oversight to patch, so it is recorded
+here and not yet ruled on. It is the one entry in this section that may turn
+out to be a defect rather than a difference.
 
 ## 10. Deliberately out of scope
 
