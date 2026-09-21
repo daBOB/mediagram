@@ -228,6 +228,24 @@ git add crates/ android/core/rust/
 git commit -m "feat(core): fill both gaps a library leaves, in one pass"
 ```
 
+## Accepted deviation
+
+**Two walks over the title list, not one.** Step 3 of task 2 said to walk the
+list once. The code walks it twice — `resolve_posters` for artwork, then
+`record_descriptions` for text — and that stands.
+
+The property the single walk was meant to protect is delivered anyway: both
+loops reach the provider through one `mediagram_tmdb::details::details`, same
+path and same query, so the second is served from the cache the first warmed.
+One request per title, both answers out of one payload.
+
+Literal compliance would mean giving up `download_into`'s batched directory
+creation and permission restriction, and the `already_held`/`written`
+arithmetic the poster counts derive from — reshaping `mediagram-tmdb`'s API to
+buy structurally what a test buys directly. `tests/fetch_cache.rs` counts
+provider requests through the real cached composition, so the property is
+pinned rather than assumed, which is what makes the two walks safe to keep.
+
 ## Todo list
 
 - [ ] The language is read from the index, with the caller's locale as fallback
