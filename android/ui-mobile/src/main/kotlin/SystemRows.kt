@@ -55,8 +55,10 @@ internal fun heldOfBudget(held: Long, budget: Long): String {
  * trips to Telegram behind the rest.
  *
  * Not hits and misses, which is what the web player's line says. Its cache
- * counts both; nothing here does. `CacheDataSource.Factory` is built with no
- * `EventListener`, so the only counts this app has are bytes served from
+ * counts both; nothing here does. A `CacheDataSource.EventListener` is
+ * attached, but it answers in bytes: `onCachedBytesRead` and
+ * `onCacheIgnored` are the whole interface, and neither one counts a read as
+ * a hit or a miss. So the only counts this app has are bytes served from
  * disk, bytes fetched, and the fetches that carried them — and a round trip
  * that returned bytes is not a cache miss, it is what a miss costs.
  *
