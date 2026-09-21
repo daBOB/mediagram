@@ -57,12 +57,13 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
         // To the shelves as well, and for a second reason besides that
         // one: a fetch is minutes of network over hundreds of titles, the
         // menu that started it is already closed, and the shelves are both
-        // where the progress line lives and where the artwork lands.
-        onFetchPosters = { at.toCatalog(); fetchViewModel.fetch() },
+        // where the progress line lives and where the artwork it fetches
+        // lands.
+        onFetch = { at.toCatalog(); fetchViewModel.fetch() },
         onTmdbKey = { at.menuScreen = MenuScreen.TmdbKey },
         onStartOver = onStartOver,
         refreshDisabledReason = refreshDisabledReason(catalogState),
-        fetchPostersDisabledReason = fetchPostersDisabledReason(fetchState.running, fetchState.hasKey),
+        fetchDisabledReason = fetchDisabledReason(fetchState.running, fetchState.hasKey),
     )
 
     when {
@@ -125,7 +126,7 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
             ) {
                 CatalogScreen(
                     state = catalogState,
-                    fetchingPosters = fetchState.running,
+                    fetching = fetchState.running,
                     onOpenTitle = { at.titleId = it },
                     onOpenCollection = { at.collection = it },
                 )
@@ -139,15 +140,15 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
     // so it is still there when the film is left, which is when there is
     // somebody to read it.
     if (setId == null) {
-        PosterFetchResultDialog(
+        FetchResultDialog(
             message = fetchResultMessage(fetchState.report, fetchState.error),
             onDismiss = fetchViewModel::dismissResult,
         )
     }
 }
 
-/** Why "Fetch posters" cannot be tapped right now, or `null` when it can. */
-private fun fetchPostersDisabledReason(running: Boolean, hasKey: Boolean): String? = when {
+/** Why "Fetch details and artwork" cannot be tapped right now, or `null` when it can. */
+private fun fetchDisabledReason(running: Boolean, hasKey: Boolean): String? = when {
     running -> "Fetching…"
     !hasKey -> "No TMDB key stored"
     else -> null
@@ -183,12 +184,12 @@ private fun fetchResultMessage(report: FetchReport?, error: String?): String? = 
 
 /** What a fetch reported, or what stopped it — shown over whichever library screen is up when it finishes. */
 @Composable
-private fun PosterFetchResultDialog(message: String?, onDismiss: () -> Unit) {
+private fun FetchResultDialog(message: String?, onDismiss: () -> Unit) {
     if (message == null) return
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Fetch posters") },
+        title = { Text("Fetch details and artwork") },
         text = { Text(message) },
         confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } },
     )

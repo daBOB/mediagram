@@ -66,8 +66,8 @@ internal fun backLabelFor(destination: Destination): String? = when (destination
  *
  * One of them — the TMDB key, which sits directly under the fetch it
  * configures — is named with an ellipsis, because it opens a screen to fill
- * in rather than doing anything itself. Fetching posters carried one too,
- * and it was a promise of a dialog that never came: that tap starts minutes
+ * in rather than doing anything itself. Fetching details and artwork carried
+ * one too, and it promised a dialog that never came: that tap starts minutes
  * of HTTP over hundreds of titles there and then. What it owes a viewer is
  * not a warning but the news that it is running, which it now says where a
  * reload of the library says it — on the progress line above the shelves.
@@ -86,11 +86,12 @@ internal fun backLabelFor(destination: Destination): String? = when (destination
 data class MenuActions(
     val onSystem: () -> Unit,
     val onRefresh: () -> Unit,
-    val onFetchPosters: () -> Unit,
+    /** Both halves in one run: the artwork an index has no room for, and the descriptions nobody wrote. */
+    val onFetch: () -> Unit,
     val onTmdbKey: () -> Unit,
     val onStartOver: () -> Unit,
     val refreshDisabledReason: String? = null,
-    val fetchPostersDisabledReason: String? = null,
+    val fetchDisabledReason: String? = null,
 )
 
 /**
@@ -150,9 +151,9 @@ fun LibraryScaffold(
                             onClick = { menuExpanded = false; menu.onRefresh() },
                         )
                         MenuItem(
-                            label = "Fetch posters",
-                            disabledReason = menu.fetchPostersDisabledReason,
-                            onClick = { menuExpanded = false; menu.onFetchPosters() },
+                            label = "Fetch details and artwork",
+                            disabledReason = menu.fetchDisabledReason,
+                            onClick = { menuExpanded = false; menu.onFetch() },
                         )
                         DropdownMenuItem(
                             text = { Text("TMDB key…") },
