@@ -684,7 +684,7 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_check_password(
     ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_fetch_posters(
+    external fun uniffi_mediagram_core_checksum_method_core_fetch_missing(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_is_authorized(
     ): Int
@@ -738,7 +738,7 @@ internal object UniffiLib {
     ): RustBuffer.ByValue
     external fun uniffi_mediagram_core_fn_method_core_check_password(`ptr`: Long,`password`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_fetch_posters(`ptr`: Long,`tmdbKey`: RustBuffer.ByValue,`language`: RustBuffer.ByValue,
+    external fun uniffi_mediagram_core_fn_method_core_fetch_missing(`ptr`: Long,`tmdbKey`: RustBuffer.ByValue,`language`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_is_authorized(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Byte
@@ -887,7 +887,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_check_password() and 0xFFFF) != 18803) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_fetch_posters() and 0xFFFF) != 13826) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_fetch_missing() and 0xFFFF) != 33898) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_is_authorized() and 0xFFFF) != 30182) {
@@ -914,7 +914,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_request_code() and 0xFFFF) != 62780) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_show_info() and 0xFFFF) != 32170) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_show_info() and 0xFFFF) != 28163) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_sign_in() and 0xFFFF) != 55455) {
@@ -1457,11 +1457,20 @@ public interface CoreInterface {
     suspend fun `checkPassword`(`password`: kotlin.String)
     
     /**
-     * Fetches poster artwork for every title in the catalog TMDB can
-     * answer about. The key is used for this call only and never stored —
-     * Kotlin owns holding it, this crate only ever spends it.
+     * Fills in what the library it was handed does not carry, for every
+     * title TMDB can answer about: the poster artwork a channel index has
+     * no room for, and the descriptions of whatever nobody ran `mediagram
+     * metadata` over before pushing it. One run answers both, because they
+     * come from one request per title and a viewer who asked for the
+     * missing pieces did not ask for half of them.
+     *
+     * `language` is only a fallback: the library itself says what language
+     * it was described in, and that is what the provider is asked in.
+     *
+     * The key is used for this call only and never stored — Kotlin owns
+     * holding it, this crate only ever spends it.
      */
-    suspend fun `fetchPosters`(`tmdbKey`: kotlin.String, `language`: kotlin.String): PosterReport
+    suspend fun `fetchMissing`(`tmdbKey`: kotlin.String, `language`: kotlin.String): FetchReport
     
     /**
      * Whether a login has ever completed. Reads the persisted auth key
@@ -1497,9 +1506,10 @@ public interface CoreInterface {
     suspend fun `requestCode`(`phone`: kotlin.String): kotlin.String
     
     /**
-     * What the index records about a title, or nothing. A course has no
-     * provider entry and a library assembled without a TMDB key has no rows
-     * at all; both are ordinary, so neither is an error.
+     * What is known about a title, or nothing. The index answers first and
+     * what this device fetched fills the gaps — see [`details::show_info`].
+     * A course has no provider entry and a library assembled without a TMDB
+     * key has no rows at all; both are ordinary, so neither is an error.
      */
     fun `showInfo`(`posterKey`: kotlin.String): ShowInfo?
     
@@ -1677,16 +1687,25 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
     
     /**
-     * Fetches poster artwork for every title in the catalog TMDB can
-     * answer about. The key is used for this call only and never stored —
-     * Kotlin owns holding it, this crate only ever spends it.
+     * Fills in what the library it was handed does not carry, for every
+     * title TMDB can answer about: the poster artwork a channel index has
+     * no room for, and the descriptions of whatever nobody ran `mediagram
+     * metadata` over before pushing it. One run answers both, because they
+     * come from one request per title and a viewer who asked for the
+     * missing pieces did not ask for half of them.
+     *
+     * `language` is only a fallback: the library itself says what language
+     * it was described in, and that is what the provider is asked in.
+     *
+     * The key is used for this call only and never stored — Kotlin owns
+     * holding it, this crate only ever spends it.
      */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `fetchPosters`(`tmdbKey`: kotlin.String, `language`: kotlin.String) : PosterReport {
+    override suspend fun `fetchMissing`(`tmdbKey`: kotlin.String, `language`: kotlin.String) : FetchReport {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_fetch_posters(
+            UniffiLib.uniffi_mediagram_core_fn_method_core_fetch_missing(
                 uniffiHandle,
                 
         FfiConverterString.lower(`tmdbKey`),
@@ -1697,7 +1716,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
         // lift function
-        { FfiConverterTypePosterReport.lift(it) },
+        { FfiConverterTypeFetchReport.lift(it) },
         // Error FFI converter
         CoreException.ErrorHandler,
     )
@@ -1875,9 +1894,10 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
     
     /**
-     * What the index records about a title, or nothing. A course has no
-     * provider entry and a library assembled without a TMDB key has no rows
-     * at all; both are ordinary, so neither is an error.
+     * What is known about a title, or nothing. The index answers first and
+     * what this device fetched fills the gaps — see [`details::show_info`].
+     * A course has no provider entry and a library assembled without a TMDB
+     * key has no rows at all; both are ordinary, so neither is an error.
      */override fun `showInfo`(`posterKey`: kotlin.String): ShowInfo? {
             return FfiConverterOptionalTypeShowInfo.lift(
     callWithHandle {
@@ -2036,6 +2056,99 @@ public object FfiConverterTypeCatalogFacts: FfiConverterRustBuffer<CatalogFacts>
 
 
 /**
+ * What one fetch did, for the screen that reports it.
+ *
+ * One run fills both gaps a library can leave — the artwork a channel index
+ * cannot carry, and the descriptions nobody ran `mediagram metadata` for —
+ * so the counts come in pairs, and the last two are what neither half could
+ * do anything about.
+ *
+ * **Every count is a number of titles.** A title is what a shelf shows as
+ * one card: a film, or a whole series or course however many episodes or
+ * lessons it holds. Every episode of a series shares one provider id, one
+ * poster and one description, so a season of eight is one here and not
+ * eight. `no_provider_id` used to be the exception, counting sets while
+ * its neighbours counted titles, which made a 162-lesson course read as
+ * "162 titles have no provider entry" beside "3 posters fetched" — two
+ * numbers of two different things, side by side, with nothing saying so.
+ *
+ * Six counts rather than a verdict, because most of what can happen to a
+ * title is not a failure and a viewer reading "0 fetched" needs to know
+ * which of them it was.
+ */
+data class FetchReport (
+    var `postersFetched`: kotlin.UInt
+    , 
+    var `postersAlreadyHeld`: kotlin.UInt
+    , 
+    var `detailsRecorded`: kotlin.UInt
+    , 
+    /**
+     * Titles something already describes — the index's own row, or one an
+     * earlier run on this device fetched. Left alone for the same reason a
+     * poster already held is not downloaded again.
+     */
+    var `detailsAlreadyKnown`: kotlin.UInt
+    , 
+    /**
+     * Titles the provider numbers nothing of, so neither half could be
+     * asked. A course is one of these, not a failure.
+     */
+    var `noProviderId`: kotlin.UInt
+    , 
+    /**
+     * Titles this run could not finish: the provider would not describe
+     * them, or their artwork would not download. One title that lost both
+     * is counted once, because these are titles.
+     */
+    var `failed`: kotlin.UInt
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFetchReport: FfiConverterRustBuffer<FetchReport> {
+    override fun read(buf: ByteBuffer): FetchReport {
+        return FetchReport(
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FetchReport) = (
+            FfiConverterUInt.allocationSize(value.`postersFetched`) +
+            FfiConverterUInt.allocationSize(value.`postersAlreadyHeld`) +
+            FfiConverterUInt.allocationSize(value.`detailsRecorded`) +
+            FfiConverterUInt.allocationSize(value.`detailsAlreadyKnown`) +
+            FfiConverterUInt.allocationSize(value.`noProviderId`) +
+            FfiConverterUInt.allocationSize(value.`failed`)
+    )
+
+    override fun write(value: FetchReport, buf: ByteBuffer) {
+            FfiConverterUInt.write(value.`postersFetched`, buf)
+            FfiConverterUInt.write(value.`postersAlreadyHeld`, buf)
+            FfiConverterUInt.write(value.`detailsRecorded`, buf)
+            FfiConverterUInt.write(value.`detailsAlreadyKnown`, buf)
+            FfiConverterUInt.write(value.`noProviderId`, buf)
+            FfiConverterUInt.write(value.`failed`, buf)
+    }
+}
+
+
+
+/**
  * One library the signed-in account could choose, as the caller sees it.
  *
  * A title to render and a handle to send back, and nothing else. The handle
@@ -2076,61 +2189,6 @@ public object FfiConverterTypeLibraryChoice: FfiConverterRustBuffer<LibraryChoic
     override fun write(value: LibraryChoice, buf: ByteBuffer) {
             FfiConverterString.write(value.`handle`, buf)
             FfiConverterString.write(value.`title`, buf)
-    }
-}
-
-
-
-/**
- * What one artwork fetch did, for the screen that reports it.
- *
- * A title with no provider id is not a failure, and artwork already on
- * disk is not fetched again — the four counts keep those apart so a viewer
- * reads what actually happened rather than a single pass/fail verdict.
- */
-data class PosterReport (
-    var `fetched`: kotlin.UInt
-    , 
-    var `alreadyHeld`: kotlin.UInt
-    , 
-    var `noProviderId`: kotlin.UInt
-    , 
-    var `failed`: kotlin.UInt
-    
-){
-    
-
-    
-
-    
-    companion object
-}
-
-/**
- * @suppress
- */
-public object FfiConverterTypePosterReport: FfiConverterRustBuffer<PosterReport> {
-    override fun read(buf: ByteBuffer): PosterReport {
-        return PosterReport(
-            FfiConverterUInt.read(buf),
-            FfiConverterUInt.read(buf),
-            FfiConverterUInt.read(buf),
-            FfiConverterUInt.read(buf),
-        )
-    }
-
-    override fun allocationSize(value: PosterReport) = (
-            FfiConverterUInt.allocationSize(value.`fetched`) +
-            FfiConverterUInt.allocationSize(value.`alreadyHeld`) +
-            FfiConverterUInt.allocationSize(value.`noProviderId`) +
-            FfiConverterUInt.allocationSize(value.`failed`)
-    )
-
-    override fun write(value: PosterReport, buf: ByteBuffer) {
-            FfiConverterUInt.write(value.`fetched`, buf)
-            FfiConverterUInt.write(value.`alreadyHeld`, buf)
-            FfiConverterUInt.write(value.`noProviderId`, buf)
-            FfiConverterUInt.write(value.`failed`, buf)
     }
 }
 

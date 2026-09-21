@@ -4,19 +4,20 @@
 //! decisions worth pinning are readable from outside: [`plan_fetch`] settles
 //! what a run asks for, in which language, and where what comes back goes,
 //! before the key is spent; [`verify_then_fetch`] puts the key check ahead
-//! of [`super::fetch::fetch_into`] and the disk cache around it, in that
-//! order and for the reason its own comment gives. [`fetch_posters`]
-//! composes them around a real TMDB client and decides nothing else.
+//! of [`super::fetch::fetch_into`] and the disk cache around it, for the
+//! reason its own comment gives.
 
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use mlib_spec::Kind;
 use rusqlite::{Connection, OpenFlags};
 
+use mediagram_tmdb::posters::kind_key;
 use mediagram_tmdb::tmdb_client::{DiskCachedApi, Localized, TmdbApi, TmdbClient};
 
 use crate::catalog::PlayableSet;
-use crate::dto::PosterReport;
+use crate::dto::FetchReport;
 
 use super::catalog;
 use super::fetch::{fetch_into, language_of};
@@ -32,9 +33,9 @@ pub struct FetchPlan {
     pub artwork_dir: PathBuf,
     pub titles: Vec<(Kind, u64)>,
     pub without_id: u32,
-    /// The language to ask in — see [`language_of`]. Settled here, from the
-    /// same snapshot of the index the titles come from, because it is part
-    /// of what a run asks for and not a detail of how it asks.
+    /// The language to ask in — see [`language_of`]. Read from the same
+    /// snapshot of the index the titles come from, because it is part of
+    /// what a run asks for and not a detail of how it asks.
     pub language: String,
 }
 
@@ -52,10 +53,8 @@ pub struct FetchPlan {
 /// The posters a fetch writes and the TMDB disk cache it reads through go
 /// to `catalog::artwork_dir`: beside the version directories, not inside
 /// one, so no refresh reaches them — and inside `catalog/`, so forgetting
-/// the library forgets them too.
-///
-/// `fallback` is the caller's own locale, used only for a library that has
-/// never been described in any language.
+/// the library forgets them too. `fallback` is the caller's own locale,
+/// used only for a library nothing has described in any language.
 pub fn plan_fetch(core: &Core, fallback: &str) -> Result<FetchPlan, CoreError> {
     let dir = std::fs::canonicalize(catalog::current_dir(core))
         .map_err(|_| CoreError::NotFound("no catalog is loaded yet".into()))?;
@@ -70,17 +69,19 @@ pub fn plan_fetch(core: &Core, fallback: &str) -> Result<FetchPlan, CoreError> {
     Ok(FetchPlan { artwork_dir: catalog::artwork_dir(core), titles, without_id, language })
 }
 
-/// Fetches artwork for every title the provider numbers.
-pub(super) async fn fetch_posters(
+/// Fills both gaps a library can leave, for every title the provider
+/// numbers: the artwork the index cannot carry, and the descriptions
+/// nobody fetched before pushing it.
+pub(super) async fn fetch_missing(
     core: &Core,
     tmdb_key: String,
     language: String,
-) -> Result<PosterReport, CoreError> {
+) -> Result<FetchReport, CoreError> {
     let plan = plan_fetch(core, &language)?;
     if plan.titles.is_empty() {
         // Nothing the provider could answer about — no reason to spend a
         // request validating a key that will never be used.
-        return Ok(PosterReport { no_provider_id: plan.without_id, ..PosterReport::default() });
+        return Ok(FetchReport { no_provider_id: plan.without_id, ..FetchReport::default() });
     }
 
     // Built once, and handed on: `TmdbClient` takes this same instance
@@ -89,15 +90,8 @@ pub(super) async fn fetch_posters(
     // own call to `install_provider` to account for.
     let client = http::client()?;
     let api = TmdbClient::new(client.clone(), tmdb_key);
-    verify_then_fetch(
-        api,
-        &client,
-        &plan.artwork_dir,
-        &plan.language,
-        &plan.titles,
-        plan.without_id,
-    )
-    .await
+    let FetchPlan { artwork_dir, titles, without_id, language } = plan;
+    verify_then_fetch(core, api, &client, &artwork_dir, &language, &titles, without_id).await
 }
 
 /// Validates the key against the provider, then resolves and downloads with
@@ -112,35 +106,52 @@ pub(super) async fn fetch_posters(
 /// that same cache. The run would report a library that is entirely
 /// "already held" and a key that is entirely fine.
 ///
-/// The cache wraps `api` afterwards, for the resolve-and-download half,
-/// where being answered twice out of one request is the whole point of it.
+/// The cache wraps `api` afterwards, for the walk that asks about every
+/// title, where being answered twice out of one request is the whole point
+/// of it — once for a poster path and once for a description.
 pub async fn verify_then_fetch<A: TmdbApi>(
+    core: &Core,
     api: A,
     http: &reqwest::Client,
     artwork_dir: &Path,
     language: &str,
     titles: &[(Kind, u64)],
     without_id: u32,
-) -> Result<PosterReport, CoreError> {
+) -> Result<FetchReport, CoreError> {
     verify_key(&api).await?;
     let cached = Localized::new(DiskCachedApi::new(api, artwork_dir), language);
-    Ok(fetch_into(&cached, http, artwork_dir, titles, without_id).await)
+    Ok(fetch_into(core, &cached, http, artwork_dir, language, titles, without_id).await)
 }
 
 /// Splits the catalog into what the provider can be asked about and what
 /// cannot be asked at all — a course has no provider id, and is counted
 /// rather than looked up. `pub` because the count it returns is part of what
 /// a fetch reports, and a caller needs this classification, not a copy of it.
+///
+/// Both halves are titles, never sets. A title is what a shelf shows as one
+/// card: every episode of a series shares one provider id, every lesson is
+/// shelved under its course. Counted per set — which is how the index holds
+/// them — one half of this answer meant something different from the other,
+/// and a 162-lesson course read as "162 titles have no provider entry"
+/// beside "3 posters fetched". A set no collection names stands alone.
 pub fn split_titles(sets: &[PlayableSet]) -> (Vec<(Kind, u64)>, u32) {
     let mut titles = Vec::new();
-    let mut without_id = 0u32;
+    let mut seen: HashSet<String> = HashSet::new();
+    let mut unaskable: HashSet<(&str, &str)> = HashSet::new();
     for set in sets {
         match (kind_of(&set.kind), set.tmdb) {
-            (Some(kind), Some(id)) if id > 0 => titles.push((kind, id as u64)),
-            _ => without_id += 1,
+            (Some(kind), Some(id)) if id > 0 => {
+                if seen.insert(format!("tmdb-{}-{id}", kind_key(kind))) {
+                    titles.push((kind, id as u64));
+                }
+            }
+            _ => {
+                let show = set.show.as_deref().map(str::trim).filter(|show| !show.is_empty());
+                unaskable.insert((set.kind.as_str(), show.unwrap_or(&set.set_id)));
+            }
         }
     }
-    (titles, without_id)
+    (titles, unaskable.len() as u32)
 }
 
 /// The `kind` column spells `Kind` exactly as its own serde does — see

@@ -125,15 +125,39 @@ pub struct CatalogFacts {
     pub published_at: Option<i64>,
 }
 
-/// What one artwork fetch did, for the screen that reports it.
+/// What one fetch did, for the screen that reports it.
 ///
-/// A title with no provider id is not a failure, and artwork already on
-/// disk is not fetched again — the four counts keep those apart so a viewer
-/// reads what actually happened rather than a single pass/fail verdict.
+/// One run fills both gaps a library can leave — the artwork a channel index
+/// cannot carry, and the descriptions nobody ran `mediagram metadata` for —
+/// so the counts come in pairs, and the last two are what neither half could
+/// do anything about.
+///
+/// **Every count is a number of titles.** A title is what a shelf shows as
+/// one card: a film, or a whole series or course however many episodes or
+/// lessons it holds. Every episode of a series shares one provider id, one
+/// poster and one description, so a season of eight is one here and not
+/// eight. `no_provider_id` used to be the exception, counting sets while
+/// its neighbours counted titles, which made a 162-lesson course read as
+/// "162 titles have no provider entry" beside "3 posters fetched" — two
+/// numbers of two different things, side by side, with nothing saying so.
+///
+/// Six counts rather than a verdict, because most of what can happen to a
+/// title is not a failure and a viewer reading "0 fetched" needs to know
+/// which of them it was.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, uniffi::Record)]
-pub struct PosterReport {
-    pub fetched: u32,
-    pub already_held: u32,
+pub struct FetchReport {
+    pub posters_fetched: u32,
+    pub posters_already_held: u32,
+    pub details_recorded: u32,
+    /// Titles something already describes — the index's own row, or one an
+    /// earlier run on this device fetched. Left alone for the same reason a
+    /// poster already held is not downloaded again.
+    pub details_already_known: u32,
+    /// Titles the provider numbers nothing of, so neither half could be
+    /// asked. A course is one of these, not a failure.
     pub no_provider_id: u32,
+    /// Titles this run could not finish: the provider would not describe
+    /// them, or their artwork would not download. One title that lost both
+    /// is counted once, because these are titles.
     pub failed: u32,
 }
