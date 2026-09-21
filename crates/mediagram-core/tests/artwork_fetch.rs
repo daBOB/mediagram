@@ -4,7 +4,8 @@
 
 use std::path::Path;
 
-use mediagram_core::api::artwork::{fetch_into, split_titles};
+use mediagram_core::api::CoreError;
+use mediagram_core::api::artwork::{fetch_into, split_titles, verify_then_fetch};
 use mediagram_core::catalog::{PlayableSet, list_playable};
 use mediagram_core::dto::PosterReport;
 use rusqlite::Connection;
@@ -19,6 +20,18 @@ struct StubApi {
 impl TmdbApi for StubApi {
     async fn get_json(&self, _path: &str, _query: &[(&str, String)]) -> anyhow::Result<serde_json::Value> {
         Ok(serde_json::json!({ "id": 1, "poster_path": self.poster_path }))
+    }
+}
+
+/// Answers every request the way TMDB answers a credential it will not
+/// accept, in the wording `TmdbClient::get_json` builds for one.
+struct RejectingApi;
+
+impl TmdbApi for RejectingApi {
+    async fn get_json(&self, path: &str, _query: &[(&str, String)]) -> anyhow::Result<serde_json::Value> {
+        anyhow::bail!(
+            r#"tmdb request to {path} failed with 401 Unauthorized: {{"status_code":7,"status_message":"Invalid API key."}}"#
+        )
     }
 }
 
@@ -84,6 +97,46 @@ fn offline_client() -> reqwest::Client {
         .resolve("image.tmdb.org", "127.0.0.1:1".parse().unwrap())
         .build()
         .unwrap()
+}
+
+/// A key the provider rejects stays rejected however warm the disk cache
+/// is.
+///
+/// The cache answers a repeated resolve, which is what it is for. It must
+/// never answer for the credential: the cache keys on the endpoint and the
+/// query, and the key appears in neither, so a rotated or mistyped key
+/// asked through it would be validated against a file the *previous* key
+/// paid for. The run that followed would then serve every title out of that
+/// same cache and report a library entirely "already held" — a screen full
+/// of zeroes a viewer would retry forever, which is the one outcome the
+/// check exists to prevent.
+#[tokio::test]
+async fn a_rejected_key_is_still_rejected_after_a_successful_run() {
+    let dir = tempfile::tempdir().unwrap();
+    catalog_with_kinds(dir.path(), &[("movie", Some(11225))]);
+    let artwork = dir.path().join("artwork");
+    let titles = [(mlib_spec::Kind::Movie, 11225u64)];
+    let _ = rustls::crypto::ring::default_provider().install_default();
+
+    // A first run with a key the provider accepts, which is what leaves a
+    // warm cache behind.
+    verify_then_fetch(
+        StubApi { poster_path: Some("/a.jpg".into()) },
+        &offline_client(),
+        &artwork,
+        "en-US",
+        &titles,
+        0,
+    )
+    .await
+    .expect("a key the provider accepts fetches");
+
+    // The same device afterwards, with a key the provider will not take.
+    let err = verify_then_fetch(RejectingApi, &offline_client(), &artwork, "en-US", &titles, 0)
+        .await
+        .expect_err("a rejected key must not be verified out of the cache");
+
+    assert!(matches!(err, CoreError::NotAuthorized(_)), "reported as {err:?}");
 }
 
 #[tokio::test]

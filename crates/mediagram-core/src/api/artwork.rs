@@ -1,11 +1,12 @@
 //! Fetching poster artwork for a catalog a channel index cannot carry.
 //!
-//! Split in two so the resolve-and-download half can be driven by a stub in
-//! tests: [`fetch_into`] takes an already-classified list of titles and an
-//! `impl TmdbApi`, and never decides which client to use. [`fetch_posters`]
-//! is the seam Kotlin calls — it resolves the catalog directory once, before
-//! the first request, validates the key, builds the real TMDB client, and
-//! hands both to `fetch_into`.
+//! Split so each half can be driven by a stub in tests: [`fetch_into`] takes
+//! an already-classified list of titles and an `impl TmdbApi`, and never
+//! decides which client to use; [`verify_then_fetch`] adds the key check
+//! ahead of it and the disk cache around it, in that order and for the
+//! reason its own comment gives. [`fetch_posters`] is the seam Kotlin calls
+//! — it resolves the catalog directory once, before the first request,
+//! builds the real TMDB client, and hands it over.
 
 use std::path::Path;
 
@@ -13,7 +14,7 @@ use mlib_spec::Kind;
 use rusqlite::{Connection, OpenFlags};
 
 use mediagram_tmdb::posters::{already_held, download_into, resolve_posters};
-use mediagram_tmdb::tmdb_client::{TmdbApi, TmdbClient};
+use mediagram_tmdb::tmdb_client::{DiskCachedApi, Localized, TmdbApi, TmdbClient};
 
 use crate::catalog::PlayableSet;
 use crate::dto::PosterReport;
@@ -83,14 +84,40 @@ pub(super) async fn fetch_posters(
     }
 
     let posters_dir = catalog::artwork_dir(core);
-    // Built once, before either use: `TmdbClient` takes this same instance
+    // Built once, and handed on: `TmdbClient` takes this same instance
     // rather than building its own (see `mediagram_tmdb::tmdb_client`'s doc
     // comment), so there is one client here, not two, and only `client()`'s
     // own call to `install_provider` to account for.
     let client = http::client()?;
-    let api = TmdbClient::with_cache(client.clone(), &tmdb_key, &posters_dir, &language);
+    let api = TmdbClient::new(client.clone(), tmdb_key);
+    verify_then_fetch(api, &client, &posters_dir, &language, &titles, without_id).await
+}
+
+/// Validates the key against the provider, then resolves and downloads with
+/// it.
+///
+/// `api` is the provider itself, and the validation is asked of it directly.
+/// Asked instead through the disk cache built below, a warm cache would
+/// answer `/authentication` out of a file some earlier run wrote — the cache
+/// keys on the endpoint and the query, and the key appears in neither — so a
+/// rotated or mistyped key would pass validation without ever having been
+/// presented, and every already-resolved title would then be served from
+/// that same cache. The run would report a library that is entirely
+/// "already held" and a key that is entirely fine.
+///
+/// The cache wraps `api` afterwards, for the resolve-and-download half,
+/// where being answered twice out of one request is the whole point of it.
+pub async fn verify_then_fetch<A: TmdbApi>(
+    api: A,
+    http: &reqwest::Client,
+    artwork_dir: &Path,
+    language: &str,
+    titles: &[(Kind, u64)],
+    without_id: u32,
+) -> Result<PosterReport, CoreError> {
     verify_key(&api).await?;
-    Ok(fetch_into(&api, &client, &posters_dir, &titles, without_id).await)
+    let cached = Localized::new(DiskCachedApi::new(api, artwork_dir), language);
+    Ok(fetch_into(&cached, http, artwork_dir, titles, without_id).await)
 }
 
 /// Splits the catalog into what the provider can be asked about and what
@@ -123,10 +150,9 @@ fn kind_of(kind: &str) -> Option<Kind> {
 
 /// Validates the key against TMDB before any resolve or download, so a
 /// wrong key is reported once rather than discovered as a report full of
-/// zeroes a viewer might retry forever. Asked through the same client
-/// `fetch_into` goes on to use, rather than a second one built just for
-/// this — one fewer client this module has to keep a crypto provider ahead
-/// of.
+/// zeroes a viewer might retry forever. Reaches TMDB every time it is
+/// asked — see [`verify_then_fetch`] for what it is deliberately not asked
+/// through.
 async fn verify_key(api: &impl TmdbApi) -> Result<(), CoreError> {
     match api.get_json("/authentication", &[]).await {
         Ok(_) => Ok(()),

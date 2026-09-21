@@ -51,9 +51,9 @@ fn a_transport_failure_is_not_mistaken_for_a_rejected_key() {
 /// `http::client()` builds, which installs the provider itself — so this
 /// now proves the injected-client path construction succeeds end to end,
 /// with no separate `install_provider` call of this test's own needed
-/// first. No network is reached: `with_cache` only constructs.
+/// first. No network is reached: `new` only constructs.
 #[test]
 fn the_real_tmdb_client_builds_from_this_crates_own_client() {
     let client = http::client().expect("this crate's own client builds");
-    let _ = TmdbClient::with_cache(client, "fake-key", Path::new("/tmp"), "en-US");
+    let _ = TmdbClient::new(client, "fake-key");
 }
