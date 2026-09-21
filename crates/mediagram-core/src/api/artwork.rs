@@ -1,51 +1,26 @@
-//! Fetching poster artwork for a catalog a channel index cannot carry.
+//! Deciding what one fetch run will ask a catalog's provider for.
 //!
 //! Split so each part can be driven by a stub in tests, and so the two
 //! decisions worth pinning are readable from outside: [`plan_fetch`] settles
-//! what a run asks for and where its artwork goes, before the key is spent,
-//! and [`verify_then_fetch`] puts the key check ahead of [`fetch_into`] and
-//! the disk cache around it, in that order and for the reason its own
-//! comment gives. [`fetch_posters`] composes them around a real TMDB client
-//! and decides nothing else.
+//! what a run asks for, in which language, and where what comes back goes,
+//! before the key is spent; [`verify_then_fetch`] puts the key check ahead
+//! of [`super::fetch::fetch_into`] and the disk cache around it, in that
+//! order and for the reason its own comment gives. [`fetch_posters`]
+//! composes them around a real TMDB client and decides nothing else.
 
 use std::path::{Path, PathBuf};
 
 use mlib_spec::Kind;
 use rusqlite::{Connection, OpenFlags};
 
-use mediagram_tmdb::posters::{already_held, download_into, resolve_posters};
 use mediagram_tmdb::tmdb_client::{DiskCachedApi, Localized, TmdbApi, TmdbClient};
 
 use crate::catalog::PlayableSet;
 use crate::dto::PosterReport;
 
 use super::catalog;
+use super::fetch::{fetch_into, language_of};
 use super::{Core, CoreError, http};
-
-/// Everything a fetch does except constructing the client, so a test can
-/// drive a stub in place of a real TMDB key.
-///
-/// `titles` already excludes anything without a provider id — `without_id`
-/// is that count, carried through rather than recomputed, so this function
-/// never has to know what a course is to report on one correctly.
-pub async fn fetch_into(
-    api: &impl TmdbApi,
-    http: &reqwest::Client,
-    posters_dir: &Path,
-    titles: &[(Kind, u64)],
-    without_id: u32,
-) -> PosterReport {
-    let refs = resolve_posters(api, titles).await;
-    let held = already_held(&refs, posters_dir) as u32;
-    // A hard failure here (the posters directory could not even be created)
-    // leaves every resolved ref undownloaded rather than panicking — the
-    // catalog is the product, the artwork a convenience.
-    let written = download_into(http, &refs, posters_dir).await.unwrap_or_default();
-    let fetched = (written.len() as u32).saturating_sub(held);
-    let failed = (refs.len() - written.len()) as u32;
-
-    PosterReport { fetched, already_held: held, no_provider_id: without_id, failed }
-}
 
 /// What a fetch will ask the provider for, and where what comes back is
 /// kept.
@@ -57,6 +32,10 @@ pub struct FetchPlan {
     pub artwork_dir: PathBuf,
     pub titles: Vec<(Kind, u64)>,
     pub without_id: u32,
+    /// The language to ask in — see [`language_of`]. Settled here, from the
+    /// same snapshot of the index the titles come from, because it is part
+    /// of what a run asks for and not a detail of how it asks.
+    pub language: String,
 }
 
 /// Reads the installed catalog and works out what a fetch would do with it.
@@ -74,17 +53,21 @@ pub struct FetchPlan {
 /// to `catalog::artwork_dir`: beside the version directories, not inside
 /// one, so no refresh reaches them — and inside `catalog/`, so forgetting
 /// the library forgets them too.
-pub fn plan_fetch(core: &Core) -> Result<FetchPlan, CoreError> {
+///
+/// `fallback` is the caller's own locale, used only for a library that has
+/// never been described in any language.
+pub fn plan_fetch(core: &Core, fallback: &str) -> Result<FetchPlan, CoreError> {
     let dir = std::fs::canonicalize(catalog::current_dir(core))
         .map_err(|_| CoreError::NotFound("no catalog is loaded yet".into()))?;
     let conn = Connection::open_with_flags(dir.join("library.db"), OpenFlags::SQLITE_OPEN_READ_ONLY)
         .map_err(|_| CoreError::Io("opening the catalog".into()))?;
     let sets = crate::catalog::list_playable(&conn)
         .map_err(|_| CoreError::Io("reading the catalog".into()))?;
+    let language = language_of(&conn, fallback);
     drop(conn);
 
     let (titles, without_id) = split_titles(&sets);
-    Ok(FetchPlan { artwork_dir: catalog::artwork_dir(core), titles, without_id })
+    Ok(FetchPlan { artwork_dir: catalog::artwork_dir(core), titles, without_id, language })
 }
 
 /// Fetches artwork for every title the provider numbers.
@@ -93,7 +76,7 @@ pub(super) async fn fetch_posters(
     tmdb_key: String,
     language: String,
 ) -> Result<PosterReport, CoreError> {
-    let plan = plan_fetch(core)?;
+    let plan = plan_fetch(core, &language)?;
     if plan.titles.is_empty() {
         // Nothing the provider could answer about — no reason to spend a
         // request validating a key that will never be used.
@@ -106,8 +89,15 @@ pub(super) async fn fetch_posters(
     // own call to `install_provider` to account for.
     let client = http::client()?;
     let api = TmdbClient::new(client.clone(), tmdb_key);
-    verify_then_fetch(api, &client, &plan.artwork_dir, &language, &plan.titles, plan.without_id)
-        .await
+    verify_then_fetch(
+        api,
+        &client,
+        &plan.artwork_dir,
+        &plan.language,
+        &plan.titles,
+        plan.without_id,
+    )
+    .await
 }
 
 /// Validates the key against the provider, then resolves and downloads with

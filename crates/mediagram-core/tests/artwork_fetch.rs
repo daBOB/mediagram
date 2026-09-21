@@ -4,7 +4,8 @@
 
 use std::path::Path;
 
-use mediagram_core::api::artwork::{fetch_into, plan_fetch, verify_then_fetch};
+use mediagram_core::api::artwork::{plan_fetch, verify_then_fetch};
+use mediagram_core::api::fetch::fetch_into;
 use mediagram_core::api::{Core, CoreError};
 use mediagram_core::dto::PosterReport;
 use rusqlite::Connection;
@@ -65,7 +66,7 @@ fn core_at(dir: &Path) -> std::sync::Arc<Core> {
 /// path is a second opinion about where artwork lives, and the first time
 /// these two disagreed the posters were being deleted on every refresh.
 fn write_existing_poster(dir: &Path, key: &str) {
-    let posters = plan_fetch(&core_at(dir)).unwrap().artwork_dir;
+    let posters = plan_fetch(&core_at(dir), "en-US").unwrap().artwork_dir;
     std::fs::create_dir_all(&posters).unwrap();
     std::fs::write(posters.join(format!("{key}.jpg")), b"stub").unwrap();
 }
@@ -83,7 +84,7 @@ async fn fetch_with(dir: &Path, api: StubApi) -> PosterReport {
     // is not an error — whichever provider got there first is fine.
     let _ = rustls::crypto::ring::default_provider().install_default();
 
-    let plan = plan_fetch(&core_at(dir)).expect("the seeded catalog is readable");
+    let plan = plan_fetch(&core_at(dir), "en-US").expect("the seeded catalog is readable");
     fetch_into(&api, &offline_client(), &plan.artwork_dir, &plan.titles, plan.without_id).await
 }
 
@@ -115,7 +116,7 @@ fn offline_client() -> reqwest::Client {
 async fn a_rejected_key_is_still_rejected_after_a_successful_run() {
     let dir = tempfile::tempdir().unwrap();
     catalog_with_kinds(dir.path(), &[("movie", Some(11225))]);
-    let plan = plan_fetch(&core_at(dir.path())).unwrap();
+    let plan = plan_fetch(&core_at(dir.path()), "en-US").unwrap();
     let (artwork, titles) = (plan.artwork_dir, plan.titles);
     let _ = rustls::crypto::ring::default_provider().install_default();
 

@@ -15,6 +15,7 @@ mod catalog;
 mod channel;
 mod channel_index;
 pub mod details;
+pub mod fetch;
 mod http;
 mod identity;
 mod library;

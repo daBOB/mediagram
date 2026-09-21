@@ -34,7 +34,7 @@ fn a_fetched_poster_outlives_the_refreshes_that_follow_it() {
     let core = Core::new(data.path().display().to_string(), 1, "h".into());
     install_version(&core, "v-1");
 
-    let plan = plan_fetch(&core).expect("the installed catalog is readable");
+    let plan = plan_fetch(&core, "en-US").expect("the installed catalog is readable");
     std::fs::create_dir_all(&plan.artwork_dir).unwrap();
     let poster = plan.artwork_dir.join("tmdb-movie-550.jpg");
     std::fs::write(&poster, b"fake-poster-bytes").unwrap();
