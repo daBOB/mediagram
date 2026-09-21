@@ -33,7 +33,7 @@ internal fun fetchSentence(
     )
     val leftovers = listOfNotNull(
         phrase(noProviderId, "title has no provider entry", "titles have no provider entry"),
-        phrase(failed, "could not be read"),
+        phrase(failed, "could not be fetched"),
     )
 
     val sentences = mutableListOf<String>()

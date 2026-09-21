@@ -76,7 +76,7 @@ class FetchReportSentenceTest {
             failed = 2,
         )
 
-        assertTrue(line.contains("2 could not be read"))
+        assertTrue(line.contains("2 could not be fetched"))
     }
 
     /** Half a run is half a sentence: a count of zero is left out rather than printed. */
