@@ -4,9 +4,8 @@
 
 use std::path::Path;
 
-use mediagram_core::api::CoreError;
-use mediagram_core::api::artwork::{fetch_into, split_titles, verify_then_fetch};
-use mediagram_core::catalog::{PlayableSet, list_playable};
+use mediagram_core::api::artwork::{fetch_into, plan_fetch, verify_then_fetch};
+use mediagram_core::api::{Core, CoreError};
 use mediagram_core::dto::PosterReport;
 use rusqlite::Connection;
 
@@ -56,19 +55,25 @@ fn catalog_with_kinds(dir: &Path, kinds: &[(&str, Option<i64>)]) {
     }
 }
 
-/// Drops a poster already on disk at the key a title would resolve to, so a
-/// test can exercise "already held" without a network download.
+fn core_at(dir: &Path) -> std::sync::Arc<Core> {
+    Core::new(dir.display().to_string(), 1, "test-hash".into())
+}
+
+/// Drops a poster already on disk where a fetch would write one, so a test
+/// can exercise "already held" without a network download. The directory
+/// comes from [`plan_fetch`] rather than being spelled out here: a hand-built
+/// path is a second opinion about where artwork lives, and the first time
+/// these two disagreed the posters were being deleted on every refresh.
 fn write_existing_poster(dir: &Path, key: &str) {
-    let posters = dir.join("catalog").join("current").join("posters");
+    let posters = plan_fetch(&core_at(dir)).unwrap().artwork_dir;
     std::fs::create_dir_all(&posters).unwrap();
     std::fs::write(posters.join(format!("{key}.jpg")), b"stub").unwrap();
 }
 
-/// Reads the catalog `fetch_with` just seeded, splits it into what
-/// `fetch_into` wants using the same [`split_titles`] production code
-/// drives, and calls `fetch_into` directly — the internal half, never the
-/// public `fetch_posters`, which constructs a real client from a key this
-/// test does not have.
+/// Plans a fetch over the catalog the test just seeded, then calls
+/// `fetch_into` directly — the internal half, never the public
+/// `fetch_posters`, which constructs a real client from a key this test does
+/// not have.
 async fn fetch_with(dir: &Path, api: StubApi) -> PosterReport {
     // `reqwest::Client::new()` panics with no crypto provider installed:
     // this crate builds with `rustls-no-provider`, so nothing pulls one in
@@ -78,12 +83,8 @@ async fn fetch_with(dir: &Path, api: StubApi) -> PosterReport {
     // is not an error — whichever provider got there first is fine.
     let _ = rustls::crypto::ring::default_provider().install_default();
 
-    let conn = Connection::open(dir.join("catalog").join("current").join("library.db")).unwrap();
-    let sets: Vec<PlayableSet> = list_playable(&conn).unwrap();
-    let (titles, without_id) = split_titles(&sets);
-
-    let posters_dir = dir.join("catalog").join("current").join("posters");
-    fetch_into(&api, &offline_client(), &posters_dir, &titles, without_id).await
+    let plan = plan_fetch(&core_at(dir)).expect("the seeded catalog is readable");
+    fetch_into(&api, &offline_client(), &plan.artwork_dir, &plan.titles, plan.without_id).await
 }
 
 /// A client that can never reach the real network: TMDB itself is stubbed,
@@ -114,8 +115,8 @@ fn offline_client() -> reqwest::Client {
 async fn a_rejected_key_is_still_rejected_after_a_successful_run() {
     let dir = tempfile::tempdir().unwrap();
     catalog_with_kinds(dir.path(), &[("movie", Some(11225))]);
-    let artwork = dir.path().join("artwork");
-    let titles = [(mlib_spec::Kind::Movie, 11225u64)];
+    let plan = plan_fetch(&core_at(dir.path())).unwrap();
+    let (artwork, titles) = (plan.artwork_dir, plan.titles);
     let _ = rustls::crypto::ring::default_provider().install_default();
 
     // A first run with a key the provider accepts, which is what leaves a

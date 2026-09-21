@@ -1,14 +1,14 @@
 //! Fetching poster artwork for a catalog a channel index cannot carry.
 //!
-//! Split so each half can be driven by a stub in tests: [`fetch_into`] takes
-//! an already-classified list of titles and an `impl TmdbApi`, and never
-//! decides which client to use; [`verify_then_fetch`] adds the key check
-//! ahead of it and the disk cache around it, in that order and for the
-//! reason its own comment gives. [`fetch_posters`] is the seam Kotlin calls
-//! — it resolves the catalog directory once, before the first request,
-//! builds the real TMDB client, and hands it over.
+//! Split so each part can be driven by a stub in tests, and so the two
+//! decisions worth pinning are readable from outside: [`plan_fetch`] settles
+//! what a run asks for and where its artwork goes, before the key is spent,
+//! and [`verify_then_fetch`] puts the key check ahead of [`fetch_into`] and
+//! the disk cache around it, in that order and for the reason its own
+//! comment gives. [`fetch_posters`] composes them around a real TMDB client
+//! and decides nothing else.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use mlib_spec::Kind;
 use rusqlite::{Connection, OpenFlags};
@@ -47,7 +47,19 @@ pub async fn fetch_into(
     PosterReport { fetched, already_held: held, no_provider_id: without_id, failed }
 }
 
-/// Fetches artwork for every title the provider numbers.
+/// What a fetch will ask the provider for, and where what comes back is
+/// kept.
+///
+/// The directory is part of this answer rather than chosen where the writing
+/// happens, so that it is a value a test can read. Where artwork lands is
+/// the whole of a defect this crate has shipped once already.
+pub struct FetchPlan {
+    pub artwork_dir: PathBuf,
+    pub titles: Vec<(Kind, u64)>,
+    pub without_id: u32,
+}
+
+/// Reads the installed catalog and works out what a fetch would do with it.
 ///
 /// `current` is a symlink a refresh swaps atomically, then deletes the
 /// directory it used to point at. `std::fs::canonicalize` resolves it to
@@ -58,16 +70,10 @@ pub async fn fetch_into(
 /// database that was current when it started, whole, rather than reading
 /// out of a directory a cleanup pass deletes out from under it.
 ///
-/// The posters this call writes and the TMDB disk cache it reads through
-/// go to `catalog::artwork_dir` instead — a directory no refresh ever
-/// touches. `install_staged` clears a version directory wholesale on every
-/// refresh, and a refresh runs on every catalog load, so artwork kept
-/// inside one would be deleted before it was ever seen.
-pub(super) async fn fetch_posters(
-    core: &Core,
-    tmdb_key: String,
-    language: String,
-) -> Result<PosterReport, CoreError> {
+/// The posters a fetch writes and the TMDB disk cache it reads through go
+/// to `catalog::artwork_dir`, outside the catalogue tree, where no refresh
+/// reaches — that function's own comment says why.
+pub fn plan_fetch(core: &Core) -> Result<FetchPlan, CoreError> {
     let dir = std::fs::canonicalize(catalog::current_dir(core))
         .map_err(|_| CoreError::NotFound("no catalog is loaded yet".into()))?;
     let conn = Connection::open_with_flags(dir.join("library.db"), OpenFlags::SQLITE_OPEN_READ_ONLY)
@@ -77,20 +83,30 @@ pub(super) async fn fetch_posters(
     drop(conn);
 
     let (titles, without_id) = split_titles(&sets);
-    if titles.is_empty() {
+    Ok(FetchPlan { artwork_dir: catalog::artwork_dir(core), titles, without_id })
+}
+
+/// Fetches artwork for every title the provider numbers.
+pub(super) async fn fetch_posters(
+    core: &Core,
+    tmdb_key: String,
+    language: String,
+) -> Result<PosterReport, CoreError> {
+    let plan = plan_fetch(core)?;
+    if plan.titles.is_empty() {
         // Nothing the provider could answer about — no reason to spend a
         // request validating a key that will never be used.
-        return Ok(PosterReport { no_provider_id: without_id, ..PosterReport::default() });
+        return Ok(PosterReport { no_provider_id: plan.without_id, ..PosterReport::default() });
     }
 
-    let posters_dir = catalog::artwork_dir(core);
     // Built once, and handed on: `TmdbClient` takes this same instance
     // rather than building its own (see `mediagram_tmdb::tmdb_client`'s doc
     // comment), so there is one client here, not two, and only `client()`'s
     // own call to `install_provider` to account for.
     let client = http::client()?;
     let api = TmdbClient::new(client.clone(), tmdb_key);
-    verify_then_fetch(api, &client, &posters_dir, &language, &titles, without_id).await
+    verify_then_fetch(api, &client, &plan.artwork_dir, &language, &plan.titles, plan.without_id)
+        .await
 }
 
 /// Validates the key against the provider, then resolves and downloads with

@@ -1,5 +1,42 @@
 use super::*;
 
+/// The emptiest catalog `plan_fetch` will read: no titles, which is all this
+/// needs, since where the artwork goes is not a fact about what is in the
+/// index.
+fn empty_catalog_at(data_dir: &Path) {
+    let current = catalog::dir(&Core::new(data_dir.display().to_string(), 1, "h".into()))
+        .join(catalog::CURRENT);
+    std::fs::create_dir_all(&current).unwrap();
+    let conn = Connection::open(current.join("library.db")).unwrap();
+    for stmt in mlib_spec::schema::migrations_up_to(mlib_spec::schema::SCHEMA_VERSION) {
+        conn.execute(stmt, []).unwrap();
+    }
+}
+
+/// A fetch writes outside the catalogue tree, and nothing in the fetch path
+/// may quietly move it back in.
+///
+/// It was inside one once: `install_staged` replaces a version directory
+/// wholesale and a refresh runs on every catalog load, so the artwork was
+/// deleted before it was ever shown — counted on a device at 0, then 236,
+/// then 0 again across a restart. `poster_path` reads both locations, so a
+/// poster planted by hand is found either way and every other test here
+/// would go on passing if this one line moved.
+#[test]
+fn a_fetch_writes_outside_the_catalogue_tree() {
+    let data = tempfile::tempdir().unwrap();
+    empty_catalog_at(data.path());
+    let core = Core::new(data.path().display().to_string(), 1, "h".into());
+
+    let plan = plan_fetch(&core).expect("the catalog is readable");
+
+    assert!(
+        !plan.artwork_dir.starts_with(catalog::dir(&core)),
+        "artwork goes in {}, which a refresh clears",
+        plan.artwork_dir.display(),
+    );
+}
+
 /// Builds the same `anyhow::Error` shape
 /// `mediagram_tmdb::tmdb_client::TmdbClient::get_json` bails with, so this
 /// stays coupled to that crate's actual wording rather than to a guess
