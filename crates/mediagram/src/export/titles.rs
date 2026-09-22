@@ -15,7 +15,7 @@ pub fn distinct_titles(conn: &Connection) -> Result<Vec<(Kind, u64)>> {
     let rows = stmt
         .query_map([], |row| {
             let kind: String = row.get(0)?;
-            let tmdb: i64 = row.get(1)?;
+            let tmdb: Option<i64> = row.get(1)?;
             Ok((kind, tmdb))
         })
         .context("listing titles")?;
@@ -23,7 +23,7 @@ pub fn distinct_titles(conn: &Connection) -> Result<Vec<(Kind, u64)>> {
     let mut out = Vec::new();
     for row in rows {
         let (kind, tmdb) = row.context("reading a title row")?;
-        let Ok(id) = u64::try_from(tmdb) else {
+        let Some(id) = mlib_spec::ids::id_from_column(tmdb) else {
             continue;
         };
         match kind.parse::<Kind>() {

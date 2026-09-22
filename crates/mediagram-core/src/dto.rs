@@ -81,8 +81,8 @@ pub fn summary_from(set: &PlayableSet) -> SetSummary {
 
 /// Mirrors the web player's `posterKeyFor(kind, tmdb)`: `tmdb-movie-<id>` or
 /// `tmdb-tv-<id>`, and no key at all without a positive TMDB id.
-fn poster_key_for(kind: &str, tmdb: Option<i64>) -> Option<String> {
-    let tmdb = tmdb.filter(|id| *id > 0)?;
+fn poster_key_for(kind: &str, tmdb: Option<u64>) -> Option<String> {
+    let tmdb = tmdb?;
     let sub = if kind == mlib_spec::Kind::Movie.as_str() { "movie" } else { "tv" };
     let key = format!("tmdb-{sub}-{tmdb}");
     debug_assert!(mlib_spec::package::poster_key_is_valid(&key));

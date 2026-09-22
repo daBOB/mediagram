@@ -134,9 +134,9 @@ pub fn split_titles(sets: &[PlayableSet]) -> (Vec<(Kind, u64)>, u32) {
     let mut unaskable: HashSet<(&str, &str)> = HashSet::new();
     for set in sets {
         match (set.kind.parse::<Kind>().ok(), set.tmdb) {
-            (Some(kind), Some(id)) if id > 0 => {
+            (Some(kind), Some(id)) => {
                 if seen.insert(format!("tmdb-{}-{id}", kind_key(kind))) {
-                    titles.push((kind, id as u64));
+                    titles.push((kind, id));
                 }
             }
             _ => {

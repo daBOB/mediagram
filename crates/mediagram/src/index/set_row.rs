@@ -86,7 +86,7 @@ impl SetRow {
 
     pub(crate) fn from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<SetRow> {
         // sqlite integers are signed 64-bit; ids and the total size are stored
-        // as `i64` and widened back to `u64` here.
+        // as `i64` and read back as `u64` here.
         let alang: String = row.get("alang")?;
         let slang: String = row.get("slang")?;
         let tmdb: Option<i64> = row.get("tmdb")?;
@@ -103,8 +103,8 @@ impl SetRow {
         Ok(SetRow {
             set_id: row.get("set_id")?,
             kind,
-            tmdb: tmdb.map(|v| v as u64),
-            tvdb: tvdb.map(|v| v as u64),
+            tmdb: mlib_spec::ids::id_from_column(tmdb),
+            tvdb: mlib_spec::ids::id_from_column(tvdb),
             imdb: row.get("imdb")?,
             show: row.get("show")?,
             chap: row.get("chap")?,

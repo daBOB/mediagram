@@ -28,7 +28,7 @@ pub struct PlayableSet {
     pub episode: Option<String>,
     /// TMDB id, when the title has one. Lets a binding-surface caller derive
     /// a poster key without a second query.
-    pub tmdb: Option<i64>,
+    pub tmdb: Option<u64>,
     pub year: Option<u16>,
     pub container: String,
     pub vcodec: Option<String>,
@@ -69,7 +69,7 @@ fn read_set(row: &rusqlite::Row<'_>) -> rusqlite::Result<PlayableSet> {
         path: row.get("path")?,
         season: row.get("season")?,
         episode: row.get("episode")?,
-        tmdb: row.get("tmdb")?,
+        tmdb: mlib_spec::ids::id_from_column(row.get("tmdb")?),
         year: row.get("year")?,
         container: row.get("container")?,
         vcodec: row.get("vcodec")?,

@@ -30,7 +30,7 @@ fn playable_with(episode: Option<&str>) -> PlayableSet {
     }
 }
 
-fn movie_with_tmdb(tmdb: Option<i64>) -> PlayableSet {
+fn movie_with_tmdb(tmdb: Option<u64>) -> PlayableSet {
     PlayableSet {
         kind: "movie".into(),
         tmdb,
