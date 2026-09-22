@@ -36,7 +36,7 @@ pub async fn plan_set(cfg: &Config, new: &NewSet) -> Result<Planned> {
     }
 
     let data_dir = cfg.data_dir()?;
-    let api = cfg.tmdb_client(mediagram_core::api::http::client()?)?;
+    let api = cfg.tmdb_client(mediagram_core::http::client()?)?;
     let lesson = new.lesson.as_ref();
     let resolve_input = ResolveInput {
         file_name,

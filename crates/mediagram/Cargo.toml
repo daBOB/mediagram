@@ -27,7 +27,7 @@ libc = "0.2"
 mediagram-core = { path = "../mediagram-core" }
 mediagram-tmdb = { path = "../mediagram-tmdb" }
 mlib-spec = { path = "../mlib-spec" }
-# `rustls-no-provider`: every client is built by `mediagram_core::api::http`,
+# `rustls-no-provider`: every client is built by `mediagram_core::http`,
 # on ring and the webpki roots, so naming a provider here would only link a
 # second crypto stack (aws-lc) that nothing uses.
 reqwest = { workspace = true, features = ["rustls-no-provider", "json"] }

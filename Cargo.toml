@@ -34,7 +34,7 @@ grammers-session = { version = "0.10", default-features = false }
 grammers-mtsender = "0.10"
 grammers-tl-types = "0.10"
 # No TLS provider is named here: every client is built by
-# `mediagram_core::api::http` on ring, and each member adds only the
+# `mediagram_core::http` on ring, and each member adds only the
 # features it uses.
 # `fallible_uint` reads a size or count column straight into `u64`, refusing
 # a negative one instead of wrapping it.

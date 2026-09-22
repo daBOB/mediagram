@@ -14,8 +14,6 @@ mod blocking;
 mod store;
 mod channel;
 pub mod enrich;
-// The uploader still reaches the HTTP client through this path.
-pub use crate::http;
 mod read;
 mod refresh;
 

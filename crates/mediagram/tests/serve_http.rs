@@ -12,7 +12,7 @@ use std::sync::Arc;
 
 use mediagram::index::{db, parts, set_row::SetRow, sets};
 use mediagram::serve::routes::router;
-use mediagram_core::stream::{ByteSource, ByteStream};
+use mediagram_core::transport::stream::{ByteSource, ByteStream};
 use mediagram_core::catalog::PartLocation;
 use mediagram_core::range::{CHUNK, Step};
 use mlib_spec::PartRange;
@@ -155,7 +155,7 @@ fn length_of(response: &reqwest::Response) -> u64 {
 async fn the_catalog_lists_what_is_playable() {
     let (_d, base, _file) = start().await;
 
-    let response = mediagram_core::api::http::client().unwrap().get(format!("{base}/sets")).send().await.unwrap();
+    let response = mediagram_core::http::client().unwrap().get(format!("{base}/sets")).send().await.unwrap();
     assert_eq!(response.status(), 200);
     let body: serde_json::Value = response.json().await.unwrap();
 
@@ -171,7 +171,7 @@ async fn the_catalog_lists_what_is_playable() {
 async fn a_request_without_a_range_streams_the_whole_file() {
     let (_d, base, file) = start().await;
 
-    let response = mediagram_core::api::http::client().unwrap().get(format!("{base}/sets/{SET}/stream")).send()
+    let response = mediagram_core::http::client().unwrap().get(format!("{base}/sets/{SET}/stream")).send()
         .await
         .unwrap();
 
@@ -185,7 +185,7 @@ async fn a_request_without_a_range_streams_the_whole_file() {
 async fn an_open_ended_range_is_partial_content_with_the_whole_remainder() {
     let (_d, base, file) = start().await;
 
-    let response = mediagram_core::api::http::client().unwrap()
+    let response = mediagram_core::http::client().unwrap()
         .get(format!("{base}/sets/{SET}/stream"))
         .header("Range", "bytes=0-")
         .send()
@@ -207,7 +207,7 @@ async fn a_range_across_the_part_boundary_returns_exactly_those_bytes() {
     let (_d, base, file) = start().await;
     let (start_byte, end_byte) = (P0 - 1000, P0 + 999);
 
-    let response = mediagram_core::api::http::client().unwrap()
+    let response = mediagram_core::http::client().unwrap()
         .get(format!("{base}/sets/{SET}/stream"))
         .header("Range", format!("bytes={start_byte}-{end_byte}"))
         .send()
@@ -230,7 +230,7 @@ async fn a_range_across_the_part_boundary_returns_exactly_those_bytes() {
 async fn a_suffix_range_returns_the_end_of_the_file() {
     let (_d, base, file) = start().await;
 
-    let response = mediagram_core::api::http::client().unwrap()
+    let response = mediagram_core::http::client().unwrap()
         .get(format!("{base}/sets/{SET}/stream"))
         .header("Range", "bytes=-500")
         .send()
@@ -249,7 +249,7 @@ async fn a_suffix_range_returns_the_end_of_the_file() {
 async fn an_unsatisfiable_range_is_refused_with_the_total_size() {
     let (_d, base, _file) = start().await;
 
-    let response = mediagram_core::api::http::client().unwrap()
+    let response = mediagram_core::http::client().unwrap()
         .get(format!("{base}/sets/{SET}/stream"))
         .header("Range", "bytes=99999999999-")
         .send()
@@ -272,7 +272,7 @@ async fn an_unsatisfiable_range_is_refused_with_the_total_size() {
 async fn a_range_in_units_we_do_not_speak_is_ignored_not_refused() {
     let (_d, base, _file) = start().await;
 
-    let response = mediagram_core::api::http::client().unwrap()
+    let response = mediagram_core::http::client().unwrap()
         .get(format!("{base}/sets/{SET}/stream"))
         .header("Range", "kilometres=0-99")
         .send()
@@ -288,7 +288,7 @@ async fn a_range_in_units_we_do_not_speak_is_ignored_not_refused() {
 async fn a_byte_range_we_cannot_parse_is_ignored_the_same_way() {
     let (_d, base, _file) = start().await;
 
-    let response = mediagram_core::api::http::client().unwrap()
+    let response = mediagram_core::http::client().unwrap()
         .get(format!("{base}/sets/{SET}/stream"))
         .header("Range", "bytes=abc-def")
         .send()
@@ -304,7 +304,7 @@ async fn a_byte_range_we_cannot_parse_is_ignored_the_same_way() {
 async fn head_reports_the_size_and_that_ranges_are_supported() {
     let (_d, base, _file) = start().await;
 
-    let response = mediagram_core::api::http::client().unwrap()
+    let response = mediagram_core::http::client().unwrap()
         .head(format!("{base}/sets/{SET}/stream"))
         .send()
         .await
@@ -320,7 +320,7 @@ async fn head_reports_the_size_and_that_ranges_are_supported() {
 async fn a_set_that_is_not_playable_is_not_found() {
     let (_d, base, _file) = start().await;
 
-    let response = mediagram_core::api::http::client().unwrap().get(format!("{base}/sets/01NOSUCHSET00000000000001/stream")).send()
+    let response = mediagram_core::http::client().unwrap().get(format!("{base}/sets/01NOSUCHSET00000000000001/stream")).send()
         .await
         .unwrap();
 

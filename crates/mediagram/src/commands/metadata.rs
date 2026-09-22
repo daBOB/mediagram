@@ -31,7 +31,7 @@ pub async fn run(cfg: &Config) -> Result<()> {
 
     // Works with no key at all when the cache is warm, which is the normal
     // case: `add` cached these payloads when it resolved each title.
-    let api = cfg.tmdb_client(mediagram_core::api::http::client()?)?;
+    let api = cfg.tmdb_client(mediagram_core::http::client()?)?;
 
     let (mut recorded, mut skipped) = (0usize, 0usize);
     for (kind, id) in &titles {

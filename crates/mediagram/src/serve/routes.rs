@@ -2,7 +2,7 @@
 //!
 //! The router is generic over where bytes come from, so the whole contract —
 //! statuses, `Content-Length`, `Content-Range`, part-boundary crossings — is
-//! testable without Telegram. [`mediagram_core::telegram::TelegramSource`] is the real
+//! testable without Telegram. [`mediagram_core::transport::source::TelegramSource`] is the real
 //! implementation; a test supplies a known file instead.
 
 use std::sync::{Arc, Mutex};
@@ -20,7 +20,7 @@ use mediagram_core::range::{PartSpan, plan_reads, total_size};
 
 use super::response::plan_response;
 
-use mediagram_core::stream::ByteSource;
+use mediagram_core::transport::stream::ByteSource;
 
 #[derive(Clone)]
 pub struct ServeState {

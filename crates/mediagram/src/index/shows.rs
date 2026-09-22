@@ -12,11 +12,10 @@
 //! read of the cache on disk, not a round of requests.
 
 use anyhow::{Context, Result};
-use mediagram_core::shows::SOURCE;
 use mediagram_tmdb::details::TitleDetailsRow;
 use mediagram_tmdb::posters::kind_key;
 use mlib_spec::Kind;
-use rusqlite::{Connection, OptionalExtension, params};
+use rusqlite::Connection;
 
 /// Writes a show's entry, replacing whatever was there; see
 /// [`mediagram_core::shows::upsert`], the table's one writer.
@@ -27,31 +26,7 @@ pub fn upsert(conn: &Connection, row: &TitleDetailsRow) -> Result<()> {
 
 /// One show's entry, or `None` when nothing has been recorded for it.
 pub fn get(conn: &Connection, kind: Kind, id: u64) -> Result<Option<TitleDetailsRow>> {
-    conn.query_row(
-        "SELECT lang, overview, tagline, genres, rating, network, status, first_air, last_air,
-                total_seasons, total_episodes
-           FROM shows WHERE source = ?1 AND kind = ?2 AND id = ?3",
-        params![SOURCE, kind_key(kind), id as i64],
-        |row| {
-            Ok(TitleDetailsRow {
-                kind,
-                id,
-                lang: row.get(0)?,
-                overview: row.get(1)?,
-                tagline: row.get(2)?,
-                genres: row.get(3)?,
-                rating: row.get(4)?,
-                network: row.get(5)?,
-                status: row.get(6)?,
-                first_air: row.get(7)?,
-                last_air: row.get(8)?,
-                total_seasons: row.get(9)?,
-                total_episodes: row.get(10)?,
-            })
-        },
-    )
-    .optional()
-    .context("reading a show entry")
+    mediagram_core::shows::get(conn, kind, id).context("reading a show entry")
 }
 
 /// How many shows have an entry. What `metadata` reports having done.

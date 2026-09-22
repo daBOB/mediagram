@@ -6,7 +6,7 @@ use anyhow::{Context, Result, bail};
 use grammers_client::Client;
 use grammers_client::message::InputMessage;
 use grammers_session::types::PeerRef;
-use mediagram_core::document;
+use mediagram_core::transport::document;
 use mlib_spec::caption::{Caption, Part};
 
 use super::part_reader::PartReader;

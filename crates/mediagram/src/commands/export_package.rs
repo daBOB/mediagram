@@ -145,7 +145,7 @@ async fn fetch_posters(
 ) -> Result<Vec<mlib_spec::package::PosterEntry>> {
     // Built once and used for both the lookup and the download below —
     // `TmdbClient` takes this same client rather than building its own.
-    let http = mediagram_core::api::http::client()?;
+    let http = mediagram_core::http::client()?;
     let api = cfg.tmdb_client(http.clone())?;
     let refs = resolve_posters(&api, titles).await;
     staging.fetch_posters(&http, &refs).await

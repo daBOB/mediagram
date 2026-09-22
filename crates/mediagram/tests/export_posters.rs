@@ -187,7 +187,7 @@ async fn no_posters_means_no_directory() {
     let tmp = tempfile::tempdir().unwrap();
     let dir = tmp.path().join("posters");
 
-    let written = download_into(&mediagram_core::api::http::client().unwrap(), &[], &dir)
+    let written = download_into(&mediagram_core::http::client().unwrap(), &[], &dir)
         .await
         .unwrap();
 
@@ -209,7 +209,7 @@ async fn a_malformed_key_is_refused_without_a_request() {
         path: "/whatever.jpg".into(),
     }];
 
-    let written = download_into(&mediagram_core::api::http::client().unwrap(), &refs, &dir)
+    let written = download_into(&mediagram_core::http::client().unwrap(), &refs, &dir)
         .await
         .unwrap();
 
@@ -238,7 +238,7 @@ async fn a_poster_already_on_disk_is_kept_and_not_requested_again() {
 
     // The bytes are the proof: had the skip failed, the CDN response would
     // have replaced this placeholder with a real image.
-    let written = download_into(&mediagram_core::api::http::client().unwrap(), &refs, &dir)
+    let written = download_into(&mediagram_core::http::client().unwrap(), &refs, &dir)
         .await
         .unwrap();
 

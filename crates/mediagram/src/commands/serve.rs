@@ -6,7 +6,7 @@
 
 use anyhow::{Context, Result};
 use mediagram_core::catalog;
-use mediagram_core::telegram::TelegramSource;
+use mediagram_core::transport::source::TelegramSource;
 use tokio::net::TcpListener;
 
 use crate::config::Config;

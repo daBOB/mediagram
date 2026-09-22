@@ -161,7 +161,7 @@ async fn refresh_from_tmdb(
     let Some(tmdb) = row.tmdb else {
         bail!("set {} has no tmdb id to refresh from", row.set_id);
     };
-    let api = cfg.tmdb_client(mediagram_core::api::http::client()?)?;
+    let api = cfg.tmdb_client(mediagram_core::http::client()?)?;
     let details = mediagram_tmdb::details::details(&api, row.kind, tmdb).await?;
 
     if row.kind == Kind::Movie {

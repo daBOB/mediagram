@@ -3,7 +3,7 @@
 //!
 //! This crate does not own transport: `TmdbClient` takes an already-built
 //! `reqwest::Client` rather than constructing one of its own. Every program
-//! that links it builds that client with `mediagram_core::api::http`, on the
+//! that links it builds that client with `mediagram_core::http`, on the
 //! one TLS stack chosen there; a client built here would have to guess.
 
 use std::path::Path;

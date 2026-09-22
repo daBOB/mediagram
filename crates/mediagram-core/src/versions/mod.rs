@@ -7,7 +7,7 @@
 //! inside a version, so an install — which clears every other version —
 //! keeps them.
 //!
-//! [`install`] is the only thing that ever writes a version; readers only
+//! `install` is the only thing that ever writes a version; readers only
 //! ever open one through `current`, so an install landing mid-query cannot
 //! be observed as a half-written database.
 

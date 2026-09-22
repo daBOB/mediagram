@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use anyhow::Result;
 use grammers_client::media::Document;
 use grammers_client::message::Message;
-use mediagram_core::document::message_document;
+use mediagram_core::transport::document::message_document;
 use rusqlite::Connection;
 
 use super::download_hash::{fetch_messages, hash_document};

@@ -36,7 +36,7 @@ mlib-spec = { path = "../mlib-spec" }
 # on the same code path this crate would actually exercise, and that crate
 # panics on Android ("expect rustls-platform-verifier to be initialized")
 # without a Kotlin companion component and a JNI init call neither of which
-# this project has. `api::http` builds its own `rustls::ClientConfig` — a
+# this project has. `http` builds its own `rustls::ClientConfig` — a
 # plain webpki-roots verifier, never the platform one — and installs it via
 # `tls_backend_preconfigured`, so `rustls-platform-verifier` stays linked
 # (reqwest requires the dependency to exist) but its verifier is never

@@ -31,7 +31,7 @@ async fn the_configured_credential_resolves_a_real_show() {
     // asks for the configured language, so building the client bare would
     // test a path nothing runs.
     let cache = tempfile::tempdir().expect("a cache dir");
-    let client = TmdbClient::with_cache(mediagram_core::api::http::client().unwrap(), &key, cache.path(), &cfg.tmdb_language);
+    let client = TmdbClient::with_cache(mediagram_core::http::client().unwrap(), &key, cache.path(), &cfg.tmdb_language);
     eprintln!("language: {}", cfg.tmdb_language);
     let found = client
         .get_json(
@@ -60,7 +60,7 @@ async fn a_seasons_episodes_come_back_named() {
     let cfg = config::load(None).expect("a config to load");
     let cache = tempfile::tempdir().expect("a cache dir");
     let client = TmdbClient::with_cache(
-        mediagram_core::api::http::client().unwrap(),
+        mediagram_core::http::client().unwrap(),
         &cfg.tmdb_key.clone().expect("tmdb_key to be set"),
         cache.path(),
         &cfg.tmdb_language,
