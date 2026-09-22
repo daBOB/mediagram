@@ -71,6 +71,7 @@ class FakeCore(
  * which is what this stands in for.
  */
 class ResolvedCoreProvider(private val client: CoreClient) : CoreProvider {
+    override suspend fun replace(apiId: Int, apiHash: String) = Unit
     override val core: StateFlow<CoreClient?> = MutableStateFlow(client)
     override suspend fun awaitCore(): CoreClient = client
     override suspend fun coreOrNull(): CoreClient = client

@@ -1,6 +1,7 @@
 package data
 
 import kotlinx.coroutines.awaitCancellation
+import uniffi.mediagram_core.AccountSummary
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.FetchReport
@@ -88,6 +89,19 @@ interface CoreClient {
      * need not say so; [DefaultCoreClient] is the only real implementation.
      */
     suspend fun nextLibraryEvent(handle: String, ownDevice: String): LibraryEvent = awaitCancellation()
+
+    /** The datacentre this login lives on, read from the stored key; `null` before any login. */
+    fun dcId(): Int? = null
+
+    /** Who is signed in: name and username, never the number. Asks Telegram. */
+    suspend fun account(): AccountSummary = error("no account behind this core")
+
+    /**
+     * Signs this device out at Telegram, then drops the connection and the
+     * stored key — which go even when Telegram cannot be reached. Deleting
+     * the key file alone left the login valid in the account's sessions.
+     */
+    suspend fun signOut() = Unit
 
     /**
      * Drops the native core and, with it, the authenticated connection it

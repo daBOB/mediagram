@@ -7,6 +7,18 @@ to `main`. Full phase-by-phase detail lives in
 
 ## 2026-09-23
 
+**Added**
+
+- Settings on the Android app, after System in the menu. The Telegram block
+  says who is signed in, which library, which datacentre and whether Telegram
+  is answering, and offers three changes: another library (installed before
+  it is remembered, then the shelves read it), a new application id and hash
+  (kept only once Telegram answers through it — otherwise the one in use
+  stays), and signing out, which ends the login at Telegram too and keeps
+  the application identity and TMDB key. The Cache block shows what is held
+  against a size now chosen from 512 MB to 8 GB (2 GB by default); choosing a
+  smaller one frees the difference at once.
+
 **Changed**
 
 - Every mediagram client names itself in the account's session list:

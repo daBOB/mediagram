@@ -34,6 +34,11 @@ internal class SetupFixture(
         return SetupViewModel(provider, Libraries(provider, library, dispatcher), tmdb, storage, dispatcher)
     }
 
+    fun settingsViewModel(): SettingsViewModel {
+        val provider = StoredCoreProvider(telegram, dispatcher) { build() }
+        return SettingsViewModel(provider, Libraries(provider, library, dispatcher), storage, telegram, dispatcher)
+    }
+
     /** A device that has answered everything up to the library question. */
     suspend fun signedIn(): SetupFixture = apply {
         telegram.write(1234, WELL_FORMED_HASH)

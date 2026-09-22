@@ -48,7 +48,7 @@ fun MobileApp() {
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { setupViewModel.recheck() }
 
             if (setupState is SetupUiState.Ready) {
-                CatalogAndPlayer(onStartOver = setupViewModel::startOver)
+                CatalogAndPlayer(onStartOver = setupViewModel::startOver, onSignedOut = setupViewModel::recheck)
             } else {
                 // The app draws edge to edge. Every setup screen is prose
                 // and controls a person has to read and reach, and without

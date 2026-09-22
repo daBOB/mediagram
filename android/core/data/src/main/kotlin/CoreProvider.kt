@@ -1,5 +1,6 @@
 package data
 
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,6 +50,15 @@ interface CoreProvider {
 
     /** Closes the core and forgets the identity it was built from. */
     suspend fun forget()
+
+    /**
+     * Swaps the application identity under the same login: the old core is
+     * closed before the new one is built, because both would open the one
+     * data directory and its one auth key. The new identity is kept only
+     * once Telegram has answered through it; otherwise the previous one is
+     * rebuilt and the failure rethrown.
+     */
+    suspend fun replace(apiId: Int, apiHash: String)
 }
 
 /**
@@ -99,6 +109,25 @@ class StoredCoreProvider(
         }
         // Assigning last is what resumes whoever is parked in awaitCore().
         built.value = client
+    }
+
+    override suspend fun replace(apiId: Int, apiHash: String): Unit = mutex.withLock {
+        built.value?.let { open -> withContext(dispatcher) { open.close() } }
+        built.value = null
+        val candidate = withContext(dispatcher) { build(TelegramCredentials(apiId, apiHash)) }
+        try {
+            // Building never talks to Telegram, so a mistyped hash would pass
+            // it. Asking who is signed in is what proves the new identity.
+            candidate.account()
+        } catch (@Suppress("TooGenericExceptionCaught") failure: Throwable) {
+            // Closed before anything else is built over the same data
+            // directory. The stored identity was never changed, so the next
+            // [awaitCore] builds the previous one again, as on any launch.
+            withContext(NonCancellable + dispatcher) { candidate.close() }
+            throw failure
+        }
+        withContext(dispatcher) { settings.write(apiId, apiHash) }
+        built.value = candidate
     }
 
     override suspend fun forget(): Unit = mutex.withLock {

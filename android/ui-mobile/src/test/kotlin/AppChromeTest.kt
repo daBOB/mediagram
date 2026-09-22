@@ -43,6 +43,11 @@ class AppChromeTest {
         assertEquals("TMDB key", barTitleFor(Destination.TmdbKey))
     }
 
+    @Test
+    fun theSettingsScreenSaysWhatItIs() {
+        assertEquals("Settings", barTitleFor(Destination.Settings))
+    }
+
     /**
      * Every screen the menu opens is a screen like any other: it is named,
      * and it can be left. A destination reachable only through the menu is
@@ -66,6 +71,7 @@ class AppChromeTest {
         assertNull(backLabelFor(Destination.Catalog))
         assertEquals("Back", backLabelFor(Destination.System))
         assertEquals("Back", backLabelFor(Destination.TmdbKey))
+        assertEquals("Back", backLabelFor(Destination.Settings))
         assertEquals("Back", backLabelFor(Destination.Title("Blade: Trinity")))
     }
 }

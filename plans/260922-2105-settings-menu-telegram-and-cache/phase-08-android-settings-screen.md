@@ -12,7 +12,16 @@
 - Phase 06 (web) — the same sections, rows and wording; phase 07 core calls
 
 ## Overview
-Priority P2. Status: pending. A "Settings" menu item opening a `MenuScreen` with the same
+Priority P2. Status: **done 2026-09-23** (uncommitted). Built as specified with these differences:
+the cache row is its own `CacheBudgetViewModel` in `feature/system` (already depends on `core:playback`), so
+`feature/setup` gains no playback dependency; `CoreProvider.replace` validates a new identity by asking `account()`
+(building a core never talks to Telegram, so a mistyped hash would otherwise pass) and on failure closes the candidate
+and leaves the stored identity untouched, so the next `awaitCore` rebuilds the old one — no eager rebuild, which would
+have put two cores on one data directory. Size choices: 512 MB, 1, 2 (default), 4, 8 GB.
+Device check (tablet, read-only as required): menu shows System · Settings · Update library · TMDB key… · Start over;
+rows "Serien Junkies" / Mediagram / DC 4 / signed in, Telegram answered; cache 896 MB of 2.0 GB → chose 512 MB →
+510 MB of 512 MB (disk 511 MB) → back to 2.0 GB (persisted `cache_budget_bytes`); Change library → Mediagram reinstalled
+and returned to the rows. Sign out and id/hash not pressed on the device (tests cover them). A "Settings" menu item opening a `MenuScreen` with the same
 two sections as the web page. Almost every part exists already; this composes them.
 
 ## Key insights
@@ -72,13 +81,13 @@ Delete: none.
 8. `./gradlew test detekt spotlessCheck`; build + install debug APK.
 
 ## Todo
-- [ ] overflow menu extraction + Settings item
-- [ ] CoreProvider.replace + test
-- [ ] AdjustableLruEvictor + prefs + test
-- [ ] core client additions + fakes
-- [ ] SettingsViewModel + test
-- [ ] SettingsScreen/Rows
-- [ ] device check (read-only, see below)
+- [x] overflow menu extraction + Settings item
+- [x] CoreProvider.replace + test
+- [x] AdjustableLruEvictor + prefs + test
+- [x] core client additions + fakes
+- [x] SettingsViewModel + test
+- [x] SettingsScreen/Rows
+- [x] device check (read-only, see below)
 
 ## Success criteria
 - Unit tests: replace order/rollback; evictor shrinks to budget; sign-out clears session+catalog+library but keeps app identity + TMDB key; library switch writes handle only after install.

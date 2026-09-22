@@ -121,7 +121,7 @@ private fun ThisAppBlock(state: SystemUiState) = Block(
 
 /** A heading and its label/value rows. A row whose value is null is left out entirely. */
 @Composable
-private fun Block(heading: String, rows: List<Pair<String, String?>>) {
+internal fun Block(heading: String, rows: List<Pair<String, String?>>) {
     Column {
         Text(text = heading, style = MaterialTheme.typography.titleMedium)
         for ((label, value) in rows) {

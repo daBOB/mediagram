@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import settings.InMemoryLibrarySettings
 import settings.LibrarySettings
+import uniffi.mediagram_core.AccountSummary
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.FetchReport
@@ -38,7 +39,18 @@ class FakeCore(
      * thrown. Past the end, a wait waits for ever, as a quiet channel does.
      */
     private val events: List<Result<LibraryEvent>> = emptyList(),
+    /** What [account] answers, or throws: whether Telegram accepts this core's identity. */
+    private val account: Result<AccountSummary> = Result.success(AccountSummary("A Viewer", "viewer")),
 ) : CoreClient {
+
+    override suspend fun account(): AccountSummary = account.getOrThrow()
+
+    var signedOut: Boolean = false
+        private set
+
+    override suspend fun signOut() {
+        signedOut = true
+    }
 
     /** How many times [nextLibraryEvent] has been waited on, and for which handle last. */
     var eventCalls: Int = 0
@@ -96,6 +108,7 @@ class FakeCore(
  * covers the waiting.
  */
 class ResolvedCoreProvider(private val client: CoreClient) : CoreProvider {
+    override suspend fun replace(apiId: Int, apiHash: String) = Unit
     override val core: StateFlow<CoreClient?> = MutableStateFlow(client)
     override suspend fun awaitCore(): CoreClient = client
     override suspend fun coreOrNull(): CoreClient = client

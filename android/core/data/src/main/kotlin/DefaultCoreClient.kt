@@ -1,5 +1,6 @@
 package data
 
+import uniffi.mediagram_core.AccountSummary
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.Core
@@ -24,6 +25,12 @@ class DefaultCoreClient(private val core: Core) : CoreClient {
 
     override suspend fun nextLibraryEvent(handle: String, ownDevice: String): LibraryEvent =
         core.nextLibraryEvent(handle, ownDevice)
+
+    override fun dcId(): Int? = core.dcId()
+
+    override suspend fun account(): AccountSummary = core.account()
+
+    override suspend fun signOut() = core.signOut()
 
     override suspend fun refreshLibrary(handle: String): Long = core.refreshLibrary(handle).toLong()
 

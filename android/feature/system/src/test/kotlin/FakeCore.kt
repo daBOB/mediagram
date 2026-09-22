@@ -65,6 +65,7 @@ class FakeCore(
 
 /** A [data.CoreProvider] that already has a core built — a fetch never waits on one. */
 class FakeCoreProvider(private val built: CoreClient) : data.CoreProvider {
+    override suspend fun replace(apiId: Int, apiHash: String) = Unit
     override val core: kotlinx.coroutines.flow.StateFlow<CoreClient?> =
         kotlinx.coroutines.flow.MutableStateFlow(built)
 

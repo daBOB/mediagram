@@ -1,9 +1,7 @@
 package ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -13,12 +11,10 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.flow.first
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.collection
 import catalog.mediaSet
 import system.FetchViewModel
-import uniffi.mediagram_core.FetchReport
 
 /**
  * The catalog, whichever show or course it opened, whichever title that
@@ -36,7 +32,7 @@ import uniffi.mediagram_core.FetchReport
  * and asking for one from the other is a move between them.
  */
 @Composable
-internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
+internal fun CatalogAndPlayer(onStartOver: () -> Unit, onSignedOut: () -> Unit) {
     val catalogViewModel: CatalogViewModel = hiltViewModel()
     val catalogState by catalogViewModel.state.collectAsStateWithLifecycle()
     val fetchViewModel: FetchViewModel = hiltViewModel()
@@ -104,6 +100,7 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
 
     val menuActions = MenuActions(
         onSystem = { at.menuScreen = MenuScreen.System },
+        onSettings = { at.menuScreen = MenuScreen.Settings },
         // To the shelves, wherever the menu was opened from. The menu is the
         // same on the system and key screens, where a reloading catalog is
         // invisible; and an update is minutes of network over hundreds of
@@ -142,6 +139,12 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
                 MenuScreen.TmdbKey -> TmdbKeyScreen(
                     hasKey = fetchState.hasKey,
                     onSave = fetchViewModel::saveKey,
+                )
+                // Stands in until the real screen lands.
+                MenuScreen.Settings -> SettingsScreen(
+                    onLibraryChanged = catalogViewModel::reload,
+                    onSignedOut = onSignedOut,
+                    cache = { CacheBudgetBlock() },
                 )
             }
         }
@@ -216,55 +219,4 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
             onDismiss = fetchViewModel::dismissResult,
         )
     }
-}
-
-/**
- * Why "Update library" cannot be tapped right now, or `null` when it can.
- *
- * A missing TMDB key is not one of the reasons. It stops the second half
- * and leaves the first worth doing, so the item stays tappable and says
- * what it will skip instead; that is `updateNote`, not this.
- */
-private fun updateDisabledReason(state: CatalogUiState, fetching: Boolean): String? = when {
-    isReadingChannel(state) -> "Reading the channel…"
-    fetching -> "Fetching details and artwork…"
-    else -> null
-}
-
-/**
- * Whether the channel is being read right now.
- *
- * Read off the catalog's own state rather than a flag beside it, so the two
- * cannot disagree. A read in flight looks like one of two things:
- * [CatalogUiState.Loading] when there were no shelves to keep, and a
- * [CatalogUiState.Ready] that says it is refreshing when there were.
- */
-private fun isReadingChannel(state: CatalogUiState): Boolean =
-    state is CatalogUiState.Loading || (state is CatalogUiState.Ready && state.refreshing)
-
-/** The sentence a finished or failed fetch leaves behind, or `null` while there is nothing to say. */
-private fun fetchResultMessage(report: FetchReport?, error: String?): String? = when {
-    error != null -> error
-    report != null -> fetchSentence(
-        detailsRecorded = report.detailsRecorded.toInt(),
-        postersFetched = report.postersFetched.toInt(),
-        detailsAlreadyKnown = report.detailsAlreadyKnown.toInt(),
-        postersAlreadyHeld = report.postersAlreadyHeld.toInt(),
-        noProviderId = report.noProviderId.toInt(),
-        failed = report.failed.toInt(),
-    )
-    else -> null
-}
-
-/** What a fetch reported, or what stopped it — shown over whichever library screen is up when it finishes. */
-@Composable
-private fun FetchResultDialog(message: String?, onDismiss: () -> Unit) {
-    if (message == null) return
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Update library") },
-        text = { Text(message) },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } },
-    )
 }

@@ -21,7 +21,6 @@ package playback
 
 import android.content.Context
 import androidx.media3.database.StandaloneDatabaseProvider
-import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -29,14 +28,15 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 private const val CACHE_DIR_NAME = "mlib"
-private const val CACHE_MAX_BYTES = 2L * 1024 * 1024 * 1024 // 2 GiB
 
 /** What the disk cache is actually holding, against what it may hold — the System screen's Held row. */
 data class CacheOccupancy(val heldBytes: Long, val budgetBytes: Long)
 
 /**
  * The one [SimpleCache] for the whole process, over `context.cacheDir/mlib`
- * with a 2 GiB LRU ceiling. `SimpleCache` throws at construction if a
+ * under an [AdjustableLruEvictor] seeded from [CacheBudgetSettings] — a 2
+ * GiB LRU ceiling ([CACHE_MAX_BYTES]) until a viewer picks another one in
+ * Settings via [setBudget]. `SimpleCache` throws at construction if a
  * second instance opens the same directory concurrently, so [get] is the
  * single choke point that guarantees only one is ever built.
  *
@@ -63,33 +63,72 @@ object CacheProvider {
     @Volatile
     private var instance: SimpleCache? = null
 
+    /**
+     * The evictor backing [instance], kept alongside it because
+     * `SimpleCache` never hands its evictor back out — [setBudget] and
+     * [occupancy] both need to reach the live budget, not just the disk
+     * usage.
+     */
+    @Volatile
+    private var evictor: AdjustableLruEvictor? = null
+
     suspend fun get(context: Context, dispatcher: CoroutineDispatcher = Dispatchers.IO): SimpleCache {
         instance?.let { return it }
         return withContext(dispatcher) {
+            // Read outside the lock: a race just repeats a cheap prefs
+            // read, where reading it while holding the lock would call a
+            // suspend function from the plain lambda `synchronized` takes.
+            val budgetBytes = budgetSettings(context).read()
             synchronized(this@CacheProvider) {
-                instance ?: buildCache(context).also { instance = it }
+                instance ?: buildCache(context, budgetBytes).also { instance = it }
             }
         }
     }
 
     /**
-     * The one number [CACHE_MAX_BYTES] is for, read back against what
-     * [SimpleCache] is actually holding right now. `cacheSpace` is a plain
-     * getter over the index's own running total, not disk I/O, so this
-     * needs no dispatch beyond whatever [get] itself needs to open the
-     * cache the first time.
+     * The live budget — [AdjustableLruEvictor.budgetBytes], not a constant
+     * — read back against what [SimpleCache] is actually holding right
+     * now. `cacheSpace` is a plain getter over the index's own running
+     * total, not disk I/O, so this needs no dispatch beyond whatever [get]
+     * itself needs to open the cache the first time.
      */
-    suspend fun occupancy(context: Context, dispatcher: CoroutineDispatcher = Dispatchers.IO): CacheOccupancy =
-        CacheOccupancy(heldBytes = get(context, dispatcher).cacheSpace, budgetBytes = CACHE_MAX_BYTES)
+    suspend fun occupancy(context: Context, dispatcher: CoroutineDispatcher = Dispatchers.IO): CacheOccupancy {
+        val cache = get(context, dispatcher)
+        val budgetBytes = evictor?.budgetBytes ?: CACHE_MAX_BYTES
+        return CacheOccupancy(heldBytes = cache.cacheSpace, budgetBytes = budgetBytes)
+    }
+
+    /**
+     * Persists [bytes] as the new budget and evicts the live cache down to
+     * it immediately — the pair a Settings row's size choice needs so
+     * "Held" drops right away and the choice survives a restart. Builds
+     * the cache first if nothing has opened it yet, same as [occupancy].
+     */
+    suspend fun setBudget(context: Context, bytes: Long, dispatcher: CoroutineDispatcher = Dispatchers.IO) {
+        val cache = get(context, dispatcher)
+        withContext(dispatcher) {
+            val settings = budgetSettings(context)
+            settings.write(bytes)
+            val clampedBytes = settings.read()
+            evictor?.setBudget(clampedBytes, cache)
+        }
+    }
 
     /** Test-only: clears the cached instance so a test can observe a fresh construction. */
     internal fun resetForTest() {
         instance = null
+        evictor = null
     }
 
-    private fun buildCache(context: Context): SimpleCache = SimpleCache(
-        File(context.cacheDir, CACHE_DIR_NAME),
-        LeastRecentlyUsedCacheEvictor(CACHE_MAX_BYTES),
-        StandaloneDatabaseProvider(context),
-    )
+    private fun budgetSettings(context: Context): CacheBudgetSettings = PlainCacheBudgetSettings(context)
+
+    private fun buildCache(context: Context, budgetBytes: Long): SimpleCache {
+        val newEvictor = AdjustableLruEvictor(budgetBytes)
+        evictor = newEvictor
+        return SimpleCache(
+            File(context.cacheDir, CACHE_DIR_NAME),
+            newEvictor,
+            StandaloneDatabaseProvider(context),
+        )
+    }
 }

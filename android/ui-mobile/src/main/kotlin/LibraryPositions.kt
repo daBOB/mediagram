@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 internal enum class MenuScreen(val destination: Destination) {
     System(Destination.System),
     TmdbKey(Destination.TmdbKey),
+    Settings(Destination.Settings),
 }
 
 /**

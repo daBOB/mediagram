@@ -34,8 +34,13 @@ import designsystem.Spacing
  * the system may write to disk.
  */
 @Composable
-fun TelegramApplicationScreen(error: String?, onSubmit: (apiId: String, apiHash: String) -> Unit) {
-    var apiId by remember { mutableStateOf("") }
+fun TelegramApplicationScreen(
+    error: String?,
+    onSubmit: (apiId: String, apiHash: String) -> Unit,
+    // Settings fills in the id already in use; the hash is never shown back.
+    initialApiId: String = "",
+) {
+    var apiId by remember { mutableStateOf(initialApiId) }
     var apiHash by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.fillMaxSize().padding(Spacing.large)) {

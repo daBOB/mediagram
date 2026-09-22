@@ -26,7 +26,7 @@ evicts down, persisted in the state DB, overriding `MEDIAGRAM_CACHE_MAX`.
 | 05 | [Web settings API + sign-in flow](phase-05-web-settings-api-and-sign-in.md) | web | 03, 04 | 5h | pending |
 | 06 | [Web Settings page](phase-06-web-settings-page.md) | web UI | 05 | 4h | pending |
 | 07 | [Rust core: account summary + sign out](phase-07-rust-core-account-and-sign-out.md) | rust | – | 3h | done |
-| 08 | [Android Settings screen](phase-08-android-settings-screen.md) | android | 07 | 6h | pending |
+| 08 | [Android Settings screen](phase-08-android-settings-screen.md) | android | 07 | 6h | done |
 | 09 | [Docs, parity note, versions, validation](phase-09-docs-versions-and-validation.md) | all | 06, 08, 10 | 2h | pending |
 | 10 | [Active sessions: list + revoke](phase-10-active-sessions-list-and-revoke.md) | all | 06, 08 | 6h | naming done; rest blocked |
 

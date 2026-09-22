@@ -1,6 +1,7 @@
 package setup
 
 import data.CoreClient
+import uniffi.mediagram_core.AccountSummary
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.FetchReport
@@ -24,7 +25,20 @@ class FakeCore(
     private val libraries: List<LibraryChoice> = emptyList(),
     var listFailure: Exception? = null,
     var installFailure: Exception? = null,
+    /** Whether Telegram answers who is signed in; `null` is an unreachable Telegram. */
+    var accountAnswer: AccountSummary? = AccountSummary("A Viewer", "viewer"),
+    var datacenter: Int? = 4,
 ) : CoreClient {
+
+    var signedOut = false
+        private set
+
+    override fun dcId(): Int? = datacenter
+    override suspend fun account(): AccountSummary = accountAnswer ?: error("no answer")
+    override suspend fun signOut() {
+        signedOut = true
+        authorized = false
+    }
 
     /** Counted so a test can prove a re-derivation did not go back to Telegram. */
     var listCalls = 0
