@@ -26,3 +26,55 @@ pub fn message_document(message: &Message) -> Option<(Document, i64)> {
         _ => None,
     }
 }
+
+/// Whether a failed download was refused because the document handle it
+/// used has gone stale.
+///
+/// A `Document` carries a file reference, and Telegram expires those: the
+/// same handle that fetched a part an hour ago is refused with
+/// `FILE_REFERENCE_EXPIRED` now. That is not a network failure and waiting
+/// will not fix it — the answer is to fetch the message again, which hands
+/// back a fresh reference. `FILE_REFERENCE_INVALID` is matched too, for the
+/// same remedy.
+pub fn is_stale_reference(err: &anyhow::Error) -> bool {
+    err.chain().any(|cause| {
+        matches!(
+            cause.downcast_ref::<grammers_mtsender::InvocationError>(),
+            Some(grammers_mtsender::InvocationError::Rpc(rpc)) if rpc.name.starts_with("FILE_REFERENCE_")
+        )
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Context;
+    use grammers_mtsender::{InvocationError, RpcError};
+
+    use super::*;
+
+    fn rpc(message: &str) -> anyhow::Error {
+        let error = InvocationError::Rpc(RpcError::from(grammers_tl_types::types::RpcError {
+            error_code: 400,
+            error_message: message.into(),
+        }));
+        // Wrapped the way `pump_step` wraps it, so the check has to look
+        // past the context to find the refusal.
+        Err::<(), _>(error).context("downloading chunk").unwrap_err()
+    }
+
+    #[test]
+    fn an_expired_reference_is_stale_even_behind_context() {
+        assert!(is_stale_reference(&rpc("FILE_REFERENCE_EXPIRED")));
+    }
+
+    #[test]
+    fn an_invalid_reference_is_stale_too() {
+        assert!(is_stale_reference(&rpc("FILE_REFERENCE_INVALID")));
+    }
+
+    #[test]
+    fn other_refusals_are_not_mistaken_for_a_stale_reference() {
+        assert!(!is_stale_reference(&rpc("FLOOD_WAIT_30")));
+        assert!(!is_stale_reference(&anyhow::anyhow!("connection reset")));
+    }
+}

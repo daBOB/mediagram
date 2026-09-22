@@ -85,10 +85,10 @@ struct State {
 /// Which Telegram document each part of one set is, resolved once.
 ///
 /// Resolving costs a round trip, and a set is read a few hundred times
-/// while it plays — every one of them for the same handful of parts. The
-/// answer cannot go stale underneath a player: a message's document is
-/// fixed, and a message that has gone away fails the download rather than
-/// returning different bytes.
+/// while it plays — every one of them for the same handful of parts. Which
+/// document a message holds is fixed, but the handle carries a file
+/// reference Telegram expires; `read` evicts a part whose reference is
+/// refused and resolves it again, so a long pause does not strand a set.
 ///
 /// Held for one set, because that is what a player reads. Opening another
 /// replaces it, which is what keeps this from growing with every set ever
@@ -113,6 +113,14 @@ impl DocumentCache {
             self.by_message.clear();
         }
         self.by_message.insert(message_id, document);
+    }
+
+    /// Forgets one part's handle, so the next read resolves it afresh.
+    /// Called when Telegram refuses the handle's expired file reference.
+    fn evict(&mut self, set_id: &str, message_id: i64) {
+        if self.set_id == set_id {
+            self.by_message.remove(&message_id);
+        }
     }
 }
 
@@ -293,5 +301,20 @@ mod tests {
 
         assert!(cache.get("set-a", 100).is_none(), "one set's parts must not answer another's");
         assert!(cache.get("set-b", 200).is_some());
+    }
+
+    /// A handle held across a long pause outlives its file reference; once
+    /// Telegram refuses it, the cache must stop answering with it or every
+    /// read of the set fails until another set is opened.
+    #[test]
+    fn an_evicted_part_is_resolved_again_and_its_neighbours_are_kept() {
+        let mut cache = DocumentCache::default();
+        cache.put("set-a", 100, document());
+        cache.put("set-a", 101, document());
+
+        cache.evict("set-a", 100);
+
+        assert!(cache.get("set-a", 100).is_none());
+        assert!(cache.get("set-a", 101).is_some(), "only the refused part is stale");
     }
 }

@@ -77,8 +77,9 @@ impl StepCursor {
 
 /// The document of a part's message, resolved by message id.
 ///
-/// A `Document` handle carries a file reference that Telegram expires, so the
-/// message is re-fetched per stream rather than cached across requests.
+/// A `Document` handle carries a file reference that Telegram expires. The
+/// HTTP path re-fetches it per stream; the Android core caches it per set and
+/// resolves again when a download is refused with `FILE_REFERENCE_*`.
 pub async fn part_document(client: &Client, channel: PeerRef, message_id: i64) -> Result<Document> {
     let id = i32::try_from(message_id)
         .map_err(|_| anyhow!("message id {message_id} is out of range"))?;

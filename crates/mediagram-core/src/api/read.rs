@@ -6,6 +6,7 @@ use grammers_session::types::{PeerId, PeerRef};
 use tokio::sync::mpsc;
 
 use crate::catalog as queries;
+use crate::document::is_stale_reference;
 use crate::range::{self, ByteRange, PartSpan};
 use crate::stream;
 
@@ -68,20 +69,49 @@ pub(super) async fn read(
         let channel = channel_ref(&handles, location.chat_id)?;
         let document = document_for(core, &client, channel, &set_id, location.message_id).await?;
 
-        // A separate task drains while `pump_step` runs, so a step whose
-        // bytes outgrow the buffer cannot deadlock against a receiver that
-        // only starts reading once the sender is done.
-        let (tx, mut rx) = mpsc::channel(BUFFERED_CHUNKS);
-        let pump_client = client.clone();
-        let pump = tokio::spawn(async move { stream::pump_step(&pump_client, &document, &step, &tx).await });
-        while let Some(chunk) = rx.recv().await {
-            out.extend(chunk.map_err(|_| CoreError::Network("the download was interrupted".into()))?);
+        let start = out.len();
+        match fetch_step(&client, document, step, &mut out).await {
+            Ok(()) => {}
+            // The held handle's file reference has expired — a film paused
+            // for hours comes back to one. Resolve the part again for a
+            // fresh reference and retry once; a second refusal is real.
+            Err(err) if is_stale_reference(&err) => {
+                out.truncate(start);
+                core.state.lock().await.documents.evict(&set_id, location.message_id);
+                let fresh = document_for(core, &client, channel, &set_id, location.message_id).await?;
+                fetch_step(&client, fresh, step, &mut out).await.map_err(interrupted)?;
+            }
+            Err(err) => return Err(interrupted(err)),
         }
-        pump.await
-            .map_err(|_| CoreError::Network("the download task did not finish cleanly".into()))?
-            .map_err(|_| CoreError::Network("the download ended before it finished".into()))?;
     }
     Ok(out)
+}
+
+/// Downloads one step onto the end of `out`.
+///
+/// A separate task drains while `pump_step` runs, so a step whose bytes
+/// outgrow the buffer cannot deadlock against a receiver that only starts
+/// reading once the sender is done. The pump's own error is returned intact,
+/// so the caller can tell a stale file reference from a dropped connection.
+async fn fetch_step(
+    client: &grammers_client::Client,
+    document: grammers_client::media::Document,
+    step: range::Step,
+    out: &mut Vec<u8>,
+) -> anyhow::Result<()> {
+    let (tx, mut rx) = mpsc::channel(BUFFERED_CHUNKS);
+    let pump_client = client.clone();
+    let pump = tokio::spawn(async move { stream::pump_step(&pump_client, &document, &step, &tx).await });
+    while let Some(chunk) = rx.recv().await {
+        out.extend(chunk?);
+    }
+    pump.await
+        .map_err(|_| anyhow::anyhow!("the download task did not finish cleanly"))?
+}
+
+/// What Kotlin is told when a download fails: the cause stays in Rust.
+fn interrupted(_: anyhow::Error) -> CoreError {
+    CoreError::Network("the download ended before it finished".into())
 }
 
 /// The document a part's bytes live in, resolved once per set.

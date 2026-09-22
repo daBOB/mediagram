@@ -9,6 +9,13 @@ to `main`. Full phase-by-phase detail lives in
 
 **Fixed**
 
+- The Android app no longer loses a film after a long pause. It keeps each
+  part's Telegram document handle for the whole of a set, and that handle
+  carries a file reference Telegram expires; once refused, every read of the
+  set failed as a network error until another title was opened. A read
+  refused with `FILE_REFERENCE_EXPIRED` (or `_INVALID`) now drops the held
+  handle, resolves the part again and retries once. The web player resolves
+  on every fetch and was never affected.
 - Merging watch state from several devices now names a viewer the same way
   whichever order their documents arrive in. One viewer typed as "André" on
   one machine and " andré " on another kept whichever spelling happened to
