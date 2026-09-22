@@ -7,6 +7,8 @@
 //! apart the first time only one of them was fixed.
 
 pub mod details;
+pub mod disk_cache;
+pub mod localized;
 pub mod posters;
 pub mod tmdb_client;
 pub mod tmdb_types;

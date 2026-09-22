@@ -2,20 +2,18 @@
 //! so `resolve` and its tests never need a live network connection.
 //!
 //! This crate does not own transport: `TmdbClient` takes an already-built
-//! `reqwest::Client` rather than constructing one of its own. A client this
-//! crate built for itself would be built with whatever `reqwest` feature
-//! this crate happens to compile with, wherever it happens to be linked in —
-//! the uploader wants its ordinary `rustls` client, `mediagram-core` wants
-//! the hand-built webpki one `http::client()` builds to keep clear of
-//! `rustls-platform-verifier`'s Android-only panic, and a crate that built
-//! its own bare client could not tell the two apart or be handed either.
+//! `reqwest::Client` rather than constructing one of its own. Every program
+//! that links it builds that client with `mediagram_core::api::http`, on the
+//! one TLS stack chosen there; a client built here would have to guess.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
 use serde_json::Value;
-use sha2::{Digest, Sha256};
+
+use crate::disk_cache::DiskCachedApi;
+use crate::localized::Localized;
 
 const BASE_URL: &str = "https://api.themoviedb.org/3";
 const MAX_RETRIES: u32 = 3;
@@ -54,47 +52,6 @@ pub fn classify(key: &str) -> Credential {
         Credential::Bearer
     } else {
         Credential::QueryParam
-    }
-}
-
-/// Asks TMDB for one language, on every request.
-///
-/// TMDB answers in English unless told otherwise, so a German library gets
-/// "Forsaken" where the file says "Verlassen" — TMDB has both, the client
-/// simply never asked.
-///
-/// This wraps the cache rather than sitting inside the client, and the order
-/// matters: the cache keys on the query it is handed, so the language has to
-/// be in that query. Added behind the cache, two languages would share one
-/// entry and the second caller would be served the first's answer.
-pub struct Localized<A> {
-    inner: A,
-    language: String,
-}
-
-impl<A> Localized<A> {
-    pub fn new(inner: A, language: impl Into<String>) -> Self {
-        Self {
-            inner,
-            language: language.into(),
-        }
-    }
-
-    /// The wrapped API. Used by tests to see what was actually asked.
-    pub fn inner(&self) -> &A {
-        &self.inner
-    }
-}
-
-impl<A: TmdbApi> TmdbApi for Localized<A> {
-    async fn get_json(&self, path: &str, query: &[(&str, String)]) -> Result<Value> {
-        // A caller that names its own language means it.
-        if query.iter().any(|(key, _)| *key == "language") {
-            return self.inner.get_json(path, query).await;
-        }
-        let mut with_language = query.to_vec();
-        with_language.push(("language", self.language.clone()));
-        self.inner.get_json(path, &with_language).await
     }
 }
 
@@ -213,60 +170,3 @@ impl TmdbApi for TmdbClient {
     }
 }
 
-/// Wraps any `TmdbApi` with a disk cache keyed by sha256(path + sorted
-/// query), so repeated resolves of the same file never re-hit the network.
-pub struct DiskCachedApi<A> {
-    inner: A,
-    cache_dir: PathBuf,
-}
-
-impl<A: TmdbApi> DiskCachedApi<A> {
-    pub fn new(inner: A, cache_dir: impl Into<PathBuf>) -> Self {
-        Self {
-            inner,
-            cache_dir: cache_dir.into().join("tmdb-cache"),
-        }
-    }
-
-    fn cache_key(path: &str, query: &[(&str, String)]) -> String {
-        let mut pairs: Vec<(&str, &str)> = query.iter().map(|(k, v)| (*k, v.as_str())).collect();
-        pairs.sort_unstable();
-        let mut buf = path.to_string();
-        for (key, value) in pairs {
-            buf.push('\u{1f}');
-            buf.push_str(key);
-            buf.push('=');
-            buf.push_str(value);
-        }
-        let mut hasher = Sha256::new();
-        hasher.update(buf.as_bytes());
-        hex::encode(hasher.finalize())
-    }
-}
-
-impl<A: TmdbApi> TmdbApi for DiskCachedApi<A> {
-    async fn get_json(&self, path: &str, query: &[(&str, String)]) -> Result<Value> {
-        let file = self
-            .cache_dir
-            .join(format!("{}.json", Self::cache_key(path, query)));
-        if let Ok(bytes) = std::fs::read(&file) {
-            if let Ok(value) = serde_json::from_slice(&bytes) {
-                return Ok(value);
-            }
-        }
-
-        let value = self.inner.get_json(path, query).await?;
-        let empty_page = value
-            .get("results")
-            .and_then(|r| r.as_array())
-            .is_some_and(|a| a.is_empty());
-        if empty_page {
-            return Ok(value);
-        }
-        std::fs::create_dir_all(&self.cache_dir)
-            .with_context(|| format!("creating tmdb cache dir {}", self.cache_dir.display()))?;
-        std::fs::write(&file, serde_json::to_vec(&value)?)
-            .with_context(|| format!("writing tmdb cache file {}", file.display()))?;
-        Ok(value)
-    }
-}

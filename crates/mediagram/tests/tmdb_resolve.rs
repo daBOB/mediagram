@@ -12,7 +12,7 @@ use anyhow::Result;
 use serde_json::{Value, json};
 
 use support::tmdb::metadata::resolve::{ResolveInput, ResolvedItem, resolve};
-use mediagram_tmdb::tmdb_client::DiskCachedApi;
+use mediagram_tmdb::disk_cache::DiskCachedApi;
 use mediagram_tmdb::tmdb_client::TmdbApi;
 use support::tmdb::{FixtureApi, ScriptedPrompter, StubApi};
 

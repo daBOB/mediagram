@@ -29,44 +29,6 @@ pub enum Kind {
     Doc,
 }
 
-impl Kind {
-    /// Every kind, in the order a reader would list them.
-    pub const ALL: [Kind; 4] = [Kind::Movie, Kind::Ep, Kind::Tut, Kind::Doc];
-
-    /// The spelling used on the wire and in the index's `kind` column — the
-    /// same one serde writes, so a caption and a row can never disagree.
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Kind::Movie => "movie",
-            Kind::Ep => "ep",
-            Kind::Tut => "tut",
-            Kind::Doc => "doc",
-        }
-    }
-}
-
-impl std::fmt::Display for Kind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.as_str())
-    }
-}
-
-/// A `kind` spelling no version of the spec has defined.
-#[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
-#[error("unknown kind `{0}`")]
-pub struct UnknownKind(pub String);
-
-impl std::str::FromStr for Kind {
-    type Err = UnknownKind;
-
-    fn from_str(s: &str) -> Result<Kind, UnknownKind> {
-        Kind::ALL
-            .into_iter()
-            .find(|kind| kind.as_str() == s)
-            .ok_or_else(|| UnknownKind(s.to_string()))
-    }
-}
-
 /// Episode number: a single episode or an inclusive range for multi-episode files.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(untagged)]
@@ -220,65 +182,5 @@ pub fn episode_code(season: u32, e: Episode) -> String {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn ep() -> Caption {
-        Caption {
-            cid: None,
-            chap: None,
-            path: None,
-            t: Kind::Ep,
-            ids: ProviderIds {
-                tmdb: Some(95396),
-                tvdb: None,
-                imdb: None,
-            },
-            show: Some("Severance".into()),
-            title: Some("Hello, Ms. Cobel".into()),
-            year: Some(2022),
-            s: Some(2),
-            e: Some(Episode::Single(1)),
-            abs: None,
-            q: Some("1080p".into()),
-            hdr: Some("SDR".into()),
-            container: "mkv".into(),
-            vcodec: None,
-            acodec: None,
-            alang: vec!["en".into()],
-            slang: vec![],
-            dur: None,
-            variant: None,
-            set: "01JQ8F2K9M4XZ".into(),
-            part: Part {
-                i: 0,
-                n: 1,
-                off: 0,
-                len: 10,
-                sha256: "ab".into(),
-            },
-            total: 10,
-        }
-    }
-
-    #[test]
-    fn display_and_episode_code() {
-        assert_eq!(ep().display_name(), "Severance S02E01");
-        assert_eq!(episode_code(1, Episode::Range([1, 2])), "S01E01-E02");
-        assert_eq!(Episode::Range([3, 5]).last(), 5);
-    }
-
-    #[test]
-    fn with_part_keeps_everything_else() {
-        let c = ep();
-        let d = c.with_part(Part {
-            i: 1,
-            n: 2,
-            off: 5,
-            len: 5,
-            sha256: "cd".into(),
-        });
-        assert_eq!(d.part.i, 1);
-        assert_eq!(d.show, c.show);
-    }
-}
+#[path = "caption_tests.rs"]
+mod tests;

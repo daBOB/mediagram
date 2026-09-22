@@ -16,6 +16,7 @@ pub mod caption_codec;
 pub mod filename;
 pub mod ids;
 pub mod index_caption;
+pub mod kind_spelling;
 pub mod package;
 pub mod part_name;
 pub mod part_plan;

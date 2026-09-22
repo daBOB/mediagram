@@ -13,7 +13,9 @@ use std::path::PathBuf;
 use mlib_spec::Kind;
 
 use mediagram_tmdb::posters::kind_key;
-use mediagram_tmdb::tmdb_client::{DiskCachedApi, HttpStatus, Localized, TmdbApi, TmdbClient};
+use mediagram_tmdb::disk_cache::DiskCachedApi;
+use mediagram_tmdb::localized::Localized;
+use mediagram_tmdb::tmdb_client::{HttpStatus, TmdbApi, TmdbClient};
 
 use crate::catalog::PlayableSet;
 use crate::dto::FetchReport;
