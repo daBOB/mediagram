@@ -40,7 +40,7 @@ pub enum AuthOutcome {
 ///
 /// A title to render and a handle to send back, and nothing else. The handle
 /// is a random name this data directory minted for the channel — see
-/// [`library`] — so a caller holding one learns nothing about where the
+/// `library` — so a caller holding one learns nothing about where the
 /// bytes live, which is the same rule the byte path is held to.
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
 pub struct LibraryChoice {
@@ -146,7 +146,7 @@ impl Core {
     }
 
     /// What is known about a title, or nothing. The index answers first and
-    /// what this device fetched fills the gaps — see [`enrich::details::title_info`].
+    /// what this device fetched fills the gaps — see `enrich::details::title_info`.
     /// A course has no provider entry and a library assembled without a TMDB
     /// key has no rows at all; both are ordinary, so neither is an error.
     pub async fn title_info(&self, poster_key: String) -> Option<crate::dto::TitleInfo> {

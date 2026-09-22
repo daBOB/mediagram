@@ -56,6 +56,9 @@ pub fn spawn_finish_set(
     // A session of its own. Closing the terminal sends SIGHUP to the
     // foreground process group, and an upload that dies with the window it
     // was started from is not a background upload.
+    // SAFETY: the closure runs in the forked child before exec, where only
+    // async-signal-safe calls are allowed; `setsid` is one, and the closure
+    // touches no memory the parent's other threads could be holding.
     unsafe {
         command.pre_exec(|| match libc::setsid() {
             -1 => Err(std::io::Error::last_os_error()),

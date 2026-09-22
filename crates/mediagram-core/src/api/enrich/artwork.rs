@@ -32,7 +32,7 @@ pub struct FetchPlan {
     pub artwork_dir: PathBuf,
     pub titles: Vec<(Kind, u64)>,
     pub without_id: u32,
-    /// The language to ask in — see [`language_of`]. Read from the same
+    /// The language to ask in — see `language_of`. Read from the same
     /// snapshot of the index the titles come from, because it is part of
     /// what a run asks for and not a detail of how it asks.
     pub language: String,

@@ -38,9 +38,21 @@ pub fn router(index: Connection, source: Arc<dyn ByteSource>) -> Router {
         })
 }
 
+/// Runs an index query off the async executor. The connection sits behind a
+/// blocking mutex and SQLite blocks on disk, so neither may hold a runtime
+/// thread another request is waiting for.
+async fn with_index<T: Send + 'static>(
+    state: &ServeState,
+    query: impl FnOnce(&Connection) -> T + Send + 'static,
+) -> T {
+    let index = Arc::clone(&state.index);
+    tokio::task::spawn_blocking(move || query(&index.lock().expect("index lock")))
+        .await
+        .expect("an index query does not panic")
+}
+
 async fn list_sets(State(state): State<ServeState>) -> Response {
-    let conn = state.index.lock().expect("index lock");
-    match catalog::list_playable(&conn) {
+    match with_index(&state, catalog::list_playable).await {
         Ok(sets) => Json(sets).into_response(),
         Err(err) => server_error(&err),
     }
@@ -52,19 +64,20 @@ async fn stream_set(
     method: Method,
     headers: HeaderMap,
 ) -> Response {
-    let (set, locations) = {
-        let conn = state.index.lock().expect("index lock");
-        let set = match catalog::playable_set(&conn, &set_id) {
-            Ok(Some(set)) => set,
-            // Not there, incomplete, or inconsistent: all the same to a
-            // player, and none of them worth telling a caller apart.
-            Ok(None) => return empty(StatusCode::NOT_FOUND),
-            Err(err) => return server_error(&err),
+    let id = set_id.clone();
+    let found = with_index(&state, move |conn| -> anyhow::Result<_> {
+        let Some(set) = catalog::playable_set(conn, &id)? else {
+            return Ok(None);
         };
-        match catalog::part_locations(&conn, &set_id) {
-            Ok(locations) => (set, locations),
-            Err(err) => return server_error(&err),
-        }
+        Ok(Some((set, catalog::part_locations(conn, &id)?)))
+    })
+    .await;
+    let (set, locations) = match found {
+        Ok(Some(found)) => found,
+        // Not there, incomplete, or inconsistent: all the same to a player,
+        // and none of them worth telling a caller apart.
+        Ok(None) => return empty(StatusCode::NOT_FOUND),
+        Err(err) => return server_error(&err),
     };
 
     let spans: Vec<PartSpan> = locations.iter().map(|l| l.span).collect();

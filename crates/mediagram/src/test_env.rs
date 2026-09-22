@@ -29,6 +29,8 @@ impl EnvGuard {
             .filter(|(k, _)| k.starts_with("MEDIAGRAM_"))
             .collect();
         for (k, _) in &saved {
+            // SAFETY: every test that reads or writes the environment holds
+            // ENV_LOCK, taken above, so no other thread is reading it now.
             unsafe { std::env::remove_var(k) };
         }
         Self { _lock: lock, saved }
@@ -38,6 +40,8 @@ impl EnvGuard {
 impl Drop for EnvGuard {
     fn drop(&mut self) {
         for (k, v) in &self.saved {
+            // SAFETY: ENV_LOCK is still held; it is released after this
+            // loop, when the guard's lock field drops.
             unsafe { std::env::set_var(k, v) };
         }
     }

@@ -1,7 +1,7 @@
 //! Turning planned reads into bytes: the half that talks to Telegram.
 //!
 //! [`StepCursor`] is pure and holds the arithmetic that trims a download to
-//! the requested range. [`pump`] drives the transport and is deliberately thin
+//! the requested range. `pump` drives the transport and is deliberately thin
 //! around it, so the part that can corrupt a video is the part under test.
 
 use std::pin::Pin;

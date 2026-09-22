@@ -2,12 +2,12 @@
 //! than in it.
 //!
 //! The index arrives from the channel already written, and this crate opens
-//! it read-only on purpose — see [`crate::api::store`]. A description the phone
+//! it read-only on purpose — see `crate::api::store`. A description the phone
 //! fetches therefore has nowhere to go inside it and needs a store of its
 //! own: the same `shows` table, built from the same migrations, in a database
 //! [`details_db`] puts where a refresh cannot reach it.
 //!
-//! [`title_info`] is the other half, and the only reader: the index answers
+//! `title_info` is the other half, and the only reader: the index answers
 //! first, and what this device fetched fills the gaps.
 
 use std::path::PathBuf;
@@ -22,7 +22,7 @@ use crate::shows::{TitleDetails, key_parts, read};
 use crate::api::{Core, CoreError, store};
 
 /// Where descriptions this device fetched are kept. Two things must both
-/// hold, exactly as for [`crate::api::store::artwork_dir`]:
+/// hold, exactly as for `crate::api::store::artwork_dir`:
 ///
 /// - **outside every version directory**, so a refresh — which removes
 ///   every `v-…` and `incoming` entry but the version it installs — keeps it;

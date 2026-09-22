@@ -12,7 +12,7 @@
 //!
 //! A course is not only video. Handouts sit beside lessons and workbooks sit
 //! in folders holding no video at all, and both are walked here alongside the
-//! lessons — see [`number_chapters`] for the one rule that keeps adding them
+//! lessons — see `number_chapters` for the one rule that keeps adding them
 //! from disturbing what is already uploaded.
 
 use std::collections::BTreeMap;
