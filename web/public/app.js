@@ -24,9 +24,10 @@ import { catalogOf, loadLink } from "./lib/link.js";
 import { colophonLine } from "./lib/colophon.js";
 import { watchStatus } from "./lib/status-view.js";
 import { openPlayer } from "./lib/player.js";
-import { divisionBlock, extentOf, levelBlock } from "./lib/course-view.js";
+import { divisionBlock, extentOf, levelBlock, seasonBlock } from "./lib/course-view.js";
 import { describeSeries, seriesHeader } from "./lib/series-header.js";
-import { SECTIONS, collectionGrid, emptyState, movieGrid, setGrid } from "./lib/shelf-view.js";
+import { SECTIONS, collectionGrid, emptyState, movieGrid, seasonGrid, setGrid } from "./lib/shelf-view.js";
+import { hasSeasonWall, seasonNamed } from "./lib/season-wall.js";
 import { GRID, LIST, setShelfMode, shelfMode } from "./lib/shelf-mode.js";
 import * as state from "./lib/watch-state.js";
 import { resumeAt } from "./lib/resume-point.js";
@@ -236,9 +237,10 @@ function crumbs(section, collectionName, folders) {
  * One show, or one level of one course.
  *
  * The two part company here because the containers do. A show's seasons are
- * one flat level holding episodes, so the whole of it goes on the page. A
- * course is four levels and 162 lessons, so one floor goes on the page and
- * the folders are doors.
+ * one flat level holding episodes, so they are a wall of season posters and
+ * each opens its own page; a show of one season skips the wall. A course is
+ * four levels and 162 lessons, so one floor goes on the page and the folders
+ * are doors.
  */
 function viewCollection(section, name, folders) {
   const collection = library[section].find((entry) => entry.name === name);
@@ -248,6 +250,19 @@ function viewCollection(section, name, folders) {
   }
 
   if (section === "tutorials") return viewCourseLevel(collection, folders);
+
+  // A season opened from the wall: its episodes, under the show's trail.
+  if (folders.length > 0) {
+    const season = seasonNamed(collection, folders[0]);
+    main.append(crumbs(section, collection.name, [folders[0]]));
+    if (!season) {
+      main.append(el("p", "error", `"${collection.name}" has no ${folders[0]}.`));
+      return;
+    }
+    heading(season.title, countOf(season.items.length, "episode"));
+    main.append(seasonBlock(season, play));
+    return;
+  }
 
   main.append(crumbs(section, collection.name, []));
   heading(collection.name, countOf(collection.count, "episode"));
@@ -266,6 +281,14 @@ function viewCollection(section, name, folders) {
       .then((res) => (res.ok ? res.json() : null))
       .then((meta) => describeSeries(header, meta))
       .catch(() => {});
+  }
+  if (hasSeasonWall(collection)) {
+    main.append(
+      seasonGrid(collection.divisions, (title) => {
+        location.hash = `#/series/${[collection.name, title].map(encodeURIComponent).join("/")}`;
+      }),
+    );
+    return;
   }
   for (const division of collection.divisions) main.append(divisionBlock(division, 0, play));
 }

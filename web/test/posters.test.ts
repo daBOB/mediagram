@@ -142,6 +142,37 @@ describe("serving artwork from a local index", () => {
   });
 });
 
+describe("a season's own artwork", () => {
+  test("an episode names its season's poster, which is served like any other", async () => {
+    const dir = withPosters("tmdb-tv-1396.jpg", "tmdb-tv-1396-s2.jpg");
+    const db = emptyIndex();
+    completeSet(db, "01SET0000000000000000010", "ep", 1396);
+    completeSet(db, "01SET0000000000000000011", "ep", 1396);
+    db.run("UPDATE sets SET season = 2 WHERE set_id = '01SET0000000000000000010'");
+    db.run("UPDATE sets SET season = 3 WHERE set_id = '01SET0000000000000000011'");
+    const route = createRouter({ db, source: NO_BYTES, posters: new PosterStore(dir) });
+
+    const catalog = await route(get("/api/sets"));
+    const sets = JSON.parse(new TextDecoder().decode(catalog.body!));
+    const bySeason = new Map(sets.map((set: any) => [set.season, set]));
+    expect((bySeason.get(2) as any).seasonPoster).toBe("tmdb-tv-1396-s2");
+    // Season three has no artwork of its own; the page falls back to the show's.
+    expect((bySeason.get(3) as any).seasonPoster).toBeNull();
+    expect((bySeason.get(3) as any).poster).toBe("tmdb-tv-1396");
+
+    expect((await route(get("/api/posters/tmdb-tv-1396-s2.jpg"))).status).toBe(200);
+  });
+
+  test("a film has no season poster", async () => {
+    const db = emptyIndex();
+    completeSet(db, "01SET0000000000000000012", "movie", 5);
+    const route = createRouter({ db, source: NO_BYTES, posters: new PosterStore(withPosters()) });
+
+    const [set] = JSON.parse(new TextDecoder().decode((await route(get("/api/sets"))).body!));
+    expect(set.seasonPoster).toBeNull();
+  });
+});
+
 /**
  * Artwork can arrive while a player is running: `mediagram posters` writes
  * into the directory a local library is already being served from. Listing

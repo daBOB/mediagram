@@ -9,6 +9,15 @@ to `main`. Full phase-by-phase detail lives in
 
 **Added**
 
+- A series of more than one season opens on a wall of its seasons, each with
+  its own TMDB poster, and a season opens a page of its episodes; a show of
+  one season still goes straight to them. Web player and Android app alike.
+  Season artwork is keyed `tmdb-tv-<id>-s<n>` (the package's poster-key rule
+  now allows that one extra part) and comes from the `/tv/{id}` payload
+  already cached, so `mediagram posters`, the package export and the phone's
+  own fetch gain it with no extra TMDB request. A season with no artwork of
+  its own shows the show's.
+
 - Each row on the start page names how much is behind it — "Latest films ·
   124" — on the web player and the Android app alike. A row shows six; the
   figure is the whole shelf "See all" opens, so Continue counts every started

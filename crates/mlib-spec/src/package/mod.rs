@@ -114,15 +114,27 @@ pub fn key_id(key: &[u8; 32]) -> String {
 }
 
 /// A poster key reaches a file name, a manifest path and a tar member name,
-/// so it is restricted to `kind-subkind-digits` before it touches any path.
+/// so it is restricted to `source-kind-digits` before it touches any path.
+///
+/// A season's artwork adds one more part, `s<digits>` — `tmdb-tv-1396-s2` —
+/// so it sits beside its show's poster under the same rules and is never
+/// mistaken for a different show: the show's own key has no fourth part.
 pub fn poster_key_is_valid(key: &str) -> bool {
     let mut parts = key.split('-');
-    let (Some(source), Some(kind), Some(id), None) =
-        (parts.next(), parts.next(), parts.next(), parts.next())
-    else {
+    let (Some(source), Some(kind), Some(id)) = (parts.next(), parts.next(), parts.next()) else {
         return false;
     };
-    is_lower_alpha(source) && is_lower_alpha(kind) && is_digits(id)
+    let season_ok = match (parts.next(), parts.next()) {
+        (None, _) => true,
+        (Some(season), None) => season.strip_prefix('s').is_some_and(is_digits),
+        _ => false,
+    };
+    is_lower_alpha(source) && is_lower_alpha(kind) && is_digits(id) && season_ok
+}
+
+/// The key a season's artwork is stored under, beside its show's `show_key`.
+pub fn season_poster_key(show_key: &str, season: u32) -> String {
+    format!("{show_key}-s{season}")
 }
 
 fn is_lower_alpha(s: &str) -> bool {

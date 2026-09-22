@@ -21,6 +21,14 @@ interface CatalogRepository {
      * entry, and a library assembled without a TMDB key has no rows at all.
      */
     suspend fun showInfo(posterKey: String): ShowInfo?
+
+    /**
+     * The local file for a poster key that has no [model.MediaSet] of its
+     * own to carry it on — a season's artwork. `null` is ordinary: not
+     * every season has art of its own, and a library assembled without a
+     * TMDB key has none at all.
+     */
+    suspend fun posterPath(posterKey: String): String?
 }
 
 /**
@@ -87,6 +95,11 @@ class DefaultCatalogRepository(
     override suspend fun showInfo(posterKey: String): ShowInfo? {
         val core = coreProvider.awaitCore()
         return withContext(dispatcher) { core.showInfo(posterKey) }
+    }
+
+    override suspend fun posterPath(posterKey: String): String? {
+        val core = coreProvider.awaitCore()
+        return core.posterPath(posterKey)
     }
 
     /**

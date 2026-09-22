@@ -74,6 +74,27 @@ async fn posters_are_keyed_by_kind_so_movie_and_show_ids_cannot_collide() {
     );
 }
 
+/// A series brings its seasons' artwork with it, from the same payload, and
+/// a season TMDB has no artwork for — or unsafe artwork — is left out.
+#[tokio::test]
+async fn a_series_yields_a_poster_per_season_that_has_one() {
+    let api = FakeApi::default().with(
+        "/tv/7",
+        json!({"id": 7, "poster_path": "/show.jpg", "seasons": [
+            {"season_number": 0, "poster_path": "/specials.jpg"},
+            {"season_number": 1, "poster_path": "/s1.jpg"},
+            {"season_number": 2},
+            {"season_number": 3, "poster_path": "/../etc/passwd"}
+        ]}),
+    );
+
+    let found = resolve_posters(&api, &[(Kind::Ep, 7)]).await;
+
+    let keys: Vec<&str> = found.iter().map(|p| p.key.as_str()).collect();
+    assert_eq!(keys, ["tmdb-tv-7", "tmdb-tv-7-s0", "tmdb-tv-7-s1"]);
+    assert_eq!(found[2].path, "/s1.jpg");
+}
+
 /// TMDB being unreachable, rate limited, or refusing an unauthenticated
 /// request costs that title its poster and nothing more. The export still
 /// produces a package.

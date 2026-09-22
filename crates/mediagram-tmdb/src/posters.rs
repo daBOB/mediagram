@@ -40,6 +40,9 @@ pub fn poster_url(poster_path: &str) -> String {
 /// Looks up the poster path for each title, skipping any that cannot be
 /// resolved. Requests the same endpoint and query string `resolve` used, so
 /// the on-disk cache hits instead of the network.
+///
+/// A series also yields one poster per season that has its own artwork,
+/// keyed `<show key>-s<n>`, read from the same payload as the show's.
 pub async fn resolve_posters(api: &impl TmdbApi, titles: &[(Kind, u64)]) -> Vec<PosterRef> {
     let mut found: Vec<PosterRef> = Vec::new();
     for (kind, id) in titles {
@@ -47,24 +50,31 @@ pub async fn resolve_posters(api: &impl TmdbApi, titles: &[(Kind, u64)]) -> Vec<
         if found.iter().any(|p| p.key == key) {
             continue;
         }
-        if let Some(path) = poster_path_for(api, *kind, *id).await {
-            found.push(PosterRef { key, path });
-        }
+        found.extend(posters_for(api, *kind, *id, &key).await);
     }
     found
 }
 
-async fn poster_path_for(api: &impl TmdbApi, kind: Kind, id: u64) -> Option<String> {
+async fn posters_for(api: &impl TmdbApi, kind: Kind, id: u64, key: &str) -> Vec<PosterRef> {
     // A course has no provider id, so it never reaches this lookup and simply
     // has no poster from TMDB.
     let details = match crate::details::details(api, kind, id).await {
         Ok(details) => details,
         Err(err) => {
             tracing::warn!(id, error = %err, "no poster for this title");
-            return None;
+            return Vec::new();
         }
     };
-    details.poster_path.filter(|p| is_image_path(p))
+    let show = details
+        .poster_path
+        .filter(|p| is_image_path(p))
+        .map(|path| PosterRef { key: key.to_owned(), path });
+    let seasons = details.seasons.into_iter().filter_map(|season| {
+        let path = season.poster_path.filter(|p| is_image_path(p))?;
+        let key = mlib_spec::package::season_poster_key(key, season.season_number);
+        Some(PosterRef { key, path })
+    });
+    show.into_iter().chain(seasons).collect()
 }
 
 /// A poster path is remote data that becomes part of a URL and a file name.

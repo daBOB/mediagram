@@ -29,6 +29,8 @@ class FakeCore(
     private val refreshFails: String? = null,
     /** Whether [refreshLibrary] is cancelled rather than finishing or failing. */
     private val refreshCancels: Boolean = false,
+    /** What [posterPath] answers for a key it holds; any other key answers nothing. */
+    private val posters: Map<String, String> = emptyMap(),
 ) : CoreClient {
 
     /** Which handle the last refresh was asked for, or `null` if none was. */
@@ -52,7 +54,7 @@ class FakeCore(
 
     override suspend fun refreshCatalog(url: String, keyB64: String): Long = refreshResult
     override fun listSets(): List<SetSummary> = sets
-    override fun posterPath(posterKey: String): String? = null
+    override fun posterPath(posterKey: String): String? = posters[posterKey]
     override fun showInfo(posterKey: String): ShowInfo? = null
     override fun totalSize(setId: String): Long = 0
     override fun catalogFacts(): CatalogFacts =

@@ -51,6 +51,11 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
     // resolved the same way and for the same reason.
     val collection = at.collection?.let(catalogState::collection)
     val title = at.titleId?.let(catalogState::mediaSet)
+    // Resolved from the collection rather than saved as a tree: a season is
+    // one of its show's own divisions, so it only exists once the show it
+    // belongs to does, and a stale key from a different show simply fails
+    // to find a match here rather than opening the wrong season.
+    val season = at.season?.let { name -> collection?.divisions?.find { it.title == name } }
 
     // Counts updates asked for, so each one runs the wait below once.
     // Deliberately not `rememberSaveable`: a request that did not survive
@@ -134,15 +139,28 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
             )
         }
 
+        // Checked ahead of the collection itself: a season is a screen the
+        // wall opened over it, and back from here has to land on that wall
+        // rather than skip past it to the catalog.
+        season != null -> LibraryBranch(Destination.Season(season.title), menuActions, { at.season = null }) {
+            SeasonScreen(division = season, onOpenTitle = { at.titleId = it })
+        }
+
         collection != null -> LibraryBranch(
             destination = Destination.Collection(collection.name),
             menu = menuActions,
-            onLeave = { at.collection = null },
+            // Both cleared together: a season position left behind here
+            // would resolve against whichever collection is opened next,
+            // and a different show can easily have a division of the same
+            // name — "Season 1" is not a fact about one show.
+            onLeave = { at.collection = null; at.season = null },
         ) {
             CollectionScreen(
                 collection = collection,
                 info = rememberShowInfo(collection.posterKey, catalogViewModel::showInfo),
+                posterPath = catalogViewModel::posterPath,
                 onOpenTitle = { at.titleId = it },
+                onOpenSeason = { at.season = it.title },
             )
         }
 
@@ -163,7 +181,10 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
                     state = catalogState,
                     fetching = fetchState.running,
                     onOpenTitle = { at.titleId = it },
-                    onOpenCollection = { at.collection = it },
+                    // A leftover season would otherwise resolve against
+                    // whichever collection is opened next; see the note on
+                    // the collection branch's own onLeave above.
+                    onOpenCollection = { at.collection = it; at.season = null },
                 )
             }
         }
