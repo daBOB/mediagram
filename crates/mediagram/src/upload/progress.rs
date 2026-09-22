@@ -14,7 +14,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 
@@ -94,7 +94,7 @@ impl Reporter {
                 ticker.tick().await;
                 let current = Progress {
                     bytes_sent: counter.load(Ordering::Relaxed),
-                    updated_at: now_unix(),
+                    updated_at: crate::clock::now_unix(),
                     ..shape.clone()
                 };
                 let Ok(text) = serde_json::to_string(&current) else {
@@ -115,9 +115,3 @@ impl Drop for Reporter {
     }
 }
 
-pub fn now_unix() -> i64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs() as i64)
-        .unwrap_or(0)
-}

@@ -66,10 +66,7 @@ pub async fn run(cfg: &Config, doc: &Document) -> Result<()> {
     mlib_spec::to_text(&probe, &probe.display_name())
         .context("caption exceeds Telegram's budget; shorten --variant or the course title")?;
 
-    let created_at = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs() as i64;
+    let created_at = crate::clock::now_unix();
     let set_row = SetRow::from_caption(&caption, created_at)?;
 
     let data_dir = cfg.data_dir()?;
@@ -80,7 +77,7 @@ pub async fn run(cfg: &Config, doc: &Document) -> Result<()> {
         parts::insert_parts(&tx, &set_id, &part_ranges)?;
         // No remux ever runs on a document, so the source recorded here is
         // the file itself and there is no temporary to clean up after.
-        db::set_meta(&tx, &format!("source:{set_id}"), &source_value(&doc.file))?;
+        db::set_meta(&tx, &db::source_key(&set_id), &source_value(&doc.file))?;
         tx.commit().context("committing index transaction")?;
     }
     drop(conn);

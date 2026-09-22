@@ -146,7 +146,7 @@ async fn upload_one<T: Transport>(
         part_bytes: part.byte_length,
         bytes_done,
         set_bytes: set.total,
-        updated_at: progress::now_unix(),
+        updated_at: crate::clock::now_unix(),
     };
     let _reporter = data_dir
         .map(|dir| progress::Reporter::start(dir, std::sync::Arc::clone(&counter), shape.clone()));
@@ -207,7 +207,7 @@ fn mime_for(container: &str) -> &'static str {
 /// `tmp:<set_id>`), then forgets it. Sets without a recorded temp are untouched,
 /// so a user's original file can never be removed here.
 async fn remove_recorded_tmp(conn: &Connection, set_id: &str) {
-    let key = format!("tmp:{set_id}");
+    let key = db::tmp_key(set_id);
     let Ok(Some(path)) = db::get_meta(conn, &key) else {
         return;
     };

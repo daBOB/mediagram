@@ -64,7 +64,7 @@ pub async fn finish_one(
     set: &sets::SetRow,
     data_dir: &Path,
 ) -> Result<bool> {
-    let source_key = format!("source:{}", set.set_id);
+    let source_key = db::source_key(&set.set_id);
     let source_path = db::get_meta(conn, &source_key)?.ok_or_else(|| {
         anyhow::anyhow!(
             "set {} has no recorded source path; cannot resume",

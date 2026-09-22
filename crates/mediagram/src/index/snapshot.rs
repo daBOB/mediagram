@@ -3,7 +3,6 @@
 //! to the live database can never land mid-upload.
 
 use std::path::Path;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context, Result};
 use rusqlite::Connection;
@@ -25,10 +24,7 @@ pub fn checkpoint(conn: &Connection) -> Result<()> {
 /// This writes to the live database. Callers that are only reading it — the
 /// package export — use [`copy_to`] instead.
 pub fn snapshot_to(conn: &Connection, dest: &Path) -> Result<()> {
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs() as i64;
+    let now = crate::clock::now_unix();
     db::set_meta(conn, "last_push_at", &now.to_string())
         .context("recording last_push_at before snapshot")?;
     copy_to(conn, dest)

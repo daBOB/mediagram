@@ -2,7 +2,7 @@
 //! needs and writes one, instead of sending the user off to copy the example.
 
 use std::io::Write;
-use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+use std::os::unix::fs::OpenOptionsExt;
 use std::path::Path;
 
 use anyhow::{Context, Result};
@@ -85,11 +85,8 @@ fn write(
     tmdb_key: &str,
 ) -> Result<()> {
     if let Some(dir) = path.parent() {
-        std::fs::create_dir_all(dir)
-            .with_context(|| format!("creating config dir {}", dir.display()))?;
         // The file holds api_hash, so the directory it sits in is private too.
-        std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700))
-            .with_context(|| format!("restricting permissions on {}", dir.display()))?;
+        crate::paths::private_dir(dir)?;
     }
     let body = toml::to_string(&Initial {
         api_id,
@@ -145,6 +142,7 @@ mod tests {
 
     #[test]
     fn file_is_owner_only() {
+        use std::os::unix::fs::PermissionsExt;
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("config.toml");
         write(&path, 1, "h", "c", "").unwrap();

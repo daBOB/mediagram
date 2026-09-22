@@ -111,10 +111,7 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
         total,
     };
 
-    let created_at = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs() as i64;
+    let created_at = crate::clock::now_unix();
     let probe = caption.with_part(Part {
         i: part_ranges.len() as u32 - 1,
         n: part_ranges.len() as u32,
@@ -137,7 +134,7 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
             Err(err) => tracing::warn!(id, error = %err, "no description recorded for this title"),
         }
     }
-    let source_key = format!("source:{set_id}");
+    let source_key = db::source_key(&set_id);
     let source_value = source_path
         .canonicalize()
         .unwrap_or_else(|_| source_path.clone())
@@ -151,7 +148,7 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
         store_sidecars(&tx, &set_id, &args.file, &caption)?;
         if source_path != args.file {
             // A faststart remux was written; remember it so only that file is deleted later.
-            db::set_meta(&tx, &format!("tmp:{set_id}"), &source_value)?;
+            db::set_meta(&tx, &db::tmp_key(&set_id), &source_value)?;
         }
         tx.commit().context("committing index transaction")?;
     }

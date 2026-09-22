@@ -2,7 +2,6 @@
 //! as a pinned document, and unpin whatever index message it replaces.
 
 use std::path::Path;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context, Result};
 use grammers_client::message::InputMessage;
@@ -55,10 +54,7 @@ async fn push_via_telegram(cfg: &Config, conn: &Connection, temp_path: &Path) ->
     let sets_count: i64 = conn
         .query_row("SELECT COUNT(*) FROM sets", [], |row| row.get(0))
         .context("counting sets for index caption")?;
-    let pushed_at = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
+    let pushed_at = crate::clock::now_unix();
     let caption = format!(
         "{INDEX_CAPTION_MARKER}\n{}",
         json!({

@@ -13,7 +13,7 @@ use mediagram_tmdb::posters::{PosterRef, download_into};
 use mlib_spec::package::{PackageManifest, PosterEntry};
 use rusqlite::Connection;
 
-use crate::export::{restrict, restrict_dir};
+use crate::paths::{private_dir, restrict_file, write_private};
 use crate::index::snapshot;
 
 pub const POSTER_DIR: &str = "posters";
@@ -33,9 +33,8 @@ impl Staging {
             std::fs::remove_dir_all(&path)
                 .with_context(|| format!("clearing stale staging dir {}", path.display()))?;
         }
-        std::fs::create_dir_all(&path)
-            .with_context(|| format!("creating staging dir {}", path.display()))?;
-        restrict_dir(&path)?;
+        // Staged files hold the private channel id and every message id.
+        private_dir(&path)?;
         Ok(Staging { path })
     }
 
@@ -53,7 +52,7 @@ impl Staging {
     pub fn copy_index(&self, conn: &Connection) -> Result<u64> {
         let dest = self.path.join(mlib_spec::schema::INDEX_FILE);
         snapshot::copy_to(conn, &dest)?;
-        restrict(&dest)?;
+        restrict_file(&dest)?;
         Ok(std::fs::metadata(&dest)
             .with_context(|| format!("sizing {}", dest.display()))?
             .len())
@@ -83,8 +82,7 @@ impl Staging {
     pub fn write_manifest(&self, manifest: &PackageManifest) -> Result<()> {
         let dest = self.path.join(MANIFEST_FILE);
         let text = serde_json::to_vec(manifest).context("serializing the manifest")?;
-        std::fs::write(&dest, text).with_context(|| format!("writing {}", dest.display()))?;
-        restrict(&dest)
+        write_private(&dest, &text)
     }
 }
 

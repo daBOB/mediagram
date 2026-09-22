@@ -134,6 +134,22 @@ fn migrate(conn: &Connection) -> Result<()> {
     Ok(())
 }
 
+/// `meta` key holding the file a pending set is uploaded from, for `resume`.
+pub fn source_key(set_id: &str) -> String {
+    format!("source:{set_id}")
+}
+
+/// `meta` key holding a faststart remux written for a set, so the upload
+/// deletes that file — and never the person's original — when it is done.
+pub fn tmp_key(set_id: &str) -> String {
+    format!("tmp:{set_id}")
+}
+
+/// Every per-set `meta` key, for forgetting a set entirely.
+pub fn set_keys(set_id: &str) -> [String; 2] {
+    [source_key(set_id), tmp_key(set_id)]
+}
+
 /// Upserts a key in the `meta` table.
 pub fn set_meta(conn: &Connection, key: &str, value: &str) -> Result<()> {
     conn.execute(

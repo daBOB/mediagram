@@ -7,7 +7,8 @@
 //! from the cache is fetched if a key is configured, and skipped otherwise:
 //! a missing poster is a cosmetic loss, never a failed export.
 
-use std::os::unix::fs::PermissionsExt;
+use std::io::Write;
+use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 use std::path::Path;
 use std::time::Duration;
 
@@ -158,14 +159,24 @@ async fn download(http: &reqwest::Client, url: &str, dest: &Path) -> Result<()> 
     if bytes.len() as u64 > POSTER_MAX_BYTES {
         bail!("poster body exceeded the {POSTER_MAX_BYTES} byte limit");
     }
-    std::fs::write(dest, &bytes).with_context(|| format!("writing {}", dest.display()))?;
-    restrict(dest)
+    write_private(dest, &bytes)
 }
 
-/// Artwork is written for one account's library and nobody else's.
-fn restrict(path: &Path) -> Result<()> {
+/// Artwork is written for one account's library and nobody else's, so a
+/// poster is created owner-only rather than restricted after it lands.
+fn write_private(path: &Path, bytes: &[u8]) -> Result<()> {
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .mode(0o600)
+        .open(path)
+        .with_context(|| format!("creating {}", path.display()))?;
+    // `mode` applies only when the file is created; one left by an earlier
+    // run keeps whatever it had.
     std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))
-        .with_context(|| format!("restricting {}", path.display()))
+        .with_context(|| format!("restricting {}", path.display()))?;
+    file.write_all(bytes).with_context(|| format!("writing {}", path.display()))
 }
 
 /// The same, for a directory, which needs the execute bit to be enterable.

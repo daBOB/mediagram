@@ -6,7 +6,6 @@
 //! `commands::rescan` supplies the messages by paging through history.
 
 use std::collections::BTreeSet;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 use mlib_spec::caption::Caption;
@@ -40,10 +39,7 @@ pub struct RescanSummary {
 /// recomputes `complete`/`pending` status for every set touched. Safe to
 /// call repeatedly with overlapping or identical input.
 pub fn apply_seen(conn: &Connection, chat_id: i64, seen: &[Seen]) -> Result<RescanSummary> {
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs() as i64;
+    let now = crate::clock::now_unix();
 
     let mut touched_sets = BTreeSet::new();
     let mut parts_seen = 0usize;

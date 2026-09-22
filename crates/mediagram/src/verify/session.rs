@@ -3,7 +3,6 @@
 //! `verify` lives here; the decisions themselves stay in [`super::report`].
 
 use std::collections::HashMap;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 use grammers_client::media::Document;
@@ -123,7 +122,7 @@ async fn verify_part(
 
     if full && verdict.size_ok && !verified_since(part, since) {
         if let Some(document) = document {
-            let now = now_unix();
+            let now = crate::clock::now_unix();
             match hash_document(&tg.client, &document, part.byte_length).await {
                 Ok(computed) => {
                     verdict = report::apply_hash(verdict, &computed, part.sha256.as_deref(), now);
@@ -187,9 +186,3 @@ fn observe(
     }
 }
 
-fn now_unix() -> i64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs() as i64
-}

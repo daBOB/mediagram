@@ -6,8 +6,6 @@
 //! can answer honestly — what is unfinished, and how far each show has got —
 //! which is enough to watch an `add-show` from another terminal.
 
-use std::time::{SystemTime, UNIX_EPOCH};
-
 use anyhow::Result;
 
 use crate::config::Config;
@@ -27,7 +25,7 @@ pub async fn run(cfg: &Config) -> Result<()> {
     let films = progress::films(&conn)?;
     let shows = progress::shows(&conn)?;
     let courses = progress::courses(&conn)?;
-    let now = now_unix();
+    let now = crate::clock::now_unix();
 
     println!(
         "library        {} · {:.1} GB in the channel",
@@ -228,9 +226,3 @@ pub fn ago(seconds: i64) -> String {
     }
 }
 
-fn now_unix() -> i64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs() as i64)
-        .unwrap_or(0)
-}

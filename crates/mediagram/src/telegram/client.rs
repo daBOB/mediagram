@@ -7,7 +7,6 @@
 //! separately so `mediagram login` can report whether it just authenticated
 //! or reused an existing session, without resolving a channel it doesn't need.
 
-use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -75,10 +74,7 @@ impl Tg {
 /// startup makes the order irrelevant, rather than leaving a rule that every
 /// future command has to remember.
 pub async fn preinit_session_store(data_dir: &Path) -> Result<()> {
-    std::fs::create_dir_all(data_dir)
-        .with_context(|| format!("creating data dir {}", data_dir.display()))?;
-    std::fs::set_permissions(data_dir, std::fs::Permissions::from_mode(0o700))
-        .with_context(|| format!("restricting permissions on {}", data_dir.display()))?;
+    crate::paths::private_dir(data_dir)?;
     let path = data_dir.join("session.sqlite");
     // Opening and dropping is enough: the configuration happens once, inside
     // libsql, on first open.
@@ -86,7 +82,8 @@ pub async fn preinit_session_store(data_dir: &Path) -> Result<()> {
         .await
         .with_context(|| format!("cannot open session {}", path.display()))?;
     drop(session);
-    restrict_session_permissions(&path)?;
+    // The session file holds the account's authorization key.
+    crate::paths::restrict_file(&path)?;
     Ok(())
 }
 
@@ -98,7 +95,8 @@ pub async fn open_client(cfg: &Config) -> Result<(Client, SenderPoolFatHandle, J
             .await
             .with_context(|| format!("cannot open session {}", path.display()))?,
     );
-    restrict_session_permissions(&path)?;
+    // The session file holds the account's authorization key.
+    crate::paths::restrict_file(&path)?;
 
     let SenderPool { runner, handle, .. } = SenderPool::new(Arc::clone(&session), cfg.api_id);
     let client = Client::new(handle.clone());
@@ -200,19 +198,9 @@ fn peer_id_matches(id: PeerId, n: i64) -> bool {
 /// Path to the persisted session database under the config's data dir.
 fn session_path(cfg: &Config) -> Result<PathBuf> {
     let dir = cfg.data_dir()?;
-    std::fs::create_dir_all(&dir)
-        .with_context(|| format!("creating data dir {}", dir.display()))?;
     // libsql keeps the auth key in WAL/SHM sidecars too, so the directory itself is private.
-    std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700))
-        .with_context(|| format!("restricting permissions on {}", dir.display()))?;
+    crate::paths::private_dir(&dir)?;
     Ok(dir.join("session.sqlite"))
-}
-
-/// Restricts the session file to owner read/write, since it holds the
-/// account's authorization key.
-fn restrict_session_permissions(path: &Path) -> Result<()> {
-    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))
-        .with_context(|| format!("restricting permissions on {}", path.display()))
 }
 
 /// See [`Tg::chat_id`]; free function so call sites holding only a

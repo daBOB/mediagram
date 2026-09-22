@@ -6,7 +6,6 @@
 //! else from that copy.
 
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context, Result, bail};
 use mediagram_core::package::cipher::{parse_key, seal};
@@ -74,7 +73,7 @@ pub async fn run(
     }
 
     let posters = fetch_posters(cfg, &data_dir, &staging, &titles).await?;
-    let created_at = now_unix();
+    let created_at = crate::clock::now_unix();
     let manifest = PackageManifest {
         format: mlib_spec::package::PACKAGE_FORMAT,
         created_at,
@@ -170,12 +169,6 @@ fn write_package(dir: &Path, created_at: i64, sealed: &[u8]) -> Result<PathBuf> 
     Ok(dest)
 }
 
-fn now_unix() -> i64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs() as i64
-}
 
 /// Publishes the archive, then the pointer that names it. The order is a
 /// correctness property: a reader must never find a pointer to a file that is
