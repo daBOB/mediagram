@@ -31,11 +31,10 @@ pub fn require_index(data_dir: &Path, purpose: &str) -> Result<PathBuf> {
 /// Opens (creating if needed) `<data_dir>/library.db`, enables WAL mode and
 /// foreign keys, runs every migration, and records the schema version.
 pub fn open(data_dir: &Path) -> Result<Connection> {
-    super::sqlite_init::configure();
     crate::paths::private_dir(data_dir)?;
     let path = index_path(data_dir);
-    let conn =
-        Connection::open(&path).with_context(|| format!("opening database {}", path.display()))?;
+    let conn = super::sqlite_init::open(&path)
+        .with_context(|| format!("opening database {}", path.display()))?;
 
     conn.pragma_update(None, "journal_mode", "WAL")
         .context("enabling WAL journal mode")?;

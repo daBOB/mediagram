@@ -51,7 +51,7 @@ fn a_database_at_version_one_is_upgraded_in_place() {
     let path = dir.path().join("library.db");
     {
         // Build a v1 database by hand: the original statements, version 1.
-        let conn = rusqlite::Connection::open(&path).unwrap();
+        let conn = mediagram::index::sqlite_init::open(&path).unwrap();
         for statement in mlib_spec::schema::migrations_up_to(1) {
             conn.execute(statement, []).unwrap();
         }
@@ -87,7 +87,7 @@ fn an_upgraded_database_matches_a_fresh_one() {
 
     let old_dir = tempfile::tempdir().unwrap();
     {
-        let conn = rusqlite::Connection::open(old_dir.path().join("library.db")).unwrap();
+        let conn = mediagram::index::sqlite_init::open(old_dir.path().join("library.db")).unwrap();
         for statement in mlib_spec::schema::migrations_up_to(1) {
             conn.execute(statement, []).unwrap();
         }

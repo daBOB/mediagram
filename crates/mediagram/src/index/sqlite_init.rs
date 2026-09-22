@@ -11,9 +11,11 @@
 //! holds for any caller — a command, a test, a future entry point — rather
 //! than only for those that remember to call something at startup.
 
+use std::path::Path;
 use std::sync::Once;
 
 use grammers_session::storages::SqliteSession;
+use rusqlite::Connection;
 
 /// Has libsql run its one-time configuration, if it has not already.
 ///
@@ -29,4 +31,13 @@ pub fn configure() {
             tracing::warn!(error = %err, "the session store could not configure SQLite first");
         }
     });
+}
+
+/// A plain connection to `path` (`":memory:"` included), opened only after
+/// [`configure`]. Every open in this crate goes through here or through
+/// `db::open`: a bare `Connection::open` initializes SQLite, and a session
+/// opened on another thread afterwards aborts the process.
+pub fn open(path: impl AsRef<Path>) -> rusqlite::Result<Connection> {
+    configure();
+    Connection::open(path)
 }

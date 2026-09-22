@@ -11,7 +11,6 @@ use anyhow::{Context, Result, bail};
 use mediagram_core::package::cipher::{parse_key, seal};
 use mediagram_tmdb::posters::resolve_posters;
 use mlib_spec::package::{PackageManifest, package_file_name};
-use rusqlite::Connection;
 
 use crate::config::Config;
 use crate::export::budget::{Verdict, estimate_bytes, verdict_for};
@@ -45,7 +44,7 @@ pub async fn run(
     let index_bytes = staging.copy_index(&conn)?;
     drop(conn);
 
-    let snapshot = Connection::open(staging.path().join(mlib_spec::schema::INDEX_FILE))
+    let snapshot = index::sqlite_init::open(staging.path().join(mlib_spec::schema::INDEX_FILE))
         .context("opening the snapshot")?;
     let titles = crate::export::titles::distinct_titles(&snapshot)?;
     let (sets, parts) = (index::sets::count(&snapshot)?, index::parts::count(&snapshot)?);

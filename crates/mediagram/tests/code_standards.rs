@@ -47,3 +47,39 @@ fn every_source_file_stays_under_the_line_limit() {
         "over {LIMIT} lines — split out a focused submodule: {over:#?}"
     );
 }
+
+/// A bare `rusqlite` open initializes SQLite before libsql can configure it,
+/// and a Telegram session opened afterwards aborts the process — on whichever
+/// thread gets there second, so tests only catch it by timing. Every open in
+/// this crate therefore goes through `index::sqlite_init`, and this keeps it so.
+#[test]
+fn every_sqlite_open_in_the_uploader_configures_sqlite_first() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let mut files = Vec::new();
+    for dir in ["src", "tests"] {
+        let mut all = Vec::new();
+        collect_rs(&root.join(dir), &mut all);
+        files.extend(all);
+    }
+    let bare: Vec<String> = files
+        .iter()
+        .filter(|file| !file.ends_with("index/sqlite_init.rs") && !file.ends_with("code_standards.rs"))
+        .filter(|file| {
+            let text = std::fs::read_to_string(file).expect("a readable file");
+            text.contains("Connection::open(") || text.contains("Connection::open_in_memory(")
+        })
+        .map(|file| file.display().to_string())
+        .collect();
+    assert!(bare.is_empty(), "open SQLite through index::sqlite_init::open instead:\n{}", bare.join("\n"));
+}
+
+fn collect_rs(dir: &Path, out: &mut Vec<PathBuf>) {
+    for entry in std::fs::read_dir(dir).expect("a readable directory") {
+        let path = entry.expect("a directory entry").path();
+        if path.is_dir() {
+            collect_rs(&path, out);
+        } else if path.extension().is_some_and(|ext| ext == "rs") {
+            out.push(path);
+        }
+    }
+}

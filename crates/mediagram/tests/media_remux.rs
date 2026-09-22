@@ -7,14 +7,13 @@ use tempfile::TempDir;
 
 use mediagram::media;
 
-use media::test_fixtures::{ffmpeg_available, make_trailing_moov_mp4};
+use media::test_fixtures::{ffmpeg_required, make_trailing_moov_mp4};
 
 #[tokio::test]
 async fn ensure_faststart_errors_when_tmp_dir_is_missing() {
     // A tmp_dir that doesn't exist should surface as an error, not a panic
     // or a silent fallback to the source's own directory.
-    if !ffmpeg_available() {
-        eprintln!("skipping ensure_faststart_errors_when_tmp_dir_is_missing: ffmpeg not on PATH");
+    if !ffmpeg_required("ensure_faststart_errors_when_tmp_dir_is_missing") {
         return;
     }
     let dir = TempDir::new().unwrap();
@@ -31,10 +30,7 @@ async fn ensure_faststart_output_path_is_stable_across_repeated_calls() {
     // The destination path is derived from the source's stem, not from a
     // timestamp or random name, so remuxing the same source twice in a row
     // (overwriting the first output) succeeds and yields the same path.
-    if !ffmpeg_available() {
-        eprintln!(
-            "skipping ensure_faststart_output_path_is_stable_across_repeated_calls: ffmpeg not on PATH"
-        );
+    if !ffmpeg_required("ensure_faststart_output_path_is_stable_across_repeated_calls") {
         return;
     }
     let dir = TempDir::new().unwrap();
@@ -55,10 +51,7 @@ async fn ensure_faststart_output_path_is_stable_across_repeated_calls() {
 async fn ensure_faststart_writes_remuxed_output_into_given_tmp_dir() {
     // When a tmp_dir is provided, the remuxed file is written there instead
     // of alongside the source.
-    if !ffmpeg_available() {
-        eprintln!(
-            "skipping ensure_faststart_writes_remuxed_output_into_given_tmp_dir: ffmpeg not on PATH"
-        );
+    if !ffmpeg_required("ensure_faststart_writes_remuxed_output_into_given_tmp_dir") {
         return;
     }
     let src_dir = TempDir::new().unwrap();

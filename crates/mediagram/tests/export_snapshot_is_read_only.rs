@@ -22,7 +22,7 @@ fn copying_for_export_leaves_the_live_database_byte_identical() {
     let live = dir.path().join("library.db");
     let before = digest_of(&live);
 
-    let conn = rusqlite::Connection::open(&live).unwrap();
+    let conn = mediagram::index::sqlite_init::open(&live).unwrap();
     let dest = dir.path().join("export.db");
     snapshot::copy_to(&conn, &dest).unwrap();
     drop(conn);
@@ -39,7 +39,7 @@ fn copying_for_export_does_not_record_a_push_time() {
 
     snapshot::copy_to(&conn, &dest).unwrap();
 
-    let copied = rusqlite::Connection::open(&dest).unwrap();
+    let copied = mediagram::index::sqlite_init::open(&dest).unwrap();
     let pushed: Option<String> = copied
         .query_row(
             "SELECT value FROM meta WHERE key = 'last_push_at'",
@@ -60,7 +60,7 @@ fn the_push_path_still_records_a_push_time() {
 
     snapshot::snapshot_to(&conn, &dest).unwrap();
 
-    let copied = rusqlite::Connection::open(&dest).unwrap();
+    let copied = mediagram::index::sqlite_init::open(&dest).unwrap();
     let pushed: String = copied
         .query_row(
             "SELECT value FROM meta WHERE key = 'last_push_at'",
@@ -87,7 +87,7 @@ fn staging_copies_the_index_without_writing_to_it_even_with_a_live_wal() {
     .unwrap();
     // A second connection keeps the WAL from being folded away on close.
     let live = dir.path().join("library.db");
-    let holder = rusqlite::Connection::open(&live).unwrap();
+    let holder = mediagram::index::sqlite_init::open(&live).unwrap();
     holder
         .query_row("SELECT COUNT(*) FROM sets", [], |r| r.get::<_, i64>(0))
         .unwrap();
@@ -95,7 +95,7 @@ fn staging_copies_the_index_without_writing_to_it_even_with_a_live_wal() {
     let before = digest_of(&live);
 
     let staging = Staging::create(dir.path(), "export-staging").unwrap();
-    let reader = rusqlite::Connection::open(&live).unwrap();
+    let reader = mediagram::index::sqlite_init::open(&live).unwrap();
     let bytes = staging.copy_index(&reader).unwrap();
 
     assert!(bytes > 0);

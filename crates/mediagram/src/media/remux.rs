@@ -62,13 +62,12 @@ pub async fn ensure_faststart(
 mod tests {
     use super::*;
     use crate::media::test_fixtures::{
-        ffmpeg_available, make_faststart_mp4, make_trailing_moov_mp4,
+        ffmpeg_required, make_faststart_mp4, make_trailing_moov_mp4,
     };
 
     #[tokio::test]
     async fn remuxes_trailing_moov_fixture() {
-        if !ffmpeg_available() {
-            eprintln!("skipping remuxes_trailing_moov_fixture: ffmpeg not on PATH");
+        if !ffmpeg_required("remuxes_trailing_moov_fixture") {
             return;
         }
         let dir = tempfile::tempdir().unwrap();
@@ -81,8 +80,7 @@ mod tests {
 
     #[tokio::test]
     async fn leaves_faststart_fixture_untouched() {
-        if !ffmpeg_available() {
-            eprintln!("skipping leaves_faststart_fixture_untouched: ffmpeg not on PATH");
+        if !ffmpeg_required("leaves_faststart_fixture_untouched") {
             return;
         }
         let dir = tempfile::tempdir().unwrap();
@@ -94,8 +92,7 @@ mod tests {
 
     #[tokio::test]
     async fn no_remux_flag_bypasses_even_when_needed() {
-        if !ffmpeg_available() {
-            eprintln!("skipping no_remux_flag_bypasses_even_when_needed: ffmpeg not on PATH");
+        if !ffmpeg_required("no_remux_flag_bypasses_even_when_needed") {
             return;
         }
         let dir = tempfile::tempdir().unwrap();

@@ -168,7 +168,7 @@ mod deleting_rows {
         // A connection opened without the helper has foreign keys off, which
         // is the case the pragma inside `delete_rows` is there for.
         drop(conn);
-        let conn = rusqlite::Connection::open(db::index_path(dir.path())).unwrap();
+        let conn = mediagram::index::sqlite_init::open(db::index_path(dir.path())).unwrap();
 
         delete_rows(&conn, "01SET0000000000000000001").unwrap();
 

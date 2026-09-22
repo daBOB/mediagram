@@ -8,7 +8,7 @@ use mlib_spec::Kind;
 use rusqlite::Connection;
 
 fn db() -> Connection {
-    let conn = Connection::open_in_memory().unwrap();
+    let conn = mediagram::index::sqlite_init::open(":memory:").unwrap();
     for statement in mlib_spec::schema::migrations_up_to(mlib_spec::schema::SCHEMA_VERSION) {
         conn.execute_batch(statement).unwrap();
     }

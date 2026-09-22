@@ -106,7 +106,7 @@ fn is_mp4_family(path: &Path) -> bool {
 mod tests {
     use super::*;
     use crate::media::test_fixtures::{
-        ffmpeg_available, make_faststart_mp4, make_trailing_moov_mp4,
+        ffmpeg_required, make_faststart_mp4, make_trailing_moov_mp4,
     };
 
     #[test]
@@ -118,8 +118,7 @@ mod tests {
 
     #[test]
     fn detects_trailing_moov() {
-        if !ffmpeg_available() {
-            eprintln!("skipping detects_trailing_moov: ffmpeg not on PATH");
+        if !ffmpeg_required("detects_trailing_moov") {
             return;
         }
         let dir = tempfile::tempdir().unwrap();
@@ -129,8 +128,7 @@ mod tests {
 
     #[test]
     fn faststart_file_does_not_need_remux() {
-        if !ffmpeg_available() {
-            eprintln!("skipping faststart_file_does_not_need_remux: ffmpeg not on PATH");
+        if !ffmpeg_required("faststart_file_does_not_need_remux") {
             return;
         }
         let dir = tempfile::tempdir().unwrap();

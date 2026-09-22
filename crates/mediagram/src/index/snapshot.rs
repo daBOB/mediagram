@@ -107,7 +107,7 @@ mod tests {
         snapshot_to(&conn, &dest).unwrap();
 
         assert!(dest.exists());
-        let snapshot_conn = rusqlite::Connection::open(&dest).unwrap();
+        let snapshot_conn = crate::index::sqlite_init::open(&dest).unwrap();
         let count: i64 = snapshot_conn
             .query_row("SELECT COUNT(*) FROM sets", [], |r| r.get(0))
             .unwrap();
@@ -132,6 +132,6 @@ mod tests {
         snapshot_to(&conn, &dest).unwrap();
 
         // A valid sqlite file, not the stale placeholder bytes.
-        rusqlite::Connection::open(&dest).unwrap();
+        crate::index::sqlite_init::open(&dest).unwrap();
     }
 }

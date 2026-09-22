@@ -4,15 +4,25 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-/// True when `ffmpeg` is reachable on PATH. Tests that need generated
-/// fixtures skip themselves (with a printed note) rather than failing in
-/// environments without the tool installed.
-pub fn ffmpeg_available() -> bool {
-    Command::new("ffmpeg")
+/// Whether a test that needs `ffmpeg` should run. A missing `ffmpeg` fails
+/// the test: the uploader needs it in production, and a test that returns
+/// early is counted as passed, which would report coverage nobody got. An
+/// environment that truly lacks it opts out with `MEDIAGRAM_SKIP_FFMPEG_TESTS`,
+/// and only then does this return `false`.
+pub fn ffmpeg_required(test: &str) -> bool {
+    let available = Command::new("ffmpeg")
         .arg("-version")
         .output()
         .map(|o| o.status.success())
-        .unwrap_or(false)
+        .unwrap_or(false);
+    if available {
+        return true;
+    }
+    if std::env::var_os("MEDIAGRAM_SKIP_FFMPEG_TESTS").is_some() {
+        eprintln!("skipping {test}: ffmpeg not on PATH and MEDIAGRAM_SKIP_FFMPEG_TESTS is set");
+        return false;
+    }
+    panic!("{test} needs ffmpeg on PATH; install it, or set MEDIAGRAM_SKIP_FFMPEG_TESTS=1 to skip");
 }
 
 /// Builds a 1-second H.264/AAC MP4 in `dir` using ffmpeg's default MP4

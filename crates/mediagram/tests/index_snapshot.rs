@@ -66,7 +66,7 @@ fn snapshot_to_produces_an_openable_copy_with_matching_meta() {
         .unwrap();
     let live_pushed_at: String = db::get_meta(&conn, "last_push_at").unwrap().unwrap();
 
-    let snapshot_conn = rusqlite::Connection::open(&dest).unwrap();
+    let snapshot_conn = mediagram::index::sqlite_init::open(&dest).unwrap();
     let snapshot_count: i64 = snapshot_conn
         .query_row("SELECT COUNT(*) FROM sets", [], |row| row.get(0))
         .unwrap();

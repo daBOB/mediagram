@@ -87,7 +87,7 @@ fn an_older_index_migrates_and_keeps_its_rows() {
 
     // Build a v2 database by hand, exactly as the previous release left it.
     {
-        let conn = rusqlite::Connection::open(dir.path().join("library.db")).unwrap();
+        let conn = mediagram::index::sqlite_init::open(dir.path().join("library.db")).unwrap();
         for statement in mlib_spec::schema::migrations_up_to(2) {
             conn.execute(statement, []).unwrap();
         }

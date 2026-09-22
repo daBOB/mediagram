@@ -10,12 +10,11 @@ use mediagram::media;
 use media::inspect::inspect;
 use media::mp4_atoms::needs_faststart;
 use media::remux::ensure_faststart;
-use media::test_fixtures::{ffmpeg_available, make_faststart_mp4, make_trailing_moov_mp4};
+use media::test_fixtures::{ffmpeg_required, make_faststart_mp4, make_trailing_moov_mp4};
 
 #[tokio::test]
 async fn inspect_yields_expected_fixture_metadata() {
-    if !ffmpeg_available() {
-        eprintln!("skipping inspect_yields_expected_fixture_metadata: ffmpeg not on PATH");
+    if !ffmpeg_required("inspect_yields_expected_fixture_metadata") {
         return;
     }
     let dir = tempfile::tempdir().unwrap();
@@ -32,8 +31,7 @@ async fn inspect_yields_expected_fixture_metadata() {
 
 #[test]
 fn mp4_atoms_detect_trailing_vs_faststart() {
-    if !ffmpeg_available() {
-        eprintln!("skipping mp4_atoms_detect_trailing_vs_faststart: ffmpeg not on PATH");
+    if !ffmpeg_required("mp4_atoms_detect_trailing_vs_faststart") {
         return;
     }
     let dir = tempfile::tempdir().unwrap();
@@ -46,8 +44,7 @@ fn mp4_atoms_detect_trailing_vs_faststart() {
 
 #[tokio::test]
 async fn ensure_faststart_remuxes_only_when_needed() {
-    if !ffmpeg_available() {
-        eprintln!("skipping ensure_faststart_remuxes_only_when_needed: ffmpeg not on PATH");
+    if !ffmpeg_required("ensure_faststart_remuxes_only_when_needed") {
         return;
     }
     let dir = tempfile::tempdir().unwrap();
@@ -74,8 +71,7 @@ fn mkv_extension_never_invokes_atom_scan() {
 async fn inspect_reports_no_audio_codec_for_video_only_file() {
     // A file with no audio stream at all reports acodec: None and an empty
     // language list, rather than erroring or defaulting to a codec name.
-    if !ffmpeg_available() {
-        eprintln!("skipping inspect_reports_no_audio_codec_for_video_only_file: ffmpeg not on PATH");
+    if !ffmpeg_required("inspect_reports_no_audio_codec_for_video_only_file") {
         return;
     }
     let dir = tempfile::tempdir().unwrap();
@@ -110,10 +106,7 @@ async fn inspect_reports_no_audio_codec_for_video_only_file() {
 async fn inspect_collects_language_tags_from_multiple_audio_streams() {
     // With two audio streams tagged eng/deu, inspect surfaces both
     // languages rather than only the first stream's tag.
-    if !ffmpeg_available() {
-        eprintln!(
-            "skipping inspect_collects_language_tags_from_multiple_audio_streams: ffmpeg not on PATH"
-        );
+    if !ffmpeg_required("inspect_collects_language_tags_from_multiple_audio_streams") {
         return;
     }
     let dir = tempfile::tempdir().unwrap();
