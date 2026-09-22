@@ -123,35 +123,55 @@ signed in `mlib-package-v1` format 1 (a hostile host can withhold updates, not
 forge one), a conversion produces one rendition rather than an adaptive
 ladder, and the transcode directory has no quota of its own.
 
-Android is not cancelled, only no longer first. The UniFFI notes below still
-apply when that round starts.
+## Android: shipping, and reaching for parity
 
-## Later: Android TV app round
+The phone app exists and is installed on a real device. It is the third
+consumer of the index and the second viewing surface, described in
+[`docs/system-architecture.md`](system-architecture.md#8-playback-the-android-app).
 
-A native Android TV player is the planned second client of the mlib
-format. Approach: bind `mlib-spec` into Kotlin via
-[UniFFI](https://mozilla.github.io/uniffi-rs/), reusing the caption
-parser/serializer, part-plan math, filename grammar, and schema constants
-verbatim rather than reimplementing them — the whole point of
-[`docs/system-architecture.md`](system-architecture.md#7-backend-portability)'s
-backend-agnostic index is that a second client doesn't reparse anything the
-Rust crate already validates.
+**The UniFFI friction this document predicted never had to be resolved.**
+`caption::Episode` is `enum Episode { Single(u32), Range([u32; 2]) }` and
+UniFFI cannot carry a fixed-size array inside an enum variant — but `Episode`
+does not cross the boundary. `mediagram-core`'s `dto.rs` flattens a set's
+episode into an `episode_first`/`episode_last` pair, so the parser stays an
+implementation detail of the crate that owns it and no player ever sees the
+enum. `mlib-spec` was never changed and the wire format never moved.
 
-**Known UniFFI friction, already identified, not yet resolved:**
-`caption::Episode` is `enum Episode { Single(u32), Range([u32; 2]) }`.
-UniFFI does not support fixed-size array types inside enum variant
-payloads. Before generating bindings, `Episode::Range` needs a
-UniFFI-friendly shape — the two live options are a two-field variant
-(`Range { first: u32, last: u32 }`) or a `Vec<u32>`-backed variant with a
-length invariant enforced in code; either requires updating
-`caption_codec` serialization and the JSON wire format stays the array
-form (`"e":[1,2]`) regardless, since that's `serde`'s concern, not
-UniFFI's. This is a v2-crate change, not a v3 spec bump — the wire format
-is unaffected. Not started.
+The shape that did emerge is the opposite of the one planned here: rather than
+binding `mlib-spec` alone and writing a Telegram client in Kotlin, the whole of
+`mediagram-core` — grammers included — is bound, so the phone has no server and
+no second MTProto implementation.
 
-The TV app itself (playback, catalog browsing, download management) has no
-detailed plan yet; it starts from a fresh planning round once the UniFFI
-binding question above is resolved.
+| Round | Scope | Status |
+|---|---|---|
+| Foundation | modules, Hilt, Compose, setup and login, the catalog | Complete |
+| Player | a set that plays, over a custom ExoPlayer data source and a disk cache | Complete |
+| Transport controls | play/pause, a scrubber, skip, a clock | Complete |
+| System menu | the System screen, playback stats, library refresh | Complete |
+| Details | the phone fetches its own synopses and artwork from TMDB | Complete |
+| External cache | the cache on a chosen volume, with a budget | Planned, [`plans/260921-1751-android-external-cache/`](../plans/260921-1751-android-external-cache/plan.md) |
+| Parity | audio, subtitles, watch state, and the screens that read it | Planned, [`plans/260922-0124-android-web-parity/`](../plans/260922-0124-android-web-parity/plan.md) |
+
+### What the phone still cannot do
+
+Per CLAUDE.md § Surface Parity the web player is the reference, so these are
+gaps rather than choices: no watch state at all — no resume, no watched marks,
+no watchlist, no lists — because `mediagram-core` exposes nothing touching
+progress; no audio-track or subtitle selection, which reaches 312 and 206 sets
+respectively; no search; no notes; no start page. The parity plan above closes
+them in order and names the ones that will stay different.
+
+## Later: the television surface
+
+`:ui-tv` is a registered Gradle module with no source in it. A Fire Stick, a
+Chromecast or a TV box installs the app today and gets a placeholder string.
+
+This is a new surface rather than a gap in an existing one, and it starts from
+its own planning round. Everything under `android/core/` is already
+surface-independent — `Shelves.kt` says so in its own documentation, and the
+cache and parity plans both name the television surface as the reason their
+pure modules are pure — so what it needs is screens and a D-pad, not new
+machinery.
 
 ## Explicitly deferred (from the v1 implementation logs, not tracked as bugs)
 

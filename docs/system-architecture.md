@@ -3,7 +3,7 @@
 `mediagram` is a Rust CLI (edition 2024) that uploads a personal video
 library into one private Telegram channel and keeps a local SQLite index of
 it. It is split into two crates so the wire format can be reused by other
-clients (see [§8](#8-backend-portability)).
+clients (see [§9](#9-backend-portability)).
 
 ## 1. Crates
 
@@ -188,10 +188,12 @@ browser ──HTTP──> Bun (web/src) ──MTProto──> the channel
 ```
 
 **Two MTProto implementations, on purpose.** Rust uses `grammers`; the player
-uses `teleproto` (the maintained fork of the archived GramJS) on Bun. They are
-not a port of one another and never share code — what they share is the wire
+uses `teleproto` (the maintained fork of the archived GramJS) on Bun. Two, not
+three: the Android app ([§8](#8-playback-the-android-app)) reuses the Rust one
+through UniFFI rather than growing a Kotlin client. They are not a port of one
+another and never share code — what they share is the wire
 format in `mlib-spec` and the index schema, which is exactly the boundary
-[§8](#8-backend-portability) says a second client reuses. The Rust
+[§9](#9-backend-portability) says a second client reuses. The Rust
 implementation stays as the reference, and the player's bytes are checked
 against ground truth rather than against it agreeing with itself: a set
 streamed out of the player hashes to the `parts.sha256` the uploader recorded,
@@ -277,7 +279,7 @@ Nothing the browser is served ever carries a `chat_id`, a `message_id` or a
 
 ### Consumers of the index
 
-Four now, which is the reason the schema and the caption format are specified
+Five now, which is the reason the schema and the caption format are specified
 rather than implied:
 
 | Consumer | Reads | Writes |
@@ -286,6 +288,7 @@ rather than implied:
 | `mediagram export-package` | `library.db`, read-only | the package |
 | `mediagram serve` | `library.db`, read-only | nothing |
 | the web player | a package's `library.db`, or a local one, read-only | nothing |
+| the Android app | a channel snapshot's `library.db`, read-only | its own sidecars |
 
 Every read-only consumer opens SQLite with `SQLITE_OPEN_READ_ONLY` rather
 than merely not issuing writes: a writable handle would let it checkpoint the
@@ -385,7 +388,69 @@ first, is in
 The lists live once, in `web/public/lib/playable.js`, and a test fails if the
 document stops matching them.
 
-## 8. Backend portability
+## 8. Playback: the Android app
+
+The second viewing surface, and the one built the other way round. The web
+player is a Bun server that speaks MTProto and serves a browser; the phone has
+no server at all. `mediagram-core` — Rust, grammers, bound into Kotlin with
+[UniFFI](https://mozilla.github.io/uniffi-rs/) — *is* the client, and the app
+is a Compose UI over fourteen methods.
+
+### Module map (`android/`)
+
+| Module | Holds |
+|---|---|
+| `app` | the single activity, and the phone-or-television branch |
+| `core:rust` | the generated UniFFI binding over `mediagram-core` |
+| `core:data` | `CoreClient`, `CatalogRepository`, and settings in `EncryptedSharedPreferences` |
+| `core:playback` | `MlibDataSource`, `CacheProvider`, `PlayerFactory` |
+| `core:model` | `MediaSet` and `Kind`, shared by every surface |
+| `core:designsystem` | theme and spacing |
+| `feature:{catalog,player,setup,system}` | view models and UI state |
+| `ui-mobile` | every screen the phone has |
+| `ui-tv` | a `build.gradle.kts` and no source — see below |
+
+Direction is `ui → feature → core:data → core:rust`, with
+`core:playback → core:data`. A feature module never imports another.
+
+### Where the catalog comes from
+
+The phone reads **the newest index snapshot the chosen channel holds**, not the
+published package the web player reads. Two consequences follow and both are
+deliberate: the phone needs a Telegram login of its own, and the index carries
+no artwork, so the device fetches its own posters and synopses from TMDB
+through `fetch_missing` rather than receiving them with the catalog.
+
+### Where the bytes come from
+
+`MlibDataSource` is an ExoPlayer `BaseDataSource` over `core.read(set_id,
+offset, len)`, addressed by an opaque `mlib://set/<id>` URI — no chat or
+message id ever reaches Kotlin. It reads ahead 1 MiB per fetch to amortise
+Telegram's 512 KiB chunking, and media3's `CacheDataSource` wraps it over a
+`SimpleCache` on disk. A cache hit never reaches the core.
+
+**Nothing is transcoded.** The phone decodes natively, so the whole conversion
+apparatus of §7 — ffmpeg, HLS, the bitrate ladder, the encoder registry — has
+no counterpart here, and the System screen has no Conversion block rather than
+an empty one. Playback is latency-bound rather than throughput-bound: the link
+outruns the bitrate, and what costs is the round trip per read.
+
+### What it does not have yet
+
+Parity with the web player is partial and tracked, not assumed. The phone has
+no watch state of any kind — no resume, no watched marks, no watchlist, no
+lists — because `mediagram-core` exposes nothing that touches progress; no
+audio-track or subtitle selection; no search; no notes. The plan that closes
+these, in order, is
+[`plans/260922-0124-android-web-parity/`](../plans/260922-0124-android-web-parity/plan.md),
+and the deliberate differences that will *not* be closed are recorded in
+`docs/superpowers/specs/2026-09-20-android-system-menu-and-playback-stats-design.md` §9.
+
+**`ui-tv` is empty.** The television surface is a registered Gradle module with
+no source in it, so a Fire Stick or a TV box installs the app and gets a
+placeholder. Everything in `core:` is surface-independent and waiting for it.
+
+## 9. Backend portability
 
 The index (`library.db`, described fully in
 [`docs/mlib-spec.md`](mlib-spec.md#6-local-index-librarydb)) and the
@@ -417,14 +482,15 @@ grep -rl grammers crates/mediagram/src/{index,media,metadata} crates/mlib-spec/
 
 is how to check it.
 
-A future Android TV app can read `library.db` and the caption spec the same
-way the web player does; the planned
-`UniFFI` binding over `mlib-spec` would need a UniFFI-friendly shape for
-`Episode::Range([u32; 2])` (UniFFI does not support fixed-size array
-enum payloads) — tracked in
-[`docs/development-roadmap.md`](development-roadmap.md).
+The Android app ([§8](#8-playback-the-android-app)) is the third consumer and
+reads the same index the same way. The `UniFFI` friction this section once
+predicted — `Episode::Range([u32; 2])`, which UniFFI cannot carry inside an
+enum variant — never had to be resolved in `mlib-spec`: `mediagram-core`'s
+`dto.rs` flattens a set's episode into an `episode_first`/`episode_last` pair
+at the boundary, so `Episode` stays an implementation detail of the crate that
+parses captions and no player ever sees it.
 
-## 9. On-disk layout
+## 10. On-disk layout
 
 All paths come from `directories::ProjectDirs::from("", "", "mediagram")`
 (XDG on Linux):
@@ -458,7 +524,7 @@ not like that — losing it means logging in again or exporting a session from
 the uploader, because a session string cannot be recovered from anywhere
 else.
 
-## 10. Telegram limits relied on
+## 11. Telegram limits relied on
 
 - 4 GB per-message document cap on Telegram Premium; parts default to 3.5
   GiB to stay comfortably clear of it however the cap is actually enforced
