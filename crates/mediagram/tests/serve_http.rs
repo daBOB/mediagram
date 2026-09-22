@@ -154,7 +154,7 @@ fn length_of(response: &reqwest::Response) -> u64 {
 async fn the_catalog_lists_what_is_playable() {
     let (_d, base, _file) = start().await;
 
-    let response = reqwest::get(format!("{base}/sets")).await.unwrap();
+    let response = mediagram_core::api::http::client().unwrap().get(format!("{base}/sets")).send().await.unwrap();
     assert_eq!(response.status(), 200);
     let body: serde_json::Value = response.json().await.unwrap();
 
@@ -170,7 +170,7 @@ async fn the_catalog_lists_what_is_playable() {
 async fn a_request_without_a_range_streams_the_whole_file() {
     let (_d, base, file) = start().await;
 
-    let response = reqwest::get(format!("{base}/sets/{SET}/stream"))
+    let response = mediagram_core::api::http::client().unwrap().get(format!("{base}/sets/{SET}/stream")).send()
         .await
         .unwrap();
 
@@ -319,7 +319,7 @@ async fn head_reports_the_size_and_that_ranges_are_supported() {
 async fn a_set_that_is_not_playable_is_not_found() {
     let (_d, base, _file) = start().await;
 
-    let response = reqwest::get(format!("{base}/sets/01NOSUCHSET00000000000001/stream"))
+    let response = mediagram_core::api::http::client().unwrap().get(format!("{base}/sets/01NOSUCHSET00000000000001/stream")).send()
         .await
         .unwrap();
 
