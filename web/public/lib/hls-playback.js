@@ -8,6 +8,8 @@
  * thing this page can load, and most sets never need it.
  */
 
+import { decodesParam } from "./link.js";
+
 /**
  * Whether this browser has to play the playlist itself.
  *
@@ -43,7 +45,7 @@ async function beginTranscode(setId, seekSeconds, maxrateBits, audioTrack) {
   // Left off for the first stream, so the common request is the short one and
   // a server that predates the chooser still answers it.
   const track = audioTrack ? `&audio=${Math.floor(audioTrack)}` : "";
-  const url = `/api/sets/${encodeURIComponent(setId)}/transcode?${seek}${rate}${track}`;
+  const url = `/api/sets/${encodeURIComponent(setId)}/transcode?${seek}${rate}${track}${decodesParam()}`;
   const response = await fetch(url);
   if (!response.ok) {
     // The server says why a conversion would not start; repeating its status

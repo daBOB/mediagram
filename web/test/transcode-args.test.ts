@@ -259,3 +259,24 @@ describe("carrying the picture across instead of encoding it", () => {
     expect(valueOf(argsFor({ copyVideo: false }), "-c:v")).toBe("libx264");
   });
 });
+
+describe("an HEVC picture carried across", () => {
+  const hevc = argsFor({ copyVideo: true, hevcCopy: true });
+
+  test("is written as fMP4, the only form hls.js plays HEVC from", () => {
+    expect(valueOf(hevc, "-hls_segment_type")).toBe("fmp4");
+    expect(hevc.at(-1)).toBe(base.output);
+  });
+
+  test("is tagged hvc1, which Safari and Chrome accept and hev1 is not", () => {
+    expect(valueOf(hevc, "-tag:v")).toBe("hvc1");
+    expect(valueOf(hevc, "-c:v")).toBe("copy");
+  });
+
+  test("every other session keeps the MPEG-TS it has always had", () => {
+    for (const args of [argsFor(), argsFor({ copyVideo: true })]) {
+      expect(args).not.toContain("-hls_segment_type");
+      expect(args).not.toContain("-tag:v");
+    }
+  });
+});

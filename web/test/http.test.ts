@@ -59,9 +59,9 @@ function index(): Database {
   // Columns named, not positional: a positional insert breaks silently the
   // next time the schema gains one.
   db.run(
-    `INSERT INTO sets(set_id, kind, title, year, container, vcodec, acodec,
+    `INSERT INTO sets(set_id, kind, title, year, container, vcodec, acodec, quality, hdr,
                       duration, total, part_count, status, created_at, spec_version)
-     VALUES (?, 'movie', 'The Matrix', 1999, 'mkv', 'hevc', 'ac3', 8160, ?, 2, 'complete', 1700000000, 3)`,
+     VALUES (?, 'movie', 'The Matrix', 1999, 'mkv', 'hevc', 'ac3', '1080p', 'SDR', 8160, ?, 2, 'complete', 1700000000, 3)`,
     [SET, TOTAL],
   );
   const part = `INSERT INTO parts(set_id, idx, byte_offset, byte_length, chat_id, message_id, status)
@@ -607,6 +607,49 @@ describe("releasing a transcode", () => {
     try {
       await rawRequest(server.port, `/api/sets/${SET}/transcode?seek=0`);
       expect(asked).toEqual([0]);
+    } finally {
+      await server.close();
+    }
+  });
+
+  /**
+   * The fixture is Matroska holding HEVC: re-encoded for a browser that said
+   * nothing, carried across for one that said it decodes HEVC.
+   */
+  test("a browser that decodes HEVC gets the picture copied, as fMP4", async () => {
+    const specs: SessionSpec[] = [];
+    const recording = fakeHls({
+      begin: async (spec: SessionSpec) => {
+        specs.push(spec);
+        return `/hls/${SESSION}/index.m3u8`;
+      },
+    });
+    const server = await startServer({ db: index(), source: new FakeSource(), hls: recording });
+    try {
+      const said = await rawRequest(server.port, `/api/sets/${SET}/transcode?seek=0&vcodecs=hevc`);
+      expect(JSON.parse(new TextDecoder().decode(said.body)).copied).toBe(true);
+      await rawRequest(server.port, `/api/sets/${SET}/transcode?seek=0`);
+      expect(specs.map((s) => [s.copyVideo, s.hevcCopy])).toEqual([
+        [true, true],
+        [false, false],
+      ]);
+    } finally {
+      await server.close();
+    }
+  });
+
+  test("a codec the policy does not know is not negotiated", async () => {
+    const specs: SessionSpec[] = [];
+    const recording = fakeHls({
+      begin: async (spec: SessionSpec) => {
+        specs.push(spec);
+        return `/hls/${SESSION}/index.m3u8`;
+      },
+    });
+    const server = await startServer({ db: index(), source: new FakeSource(), hls: recording });
+    try {
+      await rawRequest(server.port, `/api/sets/${SET}/transcode?vcodecs=prores,ac3`);
+      expect(specs[0]?.copyVideo).toBe(false);
     } finally {
       await server.close();
     }

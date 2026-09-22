@@ -7,11 +7,12 @@
  * player.
  */
 
+import { browserDecodes } from "./codec-support.js";
 import { decidePlayback } from "./playable.js";
 
 /** Assumed local until the server says otherwise: the common case, and the
  *  one where being wrong only costs a conversion nobody needed. */
-let link = { remote: false, maxBitrate: 0 };
+let link = { remote: false, maxBitrate: 0, decodes: browserDecodes() };
 
 /**
  * What the server said about the catalogue, or `null` before it answered.
@@ -26,7 +27,7 @@ export async function loadLink() {
     const response = await fetch("/api/player");
     if (!response.ok) return;
     const said = await response.json();
-    link = { remote: said.remote === true, maxBitrate: Number(said.maxBitrate) || 0 };
+    link = { ...link, remote: said.remote === true, maxBitrate: Number(said.maxBitrate) || 0 };
     catalog = {
       origin: said.catalog?.origin === "package" ? "package" : "local",
       publishedAt: Number.isFinite(said.catalog?.publishedAt) ? said.catalog.publishedAt : null,
@@ -46,4 +47,13 @@ export function catalogOf() {
 /** Whether `set` plays as it is over this link, or has to be converted. */
 export function playbackFor(set) {
   return decidePlayback(set, link);
+}
+
+/**
+ * What this browser decodes beyond the everywhere-list, as a transcode
+ * request says it. The server copies the picture rather than re-encoding it
+ * when the title's codec is on it.
+ */
+export function decodesParam() {
+  return link.decodes.length > 0 ? `&vcodecs=${link.decodes.join(",")}` : "";
 }

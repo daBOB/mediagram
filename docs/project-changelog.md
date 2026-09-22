@@ -43,6 +43,12 @@ to `main`. Full phase-by-phase detail lives in
   do not decode HEVC get H.264 exactly as before, and every other session
   keeps MPEG-TS. The server takes only codec names on `NEGOTIABLE`.
 
+  Negotiated means repackaged, never handed over directly: the index cannot
+  say whether an HEVC mp4 is tagged `hev1`, which Safari and Chrome refuse,
+  and repackaging retags it. And only SDR at 1080p or below is negotiated —
+  170 of the 229 — because the probe asks about 8-bit Main at level 4; the
+  HDR10, Dolby Vision and 2160p titles are still converted to H.264.
+
   A WebAssembly HEVC decoder was considered and rejected: it cannot feed MSE,
   decodes on the CPU alone, and would replace an encode that already scores
   SSIM 0.988 against its source. The saving is in not encoding at all.

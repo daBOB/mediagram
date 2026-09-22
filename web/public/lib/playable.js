@@ -32,7 +32,52 @@ export const AUDIO = new Set(["aac", "mp4a", "opus", "vorbis", "mp3"]);
 /** Names worth reporting back in the viewer's own words. */
 const PRETTY = { hevc: "HEVC", h265: "HEVC" };
 
-const normalize = (codec) => (codec ?? "").toLowerCase().trim();
+/** Other spellings the index may carry for one codec, by canonical name. */
+const ALIASES = { h265: "hevc" };
+
+const normalize = (codec) => {
+  const name = (codec ?? "").toLowerCase().trim();
+  return ALIASES[name] ?? name;
+};
+
+/**
+ * Video codecs a browser may decode beyond `VIDEO`, and the only ones a page
+ * may claim. The server reads the same list when a transcode request names
+ * them, so a request cannot talk it into copying anything outside it.
+ */
+export const NEGOTIABLE = new Set(["hevc"]);
+
+/**
+ * The pictures a browser's "yes" actually covers.
+ *
+ * `codec-support.js` asks about 8-bit Main at level 4, which is what 1080p
+ * SDR is. HDR is Main 10 and Dolby Vision more besides, and 2160p is level 5:
+ * a browser can decode the one and not the others, and its answer about the
+ * first says nothing about them. Those stay converted — an encode that plays
+ * is better than a copy that dies in the decoder.
+ */
+const NEGOTIATED_QUALITIES = new Set(["480p", "576p", "720p", "1080p"]);
+
+function withinProbe(profile) {
+  return (profile.hdr ?? "").toUpperCase() === "SDR" && NEGOTIATED_QUALITIES.has(profile.quality ?? "");
+}
+
+/**
+ * Whether the picture plays as it is: `"everywhere"`, `"negotiated"` for a
+ * codec this browser said it decodes, or `false`.
+ *
+ * `VIDEO` plays everywhere; `decodes` is what this particular browser said it
+ * also plays — see `codec-support.js`. Only `NEGOTIABLE` names count, so a
+ * list that arrived from outside cannot widen the policy past what it knows.
+ */
+function decodable(video, profile, decodes) {
+  if (VIDEO.has(video)) return "everywhere";
+  if (!NEGOTIABLE.has(video) || !withinProbe(profile)) return false;
+  for (const name of decodes ?? []) {
+    if (normalize(name) === video) return "negotiated";
+  }
+  return false;
+}
 
 /** The set's average bitrate in bits per second, or `null` if unmeasurable. */
 function bitrateOf(profile) {
@@ -44,8 +89,10 @@ function bitrateOf(profile) {
 
 /**
  * @param {{container: string, vcodec: string|null, acodec: string|null,
+ *          quality?: string|null, hdr?: string|null,
  *          total?: number, duration?: number|null}} profile
- * @param {{remote?: boolean, maxBitrate?: number}} [link] how it will travel
+ * @param {{remote?: boolean, maxBitrate?: number, decodes?: Iterable<string>}} [link]
+ *   how it will travel, and what the browser at the far end decodes
  * @returns {{kind: "direct"} | {kind: "transcode", reason: string}}
  */
 export function decidePlayback(profile, link = {}) {
@@ -68,9 +115,22 @@ export function decidePlayback(profile, link = {}) {
     blocking.container = true;
     reasons.push(container === "mkv" ? "Matroska container" : `${container || "unknown"} container`);
   }
-  if (!VIDEO.has(video)) {
+  const picture = decodable(video, profile, link.decodes);
+  if (picture === false) {
     blocking.video = true;
     reasons.push(`${PRETTY[video] ?? (video || "unknown")} video`);
+  } else if (picture === "negotiated" && !blocking.container) {
+    /**
+     * Never handed over as it is, only repackaged.
+     *
+     * An mp4 of HEVC may be tagged `hev1`, which Safari and Chrome refuse,
+     * and the index cannot say which tag a file carries. Repackaging retags
+     * it `hvc1` and costs a remux, not an encode; direct play of the wrong
+     * tag costs a black picture with nothing to fall back to. So the box is
+     * what is blamed, and the picture is still carried across untouched.
+     */
+    blocking.container = true;
+    reasons.push(`${PRETTY[video]} video`);
   }
   if (!AUDIO.has(audio)) {
     blocking.audio = true;

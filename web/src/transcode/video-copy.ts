@@ -25,6 +25,8 @@ export interface CopyProfile {
   container: string;
   vcodec: string | null;
   acodec: string | null;
+  quality?: string | null;
+  hdr?: string | null;
   total?: number;
   duration?: number | null;
 }
@@ -43,6 +45,12 @@ export interface CopyLink {
    * that caused the stall.
    */
   capAsked?: boolean;
+  /**
+   * Video codecs the browser said it decodes beyond the everywhere-list.
+   * Already filtered to `NEGOTIABLE` by the route; `decidePlayback` filters
+   * again, so nothing outside that list can reach a copy either way.
+   */
+  decodes?: Iterable<string>;
 }
 
 /**

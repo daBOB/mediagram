@@ -42,6 +42,8 @@ export interface TranscodeRequest {
    * what every caller written before this did.
    */
   copyVideo?: boolean;
+  /** The copied picture is HEVC: fMP4 segments, tagged `hvc1`. See `SessionSpec`. */
+  hevcCopy?: boolean;
 }
 
 /**
@@ -99,6 +101,9 @@ export function transcodeArgs(request: TranscodeRequest): string[] {
      * keyframe for the same reason, which is a second or so early at worst.
      */
     args.push("-c:v", "copy");
+    // Matroska carries HEVC as `hev1`, which Safari and Chrome's MSE refuse;
+    // the bytes are the same, only the name on the box differs.
+    if (request.hevcCopy === true) args.push("-tag:v", "hvc1");
   } else {
     if (request.encoder.kind === "vaapi") {
       args.push("-vf", "format=nv12,hwupload");
@@ -137,7 +142,13 @@ export function transcodeArgs(request: TranscodeRequest): string[] {
     // `event`, not `vod`: the playlist grows while encoding continues.
     "-hls_playlist_type",
     "event",
-    request.output,
   );
+  // hls.js demuxes HEVC out of fMP4 and not out of MPEG-TS. Only here: every
+  // other session keeps the TS it has always had, so nothing that plays today
+  // changes container underneath a viewer.
+  if (request.copyVideo === true && request.hevcCopy === true) {
+    args.push("-hls_segment_type", "fmp4");
+  }
+  args.push(request.output);
   return args;
 }

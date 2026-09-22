@@ -33,6 +33,7 @@ import {
 import { planReads, totalSize, type PartSpan, type Step } from "./range";
 import { isLocalAddress } from "./client-reach";
 import { canCopyVideo } from "./transcode/video-copy";
+import { NEGOTIABLE } from "../public/lib/playable.js";
 import type { SheetStore } from "./thumbs/sheets";
 // @ts-expect-error — plain JS shared with the browser, like `playable.js`.
 import { spritePlan } from "../public/lib/sprite-plan.js";
@@ -59,6 +60,11 @@ export interface PlayerRequest {
   range: string | null;
   /** `?seek=` on a transcode request, in seconds. */
   seek?: string | null;
+  /**
+   * `?vcodecs=` on a transcode request: video codecs the browser decodes
+   * beyond the everywhere-list, comma-separated. See `codec-support.js`.
+   */
+  vcodecs?: string | null;
   /** `?maxrate=` on a transcode request, in bits per second. */
   maxrate?: string | null;
   /** `?audio=` on a transcode request: which audio stream, as `0:a:N`. */
@@ -138,7 +144,7 @@ const THUMBS_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/thumbs\.jpg$/;
 // A session id is a hex digest and a segment is what ffmpeg names them. Both
 // reach a filesystem path, so both are spelled out rather than captured
 // loosely: a route that accepts `../` invites someone to use it.
-const HLS_PATH = /^\/hls\/([a-f0-9]{16})\/([A-Za-z0-9_-]{1,64}\.(?:m3u8|ts|m4s))$/;
+const HLS_PATH = /^\/hls\/([a-f0-9]{16})\/([A-Za-z0-9_-]{1,64}\.(?:m3u8|ts|m4s|mp4))$/;
 /** The session itself, which `DELETE` stops. */
 const HLS_SESSION_PATH = /^\/hls\/([a-f0-9]{16})\/?$/;
 
@@ -229,6 +235,26 @@ function requestedBitrate(asked: string | null | undefined, cap: number): number
  * the request waits out the whole readiness timeout. A track past the end of
  * the file is left to ffmpeg, which fails cleanly and says so.
  */
+/**
+ * The codecs a transcode request says its browser decodes.
+ *
+ * Only names on `NEGOTIABLE` survive, so a request cannot talk the server into
+ * copying a codec the policy knows nothing about — the worst a lying client
+ * can do is receive a stream its own browser then refuses.
+ */
+function isHevc(vcodec: string | null): boolean {
+  const name = (vcodec ?? "").toLowerCase();
+  return name === "hevc" || name === "h265";
+}
+
+function requestedDecodes(asked: string | null | undefined): string[] {
+  if (!asked) return [];
+  return asked
+    .split(",")
+    .map((name) => name.trim().toLowerCase())
+    .filter((name) => NEGOTIABLE.has(name));
+}
+
 function requestedAudioTrack(asked: string | null | undefined): number {
   const wanted = Number(asked);
   if (!Number.isFinite(wanted) || wanted <= 0) return 0;
@@ -562,11 +588,17 @@ export function createRouter(options: RouterOptions) {
        * then refuses. The index is the same source `decidePlayback` uses, so
        * both ends still answer from one policy.
        */
+      const decodes = requestedDecodes(request.vcodecs);
       const copyVideo = canCopyVideo(profile, {
         remote: !isLocalAddress(request.client ?? ""),
         maxBitrate,
         capAsked: request.maxrate != null && request.maxrate !== "",
+        decodes,
       });
+      // A copy of HEVC is only ever made for a browser that named it, since
+      // without that `canCopyVideo` refuses it; it needs its own segment
+      // format, which is all this decides.
+      const hevcCopy = copyVideo && isHevc(profile.vcodec);
 
       // A conversion that produces nothing is a 503 carrying the reason
       // rather than a 500: it is a title that could not be started now, and
@@ -579,6 +611,7 @@ export function createRouter(options: RouterOptions) {
           maxrateBits: rate,
           audioTrack: track,
           copyVideo,
+          hevcCopy,
         });
       } catch (error) {
         const reason = error instanceof Error ? error.message : "the conversion did not start";
@@ -647,6 +680,9 @@ const HLS_TYPES: Record<string, string> = {
   m3u8: "application/vnd.apple.mpegurl",
   ts: "video/mp2t",
   m4s: "video/iso.segment",
+  // The init segment of an fMP4 session: the codec description every `.m4s`
+  // after it depends on.
+  mp4: "video/mp4",
 };
 
 async function hlsResponse(

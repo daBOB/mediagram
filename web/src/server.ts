@@ -67,6 +67,7 @@ function describe(request: IncomingMessage, trustProxy: boolean): PlayerRequest 
     seek: url.searchParams.get("seek"),
     maxrate: url.searchParams.get("maxrate"),
     audio: url.searchParams.get("audio"),
+    vcodecs: url.searchParams.get("vcodecs"),
     query: url.searchParams.get("q"),
     // Both read here so a route compares them rather than reaching for
     // headers it would have to be handed anyway.

@@ -32,6 +32,7 @@ export class FfmpegRunner implements Runner {
       maxrateBits: spec.maxrateBits,
       audioTrack: spec.audioTrack,
       copyVideo: spec.copyVideo,
+      hevcCopy: spec.hevcCopy,
       segmentSeconds: this.options.segmentSeconds,
       // Left to ffmpeg: it reads the real rate from the source, and
       // `-force_key_frames` holds the segment boundaries regardless.

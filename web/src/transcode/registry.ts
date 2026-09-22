@@ -33,6 +33,13 @@ export interface SessionSpec {
   audioTrack: number;
   /** Carry the picture across rather than encode it. See `video-copy.ts`. */
   copyVideo: boolean;
+  /**
+   * The picture being carried across is HEVC, for a browser that said it
+   * decodes it. Written as fMP4 tagged `hvc1`: hls.js plays HEVC from fMP4
+   * only, and Safari and Chrome refuse the `hev1` tag Matroska sources carry.
+   * Absent means MPEG-TS, which is what every other session still is.
+   */
+  hevcCopy?: boolean;
 }
 
 /** A running transcode, however it is actually run. */
@@ -278,7 +285,8 @@ function sessionId(spec: SessionSpec): string {
     // viewer and encoded for a capped one, are two different streams. An id
     // that ignored this would hand the capped viewer the uncapped bytes their
     // cap exists to prevent.
-    .update(spec.copyVideo ? "copy" : "encode")
+    // An HEVC copy is fMP4 rather than TS: a different stream again.
+    .update(spec.copyVideo ? (spec.hevcCopy ? "copy-fmp4" : "copy") : "encode")
     .digest("hex")
     .slice(0, 16);
 }

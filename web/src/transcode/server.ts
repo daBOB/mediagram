@@ -17,6 +17,7 @@ const TYPES: Record<string, string> = {
   ".m3u8": "application/vnd.apple.mpegurl",
   ".ts": "video/mp2t",
   ".m4s": "video/iso.segment",
+  ".mp4": "video/mp4",
 };
 
 export interface TranscodeFilesOptions {

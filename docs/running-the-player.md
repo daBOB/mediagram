@@ -152,7 +152,7 @@ ffmpeg, out as HLS.
 | What | Direct play | Converted |
 |---|---|---|
 | Container | `mp4`, `m4v`, `webm` | everything else; Matroska in particular |
-| Video | `h264`, `avc`, `avc1`, `vp8`, `vp9`, `av1` | everything else; HEVC in particular |
+| Video | `h264`, `avc`, `avc1`, `vp8`, `vp9`, `av1` | everything else; HEVC unless the browser says it decodes it |
 | Audio | `aac`, `mp4a`, `opus`, `vorbis`, `mp3` | everything else; AC-3 and E-AC-3 in particular |
 
 The lists live in `web/public/lib/playable.js` and a test fails if this table
@@ -226,8 +226,22 @@ Why those three are where the line falls:
   perfectly playable and it makes no difference; there is nothing to open the
   container with.
 - **HEVC.** Patchy and licence-bound. Safari on Apple hardware plays it,
-  Chrome does on some platforms and not others, and "some platforms" is not
-  something a library can be built on.
+  Chrome and Edge do where there is a hardware decoder, Firefox does on a
+  Linux with VA-API — and "some browsers" is not something a library can be
+  built on. So it is not on the list above; it is **negotiated**. The page
+  asks its own browser once (`web/public/lib/codec-support.js`), counting
+  HEVC only when both `canPlayType` and `MediaSource.isTypeSupported` accept
+  `hvc1`, and says so on every conversion request as `?vcodecs=hevc`. For
+  that browser an HEVC Matroska is *repackaged* rather than re-encoded: the
+  picture is copied, tagged `hvc1`, into fMP4 segments — the only form hls.js
+  plays HEVC from — while the soundtrack is converted as before. Every other
+  browser still gets H.264. Two limits: a negotiated codec is never played
+  directly, even from an mp4, because the index cannot say whether the file
+  is tagged `hev1` (refused by Safari and Chrome) and repackaging retags it;
+  and only SDR at 1080p or below is negotiated, because the probe asks about
+  8-bit Main at level 4 and says nothing about HDR, Dolby Vision or 2160p. The server accepts only codec names on
+  `NEGOTIABLE` in `playable.js`, so a request cannot talk it into copying
+  anything else.
 - **AC-3 and E-AC-3.** Broadcast and disc audio, licensed per decoder, and
   shipped by essentially no browser. A film with AC-3 is converted for its
   soundtrack alone even when its video would have played.

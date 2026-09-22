@@ -58,6 +58,54 @@ describe("what browsers refuse", () => {
     expect(reasonOf(decision)).toContain("HEVC");
   });
 
+  /** What the probe in `codec-support.js` actually vouches for. */
+  const sdr = (container: string, vcodec: string, quality = "1080p", hdr = "SDR") => ({
+    ...set(container, vcodec, "aac"),
+    quality,
+    hdr,
+  });
+
+  test("HEVC is carried across untouched for a browser that said it decodes it", () => {
+    const decision = decidePlayback(sdr("mkv", "hevc"), { decodes: ["hevc"] });
+    expect(decision.blocking.video).toBe(false);
+    // Spelled the other way in the index, still the same codec.
+    expect(decidePlayback(sdr("mkv", "h265"), { decodes: ["hevc"] }).blocking.video).toBe(false);
+  });
+
+  test("but never handed over directly, even in an mp4", () => {
+    // The index cannot say whether the file is tagged hvc1 or hev1, and the
+    // wrong one is a black picture. Repackaging retags it.
+    const decision = decidePlayback(sdr("mp4", "hevc"), { decodes: ["hevc"] });
+    expect(decision.kind).toBe("transcode");
+    expect(decision.blocking).toMatchObject({ container: true, video: false });
+    expect(reasonOf(decision)).toContain("HEVC");
+  });
+
+  test("HDR, Dolby Vision and 2160p stay converted: the probe says nothing about them", () => {
+    for (const profile of [
+      sdr("mkv", "hevc", "1080p", "HDR10"),
+      sdr("mkv", "hevc", "1080p", "DV"),
+      sdr("mkv", "hevc", "2160p", "SDR"),
+      set("mkv", "hevc", "aac"),
+    ]) {
+      expect(decidePlayback(profile, { decodes: ["hevc"] }).blocking.video).toBe(true);
+    }
+  });
+
+  test("a browser's list cannot widen the policy past what it negotiates", () => {
+    // Nothing on it is known to the policy, so nothing is promised.
+    const decision = decidePlayback(set("mp4", "prores", "aac"), { decodes: ["prores"] });
+    expect(decision.kind).toBe("transcode");
+  });
+
+  test("an HEVC Matroska still needs a new box, but not a new picture", () => {
+    const profile = { ...set("mkv", "hevc", "aac"), quality: "720p", hdr: "SDR" };
+    const decision = decidePlayback(profile, { decodes: ["hevc"] });
+    expect(decision.kind).toBe("transcode");
+    expect(decision.blocking.video).toBe(false);
+    expect(decision.blocking.container).toBe(true);
+  });
+
   /** The films in this library: every reason at once. */
   test("the film profile is refused and says why", () => {
     const decision = decidePlayback(set("mkv", "hevc", "ac3"));
