@@ -23,6 +23,10 @@
 - Account without post/pin rights (a viewer's own Telegram, not the owner's) → `put` fails, pull still works. Degrades to read-only, logged once.
 
 ## Requirements
+- **Pin failure (web parity, 33d5312).** A first send whose pin is refused must delete the sent document and
+  fail the round; rounds must not overlap. Pins are flood-limited (`FLOOD_WAIT_633` measured), and an unpinned
+  document is invisible, so without this every round sends another. See `web/src/telegram/state-channel.ts`
+  `put` and `web/src/state/sync.ts` `once`; tests `web/test/state-channel-put.test.ts`, `state-sync.test.ts`.
 
 - Functional: `list()` = pinned messages whose caption starts `#mlib-state ` with `device=(\S+)`, media present, downloaded one at a time, capped at 1 MiB each (a state doc is KB; cap stops a hostile pin). `put()` = edit own message's media+caption when its id is known, else upload `watch-state.json`, send as document with caption, pin silently.
 - Own doc recognised by device id, its message id learnt, excluded from parsing (own export used instead) — `sync.ts:93-105`.
