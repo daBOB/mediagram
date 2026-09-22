@@ -30,7 +30,7 @@ export const VIDEO = new Set(["h264", "avc", "avc1", "vp8", "vp9", "av1"]);
 export const AUDIO = new Set(["aac", "mp4a", "opus", "vorbis", "mp3"]);
 
 /** Names worth reporting back in the viewer's own words. */
-const PRETTY = { hevc: "HEVC", h265: "HEVC" };
+const PRETTY = { hevc: "HEVC" };
 
 /** Other spellings the index may carry for one codec, by canonical name. */
 const ALIASES = { h265: "hevc" };
@@ -145,9 +145,12 @@ export function decidePlayback(profile, link = {}) {
     reasons.push(`${(bitrate / 1e6).toFixed(1)} Mbit/s over a remote connection`);
   }
 
+  // `picture` says how the video passed, so a caller that has to treat a
+  // negotiated copy differently — its own segment format — asks rather than
+  // re-deriving it from the codec name.
   return reasons.length === 0
-    ? { kind: "direct", blocking }
-    : { kind: "transcode", reason: reasons.join(", "), blocking };
+    ? { kind: "direct", blocking, picture }
+    : { kind: "transcode", reason: reasons.join(", "), blocking, picture };
 }
 
 /**

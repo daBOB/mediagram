@@ -23,7 +23,11 @@ export function decidePlayback(
     /** Video codecs this browser decodes beyond `VIDEO`; see `codec-support.js`. */
     decodes?: Iterable<string>;
   },
-): Playback & { blocking: { container: boolean; video: boolean; audio: boolean; bitrate: boolean } };
+): Playback & {
+  blocking: { container: boolean; video: boolean; audio: boolean; bitrate: boolean };
+  /** How the picture passes: everywhere, only because this browser said so, or not at all. */
+  picture: "everywhere" | "negotiated" | false;
+};
 
 /** The containers, video codecs and audio codecs that direct-play. */
 export const CONTAINERS: ReadonlySet<string>;

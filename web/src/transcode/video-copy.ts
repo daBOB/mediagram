@@ -46,9 +46,9 @@ export interface CopyLink {
    */
   capAsked?: boolean;
   /**
-   * Video codecs the browser said it decodes beyond the everywhere-list.
-   * Already filtered to `NEGOTIABLE` by the route; `decidePlayback` filters
-   * again, so nothing outside that list can reach a copy either way.
+   * Video codecs the browser said it decodes beyond the everywhere-list, as
+   * the request gave them. `decidePlayback` keeps only `NEGOTIABLE` names, so
+   * nothing outside that list can reach a copy.
    */
   decodes?: Iterable<string>;
 }
@@ -69,11 +69,23 @@ export interface CopyLink {
  * @param link how the file will travel, the same shape the browser uses
  */
 export function canCopyVideo(profile: CopyProfile, link: CopyLink = {}): boolean {
+  return copyVideoAs(profile, link) !== false;
+}
+
+/**
+ * The same decision, saying *why* the picture may be copied: because every
+ * browser plays it, or because this one said it decodes it. A negotiated copy
+ * needs its own segment format, and this is where that is known.
+ */
+export function copyVideoAs(
+  profile: CopyProfile,
+  link: CopyLink = {},
+): false | "everywhere" | "negotiated" {
   if (link.capAsked === true) return false;
-  const { blocking } = decidePlayback(profile, link);
+  const { blocking, picture } = decidePlayback(profile, link);
   if (blocking.video) return false;
   if (blocking.bitrate) return false;
   // Nothing about the video is wrong, so whatever else is wrong — a Matroska
   // box, an AC3 track, both — is fixed by re-wrapping and re-encoding sound.
-  return true;
+  return picture;
 }

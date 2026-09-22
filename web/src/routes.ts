@@ -32,8 +32,7 @@ import {
 } from "./catalog";
 import { planReads, totalSize, type PartSpan, type Step } from "./range";
 import { isLocalAddress } from "./client-reach";
-import { canCopyVideo } from "./transcode/video-copy";
-import { NEGOTIABLE } from "../public/lib/playable.js";
+import { copyVideoAs } from "./transcode/video-copy";
 import type { SheetStore } from "./thumbs/sheets";
 // @ts-expect-error — plain JS shared with the browser, like `playable.js`.
 import { spritePlan } from "../public/lib/sprite-plan.js";
@@ -227,6 +226,18 @@ function requestedBitrate(asked: string | null | undefined, cap: number): number
 }
 
 /**
+ * The codecs a transcode request says its browser decodes.
+ *
+ * Passed as given: `decidePlayback` keeps only `NEGOTIABLE` names, so a
+ * request cannot talk the server into copying a codec the policy knows
+ * nothing about — the worst a lying client can do is receive a stream its own
+ * browser then refuses.
+ */
+function requestedDecodes(asked: string | null | undefined): string[] {
+  return asked ? asked.split(",").map((name) => name.trim()) : [];
+}
+
+/**
  * Which audio stream a transcode request asked for, as `0:a:N`.
  *
  * Floored and clamped at zero for the same reason the seek position is: the
@@ -235,26 +246,6 @@ function requestedBitrate(asked: string | null | undefined, cap: number): number
  * the request waits out the whole readiness timeout. A track past the end of
  * the file is left to ffmpeg, which fails cleanly and says so.
  */
-/**
- * The codecs a transcode request says its browser decodes.
- *
- * Only names on `NEGOTIABLE` survive, so a request cannot talk the server into
- * copying a codec the policy knows nothing about — the worst a lying client
- * can do is receive a stream its own browser then refuses.
- */
-function isHevc(vcodec: string | null): boolean {
-  const name = (vcodec ?? "").toLowerCase();
-  return name === "hevc" || name === "h265";
-}
-
-function requestedDecodes(asked: string | null | undefined): string[] {
-  if (!asked) return [];
-  return asked
-    .split(",")
-    .map((name) => name.trim().toLowerCase())
-    .filter((name) => NEGOTIABLE.has(name));
-}
-
 function requestedAudioTrack(asked: string | null | undefined): number {
   const wanted = Number(asked);
   if (!Number.isFinite(wanted) || wanted <= 0) return 0;
@@ -588,17 +579,16 @@ export function createRouter(options: RouterOptions) {
        * then refuses. The index is the same source `decidePlayback` uses, so
        * both ends still answer from one policy.
        */
-      const decodes = requestedDecodes(request.vcodecs);
-      const copyVideo = canCopyVideo(profile, {
+      const copied = copyVideoAs(profile, {
         remote: !isLocalAddress(request.client ?? ""),
         maxBitrate,
         capAsked: request.maxrate != null && request.maxrate !== "",
-        decodes,
+        decodes: requestedDecodes(request.vcodecs),
       });
-      // A copy of HEVC is only ever made for a browser that named it, since
-      // without that `canCopyVideo` refuses it; it needs its own segment
-      // format, which is all this decides.
-      const hevcCopy = copyVideo && isHevc(profile.vcodec);
+      const copyVideo = copied !== false;
+      // A negotiated copy is HEVC — the only codec `NEGOTIABLE` names — and
+      // needs its own segment format, which is all this decides.
+      const hevcCopy = copied === "negotiated";
 
       // A conversion that produces nothing is a 503 carrying the reason
       // rather than a 500: it is a title that could not be started now, and

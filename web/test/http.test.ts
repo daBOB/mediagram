@@ -617,14 +617,7 @@ describe("releasing a transcode", () => {
    * nothing, carried across for one that said it decodes HEVC.
    */
   test("a browser that decodes HEVC gets the picture copied, as fMP4", async () => {
-    const specs: SessionSpec[] = [];
-    const recording = fakeHls({
-      begin: async (spec: SessionSpec) => {
-        specs.push(spec);
-        return `/hls/${SESSION}/index.m3u8`;
-      },
-    });
-    const server = await startServer({ db: index(), source: new FakeSource(), hls: recording });
+    const { specs, server } = await recordingServer(SESSION);
     try {
       const said = await rawRequest(server.port, `/api/sets/${SET}/transcode?seek=0&vcodecs=hevc`);
       expect(JSON.parse(new TextDecoder().decode(said.body)).copied).toBe(true);
@@ -639,14 +632,7 @@ describe("releasing a transcode", () => {
   });
 
   test("a codec the policy does not know is not negotiated", async () => {
-    const specs: SessionSpec[] = [];
-    const recording = fakeHls({
-      begin: async (spec: SessionSpec) => {
-        specs.push(spec);
-        return `/hls/${SESSION}/index.m3u8`;
-      },
-    });
-    const server = await startServer({ db: index(), source: new FakeSource(), hls: recording });
+    const { specs, server } = await recordingServer(SESSION);
     try {
       await rawRequest(server.port, `/api/sets/${SET}/transcode?vcodecs=prores,ac3`);
       expect(specs[0]?.copyVideo).toBe(false);
@@ -790,3 +776,16 @@ describe("the search route", () => {
     expect(lengthOf(response)).toBe(response.body.byteLength);
   });
 });
+
+/** A player whose transcodes are recorded rather than run: what each was asked to be. */
+async function recordingServer(session: string) {
+  const specs: SessionSpec[] = [];
+  const hls = fakeHls({
+    begin: async (spec: SessionSpec) => {
+      specs.push(spec);
+      return `/hls/${session}/index.m3u8`;
+    },
+  });
+  const server = await startServer({ db: index(), source: new FakeSource(), hls });
+  return { specs, server };
+}

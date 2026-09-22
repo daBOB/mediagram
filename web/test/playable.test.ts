@@ -27,6 +27,7 @@ describe("direct play", () => {
     expect(decidePlayback(set("mp4", "h264", "aac"))).toEqual({
       kind: "direct",
       blocking: { container: false, video: false, audio: false, bitrate: false },
+      picture: "everywhere",
     });
   });
 
@@ -67,7 +68,10 @@ describe("what browsers refuse", () => {
 
   test("HEVC is carried across untouched for a browser that said it decodes it", () => {
     const decision = decidePlayback(sdr("mkv", "hevc"), { decodes: ["hevc"] });
-    expect(decision.blocking.video).toBe(false);
+    // Still a new box — Matroska — but not a new picture.
+    expect(decision.kind).toBe("transcode");
+    expect(decision.blocking).toMatchObject({ container: true, video: false });
+    expect(decision.picture).toBe("negotiated");
     // Spelled the other way in the index, still the same codec.
     expect(decidePlayback(sdr("mkv", "h265"), { decodes: ["hevc"] }).blocking.video).toBe(false);
   });
@@ -96,14 +100,6 @@ describe("what browsers refuse", () => {
     // Nothing on it is known to the policy, so nothing is promised.
     const decision = decidePlayback(set("mp4", "prores", "aac"), { decodes: ["prores"] });
     expect(decision.kind).toBe("transcode");
-  });
-
-  test("an HEVC Matroska still needs a new box, but not a new picture", () => {
-    const profile = { ...set("mkv", "hevc", "aac"), quality: "720p", hdr: "SDR" };
-    const decision = decidePlayback(profile, { decodes: ["hevc"] });
-    expect(decision.kind).toBe("transcode");
-    expect(decision.blocking.video).toBe(false);
-    expect(decision.blocking.container).toBe(true);
   });
 
   /** The films in this library: every reason at once. */
