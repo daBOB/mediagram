@@ -7,6 +7,35 @@ to `main`. Full phase-by-phase detail lives in
 
 ## 2026-09-22
 
+**Shipped**
+
+- The Android catalogue has a design. It had none: `darkColorScheme()` was
+  called with no arguments, so every colour in the app was Material 3's
+  baseline violet, and every word was Roboto. It now carries the web player's
+  identity, in the terms Android states things in.
+
+  The ground is the catalogue's own ink rather than a neutral charcoal, and
+  the palette is the web player's own, inverted for a surface held in the room
+  the film is about to play in. One imprint red, lifted from `#8c3b2e` until it
+  cleared 4.5:1 on both grounds, marks the shelf in view and nothing else.
+  Fraunces and Newsreader ship in the app, converted from the same variable
+  files the browser loads, so both surfaces set the catalogue in one voice;
+  the optical-size axis is declared per face because Android has no
+  `font-optical-sizing`.
+
+  The shelves are a wall rather than side-scrolling rails. A rail hides how
+  much a shelf holds and puts whatever it shows first ahead of the rest, which
+  is how a storefront ranks stock, and this library is finite and already
+  owned. Plates replace cards: square corners, no elevation, a hairline, and a
+  poster's own 2:3; a title with no artwork gets a plate with its initials
+  rather than a grey slab.
+
+  One shelf is on screen at a time, chosen from a masthead of three. That was
+  not the plan and the build found it: the film shelf alone is three hundred
+  plates deep, so with the shelves stacked the courses sat fifty screens down
+  with nothing to say they were there. The web player has given each shelf its
+  own route from the beginning.
+
 **Fixed**
 
 - The phone could sit on a library older than the channel actually holds, and

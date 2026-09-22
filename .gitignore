@@ -19,3 +19,11 @@ android/**/jniLibs/
 *.jks
 *.keystore
 
+
+# Impeccable working directories. The surface briefs and the config are
+# durable and committed; device captures and generated comps are neither,
+# and the captures alone run to tens of megabytes per pass.
+.impeccable/review/
+.impeccable/mocks/
+.impeccable/decision-*.json
+.impeccable/questions/
