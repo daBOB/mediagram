@@ -7,13 +7,17 @@ import data.CatalogRepository
 import data.LibraryEvents
 import data.refreshSentence
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -40,14 +44,43 @@ class CatalogViewModel @Inject constructor(
     // instead of replacing a whole library with a spinner for as long as
     // the network takes. Held here rather than read back out of [state]:
     // a flow that read the StateFlow it is building would be feeding on
-    // its own output. Touched only from the collecting coroutine, which is
-    // one coroutine — flatMapLatest cancels the old inner flow inside the
-    // same collection — so a plain field is enough.
+    // its own output. Touched by the channel reads and by [showFetched]'s
+    // re-reads, both collected on the main dispatcher, so never at once —
+    // and each re-read takes it only after its own suspension, so it never
+    // writes back a copy another read has since replaced.
     private var lastReady: CatalogUiState.Ready? = null
+
+    // Asks for the shelves to be built again from this device alone. Dropped
+    // when nobody is watching, which is safe: watching again reads the channel.
+    private val refetched = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    private val _published = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /**
+     * Once each time a newer index published from another device has been
+     * read in. New media comes with no artwork or descriptions on this
+     * device, so whoever holds the fetch runs it on this — the same fetch
+     * Update library runs after its own read. Not said after a read the
+     * button asked for (that chains its own fetch), nor after one that
+     * failed (nothing new came home).
+     */
+    val published: SharedFlow<Unit> = _published.asSharedFlow()
 
     /** Re-reads the library from the channel and re-groups it. */
     fun reload() {
         reloads.update { it + 1 }
+    }
+
+    /**
+     * Builds the shelves again from the catalog already on this device, for
+     * artwork a fetch has just laid down. Each card's poster is looked up
+     * when the shelves are built, so without this a fetch that finished after
+     * the read — which is always, since it follows the read — left every new
+     * poster on disk and every card showing initials until the next reload.
+     * The channel is not asked, and Update stays available throughout.
+     */
+    fun showFetched() {
+        refetched.tryEmit(Unit)
     }
 
     // flatMapLatest, not flatMapConcat: a second request made while the
@@ -61,10 +94,10 @@ class CatalogViewModel @Inject constructor(
     // spent on a phone in a pocket. No posters are fetched on it: that stays
     // on the button, where its cost is visible.
     val state: StateFlow<CatalogUiState> = merge(
-        reloads.map { },
-        libraryEvents.events().filter { it == LibraryEvent.INDEX }.map { },
+        reloads.map { false },
+        libraryEvents.events().filter { it == LibraryEvent.INDEX }.map { true },
     )
-        .flatMapLatest {
+        .flatMapLatest { pushed ->
             flow {
                 // Loading only when there is nothing yet to keep. Every
                 // later read of the channel is said over the shelves it is
@@ -88,9 +121,26 @@ class CatalogViewModel @Inject constructor(
                 // the next reload to keep up.
                 lastReady = answer as? CatalogUiState.Ready
                 emit(answer)
+                if (pushed && failure == null) _published.tryEmit(Unit)
             }
         }
+        // Beside the channel reads rather than among them: through the same
+        // flatMapLatest, a fetch finishing mid-read would cancel that read.
+        .let { reads -> merge(reads, refetched.mapNotNull { regrouped() }) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CatalogUiState.Loading)
+
+    /**
+     * The shelves showing, rebuilt from the catalog on disk; `null` when none
+     * are showing yet, since a first read will build them with the artwork.
+     * Keeps the notice and the refreshing flag of whatever is up: this only
+     * changes what the cards look like.
+     */
+    private suspend fun regrouped(): CatalogUiState.Ready? {
+        val sets = runCatching { repository.sets() }.getOrNull() ?: return null
+        val kept = lastReady ?: return null
+        val shelves = shelvesOf(sets).takeIf { it.isNotEmpty() } ?: return null
+        return kept.copy(shelves = shelves).also { lastReady = it }
+    }
 
     /**
      * What the index says about one title, for the screen that describes it

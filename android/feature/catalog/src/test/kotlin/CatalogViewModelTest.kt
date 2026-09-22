@@ -3,7 +3,10 @@ package catalog
 import app.cash.turbine.test
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -152,6 +155,81 @@ class CatalogViewModelTest {
             assertTrue((awaitItem() as CatalogUiState.Ready).refreshing)
             assertFalse((awaitItem() as CatalogUiState.Ready).refreshing)
             assertEquals(2, repository.refreshes)
+        }
+    }
+
+    /**
+     * New media from another device arrives with no artwork or descriptions
+     * here, so a pushed read that brought it home asks for the fetch. A read
+     * the button asked for does not — the button chains its own — and a read
+     * that failed brought nothing home to describe.
+     */
+    @Test
+    fun onlyAPushedReadThatSucceededAsksForAFetch() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val pushed = MutableSharedFlow<LibraryEvent>()
+        val vm = CatalogViewModel(FakeCatalogRepository(movies = 1)) { pushed }
+        val asked = mutableListOf<Unit>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.published.toList(asked) }
+        vm.state.test {
+            awaitItem()
+            awaitItem()
+
+            vm.reload()
+            awaitItem()
+            awaitItem()
+            assertEquals(0, asked.size, "a read the button asked for chains its own fetch")
+
+            pushed.emit(LibraryEvent.INDEX)
+            awaitItem()
+            awaitItem()
+            runCurrent()
+            assertEquals(1, asked.size)
+        }
+    }
+
+    @Test
+    fun aPushedReadThatFailedAsksForNothing() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val pushed = MutableSharedFlow<LibraryEvent>()
+        val vm = CatalogViewModel(FakeCatalogRepository(movies = 1, refreshFails = true)) { pushed }
+        val asked = mutableListOf<Unit>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.published.toList(asked) }
+        vm.state.test {
+            awaitItem()
+            awaitItem()
+
+            pushed.emit(LibraryEvent.INDEX)
+            awaitItem()
+            awaitItem()
+            runCurrent()
+            assertEquals(0, asked.size)
+        }
+    }
+
+    /**
+     * The defect this closes: a card looks its poster up when the shelves are
+     * built, and a fetch finishes after they are, so fetched artwork sat on
+     * disk behind initials until the next reload. Showing it must not ask the
+     * channel again, and must not flag the library as refreshing.
+     */
+    @Test
+    fun artworkAFetchLaidDownIsShownWithoutAskingTheChannel() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val repository = FakeCatalogRepository(movies = 1)
+        val vm = CatalogViewModel(repository)
+        vm.state.test {
+            awaitItem()
+            val before = awaitItem() as CatalogUiState.Ready
+            assertEquals(listOf(null), before.shelves.flatMap { it.entries }.map { (it as Entry.Film).set.posterPath })
+
+            repository.postersArrived = true
+            vm.showFetched()
+
+            val after = awaitItem() as CatalogUiState.Ready
+            assertFalse(after.refreshing)
+            assertEquals(listOf("/artwork/movie-0.jpg"), after.shelves.flatMap { it.entries }.map { (it as Entry.Film).set.posterPath })
+            assertEquals(1, repository.refreshes, "showing artwork is not a read of the channel")
         }
     }
 }

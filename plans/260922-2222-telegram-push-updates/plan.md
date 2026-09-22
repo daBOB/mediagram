@@ -54,5 +54,5 @@ Research: `plans/reports/research-260922-2212-telegram-api-premium-opportunities
 ## Unresolved questions
 
 1. Should the push path also lengthen the default timer (5 min → 15 min) to save calls? The plan keeps 5 min.
-2. Should Android's `IndexChanged` also run `fetch_missing` (posters), or only `refresh_library`? The plan says
-   only `refresh_library`: posters stay on the manual button, where their cost is visible.
+2. ~~Should Android's `IndexChanged` also run `fetch_missing`?~~ **Answered by the user 2026-09-23: yes** — new media
+   triggers the metadata and poster fetch, quietly (phase 04).

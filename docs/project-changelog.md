@@ -9,6 +9,14 @@ to `main`. Full phase-by-phase detail lives in
 
 **Fixed**
 
+- Update library on the Android app now shows the posters it fetches. Each
+  card looks its poster up when the shelves are built, and the fetch runs
+  after the read that builds them — so every poster it downloaded sat on disk
+  behind the title's initials until the next reload or restart, and Update
+  looked as if it had fetched nothing. The shelves are now built again from
+  the catalog on this device once a fetch lays down new artwork: no second
+  read of the channel, and Update stays available throughout. The same holds
+  for the quiet fetch new media brings.
 - The Android core's update listener can no longer go deaf for the life of the
   app. It took the connection's one update receiver before asking Telegram for
   the update state, so a failed or cancelled first call — the phone offline as
@@ -37,10 +45,11 @@ to `main`. Full phase-by-phase detail lives in
   five-minute timer; a new index is noted in the log only, because its catalog
   comes from the published package. The Android core exposes the same events
   as `next_library_event`, and the Android app acts on the index half: while
-  the catalog is on screen, a new index from another device refreshes it just
-  as Update library does, without the poster fetch (that stays on the button,
-  where the download is visible). Nothing listens while the app is in the
-  background. Another device's watch state is heard but not acted on yet —
+  the catalog is on screen, a new index from another device refreshes it and
+  then fetches the new titles' artwork and descriptions — what Update library
+  does, without its result dialog, since nobody asked. A push that lands while
+  a fetch is already running is picked up by the next one. Nothing listens
+  while the app is in the background. Another device's watch state is heard but not acted on yet —
   the app has no watch-state sync to run.
   Updates are hints, never data: the timer stays, a missed update costs what it
   did before, and whoever starts listening runs one round first, because

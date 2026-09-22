@@ -6,7 +6,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import data.CoreProvider
 import data.coreSentence
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -45,6 +48,15 @@ class FetchViewModel @Inject constructor(
     private val _state = MutableStateFlow(FetchUiState())
     val state: StateFlow<FetchUiState> = _state.asStateFlow()
 
+    private val _postersArrived = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /**
+     * Once each time a fetch — asked for or quiet — laid down new artwork, so
+     * the shelves can be built again to show it. Not said when it fetched
+     * none: descriptions are read on demand and need nothing rebuilt.
+     */
+    val postersArrived: SharedFlow<Unit> = _postersArrived.asSharedFlow()
+
     init {
         refreshKeyStatus()
     }
@@ -68,25 +80,38 @@ class FetchViewModel @Inject constructor(
      * Starts a fetch. A no-op while one is already running or no key is
      * stored — the menu that offers this action is disabled in both cases,
      * so this is the second, cheaper guard behind that one, not the first.
+     *
+     * [quiet] is for the fetch nobody asked for — the one new media from
+     * another device brings. It says nothing when it ends: a dialog after
+     * every push would be a tally of work the viewer did not start, over
+     * whatever they were doing. It also leaves any result still on screen
+     * where it was. While it runs, the menu says so, as for any fetch.
      */
-    fun fetch() {
+    fun fetch(quiet: Boolean = false) {
         val current = _state.value
         if (current.running || !current.hasKey) return
 
         viewModelScope.launch {
-            _state.update { it.copy(running = true, report = null, error = null) }
+            _state.update { if (quiet) it.copy(running = true) else it.copy(running = true, report = null, error = null) }
             val key = tmdbSettings.read()
             if (key == null) {
-                _state.update { it.copy(running = false, hasKey = false, error = "No TMDB key is stored.") }
+                _state.update {
+                    it.copy(running = false, hasKey = false, error = if (quiet) it.error else "No TMDB key is stored.")
+                }
                 return@launch
             }
             _state.value = try {
                 val report = coreProvider.awaitCore().fetchMissing(key, fallbackLanguage)
-                _state.value.copy(running = false, report = report)
+                if (report.postersFetched > 0u) _postersArrived.tryEmit(Unit)
+                if (quiet) _state.value.copy(running = false) else _state.value.copy(running = false, report = report)
             } catch (e: CancellationException) {
                 throw e
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                _state.value.copy(running = false, error = e.coreSentence() ?: "The fetch failed.")
+                if (quiet) {
+                    _state.value.copy(running = false)
+                } else {
+                    _state.value.copy(running = false, error = e.coreSentence() ?: "The fetch failed.")
+                }
             }
         }
     }

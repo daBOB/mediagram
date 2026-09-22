@@ -18,6 +18,13 @@ watch-state plan's phase 04 (`WatchSync` does not exist yet).
 - **No round on (re)start for the index**, deliberately: `refresh_library` downloads the whole index (MBs) every time, even
   unchanged. The catalog still loads once per app start and the button still works; web parity (web logs index events only).
 - `ownDevice` is `""` until a watch-state device id exists; `STATE` is ignored by the catalog.
+- **Fetch on new media (user decision, 2026-09-23):** "getting a new media should trigger fetch metadata and posters".
+  Reverses the first cut's "no posters on push". `CatalogViewModel.published` fires once after a *pushed* read that
+  succeeded (not after the button's read, which chains its own fetch; not after a failed read); `LibraryFlow` collects it
+  and runs `FetchViewModel.fetch(quiet = true)` — no result dialog, and a result still on screen is left alone. A push
+  during a running fetch gets no fetch of its own (fetch refuses to overlap); the next push or the button covers it.
+  Tests: `onlyAPushedReadThatSucceededAsksForAFetch`, `aPushedReadThatFailedAsksForNothing`,
+  `aQuietFetchFillsInWithoutAReport`, `aQuietFetchLeavesAResultStillOnScreen` (catalog pair mutation-checked).
 - Tests: `LibraryEventsTest` (passes events + handle; no library → ends without asking; failure → 30 s virtual pause → resumes),
   `CatalogViewModelTest.aNewIndexFromAnotherDeviceReadsTheChannelAgain` (INDEX refreshes, STATE does not; mutation-checked).
   `:app:assembleDebug` + all `testDebugUnitTest` green.

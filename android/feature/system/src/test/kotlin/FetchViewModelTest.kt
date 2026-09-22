@@ -1,6 +1,9 @@
 package system
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
@@ -129,5 +132,51 @@ class FetchViewModelTest {
 
         assertNull(viewModel.state.value.report)
         assertTrue(viewModel.state.value.hasKey)
+    }
+
+    /** The fetch new media brings is nobody's request: it does its work and says nothing. */
+    @Test
+    fun aQuietFetchFillsInWithoutAReport() = runTest {
+        val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
+        val core = FakeCore(report = FetchReport(2u, 7u, 5u, 1u, 0u, 0u))
+        val viewModel = FetchViewModel(FakeCoreProvider(core), settings)
+
+        viewModel.fetch(quiet = true)
+
+        assertEquals("a-fake-key", core.lastKey)
+        assertNull(viewModel.state.value.report)
+        assertNull(viewModel.state.value.error)
+        assertFalse(viewModel.state.value.running)
+    }
+
+    /** A result the viewer has not dismissed yet is theirs; a quiet fetch neither clears nor replaces it. */
+    @Test
+    fun aQuietFetchLeavesAResultStillOnScreen() = runTest {
+        val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
+        val core = FakeCore(report = FetchReport(1u, 0u, 0u, 0u, 0u, 0u))
+        val viewModel = FetchViewModel(FakeCoreProvider(core), settings)
+        viewModel.fetch()
+
+        viewModel.fetch(quiet = true)
+
+        assertEquals(FetchReport(1u, 0u, 0u, 0u, 0u, 0u), viewModel.state.value.report)
+    }
+
+    /** New artwork on disk is what the shelves must be rebuilt to show; none, and nothing is said. */
+    @Test
+    fun onlyAFetchThatLaidDownPostersSaysSo() = runTest {
+        val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
+        val heard = mutableListOf<Unit>()
+
+        val withPosters = FetchViewModel(FakeCoreProvider(FakeCore(report = FetchReport(2u, 7u, 5u, 1u, 0u, 0u))), settings)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { withPosters.postersArrived.toList(heard) }
+        withPosters.fetch(quiet = true)
+        assertEquals(1, heard.size)
+
+        heard.clear()
+        val without = FetchViewModel(FakeCoreProvider(FakeCore(report = FetchReport(0u, 9u, 0u, 1u, 0u, 0u))), settings)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { without.postersArrived.toList(heard) }
+        without.fetch()
+        assertEquals(0, heard.size)
     }
 }

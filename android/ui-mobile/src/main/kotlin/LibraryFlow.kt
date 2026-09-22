@@ -87,6 +87,21 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
         fetchViewModel.fetch()
     }
 
+    // New media published from another device arrives with no artwork or
+    // descriptions here, so the fetch Update library runs follows it too —
+    // quietly, since nobody asked. Keyed on nothing: the catalog says when
+    // its read has finished, so there is no edge to race the way the button
+    // path has to.
+    LaunchedEffect(catalogViewModel) {
+        catalogViewModel.published.collect { fetchViewModel.fetch(quiet = true) }
+    }
+
+    // A fetch lays its artwork down after the shelves were built, and a card
+    // looks its poster up when they are; so they are built again to show it.
+    LaunchedEffect(fetchViewModel) {
+        fetchViewModel.postersArrived.collect { catalogViewModel.showFetched() }
+    }
+
     val menuActions = MenuActions(
         onSystem = { at.menuScreen = MenuScreen.System },
         // To the shelves, wherever the menu was opened from. The menu is the

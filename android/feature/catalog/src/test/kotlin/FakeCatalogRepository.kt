@@ -19,6 +19,9 @@ class FakeCatalogRepository(
             (0 until episodes).map { fakeSet(Kind.EPISODE, "episode-$it") } +
             (0 until tutorials).map { fakeSet(Kind.TUTORIAL, "tutorial-$it") }
 
+    /** Whether a fetch has laid artwork down: from then on every set has a poster. */
+    var postersArrived: Boolean = false
+
     /** How many times the channel has been asked, which is what a reload has to move. */
     var refreshes: Int = 0
         private set
@@ -32,7 +35,11 @@ class FakeCatalogRepository(
         }
     }
 
-    override suspend fun sets(): List<MediaSet> = if (onDisk) allSets else emptyList()
+    override suspend fun sets(): List<MediaSet> = when {
+        !onDisk -> emptyList()
+        postersArrived -> allSets.map { it.copy(posterPath = "/artwork/${it.setId}.jpg") }
+        else -> allSets
+    }
 
     /** Nothing is what a library assembled without a TMDB key answers, which is the ordinary case here. */
     override suspend fun titleInfo(posterKey: String): TitleInfo? = null
