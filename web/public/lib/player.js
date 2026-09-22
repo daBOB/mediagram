@@ -348,7 +348,7 @@ function refreshSeek() {
     at: filmTime(),
     ahead: bufferedAhead(video.buffered, video.currentTime),
     converting,
-    held: playsFromDisk(),
+    held,
   });
   seek.hidden = !bar.usable;
   if (!bar.usable) {
@@ -648,18 +648,13 @@ let starved = false;
  * Asked as the dialog opens rather than read from the catalog, which the page
  * fetched once at load and which still says "streaming" about an episode that
  * finished caching since.
+ *
+ * True of a conversion as much as of a file played directly: the encoder
+ * reads the same cache, so nothing it waits on is the network, and a seek
+ * restarts it from disk too. Leaving conversions out made every held
+ * Matroska title on a browser without HEVC read as streaming.
  */
 let held = false;
-
-/**
- * Held, and played as the file itself.
- *
- * A conversion of a held title is still waiting on its encoder, so its buffer
- * is still the honest answer to how much is ready.
- */
-function playsFromDisk() {
-  return held && !converting;
-}
 
 /** Asks whether `set` is held, and redraws if it is still the one playing. */
 async function askHeld(set) {
@@ -748,7 +743,7 @@ function refreshPreload() {
     // decision the viewer never sees into one they can.
     fillRate: watch.fillRate(),
     dropped: quality?.droppedVideoFrames,
-    held: playsFromDisk(),
+    held,
   });
 }
 
@@ -1115,7 +1110,7 @@ seekTo.addEventListener("input", () => {
     at,
     ahead: bufferedAhead(video.buffered, video.currentTime),
     converting,
-    held: playsFromDisk(),
+    held,
   });
   showSeekAt(bar);
   if (bar.seeksWhileDragging) seekFilmTo(at);
