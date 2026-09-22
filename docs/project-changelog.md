@@ -7,6 +7,15 @@ to `main`. Full phase-by-phase detail lives in
 
 ## 2026-09-22
 
+**Fixed**
+
+- Merging watch state from several devices now names a viewer the same way
+  whichever order their documents arrive in. One viewer typed as "André" on
+  one machine and " andré " on another kept whichever spelling happened to
+  be read first, so two devices could disagree about what to call the same
+  person. The spelling now follows the device id, as a tie between two rows
+  for one title already did.
+
 **Added**
 
 - A series of more than one season opens on a wall of its seasons, each with

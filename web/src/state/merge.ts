@@ -62,6 +62,8 @@ export function mergeStates(records: SyncRecord[]): MergedState {
     string,
     {
       displayName: string;
+      /** The device `displayName` was taken from, for the tie-break below. */
+      nameFrom: string;
       progress: Map<string, Held<ProgressRow>>;
       watched: Map<string, Held<WatchedRow>>;
     }
@@ -75,8 +77,14 @@ export function mergeStates(records: SyncRecord[]): MergedState {
 
       let held = byViewer.get(name);
       if (held === undefined) {
-        held = { displayName: profile.name.trim(), progress: new Map(), watched: new Map() };
+        held = { displayName: profile.name.trim(), nameFrom: device, progress: new Map(), watched: new Map() };
         byViewer.set(name, held);
+      } else if (device > held.nameFrom) {
+        // One viewer typed two ways on two devices. The spelling shown is
+        // decided by device id, as a tie between rows is, so it does not
+        // depend on which document Telegram happened to hand over first.
+        held.displayName = profile.name.trim();
+        held.nameFrom = device;
       }
 
       for (const row of profile.progress ?? []) keep(held.progress, row.setId, row, device);
