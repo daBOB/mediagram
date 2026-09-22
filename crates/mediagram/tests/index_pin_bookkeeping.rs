@@ -8,9 +8,7 @@
 //! `push-index` pinned a new snapshot and left the previous one pinned too,
 //! because the id it would have unpinned went with the database.
 
-use mediagram::commands::push_index::{
-    pending_unpins, record_index_messages, record_unpin_outcome,
-};
+use mediagram::index::pins::{pending_unpins, record_index_messages, record_unpin_outcome};
 use mediagram::index::db;
 
 fn open() -> rusqlite::Connection {

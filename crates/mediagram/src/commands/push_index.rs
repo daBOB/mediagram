@@ -8,15 +8,10 @@ use grammers_client::message::InputMessage;
 use rusqlite::Connection;
 
 use crate::config::Config;
-use crate::index::{db, snapshot};
+use crate::index::{db, pins, snapshot};
 use crate::telegram::client::Tg;
 use crate::telegram::retry::{with_flood_wait_only, with_retry};
 
-const META_INDEX_MESSAGE_ID: &str = "index_message_id";
-/// Index messages still pinned that should not be: the one this push
-/// replaces, plus any a previous push failed to unpin or a `rescan`
-/// rediscovered. Stored comma-separated, newest first.
-const META_STALE_INDEX_ID: &str = "stale_index_message_id";
 const INDEX_MIME_TYPE: &str = "application/vnd.sqlite3";
 
 /// Snapshots and pushes `library.db`, pins the new message, and unpins the
@@ -116,8 +111,7 @@ async fn send_and_pin(
 
     unpin_previous(tg, max_attempts, conn, channel).await?;
 
-    db::set_meta(conn, META_INDEX_MESSAGE_ID, &new_id.to_string())
-        .context("recording new index message id")?;
+    pins::record_current(conn, new_id)?;
 
     Ok(new_id)
 }
@@ -143,12 +137,12 @@ async fn unpin_previous(
     channel: grammers_session::types::PeerRef,
 ) -> Result<()> {
     let mut unresolved: Vec<i32> = Vec::new();
-    for old_id in pending_unpins(conn) {
+    for old_id in pins::pending_unpins(conn) {
         if !clear_pin(tg, max_attempts, channel, old_id).await {
             unresolved.push(old_id);
         }
     }
-    record_unpin_outcome(conn, &unresolved)
+    pins::record_unpin_outcome(conn, &unresolved)
 }
 
 /// Unpins one message, and reads the channel back to see whether it worked.
@@ -231,79 +225,6 @@ async fn still_pinned(
     .context("reading back the pinned flag")?;
     // A deleted message reads as `None`, and has no pin left to clear.
     Ok(matches!(found.first(), Some(Some(message)) if message.pinned()))
-}
-
-/// Writes down which ids a push could not prove unpinned.
-///
-/// Separate from the clearing so the bookkeeping can be tested without a
-/// channel: whether a stale id survives a push is the whole question, and the
-/// defect this replaced was that a false `Ok` erased it.
-///
-/// The unresolved ids are written before the replaced id is forgotten, so a
-/// write that fails part way can at worst leave an id listed twice — which
-/// `pending_unpins` folds — and never lose one.
-pub fn record_unpin_outcome(conn: &Connection, unresolved: &[i32]) -> Result<()> {
-    if unresolved.is_empty() {
-        db::delete_meta(conn, META_STALE_INDEX_ID)?;
-    } else {
-        db::set_meta(conn, META_STALE_INDEX_ID, &join_ids(unresolved))
-            .context("recording the index pins still to clear")?;
-    }
-    db::delete_meta(conn, META_INDEX_MESSAGE_ID)
-}
-
-/// The index messages this push should unpin, newest first.
-///
-/// Both keys hold comma-separated ids: `index_message_id` the snapshot this
-/// push replaces, `stale_index_message_id` anything a previous push could not
-/// clear or a `rescan` rediscovered.
-pub fn pending_unpins(conn: &Connection) -> Vec<i32> {
-    let mut ids: Vec<i32> = Vec::new();
-    for key in [META_INDEX_MESSAGE_ID, META_STALE_INDEX_ID] {
-        let Ok(Some(raw)) = db::get_meta(conn, key) else {
-            continue;
-        };
-        for piece in raw.split(',').map(str::trim).filter(|p| !p.is_empty()) {
-            match piece.parse::<i32>() {
-                Ok(id) if !ids.contains(&id) => ids.push(id),
-                Ok(_) => {}
-                Err(_) => {
-                    tracing::warn!(key, value = %piece, "recorded index message id is not valid")
-                }
-            }
-        }
-    }
-    ids
-}
-
-/// Records the index snapshots a `rescan` found in the channel.
-///
-/// The memory of which snapshot is current lives in `library.db`, and
-/// `rescan` exists because that file gets lost — so without this the first
-/// push after a rescan pins a new index and leaves the old one pinned beside
-/// it. Found by a live run against a real channel, which is what those are for.
-pub fn record_index_messages(conn: &Connection, ids: &[i32]) -> Result<()> {
-    if ids.is_empty() {
-        return Ok(());
-    }
-    let mut sorted: Vec<i32> = ids.to_vec();
-    sorted.sort_unstable_by(|a, b| b.cmp(a));
-    sorted.dedup();
-
-    let (newest, older) = sorted.split_first().expect("checked non-empty");
-    db::set_meta(conn, META_INDEX_MESSAGE_ID, &newest.to_string())
-        .context("recording the current index message id")?;
-    if older.is_empty() {
-        let _ = db::delete_meta(conn, META_STALE_INDEX_ID);
-    } else {
-        db::set_meta(conn, META_STALE_INDEX_ID, &join_ids(older))
-            .context("recording stale index message ids")?;
-    }
-    Ok(())
-}
-
-fn join_ids(ids: &[i32]) -> String {
-    ids.iter().map(i32::to_string).collect::<Vec<_>>().join(",")
 }
 
 /// Errors that mean there is no pin left to clear, so the id can be dropped.

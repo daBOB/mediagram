@@ -139,10 +139,7 @@ pub fn walk(dir: &Path) -> Result<Vec<Episode>> {
     if !dir.is_dir() {
         bail!("{} is not a directory", dir.display());
     }
-    // `prepare`'s walk, which also skips the working files a crashed run
-    // leaves behind — those look like episodes and would clash with the real
-    // ones, aborting the show.
-    let files = super::prepare::collect(dir)?;
+    let files = crate::media::video_files::collect_videos(dir)?;
 
     let mut episodes = Vec::new();
     for path in files {

@@ -10,5 +10,6 @@ pub mod prepare_check;
 pub mod prepare_plan;
 pub mod remux;
 pub mod streams;
+pub mod video_files;
 /// ffmpeg-built fixtures shared by unit and integration tests; unused at runtime.
 pub mod test_fixtures;

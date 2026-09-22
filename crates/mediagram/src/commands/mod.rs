@@ -1,4 +1,7 @@
-//! One module per subcommand; each exposes `run`.
+//! One module per subcommand, each exposing `run`, plus `args` (their clap
+//! structs) and `background` (handing an upload to a detached process).
+//! Logic another command or module needs lives in the domain modules
+//! (`index`, `upload`, `media`, ...), not here.
 
 pub mod accept_login;
 pub mod add;

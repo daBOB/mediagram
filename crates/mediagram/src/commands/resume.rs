@@ -2,11 +2,11 @@
 
 use anyhow::{Context, Result};
 
-use super::finish_set::finish_one;
 use super::push_index;
 use crate::config::Config;
 use crate::index::{db, sets};
 use crate::telegram::client::Tg;
+use crate::upload::finish::finish_one;
 use crate::upload::lock;
 use crate::upload::transport::TelegramTransport;
 

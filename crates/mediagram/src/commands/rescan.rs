@@ -4,7 +4,7 @@
 use anyhow::{Context, Result};
 use rusqlite::Connection;
 
-use crate::commands::push_index::record_index_messages;
+use crate::index::pins::record_index_messages;
 use crate::config::Config;
 use crate::index::db;
 use crate::index::rescan::{self, RescanSummary};

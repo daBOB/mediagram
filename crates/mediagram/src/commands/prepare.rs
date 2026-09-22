@@ -20,18 +20,13 @@ use tokio::process::Command;
 
 use super::args::PrepareArgs;
 use crate::config::Config;
-use crate::course::plan::is_video;
 use crate::media::direct_play;
 use crate::media::ffmpeg_progress;
 use crate::media::prepare_check::check_prepared;
 use crate::media::prepare_plan::{PreparePlan, StreamKind, Verdict, plan_prepare};
 use crate::media::streams;
+use crate::media::video_files::{PREPARE_WORKING_SUFFIX, collect_videos};
 use crate::term;
-
-/// Suffix of the file written beside the original before it is renamed over
-/// it. Shares the `.prepared.` marker so a crashed run leaves something
-/// recognisable rather than a plausible-looking video.
-const WORKING_SUFFIX: &str = ".prepared.mkv";
 
 pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
     if args.replace && args.out.is_some() {
@@ -45,7 +40,7 @@ pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
     let keep_audio = split_languages(&args.audio);
     let keep_subs = split_languages(&args.subs);
     let limit = args.limit.unwrap_or(cfg.part_size);
-    let files = collect(&args.path)?;
+    let files = collect_videos(&args.path)?;
     if files.is_empty() {
         println!("no video files under {}", args.path.display());
         return Ok(());
@@ -375,40 +370,12 @@ fn print_table(planned: &[(PathBuf, u64, f64, PreparePlan)], limit: u64) {
     );
 }
 
-pub fn collect(path: &Path) -> Result<Vec<PathBuf>> {
-    if path.is_file() {
-        return Ok(vec![path.to_path_buf()]);
-    }
-    let mut out = Vec::new();
-    walk(path, &mut out)?;
-    out.sort();
-    Ok(out)
-}
-
-fn walk(dir: &Path, out: &mut Vec<PathBuf>) -> Result<()> {
-    let entries = std::fs::read_dir(dir).with_context(|| format!("reading {}", dir.display()))?;
-    for entry in entries {
-        let entry = entry.context("reading a directory entry")?;
-        let file_type = entry.file_type().context("typing a directory entry")?;
-        if file_type.is_dir() {
-            walk(&entry.path(), out)?;
-        } else if file_type.is_file() {
-            let name = entry.file_name().to_string_lossy().to_string();
-            // `is_video` already skips our own remux temporaries.
-            if is_video(&name) && !name.ends_with(WORKING_SUFFIX) {
-                out.push(entry.path());
-            }
-        }
-    }
-    Ok(())
-}
-
 fn working_path(source: &Path) -> PathBuf {
     let stem = source
         .file_stem()
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or_else(|| "output".to_string());
-    source.with_file_name(format!("{stem}{WORKING_SUFFIX}"))
+    source.with_file_name(format!("{stem}{PREPARE_WORKING_SUFFIX}"))
 }
 
 fn split_languages(raw: &str) -> Vec<String> {
