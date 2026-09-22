@@ -744,6 +744,10 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_snapshot(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_state_device_id(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_sync_state(
+    ): Int
     external fun uniffi_mediagram_core_checksum_constructor_core_new(
     ): Int
     external fun ffi_mediagram_core_uniffi_contract_version(
@@ -833,6 +837,10 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_set_watchlisted(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`listed`: Byte,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_snapshot(`ptr`: Long,`profileId`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_state_device_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_mediagram_core_fn_method_core_sync_state(`ptr`: Long,`handle`: RustBuffer.ByValue,
     ): Long
     external fun ffi_mediagram_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -1047,6 +1055,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_snapshot() and 0xFFFF) != 28194) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_state_device_id() and 0xFFFF) != 42344) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_sync_state() and 0xFFFF) != 30436) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_constructor_core_new() and 0xFFFF) != 35315) {
@@ -1746,6 +1760,27 @@ public interface CoreInterface {
      * collections, in one round trip. Empty throughout on any failure.
      */
     suspend fun `snapshot`(`profileId`: kotlin.String): StateSnapshot
+    
+    /**
+     * This install's own id in the sync channel — a random string made
+     * once and kept in `state.db`, never the hostname. Kotlin passes it on
+     * to `next_library_event` as `own_device`, so this device's own writes
+     * never come back to it as a change worth a round.
+     */
+    fun `stateDeviceId`(): kotlin.String
+    
+    /**
+     * One round of watch-state sync against the library `handle` names:
+     * lists the pinned state documents there, merges in what is newer,
+     * and pushes this device's own document if anything changed.
+     *
+     * Never throws — a channel that cannot be reached, a login Telegram
+     * has revoked, or a refused send all come back as `failed` and leave
+     * `state.db` exactly as it was. At most one round runs at a time on
+     * this `Core`: a second call made while one is in flight waits for it,
+     * so a first send is never issued twice.
+     */
+    suspend fun `syncState`(`handle`: kotlin.String): SyncOutcome
     
     companion object
 }
@@ -2670,6 +2705,57 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     }
 
     
+    /**
+     * This install's own id in the sync channel — a random string made
+     * once and kept in `state.db`, never the hostname. Kotlin passes it on
+     * to `next_library_event` as `own_device`, so this device's own writes
+     * never come back to it as a change worth a round.
+     */override fun `stateDeviceId`(): kotlin.String {
+            return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_mediagram_core_fn_method_core_state_device_id(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * One round of watch-state sync against the library `handle` names:
+     * lists the pinned state documents there, merges in what is newer,
+     * and pushes this device's own document if anything changed.
+     *
+     * Never throws — a channel that cannot be reached, a login Telegram
+     * has revoked, or a refused send all come back as `failed` and leave
+     * `state.db` exactly as it was. At most one round runs at a time on
+     * this `Core`: a second call made while one is in flight waits for it,
+     * so a first send is never issued twice.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `syncState`(`handle`: kotlin.String) : SyncOutcome {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_sync_state(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`handle`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeSyncOutcome.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
 
     
 
@@ -3274,6 +3360,58 @@ public object FfiConverterTypeStateSnapshot: FfiConverterRustBuffer<StateSnapsho
             FfiConverterSequenceString.write(value.`watchlist`, buf)
             FfiConverterSequenceString.write(value.`kids`, buf)
             FfiConverterSequenceTypeListRow.write(value.`collections`, buf)
+    }
+}
+
+
+
+data class SyncOutcome (
+    /**
+     * Rows this device took in.
+     */
+    var `pulled`: kotlin.ULong
+    , 
+    /**
+     * Whether a document was actually sent.
+     */
+    var `pushed`: kotlin.Boolean
+    , 
+    /**
+     * What went wrong, if anything. Never a panic, never a `Result`.
+     */
+    var `failed`: kotlin.String?
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSyncOutcome: FfiConverterRustBuffer<SyncOutcome> {
+    override fun read(buf: ByteBuffer): SyncOutcome {
+        return SyncOutcome(
+            FfiConverterULong.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: SyncOutcome) = (
+            FfiConverterULong.allocationSize(value.`pulled`) +
+            FfiConverterBoolean.allocationSize(value.`pushed`) +
+            FfiConverterOptionalString.allocationSize(value.`failed`)
+    )
+
+    override fun write(value: SyncOutcome, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`pulled`, buf)
+            FfiConverterBoolean.write(value.`pushed`, buf)
+            FfiConverterOptionalString.write(value.`failed`, buf)
     }
 }
 

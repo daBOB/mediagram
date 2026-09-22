@@ -9,6 +9,13 @@ to `main`. Full phase-by-phase detail lives in
 
 **Added (groundwork)**
 
+- The Android core can sync that watch state through the library's channel,
+  the way the web player does: it reads every device's pinned `#mlib-state`
+  document, merges them with its own, takes in what is newer and sends or
+  edits its own document only when something changed. A first document whose
+  pin is refused is taken back and the round fails, as on the web, so an
+  unpinned copy is never left for the next round to multiply. What it writes
+  parses back byte for byte through the parser held to the web's.
 - The Android core keeps watch state: profiles, positions, finished titles,
   watchlist, kids and collections, in its own `state.db` beside — never
   inside — the catalog a refresh replaces. The record and the merge are

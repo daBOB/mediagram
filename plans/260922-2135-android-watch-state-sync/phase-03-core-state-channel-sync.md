@@ -11,7 +11,7 @@
 
 ## Overview
 
-- Priority: P1. Status: pending. Blocked by 02.
+- Priority: P1. Status: done. Blocked by 02.
 - `Core::sync_state(handle) -> SyncOutcome`: list pinned state docs in the library's channel, merge (own export included), import, push own doc if changed. Never returns an error.
 
 ## Key insights
@@ -37,17 +37,27 @@
 ## Architecture
 
 ```
-state/sync.rs      trait StateChannel { list, put }, struct SyncMemo, once(core_state, channel, device) -> SyncOutcome
-state/channel.rs   TelegramStateChannel { client, peer } impl StateChannel (grammers)
-api/state_sync.rs  #[uniffi::export] async fn sync_state(&self, handle: String) -> SyncOutcome
+state/sync.rs                       trait StateChannel { list, put }, SyncMemo (per-handle), once(state_db, channel, device, memo) -> SyncOutcome
+state/channel.rs                    caption only: state_caption(device), device_from_caption(caption) — grammers-free
+api/state_sync.rs                   #[uniffi::export] state_device_id(&self), sync_state(self: Arc<Self>, handle) -> SyncOutcome
+api/state_sync/telegram_channel.rs  TelegramStateChannel<'a> { core, client, peer } impl StateChannel (grammers)
 ```
+
+Deviates from the file split first sketched here: the grammers adapter
+lives under `api::state_sync` rather than `state::channel`, because it
+needs `api::account::revoked::{checked, unless_revoked}` and
+`api::channel::index::channel_error` for the revoked-login handling in the
+Requirements, and those are `pub(in crate::api)` — unreachable from
+`crate::state`. `state::channel` stays grammers-free (caption parsing
+only), matching the crate's existing convention that everything touching a
+live connection lives under `api::`.
 
 Flow: Kotlin → `sync_state(handle)` → lookup handle → peer → `once`: `list` → parse each (drop nulls) + own export → `merge_states` → `import_merged` → export → compare → `put` → outcome.
 
 ## Related code files
 
-- Create: `crates/mediagram-core/src/state/sync.rs`, `state/channel.rs`, `api/state_sync.rs`, `crates/mediagram-core/src/state/sync_tests.rs` (fake channel).
-- Modify: `state/mod.rs` (mods), `api/mod.rs` (`mod state_sync;`, `SyncMemo` field on `Core`), regenerated `android/core/rust/src/main/kotlin/uniffi/mediagram_core/mediagram_core.kt`.
+- Create: `crates/mediagram-core/src/state/sync.rs`, `state/channel.rs`, `state/sync_tests.rs` (fake channel), `api/state_sync.rs`, `api/state_sync/telegram_channel.rs`.
+- Modify: `state/mod.rs` (`pub(crate) mod channel;`, `pub(crate) mod sync;`), `api/mod.rs` (`mod state_sync;`, `sync_memo: AsyncMutex<state::sync::SyncMemo>` field on `Core`), regenerated `android/core/rust/src/main/kotlin/uniffi/mediagram_core/mediagram_core.kt`.
 - Delete: none.
 
 ## Implementation steps
@@ -60,12 +70,12 @@ Flow: Kotlin → `sync_state(handle)` → lookup handle → peer → `once`: `li
 
 ## Todo
 
-- [ ] sync.rs + fake-channel tests
-- [ ] caption helpers + tests
-- [ ] grammers adapter
-- [ ] two-machine convergence test
-- [ ] UniFFI export + regenerated binding
-- [ ] clippy + cargo test
+- [x] sync.rs + fake-channel tests
+- [x] caption helpers + tests
+- [x] grammers adapter
+- [x] two-machine convergence test
+- [x] UniFFI export + regenerated binding
+- [x] clippy + cargo test
 
 ## Success criteria
 
@@ -77,7 +87,7 @@ Flow: Kotlin → `sync_state(handle)` → lookup handle → peer → `once`: `li
 | Risk | L×I | Mitigation |
 |---|---|---|
 | Pin succeeds but edit later drops the document | L×M | Edit always carries media+caption together; test asserts both passed |
-| Send ok, pin fails → unpinned orphan, next round sends again | L×M | Same as web; on pin failure keep `mine` in memory so the next round edits and re-pins rather than sending a third |
+| Send ok, pin fails → unpinned orphan, next round sends again | L×M | Superseded by the web's own fix (33d5312): a refused pin deletes the just-sent document and fails the round without keeping `mine`, so the next round sends fresh rather than editing a message nobody can find |
 | FLOOD_WAIT on busy start | L×L | One round at a time, sequential downloads, 5-min cadence |
 | Wrong channel (library switched in settings plan) | L×M | Handle passed per call; nothing cached across handles except `mine`, which is keyed by handle |
 

@@ -18,12 +18,11 @@ mod events;
 mod read;
 mod refresh;
 mod state;
+mod state_sync;
 
 use std::path::PathBuf;
 use std::sync::Arc;
-
 use tokio::sync::Mutex as AsyncMutex;
-
 use account::auth::{PendingLogin, PendingPassword};
 use account::session::ClientHandle;
 use crate::transport::documents::PartDocuments;
@@ -64,6 +63,8 @@ pub struct Core {
     /// Positions, watched marks, the watchlist, collections and Kids — its
     /// own file beside `catalog/`, opened lazily. See `crate::state`.
     state_db: crate::state::StateDb,
+    /// One state-sync round at a time, held for the round; see `state::sync::SyncMemo`.
+    sync_memo: AsyncMutex<crate::state::sync::SyncMemo>,
 }
 
 #[uniffi::export(async_runtime = "tokio")]
@@ -80,6 +81,7 @@ impl Core {
             state: AsyncMutex::new(State::default()),
             installing: AsyncMutex::new(()),
             events: AsyncMutex::new(None),
+            sync_memo: AsyncMutex::new(crate::state::sync::SyncMemo::default()),
         })
     }
 

@@ -10,6 +10,11 @@
 //! it, for the same reason the web keeps its state database separate
 //! (`web/src/state/schema.ts:1-12`).
 
+// Crate-internal: `channel`'s captions and `sync`'s engine are read only by
+// this crate's own grammers adapter (`api::state_sync`) and its tests, never
+// by a caller outside it — keeping them `pub(crate)` rather than `pub` is
+// also what keeps `StateChannel`'s `async fn`s off rustc's public-API lint.
+pub(crate) mod channel;
 pub mod exchange;
 pub mod lists;
 pub mod merge;
@@ -17,6 +22,7 @@ pub mod profiles;
 pub mod record;
 pub mod rows;
 mod schema;
+pub(crate) mod sync;
 
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
