@@ -75,7 +75,7 @@ class DefaultCatalogRepository(
 
     override suspend fun sets(): List<MediaSet> {
         val core = coreProvider.awaitCore()
-        return core.listSets().mapNotNull { toMediaSetOrNull(core, it) }
+        return core.listSets().map { toMediaSet(core, it) }
     }
 
     /**
@@ -89,12 +89,21 @@ class DefaultCatalogRepository(
         return withContext(dispatcher) { core.showInfo(posterKey) }
     }
 
-    private fun toMediaSetOrNull(core: CoreClient, summary: SetSummary): MediaSet? {
+    /**
+     * One index row, as a set the shelves can place.
+     *
+     * A kind this does not recognise is shelved with the films rather than
+     * dropped. A viewer who notices something in the wrong place can act on
+     * it; a title that silently vanishes looks like a failed upload, and the
+     * library holds four kinds today against a parser that may learn a
+     * fifth before this app is rebuilt.
+     */
+    private fun toMediaSet(core: CoreClient, summary: SetSummary): MediaSet {
         val kind = when (summary.kind) {
-            "movie" -> Kind.MOVIE
             "ep" -> Kind.EPISODE
             "tut" -> Kind.TUTORIAL
-            else -> return null
+            "doc" -> Kind.DOCUMENT
+            else -> Kind.MOVIE
         }
         return MediaSet(
             setId = summary.setId,

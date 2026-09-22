@@ -15,11 +15,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import catalog.Division
 import catalog.Entry
 import designsystem.Spacing
+import model.Kind
 import model.MediaSet
 import uniffi.mediagram_core.ShowInfo
 
@@ -79,7 +81,7 @@ fun CollectionScreen(
     }
 }
 
-/** One line of the screen: a heading for a division, or a set to play. */
+/** One line of the screen: a heading for a division, or a set under it. */
 private sealed interface Row {
     val depth: Int
 
@@ -119,22 +121,56 @@ private fun LazyListScope.items(
                 modifier = Modifier.padding(start = indentOf(row.depth), top = Spacing.medium),
             )
 
-            is Row.Item -> Column(modifier = Modifier.padding(start = indentOf(row.depth))) {
-                Text(
-                    text = "${row.position}. ${row.set.title}",
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        // The whole line is the target, and the role is what
-                        // tells a screen reader it is one.
-                        .clickable(role = Role.Button) { onOpenTitle(row.set.setId) }
-                        .padding(vertical = Spacing.small),
-                )
-                HorizontalDivider()
-            }
+            is Row.Item -> ItemRow(row, onOpenTitle)
         }
     }
 }
+
+/**
+ * One lesson or episode to open, or one document.
+ *
+ * A document is shown and not opened. Nothing here can display a handout —
+ * the player would be handed a PDF — so the row says what it is rather than
+ * offering a tap that could only fail, which is how a disabled menu item
+ * already behaves. Leaving it out was the older behaviour and the worse
+ * one: a workbook that is simply absent reads as an upload that failed, and
+ * a folder holding nothing else disappears with it.
+ */
+@Composable
+private fun ItemRow(row: Row.Item, onOpenTitle: (setId: String) -> Unit) {
+    val document = row.set.kind == Kind.DOCUMENT
+    Column(modifier = Modifier.padding(start = indentOf(row.depth))) {
+        Text(
+            text = "${row.position}. ${row.set.title}",
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (document) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
+            modifier = Modifier
+                .fillMaxWidth()
+                // The whole line is the target, and the role is what tells a
+                // screen reader it is one. A document is not a target at all.
+                .then(
+                    if (document) {
+                        Modifier
+                    } else {
+                        Modifier.clickable(role = Role.Button) { onOpenTitle(row.set.setId) }
+                    },
+                )
+                .padding(vertical = Spacing.small),
+        )
+        if (document) {
+            Text(
+                text = DOCUMENT_REASON,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = Spacing.small),
+            )
+        }
+        HorizontalDivider()
+    }
+}
+
+/** Said under a document's own name, the way a disabled menu item says why. */
+private const val DOCUMENT_REASON = "Document — the phone cannot open one yet"
 
 /**
  * A set id is unique and a heading is not — two courses can both have a

@@ -36,10 +36,28 @@ class CatalogRepositoryTest {
         assertEquals(Kind.EPISODE, repo.sets().single().kind)
     }
 
+    /**
+     * A course handout is a kind of its own, not a lesson and not a film.
+     * The shelves place it; this only has to stop calling it nothing.
+     */
     @Test
-    fun unrecognisedKindIsDroppedRatherThanCrashing() = runTest {
+    fun aDocumentKeepsItsOwnKind() = runTest {
+        val core = FakeCore(sets = listOf(summary(kind = "doc")))
+        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+        assertEquals(Kind.DOCUMENT, repo.sets().single().kind)
+    }
+
+    /**
+     * The index may carry a kind this build has never heard of. It is shown
+     * on the film shelf rather than dropped: the wrong shelf is something a
+     * viewer can report, an absent title looks like a failed upload.
+     */
+    @Test
+    fun unrecognisedKindIsShelvedWithFilmsRatherThanDropped() = runTest {
         val core = FakeCore(sets = listOf(summary(kind = "short-film")))
         val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
-        assertTrue(repo.sets().isEmpty())
+
+        val set = repo.sets().single()
+        assertEquals(Kind.MOVIE, set.kind)
     }
 }

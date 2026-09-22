@@ -6,6 +6,9 @@ import model.MediaSet
 private const val UNKNOWN_SHOW = "Unknown show"
 private const val UNKNOWN_COURSE = "Unknown course"
 
+/** The kinds that belong to a show or a course rather than standing alone. */
+private val COLLECTED = setOf(Kind.EPISODE, Kind.TUTORIAL, Kind.DOCUMENT)
+
 /**
  * Turns a flat catalog into the three shelves a viewer expects.
  *
@@ -20,13 +23,19 @@ private const val UNKNOWN_COURSE = "Unknown course"
  */
 fun shelvesOf(sets: List<MediaSet>): List<Shelf> {
     val episodes = sets.filter { it.kind == Kind.EPISODE }
-    val lessons = sets.filter { it.kind == Kind.TUTORIAL }
-    val films = sets.filter { it.kind == Kind.MOVIE }
+    // A document belongs to the course it was uploaded with, so it goes
+    // into that tree beside the lessons rather than onto a shelf of its
+    // own. On the film shelf a handout would read as a broken film.
+    val course = sets.filter { it.kind == Kind.TUTORIAL || it.kind == Kind.DOCUMENT }
+    // Everything else, which is films and any kind this build has never
+    // heard of. Placing an unknown kind beats hiding it: the wrong shelf is
+    // something a viewer can report, an absence is not.
+    val films = sets.filter { it.kind !in COLLECTED }
 
     return listOf(
         Shelf("Movies", films.sortedWith(compareBy(NATURAL) { it.title }).map(Entry::Film)),
         Shelf("Series", collections(episodes, CollectionKind.SHOW, UNKNOWN_SHOW)),
-        Shelf("Tutorials", collections(lessons, CollectionKind.COURSE, UNKNOWN_COURSE)),
+        Shelf("Tutorials", collections(course, CollectionKind.COURSE, UNKNOWN_COURSE)),
     ).filter { it.entries.isNotEmpty() }
 }
 

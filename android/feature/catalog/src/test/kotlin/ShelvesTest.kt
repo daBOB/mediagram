@@ -152,6 +152,47 @@ class ShelvesTest {
         val show = shelves.single().entries.single() as Entry.Collection
         assertEquals("Unknown show", show.name)
     }
+
+    /**
+     * A handout sits in the course tree beside the lessons it was uploaded
+     * with. It is not a film: on the film shelf it would read as one that
+     * will not play.
+     */
+    @Test
+    fun aDocumentSitsInTheCourseThatHoldsIt() {
+        val shelves = shelvesOf(
+            listOf(
+                lesson("Steuerkurs", path = "Grundlagen", title = "Lektion 1"),
+                document("Steuerkurs", path = "Grundlagen", title = "Arbeitsbuch"),
+            ),
+        )
+
+        assertNull(shelves.find { it.title == "Movies" }, "a handout is not a film")
+        val course = assertIs<Entry.Collection>(shelves.single { it.title == "Tutorials" }.entries.single())
+        assertEquals(2, course.count, "the workbook is counted with the lesson")
+    }
+
+    /**
+     * A folder holding a workbook and no video at all still appears. When
+     * documents were dropped the whole folder went with them.
+     */
+    @Test
+    fun aFolderOfDocumentsAloneSurvives() {
+        val shelves = shelvesOf(
+            listOf(
+                lesson("Steuerkurs", path = "Grundlagen", title = "Lektion 1"),
+                document("Steuerkurs", path = "Anhang", title = "Formulare"),
+            ),
+        )
+
+        val course = assertIs<Entry.Collection>(shelves.single { it.title == "Tutorials" }.entries.single())
+        assertEquals(
+            listOf("Anhang", "Grundlagen"),
+            course.divisions.map { it.title }.sorted(),
+            "the folder that holds only a document is still a folder",
+        )
+    }
+
 }
 
 private fun film(title: String) = set(Kind.MOVIE, title)
@@ -166,6 +207,9 @@ private fun episode(
 
 private fun lesson(course: String, path: String, title: String) =
     set(Kind.TUTORIAL, title, show = course, path = path)
+
+private fun document(course: String, path: String, title: String) =
+    set(Kind.DOCUMENT, title, show = course, path = path)
 
 private fun set(
     kind: Kind,

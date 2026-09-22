@@ -7,6 +7,24 @@ to `main`. Full phase-by-phase detail lives in
 
 ## 2026-09-22
 
+**Fixed**
+
+- Course documents were invisible on the phone. The Android catalog mapped
+  three of the caption spec's four kinds and returned `null` for anything
+  else, so every handout and workbook was dropped between the index and the
+  shelves — and a course folder holding no video at all disappeared with its
+  documents. A document now rides in the course tree beside the lessons it
+  was uploaded with, as it does in the web player, shown greyed and not
+  openable with the reason said under its own name: nothing on the phone can
+  display a handout, and a tap that could only fail is worse than a row that
+  explains itself.
+
+  The same mapping no longer drops a kind it does not recognise either. It
+  shelves it with the films, which is the rule `library.js` states and the
+  reason it gives — a viewer who notices something in the wrong place can act
+  on it, whereas a title that silently vanishes looks like a failed upload.
+  Present since the Android catalog was first built.
+
 **Shipped**
 
 - A start page, at `#/home`, and the player now opens on it. Five rows, each

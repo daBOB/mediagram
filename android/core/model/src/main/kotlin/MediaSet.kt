@@ -1,10 +1,10 @@
 package model
 
 /**
- * A single item in the library: a movie, one episode of a show, or a
- * tutorial video. Carries a flattened [episodeFirst]/[episodeLast] pair
- * rather than a separate episode object, since one set can span more than
- * one episode.
+ * A single item in the library: a movie, one episode of a show, a lesson
+ * of a course, or a document belonging to one. Carries a flattened
+ * [episodeFirst]/[episodeLast] pair rather than a separate episode object,
+ * since one set can span more than one episode.
  */
 data class MediaSet(
     val setId: String,
@@ -42,4 +42,15 @@ data class MediaSet(
     val posterKey: String? = null,
 )
 
-enum class Kind { MOVIE, EPISODE, TUTORIAL }
+enum class Kind {
+    MOVIE,
+    EPISODE,
+    TUTORIAL,
+
+    /**
+     * A handout beside a lesson, or a workbook in a folder holding no video
+     * at all. It rides with the course it belongs to and is not playable:
+     * the index says what it is, and no container sniffing is involved.
+     */
+    DOCUMENT,
+}
