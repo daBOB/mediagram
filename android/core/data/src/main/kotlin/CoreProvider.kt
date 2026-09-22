@@ -56,7 +56,11 @@ interface CoreProvider {
      * closed before the new one is built, because both would open the one
      * data directory and its one auth key. The new identity is kept only
      * once Telegram has answered through it; otherwise the previous one is
-     * rebuilt and the failure rethrown.
+     * built again on the next ask and the failure rethrown.
+     *
+     * That answer proves the id and the connection, not the hash: Telegram
+     * checks an api_hash only when signing in, so a mistyped one surfaces at
+     * the next sign-in rather than here.
      */
     suspend fun replace(apiId: Int, apiHash: String)
 }
@@ -115,18 +119,15 @@ class StoredCoreProvider(
         built.value?.let { open -> withContext(dispatcher) { open.close() } }
         built.value = null
         val candidate = withContext(dispatcher) { build(TelegramCredentials(apiId, apiHash)) }
+        // From here the candidate is always either kept or closed, cancelled
+        // or not: one left open would hold a connection nothing can close.
         try {
-            // Building never talks to Telegram, so a mistyped hash would pass
-            // it. Asking who is signed in is what proves the new identity.
             candidate.account()
         } catch (@Suppress("TooGenericExceptionCaught") failure: Throwable) {
-            // Closed before anything else is built over the same data
-            // directory. The stored identity was never changed, so the next
-            // [awaitCore] builds the previous one again, as on any launch.
             withContext(NonCancellable + dispatcher) { candidate.close() }
             throw failure
         }
-        withContext(dispatcher) { settings.write(apiId, apiHash) }
+        withContext(NonCancellable + dispatcher) { settings.write(apiId, apiHash) }
         built.value = candidate
     }
 

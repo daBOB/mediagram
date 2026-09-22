@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import data.CoreProvider
 import data.CoreStorage
 import data.coreSentence
+import uniffi.mediagram_core.CoreException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -21,7 +22,9 @@ import settings.TelegramSettings
 import javax.inject.Inject
 
 private const val UNKNOWN = "—"
-private const val REFUSED_IDENTITY = "Telegram did not accept that application id and hash. " +
+private const val REFUSED_IDENTITY = "Telegram did not accept that application id. " +
+    "The previous one is still in use."
+private const val UNREACHABLE_IDENTITY = "Telegram could not be reached to try that application id. " +
     "The previous one is still in use."
 private const val SIGN_OUT_FAILED = "Signing out did not finish. Try again, or start over."
 
@@ -53,8 +56,18 @@ class SettingsViewModel @Inject constructor(
         refresh()
     }
 
-    /** Asks every row again. */
-    fun refresh() = act { readRows() }
+    /**
+     * Asks every row again, from scratch. Called each time Settings opens:
+     * this outlives the screen, and rows read before a sign-out and a new
+     * sign-in would name the previous account.
+     */
+    fun refresh() {
+        _state.value = SettingsUiState()
+        act { readRows() }
+    }
+
+    /** Clears what the last action said, so a form opened next does not show it as its own. */
+    fun clearNotice() = _state.update { it.copy(notice = null) }
 
     private suspend fun readRows() {
         val core = coreProvider.awaitCore()
@@ -99,10 +112,20 @@ class SettingsViewModel @Inject constructor(
         when {
             id == null -> _state.update { it.copy(notice = API_ID_ERROR) }
             hash == null -> _state.update { it.copy(notice = API_HASH_ERROR) }
-            else -> act(onFailure = REFUSED_IDENTITY) {
-                coreProvider.replace(id, hash)
+            else -> act {
+                try {
+                    coreProvider.replace(id, hash)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                    // An offline phone is not a refused id; the two ask for
+                    // different things next.
+                    throw SettingsFailure(if (e is CoreException.Network) UNREACHABLE_IDENTITY else REFUSED_IDENTITY)
+                }
                 _events.tryEmit(SettingsEvent.ApplicationChanged)
-                readRows()
+                // Outside the refusal's catch: the new identity is already in
+                // use here, and a row that fails to read says nothing about it.
+                runCatching { readRows() }
             }
         }
     }
@@ -130,9 +153,12 @@ class SettingsViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                onFailure ?: e.coreSentence() ?: "That did not work. Try again."
+                onFailure ?: (e as? SettingsFailure)?.sentence ?: e.coreSentence() ?: "That did not work. Try again."
             }
             _state.update { it.copy(busy = false, notice = notice ?: it.notice) }
         }
     }
 }
+
+/** A failure this ViewModel has already put into words. */
+private class SettingsFailure(val sentence: String) : Exception(sentence)

@@ -21,10 +21,14 @@ import java.util.TreeSet
  * can start from, alongside the stock evictor's two ([onSpanAdded],
  * [onStartFile]).
  *
- * [budgetBytes] is `@Volatile` because [setBudget] is called from whatever
- * thread a Settings change lands on, while every other member here only
- * ever runs on the single thread `SimpleCache` confines its listener calls
- * to — that thread needs to see a budget change immediately, not stale.
+ * `SimpleCache` has no listener thread of its own: its public methods are
+ * `synchronized` on the cache, and every callback here runs under that lock
+ * on whichever thread called in — a player's loader, a cache writer, the
+ * init thread replaying the index. So [setBudget], which a Settings change
+ * calls from an IO thread, takes the same lock before touching the span set;
+ * without it a budget change during playback raced the loader's
+ * [onSpanAdded] over one `TreeSet`. [budgetBytes] stays `@Volatile` for the
+ * unlocked read that reports occupancy.
  */
 class AdjustableLruEvictor(initialBudgetBytes: Long) : CacheEvictor {
 
@@ -80,8 +84,12 @@ class AdjustableLruEvictor(initialBudgetBytes: Long) : CacheEvictor {
      * something is added to the cache.
      */
     fun setBudget(bytes: Long, cache: Cache) {
-        budgetBytes = bytes
-        evict(cache, 0)
+        // The cache's own monitor, and reentrant: the `removeSpan` inside
+        // takes it again and calls straight back into [onSpanRemoved].
+        synchronized(cache) {
+            budgetBytes = bytes
+            evict(cache, 0)
+        }
     }
 
     /**

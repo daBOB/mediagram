@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,6 +28,8 @@ import system.cacheBudgetChoices
 internal fun CacheBudgetBlock() {
     val viewModel: CacheBudgetViewModel = hiltViewModel()
     val occupancy by viewModel.state.collectAsStateWithLifecycle()
+    // On every visit, not once per process: Held grows with every film played.
+    LaunchedEffect(Unit) { viewModel.refresh() }
     val current = occupancy ?: return
 
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {

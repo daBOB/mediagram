@@ -98,6 +98,8 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit, onSignedOut: () -> Unit) 
         fetchViewModel.postersArrived.collect { catalogViewModel.showFetched() }
     }
 
+    SettingsOutcomes(onLibraryChanged = catalogViewModel::reload, onSignedOut = onSignedOut)
+
     val menuActions = MenuActions(
         onSystem = { at.menuScreen = MenuScreen.System },
         onSettings = { at.menuScreen = MenuScreen.Settings },
@@ -141,11 +143,7 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit, onSignedOut: () -> Unit) 
                     onSave = fetchViewModel::saveKey,
                 )
                 // Stands in until the real screen lands.
-                MenuScreen.Settings -> SettingsScreen(
-                    onLibraryChanged = catalogViewModel::reload,
-                    onSignedOut = onSignedOut,
-                    cache = { CacheBudgetBlock() },
-                )
+                MenuScreen.Settings -> SettingsScreen(cache = { CacheBudgetBlock() })
             }
         }
 

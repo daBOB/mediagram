@@ -7,6 +7,20 @@ to `main`. Full phase-by-phase detail lives in
 
 ## 2026-09-23
 
+**Fixed**
+
+- Settings on Android, after review. Changing the cache size while a film
+  buffered could corrupt the evictor's bookkeeping or spin for ever: the
+  change now takes the cache's own lock. Signing out or changing library and
+  then backing out of Settings before it finished left the app signed out
+  with its shelves still up, or on the old library; the library screen now
+  acts on both. Settings re-reads its rows on every visit, so a new sign-in
+  no longer shows the previous account. The push listener follows the core
+  and restarts with every read, so a replaced core's connection closes and a
+  new library is listened to at once. An offline phone is no longer told its
+  application id was refused, and the check is described for what it proves:
+  the id and the connection — the hash is checked at the next sign-in.
+
 **Added**
 
 - Settings on the Android app, after System in the menu. The Telegram block

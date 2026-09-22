@@ -35,28 +35,26 @@ private enum class SettingsPanel { Library, Application }
  *
  * Changing the library and the application identity reuse the very screens
  * setup asks them on, laid over this one: the questions are the same and so
- * are the answers' rules, so they are asked the same way. [onLibraryChanged]
- * has the shelves read the new library; [onSignedOut] hands back to setup,
- * which finds no login and asks for one.
+ * are the answers' rules, so they are asked the same way. What signing out
+ * and a changed library lead to is [SettingsOutcomes]' to act on.
  */
 @Composable
-internal fun SettingsScreen(
-    onLibraryChanged: () -> Unit,
-    onSignedOut: () -> Unit,
-    cache: @Composable () -> Unit,
-) {
+internal fun SettingsScreen(cache: @Composable () -> Unit) {
     val viewModel: SettingsViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     var panel by rememberSaveable { mutableStateOf<SettingsPanel?>(null) }
     var askingSignOut by remember { mutableStateOf(false) }
 
+    // Read afresh on every visit: the ViewModel outlives this screen, and a
+    // row read before a sign-out and a new sign-in would name the old account.
+    LaunchedEffect(Unit) { viewModel.refresh() }
+
+    // Only what this screen itself owns. Signing out and a changed library are
+    // acted on by the library screen, which is there even after this one is
+    // left — an event nobody is collecting is dropped.
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
-            when (event) {
-                SettingsEvent.LibraryChanged -> { panel = null; onLibraryChanged() }
-                SettingsEvent.ApplicationChanged -> panel = null
-                SettingsEvent.SignedOut -> onSignedOut()
-            }
+            if (event != SettingsEvent.SignedOut) panel = null
         }
     }
 
@@ -66,7 +64,8 @@ internal fun SettingsScreen(
             LibraryScreen(
                 choices = state.choices,
                 error = state.notice,
-                onChoose = viewModel::chooseLibrary,
+                // One install at a time; a second tap waits for the first.
+                onChoose = { handle -> if (!state.busy) viewModel.chooseLibrary(handle) },
                 onLookAgain = viewModel::listLibraries,
             )
         }
@@ -80,8 +79,8 @@ internal fun SettingsScreen(
         }
         null -> SettingsRows(
             state = state,
-            onChangeLibrary = { panel = SettingsPanel.Library; viewModel.listLibraries() },
-            onChangeApplication = { panel = SettingsPanel.Application },
+            onChangeLibrary = { viewModel.clearNotice(); panel = SettingsPanel.Library; viewModel.listLibraries() },
+            onChangeApplication = { viewModel.clearNotice(); panel = SettingsPanel.Application },
             onSignOut = { askingSignOut = true },
             cache = cache,
         )

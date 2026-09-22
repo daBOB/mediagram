@@ -95,7 +95,9 @@ class CatalogViewModel @Inject constructor(
     // on the button, where its cost is visible.
     val state: StateFlow<CatalogUiState> = merge(
         reloads.map { false },
-        libraryEvents.events().filter { it == LibraryEvent.INDEX }.map { true },
+        // Restarted with every read, a changed library's included: a wait
+        // already running is filtered to the channel it began on.
+        reloads.flatMapLatest { libraryEvents.events() }.filter { it == LibraryEvent.INDEX }.map { true },
     )
         .flatMapLatest { pushed ->
             flow {

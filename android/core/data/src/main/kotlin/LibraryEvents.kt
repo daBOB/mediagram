@@ -1,9 +1,12 @@
 package data
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import settings.LibrarySettings
 import uniffi.mediagram_core.LibraryEvent
@@ -32,21 +35,30 @@ fun interface LibraryEvents {
 /**
  * [LibraryEvents] from the native core.
  *
- * Reads the chosen handle before every wait, so a library chosen again is
- * the one listened to next. Ends when no library is chosen: there is nothing
- * to listen to, and the next collection starts over.
+ * Follows [CoreProvider.core] rather than asking for a core once: a core
+ * replaced or forgotten ends the wait on the old one, and cancelling that
+ * call is what lets the old core — and its open connection — go. A wait left
+ * parked on a closed core would hold both for as long as its channel stayed
+ * quiet.
+ *
+ * Reads the chosen handle before every wait. With no library chosen there is
+ * nothing to listen to, and it goes quiet until the core changes.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class CoreLibraryEvents(
     private val coreProvider: CoreProvider,
     private val settings: LibrarySettings,
     private val retryAfter: Duration = 30.seconds,
 ) : LibraryEvents {
 
-    override fun events(): Flow<LibraryEvent> = flow {
+    override fun events(): Flow<LibraryEvent> =
+        coreProvider.core.filterNotNull().flatMapLatest { core -> listenOn(core) }
+
+    private fun listenOn(core: CoreClient): Flow<LibraryEvent> = flow {
         while (true) {
             val handle = settings.read() ?: return@flow
             val event = try {
-                coreProvider.awaitCore().nextLibraryEvent(handle, OWN_DEVICE)
+                core.nextLibraryEvent(handle, OWN_DEVICE)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
