@@ -12,8 +12,8 @@ use mlib_spec::{Episode, Kind, ProviderIds};
 use super::prompt::Prompter;
 use super::search::search_and_resolve;
 
-/// Everything `resolve` needs beyond the file name; mirrors `AddArgs`
-/// without depending on the CLI or config types.
+/// Everything `resolve` needs beyond the file name: the lookup half of
+/// `commands::add::NewSet`, without depending on the CLI or config types.
 #[derive(Debug, Clone, Default)]
 pub struct ResolveInput {
     pub file_name: String,

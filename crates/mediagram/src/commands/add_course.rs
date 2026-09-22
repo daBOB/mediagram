@@ -7,7 +7,9 @@
 
 use anyhow::{Context, Result, bail};
 
-use super::args::{AddArgs, AddCourseArgs};
+use super::add::{LessonOf, NewSet};
+use super::args::AddCourseArgs;
+use super::finish_set::Uploader;
 use crate::config::Config;
 use crate::course::report::{Outcome, Summary, dry_run_table};
 use crate::course::walk::walk_course;
@@ -55,6 +57,7 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
     }
 
     let conn = db::open(&cfg.data_dir()?)?;
+    let mut uploader = Uploader::new(cfg);
     let mut summary = Summary::default();
     for lesson in &walked.lessons {
         // Identity is the collection id plus the two numbers, so a re-run
@@ -63,7 +66,7 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
         let outcome = match sets::lesson_status(&conn, &cid, lesson.chapter, lesson.lesson)? {
             Some(SetStatus::Complete) => Outcome::AlreadyDone,
             Some(_) => Outcome::Pending,
-            None => match upload_one(cfg, &args, &course, &cid, lesson).await {
+            None => match upload_one(cfg, &mut uploader, &args, &course, &cid, lesson).await {
                 Ok(()) => Outcome::Uploaded,
                 // One unreadable file must not abandon the rest of the course.
                 Err(err) => {
@@ -81,7 +84,7 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
         let outcome = match sets::document_status(&conn, &cid, document.chapter, document.number)? {
             Some(SetStatus::Complete) => Outcome::AlreadyDone,
             Some(_) => Outcome::Pending,
-            None => match upload_document(cfg, &args, &course, &cid, document).await {
+            None => match upload_document(cfg, &mut uploader, &args, &course, &cid, document).await {
                 Ok(()) => Outcome::Uploaded,
                 // One unreadable handout must not abandon the rest.
                 Err(err) => {
@@ -93,6 +96,7 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
         summary.record_document(outcome);
     }
     drop(conn);
+    uploader.close().await;
 
     for line in summary.lines() {
         println!("{line}");
@@ -111,6 +115,7 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
 
 async fn upload_one(
     cfg: &Config,
+    uploader: &mut Uploader<'_>,
     args: &AddCourseArgs,
     course: &str,
     cid: &str,
@@ -122,45 +127,34 @@ async fn upload_one(
         lesson.lesson,
         lesson.title.as_deref().unwrap_or("")
     );
-    super::add::run(
-        cfg,
-        AddArgs {
-            file: lesson.path.clone(),
-            tmdb: None,
-            tvdb: None,
-            imdb: None,
-            season: None,
-            episode: None,
-            abs_no: None,
-            variant: args.variant.clone(),
-            manual: false,
-            no_remux: args.no_remux,
-            alang: None,
-            slang: None,
-            hdr: None,
-            // Pushed once when the walk finishes, not per lesson.
-            no_push: true,
-            // A course is walked from a folder the caller still wants.
-            delete_source: false,
-            // A course is uploaded lesson by lesson, in this process.
-            watch: true,
-            course: Some(course.to_string()),
-            cid: Some(cid.to_string()),
+    let new = NewSet {
+        file: lesson.path.clone(),
+        variant: args.variant.clone(),
+        no_remux: args.no_remux,
+        lesson: Some(LessonOf {
+            course: course.to_string(),
+            cid: cid.to_string(),
             chapter: Some(lesson.chapter),
-            chap: lesson.chapter_title.clone(),
+            chapter_title: lesson.chapter_title.clone(),
             // Empty means the lesson sat at the course root, which the
             // caption spells as absent rather than as an empty string.
             path: Some(lesson.rel_path.clone()).filter(|p| !p.is_empty()),
-            lesson: Some(lesson.lesson),
-        },
-    )
-    .await
+            number: Some(lesson.lesson),
+        }),
+        ..NewSet::default()
+    };
+    let planned = super::add::plan(cfg, &new).await?;
+    // A course is walked from a folder the caller still wants, so nothing is
+    // deleted; the index is pushed once when the walk finishes.
+    uploader.finish(&planned.set_id, None).await?;
+    Ok(())
 }
 
 /// Uploads one document: the same parts and captions a lesson gets, with
 /// none of the probing or remuxing a video needs.
 async fn upload_document(
     cfg: &Config,
+    uploader: &mut Uploader<'_>,
     args: &AddCourseArgs,
     course: &str,
     cid: &str,
@@ -172,7 +166,7 @@ async fn upload_document(
         document.number,
         document.title.as_deref().unwrap_or("")
     );
-    super::add_document::run(
+    let set_id = super::add_document::plan(
         cfg,
         &super::add_document::Document {
             file: document.path.clone(),
@@ -187,8 +181,9 @@ async fn upload_document(
             title: document.title.clone(),
             variant: args.variant.clone(),
         },
-    )
-    .await
+    )?;
+    uploader.finish(&set_id, None).await?;
+    Ok(())
 }
 
 fn course_title(args: &AddCourseArgs) -> Result<String> {

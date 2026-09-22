@@ -24,7 +24,7 @@ pub mod set_hash;
 pub mod slug;
 
 pub use caption::{Caption, Episode, Kind, Part};
-pub use caption_codec::{CaptionError, parse, to_text};
+pub use caption_codec::{CaptionError, check_budget, parse, to_text};
 pub use ids::ProviderIds;
 pub use package::{LatestPointer, PackageManifest};
 pub use part_plan::{PartRange, PlanError, plan_parts};

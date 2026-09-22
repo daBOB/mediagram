@@ -1,5 +1,11 @@
 //! `mediagram add`: inspect → resolve → remux → plan → index → upload, the
 //! last step either watched here or handed to a background process.
+//!
+//! [`plan`] is everything up to the upload, and is what `add-show` and
+//! `add-course` call for each file they walk; they upload over one
+//! connection of their own.
+
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
 use mediagram_tmdb::tmdb_client::TmdbClient;
@@ -8,30 +14,139 @@ use mlib_spec::{Caption, Part};
 use super::args::AddArgs;
 use super::{background, finish_set};
 use crate::config::Config;
-use crate::index::sets::SetRow;
-use crate::index::{assets, db, parts, sets, shows};
+use crate::index::{assets, db, shows};
 use crate::media::{classify, inspect, remux};
 use crate::metadata::prompt::DialoguerPrompter;
 use crate::metadata::resolve::{self, ResolveInput};
 use crate::metadata::show_details;
+use crate::upload::plan::{Source, record_planned};
+
+/// One file to add, however it was asked for: the `add` command's flags, or
+/// one entry of a walked show or course.
+#[derive(Debug, Default, Clone)]
+pub struct NewSet {
+    pub file: PathBuf,
+    pub tmdb: Option<u64>,
+    pub tvdb: Option<u64>,
+    pub imdb: Option<String>,
+    pub season: Option<u32>,
+    pub episode: Option<u32>,
+    /// Absolute episode number (anime).
+    pub abs: Option<u32>,
+    pub variant: Option<String>,
+    /// Enter metadata by hand instead of looking it up.
+    pub manual: bool,
+    pub no_remux: bool,
+    /// Overrides for what the file itself says.
+    pub alang: Option<Vec<String>>,
+    pub slang: Option<Vec<String>>,
+    pub hdr: Option<String>,
+    /// Set when this is a lesson, which is described by hand rather than
+    /// looked up.
+    pub lesson: Option<LessonOf>,
+}
+
+/// Where a lesson sits in its course.
+#[derive(Debug, Default, Clone)]
+pub struct LessonOf {
+    pub course: String,
+    /// Collection id grouping the course's lessons.
+    pub cid: String,
+    pub chapter: Option<u32>,
+    pub chapter_title: Option<String>,
+    /// Folders within the course, `/`-separated.
+    pub path: Option<String>,
+    pub number: Option<u32>,
+}
+
+impl From<AddArgs> for NewSet {
+    fn from(args: AddArgs) -> NewSet {
+        let lesson = args.course.map(|course| LessonOf {
+            cid: args.cid.unwrap_or_else(|| mlib_spec::slug::slug(&course)),
+            course,
+            chapter: args.chapter,
+            chapter_title: args.chap,
+            path: args.path,
+            number: args.lesson,
+        });
+        NewSet {
+            file: args.file,
+            tmdb: args.tmdb,
+            tvdb: args.tvdb,
+            imdb: args.imdb,
+            season: args.season,
+            episode: args.episode,
+            abs: args.abs_no,
+            variant: args.variant,
+            manual: args.manual,
+            no_remux: args.no_remux,
+            alang: args.alang,
+            slang: args.slang,
+            hdr: args.hdr,
+            lesson,
+        }
+    }
+}
+
+/// A set written to the index, with its bytes still to send.
+pub struct Planned {
+    pub set_id: String,
+    pub display_name: String,
+    pub total: u64,
+}
 
 pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
-    let info = inspect::inspect(&args.file)
+    let (watch, no_push) = (args.watch, args.no_push);
+    let to_delete = args.delete_source.then(|| args.file.clone());
+    let planned = plan(cfg, &NewSet::from(args)).await?;
+
+    // Everything that can ask a question or refuse has happened: the file was
+    // inspected, the title resolved, the caption measured, the rows written.
+    // What is left is bytes, which is the part worth handing away.
+    if watch {
+        return finish_set::run(cfg, &planned.set_id, to_delete.as_deref(), no_push).await;
+    }
+    // Asked before the child is started, because the child is what will be
+    // holding it a moment later.
+    let queued = crate::upload::lock::is_held(&cfg.data_dir()?);
+    let started = background::spawn_finish_set(cfg, &planned.set_id, to_delete.as_deref(), no_push)?;
+    println!(
+        "set {} planned · {} · {:.2} GB",
+        planned.set_id,
+        planned.display_name,
+        planned.total as f64 / 1e9
+    );
+    println!(
+        "  {} (pid {}); `mediagram status` says how far it has got",
+        if queued {
+            "queued behind the upload already running"
+        } else {
+            "uploading in the background"
+        },
+        started.pid
+    );
+    println!("  output: {}", started.log.display());
+    Ok(())
+}
+
+/// Inspects, resolves and remuxes one file and writes it to the index as a
+/// set ready to upload.
+pub async fn plan(cfg: &Config, new: &NewSet) -> Result<Planned> {
+    let info = inspect::inspect(&new.file)
         .await
-        .with_context(|| format!("inspecting {}", args.file.display()))?;
-    let file_name = args
+        .with_context(|| format!("inspecting {}", new.file.display()))?;
+    let file_name = new
         .file
         .file_name()
         .and_then(|n| n.to_str())
-        .with_context(|| format!("{} has no usable file name", args.file.display()))?
+        .with_context(|| format!("{} has no usable file name", new.file.display()))?
         .to_string();
 
-    // A course is described by hand, so it needs neither a key nor a lookup.
-    let course = args.course.clone();
-    if course.is_some() && (args.tmdb.is_some() || args.tvdb.is_some() || args.imdb.is_some()) {
+    // A lesson is described by hand, so it needs neither a key nor a lookup.
+    if new.lesson.is_some() && (new.tmdb.is_some() || new.tvdb.is_some() || new.imdb.is_some()) {
         bail!("--course describes a tutorial, which has no provider id; drop --tmdb/--tvdb/--imdb");
     }
-    if course.is_none() && !args.manual && cfg.tmdb_key.is_none() {
+    if new.lesson.is_none() && !new.manual && cfg.tmdb_key.is_none() {
         bail!("no tmdb_key configured in config.toml; set one or pass --manual");
     }
 
@@ -42,29 +157,29 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
         &data_dir,
         &cfg.tmdb_language,
     );
-    let mut prompter = DialoguerPrompter;
+    let lesson = new.lesson.as_ref();
     let resolve_input = ResolveInput {
         file_name,
-        tmdb: args.tmdb,
-        tvdb: args.tvdb,
-        imdb: args.imdb,
-        season: args.season.or(args.chapter),
-        episode: args.episode.or(args.lesson),
-        abs: args.abs_no,
-        manual: args.manual,
+        tmdb: new.tmdb,
+        tvdb: new.tvdb,
+        imdb: new.imdb.clone(),
+        season: new.season.or(lesson.and_then(|l| l.chapter)),
+        episode: new.episode.or(lesson.and_then(|l| l.number)),
+        abs: new.abs,
+        manual: new.manual,
     };
-    let resolved = match &course {
-        Some(title) => resolve::lesson(title, &resolve_input),
-        None => resolve::resolve(&api, &resolve_input, &mut prompter)
+    let resolved = match lesson {
+        Some(lesson) => resolve::lesson(&lesson.course, &resolve_input),
+        None => resolve::resolve(&api, &resolve_input, &mut DialoguerPrompter)
             .await
             .context("resolving metadata")?,
     };
 
     // Kept before the caption takes ownership of the resolved ids.
-    let show_id = course.is_none().then_some(resolved.ids.tmdb).flatten();
+    let show_id = lesson.is_none().then_some(resolved.ids.tmdb).flatten();
     let show_kind = resolved.kind;
 
-    let source_path = remux::ensure_faststart(&args.file, cfg.tmp_dir.as_deref(), args.no_remux)
+    let source_path = remux::ensure_faststart(&new.file, cfg.tmp_dir.as_deref(), new.no_remux)
         .await
         .context("preparing file for splitting")?;
     let total = tokio::fs::metadata(&source_path)
@@ -74,15 +189,10 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
     let part_ranges = mlib_spec::plan_parts(total, cfg.part_size).context("planning parts")?;
 
     let set_id = ulid::Ulid::new().to_string();
-    let cid = course.as_ref().map(|title| {
-        args.cid
-            .clone()
-            .unwrap_or_else(|| mlib_spec::slug::slug(title))
-    });
     let caption = Caption {
-        cid,
-        chap: args.chap.clone(),
-        path: args.path.clone(),
+        cid: lesson.map(|l| l.cid.clone()),
+        chap: lesson.and_then(|l| l.chapter_title.clone()),
+        path: lesson.and_then(|l| l.path.clone()),
         t: resolved.kind,
         ids: resolved.ids,
         show: resolved.show,
@@ -92,14 +202,14 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
         e: resolved.episode,
         abs: resolved.abs,
         q: info.quality,
-        hdr: Some(args.hdr.unwrap_or(info.hdr)),
+        hdr: Some(new.hdr.clone().unwrap_or(info.hdr)),
         container: classify::container_from_ext(&source_path),
         vcodec: info.vcodec,
         acodec: info.acodec,
-        alang: args.alang.unwrap_or(info.alang),
-        slang: args.slang.unwrap_or(info.slang),
+        alang: new.alang.clone().unwrap_or(info.alang),
+        slang: new.slang.clone().unwrap_or(info.slang),
         dur: info.duration_s,
-        variant: args.variant,
+        variant: new.variant.clone(),
         set: set_id.clone(),
         part: Part {
             i: 0,
@@ -110,18 +220,6 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
         },
         total,
     };
-
-    let created_at = crate::clock::now_unix();
-    let probe = caption.with_part(Part {
-        i: part_ranges.len() as u32 - 1,
-        n: part_ranges.len() as u32,
-        off: total,
-        len: total,
-        sha256: "0".repeat(64),
-    });
-    mlib_spec::to_text(&probe, &probe.display_name())
-        .context("caption exceeds Telegram's budget; shorten --variant or the language lists")?;
-    let set_row = SetRow::from_caption(&caption, created_at)?;
 
     let mut conn = db::open(&data_dir)?;
     // What the provider says about the show this belongs to. The payload is
@@ -134,57 +232,19 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
             Err(err) => tracing::warn!(id, error = %err, "no description recorded for this title"),
         }
     }
-    let source_key = db::source_key(&set_id);
-    let source_value = source_path
-        .canonicalize()
-        .unwrap_or_else(|_| source_path.clone())
-        .to_string_lossy()
-        .into_owned();
-    {
-        let tx = conn.transaction().context("starting index transaction")?;
-        sets::insert_set(&tx, &set_row)?;
-        parts::insert_parts(&tx, &set_id, &part_ranges)?;
-        db::set_meta(&tx, &source_key, &source_value)?;
-        store_sidecars(&tx, &set_id, &args.file, &caption)?;
-        if source_path != args.file {
-            // A faststart remux was written; remember it so only that file is deleted later.
-            db::set_meta(&tx, &db::tmp_key(&set_id), &source_value)?;
-        }
-        tx.commit().context("committing index transaction")?;
-    }
+    let source = Source {
+        path: &source_path,
+        remux: source_path != new.file,
+    };
+    record_planned(&mut conn, &caption, &part_ranges, source, |tx| {
+        store_sidecars(tx, &set_id, &new.file, &caption)
+    })?;
 
-    // Everything that can ask a question or refuse has happened: the file was
-    // inspected, the title resolved, the caption measured, the rows written.
-    // What is left is bytes, which is the part worth handing away.
-    let to_delete = args.delete_source.then(|| args.file.clone());
-    if !args.watch {
-        // The child opens the index itself, and two handles on it from one
-        // process is one more than the work needs.
-        drop(conn);
-        // Asked before the child is started, because the child is what will
-        // be holding it a moment later.
-        let queued = crate::upload::lock::is_held(&data_dir);
-        let started =
-            background::spawn_finish_set(cfg, &set_id, to_delete.as_deref(), args.no_push)?;
-        println!(
-            "set {set_id} planned · {} · {:.2} GB",
-            caption.display_name(),
-            total as f64 / 1e9
-        );
-        println!(
-            "  {} (pid {}); `mediagram status` says how far it has got",
-            if queued {
-                "queued behind the upload already running"
-            } else {
-                "uploading in the background"
-            },
-            started.pid
-        );
-        println!("  output: {}", started.log.display());
-        return Ok(());
-    }
-    drop(conn);
-    finish_set::run(cfg, &set_id, to_delete.as_deref(), args.no_push).await
+    Ok(Planned {
+        display_name: caption.display_name(),
+        set_id,
+        total,
+    })
 }
 
 /// Stores the subtitle and summary sitting beside a video, if any.
@@ -199,8 +259,8 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
 fn store_sidecars(
     conn: &rusqlite::Connection,
     set_id: &str,
-    source: &std::path::Path,
-    caption: &mlib_spec::Caption,
+    source: &Path,
+    caption: &Caption,
 ) -> Result<()> {
     let found = crate::course::sidecars::find_sidecars(source);
 

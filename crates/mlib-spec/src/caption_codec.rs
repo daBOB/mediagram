@@ -102,6 +102,24 @@ fn validate(caption: &Caption) -> Result<(), CaptionError> {
 }
 
 /// Render a caption. `human` may be empty; it is truncated to fit the budget.
+/// Whether every part of the set `template` describes fits the budget.
+///
+/// The longest caption a set produces is its last part's: the largest offset
+/// and length, and a full hash. Measured on the template before anything is
+/// written, because a caption that cannot be sent is a set that cannot be
+/// finished.
+pub fn check_budget(template: &Caption) -> Result<(), CaptionError> {
+    let n = template.part.n;
+    let last = template.with_part(crate::caption::Part {
+        i: n.saturating_sub(1),
+        n,
+        off: template.total,
+        len: template.total,
+        sha256: "0".repeat(64),
+    });
+    to_text(&last, &last.display_name()).map(drop)
+}
+
 pub fn to_text(c: &Caption, human: &str) -> Result<String, CaptionError> {
     let json = serde_json::to_string(c)?;
     let mut out = format!("{MARKER}\n{json}");

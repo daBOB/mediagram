@@ -16,7 +16,9 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result, bail};
 use futures::stream::{self, StreamExt};
 
-use super::args::{AddArgs, AddShowArgs};
+use super::add::NewSet;
+use super::args::AddShowArgs;
+use super::finish_set::Uploader;
 use crate::config::Config;
 use crate::index::status::SetStatus;
 use crate::index::{db, sets};
@@ -75,6 +77,7 @@ pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
     }
 
     let conn = db::open(&cfg.data_dir()?)?;
+    let mut uploader = Uploader::new(cfg);
     let (mut uploaded, mut skipped, mut failed) = (0usize, 0usize, 0usize);
     for ep in &episodes {
         if sets::episode_status(&conn, tmdb, ep.season, ep.episode)? == Some(SetStatus::Complete) {
@@ -88,7 +91,7 @@ pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
             ep.episode,
             name(&ep.path)
         );
-        match upload_one(cfg, tmdb, ep, args.delete_source).await {
+        match upload_one(cfg, &mut uploader, tmdb, ep, args.delete_source).await {
             Ok(()) => uploaded += 1,
             // One unreadable file must not abandon the rest of the show.
             Err(err) => {
@@ -98,6 +101,7 @@ pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
         }
     }
     drop(conn);
+    uploader.close().await;
 
     println!("\n{uploaded} uploaded, {skipped} already held, {failed} failed");
     if uploaded > 0 && !args.no_push {
@@ -111,23 +115,24 @@ pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
     Ok(())
 }
 
-async fn upload_one(cfg: &Config, tmdb: u64, ep: &Episode, delete: bool) -> Result<()> {
-    super::add::run(
-        cfg,
-        AddArgs {
-            file: ep.path.clone(),
-            tmdb: Some(tmdb),
-            season: Some(ep.season),
-            episode: Some(ep.episode),
-            // The index is pushed once when the show is done.
-            no_push: true,
-            delete_source: delete,
-            // A show is uploaded episode by episode, in this process.
-            watch: true,
-            ..Default::default()
-        },
-    )
-    .await
+async fn upload_one(
+    cfg: &Config,
+    uploader: &mut Uploader<'_>,
+    tmdb: u64,
+    ep: &Episode,
+    delete: bool,
+) -> Result<()> {
+    let new = NewSet {
+        file: ep.path.clone(),
+        tmdb: Some(tmdb),
+        season: Some(ep.season),
+        episode: Some(ep.episode),
+        ..NewSet::default()
+    };
+    let planned = super::add::plan(cfg, &new).await?;
+    // The index is pushed once when the show is done, not per episode.
+    uploader.finish(&planned.set_id, delete.then_some(ep.path.as_path())).await?;
+    Ok(())
 }
 
 /// Every video file under `dir` that names a season and an episode.

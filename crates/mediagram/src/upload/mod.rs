@@ -6,6 +6,7 @@ pub mod finish;
 pub mod lock;
 pub mod part_reader;
 pub mod pipeline;
+pub mod plan;
 pub mod progress;
 pub mod progress_line;
 pub mod transport;

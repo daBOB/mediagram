@@ -21,6 +21,22 @@ use crate::upload::transport::TelegramTransport;
 /// Uploads what is left of `set_id`, then deletes `delete` if the set
 /// reached the channel whole, and pushes the index unless told not to.
 pub async fn run(cfg: &Config, set_id: &str, delete: Option<&Path>, no_push: bool) -> Result<()> {
+    let tg = Tg::connect(cfg).await.context("connecting to Telegram")?;
+    let result = finish_with(cfg, &tg, set_id, delete).await;
+    tg.shutdown().await;
+    let complete = result?;
+    if complete && !no_push {
+        push_index::run(cfg).await.with_context(|| {
+            format!("set {set_id} is complete but the index push failed; run `mediagram push-index`")
+        })?;
+    }
+    Ok(())
+}
+
+/// Uploads what is left of `set_id` over a connection the caller holds, then
+/// deletes `delete` if the set reached the channel whole. Returns whether it
+/// did. A bulk command holds one connection for every set it walks.
+pub async fn finish_with(cfg: &Config, tg: &Tg, set_id: &str, delete: Option<&Path>) -> Result<bool> {
     let data_dir = cfg.data_dir()?;
     // One upload at a time: a file added while another is going up waits for
     // it, the way a show's episodes wait for each other, rather than the two
@@ -33,22 +49,45 @@ pub async fn run(cfg: &Config, set_id: &str, delete: Option<&Path>, no_push: boo
     let set = sets::get_set(&conn, set_id)?
         .with_context(|| format!("no set {set_id} in the index"))?;
 
-    let tg = Tg::connect(cfg).await.context("connecting to Telegram")?;
-    let transport = TelegramTransport::new(&tg, cfg.max_attempts);
-    let result = finish_one(&conn, &transport, cfg.throttle_ms, &set, &data_dir).await;
-    tg.shutdown().await;
-    let complete = result.context("uploading set")?;
+    let transport = TelegramTransport::new(tg, cfg.max_attempts);
+    let complete = finish_one(&conn, &transport, cfg.throttle_ms, &set, &data_dir)
+        .await
+        .context("uploading set")?;
 
     println!("set {set_id} added");
     if let Some(path) = delete {
         report_deletion(path, complete, set.total);
     }
-    if complete && !no_push {
-        push_index::run(cfg).await.with_context(|| {
-            format!("set {set_id} is complete but the index push failed; run `mediagram push-index`")
-        })?;
+    Ok(complete)
+}
+
+/// One Telegram connection for a command that uploads many sets in turn,
+/// made when the first of them needs it: a re-run that finds everything
+/// already uploaded never connects at all.
+pub struct Uploader<'a> {
+    cfg: &'a Config,
+    tg: Option<Tg>,
+}
+
+impl<'a> Uploader<'a> {
+    pub fn new(cfg: &'a Config) -> Uploader<'a> {
+        Uploader { cfg, tg: None }
     }
-    Ok(())
+
+    /// [`finish_with`] over this uploader's connection.
+    pub async fn finish(&mut self, set_id: &str, delete: Option<&Path>) -> Result<bool> {
+        let tg = match &mut self.tg {
+            Some(tg) => tg,
+            slot => slot.insert(Tg::connect(self.cfg).await.context("connecting to Telegram")?),
+        };
+        finish_with(self.cfg, tg, set_id, delete).await
+    }
+
+    pub async fn close(self) {
+        if let Some(tg) = self.tg {
+            tg.shutdown().await;
+        }
+    }
 }
 
 /// Removes the file the user named, once the index says every part of it is
