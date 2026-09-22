@@ -7,6 +7,26 @@ to `main`. Full phase-by-phase detail lives in
 
 ## 2026-09-22
 
+**Fixed**
+
+- The web player no longer drops a healthy title to the lowest quality. Its
+  watch on the buffer took the fill rate between consecutive samples, smoothed
+  over about a second, and judged a link "behind" with twenty or more seconds
+  still buffered. But browsers refill in bursts: Chrome playing a file
+  directly holds twenty-odd seconds and lets it sag for several before topping
+  it up, and each sag read as a link delivering nothing. Six seconds of that
+  converted the title, at the source bitrate times that near-zero rate — the
+  600 kbit/s floor. A recording of five real minutes came within two seconds
+  of doing exactly that on a file served from local disk.
+
+  The rate is now measured across a twenty-second window, and nothing is
+  called behind until fewer than ten seconds are buffered; a buffer under five
+  and clearly losing is still acted on at once. Replayed against that
+  recording and four harsher synthetic refill patterns, the old rule misfired
+  on every synthetic one and the new one on none. A link that really is slow
+  is still converted, at a bitrate taken from what it carried across the
+  window rather than from its worst second.
+
 **Shipped**
 
 - A title held on disk in full now says "cached", instead of reporting how far

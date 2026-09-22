@@ -41,6 +41,27 @@ const HUNGRY_SECONDS = 45;
 /** Below this much, a stall is seconds away rather than minutes. */
 const STARVING_SECONDS = 5;
 
+/**
+ * Above this much in hand, nothing is judged to be falling behind.
+ *
+ * Not because a link cannot be slow with more buffered, but because above it a
+ * slow link and a browser that has paused its own refill look identical, and
+ * the second is far more common. Chrome playing a file directly holds twenty
+ * to thirty seconds and lets it sag by several before topping it up; a replay
+ * of five real minutes of that, and of harsher synthetic refill patterns, read
+ * as "behind" again and again at any threshold above this. No browser lets
+ * its buffer fall this low on a link that is keeping up — so reaching it is
+ * the evidence, and what is left still covers a restart.
+ */
+const BEHIND_SECONDS = 10;
+
+/**
+ * Below this rate a nearly empty buffer is urgent, and skips `SUSTAINED_MS`.
+ * Well under `KEEPING_UP`, so a player that starts on two seconds in hand and
+ * holds them exactly — which Chrome does — is left alone.
+ */
+const LOSING = 0.8;
+
 /** How long a shortfall must last before it counts. Dips happen. */
 const SUSTAINED_MS = 6000;
 
@@ -49,6 +70,23 @@ const SUSTAINED_MS = 6000;
  * cannot sustain playback at 1×.
  */
 const KEEPING_UP = 0.97;
+
+/**
+ * How much wall clock the rate is measured across, and the least that counts.
+ *
+ * Browsers do not fetch smoothly. Chrome playing a file directly keeps twenty
+ * to thirty seconds in hand — well under `HUNGRY_SECONDS` — and tops it up in
+ * bursts, with pauses of several seconds between them in which the buffer
+ * gains nothing. A rate taken sample by sample reads each pause as a link
+ * delivering nought, and the first pause longer than `SUSTAINED_MS` converted
+ * a title that was playing perfectly — straight to the floor, because the
+ * suggested bitrate is the source's times that nought. Measured across a
+ * window longer than a fetch cycle, the pauses and the bursts average out to
+ * what the link actually carries; a slow link still shows, because it stays
+ * slow across the whole window.
+ */
+const WINDOW_MS = 20_000;
+const MIN_SPAN_MS = 6_000;
 
 /** A jump larger than this is a seek, not playback. */
 const SEEK_SECONDS = 3;
@@ -89,9 +127,21 @@ export class BufferHealth {
   /** Forgets everything measured. Call when the source changes. */
   reset() {
     this.last = null;
+    /** Samples inside `WINDOW_MS`, oldest first, that the rate is taken across. */
+    this.window = [];
     /** When the shortfall began, or `null` while it is keeping up. */
     this.shortfallSince = null;
     this.ratio = null;
+  }
+
+  /**
+   * Nothing is being fetched on purpose — the buffer is full, or there is no
+   * more — so neither a shortfall nor a window measured across it means
+   * anything once fetching starts again.
+   */
+  forgetShortfall() {
+    this.shortfallSince = null;
+    this.window = [];
   }
 
   /**
@@ -108,7 +158,6 @@ export class BufferHealth {
 
     // A seek lands in a different buffer, and comparing across the jump would
     // read the discontinuity as a collapse.
-    const elapsed = previous ? (at.now - previous.now) / 1000 : 0;
     const played = previous ? at.currentTime - previous.currentTime : 0;
     if (played < 0 || played > SEEK_SECONDS) {
       this.reset();
@@ -117,14 +166,17 @@ export class BufferHealth {
     // A paused player consumes nothing, so there is nothing to fall behind.
     // Note this is not the same as a *stalled* one, which is trying to play
     // and failing — that is the case this whole module is about.
-    if (at.paused || previous === null || elapsed <= 0) {
+    if (at.paused || previous === null || at.now <= previous.now) {
+      // A window spanning a pause would count the pause as a link delivering
+      // nothing, so measuring starts again when playback does.
+      if (at.paused) this.window = [];
       return { state: "ok", ratio: this.ratio, bufferAhead, measured: false };
     }
 
     // Only while the player still wants more. Above the mark it has what it
     // asked for and has stopped fetching, which is not a shortfall.
     if (bufferAhead >= this.hungrySeconds) {
-      this.shortfallSince = null;
+      this.forgetShortfall();
       return { state: "ok", ratio: this.ratio, bufferAhead, measured: false };
     }
 
@@ -142,17 +194,22 @@ export class BufferHealth {
       at.bufferedEnd >= at.duration - END_TOLERANCE &&
       at.duration === previous.duration;
     if (finished) {
-      this.shortfallSince = null;
+      this.forgetShortfall();
       return { state: "ok", ratio: this.ratio, bufferAhead, measured: false };
     }
 
     // Against the wall clock, not against playback. See the file comment:
     // dividing by seconds played reads a stalled player as a healthy one,
-    // because a stalled player plays exactly as fast as it downloads.
-    const gained = at.bufferedEnd - previous.bufferedEnd;
-    const ratio = gained / elapsed;
-    // Smoothed, because one sample is mostly the browser's fetch schedule.
-    this.ratio = this.ratio === null ? ratio : this.ratio * 0.7 + ratio * 0.3;
+    // because a stalled player plays exactly as fast as it downloads. And
+    // across a window rather than between two samples: see `WINDOW_MS`.
+    this.window.push(at);
+    while (at.now - this.window[0].now > WINDOW_MS) this.window.shift();
+    const oldest = this.window[0];
+    const span = at.now - oldest.now;
+    if (span < MIN_SPAN_MS) {
+      return { state: "ok", ratio: this.ratio, bufferAhead, measured: false };
+    }
+    this.ratio = (at.bufferedEnd - oldest.bufferedEnd) / (span / 1000);
 
     if (this.ratio >= KEEPING_UP) {
       this.shortfallSince = null;
@@ -160,11 +217,21 @@ export class BufferHealth {
     }
 
     if (this.shortfallSince === null) this.shortfallSince = at.now;
+    // A shortfall has to last before it counts — unless the buffer is nearly
+    // gone, when waiting out the rule would only mean waiting for the stall.
+    // The window already stands between one bad second and a verdict.
+    const starving = bufferAhead <= this.starvingSeconds;
     const sustained = at.now - this.shortfallSince >= this.sustainedMs;
-    if (!sustained) return { state: "ok", ratio: this.ratio, bufferAhead, measured: true };
+    const urgent = starving && this.ratio < LOSING;
+    // Timed from the first short window even above `BEHIND_SECONDS`, so a
+    // shortfall that was already sustained is acted on the moment it gets
+    // there rather than six seconds later.
+    if (bufferAhead > BEHIND_SECONDS || (!sustained && !urgent)) {
+      return { state: "ok", ratio: this.ratio, bufferAhead, measured: true };
+    }
 
     return {
-      state: bufferAhead <= this.starvingSeconds ? "starving" : "behind",
+      state: starving ? "starving" : "behind",
       ratio: this.ratio,
       bufferAhead,
       measured: true,

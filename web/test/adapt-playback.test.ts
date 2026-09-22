@@ -102,7 +102,9 @@ describe("a link that does not", () => {
       onExhausted: () => {},
       now: () => clock,
     });
-    video.ahead = 30;
+    // Already low: a viewer this close to a stall should not wait out a
+    // cooldown for the first switch.
+    video.ahead = 8;
     watch.begin({ capBits: null, sourceBits: 13_900_000 });
 
     for (let tick = 0; tick < 15 && switches.length === 0; tick++) {

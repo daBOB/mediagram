@@ -67,14 +67,39 @@ describe("a link that keeps up", () => {
 });
 
 describe("a link that cannot keep up", () => {
-  test("a buffer draining while hungry is reported", () => {
+  test("a buffer draining while hungry is reported once it is running low", () => {
     const health = new BufferHealth();
 
-    // 30 s of buffer losing half a second each second: still 20 s in hand
-    // after twenty seconds, so this is the early warning, not the emergency.
-    const verdict = play(health, { seconds: 20, fill: 0.5, bufferAhead: 30 });
+    // 30 s of buffer losing half a second each second. With twenty seconds
+    // still in hand this is indistinguishable from a browser that has paused
+    // its own refill, so nothing is said; under ten it is not.
+    expect(play(health, { seconds: 20, fill: 0.5, bufferAhead: 30 }).state).toBe("ok");
+    expect(play(new BufferHealth(), { seconds: 46, fill: 0.5, bufferAhead: 30 }).state).toBe(
+      "behind",
+    );
+  });
 
-    expect(verdict.state).toBe("behind");
+  /**
+   * The misfire this rule exists to prevent. Browsers refill in bursts: Chrome
+   * playing a file directly holds twenty-odd seconds and lets it sag before
+   * topping it up. Each sag reads as a link delivering nothing, and judging
+   * those converted perfectly healthy titles — to the floor bitrate.
+   */
+  test("a browser refilling in bursts is not a slow link", () => {
+    for (const [low, high, burst] of [[20, 28, 3], [15, 25, 1.5], [10, 20, 4]] as const) {
+      const health = new BufferHealth();
+      let at = 0;
+      let end = high;
+      let fetching = false;
+      for (let tick = 1; tick <= 2400; tick++) {
+        at += 0.25;
+        if (end - at <= low) fetching = true;
+        if (end - at >= high) fetching = false;
+        if (fetching) end += burst * 0.25;
+        const verdict = health.sample({ now: tick * 250, currentTime: at, bufferedEnd: end, paused: false });
+        expect(verdict.state).toBe("ok");
+      }
+    }
   });
 
   test("it says how much of realtime the link is managing", () => {
@@ -173,7 +198,7 @@ describe("what must not be measured", () => {
 describe("what to do about it", () => {
   test("a bitrate that would have fitted is derived from the measurement", () => {
     const health = new BufferHealth();
-    const verdict = play(health, { seconds: 20, fill: 0.5, bufferAhead: 30 });
+    const verdict = play(health, { seconds: 46, fill: 0.5, bufferAhead: 30 });
 
     // Half of realtime on a 13.9 Mbit/s source is a link carrying about
     // 7 Mbit/s; the target leaves room under it rather than aiming at it.
@@ -211,12 +236,16 @@ describe("whether a sample measured anything", () => {
     expect(next.measured).toBe(false);
   });
 
-  test("says yes while playing and still hungry, which is when the rate means something", () => {
+  test("says yes while playing and still hungry, once there is a window to measure across", () => {
     const health = new BufferHealth();
-    health.sample({ now: 0, currentTime: 0, bufferedEnd: 10, paused: false });
-    const next = health.sample({ now: 1000, currentTime: 1, bufferedEnd: 11.5, paused: false });
-    expect(next.measured).toBe(true);
-    expect(next.ratio).toBeGreaterThan(0);
+    let last = health.sample({ now: 0, currentTime: 0, bufferedEnd: 10, paused: false });
+    for (let tick = 1; tick <= 8; tick++) {
+      last = health.sample({ now: tick * 1000, currentTime: tick, bufferedEnd: 10 + tick * 1.5, paused: false });
+      // One second of it is the browser's fetch schedule, not the link.
+      if (tick === 1) expect(last.measured).toBe(false);
+    }
+    expect(last.measured).toBe(true);
+    expect(last.ratio).toBeCloseTo(1.5);
   });
 });
 

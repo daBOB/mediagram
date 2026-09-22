@@ -277,6 +277,15 @@ knowing if you ever change it:
 - **A full buffer looks exactly like a slow download.** A browser that has
   buffered all it wants stops fetching, so the buffer stops growing. Nothing
   is judged while more than 45 seconds are buffered.
+- **A browser refilling in bursts looks exactly like a slow download.** Chrome
+  playing a file directly keeps twenty-odd seconds in hand and lets it sag for
+  several seconds before topping it up. So the rate is measured across a
+  twenty-second window rather than between two samples, and nothing is judged
+  "behind" until fewer than ten seconds are buffered — a level no browser lets
+  itself reach on a link that is keeping up. Before this, one ordinary refill
+  pause could read as a link delivering nothing, and the suggested bitrate is
+  the source's times that rate: titles that were playing perfectly were
+  converted straight to the 600 kbit/s floor.
 - **A stalled player looks exactly like a healthy one**, if the rate is
   measured against playback. With an empty buffer the playhead advances
   precisely as fast as bytes arrive, so "buffered seconds gained per second
