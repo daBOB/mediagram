@@ -8,7 +8,7 @@
 //! `titles::distinct_titles` never yields one and nothing here has to know
 //! about the distinction.
 
-use anyhow::{Result, bail};
+use anyhow::Result;
 use mediagram_tmdb::tmdb_client::TmdbClient;
 
 use crate::config::Config;
@@ -18,13 +18,7 @@ use crate::metadata::show_details;
 
 pub async fn run(cfg: &Config) -> Result<()> {
     let data_dir = cfg.data_dir()?;
-    let live = data_dir.join("library.db");
-    if !live.exists() {
-        bail!(
-            "no library.db in {}; nothing to describe",
-            data_dir.display()
-        );
-    }
+    db::require_index(&data_dir, "describe")?;
 
     // Opened once, for writing, because this command writes: asking the same
     // database for the titles through a second read-only handle would open it

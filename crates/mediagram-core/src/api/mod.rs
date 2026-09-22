@@ -185,6 +185,10 @@ impl Core {
         refresh::refresh_catalog(self, pointer_url, key_b64).await
     }
 
+    /// Every playable set in the current catalog. An empty list, not
+    /// `NotFound`, when no catalog is loaded yet: a shelf with nothing on it
+    /// is what a first launch shows, whereas the calls that ask about one
+    /// named set have nothing sensible to return and say so.
     pub fn list_sets(&self) -> Result<Vec<crate::dto::SetSummary>, CoreError> {
         catalog::list_sets(self)
     }

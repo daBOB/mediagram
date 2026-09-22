@@ -16,7 +16,6 @@ use rusqlite::Connection;
 use crate::export::{restrict, restrict_dir};
 use crate::index::snapshot;
 
-pub const INDEX_FILE: &str = "library.db";
 pub const POSTER_DIR: &str = "posters";
 pub const MANIFEST_FILE: &str = "manifest.json";
 
@@ -52,7 +51,7 @@ impl Staging {
     /// uncheckpointed WAL on its own, so skipping it is both correct and the
     /// only way this stays a read.
     pub fn copy_index(&self, conn: &Connection) -> Result<u64> {
-        let dest = self.path.join(INDEX_FILE);
+        let dest = self.path.join(mlib_spec::schema::INDEX_FILE);
         snapshot::copy_to(conn, &dest)?;
         restrict(&dest)?;
         Ok(std::fs::metadata(&dest)

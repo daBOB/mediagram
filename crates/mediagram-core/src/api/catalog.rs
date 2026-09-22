@@ -58,14 +58,14 @@ pub(super) fn artwork_dir(core: &Core) -> PathBuf {
     dir(core).join("artwork")
 }
 
-fn library_db(dir: &Path) -> PathBuf {
-    dir.join("library.db")
+pub(super) fn library_db(dir: &Path) -> PathBuf {
+    dir.join(mlib_spec::schema::INDEX_FILE)
 }
 
 /// Opens a database read-only: nothing under `<data_dir>/catalog/` is this
 /// crate's index to write, and a writable handle could checkpoint the WAL of
 /// a version a refresh is about to remove.
-fn open_ro(path: &Path) -> Result<Connection, CoreError> {
+pub(super) fn open_ro(path: &Path) -> Result<Connection, CoreError> {
     Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY)
         .map_err(|_| CoreError::Io("opening the catalog".into()))
 }

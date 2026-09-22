@@ -1,4 +1,5 @@
 use super::*;
+use rusqlite::Connection;
 
 /// Installs a catalog under `version`, the way a refresh does: an empty but
 /// readable index is staged as `incoming` and handed to the one function

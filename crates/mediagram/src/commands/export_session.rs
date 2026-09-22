@@ -68,7 +68,7 @@ pub async fn run(cfg: &Config) -> Result<()> {
     println!("MEDIAGRAM_CHANNEL_ACCESS_HASH={access_hash}");
     println!(
         "MEDIAGRAM_LIBRARY_DB={}",
-        data_dir.join("library.db").display()
+        crate::index::db::index_path(&data_dir).display()
     );
     Ok(())
 }

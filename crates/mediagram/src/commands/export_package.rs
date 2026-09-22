@@ -19,6 +19,7 @@ use crate::config::Config;
 use crate::export::budget::{Verdict, estimate_bytes, verdict_for};
 use crate::export::stage::Staging;
 use crate::export::{archive, latest, pointer, publish};
+use crate::index::db;
 
 pub async fn run(
     cfg: &Config,
@@ -37,26 +38,16 @@ pub async fn run(
         );
     }
 
-    // A plain connection, not `index::db::open`: opening through the helper
-    // would replay migrations and rewrite the recorded schema version, and an
-    // export must leave the index exactly as it found it.
-    let live = data_dir.join("library.db");
-    if !live.exists() {
-        bail!("no library.db in {}; nothing to export", data_dir.display());
-    }
     // Read-only at the SQLite level, not merely by convention: the export
-    // must be incapable of writing to the index, not just careful not to.
-    let conn = Connection::open_with_flags(
-        &live,
-        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_URI,
-    )
-    .with_context(|| format!("opening {} read-only", live.display()))?;
+    // must be incapable of writing to the index — migrating it included —
+    // not just careful not to.
+    let conn = db::open_read_only(&data_dir, "export")?;
 
     let staging = Staging::create(&data_dir, "export-staging")?;
     let index_bytes = staging.copy_index(&conn)?;
     drop(conn);
 
-    let snapshot = Connection::open(staging.path().join(crate::export::stage::INDEX_FILE))
+    let snapshot = Connection::open(staging.path().join(mlib_spec::schema::INDEX_FILE))
         .context("opening the snapshot")?;
     let titles = crate::export::titles::distinct_titles(&snapshot)?;
     let (sets, parts) = crate::export::titles::counts(&snapshot)?;

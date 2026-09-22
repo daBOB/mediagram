@@ -2,17 +2,38 @@
 //! key-value `meta` table used to remember state that doesn't belong in
 //! `sets`/`parts` (e.g. the source file path of a still-pending set).
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use rusqlite::Connection;
+
+/// Where the index lives in a data directory.
+pub fn index_path(data_dir: &Path) -> PathBuf {
+    data_dir.join(mlib_spec::schema::INDEX_FILE)
+}
+
+/// The index's path, or an error saying there is nothing to `purpose` when
+/// no upload has created one yet — a plainer answer than SQLite's "unable to
+/// open database file", and one that never creates an empty index as a side
+/// effect of looking.
+pub fn require_index(data_dir: &Path, purpose: &str) -> Result<PathBuf> {
+    let path = index_path(data_dir);
+    if !path.exists() {
+        anyhow::bail!(
+            "no {} in {}; nothing to {purpose}",
+            mlib_spec::schema::INDEX_FILE,
+            data_dir.display()
+        );
+    }
+    Ok(path)
+}
 
 /// Opens (creating if needed) `<data_dir>/library.db`, enables WAL mode and
 /// foreign keys, runs every migration, and records the schema version.
 pub fn open(data_dir: &Path) -> Result<Connection> {
     std::fs::create_dir_all(data_dir)
         .with_context(|| format!("creating data dir {}", data_dir.display()))?;
-    let path = data_dir.join("library.db");
+    let path = index_path(data_dir);
     let conn =
         Connection::open(&path).with_context(|| format!("opening database {}", path.display()))?;
 
@@ -34,9 +55,10 @@ pub fn open(data_dir: &Path) -> Result<Connection> {
 /// serving process can never migrate a database a newer uploader wrote.
 ///
 /// No migration runs here, so an index older than this build is reported
-/// rather than upgraded behind the uploader's back.
-pub fn open_read_only(data_dir: &Path) -> Result<Connection> {
-    let path = data_dir.join("library.db");
+/// rather than upgraded behind the uploader's back. `purpose` finishes the
+/// sentence "nothing to ..." when there is no index at all.
+pub fn open_read_only(data_dir: &Path, purpose: &str) -> Result<Connection> {
+    let path = require_index(data_dir, purpose)?;
     let conn = Connection::open_with_flags(
         &path,
         rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
@@ -195,7 +217,7 @@ mod tests {
         let writable = open(dir.path()).unwrap();
         set_meta(&writable, "schema_version_probe", "1").unwrap();
 
-        let reader = open_read_only(dir.path()).unwrap();
+        let reader = open_read_only(dir.path(), "read").unwrap();
         assert_eq!(
             get_meta(&reader, "schema_version_probe").unwrap(),
             Some("1".to_string())
@@ -206,7 +228,7 @@ mod tests {
     #[test]
     fn read_only_open_refuses_a_database_that_is_not_there() {
         let dir = tempfile::tempdir().unwrap();
-        assert!(open_read_only(dir.path()).is_err());
+        assert!(open_read_only(dir.path(), "read").is_err());
     }
 
     #[test]

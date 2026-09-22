@@ -55,7 +55,7 @@ pub fn read_package(
     std::fs::create_dir_all(into).map_err(|e| PackageError::Io(e.to_string()))?;
     unpack(&plaintext, into)?;
 
-    let db = into.join("library.db");
+    let db = into.join(mlib_spec::schema::INDEX_FILE);
     if !db.exists() {
         return Err(PackageError::Archive(
             "archive carried no library.db".into(),

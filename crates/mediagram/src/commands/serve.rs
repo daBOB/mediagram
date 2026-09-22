@@ -22,7 +22,7 @@ pub async fn run(cfg: &Config, addr: Option<String>) -> Result<()> {
     let data_dir = cfg.data_dir()?;
     // Read-only: a serving process must never checkpoint or migrate the
     // index the uploader owns.
-    let index = db::open_read_only(&data_dir)?;
+    let index = db::open_read_only(&data_dir, "serve")?;
     let playable = catalog::list_playable(&index)?.len();
 
     let tg = Tg::connect(cfg).await?;

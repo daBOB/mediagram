@@ -11,7 +11,6 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use mlib_spec::Kind;
-use rusqlite::{Connection, OpenFlags};
 
 use mediagram_tmdb::posters::kind_key;
 use mediagram_tmdb::tmdb_client::{DiskCachedApi, Localized, TmdbApi, TmdbClient};
@@ -59,8 +58,7 @@ pub struct FetchPlan {
 pub fn plan_fetch(core: &Core, fallback: &str) -> Result<FetchPlan, CoreError> {
     let dir = std::fs::canonicalize(catalog::current_dir(core))
         .map_err(|_| CoreError::NotFound("no catalog is loaded yet".into()))?;
-    let conn = Connection::open_with_flags(dir.join("library.db"), OpenFlags::SQLITE_OPEN_READ_ONLY)
-        .map_err(|_| CoreError::Io("opening the catalog".into()))?;
+    let conn = catalog::open_ro(&catalog::library_db(&dir))?;
     let sets = crate::catalog::list_playable(&conn)
         .map_err(|_| CoreError::Io("reading the catalog".into()))?;
     let language = language_of(&conn, fallback);

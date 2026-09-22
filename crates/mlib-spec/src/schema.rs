@@ -3,6 +3,11 @@
 
 pub const SCHEMA_VERSION: i64 = 6;
 
+/// The index's file name, wherever a copy of it sits: the uploader's data
+/// directory, the snapshot pinned in the channel, and a metadata package all
+/// carry it under this one name, which is how a reader finds it in each.
+pub const INDEX_FILE: &str = "library.db";
+
 /// Statements grouped by the version they produce: `GROUPS[0]` takes a
 /// database from nothing to version 1, `GROUPS[1]` from 1 to 2, and so on.
 ///

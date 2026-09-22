@@ -167,7 +167,7 @@ async fn install(
     std::fs::create_dir_all(&incoming)
         .map_err(|_| CoreError::Io("staging the refreshed catalog".into()))?;
 
-    download(client, document, &incoming.join("library.db")).await?;
+    download(client, document, &incoming.join(mlib_spec::schema::INDEX_FILE)).await?;
     // Counting is also the check: a file that is not a catalog cannot be
     // counted, and this happens while it is still staged, so a channel with
     // something else pinned in it never replaces a library that works.

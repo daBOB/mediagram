@@ -23,7 +23,6 @@ const META_INDEX_MESSAGE_ID: &str = "index_message_id";
 /// replaces, plus any a previous push failed to unpin or a `rescan`
 /// rediscovered. Stored comma-separated, newest first.
 const META_STALE_INDEX_ID: &str = "stale_index_message_id";
-const INDEX_DOCUMENT_NAME: &str = "library.db";
 const INDEX_MIME_TYPE: &str = "application/vnd.sqlite3";
 
 /// Snapshots and pushes `library.db`, pins the new message, and unpins the
@@ -41,7 +40,7 @@ async fn push_snapshot(cfg: &Config) -> Result<i32> {
     snapshot::checkpoint(&conn).context("checkpointing before snapshot")?;
     // Per-process name so two overlapping pushes cannot rewrite each other's snapshot mid-upload.
     let temp_path = data_dir.join(format!("library.push.{}.db", std::process::id()));
-    snapshot::snapshot_to(&conn, &temp_path).context("snapshotting library.db")?;
+    snapshot::snapshot_to(&conn, &temp_path).context("snapshotting the index")?;
 
     let result = push_via_telegram(cfg, &conn, &temp_path).await;
 
@@ -93,7 +92,7 @@ async fn send_and_pin(
     // called `library.db` regardless of the temp file's on-disk name.
     let uploaded = tg
         .client
-        .upload_stream(&mut file, size, INDEX_DOCUMENT_NAME.to_string())
+        .upload_stream(&mut file, size, mlib_spec::schema::INDEX_FILE.to_string())
         .await
         .with_context(|| format!("uploading {}", temp_path.display()))?;
 

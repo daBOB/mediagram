@@ -8,26 +8,19 @@
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use anyhow::{Context, Result, bail};
+use anyhow::Result;
 
 use crate::config::Config;
+use crate::index::db;
 use crate::index::progress::{self, ShowProgress, Unfinished};
 use crate::upload::lock;
 use crate::upload::progress::{self as upload_progress, Progress};
 
 pub async fn run(cfg: &Config) -> Result<()> {
     let data_dir = cfg.data_dir()?;
-    let live = data_dir.join("library.db");
-    if !live.exists() {
-        bail!("no library.db in {}; nothing to report", data_dir.display());
-    }
     // Read-only at the SQLite level: reporting on a library must not migrate
     // it, and least of all while an upload is writing to it.
-    let conn = rusqlite::Connection::open_with_flags(
-        &live,
-        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_URI,
-    )
-    .with_context(|| format!("opening {} read-only", live.display()))?;
+    let conn = db::open_read_only(&data_dir, "report")?;
 
     let (sets, bytes) = progress::library(&conn)?;
     let unfinished = progress::unfinished(&conn)?;
