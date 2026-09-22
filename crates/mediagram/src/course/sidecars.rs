@@ -12,7 +12,7 @@
 
 use std::path::Path;
 
-use crate::index::assets::MAX_ASSET_BYTES;
+use crate::index::assets::{self, MAX_ASSET_BYTES};
 
 /// Suffixes a summary may use, in the order they are looked for.
 const SUMMARY_SUFFIXES: &[&str] = &[".summary.md", ".summary.txt"];
@@ -78,4 +78,37 @@ fn read_text(path: &Path) -> Option<String> {
             None
         }
     }
+}
+
+/// Stores the subtitle and summary sitting beside a video, if any.
+///
+/// Read from the source the user named rather than from a faststart remux:
+/// the remux is a temporary file `add` wrote, and the sidecars belong
+/// to the original.
+///
+/// A missing sidecar is the ordinary case and says nothing. A present one
+/// that cannot be stored is worth a warning, and no more: a lesson without
+/// its subtitle is still worth having.
+pub fn store_sidecars(
+    conn: &rusqlite::Connection,
+    set_id: &str,
+    source: &Path,
+    caption: &mlib_spec::Caption,
+) -> anyhow::Result<()> {
+    let found = find_sidecars(source);
+
+    if let Some(subtitle) = &found.subtitle {
+        // The subtitle is the audio written down, so it is in the audio's
+        // language; `und` when the file never said.
+        let lang = caption.alang.first().map(String::as_str).unwrap_or("und");
+        if let Err(err) = assets::put(conn, set_id, assets::Kind::Subtitle, lang, subtitle) {
+            tracing::warn!("subtitle for {set_id} not stored: {err:#}");
+        }
+    }
+    if let Some(summary) = &found.summary
+        && let Err(err) = assets::put(conn, set_id, assets::Kind::Summary, "", summary)
+    {
+        tracing::warn!("summary for {set_id} not stored: {err:#}");
+    }
+    Ok(())
 }

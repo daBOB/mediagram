@@ -1,5 +1,6 @@
-//!(Course folders: reading a course off disk and turning it into lessons.
+//! Course folders: reading a course off disk and turning it into lessons.
 
+pub mod identity;
 pub mod plan;
 pub mod report;
 pub mod sidecars;

@@ -7,11 +7,12 @@
 
 use anyhow::{Context, Result, bail};
 
-use super::add::{LessonOf, NewSet};
+use super::add::new_set::{LessonOf, NewSet};
 use super::args::AddCourseArgs;
 use super::finish_set::Uploader;
 use crate::config::Config;
 use crate::course::report::{Outcome, Summary, dry_run_table};
+use crate::course::identity::{course_title, duplicate_identity};
 use crate::course::walk::walk_course;
 use crate::index::status::SetStatus;
 use crate::index::{db, sets};
@@ -186,24 +187,3 @@ async fn upload_document(
     Ok(())
 }
 
-fn course_title(args: &AddCourseArgs) -> Result<String> {
-    if let Some(title) = &args.course {
-        return Ok(title.clone());
-    }
-    args.dir
-        .canonicalize()
-        .unwrap_or_else(|_| args.dir.clone())
-        .file_name()
-        .and_then(|n| n.to_str())
-        .map(|n| n.to_string())
-        .with_context(|| format!("cannot read a course title from {}", args.dir.display()))
-}
-
-/// The first `(chapter, lesson)` pair claimed twice, if any.
-fn duplicate_identity(lessons: &[crate::course::walk::Lesson]) -> Option<(u32, u32)> {
-    let mut seen = std::collections::BTreeSet::new();
-    lessons
-        .iter()
-        .find(|l| !seen.insert((l.chapter, l.lesson)))
-        .map(|l| (l.chapter, l.lesson))
-}

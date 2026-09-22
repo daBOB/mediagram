@@ -16,7 +16,7 @@ use std::io::IsTerminal;
 
 use anyhow::{Context, Result, bail};
 
-use super::add::NewSet;
+use super::add::new_set::NewSet;
 use super::args::AddShowArgs;
 use super::finish_set::Uploader;
 use crate::config::Config;

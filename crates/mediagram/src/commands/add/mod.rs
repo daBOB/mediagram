@@ -5,7 +5,7 @@
 //! `add-course` call for each file they walk; they upload over one
 //! connection of their own.
 
-use std::path::{Path, PathBuf};
+pub mod new_set;
 
 use anyhow::{Context, Result, bail};
 use mediagram_tmdb::tmdb_client::TmdbClient;
@@ -14,86 +14,13 @@ use mlib_spec::{Caption, Part};
 use super::args::AddArgs;
 use super::{background, finish_set};
 use crate::config::Config;
-use crate::index::{assets, db, shows};
+use crate::index::{db, shows};
 use crate::media::{classify, inspect, remux};
 use crate::metadata::prompt::DialoguerPrompter;
 use crate::metadata::resolve::{self, ResolveInput};
 use crate::metadata::show_details;
 use crate::upload::plan::{Source, record_planned};
-
-/// One file to add, however it was asked for: the `add` command's flags, or
-/// one entry of a walked show or course.
-#[derive(Debug, Default, Clone)]
-pub struct NewSet {
-    pub file: PathBuf,
-    pub tmdb: Option<u64>,
-    pub tvdb: Option<u64>,
-    pub imdb: Option<String>,
-    pub season: Option<u32>,
-    pub episode: Option<u32>,
-    /// Absolute episode number (anime).
-    pub abs: Option<u32>,
-    pub variant: Option<String>,
-    /// Enter metadata by hand instead of looking it up.
-    pub manual: bool,
-    pub no_remux: bool,
-    /// Overrides for what the file itself says.
-    pub alang: Option<Vec<String>>,
-    pub slang: Option<Vec<String>>,
-    pub hdr: Option<String>,
-    /// Set when this is a lesson, which is described by hand rather than
-    /// looked up.
-    pub lesson: Option<LessonOf>,
-}
-
-/// Where a lesson sits in its course.
-#[derive(Debug, Default, Clone)]
-pub struct LessonOf {
-    pub course: String,
-    /// Collection id grouping the course's lessons.
-    pub cid: String,
-    pub chapter: Option<u32>,
-    pub chapter_title: Option<String>,
-    /// Folders within the course, `/`-separated.
-    pub path: Option<String>,
-    pub number: Option<u32>,
-}
-
-impl From<AddArgs> for NewSet {
-    fn from(args: AddArgs) -> NewSet {
-        let lesson = args.course.map(|course| LessonOf {
-            cid: args.cid.unwrap_or_else(|| mlib_spec::slug::slug(&course)),
-            course,
-            chapter: args.chapter,
-            chapter_title: args.chap,
-            path: args.path,
-            number: args.lesson,
-        });
-        NewSet {
-            file: args.file,
-            tmdb: args.tmdb,
-            tvdb: args.tvdb,
-            imdb: args.imdb,
-            season: args.season,
-            episode: args.episode,
-            abs: args.abs_no,
-            variant: args.variant,
-            manual: args.manual,
-            no_remux: args.no_remux,
-            alang: args.alang,
-            slang: args.slang,
-            hdr: args.hdr,
-            lesson,
-        }
-    }
-}
-
-/// A set written to the index, with its bytes still to send.
-pub struct Planned {
-    pub set_id: String,
-    pub display_name: String,
-    pub total: u64,
-}
+use new_set::{NewSet, Planned};
 
 pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
     let (watch, no_push) = (args.watch, args.no_push);
@@ -237,7 +164,7 @@ pub async fn plan(cfg: &Config, new: &NewSet) -> Result<Planned> {
         remux: source_path != new.file,
     };
     record_planned(&mut conn, &caption, &part_ranges, source, |tx| {
-        store_sidecars(tx, &set_id, &new.file, &caption)
+        crate::course::sidecars::store_sidecars(tx, &set_id, &new.file, &caption)
     })?;
 
     Ok(Planned {
@@ -247,35 +174,3 @@ pub async fn plan(cfg: &Config, new: &NewSet) -> Result<Planned> {
     })
 }
 
-/// Stores the subtitle and summary sitting beside a video, if any.
-///
-/// Read from the source the user named rather than from a faststart remux:
-/// the remux is a temporary file this command wrote, and the sidecars belong
-/// to the original.
-///
-/// A missing sidecar is the ordinary case and says nothing. A present one
-/// that cannot be stored is worth a warning, and no more: a lesson without
-/// its subtitle is still worth having.
-fn store_sidecars(
-    conn: &rusqlite::Connection,
-    set_id: &str,
-    source: &Path,
-    caption: &Caption,
-) -> Result<()> {
-    let found = crate::course::sidecars::find_sidecars(source);
-
-    if let Some(subtitle) = &found.subtitle {
-        // The subtitle is the audio written down, so it is in the audio's
-        // language; `und` when the file never said.
-        let lang = caption.alang.first().map(String::as_str).unwrap_or("und");
-        if let Err(err) = assets::put(conn, set_id, assets::Kind::Subtitle, lang, subtitle) {
-            tracing::warn!("subtitle for {set_id} not stored: {err:#}");
-        }
-    }
-    if let Some(summary) = &found.summary
-        && let Err(err) = assets::put(conn, set_id, assets::Kind::Summary, "", summary)
-    {
-        tracing::warn!("summary for {set_id} not stored: {err:#}");
-    }
-    Ok(())
-}
