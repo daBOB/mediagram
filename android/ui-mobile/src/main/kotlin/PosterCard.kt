@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -89,6 +90,13 @@ internal fun PosterCard(
  * that reads on a phone is a small mark adrift in the middle of a tablet's
  * plate, which looks like something failed rather than like a stand-in.
  *
+ * That size is converted through the density rather than written in `sp`,
+ * so it tracks the plate and not the system font setting. `sp` would grow
+ * these letters inside a plate that does not grow with them, and at a large
+ * font scale they would run out of it. Nothing is lost by it: this is
+ * artwork standing in for artwork, not text, and the name it stands for is
+ * set right underneath in type that scales properly.
+ *
  * Split out of [PosterCard] because the title detail screen shows the same
  * art without a name beneath it — the name is already in the bar above. One
  * `AsyncImage` over one `File`, in one place: a second image path would be
@@ -116,8 +124,8 @@ internal fun PosterArt(posterPath: String?, title: String, modifier: Modifier = 
             Text(
                 text = initialsOf(title),
                 style = MaterialTheme.typography.titleMedium,
-                fontSize = (maxWidth.value * INITIAL_SHARE).sp,
-                lineHeight = (maxWidth.value * INITIAL_SHARE * 1.1f).sp,
+                fontSize = with(LocalDensity.current) { (maxWidth * INITIAL_SHARE).toSp() },
+                lineHeight = with(LocalDensity.current) { (maxWidth * INITIAL_SHARE * 1.1f).toSp() },
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 letterSpacing = INITIAL_TRACKING,
                 textAlign = TextAlign.Center,

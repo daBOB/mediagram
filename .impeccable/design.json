@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-22T19:31:00Z",
+  "title": "Design System: Mediagram (Android)",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Ground",
+        "canonical": "#16130F",
+        "note": "The deepest ink. The platform window is cleared to it before Compose draws; the top app bar sits on it. Duplicated in android/app/src/main/res/values/colors.xml by necessity.",
+        "tonalRamp": ["#0B0907", "#16130F", "#221E17", "#332C22", "#4E442F", "#7A6D55", "#A89B84", "#E8E2D4"]
+      },
+      "page": {
+        "role": "neutral",
+        "displayName": "Page",
+        "canonical": "#1E1B16",
+        "note": "The sheet the plates are tipped onto. Contrast reference ground for every measured value.",
+        "tonalRamp": ["#0C0A08", "#141210", "#1E1B16", "#2B2720", "#413A2E", "#6B6150", "#9E9280", "#E0DACC"]
+      },
+      "sunk": {
+        "role": "neutral",
+        "displayName": "Sunk",
+        "canonical": "#272319",
+        "note": "Where artwork is missing and the page itself shows through.",
+        "tonalRamp": ["#100E0A", "#191610", "#272319", "#363024", "#4C4433", "#766B51", "#A89B7E", "#E4DDCC"]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#E8E2D4",
+        "note": "13.29:1 on page. Titles, wordmark, selected shelf name.",
+        "tonalRamp": ["#1A1712", "#2E291F", "#494130", "#6B6049", "#8F8266", "#B3A88E", "#D2C9B5", "#E8E2D4"]
+      },
+      "figures": {
+        "role": "secondary",
+        "displayName": "Figures Grey",
+        "canonical": "#A89B84",
+        "note": "6.28:1 on page. Years, runtimes, counts, unselected shelf names, stand-in initials.",
+        "tonalRamp": ["#17140F", "#2A251C", "#433C2E", "#615644", "#82755C", "#A89B84", "#C6BCA8", "#E5DFD2"]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#3A342A",
+        "note": "Structure, never a boundary anyone has to look at. Every plate's edge, at 0.5dp.",
+        "tonalRamp": ["#0F0D0A", "#1C1913", "#2A251D", "#3A342A", "#544B3B", "#7B7059", "#A79B83", "#DAD3C4"]
+      },
+      "rule-strong": {
+        "role": "neutral",
+        "displayName": "Rule Strong",
+        "canonical": "#574E3E",
+        "note": "Material outline. Visible enough to read as an edge where one is doing work.",
+        "tonalRamp": ["#14120E", "#241F18", "#383123", "#4A422F", "#574E3E", "#7D7259", "#A99D84", "#DCD5C6"]
+      },
+      "imprint": {
+        "role": "primary",
+        "displayName": "Imprint Red",
+        "canonical": "#D26A55",
+        "note": "The web player's #8c3b2e lifted until it cleared 4.5:1 on ink; measured 4.85:1 on page. It lands on small text saying where a viewer got to, not on decoration.",
+        "tonalRamp": ["#2A100A", "#451A11", "#65281B", "#8C3B2E", "#B15242", "#D26A55", "#E39181", "#F2C4B9"]
+      },
+      "ochre": {
+        "role": "tertiary",
+        "displayName": "Ochre",
+        "canonical": "#C99A3F",
+        "note": "6.68:1 on page. Bound to Material's error role. The only thing the catalogue ever warns about; a refresh that failed is a warning, not an alarm.",
+        "tonalRamp": ["#251A06", "#3D2C0D", "#5C4317", "#866021", "#A87C2F", "#C99A3F", "#DDB772", "#EFDCB1"]
+      },
+      "sage": {
+        "role": "tertiary",
+        "displayName": "Sage",
+        "canonical": "#8AA17A",
+        "note": "6.10:1 on page. The only good news the catalogue has: something already held on the device. Defined and reserved; no surface shows it yet.",
+        "tonalRamp": ["#141A11", "#22301C", "#34482A", "#4A6741", "#6B8659", "#8AA17A", "#AEBF9F", "#D6DFCC"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Section headings. Fraunces Medium 26sp, opsz 28." },
+      "headline": { "displayName": "Headline", "purpose": "Top app bar title: the wordmark at the root, the name of whatever is open elsewhere." },
+      "title": { "displayName": "Title", "purpose": "Shelf names in the masthead; stand-in initials on a plate with no artwork." },
+      "title-small": { "displayName": "Title Small", "purpose": "The name under a plate, to two lines then ellipsis." },
+      "body": { "displayName": "Body", "purpose": "Whole sentences: loading, empty and failure messages." },
+      "body-small": { "displayName": "Body Small", "purpose": "The notice line above a shelf." },
+      "figures": { "displayName": "Figures", "purpose": "Year and runtime, or the count of episodes and chapters, under a plate's name. Tabular numerals." },
+      "label": { "displayName": "Label", "purpose": "The smallest figures. Tabular numerals." }
+    },
+    "shadows": [],
+    "motion": [],
+    "breakpoints": [
+      { "name": "compact", "value": "< 600dp", "note": "3 plates across." },
+      { "name": "medium", "value": "600–839dp", "note": "4 plates across." },
+      { "name": "expanded", "value": ">= 840dp", "note": "6 plates across. Verified on a 1163dp tablet." }
+    ],
+    "coverage": {
+      "documented": ["catalogue screen", "plate", "masthead", "top app bar", "notice", "empty and failure states", "platform window"],
+      "notDocumented": ["player", "title detail", "collection", "system", "buttons", "inputs", "chips", "dialogs", "lists"],
+      "note": "One screen's worth of system. The remaining screens inherit the palette and type through the theme but their composition is unreviewed."
+    }
+  },
+  "components": [
+    {
+      "name": "Plate",
+      "kind": "card",
+      "refersTo": "plate",
+      "description": "The catalogue's one real component: artwork at 2:3 with a hairline, the name beneath, figures under that. The whole plate is the target.",
+      "html": "<button class=\"ds-plate\"><span class=\"ds-plate-art\"><img src=\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='300'><rect width='200' height='300' fill='%23272319'/></svg>\" alt=\"\"><span class=\"ds-plate-rule\"></span></span><span class=\"ds-plate-name\">5 Zimmer Küche Sarg</span><span class=\"ds-plate-figures\">2014 · 1h 26m</span></button>",
+      "css": ".ds-plate { display: grid; width: 168px; background: none; border: none; border-radius: 0; padding: 0; text-align: left; cursor: pointer; font-family: 'Newsreader', Georgia, serif; } .ds-plate-art { position: relative; display: block; aspect-ratio: 2/3; background: #272319; overflow: hidden; } .ds-plate-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; } .ds-plate-rule { position: absolute; inset: 0; border: 0.5px solid #3A342A; } .ds-plate-name { display: block; margin-top: 8px; font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 16px; line-height: 1.25; color: #E8E2D4; font-variation-settings: 'opsz' 28; } .ds-plate-figures { display: block; margin-top: 2px; font-size: 13px; color: #A89B84; font-variant-numeric: tabular-nums; font-variation-settings: 'opsz' 16; } .ds-plate:hover .ds-plate-rule { border-color: #574E3E; } .ds-plate:focus-visible { outline: 1px solid #D26A55; outline-offset: 4px; }"
+    },
+    {
+      "name": "Plate, artwork missing",
+      "kind": "card",
+      "refersTo": "plate-initials",
+      "description": "Two initials stand in for a poster, sized at 26% of the plate's own width so the mark scales with the plate rather than sitting adrift on a tablet.",
+      "html": "<span class=\"ds-plate-empty\"><span class=\"ds-plate-initials\">PY</span><span class=\"ds-plate-rule-2\"></span></span>",
+      "css": ".ds-plate-empty { position: relative; display: grid; place-items: center; width: 168px; aspect-ratio: 2/3; background: #272319; } .ds-plate-initials { font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 43px; letter-spacing: 2px; color: #A89B84; font-variation-settings: 'opsz' 28; } .ds-plate-rule-2 { position: absolute; inset: 0; border: 0.5px solid #3A342A; }"
+    },
+    {
+      "name": "Masthead",
+      "kind": "nav",
+      "refersTo": "masthead",
+      "description": "Which shelf the wall is showing. Transparent container, centred, held to 560dp. Selected label at paper weight with the imprint rule beneath it.",
+      "html": "<nav class=\"ds-masthead\"><button class=\"ds-shelf-tab ds-shelf-tab--on\">Movies</button><button class=\"ds-shelf-tab\">Series</button><button class=\"ds-shelf-tab\">Tutorials</button></nav>",
+      "css": ".ds-masthead { display: flex; justify-content: space-around; max-width: 560px; margin: 0 auto; background: transparent; border-bottom: 1px solid #3A342A; } .ds-shelf-tab { flex: 1; background: none; border: none; border-radius: 0; padding: 14px 4px; font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 18px; color: #A89B84; cursor: pointer; font-variation-settings: 'opsz' 28; box-shadow: none; } .ds-shelf-tab--on { color: #E8E2D4; box-shadow: inset 0 -3px 0 0 #D26A55; } .ds-shelf-tab:hover { color: #E8E2D4; } .ds-shelf-tab:focus-visible { outline: 1px solid #D26A55; outline-offset: -2px; }"
+    },
+    {
+      "name": "Top app bar",
+      "kind": "nav",
+      "refersTo": "app-bar",
+      "description": "On ground, darker than the page below it. Title in Fraunces; platform vector marks for back and overflow, in figures grey.",
+      "html": "<header class=\"ds-appbar\"><span class=\"ds-appbar-title\">Mediagram</span><button class=\"ds-appbar-action\" aria-label=\"More\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"currentColor\"><circle cx=\"12\" cy=\"5\" r=\"1.8\"/><circle cx=\"12\" cy=\"12\" r=\"1.8\"/><circle cx=\"12\" cy=\"19\" r=\"1.8\"/></svg></button></header>",
+      "css": ".ds-appbar { display: flex; align-items: center; justify-content: space-between; background: #16130F; padding: 12px 16px; } .ds-appbar-title { font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 23px; letter-spacing: -0.1px; color: #E8E2D4; font-variation-settings: 'opsz' 28; } .ds-appbar-action { background: none; border: none; border-radius: 0; padding: 8px; color: #A89B84; cursor: pointer; } .ds-appbar-action:hover { color: #E8E2D4; } .ds-appbar-action:focus-visible { outline: 1px solid #D26A55; }"
+    },
+    {
+      "name": "Notice",
+      "kind": "custom",
+      "refersTo": "notice",
+      "description": "One ochre line above the shelf and never instead of it. A refresh that failed is a warning, not an alarm.",
+      "html": "<p class=\"ds-notice\">Could not reach Telegram. Showing the library already on this device.</p>",
+      "css": ".ds-notice { margin: 0; padding: 8px 16px; font-family: 'Newsreader', Georgia, serif; font-size: 13px; line-height: 1.4; color: #C99A3F; background: none; font-variation-settings: 'opsz' 16; }"
+    },
+    {
+      "name": "Empty state",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "One centred sentence in the catalogue's reading face inside 32dp of margin. No illustration, no icon, no button.",
+      "html": "<div class=\"ds-empty\"><p>The library is empty.</p></div>",
+      "css": ".ds-empty { display: grid; place-items: center; padding: 32px; background: #1E1B16; } .ds-empty p { margin: 0; font-family: 'Newsreader', Georgia, serif; font-size: 17px; color: #A89B84; text-align: center; font-variation-settings: 'opsz' 16; }"
+    },
+    {
+      "name": "Shelf wall",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Everything one shelf holds, on one wall, in one direction of travel. Fixed column count from the window width class, never from how many titles the shelf holds.",
+      "html": "<div class=\"ds-wall\"><span class=\"ds-wall-plate\"></span><span class=\"ds-wall-plate\"></span><span class=\"ds-wall-plate\"></span><span class=\"ds-wall-plate\"></span><span class=\"ds-wall-plate\"></span><span class=\"ds-wall-plate\"></span></div>",
+      "css": ".ds-wall { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 16px; background: #1E1B16; } .ds-wall-plate { aspect-ratio: 2/3; background: #272319; box-shadow: inset 0 0 0 0.5px #3A342A; } @media (min-width: 840px) { .ds-wall { grid-template-columns: repeat(6, 1fr); } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Catalogue Printed in Ink",
+    "overview": "The web player sets this library on uncoated paper. The Android app sets the same catalogue in ink: the same hues, the same restraint, the page inverted. A phone or a tablet is held in the room the film is about to play in, and a paper-white slab there is a lamp — so the stock is inverted rather than reproduced. Everything else about the identity carries over unchanged: two serifs, hairline rules instead of cards, artwork set as plates with the name beneath, one imprint red for the one thing worth marking.\n\nDensity is a wall, not a rail. A shelf puts everything it holds on the page in one direction of travel, because this library is finite and already owned and nothing in it is ranked. The refusal of the horizontally-scrolling poster row is the thesis, not a stylistic preference: a rail hides how much is on a shelf and promotes whatever it happens to show first.\n\nThis is one screen's worth of system, recorded from the shipped catalogue screen. It is Material 3 underneath — Material's components, touch targets, back behaviour and system bars are kept — with Material's own colour and type defaults entirely replaced. Before this build the app called darkColorScheme() with no arguments and rendered Material's baseline violet in Roboto; that is what this system exists to have ended.",
+    "keyCharacteristics": [
+      "Ink ground, paper text, no white anywhere.",
+      "Flat by tonal layering. Three grounds, no shadows, no elevation.",
+      "Plates, not cards: square corners, a hairline, the name underneath.",
+      "Two variable serifs, both driven on the optical-size axis.",
+      "One accent, on the shelf you are on and nothing else.",
+      "Figures in tabular numerals, always."
+    ],
+    "rules": [
+      { "name": "The One Accent Rule", "body": "Imprint red says one thing: this is the shelf you are on / this is the thing you are in the middle of. It is never a button fill, never a heading colour, never a link. Its rarity is the whole of its meaning.", "section": "colors" },
+      { "name": "The Inverted Stock Rule", "body": "The palette is the web player's, one relation inverted: ink where paper was. Ground is darker than page; page is darker than nothing else. Any surface lighter than the page it sits over breaks the one relation the palette names — which is why the top app bar is on ground, not on a lifted container.", "section": "colors" },
+      { "name": "The Measured Colour Rule", "body": "A colour that carries text is measured against both grounds before it ships. Every text-carrying value in this palette clears 4.5:1 on ground and on page, and the doc comment beside it records the number.", "section": "colors" },
+      { "name": "The Optical Size Rule", "body": "Android does nothing automatic with opsz — there is no font-optical-sizing here. Every face is declared with its axis fixed at the distance it is read from: 28 for a name held at arm's length, 16 for a sentence or a figure. A new face declaration that omits the axis gives up the reason these two files are worth their bytes.", "section": "typography" },
+      { "name": "The Tabular Figures Rule", "body": "Anything countable — runtimes, years, counts, sizes — is set in tabular numerals, so a column of them lines up down a page instead of shifting with each digit's width.", "section": "typography" },
+      { "name": "The Fraunces Floor", "body": "Fraunces is never asked for a weight below 500. On an ink ground its 400 goes thin enough to shimmer, and the catalogue sets its names in medium on paper anyway.", "section": "typography" },
+      { "name": "The Whole-Sentence Rule", "body": "A first run, an empty library and a failed load are the three moments a viewer reads a whole sentence. They are set in the catalogue's reading face, not left at a platform default, because they are exactly the moments the app would otherwise stop sounding like itself.", "section": "typography" },
+      { "name": "The Wall Rule", "body": "A shelf is a wall: everything it holds, on the page, in one direction of travel. No horizontally-scrolling rail, ever. A rail hides how much is on a shelf and ranks what it shows first, which is a storefront's job and not this one's.", "section": "layout" },
+      { "name": "The One Shelf Rule", "body": "Exactly one shelf is on the wall at a time, chosen from the masthead. Stacked shelves and the wall cannot both be had: the film shelf alone is three hundred plates deep, so stacking would put the courses fifty screens below the fold with nothing on screen to say they existed.", "section": "layout" },
+      { "name": "The Hairline Rule", "body": "Structure is drawn with a 0.5dp hairline in rule, never with a shadow, a fill or a raised container. On a plate the hairline is painted as an overlay on top of the artwork, not as a border on the same box — a border modifier paints beneath the content, and a poster cropped to fill would cover it.", "section": "elevation" },
+      { "name": "The No Floating Container Rule", "body": "The masthead's container is transparent so it reads as type on the page. Given a colour of its own it becomes a filled band floating between the bar and the wall, which is the one thing this world does not do.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do put everything a shelf holds on one vertical wall, and reach other shelves from the masthead.",
+      "Do set names in Fraunces at 500 or above and everything readable or countable in Newsreader.",
+      "Do fix opsz explicitly on every face declaration: 28 for display, 16 for reading.",
+      "Do set every figure in tabular numerals.",
+      "Do draw structure with the 0.5dp hairline in rule, and keep surfaces flat.",
+      "Do measure any new text-carrying colour against ground and page, record the ratio beside the value, and lift it until it clears 4.5:1 — as imprint was lifted from the web player's #8c3b2e.",
+      "Do take the colour of a new surface from Material roles: a component that reaches for colorScheme.surface knowing nothing about this app must land on the page.",
+      "Do keep the app dark on every device, regardless of system theme. A media library is looked at in the dark."
+    ],
+    "donts": [
+      "Don't ship a horizontally-scrolling poster rail.",
+      "Don't round a corner. The radius of this system is 0dp.",
+      "Don't add a shadow or a Material elevation overlay. Against ink they do not render, and the hairline already carries that job.",
+      "Don't give a masthead, a shelf header or a grouping band a container colour. A filled container floating between the bar and the wall is the one thing this world does not do.",
+      "Don't spend imprint red on anything but the shelf in view or the thing a viewer is in the middle of.",
+      "Don't put a name across a plate's face.",
+      "Don't offer dynamic colour. Material You would derive the scheme from a wallpaper, and a wallpaper cannot be allowed to decide what the catalogue warns in.",
+      "Don't invent an icon for something that already has a name. The platform's own back and overflow marks are fine in the app bar; a drawn glyph standing in for a shelf is not.",
+      "Don't reach for a signal red. The strongest thing this catalogue ever says is ochre."
+    ]
+  }
+}
