@@ -4,6 +4,7 @@
 use anyhow::{Context, Result, bail};
 
 use crate::config::Config;
+use crate::index::status::SetStatus;
 use crate::index::{db, sets};
 use crate::telegram::client::Tg;
 use crate::verify::render;
@@ -34,7 +35,7 @@ pub async fn run(
             .ok_or_else(|| anyhow::anyhow!("set {id} vanished from the index mid-verify"))?;
         // A set still mid-upload is `resume`'s business, not a verification
         // failure; naming one explicitly still checks it strictly.
-        if all && row.status != "complete" {
+        if all && row.status != SetStatus::Complete {
             println!("set {id}: {}, skipped", row.status);
             continue;
         }

@@ -5,6 +5,7 @@
 //! (kept here rather than in `index::parts`, which only tracks the upload
 //! side of a part, not verification).
 
+use crate::index::status::PartStatus;
 use anyhow::{Context, Result, bail};
 use rusqlite::Connection;
 
@@ -26,7 +27,7 @@ pub struct LocalPart {
     pub message_id: Option<i64>,
     pub doc_id: Option<i64>,
     pub sha256: Option<String>,
-    pub status: String,
+    pub status: PartStatus,
     pub verified_at: Option<i64>,
 }
 

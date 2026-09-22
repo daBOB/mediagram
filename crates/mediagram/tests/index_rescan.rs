@@ -2,6 +2,7 @@
 //! sqlite file; no Telegram connection. `snapshot_to` is covered in
 //! `tests/index_snapshot.rs`.
 
+use mediagram::index::status::SetStatus;
 use mediagram::index::{rescan, sets};
 use mediagram::upload::transport::Seen;
 
@@ -25,7 +26,7 @@ fn complete_set_becomes_complete_with_correct_set_hash() {
     assert_eq!(summary.sets_incomplete, 0);
     assert_eq!(summary.duplicates_skipped, 0);
     let row = sets::get_set(&conn, set_id).unwrap().unwrap();
-    assert_eq!(row.status, "complete");
+    assert_eq!(row.status, SetStatus::Complete);
     let expected = mlib_spec::set_hash::set_hash(&["aa", "bb", "cc"]);
     assert_eq!(row.set_hash.as_deref(), Some(expected.as_str()));
 }
@@ -43,7 +44,7 @@ fn incomplete_set_stays_pending() {
     assert_eq!(summary.sets_complete, 0);
     assert_eq!(summary.sets_incomplete, 1);
     let row = sets::get_set(&conn, set_id).unwrap().unwrap();
-    assert_eq!(row.status, "pending");
+    assert_eq!(row.status, SetStatus::Pending);
     assert!(row.set_hash.is_none());
 }
 
@@ -126,5 +127,5 @@ fn applying_the_same_batch_twice_is_idempotent() {
 
     assert_eq!(first, second);
     let row = sets::get_set(&conn, set_id).unwrap().unwrap();
-    assert_eq!(row.status, "complete");
+    assert_eq!(row.status, SetStatus::Complete);
 }

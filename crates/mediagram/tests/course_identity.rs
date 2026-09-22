@@ -4,6 +4,7 @@
 
 use mediagram::course::report::{Outcome, Summary, dry_run_table};
 use mediagram::course::walk::Lesson;
+use mediagram::index::status::SetStatus;
 use mediagram::index::{db, set_row::SetRow, sets};
 use mlib_spec::caption::{Caption, Episode, Kind, Part};
 use mlib_spec::ids::ProviderIds;
@@ -42,27 +43,27 @@ fn lesson_caption(set: &str, cid: &str, chapter: u32, lesson: u32) -> Caption {
     }
 }
 
-fn index_with(rows: &[(&str, &str, u32, u32, &str)]) -> (tempfile::TempDir, rusqlite::Connection) {
+fn index_with(rows: &[(&str, &str, u32, u32, SetStatus)]) -> (tempfile::TempDir, rusqlite::Connection) {
     let dir = tempfile::tempdir().unwrap();
     let conn = db::open(dir.path()).unwrap();
     for (set, cid, chapter, lesson, status) in rows {
         let row = SetRow::from_caption(&lesson_caption(set, cid, *chapter, *lesson), 1_700_000_000)
             .unwrap();
         sets::insert_set(&conn, &row).unwrap();
-        sets::set_status(&conn, set, status).unwrap();
+        sets::set_status(&conn, set, *status).unwrap();
     }
     (dir, conn)
 }
 
 #[test]
 fn a_finished_lesson_is_recognised_by_its_identity() {
-    let (_d, conn) = index_with(&[("01SET0000000000000000001", "rust-course", 2, 2, "complete")]);
+    let (_d, conn) = index_with(&[("01SET0000000000000000001", "rust-course", 2, 2, SetStatus::Complete)]);
     assert!(sets::complete_lesson_exists(&conn, "rust-course", 2, 2).unwrap());
 }
 
 #[test]
 fn a_different_chapter_or_lesson_is_a_different_thing() {
-    let (_d, conn) = index_with(&[("01SET0000000000000000001", "rust-course", 2, 2, "complete")]);
+    let (_d, conn) = index_with(&[("01SET0000000000000000001", "rust-course", 2, 2, SetStatus::Complete)]);
     assert!(!sets::complete_lesson_exists(&conn, "rust-course", 2, 3).unwrap());
     assert!(!sets::complete_lesson_exists(&conn, "rust-course", 1, 2).unwrap());
 }
@@ -72,8 +73,8 @@ fn a_different_chapter_or_lesson_is_a_different_thing() {
 #[test]
 fn two_courses_do_not_collide() {
     let (_d, conn) = index_with(&[
-        ("01SET0000000000000000001", "rust-course", 1, 1, "complete"),
-        ("01SET0000000000000000002", "go-course", 1, 1, "complete"),
+        ("01SET0000000000000000001", "rust-course", 1, 1, SetStatus::Complete),
+        ("01SET0000000000000000002", "go-course", 1, 1, SetStatus::Complete),
     ]);
     assert!(sets::complete_lesson_exists(&conn, "rust-course", 1, 1).unwrap());
     assert!(sets::complete_lesson_exists(&conn, "go-course", 1, 1).unwrap());
@@ -84,14 +85,12 @@ fn two_courses_do_not_collide() {
 /// neither upload it again nor silently ignore it.
 #[test]
 fn an_unfinished_lesson_is_reported_rather_than_re_uploaded() {
-    let (_d, conn) = index_with(&[("01SET0000000000000000001", "rust-course", 1, 1, "pending")]);
+    let (_d, conn) = index_with(&[("01SET0000000000000000001", "rust-course", 1, 1, SetStatus::Pending)]);
 
     assert!(!sets::complete_lesson_exists(&conn, "rust-course", 1, 1).unwrap());
     assert_eq!(
-        sets::lesson_status(&conn, "rust-course", 1, 1)
-            .unwrap()
-            .as_deref(),
-        Some("pending")
+        sets::lesson_status(&conn, "rust-course", 1, 1).unwrap(),
+        Some(SetStatus::Pending)
     );
 }
 

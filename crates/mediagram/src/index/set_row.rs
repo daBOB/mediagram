@@ -1,15 +1,17 @@
 //! One row of the `sets` table: a whole media file split into parts, mirroring
 //! the fields carried on every part's caption.
 
-use anyhow::{Result, bail};
+use anyhow::Result;
 use mlib_spec::caption::{Caption, Kind, Part};
 use mlib_spec::ids::ProviderIds;
+
+use crate::index::status::SetStatus;
 
 /// One row of the `sets` table.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SetRow {
     pub set_id: String,
-    pub kind: String,
+    pub kind: Kind,
     pub tmdb: Option<u64>,
     pub tvdb: Option<u64>,
     pub imdb: Option<String>,
@@ -37,7 +39,7 @@ pub struct SetRow {
     pub total: u64,
     pub part_count: u32,
     pub set_hash: Option<String>,
-    pub status: String,
+    pub status: SetStatus,
     pub created_at: i64,
     pub spec_version: u32,
 }
@@ -49,12 +51,7 @@ impl SetRow {
         let episode = caption.e.map(|e| serde_json::to_string(&e)).transpose()?;
         Ok(SetRow {
             set_id: caption.set.clone(),
-            kind: match caption.t {
-                Kind::Movie => "movie".to_string(),
-                Kind::Ep => "ep".to_string(),
-                Kind::Tut => "tut".to_string(),
-                Kind::Doc => "doc".to_string(),
-            },
+            kind: caption.t,
             tmdb: caption.ids.tmdb,
             tvdb: caption.ids.tvdb,
             imdb: caption.ids.imdb.clone(),
@@ -81,7 +78,7 @@ impl SetRow {
             total: caption.total,
             part_count: caption.part.n,
             set_hash: None,
-            status: "pending".to_string(),
+            status: SetStatus::Pending,
             created_at,
             spec_version: mlib_spec::SPEC_VERSION,
         })
@@ -95,9 +92,17 @@ impl SetRow {
         let tmdb: Option<i64> = row.get("tmdb")?;
         let tvdb: Option<i64> = row.get("tvdb")?;
         let total: i64 = row.get("total")?;
+        let kind: String = row.get("kind")?;
+        let kind = kind.parse::<Kind>().map_err(|err| {
+            rusqlite::Error::FromSqlConversionFailure(
+                row.as_ref().column_index("kind").unwrap_or_default(),
+                rusqlite::types::Type::Text,
+                Box::new(err),
+            )
+        })?;
         Ok(SetRow {
             set_id: row.get("set_id")?,
-            kind: row.get("kind")?,
+            kind,
             tmdb: tmdb.map(|v| v as u64),
             tvdb: tvdb.map(|v| v as u64),
             imdb: row.get("imdb")?,
@@ -133,13 +138,6 @@ impl SetRow {
     /// The set's `Caption` with a placeholder part block (idx 0, empty hash),
     /// used to derive names and human text that don't depend on which part.
     pub fn caption_template(&self) -> Result<Caption> {
-        let t = match self.kind.as_str() {
-            "movie" => Kind::Movie,
-            "ep" => Kind::Ep,
-            "tut" => Kind::Tut,
-            "doc" => Kind::Doc,
-            other => bail!("set {} has unknown kind `{other}`", self.set_id),
-        };
         let e = self
             .episode
             .as_deref()
@@ -152,7 +150,7 @@ impl SetRow {
             cid: self.group_key.clone(),
             chap: self.chap.clone(),
             path: self.path.clone(),
-            t,
+            t: self.kind,
             ids: ProviderIds {
                 tmdb: self.tmdb,
                 tvdb: self.tvdb,

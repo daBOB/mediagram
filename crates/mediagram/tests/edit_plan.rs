@@ -6,6 +6,7 @@
 //! the hashes are what `verify` checks and what a player seeks with. An edit
 //! that touched them would turn a correction into corruption.
 
+use mediagram::index::status::PartStatus;
 use mediagram::edit::plan::{Edits, apply, captions};
 use mediagram::index::parts::PartRow;
 use mediagram::index::sets::SetRow;
@@ -65,7 +66,7 @@ fn two_parts() -> Vec<PartRow> {
             message_id: Some(100),
             doc_id: Some(900),
             sha256: Some("a".repeat(64)),
-            status: "done".into(),
+            status: PartStatus::Done,
             verified_at: None,
         },
         PartRow {
@@ -77,7 +78,7 @@ fn two_parts() -> Vec<PartRow> {
             message_id: Some(101),
             doc_id: Some(901),
             sha256: Some("b".repeat(64)),
-            status: "done".into(),
+            status: PartStatus::Done,
             verified_at: None,
         },
     ]
@@ -224,34 +225,33 @@ fn an_edit_that_would_overflow_the_caption_budget_is_refused() {
 /// clear a field, not only overwrite one.
 mod reshelving {
     use super::*;
-    use mediagram::edit::plan::{Clearable, apply_checked};
+    use mediagram::edit::plan::{Clearable, apply_checked, editable_kind};
 
     #[test]
     fn the_kind_can_be_corrected() {
         let edited = apply_checked(
             &row(),
             &Edits {
-                kind: Some("movie".into()),
+                kind: Some(Kind::Movie),
                 ..Edits::default()
             },
         )
         .unwrap();
 
-        assert_eq!(edited.kind, "movie");
+        assert_eq!(edited.kind, Kind::Movie);
     }
 
     #[test]
     fn a_kind_the_spec_does_not_have_is_refused() {
         for bad in ["film", "MOVIE", "", "episode"] {
-            let refused = apply_checked(
-                &row(),
-                &Edits {
-                    kind: Some(bad.into()),
-                    ..Edits::default()
-                },
-            );
-            assert!(refused.is_err(), "kind {bad:?} should be refused");
+            assert!(editable_kind(bad).is_err(), "kind {bad:?} should be refused");
         }
+    }
+
+    #[test]
+    fn a_video_cannot_be_filed_as_a_document() {
+        assert!(editable_kind("doc").is_err());
+        assert_eq!(editable_kind("tut").unwrap(), Kind::Tut);
     }
 
     #[test]
@@ -307,7 +307,7 @@ mod reshelving {
         let edited = apply_checked(
             &row(),
             &Edits {
-                kind: Some("movie".into()),
+                kind: Some(Kind::Movie),
                 title: Some("Blade: Trinity".into()),
                 year: Some(2004),
                 tmdb: Some(36647),
@@ -322,7 +322,7 @@ mod reshelving {
         )
         .unwrap();
 
-        assert_eq!(edited.kind, "movie");
+        assert_eq!(edited.kind, Kind::Movie);
         assert_eq!(edited.title.as_deref(), Some("Blade: Trinity"));
         assert_eq!(edited.year, Some(2004));
         assert_eq!(edited.tmdb, Some(36647));

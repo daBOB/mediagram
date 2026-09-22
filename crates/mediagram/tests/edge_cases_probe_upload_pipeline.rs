@@ -1,6 +1,7 @@
 //! Comprehensive edge case probes for the upload path: streaming part upload,
 //! PartReader behavior, adoption logic, database constraints, and concurrency.
 
+use mediagram::index::status::SetStatus;
 use mediagram::index::{db, parts, sets};
 use mediagram::upload::part_reader::PartReader;
 use mediagram::upload::pipeline::run_set;
@@ -155,7 +156,7 @@ async fn run_set_transport_send_fails_on_part_1() {
 
     // Set should still be pending
     let final_row = sets::get_set(&conn, &set_row.set_id).unwrap().unwrap();
-    assert_eq!(final_row.status, "pending");
+    assert_eq!(final_row.status, SetStatus::Pending);
 }
 
 #[tokio::test]

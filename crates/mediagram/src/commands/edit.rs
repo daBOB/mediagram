@@ -14,10 +14,11 @@ use anyhow::{Context, Result, bail};
 use crate::commands::args::EditArgs;
 use crate::config::Config;
 use crate::edit::apply::write_captions;
-use crate::edit::plan::{Clearable, Edits, apply_checked, captions};
+use crate::edit::plan::{Clearable, Edits, apply_checked, captions, editable_kind};
 use crate::index::{db, parts, sets};
-use mediagram_tmdb::tmdb_client::{TmdbApi, TmdbClient};
 use crate::telegram::client::Tg;
+use mediagram_tmdb::tmdb_client::{TmdbApi, TmdbClient};
+use mlib_spec::Kind;
 
 pub async fn run(cfg: &Config, args: EditArgs) -> Result<()> {
     let data_dir = cfg.data_dir()?;
@@ -36,7 +37,7 @@ pub async fn run(cfg: &Config, args: EditArgs) -> Result<()> {
         .collect::<Result<Vec<_>>>()?;
 
     let mut edits = Edits {
-        kind: args.kind.clone(),
+        kind: args.kind.as_deref().map(editable_kind).transpose()?,
         tmdb: args.tmdb,
         clear,
         title: args.title.clone(),
@@ -76,7 +77,7 @@ pub async fn run(cfg: &Config, args: EditArgs) -> Result<()> {
     let writes = captions(&edited, &part_rows)?;
 
     println!("set {}", args.set_id);
-    describe_change("kind", Some(&row.kind), Some(&edited.kind));
+    describe_change("kind", Some(row.kind.as_str()), Some(edited.kind.as_str()));
     describe_change("title", row.title.as_deref(), edited.title.as_deref());
     describe_change("show", row.show.as_deref(), edited.show.as_deref());
     describe_change("chap", row.chap.as_deref(), edited.chap.as_deref());
@@ -149,7 +150,7 @@ async fn refresh_from_tmdb(
     };
     let api = TmdbClient::with_cache(reqwest::Client::new(), key, data_dir, &cfg.tmdb_language);
 
-    if row.kind == "movie" {
+    if row.kind == Kind::Movie {
         let movie = api.get_json(&format!("/movie/{tmdb}"), &[]).await?;
         return Ok(Fetched {
             title: movie["title"].as_str().map(str::to_string),

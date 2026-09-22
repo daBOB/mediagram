@@ -11,6 +11,8 @@
 
 use anyhow::{Context, Result, bail};
 
+use mlib_spec::Kind;
+
 use crate::index::parts::PartRow;
 use crate::index::sets::SetRow;
 
@@ -57,7 +59,7 @@ impl Clearable {
 /// Fields a person may correct. `None` leaves a field as it was.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Edits {
-    pub kind: Option<String>,
+    pub kind: Option<Kind>,
     pub title: Option<String>,
     pub show: Option<String>,
     pub year: Option<u16>,
@@ -92,9 +94,20 @@ impl Edits {
     }
 }
 
-/// The kinds the caption spec has. A kind outside this set would produce a
-/// caption no reader can parse.
-const KINDS: [&str; 3] = ["movie", "ep", "tut"];
+/// The kinds a set can be moved between. `Doc` is left out on purpose: its
+/// bytes are a document and every other kind's are a video, so filing one as
+/// the other would give a player something it cannot open.
+const EDITABLE_KINDS: [Kind; 3] = [Kind::Movie, Kind::Ep, Kind::Tut];
+
+/// Parses a `--kind` value, refusing a kind the spec does not have (its
+/// caption would be unreadable) and one a set cannot be moved to.
+pub fn editable_kind(spelling: &str) -> Result<Kind> {
+    let names = EDITABLE_KINDS.map(Kind::as_str).join(", ");
+    match spelling.parse::<Kind>() {
+        Ok(kind) if EDITABLE_KINDS.contains(&kind) => Ok(kind),
+        _ => bail!("kind must be one of {names}, not {spelling:?}"),
+    }
+}
 
 /// One message to rewrite.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -110,11 +123,6 @@ pub struct CaptionWrite {
 /// unknown kind produces a caption no reader can parse, and a field both set
 /// and cleared is a contradiction where guessing is worse than stopping.
 pub fn apply_checked(row: &SetRow, edits: &Edits) -> Result<SetRow> {
-    if let Some(kind) = &edits.kind
-        && !KINDS.contains(&kind.as_str())
-    {
-        bail!("kind must be one of {}, not {kind:?}", KINDS.join(", "));
-    }
     for field in [
         Clearable::Show,
         Clearable::Chap,
@@ -133,8 +141,8 @@ pub fn apply_checked(row: &SetRow, edits: &Edits) -> Result<SetRow> {
 /// Applies `edits` to a row, leaving everything they do not mention.
 pub fn apply(row: &SetRow, edits: &Edits) -> SetRow {
     let mut edited = row.clone();
-    if let Some(kind) = &edits.kind {
-        edited.kind = kind.clone();
+    if let Some(kind) = edits.kind {
+        edited.kind = kind;
     }
     if let Some(tmdb) = edits.tmdb {
         edited.tmdb = Some(tmdb);

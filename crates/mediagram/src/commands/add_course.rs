@@ -11,6 +11,7 @@ use super::args::{AddArgs, AddCourseArgs};
 use crate::config::Config;
 use crate::course::report::{Outcome, Summary, dry_run_table};
 use crate::course::walk::walk_course;
+use crate::index::status::SetStatus;
 use crate::index::{db, sets};
 
 pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
@@ -60,7 +61,7 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
         // after an interruption skips what finished without depending on
         // where the folder happens to live.
         let outcome = match sets::lesson_status(&conn, &cid, lesson.chapter, lesson.lesson)? {
-            Some(status) if status == "complete" => Outcome::AlreadyDone,
+            Some(SetStatus::Complete) => Outcome::AlreadyDone,
             Some(_) => Outcome::Pending,
             None => match upload_one(cfg, &args, &course, &cid, lesson).await {
                 Ok(()) => Outcome::Uploaded,
@@ -78,7 +79,7 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
     // for, and a handout is worth having a minute later.
     for document in &walked.documents {
         let outcome = match sets::document_status(&conn, &cid, document.chapter, document.number)? {
-            Some(status) if status == "complete" => Outcome::AlreadyDone,
+            Some(SetStatus::Complete) => Outcome::AlreadyDone,
             Some(_) => Outcome::Pending,
             None => match upload_document(cfg, &args, &course, &cid, document).await {
                 Ok(()) => Outcome::Uploaded,

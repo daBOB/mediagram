@@ -12,6 +12,7 @@ use anyhow::Result;
 use mlib_spec::caption::Caption;
 use rusqlite::Connection;
 
+use crate::index::status::SetStatus;
 use crate::index::rescan_parts::upsert_part;
 use crate::index::set_row::SetRow;
 use crate::index::sets;
@@ -89,7 +90,7 @@ pub fn apply_seen(conn: &Connection, chat_id: i64, seen: &[Seen]) -> Result<Resc
             sets::set_hash_and_complete(conn, set_id, &hash)?;
             sets_complete += 1;
         } else {
-            sets::set_status(conn, set_id, "pending")?;
+            sets::set_status(conn, set_id, SetStatus::Pending)?;
             sets_incomplete += 1;
         }
     }

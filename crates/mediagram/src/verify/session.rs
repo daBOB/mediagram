@@ -13,6 +13,7 @@ use rusqlite::Connection;
 use super::download_hash::{fetch_messages, hash_document};
 use super::report::{self, ExpectedPart, ObservedMessage, PartVerdict, SetReport};
 use super::{LocalPart, clear_verified, mark_verified, verified_since};
+use crate::index::status::PartStatus;
 use crate::index::sets::SetRow;
 use crate::telegram::client::Tg;
 use crate::telegram::document::message_document;
@@ -64,7 +65,7 @@ pub async fn verify_set(
     let ids: Vec<i32> = plan
         .parts
         .iter()
-        .filter(|p| p.status == "done" && in_this_chat(p, chat_id))
+        .filter(|p| p.status == PartStatus::Done && in_this_chat(p, chat_id))
         .filter_map(|p| p.message_id)
         .filter_map(|id| i32::try_from(id).ok())
         .collect();
@@ -156,7 +157,7 @@ fn observe(
     chat_id: i64,
     messages: &HashMap<i32, Message>,
 ) -> (ObservedMessage, Option<Document>) {
-    if part.status != "done" {
+    if part.status != PartStatus::Done {
         return (ObservedMessage::NotUploaded, None);
     }
     if let Some(recorded) = part.chat_id

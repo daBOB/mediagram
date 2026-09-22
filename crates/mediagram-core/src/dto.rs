@@ -83,7 +83,7 @@ pub fn summary_from(set: &PlayableSet) -> SetSummary {
 /// `tmdb-tv-<id>`, and no key at all without a positive TMDB id.
 fn poster_key_for(kind: &str, tmdb: Option<i64>) -> Option<String> {
     let tmdb = tmdb.filter(|id| *id > 0)?;
-    let sub = if kind == "movie" { "movie" } else { "tv" };
+    let sub = if kind == mlib_spec::Kind::Movie.as_str() { "movie" } else { "tv" };
     let key = format!("tmdb-{sub}-{tmdb}");
     debug_assert!(mlib_spec::package::poster_key_is_valid(&key));
     Some(key)

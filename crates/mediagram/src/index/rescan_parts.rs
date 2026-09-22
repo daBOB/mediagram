@@ -5,9 +5,11 @@ use anyhow::Result;
 use mlib_spec::caption::Caption;
 use rusqlite::{Connection, OptionalExtension, params};
 
+use crate::index::status::PartStatus;
+
 /// One existing `parts` row's state, enough to detect a duplicate caption.
 pub(super) struct ExistingPart {
-    pub(super) status: String,
+    pub(super) status: PartStatus,
     pub(super) message_id: Option<i64>,
 }
 
@@ -43,7 +45,7 @@ pub(super) fn upsert_part(
 ) -> Result<bool> {
     let existing = existing_part(conn, &caption.set, caption.part.i)?;
     let is_duplicate = match &existing {
-        Some(existing) => existing.status == "done" && existing.message_id != Some(message_id),
+        Some(existing) => existing.status == PartStatus::Done && existing.message_id != Some(message_id),
         None => false,
     };
     if is_duplicate {

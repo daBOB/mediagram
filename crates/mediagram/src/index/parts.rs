@@ -5,6 +5,8 @@ use anyhow::{Context, Result};
 use mlib_spec::part_plan::PartRange;
 use rusqlite::{Connection, params};
 
+use crate::index::status::PartStatus;
+
 /// One row of the `parts` table.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PartRow {
@@ -16,7 +18,7 @@ pub struct PartRow {
     pub message_id: Option<i64>,
     pub doc_id: Option<i64>,
     pub sha256: Option<String>,
-    pub status: String,
+    pub status: PartStatus,
     pub verified_at: Option<i64>,
 }
 
@@ -51,11 +53,11 @@ pub fn insert_parts(conn: &Connection, set_id: &str, parts: &[PartRange]) -> Res
     Ok(())
 }
 
-/// Every `pending` part of a set, in upload order.
 /// Every column `from_row` reads, named once so two queries cannot drift.
 const PART_COLUMNS: &str = "set_id, idx, byte_offset, byte_length, chat_id, message_id, doc_id,
      sha256, status, verified_at";
 
+/// Every `pending` part of a set, in upload order.
 pub fn pending_parts(conn: &Connection, set_id: &str) -> Result<Vec<PartRow>> {
     let mut stmt = conn.prepare(&format!(
         "SELECT {PART_COLUMNS} FROM parts WHERE set_id = ?1 AND status = 'pending' ORDER BY idx"
@@ -102,7 +104,6 @@ pub fn all_parts(conn: &Connection, set_id: &str) -> Result<Vec<PartRow>> {
         .context("reading a part row")
 }
 
-/// Sha256 hex of every `done` part, in idx order; the input to `set_hash`.
 /// Bytes of a set already in the channel, for reporting a resumed upload
 /// against the whole of it rather than against what this run has done.
 pub fn done_bytes(conn: &Connection, set_id: &str) -> Result<u64> {
@@ -117,6 +118,7 @@ pub fn done_bytes(conn: &Connection, set_id: &str) -> Result<u64> {
     Ok(total.max(0) as u64)
 }
 
+/// Sha256 hex of every `done` part, in idx order; the input to `set_hash`.
 pub fn done_hashes(conn: &Connection, set_id: &str) -> Result<Vec<String>> {
     let mut stmt = conn
         .prepare("SELECT sha256 FROM parts WHERE set_id = ?1 AND status = 'done' ORDER BY idx")?;

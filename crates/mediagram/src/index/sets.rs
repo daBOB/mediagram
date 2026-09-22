@@ -5,6 +5,7 @@ use anyhow::{Context, Result};
 use rusqlite::{Connection, OptionalExtension, params};
 
 pub use crate::index::set_row::SetRow;
+use crate::index::status::SetStatus;
 
 const COLUMNS: &str =
     "set_id, kind, tmdb, tvdb, imdb, show, chap, path, title, year, season, episode,
@@ -27,7 +28,7 @@ pub fn insert_set(conn: &Connection, row: &SetRow) -> Result<()> {
         ),
         params![
             row.set_id,
-            row.kind,
+            row.kind.as_str(),
             tmdb,
             tvdb,
             row.imdb,
@@ -61,7 +62,7 @@ pub fn insert_set(conn: &Connection, row: &SetRow) -> Result<()> {
 }
 
 /// Updates `status` for one set.
-pub fn set_status(conn: &Connection, set_id: &str, status: &str) -> Result<()> {
+pub fn set_status(conn: &Connection, set_id: &str, status: SetStatus) -> Result<()> {
     conn.execute(
         "UPDATE sets SET status = ?1 WHERE set_id = ?2",
         params![status, set_id],
@@ -86,7 +87,7 @@ pub fn update_metadata(conn: &Connection, row: &SetRow) -> Result<()> {
                          season = ?7, episode = ?8, abs = ?9, tmdb = ?10, tvdb = ?11, imdb = ?12
          WHERE set_id = ?13",
         params![
-            row.kind,
+            row.kind.as_str(),
             row.show,
             row.chap,
             row.path,
@@ -175,9 +176,9 @@ pub fn episode_status(
     tmdb: u64,
     season: u32,
     episode: u32,
-) -> Result<Option<String>> {
+) -> Result<Option<SetStatus>> {
     let episode = serde_json::to_string(&mlib_spec::caption::Episode::Single(episode))?;
-    let status: Option<String> = conn
+    let status: Option<SetStatus> = conn
         .query_row(
             "SELECT status FROM sets
              WHERE tmdb = ?1 AND season = ?2 AND episode = ?3 AND kind = 'ep'",
@@ -200,9 +201,9 @@ pub fn document_status(
     cid: &str,
     chapter: u32,
     number: u32,
-) -> Result<Option<String>> {
+) -> Result<Option<SetStatus>> {
     let number = serde_json::to_string(&mlib_spec::caption::Episode::Single(number))?;
-    let status: Option<String> = conn
+    let status: Option<SetStatus> = conn
         .query_row(
             "SELECT status FROM sets
              WHERE group_key = ?1 AND season = ?2 AND episode = ?3 AND kind = 'doc'",
@@ -220,9 +221,9 @@ pub fn lesson_status(
     cid: &str,
     chapter: u32,
     lesson: u32,
-) -> Result<Option<String>> {
+) -> Result<Option<SetStatus>> {
     let episode = serde_json::to_string(&mlib_spec::caption::Episode::Single(lesson))?;
-    let status: Option<String> = conn
+    let status: Option<SetStatus> = conn
         .query_row(
             "SELECT status FROM sets
              WHERE group_key = ?1 AND season = ?2 AND episode = ?3 AND kind = 'tut'",

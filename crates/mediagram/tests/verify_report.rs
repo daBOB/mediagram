@@ -2,6 +2,7 @@
 //! index invariant check, and row/summary rendering. No Telegram connection
 //! is needed since `report` never performs IO.
 
+use mediagram::index::status::PartStatus;
 use mediagram::verify::render::{render_rows, summary_line};
 use mediagram::verify::report::{
     ExpectedPart, ObservedMessage, PartVerdict, SetReport, apply_hash, check_local_invariant,
@@ -268,7 +269,7 @@ fn since_skips_only_parts_verified_at_or_after_the_cutoff() {
         message_id: Some(2),
         doc_id: Some(3),
         sha256: Some("c".repeat(64)),
-        status: "done".into(),
+        status: PartStatus::Done,
         verified_at,
     };
     assert!(verified_since(&part(Some(1_000)), Some(1_000)));

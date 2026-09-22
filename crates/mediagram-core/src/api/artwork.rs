@@ -135,7 +135,7 @@ pub fn split_titles(sets: &[PlayableSet]) -> (Vec<(Kind, u64)>, u32) {
     let mut seen: HashSet<String> = HashSet::new();
     let mut unaskable: HashSet<(&str, &str)> = HashSet::new();
     for set in sets {
-        match (kind_of(&set.kind), set.tmdb) {
+        match (set.kind.parse::<Kind>().ok(), set.tmdb) {
             (Some(kind), Some(id)) if id > 0 => {
                 if seen.insert(format!("tmdb-{}-{id}", kind_key(kind))) {
                     titles.push((kind, id as u64));
@@ -146,24 +146,12 @@ pub fn split_titles(sets: &[PlayableSet]) -> (Vec<(Kind, u64)>, u32) {
                 // collection, and the ones naming none share the single card
                 // `Shelves.kt` gives them instead of being counted apart.
                 let held_by = set.show.as_deref().map(str::trim).filter(|s| !s.is_empty());
-                let alone = if set.kind == "movie" { set.set_id.as_str() } else { "" };
+                let alone = if set.kind == Kind::Movie.as_str() { set.set_id.as_str() } else { "" };
                 unaskable.insert((set.kind.as_str(), held_by.unwrap_or(alone)));
             }
         }
     }
     (titles, unaskable.len() as u32)
-}
-
-/// The `kind` column spells `Kind` exactly as its own serde does — see
-/// `mlib_spec::Kind`'s `rename_all = "lowercase"`.
-fn kind_of(kind: &str) -> Option<Kind> {
-    match kind {
-        "movie" => Some(Kind::Movie),
-        "ep" => Some(Kind::Ep),
-        "tut" => Some(Kind::Tut),
-        "doc" => Some(Kind::Doc),
-        _ => None,
-    }
 }
 
 /// Validates the key against TMDB before any resolve or download, so a

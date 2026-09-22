@@ -1,5 +1,6 @@
 //! `index::sets` and `index::parts` round trips against a real sqlite file.
 
+use mediagram::index::status::SetStatus;
 use mediagram::index::{db, parts, sets};
 use mlib_spec::caption::{Caption, Episode, Kind, Part};
 use mlib_spec::ids::ProviderIds;
@@ -57,7 +58,7 @@ fn sets_insert_get_list_pending_and_complete() {
     sets::set_hash_and_complete(&conn, &row.set_id, "abc").unwrap();
     assert_eq!(sets::list_pending(&conn).unwrap().len(), 0);
     let done = sets::get_set(&conn, &row.set_id).unwrap().unwrap();
-    assert_eq!(done.status, "complete");
+    assert_eq!(done.status, SetStatus::Complete);
     assert_eq!(done.set_hash.as_deref(), Some("abc"));
 }
 

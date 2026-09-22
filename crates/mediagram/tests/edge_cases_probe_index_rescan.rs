@@ -2,6 +2,7 @@
 //! These tests explore boundary conditions and error scenarios to identify
 //! gaps in the current implementation.
 
+use mediagram::index::status::SetStatus;
 use mediagram::index::{db, rescan, snapshot};
 use mediagram::upload::transport::Seen;
 use mlib_spec::caption::Part;
@@ -46,7 +47,7 @@ fn partial_set_has_correct_part_count_recorded() {
         .unwrap();
     assert_eq!(set_row.part_count, 3);
     assert_eq!(summary.sets_incomplete, 1);
-    assert_eq!(set_row.status, "pending");
+    assert_eq!(set_row.status, SetStatus::Pending);
 }
 
 // ============================================================================
@@ -70,7 +71,7 @@ fn caption_total_mismatch_prevents_completion() {
     let row = mediagram::index::sets::get_set(&conn, set_id)
         .unwrap()
         .unwrap();
-    assert_eq!(row.status, "pending");
+    assert_eq!(row.status, SetStatus::Pending);
 }
 
 // ============================================================================
@@ -105,8 +106,8 @@ fn two_sets_interleaved_in_single_batch() {
     let row_b = mediagram::index::sets::get_set(&conn, set_b)
         .unwrap()
         .unwrap();
-    assert_eq!(row_a.status, "complete");
-    assert_eq!(row_b.status, "complete");
+    assert_eq!(row_a.status, SetStatus::Complete);
+    assert_eq!(row_b.status, SetStatus::Complete);
 }
 
 // ============================================================================
@@ -164,7 +165,7 @@ fn any_valid_caption_gets_recorded_regardless_of_field_values() {
     let row = mediagram::index::sets::get_set(&conn, set_id)
         .unwrap()
         .unwrap();
-    assert_eq!(row.status, "complete");
+    assert_eq!(row.status, SetStatus::Complete);
 }
 
 // ============================================================================
@@ -193,7 +194,7 @@ fn replaying_seen_after_completion_maintains_complete_status() {
     let row = mediagram::index::sets::get_set(&conn, set_id)
         .unwrap()
         .unwrap();
-    assert_eq!(row.status, "complete");
+    assert_eq!(row.status, SetStatus::Complete);
 }
 
 // ============================================================================
@@ -229,7 +230,7 @@ fn apply_seen_does_not_delete_parts_absent_from_batch() {
     let row = mediagram::index::sets::get_set(&conn, set_id)
         .unwrap()
         .unwrap();
-    assert_eq!(row.status, "complete");
+    assert_eq!(row.status, SetStatus::Complete);
 }
 
 // ============================================================================
@@ -288,8 +289,8 @@ fn message_id_order_does_not_affect_final_state() {
     let row2 = mediagram::index::sets::get_set(&conn2, set_id)
         .unwrap()
         .unwrap();
-    assert_eq!(row1.status, "complete");
-    assert_eq!(row2.status, "complete");
+    assert_eq!(row1.status, SetStatus::Complete);
+    assert_eq!(row2.status, SetStatus::Complete);
 }
 
 // ============================================================================
@@ -336,7 +337,7 @@ fn large_batch_5000_entries_completes_and_maintains_correctness() {
     // Spot check: verify one set is complete
     let spot_check_id = "01JQ8F2K9M4XZ0000000100".to_string();
     if let Ok(Some(row)) = mediagram::index::sets::get_set(&conn, &spot_check_id) {
-        assert_eq!(row.status, "complete");
+        assert_eq!(row.status, SetStatus::Complete);
     }
 }
 
@@ -498,7 +499,7 @@ fn overlapping_part_ranges_do_not_prevent_completion_if_sum_matches() {
     let row = mediagram::index::sets::get_set(&conn, set_id)
         .unwrap()
         .unwrap();
-    assert_eq!(row.status, "pending");
+    assert_eq!(row.status, SetStatus::Pending);
 }
 
 // ============================================================================

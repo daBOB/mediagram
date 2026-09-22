@@ -11,3 +11,4 @@ pub mod set_row;
 pub mod sets;
 pub mod shows;
 pub mod snapshot;
+pub mod status;

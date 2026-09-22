@@ -3,6 +3,7 @@
 //! that adopts an unrecorded part instead of re-uploading it, and the
 //! `PLAYABLE_SQL` invariant before/after completion.
 
+use mediagram::index::status::SetStatus;
 use mediagram::index::{parts, sets};
 use mediagram::upload::pipeline::run_set;
 use mlib_spec::caption::Part;
@@ -49,7 +50,7 @@ async fn uploads_all_parts_and_completes_set() {
     }
 
     let final_row = sets::get_set(&conn, &set_row.set_id).unwrap().unwrap();
-    assert_eq!(final_row.status, "complete");
+    assert_eq!(final_row.status, SetStatus::Complete);
     assert_eq!(
         final_row.set_hash.as_deref(),
         Some(mlib_spec::set_hash::set_hash(&expected_hashes).as_str())
@@ -96,7 +97,7 @@ async fn resumes_via_adoption_without_duplicate_upload() {
     assert_eq!(transport.send_count(), 1);
 
     let final_row = sets::get_set(&conn, &set_row.set_id).unwrap().unwrap();
-    assert_eq!(final_row.status, "complete");
+    assert_eq!(final_row.status, SetStatus::Complete);
 
     let range2 = plan[2];
     let hash2 = hex_sha256(&data[range2.off as usize..(range2.off + range2.len) as usize]);

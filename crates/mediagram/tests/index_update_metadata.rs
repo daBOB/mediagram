@@ -5,6 +5,7 @@
 //! a player seeks with them, so an update that touched them would turn a
 //! correction into corruption.
 
+use mediagram::index::status::SetStatus;
 use mediagram::index::{db, parts, sets};
 use mlib_spec::caption::{Caption, Episode, Kind, Part};
 use mlib_spec::ids::ProviderIds;
@@ -95,7 +96,7 @@ fn the_bytes_are_not_touched_even_by_a_row_that_claims_otherwise() {
     lying.total = 999;
     lying.part_count = 42;
     lying.set_hash = Some("c".repeat(64));
-    lying.status = "pending".into();
+    lying.status = SetStatus::Pending;
     lying.container = "avi".into();
     sets::update_metadata(&conn, &lying).unwrap();
 
@@ -156,16 +157,16 @@ fn an_unknown_set_has_no_parts() {
 fn the_kind_is_written_too() {
     let (_d, conn) = seeded();
     let mut row = sets::get_set(&conn, SET).unwrap().unwrap();
-    assert_eq!(row.kind, "ep");
+    assert_eq!(row.kind, Kind::Ep);
 
-    row.kind = "movie".into();
+    row.kind = Kind::Movie;
     row.show = None;
     row.season = None;
     row.episode = None;
     sets::update_metadata(&conn, &row).unwrap();
 
     let after = sets::get_set(&conn, SET).unwrap().unwrap();
-    assert_eq!(after.kind, "movie");
+    assert_eq!(after.kind, Kind::Movie);
     assert_eq!(after.show, None);
     assert_eq!(after.season, None);
     assert_eq!(after.episode, None);

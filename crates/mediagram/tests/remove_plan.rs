@@ -5,6 +5,7 @@
 //! touch is separated from the touching, and is stated in full before
 //! anything happens.
 
+use mediagram::index::status::PartStatus;
 use mediagram::index::parts::PartRow;
 use mediagram::index::sets::SetRow;
 use mediagram::remove::plan::{Removal, plan_removal};
@@ -61,9 +62,9 @@ fn part(idx: u32, message: Option<i64>, len: u64) -> PartRow {
         doc_id: message,
         sha256: Some("a".repeat(64)),
         status: if message.is_some() {
-            "done".into()
+            PartStatus::Done
         } else {
-            "pending".into()
+            PartStatus::Pending
         },
         verified_at: None,
     }

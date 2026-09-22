@@ -27,3 +27,6 @@ android/**/jniLibs/
 .impeccable/mocks/
 .impeccable/decision-*.json
 .impeccable/questions/
+
+# desloppify local state
+.desloppify/

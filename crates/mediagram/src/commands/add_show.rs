@@ -18,6 +18,7 @@ use futures::stream::{self, StreamExt};
 
 use super::args::{AddArgs, AddShowArgs};
 use crate::config::Config;
+use crate::index::status::SetStatus;
 use crate::index::{db, sets};
 use crate::media::direct_play::{self, Blocker};
 use crate::media::streams;
@@ -76,8 +77,7 @@ pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
     let conn = db::open(&cfg.data_dir()?)?;
     let (mut uploaded, mut skipped, mut failed) = (0usize, 0usize, 0usize);
     for ep in &episodes {
-        if sets::episode_status(&conn, tmdb, ep.season, ep.episode)?.as_deref() == Some("complete")
-        {
+        if sets::episode_status(&conn, tmdb, ep.season, ep.episode)? == Some(SetStatus::Complete) {
             println!("S{:02}E{:02} already uploaded", ep.season, ep.episode);
             skipped += 1;
             continue;
