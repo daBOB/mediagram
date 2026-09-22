@@ -112,7 +112,7 @@ fn a_push_keeps_only_what_it_could_not_clear() {
 
 mod nothing_left_to_unpin {
     use grammers_mtsender::InvocationError;
-    use mediagram::commands::push_index::message_is_gone;
+    use mediagram::telegram::unpin::message_is_gone;
 
     fn rpc(code: i32, message: &str) -> anyhow::Error {
         anyhow::Error::new(InvocationError::Rpc(
