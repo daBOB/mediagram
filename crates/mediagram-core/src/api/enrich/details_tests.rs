@@ -1,6 +1,6 @@
 use mlib_spec::Kind;
 
-use crate::api::refresh::install_staged;
+use crate::versions::install_staged;
 
 use super::*;
 
@@ -61,7 +61,7 @@ fn the_sidecar_survives_the_refreshes_that_follow_it() {
     // standing.
     let incoming = store::dir(&core).join("incoming");
     std::fs::create_dir_all(&incoming).unwrap();
-    install_staged(&core, &incoming, "v-2").unwrap();
+    install_staged(&store::dir(&core), &incoming, "v-2").unwrap();
 
     let conn = open_or_create(&core).unwrap();
     assert!(read(&conn, "tmdb-movie-550").unwrap().is_some());

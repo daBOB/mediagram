@@ -22,7 +22,8 @@ use install::install;
 use library::LibraryEntry;
 use crate::api::account::revoked::checked;
 use crate::api::account::session;
-use crate::api::{Core, CoreError, LibraryChoice, refresh};
+use crate::api::{Core, CoreError, LibraryChoice};
+use crate::versions::now_unix;
 use crate::transport::document::message_document;
 
 /// How far down the dialog list to look. Telegram orders it the way the
@@ -79,7 +80,7 @@ pub(super) async fn refresh_library(core: &Core, handle: String) -> Result<u64, 
     let (document, caption) = newest_index(core, &client, peer).await?;
     let version = format!(
         "v-{}",
-        index::pushed_at(&caption, refresh::now_unix())
+        index::pushed_at(&caption, now_unix())
     );
     install(core, &client, &document, &version).await
 }
@@ -150,7 +151,7 @@ async fn newest_index(
         .iter()
         .map(|message| (message.text(), i64::from(message.id())))
         .collect();
-    let chosen = index::pick_index(&candidates, refresh::now_unix())?;
+    let chosen = index::pick_index(&candidates, now_unix())?;
     let message = found.into_iter().nth(chosen).expect("chosen from this list");
     let caption = message.text().to_string();
     match message_document(&message) {

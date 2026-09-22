@@ -1,12 +1,13 @@
 use std::os::unix::fs::symlink;
 
 use super::*;
+use crate::versions::CURRENT;
 
 fn core_at(dir: &std::path::Path) -> std::sync::Arc<Core> {
     Core::new(dir.display().to_string(), 1, "test-hash".into())
 }
 
-/// Points `current` at `version`, the way `refresh.rs`'s `swap_current`
+/// Points `current` at `version`, the way `versions::install_staged`'s swap
 /// does, creating the version directory first.
 fn point_current_at(core: &Core, version: &str) {
     let root = dir(core);
@@ -43,7 +44,7 @@ fn a_fetched_poster_is_found_after_the_catalogue_is_replaced() {
     // real place to put a file and one no refresh leaves standing.
     let incoming = dir(&core).join("incoming");
     std::fs::create_dir_all(&incoming).unwrap();
-    crate::api::refresh::install_staged(&core, &incoming, "v-2").unwrap();
+    crate::versions::install_staged(&dir(&core), &incoming, "v-2").unwrap();
 
     assert!(poster_path(&core, key.into()).is_some());
 }

@@ -21,7 +21,9 @@ use crate::catalog::PlayableSet;
 use crate::dto::FetchReport;
 
 use super::fetch::{fetch_into, language_of};
-use crate::api::{Core, CoreError, http, store};
+use crate::api::{Core, CoreError, store};
+use crate::http;
+use crate::versions;
 
 /// What a fetch will ask the provider for, and where what comes back is kept.
 ///
@@ -59,7 +61,7 @@ pub struct FetchPlan {
 pub fn plan_fetch(core: &Core, fallback: &str) -> Result<FetchPlan, CoreError> {
     let dir = std::fs::canonicalize(store::current_dir(core))
         .map_err(CoreError::NotFound("no catalog is loaded yet".into()).logged())?;
-    let conn = store::open_ro(&store::library_db(&dir))?;
+    let conn = versions::open_ro(&versions::library_db(&dir))?;
     let sets = crate::catalog::list_playable(&conn)
         .map_err(CoreError::io("reading the catalog"))?;
     let language = language_of(&conn, fallback);

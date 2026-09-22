@@ -12,7 +12,7 @@ fn install_version(core: &Core, version: &str) {
         conn.execute(stmt, []).unwrap();
     }
     drop(conn);
-    crate::api::refresh::install_staged(core, &incoming, version).unwrap();
+    crate::versions::install_staged(&store::dir(core), &incoming, version).unwrap();
 }
 
 /// Artwork a fetch wrote outlives the refreshes that follow it.

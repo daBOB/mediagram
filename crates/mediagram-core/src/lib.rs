@@ -6,10 +6,13 @@ uniffi::setup_scaffolding!();
 pub mod api;
 pub mod catalog;
 pub mod dto;
+mod error;
+pub mod http;
 pub mod package;
 pub mod range;
 pub mod shows;
 pub mod transport;
+pub mod versions;
 
 // The uploader still imports these by their old root paths.
 pub use transport::source as telegram;

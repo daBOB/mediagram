@@ -11,11 +11,11 @@
 
 mod account;
 mod blocking;
-mod error;
 mod store;
 mod channel;
 pub mod enrich;
-pub mod http;
+// The uploader still reaches the HTTP client through this path.
+pub use crate::http;
 mod read;
 mod refresh;
 
@@ -27,7 +27,7 @@ use tokio::sync::Mutex as AsyncMutex;
 use account::auth::{PendingLogin, PendingPassword};
 use account::session::ClientHandle;
 use crate::transport::documents::PartDocuments;
-pub use error::CoreError;
+pub use crate::error::CoreError;
 
 /// Outcome of a completed sign-in step.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
@@ -74,6 +74,9 @@ pub struct Core {
     api_id: i32,
     api_hash: String,
     state: AsyncMutex<State>,
+    /// Held by whichever refresh is installing a catalog, so two cannot
+    /// assemble in the same staging directory at once.
+    installing: AsyncMutex<()>,
 }
 
 #[uniffi::export(async_runtime = "tokio")]
@@ -85,6 +88,7 @@ impl Core {
             api_id,
             api_hash,
             state: AsyncMutex::new(State::default()),
+            installing: AsyncMutex::new(()),
         })
     }
 

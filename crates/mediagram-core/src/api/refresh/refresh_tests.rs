@@ -15,7 +15,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 
 use super::*;
-use super::identity;
+use crate::versions::identity::{self, read_identity};
+use crate::versions::install_staged;
 use crate::package::cipher;
 
 const KEY: [u8; 32] = [3u8; 32];
@@ -162,7 +163,7 @@ async fn an_older_package_is_refused_and_current_is_left_untouched() {
         schema: mlib_spec::schema::SCHEMA_VERSION,
         spec: mlib_spec::SPEC_VERSION,
     };
-    store::write_identity(&current, &held).unwrap();
+    write_identity(&current, &held).unwrap();
 
     let (pointer, _sealed) = fixture_package(100); // older than 500
     let base = serve(vec![pointer_response(&pointer)]).await; // package must never be requested
@@ -172,7 +173,7 @@ async fn an_older_package_is_refused_and_current_is_left_untouched() {
         .unwrap_err();
 
     assert!(matches!(err, CoreError::Cipher(_)));
-    assert_eq!(store::read_identity(&current).unwrap(), Some(held));
+    assert_eq!(read_identity(&current).unwrap(), Some(held));
 }
 
 /// A reader must never observe half a catalog: `current` resolves to
@@ -193,8 +194,8 @@ async fn a_successful_refresh_swaps_current_atomically() {
     assert_eq!(count, 0); // the fixture db carries no sets, only a schema
     let current = store::current_dir(&core);
     assert_eq!(
-        store::read_identity(&current).unwrap(),
-        Some(store::identity_of(&pointer))
+        read_identity(&current).unwrap(),
+        Some(identity_of(&pointer))
     );
     assert!(current.join("library.db").exists());
 }
@@ -214,8 +215,8 @@ fn reinstalling_the_current_version_keeps_current_whole() {
         incoming
     };
 
-    install_staged(&core, &stage("first"), "v-5").unwrap();
-    install_staged(&core, &stage("second"), "v-5").unwrap();
+    install_staged(&store::dir(&core), &stage("first"), "v-5").unwrap();
+    install_staged(&store::dir(&core), &stage("second"), "v-5").unwrap();
 
     let current = store::current_dir(&core);
     assert_eq!(std::fs::read_to_string(current.join("marker")).unwrap(), "second");
@@ -226,4 +227,25 @@ fn reinstalling_the_current_version_keeps_current_whole() {
         .filter(|name| name.starts_with("v-"))
         .collect();
     assert_eq!(versions.len(), 1, "the replaced copy is swept: {versions:?}");
+}
+
+/// The download is checked against the pointer's sha256 once, before the
+/// cipher runs; a flipped byte is refused as that, and nothing is installed.
+#[tokio::test]
+async fn a_package_that_does_not_match_its_pointer_is_refused() {
+    let (pointer, mut sealed) = fixture_package(100);
+    sealed[0] ^= 1;
+    let base = serve(vec![pointer_response(&pointer), http_response(&sealed)]).await;
+
+    let dir = tempfile::tempdir().unwrap();
+    let core = core_at(dir.path());
+    let err = refresh_catalog(&core, format!("{base}/latest.json"), STANDARD.encode(KEY))
+        .await
+        .unwrap_err();
+
+    assert_eq!(
+        err.to_string(),
+        "cipher error: the package does not match the sha256 in its pointer"
+    );
+    assert!(!store::current_dir(&core).exists());
 }
