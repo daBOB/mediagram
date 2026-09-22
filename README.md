@@ -15,7 +15,7 @@ canonical record of what's in the channel. See
   bundled copy — grammers already statically links its own sqlite3, and
   two bundled copies collide at link time).
 - A Telegram `api_id`/`api_hash` from <https://my.telegram.org>, and a
-  private channel (or supergroup) where the logged-in account is an admin.
+  private broadcast channel where the logged-in account is an admin.
 - A [TMDB](https://www.themoviedb.org/settings/api) API key (free tier) —
   optional if every `add` will use `--manual`.
 

@@ -4,7 +4,7 @@
 //! running — so the queries are the whole of the answer and each one is worth
 //! pinning.
 
-use mediagram::commands::status::{ago, count, episodes_of, heading, label, progress_of};
+use mediagram::commands::status::text::{ago, count, episodes_of, heading, label, progress_of};
 use mediagram::index::progress::{ShowProgress, Unfinished, library, shows, unfinished};
 use rusqlite::{Connection, params};
 

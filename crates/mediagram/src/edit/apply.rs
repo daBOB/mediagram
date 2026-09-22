@@ -9,7 +9,7 @@ use grammers_client::Client;
 use grammers_client::message::InputMessage;
 use grammers_session::types::PeerRef;
 
-use crate::edit::plan::CaptionWrite;
+use crate::edit::captions::CaptionWrite;
 use crate::telegram::retry::with_retry;
 
 /// Rewrites each message's caption, in part order.

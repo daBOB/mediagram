@@ -7,7 +7,8 @@
 //! that touched them would turn a correction into corruption.
 
 use mediagram::index::status::PartStatus;
-use mediagram::edit::plan::{Edits, apply, captions};
+use mediagram::edit::captions::captions;
+use mediagram::edit::plan::{Edits, apply};
 use mediagram::index::parts::PartRow;
 use mediagram::index::set_row::SetRow;
 use mlib_spec::caption::{Caption, Episode, Kind, Part};
