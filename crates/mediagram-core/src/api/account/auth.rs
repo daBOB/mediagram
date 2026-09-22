@@ -4,10 +4,8 @@
 //! Every step reuses the one connection [`request_code`] opens: Telegram
 //! correlates a login attempt to that connection's session, not to a phone
 //! number alone, so a later step reconnecting would lose it. This client
-//! logs itself in; it never accepts an auth key exported from elsewhere; a
-//! measured case (`commands::export_session`, on the Linux side of this
-//! project) is two clients sharing one key breaking each other until a
-//! restart.
+//! logs itself in and never accepts an auth key exported from elsewhere:
+//! two clients sharing one key break each other until a restart.
 //!
 //! A wrong code or password must never cost the flood-wait budget of a
 //! fresh `request_code`: Telegram still accepts another attempt against the

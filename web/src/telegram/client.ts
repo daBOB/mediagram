@@ -53,7 +53,7 @@ export class Telegram {
     // a half-open login would look like an empty library.
     if (!(await client.isUserAuthorized())) {
       throw new Error(
-        "the configured session is not authorized; produce a fresh one with `mediagram export-session`",
+        "the configured session is not authorized; log in again with `bun run login`",
       );
     }
 

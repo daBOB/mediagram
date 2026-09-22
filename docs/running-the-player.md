@@ -46,15 +46,9 @@ has it can read every chat that account can, and revoking it means terminating
 a session rather than changing a password. A dedicated account limits that to
 the one channel you invited it to.
 
-To issue a session from the uploader's own key instead of logging in again:
-
-```
-mediagram export-session      # prints MEDIAGRAM_SESSION=... for one player
-```
-
-One auth key cannot serve two clients at once — a second connection using it
-breaks both until the process restarts — so a host that runs the uploader and
-a player needs two keys, not one shared.
+A player always logs in for itself. One auth key cannot serve two clients at
+once — a second connection using it breaks both until the process restarts —
+so a host that runs the uploader and a player needs two keys, not one shared.
 
 ## Starting it
 

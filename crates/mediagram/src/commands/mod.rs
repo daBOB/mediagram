@@ -12,7 +12,6 @@ pub mod args;
 pub mod background;
 pub mod edit;
 pub mod export_package;
-pub mod export_session;
 pub mod finish_set;
 pub mod login;
 pub mod login_code;

@@ -8,12 +8,12 @@
 export interface Config {
   apiId: number;
   apiHash: string;
-  /** teleproto `StringSession`. See `mediagram export-session`. */
+  /** teleproto `StringSession`, written by `bun run login`. */
   session: string;
   /** Bot-API form, as recorded in `parts.chat_id`: `-100…`. */
   chatId: number;
   /**
-   * The channel's access hash, exported by `mediagram export-session`.
+   * The channel's access hash, written by `bun run login`.
    *
    * Carried rather than resolved: an access hash is bound to the account, the
    * uploader already holds one that works, and resolving by id costs a round
