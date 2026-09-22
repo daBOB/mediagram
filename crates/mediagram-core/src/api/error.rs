@@ -42,4 +42,14 @@ impl CoreError {
             CoreError::Network(what.into())
         }
     }
+
+    /// This error, standing for a cause that is logged rather than returned —
+    /// the same rule as [`CoreError::io`], for the variants whose message is a
+    /// fixed sentence written for the person reading it.
+    pub(crate) fn logged<E: std::fmt::Display>(self) -> impl FnOnce(E) -> CoreError {
+        move |cause| {
+            tracing::warn!(%cause, "{self}");
+            self
+        }
+    }
 }

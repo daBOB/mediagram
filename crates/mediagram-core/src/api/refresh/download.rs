@@ -96,9 +96,9 @@ pub(in crate::api) async fn fetch_capped(
 /// build other than the one its pointer claims.
 pub(in crate::api) fn check_manifest(dir: &Path, pointer: &LatestPointer) -> Result<(), CoreError> {
     let text = std::fs::read_to_string(dir.join(store::MANIFEST_FILE))
-        .map_err(|_| CoreError::Cipher("the package has no manifest".into()))?;
+        .map_err(CoreError::Cipher("the package has no manifest".into()).logged())?;
     let manifest: serde_json::Value = serde_json::from_str(&text)
-        .map_err(|_| CoreError::Cipher("the package manifest is not JSON".into()))?;
+        .map_err(CoreError::Cipher("the package manifest is not JSON".into()).logged())?;
     if manifest.get("created_at").and_then(serde_json::Value::as_i64) != Some(pointer.created_at) {
         return Err(CoreError::Cipher(
             "the package manifest disagrees with the pointer about when it was built".into(),

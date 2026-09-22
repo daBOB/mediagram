@@ -2046,6 +2046,10 @@ public object FfiConverterTypeCore: FfiConverter<Core, Long> {
  * file happens to claim.
  */
 data class CatalogFacts (
+    /**
+     * Where the installed catalogue came from: `"channel"` or `"package"`,
+     * or empty when none is installed or its record cannot be read.
+     */
     var `origin`: kotlin.String
     , 
     var `sets`: kotlin.ULong

@@ -83,7 +83,7 @@ fn store_auth_key(data_dir: &Path, dc_id: i32, key: &[u8; AUTH_KEY_LEN]) -> Resu
                 .map_err(CoreError::io("replacing the session"))?;
             open().map_err(CoreError::io("writing the session"))?
         }
-        Err(_) => return Err(CoreError::Io("writing the session".into())),
+        Err(err) => return Err(CoreError::io("writing the session")(err)),
     };
     file.write_all(&bytes)
         .map_err(CoreError::io("writing the session"))

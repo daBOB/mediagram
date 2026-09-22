@@ -160,9 +160,16 @@ fn pushed_at_of(name: &str) -> Option<i64> {
 /// that cannot draw is worse than one that says a library is empty.
 pub(super) fn facts(core: &Core) -> dto::CatalogFacts {
     let dir = current_dir(core);
+    // Only a refresh from a package writes an identity record; a catalog
+    // without one came from the channel. Nothing installed is neither.
     let origin = match read_identity(&dir) {
         Ok(Some(_)) => "package",
-        _ => "channel",
+        _ if !dir.exists() => "",
+        Ok(None) => "channel",
+        Err(err) => {
+            tracing::warn!(error = %err, "the installed catalog's origin could not be read");
+            ""
+        }
     }
     .to_string();
 

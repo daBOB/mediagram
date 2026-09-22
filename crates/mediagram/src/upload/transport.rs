@@ -90,7 +90,7 @@ impl Transport for TelegramTransport {
             {
                 Ok(uploaded) => break uploaded,
                 Err(err) if attempt >= attempts => {
-                    return Err(anyhow::anyhow!("uploading part bytes: {err}"));
+                    return Err(err).context("uploading part bytes");
                 }
                 Err(err) => {
                     let delay = retry::backoff(attempt);
@@ -99,7 +99,7 @@ impl Transport for TelegramTransport {
                     reader
                         .rewind()
                         .await
-                        .map_err(|err| anyhow::anyhow!("rereading the part to retry it: {err}"))?;
+                        .context("rereading the part to retry it")?;
                 }
             }
         };

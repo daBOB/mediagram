@@ -8,7 +8,8 @@ use mediagram::verify::report::{
     ExpectedPart, ObservedMessage, PartVerdict, SetReport, apply_hash, check_local_invariant,
     verify_size,
 };
-use mediagram::verify::{LocalPart, forget_stale_success, load_parts, mark_verified, verified_since};
+use mediagram::index::parts::{PartRow, all_parts};
+use mediagram::verify::{forget_stale_success, mark_verified, other_chat, verified_since};
 
 fn expected() -> ExpectedPart {
     ExpectedPart {
@@ -485,8 +486,10 @@ fn empty_report_with_no_parts_is_not_a_failure() {
 /// older stamp, a missing stamp, or no cutoff at all means re-check.
 #[test]
 fn since_skips_only_parts_verified_at_or_after_the_cutoff() {
-    let part = |verified_at| LocalPart {
+    let part = |verified_at| PartRow {
+        set_id: "01SET0000000000000000001".into(),
         idx: 0,
+        byte_offset: 0,
         byte_length: 1024,
         chat_id: Some(-1001),
         message_id: Some(2),
@@ -524,7 +527,7 @@ fn a_failing_part_forgets_its_old_success_and_a_passing_one_keeps_it() {
     parts::insert_parts(&conn, set_id, &ranges).unwrap();
     mark_verified(&conn, set_id, 0, 1_700_000_000).unwrap();
     mark_verified(&conn, set_id, 1, 1_700_000_000).unwrap();
-    let stored = load_parts(&conn, set_id).unwrap();
+    let stored = all_parts(&conn, set_id).unwrap();
 
     let mut failing = verify_size(&expected(), &ObservedMessage::MessageMissing);
     failing.verified_at = Some(1_700_000_000);
@@ -540,9 +543,30 @@ fn a_failing_part_forgets_its_old_success_and_a_passing_one_keeps_it() {
     };
     forget_stale_success(&conn, set_id, &stored[1], &mut passing).unwrap();
 
-    let after = load_parts(&conn, set_id).unwrap();
+    let after = all_parts(&conn, set_id).unwrap();
     assert_eq!(failing.verified_at, None);
     assert_eq!(after[0].verified_at, None);
     assert_eq!(passing.verified_at, Some(1_700_000_000));
     assert_eq!(after[1].verified_at, Some(1_700_000_000));
+}
+
+/// A part recorded in another chat is reported as such, never as missing; a
+/// part with no chat recorded predates the column and belongs to this one.
+#[test]
+fn a_part_is_in_another_chat_only_when_one_other_is_recorded() {
+    let part = |chat_id| PartRow {
+        set_id: "01SET0000000000000000001".into(),
+        idx: 0,
+        byte_offset: 0,
+        byte_length: 1024,
+        chat_id,
+        message_id: Some(2),
+        doc_id: Some(3),
+        sha256: None,
+        status: PartStatus::Done,
+        verified_at: None,
+    };
+    assert_eq!(other_chat(&part(Some(-1002)), -1001), Some(-1002));
+    assert_eq!(other_chat(&part(Some(-1001)), -1001), None);
+    assert_eq!(other_chat(&part(None), -1001), None);
 }

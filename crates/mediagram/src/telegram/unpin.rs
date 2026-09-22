@@ -29,7 +29,7 @@ pub async fn unpin_previous(
     channel: grammers_session::types::PeerRef,
 ) -> Result<()> {
     let mut unresolved: Vec<i32> = Vec::new();
-    for old_id in pins::pending_unpins(conn) {
+    for old_id in pins::pending_unpins(conn)? {
         if !clear_pin(tg, max_attempts, channel, old_id).await {
             unresolved.push(old_id);
         }

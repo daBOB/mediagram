@@ -5,6 +5,7 @@ use anyhow::Result;
 use mlib_spec::caption::{Caption, Kind, Part};
 use mlib_spec::ids::ProviderIds;
 
+use crate::index::columns::decoded;
 use crate::index::status::SetStatus;
 
 /// One row of the `sets` table.
@@ -85,24 +86,11 @@ impl SetRow {
     }
 
     pub(crate) fn from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<SetRow> {
-        // sqlite integers are signed 64-bit; ids and the total size are stored
-        // as `i64` and read back as `u64` here.
-        let alang: String = row.get("alang")?;
-        let slang: String = row.get("slang")?;
         let tmdb: Option<i64> = row.get("tmdb")?;
         let tvdb: Option<i64> = row.get("tvdb")?;
-        let total: i64 = row.get("total")?;
-        let kind: String = row.get("kind")?;
-        let kind = kind.parse::<Kind>().map_err(|err| {
-            rusqlite::Error::FromSqlConversionFailure(
-                row.as_ref().column_index("kind").unwrap_or_default(),
-                rusqlite::types::Type::Text,
-                Box::new(err),
-            )
-        })?;
         Ok(SetRow {
             set_id: row.get("set_id")?,
-            kind,
+            kind: decoded(row, "kind", str::parse::<Kind>)?,
             tmdb: mlib_spec::ids::id_from_column(tmdb),
             tvdb: mlib_spec::ids::id_from_column(tvdb),
             imdb: row.get("imdb")?,
@@ -119,12 +107,12 @@ impl SetRow {
             container: row.get("container")?,
             vcodec: row.get("vcodec")?,
             acodec: row.get("acodec")?,
-            alang: serde_json::from_str(&alang).unwrap_or_default(),
-            slang: serde_json::from_str(&slang).unwrap_or_default(),
+            alang: decoded(row, "alang", |text| serde_json::from_str(text))?,
+            slang: decoded(row, "slang", |text| serde_json::from_str(text))?,
             duration: row.get("duration")?,
             variant: row.get("variant")?,
             group_key: row.get("group_key")?,
-            total: total as u64,
+            total: row.get("total")?,
             part_count: row.get("part_count")?,
             set_hash: row.get("set_hash")?,
             status: row.get("status")?,

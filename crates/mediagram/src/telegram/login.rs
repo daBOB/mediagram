@@ -51,8 +51,8 @@ async fn login_interactive(client: &Client, cfg: &Config) -> Result<()> {
                 .check_password(password_token, password.into_bytes())
                 .await
                 .map(drop)
-                .map_err(|err| anyhow::anyhow!("2FA check failed: {err}"))
+                .context("2FA check failed")
         }
-        Err(err) => Err(anyhow::anyhow!("sign-in failed: {err}")),
+        Err(err) => Err(err).context("sign-in failed"),
     }
 }

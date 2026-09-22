@@ -55,7 +55,12 @@ pub fn open_or_create(core: &Core) -> Result<Connection, CoreError> {
     let conn =
         Connection::open(&path).map_err(CoreError::io("opening the description store"))?;
 
-    let at: i64 = conn.pragma_query_value(None, "user_version", |row| row.get(0)).unwrap_or(0);
+    // A new file reads 0; a read that fails is a real fault, not a new file,
+    // and replaying every migration over a populated store would only fail
+    // later with a less useful error.
+    let at: i64 = conn
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .map_err(CoreError::io(PREPARING))?;
     if at < schema::SCHEMA_VERSION {
         migrate_from(&conn, at)?;
     }
@@ -77,14 +82,15 @@ fn migrate_from(conn: &Connection, at: i64) -> Result<(), CoreError> {
     let applied = schema::migrations_up_to(at).len();
     conn.execute_batch("BEGIN").map_err(CoreError::io(PREPARING))?;
     for statement in schema::migrations_up_to(schema::SCHEMA_VERSION).into_iter().skip(applied) {
-        if conn.execute(statement, []).is_err() {
+        if let Err(err) = conn.execute(statement, []) {
             let _ = conn.execute_batch("ROLLBACK");
-            return Err(CoreError::Io(PREPARING.into()));
+            tracing::warn!(statement, "a description store migration failed");
+            return Err(CoreError::io(PREPARING)(err));
         }
     }
-    if conn.pragma_update(None, "user_version", schema::SCHEMA_VERSION).is_err() {
+    if let Err(err) = conn.pragma_update(None, "user_version", schema::SCHEMA_VERSION) {
         let _ = conn.execute_batch("ROLLBACK");
-        return Err(CoreError::Io(PREPARING.into()));
+        return Err(CoreError::io(PREPARING)(err));
     }
     conn.execute_batch("COMMIT").map_err(CoreError::io(PREPARING))
 }
@@ -116,8 +122,25 @@ pub(in crate::api) fn title_info(core: &Core, poster_key: String) -> Option<Titl
 
 /// The row the downloaded index carries, if it carries one.
 fn in_index(core: &Core, poster_key: &str) -> Option<TitleDetails> {
-    let conn = store::open(core).ok()?;
-    read(&conn, poster_key).ok().flatten()
+    let conn = match store::open(core) {
+        Ok(conn) => conn,
+        // No catalog installed yet: nothing to describe, and nothing wrong.
+        Err(CoreError::NotFound(_)) => return None,
+        Err(err) => {
+            tracing::warn!(error = %err, "the index could not be opened for a description");
+            return None;
+        }
+    };
+    read_logged(&conn, poster_key, "the index")
+}
+
+/// A stored description, or `None` — logging a store that could not be read,
+/// so a corrupt one is not mistaken for a title nobody described.
+fn read_logged(conn: &Connection, poster_key: &str, store: &str) -> Option<TitleDetails> {
+    read(conn, poster_key).unwrap_or_else(|err| {
+        tracing::warn!(error = %err, store, "a stored description could not be read");
+        None
+    })
 }
 
 /// The row a fetch on this device left, if there has been one.
@@ -131,8 +154,14 @@ fn fetched(core: &Core, poster_key: &str) -> Option<TitleDetails> {
     if !path.exists() {
         return None;
     }
-    let conn = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY).ok()?;
-    read(&conn, poster_key).ok().flatten()
+    let conn = match Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY) {
+        Ok(conn) => conn,
+        Err(err) => {
+            tracing::warn!(error = %err, "the description store could not be opened");
+            return None;
+        }
+    };
+    read_logged(&conn, poster_key, "the description store")
 }
 
 #[cfg(test)]

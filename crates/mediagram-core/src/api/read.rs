@@ -2,6 +2,7 @@
 //! code `mediagram serve` uses, driving the Telegram transport directly
 //! rather than through an HTTP response body.
 
+use anyhow::Context;
 use grammers_session::types::{PeerId, PeerRef};
 use tokio::sync::mpsc;
 
@@ -116,7 +117,7 @@ async fn fetch_step(
         out.extend(chunk?);
     }
     pump.await
-        .map_err(|_| anyhow::anyhow!("the download task did not finish cleanly"))?
+        .context("the download task did not finish cleanly")?
 }
 
 /// What Kotlin is told when a download fails: the cause is logged in Rust.

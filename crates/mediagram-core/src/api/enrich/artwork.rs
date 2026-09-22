@@ -58,7 +58,7 @@ pub struct FetchPlan {
 /// used only for a library nothing has described in any language.
 pub fn plan_fetch(core: &Core, fallback: &str) -> Result<FetchPlan, CoreError> {
     let dir = std::fs::canonicalize(store::current_dir(core))
-        .map_err(|_| CoreError::NotFound("no catalog is loaded yet".into()))?;
+        .map_err(CoreError::NotFound("no catalog is loaded yet".into()).logged())?;
     let conn = store::open_ro(&store::library_db(&dir))?;
     let sets = crate::catalog::list_playable(&conn)
         .map_err(CoreError::io("reading the catalog"))?;
@@ -160,7 +160,7 @@ async fn verify_key(api: &impl TmdbApi) -> Result<(), CoreError> {
         Err(err) if rejected_the_key(&err) => {
             Err(CoreError::NotAuthorized("the artwork provider rejected this key".into()))
         }
-        Err(_) => Err(CoreError::Network("could not reach the artwork provider".into())),
+        Err(err) => Err(CoreError::network("could not reach the artwork provider")(err)),
     }
 }
 

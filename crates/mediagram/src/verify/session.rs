@@ -12,7 +12,8 @@ use rusqlite::Connection;
 
 use super::download_hash::{fetch_messages, hash_document};
 use super::report::{self, ExpectedPart, ObservedMessage, PartVerdict, SetReport};
-use super::{LocalPart, forget_stale_success, mark_verified, verified_since};
+use super::{forget_stale_success, mark_verified, other_chat, verified_since};
+use crate::index::parts::PartRow;
 use crate::index::set_row::SetRow;
 use crate::index::status::PartStatus;
 use crate::telegram::client::Tg;
@@ -21,18 +22,21 @@ use crate::telegram::client::Tg;
 pub struct SetPlan {
     pub set_id: String,
     pub row: SetRow,
-    pub parts: Vec<LocalPart>,
+    pub parts: Vec<PartRow>,
 }
 
 impl SetPlan {
     /// Bytes `--full` would download for this set, `None` if the recorded
     /// lengths overflow (a corrupt index rather than a real library).
     pub fn total_bytes(&self, since: Option<i64>) -> Option<u64> {
-        self.parts
-            .iter()
-            .filter(|p| !verified_since(p, since))
-            .try_fold(0u64, |acc, p| acc.checked_add(p.byte_length))
+        summed(self.parts.iter().filter(|p| !verified_since(p, since)))
     }
+}
+
+/// The parts' lengths added up, `None` if they overflow — which a real
+/// library cannot, so it means a corrupt index.
+fn summed<'a>(parts: impl Iterator<Item = &'a PartRow>) -> Option<u64> {
+    parts.map(|p| p.byte_length).try_fold(0u64, u64::checked_add)
 }
 
 /// Verifies one set. Returns an error only when the set cannot be checked at
@@ -47,11 +51,7 @@ pub async fn verify_set(
     since: Option<i64>,
     max_attempts: u32,
 ) -> Result<SetReport> {
-    let local_issue = match plan
-        .parts
-        .iter()
-        .try_fold(0u64, |a, p| a.checked_add(p.byte_length))
-    {
+    let local_issue = match summed(plan.parts.iter()) {
         Some(sum_len) => report::check_local_invariant(
             plan.row.part_count,
             plan.parts.len(),
@@ -64,27 +64,24 @@ pub async fn verify_set(
     let ids: Vec<i32> = plan
         .parts
         .iter()
-        .filter(|p| p.status == PartStatus::Done && in_this_chat(p, chat_id))
+        .filter(|p| p.status == PartStatus::Done && other_chat(p, chat_id).is_none())
         .filter_map(|p| p.message_id)
         .filter_map(|id| i32::try_from(id).ok())
         .collect();
     let messages = fetch_messages(&tg.client, tg.channel, &ids, max_attempts).await?;
 
+    let check = PartCheck {
+        conn,
+        tg,
+        set_id: &plan.set_id,
+        chat_id,
+        messages: &messages,
+        full,
+        since,
+    };
     let mut parts = Vec::with_capacity(plan.parts.len());
     for part in &plan.parts {
-        parts.push(
-            verify_part(
-                conn,
-                tg,
-                &plan.set_id,
-                part,
-                chat_id,
-                &messages,
-                full,
-                since,
-            )
-            .await?,
-        );
+        parts.push(check.verify_part(part).await?);
     }
     Ok(SetReport {
         set_id: plan.set_id.clone(),
@@ -93,35 +90,35 @@ pub async fn verify_set(
     })
 }
 
-/// A part with no recorded `chat_id` predates that column being written and
-/// is assumed to live in the configured channel.
-fn in_this_chat(part: &LocalPart, chat_id: i64) -> bool {
-    part.chat_id.is_none_or(|recorded| recorded == chat_id)
-}
-
-#[allow(clippy::too_many_arguments)]
-async fn verify_part(
-    conn: &Connection,
-    tg: &Tg,
-    set_id: &str,
-    part: &LocalPart,
+/// What stays the same for every part of one set's verification.
+struct PartCheck<'a> {
+    conn: &'a Connection,
+    tg: &'a Tg,
+    set_id: &'a str,
     chat_id: i64,
-    messages: &HashMap<i32, Message>,
+    messages: &'a HashMap<i32, Message>,
     full: bool,
     since: Option<i64>,
-) -> Result<PartVerdict> {
-    let expected = ExpectedPart {
-        idx: part.idx,
-        byte_length: part.byte_length,
-        doc_id: part.doc_id,
-        sha256: part.sha256.clone(),
-        verified_at: part.verified_at,
-    };
-    let (observed, document) = observe(part, chat_id, messages);
-    let mut verdict = report::verify_size(&expected, &observed);
+}
 
-    if full && verdict.size_ok && !verified_since(part, since) {
-        if let Some(document) = document {
+impl PartCheck<'_> {
+    async fn verify_part(&self, part: &PartRow) -> Result<PartVerdict> {
+        let Self { conn, tg, set_id, chat_id, messages, full, since } = *self;
+        let expected = ExpectedPart {
+            idx: part.idx,
+            byte_length: part.byte_length,
+            doc_id: part.doc_id,
+            sha256: part.sha256.clone(),
+            verified_at: part.verified_at,
+        };
+        let (observed, document) = observe(part, chat_id, messages);
+        let mut verdict = report::verify_size(&expected, &observed);
+
+        if full
+            && verdict.size_ok
+            && !verified_since(part, since)
+            && let Some(document) = document
+        {
             let now = crate::clock::now_unix();
             match hash_document(&tg.client, &document, part.byte_length).await {
                 Ok(computed) => {
@@ -131,32 +128,28 @@ async fn verify_part(
                     }
                 }
                 Err(err) => {
-                    verdict = report::verify_size(
-                        &expected,
-                        &ObservedMessage::DownloadFailed(format!("{err:#}")),
-                    );
+                    let failed = ObservedMessage::DownloadFailed(format!("{err:#}"));
+                    verdict = report::verify_size(&expected, &failed);
                 }
             }
         }
-    }
 
-    forget_stale_success(conn, set_id, part, &mut verdict)?;
-    Ok(verdict)
+        forget_stale_success(conn, set_id, part, &mut verdict)?;
+        Ok(verdict)
+    }
 }
 
 /// What Telegram shows for this part, plus the document itself when there is
 /// one to hash, so `--full` never has to look the message up a second time.
 fn observe(
-    part: &LocalPart,
+    part: &PartRow,
     chat_id: i64,
     messages: &HashMap<i32, Message>,
 ) -> (ObservedMessage, Option<Document>) {
     if part.status != PartStatus::Done {
         return (ObservedMessage::NotUploaded, None);
     }
-    if let Some(recorded) = part.chat_id
-        && recorded != chat_id
-    {
+    if let Some(recorded) = other_chat(part, chat_id) {
         let observed = ObservedMessage::OtherChat {
             recorded,
             current: chat_id,

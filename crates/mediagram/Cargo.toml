@@ -35,7 +35,7 @@ reqwest = { workspace = true, features = ["rustls-no-provider", "json"] }
 # sqlite3 (via libsql-ffi), and two bundled copies in one binary collide at
 # link time with duplicate `sqlite3_*` symbols. Linking against the system
 # library avoids the clash.
-rusqlite = "0.40.2"
+rusqlite = { version = "0.40.2", features = ["fallible_uint"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sha2.workspace = true

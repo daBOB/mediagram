@@ -50,7 +50,7 @@ pub(in crate::api) fn read_identity(dir: &Path) -> Result<Option<Identity>, Core
     let text = match std::fs::read_to_string(&path) {
         Ok(text) => text,
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-        Err(_) => return Err(CoreError::Io("reading the package identity".into())),
+        Err(err) => return Err(CoreError::io("reading the package identity")(err)),
     };
     serde_json::from_str(&text)
         .map(Some)

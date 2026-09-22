@@ -54,7 +54,10 @@ pub async fn fetch_into(
     // A hard failure here (the posters directory could not even be created)
     // leaves every resolved ref undownloaded rather than panicking — the
     // catalog is the product, the artwork a convenience.
-    let written = download_into(http, &refs, artwork_dir).await.unwrap_or_default();
+    let written = download_into(http, &refs, artwork_dir).await.unwrap_or_else(|err| {
+        tracing::warn!(error = %err, "the artwork directory is unavailable");
+        Vec::new()
+    });
     let fetched = (written.len() as u32).saturating_sub(held);
 
     // Collected as keys rather than added up, so a title that lost both its
@@ -127,17 +130,30 @@ async fn record_descriptions(
             described.already_known += 1;
             continue;
         }
-        let Ok(payload) = details(api, *kind, *id).await else {
+        let payload = match details(api, *kind, *id).await {
+            Ok(payload) => payload,
+            Err(err) => {
+                tracing::warn!(id, error = %err, "no description for this title");
+                described.lost.push(key);
+                continue;
+            }
+        };
+        if opened.is_none() {
+            opened = store::open_or_create(core)
+                .inspect_err(|err| tracing::warn!(error = %err, "the description store is unavailable"))
+                .ok();
+        }
+        let row = from_details(*kind, language, &payload);
+        let Some(conn) = opened.as_ref() else {
             described.lost.push(key);
             continue;
         };
-        if opened.is_none() {
-            opened = store::open_or_create(core).ok();
-        }
-        let row = from_details(*kind, language, &payload);
-        match opened.as_ref() {
-            Some(conn) if store::upsert(conn, &row).is_ok() => described.recorded += 1,
-            _ => described.lost.push(key),
+        match store::upsert(conn, &row) {
+            Ok(()) => described.recorded += 1,
+            Err(err) => {
+                tracing::warn!(id, error = %err, "a description could not be recorded");
+                described.lost.push(key);
+            }
         }
     }
     described

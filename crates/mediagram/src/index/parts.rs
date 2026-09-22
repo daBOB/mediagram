@@ -23,15 +23,11 @@ pub struct PartRow {
 }
 
 fn from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<PartRow> {
-    // sqlite integers are signed 64-bit; byte offsets/lengths are stored as
-    // `i64` and widened back to `u64` here (parts never approach 2^63 bytes).
-    let byte_offset: i64 = row.get("byte_offset")?;
-    let byte_length: i64 = row.get("byte_length")?;
     Ok(PartRow {
         set_id: row.get("set_id")?,
         idx: row.get("idx")?,
-        byte_offset: byte_offset as u64,
-        byte_length: byte_length as u64,
+        byte_offset: row.get("byte_offset")?,
+        byte_length: row.get("byte_length")?,
         chat_id: row.get("chat_id")?,
         message_id: row.get("message_id")?,
         doc_id: row.get("doc_id")?,

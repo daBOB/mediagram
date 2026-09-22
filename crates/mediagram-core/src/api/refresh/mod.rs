@@ -28,7 +28,7 @@ pub(super) async fn refresh_catalog(
     key_b64: String,
 ) -> Result<u64, CoreError> {
     let key =
-        package::cipher::parse_key(&key_b64).map_err(|_| CoreError::Cipher("bad key".into()))?;
+        package::cipher::parse_key(&key_b64).map_err(CoreError::Cipher("bad key".into()).logged())?;
     let client = http::client()?;
 
     let pointer: LatestPointer = fetch(&client, &pointer_url)

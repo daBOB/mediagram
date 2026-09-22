@@ -2,6 +2,7 @@
 //! part, independent of what has actually reached the channel.
 
 pub mod assets;
+mod columns;
 pub mod db;
 pub mod label;
 pub mod parts;

@@ -23,7 +23,7 @@ fn open() -> rusqlite::Connection {
 fn a_fresh_index_has_nothing_to_unpin() {
     let conn = open();
 
-    assert!(pending_unpins(&conn).is_empty());
+    assert!(pending_unpins(&conn).unwrap().is_empty());
 }
 
 #[test]
@@ -34,7 +34,7 @@ fn rescan_records_the_newest_snapshot_as_current() {
 
     // The newest is the one a later push replaces, so it is what gets
     // unpinned next time; the older two are stale and unpinned as well.
-    assert_eq!(pending_unpins(&conn), vec![61, 55, 40]);
+    assert_eq!(pending_unpins(&conn).unwrap(), vec![61, 55, 40]);
 }
 
 #[test]
@@ -45,7 +45,7 @@ fn every_snapshot_a_rescan_saw_is_eventually_unpinned() {
 
     record_index_messages(&conn, &[61, 63]).unwrap();
 
-    let pending = pending_unpins(&conn);
+    let pending = pending_unpins(&conn).unwrap();
     assert!(pending.contains(&61));
     assert!(pending.contains(&63));
 }
@@ -57,7 +57,7 @@ fn recording_nothing_leaves_the_bookkeeping_alone() {
 
     record_index_messages(&conn, &[]).unwrap();
 
-    assert_eq!(pending_unpins(&conn), vec![61]);
+    assert_eq!(pending_unpins(&conn).unwrap(), vec![61]);
 }
 
 #[test]
@@ -67,7 +67,7 @@ fn a_repeat_rescan_does_not_accumulate_duplicates() {
     record_index_messages(&conn, &[40, 61]).unwrap();
     record_index_messages(&conn, &[40, 61]).unwrap();
 
-    assert_eq!(pending_unpins(&conn), vec![61, 40]);
+    assert_eq!(pending_unpins(&conn).unwrap(), vec![61, 40]);
 }
 
 /// The defect this guards: a push whose unpin returned `Ok` without taking
@@ -83,7 +83,7 @@ fn an_id_that_could_not_be_proved_unpinned_survives_the_push() {
     record_unpin_outcome(&conn, &[1558]).unwrap();
 
     assert_eq!(
-        pending_unpins(&conn),
+        pending_unpins(&conn).unwrap(),
         vec![1558],
         "the next push has to try again"
     );
@@ -96,7 +96,7 @@ fn an_id_proved_unpinned_is_forgotten() {
 
     record_unpin_outcome(&conn, &[]).unwrap();
 
-    assert!(pending_unpins(&conn).is_empty());
+    assert!(pending_unpins(&conn).unwrap().is_empty());
 }
 
 /// A push clears what it proved and keeps what it did not, in one pass.
@@ -107,7 +107,7 @@ fn a_push_keeps_only_what_it_could_not_clear() {
 
     record_unpin_outcome(&conn, &[1558]).unwrap();
 
-    assert_eq!(pending_unpins(&conn), vec![1558]);
+    assert_eq!(pending_unpins(&conn).unwrap(), vec![1558]);
 }
 
 mod nothing_left_to_unpin {

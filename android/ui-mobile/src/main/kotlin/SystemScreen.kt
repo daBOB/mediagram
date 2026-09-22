@@ -65,7 +65,11 @@ private fun CatalogueBlock(state: SystemUiState) = Block(
         // read on. Every catalogue this app holds was pushed to a channel
         // and pulled back down — which is what the Refresh row two lines
         // below is reporting the age of.
-        "Source" to if (state.origin == "package") "published package" else "the library's channel",
+        "Source" to when (state.origin) {
+            "package" -> "published package"
+            "channel" -> "the library's channel"
+            else -> "nothing installed yet"
+        },
         "Holds" to "${state.sets} playable sets, ${state.posters} posters",
         // Read against the wall clock at the moment this block is composed
         // rather than when the facts were taken: the state is re-read on

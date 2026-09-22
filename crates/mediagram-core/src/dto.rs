@@ -120,6 +120,8 @@ impl From<TitleDetails> for TitleInfo {
 /// file happens to claim.
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
 pub struct CatalogFacts {
+    /// Where the installed catalogue came from: `"channel"` or `"package"`,
+    /// or empty when none is installed or its record cannot be read.
     pub origin: String,
     pub sets: u64,
     pub posters: u64,

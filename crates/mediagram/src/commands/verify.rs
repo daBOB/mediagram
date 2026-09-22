@@ -5,7 +5,7 @@ use anyhow::{Context, Result, bail};
 
 use crate::config::Config;
 use crate::index::status::SetStatus;
-use crate::index::{db, sets};
+use crate::index::{db, parts, sets};
 use crate::telegram::client::Tg;
 use crate::verify::render;
 use crate::verify::session::{self, SetPlan};
@@ -30,6 +30,7 @@ pub async fn run(
     }
 
     let mut plans = Vec::with_capacity(set_ids.len());
+    let mut unreadable = 0usize;
     for id in set_ids {
         let row = sets::get_set(&conn, &id)?
             .ok_or_else(|| anyhow::anyhow!("set {id} vanished from the index mid-verify"))?;
@@ -39,7 +40,16 @@ pub async fn run(
             println!("set {id}: {}, skipped", row.status);
             continue;
         }
-        let parts = verify::load_parts(&conn, &id)?;
+        // A set whose rows cannot be read is reported and counted, like a set
+        // Telegram cannot reach, rather than ending the run for every other.
+        let parts = match parts::all_parts(&conn, &id) {
+            Ok(parts) => parts,
+            Err(err) => {
+                println!("set {id}: its parts could not be read: {err:#}");
+                unreadable += 1;
+                continue;
+            }
+        };
         plans.push(SetPlan {
             set_id: id,
             row,
@@ -47,6 +57,9 @@ pub async fn run(
         });
     }
     if plans.is_empty() {
+        if unreadable > 0 {
+            bail!("{unreadable} set(s) could not be read from the index");
+        }
         println!("no complete sets to verify");
         return Ok(());
     }
@@ -56,7 +69,7 @@ pub async fn run(
 
     let tg = Tg::connect(cfg).await.context("connecting to Telegram")?;
     let chat_id = tg.chat_id();
-    let mut failed = 0usize;
+    let mut failed = unreadable;
     for plan in &plans {
         match session::verify_set(&conn, &tg, chat_id, plan, full, since, cfg.max_attempts).await {
             Ok(report) => {

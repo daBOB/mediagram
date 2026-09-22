@@ -47,10 +47,10 @@ pub fn record_unpin_outcome(conn: &Connection, unresolved: &[i32]) -> Result<()>
 /// Both keys hold comma-separated ids: `index_message_id` the snapshot this
 /// push replaces, `stale_index_message_id` anything a previous push could not
 /// clear or a `rescan` rediscovered.
-pub fn pending_unpins(conn: &Connection) -> Vec<i32> {
+pub fn pending_unpins(conn: &Connection) -> Result<Vec<i32>> {
     let mut ids: Vec<i32> = Vec::new();
     for key in [META_INDEX_MESSAGE_ID, META_STALE_INDEX_ID] {
-        let Ok(Some(raw)) = db::get_meta(conn, key) else {
+        let Some(raw) = db::get_meta(conn, key)? else {
             continue;
         };
         for piece in raw.split(',').map(str::trim).filter(|p| !p.is_empty()) {
@@ -63,7 +63,7 @@ pub fn pending_unpins(conn: &Connection) -> Vec<i32> {
             }
         }
     }
-    ids
+    Ok(ids)
 }
 
 /// Records the index snapshots a `rescan` found in the channel.

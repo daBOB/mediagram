@@ -59,7 +59,6 @@ const COLUMNS: &str = "set_id, kind, title, show, chap, path, season, episode, t
      vcodec, acodec, quality, hdr, duration, total, part_count, created_at";
 
 fn read_set(row: &rusqlite::Row<'_>) -> rusqlite::Result<PlayableSet> {
-    let total: i64 = row.get("total")?;
     Ok(PlayableSet {
         set_id: row.get("set_id")?,
         kind: row.get("kind")?,
@@ -77,7 +76,7 @@ fn read_set(row: &rusqlite::Row<'_>) -> rusqlite::Result<PlayableSet> {
         quality: row.get("quality")?,
         hdr: row.get("hdr")?,
         duration: row.get("duration")?,
-        total: total.max(0) as u64,
+        total: row.get("total")?,
         part_count: row.get("part_count")?,
         created_at: row.get("created_at")?,
     })
@@ -128,13 +127,11 @@ pub fn part_locations(conn: &Connection, set_id: &str) -> Result<Vec<PartLocatio
         .context("preparing the part query")?;
     let rows = stmt
         .query_map([set_id], |row| {
-            let off: i64 = row.get("byte_offset")?;
-            let len: i64 = row.get("byte_length")?;
             Ok(PartLocation {
                 span: PartSpan {
                     idx: row.get("idx")?,
-                    off: off.max(0) as u64,
-                    len: len.max(0) as u64,
+                    off: row.get("byte_offset")?,
+                    len: row.get("byte_length")?,
                 },
                 chat_id: row.get("chat_id")?,
                 message_id: row.get("message_id")?,

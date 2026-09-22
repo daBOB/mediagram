@@ -41,7 +41,7 @@ fn install_downloaded(
     incoming: &std::path::Path,
     version: &str,
 ) -> Result<u64, CoreError> {
-    let sets = store::count_playable(incoming).map_err(|_| CoreError::Library(UNREADABLE.into()))?;
+    let sets = store::count_playable(incoming).map_err(CoreError::Library(UNREADABLE.into()).logged())?;
     refresh::install_staged(core, incoming, version)?;
     Ok(sets)
 }
