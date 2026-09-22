@@ -5,11 +5,17 @@ import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import catalog.Shelf
 import designsystem.Spacing
-import androidx.compose.foundation.layout.padding
 
 /**
  * Which shelf the wall is showing, as the masthead the web player has.
@@ -31,10 +37,25 @@ internal fun ShelfTabs(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Held to a readable measure instead of filling the window. Three
+    // labels spread across a tablet's twelve hundred points put "Movies"
+    // and "Tutorials" at opposite edges of the glass, which reads as three
+    // unrelated buttons rather than as one masthead.
+    Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Masthead(shelves, selected, onSelect)
+    }
+}
+
+@Composable
+private fun Masthead(shelves: List<Shelf>, selected: Int, onSelect: (Int) -> Unit) {
     PrimaryTabRow(
         selectedTabIndex = selected,
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.background,
+        modifier = Modifier.widthIn(max = MASTHEAD_MAX_WIDTH),
+        // Transparent, so the masthead is type on the page rather than a
+        // band laid over it. Given its own colour it becomes a filled
+        // container floating between the bar and the wall, which is the one
+        // thing this world does not do.
+        containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         shelves.forEachIndexed { index, shelf ->
@@ -59,3 +80,6 @@ internal fun ShelfTabs(
         }
     }
 }
+
+/** As wide as three names need, and no wider. */
+private val MASTHEAD_MAX_WIDTH = 560.dp

@@ -30,6 +30,15 @@ to `main`. Full phase-by-phase detail lives in
   poster's own 2:3; a title with no artwork gets a plate with its initials
   rather than a grey slab.
 
+  A review of the built screen found the app's platform theme was still
+  `Theme.Material.Light.NoActionBar`, on both the application and the activity.
+  That is why a dark app opened on a white flash and then sat under a pale grey
+  navigation bar: Compose owns the frames, but the platform owns the window
+  before the first one and the default look of the system bars. It now has a
+  dark theme whose window background is the catalogue's ground, and the
+  activity calls `enableEdgeToEdge` with both bar styles pinned dark, for the
+  reason the theme is pinned dark.
+
   One shelf is on screen at a time, chosen from a masthead of three. That was
   not the plan and the build found it: the film shelf alone is three hundred
   plates deep, so with the shelves stacked the courses sat fifty screens down

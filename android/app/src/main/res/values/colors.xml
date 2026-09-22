@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  One value, duplicated from `Palette.Ground` on purpose: the window opens
+  before Compose exists, so the platform needs the number in its own
+  vocabulary. A reader who changes one must change the other, which is why
+  they name the same thing.
+-->
+<resources>
+    <color name="ground">#FF16130F</color>
+</resources>

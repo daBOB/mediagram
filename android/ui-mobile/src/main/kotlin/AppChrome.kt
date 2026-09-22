@@ -4,14 +4,19 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -127,19 +132,34 @@ fun LibraryScaffold(
         topBar = {
             TopAppBar(
                 title = { Text(barTitleFor(destination)) },
+                // The masthead band is the ground; the page is what the
+                // plates are tipped onto, below it. A bar lighter than the
+                // sheet it sits over inverts the one relation the palette
+                // names.
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
                 navigationIcon = {
                     if (backLabel != null) {
                         IconButton(
                             onClick = onBack,
                             modifier = Modifier.semantics { contentDescription = backLabel },
-                        ) { Text("←") }
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = null,
+                            )
+                        }
                     }
                 },
                 actions = {
                     IconButton(
                         onClick = { menuExpanded = true },
                         modifier = Modifier.semantics { contentDescription = "Menu" },
-                    ) { Text("⋮") }
+                    ) { Icon(imageVector = Icons.Default.MoreVert, contentDescription = null) }
                     DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                         DropdownMenuItem(
                             text = { Text("System") },
@@ -167,6 +187,7 @@ fun LibraryScaffold(
                 },
             )
         },
+        containerColor = MaterialTheme.colorScheme.surface,
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) { content() }
     }

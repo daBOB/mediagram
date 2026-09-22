@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The window the app opens in, before a single composable has drawn.
+
+  This is not decoration. Compose paints the catalogue's ink, but the
+  platform theme owns the window between the launcher tap and the first
+  frame, and it owns the default look of the system bars. Left on a Light
+  parent, a dark app opens on a white flash and then sits under a pale grey
+  navigation bar for the rest of its life.
+-->
+<resources>
+    <style name="Theme.Mediagram" parent="@android:style/Theme.Material.NoActionBar">
+        <!-- The catalogue's ground, so the cold-start window is already the
+             colour the first frame will be. -->
+        <item name="android:windowBackground">@color/ground</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+</resources>

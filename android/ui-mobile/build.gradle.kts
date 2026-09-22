@@ -21,4 +21,5 @@ dependencies {
     // it an implementation dependency, so this module needs its own.
     implementation(project(":core:playback"))
     implementation(libs.findLibrary("androidx.activity.compose").get())
+    implementation(libs.findLibrary("androidx.compose.material.icons.core").get())
 }

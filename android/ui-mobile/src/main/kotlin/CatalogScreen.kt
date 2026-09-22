@@ -21,6 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.window.core.layout.WindowWidthSizeClass
 import catalog.CatalogUiState
 import catalog.CollectionKind
@@ -136,7 +137,12 @@ private fun ShelfWall(
                 is Entry.Film -> PosterCard(
                     posterPath = entry.set.posterPath,
                     title = entry.set.title,
-                    caption = null,
+                    // The year and the runtime, in the figures the detail
+                    // screen already sets them in. A shelf of three hundred
+                    // films with nothing but names under them is a wall of
+                    // artwork; the line under the name is what tells two
+                    // versions of the same title apart.
+                    caption = factsLine(entry.set.year, entry.set.durationSecs),
                     modifier = Modifier,
                     onClick = { onOpenTitle(entry.set.setId) },
                 )
@@ -177,9 +183,25 @@ internal fun posterColumnsFor(widthSizeClass: WindowWidthSizeClass): Int = when 
     else -> 3
 }
 
+/**
+ * What the screen says when it has nothing to show.
+ *
+ * Set in the catalogue's own reading face rather than left at the default,
+ * because a first run, an empty library and a failed load are the three
+ * moments a viewer reads a whole sentence here, and they are exactly the
+ * moments the app would otherwise stop sounding like itself.
+ */
 @Composable
 private fun CenteredMessage(message: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = message)
+    Box(
+        modifier = Modifier.fillMaxSize().padding(Spacing.extraLarge),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
     }
 }
