@@ -14,7 +14,7 @@ use super::prompt::Prompter;
 use super::search::search_and_resolve;
 
 /// Everything `resolve` needs beyond the file name: the lookup half of
-/// `commands::add::NewSet`, without depending on the CLI or config types.
+/// `upload::new_set::NewSet`, without depending on the CLI or config types.
 #[derive(Debug, Clone, Default)]
 pub struct ResolveInput {
     pub file_name: String,
@@ -161,7 +161,7 @@ pub(super) async fn fetch_details(api: &impl TmdbApi, id: u64, kind: Kind) -> Re
 /// everything comes from what the caller passed and from the file name.
 pub fn lesson(course: &str, input: &ResolveInput) -> ResolvedItem {
     let (_, title) =
-        crate::course::plan::split_number_and_title(crate::course::plan::stem(&input.file_name));
+        crate::media::file_names::split_number_and_title(crate::media::file_names::stem(&input.file_name));
     ResolvedItem {
         kind: Kind::Tut,
         ids: ProviderIds::default(),

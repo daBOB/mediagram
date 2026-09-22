@@ -1,4 +1,4 @@
-//! Uploading one course document.
+//! Planning one course document as a set.
 //!
 //! A document takes the same road as a lesson from the moment there are bytes
 //! to send — the same parts, the same captions, the same upload — and skips
@@ -8,9 +8,9 @@
 //! to look up: a document belongs to a course, and a course is described by
 //! hand.
 //!
-//! Not a subcommand. Documents are found by walking a course, so `add-course`
-//! is the one caller and a second entry point would be a second way to get
-//! the numbering wrong.
+//! No subcommand plans a document on its own. Documents are found by walking
+//! a course, so `add-course` is the one caller and a second entry point would
+//! be a second way to get the numbering wrong.
 
 use std::path::PathBuf;
 
@@ -44,7 +44,7 @@ pub struct Document {
 
 /// Writes one document to the index as a set ready to upload, and returns
 /// its id.
-pub fn plan(cfg: &Config, doc: &Document) -> Result<String> {
+pub fn plan_document(cfg: &Config, doc: &Document) -> Result<String> {
     let total = std::fs::metadata(&doc.file)
         .with_context(|| format!("stat {}", doc.file.display()))?
         .len();

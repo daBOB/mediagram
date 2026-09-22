@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 
-use crate::course::plan::{is_document, is_video};
+use crate::media::file_names::{is_document, is_video};
 
 /// The files of interest in one directory.
 #[derive(Debug, Default, Clone)]

@@ -4,6 +4,7 @@
 pub mod classify;
 pub mod direct_play;
 pub mod ffmpeg_progress;
+pub mod file_names;
 pub mod inspect;
 pub mod mp4_atoms;
 pub mod prepare_check;
