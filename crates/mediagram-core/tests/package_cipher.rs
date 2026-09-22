@@ -2,7 +2,7 @@
 //! pointer's identifying fields as associated data so a replayed archive
 //! under an edited pointer fails its tag instead of being accepted.
 
-use mediagram_core::package::cipher::{EncryptError, open, parse_key, seal};
+use mediagram_core::package::cipher::{EncryptError, NONCE_LEN, TAG_LEN, open, parse_key, seal};
 
 const AAD: &[u8] =
     br#"{"format":1,"created_at":1781568000,"key_id":"9f2c41ab","schema":1,"spec":2}"#;
@@ -80,6 +80,63 @@ fn two_seals_of_the_same_payload_use_different_nonces() {
     let b = seal(&key(), b"same", AAD).unwrap();
     assert_ne!(a[..12], b[..12], "nonce must be fresh per seal");
     assert_ne!(a, b);
+}
+
+/// Associated data is optional in the AEAD sense: an empty AAD still binds
+/// the tag to the key, so opening under the wrong key still fails.
+#[test]
+fn empty_associated_data_still_authenticates() {
+    let plaintext = b"content";
+    let sealed = seal(&key(), plaintext, b"").unwrap();
+    assert_eq!(open(&key(), &sealed, b"").unwrap(), plaintext);
+
+    let other = [8u8; 32];
+    assert!(matches!(
+        open(&other, &sealed, b""),
+        Err(EncryptError::Tag)
+    ));
+}
+
+/// The associated data is a JSON pointer, not a fixed-size field, so nothing
+/// in `seal`/`open` should assume it is small.
+#[test]
+fn a_large_associated_data_still_authenticates() {
+    let plaintext = b"small";
+    let large_aad = vec![0xAAu8; 64 * 1024];
+    let sealed = seal(&key(), plaintext, &large_aad).unwrap();
+    assert_eq!(open(&key(), &sealed, &large_aad).unwrap(), plaintext);
+}
+
+/// A key of all zeros is unwise but not invalid; the cipher does not reject
+/// it on the caller's behalf.
+#[test]
+fn an_all_zero_key_still_seals_and_opens() {
+    let key = [0u8; 32];
+    let plaintext = b"encrypted with a weak key";
+    let sealed = seal(&key, plaintext, AAD).unwrap();
+    assert_eq!(open(&key, &sealed, AAD).unwrap(), plaintext);
+}
+
+/// A sealed message exactly `NONCE_LEN + TAG_LEN` bytes long carries a nonce
+/// and a tag but zero ciphertext bytes. It is long enough to pass the length
+/// check, so it must fail on tag verification, not on size.
+#[test]
+fn a_zero_length_ciphertext_fails_the_tag_not_the_length_check() {
+    let exactly_nonce_and_tag = vec![0u8; NONCE_LEN + TAG_LEN];
+    assert!(matches!(
+        open(&key(), &exactly_nonce_and_tag, b""),
+        Err(EncryptError::Tag)
+    ));
+}
+
+/// A multi-megabyte payload, the size an archive of a real library reaches,
+/// round-trips exactly like a small one.
+#[test]
+fn a_multi_megabyte_payload_round_trips() {
+    let plaintext = vec![0x99u8; 5 * 1024 * 1024];
+    let sealed = seal(&key(), &plaintext, AAD).unwrap();
+    let decrypted = open(&key(), &sealed, AAD).unwrap();
+    assert_eq!(decrypted, plaintext);
 }
 
 #[test]

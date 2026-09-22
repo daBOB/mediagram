@@ -66,3 +66,36 @@ fn an_absurd_poster_count_cannot_overflow_the_estimate() {
     assert_eq!(huge, u64::MAX, "saturates instead of wrapping");
     assert!(matches!(verdict_for(huge), Verdict::TooLarge(_)));
 }
+
+/// The warn threshold is inclusive: exactly 24 MB already warns, not just
+/// the byte after it.
+#[test]
+fn the_warn_threshold_includes_its_own_boundary_byte() {
+    assert_eq!(verdict_for(24 * 1024 * 1024 - 1), Verdict::Fine);
+    assert!(matches!(
+        verdict_for(24 * 1024 * 1024),
+        Verdict::Large(_)
+    ));
+    assert!(matches!(
+        verdict_for(24 * 1024 * 1024 + 1),
+        Verdict::Large(_)
+    ));
+}
+
+/// Same shape as the warn threshold, one boundary up: exactly 48 MB already
+/// refuses.
+#[test]
+fn the_refuse_threshold_includes_its_own_boundary_byte() {
+    assert!(matches!(
+        verdict_for(48 * 1024 * 1024 - 1),
+        Verdict::Large(_)
+    ));
+    assert!(matches!(
+        verdict_for(48 * 1024 * 1024),
+        Verdict::TooLarge(_)
+    ));
+    assert!(matches!(
+        verdict_for(48 * 1024 * 1024 + 1),
+        Verdict::TooLarge(_)
+    ));
+}

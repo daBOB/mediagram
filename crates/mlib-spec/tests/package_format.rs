@@ -77,6 +77,46 @@ fn manifest_serializes_in_declared_field_order() {
     }
 }
 
+#[test]
+fn manifest_round_trips_with_zero_posters() {
+    let mut empty = manifest();
+    empty.posters.clear();
+    let text = serde_json::to_string(&empty).unwrap();
+    let back: PackageManifest = serde_json::from_str(&text).unwrap();
+    assert!(back.posters.is_empty());
+}
+
+/// Nothing in this layer enforces that poster keys are unique; that is left
+/// to whoever builds the manifest.
+#[test]
+fn manifest_allows_duplicate_poster_keys() {
+    let mut with_duplicate = manifest();
+    with_duplicate.posters.push(with_duplicate.posters[0].clone());
+    let text = serde_json::to_string(&with_duplicate).unwrap();
+    let back: PackageManifest = serde_json::from_str(&text).unwrap();
+    assert_eq!(back.posters.len(), 2);
+    assert_eq!(back.posters[0].key, back.posters[1].key);
+}
+
+#[test]
+fn manifest_round_trips_extreme_numeric_values() {
+    let extreme = PackageManifest {
+        format: u32::MAX,
+        created_at: i64::MIN,
+        schema: i64::MAX,
+        spec: u32::MAX,
+        sets: u64::MAX,
+        parts: u64::MAX,
+        posters: vec![PosterEntry {
+            key: "a-b-1".into(),
+            file: "f".into(),
+        }],
+    };
+    let text = serde_json::to_string(&extreme).unwrap();
+    let back: PackageManifest = serde_json::from_str(&text).unwrap();
+    assert_eq!(back, extreme);
+}
+
 /// The pointer is the one file published in the clear, so it must never name
 /// a title, a set, a chat or a message.
 #[test]
@@ -149,6 +189,49 @@ fn associated_data_ignores_the_download_fields() {
 }
 
 #[test]
+fn associated_data_changes_when_format_changes() {
+    let mut newer_format = pointer();
+    newer_format.format += 1;
+    assert_ne!(associated_data(&pointer()), associated_data(&newer_format));
+}
+
+#[test]
+fn associated_data_changes_when_spec_changes() {
+    let mut newer_spec = pointer();
+    newer_spec.spec += 1;
+    assert_ne!(associated_data(&pointer()), associated_data(&newer_spec));
+}
+
+/// serde_json escapes whatever a key_id contains, so associated data stays
+/// valid JSON even for a value `pointer_is_readable` would already refuse.
+#[test]
+fn associated_data_stays_valid_json_for_any_key_id_content() {
+    for awkward in ["abc\"def", "abc\\def", "abc\ndef\nghi", "café_日本"] {
+        let mut odd = pointer();
+        odd.key_id = awkward.into();
+        let text = String::from_utf8(associated_data(&odd)).unwrap();
+        serde_json::from_str::<serde_json::Value>(&text)
+            .unwrap_or_else(|e| panic!("`{awkward}` produced invalid JSON: {e}"));
+    }
+}
+
+#[test]
+fn associated_data_round_trips_extreme_created_at_and_schema() {
+    let mut at_min = pointer();
+    at_min.created_at = i64::MIN;
+    at_min.schema = i64::MIN;
+    let mut at_max = pointer();
+    at_max.created_at = i64::MAX;
+    at_max.schema = i64::MAX;
+    for p in [&at_min, &at_max] {
+        let text = String::from_utf8(associated_data(p)).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&text).unwrap();
+        assert_eq!(parsed["created_at"].as_i64().unwrap(), p.created_at);
+        assert_eq!(parsed["schema"].as_i64().unwrap(), p.schema);
+    }
+}
+
+#[test]
 fn key_id_is_stable_for_a_key_and_differs_for_another() {
     let a = [7u8; 32];
     let b = [8u8; 32];
@@ -161,6 +244,8 @@ fn key_id_is_stable_for_a_key_and_differs_for_another() {
 fn poster_keys_accept_the_documented_shapes() {
     assert!(poster_key_is_valid("tmdb-movie-693134"));
     assert!(poster_key_is_valid("tmdb-tv-550"));
+    assert!(poster_key_is_valid("tvdb-series-12345"));
+    assert!(poster_key_is_valid("a-b-1"));
 }
 
 /// The key reaches a file name, a manifest path and a tar member name, so
@@ -197,6 +282,72 @@ fn poster_keys_separate_movie_and_tv_id_spaces() {
     assert!(poster_key_is_valid("tmdb-movie-550") && poster_key_is_valid("tmdb-tv-550"));
 }
 
+/// Only ASCII digits and letters count: a look-alike from another script
+/// must not slip through and reach a file name or a tar member name.
+#[test]
+fn poster_keys_reject_non_ascii_lookalikes_of_valid_characters() {
+    assert!(!poster_key_is_valid("tmdb-movie-٦٩٣١٣٤")); // Arabic-Indic digits
+    assert!(!poster_key_is_valid("tmdb-movie-６９３１３４")); // fullwidth digits
+    assert!(!poster_key_is_valid("ｔｍｄｂ-ｍｏｖｉｅ-693134")); // fullwidth letters
+}
+
+/// The spec calls for digits, not a positive non-zero integer, so a leading
+/// zero is not itself a reason to reject an id.
+#[test]
+fn poster_keys_accept_leading_zeros_in_the_id() {
+    assert!(poster_key_is_valid("tmdb-movie-00693134"));
+    assert!(poster_key_is_valid("tmdb-movie-0"));
+    assert!(poster_key_is_valid("tmdb-movie-00000000"));
+}
+
+#[test]
+fn poster_keys_reject_a_sign_in_the_id() {
+    assert!(!poster_key_is_valid("tmdb-movie-+693134"));
+    assert!(!poster_key_is_valid("tmdb-movie--693134"));
+    assert!(!poster_key_is_valid("tmdb-movie-693134+"));
+}
+
+#[test]
+fn poster_keys_reject_hex_letters_in_the_id() {
+    assert!(!poster_key_is_valid("tmdb-movie-deadbeef"));
+    assert!(!poster_key_is_valid("tmdb-movie-a1b2c3"));
+}
+
+#[test]
+fn poster_keys_accept_an_arbitrarily_long_id() {
+    let long_id = format!("tmdb-movie-{}", "1".repeat(10_000));
+    assert!(poster_key_is_valid(&long_id));
+}
+
+/// The key has exactly three parts; fewer or more must be rejected.
+#[test]
+fn poster_keys_reject_too_few_or_too_many_parts() {
+    assert!(!poster_key_is_valid("tmdb-movie"));
+    assert!(!poster_key_is_valid("tmdb"));
+    assert!(!poster_key_is_valid("tmdb-movie-123-extra"));
+    assert!(!poster_key_is_valid("tmdb-movie.693134")); // one dash: the dot doesn't split
+}
+
+#[test]
+fn poster_keys_reject_uppercase_anywhere_in_source_or_kind() {
+    assert!(!poster_key_is_valid("TMDB-movie-693134"));
+    assert!(!poster_key_is_valid("tmdb-MOVIE-693134"));
+    assert!(!poster_key_is_valid("Tmdb-Movie-693134"));
+}
+
+#[test]
+fn poster_keys_reject_special_characters_in_the_id() {
+    assert!(!poster_key_is_valid("tmdb-movie-693 134"));
+    assert!(!poster_key_is_valid("tmdb-movie-693_134"));
+}
+
+#[test]
+fn poster_keys_reject_empty_or_whitespace_only_segments() {
+    assert!(!poster_key_is_valid("-movie-693134"));
+    assert!(!poster_key_is_valid("tmdb--693134"));
+    assert!(!poster_key_is_valid("tmdb-movie- "));
+}
+
 /// A digest whose first four bytes are the ones that reach the file name.
 fn digest(first_four: [u8; 4]) -> [u8; 32] {
     let mut out = [0xffu8; 32];
@@ -223,6 +374,78 @@ fn package_file_name_differs_for_different_content_on_the_same_day() {
 #[test]
 fn package_file_name_handles_the_unix_epoch() {
     assert!(package_file_name(0, &digest([0xcc; 4])).contains("19700101"));
+}
+
+/// Divisible by 100 does not make a leap year unless also divisible by 400.
+#[test]
+fn package_file_name_follows_the_leap_year_rule_across_centuries() {
+    // 2024-02-29: an ordinary leap year.
+    assert!(package_file_name(1_709_164_800, &digest([0; 4])).contains("20240229"));
+    // 2000-02-29: divisible by 400, so still a leap year.
+    assert!(package_file_name(951_782_400, &digest([0; 4])).contains("20000229"));
+    // 2100-03-01: divisible by 100 but not 400, so February has only 28 days.
+    assert!(package_file_name(4_107_542_400, &digest([0; 4])).contains("21000301"));
+}
+
+#[test]
+fn package_file_name_crosses_the_millennium_boundary() {
+    assert!(package_file_name(946_684_799, &digest([0; 4])).contains("19991231"));
+    assert!(package_file_name(946_684_800, &digest([0; 4])).contains("20000101"));
+}
+
+/// The date changes only at midnight UTC, whether entering or leaving a day.
+#[test]
+fn package_file_name_changes_only_at_the_day_boundary() {
+    let midnight = 1_781_568_000;
+    let before = package_file_name(midnight - 1, &digest([0; 4]));
+    let at = package_file_name(midnight, &digest([0; 4]));
+    let just_after = package_file_name(midnight + 1, &digest([0; 4]));
+    let last_second = package_file_name(midnight + 86_399, &digest([0; 4]));
+    let next_midnight = package_file_name(midnight + 86_400, &digest([0; 4]));
+    assert_ne!(before, at, "the previous day must not share a name with this one");
+    assert_eq!(at, just_after, "the same day must share one name");
+    assert_ne!(
+        last_second, next_midnight,
+        "the next day must not share a name with this one"
+    );
+}
+
+/// A pre-epoch timestamp is clamped to the epoch rather than rendered,
+/// because a negative year would break the fixed `YYYYMMDD` shape. It cannot
+/// arise from a real export, and `pointer_is_readable` rejects a negative
+/// `created_at` outright, so clamping here only guarantees a well-formed name.
+#[test]
+fn package_file_name_clamps_any_pre_epoch_timestamp_to_the_epoch() {
+    assert!(package_file_name(-1, &digest([0; 4])).contains("19700101"));
+    assert!(package_file_name(-86_400, &digest([0; 4])).contains("19700101"));
+    assert!(package_file_name(-315_619_200, &digest([0; 4])).contains("19700101"));
+}
+
+#[test]
+fn package_file_name_does_not_panic_at_i64_max() {
+    let name = package_file_name(i64::MAX, &digest([0; 4]));
+    assert!(name.starts_with("prebuilt_mediagram_db_") && name.ends_with(".tar.gz.enc"));
+}
+
+#[test]
+fn package_file_name_does_not_panic_at_i64_min() {
+    let name = package_file_name(i64::MIN, &digest([0; 4]));
+    assert!(name.starts_with("prebuilt_mediagram_db_") && name.ends_with(".tar.gz.enc"));
+}
+
+/// Only the first four digest bytes reach the name; anything past that
+/// boundary cannot affect it.
+#[test]
+fn package_file_name_uses_only_the_first_four_digest_bytes() {
+    let mut a = [0u8; 32];
+    let mut b = [0u8; 32];
+    a[..4].copy_from_slice(&[0xde, 0xad, 0xbe, 0xef]);
+    b[..4].copy_from_slice(&[0xde, 0xad, 0xbe, 0xef]);
+    b[4] = 0xff;
+    assert_eq!(
+        package_file_name(1_781_568_000, &a),
+        package_file_name(1_781_568_000, &b)
+    );
 }
 
 #[test]
@@ -331,6 +554,42 @@ fn a_pointer_dated_before_the_epoch_is_refused() {
         pointer_is_readable(&p, &[mlib_spec::schema::SCHEMA_VERSION]),
         Err(PointerError::Malformed("created_at"))
     );
+}
+
+#[test]
+fn a_pointer_is_refused_when_the_supported_schema_list_is_empty() {
+    assert!(matches!(
+        pointer_is_readable(&pointer(), &[]),
+        Err(PointerError::UnsupportedSchema(_))
+    ));
+}
+
+/// The checks run in a fixed order, so a pointer wrong in every way still
+/// reports the first one: format.
+#[test]
+fn pointer_is_readable_checks_format_before_cipher_or_schema() {
+    let mut wrong_in_every_way = pointer();
+    wrong_in_every_way.format = PACKAGE_FORMAT + 1;
+    wrong_in_every_way.cipher = "unknown".into();
+    wrong_in_every_way.schema = 999;
+    assert!(matches!(
+        pointer_is_readable(&wrong_in_every_way, &[1]),
+        Err(PointerError::UnsupportedFormat(_))
+    ));
+}
+
+#[test]
+fn a_pointer_with_a_negative_schema_is_accepted_if_listed() {
+    let mut p = pointer();
+    p.schema = -1;
+    assert!(pointer_is_readable(&p, &[-1]).is_ok());
+}
+
+#[test]
+fn a_pointer_with_schema_zero_is_accepted_if_listed() {
+    let mut p = pointer();
+    p.schema = 0;
+    assert!(pointer_is_readable(&p, &[0]).is_ok());
 }
 
 /// `key_id` is hex by the time it reaches the cipher, which is what lets a

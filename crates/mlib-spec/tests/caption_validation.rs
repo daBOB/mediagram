@@ -116,3 +116,24 @@ fn a_valid_part_hash_parses() {
     );
     assert!(parse(&caption).is_ok());
 }
+
+/// A BOM is not ASCII whitespace, so `trim_start` leaves it in place and the
+/// marker check never sees `#mlib` at the start of the text.
+#[test]
+fn a_byte_order_mark_before_the_marker_is_not_tolerated() {
+    let text = format!("\u{FEFF}{}", caption_with("01JQ8F2K9M4XZ00000000001"));
+    assert!(matches!(parse(&text), Err(CaptionError::NoMarker)));
+}
+
+/// A future writer can add fields to the JSON line; serde ignores what it
+/// does not know about instead of rejecting the caption.
+#[test]
+fn unknown_json_fields_are_ignored_for_forward_compatibility() {
+    let text = "#mlib v=2\n{\"t\":\"movie\",\"ids\":{},\"show\":null,\"title\":\"Dune\",\"year\":2021,\
+\"s\":null,\"e\":null,\"abs\":null,\"q\":null,\"hdr\":null,\"container\":\"mkv\",\"vcodec\":null,\
+\"acodec\":null,\"alang\":[],\"slang\":[],\"dur\":null,\"variant\":null,\"set\":\"01ABC\",\
+\"part\":{\"i\":0,\"n\":1,\"off\":0,\"len\":10,\"sha256\":\"\"},\"total\":10,\
+\"future_feature\":\"unused\",\"another_unknown\":42}";
+    let caption = parse(text).unwrap();
+    assert_eq!(caption.title.as_deref(), Some("Dune"));
+}

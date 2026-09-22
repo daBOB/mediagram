@@ -87,3 +87,79 @@ fn scene_episode_title_and_trailing_id_survive() {
     let g = parse_filename("Fahrenheit 451 - 2018.mkv").unwrap();
     assert_eq!((g.title.as_str(), g.year), ("Fahrenheit 451", Some(2018)));
 }
+
+/// A number inside the title itself, before or after the real year, is never
+/// mistaken for the year the parenthesised group actually gives.
+#[test]
+fn a_number_inside_the_title_is_not_mistaken_for_the_year() {
+    for (name, title, year) in [
+        (
+            "2001 A Space Odyssey (1968).mkv",
+            "2001 A Space Odyssey",
+            1968,
+        ),
+        ("Blade Runner 2049 (2017).mkv", "Blade Runner 2049", 2017),
+    ] {
+        let g = parse_filename(name).unwrap();
+        assert_eq!((g.title.as_str(), g.year), (title, Some(year)), "{name}");
+    }
+}
+
+/// With no show name in front of it, a bare episode code reads as a plain
+/// title instead of an episode: nothing to strip it off of.
+#[test]
+fn a_bare_episode_code_with_no_show_name_is_not_read_as_an_episode() {
+    let g = parse_filename("S01E01.mkv").unwrap();
+    assert_eq!(g.title, "S01E01");
+    assert!(!g.is_episode());
+}
+
+/// The show name can sit directly against `SxxEyy` with a plain space and no
+/// year, for both a single episode and a range.
+#[test]
+fn episode_code_with_space_separator_and_no_year_parses() {
+    let g = parse_filename("The Office S01E01.mkv").unwrap();
+    assert_eq!(
+        (g.title.as_str(), g.season, g.episode, g.episode_end),
+        ("The Office", Some(1), Some(1), None)
+    );
+
+    let g = parse_filename("Breaking Bad S05E14-E16.mkv").unwrap();
+    assert_eq!(
+        (g.title.as_str(), g.season, g.episode, g.episode_end),
+        ("Breaking Bad", Some(5), Some(14), Some(16))
+    );
+}
+
+/// Absolute episode numbers keep their leading zeros as plain magnitude, at
+/// both ends of the 2-4 digit width the grammar accepts.
+#[test]
+fn absolute_numbering_strips_leading_zeros() {
+    for (name, abs) in [
+        ("Anime Show - 001.mkv", 1),
+        ("Anime Show - 042.mkv", 42),
+        ("Anime Show - 0100.mkv", 100),
+    ] {
+        let g = parse_filename(name).unwrap();
+        assert_eq!((g.title.as_str(), g.abs), ("Anime Show", Some(abs)), "{name}");
+    }
+}
+
+/// Junk stripping only starts after a year or an episode code anchors it, so
+/// a name with neither keeps its release-group junk right in the title. The
+/// id tag is still pulled out, because that runs as its own step first.
+#[test]
+fn junk_with_no_year_or_episode_anchor_stays_in_the_title() {
+    let g = parse_filename("Film - 1080p - BluRay - x265 [tmdb-693134].mkv").unwrap();
+    assert_eq!(g.title, "Film - 1080p - BluRay - x265");
+    assert_eq!(g.ids.tmdb, Some(693134));
+}
+
+/// The id tag pattern only recognises `{}` and `[]`; a parenthesised
+/// `(imdb-...)` is not an id tag and is left as ordinary title text.
+#[test]
+fn a_parenthesised_provider_id_is_not_recognized() {
+    let g = parse_filename("Film (imdb-tt15239678).mkv").unwrap();
+    assert!(g.ids.is_empty());
+    assert_eq!(g.title, "Film (imdb-tt15239678)");
+}

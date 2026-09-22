@@ -258,6 +258,229 @@ fn a_part_with_no_recorded_hash_fails_the_comparison() {
     assert!(verdict.failure.unwrap().contains("none recorded"));
 }
 
+/// The recorded hash and the freshly computed one are compared
+/// case-insensitively.
+#[test]
+fn hash_comparison_ignores_case() {
+    let expected = ExpectedPart {
+        idx: 0,
+        byte_length: 1024,
+        doc_id: Some(303),
+        sha256: Some("ABCDEF0123456789".repeat(4)),
+        verified_at: None,
+    };
+    let observed = ObservedMessage::Document {
+        doc_id: 303,
+        size: Some(1024),
+    };
+    let v = verify_size(&expected, &observed);
+    let computed_lowercase = "abcdef0123456789".repeat(4);
+    let v = apply_hash(v, &computed_lowercase, expected.sha256.as_deref(), 1);
+    assert_eq!(v.hash_ok, Some(true));
+    assert_eq!(v.verified_at, Some(1));
+}
+
+/// A document with no reported size is a failure, phrased as "unknown"
+/// rather than a bogus number.
+#[test]
+fn document_with_unknown_size_fails_with_unknown_in_the_message() {
+    let expected = ExpectedPart {
+        idx: 0,
+        byte_length: 1024,
+        doc_id: Some(603),
+        sha256: None,
+        verified_at: None,
+    };
+    let observed = ObservedMessage::Document {
+        doc_id: 603,
+        size: None,
+    };
+    let v = verify_size(&expected, &observed);
+    assert!(v.failed());
+    assert!(v.failure.unwrap().contains("unknown"));
+}
+
+/// A size check alone (no `--full`) never clears a `verified_at` an earlier
+/// run recorded; only `forget_stale_success` does that, and only on a fresh
+/// failure.
+#[test]
+fn size_check_alone_preserves_a_prior_verified_at() {
+    let expected = ExpectedPart {
+        idx: 0,
+        byte_length: 1024,
+        doc_id: Some(700),
+        sha256: Some("a".repeat(64)),
+        verified_at: Some(1_600_000_000),
+    };
+    let observed = ObservedMessage::Document {
+        doc_id: 700,
+        size: Some(1024),
+    };
+    let v = verify_size(&expected, &observed);
+    assert_eq!(v.verified_at, Some(1_600_000_000));
+}
+
+/// A fresh `--full` hash match overwrites `verified_at` with the current
+/// run's time, even when the part already carried an older stamp.
+#[test]
+fn hash_check_overwrites_a_prior_verified_at() {
+    let expected = ExpectedPart {
+        idx: 0,
+        byte_length: 1024,
+        doc_id: Some(701),
+        sha256: Some("a".repeat(64)),
+        verified_at: Some(1_600_000_000),
+    };
+    let observed = ObservedMessage::Document {
+        doc_id: 701,
+        size: Some(1024),
+    };
+    let v = verify_size(&expected, &observed);
+    let v = apply_hash(v, &"a".repeat(64), expected.sha256.as_deref(), 1_700_000_000);
+    assert_eq!(v.verified_at, Some(1_700_000_000));
+}
+
+/// A forwarded document id only warns; a hash that still matches afterwards
+/// leaves the part clean, not failed.
+#[test]
+fn doc_id_warning_does_not_block_a_later_successful_hash_check() {
+    let expected = ExpectedPart {
+        idx: 0,
+        byte_length: 1024,
+        doc_id: Some(100),
+        sha256: Some("a".repeat(64)),
+        verified_at: None,
+    };
+    let observed = ObservedMessage::Document {
+        doc_id: 999,
+        size: Some(1024),
+    };
+    let v = verify_size(&expected, &observed);
+    assert!(v.size_ok);
+    assert!(v.warning.is_some());
+    let v = apply_hash(v, &"a".repeat(64), expected.sha256.as_deref(), 1);
+    assert_eq!(v.hash_ok, Some(true));
+    assert!(!v.failed());
+}
+
+/// In a set with an ok, a warned, and a failed part, only the failed one
+/// counts toward the "N/M failed" tally.
+#[test]
+fn a_warned_part_does_not_count_toward_the_failed_tally() {
+    let ok = PartVerdict {
+        idx: 0,
+        size_ok: true,
+        hash_ok: Some(true),
+        warning: None,
+        failure: None,
+        verified_at: Some(1),
+    };
+    let warned = PartVerdict {
+        idx: 1,
+        size_ok: true,
+        hash_ok: Some(true),
+        warning: Some("document id changed".into()),
+        failure: None,
+        verified_at: Some(1),
+    };
+    let failed = PartVerdict {
+        idx: 2,
+        size_ok: false,
+        hash_ok: None,
+        warning: None,
+        failure: Some("size mismatch".into()),
+        verified_at: None,
+    };
+    let report = SetReport {
+        set_id: "MIXED".into(),
+        local_issue: None,
+        parts: vec![ok, warned, failed],
+    };
+    assert!(report.failed());
+    assert!(summary_line(&report).contains("1/3"));
+}
+
+/// A row prints both a warning and a failure when a part carries both.
+#[test]
+fn a_row_can_show_both_a_warning_and_a_failure() {
+    let part = PartVerdict {
+        idx: 5,
+        size_ok: false,
+        hash_ok: None,
+        warning: Some("document id changed (1 -> 2)".into()),
+        failure: Some("size mismatch: expected 1024 bytes, got 512".into()),
+        verified_at: None,
+    };
+    let report = SetReport {
+        set_id: "TEST".into(),
+        local_issue: None,
+        parts: vec![part],
+    };
+    let rows = render_rows(&report);
+    assert!(rows[0].contains("warn:"));
+    assert!(rows[0].contains("fail:"));
+}
+
+/// The summary line reads "FAILED" when every part in the set failed.
+#[test]
+fn summary_line_says_failed_when_every_part_fails() {
+    let parts: Vec<PartVerdict> = (0..5)
+        .map(|idx| PartVerdict {
+            idx,
+            size_ok: false,
+            hash_ok: None,
+            warning: None,
+            failure: Some(format!("failure {idx}")),
+            verified_at: None,
+        })
+        .collect();
+    let report = SetReport {
+        set_id: "ALLFAIL".into(),
+        local_issue: None,
+        parts,
+    };
+    let summary = summary_line(&report);
+    assert!(summary.contains("5/5"));
+    assert!(summary.contains("FAILED"));
+}
+
+/// Warnings on an otherwise clean set are counted and reported, without
+/// turning the summary into a failure.
+#[test]
+fn summary_line_counts_warnings_without_counting_them_as_failures() {
+    let parts: Vec<PartVerdict> = (0..3)
+        .map(|idx| PartVerdict {
+            idx,
+            size_ok: true,
+            hash_ok: Some(true),
+            warning: Some("document id changed".into()),
+            failure: None,
+            verified_at: Some(1),
+        })
+        .collect();
+    let report = SetReport {
+        set_id: "WARNED".into(),
+        local_issue: None,
+        parts,
+    };
+    let summary = summary_line(&report);
+    assert!(summary.contains("3/3"));
+    assert!(summary.contains("ok"));
+    assert!(summary.contains("warning"));
+}
+
+/// A set with no part rows at all is not a failure, and renders no rows.
+#[test]
+fn empty_report_with_no_parts_is_not_a_failure() {
+    let report = SetReport {
+        set_id: "EMPTY".into(),
+        local_issue: None,
+        parts: vec![],
+    };
+    assert!(!report.failed());
+    assert_eq!(render_rows(&report).len(), 0);
+}
+
 /// `--since` skips only parts already proven at or after the cutoff; an
 /// older stamp, a missing stamp, or no cutoff at all means re-check.
 #[test]

@@ -3,6 +3,7 @@
 
 use mediagram::export::pointer;
 use mediagram::export::titles::{counts, distinct_titles};
+use mediagram::index::db;
 use mlib_spec::caption::Kind;
 
 mod support;
@@ -47,6 +48,48 @@ fn an_empty_index_reports_nothing() {
     assert_eq!(counts(&conn).unwrap(), (0, 0));
 }
 
+/// A `kind` outside the enum can only exist in a database from before the
+/// value was validated on write, or written by hand. Either way it must not
+/// surface as a title `distinct_titles` cannot even name.
+#[test]
+fn a_row_with_an_unrecognized_kind_contributes_no_title() {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = db::open(dir.path()).unwrap();
+    conn.execute(
+        "INSERT INTO sets (set_id, kind, tmdb, title, container, total, part_count, created_at, spec_version) VALUES ('unknown_set', 'unknown', 999, 'Unknown Title', 'mkv', 0, 0, 1700000000, 2)",
+        [],
+    )
+    .unwrap();
+
+    assert_eq!(distinct_titles(&conn).unwrap().len(), 0);
+}
+
+/// `tmdb` is stored as SQLite's `INTEGER`, which does not enforce
+/// non-negativity, so a negative value has to be filtered rather than
+/// rejected by the column type.
+#[test]
+fn a_row_with_a_negative_tmdb_id_contributes_no_title() {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = db::open(dir.path()).unwrap();
+    conn.execute(
+        "INSERT INTO sets (set_id, kind, tmdb, title, container, total, part_count, created_at, spec_version) VALUES ('negative_set', 'movie', -1, 'Negative ID', 'mkv', 0, 0, 1700000000, 2)",
+        [],
+    )
+    .unwrap();
+
+    assert_eq!(distinct_titles(&conn).unwrap().len(), 0);
+}
+
+#[test]
+fn a_tmdb_id_near_i64_max_still_round_trips() {
+    let large_id = i64::MAX as u64 - 1_000_000;
+    let (_d, conn) = db_with(&[("01A", Kind::Movie, Some(large_id))]);
+    assert_eq!(
+        distinct_titles(&conn).unwrap(),
+        vec![(Kind::Movie, large_id)]
+    );
+}
+
 /// The draft carries only what the cipher authenticates. The download fields
 /// are filled in later, once the ciphertext those fields describe exists.
 #[test]
@@ -86,4 +129,37 @@ fn sha256_matches_a_known_digest() {
         hex::encode(pointer::sha256(b"abc")),
         "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
     );
+    assert_eq!(
+        hex::encode(pointer::sha256(b"")),
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    );
+}
+
+/// `created_at` is stored and echoed verbatim; nothing about the draft
+/// special-cases the ends of the range it lives in.
+#[test]
+fn a_draft_carries_created_at_verbatim_at_the_extremes_of_i64() {
+    let key = [7u8; 32];
+    let earliest = pointer::draft(0, &key);
+    assert_eq!(earliest.created_at, 0);
+    assert_eq!(earliest.format, mlib_spec::package::PACKAGE_FORMAT);
+
+    let latest = pointer::draft(i64::MAX, &key);
+    assert_eq!(latest.created_at, i64::MAX);
+    assert_eq!(latest.format, mlib_spec::package::PACKAGE_FORMAT);
+}
+
+/// The cipher's associated data has to be valid, parseable JSON, not just
+/// bytes that happen to authenticate.
+#[test]
+fn the_associated_data_is_valid_json_with_the_identifying_fields() {
+    let key = [9u8; 32];
+    let draft = pointer::draft(1234567890, &key);
+    let aad = mlib_spec::package::associated_data(&draft);
+
+    let json_str = std::str::from_utf8(&aad).expect("AAD is valid UTF-8");
+    let json_val: serde_json::Value = serde_json::from_str(json_str).expect("AAD parses as JSON");
+
+    assert_eq!(json_val["format"], mlib_spec::package::PACKAGE_FORMAT);
+    assert_eq!(json_val["created_at"], 1234567890);
 }

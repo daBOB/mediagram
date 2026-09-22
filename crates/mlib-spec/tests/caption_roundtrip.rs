@@ -112,6 +112,27 @@ fn oversized_json_is_an_error() {
     assert!(to_text(&big, "").is_err());
 }
 
+/// Season 0 (a special) can carry an absolute number alongside its season and
+/// episode range, and every provider id at once; none of that confuses the
+/// wire format or gets lost on the way back.
+#[test]
+fn specials_and_absolute_numbering_survive_a_roundtrip() {
+    let c = Caption {
+        ids: ProviderIds {
+            tmdb: Some(123456),
+            tvdb: Some(789012),
+            imdb: Some("tt9999999".into()),
+        },
+        s: Some(0),
+        abs: Some(100),
+        title: Some("Special: Lost Girls".into()),
+        variant: Some("Director's Cut".into()),
+        ..episode()
+    };
+    let text = to_text(&c, "").unwrap();
+    assert_eq!(parse(&text).unwrap(), c);
+}
+
 #[test]
 fn budget_is_utf16_and_exact_fit_does_not_panic() {
     use mlib_spec::caption_codec::tg_len;
