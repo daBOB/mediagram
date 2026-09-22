@@ -54,7 +54,7 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
         manual: args.manual,
     };
     let resolved = match &course {
-        Some(title) => resolve::tutorial(title, &resolve_input),
+        Some(title) => resolve::lesson(title, &resolve_input),
         None => resolve::resolve(&api, &resolve_input, &mut prompter)
             .await
             .context("resolving metadata")?,

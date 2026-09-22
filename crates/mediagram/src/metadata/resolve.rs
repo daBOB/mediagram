@@ -192,7 +192,7 @@ async fn find_by_external(api: &impl TmdbApi, id: &str, source: &str, kind: Kind
 }
 
 /// Fetches an episode's title. Failures here are non-fatal to the caller.
-async fn fetch_episode_title(
+pub(crate) async fn fetch_episode_title(
     api: &impl TmdbApi,
     show_id: u64,
     season: u32,
@@ -207,7 +207,7 @@ async fn fetch_episode_title(
 
 /// Metadata for a course lesson. No lookup: TMDB has no courses, so
 /// everything comes from what the caller passed and from the file name.
-pub fn tutorial(course: &str, input: &ResolveInput) -> ResolvedItem {
+pub fn lesson(course: &str, input: &ResolveInput) -> ResolvedItem {
     let (_, title) =
         crate::course::plan::split_number_and_title(crate::course::plan::stem(&input.file_name));
     ResolvedItem {

@@ -10,15 +10,16 @@
 //! time anyone ran it.
 
 use anyhow::{Context, Result, bail};
-use mediagram_tmdb::tmdb_client::{TmdbApi, TmdbClient};
+use mediagram_tmdb::tmdb_client::TmdbClient;
+use mlib_spec::Kind;
 
 use crate::commands::args::EditArgs;
 use crate::config::Config;
 use crate::edit::apply::write_captions;
 use crate::edit::plan::{Clearable, Edits, apply_checked, captions, editable_kind};
 use crate::index::{db, parts, sets};
+use crate::metadata::resolve::fetch_episode_title;
 use crate::telegram::client::Tg;
-use mlib_spec::Kind;
 
 pub async fn run(cfg: &Config, args: EditArgs) -> Result<()> {
     let data_dir = cfg.data_dir()?;
@@ -149,47 +150,50 @@ async fn refresh_from_tmdb(
         bail!("set {} has no tmdb id to refresh from", row.set_id);
     };
     let api = TmdbClient::with_cache(reqwest::Client::new(), key, data_dir, &cfg.tmdb_language);
+    let details = mediagram_tmdb::details::details(&api, row.kind, tmdb).await?;
 
     if row.kind == Kind::Movie {
-        let movie = api.get_json(&format!("/movie/{tmdb}"), &[]).await?;
         return Ok(Fetched {
-            title: movie["title"].as_str().map(str::to_string),
+            title: details.display_title(),
             show: None,
-            year: year_of(movie["release_date"].as_str()),
+            year: details.year(),
         });
     }
-
-    let show = api.get_json(&format!("/tv/{tmdb}"), &[]).await?;
-    let show_name = show["name"].as_str().map(str::to_string);
-    let first_aired = year_of(show["first_air_date"].as_str());
 
     // An episode title needs both numbers; without them the show name is
     // still worth correcting on its own.
     let (Some(season), Some(episode)) = (row.season, row.episode.as_deref()) else {
         return Ok(Fetched {
             title: None,
-            show: show_name,
-            year: first_aired,
+            show: details.display_title(),
+            year: details.year(),
         });
     };
-    let number: u32 = episode
-        .split(['-', 'x'])
-        .next()
-        .unwrap_or(episode)
-        .parse()
-        .with_context(|| format!("episode {episode} is not a number"))?;
-
-    let detail = api
-        .get_json(&format!("/tv/{tmdb}/season/{season}/episode/{number}"), &[])
-        .await?;
+    let number = first_episode(episode)?;
     Ok(Fetched {
-        title: detail["name"].as_str().map(str::to_string),
-        show: show_name,
-        year: first_aired,
+        title: fetch_episode_title(&api, tmdb, season, number).await?,
+        show: details.display_title(),
+        year: details.year(),
     })
 }
 
-/// The year from a TMDB date like `2004-12-08`.
-fn year_of(date: Option<&str>) -> Option<u16> {
-    date?.get(..4)?.parse().ok()
+/// The episode a row's `episode` column starts at. The column holds the
+/// caption's JSON `Episode` — `1`, or `[1,2]` for a file holding two — and a
+/// file spanning several is titled after its first.
+fn first_episode(column: &str) -> Result<u32> {
+    let episode: mlib_spec::Episode = serde_json::from_str(column)
+        .with_context(|| format!("episode {column} is not an episode number"))?;
+    Ok(episode.first())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::first_episode;
+
+    #[test]
+    fn a_single_episode_and_a_double_one_both_name_their_first() {
+        assert_eq!(first_episode("4").unwrap(), 4);
+        assert_eq!(first_episode("[5,6]").unwrap(), 5);
+        assert!(first_episode("5-6").is_err());
+    }
 }

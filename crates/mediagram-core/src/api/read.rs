@@ -24,6 +24,14 @@ pub(super) async fn read(
 ) -> Result<Vec<u8>, CoreError> {
     let locations = {
         let conn = catalog::open(core)?;
+        // The gate the catalog lists with and `total_size` answers with. A set
+        // that is incomplete, or whose parts do not add up to its total, must
+        // not be readable here while being refused everywhere else.
+        let playable = queries::playable_set(&conn, &set_id)
+            .map_err(|_| CoreError::Io("reading the catalog".into()))?;
+        if playable.is_none() {
+            return Err(CoreError::NotFound("set not found".into()));
+        }
         queries::part_locations(&conn, &set_id)
             .map_err(|_| CoreError::Io("reading the catalog".into()))?
     };
@@ -185,10 +193,15 @@ mod tests {
         assert!(matches!(refused, CoreError::Io(_)));
     }
 
-    /// A minimal catalog with one done part, just enough for `read` to plan
-    /// against. `read` never queries `sets`, only `parts`, so that table is
-    /// left empty.
-    fn core_with_one_part(dir: &std::path::Path, set_id: &str, part_len: u64) -> std::sync::Arc<Core> {
+    /// A minimal catalog with one set of one done part, just enough for
+    /// `read` to plan against. `status` is the set's; a playable one is
+    /// `complete`.
+    fn core_with_one_part(
+        dir: &std::path::Path,
+        set_id: &str,
+        part_len: u64,
+        status: &str,
+    ) -> std::sync::Arc<Core> {
         let current = dir.join("catalog").join("current");
         std::fs::create_dir_all(&current).unwrap();
         let conn = Connection::open(current.join("library.db")).unwrap();
@@ -197,8 +210,8 @@ mod tests {
         }
         conn.execute(
             "INSERT INTO sets(set_id, kind, container, total, part_count, status, created_at, spec_version)
-             VALUES (?1, 'movie', 'mkv', ?2, 1, 'complete', 0, 1)",
-            rusqlite::params![set_id, part_len as i64],
+             VALUES (?1, 'movie', 'mkv', ?2, 1, ?3, 0, 1)",
+            rusqlite::params![set_id, part_len as i64, status],
         )
         .unwrap();
         conn.execute(
@@ -218,12 +231,26 @@ mod tests {
     #[tokio::test]
     async fn a_zero_length_read_at_a_nonzero_offset_returns_empty() {
         let dir = tempfile::tempdir().unwrap();
-        let core = core_with_one_part(dir.path(), "01SET0000000000000000001", 1000);
+        let core = core_with_one_part(dir.path(), "01SET0000000000000000001", 1000, "complete");
 
         let bytes = read(&core, "01SET0000000000000000001".into(), 500, 0)
             .await
             .unwrap();
 
         assert!(bytes.is_empty());
+    }
+
+    /// Listing, sizing and streaming all refuse a set that is not playable;
+    /// reading its bytes must too, before any of them is fetched.
+    #[tokio::test]
+    async fn a_set_that_is_not_playable_cannot_be_read() {
+        let dir = tempfile::tempdir().unwrap();
+        let core = core_with_one_part(dir.path(), "01SET0000000000000000002", 1000, "pending");
+
+        let refused = read(&core, "01SET0000000000000000002".into(), 0, 10)
+            .await
+            .unwrap_err();
+
+        assert!(matches!(refused, CoreError::NotFound(_)));
     }
 }
