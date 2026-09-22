@@ -109,9 +109,10 @@ struct State {
 ///
 /// Resolving costs a round trip, and a set is read a few hundred times
 /// while it plays — every one of them for the same handful of parts. The
-/// answer cannot go stale underneath a player: a message's document is
-/// fixed, and a message that has gone away fails the download rather than
-/// returning different bytes.
+/// document a message holds is fixed, so the answer cannot turn into
+/// different bytes. The file reference inside the handle does expire, which
+/// is why a read that fails on a held handle forgets it and resolves the
+/// part again before giving up.
 ///
 /// Held for one set, because that is what a player reads. Opening another
 /// replaces it, which is what keeps this from growing with every set ever
@@ -128,6 +129,12 @@ impl DocumentCache {
             return None;
         }
         self.by_message.get(&message_id).cloned()
+    }
+
+    fn forget(&mut self, set_id: &str, message_id: i64) {
+        if self.set_id == set_id {
+            self.by_message.remove(&message_id);
+        }
     }
 
     fn put(&mut self, set_id: &str, message_id: i64, document: grammers_client::media::Document) {
@@ -320,5 +327,20 @@ mod tests {
 
         assert!(cache.get("set-a", 100).is_none(), "one set's parts must not answer another's");
         assert!(cache.get("set-b", 200).is_some());
+    }
+
+    /// A handle whose file reference has expired is forgotten on its own:
+    /// the next read resolves that part afresh, and the rest stay held.
+    #[test]
+    fn a_forgotten_part_is_resolved_again_and_the_others_stay_held() {
+        let mut cache = DocumentCache::default();
+        cache.put("set-a", 100, document());
+        cache.put("set-a", 101, document());
+
+        cache.forget("set-a", 100);
+        cache.forget("set-b", 101);
+
+        assert!(cache.get("set-a", 100).is_none());
+        assert!(cache.get("set-a", 101).is_some(), "forgetting another set's part touches nothing");
     }
 }

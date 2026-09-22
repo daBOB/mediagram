@@ -74,25 +74,51 @@ pub(super) async fn read(
             .find(|location| location.span.idx == step.part_idx)
             .ok_or_else(|| CoreError::NotFound("set not found".into()))?;
         let channel = channel_ref(&handles, location.chat_id)?;
-        let document = document_for(core, &client, channel, &set_id, location.message_id).await?;
-
-        // A separate task drains while `pump_step` runs, so a step whose
-        // bytes outgrow the buffer cannot deadlock against a receiver that
-        // only starts reading once the sender is done.
-        let (tx, mut rx) = mpsc::channel(BUFFERED_CHUNKS);
-        let pump_client = client.clone();
-        let pump = tokio::spawn(async move { stream::pump_step(&pump_client, &document, &step, &tx).await });
-        while let Some(chunk) = rx.recv().await {
-            out.extend(chunk.map_err(CoreError::network("the download was interrupted"))?);
-        }
-        pump.await
-            .map_err(CoreError::network("the download task did not finish cleanly"))?
-            .map_err(CoreError::network("the download ended before it finished"))?;
+        let (document, held) = document_for(core, &client, channel, &set_id, location.message_id).await?;
+        let bytes = match fetch_step(&client, document, &step).await {
+            // A held handle may carry a file reference Telegram has since
+            // expired — a set paused for an evening. Resolve the part afresh
+            // and try once more before calling the read failed.
+            Err(_) if held => {
+                core.state.lock().await.documents.forget(&set_id, location.message_id);
+                let (fresh, _) =
+                    document_for(core, &client, channel, &set_id, location.message_id).await?;
+                fetch_step(&client, fresh, &step).await?
+            }
+            fetched => fetched?,
+        };
+        out.extend(bytes);
     }
     Ok(out)
 }
 
-/// The document a part's bytes live in, resolved once per set.
+/// One step's bytes, downloaded from `document`.
+///
+/// A separate task drains while `pump_step` runs, so a step whose bytes
+/// outgrow the buffer cannot deadlock against a receiver that only starts
+/// reading once the sender is done.
+async fn fetch_step(
+    client: &grammers_client::Client,
+    document: grammers_client::media::Document,
+    step: &range::Step,
+) -> Result<Vec<u8>, CoreError> {
+    let (tx, mut rx) = mpsc::channel(BUFFERED_CHUNKS);
+    let pump_client = client.clone();
+    let pump_step = *step;
+    let pump =
+        tokio::spawn(async move { stream::pump_step(&pump_client, &document, &pump_step, &tx).await });
+    let mut out = Vec::new();
+    while let Some(chunk) = rx.recv().await {
+        out.extend(chunk.map_err(CoreError::network("the download was interrupted"))?);
+    }
+    pump.await
+        .map_err(CoreError::network("the download task did not finish cleanly"))?
+        .map_err(CoreError::network("the download ended before it finished"))?;
+    Ok(out)
+}
+
+/// The document a part's bytes live in, resolved once per set, and whether
+/// it came from what was held rather than from Telegram just now.
 ///
 /// A player reads the same few parts a few hundred times, and resolving is
 /// a round trip every time — a third of the cost of a read that otherwise
@@ -103,9 +129,9 @@ async fn document_for(
     channel: PeerRef,
     set_id: &str,
     message_id: i64,
-) -> Result<grammers_client::media::Document, CoreError> {
+) -> Result<(grammers_client::media::Document, bool), CoreError> {
     if let Some(held) = core.state.lock().await.documents.get(set_id, message_id) {
-        return Ok(held);
+        return Ok((held, true));
     }
     let document = stream::part_document(client, channel, message_id)
         .await
@@ -115,7 +141,7 @@ async fn document_for(
         .await
         .documents
         .put(set_id, message_id, document.clone());
-    Ok(document)
+    Ok((document, false))
 }
 
 /// How to address the channel a part lives in.
