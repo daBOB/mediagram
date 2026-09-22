@@ -141,15 +141,7 @@ pub async fn fetch_with(dir: &Path, api: StubApi) -> FetchReport {
     install_crypto_provider();
     let core = core_at(dir);
     let plan = plan_fetch(&core, "en-US").expect("the seeded catalog is readable");
-    fetch_into(
-        &core,
-        &api,
-        &offline_client(),
-        &plan.artwork_dir,
-        &plan.language,
-        &plan.titles,
-        plan.without_id,
-    )
+    fetch_into(&core, &api, &offline_client(), &plan)
     .await
 }
 
@@ -160,15 +152,7 @@ pub async fn fetch_rejecting(dir: &Path) -> Result<FetchReport, CoreError> {
     install_crypto_provider();
     let core = core_at(dir);
     let plan = plan_fetch(&core, "en-US").expect("the seeded catalog is readable");
-    verify_then_fetch(
-        &core,
-        RejectingApi,
-        &offline_client(),
-        &plan.artwork_dir,
-        &plan.language,
-        &plan.titles,
-        plan.without_id,
-    )
+    verify_then_fetch(&core, RejectingApi, &offline_client(), &plan)
     .await
 }
 

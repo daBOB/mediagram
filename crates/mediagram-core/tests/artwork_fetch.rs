@@ -28,18 +28,18 @@ async fn a_rejected_key_is_still_rejected_after_a_successful_run() {
     catalog_with_kinds(dir.path(), &[("movie", Some(11225))]);
     let core = core_at(dir.path());
     let plan = plan_fetch(&core, "en-US").unwrap();
-    let (http, art) = (offline_client(), &plan.artwork_dir);
+    let http = offline_client();
     install_crypto_provider();
 
     // A first run with a key the provider accepts, which is what leaves a
     // warm cache behind.
     let good = StubApi::with_poster("/a.jpg");
-    verify_then_fetch(&core, good, &http, art, "en-US", &plan.titles, 0)
+    verify_then_fetch(&core, good, &http, &plan)
         .await
         .expect("a key the provider accepts fetches");
 
     // The same device afterwards, with a key the provider will not take.
-    let err = verify_then_fetch(&core, RejectingApi, &http, art, "en-US", &plan.titles, 0)
+    let err = verify_then_fetch(&core, RejectingApi, &http, &plan)
         .await
         .expect_err("a rejected key must not be verified out of the cache");
 

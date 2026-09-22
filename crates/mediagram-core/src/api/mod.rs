@@ -198,14 +198,17 @@ impl Core {
         channel::list_libraries(self).await
     }
 
-    /// Installs the index pinned in the chosen library's channel, and answers
-    /// how many sets it holds. Also the refresh: it re-reads the same pin.
+    /// Refreshes from **the channel**: installs the newest index snapshot the
+    /// chosen library's channel holds, and answers how many sets it holds.
+    /// The first install and every later refresh are the same call.
     pub async fn refresh_library(&self, handle: String) -> Result<u64, CoreError> {
         channel::refresh_library(self, handle).await
     }
 
-    /// The published-package reader, kept whole beside the channel path
-    /// above: it is the only one that carries poster art, and nothing in the
+    /// Refreshes from **a published package**: fetches the pointer at
+    /// `pointer_url`, then the encrypted package it names, and installs the
+    /// index inside it. Kept whole beside [`Core::refresh_library`]: it is
+    /// the only source that carries poster art, though nothing in the
     /// first-run flow reaches it any more.
     pub async fn refresh_catalog(
         &self,

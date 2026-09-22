@@ -61,15 +61,7 @@ async fn a_title_is_asked_about_once_however_many_answers_are_taken_from_it() {
     let plan = plan_fetch(&core, "en-US").unwrap();
     let asked = Arc::new(AtomicUsize::new(0));
 
-    verify_then_fetch(
-        &core,
-        CountingApi { asked: Arc::clone(&asked) },
-        &offline_client(),
-        &plan.artwork_dir,
-        &plan.language,
-        &plan.titles,
-        plan.without_id,
-    )
+    verify_then_fetch(&core, CountingApi { asked: Arc::clone(&asked) }, &offline_client(), &plan)
     .await
     .expect("a stub that answers accepts the key");
 
@@ -92,15 +84,7 @@ async fn a_series_costs_one_request_however_many_episodes_it_has() {
     let plan = plan_fetch(&core, "en-US").unwrap();
     let asked = Arc::new(AtomicUsize::new(0));
 
-    verify_then_fetch(
-        &core,
-        CountingApi { asked: Arc::clone(&asked) },
-        &offline_client(),
-        &plan.artwork_dir,
-        &plan.language,
-        &plan.titles,
-        plan.without_id,
-    )
+    verify_then_fetch(&core, CountingApi { asked: Arc::clone(&asked) }, &offline_client(), &plan)
     .await
     .expect("a stub that answers accepts the key");
 

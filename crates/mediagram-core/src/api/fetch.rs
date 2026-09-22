@@ -12,15 +12,13 @@
 //! before pushing it. Both answers sit in the same payload, so both are
 //! taken from the one request per title [`fetch_into`] makes.
 
-use std::path::Path;
-
-use mlib_spec::Kind;
-use rusqlite::Connection;
-
 use mediagram_tmdb::details::{details, from_details};
 use mediagram_tmdb::posters::{already_held, download_into, kind_key, resolve_posters};
 use mediagram_tmdb::tmdb_client::TmdbApi;
+use mlib_spec::Kind;
+use rusqlite::Connection;
 
+use super::artwork::FetchPlan;
 use crate::dto::FetchReport;
 
 use super::Core;
@@ -48,17 +46,15 @@ pub async fn fetch_into(
     core: &Core,
     api: &impl TmdbApi,
     http: &reqwest::Client,
-    posters_dir: &Path,
-    language: &str,
-    titles: &[(Kind, u64)],
-    without_id: u32,
+    plan: &FetchPlan,
 ) -> FetchReport {
+    let FetchPlan { artwork_dir, titles, without_id, language } = plan;
     let refs = resolve_posters(api, titles).await;
-    let held = already_held(&refs, posters_dir) as u32;
+    let held = already_held(&refs, artwork_dir) as u32;
     // A hard failure here (the posters directory could not even be created)
     // leaves every resolved ref undownloaded rather than panicking — the
     // catalog is the product, the artwork a convenience.
-    let written = download_into(http, &refs, posters_dir).await.unwrap_or_default();
+    let written = download_into(http, &refs, artwork_dir).await.unwrap_or_default();
     let fetched = (written.len() as u32).saturating_sub(held);
 
     // Collected as keys rather than added up, so a title that lost both its
@@ -77,7 +73,7 @@ pub async fn fetch_into(
         posters_already_held: held,
         details_recorded: described.recorded,
         details_already_known: described.already_known,
-        no_provider_id: without_id,
+        no_provider_id: *without_id,
         failed: lost.len() as u32,
     }
 }

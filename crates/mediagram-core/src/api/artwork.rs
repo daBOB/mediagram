@@ -8,7 +8,7 @@
 //! reason its own comment gives.
 
 use std::collections::HashSet;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use mlib_spec::Kind;
 
@@ -87,8 +87,7 @@ pub(super) async fn fetch_missing(
     // client here, not two, and only `client()`'s `install_provider` to weigh.
     let client = http::client()?;
     let api = TmdbClient::new(client.clone(), tmdb_key);
-    let FetchPlan { artwork_dir, titles, without_id, language } = plan;
-    verify_then_fetch(core, api, &client, &artwork_dir, &language, &titles, without_id).await
+    verify_then_fetch(core, api, &client, &plan).await
 }
 
 /// Validates the key against the provider, then spends it.
@@ -108,14 +107,11 @@ pub async fn verify_then_fetch<A: TmdbApi>(
     core: &Core,
     api: A,
     http: &reqwest::Client,
-    artwork_dir: &Path,
-    language: &str,
-    titles: &[(Kind, u64)],
-    without_id: u32,
+    plan: &FetchPlan,
 ) -> Result<FetchReport, CoreError> {
     verify_key(&api).await?;
-    let cached = Localized::new(DiskCachedApi::new(api, artwork_dir), language);
-    Ok(fetch_into(core, &cached, http, artwork_dir, language, titles, without_id).await)
+    let cached = Localized::new(DiskCachedApi::new(api, &plan.artwork_dir), &plan.language);
+    Ok(fetch_into(core, &cached, http, plan).await)
 }
 
 /// Splits the catalog into what the provider can be asked about and what
