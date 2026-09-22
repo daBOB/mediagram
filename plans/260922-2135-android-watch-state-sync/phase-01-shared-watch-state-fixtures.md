@@ -52,11 +52,11 @@ web/test/fixtures/watch-state/
 
 ## Todo
 
-- [ ] record-parse.json
-- [ ] merge.json (incl. reversed run)
-- [ ] resume-point.json
-- [ ] next-up.json
-- [ ] shared-watch-state-fixtures.test.ts green
+- [x] record-parse.json
+- [x] merge.json (incl. reversed run)
+- [x] resume-point.json
+- [x] next-up.json
+- [x] shared-watch-state-fixtures.test.ts green
 
 ## Success criteria
 

@@ -1,0 +1,253 @@
+[
+  {
+    "name": "nothing watched offers nothing",
+    "order": [
+      "E1",
+      "E2",
+      "E3"
+    ],
+    "progress": [],
+    "watched": {},
+    "expect": {
+      "nextUp": null,
+      "continues": [],
+      "totals": {
+        "continues": 0,
+        "nextUp": 0
+      }
+    }
+  },
+  {
+    "name": "a resumable position offers itself",
+    "order": [
+      "E1",
+      "E2",
+      "E3"
+    ],
+    "progress": [
+      {
+        "setId": "E2",
+        "at": 1800,
+        "duration": 3600,
+        "updatedAt": 1000
+      }
+    ],
+    "watched": {},
+    "expect": {
+      "nextUp": {
+        "setId": "E2",
+        "resume": true
+      },
+      "continues": [],
+      "totals": {
+        "continues": 1,
+        "nextUp": 1
+      }
+    }
+  },
+  {
+    "name": "being part-way through beats what follows a finished episode",
+    "order": [
+      "E1",
+      "E2",
+      "E3"
+    ],
+    "progress": [
+      {
+        "setId": "E2",
+        "at": 1800,
+        "duration": 3600,
+        "updatedAt": 6000
+      }
+    ],
+    "watched": {
+      "E1": 5000
+    },
+    "expect": {
+      "nextUp": {
+        "setId": "E2",
+        "resume": true
+      },
+      "continues": [],
+      "totals": {
+        "continues": 1,
+        "nextUp": 1
+      }
+    }
+  },
+  {
+    "name": "a finished episode offers the one after it",
+    "order": [
+      "E1",
+      "E2",
+      "E3"
+    ],
+    "progress": [],
+    "watched": {
+      "E1": 5000
+    },
+    "expect": {
+      "nextUp": {
+        "setId": "E2",
+        "resume": false
+      },
+      "continues": [],
+      "totals": {
+        "continues": 0,
+        "nextUp": 1
+      }
+    }
+  },
+  {
+    "name": "an episode watched out of order is walked past, not offered again",
+    "order": [
+      "E1",
+      "E2",
+      "E3"
+    ],
+    "progress": [],
+    "watched": {
+      "E1": 5000,
+      "E2": 1000
+    },
+    "expect": {
+      "nextUp": {
+        "setId": "E3",
+        "resume": false
+      },
+      "continues": [],
+      "totals": {
+        "continues": 0,
+        "nextUp": 1
+      }
+    }
+  },
+  {
+    "name": "a finished show offers nothing and leaves the row",
+    "order": [
+      "E1",
+      "E2"
+    ],
+    "progress": [],
+    "watched": {
+      "E1": 1,
+      "E2": 2
+    },
+    "expect": {
+      "nextUp": null,
+      "continues": [],
+      "totals": {
+        "continues": 0,
+        "nextUp": 0
+      }
+    }
+  },
+  {
+    "name": "a glance is not being underway",
+    "order": [
+      "E1",
+      "E2",
+      "E3"
+    ],
+    "progress": [
+      {
+        "setId": "E1",
+        "at": 20,
+        "duration": 3600,
+        "updatedAt": 5000
+      }
+    ],
+    "watched": {},
+    "expect": {
+      "nextUp": null,
+      "continues": [],
+      "totals": {
+        "continues": 0,
+        "nextUp": 0
+      }
+    }
+  },
+  {
+    "name": "the most recently touched resumable episode is the one offered; the rest stay on Continue",
+    "order": [
+      "E1",
+      "E2",
+      "E3"
+    ],
+    "progress": [
+      {
+        "setId": "E1",
+        "at": 1800,
+        "duration": 3600,
+        "updatedAt": 2000
+      },
+      {
+        "setId": "E2",
+        "at": 1800,
+        "duration": 3600,
+        "updatedAt": 9000
+      }
+    ],
+    "watched": {},
+    "expect": {
+      "nextUp": {
+        "setId": "E2",
+        "resume": true
+      },
+      "continues": [
+        "E1"
+      ],
+      "totals": {
+        "continues": 2,
+        "nextUp": 1
+      }
+    }
+  },
+  {
+    "name": "a resume point beats a finish mark on the same title, whichever is newer",
+    "order": [
+      "E1",
+      "E2"
+    ],
+    "progress": [
+      {
+        "setId": "E1",
+        "at": 1800,
+        "duration": 3600,
+        "updatedAt": 9000
+      }
+    ],
+    "watched": {
+      "E1": 1000
+    },
+    "expect": {
+      "nextUp": {
+        "setId": "E1",
+        "resume": true
+      },
+      "continues": [],
+      "totals": {
+        "continues": 1,
+        "nextUp": 1
+      }
+    }
+  },
+  {
+    "name": "finishing the only episode in a collection walks off the end to nothing",
+    "order": [
+      "E1"
+    ],
+    "progress": [],
+    "watched": {
+      "E1": 1000
+    },
+    "expect": {
+      "nextUp": null,
+      "continues": [],
+      "totals": {
+        "continues": 0,
+        "nextUp": 0
+      }
+    }
+  }
+]
