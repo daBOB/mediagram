@@ -10,7 +10,9 @@ import data.CatalogRepository
 import data.CoreProvider
 import data.CoreStorage
 import data.DefaultCatalogRepository
+import data.CoreLibraryEvents
 import data.FileCoreStorage
+import data.LibraryEvents
 import data.RefreshLog
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -74,4 +76,12 @@ object DataModule {
         settings: LibrarySettings,
         refreshes: RefreshLog,
     ): CatalogRepository = DefaultCatalogRepository(coreProvider, settings, refreshes)
+
+    // The core serves one update stream: a second collector's wait queues
+    // behind the first and takes whichever event comes next. The catalog is
+    // the only collector today; a second one should share its collection.
+    @Provides
+    @Singleton
+    fun provideLibraryEvents(coreProvider: CoreProvider, settings: LibrarySettings): LibraryEvents =
+        CoreLibraryEvents(coreProvider, settings)
 }

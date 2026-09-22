@@ -1,9 +1,11 @@
 package data
 
+import kotlinx.coroutines.awaitCancellation
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.LibraryChoice
+import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.TitleInfo
 
@@ -73,6 +75,19 @@ interface CoreClient {
      * true from exactly one place.
      */
     suspend fun fetchMissing(tmdbKey: String, language: String): FetchReport
+
+    /**
+     * Waits until library [handle] changes in a way worth a round: another
+     * device's watch state, or a newly published index. Only a hint — act
+     * on it with the ordinary refresh, and expect nothing missed while not
+     * listening to be replayed. [ownDevice] is this device's watch-state id,
+     * so its own writes are not reported back. Throws when listening stops;
+     * call again after a pause.
+     *
+     * Waits for ever by default, so a test fake that has no events to give
+     * need not say so; [DefaultCoreClient] is the only real implementation.
+     */
+    suspend fun nextLibraryEvent(handle: String, ownDevice: String): LibraryEvent = awaitCancellation()
 
     /**
      * Drops the native core and, with it, the authenticated connection it

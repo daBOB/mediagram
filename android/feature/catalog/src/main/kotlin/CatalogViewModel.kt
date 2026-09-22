@@ -4,15 +4,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import data.CatalogRepository
+import data.LibraryEvents
 import data.refreshSentence
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.TitleInfo
 import javax.inject.Inject
 
@@ -21,6 +26,7 @@ import javax.inject.Inject
 @HiltViewModel
 class CatalogViewModel @Inject constructor(
     private val repository: CatalogRepository,
+    libraryEvents: LibraryEvents = LibraryEvents.None,
 ) : ViewModel() {
 
     // What [state] is built from. A cold flow handed to stateIn runs once
@@ -47,7 +53,17 @@ class CatalogViewModel @Inject constructor(
     // flatMapLatest, not flatMapConcat: a second request made while the
     // first is still in flight should replace it rather than queue behind
     // it, because both would install the same snapshot.
-    val state: StateFlow<CatalogUiState> = reloads
+    //
+    // A newer index published from another device is one more reason to read
+    // the channel, merged in beside the button. It is collected only while
+    // [state] is — the screen in front — so the app listens while a viewer can
+    // see the result, and a refresh that downloads the whole index is never
+    // spent on a phone in a pocket. No posters are fetched on it: that stays
+    // on the button, where its cost is visible.
+    val state: StateFlow<CatalogUiState> = merge(
+        reloads.map { },
+        libraryEvents.events().filter { it == LibraryEvent.INDEX }.map { },
+    )
         .flatMapLatest {
             flow {
                 // Loading only when there is nothing yet to keep. Every

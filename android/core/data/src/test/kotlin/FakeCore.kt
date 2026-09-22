@@ -1,6 +1,7 @@
 package data
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
@@ -10,6 +11,7 @@ import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.LibraryChoice
+import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.TitleInfo
 
@@ -31,7 +33,24 @@ class FakeCore(
     private val refreshCancels: Boolean = false,
     /** What [posterPath] answers for a key it holds; any other key answers nothing. */
     private val posters: Map<String, String> = emptyMap(),
+    /**
+     * What each wait in [nextLibraryEvent] answers, in order; a failure is
+     * thrown. Past the end, a wait waits for ever, as a quiet channel does.
+     */
+    private val events: List<Result<LibraryEvent>> = emptyList(),
 ) : CoreClient {
+
+    /** How many times [nextLibraryEvent] has been waited on, and for which handle last. */
+    var eventCalls: Int = 0
+        private set
+    var eventHandle: String? = null
+        private set
+
+    override suspend fun nextLibraryEvent(handle: String, ownDevice: String): LibraryEvent {
+        eventHandle = handle
+        val next = events.getOrNull(eventCalls++) ?: awaitCancellation()
+        return next.getOrThrow()
+    }
 
     /** Which handle the last refresh was asked for, or `null` if none was. */
     var refreshedHandle: String? = null

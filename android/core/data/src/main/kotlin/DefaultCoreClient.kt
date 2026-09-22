@@ -5,6 +5,7 @@ import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.Core
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.LibraryChoice
+import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.TitleInfo
 
@@ -20,6 +21,9 @@ class DefaultCoreClient(private val core: Core) : CoreClient {
     override suspend fun checkPassword(password: String) = core.checkPassword(password)
 
     override suspend fun listLibraries(): List<LibraryChoice> = core.listLibraries()
+
+    override suspend fun nextLibraryEvent(handle: String, ownDevice: String): LibraryEvent =
+        core.nextLibraryEvent(handle, ownDevice)
 
     override suspend fun refreshLibrary(handle: String): Long = core.refreshLibrary(handle).toLong()
 

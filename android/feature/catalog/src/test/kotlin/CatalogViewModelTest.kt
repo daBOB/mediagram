@@ -2,12 +2,15 @@ package catalog
 
 import app.cash.turbine.test
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import uniffi.mediagram_core.LibraryEvent
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -122,6 +125,33 @@ class CatalogViewModelTest {
         vm.state.test {
             awaitItem()
             assertTrue(awaitItem() is CatalogUiState.Failed)
+        }
+    }
+
+    /**
+     * Another device publishing an index is a reason to read the channel
+     * again, exactly as pressing Update is. Another device's watch state is
+     * not the catalog's business, and must not cost an index download.
+     */
+    @Test
+    fun aNewIndexFromAnotherDeviceReadsTheChannelAgain() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val pushed = MutableSharedFlow<LibraryEvent>()
+        val repository = FakeCatalogRepository(movies = 2)
+        val vm = CatalogViewModel(repository) { pushed }
+        vm.state.test {
+            assertEquals(CatalogUiState.Loading, awaitItem())
+            awaitItem() as CatalogUiState.Ready
+            assertEquals(1, repository.refreshes)
+
+            pushed.emit(LibraryEvent.STATE)
+            runCurrent()
+            assertEquals(1, repository.refreshes, "watch state is not a catalog change")
+
+            pushed.emit(LibraryEvent.INDEX)
+            assertTrue((awaitItem() as CatalogUiState.Ready).refreshing)
+            assertFalse((awaitItem() as CatalogUiState.Ready).refreshing)
+            assertEquals(2, repository.refreshes)
         }
     }
 }

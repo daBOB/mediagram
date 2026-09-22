@@ -5,7 +5,30 @@
 - `android/ui-mobile/src/main/kotlin/LibraryFlow.kt` ("Update library"), core `refresh_library`
 
 ## Overview
-Priority P2. Status: pending. Blocked by 03 and by the Android watch-state plan's phase 04 (WatchSync must exist).
+Priority P2. Status: **index half done 2026-09-23** (uncommitted); state half still blocked by the Android
+watch-state plan's phase 04 (`WatchSync` does not exist yet).
+
+## What was built (differs from the original sketch — simpler, same effect)
+- `CoreClient.nextLibraryEvent` (default body waits for ever, so the five module fakes need no change; `DefaultCoreClient` delegates).
+- `data.LibraryEvents` (`fun interface`, `None` for tests) + `CoreLibraryEvents`: cold flow looping the core call; reads the
+  handle before each wait; ends when no library is chosen; 30 s pause after a failed wait. Hilt singleton in `DataModule`.
+- No `MainActivity` hooks: `CatalogViewModel.state` now merges `INDEX` events beside the button's reloads. `state` is shared
+  `WhileSubscribed(5_000)` and collected with `collectAsStateWithLifecycle`, so listening lasts exactly as long as the catalog
+  is on screen — foreground-only for free.
+- **No round on (re)start for the index**, deliberately: `refresh_library` downloads the whole index (MBs) every time, even
+  unchanged. The catalog still loads once per app start and the button still works; web parity (web logs index events only).
+- `ownDevice` is `""` until a watch-state device id exists; `STATE` is ignored by the catalog.
+- Tests: `LibraryEventsTest` (passes events + handle; no library → ends without asking; failure → 30 s virtual pause → resumes),
+  `CatalogViewModelTest.aNewIndexFromAnotherDeviceReadsTheChannelAgain` (INDEX refreshes, STATE does not; mutation-checked).
+  `:app:assembleDebug` + all `testDebugUnitTest` green.
+- **Device-validated 2026-09-23** on the tablet (`caad49da`), debug build installed over the signed-in session. App on the
+  start page, catalog `v-1790115283`; nobody touched it. The external uploader pushed index 3164 (`pushed_at` 00:22:35 by
+  its own clock); the tablet had installed `v-1790115755` by 00:22:38 (file mtime). Seconds, across two machines' clocks.
+  USB stay-awake was changed for the run and restored to its original `15`.
+
+## Remaining (state half)
+When `WatchSync` lands: collect the same `LibraryEvents` (share one collection — the core serves one stream), call
+`WatchSync.soon()` on `STATE`, and pass the real watch-state device id instead of `""`.
 
 ## Requirements
 - `LibraryEvents` (`@Singleton`, in `core/data`): `onForeground` launches a loop over `next_library_event()`;

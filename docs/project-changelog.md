@@ -36,7 +36,12 @@ to `main`. Full phase-by-phase detail lives in
   about five seconds after another device writes, instead of at the next
   five-minute timer; a new index is noted in the log only, because its catalog
   comes from the published package. The Android core exposes the same events
-  as `next_library_event` for the app to act on (not yet wired in the app).
+  as `next_library_event`, and the Android app acts on the index half: while
+  the catalog is on screen, a new index from another device refreshes it just
+  as Update library does, without the poster fetch (that stays on the button,
+  where the download is visible). Nothing listens while the app is in the
+  background. Another device's watch state is heard but not acted on yet —
+  the app has no watch-state sync to run.
   Updates are hints, never data: the timer stays, a missed update costs what it
   did before, and whoever starts listening runs one round first, because
   catching up after a disconnect replays nothing. Which updates count is one
