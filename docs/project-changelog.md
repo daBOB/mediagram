@@ -17,6 +17,15 @@ to `main`. Full phase-by-phase detail lives in
   the catalog on this device once a fetch lays down new artwork: no second
   read of the channel, and Update stays available throughout. The same holds
   for the quiet fetch new media brings.
+- `rescan` dates a set it rebuilds from the channel by when its upload began
+  — the earliest of its parts' messages — instead of by when the scan ran.
+  Every set one scan found was stamped with the same second, so "Latest films"
+  on a player reading the local index became a tie across all of them, and a
+  title uploaded hours earlier won it: the web showed Jackass Forever first
+  while the phone, reading the uploader's own index, rightly showed Jeepers
+  Creepers. A set the index already had keeps its date, as a rescan has always
+  left existing rows alone — so rows a past scan already mis-dated stay as
+  they are until corrected.
 - The Android core's update listener can no longer go deaf for the life of the
   app. It took the connection's one update receiver before asking Telegram for
   the update state, so a failed or cancelled first call — the phone offline as

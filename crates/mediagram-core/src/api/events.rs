@@ -23,7 +23,7 @@ use tokio::time::Instant;
 
 use crate::updates::{ChannelUpdate, Debouncer, LibraryEvent, UpdateKind, classify};
 
-use super::account::session;
+use super::account::{session, subscribe};
 use super::channel::library;
 use super::{Core, CoreError};
 
@@ -72,7 +72,7 @@ async fn open(core: &Core) -> Result<Listener, CoreError> {
     // Subscribe first, while a failure or a cancelled call costs nothing:
     // the receiver below is handed out once per connection, and taking it
     // before a round trip that can fail would lose it for the app's life.
-    session::subscribe(core).await?;
+    subscribe::subscribe(core).await?;
     let (client, updates) = session::updates_receiver(core).await;
     let updates = updates
         .ok_or_else(|| CoreError::Network("this connection's updates are already being read".into()))?;

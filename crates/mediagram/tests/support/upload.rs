@@ -133,6 +133,7 @@ impl Transport for FakeTransport {
                 message_id: m.message_id,
                 doc_id: Some(m.doc_id),
                 caption: m.caption.clone(),
+                sent_at: 0,
             })
             .collect())
     }

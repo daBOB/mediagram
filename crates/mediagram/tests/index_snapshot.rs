@@ -48,6 +48,7 @@ fn sample_seen() -> Seen {
         message_id: 401,
         doc_id: Some(9501),
         caption: mlib_spec::to_text(&caption, "").unwrap(),
+        sent_at: 0,
     }
 }
 

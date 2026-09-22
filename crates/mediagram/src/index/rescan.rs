@@ -25,6 +25,9 @@ pub struct Seen {
     pub message_id: i64,
     pub doc_id: Option<i64>,
     pub caption: String,
+    /// When Telegram says the message was sent, unix seconds. A set rebuilt
+    /// from the channel is dated by this, not by when the scan ran.
+    pub sent_at: i64,
 }
 
 /// Counts produced by one [`apply_seen`] pass, printed by `mediagram rescan`.
@@ -49,9 +52,9 @@ pub struct RescanSummary {
 /// recomputes `complete`/`pending` status for every set touched. Safe to
 /// call repeatedly with overlapping or identical input.
 pub fn apply_seen(conn: &Connection, chat_id: i64, seen: &[Seen]) -> Result<RescanSummary> {
-    let now = crate::clock::now_unix();
-
     let mut touched_sets = BTreeSet::new();
+    // Sets this pass inserted, as opposed to ones the index already had.
+    let mut folded_in = BTreeSet::new();
     let mut parts_seen = 0usize;
     let mut duplicates_skipped = 0usize;
 
@@ -77,7 +80,14 @@ pub fn apply_seen(conn: &Connection, chat_id: i64, seen: &[Seen]) -> Result<Resc
             continue;
         };
 
-        upsert_set(conn, &caption, now)?;
+        // Dated by its earliest part, which is when its upload began. The
+        // time of the scan would date every set it finds at once — a whole
+        // library tied as "latest", ordered by whatever breaks the tie.
+        if insert_set_if_new(conn, &caption, msg.sent_at)? {
+            folded_in.insert(caption.set.clone());
+        } else if folded_in.contains(&caption.set) {
+            sets::date_no_later_than(conn, &caption.set, msg.sent_at)?;
+        }
         touched_sets.insert(caption.set.clone());
 
         if upsert_part(conn, chat_id, msg.message_id, doc_id, &caption)? {
@@ -114,15 +124,17 @@ pub fn apply_seen(conn: &Connection, chat_id: i64, seen: &[Seen]) -> Result<Resc
     })
 }
 
-/// Inserts the set row the first time its id is seen. Every part's caption
-/// mirrors the same set-level fields, so whichever caption arrives first
-/// during the scan is as good as any other; later ones are left untouched.
-fn upsert_set(conn: &Connection, caption: &Caption, created_at: i64) -> Result<()> {
+/// Inserts the set row the first time its id is seen, answering whether it
+/// did. Every part's caption mirrors the same set-level fields, so whichever
+/// caption arrives first during the scan is as good as any other; a set the
+/// index already had is left untouched, date included.
+fn insert_set_if_new(conn: &Connection, caption: &Caption, created_at: i64) -> Result<bool> {
     if sets::get_set(conn, &caption.set)?.is_some() {
-        return Ok(());
+        return Ok(false);
     }
     let row = SetRow::from_caption(caption, created_at)?;
-    sets::insert_set(conn, &row)
+    sets::insert_set(conn, &row)?;
+    Ok(true)
 }
 
 /// The playable invariant computed directly from `parts` rather than via

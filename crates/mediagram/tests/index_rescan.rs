@@ -293,11 +293,13 @@ mod ignored_and_malformed_input {
                 message_id: 1,
                 doc_id: Some(1),
                 caption: "#mlib-index v=2\n{\"pushed_at\":1,\"sets\":0,\"schema\":1}".into(),
+                sent_at: 0,
             },
             Seen {
                 message_id: 2,
                 doc_id: Some(2),
                 caption: "just a note, not a caption".into(),
+                sent_at: 0,
             },
         ];
 
@@ -327,6 +329,7 @@ mod ignored_and_malformed_input {
                 doc_id: Some(1),
                 caption: "#mlib-index v=2\n{\"pushed_at\":1000000000,\"sets\":5,\"schema\":1}"
                     .into(),
+                sent_at: 0,
             },
             part_seen(&t, 0, 0, 100, "aa", 101, 9001),
             part_seen(&t, 1, 100, 100, "bb", 102, 9002),
@@ -362,6 +365,7 @@ mod ignored_and_malformed_input {
             message_id: 101,
             doc_id: None,
             caption: caption_text,
+            sent_at: 0,
         }];
 
         let summary = rescan::apply_seen(&conn, CHAT_ID, &seen).unwrap();
@@ -379,6 +383,7 @@ mod ignored_and_malformed_input {
             message_id: 101,
             doc_id: Some(9001),
             caption: "#mlib v=3\nsome_unsupported_format".to_string(),
+            sent_at: 0,
         }];
 
         let summary = rescan::apply_seen(&conn, CHAT_ID, &seen).unwrap();
@@ -404,5 +409,59 @@ mod snapshot_error_paths {
 
         let result = snapshot::snapshot_to(&conn, &dest);
         assert!(result.is_err());
+    }
+}
+
+mod dating {
+    use super::*;
+    use support::rescan::SENT_BASE;
+
+    /// A set found by a scan is dated by when its upload began — its earliest
+    /// part — however the scan meets them. A channel is read newest first.
+    #[test]
+    fn a_folded_in_set_is_dated_by_its_earliest_part() {
+        let (_dir, conn) = open_db();
+        let set_id = "01JQ8F2K9M4XZ00000000D01";
+        let t = template(set_id, 3, 300);
+        let seen = vec![
+            part_seen(&t, 2, 200, 100, "cc", 103, 9003),
+            part_seen(&t, 1, 100, 100, "bb", 102, 9002),
+            part_seen(&t, 0, 0, 100, "aa", 101, 9001),
+        ];
+        rescan::apply_seen(&conn, CHAT_ID, &seen).unwrap();
+        let row = sets::get_set(&conn, set_id).unwrap().unwrap();
+        assert_eq!(row.created_at, SENT_BASE + 101);
+    }
+
+    /// The defect this closes: every set a scan found was dated by the scan,
+    /// so a whole library tied for "latest" and a stale title won the tie.
+    #[test]
+    fn sets_found_in_one_scan_keep_their_own_dates() {
+        let (_dir, conn) = open_db();
+        let earlier = template("01JQ8F2K9M4XZ00000000D02", 1, 100);
+        let later = template("01JQ8F2K9M4XZ00000000D03", 1, 100);
+        let seen = vec![
+            part_seen(&later, 0, 0, 100, "bb", 250, 9102),
+            part_seen(&earlier, 0, 0, 100, "aa", 120, 9101),
+        ];
+        rescan::apply_seen(&conn, CHAT_ID, &seen).unwrap();
+        let earlier_at = sets::get_set(&conn, "01JQ8F2K9M4XZ00000000D02").unwrap().unwrap().created_at;
+        let later_at = sets::get_set(&conn, "01JQ8F2K9M4XZ00000000D03").unwrap().unwrap().created_at;
+        assert_eq!((earlier_at, later_at), (SENT_BASE + 120, SENT_BASE + 250));
+    }
+
+    /// A rescan is additive: a set the index already had keeps its date, even
+    /// when a later scan meets a part of it sent earlier than that date.
+    #[test]
+    fn a_set_already_indexed_keeps_its_date() {
+        let (_dir, conn) = open_db();
+        let set_id = "01JQ8F2K9M4XZ00000000D04";
+        let t = template(set_id, 2, 200);
+        rescan::apply_seen(&conn, CHAT_ID, &[part_seen(&t, 1, 100, 100, "bb", 300, 9202)]).unwrap();
+
+        rescan::apply_seen(&conn, CHAT_ID, &[part_seen(&t, 0, 0, 100, "aa", 100, 9201)]).unwrap();
+
+        let row = sets::get_set(&conn, set_id).unwrap().unwrap();
+        assert_eq!(row.created_at, SENT_BASE + 300);
     }
 }

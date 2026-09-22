@@ -10,6 +10,10 @@ use mlib_spec::ids::ProviderIds;
 
 pub const CHAT_ID: i64 = -1001234567890;
 
+/// When message 0 was sent. [`part_seen`] dates each message this many
+/// seconds plus its id, so a later message is a later send, as on a channel.
+pub const SENT_BASE: i64 = 1_790_000_000;
+
 pub fn open_db() -> (tempfile::TempDir, rusqlite::Connection) {
     let dir = tempfile::tempdir().unwrap();
     let conn = db::open(dir.path()).unwrap();
@@ -77,5 +81,6 @@ pub fn part_seen(
         message_id,
         doc_id: Some(doc_id),
         caption: text,
+        sent_at: SENT_BASE + message_id,
     }
 }

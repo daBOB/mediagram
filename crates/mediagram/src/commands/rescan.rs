@@ -61,6 +61,7 @@ async fn rescan_all(conn: &mut Connection, tg: &Tg, chat_id: i64) -> Result<Resc
             message_id: i64::from(message.id()),
             doc_id,
             caption,
+            sent_at: message.date().timestamp(),
         });
         if batch.len() >= BATCH_SIZE {
             flush_batch(conn, chat_id, &mut batch, &mut totals)?;

@@ -70,6 +70,16 @@ pub fn set_status(conn: &Connection, set_id: &str, status: SetStatus) -> Result<
     Ok(())
 }
 
+/// Moves a set's `created_at` back to `at` if `at` is earlier, never forward.
+/// A rescan meets a set's parts in any order and dates it by the earliest.
+pub fn date_no_later_than(conn: &Connection, set_id: &str, at: i64) -> Result<()> {
+    conn.execute(
+        "UPDATE sets SET created_at = ?1 WHERE set_id = ?2 AND created_at > ?1",
+        params![at, set_id],
+    )?;
+    Ok(())
+}
+
 /// Writes a corrected row's metadata, and only its metadata.
 ///
 /// `kind` is included: which shelf a set belongs on is metadata, and a film

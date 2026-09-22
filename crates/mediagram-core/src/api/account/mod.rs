@@ -4,3 +4,4 @@
 pub(super) mod auth;
 pub(super) mod revoked;
 pub(super) mod session;
+pub(super) mod subscribe;

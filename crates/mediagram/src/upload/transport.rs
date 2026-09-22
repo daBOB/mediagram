@@ -164,6 +164,7 @@ impl Transport for TelegramTransport {
                 message_id: i64::from(message.id()),
                 doc_id,
                 caption: message.text().to_string(),
+                sent_at: message.date().timestamp(),
             });
         }
         Ok(out)
