@@ -24,7 +24,7 @@ base64.workspace = true
 bytes = "1"
 flate2.workspace = true
 futures.workspace = true
-getrandom = "0.3"
+getrandom.workspace = true
 glass_pumpkin.workspace = true
 grammers-client.workspace = true
 grammers-mtsender.workspace = true
@@ -77,14 +77,14 @@ webpki-roots = "1"
 # breath — two static sqlite3 in one binary collide on duplicate symbols. The
 # session is held as a MemorySession rebuilt from the stored auth key instead.
 [target.'cfg(target_os = "android")'.dependencies]
-grammers-session = { version = "0.10", default-features = false }
-rusqlite = { version = "0.40.2", features = ["bundled", "fallible_uint"] }
+grammers-session.workspace = true
+rusqlite = { workspace = true, features = ["bundled"] }
 
 # Off Android there is a system libsqlite3 to link against, so rusqlite needs
 # no copy of its own and the session store keeps its sqlite-backed storage.
 [target.'cfg(not(target_os = "android"))'.dependencies]
-grammers-session = "0.10"
-rusqlite = { version = "0.40.2", features = ["fallible_uint"] }
+grammers-session = { workspace = true, default-features = true }
+rusqlite.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

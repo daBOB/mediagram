@@ -18,7 +18,7 @@ futures.workspace = true
 glass_pumpkin.workspace = true
 grammers-client.workspace = true
 grammers-mtsender.workspace = true
-grammers-session = "0.10"
+grammers-session = { workspace = true, default-features = true }
 grammers-tl-types.workspace = true
 hex.workspace = true
 # setsid, so a backgrounded upload gets a session of its own and survives
@@ -35,7 +35,7 @@ reqwest = { workspace = true, features = ["rustls-no-provider", "json"] }
 # sqlite3 (via libsql-ffi), and two bundled copies in one binary collide at
 # link time with duplicate `sqlite3_*` symbols. Linking against the system
 # library avoids the clash.
-rusqlite = { version = "0.40.2", features = ["fallible_uint"] }
+rusqlite.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sha2.workspace = true
