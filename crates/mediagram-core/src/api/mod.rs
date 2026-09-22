@@ -72,6 +72,29 @@ pub enum CoreError {
     Library(String),
 }
 
+impl CoreError {
+    /// `Io(what)` for a failure whose cause is logged rather than returned.
+    ///
+    /// The message Kotlin sees stays the plain `what`: no variant may carry a
+    /// chat, message or document id, and a cause is free to name one. The
+    /// cause still matters to whoever diagnoses the failure — permission
+    /// denied and disk full read the same without it — so it goes to the log.
+    pub(crate) fn io<E: std::fmt::Display>(what: &str) -> impl FnOnce(E) -> CoreError + '_ {
+        move |cause| {
+            tracing::warn!(%cause, "{what}");
+            CoreError::Io(what.into())
+        }
+    }
+
+    /// [`CoreError::io`]'s counterpart for a failure on the network.
+    pub(crate) fn network<E: std::fmt::Display>(what: &str) -> impl FnOnce(E) -> CoreError + '_ {
+        move |cause| {
+            tracing::warn!(%cause, "{what}");
+            CoreError::Network(what.into())
+        }
+    }
+}
+
 /// State a running app keeps between calls: the connection once opened,
 /// whichever login step is in flight, and where the set being played lives.
 #[derive(Default)]

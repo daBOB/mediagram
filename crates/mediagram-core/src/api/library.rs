@@ -62,21 +62,21 @@ pub(super) fn read(path: &Path) -> Result<Handles, CoreError> {
     let text = match std::fs::read_to_string(path) {
         Ok(text) => text,
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(Handles::new()),
-        Err(_) => return Err(CoreError::Io("reading the stored libraries".into())),
+        Err(err) => return Err(CoreError::io("reading the stored libraries")(err)),
     };
-    serde_json::from_str(&text).map_err(|_| {
-        CoreError::Io("the stored list of libraries is corrupt; starting over clears it".into())
-    })
+    serde_json::from_str(&text).map_err(CoreError::io(
+        "the stored list of libraries is corrupt; starting over clears it",
+    ))
 }
 
 /// Writes the map owner-only, through a temporary file renamed over the old
 /// one, so a process killed mid-write leaves the previous map intact rather
 /// than a half-written one that would not parse.
 pub(super) fn write(path: &Path, handles: &Handles) -> Result<(), CoreError> {
-    let failed = || CoreError::Io("recording the chosen library".into());
-    let text = serde_json::to_string(handles).map_err(|_| failed())?;
+    const RECORDING: &str = "recording the chosen library";
+    let text = serde_json::to_string(handles).map_err(CoreError::io(RECORDING))?;
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|_| failed())?;
+        std::fs::create_dir_all(parent).map_err(CoreError::io(RECORDING))?;
     }
     let staged = path.with_extension("json.new");
     let _ = std::fs::remove_file(&staged);
@@ -85,10 +85,10 @@ pub(super) fn write(path: &Path, handles: &Handles) -> Result<(), CoreError> {
         .mode(0o600)
         .create_new(true)
         .open(&staged)
-        .map_err(|_| failed())?;
-    file.write_all(text.as_bytes()).map_err(|_| failed())?;
+        .map_err(CoreError::io(RECORDING))?;
+    file.write_all(text.as_bytes()).map_err(CoreError::io(RECORDING))?;
     drop(file);
-    std::fs::rename(&staged, path).map_err(|_| failed())
+    std::fs::rename(&staged, path).map_err(CoreError::io(RECORDING))
 }
 
 /// The handle this device already uses for `entry`'s channel, or a fresh one.

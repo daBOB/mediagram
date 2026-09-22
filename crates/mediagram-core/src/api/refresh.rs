@@ -32,7 +32,7 @@ pub(super) async fn refresh_catalog(
         .await?
         .json()
         .await
-        .map_err(|_| CoreError::Network("pointer response was not valid JSON".into()))?;
+        .map_err(CoreError::network("pointer response was not valid JSON"))?;
 
     mlib_spec::package::pointer_is_readable(&pointer, package::SUPPORTED_SCHEMA)
         .map_err(|err| CoreError::Cipher(err.to_string()))?;
@@ -106,7 +106,7 @@ pub(super) fn install_staged(
     let root = catalog::dir(core);
     let installed = free_version_name(&root, version_name);
     std::fs::rename(incoming, root.join(&installed))
-        .map_err(|_| CoreError::Io("staging the refreshed catalog".into()))?;
+        .map_err(CoreError::io("staging the refreshed catalog"))?;
     swap_current(core, &installed)?;
     remove_other_versions(core, &installed)
 }
@@ -137,9 +137,9 @@ fn swap_current(core: &Core, version_name: &str) -> Result<(), CoreError> {
     let staged = root.join(".current-swap");
     let _ = std::fs::remove_file(&staged);
     std::os::unix::fs::symlink(version_name, &staged)
-        .map_err(|_| CoreError::Io("staging the catalog switch".into()))?;
+        .map_err(CoreError::io("staging the catalog switch"))?;
     std::fs::rename(&staged, root.join(catalog::CURRENT))
-        .map_err(|_| CoreError::Io("switching the current catalog".into()))
+        .map_err(CoreError::io("switching the current catalog"))
 }
 
 /// Clears every stale version and leftover staging directory, keeping only

@@ -61,10 +61,10 @@ pub fn details_db(core: &Core) -> PathBuf {
 pub fn open_or_create(core: &Core) -> Result<Connection, CoreError> {
     let path = details_db(core);
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|_| preparing())?;
+        std::fs::create_dir_all(parent).map_err(CoreError::io(PREPARING))?;
     }
     let conn =
-        Connection::open(&path).map_err(|_| CoreError::Io("opening the description store".into()))?;
+        Connection::open(&path).map_err(CoreError::io("opening the description store"))?;
 
     let at: i64 = conn.pragma_query_value(None, "user_version", |row| row.get(0)).unwrap_or(0);
     if at < schema::SCHEMA_VERSION {
@@ -86,27 +86,25 @@ pub fn open_or_create(core: &Core) -> Result<Connection, CoreError> {
 /// transactional, and `index/db.rs` guards the index the same way.
 fn migrate_from(conn: &Connection, at: i64) -> Result<(), CoreError> {
     let applied = schema::migrations_up_to(at).len();
-    conn.execute_batch("BEGIN").map_err(|_| preparing())?;
+    conn.execute_batch("BEGIN").map_err(CoreError::io(PREPARING))?;
     for statement in schema::migrations_up_to(schema::SCHEMA_VERSION).into_iter().skip(applied) {
         if conn.execute(statement, []).is_err() {
             let _ = conn.execute_batch("ROLLBACK");
-            return Err(preparing());
+            return Err(CoreError::Io(PREPARING.into()));
         }
     }
     if conn.pragma_update(None, "user_version", schema::SCHEMA_VERSION).is_err() {
         let _ = conn.execute_batch("ROLLBACK");
-        return Err(preparing());
+        return Err(CoreError::Io(PREPARING.into()));
     }
-    conn.execute_batch("COMMIT").map_err(|_| preparing())
+    conn.execute_batch("COMMIT").map_err(CoreError::io(PREPARING))
 }
 
-fn preparing() -> CoreError {
-    CoreError::Io("preparing the description store".into())
-}
+const PREPARING: &str = "preparing the description store";
 
 /// Records what a fetch learned about one title; see [`crate::shows::upsert`].
 pub fn upsert(conn: &Connection, row: &ShowRow) -> Result<(), CoreError> {
-    crate::shows::upsert(conn, row).map_err(|_| CoreError::Io("recording a description".into()))
+    crate::shows::upsert(conn, row).map_err(CoreError::io("recording a description"))
 }
 
 /// What is known about a title: the index's own row first, whatever this

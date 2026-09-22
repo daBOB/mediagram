@@ -27,10 +27,10 @@ pub(super) fn package_url(pointer_url: &str, file: &str) -> Result<String, CoreE
         return Err(CoreError::Cipher("the pointer names an unsafe file".into()));
     }
     let base = url::Url::parse(pointer_url)
-        .map_err(|_| CoreError::Network("pointer_url is not a valid URL".into()))?;
+        .map_err(CoreError::network("pointer_url is not a valid URL"))?;
     let joined = base
         .join(file)
-        .map_err(|_| CoreError::Network("could not build the package URL".into()))?;
+        .map_err(CoreError::network("could not build the package URL"))?;
     Ok(joined.to_string())
 }
 
@@ -54,7 +54,10 @@ pub(super) async fn fetch(
         .send()
         .await
         .and_then(reqwest::Response::error_for_status)
-        .map_err(|_| CoreError::Network(format!("request to {url} failed")))
+        .map_err(|cause| {
+            tracing::warn!(%cause, "request to {url} failed");
+            CoreError::Network(format!("request to {url} failed"))
+        })
 }
 
 /// Fetches `url`, refusing once the actual bytes received exceed `cap` —
@@ -76,7 +79,7 @@ pub(super) async fn fetch_capped(
     while let Some(chunk) = response
         .chunk()
         .await
-        .map_err(|_| CoreError::Network("the package download ended before it finished".into()))?
+        .map_err(CoreError::network("the package download ended before it finished"))?
     {
         out.extend_from_slice(&chunk);
         if out.len() as u64 > cap {

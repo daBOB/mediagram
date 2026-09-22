@@ -63,7 +63,7 @@ pub(super) fn load_auth_key(data_dir: &Path) -> Option<(i32, [u8; AUTH_KEY_LEN])
 /// window never opens on a second write either.
 fn store_auth_key(data_dir: &Path, dc_id: i32, key: &[u8; AUTH_KEY_LEN]) -> Result<(), CoreError> {
     std::fs::create_dir_all(data_dir)
-        .map_err(|_| CoreError::Io("creating the data directory".into()))?;
+        .map_err(CoreError::io("creating the data directory"))?;
     let path = data_dir.join(SESSION_FILE);
     let mut bytes = Vec::with_capacity(4 + AUTH_KEY_LEN);
     bytes.extend_from_slice(&dc_id.to_be_bytes());
@@ -80,13 +80,13 @@ fn store_auth_key(data_dir: &Path, dc_id: i32, key: &[u8; AUTH_KEY_LEN]) -> Resu
         Ok(file) => file,
         Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => {
             std::fs::remove_file(&path)
-                .map_err(|_| CoreError::Io("replacing the session".into()))?;
-            open().map_err(|_| CoreError::Io("writing the session".into()))?
+                .map_err(CoreError::io("replacing the session"))?;
+            open().map_err(CoreError::io("writing the session"))?
         }
         Err(_) => return Err(CoreError::Io("writing the session".into())),
     };
     file.write_all(&bytes)
-        .map_err(|_| CoreError::Io("writing the session".into()))
+        .map_err(CoreError::io("writing the session"))
 }
 
 /// A fresh bootstrap session before any login, or one seeded with the
@@ -136,11 +136,11 @@ pub(super) fn persist(handle: &SenderPoolFatHandle, data_dir: &Path) -> Result<(
     let dc_id = handle
         .session
         .home_dc_id()
-        .map_err(|_| CoreError::Io("reading the session".into()))?;
+        .map_err(CoreError::io("reading the session"))?;
     let key = handle
         .session
         .dc_option(dc_id)
-        .map_err(|_| CoreError::Io("reading the session".into()))?
+        .map_err(CoreError::io("reading the session"))?
         .and_then(|option| option.auth_key)
         .ok_or_else(|| CoreError::NotAuthorized("sign-in did not yield an auth key".into()))?;
     store_auth_key(data_dir, dc_id, &key)

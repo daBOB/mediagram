@@ -66,7 +66,7 @@ pub(super) fn library_db(dir: &Path) -> PathBuf {
 /// a version a refresh is about to remove.
 pub(super) fn open_ro(path: &Path) -> Result<Connection, CoreError> {
     Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY)
-        .map_err(|_| CoreError::Io("opening the catalog".into()))
+        .map_err(CoreError::io("opening the catalog"))
 }
 
 /// Opens the current catalog, or reports it as not-yet-loaded rather than
@@ -89,7 +89,7 @@ pub(super) fn list_sets(core: &Core) -> Result<Vec<SetSummary>, CoreError> {
         return Ok(Vec::new());
     }
     let conn = open_ro(&path)?;
-    let sets = queries::list_playable(&conn).map_err(|_| CoreError::Io("reading the catalog".into()))?;
+    let sets = queries::list_playable(&conn).map_err(CoreError::io("reading the catalog"))?;
     Ok(sets.iter().map(dto::summary_from).collect())
 }
 
@@ -116,7 +116,7 @@ pub(super) fn poster_path(core: &Core, poster_key: String) -> Option<String> {
 pub(super) fn total_size(core: &Core, set_id: String) -> Result<u64, CoreError> {
     let conn = open(core)?;
     queries::playable_set(&conn, &set_id)
-        .map_err(|_| CoreError::Io("reading the catalog".into()))?
+        .map_err(CoreError::io("reading the catalog"))?
         .map(|set| set.total)
         .ok_or_else(|| CoreError::NotFound("set not found".into()))
 }
@@ -125,7 +125,7 @@ pub(super) fn total_size(core: &Core, set_id: String) -> Result<u64, CoreError> 
 pub(super) fn count_playable(dir: &Path) -> Result<u64, CoreError> {
     let conn = open_ro(&library_db(dir))?;
     let sets =
-        queries::list_playable(&conn).map_err(|_| CoreError::Io("reading the catalog".into()))?;
+        queries::list_playable(&conn).map_err(CoreError::io("reading the catalog"))?;
     Ok(sets.len() as u64)
 }
 

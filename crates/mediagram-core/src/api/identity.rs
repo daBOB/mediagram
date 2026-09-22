@@ -54,14 +54,14 @@ pub(super) fn read_identity(dir: &Path) -> Result<Option<Identity>, CoreError> {
     };
     serde_json::from_str(&text)
         .map(Some)
-        .map_err(|_| CoreError::Io("the package identity record is corrupt".into()))
+        .map_err(CoreError::io("the package identity record is corrupt"))
 }
 
 pub(super) fn write_identity(dir: &Path, identity: &Identity) -> Result<(), CoreError> {
     let text = serde_json::to_string(identity)
-        .map_err(|_| CoreError::Io("recording the package identity".into()))?;
+        .map_err(CoreError::io("recording the package identity"))?;
     std::fs::write(dir.join(IDENTITY_FILE), text)
-        .map_err(|_| CoreError::Io("recording the package identity".into()))
+        .map_err(CoreError::io("recording the package identity"))
 }
 
 #[cfg(test)]

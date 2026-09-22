@@ -60,7 +60,7 @@ pub fn plan_fetch(core: &Core, fallback: &str) -> Result<FetchPlan, CoreError> {
         .map_err(|_| CoreError::NotFound("no catalog is loaded yet".into()))?;
     let conn = catalog::open_ro(&catalog::library_db(&dir))?;
     let sets = crate::catalog::list_playable(&conn)
-        .map_err(|_| CoreError::Io("reading the catalog".into()))?;
+        .map_err(CoreError::io("reading the catalog"))?;
     let language = language_of(&conn, fallback);
     drop(conn);
 

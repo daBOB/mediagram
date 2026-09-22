@@ -28,12 +28,12 @@ pub(super) async fn read(
         // that is incomplete, or whose parts do not add up to its total, must
         // not be readable here while being refused everywhere else.
         let playable = queries::playable_set(&conn, &set_id)
-            .map_err(|_| CoreError::Io("reading the catalog".into()))?;
+            .map_err(CoreError::io("reading the catalog"))?;
         if playable.is_none() {
             return Err(CoreError::NotFound("set not found".into()));
         }
         queries::part_locations(&conn, &set_id)
-            .map_err(|_| CoreError::Io("reading the catalog".into()))?
+            .map_err(CoreError::io("reading the catalog"))?
     };
     if locations.is_empty() {
         return Err(CoreError::NotFound("set not found".into()));
@@ -83,11 +83,11 @@ pub(super) async fn read(
         let pump_client = client.clone();
         let pump = tokio::spawn(async move { stream::pump_step(&pump_client, &document, &step, &tx).await });
         while let Some(chunk) = rx.recv().await {
-            out.extend(chunk.map_err(|_| CoreError::Network("the download was interrupted".into()))?);
+            out.extend(chunk.map_err(CoreError::network("the download was interrupted"))?);
         }
         pump.await
-            .map_err(|_| CoreError::Network("the download task did not finish cleanly".into()))?
-            .map_err(|_| CoreError::Network("the download ended before it finished".into()))?;
+            .map_err(CoreError::network("the download task did not finish cleanly"))?
+            .map_err(CoreError::network("the download ended before it finished"))?;
     }
     Ok(out)
 }
@@ -109,7 +109,7 @@ async fn document_for(
     }
     let document = stream::part_document(client, channel, message_id)
         .await
-        .map_err(|_| CoreError::Network("the part could not be resolved".into()))?;
+        .map_err(CoreError::network("the part could not be resolved"))?;
     core.state
         .lock()
         .await

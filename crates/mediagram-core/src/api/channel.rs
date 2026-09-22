@@ -165,7 +165,7 @@ async fn install(
     let incoming = catalog::dir(core).join("incoming");
     let _ = std::fs::remove_dir_all(&incoming);
     std::fs::create_dir_all(&incoming)
-        .map_err(|_| CoreError::Io("staging the refreshed catalog".into()))?;
+        .map_err(CoreError::io("staging the refreshed catalog"))?;
 
     download(client, document, &incoming.join(mlib_spec::schema::INDEX_FILE)).await?;
     install_downloaded(core, &incoming, version)
@@ -191,20 +191,20 @@ async fn download(
     document: &Document,
     path: &std::path::Path,
 ) -> Result<(), CoreError> {
-    let failed = || CoreError::Io("writing the downloaded index".into());
-    let mut file = std::fs::File::create(path).map_err(|_| failed())?;
+    const WRITING: &str = "writing the downloaded index";
+    let mut file = std::fs::File::create(path).map_err(CoreError::io(WRITING))?;
     let mut written: u64 = 0;
     let mut chunks = client.iter_download(document);
     while let Some(chunk) = chunks
         .next()
         .await
-        .map_err(|_| CoreError::Network("the index download was interrupted".into()))?
+        .map_err(CoreError::network("the index download was interrupted"))?
     {
         written += chunk.len() as u64;
         if written > MAX_INDEX_BYTES {
             return Err(CoreError::Library(UNREADABLE.into()));
         }
-        file.write_all(&chunk).map_err(|_| failed())?;
+        file.write_all(&chunk).map_err(CoreError::io(WRITING))?;
     }
     Ok(())
 }
