@@ -66,10 +66,7 @@ pub fn parse_range(header: &str, total: u64) -> Result<ByteRange, RangeError> {
     if raw_start.is_empty() {
         // Suffix form: the last n bytes.
         let n: u64 = raw_end.parse().map_err(|_| RangeError::Malformed)?;
-        if n == 0 {
-            return Err(RangeError::Unsatisfiable);
-        }
-        if total == 0 {
+        if n == 0 || total == 0 {
             return Err(RangeError::Unsatisfiable);
         }
         let start = total.saturating_sub(n);
@@ -89,7 +86,9 @@ pub fn parse_range(header: &str, total: u64) -> Result<ByteRange, RangeError> {
             .min(total.saturating_sub(1))
     };
 
-    if total == 0 || start >= total || start > end {
+    // An empty file fails here too: its clamped end is 0, and no start is
+    // below a total of 0.
+    if start >= total || start > end {
         return Err(RangeError::Unsatisfiable);
     }
     Ok(ByteRange { start, end })
@@ -116,6 +115,8 @@ pub fn plan_reads(parts: &[PartSpan], range: &ByteRange) -> Vec<Step> {
         // Where this read starts and ends inside this part.
         let from = range.start.saturating_sub(part.off);
         let to = (range.end - part.off + 1).min(part.len); // exclusive
+        // Only a zero-length part lying inside the range gets here with
+        // nothing to read; it contributes no step.
         if to <= from {
             continue;
         }

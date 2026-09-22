@@ -51,19 +51,12 @@ impl StepCursor {
         if self.remaining == 0 {
             return &[];
         }
-        if self.head_drop > 0 {
-            let drop = self.head_drop.min(chunk.len() as u64);
-            self.head_drop -= drop;
-            let chunk = &chunk[drop as usize..];
-            return self.take_body(chunk);
-        }
-        self.take_body(chunk)
-    }
-
-    fn take_body<'a>(&mut self, chunk: &'a [u8]) -> &'a [u8] {
-        let take = self.remaining.min(chunk.len() as u64) as usize;
+        let drop = self.head_drop.min(chunk.len() as u64);
+        self.head_drop -= drop;
+        let body = &chunk[drop as usize..];
+        let take = self.remaining.min(body.len() as u64) as usize;
         self.remaining -= take as u64;
-        &chunk[..take]
+        &body[..take]
     }
 
     pub fn is_done(&self) -> bool {
