@@ -2,12 +2,12 @@
 //! local index is lost. Reads only; never re-uploads media.
 
 use anyhow::{Context, Result};
-use rusqlite::{Connection, ToSql};
+use rusqlite::Connection;
 
 use crate::index::pins::record_index_messages;
 use crate::config::Config;
 use crate::index::db;
-use crate::index::status::{PartStatus, SetStatus};
+use crate::index::{parts, sets};
 use crate::index::rescan::{self, RescanSummary};
 use crate::telegram::client::Tg;
 use crate::index::rescan::Seen;
@@ -70,13 +70,10 @@ async fn rescan_all(conn: &mut Connection, tg: &Tg, chat_id: i64) -> Result<Resc
 
     // Set-level counts come from the library as a whole: a set that straddles
     // two batches would otherwise be counted twice.
-    let count = |sql: &str, status: &dyn ToSql| -> Result<usize> {
-        let n: u64 = conn.query_row(sql, [status], |row| row.get(0))?;
-        Ok(usize::try_from(n)?)
-    };
-    totals.sets_seen = count("SELECT COUNT(DISTINCT set_id) FROM parts WHERE status = ?1", &PartStatus::Done)?;
-    totals.sets_complete = count("SELECT COUNT(*) FROM sets WHERE status = ?1", &SetStatus::Complete)?;
-    totals.sets_incomplete = count("SELECT COUNT(*) FROM sets WHERE status != ?1", &SetStatus::Complete)?;
+    let complete = sets::count_complete(conn)?;
+    totals.sets_seen = usize::try_from(parts::sets_with_done_parts(conn)?)?;
+    totals.sets_complete = usize::try_from(complete)?;
+    totals.sets_incomplete = usize::try_from(sets::count(conn)? - complete)?;
 
     let pinned = pinned_index_messages(tg).await?;
     record_index_messages(conn, &pinned)?;

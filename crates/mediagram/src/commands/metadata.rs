@@ -9,7 +9,6 @@
 //! about the distinction.
 
 use anyhow::Result;
-use mediagram_tmdb::tmdb_client::TmdbClient;
 
 use crate::config::Config;
 use crate::export::titles::distinct_titles;
@@ -32,12 +31,7 @@ pub async fn run(cfg: &Config) -> Result<()> {
 
     // Works with no key at all when the cache is warm, which is the normal
     // case: `add` cached these payloads when it resolved each title.
-    let api = TmdbClient::with_cache(
-        mediagram_core::api::http::client()?,
-        cfg.tmdb_key.as_deref().unwrap_or(""),
-        &data_dir,
-        &cfg.tmdb_language,
-    );
+    let api = cfg.tmdb_client(mediagram_core::api::http::client()?)?;
 
     let (mut recorded, mut skipped) = (0usize, 0usize);
     for (kind, id) in &titles {

@@ -8,7 +8,7 @@ use grammers_client::message::InputMessage;
 use rusqlite::Connection;
 
 use crate::config::Config;
-use crate::index::{db, pins, snapshot};
+use crate::index::{db, pins, sets, snapshot};
 use crate::telegram::client::Tg;
 use crate::telegram::retry::{with_flood_wait_only, with_retry};
 
@@ -41,9 +41,7 @@ async fn push_snapshot(cfg: &Config) -> Result<i32> {
 }
 
 async fn push_via_telegram(cfg: &Config, conn: &Connection, temp_path: &Path) -> Result<i32> {
-    let sets_count: i64 = conn
-        .query_row("SELECT COUNT(*) FROM sets", [], |row| row.get(0))
-        .context("counting sets for index caption")?;
+    let sets_count = i64::try_from(sets::count(conn)?)?;
     let pushed_at = crate::clock::now_unix();
     let caption = mlib_spec::index_caption::render(pushed_at, sets_count);
 

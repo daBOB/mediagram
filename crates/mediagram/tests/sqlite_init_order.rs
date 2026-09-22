@@ -4,33 +4,23 @@
 //! with MISUSE once SQLite has been initialized, and `rusqlite` initializes it
 //! the moment it opens `library.db`.
 //!
-//! Every command opens the index before connecting to Telegram, so without
-//! the fix below every one of them panics. Only `smoke-upload`, which never
-//! touches the index, escaped it, which is why the single live test that ever
-//! ran passed.
+//! Every command opens the index before connecting to Telegram, which is the
+//! order that aborted the process. Opening the index now lets libsql
+//! configure SQLite first, so that order is safe for any caller.
+//!
+//! One test per binary on purpose: the configuration happens once per
+//! process, so a second test here would only ever see it already done.
 
+use grammers_session::storages::SqliteSession;
 use mediagram::index::db;
-use mediagram::telegram::client::preinit_session_store;
 
 #[tokio::test]
-async fn the_session_store_can_still_start_after_the_index_is_open() {
+async fn the_session_store_opens_after_the_index_without_any_setup_call() {
     let dir = tempfile::tempdir().unwrap();
 
-    // The order every command uses: the session store is configured at
-    // startup, then the index is opened.
-    preinit_session_store(dir.path()).await.unwrap();
     let _conn = db::open(dir.path()).unwrap();
 
-    // Opening the session store again must not panic; before the fix, this is
-    // where libsql asserted.
-    preinit_session_store(dir.path()).await.unwrap();
-}
-
-#[tokio::test]
-async fn preinit_is_safe_to_call_repeatedly() {
-    let dir = tempfile::tempdir().unwrap();
-    for _ in 0..3 {
-        preinit_session_store(dir.path()).await.unwrap();
-    }
-    let _conn = db::open(dir.path()).unwrap();
+    // Before the index configured SQLite on the session store's behalf, this
+    // is where libsql asserted and took the process down.
+    SqliteSession::open(dir.path().join("session.sqlite")).await.unwrap();
 }

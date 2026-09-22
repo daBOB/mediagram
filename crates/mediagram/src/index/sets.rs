@@ -137,6 +137,20 @@ pub fn list_pending(conn: &Connection) -> Result<Vec<SetRow>> {
     Ok(rows)
 }
 
+/// How many sets the index holds, whatever their status.
+pub fn count(conn: &Connection) -> Result<u64> {
+    conn.query_row("SELECT COUNT(*) FROM sets", [], |row| row.get(0))
+        .context("counting sets")
+}
+
+/// How many sets are wholly in the channel.
+pub fn count_complete(conn: &Connection) -> Result<u64> {
+    conn.query_row("SELECT COUNT(*) FROM sets WHERE status = ?1", [SetStatus::Complete], |row| {
+        row.get(0)
+    })
+    .context("counting complete sets")
+}
+
 // Covered by `tests/index_state.rs`: insert/get/list_pending/complete round
 // trip through a real sqlite file, plus the not-found case.
 

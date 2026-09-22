@@ -134,3 +134,19 @@ pub fn done_hashes(conn: &Connection, set_id: &str) -> Result<Vec<String>> {
 
 // Covered by `tests/index_state.rs`: insert_parts/pending_parts/mark_done/
 // done_hashes round trip, including the two-part ordering guarantee.
+
+/// How many part rows the index holds, whatever their status.
+pub fn count(conn: &Connection) -> Result<u64> {
+    conn.query_row("SELECT COUNT(*) FROM parts", [], |row| row.get(0))
+        .context("counting parts")
+}
+
+/// How many sets have at least one part in the channel.
+pub fn sets_with_done_parts(conn: &Connection) -> Result<u64> {
+    conn.query_row(
+        "SELECT COUNT(DISTINCT set_id) FROM parts WHERE status = ?1",
+        [PartStatus::Done],
+        |row| row.get(0),
+    )
+    .context("counting sets with parts in the channel")
+}

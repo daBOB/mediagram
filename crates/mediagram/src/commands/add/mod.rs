@@ -8,7 +8,6 @@
 pub mod new_set;
 
 use anyhow::{Context, Result, bail};
-use mediagram_tmdb::tmdb_client::TmdbClient;
 use mlib_spec::{Caption, Part};
 
 use super::args::AddArgs;
@@ -78,12 +77,7 @@ pub async fn plan(cfg: &Config, new: &NewSet) -> Result<Planned> {
     }
 
     let data_dir = cfg.data_dir()?;
-    let api = TmdbClient::with_cache(
-        mediagram_core::api::http::client()?,
-        cfg.tmdb_key.as_deref().unwrap_or(""),
-        &data_dir,
-        &cfg.tmdb_language,
-    );
+    let api = cfg.tmdb_client(mediagram_core::api::http::client()?)?;
     let lesson = new.lesson.as_ref();
     let resolve_input = ResolveInput {
         file_name,

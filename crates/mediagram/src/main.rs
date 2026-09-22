@@ -140,10 +140,6 @@ async fn main() -> Result<()> {
     } else {
         config::load(Some(&cfg_path))?
     };
-    // Before anything opens library.db: the session store has to configure
-    // SQLite first, and that configuration fails once SQLite is initialized.
-    // See `telegram::client::preinit_session_store`.
-    mediagram::telegram::client::preinit_session_store(&cfg.data_dir()?).await?;
     match cli.cmd {
         Cmd::Login => commands::login::run(&cfg).await,
         Cmd::Whoami => commands::whoami::run(&cfg).await,

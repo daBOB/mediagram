@@ -10,7 +10,6 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result, bail};
 use mediagram_core::package::cipher::{parse_key, seal};
 use mediagram_tmdb::posters::resolve_posters;
-use mediagram_tmdb::tmdb_client::TmdbClient;
 use mlib_spec::package::{PackageManifest, package_file_name};
 use rusqlite::Connection;
 
@@ -18,7 +17,7 @@ use crate::config::Config;
 use crate::export::budget::{Verdict, estimate_bytes, verdict_for};
 use crate::export::stage::Staging;
 use crate::export::{archive, pointer, publish};
-use crate::index::db;
+use crate::index::{self, db};
 
 pub async fn run(
     cfg: &Config,
@@ -49,7 +48,7 @@ pub async fn run(
     let snapshot = Connection::open(staging.path().join(mlib_spec::schema::INDEX_FILE))
         .context("opening the snapshot")?;
     let titles = crate::export::titles::distinct_titles(&snapshot)?;
-    let (sets, parts) = crate::export::titles::set_and_part_counts(&snapshot)?;
+    let (sets, parts) = (index::sets::count(&snapshot)?, index::parts::count(&snapshot)?);
 
     // Refuse before downloading: discovering the limit afterwards would throw
     // away every poster fetched to get there.
@@ -72,7 +71,7 @@ pub async fn run(
         return Ok(());
     }
 
-    let posters = fetch_posters(cfg, &data_dir, &staging, &titles).await?;
+    let posters = fetch_posters(cfg, &staging, &titles).await?;
     let created_at = crate::clock::now_unix();
     let manifest = PackageManifest {
         format: mlib_spec::package::PACKAGE_FORMAT,
@@ -142,21 +141,13 @@ fn package_key(cfg: &Config) -> Result<[u8; 32]> {
 
 async fn fetch_posters(
     cfg: &Config,
-    data_dir: &Path,
     staging: &Staging,
     titles: &[(mlib_spec::Kind, u64)],
 ) -> Result<Vec<mlib_spec::package::PosterEntry>> {
     // Built once and used for both the lookup and the download below —
     // `TmdbClient` takes this same client rather than building its own.
     let http = mediagram_core::api::http::client()?;
-    // Works with no key at all when the cache is warm, which is the normal
-    // case: `add` cached these payloads when it resolved each title.
-    let api = TmdbClient::with_cache(
-        http.clone(),
-        cfg.tmdb_key.as_deref().unwrap_or(""),
-        data_dir,
-        &cfg.tmdb_language,
-    );
+    let api = cfg.tmdb_client(http.clone())?;
     let refs = resolve_posters(&api, titles).await;
     staging.fetch_posters(&http, &refs).await
 }

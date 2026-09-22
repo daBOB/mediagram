@@ -60,8 +60,7 @@ pub fn is_held(data_dir: &Path) -> bool {
 
 fn open(path: &Path) -> Result<File> {
     if let Some(dir) = path.parent() {
-        std::fs::create_dir_all(dir)
-            .with_context(|| format!("creating data dir {}", dir.display()))?;
+        crate::paths::private_dir(dir)?;
     }
     OpenOptions::new()
         .create(true)
