@@ -1,15 +1,35 @@
-//! Reading a file's streams with `ffprobe`.
+//! A file's streams, as `ffprobe` reports them.
 //!
-//! Kept apart from [`super::prepare_plan`] so the decision logic stays pure
-//! and the parsing can be tested against real output: a measured episode has
-//! 52 streams, 43 of them with no declared bitrate, which is the shape that
-//! catches a parser assuming every field is present.
+//! The model the prepare pipeline decides over and the direct-play policy
+//! reads. Parsing is kept apart from those decisions so they stay pure, and
+//! is tested against real output, which is where a parser assuming every
+//! field is present gets caught.
 
-use anyhow::{Context, Result, bail};
-use serde::Deserialize;
-use tokio::process::Command;
+use std::path::Path;
 
-use super::prepare_plan::{Stream, StreamKind};
+use anyhow::{Result, bail};
+
+use super::probe::{self, Report};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StreamKind {
+    Video,
+    Audio,
+    Subtitle,
+    Other,
+}
+
+/// One stream as `ffprobe` reports it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Stream {
+    pub index: u32,
+    pub kind: StreamKind,
+    pub language: Option<String>,
+    pub bit_rate: Option<u64>,
+    /// ffprobe's `codec_name`, which decides whether a browser can open the
+    /// result without the player converting it first.
+    pub codec: Option<String>,
+}
 
 /// What one probe tells us about a file.
 #[derive(Debug, Clone, PartialEq)]
@@ -19,43 +39,22 @@ pub struct Probed {
     pub size: Option<u64>,
 }
 
-#[derive(Deserialize)]
-struct RawProbe {
-    #[serde(default)]
-    streams: Vec<RawStream>,
-    #[serde(default)]
-    format: Option<RawFormat>,
-}
-
-#[derive(Deserialize)]
-struct RawStream {
-    index: u32,
-    codec_type: Option<String>,
-    codec_name: Option<String>,
-    // ffprobe reports numbers as strings.
-    bit_rate: Option<String>,
-    #[serde(default)]
-    tags: Option<RawTags>,
-}
-
-#[derive(Deserialize)]
-struct RawTags {
-    language: Option<String>,
-}
-
-#[derive(Deserialize)]
-struct RawFormat {
-    duration: Option<String>,
-    size: Option<String>,
-}
-
 /// Parses `ffprobe -of json` output.
 pub fn parse_probe(json: &str) -> Result<Probed> {
-    let raw: RawProbe = serde_json::from_str(json).context("ffprobe output is not valid JSON")?;
-    if raw.streams.is_empty() {
+    from_report(probe::parse(json.as_bytes())?)
+}
+
+/// Probes a file on disk.
+pub async fn probe(path: &Path) -> Result<Probed> {
+    from_report(probe::run(path).await?)
+}
+
+fn from_report(report: Report) -> Result<Probed> {
+    if report.streams.is_empty() {
         bail!("ffprobe reported no streams");
     }
-    let streams = raw
+    let (duration, size) = (report.duration().unwrap_or(0.0), report.size());
+    let streams = report
         .streams
         .into_iter()
         .map(|s| Stream {
@@ -66,50 +65,10 @@ pub fn parse_probe(json: &str) -> Result<Probed> {
                 Some("subtitle") => StreamKind::Subtitle,
                 _ => StreamKind::Other,
             },
-            language: s.tags.and_then(|t| t.language),
-            bit_rate: s.bit_rate.and_then(|b| b.parse().ok()),
+            language: s.language().map(str::to_string),
+            bit_rate: s.bit_rate.as_deref().and_then(|b| b.parse().ok()),
             codec: s.codec_name,
         })
         .collect();
-    let format = raw.format;
-    Ok(Probed {
-        streams,
-        duration: format
-            .as_ref()
-            .and_then(|f| f.duration.as_ref())
-            .and_then(|d| d.parse().ok())
-            .unwrap_or(0.0),
-        size: format
-            .as_ref()
-            .and_then(|f| f.size.as_ref())
-            .and_then(|s| s.parse().ok()),
-    })
-}
-
-/// Probes a file on disk.
-pub async fn probe(path: &std::path::Path) -> Result<Probed> {
-    let output = Command::new("ffprobe")
-        .args([
-            "-v",
-            "error",
-            "-show_entries",
-            "stream=index,codec_type,codec_name,bit_rate:stream_tags=language",
-            "-show_entries",
-            "format=duration,size",
-            "-of",
-            "json",
-        ])
-        .arg(path)
-        .output()
-        .await
-        .with_context(|| format!("running ffprobe on {}", path.display()))?;
-    if !output.status.success() {
-        bail!(
-            "ffprobe failed on {}: {}",
-            path.display(),
-            String::from_utf8_lossy(&output.stderr).trim()
-        );
-    }
-    parse_probe(&String::from_utf8_lossy(&output.stdout))
-        .with_context(|| format!("probing {}", path.display()))
+    Ok(Probed { streams, duration, size })
 }

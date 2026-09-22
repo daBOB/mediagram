@@ -3,7 +3,8 @@
 //! undo for a file whose tracks were dropped on a different basis than the
 //! table showed.
 
-use mediagram::media::prepare_plan::{Stream, StreamKind, Verdict, plan_prepare};
+use mediagram::media::prepare::plan::{Verdict, plan_prepare};
+use mediagram::media::streams::{Stream, StreamKind};
 
 fn video() -> Stream {
     Stream {

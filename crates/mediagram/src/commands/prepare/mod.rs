@@ -11,7 +11,7 @@
 //! Replacing the original is irreversible, so it happens only with
 //! `--replace`; `--out` writes a parallel tree instead and leaves the sources
 //! alone. Either way the new file must pass every check in
-//! [`crate::media::prepare_check`] before it is kept.
+//! [`crate::media::prepare::check`] before it is kept.
 
 mod report;
 mod rewrite;
@@ -23,7 +23,7 @@ use anyhow::{Result, bail};
 use super::args::PrepareArgs;
 use crate::config::Config;
 use crate::media::direct_play;
-use crate::media::prepare_plan::{PreparePlan, Verdict, plan_prepare};
+use crate::media::prepare::plan::{PreparePlan, Verdict, plan_prepare};
 use crate::media::streams;
 use crate::media::video_files::collect_videos;
 use crate::term;

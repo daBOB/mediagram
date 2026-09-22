@@ -5,7 +5,7 @@
 //! produced something that is not a usable replacement. Pure, so each one can
 //! be tested against the case it guards.
 
-use super::prepare_plan::{Stream, StreamKind};
+use crate::media::streams::{Stream, StreamKind};
 
 /// Why a prepared file was rejected. Each variant names one real failure.
 #[derive(Debug, Clone, PartialEq)]

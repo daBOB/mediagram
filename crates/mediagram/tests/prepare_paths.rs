@@ -4,7 +4,7 @@
 
 use std::path::Path;
 
-use mediagram::media::prepare_paths::{PREPARE_WORKING_SUFFIX, mirrored, working_path};
+use mediagram::media::prepare::paths::{PREPARE_WORKING_SUFFIX, mirrored, working_path};
 
 #[test]
 fn a_file_under_the_root_keeps_its_place_in_the_tree() {

@@ -12,7 +12,7 @@
 
 use std::path::Path;
 
-use crate::media::prepare_plan::{Stream, StreamKind};
+use crate::media::streams::{Stream, StreamKind};
 
 /// Containers a browser will open. Matroska is not one of them.
 pub const CONTAINERS: [&str; 3] = ["mp4", "m4v", "webm"];

@@ -80,7 +80,7 @@ fn codec_names_are_compared_the_way_ffprobe_spells_them() {
 // differently the way two hand-written copies did.
 
 use mediagram::media::direct_play::{Blocker, blockers, plays_directly};
-use mediagram::media::prepare_plan::{Stream, StreamKind};
+use mediagram::media::streams::{Stream, StreamKind};
 use std::path::Path;
 
 fn stream(kind: StreamKind, codec: &str) -> Stream {
