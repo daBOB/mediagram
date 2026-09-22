@@ -27,7 +27,8 @@ use crate::media::prepare_plan::{PreparePlan, Verdict, plan_prepare};
 use crate::media::streams;
 use crate::media::video_files::collect_videos;
 use crate::term;
-use report::{name, print_table, truncate, warn_about_video_codecs};
+use crate::paths::file_name;
+use report::{print_table, truncate, warn_about_video_codecs};
 use rewrite::rewrite_all;
 
 /// One probed file and what `prepare` would do with it.
@@ -108,7 +109,7 @@ async fn probe_all(
             "  probing {}/{} · {}",
             index + 1,
             files.len(),
-            truncate(&name(file), 44)
+            truncate(&file_name(file), 44)
         ));
         let probed = streams::probe(file).await?;
         let size = probed

@@ -7,7 +7,7 @@
 use std::fs;
 use std::path::Path;
 
-use mediagram::commands::add_show::{duplicate_episode, walk};
+use mediagram::media::show_episodes::{duplicate_episode, walk};
 
 fn touch(dir: &Path, name: &str) {
     fs::create_dir_all(dir).unwrap();

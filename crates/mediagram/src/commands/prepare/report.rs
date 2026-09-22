@@ -1,11 +1,10 @@
 //! What `prepare` prints before it changes anything: the plan per file, and
 //! which files `--mp4` cannot make direct-playable.
 
-use std::path::Path;
-
 use super::Candidate;
 use crate::media::direct_play;
 use crate::media::prepare_plan::Verdict;
+use crate::paths::file_name;
 
 pub(super) fn print_table(planned: &[Candidate], limit: u64) {
     println!(
@@ -21,7 +20,7 @@ pub(super) fn print_table(planned: &[Candidate], limit: u64) {
         };
         println!(
             "{:<44} {:>8.2}G {:>6} {:>5} {:>10.2}G  {}",
-            truncate(&name(file), 44),
+            truncate(&file_name(file), 44),
             *size as f64 / 1e9,
             plan.dropped_audio,
             plan.dropped_subtitles,
@@ -72,11 +71,6 @@ pub(super) fn warn_about_video_codecs(planned: &[Candidate]) {
     );
 }
 
-pub(super) fn name(path: &Path) -> String {
-    path.file_name()
-        .map(|n| n.to_string_lossy().to_string())
-        .unwrap_or_default()
-}
 
 pub(super) fn truncate(s: &str, max: usize) -> String {
     if s.chars().count() <= max {

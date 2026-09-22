@@ -53,3 +53,10 @@ pub fn restrict_file(path: &Path) -> Result<()> {
     std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))
         .with_context(|| format!("restricting {}", path.display()))
 }
+
+/// A path's file name for a line a person reads, or empty when it has none.
+pub fn file_name(path: &Path) -> String {
+    path.file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default()
+}

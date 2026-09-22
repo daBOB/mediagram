@@ -7,7 +7,8 @@ use anyhow::{Context, Result, bail};
 use tokio::process::Command;
 
 use super::Candidate;
-use super::report::{name, truncate};
+use super::report::truncate;
+use crate::paths::file_name;
 use crate::commands::args::PrepareArgs;
 use crate::media::direct_play;
 use crate::media::ffmpeg_progress;
@@ -41,7 +42,7 @@ pub(super) async fn rewrite_all(
             ffmpeg_progress::Job {
                 index,
                 total: todo.len(),
-                name: truncate(&name(file), 44),
+                name: truncate(&file_name(file), 44),
                 duration: *duration,
             },
         )
@@ -51,7 +52,7 @@ pub(super) async fn rewrite_all(
                 rewritten += 1;
                 println!(
                     "{}: {:.2} GB -> {:.2} GB",
-                    name(file),
+                    file_name(file),
                     *size as f64 / 1e9,
                     new_size as f64 / 1e9
                 );
@@ -61,13 +62,13 @@ pub(super) async fn rewrite_all(
                 if args.delete_source {
                     match std::fs::remove_file(file) {
                         Ok(()) => freed += *size,
-                        Err(err) => println!("  {} kept: {err}", name(file)),
+                        Err(err) => println!("  {} kept: {err}", file_name(file)),
                     }
                 }
             }
             Err(err) => {
                 failed += 1;
-                println!("{}: left unchanged: {err:#}", name(file));
+                println!("{}: left unchanged: {err:#}", file_name(file));
             }
         }
     }
