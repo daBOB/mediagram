@@ -7,7 +7,7 @@
 //! synthetic file whose bytes are known.
 
 use mediagram_core::range::{ByteRange, CHUNK, PartSpan, Step, plan_reads};
-use mediagram_core::stream::StepCursor;
+use mediagram_core::transport::stream::StepCursor;
 
 fn step(skip_chunks: u32, head_drop: u64, take: u64) -> Step {
     Step {
@@ -138,5 +138,29 @@ fn planned_reads_reproduce_the_source_bytes_exactly() {
             file[start as usize..=end as usize],
             "range {start}-{end} served the wrong bytes"
         );
+    }
+}
+
+/// A download refused midway resumes with `Step::after`: what it delivered
+/// plus what the resumed step delivers must be the step's bytes exactly, with
+/// nothing sent twice and nothing skipped.
+#[test]
+fn a_step_resumed_after_an_interruption_continues_where_it_stopped() {
+    let part = synthetic(4 * CHUNK + 500);
+    let chunks = chunks_of(&part);
+    let whole = step(1, 300, 2 * CHUNK + 42);
+    let wanted = &part[(CHUNK + 300) as usize..(3 * CHUNK + 342) as usize];
+
+    for delivered in [0, 1, CHUNK - 300, CHUNK - 299, CHUNK + 5, whole.take - 1] {
+        let rest = whole.after(delivered);
+        let mut cursor = StepCursor::new(&rest);
+        let mut served = wanted[..delivered as usize].to_vec();
+        for chunk in chunks.iter().skip(rest.skip_chunks as usize) {
+            served.extend_from_slice(cursor.take(chunk));
+            if cursor.is_done() {
+                break;
+            }
+        }
+        assert_eq!(served, wanted, "resuming after {delivered} bytes");
     }
 }

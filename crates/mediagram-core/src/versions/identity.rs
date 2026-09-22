@@ -1,25 +1,24 @@
 //! Which package a version of the catalog was decrypted from, recorded
 //! beside it so a later refresh can tell a replay from a real update.
 //!
-//! The channel path never writes this file — only [`super`] does,
-//! after decrypting a published package — so its absence under a version
-//! directory is what tells a package-installed catalog from a
-//! channel-installed one apart.
+//! The channel path never writes this file — only a refresh from a package
+//! does, after decrypting it — so its absence under a version directory is
+//! what tells a package-installed catalog from a channel-installed one.
 
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-use crate::api::CoreError;
+use crate::error::CoreError;
 
-pub(in crate::api) const IDENTITY_FILE: &str = "identity.json";
+const IDENTITY_FILE: &str = "identity.json";
 
 /// The five fields the cipher authenticates — what "already held" means.
 /// Recorded only after a successful decrypt, never from `sha256`: that field
 /// is not authenticated, and a reader that treats it as identity can have an
 /// update suppressed by whoever last wrote the pointer.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub(in crate::api) struct Identity {
+pub struct Identity {
     pub format: u32,
     pub created_at: i64,
     pub key_id: String,
@@ -27,7 +26,7 @@ pub(in crate::api) struct Identity {
     pub spec: u32,
 }
 
-pub(in crate::api) fn identity_of(pointer: &mlib_spec::package::LatestPointer) -> Identity {
+pub fn identity_of(pointer: &mlib_spec::package::LatestPointer) -> Identity {
     Identity {
         format: pointer.format,
         created_at: pointer.created_at,
@@ -45,7 +44,7 @@ pub(in crate::api) fn identity_of(pointer: &mlib_spec::package::LatestPointer) -
 /// let deleting or corrupting this one file silently defeat the replay
 /// check that reads it, by making an old package look like the first one
 /// ever seen.
-pub(in crate::api) fn read_identity(dir: &Path) -> Result<Option<Identity>, CoreError> {
+pub fn read_identity(dir: &Path) -> Result<Option<Identity>, CoreError> {
     let path = dir.join(IDENTITY_FILE);
     let text = match std::fs::read_to_string(&path) {
         Ok(text) => text,
@@ -57,7 +56,7 @@ pub(in crate::api) fn read_identity(dir: &Path) -> Result<Option<Identity>, Core
         .map_err(CoreError::io("the package identity record is corrupt"))
 }
 
-pub(in crate::api) fn write_identity(dir: &Path, identity: &Identity) -> Result<(), CoreError> {
+pub fn write_identity(dir: &Path, identity: &Identity) -> Result<(), CoreError> {
     let text = serde_json::to_string(identity)
         .map_err(CoreError::io("recording the package identity"))?;
     std::fs::write(dir.join(IDENTITY_FILE), text)

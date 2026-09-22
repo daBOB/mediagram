@@ -6,7 +6,7 @@ use std::path::Path;
 
 use mlib_spec::package::LatestPointer;
 
-use crate::api::store;
+use crate::versions;
 use crate::api::CoreError;
 
 /// Derives the package's download URL from the same base `pointer_url` was
@@ -95,7 +95,7 @@ pub(in crate::api) async fn fetch_capped(
 /// about what they describe, or a package could carry index bytes for a
 /// build other than the one its pointer claims.
 pub(in crate::api) fn check_manifest(dir: &Path, pointer: &LatestPointer) -> Result<(), CoreError> {
-    let text = std::fs::read_to_string(dir.join(store::MANIFEST_FILE))
+    let text = std::fs::read_to_string(dir.join(versions::MANIFEST_FILE))
         .map_err(CoreError::Cipher("the package has no manifest".into()).logged())?;
     let manifest: serde_json::Value = serde_json::from_str(&text)
         .map_err(CoreError::Cipher("the package manifest is not JSON".into()).logged())?;
@@ -169,7 +169,7 @@ mod tests {
     fn a_manifest_agreeing_with_the_pointer_passes() {
         let dir = tempfile::tempdir().unwrap();
         std::fs::write(
-            dir.path().join(store::MANIFEST_FILE),
+            dir.path().join(versions::MANIFEST_FILE),
             r#"{"created_at":100,"schema":6}"#,
         )
         .unwrap();
@@ -180,7 +180,7 @@ mod tests {
     fn a_manifest_naming_a_different_build_is_refused() {
         let dir = tempfile::tempdir().unwrap();
         std::fs::write(
-            dir.path().join(store::MANIFEST_FILE),
+            dir.path().join(versions::MANIFEST_FILE),
             r#"{"created_at":999,"schema":6}"#,
         )
         .unwrap();

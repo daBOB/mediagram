@@ -1,25 +1,21 @@
-//! Serving one read against a set's virtual file: the same range-planning
-//! code `mediagram serve` uses, driving the Telegram transport directly
-//! rather than through an HTTP response body.
+//! Serving one read against a set's virtual file: the same range planning
+//! and download loop `mediagram serve` uses, collected into a buffer rather
+//! than streamed into an HTTP response body.
 
-use anyhow::Context;
+use std::collections::HashMap;
+
 use grammers_session::types::{PeerId, PeerRef};
 use tokio::sync::mpsc;
 
 use crate::catalog::{self as queries, PartLocation};
-use crate::document::is_stale_reference;
 use crate::range::{self, ByteRange, PartSpan};
-use crate::stream;
+use crate::transport::fetch::Parts;
+use crate::transport::source::BUFFERED_CHUNKS;
 
 use super::account::session;
 use super::channel::library;
 use super::account::revoked;
 use super::{Core, CoreError, store};
-
-/// Chunks buffered between the download and this call's own accumulation.
-/// Matches [`crate::telegram`]'s buffer: enough to keep the download busy
-/// without letting it run far ahead of a caller that stopped reading.
-const BUFFERED_CHUNKS: usize = 4;
 
 /// Where a set's parts live, if it may be played. Blocking: a catalog query.
 ///
@@ -43,12 +39,10 @@ pub(super) fn locations(core: &Core, set_id: &str) -> Result<Vec<PartLocation>, 
 /// `locations` names.
 pub(super) async fn read(
     core: &Core,
-    set_id: String,
     locations: Vec<PartLocation>,
     offset: u64,
     len: u32,
 ) -> Result<Vec<u8>, CoreError> {
-
     let spans: Vec<PartSpan> = locations.iter().map(|location| location.span).collect();
     let total = range::total_size(&spans);
     if total == 0 || offset >= total {
@@ -69,63 +63,41 @@ pub(super) async fn read(
     let steps = range::plan_reads(&spans, &ByteRange { start: offset, end });
 
     let client = session::client(core).await;
-    // Read once, not per part: every part of a set lives in the same
-    // channel, and this is a file on disk.
+    // Every channel is looked up before any byte is fetched, so a part this
+    // device cannot address fails the read as that, not as a broken download.
     let handles = library::read(&library::path(core))?;
+    let mut channels = HashMap::new();
+    for location in &locations {
+        channels.insert(location.chat_id, channel_ref(&handles, location.chat_id)?);
+    }
+    let documents = core.state.lock().await.documents.clone();
+    let parts = Parts {
+        client: &client,
+        documents: &documents,
+        locations: &locations,
+        channel_of: &|location| channels[&location.chat_id],
+    };
 
     // Clamped to what this read can actually return, not to the caller's
     // raw `len`: an out-of-range `UInt` from Kotlin must not become an
     // attempt to reserve up to 4 GiB before a single byte is read.
     let capacity = usize::try_from(end - offset + 1).unwrap_or(usize::MAX);
     let mut out = Vec::with_capacity(capacity);
-    for step in steps {
-        let location = locations
-            .iter()
-            .find(|location| location.span.idx == step.part_idx)
-            .ok_or_else(|| CoreError::NotFound("set not found".into()))?;
-        let channel = channel_ref(&handles, location.chat_id)?;
-        let document = document_for(core, &client, channel, &set_id, location.message_id).await?;
-
-        let start = out.len();
-        match fetch_step(&client, document, step, &mut out).await {
-            Ok(()) => {}
-            // The held handle's file reference has expired — a film paused
-            // for hours comes back to one. Resolve the part again for a
-            // fresh reference and retry once; a second refusal is real.
-            Err(err) if is_stale_reference(&err) => {
-                out.truncate(start);
-                core.state.lock().await.documents.evict(&set_id, location.message_id);
-                let fresh = document_for(core, &client, channel, &set_id, location.message_id).await?;
-                if let Err(err) = fetch_step(&client, fresh, step, &mut out).await {
-                    return Err(failed(core, INTERRUPTED, err).await);
-                }
-            }
-            Err(err) => return Err(failed(core, INTERRUPTED, err).await),
+    // Drained while the download runs, so a read larger than the buffer
+    // cannot deadlock against a receiver that waits for the sender to finish.
+    let (tx, mut rx) = mpsc::channel(BUFFERED_CHUNKS);
+    let fetch = async move { parts.fetch(&steps, &tx).await };
+    let drain = async {
+        while let Some(chunk) = rx.recv().await {
+            out.extend(chunk?);
         }
+        anyhow::Ok(())
+    };
+    let (fetched, drained) = tokio::join!(fetch, drain);
+    if let Err(err) = fetched.and(drained) {
+        return Err(failed(core, INTERRUPTED, err).await);
     }
     Ok(out)
-}
-
-/// Downloads one step onto the end of `out`.
-///
-/// A separate task drains while `pump_step` runs, so a step whose bytes
-/// outgrow the buffer cannot deadlock against a receiver that only starts
-/// reading once the sender is done. The pump's own error is returned intact,
-/// so the caller can tell a stale file reference from a dropped connection.
-async fn fetch_step(
-    client: &grammers_client::Client,
-    document: grammers_client::media::Document,
-    step: range::Step,
-    out: &mut Vec<u8>,
-) -> anyhow::Result<()> {
-    let (tx, mut rx) = mpsc::channel(BUFFERED_CHUNKS);
-    let pump_client = client.clone();
-    let pump = tokio::spawn(async move { stream::pump_step(&pump_client, &document, &step, &tx).await });
-    while let Some(chunk) = rx.recv().await {
-        out.extend(chunk?);
-    }
-    pump.await
-        .context("the download task did not finish cleanly")?
 }
 
 const INTERRUPTED: &str = "the download ended before it finished";
@@ -135,33 +107,6 @@ const INTERRUPTED: &str = "the download ended before it finished";
 async fn failed(core: &Core, what: &str, err: anyhow::Error) -> CoreError {
     let fallback = CoreError::network(what)(&err);
     revoked::unless_revoked(core, err.as_ref(), fallback).await
-}
-
-/// The document a part's bytes live in, resolved once per set.
-///
-/// A player reads the same few parts a few hundred times, and resolving is
-/// a round trip every time — a third of the cost of a read that otherwise
-/// fetches two chunks.
-async fn document_for(
-    core: &Core,
-    client: &grammers_client::Client,
-    channel: PeerRef,
-    set_id: &str,
-    message_id: i64,
-) -> Result<grammers_client::media::Document, CoreError> {
-    if let Some(held) = core.state.lock().await.documents.get(set_id, message_id) {
-        return Ok(held);
-    }
-    let document = match stream::part_document(client, channel, message_id).await {
-        Ok(document) => document,
-        Err(err) => return Err(failed(core, "the part could not be resolved", err).await),
-    };
-    core.state
-        .lock()
-        .await
-        .documents
-        .put(set_id, message_id, document.clone());
-    Ok(document)
 }
 
 /// How to address the channel a part lives in.

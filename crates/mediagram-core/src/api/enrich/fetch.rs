@@ -1,16 +1,7 @@
-//! What one fetch run actually does to a library, and the one thing it has
-//! to settle before it starts: which language to ask the provider in.
-//!
-//! [`super::artwork`] decides what a run will ask for and whether the key is
-//! any good; this is the walk that spends it. Split out so that neither file
-//! has to be read to understand the other, and so the walk can be driven by
-//! a stub with no key and no network.
-//!
-//! A library can be missing two things, and a viewer who asked for the
-//! missing pieces did not ask for half of them: the artwork a channel index
-//! cannot carry, and the descriptions nobody ran `mediagram metadata` for
-//! before pushing it. Both answers sit in the same payload, so both are
-//! taken from the one request per title [`fetch_into`] makes.
+//! The walk a fetch run makes over a library's titles, filling both gaps it
+//! can have — artwork and descriptions — from one request per title.
+//! [`super::artwork`] plans the run; this spends it, and takes the client as
+//! a parameter so a test can drive it with a stub.
 
 use mediagram_tmdb::details::{details, from_details};
 use mediagram_tmdb::poster_files::{already_held, download_into};
@@ -25,23 +16,14 @@ use crate::dto::FetchReport;
 use crate::api::Core;
 use super::details as store;
 
-/// Everything a fetch does except constructing the client, so a test can
-/// drive a stub in place of a real TMDB key.
+/// Fetches the artwork, then the descriptions, for `plan`'s titles, counting
+/// titles throughout; see [`FetchReport`].
 ///
-/// `titles` is already deduplicated and already excludes anything without a
-/// provider id — `without_id` is that count, carried through rather than
-/// recomputed, so this function never has to know what a course is to
-/// report on one correctly. Every count it returns is therefore a number of
-/// titles; see [`FetchReport`].
-///
-/// The description half runs second and asks the same questions of the same
-/// client. A title the provider answered for costs no second request:
-/// `resolve_posters` has just put its payload in the disk cache the caller
-/// wrapped this client in, and the description is read out of the very
-/// payload the poster path came from. A title it refused is asked twice —
-/// `DiskCachedApi` stores nothing for a call that failed — and that second
-/// refusal is what puts the title in `failed` rather than leaving it
-/// silently undescribed. `tests/fetch_cache.rs` counts the requests.
+/// The description half costs no second request for a title the provider
+/// answered: the caller wraps `api` in a disk cache, which the poster half
+/// has just filled. A title it refused is asked again — nothing is cached for
+/// a failure — and that second refusal is what counts it as `failed`.
+/// `tests/fetch_cache.rs` counts the requests.
 pub async fn fetch_into(
     core: &Core,
     api: &impl TmdbApi,
@@ -92,30 +74,16 @@ struct Described {
 }
 
 /// Records what the provider says about every title nothing already
-/// describes.
+/// describes — in the index or from an earlier run — the same way a poster
+/// already on disk is not downloaded again.
 ///
-/// A title something already describes is left alone, the same way a poster
-/// already on disk is not downloaded again. `title_info` asks both stores at
-/// once: the index's own row was written in the library's language by
-/// whoever curated it and this device has no better claim on it, and a row
-/// an earlier run left here is this run's own answer, already given.
+/// The store is opened on the first title that needs recording and never
+/// before, so a run that learned nothing leaves no database file behind.
 ///
-/// The store is opened on the first title that actually needs recording and
-/// never before, because a run over a library that is already described
-/// must not leave a database file behind on a device that learned nothing —
-/// the same rule the reading side keeps in `details::fetched`.
-///
-/// `title_info` re-resolves the `current` symlink on every title, so this is
-/// the one reader in a run that is not pinned to the snapshot `plan_fetch`
-/// canonicalised. That is the right answer rather than a missed one, in all
-/// three cases a refresh landing mid-run can produce: a newer index that
-/// describes the title means the title is worth skipping, and its row is
-/// the one `title_info` would prefer anyway; a newer index that does not
-/// means the fetch should happen; and a symlink caught mid-swap reads as
-/// "nothing describes it", costing one redundant fetch whose row the index
-/// outranks on every later read. Pinning it instead would mean carrying the
-/// resolved directory through two signatures and handing this function a
-/// connection it does not otherwise need.
+/// Unlike the rest of a run this is not pinned to one catalog version:
+/// `title_info` follows `current` on every title. A refresh landing mid-run
+/// costs at worst one redundant fetch, whose row the index outranks on every
+/// later read.
 async fn record_descriptions(
     core: &Core,
     api: &impl TmdbApi,
@@ -159,29 +127,18 @@ async fn record_descriptions(
     described
 }
 
-/// The language the library was described in, or `fallback` when it was
-/// described in none.
-///
-/// TMDB answers in English unless asked otherwise, so a run that ignores
-/// this produces a shelf where some titles read in German and the rest in
-/// English — worse than either, and not something a viewer can fix. The
-/// rows the index already carries say which language that is, so nothing
-/// needs configuring and nothing needs guessing.
-///
-/// Whichever language most of the rows use wins: a library described twice
-/// is still mostly one language, and the run should keep asking in it
-/// rather than deepen the split. `lang` is `''` for a row that names no
-/// language — the column's own default, and what an index written before
-/// that column existed carries — so an empty value is no answer at all; it
-/// would reach the provider as `language=`, which asks for nothing rather
-/// than for the caller's locale.
+/// The language to ask the provider in: the one the library is already
+/// described in, or `fallback` when it is described in none. TMDB answers in
+/// English unless asked, and a shelf half in German and half in English is
+/// worse than either.
 pub(in crate::api) fn language_of(conn: &Connection, fallback: &str) -> String {
-    conn.query_row(
-        "SELECT lang FROM shows WHERE lang <> '' GROUP BY lang ORDER BY COUNT(*) DESC LIMIT 1",
-        [],
-        |row| row.get::<_, String>(0),
-    )
-    .unwrap_or_else(|_| fallback.to_string())
+    match crate::shows::language(conn) {
+        Ok(language) => language.unwrap_or_else(|| fallback.to_string()),
+        Err(err) => {
+            tracing::warn!(error = %err, "the library's language could not be read");
+            fallback.to_string()
+        }
+    }
 }
 
 #[cfg(test)]

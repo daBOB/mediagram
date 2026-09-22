@@ -1,39 +1,29 @@
-//! What a refreshed catalog holds, and where it lives on disk.
+//! Reading the installed catalog for Kotlin: where this device keeps it, and
+//! what the current version holds. How versions are laid out and installed
+//! is [`crate::versions`]; this only ever reads one, through `current`.
 //!
-//! Layout under `<data_dir>/catalog/`: version directories (`v-<created_at>`,
-//! one per successful refresh), a `current` symlink pointing at the one in
-//! use, and two siblings that outlive every version — `artwork/`, see
+//! Two siblings of the versions outlive every one of them: `artwork/`, see
 //! [`artwork_dir`], and `details.db`, holding the descriptions this device
-//! fetched for itself, see [`super::enrich::details::details_db`]. Anything else
-//! fetched belongs beside those two and for their reasons, never inside a
-//! version. `refresh.rs` is the only thing that ever writes a
-//! version; this module only ever reads one, through `current`, so a refresh
-//! landing mid-query cannot be observed as a half-written database — the
-//! symlink swap in `refresh.rs` is atomic, and an already-open handle keeps
-//! the version it opened.
+//! fetched for itself, see [`super::enrich::details::details_db`].
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-use rusqlite::{Connection, OpenFlags};
+use rusqlite::Connection;
 
 use crate::catalog as queries;
 use crate::dto::{self, SetSummary};
+use crate::versions::identity::read_identity;
+use crate::versions::{self, count_playable, library_db, open_ro, pushed_at_of};
 
-use super::refresh::identity;
 use super::{Core, CoreError};
-
-pub(super) use identity::{identity_of, read_identity, write_identity};
-
-pub(super) const CURRENT: &str = "current";
-pub(super) const MANIFEST_FILE: &str = "manifest.json";
 
 pub(super) fn dir(core: &Core) -> PathBuf {
     core.data_dir.join("catalog")
 }
 
 pub(super) fn current_dir(core: &Core) -> PathBuf {
-    dir(core).join(CURRENT)
+    versions::current(&dir(core))
 }
 
 /// Where fetched poster artwork and the TMDB provider-id cache live. Two
@@ -47,18 +37,6 @@ pub(super) fn current_dir(core: &Core) -> PathBuf {
 ///   naming the previous one's titles, and nothing grows without bound.
 pub(super) fn artwork_dir(core: &Core) -> PathBuf {
     dir(core).join("artwork")
-}
-
-pub(super) fn library_db(dir: &Path) -> PathBuf {
-    dir.join(mlib_spec::schema::INDEX_FILE)
-}
-
-/// Opens a database read-only: nothing under `<data_dir>/catalog/` is this
-/// crate's index to write, and a writable handle could checkpoint the WAL of
-/// a version a refresh is about to remove.
-pub(super) fn open_ro(path: &Path) -> Result<Connection, CoreError> {
-    Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY)
-        .map_err(CoreError::io("opening the catalog"))
 }
 
 /// Opens the current catalog, or reports it as not-yet-loaded rather than
@@ -113,14 +91,6 @@ pub(super) fn total_size(core: &Core, set_id: String) -> Result<u64, CoreError> 
         .ok_or_else(|| CoreError::NotFound("set not found".into()))
 }
 
-/// Counts what a version holds, for `refresh_catalog`'s return value.
-pub(super) fn count_playable(dir: &Path) -> Result<u64, CoreError> {
-    let conn = open_ro(&library_db(dir))?;
-    let sets =
-        queries::list_playable(&conn).map_err(CoreError::io("reading the catalog"))?;
-    Ok(sets.len() as u64)
-}
-
 /// `*.jpg` entries under `<current>/posters/` and the artwork directory,
 /// counted once per key even when a title is held in both — one title held
 /// in both places is one poster, not two. An absent directory contributes
@@ -140,18 +110,6 @@ fn count_posters(version_dir: &Path, artwork_dir: &Path) -> u64 {
         );
     }
     keys.len() as u64
-}
-
-/// When the index in a version directory was pushed, from its name.
-///
-/// `refresh.rs` names every installed version `v-<pushed_at>` — with a
-/// `-<n>` suffix when the same version is installed again beside itself —
-/// and points `current` at it, so the catalogue's age is already written
-/// down and needs no second record that could disagree with it. A name that is not
-/// one of ours — including `current` itself, read literally rather than
-/// through the symlink — reads as unknown rather than as a wrong date.
-fn pushed_at_of(name: &str) -> Option<i64> {
-    name.strip_prefix("v-")?.split('-').next()?.parse().ok()
 }
 
 /// What the installed catalog is, for the System screen. Every count is

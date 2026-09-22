@@ -12,7 +12,7 @@
 
 use std::sync::Arc;
 
-use super::CoreError;
+use crate::api::CoreError;
 
 /// Installs this crate's rustls crypto provider, once per process.
 ///

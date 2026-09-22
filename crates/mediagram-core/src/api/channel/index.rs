@@ -14,7 +14,7 @@ use grammers_mtsender::InvocationError;
 use mlib_spec::index_caption;
 
 use crate::api::CoreError;
-use crate::api::refresh::FUTURE_TOLERANCE_SECONDS;
+use crate::versions::FUTURE_TOLERANCE_SECONDS;
 
 pub(in crate::api) const NOTHING_PINNED: &str = concat!(
     "That channel has nothing pinned. The uploader pins its index after ",

@@ -1,22 +1,21 @@
-//! The narrow surface Kotlin calls through UniFFI: authentication, catalog
-//! refresh, and byte reads.
+//! The surface Kotlin calls through UniFFI: signing in, choosing and
+//! refreshing a library, reading bytes, and fetching what a library lacks.
 //!
-//! Everything that actually does the work — range planning, catalog
-//! queries, the Telegram transport, package decryption — already lives in
-//! this crate's other modules; `Core` only orchestrates them for a caller
-//! that never sees a `Connection` or a `Client` directly, and never learns a
-//! `chat_id`, a `message_id`, or a `doc_id`: no [`CoreError`] variant may
-//! carry one, because the player is told what it may play, never where the
-//! bytes live.
+//! The machinery lives in this crate's other modules — range planning,
+//! catalog queries, the byte transport, catalog versions, package
+//! decryption, the `shows` stores. What stays here is each call's
+//! orchestration over one `Core`, for a caller that never sees a
+//! `Connection` or a `Client` and never learns a `chat_id`, a `message_id`
+//! or a `doc_id`: no [`CoreError`] variant may carry one, because the player
+//! is told what it may play, never where the bytes live.
 
 mod account;
 mod blocking;
-mod document_cache;
-mod error;
 mod store;
 mod channel;
 pub mod enrich;
-pub mod http;
+// The uploader still reaches the HTTP client through this path.
+pub use crate::http;
 mod read;
 mod refresh;
 
@@ -27,8 +26,8 @@ use tokio::sync::Mutex as AsyncMutex;
 
 use account::auth::{PendingLogin, PendingPassword};
 use account::session::ClientHandle;
-use document_cache::DocumentCache;
-pub use error::CoreError;
+use crate::transport::documents::PartDocuments;
+pub use crate::error::CoreError;
 
 /// Outcome of a completed sign-in step.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
@@ -57,7 +56,7 @@ struct State {
     client: Option<ClientHandle>,
     pending_login: Option<PendingLogin>,
     pending_password: Option<PendingPassword>,
-    documents: DocumentCache,
+    documents: Arc<PartDocuments>,
 }
 
 
@@ -75,6 +74,9 @@ pub struct Core {
     api_id: i32,
     api_hash: String,
     state: AsyncMutex<State>,
+    /// Held by whichever refresh is installing a catalog, so two cannot
+    /// assemble in the same staging directory at once.
+    installing: AsyncMutex<()>,
 }
 
 #[uniffi::export(async_runtime = "tokio")]
@@ -86,6 +88,7 @@ impl Core {
             api_id,
             api_hash,
             state: AsyncMutex::new(State::default()),
+            installing: AsyncMutex::new(()),
         })
     }
 
@@ -170,9 +173,8 @@ impl Core {
     }
 
     pub async fn read(self: Arc<Self>, set_id: String, offset: u64, len: u32) -> Result<Vec<u8>, CoreError> {
-        let id = set_id.clone();
-        let locations = self.blocking(move |core| read::locations(core, &id)).await?;
-        read::read(&self, set_id, locations, offset, len).await
+        let locations = self.blocking(move |core| read::locations(core, &set_id)).await?;
+        read::read(&self, locations, offset, len).await
     }
 
     /// Fills in what the library it was handed does not carry, for every
