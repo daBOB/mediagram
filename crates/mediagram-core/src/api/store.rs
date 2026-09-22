@@ -4,7 +4,7 @@
 //! one per successful refresh), a `current` symlink pointing at the one in
 //! use, and two siblings that outlive every version — `artwork/`, see
 //! [`artwork_dir`], and `details.db`, holding the descriptions this device
-//! fetched for itself, see [`super::details::details_db`]. Anything else
+//! fetched for itself, see [`super::enrich::details::details_db`]. Anything else
 //! fetched belongs beside those two and for their reasons, never inside a
 //! version. `refresh.rs` is the only thing that ever writes a
 //! version; this module only ever reads one, through `current`, so a refresh

@@ -14,7 +14,7 @@ use mediagram_tmdb::tmdb_client::TmdbClient;
 use crate::config::Config;
 use crate::export::titles::distinct_titles;
 use crate::index::{db, shows};
-use crate::metadata::show_details;
+use crate::metadata::title_details;
 
 pub async fn run(cfg: &Config) -> Result<()> {
     let data_dir = cfg.data_dir()?;
@@ -41,7 +41,7 @@ pub async fn run(cfg: &Config) -> Result<()> {
 
     let (mut recorded, mut skipped) = (0usize, 0usize);
     for (kind, id) in &titles {
-        match show_details::fetch(&api, *kind, *id, &cfg.tmdb_language).await {
+        match title_details::fetch(&api, *kind, *id, &cfg.tmdb_language).await {
             Ok(row) => {
                 shows::upsert(&conn, &row)?;
                 recorded += 1;
@@ -56,7 +56,7 @@ pub async fn run(cfg: &Config) -> Result<()> {
     }
 
     println!(
-        "{recorded} show(s) described, {} held in total",
+        "{recorded} title(s) described, {} held in total",
         shows::count(&conn)?
     );
     if skipped > 0 {

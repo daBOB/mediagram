@@ -16,7 +16,8 @@ use mediagram::telegram::client::preinit_session_store;
 async fn the_session_store_can_still_start_after_the_index_is_open() {
     let dir = tempfile::tempdir().unwrap();
 
-    // The order every command uses: index first.
+    // The order every command uses: the session store is configured at
+    // startup, then the index is opened.
     preinit_session_store(dir.path()).await.unwrap();
     let _conn = db::open(dir.path()).unwrap();
 

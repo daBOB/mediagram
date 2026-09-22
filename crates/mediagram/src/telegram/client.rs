@@ -44,7 +44,6 @@ impl Tg {
         })
     }
 
-    /// Signals the sender pool to disconnect and waits for it to stop.
     /// The id recorded in every `parts.chat_id`: the bot-API dialog id when
     /// the channel exposes one, else the bare peer id. Verification compares
     /// against this, so the derivation lives in one place.
@@ -52,14 +51,13 @@ impl Tg {
         chat_id_of(self.channel)
     }
 
+    /// Signals the sender pool to disconnect and waits for it to stop.
     pub async fn shutdown(self) {
         self.handle.quit();
         let _ = self.pool_task.await;
     }
 }
 
-/// Opens the persisted session and starts its sender pool, without logging
-/// in or resolving a channel. Callers must run [`super::login::ensure_login`] before
 /// Lets the session store configure SQLite before anything else touches it.
 ///
 /// This binary links a single SQLite library used by two crates. `libsql`,
@@ -86,7 +84,9 @@ pub async fn preinit_session_store(data_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-/// issuing authenticated requests.
+/// Opens the persisted session and starts its sender pool, without logging
+/// in or resolving a channel. Callers must run [`super::login::ensure_login`]
+/// before issuing authenticated requests.
 pub async fn open_client(cfg: &Config) -> Result<(Client, SenderPoolFatHandle, JoinHandle<()>)> {
     let path = session_path(cfg)?;
     let session = Arc::new(

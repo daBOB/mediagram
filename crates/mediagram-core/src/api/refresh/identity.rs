@@ -1,7 +1,7 @@
 //! Which package a version of the catalog was decrypted from, recorded
 //! beside it so a later refresh can tell a replay from a real update.
 //!
-//! The channel path never writes this file — only [`super::refresh`] does,
+//! The channel path never writes this file — only [`super`] does,
 //! after decrypting a published package — so its absence under a version
 //! directory is what tells a package-installed catalog from a
 //! channel-installed one apart.

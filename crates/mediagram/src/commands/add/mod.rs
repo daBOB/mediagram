@@ -18,7 +18,7 @@ use crate::index::{db, shows};
 use crate::media::{classify, inspect, remux};
 use crate::metadata::prompt::DialoguerPrompter;
 use crate::metadata::resolve::{self, ResolveInput};
-use crate::metadata::show_details;
+use crate::metadata::title_details;
 use crate::upload::plan::{Source, record_planned};
 use new_set::{NewSet, Planned};
 
@@ -103,8 +103,8 @@ pub async fn plan(cfg: &Config, new: &NewSet) -> Result<Planned> {
     };
 
     // Kept before the caption takes ownership of the resolved ids.
-    let show_id = lesson.is_none().then_some(resolved.ids.tmdb).flatten();
-    let show_kind = resolved.kind;
+    let title_id = lesson.is_none().then_some(resolved.ids.tmdb).flatten();
+    let title_kind = resolved.kind;
 
     let source_path = remux::ensure_faststart(&new.file, cfg.tmp_dir.as_deref(), new.no_remux)
         .await
@@ -153,8 +153,8 @@ pub async fn plan(cfg: &Config, new: &NewSet) -> Result<Planned> {
     // already cached from resolving the title, so this is a read of disk.
     // A failure costs the show its description and nothing else — the upload
     // is the point, and a synopsis is not worth failing it for.
-    if let Some(id) = show_id {
-        match show_details::fetch(&api, show_kind, id, &cfg.tmdb_language).await {
+    if let Some(id) = title_id {
+        match title_details::fetch(&api, title_kind, id, &cfg.tmdb_language).await {
             Ok(row) => shows::upsert(&conn, &row)?,
             Err(err) => tracing::warn!(id, error = %err, "no description recorded for this title"),
         }

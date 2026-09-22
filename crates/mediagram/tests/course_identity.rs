@@ -141,7 +141,7 @@ fn the_summary_counts_documents_separately() {
     let lines = summary.lines().join("\n");
     assert!(lines.contains("1 lesson(s) uploaded"), "{lines}");
     assert!(lines.contains("1 document(s) uploaded, 0 already done, 1 failed"), "{lines}");
-    assert_eq!(summary.failed(), 1);
+    assert_eq!(summary.failed_count(), 1);
     assert!(summary.uploaded_anything());
 }
 

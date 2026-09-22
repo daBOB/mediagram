@@ -1,7 +1,7 @@
 //! Caption text format:
 //!
 //! ```text
-//! #mlib v=2                      ← marker, exact
+//! #mlib v=4                      ← marker, exact
 //! {"t":"movie",...}              ← minified JSON, plain ASCII
 //! 🎬 Dune: Part Two (2024) …     ← optional human lines, free form
 //! ```

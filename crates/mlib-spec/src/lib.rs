@@ -1,4 +1,4 @@
-//! mlib spec v2: the machine-readable contract shared by the Linux uploader and
+//! The mlib spec (caption format v4): the machine-readable contract shared by the Linux uploader and
 //! the Android TV player. Pure data + parsing, no IO, no Telegram dependency.
 //!
 //! - [`caption`]: the JSON record carried on every uploaded part

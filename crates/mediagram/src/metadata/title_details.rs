@@ -1,4 +1,5 @@
-//! Reading a show's own description out of the provider payload.
+//! Reading a title's own description — a film's or a whole series' — out of
+//! the provider payload.
 
 use anyhow::Result;
 use mlib_spec::Kind;

@@ -20,7 +20,7 @@ use mediagram_core::range::{PartSpan, plan_reads, total_size};
 
 use super::response::plan_response;
 
-pub use mediagram_core::stream::{ByteSource, ByteStream};
+use mediagram_core::stream::ByteSource;
 
 #[derive(Clone)]
 pub struct ServeState {

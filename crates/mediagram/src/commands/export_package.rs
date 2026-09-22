@@ -49,7 +49,7 @@ pub async fn run(
     let snapshot = Connection::open(staging.path().join(mlib_spec::schema::INDEX_FILE))
         .context("opening the snapshot")?;
     let titles = crate::export::titles::distinct_titles(&snapshot)?;
-    let (sets, parts) = crate::export::titles::counts(&snapshot)?;
+    let (sets, parts) = crate::export::titles::set_and_part_counts(&snapshot)?;
 
     // Refuse before downloading: discovering the limit afterwards would throw
     // away every poster fetched to get there.

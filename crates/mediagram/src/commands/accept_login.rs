@@ -48,26 +48,10 @@ pub async fn run(cfg: &Config, token: &str) -> Result<()> {
 /// Accepts standard or URL-safe base64, padded or not.
 fn decode_token(text: &str) -> Result<Vec<u8>> {
     use base64::engine::general_purpose::{STANDARD, STANDARD_NO_PAD, URL_SAFE, URL_SAFE_NO_PAD};
-    for engine in [
-        &STANDARD as &dyn EngineLike,
-        &STANDARD_NO_PAD,
-        &URL_SAFE,
-        &URL_SAFE_NO_PAD,
-    ] {
-        if let Some(bytes) = engine.try_decode(text) {
+    for engine in [STANDARD, STANDARD_NO_PAD, URL_SAFE, URL_SAFE_NO_PAD] {
+        if let Ok(bytes) = engine.decode(text) {
             return Ok(bytes);
         }
     }
     bail!("the token is not base64; paste exactly what the player printed")
-}
-
-/// Small shim so the four alphabets can be tried in one loop.
-trait EngineLike {
-    fn try_decode(&self, text: &str) -> Option<Vec<u8>>;
-}
-
-impl<T: Engine> EngineLike for T {
-    fn try_decode(&self, text: &str) -> Option<Vec<u8>> {
-        self.decode(text).ok()
-    }
 }

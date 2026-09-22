@@ -1,5 +1,5 @@
 //! mediagram: uploads a personal video library to one private Telegram channel
-//! using the mlib v2 caption + index spec.
+//! using the mlib caption and index spec.
 
 use std::path::PathBuf;
 

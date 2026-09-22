@@ -38,7 +38,7 @@ pub fn distinct_titles(conn: &Connection) -> Result<Vec<(Kind, u64)>> {
 }
 
 /// Set and part counts, for the manifest.
-pub fn counts(conn: &Connection) -> Result<(u64, u64)> {
+pub fn set_and_part_counts(conn: &Connection) -> Result<(u64, u64)> {
     let sets: i64 = conn
         .query_row("SELECT COUNT(*) FROM sets", [], |r| r.get(0))
         .context("counting sets")?;

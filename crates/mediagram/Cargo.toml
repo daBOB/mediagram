@@ -1,6 +1,6 @@
 [package]
 name = "mediagram"
-description = "Linux uploader for a Telegram-backed personal video library (mlib v2)"
+description = "Linux uploader for a Telegram-backed personal video library (the mlib format)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

@@ -56,7 +56,8 @@ impl Summary {
         self.lessons.uploaded + self.documents.uploaded > 0
     }
 
-    pub fn failed(&self) -> u32 {
+    /// How many lessons and documents failed to upload.
+    pub fn failed_count(&self) -> u32 {
         self.lessons.failed + self.documents.failed
     }
 

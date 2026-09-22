@@ -1,8 +1,11 @@
-//! What a provider says about a show, as opposed to about a file.
+//! What a provider says about a title — a film or a whole series — as
+//! opposed to about a file. The table is called `shows` for history; it holds
+//! films too.
 //!
 //! The rest of the index describes files: a set is bytes with a name on them.
-//! A synopsis belongs to the whole show and would be a lie repeated on every
-//! episode, so it lives in its own table keyed the way a poster key is.
+//! A series' synopsis belongs to the whole series and would be a lie repeated
+//! on every episode, so it lives in its own table keyed the way a poster key
+//! is.
 //!
 //! Every field here comes out of the TMDB payload `add` already fetched to
 //! resolve a title, so filling this table for a library that predates it is a

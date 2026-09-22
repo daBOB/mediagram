@@ -85,16 +85,13 @@ pub async fn resolve(
     item.episode = episode_value(input, &guess);
     item.abs = input.abs.or(guess.abs);
 
-    if kind == Kind::Ep {
-        if let (Some(show_id), Some(season), Some(episode)) =
+    // A missing episode title is not worth failing the add for.
+    if kind == Kind::Ep
+        && let (Some(show_id), Some(season), Some(episode)) =
             (item.ids.tmdb, item.season, item.episode)
-        {
-            if let Ok(Some(title)) =
-                fetch_episode_title(api, show_id, season, episode.first()).await
-            {
-                item.title = Some(title);
-            }
-        }
+        && let Ok(Some(title)) = fetch_episode_title(api, show_id, season, episode.first()).await
+    {
+        item.title = Some(title);
     }
 
     Ok(item)
@@ -138,40 +135,25 @@ pub(super) async fn fetch_details(api: &impl TmdbApi, id: u64, kind: Kind) -> Re
         .with_context(|| format!("invalid tmdb response for {path}"))?;
     let ext = details.external_ids.clone().unwrap_or_default();
 
-    if matches!(kind, Kind::Tut | Kind::Doc) {
-        bail!("a course has no TMDB entry; courses are described by hand");
-    }
-    Ok(match kind {
-        // Guarded immediately above; a course never reaches TMDB.
-        Kind::Tut | Kind::Doc => bail!("a course has no TMDB entry"),
-        Kind::Movie => ResolvedItem {
-            kind,
-            ids: ProviderIds {
-                tmdb: Some(id),
-                tvdb: None,
-                imdb: ext.imdb_id,
-            },
-            title: details.display_title(),
-            show: None,
-            year: details.year(),
-            season: None,
-            episode: None,
-            abs: None,
+    // A film is its own title; an episode's title is its show's name, and
+    // TVDB numbers only series.
+    let (title, show, tvdb) = match kind {
+        Kind::Movie => (details.display_title(), None, None),
+        _ => (None, details.display_title(), ext.tvdb_id),
+    };
+    Ok(ResolvedItem {
+        kind,
+        ids: ProviderIds {
+            tmdb: Some(id),
+            tvdb,
+            imdb: ext.imdb_id,
         },
-        Kind::Ep => ResolvedItem {
-            kind,
-            ids: ProviderIds {
-                tmdb: Some(id),
-                tvdb: ext.tvdb_id,
-                imdb: ext.imdb_id,
-            },
-            title: None,
-            show: details.display_title(),
-            year: details.year(),
-            season: None,
-            episode: None,
-            abs: None,
-        },
+        title,
+        show,
+        year: details.year(),
+        season: None,
+        episode: None,
+        abs: None,
     })
 }
 

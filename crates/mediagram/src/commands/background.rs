@@ -33,7 +33,7 @@ pub fn spawn_finish_set(
     no_push: bool,
 ) -> Result<Started> {
     let data_dir = cfg.data_dir()?;
-    let log_path = data_dir.join(LOG_NAME);
+    let log_path = log_path(&data_dir);
     let log = OpenOptions::new()
         .create(true)
         .append(true)

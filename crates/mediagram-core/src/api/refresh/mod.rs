@@ -2,7 +2,7 @@
 //! enforced against the actual bytes, atomic staging, and manifest
 //! cross-checking. `docs/mlib-package-v1.md` §5 is the normative algorithm;
 //! this is that algorithm, not a simplified reading of it. The network and
-//! manifest-checking parts live in [`super::refresh_fetch`]; this file is
+//! manifest-checking parts live in [`download`]; this file is
 //! the orchestration and the on-disk staging.
 
 mod download;
@@ -111,7 +111,8 @@ pub(super) fn install_staged(
     std::fs::rename(incoming, root.join(&installed))
         .map_err(CoreError::io("staging the refreshed catalog"))?;
     swap_current(core, &installed)?;
-    remove_other_versions(core, &installed)
+    remove_other_versions(core, &installed);
+    Ok(())
 }
 
 /// `version_name`, or the first `version_name-<n>` not already taken.
@@ -147,11 +148,11 @@ fn swap_current(core: &Core, version_name: &str) -> Result<(), CoreError> {
 
 /// Clears every stale version and leftover staging directory, keeping only
 /// the one just published and whatever `current` points at.
-fn remove_other_versions(core: &Core, keep: &str) -> Result<(), CoreError> {
+fn remove_other_versions(core: &Core, keep: &str) {
     let root = store::dir(core);
     let entries = match std::fs::read_dir(&root) {
         Ok(entries) => entries,
-        Err(_) => return Ok(()),
+        Err(_) => return,
     };
     for entry in entries.flatten() {
         let name = entry.file_name();
@@ -163,7 +164,6 @@ fn remove_other_versions(core: &Core, keep: &str) -> Result<(), CoreError> {
             let _ = std::fs::remove_dir_all(entry.path());
         }
     }
-    Ok(())
 }
 
 fn package_error(err: PackageError) -> CoreError {

@@ -2,7 +2,7 @@
 //! identifying fields become the cipher's associated data.
 
 use mediagram::export::pointer;
-use mediagram::export::titles::{counts, distinct_titles};
+use mediagram::export::titles::{distinct_titles, set_and_part_counts};
 use mediagram::index::db;
 use mlib_spec::caption::Kind;
 
@@ -36,7 +36,7 @@ fn a_set_with_no_provider_id_contributes_no_title() {
 #[test]
 fn counts_report_sets_and_parts() {
     let (_d, conn) = db_with(&[("01A", Kind::Movie, Some(1)), ("01B", Kind::Ep, Some(2))]);
-    let (sets_count, parts_count) = counts(&conn).unwrap();
+    let (sets_count, parts_count) = set_and_part_counts(&conn).unwrap();
     assert_eq!(sets_count, 2);
     assert_eq!(parts_count, 0, "no part rows were inserted");
 }
@@ -45,7 +45,7 @@ fn counts_report_sets_and_parts() {
 fn an_empty_index_reports_nothing() {
     let (_d, conn) = db_with(&[]);
     assert!(distinct_titles(&conn).unwrap().is_empty());
-    assert_eq!(counts(&conn).unwrap(), (0, 0));
+    assert_eq!(set_and_part_counts(&conn).unwrap(), (0, 0));
 }
 
 /// A `kind` outside the enum can only exist in a database from before the

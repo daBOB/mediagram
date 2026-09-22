@@ -108,8 +108,8 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
             .await
             .context("pushing the index after the course")?;
     }
-    if summary.failed() > 0 {
-        bail!("{} set(s) failed", summary.failed());
+    if summary.failed_count() > 0 {
+        bail!("{} set(s) failed", summary.failed_count());
     }
     Ok(())
 }

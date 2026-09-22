@@ -5,4 +5,4 @@ mod search;
 
 pub mod prompt;
 pub mod resolve;
-pub mod show_details;
+pub mod title_details;

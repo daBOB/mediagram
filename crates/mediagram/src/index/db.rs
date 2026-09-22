@@ -5,7 +5,7 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 
 /// Where the index lives in a data directory.
 pub fn index_path(data_dir: &Path) -> PathBuf {
@@ -166,7 +166,8 @@ pub fn get_meta(conn: &Connection, key: &str) -> Result<Option<String>> {
     conn.query_row("SELECT value FROM meta WHERE key = ?1", [key], |row| {
         row.get(0)
     })
-    .optional_context(key)
+    .optional()
+    .with_context(|| format!("reading meta key {key}"))
 }
 
 /// Deletes a key from the `meta` table; a no-op if it was never set.
@@ -174,22 +175,6 @@ pub fn delete_meta(conn: &Connection, key: &str) -> Result<()> {
     conn.execute("DELETE FROM meta WHERE key = ?1", [key])
         .with_context(|| format!("deleting meta key {key}"))?;
     Ok(())
-}
-
-/// Small helper to turn rusqlite's `QueryReturnedNoRows` into `None` while
-/// still surfacing real errors with context.
-trait OptionalContext<T> {
-    fn optional_context(self, key: &str) -> Result<Option<T>>;
-}
-
-impl<T> OptionalContext<T> for rusqlite::Result<T> {
-    fn optional_context(self, key: &str) -> Result<Option<T>> {
-        match self {
-            Ok(v) => Ok(Some(v)),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-            Err(e) => Err(e).with_context(|| format!("reading meta key {key}")),
-        }
-    }
 }
 
 #[cfg(test)]
