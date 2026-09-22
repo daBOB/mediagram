@@ -3,7 +3,7 @@ title: "Settings menu: Telegram connection and cache size, web + Android"
 description: "One Settings surface on both players: connection view, library switch, app id/hash, sign in/out, live cache budget."
 status: pending
 priority: P2
-effort: 38h
+effort: 44h
 branch: feat/settings-menu (cut from main once desloppify/code-health lands)
 tags: [web, android, rust-core, telegram, cache, security, settings]
 created: 2026-09-22
@@ -27,9 +27,10 @@ evicts down, persisted in the state DB, overriding `MEDIAGRAM_CACHE_MAX`.
 | 06 | [Web Settings page](phase-06-web-settings-page.md) | web UI | 05 | 4h | pending |
 | 07 | [Rust core: account summary + sign out](phase-07-rust-core-account-and-sign-out.md) | rust | – | 3h | pending |
 | 08 | [Android Settings screen](phase-08-android-settings-screen.md) | android | 07 | 6h | pending |
-| 09 | [Docs, parity note, versions, validation](phase-09-docs-versions-and-validation.md) | all | 06, 08 | 2h | pending |
+| 09 | [Docs, parity note, versions, validation](phase-09-docs-versions-and-validation.md) | all | 06, 08, 10 | 2h | pending |
+| 10 | [Active sessions: list + revoke](phase-10-active-sessions-list-and-revoke.md) | all | 06, 08 | 6h | pending |
 
-Tracks run in parallel: web (01→02→{03,04}→05→06) and Android (07→08). 03 and 04 own
+Tracks run in parallel: web (01→02→{03,04}→05→06) and Android (07→08); 10 joins both before 09. 03 and 04 own
 disjoint files; all wiring into `web/src/index.ts`/runtime happens in 05 only.
 
 ## Key decisions (this plan)
@@ -73,3 +74,5 @@ older builds skip unknown versions (`web/src/state/store.ts:643`). Deleting
 6. Android TV (`ui-tv`) gets no Settings in this plan (module has no screens yet). OK?
 7. Should web sign-in of a different account also `auth.logOut` the previous session
    (plan: yes, best effort) — or keep it alive for the uploader-export path?
+8. Sessions list (10) shows only this app's sessions (same api_id), never the official
+   Telegram apps. Enough, or should every session be listed read-only?

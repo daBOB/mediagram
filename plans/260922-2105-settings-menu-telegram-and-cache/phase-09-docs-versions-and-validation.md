@@ -1,7 +1,7 @@
 # Phase 09 — Docs, parity note, versions, validation
 
 ## Context links
-- `CLAUDE.md` § Surface Parity, § Versioning (three manifests in step; `versionCode` +1 separately)
+- `CLAUDE.md` § Surface Parity, § Versioning; phase 10 (sessions) is covered by the same parity note (three manifests in step; `versionCode` +1 separately)
 - `Cargo.toml:6`, `web/package.json` (`version`), `android/app/build.gradle.kts:12-13`
 - `docs/system-architecture.md` §7 (web), §8 (Android), §10 (on-disk layout); `docs/running-the-player.md`;
   `docs/project-changelog.md`; `docs/development-roadmap.md`

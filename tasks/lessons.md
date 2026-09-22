@@ -20,3 +20,18 @@ decisions twice, on purpose (`docs/system-architecture.md` §7). When a change
 lands in one, grep the other for the same decision before calling it done — and
 where the answer must match, pin it with a test that reads both, the way
 `shared_playable_sql.rs` does for `PLAYABLE_SQL`.
+
+---
+
+## 2026-09-22 — A safety check that printed a live client and was run past anyway
+
+**What happened.** Before a real-Telegram check, a `pgrep` listed the dev player
+(`bun --watch run src/index.ts`) holding the `web/.env` key. The same command
+went on to start a listener on that key, so two clients shared one auth key for
+~30 s. The player survived (fresh fetch OK, 0 failed reads), but the measured
+failure mode for a shared key is permanent until restart.
+
+**Rule.** A pre-flight check must be able to stop the run: `pgrep … && exit 1`,
+never a `pgrep` whose output is only read afterwards. And `bun --watch` means the
+player is live and reloads on every edit under `web/src/`, so editing the player
+while it runs already changes what the viewer is using.
