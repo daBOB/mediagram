@@ -11,6 +11,8 @@ use anyhow::Result;
 use mlib_spec::caption::Caption;
 use rusqlite::Connection;
 
+use crate::index::status::PartStatus;
+
 use crate::index::rescan_parts::upsert_part;
 use crate::index::set_row::SetRow;
 use crate::index::sets;
@@ -129,11 +131,11 @@ fn upsert_set(conn: &Connection, caption: &Caption, created_at: i64) -> Result<(
 fn parts_complete(conn: &Connection, set_id: &str) -> Result<bool> {
     let set = sets::get_set(conn, set_id)?
         .ok_or_else(|| anyhow::anyhow!("set {set_id} vanished during rescan"))?;
-    let (done_count, done_total): (i64, i64) = conn.query_row(
+    let (done_count, done_total): (u32, u64) = conn.query_row(
         "SELECT COUNT(*), COALESCE(SUM(byte_length), 0) FROM parts
-         WHERE set_id = ?1 AND status = 'done'",
-        [set_id],
+         WHERE set_id = ?1 AND status = ?2",
+        rusqlite::params![set_id, PartStatus::Done],
         |row| Ok((row.get(0)?, row.get(1)?)),
     )?;
-    Ok(done_count as u32 == set.part_count && done_total as u64 == set.total)
+    Ok(done_count == set.part_count && done_total == set.total)
 }

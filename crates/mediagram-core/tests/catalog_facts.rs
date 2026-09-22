@@ -41,7 +41,7 @@ async fn a_channel_catalog_counts_its_sets_and_its_artwork() {
     catalog_with(dir.path(), 3, 2);
     let core = mediagram_core::api::Core::new(dir.path().display().to_string(), 1, "h".into());
 
-    let facts = core.catalog_facts().await;
+    let facts = core.clone().catalog_facts().await;
 
     assert_eq!(facts.origin, "channel");
     assert_eq!(facts.sets, 3);
@@ -57,7 +57,7 @@ async fn a_catalog_with_no_artwork_says_none_rather_than_failing() {
     catalog_with(dir.path(), 1, 0);
     let core = mediagram_core::api::Core::new(dir.path().display().to_string(), 1, "h".into());
 
-    assert_eq!(core.catalog_facts().await.posters, 0);
+    assert_eq!(core.clone().catalog_facts().await.posters, 0);
 }
 
 /// Before setup finishes there is no catalog. The screen still has to render.
@@ -66,7 +66,7 @@ async fn no_catalog_at_all_reports_zeroes_rather_than_failing() {
     let dir = tempfile::tempdir().unwrap();
     let core = mediagram_core::api::Core::new(dir.path().display().to_string(), 1, "h".into());
 
-    let facts = core.catalog_facts().await;
+    let facts = core.clone().catalog_facts().await;
 
     assert_eq!(facts.sets, 0);
     assert_eq!(facts.posters, 0);

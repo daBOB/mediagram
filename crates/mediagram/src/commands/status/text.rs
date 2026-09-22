@@ -55,7 +55,7 @@ pub fn label(set: &Unfinished) -> String {
         show: set.show.as_deref(),
         title: set.title.as_deref(),
         season: set.season,
-        episode: set.episode.as_deref(),
+        episode: set.episode,
     }
     .label()
 }

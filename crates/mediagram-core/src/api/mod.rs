@@ -10,6 +10,7 @@
 //! bytes live.
 
 mod account;
+mod blocking;
 mod document_cache;
 mod error;
 mod store;
@@ -137,10 +138,12 @@ impl Core {
     /// `NotFound`, when no catalog is loaded yet: a shelf with nothing on it
     /// is what a first launch shows, whereas the calls that ask about one
     /// named set have nothing sensible to return and say so.
-    pub async fn list_sets(&self) -> Result<Vec<crate::dto::SetSummary>, CoreError> {
-        store::list_sets(self)
+    pub async fn list_sets(self: Arc<Self>) -> Result<Vec<crate::dto::SetSummary>, CoreError> {
+        self.blocking(store::list_sets).await
     }
 
+    /// Where a poster's image is on disk, if it is. Sync, unlike the catalog
+    /// reads: two `stat`s and no SQLite, which Kotlin already runs off-main.
     pub fn poster_path(&self, poster_key: String) -> Option<String> {
         store::poster_path(self, poster_key)
     }
@@ -149,12 +152,12 @@ impl Core {
     /// what this device fetched fills the gaps — see `enrich::details::title_info`.
     /// A course has no provider entry and a library assembled without a TMDB
     /// key has no rows at all; both are ordinary, so neither is an error.
-    pub async fn title_info(&self, poster_key: String) -> Option<crate::dto::TitleInfo> {
-        enrich::details::title_info(self, poster_key)
+    pub async fn title_info(self: Arc<Self>, poster_key: String) -> Option<crate::dto::TitleInfo> {
+        self.blocking(move |core| enrich::details::title_info(core, poster_key)).await
     }
 
-    pub async fn total_size(&self, set_id: String) -> Result<u64, CoreError> {
-        store::total_size(self, set_id)
+    pub async fn total_size(self: Arc<Self>, set_id: String) -> Result<u64, CoreError> {
+        self.blocking(move |core| store::total_size(core, set_id)).await
     }
 
     /// What the installed catalog is, for the screen that says so.
@@ -162,12 +165,14 @@ impl Core {
     /// Total failure is reported as zeroes rather than an error: this is
     /// read to draw a screen, and a screen that cannot draw because a count
     /// failed is worse than one that says a library is empty.
-    pub async fn catalog_facts(&self) -> crate::dto::CatalogFacts {
-        store::facts(self)
+    pub async fn catalog_facts(self: Arc<Self>) -> crate::dto::CatalogFacts {
+        self.blocking(store::facts).await
     }
 
-    pub async fn read(&self, set_id: String, offset: u64, len: u32) -> Result<Vec<u8>, CoreError> {
-        read::read(self, set_id, offset, len).await
+    pub async fn read(self: Arc<Self>, set_id: String, offset: u64, len: u32) -> Result<Vec<u8>, CoreError> {
+        let id = set_id.clone();
+        let locations = self.blocking(move |core| read::locations(core, &id)).await?;
+        read::read(&self, set_id, locations, offset, len).await
     }
 
     /// Fills in what the library it was handed does not carry, for every

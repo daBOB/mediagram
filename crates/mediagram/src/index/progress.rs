@@ -7,7 +7,11 @@
 //! queue would record.
 
 use anyhow::{Context, Result};
-use rusqlite::Connection;
+use mlib_spec::{Episode, Kind};
+use rusqlite::{Connection, params};
+
+use crate::index::columns::decoded_or_null;
+use crate::index::status::{PartStatus, SetStatus};
 
 /// A set whose parts are not all in the channel yet.
 #[derive(Debug, Clone, PartialEq)]
@@ -17,7 +21,7 @@ pub struct Unfinished {
     pub show: Option<String>,
     pub title: Option<String>,
     pub season: Option<u32>,
-    pub episode: Option<String>,
+    pub episode: Option<Episode>,
     pub parts_done: u32,
     pub parts_total: u32,
     pub bytes_done: u64,
@@ -41,28 +45,28 @@ pub fn unfinished(conn: &Connection) -> Result<Vec<Unfinished>> {
         .prepare(
             "SELECT s.set_id, s.kind, s.show, s.title, s.season, s.episode, s.total, s.created_at,
                     COUNT(p.idx),
-                    COALESCE(SUM(p.status = 'done'), 0),
-                    COALESCE(SUM(CASE WHEN p.status = 'done' THEN p.byte_length ELSE 0 END), 0)
+                    COALESCE(SUM(p.status = ?1), 0),
+                    COALESCE(SUM(CASE WHEN p.status = ?1 THEN p.byte_length ELSE 0 END), 0)
                FROM sets s LEFT JOIN parts p USING(set_id)
-              WHERE s.status != 'complete'
+              WHERE s.status != ?2
               GROUP BY s.set_id
               ORDER BY s.created_at",
         )
         .context("preparing the unfinished query")?;
     let rows = stmt
-        .query_map([], |row| {
+        .query_map(params![PartStatus::Done, SetStatus::Complete], |row| {
             Ok(Unfinished {
                 set_id: row.get(0)?,
                 kind: row.get(1)?,
                 show: row.get(2)?,
                 title: row.get(3)?,
                 season: row.get(4)?,
-                episode: row.get(5)?,
-                bytes_total: row.get::<_, i64>(6)?.max(0) as u64,
+                episode: decoded_or_null(row, "episode", |text| serde_json::from_str(text))?,
+                bytes_total: row.get(6)?,
                 created_at: row.get(7)?,
-                parts_total: row.get::<_, i64>(8)?.max(0) as u32,
-                parts_done: row.get::<_, i64>(9)?.max(0) as u32,
-                bytes_done: row.get::<_, i64>(10)?.max(0) as u64,
+                parts_total: row.get(8)?,
+                parts_done: row.get(9)?,
+                bytes_done: row.get(10)?,
             })
         })
         .context("listing unfinished sets")?;
@@ -89,17 +93,17 @@ pub fn shows(conn: &Connection) -> Result<Vec<ShowProgress>> {
             "SELECT s.show, COUNT(*), MAX(w.total_episodes)
                FROM sets s
                LEFT JOIN shows w ON w.source = 'tmdb' AND w.kind = 'tv' AND w.id = s.tmdb
-              WHERE s.kind = 'ep' AND s.status = 'complete' AND s.show IS NOT NULL
+              WHERE s.kind = ?1 AND s.status = ?2 AND s.show IS NOT NULL
               GROUP BY s.show
               ORDER BY s.show",
         )
         .context("preparing the show progress query")?;
     let rows = stmt
-        .query_map([], |row| {
+        .query_map(params![Kind::Ep.as_str(), SetStatus::Complete], |row| {
             Ok(ShowProgress {
                 show: row.get(0)?,
-                held: row.get::<_, i64>(1)?.max(0) as u32,
-                total: row.get::<_, Option<i64>>(2)?.map(|n| n.max(0) as u32),
+                held: row.get(1)?,
+                total: row.get(2)?,
             })
         })
         .context("listing show progress")?;
@@ -119,15 +123,15 @@ pub fn films(conn: &Connection) -> Result<Vec<Film>> {
     let mut stmt = conn
         .prepare(
             "SELECT COALESCE(title, set_id), year FROM sets
-              WHERE kind = 'movie' AND status = 'complete'
+              WHERE kind = ?1 AND status = ?2
               ORDER BY COALESCE(title, set_id)",
         )
         .context("preparing the film query")?;
     let rows = stmt
-        .query_map([], |row| {
+        .query_map(params![Kind::Movie.as_str(), SetStatus::Complete], |row| {
             Ok(Film {
                 title: row.get(0)?,
-                year: row.get::<_, Option<i64>>(1)?.map(|y| y.max(0) as u32),
+                year: row.get(1)?,
             })
         })
         .context("listing films")?;
@@ -150,16 +154,16 @@ pub fn courses(conn: &Connection) -> Result<Vec<Course>> {
     let mut stmt = conn
         .prepare(
             "SELECT COALESCE(show, group_key, 'course'), COUNT(*) FROM sets
-              WHERE kind = 'tut' AND status = 'complete'
+              WHERE kind = ?1 AND status = ?2
               GROUP BY COALESCE(show, group_key, 'course')
               ORDER BY 1",
         )
         .context("preparing the course query")?;
     let rows = stmt
-        .query_map([], |row| {
+        .query_map(params![Kind::Tut.as_str(), SetStatus::Complete], |row| {
             Ok(Course {
                 name: row.get(0)?,
-                lessons: row.get::<_, i64>(1)?.max(0) as u32,
+                lessons: row.get(1)?,
             })
         })
         .context("listing courses")?;
@@ -170,14 +174,9 @@ pub fn courses(conn: &Connection) -> Result<Vec<Course>> {
 /// What the channel holds: how many sets, and how many bytes across them.
 pub fn library(conn: &Connection) -> Result<(u64, u64)> {
     conn.query_row(
-        "SELECT COUNT(*), COALESCE(SUM(total), 0) FROM sets WHERE status = 'complete'",
-        [],
-        |row| {
-            Ok((
-                row.get::<_, i64>(0)?.max(0) as u64,
-                row.get::<_, i64>(1)?.max(0) as u64,
-            ))
-        },
+        "SELECT COUNT(*), COALESCE(SUM(total), 0) FROM sets WHERE status = ?1",
+        [SetStatus::Complete],
+        |row| Ok((row.get(0)?, row.get(1)?)),
     )
     .context("counting the library")
 }

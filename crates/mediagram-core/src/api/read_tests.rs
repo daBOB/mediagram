@@ -90,7 +90,7 @@ async fn a_zero_length_read_at_a_nonzero_offset_returns_empty() {
     let dir = tempfile::tempdir().unwrap();
     let core = core_with_one_part(dir.path(), "01SET0000000000000000001", 1000, "complete");
 
-    let bytes = read(&core, "01SET0000000000000000001".into(), 500, 0)
+    let bytes = core.clone().read("01SET0000000000000000001".into(), 500, 0)
         .await
         .unwrap();
 
@@ -104,7 +104,7 @@ async fn a_set_that_is_not_playable_cannot_be_read() {
     let dir = tempfile::tempdir().unwrap();
     let core = core_with_one_part(dir.path(), "01SET0000000000000000002", 1000, "pending");
 
-    let refused = read(&core, "01SET0000000000000000002".into(), 0, 10)
+    let refused = core.clone().read("01SET0000000000000000002".into(), 0, 10)
         .await
         .unwrap_err();
 

@@ -13,8 +13,7 @@ pub struct Named<'a> {
     pub show: Option<&'a str>,
     pub title: Option<&'a str>,
     pub season: Option<u32>,
-    /// The index's JSON-encoded `Episode`: `7` or `[1,2]`.
-    pub episode: Option<&'a str>,
+    pub episode: Option<Episode>,
 }
 
 impl Named<'_> {
@@ -34,7 +33,7 @@ impl Named<'_> {
 
     fn code(&self) -> Option<String> {
         let season = self.season?;
-        let episode: Episode = serde_json::from_str(self.episode?).ok()?;
+        let episode = self.episode?;
         match self.kind.parse::<Kind>().ok()? {
             Kind::Ep => Some(episode_code(season, episode)),
             Kind::Tut => Some(lesson_code(season, episode)),

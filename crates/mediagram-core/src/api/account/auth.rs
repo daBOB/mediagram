@@ -15,6 +15,7 @@
 
 use grammers_client::SignInError;
 use grammers_client::client::{LoginToken, PasswordToken};
+use grammers_mtsender::InvocationError;
 
 use super::session;
 use crate::api::{AuthOutcome, Core, CoreError};
@@ -45,7 +46,7 @@ pub(in crate::api) async fn request_code(core: &Core, phone: String) -> Result<S
     let token = client
         .request_login_code(&phone, &core.api_hash)
         .await
-        .map_err(|err| CoreError::Network(err.to_string()))?;
+        .map_err(|err| refused(&err))?;
 
     let id = opaque_id();
     let mut state = core.state.lock().await;
@@ -95,8 +96,9 @@ pub(in crate::api) async fn sign_in(
             core.state.lock().await.pending_login = Some(pending);
             Err(CoreError::NotAuthorized("the code was not accepted".into()))
         }
-        Err(SignInError::Other(err)) => Err(CoreError::Network(err.to_string())),
-        Err(_other) => Err(CoreError::NotAuthorized("sign-in was rejected".into())),
+        Err(SignInError::SignUpRequired) => Err(CoreError::NotAuthorized(NO_ACCOUNT.into())),
+        Err(SignInError::Other(err)) => Err(refused(&err)),
+        Err(unexpected @ SignInError::InvalidPassword(_)) => Err(out_of_step(unexpected)),
     }
 }
 
@@ -127,7 +129,34 @@ pub(in crate::api) async fn check_password(core: &Core, password: String) -> Res
                 "the password was not accepted".into(),
             ))
         }
-        Err(SignInError::Other(err)) => Err(CoreError::Network(err.to_string())),
-        Err(_other) => Err(CoreError::NotAuthorized("password check was rejected".into())),
+        Err(SignInError::Other(err)) => Err(refused(&err)),
+        Err(unexpected) => Err(out_of_step(unexpected)),
     }
 }
+
+const NO_ACCOUNT: &str = "this number has no Telegram account yet; create one in the Telegram app first";
+
+/// What a failed login step becomes. Telegram refusing what was typed — a
+/// malformed or banned number, an expired code — is `NotAuthorized`, named by
+/// Telegram's own reason, which carries no account detail. A flood wait or
+/// anything that never reached an answer is a network fault, cause logged.
+fn refused(err: &InvocationError) -> CoreError {
+    match err {
+        InvocationError::Rpc(rpc) if (400..500).contains(&rpc.code) && rpc.code != 420 => {
+            tracing::warn!(%err, "login step refused");
+            CoreError::NotAuthorized(format!("Telegram refused the sign-in ({})", rpc.name))
+        }
+        _ => CoreError::network("the login could not reach Telegram")(err),
+    }
+}
+
+/// An answer Telegram should not give at this step, such as a password
+/// verdict to a code. Logged, since it means the flow and grammers disagree.
+fn out_of_step(err: SignInError) -> CoreError {
+    tracing::warn!(%err, "unexpected answer to a login step");
+    CoreError::NotAuthorized("sign-in was rejected".into())
+}
+
+#[cfg(test)]
+#[path = "auth_tests.rs"]
+mod tests;

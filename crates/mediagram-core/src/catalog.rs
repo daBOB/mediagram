@@ -120,13 +120,13 @@ pub fn part_locations(conn: &Connection, set_id: &str) -> Result<Vec<PartLocatio
         .prepare(
             "SELECT idx, byte_offset, byte_length, chat_id, message_id
              FROM parts
-             WHERE set_id = ?1 AND status = 'done'
+             WHERE set_id = ?1 AND status = ?2
                AND chat_id IS NOT NULL AND message_id IS NOT NULL
              ORDER BY idx",
         )
         .context("preparing the part query")?;
     let rows = stmt
-        .query_map([set_id], |row| {
+        .query_map([set_id, mlib_spec::schema::PART_DONE], |row| {
             Ok(PartLocation {
                 span: PartSpan {
                     idx: row.get("idx")?,

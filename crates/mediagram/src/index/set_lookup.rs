@@ -4,6 +4,7 @@
 //! without caring where a file sits.
 
 use anyhow::Result;
+use mlib_spec::Kind;
 use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::index::status::SetStatus;
@@ -27,8 +28,8 @@ pub fn complete_lesson_exists(
         .query_row(
             "SELECT 1 FROM sets
              WHERE group_key = ?1 AND season = ?2 AND episode = ?3
-               AND kind = 'tut' AND status = 'complete'",
-            params![cid, chapter, episode],
+               AND kind = ?4 AND status = ?5",
+            params![cid, chapter, episode, Kind::Tut.as_str(), SetStatus::Complete],
             |row| row.get(0),
         )
         .optional()?;

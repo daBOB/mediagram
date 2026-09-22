@@ -41,10 +41,10 @@ fn from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<PartRow> {
 pub fn insert_parts(conn: &Connection, set_id: &str, parts: &[PartRange]) -> Result<()> {
     let mut stmt = conn.prepare(
         "INSERT INTO parts(set_id, idx, byte_offset, byte_length, status)
-         VALUES (?1, ?2, ?3, ?4, 'pending')",
+         VALUES (?1, ?2, ?3, ?4, ?5)",
     )?;
     for part in parts {
-        stmt.execute(params![set_id, part.idx, part.off as i64, part.len as i64])?;
+        stmt.execute(params![set_id, part.idx, part.off as i64, part.len as i64, PartStatus::Pending])?;
     }
     Ok(())
 }
@@ -56,10 +56,10 @@ const PART_COLUMNS: &str = "set_id, idx, byte_offset, byte_length, chat_id, mess
 /// Every `pending` part of a set, in upload order.
 pub fn pending_parts(conn: &Connection, set_id: &str) -> Result<Vec<PartRow>> {
     let mut stmt = conn.prepare(&format!(
-        "SELECT {PART_COLUMNS} FROM parts WHERE set_id = ?1 AND status = 'pending' ORDER BY idx"
+        "SELECT {PART_COLUMNS} FROM parts WHERE set_id = ?1 AND status = ?2 ORDER BY idx"
     ))?;
     let rows = stmt
-        .query_map([set_id], from_row)?
+        .query_map(params![set_id, PartStatus::Pending], from_row)?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     Ok(rows)
 }
@@ -76,7 +76,7 @@ pub struct Landed {
 /// Records a part as uploaded (or adopted from an existing channel message).
 pub fn mark_done(conn: &Connection, set_id: &str, idx: u32, landed: &Landed) -> Result<()> {
     conn.execute(
-        "UPDATE parts SET chat_id = ?1, message_id = ?2, doc_id = ?3, sha256 = ?4, status = 'done'
+        "UPDATE parts SET chat_id = ?1, message_id = ?2, doc_id = ?3, sha256 = ?4, status = ?7
          WHERE set_id = ?5 AND idx = ?6",
         params![
             landed.chat_id,
@@ -84,7 +84,8 @@ pub fn mark_done(conn: &Connection, set_id: &str, idx: u32, landed: &Landed) -> 
             landed.doc_id,
             landed.sha256,
             set_id,
-            idx
+            idx,
+            PartStatus::Done
         ],
     )?;
     Ok(())
@@ -110,23 +111,21 @@ pub fn all_parts(conn: &Connection, set_id: &str) -> Result<Vec<PartRow>> {
 /// Bytes of a set already in the channel, for reporting a resumed upload
 /// against the whole of it rather than against what this run has done.
 pub fn done_bytes(conn: &Connection, set_id: &str) -> Result<u64> {
-    let total: i64 = conn
-        .query_row(
-            "SELECT COALESCE(SUM(byte_length), 0) FROM parts
-              WHERE set_id = ?1 AND status = 'done'",
-            params![set_id],
-            |row| row.get(0),
-        )
-        .context("summing the parts already sent")?;
-    Ok(total.max(0) as u64)
+    conn.query_row(
+        "SELECT COALESCE(SUM(byte_length), 0) FROM parts
+          WHERE set_id = ?1 AND status = ?2",
+        params![set_id, PartStatus::Done],
+        |row| row.get(0),
+    )
+    .context("summing the parts already sent")
 }
 
 /// Sha256 hex of every `done` part, in idx order; the input to `set_hash`.
 pub fn done_hashes(conn: &Connection, set_id: &str) -> Result<Vec<String>> {
     let mut stmt = conn
-        .prepare("SELECT sha256 FROM parts WHERE set_id = ?1 AND status = 'done' ORDER BY idx")?;
+        .prepare("SELECT sha256 FROM parts WHERE set_id = ?1 AND status = ?2 ORDER BY idx")?;
     let rows = stmt
-        .query_map([set_id], |row| row.get::<_, Option<String>>(0))?
+        .query_map(params![set_id, PartStatus::Done], |row| row.get::<_, Option<String>>(0))?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     // A `done` row always has a hash; anything else is a mark_done bug, not
     // recoverable data, so it's fine to drop nulls rather than error here.

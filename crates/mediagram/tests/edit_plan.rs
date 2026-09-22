@@ -128,7 +128,7 @@ fn every_field_a_person_would_want_to_fix_can_be_fixed() {
     assert_eq!(edited.show.as_deref(), Some("Spartacus: Das Haus Ashur"));
     assert_eq!(edited.year, Some(2026));
     assert_eq!(edited.season, Some(2));
-    assert_eq!(edited.episode.as_deref(), Some("7"));
+    assert_eq!(edited.episode, Some(mlib_spec::Episode::Single(7)));
     assert_eq!(edited.chap.as_deref(), Some("Kapitel"));
     assert_eq!(edited.path.as_deref(), Some("Staffel 1"));
 }

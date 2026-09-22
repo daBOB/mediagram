@@ -80,7 +80,7 @@ async fn a_film_reports_what_the_provider_said_about_it() {
     catalog_with_show(dir.path(), "movie", 11225);
     let core = core_at(dir.path());
 
-    let info = core.title_info("tmdb-movie-11225".into()).await.expect("a recorded show");
+    let info = core.clone().title_info("tmdb-movie-11225".into()).await.expect("a recorded show");
 
     assert_eq!(info.overview.as_deref(), Some("Dracula is awakened."));
     assert_eq!(info.tagline.as_deref(), Some("The final hunt begins."));
@@ -95,7 +95,7 @@ async fn a_series_key_finds_the_row_that_belongs_to_the_whole_show() {
     catalog_with_show(dir.path(), "tv", 1399);
     let core = core_at(dir.path());
 
-    assert!(core.title_info("tmdb-tv-1399".into()).await.is_some());
+    assert!(core.clone().title_info("tmdb-tv-1399".into()).await.is_some());
 }
 
 /// A title the uploader never resolved has no row, and that is ordinary
@@ -106,7 +106,7 @@ async fn a_title_with_no_recorded_description_says_nothing_rather_than_failing()
     catalog_with_show(dir.path(), "movie", 11225);
     let core = core_at(dir.path());
 
-    assert!(core.title_info("tmdb-movie-99999".into()).await.is_none());
+    assert!(core.clone().title_info("tmdb-movie-99999".into()).await.is_none());
 }
 
 /// A key that is not a key never reaches SQL.
@@ -116,7 +116,7 @@ async fn a_malformed_key_is_refused_before_it_is_queried() {
     catalog_with_show(dir.path(), "movie", 11225);
     let core = core_at(dir.path());
 
-    assert!(core.title_info("'; DROP TABLE shows; --".into()).await.is_none());
+    assert!(core.clone().title_info("'; DROP TABLE shows; --".into()).await.is_none());
 }
 
 /// A key that begins with `tmdb-` and still carries an injection payload in
@@ -133,7 +133,7 @@ async fn a_key_carrying_an_injection_payload_is_refused_even_when_a_matching_row
     index_describes(dir.path(), malicious_kind, 11225, "should never be read");
     let core = core_at(dir.path());
 
-    assert!(core.title_info(format!("tmdb-{malicious_kind}-11225")).await.is_none());
+    assert!(core.clone().title_info(format!("tmdb-{malicious_kind}-11225")).await.is_none());
 }
 
 /// The publisher's own description wins. It was written in the library's
@@ -146,7 +146,7 @@ async fn a_row_in_the_index_is_preferred_to_a_fetched_one() {
     let core = core_at(dir.path());
     fetched_describes(&core, Kind::Movie, 550, "what the phone fetched");
 
-    let info = core.title_info("tmdb-movie-550".into()).await.expect("a described title");
+    let info = core.clone().title_info("tmdb-movie-550".into()).await.expect("a described title");
     assert_eq!(info.overview.as_deref(), Some("what the publisher wrote"));
 }
 
@@ -158,7 +158,7 @@ async fn a_title_the_index_omits_is_answered_from_the_sidecar() {
     let core = core_at(dir.path());
     fetched_describes(&core, Kind::Movie, 550, "what the phone fetched");
 
-    let info = core.title_info("tmdb-movie-550".into()).await.expect("a described title");
+    let info = core.clone().title_info("tmdb-movie-550".into()).await.expect("a described title");
     assert_eq!(info.overview.as_deref(), Some("what the phone fetched"));
 }
 
@@ -170,7 +170,7 @@ async fn a_title_neither_holds_is_simply_unknown() {
     index_describes_nothing(dir.path());
     let core = core_at(dir.path());
 
-    assert!(core.title_info("tmdb-movie-550".into()).await.is_none());
+    assert!(core.clone().title_info("tmdb-movie-550".into()).await.is_none());
 }
 
 /// A library nobody has fetched for has no sidecar at all, and a lookup must
@@ -182,7 +182,7 @@ async fn a_lookup_does_not_create_the_store_it_did_not_find() {
     index_describes_nothing(dir.path());
     let core = core_at(dir.path());
 
-    assert!(core.title_info("tmdb-movie-550".into()).await.is_none());
+    assert!(core.clone().title_info("tmdb-movie-550".into()).await.is_none());
     let store = details::details_db(&core);
     assert!(!store.exists(), "a lookup created a store nobody had written to");
 }

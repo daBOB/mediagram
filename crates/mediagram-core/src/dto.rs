@@ -79,12 +79,12 @@ pub fn summary_from(set: &PlayableSet) -> SetSummary {
     }
 }
 
-/// Mirrors the web player's `posterKeyFor(kind, tmdb)`: `tmdb-movie-<id>` or
-/// `tmdb-tv-<id>`, and no key at all without a positive TMDB id.
+/// Mirrors the web player's `posterKeyFor(kind, tmdb)`: no key at all
+/// without a positive TMDB id. A kind this build does not know keys as a
+/// series, as it does there — only a film is numbered apart.
 fn poster_key_for(kind: &str, tmdb: Option<u64>) -> Option<String> {
-    let tmdb = tmdb?;
-    let sub = if kind == mlib_spec::Kind::Movie.as_str() { "movie" } else { "tv" };
-    let key = format!("tmdb-{sub}-{tmdb}");
+    let kind = kind.parse().unwrap_or(mlib_spec::Kind::Ep);
+    let key = mediagram_tmdb::posters::poster_key(kind, tmdb?);
     debug_assert!(mlib_spec::package::poster_key_is_valid(&key));
     Some(key)
 }

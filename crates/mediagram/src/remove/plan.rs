@@ -72,7 +72,7 @@ fn label_of(set: &SetRow) -> String {
         show: set.show.as_deref(),
         title: set.title.as_deref(),
         season: set.season,
-        episode: set.episode.as_deref(),
+        episode: set.episode,
     };
     format!("{}  [{}]", named.label(), set.container)
 }

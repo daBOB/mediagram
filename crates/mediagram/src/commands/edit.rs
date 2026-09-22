@@ -11,7 +11,7 @@
 
 use anyhow::{Context, Result, bail};
 use mediagram_tmdb::tmdb_client::TmdbClient;
-use mlib_spec::Kind;
+use mlib_spec::{Episode, Kind};
 
 use crate::commands::args::EditArgs;
 use crate::config::Config;
@@ -95,7 +95,11 @@ pub async fn run(cfg: &Config, args: EditArgs) -> Result<()> {
         row.season.map(|s| s.to_string()).as_deref(),
         edited.season.map(|s| s.to_string()).as_deref(),
     );
-    describe_change("episode", row.episode.as_deref(), edited.episode.as_deref());
+    describe_change(
+        "episode",
+        row.episode.map(episode_text).as_deref(),
+        edited.episode.map(episode_text).as_deref(),
+    );
     describe_change(
         "tmdb",
         row.tmdb.map(|v| v.to_string()).as_deref(),
@@ -127,6 +131,14 @@ fn describe_change(field: &str, before: Option<&str>, after: Option<&str>) {
             before.unwrap_or("-"),
             after.unwrap_or("-")
         );
+    }
+}
+
+/// `4`, or `5-6` for a file holding two.
+fn episode_text(episode: Episode) -> String {
+    match episode {
+        Episode::Single(n) => n.to_string(),
+        Episode::Range([first, last]) => format!("{first}-{last}"),
     }
 }
 
@@ -164,7 +176,7 @@ async fn refresh_from_tmdb(
 
     // An episode title needs both numbers; without them the show name is
     // still worth correcting on its own.
-    let (Some(season), Some(number)) = (row.season, row.first_episode()?) else {
+    let (Some(season), Some(number)) = (row.season, row.episode.map(Episode::first)) else {
         return Ok(Fetched {
             title: None,
             show: details.display_title(),

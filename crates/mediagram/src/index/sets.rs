@@ -38,7 +38,7 @@ pub fn insert_set(conn: &Connection, row: &SetRow) -> Result<()> {
             row.title,
             row.year,
             row.season,
-            row.episode,
+            row.episode_json()?,
             row.abs,
             row.quality,
             row.hdr,
@@ -94,7 +94,7 @@ pub fn update_metadata(conn: &Connection, row: &SetRow) -> Result<()> {
             row.title,
             row.year,
             row.season,
-            row.episode,
+            row.episode_json()?,
             row.abs,
             row.tmdb.map(|v| v as i64),
             row.tvdb.map(|v| v as i64),
@@ -109,8 +109,8 @@ pub fn update_metadata(conn: &Connection, row: &SetRow) -> Result<()> {
 /// Records the final `set_hash` and marks the set `complete`.
 pub fn set_hash_and_complete(conn: &Connection, set_id: &str, hash: &str) -> Result<()> {
     conn.execute(
-        "UPDATE sets SET set_hash = ?1, status = 'complete' WHERE set_id = ?2",
-        params![hash, set_id],
+        "UPDATE sets SET set_hash = ?1, status = ?3 WHERE set_id = ?2",
+        params![hash, set_id, SetStatus::Complete],
     )?;
     Ok(())
 }
@@ -129,10 +129,10 @@ pub fn get_set(conn: &Connection, set_id: &str) -> Result<Option<SetRow>> {
 /// Every set still `pending`, oldest first (so `resume` finishes older sets before newer ones).
 pub fn list_pending(conn: &Connection) -> Result<Vec<SetRow>> {
     let mut stmt = conn.prepare(&format!(
-        "SELECT {COLUMNS} FROM sets WHERE status = 'pending' ORDER BY created_at"
+        "SELECT {COLUMNS} FROM sets WHERE status = ?1 ORDER BY created_at"
     ))?;
     let rows = stmt
-        .query_map([], SetRow::from_row)?
+        .query_map([SetStatus::Pending], SetRow::from_row)?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     Ok(rows)
 }

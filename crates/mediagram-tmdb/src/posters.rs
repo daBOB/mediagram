@@ -88,7 +88,8 @@ fn is_image_path(path: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '_' || c == '-')
 }
 
-fn poster_key(kind: Kind, id: u64) -> String {
+/// The key a title's poster is stored under: `tmdb-movie-<id>` or `tmdb-tv-<id>`.
+pub fn poster_key(kind: Kind, id: u64) -> String {
     format!("tmdb-{}-{id}", kind_key(kind))
 }
 

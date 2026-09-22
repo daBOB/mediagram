@@ -2,10 +2,10 @@
 //! the fields carried on every part's caption.
 
 use anyhow::Result;
-use mlib_spec::caption::{Caption, Kind, Part};
+use mlib_spec::caption::{Caption, Episode, Kind, Part};
 use mlib_spec::ids::ProviderIds;
 
-use crate::index::columns::decoded;
+use crate::index::columns::{decoded, decoded_or_null};
 use crate::index::status::SetStatus;
 
 /// One row of the `sets` table.
@@ -24,8 +24,8 @@ pub struct SetRow {
     pub title: Option<String>,
     pub year: Option<u16>,
     pub season: Option<u32>,
-    /// JSON-encoded `mlib_spec::Episode`, e.g. `1` or `[1,2]`.
-    pub episode: Option<String>,
+    /// Stored as the caption's JSON, `1` or `[1,2]`; decoded on read.
+    pub episode: Option<Episode>,
     pub abs: Option<u32>,
     pub quality: Option<String>,
     pub hdr: Option<String>,
@@ -49,7 +49,6 @@ impl SetRow {
     /// Builds the `sets` row for a freshly planned upload. `caption` carries
     /// every field this row mirrors; `part.n` becomes `part_count`.
     pub fn from_caption(caption: &Caption, created_at: i64) -> Result<SetRow> {
-        let episode = caption.e.map(|e| serde_json::to_string(&e)).transpose()?;
         Ok(SetRow {
             set_id: caption.set.clone(),
             kind: caption.t,
@@ -62,7 +61,7 @@ impl SetRow {
             title: caption.title.clone(),
             year: caption.year,
             season: caption.s,
-            episode,
+            episode: caption.e,
             abs: caption.abs,
             quality: caption.q.clone(),
             hdr: caption.hdr.clone(),
@@ -100,7 +99,7 @@ impl SetRow {
             title: row.get("title")?,
             year: row.get("year")?,
             season: row.get("season")?,
-            episode: row.get("episode")?,
+            episode: decoded_or_null(row, "episode", |text| serde_json::from_str(text))?,
             abs: row.get("abs")?,
             quality: row.get("quality")?,
             hdr: row.get("hdr")?,
@@ -123,26 +122,14 @@ impl SetRow {
 }
 
 impl SetRow {
-    /// The episode this set starts at, `None` when it has none. The column
-    /// holds the caption's JSON `Episode` — `1`, or `[1,2]` for a file
-    /// holding two — and a file spanning several is known by its first.
-    pub fn first_episode(&self) -> Result<Option<u32>> {
-        let Some(column) = self.episode.as_deref() else {
-            return Ok(None);
-        };
-        let episode: mlib_spec::Episode = serde_json::from_str(column)
-            .map_err(|_| anyhow::anyhow!("episode {column} is not an episode number"))?;
-        Ok(Some(episode.first()))
+    /// The `episode` column's value: the caption's JSON, `1` or `[1,2]`.
+    pub(crate) fn episode_json(&self) -> Result<Option<String>> {
+        Ok(self.episode.map(|e| serde_json::to_string(&e)).transpose()?)
     }
 
     /// The set's `Caption` with a placeholder part block (idx 0, empty hash),
     /// used to derive names and human text that don't depend on which part.
     pub fn caption_template(&self) -> Result<Caption> {
-        let e = self
-            .episode
-            .as_deref()
-            .map(serde_json::from_str)
-            .transpose()?;
         Ok(Caption {
             // The pipeline builds every part's caption from this template, so
             // dropping these would publish a course with no collection id and
@@ -160,7 +147,7 @@ impl SetRow {
             title: self.title.clone(),
             year: self.year,
             s: self.season,
-            e,
+            e: self.episode,
             abs: self.abs,
             q: self.quality.clone(),
             hdr: self.hdr.clone(),

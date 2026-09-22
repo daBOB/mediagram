@@ -899,7 +899,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_list_sets() and 0xFFFF) != 8505) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_poster_path() and 0xFFFF) != 59229) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_poster_path() and 0xFFFF) != 16393) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_read() and 0xFFFF) != 42617) {
@@ -1493,6 +1493,10 @@ public interface CoreInterface {
      */
     suspend fun `listSets`(): List<SetSummary>
     
+    /**
+     * Where a poster's image is on disk, if it is. Sync, unlike the catalog
+     * reads: two `stat`s and no SQLite, which Kotlin already runs off-main.
+     */
     fun `posterPath`(`posterKey`: kotlin.String): kotlin.String?
     
     suspend fun `read`(`setId`: kotlin.String, `offset`: kotlin.ULong, `len`: kotlin.UInt): kotlin.ByteArray
@@ -1809,7 +1813,11 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    override fun `posterPath`(`posterKey`: kotlin.String): kotlin.String? {
+    
+    /**
+     * Where a poster's image is on disk, if it is. Sync, unlike the catalog
+     * reads: two `stat`s and no SQLite, which Kotlin already runs off-main.
+     */override fun `posterPath`(`posterKey`: kotlin.String): kotlin.String? {
             return FfiConverterOptionalString.lift(
     callWithHandle {
     uniffiRustCall() { _status ->

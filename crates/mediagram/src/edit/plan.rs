@@ -11,7 +11,7 @@
 
 use anyhow::{Result, bail};
 
-use mlib_spec::Kind;
+use mlib_spec::{Episode, Kind};
 
 use crate::index::set_row::SetRow;
 
@@ -151,7 +151,7 @@ pub fn apply(row: &SetRow, edits: &Edits) -> SetRow {
         edited.season = Some(season);
     }
     if let Some(episode) = edits.episode {
-        edited.episode = Some(episode.to_string());
+        edited.episode = Some(Episode::Single(episode));
     }
     if let Some(chap) = &edits.chap {
         edited.chap = Some(chap.clone());

@@ -68,7 +68,7 @@ pub(super) fn write_part_done(
 ) -> Result<()> {
     conn.execute(
         "INSERT INTO parts(set_id, idx, byte_offset, byte_length, chat_id, message_id, doc_id, sha256, status)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'done')
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
          ON CONFLICT(set_id, idx) DO UPDATE SET
             byte_offset = excluded.byte_offset,
             byte_length = excluded.byte_length,
@@ -76,7 +76,7 @@ pub(super) fn write_part_done(
             message_id = excluded.message_id,
             doc_id = excluded.doc_id,
             sha256 = excluded.sha256,
-            status = 'done'",
+            status = excluded.status",
         params![
             caption.set,
             caption.part.i,
@@ -86,6 +86,7 @@ pub(super) fn write_part_done(
             message_id,
             doc_id,
             caption.part.sha256,
+            PartStatus::Done,
         ],
     )?;
     Ok(())

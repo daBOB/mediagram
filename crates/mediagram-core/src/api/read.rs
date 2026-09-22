@@ -6,13 +6,14 @@ use anyhow::Context;
 use grammers_session::types::{PeerId, PeerRef};
 use tokio::sync::mpsc;
 
-use crate::catalog as queries;
+use crate::catalog::{self as queries, PartLocation};
 use crate::document::is_stale_reference;
 use crate::range::{self, ByteRange, PartSpan};
 use crate::stream;
 
 use super::account::session;
 use super::channel::library;
+use super::account::revoked;
 use super::{Core, CoreError, store};
 
 /// Chunks buffered between the download and this call's own accumulation.
@@ -20,28 +21,33 @@ use super::{Core, CoreError, store};
 /// without letting it run far ahead of a caller that stopped reading.
 const BUFFERED_CHUNKS: usize = 4;
 
-pub(super) async fn read(
-    core: &Core,
-    set_id: String,
-    offset: u64,
-    len: u32,
-) -> Result<Vec<u8>, CoreError> {
-    let locations = {
-        let conn = store::open(core)?;
-        // The gate the catalog lists with and `total_size` answers with. A set
-        // that is incomplete, or whose parts do not add up to its total, must
-        // not be readable here while being refused everywhere else.
-        let playable = queries::playable_set(&conn, &set_id)
-            .map_err(CoreError::io("reading the catalog"))?;
-        if playable.is_none() {
-            return Err(CoreError::NotFound("set not found".into()));
-        }
-        queries::part_locations(&conn, &set_id)
-            .map_err(CoreError::io("reading the catalog"))?
+/// Where a set's parts live, if it may be played. Blocking: a catalog query.
+///
+/// The gate is the one the catalog lists with and `total_size` answers with.
+/// A set that is incomplete, or whose parts do not add up to its total, must
+/// not be readable here while being refused everywhere else.
+pub(super) fn locations(core: &Core, set_id: &str) -> Result<Vec<PartLocation>, CoreError> {
+    let conn = store::open(core)?;
+    let playable = queries::playable_set(&conn, set_id).map_err(CoreError::io("reading the catalog"))?;
+    let locations = match playable {
+        Some(_) => queries::part_locations(&conn, set_id).map_err(CoreError::io("reading the catalog"))?,
+        None => Vec::new(),
     };
     if locations.is_empty() {
         return Err(CoreError::NotFound("set not found".into()));
     }
+    Ok(locations)
+}
+
+/// `len` bytes of the set from `offset`, fetched from the channel parts
+/// `locations` names.
+pub(super) async fn read(
+    core: &Core,
+    set_id: String,
+    locations: Vec<PartLocation>,
+    offset: u64,
+    len: u32,
+) -> Result<Vec<u8>, CoreError> {
 
     let spans: Vec<PartSpan> = locations.iter().map(|location| location.span).collect();
     let total = range::total_size(&spans);
@@ -90,9 +96,11 @@ pub(super) async fn read(
                 out.truncate(start);
                 core.state.lock().await.documents.evict(&set_id, location.message_id);
                 let fresh = document_for(core, &client, channel, &set_id, location.message_id).await?;
-                fetch_step(&client, fresh, step, &mut out).await.map_err(interrupted)?;
+                if let Err(err) = fetch_step(&client, fresh, step, &mut out).await {
+                    return Err(failed(core, INTERRUPTED, err).await);
+                }
             }
-            Err(err) => return Err(interrupted(err)),
+            Err(err) => return Err(failed(core, INTERRUPTED, err).await),
         }
     }
     Ok(out)
@@ -120,9 +128,13 @@ async fn fetch_step(
         .context("the download task did not finish cleanly")?
 }
 
-/// What Kotlin is told when a download fails: the cause is logged in Rust.
-fn interrupted(err: anyhow::Error) -> CoreError {
-    CoreError::network("the download ended before it finished")(err)
+const INTERRUPTED: &str = "the download ended before it finished";
+
+/// What Kotlin is told when a Telegram call fails: `what`, with the cause
+/// logged in Rust — or `NotAuthorized` when the login itself was refused.
+async fn failed(core: &Core, what: &str, err: anyhow::Error) -> CoreError {
+    let fallback = CoreError::network(what)(&err);
+    revoked::unless_revoked(core, err.as_ref(), fallback).await
 }
 
 /// The document a part's bytes live in, resolved once per set.
@@ -140,9 +152,10 @@ async fn document_for(
     if let Some(held) = core.state.lock().await.documents.get(set_id, message_id) {
         return Ok(held);
     }
-    let document = stream::part_document(client, channel, message_id)
-        .await
-        .map_err(CoreError::network("the part could not be resolved"))?;
+    let document = match stream::part_document(client, channel, message_id).await {
+        Ok(document) => document,
+        Err(err) => return Err(failed(core, "the part could not be resolved", err).await),
+    };
     core.state
         .lock()
         .await

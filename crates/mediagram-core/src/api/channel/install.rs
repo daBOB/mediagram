@@ -7,6 +7,7 @@ use grammers_client::Client;
 use grammers_client::media::Document;
 
 use super::index::UNREADABLE;
+use crate::api::account::revoked::checked;
 use crate::api::{Core, CoreError, refresh, store};
 
 /// A hard ceiling on the snapshot. A real `library.db` for a few hundred sets
@@ -27,7 +28,7 @@ pub(super) async fn install(
     std::fs::create_dir_all(&incoming)
         .map_err(CoreError::io("staging the refreshed catalog"))?;
 
-    download(client, document, &incoming.join(mlib_spec::schema::INDEX_FILE)).await?;
+    download(core, client, document, &incoming.join(mlib_spec::schema::INDEX_FILE)).await?;
     install_downloaded(core, &incoming, version)
 }
 
@@ -47,6 +48,7 @@ fn install_downloaded(
 }
 
 async fn download(
+    core: &Core,
     client: &Client,
     document: &Document,
     path: &std::path::Path,
@@ -55,10 +57,12 @@ async fn download(
     let mut file = std::fs::File::create(path).map_err(CoreError::io(WRITING))?;
     let mut written: u64 = 0;
     let mut chunks = client.iter_download(document);
-    while let Some(chunk) = chunks
-        .next()
-        .await
-        .map_err(CoreError::network("the index download was interrupted"))?
+    while let Some(chunk) = checked(
+        core,
+        chunks.next().await,
+        |err| CoreError::network("the index download was interrupted")(err),
+    )
+    .await?
     {
         written += chunk.len() as u64;
         if written > MAX_INDEX_BYTES {

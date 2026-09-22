@@ -1,10 +1,11 @@
 //! Lifecycle states of a set and of a part, as the index spells them.
 //!
 //! Typed so that a misspelt state is a compile error rather than a comparison
-//! that is silently never true. The spellings are part of the schema:
-//! `mlib_spec::schema::PLAYABLE_SQL` and the player both read them, so they
-//! are written here once and never re-typed at a call site.
+//! that is silently never true. The spellings are part of the schema and live
+//! in `mlib_spec::schema`; a query binds these values as parameters rather
+//! than re-typing them.
 
+use mlib_spec::schema::{PART_DONE, PART_PENDING, SET_COMPLETE, SET_PENDING};
 use rusqlite::ToSql;
 use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSqlOutput, ValueRef};
 
@@ -29,8 +30,8 @@ pub enum PartStatus {
 impl SetStatus {
     pub fn as_str(self) -> &'static str {
         match self {
-            SetStatus::Pending => "pending",
-            SetStatus::Complete => "complete",
+            SetStatus::Pending => SET_PENDING,
+            SetStatus::Complete => SET_COMPLETE,
         }
     }
 }
@@ -38,8 +39,8 @@ impl SetStatus {
 impl PartStatus {
     pub fn as_str(self) -> &'static str {
         match self {
-            PartStatus::Pending => "pending",
-            PartStatus::Done => "done",
+            PartStatus::Pending => PART_PENDING,
+            PartStatus::Done => PART_DONE,
         }
     }
 }
@@ -71,8 +72,8 @@ impl ToSql for PartStatus {
 impl FromSql for SetStatus {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
         match value.as_str()? {
-            "pending" => Ok(SetStatus::Pending),
-            "complete" => Ok(SetStatus::Complete),
+            SET_PENDING => Ok(SetStatus::Pending),
+            SET_COMPLETE => Ok(SetStatus::Complete),
             other => Err(unknown("set", other)),
         }
     }
@@ -81,8 +82,8 @@ impl FromSql for SetStatus {
 impl FromSql for PartStatus {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
         match value.as_str()? {
-            "pending" => Ok(PartStatus::Pending),
-            "done" => Ok(PartStatus::Done),
+            PART_PENDING => Ok(PartStatus::Pending),
+            PART_DONE => Ok(PartStatus::Done),
             other => Err(unknown("part", other)),
         }
     }

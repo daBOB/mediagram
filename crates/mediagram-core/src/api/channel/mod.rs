@@ -20,6 +20,7 @@ use grammers_tl_types::enums::MessagesFilter;
 use index::NOT_AN_INDEX;
 use install::install;
 use library::LibraryEntry;
+use crate::api::account::revoked::checked;
 use crate::api::account::session;
 use crate::api::{Core, CoreError, LibraryChoice, refresh};
 use crate::document::message_document;
@@ -53,11 +54,7 @@ pub(super) async fn list_libraries(core: &Core) -> Result<Vec<LibraryChoice>, Co
     let mut choices = Vec::new();
 
     let mut dialogs = client.iter_dialogs().limit(MAX_DIALOGS);
-    while let Some(dialog) = dialogs
-        .next()
-        .await
-        .map_err(|err| index::channel_error(&err))?
-    {
+    while let Some(dialog) = checked(core, dialogs.next().await, index::channel_error).await? {
         let Some(entry) = entry_of(dialog.peer()).await else {
             continue;
         };
@@ -79,7 +76,7 @@ pub(super) async fn refresh_library(core: &Core, handle: String) -> Result<u64, 
         .ok_or_else(|| CoreError::NotFound("this device no longer has that library stored".into()))?;
     let client = session::client(core).await;
 
-    let (document, caption) = newest_index(&client, peer).await?;
+    let (document, caption) = newest_index(core, &client, peer).await?;
     let version = format!(
         "v-{}",
         index::pushed_at(&caption, refresh::now_unix())
@@ -119,18 +116,18 @@ async fn entry_of(peer: &grammers_client::peer::Peer) -> Option<LibraryEntry> {
 /// The text search is allowed to fail: a channel where it is unavailable
 /// still has its pins, and refusing the whole refresh over the cheaper half
 /// being unavailable would trade a stale library for no library.
-async fn newest_index(client: &Client, peer: PeerRef) -> Result<(Document, String), CoreError> {
+async fn newest_index(
+    core: &Core,
+    client: &Client,
+    peer: PeerRef,
+) -> Result<(Document, String), CoreError> {
     let mut found: Vec<Message> = Vec::new();
 
     let mut pinned = client
         .search_messages(peer)
         .filter(MessagesFilter::InputMessagesFilterPinned)
         .limit(MAX_PINNED);
-    while let Some(message) = pinned
-        .next()
-        .await
-        .map_err(|err| index::channel_error(&err))?
-    {
+    while let Some(message) = checked(core, pinned.next().await, index::channel_error).await? {
         found.push(message);
     }
 

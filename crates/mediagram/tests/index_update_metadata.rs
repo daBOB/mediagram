@@ -184,17 +184,19 @@ fn the_kind_is_written_too() {
     assert_eq!(after.episode, None);
 }
 
-/// A set holding two episodes is known by its first; the column is the
-/// caption's JSON, not a `1-2` spelling.
+/// The column is the caption's JSON, not a `5-6` spelling: a set holding two
+/// episodes reads back as a range, and anything else fails the read rather
+/// than passing for a set with no episode.
 #[test]
-fn a_rows_first_episode_is_read_from_the_json_column() {
+fn a_rows_episode_is_read_from_the_json_column() {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = db::open(dir.path()).unwrap();
     let mut row = SetRow::from_caption(&caption(), 1_700_000_000).unwrap();
-    row.episode = Some("4".into());
-    assert_eq!(row.first_episode().unwrap(), Some(4));
-    row.episode = Some("[5,6]".into());
-    assert_eq!(row.first_episode().unwrap(), Some(5));
-    row.episode = Some("5-6".into());
-    assert!(row.first_episode().is_err());
-    row.episode = None;
-    assert_eq!(row.first_episode().unwrap(), None);
+    row.episode = Some(Episode::Range([5, 6]));
+    sets::insert_set(&conn, &row).unwrap();
+    let read = sets::get_set(&conn, SET).unwrap().unwrap();
+    assert_eq!(read.episode, Some(Episode::Range([5, 6])));
+
+    conn.execute("UPDATE sets SET episode = '5-6'", []).unwrap();
+    assert!(sets::get_set(&conn, SET).is_err());
 }

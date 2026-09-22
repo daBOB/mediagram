@@ -119,6 +119,14 @@ const V6: &[&str] = &[
     "ALTER TABLE shows ADD COLUMN total_episodes INTEGER",
 ];
 
+/// How `sets.status` and `parts.status` spell each state. Written once here,
+/// beside the one SQL fragment that has to spell them inline; every other
+/// query binds them as parameters. The player reads the same spellings.
+pub const SET_PENDING: &str = "pending";
+pub const SET_COMPLETE: &str = "complete";
+pub const PART_PENDING: &str = "pending";
+pub const PART_DONE: &str = "done";
+
 /// Playable invariant, as SQL usable in a WHERE clause on `sets s`.
 pub const PLAYABLE_SQL: &str = "s.status = 'complete'
     AND s.part_count = (SELECT COUNT(*) FROM parts p WHERE p.set_id = s.set_id AND p.status = 'done')
@@ -126,6 +134,15 @@ pub const PLAYABLE_SQL: &str = "s.status = 'complete'
 
 #[cfg(test)]
 mod tests {
+    /// `PLAYABLE_SQL` is a `const`, so it cannot be built from the spellings
+    /// above; this holds the two together instead.
+    #[test]
+    fn the_playable_gate_spells_states_as_the_constants_do() {
+        let gate = super::PLAYABLE_SQL;
+        assert!(gate.contains(&format!("s.status = '{}'", super::SET_COMPLETE)));
+        assert!(gate.contains(&format!("p.status = '{}'", super::PART_DONE)));
+    }
+
     #[test]
     fn the_first_group_creates_the_tables_idempotently() {
         let v1 = super::GROUPS[0];
