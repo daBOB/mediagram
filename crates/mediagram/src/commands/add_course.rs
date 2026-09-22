@@ -15,7 +15,7 @@ use crate::course::report::{Outcome, Summary, dry_run_table};
 use crate::course::identity::{course_title, duplicate_identity};
 use crate::course::walk::walk_course;
 use crate::index::status::SetStatus;
-use crate::index::{db, sets};
+use crate::index::{db, set_lookup};
 
 pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
     let course = course_title(&args)?;
@@ -64,7 +64,7 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
         // Identity is the collection id plus the two numbers, so a re-run
         // after an interruption skips what finished without depending on
         // where the folder happens to live.
-        let outcome = match sets::lesson_status(&conn, &cid, lesson.chapter, lesson.lesson)? {
+        let outcome = match set_lookup::lesson_status(&conn, &cid, lesson.chapter, lesson.lesson)? {
             Some(SetStatus::Complete) => Outcome::AlreadyDone,
             Some(_) => Outcome::Pending,
             None => match upload_one(cfg, &mut uploader, &args, &course, &cid, lesson).await {
@@ -82,7 +82,7 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
     // Documents after the lessons: the videos are what someone is waiting
     // for, and a handout is worth having a minute later.
     for document in &walked.documents {
-        let outcome = match sets::document_status(&conn, &cid, document.chapter, document.number)? {
+        let outcome = match set_lookup::document_status(&conn, &cid, document.chapter, document.number)? {
             Some(SetStatus::Complete) => Outcome::AlreadyDone,
             Some(_) => Outcome::Pending,
             None => match upload_document(cfg, &mut uploader, &args, &course, &cid, document).await {

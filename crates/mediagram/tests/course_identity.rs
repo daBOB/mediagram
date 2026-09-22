@@ -5,7 +5,7 @@
 use mediagram::course::report::{Outcome, Summary, dry_run_table};
 use mediagram::course::walk::Lesson;
 use mediagram::index::status::SetStatus;
-use mediagram::index::{db, set_row::SetRow, sets};
+use mediagram::index::{db, set_lookup, set_row::SetRow, sets};
 use mlib_spec::caption::{Caption, Episode, Kind, Part};
 use mlib_spec::ids::ProviderIds;
 
@@ -58,14 +58,14 @@ fn index_with(rows: &[(&str, &str, u32, u32, SetStatus)]) -> (tempfile::TempDir,
 #[test]
 fn a_finished_lesson_is_recognised_by_its_identity() {
     let (_d, conn) = index_with(&[("01SET0000000000000000001", "rust-course", 2, 2, SetStatus::Complete)]);
-    assert!(sets::complete_lesson_exists(&conn, "rust-course", 2, 2).unwrap());
+    assert!(set_lookup::complete_lesson_exists(&conn, "rust-course", 2, 2).unwrap());
 }
 
 #[test]
 fn a_different_chapter_or_lesson_is_a_different_thing() {
     let (_d, conn) = index_with(&[("01SET0000000000000000001", "rust-course", 2, 2, SetStatus::Complete)]);
-    assert!(!sets::complete_lesson_exists(&conn, "rust-course", 2, 3).unwrap());
-    assert!(!sets::complete_lesson_exists(&conn, "rust-course", 1, 2).unwrap());
+    assert!(!set_lookup::complete_lesson_exists(&conn, "rust-course", 2, 3).unwrap());
+    assert!(!set_lookup::complete_lesson_exists(&conn, "rust-course", 1, 2).unwrap());
 }
 
 /// The reason the id is carried in the caption rather than derived from the
@@ -76,9 +76,9 @@ fn two_courses_do_not_collide() {
         ("01SET0000000000000000001", "rust-course", 1, 1, SetStatus::Complete),
         ("01SET0000000000000000002", "go-course", 1, 1, SetStatus::Complete),
     ]);
-    assert!(sets::complete_lesson_exists(&conn, "rust-course", 1, 1).unwrap());
-    assert!(sets::complete_lesson_exists(&conn, "go-course", 1, 1).unwrap());
-    assert!(!sets::complete_lesson_exists(&conn, "zig-course", 1, 1).unwrap());
+    assert!(set_lookup::complete_lesson_exists(&conn, "rust-course", 1, 1).unwrap());
+    assert!(set_lookup::complete_lesson_exists(&conn, "go-course", 1, 1).unwrap());
+    assert!(!set_lookup::complete_lesson_exists(&conn, "zig-course", 1, 1).unwrap());
 }
 
 /// An interrupted lesson is `resume`'s business. Re-running the walk must
@@ -87,9 +87,9 @@ fn two_courses_do_not_collide() {
 fn an_unfinished_lesson_is_reported_rather_than_re_uploaded() {
     let (_d, conn) = index_with(&[("01SET0000000000000000001", "rust-course", 1, 1, SetStatus::Pending)]);
 
-    assert!(!sets::complete_lesson_exists(&conn, "rust-course", 1, 1).unwrap());
+    assert!(!set_lookup::complete_lesson_exists(&conn, "rust-course", 1, 1).unwrap());
     assert_eq!(
-        sets::lesson_status(&conn, "rust-course", 1, 1).unwrap(),
+        set_lookup::lesson_status(&conn, "rust-course", 1, 1).unwrap(),
         Some(SetStatus::Pending)
     );
 }
@@ -98,7 +98,7 @@ fn an_unfinished_lesson_is_reported_rather_than_re_uploaded() {
 fn a_lesson_never_seen_has_no_status() {
     let (_d, conn) = index_with(&[]);
     assert_eq!(
-        sets::lesson_status(&conn, "rust-course", 1, 1).unwrap(),
+        set_lookup::lesson_status(&conn, "rust-course", 1, 1).unwrap(),
         None
     );
 }

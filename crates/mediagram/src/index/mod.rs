@@ -9,6 +9,7 @@ pub mod pins;
 pub mod progress;
 pub mod rescan;
 pub mod rescan_parts;
+pub mod set_lookup;
 pub mod set_row;
 pub mod sets;
 pub mod shows;

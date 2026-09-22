@@ -21,7 +21,7 @@ use super::args::AddShowArgs;
 use super::finish_set::Uploader;
 use crate::config::Config;
 use crate::index::status::SetStatus;
-use crate::index::{db, sets};
+use crate::index::{db, set_lookup};
 use crate::media::show_episodes::{Episode, duplicate_episode, walk};
 use crate::paths::file_name;
 use survey::{report_blockers, survey};
@@ -70,7 +70,7 @@ pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
     let mut uploader = Uploader::new(cfg);
     let (mut uploaded, mut skipped, mut failed) = (0usize, 0usize, 0usize);
     for ep in &episodes {
-        if sets::episode_status(&conn, tmdb, ep.season, ep.episode)? == Some(SetStatus::Complete) {
+        if set_lookup::episode_status(&conn, tmdb, ep.season, ep.episode)? == Some(SetStatus::Complete) {
             println!("S{:02}E{:02} already uploaded", ep.season, ep.episode);
             skipped += 1;
             continue;

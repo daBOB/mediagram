@@ -18,9 +18,11 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 
-use crate::course::plan::{assign_unique_numbers, is_document, is_video, split_number_and_title};
+use crate::course::folders::{Folder, collect};
+use crate::course::naming::{chapter_label, chapter_title, number_files, relative_path};
+use crate::course::plan::{assign_unique_numbers, split_number_and_title};
 
 /// One lesson: where its file is, and where it sits in the course.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -74,13 +76,6 @@ impl Course {
     pub fn is_empty(&self) -> bool {
         self.lessons.is_empty() && self.documents.is_empty()
     }
-}
-
-/// The files of interest in one directory.
-#[derive(Debug, Default, Clone)]
-struct Folder {
-    videos: Vec<String>,
-    documents: Vec<String>,
 }
 
 /// Walks a course folder. Every directory holding video files becomes a
@@ -168,87 +163,3 @@ fn number_chapters(
     chapters
 }
 
-/// The folders between the course root and `dir`, as the caption spells them.
-///
-/// Always `/`-separated: this is a label inside a course, not a path on the
-/// machine that happened to upload it, and it has to mean the same thing
-/// wherever it is read.
-fn relative_path(root: &Path, dir: &Path) -> String {
-    dir.strip_prefix(root)
-        .unwrap_or(dir)
-        .components()
-        .map(|component| component.as_os_str().to_string_lossy().to_string())
-        .collect::<Vec<_>>()
-        .join("/")
-}
-
-/// Numbers for one folder's files of one kind, guaranteed distinct.
-fn number_files(files: &[String]) -> Vec<(u32, Option<String>, String)> {
-    let entries: Vec<(String, String)> = files
-        .iter()
-        .map(|name| (crate::course::plan::stem(name).to_string(), name.clone()))
-        .collect();
-    assign_unique_numbers(&entries)
-}
-
-/// Video and document file names in each directory holding either, keyed by
-/// directory.
-fn collect(dir: &Path, out: &mut BTreeMap<PathBuf, Folder>) -> Result<()> {
-    let entries = std::fs::read_dir(dir).with_context(|| format!("reading {}", dir.display()))?;
-    let mut here = Folder::default();
-    let mut subdirs = Vec::new();
-    for entry in entries {
-        let entry = entry.context("reading a course entry")?;
-        let file_type = entry.file_type().context("typing a course entry")?;
-        let name = entry.file_name().to_string_lossy().to_string();
-        if file_type.is_dir() {
-            subdirs.push(entry.path());
-        } else if file_type.is_file() {
-            if is_video(&name) {
-                here.videos.push(name);
-            } else if is_document(&name) {
-                here.documents.push(name);
-            }
-        }
-    }
-    if !here.videos.is_empty() || !here.documents.is_empty() {
-        here.videos.sort();
-        here.documents.sort();
-        out.insert(dir.to_path_buf(), here);
-    }
-    subdirs.sort();
-    for sub in subdirs {
-        collect(&sub, out)?;
-    }
-    Ok(())
-}
-
-/// The name a chapter's number and inferred title are read from: its own
-/// folder name, or the course name when the videos sit in the root.
-fn chapter_label(root: &Path, dir: &Path) -> String {
-    if dir == root {
-        return String::new();
-    }
-    dir.file_name()
-        .map(|n| n.to_string_lossy().to_string())
-        .unwrap_or_default()
-}
-
-/// The chapter's path relative to the course root, which is what carries the
-/// section it belongs to. `None` for videos sitting in the root itself.
-///
-/// Each segment is cleaned the way a lesson title is: the leading number is
-/// dropped because the chapter number already encodes order, and repeating it
-/// in the title would just be noise.
-fn chapter_title(root: &Path, dir: &Path) -> Option<String> {
-    let relative = dir.strip_prefix(root).ok()?;
-    let parts: Vec<String> = relative
-        .components()
-        .filter_map(|c| {
-            let raw = c.as_os_str().to_string_lossy().to_string();
-            let (_, cleaned) = split_number_and_title(&raw);
-            cleaned.or(Some(raw)).filter(|t| !t.is_empty())
-        })
-        .collect();
-    (!parts.is_empty()).then(|| parts.join(" / "))
-}

@@ -5,6 +5,7 @@ pub mod adopt;
 pub mod finish;
 pub mod lock;
 pub mod part_reader;
+mod part_upload;
 pub mod pipeline;
 pub mod plan;
 pub mod progress;
