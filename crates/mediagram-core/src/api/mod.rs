@@ -11,7 +11,6 @@
 
 mod account;
 mod blocking;
-mod document_cache;
 mod error;
 mod store;
 mod channel;
@@ -27,7 +26,7 @@ use tokio::sync::Mutex as AsyncMutex;
 
 use account::auth::{PendingLogin, PendingPassword};
 use account::session::ClientHandle;
-use document_cache::DocumentCache;
+use crate::transport::documents::PartDocuments;
 pub use error::CoreError;
 
 /// Outcome of a completed sign-in step.
@@ -57,7 +56,7 @@ struct State {
     client: Option<ClientHandle>,
     pending_login: Option<PendingLogin>,
     pending_password: Option<PendingPassword>,
-    documents: DocumentCache,
+    documents: Arc<PartDocuments>,
 }
 
 
@@ -170,9 +169,8 @@ impl Core {
     }
 
     pub async fn read(self: Arc<Self>, set_id: String, offset: u64, len: u32) -> Result<Vec<u8>, CoreError> {
-        let id = set_id.clone();
-        let locations = self.blocking(move |core| read::locations(core, &id)).await?;
-        read::read(&self, set_id, locations, offset, len).await
+        let locations = self.blocking(move |core| read::locations(core, &set_id)).await?;
+        read::read(&self, locations, offset, len).await
     }
 
     /// Fills in what the library it was handed does not carry, for every

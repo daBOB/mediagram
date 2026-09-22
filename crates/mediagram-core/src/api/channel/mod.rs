@@ -23,7 +23,7 @@ use library::LibraryEntry;
 use crate::api::account::revoked::checked;
 use crate::api::account::session;
 use crate::api::{Core, CoreError, LibraryChoice, refresh};
-use crate::document::message_document;
+use crate::transport::document::message_document;
 
 /// How far down the dialog list to look. Telegram orders it the way the
 /// account's own Telegram app does — pinned first, then most recent — so the

@@ -104,6 +104,21 @@ pub struct Step {
     pub take: u64,
 }
 
+impl Step {
+    /// What is left of this step once `sent` of its bytes are delivered: a
+    /// download interrupted midway resumes where it stopped, not from the
+    /// top, which would send the delivered bytes twice.
+    pub fn after(&self, sent: u64) -> Step {
+        let from = u64::from(self.skip_chunks) * CHUNK + self.head_drop + sent;
+        Step {
+            part_idx: self.part_idx,
+            skip_chunks: (from / CHUNK) as u32,
+            head_drop: from % CHUNK,
+            take: self.take - sent,
+        }
+    }
+}
+
 /// The reads that together cover `range` exactly, in order.
 pub fn plan_reads(parts: &[PartSpan], range: &ByteRange) -> Vec<Step> {
     let mut steps = Vec::new();
