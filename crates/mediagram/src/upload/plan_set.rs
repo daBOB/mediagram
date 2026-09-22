@@ -1,64 +1,22 @@
-//! `mediagram add`: inspect → resolve → remux → plan → index → upload, the
-//! last step either watched here or handed to a background process.
-//!
-//! [`plan`] is everything up to the upload, and is what `add-show` and
-//! `add-course` call for each file they walk; they upload over one
-//! connection of their own.
-
-pub mod new_set;
+//! Planning one file as a set: inspect, resolve, remux, then write it to the
+//! index ready to upload. `add` runs this for the file it is handed, and
+//! `add-show` and `add-course` for each file they walk.
 
 use anyhow::{Context, Result, bail};
-use mediagram_tmdb::tmdb_client::TmdbClient;
 use mlib_spec::{Caption, Part};
 
-use super::args::AddArgs;
-use super::{background, finish_set};
 use crate::config::Config;
 use crate::index::{db, shows};
 use crate::media::{classify, inspect, remux};
 use crate::metadata::prompt::DialoguerPrompter;
 use crate::metadata::resolve::{self, ResolveInput};
 use crate::metadata::title_details;
+use crate::upload::new_set::{NewSet, Planned};
 use crate::upload::plan::{Source, record_planned};
-use new_set::{NewSet, Planned};
-
-pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
-    let (watch, no_push) = (args.watch, args.no_push);
-    let to_delete = args.delete_source.then(|| args.file.clone());
-    let planned = plan(cfg, &NewSet::from(args)).await?;
-
-    // Everything that can ask a question or refuse has happened: the file was
-    // inspected, the title resolved, the caption measured, the rows written.
-    // What is left is bytes, which is the part worth handing away.
-    if watch {
-        return finish_set::run(cfg, &planned.set_id, to_delete.as_deref(), no_push).await;
-    }
-    // Asked before the child is started, because the child is what will be
-    // holding it a moment later.
-    let queued = crate::upload::lock::is_held(&cfg.data_dir()?);
-    let started = background::spawn_finish_set(cfg, &planned.set_id, to_delete.as_deref(), no_push)?;
-    println!(
-        "set {} planned · {} · {:.2} GB",
-        planned.set_id,
-        planned.display_name,
-        planned.total as f64 / 1e9
-    );
-    println!(
-        "  {} (pid {}); `mediagram status` says how far it has got",
-        if queued {
-            "queued behind the upload already running"
-        } else {
-            "uploading in the background"
-        },
-        started.pid
-    );
-    println!("  output: {}", started.log.display());
-    Ok(())
-}
 
 /// Inspects, resolves and remuxes one file and writes it to the index as a
 /// set ready to upload.
-pub async fn plan(cfg: &Config, new: &NewSet) -> Result<Planned> {
+pub async fn plan_set(cfg: &Config, new: &NewSet) -> Result<Planned> {
     let info = inspect::inspect(&new.file)
         .await
         .with_context(|| format!("inspecting {}", new.file.display()))?;
@@ -78,12 +36,7 @@ pub async fn plan(cfg: &Config, new: &NewSet) -> Result<Planned> {
     }
 
     let data_dir = cfg.data_dir()?;
-    let api = TmdbClient::with_cache(
-        mediagram_core::api::http::client()?,
-        cfg.tmdb_key.as_deref().unwrap_or(""),
-        &data_dir,
-        &cfg.tmdb_language,
-    );
+    let api = cfg.tmdb_client(mediagram_core::api::http::client()?)?;
     let lesson = new.lesson.as_ref();
     let resolve_input = ResolveInput {
         file_name,

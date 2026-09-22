@@ -4,8 +4,8 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 
-use crate::course::plan::is_video;
-use crate::media::prepare_paths::PREPARE_WORKING_SUFFIX;
+use crate::media::file_names::is_video;
+use crate::media::prepare::paths::PREPARE_WORKING_SUFFIX;
 
 /// `path` itself when it is a file; otherwise every video file under it,
 /// recursively and sorted.

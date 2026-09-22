@@ -4,10 +4,10 @@
 
 use std::path::Path;
 
-use anyhow::{Context, Result, bail};
-use serde::Deserialize;
+use anyhow::{Context, Result};
 
 use crate::media::classify;
+use crate::media::probe::{self, RawStream};
 
 /// Technical metadata extracted from one media file.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -25,55 +25,25 @@ pub struct MediaInfo {
     pub slang: Vec<String>,
 }
 
-/// Runs `ffprobe -v error -print_format json -show_format -show_streams`
-/// on `path` and classifies the result into a [`MediaInfo`].
+/// Probes `path` and classifies the result into a [`MediaInfo`].
 pub async fn inspect(path: &Path) -> Result<MediaInfo> {
-    let output = tokio::process::Command::new("ffprobe")
-        .args([
-            "-v",
-            "error",
-            "-print_format",
-            "json",
-            "-show_format",
-            "-show_streams",
-        ])
-        .arg(path)
-        .output()
-        .await
-        .with_context(|| format!("running ffprobe on {}", path.display()))?;
-
-    if !output.status.success() {
-        bail!(
-            "ffprobe exited with {} for {}: {}",
-            output.status,
-            path.display(),
-            String::from_utf8_lossy(&output.stderr).trim()
-        );
-    }
-
-    let parsed: FfprobeOutput = serde_json::from_slice(&output.stdout)
-        .with_context(|| format!("parsing ffprobe json for {}", path.display()))?;
+    let report = probe::run(path).await?;
 
     let size = tokio::fs::metadata(path)
         .await
         .with_context(|| format!("stat {}", path.display()))?
         .len();
 
-    let video = parsed
+    let video = report
         .streams
         .iter()
         .find(|s| s.codec_type.as_deref() == Some("video"));
-    let audio = parsed
+    let audio = report
         .streams
         .iter()
         .find(|s| s.codec_type.as_deref() == Some("audio"));
 
-    let duration_s = parsed
-        .format
-        .duration
-        .as_deref()
-        .and_then(|d| d.parse::<f64>().ok())
-        .map(|d| d.round() as u32);
+    let duration_s = report.duration().map(|d| d.round() as u32);
 
     let side_data_types: Vec<&str> = video
         .and_then(|v| v.side_data_list.as_ref())
@@ -102,58 +72,24 @@ pub async fn inspect(path: &Path) -> Result<MediaInfo> {
         quality: video
             .and_then(|v| Some(classify::quality_from_frame(v.width?, v.height?).to_string())),
         hdr,
-        alang: collect_langs(&parsed.streams, "audio"),
-        slang: collect_langs(&parsed.streams, "subtitle"),
+        alang: collect_langs(&report.streams, "audio"),
+        slang: collect_langs(&report.streams, "subtitle"),
     })
 }
 
 /// Collects the distinct, mapped language codes for every stream of
 /// `codec_type`, preserving first-seen order.
-fn collect_langs(streams: &[FfprobeStream], codec_type: &str) -> Vec<String> {
+fn collect_langs(streams: &[RawStream], codec_type: &str) -> Vec<String> {
     let mut out = Vec::new();
     for s in streams {
         if s.codec_type.as_deref() != Some(codec_type) {
             continue;
         }
-        let tag = s.tags.as_ref().and_then(|t| t.language.as_deref());
-        if let Some(code) = classify::lang_code(tag)
+        if let Some(code) = classify::lang_code(s.language())
             && !out.contains(&code)
         {
             out.push(code);
         }
     }
     out
-}
-
-#[derive(Deserialize, Debug)]
-struct FfprobeOutput {
-    format: FfprobeFormat,
-    #[serde(default)]
-    streams: Vec<FfprobeStream>,
-}
-
-#[derive(Deserialize, Debug)]
-struct FfprobeFormat {
-    duration: Option<String>,
-}
-
-#[derive(Deserialize, Debug)]
-struct FfprobeStream {
-    codec_type: Option<String>,
-    codec_name: Option<String>,
-    width: Option<u32>,
-    height: Option<u32>,
-    color_transfer: Option<String>,
-    tags: Option<FfprobeTags>,
-    side_data_list: Option<Vec<FfprobeSideData>>,
-}
-
-#[derive(Deserialize, Debug)]
-struct FfprobeTags {
-    language: Option<String>,
-}
-
-#[derive(Deserialize, Debug)]
-struct FfprobeSideData {
-    side_data_type: Option<String>,
 }

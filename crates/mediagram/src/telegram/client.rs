@@ -7,7 +7,7 @@
 //! separately so `mediagram login` can report whether it just authenticated
 //! or reused an existing session, without resolving a channel it doesn't need.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::{Context, Result, bail};
@@ -56,32 +56,6 @@ impl Tg {
         self.handle.quit();
         let _ = self.pool_task.await;
     }
-}
-
-/// Lets the session store configure SQLite before anything else touches it.
-///
-/// This binary links a single SQLite library used by two crates. `libsql`,
-/// under the session store, calls `sqlite3_config(SERIALIZED)` the first time
-/// it opens a database and asserts the call succeeded. `sqlite3_config`
-/// returns MISUSE once SQLite has been initialized, and `rusqlite`
-/// initializes it the moment it opens `library.db`.
-///
-/// Every command reads the index before it reaches Telegram, so without this
-/// the second of the two to start would abort the process. Calling it once at
-/// startup makes the order irrelevant, rather than leaving a rule that every
-/// future command has to remember.
-pub async fn preinit_session_store(data_dir: &Path) -> Result<()> {
-    crate::paths::private_dir(data_dir)?;
-    let path = data_dir.join("session.sqlite");
-    // Opening and dropping is enough: the configuration happens once, inside
-    // libsql, on first open.
-    let session = SqliteSession::open(&path)
-        .await
-        .with_context(|| format!("cannot open session {}", path.display()))?;
-    drop(session);
-    // The session file holds the account's authorization key.
-    crate::paths::restrict_file(&path)?;
-    Ok(())
 }
 
 /// Opens the persisted session and starts its sender pool, without logging

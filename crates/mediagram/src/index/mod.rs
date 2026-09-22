@@ -15,4 +15,5 @@ pub mod set_row;
 pub mod sets;
 pub mod shows;
 pub mod snapshot;
+pub mod sqlite_init;
 pub mod status;

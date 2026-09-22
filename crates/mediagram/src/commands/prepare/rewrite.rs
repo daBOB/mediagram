@@ -10,12 +10,11 @@ use super::Candidate;
 use super::report::truncate;
 use crate::paths::file_name;
 use crate::commands::args::PrepareArgs;
-use crate::media::direct_play;
-use crate::media::ffmpeg_progress;
-use crate::media::prepare_check::{Measured, check_prepared};
-use crate::media::prepare_paths::{mirrored, working_path};
-use crate::media::prepare_plan::{PreparePlan, StreamKind};
-use crate::media::streams;
+use crate::media::prepare::check::{Measured, check_prepared};
+use crate::media::prepare::paths::{mirrored, working_path};
+use crate::media::prepare::plan::PreparePlan;
+use crate::media::streams::{self, StreamKind};
+use crate::media::{direct_play, ffmpeg_progress};
 
 /// Rewrites every selected file in turn, reporting each, and fails the run
 /// if any could not be prepared.

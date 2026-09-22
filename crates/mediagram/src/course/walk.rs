@@ -22,7 +22,8 @@ use anyhow::Result;
 
 use crate::course::folders::{Folder, collect};
 use crate::course::naming::{chapter_label, chapter_title, number_files, relative_path};
-use crate::course::plan::{assign_unique_numbers, split_number_and_title};
+use crate::course::plan::assign_unique_numbers;
+use crate::media::file_names::split_number_and_title;
 
 /// One lesson: where its file is, and where it sits in the course.
 #[derive(Debug, Clone, PartialEq, Eq)]

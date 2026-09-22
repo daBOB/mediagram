@@ -10,7 +10,6 @@
 //! time anyone ran it.
 
 use anyhow::{Context, Result, bail};
-use mediagram_tmdb::tmdb_client::TmdbClient;
 use mlib_spec::{Episode, Kind};
 
 use crate::commands::args::EditArgs;
@@ -58,7 +57,7 @@ pub async fn run(cfg: &Config, args: EditArgs) -> Result<()> {
         // Against the row as it will be, not as it was: a set being moved to
         // another shelf must be looked up on that shelf's endpoint.
         let provisional = apply_checked(&row, &edits)?;
-        let fetched = refresh_from_tmdb(cfg, &data_dir, &provisional).await?;
+        let fetched = refresh_from_tmdb(cfg, &provisional).await?;
         edits.title = edits.title.or(fetched.title);
         edits.show = edits.show.or(fetched.show);
         edits.year = edits.year.or(fetched.year);
@@ -154,16 +153,15 @@ struct Fetched {
 /// knows it is. Only the words are taken; the ids and the numbers stay.
 async fn refresh_from_tmdb(
     cfg: &Config,
-    data_dir: &std::path::Path,
     row: &SetRow,
 ) -> Result<Fetched> {
-    let Some(key) = cfg.tmdb_key.as_deref() else {
+    if cfg.tmdb_key.is_none() {
         bail!("--refresh needs tmdb_key in the config");
-    };
+    }
     let Some(tmdb) = row.tmdb else {
         bail!("set {} has no tmdb id to refresh from", row.set_id);
     };
-    let api = TmdbClient::with_cache(mediagram_core::api::http::client()?, key, data_dir, &cfg.tmdb_language);
+    let api = cfg.tmdb_client(mediagram_core::api::http::client()?)?;
     let details = mediagram_tmdb::details::details(&api, row.kind, tmdb).await?;
 
     if row.kind == Kind::Movie {

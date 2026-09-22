@@ -16,14 +16,15 @@ use std::io::IsTerminal;
 
 use anyhow::{Context, Result, bail};
 
-use super::add::new_set::NewSet;
 use super::args::AddShowArgs;
-use super::finish_set::Uploader;
 use crate::config::Config;
 use crate::index::status::SetStatus;
 use crate::index::{db, set_lookup};
 use crate::media::show_episodes::{Episode, duplicate_episode, walk};
 use crate::paths::file_name;
+use crate::upload::finish_set::Uploader;
+use crate::upload::new_set::NewSet;
+use crate::upload::plan_set::plan_set;
 use survey::{report_blockers, survey};
 
 pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
@@ -119,7 +120,7 @@ async fn upload_one(
         episode: Some(ep.episode),
         ..NewSet::default()
     };
-    let planned = super::add::plan(cfg, &new).await?;
+    let planned = plan_set(cfg, &new).await?;
     // The index is pushed once when the show is done, not per episode.
     uploader.finish(&planned.set_id, delete.then_some(ep.path.as_path())).await?;
     Ok(())

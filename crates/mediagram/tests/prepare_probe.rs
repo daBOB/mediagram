@@ -2,7 +2,8 @@
 //! episode: 52 streams, 43 of them with no declared bitrate, which is the
 //! shape that breaks a naive parser.
 
-use mediagram::media::prepare_plan::{StreamKind, Verdict, plan_prepare};
+use mediagram::media::prepare::plan::{Verdict, plan_prepare};
+use mediagram::media::streams::StreamKind;
 use mediagram::media::streams::parse_probe;
 
 const FIXTURE: &str = include_str!("fixtures/ffprobe/episode_streams.json");

@@ -7,30 +7,21 @@
 
 use anyhow::{Context, Result, bail};
 
-use super::add::new_set::{LessonOf, NewSet};
 use super::args::AddCourseArgs;
-use super::finish_set::Uploader;
 use crate::config::Config;
 use crate::course::report::{Outcome, Summary, dry_run_table};
-use crate::course::identity::{course_title, duplicate_identity};
+use crate::course::identity::{collection_id, course_title, duplicate_identity};
 use crate::course::walk::walk_course;
 use crate::index::status::SetStatus;
 use crate::index::{db, set_lookup};
+use crate::upload::finish_set::Uploader;
+use crate::upload::new_set::{LessonOf, NewSet};
+use crate::upload::plan_document::{Document, plan_document};
+use crate::upload::plan_set::plan_set;
 
 pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
-    let course = course_title(&args)?;
-    let cid = match &args.cid {
-        Some(explicit) => explicit.clone(),
-        None => {
-            let derived = mlib_spec::slug::slug(&course);
-            if derived.is_empty() {
-                bail!(
-                    "cannot derive a collection id from `{course}`; pass --cid with an id of your own"
-                );
-            }
-            derived
-        }
-    };
+    let course = course_title(args.course.as_deref(), &args.dir)?;
+    let cid = collection_id(&course, args.cid.as_deref())?;
 
     let walked = walk_course(&args.dir)?;
     if walked.is_empty() {
@@ -144,7 +135,7 @@ async fn upload_one(
         }),
         ..NewSet::default()
     };
-    let planned = super::add::plan(cfg, &new).await?;
+    let planned = plan_set(cfg, &new).await?;
     // A course is walked from a folder the caller still wants, so nothing is
     // deleted; the index is pushed once when the walk finishes.
     uploader.finish(&planned.set_id, None).await?;
@@ -167,9 +158,9 @@ async fn upload_document(
         document.number,
         document.title.as_deref().unwrap_or("")
     );
-    let set_id = super::add_document::plan(
+    let set_id = plan_document(
         cfg,
-        &super::add_document::Document {
+        &Document {
             file: document.path.clone(),
             course: course.to_string(),
             cid: cid.to_string(),

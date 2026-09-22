@@ -14,7 +14,6 @@
 use anyhow::Result;
 use mediagram_tmdb::poster_files::{already_held, download_into};
 use mediagram_tmdb::posters::resolve_posters;
-use mediagram_tmdb::tmdb_client::TmdbClient;
 
 use crate::config::Config;
 use crate::export::stage::POSTER_DIR;
@@ -32,14 +31,7 @@ pub async fn run(cfg: &Config) -> Result<()> {
     // Built once and used for both the lookup and the download below —
     // `TmdbClient` takes this same client rather than building its own.
     let http = mediagram_core::api::http::client()?;
-    // Works with no key at all when the cache is warm, which is the normal
-    // case: `add` cached these payloads when it resolved each title.
-    let api = TmdbClient::with_cache(
-        http.clone(),
-        cfg.tmdb_key.as_deref().unwrap_or(""),
-        &data_dir,
-        &cfg.tmdb_language,
-    );
+    let api = cfg.tmdb_client(http.clone())?;
     let refs = resolve_posters(&api, &titles).await;
     if refs.is_empty() {
         println!(

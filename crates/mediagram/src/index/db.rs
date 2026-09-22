@@ -31,8 +31,8 @@ pub fn require_index(data_dir: &Path, purpose: &str) -> Result<PathBuf> {
 /// Opens (creating if needed) `<data_dir>/library.db`, enables WAL mode and
 /// foreign keys, runs every migration, and records the schema version.
 pub fn open(data_dir: &Path) -> Result<Connection> {
-    std::fs::create_dir_all(data_dir)
-        .with_context(|| format!("creating data dir {}", data_dir.display()))?;
+    super::sqlite_init::configure();
+    crate::paths::private_dir(data_dir)?;
     let path = index_path(data_dir);
     let conn =
         Connection::open(&path).with_context(|| format!("opening database {}", path.display()))?;
@@ -59,6 +59,7 @@ pub fn open(data_dir: &Path) -> Result<Connection> {
 /// sentence "nothing to ..." when there is no index at all.
 pub fn open_read_only(data_dir: &Path, purpose: &str) -> Result<Connection> {
     let path = require_index(data_dir, purpose)?;
+    super::sqlite_init::configure();
     let conn = Connection::open_with_flags(
         &path,
         rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,

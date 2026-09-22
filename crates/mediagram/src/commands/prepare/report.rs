@@ -3,7 +3,7 @@
 
 use super::Candidate;
 use crate::media::direct_play;
-use crate::media::prepare_plan::Verdict;
+use crate::media::prepare::plan::Verdict;
 use crate::paths::file_name;
 
 pub(super) fn print_table(planned: &[Candidate], limit: u64) {

@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
 
+use crate::media::file_names::REMUX_MARKER;
 use crate::media::mp4_atoms;
 
 /// Ensures `src` is faststart-safe for splitting. Returns `src` unchanged
@@ -30,7 +31,7 @@ pub async fn ensure_faststart(
         .file_stem()
         .and_then(|s| s.to_str())
         .with_context(|| format!("{} has no usable file stem", src.display()))?;
-    let dest = dest_dir.join(format!("{stem}.faststart.mp4"));
+    let dest = dest_dir.join(format!("{stem}{REMUX_MARKER}mp4"));
 
     let output = tokio::process::Command::new("ffmpeg")
         .args(["-v", "error", "-i"])

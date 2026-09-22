@@ -4,7 +4,8 @@
 
 use std::path::Path;
 
-use crate::course::plan::{assign_unique_numbers, split_number_and_title, stem};
+use crate::course::plan::assign_unique_numbers;
+use crate::media::file_names::{split_number_and_title, stem};
 
 /// The folders between the course root and `dir`, as the caption spells them.
 ///

@@ -2,8 +2,8 @@
 //! original. They exist because ffmpeg can exit 0 having produced something
 //! that is not a usable replacement, and the replacement is irreversible.
 
-use mediagram::media::prepare_check::{Measured, Rejection, check_prepared};
-use mediagram::media::prepare_plan::{Stream, StreamKind};
+use mediagram::media::prepare::check::{Measured, Rejection, check_prepared};
+use mediagram::media::streams::{Stream, StreamKind};
 
 fn stream(index: u32, kind: StreamKind, lang: Option<&str>) -> Stream {
     Stream {

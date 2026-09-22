@@ -5,25 +5,7 @@
 //! real run uses both come from this one function, so they cannot disagree
 //! about what is being dropped.
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum StreamKind {
-    Video,
-    Audio,
-    Subtitle,
-    Other,
-}
-
-/// One stream as `ffprobe` reports it.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Stream {
-    pub index: u32,
-    pub kind: StreamKind,
-    pub language: Option<String>,
-    pub bit_rate: Option<u64>,
-    /// ffprobe's `codec_name`, which decides whether a browser can open the
-    /// result without the player converting it first.
-    pub codec: Option<String>,
-}
+use crate::media::streams::{Stream, StreamKind};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Verdict {

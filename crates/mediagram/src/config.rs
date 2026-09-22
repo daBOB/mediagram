@@ -4,6 +4,9 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
+use mediagram_tmdb::disk_cache::DiskCachedApi;
+use mediagram_tmdb::localized::Localized;
+use mediagram_tmdb::tmdb_client::TmdbClient;
 use mlib_spec::part_plan::{DEFAULT_PART_SIZE, validate_part_size};
 use serde::Deserialize;
 
@@ -100,6 +103,20 @@ impl Config {
             Some(d) => Ok(d.clone()),
             None => paths::data_dir(),
         }
+    }
+
+    /// The TMDB client every command uses, over `http` — passed in so a
+    /// command that also downloads artwork uses one client for both.
+    ///
+    /// Built even with no key configured: the payloads `add` looked up are
+    /// cached under the data directory, and a warm cache answers without one.
+    pub fn tmdb_client(&self, http: reqwest::Client) -> Result<Localized<DiskCachedApi<TmdbClient>>> {
+        Ok(TmdbClient::with_cache(
+            http,
+            self.tmdb_key.as_deref().unwrap_or(""),
+            &self.data_dir()?,
+            &self.tmdb_language,
+        ))
     }
 }
 
