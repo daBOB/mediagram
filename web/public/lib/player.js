@@ -348,6 +348,7 @@ function refreshSeek() {
     at: filmTime(),
     ahead: bufferedAhead(video.buffered, video.currentTime),
     converting,
+    held: playsFromDisk(),
   });
   seek.hidden = !bar.usable;
   if (!bar.usable) {
@@ -642,6 +643,41 @@ function playNext(how = "asap") {
 let starved = false;
 
 /**
+ * Whether the title playing is on the server's disk in full.
+ *
+ * Asked as the dialog opens rather than read from the catalog, which the page
+ * fetched once at load and which still says "streaming" about an episode that
+ * finished caching since.
+ */
+let held = false;
+
+/**
+ * Held, and played as the file itself.
+ *
+ * A conversion of a held title is still waiting on its encoder, so its buffer
+ * is still the honest answer to how much is ready.
+ */
+function playsFromDisk() {
+  return held && !converting;
+}
+
+/** Asks whether `set` is held, and redraws if it is still the one playing. */
+async function askHeld(set) {
+  try {
+    const response = await fetch(`/api/sets/${encodeURIComponent(set.setId)}/held`);
+    const answer = response.ok ? await response.json() : null;
+    // The viewer may have moved on while this was asked.
+    if (playing?.setId !== set.setId) return;
+    held = answer?.held === true;
+  } catch {
+    // Not knowing is the old behaviour: the readout shows the buffer.
+    return;
+  }
+  refreshPreload();
+  refreshSeek();
+}
+
+/**
  * A title that is going to start itself, and the wait before it does.
  *
  * `null` while nothing is waiting. Unattended starts hold for a buffer — a
@@ -712,6 +748,7 @@ function refreshPreload() {
     // decision the viewer never sees into one they can.
     fillRate: watch.fillRate(),
     dropped: quality?.droppedVideoFrames,
+    held: playsFromDisk(),
   });
 }
 
@@ -753,9 +790,11 @@ export function openPlayer(set, options = {}) {
   audioTrack = 0;
   audio.hidden = true;
   starved = false;
+  held = false;
   shownPhase = null;
   stopWaitingToStart();
   refreshPreload();
+  void askHeld(set);
   refreshWatchlist();
   refreshKids();
   refreshPlayNext();
@@ -1076,6 +1115,7 @@ seekTo.addEventListener("input", () => {
     at,
     ahead: bufferedAhead(video.buffered, video.currentTime),
     converting,
+    held: playsFromDisk(),
   });
   showSeekAt(bar);
   if (bar.seeksWhileDragging) seekFilmTo(at);
@@ -1142,6 +1182,7 @@ dialog.addEventListener("close", () => {
   seek.hidden = true;
   thumbs.hide();
   converting = false;
+  held = false;
   audio.hidden = true;
   ends.textContent = "";
   preload.textContent = "";

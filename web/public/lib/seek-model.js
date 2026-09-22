@@ -29,7 +29,11 @@ import { clockTime } from "./format.js";
  * length someone guessed.
  *
  * @param {{runtime?: number|null, at?: number|null, ahead?: number|null,
- *          converting?: boolean}} facts
+ *          converting?: boolean, held?: boolean}} facts
+ *
+ * `held` is a title on the server's disk in full. The browser still only
+ * buffers a minute or so ahead of itself, but nothing past that is waiting on
+ * the network, so the whole track is painted.
  */
 export function seekModel(facts = {}) {
   // `Number(null)` is 0, and 0 is a real position — the start of the film.
@@ -67,7 +71,8 @@ export function seekModel(facts = {}) {
     played: at / runtime,
     // What is played is also buffered; the paint is one band from nought, not
     // a band floating beyond the thumb.
-    buffered: clamp(at + ahead, runtime) / runtime,
+    buffered:
+      facts.held === true ? 1 : clamp(at + ahead, runtime) / runtime,
     /**
      * Whether dragging should move the picture, or only the readout.
      *

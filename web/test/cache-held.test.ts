@@ -118,6 +118,22 @@ describe("which sets are held", () => {
   });
 });
 
+describe("asking about one set", () => {
+  test("looks now, so a title cached since the last scan is already held", async () => {
+    const held = new HeldSets(root, expectedChunks(db));
+    // No scan at all: `has` would say false for everything.
+    expect(await held.check(WHOLE)).toBe(true);
+    expect(await held.check(HALF)).toBe(false);
+    expect(await held.check(NONE)).toBe(false);
+  });
+
+  test("a set the index does not expect is not held", async () => {
+    const held = new HeldSets(root, expectedChunks(db));
+    expect(await held.check(PENDING)).toBe(false);
+    expect(await held.check("01UNKNOWN")).toBe(false);
+  });
+});
+
 describe("rescanning", () => {
   test("keeps the reading until the interval has passed", async () => {
     let clock = 0;

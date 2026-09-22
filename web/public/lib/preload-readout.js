@@ -79,7 +79,7 @@ const UNREMARKABLE = 0.15;
  *
  * @param {{readyState: number, ahead: number, starved?: boolean,
  *          awaitingStart?: boolean, fillRate?: number|null,
- *          dropped?: number}} at
+ *          dropped?: number, held?: boolean}} at
  */
 export function preloadReadout(at = {}) {
   const ready = Number(at.readyState) || 0;
@@ -87,13 +87,28 @@ export function preloadReadout(at = {}) {
   const ahead = Number.isFinite(aheadSeconds) && aheadSeconds > 0 ? aheadSeconds : 0;
 
   const state = stateOf(at, ready);
-  const parts = [ahead > 0 ? `${state} · ${clockTime(ahead)} ahead` : state];
+
+  /**
+   * A title held in full says so instead of how far ahead it has read.
+   *
+   * The browser's buffer is the same minute-or-so either way, so "0:52 ahead,
+   * filling 3.1×" described a film on local disk exactly as it described one
+   * crossing the network — which read as the cache not working.
+   */
+  const parts = [
+    at.held === true
+      ? `${state} · cached`
+      : ahead > 0
+        ? `${state} · ${clockTime(ahead)} ahead`
+        : state,
+  ];
 
   // `Number(null)` is 0, and 0 is a rate worth showing — it is a dead stall.
   // So an absent measurement is separated from a measured zero here rather
   // than left to coercion, which cannot tell them apart.
   const rate = Number(at.fillRate ?? Number.NaN);
-  if (Number.isFinite(rate) && rate >= 0 && Math.abs(rate - 1) > UNREMARKABLE) {
+  const remarkable = Number.isFinite(rate) && rate >= 0 && Math.abs(rate - 1) > UNREMARKABLE;
+  if (remarkable && at.held !== true) {
     parts.push(`filling ${rate.toFixed(1)}×`);
   }
 

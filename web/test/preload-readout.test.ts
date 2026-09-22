@@ -139,3 +139,22 @@ describe("a title waiting to start itself", () => {
     );
   });
 });
+
+describe("a title held in full", () => {
+  test("says cached instead of how far ahead the browser has read", () => {
+    // The browser buffers the same minute either way; reporting it made a
+    // film on local disk look like it was still streaming.
+    expect(preloadReadout({ readyState: 4, ahead: 52, fillRate: 3.1, held: true })).toBe(
+      "ready · cached",
+    );
+  });
+
+  test("still says so when it is waiting, and still counts dropped frames", () => {
+    expect(preloadReadout({ readyState: 2, ahead: 0, starved: true, held: true })).toBe(
+      "buffering · cached",
+    );
+    expect(preloadReadout({ readyState: 4, ahead: 30, dropped: 3, held: true })).toBe(
+      "ready · cached, 3 dropped",
+    );
+  });
+});

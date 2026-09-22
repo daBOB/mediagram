@@ -531,6 +531,31 @@ describe("releasing a transcode", () => {
     }
   });
 
+  test("the held route asks the cache fresh, not the catalog's reading", async () => {
+    const asked: string[] = [];
+    const held = { check: async (setId: string) => (asked.push(setId), true) };
+    const server = await startServer({ db: index(), source: new FakeSource(), held: held as never });
+    try {
+      const response = await rawRequest(server.port, `/api/sets/${SET}/held`);
+      expect(response.status).toBe(200);
+      expect(JSON.parse(new TextDecoder().decode(response.body))).toEqual({ held: true });
+      expect(asked).toEqual([SET]);
+    } finally {
+      await server.close();
+    }
+  });
+
+  test("a player with no cache holds nothing, and says so", async () => {
+    const server = await startServer({ db: index(), source: new FakeSource() });
+    try {
+      const response = await rawRequest(server.port, `/api/sets/${SET}/held`);
+      expect(JSON.parse(new TextDecoder().decode(response.body))).toEqual({ held: false });
+      expect((await rawRequest(server.port, "/api/sets/01NOPE/held")).status).toBe(404);
+    } finally {
+      await server.close();
+    }
+  });
+
   test("audio for a set the catalog will not play is a 404", async () => {
     const server = await startServer({ db: index(), source: new FakeSource() });
     try {

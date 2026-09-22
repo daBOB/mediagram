@@ -124,6 +124,7 @@ export interface PlayerResponse {
 const STREAM_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/stream$/;
 const SUMMARY_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/summary$/;
 const AUDIO_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/audio$/;
+const HELD_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/held$/;
 // Spelled out for the same reason as everything else that reaches a file
 // name: the key comes from a caption, and `posterKeyIsValid` checks it again.
 const POSTER_PATH = /^\/api\/posters\/(tmdb-(?:movie|tv)-\d{1,12})\.jpg$/;
@@ -506,6 +507,17 @@ export function createRouter(options: RouterOptions) {
       if (body === null) return empty(404);
       const response = text(body, "text/plain; charset=utf-8");
       return request.method === "HEAD" ? { ...response, body: null } : response;
+    }
+
+    // Whether this title is on this disk in full, asked as the player opens
+    // it. Not the catalog's `offline`, which the page fetched once at load
+    // and which says "streaming" about anything cached since.
+    const wantsHeld = HELD_PATH.exec(request.path);
+    if (wantsHeld) {
+      const setId = wantsHeld[1]!;
+      if (playableSet(db, setId) === null) return empty(404);
+      const held = (await options.held?.check(setId)) ?? false;
+      return text(JSON.stringify({ held }), "application/json");
     }
 
     // Which audio streams this title holds. Answered from the file rather

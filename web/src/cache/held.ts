@@ -90,6 +90,19 @@ export class HeldSets {
     return this.held.has(setId);
   }
 
+  /**
+   * Whether this one set is held, looked at now rather than remembered.
+   *
+   * For the player opening a title, which cannot use `has`: an episode that
+   * finished caching seconds ago would be reported as streaming for up to a
+   * scan's lifetime. One set is one directory, so asking fresh is cheap.
+   */
+  async check(setId: string): Promise<boolean> {
+    const want = this.expected.get(setId);
+    if (want === undefined) return false;
+    return this.isHeld(join(this.root, String(CACHE_CHUNK)), setId, want);
+  }
+
   /** How many are held, for anything that wants to say so. */
   get count(): number {
     return this.held.size;

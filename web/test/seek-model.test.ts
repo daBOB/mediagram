@@ -20,6 +20,11 @@ describe("a bar there is something to draw", () => {
     expect(bar.buffered).toBeCloseTo(0.65);
   });
 
+  test("paints the whole track for a title held in full", () => {
+    // Nothing past the browser's own read-ahead is waiting on the network.
+    expect(seekModel({ runtime: 100, at: 40, ahead: 25, held: true }).buffered).toBe(1);
+  });
+
   test("an hour-long title keeps its hours", () => {
     expect(seekModel({ runtime: 7084, at: 3725 }).label).toBe("1:02:05 / 1:58:04");
   });
