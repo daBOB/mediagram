@@ -187,6 +187,12 @@ never demotes or deletes a set that local data already had recorded, and
 it never re-uploads anything — `verify` is the tool for detecting
 mismatches against what is already indexed, not `rescan`.
 
+A set it inserts is dated by **the earliest of its parts' messages** — when
+its upload began — never by when the scan ran. Dating by the scan gave every
+set one scan found the same second, and every player's "Latest" row sorts on
+that column: a batch of hundreds tied, and whichever title broke the tie led.
+A set the index already had keeps its date, like everything else it had.
+
 ## 6. `verify`
 
 Two modes, selected on one set (by id) or `--all`:
@@ -424,6 +430,30 @@ is being converted, now on the shelf badge as well as in the player, and the
 technical line under a title, whose average bitrate is what makes the
 `needs transcode` badge legible.
 
+### Updates Telegram pushes
+
+Every session of the account hears about a message sent, edited or pinned in
+the library channel within milliseconds (measured: 0–41 ms on teleproto and
+grammers alike). `telegram/channel-events.ts` listens for those, reduces each
+to a small shape, and `telegram/updates.ts` decides whether it matters:
+another device's `#mlib-state` document is a **state** event, a newly sent
+`#mlib-index` or a pin is an **index** event, and everything else — this
+device's own writes, part captions sharing the `#mlib` hashtag, unpins, pin
+notices, other channels — is nothing. Events of a kind are released at most
+once per five seconds, timed from the first, so an upload's burst of part,
+index, pin and unpin is one event and a long upload cannot starve it.
+
+An event is a hint, never data. A state event runs the ordinary sync round,
+which reads the pin list itself; the five-minute timer stays, and a missed
+update costs exactly the wait it always did. Nothing missed while the
+connection was down is replayed — a `StringSession` keeps no update state —
+so the listener is subscribed before the start-up round, which covers what
+came before it. An index event is only logged: this player's catalog is the
+published package, not the channel.
+
+The rule is shared with the Android core and pinned by one set of fixtures
+both read, `web/test/fixtures/channel-updates/`.
+
 ### The codec policy
 
 Which profiles are handed to the browser as they are, and which are converted
@@ -478,6 +508,37 @@ apparatus of §7 — ffmpeg, HLS, the bitrate ladder, the encoder registry — h
 no counterpart here, and the System screen has no Conversion block rather than
 an empty one. Playback is latency-bound rather than throughput-bound: the link
 outruns the bitrate, and what costs is the round trip per read.
+
+### Updates Telegram pushes
+
+The core listens the way the web player does, with the same rule and the
+same fixtures (`mediagram-core/src/updates.rs`, `api/events.rs`), and hands
+Kotlin one call: `nextLibraryEvent(handle, ownDevice)`, which waits and
+answers `STATE` or `INDEX`. Before it takes the connection's update receiver
+— one per connection, for the app's life — it asks Telegram for the update
+state itself and stores it: a connection that has made no such request is
+never pushed anything, and grammers only asks when the session already knows
+its own user, which a key-only in-memory session does not. Measured the hard
+way: without it the stream opened and stayed silent.
+
+The app listens **only while the catalog is on screen**. `CatalogViewModel`
+merges `INDEX` events beside the Update button's reloads, and its state is
+collected only while visible, so a phone in a pocket holds nothing open. This
+is a deliberate difference from the web player, which is a server and always
+listening. On an index event the catalog reads the channel again and then
+runs the artwork and description fetch quietly — no result dialog for work
+nobody asked for. There is no read on returning to the app: a read downloads
+the whole index, and the catalog already reads once per start. `STATE` is
+heard and dropped until the app has watch state to sync.
+
+Measured on the tablet: a new index pushed by an uploader on another machine
+was installed within about three seconds, and the new title's poster was on
+its card within the same minute, with nothing touched.
+
+Each card looks its poster up when the shelves are built, and a fetch always
+finishes after the read that built them; so once a fetch lays down artwork
+the shelves are rebuilt from the catalog on the device, without asking the
+channel again.
 
 ### What it does not have yet
 
@@ -579,3 +640,11 @@ else.
   batches accordingly.
 - `FLOOD_WAIT_n` RPC errors carry the exact server-requested backoff in
   seconds; `telegram::retry` sleeps that plus one second of slack.
+- Pinning is flood-limited hard: a handful of pin and unpin calls drew
+  `FLOOD_WAIT_633` (over ten minutes) for the account. Pins are how every
+  reader finds the index and each device's watch state, so nothing
+  experimental may spend them.
+- Updates are pushed only to a connection that has asked for its update
+  state, and they arrive within milliseconds at every session of the account.
+  Catching up after a disconnect replays no channel messages, so a listener
+  is only ever a hint beside the reader it wakes.

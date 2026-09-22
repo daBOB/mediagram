@@ -42,6 +42,7 @@
 | 7 | Watchlist / Kids / list edits | Shelves update immediately; persist across restart; on web too if 08 |
 | 8 | Rotate during playback | No restart from resume point, no double save |
 | 9 | Two viewers | Switching viewer switches Continue; Kids shelf shared |
+| 10 | Push latency, both ways (needs `WatchSync.soon()` on `STATE` — push-updates phase 04 remainder) | Web position → tablet Continue, and tablet → web Continue, each in **seconds**, not at the 5-min timer. Handed on from `plans/260922-2222-telegram-push-updates/reports/validation-260923-0055-push-update-latency-report.md`; core half already measured at 5.0 s |
 
 **Never** tap "Start over" on the tablet.
 

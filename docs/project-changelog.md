@@ -45,6 +45,16 @@ to `main`. Full phase-by-phase detail lives in
   also run one at a time now: a pushed update and the timer could otherwise
   overlap on a device's first send and each send a document.
 
+**Docs**
+
+- `system-architecture.md` now describes push updates on both players (§7,
+  §8): what counts as a change, that an update is only a hint beside the
+  ordinary round, and that the Android app listens only while its catalog is
+  on screen — a deliberate difference from the always-on web server. §5 says
+  how `rescan` dates what it finds; §11 adds the limits the design leans on:
+  pins are flood-limited hard, updates need a subscribing request, and
+  nothing is replayed after a disconnect.
+
 **Added**
 
 - Push updates. Telegram tells every signed-in session about a change in the

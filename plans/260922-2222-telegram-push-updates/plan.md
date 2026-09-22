@@ -28,7 +28,7 @@ Research: `plans/reports/research-260922-2212-telegram-api-premium-opportunities
 | 03 | [Rust core: update stream export](phase-03-rust-core-update-stream.md) | rust | 02 | 4h | done |
 | 04 | [Android: react while foregrounded](phase-04-android-react-while-foregrounded.md) | android | 03, watch-state-sync 04 | 3h | index half done; state half blocked |
 | 05 | [Web: sync on push](phase-05-web-sync-on-push.md) | web | 02 | 3h | done |
-| 06 | [Docs, versions, device validation](phase-06-docs-versions-and-validation.md) | all | 04, 05 | 2h | pending |
+| 06 | [Docs, versions, device validation](phase-06-docs-versions-and-validation.md) | all | 04, 05 | 2h | done; watch-state latency handed on |
 
 04 and 05 run in parallel.
 
