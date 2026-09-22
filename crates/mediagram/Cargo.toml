@@ -7,24 +7,19 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-anyhow = "1.0.104"
+anyhow.workspace = true
 axum = { version = "0.8.9", default-features = false, features = ["http1", "json", "tokio"] }
-base64 = "0.23.1"
+base64.workspace = true
 clap = { version = "4.6.7", features = ["derive"] }
 dialoguer = "0.12.0"
 directories = "6.0.0"
-flate2 = "1.1.10"
-futures = "0.3.34"
-# Pinned, not used directly: grammers-crypto 0.10 calls glass_pumpkin's rc0
-# `safe_prime::check` (returns bool, takes num-bigint 0.4). rc1 returns a
-# Result and moved to num-bigint 0.5, so a plain `cargo update` picks it up
-# — both are prereleases of 2.0.0 — and grammers stops compiling. Drop this
-# once grammers-crypto builds against rc1.
-glass_pumpkin = "=2.0.0-rc0"
-grammers-client = "0.10"
-grammers-mtsender = "0.10"
+flate2.workspace = true
+futures.workspace = true
+glass_pumpkin.workspace = true
+grammers-client.workspace = true
+grammers-mtsender.workspace = true
 grammers-session = "0.10"
-grammers-tl-types = "0.10"
+grammers-tl-types.workspace = true
 hex.workspace = true
 # setsid, so a backgrounded upload gets a session of its own and survives
 # the terminal it was started from closing.
@@ -32,7 +27,10 @@ libc = "0.2"
 mediagram-core = { path = "../mediagram-core" }
 mediagram-tmdb = { path = "../mediagram-tmdb" }
 mlib-spec = { path = "../mlib-spec" }
-reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "json"] }
+# `rustls-no-provider`: every client is built by `mediagram_core::api::http`,
+# on ring and the webpki roots, so naming a provider here would only link a
+# second crypto stack (aws-lc) that nothing uses.
+reqwest = { workspace = true, features = ["rustls-no-provider", "json"] }
 # Not "bundled": grammers-session already statically links its own copy of
 # sqlite3 (via libsql-ffi), and two bundled copies in one binary collide at
 # link time with duplicate `sqlite3_*` symbols. Linking against the system
@@ -42,13 +40,13 @@ serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sha2.workspace = true
 strsim = "0.11.1"
-tar = "0.4.46"
+tar.workspace = true
 thiserror.workspace = true
-tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "fs", "io-util", "net", "signal", "time", "process"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "fs", "io-util", "net", "signal", "time", "process"] }
 toml = "1.1.6"
-tracing = "0.1.44"
+tracing.workspace = true
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 ulid.workspace = true
 
 [dev-dependencies]
-tempfile = "3.27.0"
+tempfile.workspace = true

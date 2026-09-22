@@ -16,7 +16,7 @@ mod channel;
 mod channel_index;
 pub mod details;
 pub mod fetch;
-mod http;
+pub mod http;
 mod identity;
 mod library;
 mod read;

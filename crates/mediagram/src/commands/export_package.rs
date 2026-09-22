@@ -148,7 +148,7 @@ async fn fetch_posters(
 ) -> Result<Vec<mlib_spec::package::PosterEntry>> {
     // Built once and used for both the lookup and the download below —
     // `TmdbClient` takes this same client rather than building its own.
-    let http = reqwest::Client::new();
+    let http = mediagram_core::api::http::client()?;
     // Works with no key at all when the cache is warm, which is the normal
     // case: `add` cached these payloads when it resolved each title.
     let api = TmdbClient::with_cache(

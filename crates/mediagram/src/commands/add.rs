@@ -152,7 +152,7 @@ pub async fn plan(cfg: &Config, new: &NewSet) -> Result<Planned> {
 
     let data_dir = cfg.data_dir()?;
     let api = TmdbClient::with_cache(
-        reqwest::Client::new(),
+        mediagram_core::api::http::client()?,
         cfg.tmdb_key.as_deref().unwrap_or(""),
         &data_dir,
         &cfg.tmdb_language,

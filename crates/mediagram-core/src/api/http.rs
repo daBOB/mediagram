@@ -23,8 +23,9 @@ pub(super) fn install_provider() {
     let _ = rustls::crypto::ring::default_provider().install_default();
 }
 
-/// Builds the client this crate uses for every outbound HTTPS request.
-pub(super) fn client() -> Result<reqwest::Client, CoreError> {
+/// Builds the client this crate uses for every outbound HTTPS request, and
+/// the one the uploader uses too, so a build of either links one TLS stack.
+pub fn client() -> Result<reqwest::Client, CoreError> {
     install_provider();
 
     let mut roots = rustls::RootCertStore::empty();
