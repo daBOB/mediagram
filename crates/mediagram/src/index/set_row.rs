@@ -135,6 +135,18 @@ impl SetRow {
 }
 
 impl SetRow {
+    /// The episode this set starts at, `None` when it has none. The column
+    /// holds the caption's JSON `Episode` — `1`, or `[1,2]` for a file
+    /// holding two — and a file spanning several is known by its first.
+    pub fn first_episode(&self) -> Result<Option<u32>> {
+        let Some(column) = self.episode.as_deref() else {
+            return Ok(None);
+        };
+        let episode: mlib_spec::Episode = serde_json::from_str(column)
+            .map_err(|_| anyhow::anyhow!("episode {column} is not an episode number"))?;
+        Ok(Some(episode.first()))
+    }
+
     /// The set's `Caption` with a placeholder part block (idx 0, empty hash),
     /// used to derive names and human text that don't depend on which part.
     pub fn caption_template(&self) -> Result<Caption> {

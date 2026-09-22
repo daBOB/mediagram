@@ -19,9 +19,12 @@ the module map these rules apply to.
   command. Decision logic that doesn't need IO (e.g.
   `verify::report`, `index::rescan::apply_seen`) lives in its own module so
   it can be unit-tested without a live connection or a temp database.
-- **Every file under `src/` stays under 200 lines.** Test files in
-  `tests/` are exempt: a probe suite is a flat list of independent cases,
-  and splitting it by line count would hide rather than clarify coverage. When a file would grow past
+- **Every file under `src/` stays under 200 lines**, and
+  `tests/code_standards.rs` fails the build when one does not. Test files are
+  exempt — everything in `tests/`, and the `<module>_tests.rs` (or `tests.rs`
+  beside a `mod.rs`) a module includes for its unit tests: a suite is a flat
+  list of independent cases, and splitting it by line count would hide rather
+  than clarify coverage. When a file would grow past
   that, split out a focused submodule (`media/mp4_atoms.rs` out of
   `media/remux.rs`; `verify/report.rs` out of `commands/verify.rs`) rather
   than letting one file accumulate unrelated responsibility.

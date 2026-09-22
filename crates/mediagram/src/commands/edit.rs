@@ -20,7 +20,7 @@ use crate::edit::captions::captions;
 use crate::edit::plan::{Clearable, Edits, apply_checked, editable_kind};
 use crate::index::set_row::SetRow;
 use crate::index::{db, parts, sets};
-use crate::metadata::resolve::fetch_episode_title;
+use crate::metadata::lookup::fetch_episode_title;
 use crate::telegram::client::Tg;
 
 pub async fn run(cfg: &Config, args: EditArgs) -> Result<()> {
@@ -164,38 +164,16 @@ async fn refresh_from_tmdb(
 
     // An episode title needs both numbers; without them the show name is
     // still worth correcting on its own.
-    let (Some(season), Some(episode)) = (row.season, row.episode.as_deref()) else {
+    let (Some(season), Some(number)) = (row.season, row.first_episode()?) else {
         return Ok(Fetched {
             title: None,
             show: details.display_title(),
             year: details.year(),
         });
     };
-    let number = first_episode(episode)?;
     Ok(Fetched {
         title: fetch_episode_title(&api, tmdb, season, number).await?,
         show: details.display_title(),
         year: details.year(),
     })
-}
-
-/// The episode a row's `episode` column starts at. The column holds the
-/// caption's JSON `Episode` — `1`, or `[1,2]` for a file holding two — and a
-/// file spanning several is titled after its first.
-fn first_episode(column: &str) -> Result<u32> {
-    let episode: mlib_spec::Episode = serde_json::from_str(column)
-        .with_context(|| format!("episode {column} is not an episode number"))?;
-    Ok(episode.first())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::first_episode;
-
-    #[test]
-    fn a_single_episode_and_a_double_one_both_name_their_first() {
-        assert_eq!(first_episode("4").unwrap(), 4);
-        assert_eq!(first_episode("[5,6]").unwrap(), 5);
-        assert!(first_episode("5-6").is_err());
-    }
 }

@@ -17,7 +17,7 @@ use rusqlite::Connection;
 use crate::config::Config;
 use crate::export::budget::{Verdict, estimate_bytes, verdict_for};
 use crate::export::stage::Staging;
-use crate::export::{archive, latest, pointer, publish};
+use crate::export::{archive, pointer, publish};
 use crate::index::db;
 
 pub async fn run(
@@ -128,7 +128,7 @@ pub async fn run(
     }
 
     if publish_it {
-        publish_package(cfg, &pointer, &written, sealed_len, &sealed, dry_run).await?;
+        publish::publish_package(cfg, &pointer, &written, sealed_len, &sealed, dry_run).await?;
     }
     Ok(())
 }
@@ -169,46 +169,3 @@ fn write_package(dir: &Path, created_at: i64, sealed: &[u8]) -> Result<PathBuf> 
     Ok(dest)
 }
 
-
-/// Publishes the archive, then the pointer that names it. The order is a
-/// correctness property: a reader must never find a pointer to a file that is
-/// not there yet. A reader arriving mid-publish sees the previous pointer and
-/// the previous archive, which is still present.
-async fn publish_package(
-    cfg: &Config,
-    draft: &mlib_spec::package::LatestPointer,
-    package: &Path,
-    bytes: u64,
-    sealed: &[u8],
-    dry_run: bool,
-) -> Result<()> {
-    let argv = cfg.publish_cmd.clone().unwrap_or_default();
-    let base_url = cfg.publish_base_url.as_deref().unwrap_or("");
-    let file_name = package
-        .file_name()
-        .and_then(|n| n.to_str())
-        .context("package has no usable file name")?;
-
-    let digest = hex::encode(pointer::sha256(sealed));
-    let complete = latest::complete(draft, file_name, base_url, bytes, &digest);
-    let pointer_path = package.with_file_name("latest.json");
-    std::fs::write(&pointer_path, serde_json::to_vec(&complete)?)
-        .with_context(|| format!("writing {}", pointer_path.display()))?;
-
-    if dry_run {
-        for file in [package, pointer_path.as_path()] {
-            println!("would run: {:?}", publish::substitute(&argv, file));
-        }
-        return Ok(());
-    }
-
-    publish::run_publish(&argv, package).await?;
-    publish::run_publish(&argv, &pointer_path).await?;
-
-    println!("published {}", complete.url);
-    println!(
-        "pointer at {}/latest.json is the URL the player needs",
-        base_url.trim_end_matches('/')
-    );
-    Ok(())
-}

@@ -90,7 +90,8 @@ verify/            report (pure verdict logic) + download_hash (Telegram
                    download → SHA-256 streaming)
 ```
 
-Every source file stays under 200 lines; a module that would grow past
+Every source file stays under 200 lines (enforced by
+`crates/mediagram/tests/code_standards.rs`); a module that would grow past
 that is split (e.g. `media/mp4_atoms.rs` carries the atom-scanning detail
 out of `media/remux.rs`, `verify/report.rs` carries the decision logic out
 of `commands/verify.rs`).

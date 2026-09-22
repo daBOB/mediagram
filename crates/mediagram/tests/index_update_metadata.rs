@@ -183,3 +183,18 @@ fn the_kind_is_written_too() {
     assert_eq!(after.season, None);
     assert_eq!(after.episode, None);
 }
+
+/// A set holding two episodes is known by its first; the column is the
+/// caption's JSON, not a `1-2` spelling.
+#[test]
+fn a_rows_first_episode_is_read_from_the_json_column() {
+    let mut row = SetRow::from_caption(&caption(), 1_700_000_000).unwrap();
+    row.episode = Some("4".into());
+    assert_eq!(row.first_episode().unwrap(), Some(4));
+    row.episode = Some("[5,6]".into());
+    assert_eq!(row.first_episode().unwrap(), Some(5));
+    row.episode = Some("5-6".into());
+    assert!(row.first_episode().is_err());
+    row.episode = None;
+    assert_eq!(row.first_episode().unwrap(), None);
+}
