@@ -9,6 +9,16 @@ to `main`. Full phase-by-phase detail lives in
 
 **Fixed**
 
+- The Android core's update listener can no longer go deaf for the life of the
+  app. It took the connection's one update receiver before asking Telegram for
+  the update state, so a failed or cancelled first call — the phone offline as
+  the app came forward, or the call cut off — dropped the receiver, and nothing
+  reconnects to bring another. And grammers asks for that state only once,
+  ignoring a failure, which left the stream silent with no error and unable to
+  recover after a dropped connection. The core now asks for the state itself,
+  stores it, and only then takes the receiver; a failure is an ordinary error
+  to retry. Measured on the channel after three cancelled calls: one `State`
+  event, five seconds after another device wrote, and none for its own write.
 - The web player no longer leaves stray watch-state documents in the channel
   when Telegram refuses to pin one. Pins are flood-limited hard (a wait of
   over ten minutes was measured), and an unpinned document is invisible —

@@ -31,7 +31,8 @@ pub(in crate::api) struct ClientHandle {
     pub(in crate::api) client: Client,
     pub(in crate::api) handle: SenderPoolFatHandle,
     /// What Telegram pushes down this connection, until the event listener
-    /// takes it. One receiver per connection: a reconnect brings a new one.
+    /// takes it. One per sender pool, for the pool's life: the pool's own
+    /// reconnects reuse it, and only a new `Core` brings a new one.
     updates: Option<UnboundedReceiver<UpdatesLike>>,
     // Never polled again after `connect`, but dropping it would detach the
     // runner from anything keeping it alive for the compiler's purposes;
@@ -147,6 +148,43 @@ pub(in crate::api) async fn updates_receiver(
         .client
         .get_or_insert_with(|| connect(&core.data_dir, core.api_id));
     (live.client.clone(), live.updates.take())
+}
+
+/// Asks Telegram for the account's update state and stores it in the
+/// session, which is also what subscribes this connection to pushed updates.
+///
+/// Done here, before the listener takes the receiver, rather than left to
+/// grammers: its stream asks once, ignores a failure, and never asks again
+/// — and it only asks at all when the session already knows its own user,
+/// which the in-memory session this core keeps does not. Either way the
+/// stream stays silent. Here a failure is an error the caller can retry, and
+/// the stored state gives the stream a base to recover gaps from after the
+/// connection drops.
+pub(in crate::api) async fn subscribe(core: &Core) -> Result<(), CoreError> {
+    use grammers_session::types::{UpdateState, UpdatesState};
+    use grammers_tl_types as tl;
+
+    let unavailable = || CoreError::Network("could not start listening for library changes".into());
+    let client = client(core).await;
+    let tl::enums::updates::State::State(state) = client
+        .invoke(&tl::functions::updates::GetState {})
+        .await
+        .map_err(|_| unavailable())?;
+    let session = {
+        let state = core.state.lock().await;
+        state.client.as_ref().map(|live| live.handle.session.clone())
+    }
+    .ok_or_else(unavailable)?;
+    session
+        .set_update_state(UpdateState::All(UpdatesState {
+            pts: state.pts,
+            qts: state.qts,
+            date: state.date,
+            seq: state.seq,
+            channels: Vec::new(),
+        }))
+        .await
+        .map_err(|_| unavailable())
 }
 
 /// Persists whatever auth key the session now holds for its home

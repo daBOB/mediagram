@@ -43,3 +43,13 @@ Modify: `api/session.rs`, `api/mod.rs`, `dto.rs` (`LibraryEvent` enum); regenera
 |---|---|---|
 | Stream holds the client alive after sign-out | M×M | end on client drop; test |
 | Updates starve reads | L×M | stream runs on its own task; reads use the handle as today |
+
+## Review follow-up (2026-09-23)
+Code review found the listener could go permanently deaf: the receiver was taken before `get_me` (a failed or cancelled
+call dropped it; nothing reconnects), and grammers' own one-shot `getState` ignores failure. Fixed: `session::subscribe`
+invokes `updates.getState` and stores it via `set_update_state` **before** `updates_receiver` takes the receiver; the
+stream opens with `catch_up: true` from that fresh state, so grammers' first `getDifference` is retried after a cancel
+and a dropped connection is recovered from. `get_me` workaround removed. Re-measured live after three cancelled calls:
+own-device write → nothing; other device → one `State` 5.0 s later.
+Known, accepted: while the app is backgrounded but alive, the pool keeps buffering account-wide updates unpolled
+(grammers' mpsc is unbounded). Hints only; Android reclaims background processes. Revisit if memory shows it.

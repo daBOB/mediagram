@@ -56,9 +56,10 @@ pub(super) async fn next(core: &Core, handle: &str, own_device: &str) -> Result<
     match listener.wait(channel, own_device).await {
         Ok(event) => Ok(event),
         Err(err) => {
-            // The connection behind the stream is gone — a sign-out, or a
-            // client replaced after sign-in. The next call listens on
-            // whichever connection is live then.
+            // The sender pool behind the stream has quit — today only when
+            // the `Core` itself is going. Cleared so a later call starts over
+            // on whatever connection is live then. Any other error keeps the
+            // listener: grammers re-sends its pending request on the next call.
             if matches!(err, InvocationError::Dropped) {
                 *slot = None;
             }
@@ -68,21 +69,19 @@ pub(super) async fn next(core: &Core, handle: &str, own_device: &str) -> Result<
 }
 
 async fn open(core: &Core) -> Result<Listener, CoreError> {
+    // Subscribe first, while a failure or a cancelled call costs nothing:
+    // the receiver below is handed out once per connection, and taking it
+    // before a round trip that can fail would lose it for the app's life.
+    session::subscribe(core).await?;
     let (client, updates) = session::updates_receiver(core).await;
     let updates = updates
         .ok_or_else(|| CoreError::Network("this connection's updates are already being read".into()))?;
-    // Telegram pushes updates only to a connection that has asked for its
-    // update state, and grammers asks (`updates.getState`) only when the
-    // session already knows its own user. The in-memory session this core
-    // keeps knows nothing but the auth key, so without this the stream opens
-    // and stays silent — measured: no event for a change made seconds later.
-    // `get_me` caches the user, and the stream then subscribes itself.
-    client
-        .get_me()
-        .await
-        .map_err(|_| CoreError::Network("could not start listening for library changes".into()))?;
+    // `catch_up` here means "start from the state `subscribe` just stored",
+    // not "replay what was missed" — nothing was, it is seconds old. From
+    // that base grammers' first `getDifference` is re-sent if cancelled, and
+    // a dropped connection is recovered from rather than left silent.
     let configuration = UpdatesConfiguration {
-        catch_up: false,
+        catch_up: true,
         update_queue_limit: Some(QUEUE_LIMIT),
     };
     let stream = client
