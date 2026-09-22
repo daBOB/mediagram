@@ -11,6 +11,7 @@ use std::io::Write;
 
 use grammers_client::Client;
 use grammers_client::media::Document;
+use grammers_client::message::Message;
 use grammers_session::types::PeerRef;
 use grammers_tl_types::enums::MessagesFilter;
 
@@ -29,6 +30,11 @@ const MAX_DIALOGS: usize = 500;
 /// How many pinned messages to read before deciding. A channel with more
 /// pins than this is not one `push-index` maintains.
 const MAX_PINNED: usize = 100;
+
+/// How far back to look for index snapshots the pins do not name. A channel
+/// accumulates one per publish, so this is generous for finding the newest
+/// few without paging years of history onto a phone.
+const MAX_INDEX_CANDIDATES: usize = 50;
 
 /// A hard ceiling on the snapshot. A real `library.db` for a few hundred sets
 /// is a handful of megabytes; this only stops a wrong or hostile pinned
@@ -64,8 +70,8 @@ pub(super) async fn list_libraries(core: &Core) -> Result<Vec<LibraryChoice>, Co
     Ok(choices)
 }
 
-/// Re-reads the index pinned in the chosen channel and installs it as the
-/// current catalog, returning how many sets it holds.
+/// Re-reads the newest index the chosen channel holds and installs it as
+/// the current catalog, returning how many sets it holds.
 pub(super) async fn refresh_library(core: &Core, handle: String) -> Result<u64, CoreError> {
     let entry = library::lookup(core, &handle)?;
     let peer = entry
@@ -73,7 +79,7 @@ pub(super) async fn refresh_library(core: &Core, handle: String) -> Result<u64, 
         .ok_or_else(|| CoreError::NotFound("this device no longer has that library stored".into()))?;
     let client = session::client(core).await;
 
-    let (document, caption) = pinned_index(&client, peer).await?;
+    let (document, caption) = newest_index(&client, peer).await?;
     let version = format!(
         "v-{}",
         channel_index::pushed_at(&caption, refresh::now_unix())
@@ -98,24 +104,49 @@ async fn entry_of(peer: &grammers_client::peer::Peer) -> Option<LibraryEntry> {
     })
 }
 
-/// The one pinned index snapshot, with its caption.
-async fn pinned_index(client: &Client, peer: PeerRef) -> Result<(Document, String), CoreError> {
-    let mut search = client
+/// The newest index snapshot the channel holds, with its caption.
+///
+/// Two searches, not one. The pinned list is where a healthy channel keeps
+/// its index and is the cheapest thing to ask for; a text search for the
+/// marker finds the snapshots an interrupted publish or a second machine
+/// publishing to the same channel left unpinned. Reading only the pins is
+/// what lets a reader sit on a library older than the one the channel
+/// actually holds, with nothing on screen to say so.
+///
+/// The text search is allowed to fail: a channel where it is unavailable
+/// still has its pins, and refusing the whole refresh over the cheaper half
+/// being unavailable would trade a stale library for no library.
+async fn newest_index(client: &Client, peer: PeerRef) -> Result<(Document, String), CoreError> {
+    let mut found: Vec<Message> = Vec::new();
+
+    let mut pinned = client
         .search_messages(peer)
         .filter(MessagesFilter::InputMessagesFilterPinned)
         .limit(MAX_PINNED);
-    let mut pinned = Vec::new();
-    while let Some(message) = search
+    while let Some(message) = pinned
         .next()
         .await
         .map_err(|err| channel_index::channel_error(&err))?
     {
-        pinned.push(message);
+        found.push(message);
     }
 
-    let captions: Vec<&str> = pinned.iter().map(|message| message.text()).collect();
-    let chosen = channel_index::pick_index(&captions)?;
-    let message = pinned.into_iter().nth(chosen).expect("chosen from this list");
+    let mut marked = client
+        .search_messages(peer)
+        .query(channel_index::INDEX_CAPTION_PREFIX)
+        .limit(MAX_INDEX_CANDIDATES);
+    while let Ok(Some(message)) = marked.next().await {
+        if !found.iter().any(|seen| seen.id() == message.id()) {
+            found.push(message);
+        }
+    }
+
+    let candidates: Vec<(&str, i64)> = found
+        .iter()
+        .map(|message| (message.text(), i64::from(message.id())))
+        .collect();
+    let chosen = channel_index::pick_index(&candidates)?;
+    let message = found.into_iter().nth(chosen).expect("chosen from this list");
     let caption = message.text().to_string();
     match message_document(&message) {
         Some((document, _)) => Ok((document, caption)),

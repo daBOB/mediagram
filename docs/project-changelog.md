@@ -9,6 +9,17 @@ to `main`. Full phase-by-phase detail lives in
 
 **Fixed**
 
+- The phone could sit on a library older than the channel actually holds, and
+  sometimes refused to refresh at all. It read the snapshot the channel had
+  *pinned*, but pinning is a separate operation from publishing: a publish
+  whose unpin failed, a second machine publishing to the same channel, or a
+  snapshot pinned by hand all leave the pin somewhere other than the newest
+  index — and two pinned snapshots gave up outright with "there is no way to
+  tell which one is current". The newest now wins, decided by the `pushed_at`
+  the caption carries, because that travels with the snapshot and a pin does
+  not. The pins are still read, and a text search for the index marker finds
+  the snapshots no pin names; a channel holding no index at all still says so.
+
 - Course documents were invisible on the phone. The Android catalog mapped
   three of the caption spec's four kinds and returned `null` for anything
   else, so every handout and workbook was dropped between the index and the
