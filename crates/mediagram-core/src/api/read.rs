@@ -9,7 +9,9 @@ use crate::catalog as queries;
 use crate::range::{self, ByteRange, PartSpan};
 use crate::stream;
 
-use super::{Core, CoreError, catalog, library, session};
+use super::account::session;
+use super::channel::library;
+use super::{Core, CoreError, store};
 
 /// Chunks buffered between the download and this call's own accumulation.
 /// Matches [`crate::telegram`]'s buffer: enough to keep the download busy
@@ -23,7 +25,7 @@ pub(super) async fn read(
     len: u32,
 ) -> Result<Vec<u8>, CoreError> {
     let locations = {
-        let conn = catalog::open(core)?;
+        let conn = store::open(core)?;
         // The gate the catalog lists with and `total_size` answers with. A set
         // that is incomplete, or whose parts do not add up to its total, must
         // not be readable here while being refused everywhere else.

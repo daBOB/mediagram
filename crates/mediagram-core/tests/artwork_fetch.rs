@@ -8,7 +8,7 @@ use fetch_stub::{
     fetch_with, install_crypto_provider, offline_client, write_existing_poster,
 };
 
-use mediagram_core::api::artwork::{plan_fetch, verify_then_fetch};
+use mediagram_core::api::enrich::artwork::{plan_fetch, verify_then_fetch};
 use mediagram_core::api::CoreError;
 
 /// A key the provider rejects stays rejected however warm the disk cache

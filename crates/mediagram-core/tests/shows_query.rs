@@ -5,7 +5,8 @@
 use mlib_spec::Kind;
 use rusqlite::Connection;
 
-use mediagram_core::api::{Core, details};
+use mediagram_core::api::Core;
+use mediagram_core::api::enrich::details;
 use mediagram_tmdb::details::ShowRow;
 
 fn core_at(dir: &std::path::Path) -> std::sync::Arc<Core> {

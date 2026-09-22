@@ -9,28 +9,21 @@
 //! carry one, because the player is told what it may play, never where the
 //! bytes live.
 
-pub mod artwork;
-mod auth;
-mod catalog;
+mod account;
+mod store;
 mod channel;
-mod channel_index;
-pub mod details;
-pub mod fetch;
+pub mod enrich;
 pub mod http;
-mod identity;
-mod library;
 mod read;
 mod refresh;
-mod refresh_fetch;
-mod session;
 
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use tokio::sync::Mutex as AsyncMutex;
 
-use auth::{PendingLogin, PendingPassword};
-use session::ClientHandle;
+use account::auth::{PendingLogin, PendingPassword};
+use account::session::ClientHandle;
 
 /// Outcome of a completed sign-in step.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
@@ -177,19 +170,19 @@ impl Core {
     /// Whether a login has ever completed. Reads the persisted auth key
     /// only: cheap, and needs no connection.
     pub fn is_authorized(&self) -> bool {
-        session::load_auth_key(&self.data_dir).is_some()
+        account::session::load_auth_key(&self.data_dir).is_some()
     }
 
     pub async fn request_code(&self, phone: String) -> Result<String, CoreError> {
-        auth::request_code(self, phone).await
+        account::auth::request_code(self, phone).await
     }
 
     pub async fn sign_in(&self, token: String, code: String) -> Result<AuthOutcome, CoreError> {
-        auth::sign_in(self, token, code).await
+        account::auth::sign_in(self, token, code).await
     }
 
     pub async fn check_password(&self, password: String) -> Result<(), CoreError> {
-        auth::check_password(self, password).await
+        account::auth::check_password(self, password).await
     }
 
     /// The libraries this account could choose from, in the order Telegram
@@ -223,23 +216,23 @@ impl Core {
     /// is what a first launch shows, whereas the calls that ask about one
     /// named set have nothing sensible to return and say so.
     pub fn list_sets(&self) -> Result<Vec<crate::dto::SetSummary>, CoreError> {
-        catalog::list_sets(self)
+        store::list_sets(self)
     }
 
     pub fn poster_path(&self, poster_key: String) -> Option<String> {
-        catalog::poster_path(self, poster_key)
+        store::poster_path(self, poster_key)
     }
 
     /// What is known about a title, or nothing. The index answers first and
-    /// what this device fetched fills the gaps — see [`details::show_info`].
+    /// what this device fetched fills the gaps — see [`enrich::details::show_info`].
     /// A course has no provider entry and a library assembled without a TMDB
     /// key has no rows at all; both are ordinary, so neither is an error.
     pub fn show_info(&self, poster_key: String) -> Option<crate::dto::ShowInfo> {
-        details::show_info(self, poster_key)
+        enrich::details::show_info(self, poster_key)
     }
 
     pub fn total_size(&self, set_id: String) -> Result<u64, CoreError> {
-        catalog::total_size(self, set_id)
+        store::total_size(self, set_id)
     }
 
     /// What the installed catalog is, for the screen that says so.
@@ -248,7 +241,7 @@ impl Core {
     /// read to draw a screen, and a screen that cannot draw because a count
     /// failed is worse than one that says a library is empty.
     pub fn catalog_facts(&self) -> crate::dto::CatalogFacts {
-        catalog::facts(self)
+        store::facts(self)
     }
 
     pub async fn read(&self, set_id: String, offset: u64, len: u32) -> Result<Vec<u8>, CoreError> {
@@ -272,7 +265,7 @@ impl Core {
         tmdb_key: String,
         language: String,
     ) -> Result<crate::dto::FetchReport, CoreError> {
-        artwork::fetch_missing(self, tmdb_key, language).await
+        enrich::artwork::fetch_missing(self, tmdb_key, language).await
     }
 }
 

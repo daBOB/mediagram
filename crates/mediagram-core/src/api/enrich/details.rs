@@ -2,7 +2,7 @@
 //! than in it.
 //!
 //! The index arrives from the channel already written, and this crate opens
-//! it read-only on purpose — see [`super::catalog`]. A description the phone
+//! it read-only on purpose — see [`crate::api::store`]. A description the phone
 //! fetches therefore has nowhere to go inside it and needs a store of its
 //! own: the same `shows` table, built from the same migrations, in a database
 //! [`details_db`] puts where a refresh cannot reach it.

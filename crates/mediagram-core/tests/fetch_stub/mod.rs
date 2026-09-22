@@ -9,8 +9,8 @@
 
 use std::path::Path;
 
-use mediagram_core::api::artwork::{plan_fetch, verify_then_fetch};
-use mediagram_core::api::fetch::fetch_into;
+use mediagram_core::api::enrich::artwork::{plan_fetch, verify_then_fetch};
+use mediagram_core::api::enrich::fetch::fetch_into;
 use mediagram_core::api::{Core, CoreError};
 use mediagram_core::dto::FetchReport;
 use rusqlite::Connection;

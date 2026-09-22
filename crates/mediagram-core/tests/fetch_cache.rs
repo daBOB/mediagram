@@ -19,7 +19,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use fetch_stub::{catalog_with_kinds, core_at, install_crypto_provider, offline_client};
 
-use mediagram_core::api::artwork::{plan_fetch, verify_then_fetch};
+use mediagram_core::api::enrich::artwork::{plan_fetch, verify_then_fetch};
 use mediagram_tmdb::tmdb_client::TmdbApi;
 
 /// Answers like the ordinary stub and counts every request that actually
