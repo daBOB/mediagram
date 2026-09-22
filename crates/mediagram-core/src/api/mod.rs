@@ -1,13 +1,13 @@
-//! The narrow surface Kotlin calls through UniFFI: authentication, catalog
-//! refresh, and byte reads.
+//! The surface Kotlin calls through UniFFI: signing in, choosing and
+//! refreshing a library, reading bytes, and fetching what a library lacks.
 //!
-//! Everything that actually does the work — range planning, catalog
-//! queries, the Telegram transport, package decryption — already lives in
-//! this crate's other modules; `Core` only orchestrates them for a caller
-//! that never sees a `Connection` or a `Client` directly, and never learns a
-//! `chat_id`, a `message_id`, or a `doc_id`: no [`CoreError`] variant may
-//! carry one, because the player is told what it may play, never where the
-//! bytes live.
+//! The machinery lives in this crate's other modules — range planning,
+//! catalog queries, the byte transport, catalog versions, package
+//! decryption, the `shows` stores. What stays here is each call's
+//! orchestration over one `Core`, for a caller that never sees a
+//! `Connection` or a `Client` and never learns a `chat_id`, a `message_id`
+//! or a `doc_id`: no [`CoreError`] variant may carry one, because the player
+//! is told what it may play, never where the bytes live.
 
 mod account;
 mod blocking;

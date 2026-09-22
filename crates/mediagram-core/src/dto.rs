@@ -1,16 +1,10 @@
-//! Flattened set metadata for the binding surface.
-//!
-//! `catalog::PlayableSet` stores a title's episode number as JSON text — the
-//! wire encoding of `mlib_spec::caption::Episode` — because that is how the
-//! `sets` table carries it. A UniFFI record cannot hold that enum directly
-//! (nor should it: `Episode` is an implementation detail of this crate's own
-//! schema), so [`summary_from`] parses it here and hands the boundary two
-//! plain numbers instead.
+//! The records Kotlin receives. A set's episode arrives as the index's JSON
+//! text; [`summary_from`] hands the boundary two plain numbers instead.
 
 use mlib_spec::caption::Episode;
 
 use crate::catalog::PlayableSet;
-use crate::shows::TitleDetails;
+use mediagram_tmdb::details::TitleDetailsRow;
 
 /// One title, flattened for a player that never sees `Episode`, `set_id`
 /// internals, or where the bytes live.
@@ -100,8 +94,8 @@ pub struct TitleInfo {
     pub status: Option<String>,
 }
 
-impl From<TitleDetails> for TitleInfo {
-    fn from(record: TitleDetails) -> Self {
+impl From<TitleDetailsRow> for TitleInfo {
+    fn from(record: TitleDetailsRow) -> Self {
         TitleInfo {
             overview: record.overview,
             tagline: record.tagline,
@@ -134,21 +128,10 @@ pub struct CatalogFacts {
 
 /// What one fetch did, for the screen that reports it.
 ///
-/// One run fills both gaps a library can leave — the artwork a channel index
-/// cannot carry, and the descriptions nobody ran `mediagram metadata` for —
-/// so the counts come in pairs, and the last two are what neither half could
-/// do anything about.
-///
-/// **Every count is a number of titles.** A title is what a shelf shows as
-/// one card: a film, or a whole series or course however many episodes or
-/// lessons it holds. Every episode of a series shares one provider id, one
-/// poster and one description, so a season of eight is one here and not
-/// eight — and a course of 162 lessons is one title without a provider
-/// entry, so every count on the screen measures the same thing.
-///
-/// Six counts rather than a verdict, because most of what can happen to a
-/// title is not a failure and a viewer reading "0 fetched" needs to know
-/// which of them it was.
+/// Every count is a number of titles — what a shelf shows as one card, so a
+/// series or a course is one however many episodes it holds. Six counts
+/// rather than a verdict, because most of what happens to a title is not a
+/// failure and "0 fetched" needs to say which it was.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, uniffi::Record)]
 pub struct FetchReport {
     pub posters_fetched: u32,

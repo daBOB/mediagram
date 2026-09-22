@@ -884,43 +884,43 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_catalog_facts() and 0xFFFF) != 61540) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_check_password() and 0xFFFF) != 22796) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_check_password() and 0xFFFF) != 58515) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_fetch_missing() and 0xFFFF) != 41722) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_fetch_missing() and 0xFFFF) != 46161) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_is_authorized() and 0xFFFF) != 30182) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_list_libraries() and 0xFFFF) != 28238) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_list_libraries() and 0xFFFF) != 31313) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_list_sets() and 0xFFFF) != 8505) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_list_sets() and 0xFFFF) != 11887) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_poster_path() and 0xFFFF) != 16393) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_read() and 0xFFFF) != 42617) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_read() and 0xFFFF) != 23677) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_catalog() and 0xFFFF) != 35217) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_catalog() and 0xFFFF) != 12465) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_library() and 0xFFFF) != 22897) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_library() and 0xFFFF) != 63677) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_request_code() and 0xFFFF) != 21364) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_request_code() and 0xFFFF) != 6400) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_sign_in() and 0xFFFF) != 40173) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_sign_in() and 0xFFFF) != 62083) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_title_info() and 0xFFFF) != 51771) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_total_size() and 0xFFFF) != 59108) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_total_size() and 0xFFFF) != 8277) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_constructor_core_new() and 0xFFFF) != 57756) {
@@ -2118,21 +2118,10 @@ public object FfiConverterTypeCatalogFacts: FfiConverterRustBuffer<CatalogFacts>
 /**
  * What one fetch did, for the screen that reports it.
  *
- * One run fills both gaps a library can leave — the artwork a channel index
- * cannot carry, and the descriptions nobody ran `mediagram metadata` for —
- * so the counts come in pairs, and the last two are what neither half could
- * do anything about.
- *
- * **Every count is a number of titles.** A title is what a shelf shows as
- * one card: a film, or a whole series or course however many episodes or
- * lessons it holds. Every episode of a series shares one provider id, one
- * poster and one description, so a season of eight is one here and not
- * eight — and a course of 162 lessons is one title without a provider
- * entry, so every count on the screen measures the same thing.
- *
- * Six counts rather than a verdict, because most of what can happen to a
- * title is not a failure and a viewer reading "0 fetched" needs to know
- * which of them it was.
+ * Every count is a number of titles — what a shelf shows as one card, so a
+ * series or a course is one however many episodes it holds. Six counts
+ * rather than a verdict, because most of what happens to a title is not a
+ * failure and "0 fetched" needs to say which it was.
  */
 data class FetchReport (
     var `postersFetched`: kotlin.UInt
