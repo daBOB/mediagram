@@ -17,6 +17,15 @@ to `main`. Full phase-by-phase detail lives in
   out. A client takes its new name the next time it connects. The Android
   core's constructor gains the device name, since only Kotlin can read it.
 
+**Added**
+
+- The Android core can say which account is signed in (`account`: name and
+  username, never the number), which datacentre it lives on (`dcId`, from the
+  stored key, no network), and sign out properly (`signOut`): `auth.logOut`
+  at Telegram first — deleting the key file alone left the login valid and
+  listed in the account's sessions — then the connection and the key, which
+  go even when Telegram cannot be reached. For the Settings screen to come.
+
 **Fixed**
 
 - Update library on the Android app now shows the posters it fetches. Each

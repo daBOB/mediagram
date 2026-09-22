@@ -9,7 +9,13 @@
 - `docs/code-standards.md` § Security (mask phone to last 2 digits — not needed: phone not shown)
 
 ## Overview
-Priority P2. Status: pending. Two new exports so Android can show the connection and sign
+Priority P2. Status: **done 2026-09-23** (uncommitted). Built in `api/account/profile.rs` (own `#[uniffi::export]`
+block, as `events.rs` does — `api/mod.rs` has no room); `AccountSummary` in `dto.rs`; `session::forget_auth_key` already
+existed, so no `delete_auth_key`. `sign_out`: `auth.logOut` capped at 10 s (offline still forgets), then state reset
+(drops the pool; a waiting update listener ends itself — its lock is never taken), then key removed; idempotent.
+Kotlin wrappers are 08's. Not live-tested: minting a throwaway login needs the account's 2FA password (a QR attempt
+left a password-pending session, revoked at once via `account.resetAuthorization`, which that exercised live).
+Original text: Two new exports so Android can show the connection and sign
 out properly (server-side `auth.logOut`, not just deleting the key file).
 
 ## Key insights
@@ -45,9 +51,9 @@ Delete: none.
 4. Run `scripts/generate-android-bindings.sh` and `scripts/build-android-core.sh`; `cargo test -p mediagram-core`; `scripts/check.sh`.
 
 ## Todo
-- [ ] delete_auth_key + test
-- [ ] account()/dc_id()/sign_out() + tests
-- [ ] bindings regenerated, core rebuilt
+- [x] delete_auth_key + test
+- [x] account()/dc_id()/sign_out() + tests
+- [x] bindings regenerated, core rebuilt
 
 ## Success criteria
 - `cargo test -p mediagram-core` green; clippy clean; bindings diff contains only the new symbols.

@@ -161,3 +161,11 @@ pub struct LibraryChoice {
     pub handle: String,
     pub title: String,
 }
+
+/// Who the signed-in account is, for a screen that shows the connection.
+/// Never the phone number: nothing here needs it, so nothing carries it.
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct AccountSummary {
+    pub name: String,
+    pub username: Option<String>,
+}
