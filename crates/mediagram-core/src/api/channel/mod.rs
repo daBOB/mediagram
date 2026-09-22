@@ -91,14 +91,17 @@ pub(super) async fn refresh_library(core: &Core, handle: String) -> Result<u64, 
     install(core, &client, &document, &version).await
 }
 
-/// The channel or group behind a dialog, with the authority needed to
+/// The broadcast channel behind a dialog, with the authority needed to
 /// address it later. A peer whose reference cannot be resolved is skipped
 /// rather than listed: a title that cannot be opened is worse than absent.
 async fn entry_of(peer: &grammers_client::peer::Peer) -> Option<LibraryEntry> {
     use grammers_client::peer::Peer;
     match peer {
-        Peer::Channel(_) | Peer::Group(_) => {}
-        Peer::User(_) => return None,
+        Peer::Channel(_) => {}
+        // Any member of a group can post in it, so an index found there says
+        // nothing about who published it. Only a broadcast channel, where
+        // only its admins post, is offered as a library.
+        Peer::Group(_) | Peer::User(_) => return None,
     }
     let reference = peer.to_ref().await.ok().flatten()?;
     Some(LibraryEntry {
@@ -144,6 +147,11 @@ async fn newest_index(client: &Client, peer: PeerRef) -> Result<(Document, Strin
             found.push(message);
         }
     }
+
+    // Only the channel's own posts: a message a member slipped in — through
+    // a discussion group, say, or into a library chosen before groups
+    // stopped being offered — is not a snapshot anyone published.
+    found.retain(Message::post);
 
     let candidates: Vec<(&str, i64)> = found
         .iter()

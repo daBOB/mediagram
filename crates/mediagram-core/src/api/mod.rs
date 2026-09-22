@@ -185,8 +185,9 @@ impl Core {
         account::auth::check_password(self, password).await
     }
 
-    /// The libraries this account could choose from, in the order Telegram
-    /// itself lists them: pinned conversations first, then most recent.
+    /// The libraries this account could choose from — its broadcast
+    /// channels, in the order Telegram itself lists them: pinned
+    /// conversations first, then most recent.
     pub async fn list_libraries(&self) -> Result<Vec<LibraryChoice>, CoreError> {
         channel::list_libraries(self).await
     }

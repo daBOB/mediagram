@@ -294,7 +294,9 @@ prefix alone. Each push pins the new index message and unpins whatever
 index message it replaces, so a reader looking for the current index reads
 the channel's pinned messages and picks the newest `#mlib-index` one. "Newest" is by `pushed_at`, and a reader does not believe one more than a
 day ahead of its own clock — such a caption is treated like one whose time
-cannot be read, so it never outranks a real snapshot. The marker, the JSON
+cannot be read, so it never outranks a real snapshot. Only the channel's own posts are candidates: a library is a broadcast
+channel, where only its admins can post, and a message anyone else managed to
+put there is not a snapshot anyone published. The marker, the JSON
 line and both rules live in `mlib_spec::index_caption`.
 
 ### `meta` keys
