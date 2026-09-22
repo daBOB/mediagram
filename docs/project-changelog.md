@@ -9,6 +9,44 @@ to `main`. Full phase-by-phase detail lives in
 
 **Shipped**
 
+- A title held on disk in full now says "cached", instead of reporting how far
+  ahead it has read. The browser buffers the same minute or so whether the
+  bytes come off a local disk or across the network, so the readout described
+  both identically — "0:52 ahead, filling 3.1x" — which read as the cache not
+  working on precisely the titles where it had. The seek track is painted
+  whole for the same reason: nothing past the browser's own buffer is waiting
+  on anything, so drawing a buffer edge in the middle of it described a limit
+  that was not there.
+
+  It is asked as the player opens a title, over a new `/api/sets/{id}/held`,
+  rather than read from the catalog the page fetched once at load — which goes
+  on saying "streaming" about an episode that finished caching since. Behind
+  it, `HeldSets.check` looks at the one set now rather than answering from the
+  last scan; one set is one directory, so asking fresh is cheap.
+
+  Two things it deliberately does not claim. A conversion of a held title
+  still reports its buffer, because it is waiting on an encoder and the buffer
+  is the honest answer. And a request that fails leaves the readout as it was:
+  not knowing is the old behaviour, not an error worth a sentence on screen.
+
+- The web player and its server negotiate the video codec. Every HEVC title —
+  229 of them, all Matroska — was re-encoded to H.264 for every browser,
+  because `playable.js` could only name codecs that play in *all* of them.
+  The page now asks its own browser once whether it decodes HEVC, counting it
+  only when both `canPlayType` and `MediaSource.isTypeSupported` accept
+  `hvc1`, and sends `?vcodecs=hevc` with each conversion. For that browser the
+  picture is copied rather than encoded: tagged `hvc1`, in fMP4 segments,
+  which is the only form hls.js plays HEVC from. Only the soundtrack is
+  converted, and the note says "Repackaging" rather than "Converting".
+  Verified in Firefox 156 against a cached HEVC episode: 1280×720, playing,
+  and thirty seconds of it repackaged in a third of a second. Browsers that
+  do not decode HEVC get H.264 exactly as before, and every other session
+  keeps MPEG-TS. The server takes only codec names on `NEGOTIABLE`.
+
+  A WebAssembly HEVC decoder was considered and rejected: it cannot feed MSE,
+  decodes on the CPU alone, and would replace an encode that already scores
+  SSIM 0.988 against its source. The saving is in not encoding at all.
+
 - A start page on the phone, and the app opens on it. Three rows — latest
   movies, latest series, latest courses — six plates each, with **See all**
   through to the whole shelf. Home is the first entry in the masthead, as it
