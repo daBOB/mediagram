@@ -91,7 +91,7 @@ struct Described {
 /// describes.
 ///
 /// A title something already describes is left alone, the same way a poster
-/// already on disk is not downloaded again. `show_info` asks both stores at
+/// already on disk is not downloaded again. `title_info` asks both stores at
 /// once: the index's own row was written in the library's language by
 /// whoever curated it and this device has no better claim on it, and a row
 /// an earlier run left here is this run's own answer, already given.
@@ -101,12 +101,12 @@ struct Described {
 /// must not leave a database file behind on a device that learned nothing —
 /// the same rule the reading side keeps in `details::fetched`.
 ///
-/// `show_info` re-resolves the `current` symlink on every title, so this is
+/// `title_info` re-resolves the `current` symlink on every title, so this is
 /// the one reader in a run that is not pinned to the snapshot `plan_fetch`
 /// canonicalised. That is the right answer rather than a missed one, in all
 /// three cases a refresh landing mid-run can produce: a newer index that
 /// describes the title means the title is worth skipping, and its row is
-/// the one `show_info` would prefer anyway; a newer index that does not
+/// the one `title_info` would prefer anyway; a newer index that does not
 /// means the fetch should happen; and a symlink caught mid-swap reads as
 /// "nothing describes it", costing one redundant fetch whose row the index
 /// outranks on every later read. Pinning it instead would mean carrying the
@@ -122,7 +122,7 @@ async fn record_descriptions(
     let mut opened: Option<Connection> = None;
     for (kind, id) in titles {
         let key = format!("tmdb-{}-{id}", kind_key(*kind));
-        if store::show_info(core, key.clone()).is_some() {
+        if store::title_info(core, key.clone()).is_some() {
             described.already_known += 1;
             continue;
         }

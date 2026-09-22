@@ -49,8 +49,10 @@ class MlibDataSource(private val core: CoreClient?, private val counters: Playba
     override fun open(dataSpec: DataSpec): Long {
         val client = core ?: throw IOException("this device is not set up to read the library")
         val id = dataSpec.uri.lastPathSegment ?: throw IOException("no set in the given URI")
+        // Blocking, like fetch() below: ExoPlayer calls open() on its loader
+        // thread and expects it to block until the size is known.
         val total = try {
-            client.totalSize(id)
+            runBlocking { client.totalSize(id) }
         } catch (e: CoreException) {
             throw IOException("could not read the set's size", e)
         }
@@ -103,8 +105,9 @@ class MlibDataSource(private val core: CoreClient?, private val counters: Playba
     private fun fetch(want: Int): ByteArray =
         // Blocking is correct here: ExoPlayer calls read() on its loader
         // thread and expects it to block until bytes arrive or the input
-        // ends. This is the one place in :core:playback runBlocking is
-        // allowed — everywhere else it would risk landing on main.
+        // ends. This and open() are the only places in :core:playback
+        // runBlocking is allowed — everywhere else it would risk landing on
+        // main.
         try {
             runBlocking { core!!.read(setId!!, position, want) }.also { counters.fetched(it.size) }
         } catch (e: CoreException) {

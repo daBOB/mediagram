@@ -702,9 +702,9 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_request_code(
     ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_show_info(
-    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_sign_in(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_title_info(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_total_size(
     ): Int
@@ -734,8 +734,8 @@ internal object UniffiLib {
     ): Unit
     external fun uniffi_mediagram_core_fn_constructor_core_new(`dataDir`: RustBuffer.ByValue,`apiId`: Int,`apiHash`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_catalog_facts(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): RustBuffer.ByValue
+    external fun uniffi_mediagram_core_fn_method_core_catalog_facts(`ptr`: Long,
+    ): Long
     external fun uniffi_mediagram_core_fn_method_core_check_password(`ptr`: Long,`password`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_fetch_missing(`ptr`: Long,`tmdbKey`: RustBuffer.ByValue,`language`: RustBuffer.ByValue,
@@ -744,8 +744,8 @@ internal object UniffiLib {
     ): Byte
     external fun uniffi_mediagram_core_fn_method_core_list_libraries(`ptr`: Long,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_list_sets(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): RustBuffer.ByValue
+    external fun uniffi_mediagram_core_fn_method_core_list_sets(`ptr`: Long,
+    ): Long
     external fun uniffi_mediagram_core_fn_method_core_poster_path(`ptr`: Long,`posterKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_mediagram_core_fn_method_core_read(`ptr`: Long,`setId`: RustBuffer.ByValue,`offset`: Long,`len`: Int,
@@ -756,11 +756,11 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_request_code(`ptr`: Long,`phone`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_show_info(`ptr`: Long,`posterKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-    ): RustBuffer.ByValue
     external fun uniffi_mediagram_core_fn_method_core_sign_in(`ptr`: Long,`token`: RustBuffer.ByValue,`code`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_total_size(`ptr`: Long,`setId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_mediagram_core_fn_method_core_title_info(`ptr`: Long,`posterKey`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_total_size(`ptr`: Long,`setId`: RustBuffer.ByValue,
     ): Long
     external fun ffi_mediagram_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -881,7 +881,7 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 }
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
-    if ((lib.uniffi_mediagram_core_checksum_method_core_catalog_facts() and 0xFFFF) != 50153) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_catalog_facts() and 0xFFFF) != 61540) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_check_password() and 0xFFFF) != 18803) {
@@ -893,10 +893,10 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_is_authorized() and 0xFFFF) != 30182) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_list_libraries() and 0xFFFF) != 41157) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_list_libraries() and 0xFFFF) != 53643) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_list_sets() and 0xFFFF) != 495) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_list_sets() and 0xFFFF) != 21497) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_poster_path() and 0xFFFF) != 59229) {
@@ -905,22 +905,22 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_read() and 0xFFFF) != 63462) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_catalog() and 0xFFFF) != 17373) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_catalog() and 0xFFFF) != 36053) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_library() and 0xFFFF) != 44028) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_library() and 0xFFFF) != 49461) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_request_code() and 0xFFFF) != 62780) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_show_info() and 0xFFFF) != 28163) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if ((lib.uniffi_mediagram_core_checksum_method_core_sign_in() and 0xFFFF) != 55455) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_total_size() and 0xFFFF) != 54101) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_title_info() and 0xFFFF) != 6399) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_total_size() and 0xFFFF) != 41134) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_constructor_core_new() and 0xFFFF) != 57756) {
@@ -1452,7 +1452,7 @@ public interface CoreInterface {
      * read to draw a screen, and a screen that cannot draw because a count
      * failed is worse than one that says a library is empty.
      */
-    fun `catalogFacts`(): CatalogFacts
+    suspend fun `catalogFacts`(): CatalogFacts
     
     suspend fun `checkPassword`(`password`: kotlin.String)
     
@@ -1479,43 +1479,53 @@ public interface CoreInterface {
     fun `isAuthorized`(): kotlin.Boolean
     
     /**
-     * The libraries this account could choose from, in the order Telegram
-     * itself lists them: pinned conversations first, then most recent.
+     * The libraries this account could choose from — its broadcast
+     * channels, in the order Telegram itself lists them: pinned
+     * conversations first, then most recent.
      */
     suspend fun `listLibraries`(): List<LibraryChoice>
     
-    fun `listSets`(): List<SetSummary>
+    /**
+     * Every playable set in the current catalog. An empty list, not
+     * `NotFound`, when no catalog is loaded yet: a shelf with nothing on it
+     * is what a first launch shows, whereas the calls that ask about one
+     * named set have nothing sensible to return and say so.
+     */
+    suspend fun `listSets`(): List<SetSummary>
     
     fun `posterPath`(`posterKey`: kotlin.String): kotlin.String?
     
     suspend fun `read`(`setId`: kotlin.String, `offset`: kotlin.ULong, `len`: kotlin.UInt): kotlin.ByteArray
     
     /**
-     * The published-package reader, kept whole beside the channel path
-     * above: it is the only one that carries poster art, and nothing in the
+     * Refreshes from **a published package**: fetches the pointer at
+     * `pointer_url`, then the encrypted package it names, and installs the
+     * index inside it. Kept whole beside [`Core::refresh_library`]: it is
+     * the only source that carries poster art, though nothing in the
      * first-run flow reaches it any more.
      */
     suspend fun `refreshCatalog`(`pointerUrl`: kotlin.String, `keyB64`: kotlin.String): kotlin.ULong
     
     /**
-     * Installs the index pinned in the chosen library's channel, and answers
-     * how many sets it holds. Also the refresh: it re-reads the same pin.
+     * Refreshes from **the channel**: installs the newest index snapshot the
+     * chosen library's channel holds, and answers how many sets it holds.
+     * The first install and every later refresh are the same call.
      */
     suspend fun `refreshLibrary`(`handle`: kotlin.String): kotlin.ULong
     
     suspend fun `requestCode`(`phone`: kotlin.String): kotlin.String
     
+    suspend fun `signIn`(`token`: kotlin.String, `code`: kotlin.String): AuthOutcome
+    
     /**
      * What is known about a title, or nothing. The index answers first and
-     * what this device fetched fills the gaps — see [`details::show_info`].
+     * what this device fetched fills the gaps — see [`enrich::details::title_info`].
      * A course has no provider entry and a library assembled without a TMDB
      * key has no rows at all; both are ordinary, so neither is an error.
      */
-    fun `showInfo`(`posterKey`: kotlin.String): ShowInfo?
+    suspend fun `titleInfo`(`posterKey`: kotlin.String): TitleInfo?
     
-    suspend fun `signIn`(`token`: kotlin.String, `code`: kotlin.String): AuthOutcome
-    
-    fun `totalSize`(`setId`: kotlin.String): kotlin.ULong
+    suspend fun `totalSize`(`setId`: kotlin.String): kotlin.ULong
     
     companion object
 }
@@ -1649,18 +1659,25 @@ open class Core: Disposable, AutoCloseable, CoreInterface
      * Total failure is reported as zeroes rather than an error: this is
      * read to draw a screen, and a screen that cannot draw because a count
      * failed is worse than one that says a library is empty.
-     */override fun `catalogFacts`(): CatalogFacts {
-            return FfiConverterTypeCatalogFacts.lift(
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_mediagram_core_fn_method_core_catalog_facts(
-        it,
-        _status)
-}
-    }
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `catalogFacts`() : CatalogFacts {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_catalog_facts(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeCatalogFacts.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
     )
     }
-    
 
     
     @Throws(CoreException::class)
@@ -1741,8 +1758,9 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
     
     /**
-     * The libraries this account could choose from, in the order Telegram
-     * itself lists them: pinned conversations first, then most recent.
+     * The libraries this account could choose from — its broadcast
+     * channels, in the order Telegram itself lists them: pinned
+     * conversations first, then most recent.
      */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -1765,18 +1783,31 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     }
 
     
-    @Throws(CoreException::class)override fun `listSets`(): List<SetSummary> {
-            return FfiConverterSequenceTypeSetSummary.lift(
-    callWithHandle {
-    uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_mediagram_core_fn_method_core_list_sets(
-        it,
-        _status)
-}
-    }
+    /**
+     * Every playable set in the current catalog. An empty list, not
+     * `NotFound`, when no catalog is loaded yet: a shelf with nothing on it
+     * is what a first launch shows, whereas the calls that ask about one
+     * named set have nothing sensible to return and say so.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `listSets`() : List<SetSummary> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_list_sets(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypeSetSummary.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
     )
     }
-    
 
     override fun `posterPath`(`posterKey`: kotlin.String): kotlin.String? {
             return FfiConverterOptionalString.lift(
@@ -1818,8 +1849,10 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
     
     /**
-     * The published-package reader, kept whole beside the channel path
-     * above: it is the only one that carries poster art, and nothing in the
+     * Refreshes from **a published package**: fetches the pointer at
+     * `pointer_url`, then the encrypted package it names, and installs the
+     * index inside it. Kept whole beside [`Core::refresh_library`]: it is
+     * the only source that carries poster art, though nothing in the
      * first-run flow reaches it any more.
      */
     @Throws(CoreException::class)
@@ -1846,8 +1879,9 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
     
     /**
-     * Installs the index pinned in the chosen library's channel, and answers
-     * how many sets it holds. Also the refresh: it re-reads the same pin.
+     * Refreshes from **the channel**: installs the newest index snapshot the
+     * chosen library's channel holds, and answers how many sets it holds.
+     * The first install and every later refresh are the same call.
      */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -1893,26 +1927,6 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     }
 
     
-    /**
-     * What is known about a title, or nothing. The index answers first and
-     * what this device fetched fills the gaps — see [`details::show_info`].
-     * A course has no provider entry and a library assembled without a TMDB
-     * key has no rows at all; both are ordinary, so neither is an error.
-     */override fun `showInfo`(`posterKey`: kotlin.String): ShowInfo? {
-            return FfiConverterOptionalTypeShowInfo.lift(
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_mediagram_core_fn_method_core_show_info(
-        it,
-        
-        FfiConverterString.lower(`posterKey`),_status)
-}
-    }
-    )
-    }
-    
-
-    
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `signIn`(`token`: kotlin.String, `code`: kotlin.String) : AuthOutcome {
@@ -1936,19 +1950,53 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     }
 
     
-    @Throws(CoreException::class)override fun `totalSize`(`setId`: kotlin.String): kotlin.ULong {
-            return FfiConverterULong.lift(
-    callWithHandle {
-    uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_mediagram_core_fn_method_core_total_size(
-        it,
-        
-        FfiConverterString.lower(`setId`),_status)
-}
-    }
+    /**
+     * What is known about a title, or nothing. The index answers first and
+     * what this device fetched fills the gaps — see [`enrich::details::title_info`].
+     * A course has no provider entry and a library assembled without a TMDB
+     * key has no rows at all; both are ordinary, so neither is an error.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `titleInfo`(`posterKey`: kotlin.String) : TitleInfo? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_title_info(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`posterKey`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalTypeTitleInfo.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
     )
     }
+
     
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `totalSize`(`setId`: kotlin.String) : kotlin.ULong {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_total_size(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`setId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_u64(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_u64(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_u64(future) },
+        // lift function
+        { FfiConverterULong.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
 
     
 
@@ -2067,10 +2115,8 @@ public object FfiConverterTypeCatalogFacts: FfiConverterRustBuffer<CatalogFacts>
  * one card: a film, or a whole series or course however many episodes or
  * lessons it holds. Every episode of a series shares one provider id, one
  * poster and one description, so a season of eight is one here and not
- * eight. `no_provider_id` used to be the exception, counting sets while
- * its neighbours counted titles, which made a 162-lesson course read as
- * "162 titles have no provider entry" beside "3 posters fetched" — two
- * numbers of two different things, side by side, with nothing saying so.
+ * eight — and a course of 162 lessons is one title without a provider
+ * entry, so every count on the screen measures the same thing.
  *
  * Six counts rather than a verdict, because most of what can happen to a
  * title is not a failure and a viewer reading "0 fetched" needs to know
@@ -2339,7 +2385,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
 /**
  * What a provider said about a title, flattened for the binding surface.
  */
-data class ShowInfo (
+data class TitleInfo (
     var `overview`: kotlin.String?
     , 
     var `tagline`: kotlin.String?
@@ -2364,9 +2410,9 @@ data class ShowInfo (
 /**
  * @suppress
  */
-public object FfiConverterTypeShowInfo: FfiConverterRustBuffer<ShowInfo> {
-    override fun read(buf: ByteBuffer): ShowInfo {
-        return ShowInfo(
+public object FfiConverterTypeTitleInfo: FfiConverterRustBuffer<TitleInfo> {
+    override fun read(buf: ByteBuffer): TitleInfo {
+        return TitleInfo(
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
@@ -2376,7 +2422,7 @@ public object FfiConverterTypeShowInfo: FfiConverterRustBuffer<ShowInfo> {
         )
     }
 
-    override fun allocationSize(value: ShowInfo) = (
+    override fun allocationSize(value: TitleInfo) = (
             FfiConverterOptionalString.allocationSize(value.`overview`) +
             FfiConverterOptionalString.allocationSize(value.`tagline`) +
             FfiConverterOptionalString.allocationSize(value.`genres`) +
@@ -2385,7 +2431,7 @@ public object FfiConverterTypeShowInfo: FfiConverterRustBuffer<ShowInfo> {
             FfiConverterOptionalString.allocationSize(value.`status`)
     )
 
-    override fun write(value: ShowInfo, buf: ByteBuffer) {
+    override fun write(value: TitleInfo, buf: ByteBuffer) {
             FfiConverterOptionalString.write(value.`overview`, buf)
             FfiConverterOptionalString.write(value.`tagline`, buf)
             FfiConverterOptionalString.write(value.`genres`, buf)
@@ -2742,28 +2788,28 @@ public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?>
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypeShowInfo: FfiConverterRustBuffer<ShowInfo?> {
-    override fun read(buf: ByteBuffer): ShowInfo? {
+public object FfiConverterOptionalTypeTitleInfo: FfiConverterRustBuffer<TitleInfo?> {
+    override fun read(buf: ByteBuffer): TitleInfo? {
         if (buf.get().toInt() == 0) {
             return null
         }
-        return FfiConverterTypeShowInfo.read(buf)
+        return FfiConverterTypeTitleInfo.read(buf)
     }
 
-    override fun allocationSize(value: ShowInfo?): ULong {
+    override fun allocationSize(value: TitleInfo?): ULong {
         if (value == null) {
             return 1UL
         } else {
-            return 1UL + FfiConverterTypeShowInfo.allocationSize(value)
+            return 1UL + FfiConverterTypeTitleInfo.allocationSize(value)
         }
     }
 
-    override fun write(value: ShowInfo?, buf: ByteBuffer) {
+    override fun write(value: TitleInfo?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
             buf.put(1)
-            FfiConverterTypeShowInfo.write(value, buf)
+            FfiConverterTypeTitleInfo.write(value, buf)
         }
     }
 }

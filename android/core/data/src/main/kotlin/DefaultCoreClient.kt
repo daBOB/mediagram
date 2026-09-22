@@ -6,7 +6,7 @@ import uniffi.mediagram_core.Core
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SetSummary
-import uniffi.mediagram_core.ShowInfo
+import uniffi.mediagram_core.TitleInfo
 
 /** Delegates every call straight through to the generated native core. */
 class DefaultCoreClient(private val core: Core) : CoreClient {
@@ -26,15 +26,15 @@ class DefaultCoreClient(private val core: Core) : CoreClient {
     override suspend fun refreshCatalog(url: String, keyB64: String): Long =
         core.refreshCatalog(url, keyB64).toLong()
 
-    override fun listSets(): List<SetSummary> = core.listSets()
+    override suspend fun listSets(): List<SetSummary> = core.listSets()
 
     override fun posterPath(posterKey: String): String? = core.posterPath(posterKey)
 
-    override fun showInfo(posterKey: String): ShowInfo? = core.showInfo(posterKey)
+    override suspend fun titleInfo(posterKey: String): TitleInfo? = core.titleInfo(posterKey)
 
-    override fun totalSize(setId: String): Long = core.totalSize(setId).toLong()
+    override suspend fun totalSize(setId: String): Long = core.totalSize(setId).toLong()
 
-    override fun catalogFacts(): CatalogFacts = core.catalogFacts()
+    override suspend fun catalogFacts(): CatalogFacts = core.catalogFacts()
 
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray =
         core.read(setId, offset.toULong(), len.toUInt())

@@ -216,7 +216,7 @@ impl Core {
     /// `NotFound`, when no catalog is loaded yet: a shelf with nothing on it
     /// is what a first launch shows, whereas the calls that ask about one
     /// named set have nothing sensible to return and say so.
-    pub fn list_sets(&self) -> Result<Vec<crate::dto::SetSummary>, CoreError> {
+    pub async fn list_sets(&self) -> Result<Vec<crate::dto::SetSummary>, CoreError> {
         store::list_sets(self)
     }
 
@@ -225,14 +225,14 @@ impl Core {
     }
 
     /// What is known about a title, or nothing. The index answers first and
-    /// what this device fetched fills the gaps — see [`enrich::details::show_info`].
+    /// what this device fetched fills the gaps — see [`enrich::details::title_info`].
     /// A course has no provider entry and a library assembled without a TMDB
     /// key has no rows at all; both are ordinary, so neither is an error.
-    pub fn show_info(&self, poster_key: String) -> Option<crate::dto::ShowInfo> {
-        enrich::details::show_info(self, poster_key)
+    pub async fn title_info(&self, poster_key: String) -> Option<crate::dto::TitleInfo> {
+        enrich::details::title_info(self, poster_key)
     }
 
-    pub fn total_size(&self, set_id: String) -> Result<u64, CoreError> {
+    pub async fn total_size(&self, set_id: String) -> Result<u64, CoreError> {
         store::total_size(self, set_id)
     }
 
@@ -241,7 +241,7 @@ impl Core {
     /// Total failure is reported as zeroes rather than an error: this is
     /// read to draw a screen, and a screen that cannot draw because a count
     /// failed is worse than one that says a library is empty.
-    pub fn catalog_facts(&self) -> crate::dto::CatalogFacts {
+    pub async fn catalog_facts(&self) -> crate::dto::CatalogFacts {
         store::facts(self)
     }
 

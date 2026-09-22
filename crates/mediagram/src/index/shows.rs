@@ -10,27 +10,27 @@
 
 use anyhow::{Context, Result};
 use mediagram_core::shows::SOURCE;
-use mediagram_tmdb::details::ShowRow;
+use mediagram_tmdb::details::TitleDetailsRow;
 use mediagram_tmdb::posters::kind_key;
 use mlib_spec::Kind;
 use rusqlite::{Connection, OptionalExtension, params};
 
 /// Writes a show's entry, replacing whatever was there; see
 /// [`mediagram_core::shows::upsert`], the table's one writer.
-pub fn upsert(conn: &Connection, row: &ShowRow) -> Result<()> {
+pub fn upsert(conn: &Connection, row: &TitleDetailsRow) -> Result<()> {
     mediagram_core::shows::upsert(conn, row)
         .with_context(|| format!("recording {} {}", kind_key(row.kind), row.id))
 }
 
 /// One show's entry, or `None` when nothing has been recorded for it.
-pub fn get(conn: &Connection, kind: Kind, id: u64) -> Result<Option<ShowRow>> {
+pub fn get(conn: &Connection, kind: Kind, id: u64) -> Result<Option<TitleDetailsRow>> {
     conn.query_row(
         "SELECT lang, overview, tagline, genres, rating, network, status, first_air, last_air,
                 total_seasons, total_episodes
            FROM shows WHERE source = ?1 AND kind = ?2 AND id = ?3",
         params![SOURCE, kind_key(kind), id as i64],
         |row| {
-            Ok(ShowRow {
+            Ok(TitleDetailsRow {
                 kind,
                 id,
                 lang: row.get(0)?,

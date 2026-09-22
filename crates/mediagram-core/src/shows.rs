@@ -6,7 +6,7 @@
 //! a whole series rather than to each episode of it.
 
 use anyhow::Result;
-use mediagram_tmdb::details::ShowRow;
+use mediagram_tmdb::details::TitleDetailsRow;
 use mediagram_tmdb::posters::kind_key;
 use rusqlite::{Connection, OptionalExtension, params};
 
@@ -21,7 +21,7 @@ pub const SOURCE: &str = "tmdb";
 /// Replacing rather than merging is the point — a later fetch is a
 /// correction, not a second opinion, and asking again in another language
 /// must not leave half the row in the old one.
-pub fn upsert(conn: &Connection, row: &ShowRow) -> rusqlite::Result<()> {
+pub fn upsert(conn: &Connection, row: &TitleDetailsRow) -> rusqlite::Result<()> {
     conn.execute(
         "INSERT INTO shows(source, kind, id, lang, overview, tagline, genres, rating,
                            network, status, first_air, last_air,
@@ -56,7 +56,7 @@ pub fn upsert(conn: &Connection, row: &ShowRow) -> rusqlite::Result<()> {
 
 /// What a viewer would read about a title.
 #[derive(Debug, Clone, PartialEq)]
-pub struct ShowRecord {
+pub struct TitleDetails {
     pub overview: Option<String>,
     pub tagline: Option<String>,
     pub genres: Option<String>,
@@ -77,7 +77,7 @@ pub fn key_parts(poster_key: &str) -> Option<(&str, &str, i64)> {
     Some((SOURCE, kind, id.parse().ok()?))
 }
 
-pub fn read(conn: &Connection, poster_key: &str) -> Result<Option<ShowRecord>> {
+pub fn read(conn: &Connection, poster_key: &str) -> Result<Option<TitleDetails>> {
     let Some((source, kind, id)) = key_parts(poster_key) else {
         return Ok(None);
     };
@@ -87,7 +87,7 @@ pub fn read(conn: &Connection, poster_key: &str) -> Result<Option<ShowRecord>> {
              FROM shows WHERE source = ?1 AND kind = ?2 AND id = ?3",
             rusqlite::params![source, kind, id],
             |row| {
-                Ok(ShowRecord {
+                Ok(TitleDetails {
                     overview: row.get(0)?,
                     tagline: row.get(1)?,
                     genres: row.get(2)?,

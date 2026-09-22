@@ -7,17 +7,17 @@
 //! own: the same `shows` table, built from the same migrations, in a database
 //! [`details_db`] puts where a refresh cannot reach it.
 //!
-//! [`show_info`] is the other half, and the only reader: the index answers
+//! [`title_info`] is the other half, and the only reader: the index answers
 //! first, and what this device fetched fills the gaps.
 
 use std::path::PathBuf;
 
-use mediagram_tmdb::details::ShowRow;
+use mediagram_tmdb::details::TitleDetailsRow;
 use mlib_spec::schema;
 use rusqlite::{Connection, OpenFlags};
 
-use crate::dto::ShowInfo;
-use crate::shows::{ShowRecord, key_parts, read};
+use crate::dto::TitleInfo;
+use crate::shows::{TitleDetails, key_parts, read};
 
 use crate::api::{Core, CoreError, store};
 
@@ -92,7 +92,7 @@ fn migrate_from(conn: &Connection, at: i64) -> Result<(), CoreError> {
 const PREPARING: &str = "preparing the description store";
 
 /// Records what a fetch learned about one title; see [`crate::shows::upsert`].
-pub fn upsert(conn: &Connection, row: &ShowRow) -> Result<(), CoreError> {
+pub fn upsert(conn: &Connection, row: &TitleDetailsRow) -> Result<(), CoreError> {
     crate::shows::upsert(conn, row).map_err(CoreError::io("recording a description"))
 }
 
@@ -106,7 +106,7 @@ pub fn upsert(conn: &Connection, row: &ShowRow) -> Result<(), CoreError> {
 ///
 /// Neither store holding it is not an error — a course has no provider
 /// entry, and a library assembled without a key has no rows at all.
-pub(in crate::api) fn show_info(core: &Core, poster_key: String) -> Option<ShowInfo> {
+pub(in crate::api) fn title_info(core: &Core, poster_key: String) -> Option<TitleInfo> {
     // One gate, both stores, before either is opened. `poster_path` settles
     // the same question the same way for the two places artwork can sit: a
     // second lookup location must never become a second way past the check.
@@ -115,7 +115,7 @@ pub(in crate::api) fn show_info(core: &Core, poster_key: String) -> Option<ShowI
 }
 
 /// The row the downloaded index carries, if it carries one.
-fn in_index(core: &Core, poster_key: &str) -> Option<ShowRecord> {
+fn in_index(core: &Core, poster_key: &str) -> Option<TitleDetails> {
     let conn = store::open(core).ok()?;
     read(&conn, poster_key).ok().flatten()
 }
@@ -126,7 +126,7 @@ fn in_index(core: &Core, poster_key: &str) -> Option<ShowRecord> {
 /// missing file is nothing rather than an error. Opened read-only, and only
 /// once the file is known to be there, because a lookup that created the
 /// store would leave one behind on every device that merely opened a title.
-fn fetched(core: &Core, poster_key: &str) -> Option<ShowRecord> {
+fn fetched(core: &Core, poster_key: &str) -> Option<TitleDetails> {
     let path = details_db(core);
     if !path.exists() {
         return None;

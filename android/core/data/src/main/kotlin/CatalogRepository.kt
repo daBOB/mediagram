@@ -1,14 +1,11 @@
 package data
 
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import model.Kind
 import model.MediaSet
 import settings.LibrarySettings
 import uniffi.mediagram_core.SetSummary
-import uniffi.mediagram_core.ShowInfo
+import uniffi.mediagram_core.TitleInfo
 
 interface CatalogRepository {
     suspend fun refresh(): Result<Int>
@@ -20,7 +17,7 @@ interface CatalogRepository {
      * Nothing is ordinary rather than exceptional: a course has no provider
      * entry, and a library assembled without a TMDB key has no rows at all.
      */
-    suspend fun showInfo(posterKey: String): ShowInfo?
+    suspend fun titleInfo(posterKey: String): TitleInfo?
 }
 
 /**
@@ -36,11 +33,10 @@ class DefaultCatalogRepository(
     private val coreProvider: CoreProvider,
     private val settings: LibrarySettings,
     private val refreshes: RefreshLog,
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : CatalogRepository {
 
     /**
-     * Re-reads the index pinned in the chosen library's channel. The handle
+     * Re-reads the newest index the chosen library's channel holds. The handle
      * is read per call rather than held, for the same reason the core is:
      * a "start over" replaces both, and a repository that had captured
      * either would go on refreshing a library the person had given back.
@@ -78,16 +74,9 @@ class DefaultCatalogRepository(
         return core.listSets().map { toMediaSet(core, it) }
     }
 
-    /**
-     * The core is awaited here rather than captured, as everywhere else, and
-     * the query itself runs on [dispatcher]: `showInfo` is not one of the
-     * generated suspend bindings, so it reads the catalog database on
-     * whichever thread calls it, and the caller is a composition on main.
-     */
-    override suspend fun showInfo(posterKey: String): ShowInfo? {
-        val core = coreProvider.awaitCore()
-        return withContext(dispatcher) { core.showInfo(posterKey) }
-    }
+    /** The core is awaited here rather than captured, as everywhere else. */
+    override suspend fun titleInfo(posterKey: String): TitleInfo? =
+        coreProvider.awaitCore().titleInfo(posterKey)
 
     /**
      * One index row, as a set the shelves can place.

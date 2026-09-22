@@ -11,7 +11,7 @@ import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SetSummary
-import uniffi.mediagram_core.ShowInfo
+import uniffi.mediagram_core.TitleInfo
 
 class FakeCore(
     private val sets: List<SetSummary> = emptyList(),
@@ -51,11 +51,11 @@ class FakeCore(
     }
 
     override suspend fun refreshCatalog(url: String, keyB64: String): Long = refreshResult
-    override fun listSets(): List<SetSummary> = sets
+    override suspend fun listSets(): List<SetSummary> = sets
     override fun posterPath(posterKey: String): String? = null
-    override fun showInfo(posterKey: String): ShowInfo? = null
-    override fun totalSize(setId: String): Long = 0
-    override fun catalogFacts(): CatalogFacts =
+    override suspend fun titleInfo(posterKey: String): TitleInfo? = null
+    override suspend fun totalSize(setId: String): Long = 0
+    override suspend fun catalogFacts(): CatalogFacts =
         CatalogFacts("channel", 0uL, 0uL, 0u, publishedAt[minOf(readings++, publishedAt.lastIndex)])
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray = ByteArray(0)
     override suspend fun fetchMissing(tmdbKey: String, language: String): FetchReport =

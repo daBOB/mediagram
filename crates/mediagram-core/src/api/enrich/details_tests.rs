@@ -8,11 +8,11 @@ fn core_at(dir: &std::path::Path) -> std::sync::Arc<Core> {
     Core::new(dir.display().to_string(), 1, "test-hash".into())
 }
 
-/// A row as a fetch would record it. `ShowRow` carries no source of its own
+/// A row as a fetch would record it. `TitleDetailsRow` carries no source of its own
 /// — `upsert` writes the one the index writes — and names the kind with the
 /// provider's own enum rather than with text.
-fn described(kind: Kind, id: u64, overview: &str) -> ShowRow {
-    ShowRow {
+fn described(kind: Kind, id: u64, overview: &str) -> TitleDetailsRow {
+    TitleDetailsRow {
         kind,
         id,
         lang: "en-US".into(),
@@ -194,5 +194,5 @@ fn an_injection_payload_is_refused_against_the_sidecar_too() {
     .unwrap();
     drop(conn);
 
-    assert!(show_info(&core, format!("tmdb-{kind}-550")).is_none());
+    assert!(title_info(&core, format!("tmdb-{kind}-550")).is_none());
 }

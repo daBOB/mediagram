@@ -7,7 +7,7 @@ use rusqlite::Connection;
 
 use mediagram_core::api::Core;
 use mediagram_core::api::enrich::details;
-use mediagram_tmdb::details::ShowRow;
+use mediagram_tmdb::details::TitleDetailsRow;
 
 fn core_at(dir: &std::path::Path) -> std::sync::Arc<Core> {
     Core::new(dir.display().to_string(), 1, "test-hash".into())
@@ -52,10 +52,10 @@ fn index_describes_nothing(dir: &std::path::Path) {
 }
 
 /// One row in the sidecar, as a fetch on this device would leave it.
-/// `ShowRow` carries no source of its own — `upsert` writes the one the index
+/// `TitleDetailsRow` carries no source of its own — `upsert` writes the one the index
 /// writes — and names the kind with the provider's own enum.
 fn fetched_describes(core: &Core, kind: Kind, id: u64, overview: &str) {
-    let row = ShowRow {
+    let row = TitleDetailsRow {
         kind,
         id,
         lang: "en-US".into(),
@@ -74,13 +74,13 @@ fn fetched_describes(core: &Core, kind: Kind, id: u64, overview: &str) {
     details::upsert(&conn, &row).unwrap();
 }
 
-#[test]
-fn a_film_reports_what_the_provider_said_about_it() {
+#[tokio::test]
+async fn a_film_reports_what_the_provider_said_about_it() {
     let dir = tempfile::tempdir().unwrap();
     catalog_with_show(dir.path(), "movie", 11225);
     let core = core_at(dir.path());
 
-    let info = core.show_info("tmdb-movie-11225".into()).expect("a recorded show");
+    let info = core.title_info("tmdb-movie-11225".into()).await.expect("a recorded show");
 
     assert_eq!(info.overview.as_deref(), Some("Dracula is awakened."));
     assert_eq!(info.tagline.as_deref(), Some("The final hunt begins."));
@@ -89,34 +89,34 @@ fn a_film_reports_what_the_provider_said_about_it() {
 }
 
 /// Every episode of a series shares one row, so the key must be the series'.
-#[test]
-fn a_series_key_finds_the_row_that_belongs_to_the_whole_show() {
+#[tokio::test]
+async fn a_series_key_finds_the_row_that_belongs_to_the_whole_show() {
     let dir = tempfile::tempdir().unwrap();
     catalog_with_show(dir.path(), "tv", 1399);
     let core = core_at(dir.path());
 
-    assert!(core.show_info("tmdb-tv-1399".into()).is_some());
+    assert!(core.title_info("tmdb-tv-1399".into()).await.is_some());
 }
 
 /// A title the uploader never resolved has no row, and that is ordinary
 /// rather than an error: a course has no provider entry at all.
-#[test]
-fn a_title_with_no_recorded_description_says_nothing_rather_than_failing() {
+#[tokio::test]
+async fn a_title_with_no_recorded_description_says_nothing_rather_than_failing() {
     let dir = tempfile::tempdir().unwrap();
     catalog_with_show(dir.path(), "movie", 11225);
     let core = core_at(dir.path());
 
-    assert!(core.show_info("tmdb-movie-99999".into()).is_none());
+    assert!(core.title_info("tmdb-movie-99999".into()).await.is_none());
 }
 
 /// A key that is not a key never reaches SQL.
-#[test]
-fn a_malformed_key_is_refused_before_it_is_queried() {
+#[tokio::test]
+async fn a_malformed_key_is_refused_before_it_is_queried() {
     let dir = tempfile::tempdir().unwrap();
     catalog_with_show(dir.path(), "movie", 11225);
     let core = core_at(dir.path());
 
-    assert!(core.show_info("'; DROP TABLE shows; --".into()).is_none());
+    assert!(core.title_info("'; DROP TABLE shows; --".into()).await.is_none());
 }
 
 /// A key that begins with `tmdb-` and still carries an injection payload in
@@ -126,63 +126,63 @@ fn a_malformed_key_is_refused_before_it_is_queried() {
 /// through unchecked, the query would find it and answer with its text,
 /// which is what proves the key never reached the query at all rather than
 /// merely matching nothing.
-#[test]
-fn a_key_carrying_an_injection_payload_is_refused_even_when_a_matching_row_exists() {
+#[tokio::test]
+async fn a_key_carrying_an_injection_payload_is_refused_even_when_a_matching_row_exists() {
     let dir = tempfile::tempdir().unwrap();
     let malicious_kind = "movie'; DROP TABLE shows;";
     index_describes(dir.path(), malicious_kind, 11225, "should never be read");
     let core = core_at(dir.path());
 
-    assert!(core.show_info(format!("tmdb-{malicious_kind}-11225")).is_none());
+    assert!(core.title_info(format!("tmdb-{malicious_kind}-11225")).await.is_none());
 }
 
 /// The publisher's own description wins. It was written in the library's
 /// language by whoever curated it, and a phone that fetched its own copy has
 /// no better claim on the same title.
-#[test]
-fn a_row_in_the_index_is_preferred_to_a_fetched_one() {
+#[tokio::test]
+async fn a_row_in_the_index_is_preferred_to_a_fetched_one() {
     let dir = tempfile::tempdir().unwrap();
     index_describes(dir.path(), "movie", 550, "what the publisher wrote");
     let core = core_at(dir.path());
     fetched_describes(&core, Kind::Movie, 550, "what the phone fetched");
 
-    let info = core.show_info("tmdb-movie-550".into()).expect("a described title");
+    let info = core.title_info("tmdb-movie-550".into()).await.expect("a described title");
     assert_eq!(info.overview.as_deref(), Some("what the publisher wrote"));
 }
 
 /// A title the index says nothing about is what a fetch is for.
-#[test]
-fn a_title_the_index_omits_is_answered_from_the_sidecar() {
+#[tokio::test]
+async fn a_title_the_index_omits_is_answered_from_the_sidecar() {
     let dir = tempfile::tempdir().unwrap();
     index_describes_nothing(dir.path());
     let core = core_at(dir.path());
     fetched_describes(&core, Kind::Movie, 550, "what the phone fetched");
 
-    let info = core.show_info("tmdb-movie-550".into()).expect("a described title");
+    let info = core.title_info("tmdb-movie-550".into()).await.expect("a described title");
     assert_eq!(info.overview.as_deref(), Some("what the phone fetched"));
 }
 
 /// Neither holding it is not an error. A course has no provider entry, and a
 /// library assembled without a key has no rows at all.
-#[test]
-fn a_title_neither_holds_is_simply_unknown() {
+#[tokio::test]
+async fn a_title_neither_holds_is_simply_unknown() {
     let dir = tempfile::tempdir().unwrap();
     index_describes_nothing(dir.path());
     let core = core_at(dir.path());
 
-    assert!(core.show_info("tmdb-movie-550".into()).is_none());
+    assert!(core.title_info("tmdb-movie-550".into()).await.is_none());
 }
 
 /// A library nobody has fetched for has no sidecar at all, and a lookup must
 /// not bring one into being: a read that wrote would leave a store behind on
 /// every device that merely opened a title.
-#[test]
-fn a_lookup_does_not_create_the_store_it_did_not_find() {
+#[tokio::test]
+async fn a_lookup_does_not_create_the_store_it_did_not_find() {
     let dir = tempfile::tempdir().unwrap();
     index_describes_nothing(dir.path());
     let core = core_at(dir.path());
 
-    assert!(core.show_info("tmdb-movie-550".into()).is_none());
+    assert!(core.title_info("tmdb-movie-550".into()).await.is_none());
     let store = details::details_db(&core);
     assert!(!store.exists(), "a lookup created a store nobody had written to");
 }

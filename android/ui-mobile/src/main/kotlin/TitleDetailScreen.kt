@@ -23,7 +23,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import designsystem.Spacing
 import model.MediaSet
-import uniffi.mediagram_core.ShowInfo
+import uniffi.mediagram_core.TitleInfo
 
 /** Wide enough to recognise a poster by, narrow enough to leave the facts a column. */
 private val POSTER_WIDTH = 120.dp
@@ -45,7 +45,7 @@ private val POSTER_WIDTH = 120.dp
  * bottom with no way to reach it.
  */
 @Composable
-fun TitleDetailScreen(set: MediaSet, info: ShowInfo?, onPlay: () -> Unit) {
+fun TitleDetailScreen(set: MediaSet, info: TitleInfo?, onPlay: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -91,7 +91,7 @@ internal fun TitleHeader(
     posterPath: String?,
     title: String,
     facts: String?,
-    info: ShowInfo?,
+    info: TitleInfo?,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
@@ -139,8 +139,8 @@ internal fun TitleHeader(
  * promise something that is never coming.
  */
 @Composable
-internal fun rememberShowInfo(posterKey: String?, lookup: suspend (String) -> ShowInfo?): ShowInfo? {
-    var info by remember(posterKey) { mutableStateOf<ShowInfo?>(null) }
+internal fun rememberTitleInfo(posterKey: String?, lookup: suspend (String) -> TitleInfo?): TitleInfo? {
+    var info by remember(posterKey) { mutableStateOf<TitleInfo?>(null) }
     LaunchedEffect(posterKey) { info = posterKey?.let { lookup(it) } }
     return info
 }

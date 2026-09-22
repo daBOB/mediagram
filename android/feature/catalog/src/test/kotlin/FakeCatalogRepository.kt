@@ -3,7 +3,7 @@ package catalog
 import data.CatalogRepository
 import model.Kind
 import model.MediaSet
-import uniffi.mediagram_core.ShowInfo
+import uniffi.mediagram_core.TitleInfo
 
 class FakeCatalogRepository(
     movies: Int = 0,
@@ -35,7 +35,7 @@ class FakeCatalogRepository(
     override suspend fun sets(): List<MediaSet> = if (onDisk) allSets else emptyList()
 
     /** Nothing is what a library assembled without a TMDB key answers, which is the ordinary case here. */
-    override suspend fun showInfo(posterKey: String): ShowInfo? = null
+    override suspend fun titleInfo(posterKey: String): TitleInfo? = null
 }
 
 private fun fakeSet(kind: Kind, id: String) = MediaSet(

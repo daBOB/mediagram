@@ -7,7 +7,7 @@ import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SetSummary
-import uniffi.mediagram_core.ShowInfo
+import uniffi.mediagram_core.TitleInfo
 
 /**
  * Answers [fetchMissing] with whatever the test sets up: a canned report, or
@@ -44,11 +44,11 @@ class FakeCore(
     override suspend fun listLibraries(): List<LibraryChoice> = emptyList()
     override suspend fun refreshLibrary(handle: String): Long = 0
     override suspend fun refreshCatalog(url: String, keyB64: String): Long = 0
-    override fun listSets(): List<SetSummary> = emptyList()
+    override suspend fun listSets(): List<SetSummary> = emptyList()
     override fun posterPath(posterKey: String): String? = null
-    override fun showInfo(posterKey: String): ShowInfo? = null
-    override fun totalSize(setId: String): Long = 0
-    override fun catalogFacts(): CatalogFacts = CatalogFacts("channel", 0uL, 0uL, 0u, null)
+    override suspend fun titleInfo(posterKey: String): TitleInfo? = null
+    override suspend fun totalSize(setId: String): Long = 0
+    override suspend fun catalogFacts(): CatalogFacts = CatalogFacts("channel", 0uL, 0uL, 0u, null)
     override suspend fun read(setId: String, offset: Long, len: Int): ByteArray = ByteArray(0)
 
     override suspend fun fetchMissing(tmdbKey: String, language: String): FetchReport {

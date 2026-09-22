@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import uniffi.mediagram_core.ShowInfo
+import uniffi.mediagram_core.TitleInfo
 import javax.inject.Inject
 
 /** Refreshes the catalog on request, then groups it into shelves for the screen to render. */
@@ -85,5 +85,5 @@ class CatalogViewModel @Inject constructor(
      * synopsis into the catalog would do a few hundred queries to render
      * one screen.
      */
-    suspend fun showInfo(posterKey: String): ShowInfo? = repository.showInfo(posterKey)
+    suspend fun titleInfo(posterKey: String): TitleInfo? = repository.titleInfo(posterKey)
 }

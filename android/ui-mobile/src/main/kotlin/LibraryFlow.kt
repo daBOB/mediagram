@@ -129,7 +129,7 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
         title != null -> LibraryBranch(Destination.Title(title.title), menuActions, { at.titleId = null }) {
             TitleDetailScreen(
                 set = title,
-                info = rememberShowInfo(title.posterKey, catalogViewModel::showInfo),
+                info = rememberTitleInfo(title.posterKey, catalogViewModel::titleInfo),
                 onPlay = { at.setId = title.setId },
             )
         }
@@ -141,7 +141,7 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
         ) {
             CollectionScreen(
                 collection = collection,
-                info = rememberShowInfo(collection.posterKey, catalogViewModel::showInfo),
+                info = rememberTitleInfo(collection.posterKey, catalogViewModel::titleInfo),
                 onOpenTitle = { at.titleId = it },
             )
         }

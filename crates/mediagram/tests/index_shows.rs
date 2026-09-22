@@ -1,7 +1,7 @@
 //! The `shows` table: what a provider says about a title, recorded once.
 
 use mediagram::index::shows::{count, get, upsert};
-use mediagram_tmdb::details::ShowRow;
+use mediagram_tmdb::details::TitleDetailsRow;
 use mediagram_tmdb::posters::kind_key;
 use mediagram_tmdb::tmdb_types::NamedRef;
 use mlib_spec::Kind;
@@ -15,8 +15,8 @@ fn db() -> Connection {
     conn
 }
 
-fn row(kind: Kind, id: u64) -> ShowRow {
-    ShowRow {
+fn row(kind: Kind, id: u64) -> TitleDetailsRow {
+    TitleDetailsRow {
         kind,
         id,
         lang: "de-DE".into(),

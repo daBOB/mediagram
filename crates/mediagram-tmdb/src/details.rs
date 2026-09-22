@@ -31,7 +31,7 @@ pub async fn details(api: &impl TmdbApi, kind: Kind, id: u64) -> Result<DetailsR
 /// What one show's entry holds. Every field is optional because TMDB answers
 /// for an obscure title with a record that is mostly empty.
 #[derive(Debug, Clone, PartialEq)]
-pub struct ShowRow {
+pub struct TitleDetailsRow {
     pub kind: Kind,
     pub id: u64,
     pub lang: String,
@@ -50,7 +50,7 @@ pub struct ShowRow {
 }
 
 /// Reads a details payload into a row, keeping only what a viewer would read.
-pub fn from_details(kind: Kind, lang: &str, details: &DetailsResponse) -> ShowRow {
+pub fn from_details(kind: Kind, lang: &str, details: &DetailsResponse) -> TitleDetailsRow {
     let join = |items: &[crate::tmdb_types::NamedRef]| {
         let joined = items
             .iter()
@@ -59,7 +59,7 @@ pub fn from_details(kind: Kind, lang: &str, details: &DetailsResponse) -> ShowRo
             .join(", ");
         (!joined.is_empty()).then_some(joined)
     };
-    ShowRow {
+    TitleDetailsRow {
         kind,
         id: details.id,
         lang: lang.to_string(),

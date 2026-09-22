@@ -36,38 +36,38 @@ fn a_fresh_core_is_not_authorized() {
     assert!(!core(dir.path()).is_authorized());
 }
 
-#[test]
-fn reading_an_unknown_set_with_no_catalog_at_all_is_not_found() {
+#[tokio::test]
+async fn reading_an_unknown_set_with_no_catalog_at_all_is_not_found() {
     let dir = tempfile::tempdir().unwrap();
-    let err = core(dir.path()).total_size("nosuchset".into()).unwrap_err();
+    let err = core(dir.path()).total_size("nosuchset".into()).await.unwrap_err();
     assert!(matches!(err, mediagram_core::api::CoreError::NotFound(_)));
 }
 
 /// The case the earlier version of this test claimed to cover but never
 /// reached: a catalog exists, and the set asked for still is not in it.
-#[test]
-fn reading_a_set_that_is_not_in_an_existing_catalog_is_not_found() {
+#[tokio::test]
+async fn reading_a_set_that_is_not_in_an_existing_catalog_is_not_found() {
     let dir = tempfile::tempdir().unwrap();
     seed_one_set(dir.path(), "01SETHELD00000000000000001");
 
     let err = core(dir.path())
-        .total_size("01NOSUCHSET0000000000000001".into())
+        .total_size("01NOSUCHSET0000000000000001".into()).await
         .unwrap_err();
     assert!(matches!(err, mediagram_core::api::CoreError::NotFound(_)));
     // And the one that *is* there is found, so "not found" really is about
     // this id and not a broken catalog.
     assert_eq!(
         core(dir.path())
-            .total_size("01SETHELD00000000000000001".into())
+            .total_size("01SETHELD00000000000000001".into()).await
             .unwrap(),
         0
     );
 }
 
-#[test]
-fn listing_sets_before_any_refresh_is_empty_not_an_error() {
+#[tokio::test]
+async fn listing_sets_before_any_refresh_is_empty_not_an_error() {
     let dir = tempfile::tempdir().unwrap();
-    assert_eq!(core(dir.path()).list_sets().unwrap(), Vec::new());
+    assert_eq!(core(dir.path()).list_sets().await.unwrap(), Vec::new());
 }
 
 #[test]

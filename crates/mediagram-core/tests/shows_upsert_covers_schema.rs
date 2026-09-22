@@ -6,11 +6,11 @@
 //! recording it. This test writes a row with every field set and reads the
 //! table back generically, so a column nothing writes shows up as NULL.
 //!
-//! The row below names every field explicitly, so a field added to `ShowRow`
+//! The row below names every field explicitly, so a field added to `TitleDetailsRow`
 //! breaks this file until someone fills it in. That is deliberate: a column
 //! nobody sets here would read back NULL while meaning nothing.
 
-use mediagram_tmdb::details::ShowRow;
+use mediagram_tmdb::details::TitleDetailsRow;
 use mlib_spec::Kind;
 use mlib_spec::schema;
 use rusqlite::Connection;
@@ -28,8 +28,8 @@ fn shared_schema() -> Connection {
 
 /// Every field set to something distinguishable, so a column one side forgets
 /// reads back as NULL against a value rather than as one blank against another.
-fn a_fully_populated_row() -> ShowRow {
-    ShowRow {
+fn a_fully_populated_row() -> TitleDetailsRow {
+    TitleDetailsRow {
         kind: Kind::Ep,
         id: 84_773,
         lang: "de-DE".into(),
@@ -74,7 +74,7 @@ fn the_writer_records_every_column_the_shared_schema_declares() {
     assert!(
         unwritten.is_empty(),
         "the shared schema declares {unwritten:?}, which `shows::upsert` does not \
-         set. Add the column to the statement and to `ShowRow`, or say in \
+         set. Add the column to the statement and to `TitleDetailsRow`, or say in \
          mlib_spec::schema why the table holds it unwritten."
     );
 }

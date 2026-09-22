@@ -23,7 +23,7 @@ import catalog.Entry
 import designsystem.Spacing
 import model.Kind
 import model.MediaSet
-import uniffi.mediagram_core.ShowInfo
+import uniffi.mediagram_core.TitleInfo
 
 /**
  * What is inside one show or course: its seasons or chapters, and the
@@ -44,7 +44,7 @@ import uniffi.mediagram_core.ShowInfo
 @Composable
 fun CollectionScreen(
     collection: Entry.Collection,
-    info: ShowInfo?,
+    info: TitleInfo?,
     onOpenTitle: (setId: String) -> Unit,
 ) {
     // Flattened once per collection, not on every recomposition: the depth

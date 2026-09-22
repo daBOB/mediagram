@@ -5,7 +5,7 @@ import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SetSummary
-import uniffi.mediagram_core.ShowInfo
+import uniffi.mediagram_core.TitleInfo
 
 /**
  * The seam between this app and the generated native core. The generated
@@ -27,7 +27,7 @@ interface CoreClient {
      */
     suspend fun listLibraries(): List<LibraryChoice>
 
-    /** Installs the catalog pinned in that library's channel; answers its set count. */
+    /** Installs the newest index that library's channel holds; answers its set count. */
     suspend fun refreshLibrary(handle: String): Long
 
     /**
@@ -36,7 +36,7 @@ interface CoreClient {
      * kept whole for the round that brings posters back.
      */
     suspend fun refreshCatalog(url: String, keyB64: String): Long
-    fun listSets(): List<SetSummary>
+    suspend fun listSets(): List<SetSummary>
     fun posterPath(posterKey: String): String?
 
     /**
@@ -44,8 +44,8 @@ interface CoreClient {
      * provider entry and a library assembled without a TMDB key has no rows
      * at all; both are ordinary, so neither is an error.
      */
-    fun showInfo(posterKey: String): ShowInfo?
-    fun totalSize(setId: String): Long
+    suspend fun titleInfo(posterKey: String): TitleInfo?
+    suspend fun totalSize(setId: String): Long
 
     /**
      * What the installed catalog is, for the System screen's "Catalogue"
@@ -54,7 +54,7 @@ interface CoreClient {
      * reads back as zero, because a screen that cannot draw is worse than
      * one that says a library is empty.
      */
-    fun catalogFacts(): CatalogFacts
+    suspend fun catalogFacts(): CatalogFacts
     suspend fun read(setId: String, offset: Long, len: Int): ByteArray
 
     /**
