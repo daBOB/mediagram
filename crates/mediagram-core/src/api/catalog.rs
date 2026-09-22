@@ -42,12 +42,11 @@ pub(super) fn current_dir(core: &Core) -> PathBuf {
 /// first is how artwork came to outlive a start-over meant to forget it.
 ///
 /// **Out of the version directory**, so a refresh cannot delete it.
-/// `install_staged` removes one wholesale before renaming a fresh download
-/// into place, `remove_other_versions` clears every version but the one just
-/// published, and a refresh runs on every catalog load. Artwork kept there
+/// `remove_other_versions` clears every version but the one just published,
+/// and a refresh runs on every catalog load. Artwork kept there
 /// was counted on a device at 0, then 236, then 0 again across a restart.
 /// Neither pass touches a sibling: both remove only entries named `v-…` or
-/// `incoming`, and a version is always `v-<pushed_at>`.
+/// `incoming`, and a version is always named `v-…`.
 ///
 /// **Inside `catalog/`**, so forgetting the library forgets its artwork too.
 /// Signing out deletes this directory whole; artwork held anywhere else
@@ -153,13 +152,14 @@ fn count_posters(version_dir: &Path, artwork_dir: &Path) -> u64 {
 
 /// When the index in a version directory was pushed, from its name.
 ///
-/// `refresh.rs` names every installed version `v-<pushed_at>` and points
-/// `current` at it, so the catalogue's age is already written down and
-/// needs no second record that could disagree with it. A name that is not
+/// `refresh.rs` names every installed version `v-<pushed_at>` — with a
+/// `-<n>` suffix when the same version is installed again beside itself —
+/// and points `current` at it, so the catalogue's age is already written
+/// down and needs no second record that could disagree with it. A name that is not
 /// one of ours — including `current` itself, read literally rather than
 /// through the symlink — reads as unknown rather than as a wrong date.
 fn pushed_at_of(name: &str) -> Option<i64> {
-    name.strip_prefix("v-")?.parse().ok()
+    name.strip_prefix("v-")?.split('-').next()?.parse().ok()
 }
 
 /// What the installed catalog is, for the System screen. Every count is

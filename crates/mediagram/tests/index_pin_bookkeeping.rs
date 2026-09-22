@@ -82,7 +82,7 @@ fn an_id_that_could_not_be_proved_unpinned_survives_the_push() {
     record_index_messages(&conn, &[1558]).unwrap();
 
     // What a push does when the channel still reports 1558 as pinned.
-    record_unpin_outcome(&conn, &[1558]);
+    record_unpin_outcome(&conn, &[1558]).unwrap();
 
     assert_eq!(
         pending_unpins(&conn),
@@ -96,7 +96,7 @@ fn an_id_proved_unpinned_is_forgotten() {
     let conn = open();
     record_index_messages(&conn, &[1558]).unwrap();
 
-    record_unpin_outcome(&conn, &[]);
+    record_unpin_outcome(&conn, &[]).unwrap();
 
     assert!(pending_unpins(&conn).is_empty());
 }
@@ -107,7 +107,7 @@ fn a_push_keeps_only_what_it_could_not_clear() {
     let conn = open();
     record_index_messages(&conn, &[1561, 1558, 1539]).unwrap();
 
-    record_unpin_outcome(&conn, &[1558]);
+    record_unpin_outcome(&conn, &[1558]).unwrap();
 
     assert_eq!(pending_unpins(&conn), vec![1558]);
 }

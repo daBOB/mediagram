@@ -30,11 +30,10 @@ use super::{Core, CoreError};
 /// across a restart.
 ///
 /// **Out of the version directory**, so a refresh cannot delete it.
-/// `install_staged` removes a version wholesale before renaming a fresh
-/// download into place, `remove_other_versions` clears every version but the
-/// one just published, and a refresh runs on every catalog load. Neither
+/// `remove_other_versions` clears every version but the one just published,
+/// and a refresh runs on every catalog load. Neither
 /// pass touches a sibling: both remove only entries named `v-…` or
-/// `incoming`, and a version is always `v-<pushed_at>`.
+/// `incoming`, and a version is always named `v-…`.
 ///
 /// **Inside `catalog/`**, so forgetting the library forgets these too.
 /// Signing out deletes that directory whole; rows held anywhere else would

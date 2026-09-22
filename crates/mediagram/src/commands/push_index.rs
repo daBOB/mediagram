@@ -126,7 +126,7 @@ async fn send_and_pin(
     .await
     .context("pinning index message")?;
 
-    unpin_previous(tg, max_attempts, conn, channel).await;
+    unpin_previous(tg, max_attempts, conn, channel).await?;
 
     db::set_meta(conn, META_INDEX_MESSAGE_ID, &new_id.to_string())
         .context("recording new index message id")?;
@@ -143,22 +143,24 @@ const UNPIN_ATTEMPTS: u32 = 2;
 
 /// Unpins every index message that should no longer be pinned.
 ///
-/// Best-effort: one that will not unpin is kept on the list so the next push
-/// tries again, because the alternative is a channel with two pinned indexes
-/// and a reader with no way to tell which is current.
+/// Best-effort about the channel: one that will not unpin is kept on the list
+/// so the next push tries again, because the alternative is a channel with two
+/// pinned indexes and a reader with no way to tell which is current. Not
+/// about the list itself — failing to record it is an error, since that is
+/// exactly how an id gets lost.
 async fn unpin_previous(
     tg: &Tg,
     max_attempts: u32,
     conn: &Connection,
     channel: grammers_session::types::PeerRef,
-) {
+) -> Result<()> {
     let mut unresolved: Vec<i32> = Vec::new();
     for old_id in pending_unpins(conn) {
         if !clear_pin(tg, max_attempts, channel, old_id).await {
             unresolved.push(old_id);
         }
     }
-    record_unpin_outcome(conn, &unresolved);
+    record_unpin_outcome(conn, &unresolved)
 }
 
 /// Unpins one message, and reads the channel back to see whether it worked.
@@ -248,13 +250,18 @@ async fn still_pinned(
 /// Separate from the clearing so the bookkeeping can be tested without a
 /// channel: whether a stale id survives a push is the whole question, and the
 /// defect this replaced was that a false `Ok` erased it.
-pub fn record_unpin_outcome(conn: &Connection, unresolved: &[i32]) {
-    let _ = db::delete_meta(conn, META_INDEX_MESSAGE_ID);
+///
+/// The unresolved ids are written before the replaced id is forgotten, so a
+/// write that fails part way can at worst leave an id listed twice — which
+/// `pending_unpins` folds — and never lose one.
+pub fn record_unpin_outcome(conn: &Connection, unresolved: &[i32]) -> Result<()> {
     if unresolved.is_empty() {
-        let _ = db::delete_meta(conn, META_STALE_INDEX_ID);
+        db::delete_meta(conn, META_STALE_INDEX_ID)?;
     } else {
-        let _ = db::set_meta(conn, META_STALE_INDEX_ID, &join_ids(unresolved));
+        db::set_meta(conn, META_STALE_INDEX_ID, &join_ids(unresolved))
+            .context("recording the index pins still to clear")?;
     }
+    db::delete_meta(conn, META_INDEX_MESSAGE_ID)
 }
 
 /// The index messages this push should unpin, newest first.

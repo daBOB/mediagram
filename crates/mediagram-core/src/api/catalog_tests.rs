@@ -35,8 +35,8 @@ fn a_fetched_poster_is_found_after_the_catalogue_is_replaced() {
     write_poster(&artwork_dir(&core), key);
 
     // A real refresh rather than a stand-in for one. `install_staged` is
-    // both destructive passes at once: it renames the staged directory over
-    // the version, repoints `current`, and then sweeps every other version
+    // both destructive passes at once: it renames the staged directory into
+    // place, repoints `current`, and then sweeps every other version
     // and any leftover staging directory. Removing the old `v-…` directory
     // by hand would exercise neither, and would miss artwork kept somewhere
     // the rename or the sweep reaches — `incoming` above all, which is a
@@ -153,6 +153,7 @@ fn a_catalogue_with_no_push_time_in_its_name_reports_none() {
 fn a_version_directory_name_carries_its_push_time() {
     assert_eq!(pushed_at_of("v-1758300000"), Some(1_758_300_000));
     assert_eq!(pushed_at_of("v-0"), Some(0));
+    assert_eq!(pushed_at_of("v-1758300000-1"), Some(1_758_300_000));
     assert_eq!(pushed_at_of("current"), None);
     assert_eq!(pushed_at_of("v-"), None);
     assert_eq!(pushed_at_of("v-not-a-number"), None);

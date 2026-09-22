@@ -168,12 +168,21 @@ async fn install(
         .map_err(|_| CoreError::Io("staging the refreshed catalog".into()))?;
 
     download(client, document, &incoming.join(mlib_spec::schema::INDEX_FILE)).await?;
-    // Counting is also the check: a file that is not a catalog cannot be
-    // counted, and this happens while it is still staged, so a channel with
-    // something else pinned in it never replaces a library that works.
-    let sets = catalog::count_playable(&incoming).map_err(|_| CoreError::Library(UNREADABLE.into()))?;
+    install_downloaded(core, &incoming, version)
+}
 
-    refresh::install_staged(core, &incoming, version)?;
+/// Makes a downloaded snapshot current once it has proved to be a library.
+///
+/// Counting is also the check: a file that is not a catalog cannot be
+/// counted, and this happens while it is still staged, so a channel with
+/// something else pinned in it never replaces a library that works.
+fn install_downloaded(
+    core: &Core,
+    incoming: &std::path::Path,
+    version: &str,
+) -> Result<u64, CoreError> {
+    let sets = catalog::count_playable(incoming).map_err(|_| CoreError::Library(UNREADABLE.into()))?;
+    refresh::install_staged(core, incoming, version)?;
     Ok(sets)
 }
 
@@ -210,15 +219,25 @@ mod tests {
     async fn a_staged_file_that_is_not_a_library_never_becomes_the_current_one() {
         let dir = tempfile::tempdir().unwrap();
         let core = Core::new(dir.path().display().to_string(), 1, "test-hash".into());
-        let incoming = catalog::dir(&core).join("incoming");
-        std::fs::create_dir_all(&incoming).unwrap();
-        std::fs::write(incoming.join("library.db"), b"not a database").unwrap();
+        let stage = |bytes: &[u8]| {
+            let incoming = catalog::dir(&core).join("incoming");
+            std::fs::create_dir_all(&incoming).unwrap();
+            std::fs::write(incoming.join(mlib_spec::schema::INDEX_FILE), bytes).unwrap();
+            incoming
+        };
 
-        let staged = catalog::count_playable(&incoming)
-            .map_err(|_| CoreError::Library(UNREADABLE.into()))
-            .unwrap_err();
+        let working = stage(b"");
+        let conn = rusqlite::Connection::open(working.join(mlib_spec::schema::INDEX_FILE)).unwrap();
+        for stmt in mlib_spec::schema::migrations_up_to(mlib_spec::schema::SCHEMA_VERSION) {
+            conn.execute(stmt, []).unwrap();
+        }
+        drop(conn);
+        install_downloaded(&core, &working, "v-1").unwrap();
+        let before = std::fs::canonicalize(catalog::current_dir(&core)).unwrap();
 
-        assert_eq!(staged.to_string(), format!("library error: {UNREADABLE}"));
-        assert!(!catalog::current_dir(&core).exists());
+        let refused = install_downloaded(&core, &stage(b"not a database"), "v-2").unwrap_err();
+
+        assert_eq!(refused.to_string(), format!("library error: {UNREADABLE}"));
+        assert_eq!(std::fs::canonicalize(catalog::current_dir(&core)).unwrap(), before);
     }
 }

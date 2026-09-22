@@ -197,3 +197,32 @@ async fn a_successful_refresh_swaps_current_atomically() {
     );
     assert!(current.join("library.db").exists());
 }
+
+/// Installing the version `current` already points at — what a refresh that
+/// finds nothing newer does — must never leave `current` without a
+/// directory behind it, and must still sweep the copy it replaced.
+#[test]
+fn reinstalling_the_current_version_keeps_current_whole() {
+    let dir = tempfile::tempdir().unwrap();
+    let core = core_at(dir.path());
+    let root = catalog::dir(&core);
+    let stage = |marker: &str| {
+        let incoming = root.join("incoming");
+        std::fs::create_dir_all(&incoming).unwrap();
+        std::fs::write(incoming.join("marker"), marker).unwrap();
+        incoming
+    };
+
+    install_staged(&core, &stage("first"), "v-5").unwrap();
+    install_staged(&core, &stage("second"), "v-5").unwrap();
+
+    let current = catalog::current_dir(&core);
+    assert_eq!(std::fs::read_to_string(current.join("marker")).unwrap(), "second");
+    let versions: Vec<String> = std::fs::read_dir(&root)
+        .unwrap()
+        .flatten()
+        .filter_map(|entry| entry.file_name().into_string().ok())
+        .filter(|name| name.starts_with("v-"))
+        .collect();
+    assert_eq!(versions.len(), 1, "the replaced copy is swept: {versions:?}");
+}

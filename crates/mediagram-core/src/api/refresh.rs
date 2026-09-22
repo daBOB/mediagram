@@ -103,12 +103,29 @@ pub(super) fn install_staged(
     incoming: &std::path::Path,
     version_name: &str,
 ) -> Result<(), CoreError> {
-    let version = catalog::dir(core).join(version_name);
-    let _ = std::fs::remove_dir_all(&version);
-    std::fs::rename(incoming, &version)
+    let root = catalog::dir(core);
+    let installed = free_version_name(&root, version_name);
+    std::fs::rename(incoming, root.join(&installed))
         .map_err(|_| CoreError::Io("staging the refreshed catalog".into()))?;
-    swap_current(core, version_name)?;
-    remove_other_versions(core, version_name)
+    swap_current(core, &installed)?;
+    remove_other_versions(core, &installed)
+}
+
+/// `version_name`, or the first `version_name-<n>` not already taken.
+///
+/// Never an existing directory: the one `current` points at is the likeliest
+/// to share the name — a refresh that finds nothing newer installs the same
+/// version again — and clearing it before the rename would leave `current`
+/// dangling until the swap, and for good if the rename failed. The old copy
+/// goes afterwards, with every other stale version.
+fn free_version_name(root: &std::path::Path, version_name: &str) -> String {
+    if !root.join(version_name).exists() {
+        return version_name.to_string();
+    }
+    (1u32..)
+        .map(|n| format!("{version_name}-{n}"))
+        .find(|name| !root.join(name).exists())
+        .expect("some suffix is free")
 }
 
 /// Points `current` at `version_name`, atomically: a symlink renamed over

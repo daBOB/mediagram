@@ -25,10 +25,9 @@ fn install_version(core: &Core, version: &str) {
 /// version's own `posters/` and the artwork directory, so a poster planted
 /// by hand is found either way and nothing else here would notice.
 ///
-/// Two passes can take it, and both run on every install, so both are run
-/// here: `install_staged` clears the version directory it is about to write,
-/// and `remove_other_versions` clears every version but the one just
-/// published.
+/// Both ways an install replaces a version run here: the same version
+/// installed again beside itself, and a new one, each followed by
+/// `remove_other_versions` clearing every version but the one just published.
 #[test]
 fn a_fetched_poster_outlives_the_refreshes_that_follow_it() {
     let data = tempfile::tempdir().unwrap();
@@ -40,8 +39,7 @@ fn a_fetched_poster_outlives_the_refreshes_that_follow_it() {
     let poster = plan.artwork_dir.join("tmdb-movie-550.jpg");
     std::fs::write(&poster, b"fake-poster-bytes").unwrap();
 
-    // The same version installed again: `install_staged` removes what is
-    // already there before renaming the staged copy into its place.
+    // The same version installed again, which replaces the copy in place.
     install_version(&core, "v-1");
     assert!(poster.exists(), "reinstalling a version took the artwork with it");
 
