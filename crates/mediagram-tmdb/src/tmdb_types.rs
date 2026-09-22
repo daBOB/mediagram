@@ -109,6 +109,18 @@ pub struct DetailsResponse {
     pub number_of_seasons: Option<u32>,
     #[serde(default)]
     pub number_of_episodes: Option<u32>,
+    /// A series' seasons, each with its own artwork. Already in the cached
+    /// `/tv/{id}` payload, so season posters cost no request either.
+    #[serde(default)]
+    pub seasons: Vec<SeasonRef>,
+}
+
+/// One entry of a series' `seasons`: its number and its artwork, if any.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct SeasonRef {
+    pub season_number: u32,
+    #[serde(default)]
+    pub poster_path: Option<String>,
 }
 
 /// TMDB spells a genre, a network and a company all the same way.

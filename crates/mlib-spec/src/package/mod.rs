@@ -7,7 +7,10 @@
 //! archive offered under an edited pointer then fails its authentication tag
 //! instead of being accepted as current.
 
+mod charset;
 pub mod naming;
+
+use charset::{is_digits, is_lower_alpha, is_lower_hex};
 
 pub use naming::package_file_name;
 
@@ -114,23 +117,27 @@ pub fn key_id(key: &[u8; 32]) -> String {
 }
 
 /// A poster key reaches a file name, a manifest path and a tar member name,
-/// so it is restricted to `kind-subkind-digits` before it touches any path.
+/// so it is restricted to `source-kind-digits` before it touches any path.
+///
+/// A season's artwork adds one more part, `s<digits>` — `tmdb-tv-1396-s2` —
+/// so it sits beside its show's poster under the same rules and is never
+/// mistaken for a different show: the show's own key has no fourth part.
 pub fn poster_key_is_valid(key: &str) -> bool {
     let mut parts = key.split('-');
-    let (Some(source), Some(kind), Some(id), None) =
-        (parts.next(), parts.next(), parts.next(), parts.next())
-    else {
+    let (Some(source), Some(kind), Some(id)) = (parts.next(), parts.next(), parts.next()) else {
         return false;
     };
-    is_lower_alpha(source) && is_lower_alpha(kind) && is_digits(id)
+    let season_ok = match (parts.next(), parts.next()) {
+        (None, _) => true,
+        (Some(season), None) => season.strip_prefix('s').is_some_and(is_digits),
+        _ => false,
+    };
+    is_lower_alpha(source) && is_lower_alpha(kind) && is_digits(id) && season_ok
 }
 
-fn is_lower_alpha(s: &str) -> bool {
-    !s.is_empty() && s.chars().all(|c| c.is_ascii_lowercase())
-}
-
-fn is_digits(s: &str) -> bool {
-    !s.is_empty() && s.chars().all(|c| c.is_ascii_digit())
+/// The key a season's artwork is stored under, beside its show's `show_key`.
+pub fn season_poster_key(show_key: &str, season: u32) -> String {
+    format!("{show_key}-s{season}")
 }
 
 #[derive(Error, Debug, PartialEq, Eq)]
@@ -145,16 +152,6 @@ pub enum PointerError {
     Malformed(&'static str),
     #[error("pointer claims {0} bytes, over the {MAX_PACKAGE_BYTES} byte limit")]
     TooLarge(u64),
-}
-
-/// Lowercase hex of an exact length. Used on every pointer field that reaches
-/// the cipher or a file name: it keeps `key_id` free of any character a JSON
-/// writer might escape differently, which is what makes the associated data
-/// reproducible by a reader using a different JSON library.
-fn is_lower_hex(s: &str, len: usize) -> bool {
-    s.len() == len
-        && s.bytes()
-            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
 }
 
 /// Whether a reader can use the package a pointer names, decided before any

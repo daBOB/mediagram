@@ -23,6 +23,12 @@ class AppChromeTest {
     }
 
     @Test
+    fun aSeasonIsNamedAfterItself() {
+        assertEquals("Season 2", barTitleFor(Destination.Season("Season 2")))
+        assertEquals("Back", backLabelFor(Destination.Season("Season 2")))
+    }
+
+    @Test
     fun aTitleIsNamedAfterItself() {
         assertEquals("Blade: Trinity", barTitleFor(Destination.Title("Blade: Trinity")))
     }

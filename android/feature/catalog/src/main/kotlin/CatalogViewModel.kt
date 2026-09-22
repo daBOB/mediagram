@@ -86,4 +86,12 @@ class CatalogViewModel @Inject constructor(
      * one screen.
      */
     suspend fun titleInfo(posterKey: String): TitleInfo? = repository.titleInfo(posterKey)
+
+    /**
+     * The local file for a poster key with no set of its own to carry it —
+     * a season's artwork. Asked for on demand for the same reason
+     * [titleInfo] is: a wall renders a handful of these at a time, not the
+     * whole library's worth.
+     */
+    suspend fun posterPath(posterKey: String): String? = repository.posterPath(posterKey)
 }

@@ -39,7 +39,7 @@ import { spritePlan } from "../public/lib/sprite-plan.js";
 import type { SessionSpec } from "./transcode/registry";
 import type { HeldSets } from "./cache/held";
 import { SearchIndex } from "./search/index";
-import { PosterStore, posterKeyFor, posterKeyIsValid } from "./package/posters";
+import { PosterStore, posterKeyFor, posterKeyIsValid, seasonPosterKeyFor } from "./package/posters";
 import { showMeta } from "./shows";
 import type { AudioTrackReader } from "./audio-tracks";
 import { createStateRouter } from "./state/routes";
@@ -132,7 +132,7 @@ const AUDIO_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/audio$/;
 const HELD_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/held$/;
 // Spelled out for the same reason as everything else that reaches a file
 // name: the key comes from a caption, and `posterKeyIsValid` checks it again.
-const POSTER_PATH = /^\/api\/posters\/(tmdb-(?:movie|tv)-\d{1,12})\.jpg$/;
+const POSTER_PATH = /^\/api\/posters\/(tmdb-(?:movie|tv)-\d{1,12}(?:-s\d{1,4})?)\.jpg$/;
 // The same key names the show itself, which is what a series page asks about.
 const SHOW_PATH = /^\/api\/shows\/(tmdb-(?:movie|tv)-\d{1,12})$/;
 // The language is spelled out rather than captured loosely: it ends up in no
@@ -363,9 +363,16 @@ export function createRouter(options: RouterOptions) {
       // asks about the show by this even when the shelf has nothing to show.
       showKey: key,
       poster: posters.has(key) ? key : null,
+      // A season's own artwork, for the wall a show's page opens on. Only an
+      // episode has one; `null` leaves the page to fall back to the show's.
+      seasonPoster: set.kind === "ep" ? heldOrNull(seasonPosterKeyFor(key, set.season)) : null,
       hasSummary: summary(db, set.setId) !== null,
       subtitles: subtitleLanguages(db, set.setId),
     };
+  }
+
+  function heldOrNull(key: string | null): string | null {
+    return posters.has(key) ? key : null;
   }
 
   return async function route(request: PlayerRequest): Promise<PlayerResponse> {

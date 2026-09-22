@@ -1,0 +1,396 @@
+[
+  {
+    "name": "a document this player wrote itself reads back as written",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"localId\":\"b398013d\",\"progress\":[{\"setId\":\"01A\",\"at\":742,\"duration\":1204,\"updatedAt\":1789000000000}],\"watched\":[{\"setId\":\"01B\",\"updatedAt\":1789000000000}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "localId": "b398013d",
+          "progress": [
+            {
+              "setId": "01A",
+              "at": 742,
+              "duration": 1204,
+              "updatedAt": 1789000000000
+            }
+          ],
+          "watched": [
+            {
+              "setId": "01B",
+              "updatedAt": 1789000000000
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "an empty string is not JSON",
+    "input": "",
+    "expect": null
+  },
+  {
+    "name": "unbalanced braces are not JSON",
+    "input": "{{{",
+    "expect": null
+  },
+  {
+    "name": "the literal null parses but is not a document",
+    "input": "null",
+    "expect": null
+  },
+  {
+    "name": "an array parses but is not a document",
+    "input": "[]",
+    "expect": null
+  },
+  {
+    "name": "a bare string parses but is not a document",
+    "input": "\"a string\"",
+    "expect": null
+  },
+  {
+    "name": "a bare number parses but is not a document",
+    "input": "7",
+    "expect": null
+  },
+  {
+    "name": "a format from the future is ignored, not guessed at",
+    "input": "{\"format\":2,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"localId\":\"b398013d\",\"progress\":[{\"setId\":\"01A\",\"at\":742,\"duration\":1204,\"updatedAt\":1789000000000}],\"watched\":[{\"setId\":\"01B\",\"updatedAt\":1789000000000}]}]}",
+    "expect": null
+  },
+  {
+    "name": "a missing format is rejected",
+    "input": "{\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"localId\":\"b398013d\",\"progress\":[{\"setId\":\"01A\",\"at\":742,\"duration\":1204,\"updatedAt\":1789000000000}],\"watched\":[{\"setId\":\"01B\",\"updatedAt\":1789000000000}]}]}",
+    "expect": null
+  },
+  {
+    "name": "a zero format is rejected",
+    "input": "{\"format\":0,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"localId\":\"b398013d\",\"progress\":[{\"setId\":\"01A\",\"at\":742,\"duration\":1204,\"updatedAt\":1789000000000}],\"watched\":[{\"setId\":\"01B\",\"updatedAt\":1789000000000}]}]}",
+    "expect": null
+  },
+  {
+    "name": "a negative format is rejected",
+    "input": "{\"format\":-1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"localId\":\"b398013d\",\"progress\":[{\"setId\":\"01A\",\"at\":742,\"duration\":1204,\"updatedAt\":1789000000000}],\"watched\":[{\"setId\":\"01B\",\"updatedAt\":1789000000000}]}]}",
+    "expect": null
+  },
+  {
+    "name": "a non-numeric format is rejected",
+    "input": "{\"format\":\"one\",\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"localId\":\"b398013d\",\"progress\":[{\"setId\":\"01A\",\"at\":742,\"duration\":1204,\"updatedAt\":1789000000000}],\"watched\":[{\"setId\":\"01B\",\"updatedAt\":1789000000000}]}]}",
+    "expect": null
+  },
+  {
+    "name": "a fractional format is rejected",
+    "input": "{\"format\":1.5,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"localId\":\"b398013d\",\"progress\":[{\"setId\":\"01A\",\"at\":742,\"duration\":1204,\"updatedAt\":1789000000000}],\"watched\":[{\"setId\":\"01B\",\"updatedAt\":1789000000000}]}]}",
+    "expect": null
+  },
+  {
+    "name": "a document with no device cannot be attributed, so it is dropped",
+    "input": "{\"format\":1,\"device\":\"  \",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"localId\":\"b398013d\",\"progress\":[{\"setId\":\"01A\",\"at\":742,\"duration\":1204,\"updatedAt\":1789000000000}],\"watched\":[{\"setId\":\"01B\",\"updatedAt\":1789000000000}]}]}",
+    "expect": null
+  },
+  {
+    "name": "a missing device is dropped the same way",
+    "input": "{\"format\":1,\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"localId\":\"b398013d\",\"progress\":[{\"setId\":\"01A\",\"at\":742,\"duration\":1204,\"updatedAt\":1789000000000}],\"watched\":[{\"setId\":\"01B\",\"updatedAt\":1789000000000}]}]}",
+    "expect": null
+  },
+  {
+    "name": "a device that is not text is dropped",
+    "input": "{\"format\":1,\"device\":5,\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"localId\":\"b398013d\",\"progress\":[{\"setId\":\"01A\",\"at\":742,\"duration\":1204,\"updatedAt\":1789000000000}],\"watched\":[{\"setId\":\"01B\",\"updatedAt\":1789000000000}]}]}",
+    "expect": null
+  },
+  {
+    "name": "an unreadable row is dropped and its neighbours survive",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[{\"setId\":\"01A\",\"at\":742,\"updatedAt\":1000},{\"setId\":\"01B\",\"at\":\"halfway\",\"updatedAt\":1000},{\"setId\":\"\",\"at\":5,\"updatedAt\":1000},{\"setId\":\"01C\",\"at\":5,\"updatedAt\":0},{\"setId\":\"01D\",\"at\":60,\"updatedAt\":2000}],\"watched\":[]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [
+            {
+              "setId": "01A",
+              "at": 742,
+              "duration": null,
+              "updatedAt": 1000
+            },
+            {
+              "setId": "01D",
+              "at": 60,
+              "duration": null,
+              "updatedAt": 2000
+            }
+          ],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "nought is a position and is kept",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\",\"progress\":[{\"setId\":\"01A\",\"at\":0,\"updatedAt\":1}],\"watched\":[]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "A",
+          "progress": [
+            {
+              "setId": "01A",
+              "at": 0,
+              "duration": null,
+              "updatedAt": 1
+            }
+          ],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "a runtime nobody knows is null, not nought",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\",\"progress\":[{\"setId\":\"01A\",\"at\":5,\"updatedAt\":1}],\"watched\":[]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "A",
+          "progress": [
+            {
+              "setId": "01A",
+              "at": 5,
+              "duration": null,
+              "updatedAt": 1
+            }
+          ],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "a duration that is not positive is null, not kept as-is",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\",\"progress\":[{\"setId\":\"01A\",\"at\":5,\"duration\":0,\"updatedAt\":1},{\"setId\":\"01B\",\"at\":5,\"duration\":-100,\"updatedAt\":1}],\"watched\":[]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "A",
+          "progress": [
+            {
+              "setId": "01A",
+              "at": 5,
+              "duration": null,
+              "updatedAt": 1
+            },
+            {
+              "setId": "01B",
+              "at": 5,
+              "duration": null,
+              "updatedAt": 1
+            }
+          ],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "a numeral typed as text still counts as a position",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\",\"progress\":[{\"setId\":\"01A\",\"at\":\"12\",\"duration\":\"34\",\"updatedAt\":\"1000\"}],\"watched\":[]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "A",
+          "progress": [
+            {
+              "setId": "01A",
+              "at": 12,
+              "duration": 34,
+              "updatedAt": 1000
+            }
+          ],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "null and true coerce to numbers rather than being rejected",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\",\"progress\":[{\"setId\":\"01A\",\"at\":null,\"updatedAt\":1000},{\"setId\":\"01B\",\"at\":true,\"updatedAt\":1000}],\"watched\":[]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "A",
+          "progress": [
+            {
+              "setId": "01A",
+              "at": 0,
+              "duration": null,
+              "updatedAt": 1000
+            },
+            {
+              "setId": "01B",
+              "at": 1,
+              "duration": null,
+              "updatedAt": 1000
+            }
+          ],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "a watched row with no id or a stale timestamp is dropped, its neighbour kept",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\",\"progress\":[],\"watched\":[{\"setId\":\"01A\",\"updatedAt\":1000},{\"setId\":\"\",\"updatedAt\":1000},{\"setId\":\"01B\",\"updatedAt\":0}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "A",
+          "progress": [],
+          "watched": [
+            {
+              "setId": "01A",
+              "updatedAt": 1000
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "a profile with no usable name is dropped",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":5,\"progress\":[],\"watched\":[]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": []
+    }
+  },
+  {
+    "name": "missing arrays are empty ones, not an error",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\"}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "A",
+          "progress": [],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "a missing writtenAt is zero, not a crash",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"profiles\":[{\"name\":\"André\",\"localId\":\"b398013d\",\"progress\":[{\"setId\":\"01A\",\"at\":742,\"duration\":1204,\"updatedAt\":1789000000000}],\"watched\":[{\"setId\":\"01B\",\"updatedAt\":1789000000000}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 0,
+      "profiles": [
+        {
+          "name": "André",
+          "localId": "b398013d",
+          "progress": [
+            {
+              "setId": "01A",
+              "at": 742,
+              "duration": 1204,
+              "updatedAt": 1789000000000
+            }
+          ],
+          "watched": [
+            {
+              "setId": "01B",
+              "updatedAt": 1789000000000
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "a writtenAt that is not a number falls back to zero",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":\"not a number\",\"profiles\":[{\"name\":\"André\",\"localId\":\"b398013d\",\"progress\":[{\"setId\":\"01A\",\"at\":742,\"duration\":1204,\"updatedAt\":1789000000000}],\"watched\":[{\"setId\":\"01B\",\"updatedAt\":1789000000000}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 0,
+      "profiles": [
+        {
+          "name": "André",
+          "localId": "b398013d",
+          "progress": [
+            {
+              "setId": "01A",
+              "at": 742,
+              "duration": 1204,
+              "updatedAt": 1789000000000
+            }
+          ],
+          "watched": [
+            {
+              "setId": "01B",
+              "updatedAt": 1789000000000
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "an unrecognised top-level key is ignored, not rejected",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"localId\":\"b398013d\",\"progress\":[{\"setId\":\"01A\",\"at\":742,\"duration\":1204,\"updatedAt\":1789000000000}],\"watched\":[{\"setId\":\"01B\",\"updatedAt\":1789000000000}]}],\"extra\":\"from a newer player\"}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "localId": "b398013d",
+          "progress": [
+            {
+              "setId": "01A",
+              "at": 742,
+              "duration": 1204,
+              "updatedAt": 1789000000000
+            }
+          ],
+          "watched": [
+            {
+              "setId": "01B",
+              "updatedAt": 1789000000000
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

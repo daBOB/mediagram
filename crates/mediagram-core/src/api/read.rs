@@ -6,6 +6,7 @@ use grammers_session::types::{PeerId, PeerRef};
 use tokio::sync::mpsc;
 
 use crate::catalog as queries;
+use crate::document::is_stale_reference;
 use crate::range::{self, ByteRange, PartSpan};
 use crate::stream;
 
@@ -76,51 +77,54 @@ pub(super) async fn read(
             .find(|location| location.span.idx == step.part_idx)
             .ok_or_else(|| CoreError::NotFound("set not found".into()))?;
         let channel = channel_ref(&handles, location.chat_id)?;
-        let (document, held) = document_for(core, &client, channel, &set_id, location.message_id).await?;
-        let bytes = match fetch_step(&client, document, &step).await {
-            // A held handle may carry a file reference Telegram has since
-            // expired — a set paused for an evening. Resolve the part afresh
-            // and try once more before calling the read failed.
-            Err(_) if held => {
-                core.state.lock().await.documents.forget(&set_id, location.message_id);
-                let (fresh, _) =
-                    document_for(core, &client, channel, &set_id, location.message_id).await?;
-                fetch_step(&client, fresh, &step).await?
+        let document = document_for(core, &client, channel, &set_id, location.message_id).await?;
+
+        let start = out.len();
+        match fetch_step(&client, document, step, &mut out).await {
+            Ok(()) => {}
+            // The held handle's file reference has expired — a film paused
+            // for hours comes back to one. Resolve the part again for a
+            // fresh reference and retry once; a second refusal is real.
+            Err(err) if is_stale_reference(&err) => {
+                out.truncate(start);
+                core.state.lock().await.documents.evict(&set_id, location.message_id);
+                let fresh = document_for(core, &client, channel, &set_id, location.message_id).await?;
+                fetch_step(&client, fresh, step, &mut out).await.map_err(interrupted)?;
             }
-            fetched => fetched?,
-        };
-        out.extend(bytes);
+            Err(err) => return Err(interrupted(err)),
+        }
     }
     Ok(out)
 }
 
-/// One step's bytes, downloaded from `document`.
+/// Downloads one step onto the end of `out`.
 ///
 /// A separate task drains while `pump_step` runs, so a step whose bytes
 /// outgrow the buffer cannot deadlock against a receiver that only starts
-/// reading once the sender is done.
+/// reading once the sender is done. The pump's own error is returned intact,
+/// so the caller can tell a stale file reference from a dropped connection.
 async fn fetch_step(
     client: &grammers_client::Client,
     document: grammers_client::media::Document,
-    step: &range::Step,
-) -> Result<Vec<u8>, CoreError> {
+    step: range::Step,
+    out: &mut Vec<u8>,
+) -> anyhow::Result<()> {
     let (tx, mut rx) = mpsc::channel(BUFFERED_CHUNKS);
     let pump_client = client.clone();
-    let pump_step = *step;
-    let pump =
-        tokio::spawn(async move { stream::pump_step(&pump_client, &document, &pump_step, &tx).await });
-    let mut out = Vec::new();
+    let pump = tokio::spawn(async move { stream::pump_step(&pump_client, &document, &step, &tx).await });
     while let Some(chunk) = rx.recv().await {
-        out.extend(chunk.map_err(CoreError::network("the download was interrupted"))?);
+        out.extend(chunk?);
     }
     pump.await
-        .map_err(CoreError::network("the download task did not finish cleanly"))?
-        .map_err(CoreError::network("the download ended before it finished"))?;
-    Ok(out)
+        .map_err(|_| anyhow::anyhow!("the download task did not finish cleanly"))?
 }
 
-/// The document a part's bytes live in, resolved once per set, and whether
-/// it came from what was held rather than from Telegram just now.
+/// What Kotlin is told when a download fails: the cause is logged in Rust.
+fn interrupted(err: anyhow::Error) -> CoreError {
+    CoreError::network("the download ended before it finished")(err)
+}
+
+/// The document a part's bytes live in, resolved once per set.
 ///
 /// A player reads the same few parts a few hundred times, and resolving is
 /// a round trip every time — a third of the cost of a read that otherwise
@@ -131,9 +135,9 @@ async fn document_for(
     channel: PeerRef,
     set_id: &str,
     message_id: i64,
-) -> Result<(grammers_client::media::Document, bool), CoreError> {
+) -> Result<grammers_client::media::Document, CoreError> {
     if let Some(held) = core.state.lock().await.documents.get(set_id, message_id) {
-        return Ok((held, true));
+        return Ok(held);
     }
     let document = stream::part_document(client, channel, message_id)
         .await
@@ -143,7 +147,7 @@ async fn document_for(
         .await
         .documents
         .put(set_id, message_id, document.clone());
-    Ok((document, false))
+    Ok(document)
 }
 
 /// How to address the channel a part lives in.

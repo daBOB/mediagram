@@ -11,9 +11,9 @@
  * and putting all of it on one page means a viewer scrolls past a hundred
  * things they did not ask for to reach the folder they did.
  *
- * `divisionBlock` is the whole tree at once, indented. A show's seasons are
- * one flat level with nothing under them, so there is nothing to walk into
- * and a drill-down would only add a click.
+ * `divisionBlock` is the whole tree at once, indented: a show of a single
+ * season, which has nothing to walk into. A show of several is a wall of
+ * seasons instead, and `seasonBlock` is one of them opened.
  */
 
 import { el } from "./dom.js";
@@ -143,6 +143,18 @@ export function levelBlock(level, onOpen, onPlay) {
     if (entry.kind === "lesson") block.append(lessonRow(entry.set, onPlay));
     else if (entry.kind === "document") block.append(documentRow(entry.set));
     else block.append(folderRow(entry.division, onOpen));
+  }
+  return block;
+}
+
+/**
+ * One season's episodes, on the page the season opened. No heading of its
+ * own: the page's title already names the season.
+ */
+export function seasonBlock(season, onPlay) {
+  const block = el("section", "season depth-0");
+  for (const set of season.items) {
+    block.append(isDocument(set) ? documentRow(set) : lessonRow(set, onPlay));
   }
   return block;
 }

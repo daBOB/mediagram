@@ -3,7 +3,8 @@
  *
  * A poster key is `tmdb-movie-<id>` or `tmdb-tv-<id>`. TMDB's film and
  * television id spaces are independent, so the kind is part of the key and a
- * film sharing an id with a series never collides with it.
+ * film sharing an id with a series never collides with it. A season's own
+ * artwork adds `-s<n>` to its show's key: `tmdb-tv-1396-s2`.
  *
  * The key reaches a URL and then a file name, so it is spelled out rather
  * than passed through: a store that accepts any string is one caption away
@@ -13,7 +14,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
-const KEY = /^tmdb-(?:movie|tv)-\d{1,12}$/;
+const KEY = /^tmdb-(?:movie|tv)-\d{1,12}(?:-s\d{1,4})?$/;
 
 /** The key for a set, or `null` when it has no TMDB id to build one from. */
 export function posterKeyFor(kind: string, tmdb: number | null): string | null {
@@ -21,6 +22,12 @@ export function posterKeyFor(kind: string, tmdb: number | null): string | null {
   // Everything that is not a film is filed under a show: an episode's artwork
   // is the series', which is also the only poster the package carries for it.
   return `tmdb-${kind === "movie" ? "movie" : "tv"}-${tmdb}`;
+}
+
+/** The key a season's artwork is filed under, or `null` without a show key. */
+export function seasonPosterKeyFor(showKey: string | null, season: number | null): string | null {
+  if (showKey === null || season === null || !Number.isInteger(season) || season < 0) return null;
+  return `${showKey}-s${season}`;
 }
 
 export function posterKeyIsValid(key: string): boolean {

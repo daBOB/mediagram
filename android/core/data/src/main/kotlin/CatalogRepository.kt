@@ -18,6 +18,14 @@ interface CatalogRepository {
      * entry, and a library assembled without a TMDB key has no rows at all.
      */
     suspend fun titleInfo(posterKey: String): TitleInfo?
+
+    /**
+     * The local file for a poster key that has no [model.MediaSet] of its
+     * own to carry it on — a season's artwork. `null` is ordinary: not
+     * every season has art of its own, and a library assembled without a
+     * TMDB key has none at all.
+     */
+    suspend fun posterPath(posterKey: String): String?
 }
 
 /**
@@ -77,6 +85,11 @@ class DefaultCatalogRepository(
     /** The core is awaited here rather than captured, as everywhere else. */
     override suspend fun titleInfo(posterKey: String): TitleInfo? =
         coreProvider.awaitCore().titleInfo(posterKey)
+
+    override suspend fun posterPath(posterKey: String): String? {
+        val core = coreProvider.awaitCore()
+        return core.posterPath(posterKey)
+    }
 
     /**
      * One index row, as a set the shelves can place.

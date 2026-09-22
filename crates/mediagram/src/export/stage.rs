@@ -9,7 +9,8 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
-use mediagram_tmdb::posters::{PosterRef, download_into};
+use mediagram_tmdb::poster_files::download_into;
+use mediagram_tmdb::posters::PosterRef;
 use mlib_spec::package::{PackageManifest, PosterEntry};
 use rusqlite::Connection;
 

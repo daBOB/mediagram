@@ -1,0 +1,858 @@
+[
+  {
+    "name": "the later position for a title is the one that counts",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [
+              {
+                "setId": "01A",
+                "at": 100,
+                "duration": 3600,
+                "updatedAt": 1000
+              }
+            ],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "desktop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [
+              {
+                "setId": "01A",
+                "at": 900,
+                "duration": 3600,
+                "updatedAt": 2000
+              }
+            ],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "progress": [
+            {
+              "setId": "01A",
+              "at": 900,
+              "duration": 3600,
+              "updatedAt": 2000
+            }
+          ],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "two titles watched on two machines both survive",
+    "records": [
+      {
+        "format": 1,
+        "device": "phone",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [
+              {
+                "setId": "01E4",
+                "at": 300,
+                "duration": 3600,
+                "updatedAt": 1000
+              }
+            ],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [
+              {
+                "setId": "01E9",
+                "at": 700,
+                "duration": 3600,
+                "updatedAt": 1000
+              }
+            ],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "progress": [
+            {
+              "setId": "01E4",
+              "at": 300,
+              "duration": 3600,
+              "updatedAt": 1000
+            },
+            {
+              "setId": "01E9",
+              "at": 700,
+              "duration": 3600,
+              "updatedAt": 1000
+            }
+          ],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "merging a document with itself changes nothing",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [
+              {
+                "setId": "01A",
+                "at": 100,
+                "duration": 3600,
+                "updatedAt": 1000
+              }
+            ],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [
+              {
+                "setId": "01A",
+                "at": 100,
+                "duration": 3600,
+                "updatedAt": 1000
+              }
+            ],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "progress": [
+            {
+              "setId": "01A",
+              "at": 100,
+              "duration": 3600,
+              "updatedAt": 1000
+            }
+          ],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "a tie on the position breaks on the greater device id, the same way every time",
+    "records": [
+      {
+        "format": 1,
+        "device": "aaa",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [
+              {
+                "setId": "01A",
+                "at": 111,
+                "duration": 3600,
+                "updatedAt": 5000
+              }
+            ],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "zzz",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [
+              {
+                "setId": "01A",
+                "at": 222,
+                "duration": 3600,
+                "updatedAt": 5000
+              }
+            ],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "progress": [
+            {
+              "setId": "01A",
+              "at": 222,
+              "duration": 3600,
+              "updatedAt": 5000
+            }
+          ],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "a completion beats a position a device had not heard about",
+    "records": [
+      {
+        "format": 1,
+        "device": "phone",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [
+              {
+                "setId": "01A",
+                "at": 900,
+                "duration": 3600,
+                "updatedAt": 1000
+              }
+            ],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [
+              {
+                "setId": "01A",
+                "updatedAt": 2000
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "progress": [],
+          "watched": [
+            {
+              "setId": "01A",
+              "updatedAt": 2000
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "even at the same millisecond a completion beats the position",
+    "records": [
+      {
+        "format": 1,
+        "device": "phone",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [
+              {
+                "setId": "01A",
+                "at": 900,
+                "duration": 3600,
+                "updatedAt": 1000
+              }
+            ],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [
+              {
+                "setId": "01A",
+                "updatedAt": 1000
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "progress": [],
+          "watched": [
+            {
+              "setId": "01A",
+              "updatedAt": 1000
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "starting a title again after finishing it does come back",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [
+              {
+                "setId": "01A",
+                "updatedAt": 1000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "phone",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [
+              {
+                "setId": "01A",
+                "at": 30,
+                "duration": 3600,
+                "updatedAt": 2000
+              }
+            ],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "progress": [
+            {
+              "setId": "01A",
+              "at": 30,
+              "duration": 3600,
+              "updatedAt": 2000
+            }
+          ],
+          "watched": [
+            {
+              "setId": "01A",
+              "updatedAt": 1000
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "the same name typed differently is the same person",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [
+              {
+                "setId": "01A",
+                "at": 100,
+                "duration": 3600,
+                "updatedAt": 1000
+              }
+            ],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "desktop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": " andré ",
+            "progress": [
+              {
+                "setId": "01B",
+                "at": 200,
+                "duration": 3600,
+                "updatedAt": 1000
+              }
+            ],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "progress": [
+            {
+              "setId": "01A",
+              "at": 100,
+              "duration": 3600,
+              "updatedAt": 1000
+            },
+            {
+              "setId": "01B",
+              "at": 200,
+              "duration": 3600,
+              "updatedAt": 1000
+            }
+          ],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "two different people stay apart",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [
+              {
+                "setId": "01A",
+                "at": 100,
+                "duration": 3600,
+                "updatedAt": 1000
+              }
+            ],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Sam",
+            "progress": [
+              {
+                "setId": "01A",
+                "at": 900,
+                "duration": 3600,
+                "updatedAt": 2000
+              }
+            ],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "progress": [
+            {
+              "setId": "01A",
+              "at": 100,
+              "duration": 3600,
+              "updatedAt": 1000
+            }
+          ],
+          "watched": []
+        },
+        {
+          "name": "sam",
+          "displayName": "Sam",
+          "progress": [
+            {
+              "setId": "01A",
+              "at": 900,
+              "duration": 3600,
+              "updatedAt": 2000
+            }
+          ],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "a profile with no usable name is dropped, not merged into one bucket",
+    "records": [
+      {
+        "format": 1,
+        "device": "d",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "  ",
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": []
+    }
+  },
+  {
+    "name": "nothing to merge is not an error",
+    "records": [],
+    "expect": {
+      "profiles": []
+    }
+  },
+  {
+    "name": "one document alone becomes one profile with nothing to reconcile",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "progress": [],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "the name a new machine will greet you by is the one somebody typed, trimmed",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": " André ",
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "progress": [],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "a completed row also breaks its tie on the device id",
+    "records": [
+      {
+        "format": 1,
+        "device": "aaa",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [
+              {
+                "setId": "01A",
+                "updatedAt": 5000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "zzz",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [
+              {
+                "setId": "01A",
+                "updatedAt": 5000
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "progress": [],
+          "watched": [
+            {
+              "setId": "01A",
+              "updatedAt": 5000
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "a later completion from another device wins over an earlier one",
+    "records": [
+      {
+        "format": 1,
+        "device": "phone",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [
+              {
+                "setId": "01A",
+                "updatedAt": 1000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [
+              {
+                "setId": "01A",
+                "updatedAt": 9000
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "progress": [],
+          "watched": [
+            {
+              "setId": "01A",
+              "updatedAt": 9000
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "several viewers and several devices resolve independently of each other",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [
+              {
+                "setId": "01A",
+                "at": 100,
+                "duration": 3600,
+                "updatedAt": 1000
+              }
+            ],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "phone",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [
+              {
+                "setId": "01A",
+                "at": 500,
+                "duration": 3600,
+                "updatedAt": 3000
+              }
+            ],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Sam",
+            "progress": [],
+            "watched": [
+              {
+                "setId": "01B",
+                "updatedAt": 2000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tablet",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Sam",
+            "progress": [
+              {
+                "setId": "01B",
+                "at": 50,
+                "duration": 3600,
+                "updatedAt": 1500
+              }
+            ],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "progress": [
+            {
+              "setId": "01A",
+              "at": 500,
+              "duration": 3600,
+              "updatedAt": 3000
+            }
+          ],
+          "watched": []
+        },
+        {
+          "name": "sam",
+          "displayName": "Sam",
+          "progress": [],
+          "watched": [
+            {
+              "setId": "01B",
+              "updatedAt": 2000
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

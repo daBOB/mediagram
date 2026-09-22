@@ -13,7 +13,8 @@
 //! taken from the one request per title [`fetch_into`] makes.
 
 use mediagram_tmdb::details::{details, from_details};
-use mediagram_tmdb::posters::{already_held, download_into, kind_key, resolve_posters};
+use mediagram_tmdb::poster_files::{already_held, download_into};
+use mediagram_tmdb::posters::{kind_key, resolve_posters};
 use mediagram_tmdb::tmdb_client::TmdbApi;
 use mlib_spec::Kind;
 use rusqlite::Connection;

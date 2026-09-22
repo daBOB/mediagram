@@ -27,29 +27,34 @@ internal enum class MenuScreen(val destination: Destination) {
 
 /**
  * Where in the library a viewer currently is: whichever show or course the
- * catalog opened, whichever title that described, whichever set that
- * played, and whichever screen the menu opened over them.
+ * catalog opened, whichever season of it that opened from its wall,
+ * whichever title that described, whichever set that played, and whichever
+ * screen the menu opened over them.
  *
- * All four are saved rather than remembered: the Activity is fully
+ * All five are saved rather than remembered: the Activity is fully
  * destroyed and recreated on rotation (there is no `android:configChanges`),
  * and the singleton player survives that regardless — without this,
  * rotating away from an open set would drop back to the catalog while the
  * film kept playing underneath it.
  *
- * The collection and the opened title are held as keys and looked up again,
- * not kept as trees or sets: a saved position has to survive the process
- * being killed, and a key is a short string where a course is a few hundred
- * sets.
+ * The collection, the season within it, and the opened title are held as
+ * keys and looked up again, not kept as trees or sets: a saved position has
+ * to survive the process being killed, and a key is a short string where a
+ * course is a few hundred sets. A season is keyed by its division's title
+ * rather than its number, so "Episodes" and specials — which carry no
+ * number — resolve the same way a numbered season does.
  */
 internal class LibraryPositions(
     setId: MutableState<String?>,
     titleId: MutableState<String?>,
     collection: MutableState<String?>,
+    season: MutableState<String?>,
     menuScreen: MutableState<MenuScreen?>,
 ) {
     var setId: String? by setId
     var titleId: String? by titleId
     var collection: String? by collection
+    var season: String? by season
     var menuScreen: MenuScreen? by menuScreen
 
     /**
@@ -61,6 +66,7 @@ internal class LibraryPositions(
         setId = null
         titleId = null
         collection = null
+        season = null
         menuScreen = null
     }
 }
@@ -70,6 +76,7 @@ internal fun rememberLibraryPositions(): LibraryPositions = LibraryPositions(
     setId = rememberSaveable { mutableStateOf<String?>(null) },
     titleId = rememberSaveable { mutableStateOf<String?>(null) },
     collection = rememberSaveable { mutableStateOf<String?>(null) },
+    season = rememberSaveable { mutableStateOf<String?>(null) },
     menuScreen = rememberSaveable { mutableStateOf<MenuScreen?>(null) },
 )
 

@@ -7,7 +7,32 @@ to `main`. Full phase-by-phase detail lives in
 
 ## 2026-09-22
 
+**Fixed**
+
+- The Android app no longer loses a film after a long pause. It keeps each
+  part's Telegram document handle for the whole of a set, and that handle
+  carries a file reference Telegram expires; once refused, every read of the
+  set failed as a network error until another title was opened. A read
+  refused with `FILE_REFERENCE_EXPIRED` (or `_INVALID`) now drops the held
+  handle, resolves the part again and retries once. The web player resolves
+  on every fetch and was never affected.
+- Merging watch state from several devices now names a viewer the same way
+  whichever order their documents arrive in. One viewer typed as "André" on
+  one machine and " andré " on another kept whichever spelling happened to
+  be read first, so two devices could disagree about what to call the same
+  person. The spelling now follows the device id, as a tie between two rows
+  for one title already did.
+
 **Added**
+
+- A series of more than one season opens on a wall of its seasons, each with
+  its own TMDB poster, and a season opens a page of its episodes; a show of
+  one season still goes straight to them. Web player and Android app alike.
+  Season artwork is keyed `tmdb-tv-<id>-s<n>` (the package's poster-key rule
+  now allows that one extra part) and comes from the `/tv/{id}` payload
+  already cached, so `mediagram posters`, the package export and the phone's
+  own fetch gain it with no extra TMDB request. A season with no artwork of
+  its own shows the show's.
 
 - Each row on the start page names how much is behind it — "Latest films ·
   124" — on the web player and the Android app alike. A row shows six; the

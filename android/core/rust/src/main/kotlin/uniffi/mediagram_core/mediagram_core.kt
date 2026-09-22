@@ -917,7 +917,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_sign_in() and 0xFFFF) != 40173) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_title_info() and 0xFFFF) != 6399) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_title_info() and 0xFFFF) != 51771) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_total_size() and 0xFFFF) != 59108) {
@@ -1519,7 +1519,7 @@ public interface CoreInterface {
     
     /**
      * What is known about a title, or nothing. The index answers first and
-     * what this device fetched fills the gaps — see [`enrich::details::title_info`].
+     * what this device fetched fills the gaps — see `enrich::details::title_info`.
      * A course has no provider entry and a library assembled without a TMDB
      * key has no rows at all; both are ordinary, so neither is an error.
      */
@@ -1952,7 +1952,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     
     /**
      * What is known about a title, or nothing. The index answers first and
-     * what this device fetched fills the gaps — see [`enrich::details::title_info`].
+     * what this device fetched fills the gaps — see `enrich::details::title_info`.
      * A course has no provider entry and a library assembled without a TMDB
      * key has no rows at all; both are ordinary, so neither is an error.
      */
@@ -2199,7 +2199,7 @@ public object FfiConverterTypeFetchReport: FfiConverterRustBuffer<FetchReport> {
  *
  * A title to render and a handle to send back, and nothing else. The handle
  * is a random name this data directory minted for the channel — see
- * [`library`] — so a caller holding one learns nothing about where the
+ * `library` — so a caller holding one learns nothing about where the
  * bytes live, which is the same rule the byte path is held to.
  */
 data class LibraryChoice (

@@ -23,6 +23,7 @@ class LibraryPositionsTest {
         setId = Slot<String?>(null),
         titleId = Slot<String?>(null),
         collection = Slot<String?>(null),
+        season = Slot<String?>(null),
         menuScreen = Slot<MenuScreen?>(null),
     )
 
@@ -62,6 +63,7 @@ class LibraryPositionsTest {
     fun theCatalogIsReachedByLeavingEveryOtherPositionAtOnce() {
         val at = positions()
         at.collection = "spartacus"
+        at.season = "Season 1"
         at.titleId = "set-1"
         at.setId = "set-1"
         at.menuScreen = MenuScreen.TmdbKey
@@ -71,6 +73,7 @@ class LibraryPositionsTest {
         assertNull(at.setId)
         assertNull(at.titleId)
         assertNull(at.collection)
+        assertNull(at.season)
         assertNull(at.menuScreen)
     }
 }

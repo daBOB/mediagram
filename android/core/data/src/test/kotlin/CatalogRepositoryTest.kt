@@ -71,4 +71,14 @@ class CatalogRepositoryTest {
         val set = repo.sets().single()
         assertEquals(Kind.MOVIE, set.kind)
     }
+
+    /** A season poster has no set of its own to carry it, so it is asked for by key directly. */
+    @Test
+    fun posterPathDelegatesToTheCore() = runTest {
+        val core = FakeCore(posters = mapOf("tmdb-tv-1396-s2" to "/cache/1396-s2.jpg"))
+        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+
+        assertEquals("/cache/1396-s2.jpg", repo.posterPath("tmdb-tv-1396-s2"))
+        assertEquals(null, repo.posterPath("tmdb-tv-1396-s9"))
+    }
 }

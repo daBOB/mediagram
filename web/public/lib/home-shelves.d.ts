@@ -26,6 +26,14 @@ export interface HomeShelves {
   latestMovies: CatalogSet[];
   latestSeries: Collection[];
   latestCourses: Collection[];
+  /** How much is behind each row, for its heading: the whole shelf, not the six. */
+  totals: {
+    continues: number;
+    nextUp: number;
+    latestMovies: number;
+    latestSeries: number;
+    latestCourses: number;
+  };
 }
 
 /** One recorded position, as the watch store holds it. */

@@ -4,10 +4,9 @@
 ///
 /// Resolving costs a round trip, and a set is read a few hundred times
 /// while it plays — every one of them for the same handful of parts. The
-/// document a message holds is fixed, so the answer cannot turn into
-/// different bytes. The file reference inside the handle does expire, which
-/// is why a read that fails on a held handle forgets it and resolves the
-/// part again before giving up.
+/// document a message holds is fixed, but the handle carries a file
+/// reference Telegram expires; `read` evicts a part whose reference is
+/// refused and resolves it again, so a long pause does not strand a set.
 ///
 /// Held for one set, because that is what a player reads. Opening another
 /// replaces it, which is what keeps this from growing with every set ever
@@ -26,7 +25,7 @@ impl DocumentCache {
         self.by_message.get(&message_id).cloned()
     }
 
-    pub(super) fn forget(&mut self, set_id: &str, message_id: i64) {
+    pub(super) fn evict(&mut self, set_id: &str, message_id: i64) {
         if self.set_id == set_id {
             self.by_message.remove(&message_id);
         }
@@ -97,16 +96,17 @@ mod tests {
         assert!(cache.get("set-b", 200).is_some());
     }
 
-    /// A handle whose file reference has expired is forgotten on its own:
-    /// the next read resolves that part afresh, and the rest stay held.
+    /// A handle held across a long pause outlives its file reference; once
+    /// Telegram refuses it, the cache must stop answering with it or every
+    /// read of the set fails until another set is opened.
     #[test]
-    fn a_forgotten_part_is_resolved_again_and_the_others_stay_held() {
+    fn an_evicted_part_is_resolved_again_and_its_neighbours_are_kept() {
         let mut cache = DocumentCache::default();
         cache.put("set-a", 100, document());
         cache.put("set-a", 101, document());
 
-        cache.forget("set-a", 100);
-        cache.forget("set-b", 101);
+        cache.evict("set-a", 100);
+        cache.evict("set-b", 101);
 
         assert!(cache.get("set-a", 100).is_none());
         assert!(cache.get("set-a", 101).is_some(), "forgetting another set's part touches nothing");

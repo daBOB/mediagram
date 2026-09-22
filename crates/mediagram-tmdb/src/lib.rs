@@ -9,6 +9,7 @@
 pub mod details;
 pub mod disk_cache;
 pub mod localized;
+pub mod poster_files;
 pub mod posters;
 pub mod tmdb_client;
 pub mod tmdb_types;

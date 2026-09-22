@@ -1,0 +1,405 @@
+[
+  {
+    "name": "a position in the middle is one to go back to",
+    "fn": "resumeAt",
+    "args": [
+      {
+        "at": 1200,
+        "duration": 2400
+      }
+    ],
+    "expect": 1200
+  },
+  {
+    "name": "twelve seconds in is looking, not watching",
+    "fn": "resumeAt",
+    "args": [
+      {
+        "at": 12,
+        "duration": 2400
+      }
+    ],
+    "expect": null
+  },
+  {
+    "name": "twenty-nine seconds in is still a glance",
+    "fn": "resumeAt",
+    "args": [
+      {
+        "at": 29,
+        "duration": 2400
+      }
+    ],
+    "expect": null
+  },
+  {
+    "name": "thirty-one seconds in is a position",
+    "fn": "resumeAt",
+    "args": [
+      {
+        "at": 31,
+        "duration": 2400
+      }
+    ],
+    "expect": 31
+  },
+  {
+    "name": "the last percent of a long film is the credits",
+    "fn": "resumeAt",
+    "args": [
+      {
+        "at": 2340,
+        "duration": 2400
+      }
+    ],
+    "expect": null
+  },
+  {
+    "name": "one second before the credits still resumes",
+    "fn": "resumeAt",
+    "args": [
+      {
+        "at": 2339,
+        "duration": 2400
+      }
+    ],
+    "expect": 2339
+  },
+  {
+    "name": "a two-minute lesson resumes at a minute in",
+    "fn": "resumeAt",
+    "args": [
+      {
+        "at": 60,
+        "duration": 120
+      }
+    ],
+    "expect": 60
+  },
+  {
+    "name": "a two-minute lesson resumes seven seconds from the end",
+    "fn": "resumeAt",
+    "args": [
+      {
+        "at": 113,
+        "duration": 120
+      }
+    ],
+    "expect": 113
+  },
+  {
+    "name": "a two-minute lesson is finished five seconds from the end",
+    "fn": "resumeAt",
+    "args": [
+      {
+        "at": 115,
+        "duration": 120
+      }
+    ],
+    "expect": null
+  },
+  {
+    "name": "a 64-second lesson: five seconds in is a glance",
+    "fn": "resumeAt",
+    "args": [
+      {
+        "at": 5,
+        "duration": 64
+      }
+    ],
+    "expect": null
+  },
+  {
+    "name": "a 64-second lesson: twenty seconds in is a position",
+    "fn": "resumeAt",
+    "args": [
+      {
+        "at": 20,
+        "duration": 64
+      }
+    ],
+    "expect": 20
+  },
+  {
+    "name": "a long title resumes with twelve minutes left, not finished by percentage",
+    "fn": "resumeAt",
+    "args": [
+      {
+        "at": 13000,
+        "duration": 14400
+      }
+    ],
+    "expect": 13000
+  },
+  {
+    "name": "a long title is finished with fifty seconds left, by its last minute",
+    "fn": "resumeAt",
+    "args": [
+      {
+        "at": 14350,
+        "duration": 14400
+      }
+    ],
+    "expect": null
+  },
+  {
+    "name": "with no runtime a position is taken at face value",
+    "fn": "resumeAt",
+    "args": [
+      {
+        "at": 9000,
+        "duration": null
+      }
+    ],
+    "expect": 9000
+  },
+  {
+    "name": "nothing recorded is nothing to resume",
+    "fn": "resumeAt",
+    "args": [
+      null
+    ],
+    "expect": null
+  },
+  {
+    "name": "an unreadable position resumes nowhere",
+    "fn": "resumeAt",
+    "args": [
+      {
+        "at": "not-a-number",
+        "duration": 2400
+      }
+    ],
+    "expect": null
+  },
+  {
+    "name": "a runtime that is not finite is treated as unknown, the position still kept",
+    "fn": "resumeAt",
+    "args": [
+      {
+        "at": 1200,
+        "duration": 0
+      }
+    ],
+    "expect": 1200
+  },
+  {
+    "name": "twelve minutes of four hours left is not finished",
+    "fn": "isFinished",
+    "args": [
+      13000,
+      14400
+    ],
+    "expect": false
+  },
+  {
+    "name": "fifty seconds of four hours left is finished",
+    "fn": "isFinished",
+    "args": [
+      14350,
+      14400
+    ],
+    "expect": true
+  },
+  {
+    "name": "a 37-second title with seventeen left is not finished",
+    "fn": "isFinished",
+    "args": [
+      20,
+      37
+    ],
+    "expect": false
+  },
+  {
+    "name": "a 37-second title with one second left is finished",
+    "fn": "isFinished",
+    "args": [
+      36,
+      37
+    ],
+    "expect": true
+  },
+  {
+    "name": "a 57-second title barely begun is not finished",
+    "fn": "isFinished",
+    "args": [
+      1,
+      57
+    ],
+    "expect": false
+  },
+  {
+    "name": "a runtime of zero is unknown, so nothing is finished",
+    "fn": "isFinished",
+    "args": [
+      1200,
+      0
+    ],
+    "expect": false
+  },
+  {
+    "name": "a negative position is never finished",
+    "fn": "isFinished",
+    "args": [
+      -5,
+      3600
+    ],
+    "expect": false
+  },
+  {
+    "name": "half of the runtime is half the bar",
+    "fn": "watchedFraction",
+    "args": [
+      {
+        "at": 1200,
+        "duration": 2400
+      }
+    ],
+    "expect": 0.5
+  },
+  {
+    "name": "the whole runtime is the full bar",
+    "fn": "watchedFraction",
+    "args": [
+      {
+        "at": 2400,
+        "duration": 2400
+      }
+    ],
+    "expect": 1
+  },
+  {
+    "name": "past the end the bar clamps to full",
+    "fn": "watchedFraction",
+    "args": [
+      {
+        "at": 9999,
+        "duration": 2400
+      }
+    ],
+    "expect": 1
+  },
+  {
+    "name": "before the start the bar clamps to empty",
+    "fn": "watchedFraction",
+    "args": [
+      {
+        "at": -5,
+        "duration": 2400
+      }
+    ],
+    "expect": 0
+  },
+  {
+    "name": "an unknown runtime draws no bar",
+    "fn": "watchedFraction",
+    "args": [
+      {
+        "at": 600,
+        "duration": null
+      }
+    ],
+    "expect": null
+  },
+  {
+    "name": "a zero runtime draws no bar",
+    "fn": "watchedFraction",
+    "args": [
+      {
+        "at": 600,
+        "duration": 0
+      }
+    ],
+    "expect": null
+  },
+  {
+    "name": "nothing recorded draws no bar",
+    "fn": "watchedFraction",
+    "args": [
+      null
+    ],
+    "expect": null
+  },
+  {
+    "name": "the catalog's runtime is believed whenever there is one",
+    "fn": "trustedRuntime",
+    "args": [
+      {
+        "catalogued": 2400,
+        "observed": 30,
+        "direct": true
+      }
+    ],
+    "expect": 2400
+  },
+  {
+    "name": "the catalog's runtime is believed even off the direct path",
+    "fn": "trustedRuntime",
+    "args": [
+      {
+        "catalogued": 2400,
+        "observed": 30,
+        "direct": false
+      }
+    ],
+    "expect": 2400
+  },
+  {
+    "name": "the browser's runtime is believed only on the direct path",
+    "fn": "trustedRuntime",
+    "args": [
+      {
+        "catalogued": null,
+        "observed": 1800,
+        "direct": true
+      }
+    ],
+    "expect": 1800
+  },
+  {
+    "name": "a conversion's still-growing runtime is never believed",
+    "fn": "trustedRuntime",
+    "args": [
+      {
+        "catalogued": null,
+        "observed": 1260,
+        "direct": false
+      }
+    ],
+    "expect": 0
+  },
+  {
+    "name": "nothing known anywhere is zero, not a guess",
+    "fn": "trustedRuntime",
+    "args": [
+      {
+        "catalogued": null,
+        "observed": null,
+        "direct": true
+      }
+    ],
+    "expect": 0
+  },
+  {
+    "name": "a catalogued zero is not believed either",
+    "fn": "trustedRuntime",
+    "args": [
+      {
+        "catalogued": 0,
+        "observed": 0,
+        "direct": true
+      }
+    ],
+    "expect": 0
+  },
+  {
+    "name": "absent fields are the same as unknown ones",
+    "fn": "trustedRuntime",
+    "args": [
+      {
+        "direct": false
+      }
+    ],
+    "expect": 0
+  }
+]

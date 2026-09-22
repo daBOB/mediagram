@@ -12,7 +12,8 @@
 //! in this file has to know about the distinction.
 
 use anyhow::Result;
-use mediagram_tmdb::posters::{already_held, download_into, resolve_posters};
+use mediagram_tmdb::poster_files::{already_held, download_into};
+use mediagram_tmdb::posters::resolve_posters;
 use mediagram_tmdb::tmdb_client::TmdbClient;
 
 use crate::config::Config;

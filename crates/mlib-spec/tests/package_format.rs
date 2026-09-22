@@ -246,6 +246,12 @@ fn poster_keys_accept_the_documented_shapes() {
     assert!(poster_key_is_valid("tmdb-tv-550"));
     assert!(poster_key_is_valid("tvdb-series-12345"));
     assert!(poster_key_is_valid("a-b-1"));
+    // A season's artwork: one more part, `s` and digits, nothing else.
+    assert!(poster_key_is_valid("tmdb-tv-550-s2"));
+    for bad in ["tmdb-tv-550-s", "tmdb-tv-550-2", "tmdb-tv-550-x2", "tmdb-tv-550-s2-s3", "tmdb-tv-550-S2"] {
+        assert!(!poster_key_is_valid(bad), "`{bad}` must be rejected");
+    }
+    assert_eq!(mlib_spec::package::season_poster_key("tmdb-tv-550", 2), "tmdb-tv-550-s2");
 }
 
 /// The key reaches a file name, a manifest path and a tar member name, so

@@ -20,6 +20,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import catalog.Division
 import catalog.Entry
+import catalog.seasonPlatesOf
 import designsystem.Spacing
 import model.Kind
 import model.MediaSet
@@ -28,6 +29,13 @@ import uniffi.mediagram_core.TitleInfo
 /**
  * What is inside one show or course: its seasons or chapters, and the
  * episodes or lessons under them.
+ *
+ * A show with more than one season is a wall of season plates instead —
+ * [SeasonWall] — because a course drills into chapters and a show into
+ * seasons, and only the second has artwork of its own to put on a plate.
+ * Everything else — a course, and a show with just one season — falls
+ * through to the flat, indented list below, the same list a season screen
+ * shows for the one season it was opened from ([SeasonScreen]).
  *
  * The nesting is kept rather than flattened. A course runs from one folder
  * deep to four, and flattening it gives a row of headings that each repeat
@@ -45,8 +53,16 @@ import uniffi.mediagram_core.TitleInfo
 fun CollectionScreen(
     collection: Entry.Collection,
     info: TitleInfo?,
+    posterPath: suspend (key: String) -> String?,
     onOpenTitle: (setId: String) -> Unit,
+    onOpenSeason: (Division) -> Unit,
 ) {
+    val seasons = remember(collection) { seasonPlatesOf(collection) }
+    if (seasons != null) {
+        SeasonWall(collection, info, seasons, posterPath, onOpenSeason)
+        return
+    }
+
     // Flattened once per collection, not on every recomposition: the depth
     // becomes an indent here because a lazy list cannot nest, and a viewer
     // still has to see which folder holds what.
@@ -81,8 +97,14 @@ fun CollectionScreen(
     }
 }
 
-/** One line of the screen: a heading for a division, or a set under it. */
-private sealed interface Row {
+/**
+ * One line of the screen: a heading for a division, or a set under it.
+ *
+ * Internal rather than private: [SeasonScreen] renders the same rows for
+ * the one division a season plate was opened from, and a set of episodes
+ * is not something worth two rendering paths.
+ */
+internal sealed interface Row {
     val depth: Int
 
     data class Heading(override val depth: Int, val title: String) : Row
@@ -97,7 +119,7 @@ private sealed interface Row {
  * the course was built, and dropping it would join two levels that are not
  * the same level.
  */
-private fun rowsOf(divisions: List<Division>, depth: Int = 0): List<Row> =
+internal fun rowsOf(divisions: List<Division>, depth: Int = 0): List<Row> =
     divisions.flatMap { division ->
         buildList {
             add(Row.Heading(depth, division.title))
@@ -106,7 +128,7 @@ private fun rowsOf(divisions: List<Division>, depth: Int = 0): List<Row> =
         }
     }
 
-private fun LazyListScope.items(
+internal fun LazyListScope.items(
     rows: List<Row>,
     onOpenTitle: (setId: String) -> Unit,
 ) {
