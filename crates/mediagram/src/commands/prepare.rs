@@ -22,11 +22,21 @@ use super::args::PrepareArgs;
 use crate::config::Config;
 use crate::media::direct_play;
 use crate::media::ffmpeg_progress;
-use crate::media::prepare_check::check_prepared;
+use crate::media::prepare_check::{Measured, check_prepared};
 use crate::media::prepare_plan::{PreparePlan, StreamKind, Verdict, plan_prepare};
 use crate::media::streams;
-use crate::media::video_files::{PREPARE_WORKING_SUFFIX, collect_videos};
+use crate::media::prepare_paths::{mirrored, working_path};
+use crate::media::video_files::collect_videos;
 use crate::term;
+
+/// One probed file and what `prepare` would do with it.
+struct Candidate {
+    file: PathBuf,
+    size: u64,
+    /// Seconds, as probed.
+    duration: f64,
+    plan: PreparePlan,
+}
 
 pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
     if args.replace && args.out.is_some() {
@@ -68,7 +78,12 @@ pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
             &borrowed(&keep_subs),
             limit,
         );
-        planned.push((file.clone(), size, probed.duration, plan));
+        planned.push(Candidate {
+            file: file.clone(),
+            size,
+            duration: probed.duration,
+            plan,
+        });
     }
     term::redraw("");
 
@@ -90,7 +105,7 @@ pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
     // which file of how many rather than counting only the ones left.
     let todo: Vec<_> = planned
         .iter()
-        .filter(|(file, _, _, plan)| {
+        .filter(|Candidate { file, plan, .. }| {
             // Size is not the only reason to rewrite. `--mp4` exists to make a
             // file playable, and a file already small enough still plays badly
             // if it is Matroska with E-AC-3 inside.
@@ -106,7 +121,7 @@ pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
     let mut rewritten = 0usize;
     let mut failed = 0usize;
     let mut freed = 0u64;
-    for (index, (file, size, duration, plan)) in todo.iter().enumerate() {
+    for (index, Candidate { file, size, duration, plan }) in todo.iter().enumerate() {
         let dest = match &args.out {
             Some(root) => Some(mirrored(file, &args.path, root, args.mp4)?),
             None => None,
@@ -241,17 +256,17 @@ async fn rewrite(
         .cloned()
         .collect::<Vec<_>>();
 
-    if let Err(rejection) = check_prepared(
-        &probed.streams,
-        new_size,
-        probed.duration,
-        source_size,
-        job.duration,
-        &expected,
-        // Re-encoding the audio can round upwards on a file that had little
-        // to drop, so growth is only suspicious when tracks were merely cut.
-        to_mp4,
-    ) {
+    let prepared = Measured {
+        size: new_size,
+        duration: probed.duration,
+    };
+    let original = Measured {
+        size: source_size,
+        duration: job.duration,
+    };
+    // Re-encoding the audio can round upwards on a file that had little to
+    // drop, so growth is only suspicious when tracks were merely cut.
+    if let Err(rejection) = check_prepared(&probed.streams, prepared, original, &expected, to_mp4) {
         let _ = std::fs::remove_file(&working);
         bail!("prepared file rejected: {rejection:?}");
     }
@@ -261,33 +276,6 @@ async fn rewrite(
     std::fs::rename(&working, final_path)
         .with_context(|| format!("writing {}", final_path.display()))?;
     Ok(new_size)
-}
-
-/// Where a source file lands under `--out`, keeping the tree it came from.
-///
-/// A file named directly has no tree to mirror — stripping the root off it
-/// leaves nothing — so it lands at the top of the output directory under its
-/// own name. Without that case the output directory is itself renamed into
-/// the result.
-fn mirrored(file: &Path, root: &Path, out: &Path, to_mp4: bool) -> Result<PathBuf> {
-    let relative = match file.strip_prefix(root) {
-        Ok(rest) if !rest.as_os_str().is_empty() => rest.to_path_buf(),
-        _ => PathBuf::from(
-            file.file_name()
-                .with_context(|| format!("{} has no file name", file.display()))?,
-        ),
-    };
-    let mut dest = out.join(relative);
-    if to_mp4 {
-        dest.set_extension("mp4");
-    }
-    if dest == file {
-        bail!(
-            "{} would be written over its own source; give --out a different directory",
-            dest.display()
-        );
-    }
-    Ok(dest)
 }
 
 /// Whether any audio track being kept is one a browser would refuse.
@@ -310,10 +298,10 @@ fn audio_needs_encoding(plan: &PreparePlan) -> bool {
 /// Converting the wrapper of an HEVC file is wasted work: the player converts
 /// it on every play regardless, because the picture itself is what a browser
 /// will not open. Better to say so before an hour of encoding than after.
-fn warn_about_video_codecs(planned: &[(PathBuf, u64, f64, PreparePlan)]) {
+fn warn_about_video_codecs(planned: &[Candidate]) {
     let mut names: Vec<String> = planned
         .iter()
-        .flat_map(|(file, _, _, plan)| direct_play::blockers(file, &plan.keep))
+        .flat_map(|c| direct_play::blockers(&c.file, &c.plan.keep))
         .filter(|blocker| !blocker.fixable_by_prepare())
         .map(|blocker| blocker.reason())
         .collect();
@@ -331,12 +319,12 @@ fn warn_about_video_codecs(planned: &[(PathBuf, u64, f64, PreparePlan)]) {
     );
 }
 
-fn print_table(planned: &[(PathBuf, u64, f64, PreparePlan)], limit: u64) {
+fn print_table(planned: &[Candidate], limit: u64) {
     println!(
         "{:<44} {:>9} {:>6} {:>5} {:>11}  verdict",
         "file", "size", "audio", "subs", "estimated"
     );
-    for (file, size, _, plan) in planned {
+    for Candidate { file, size, plan, .. } in planned {
         let verdict = match plan.verdict {
             Verdict::AlreadyFits => "already fits".to_string(),
             Verdict::NothingToDrop => "nothing to drop".to_string(),
@@ -353,12 +341,12 @@ fn print_table(planned: &[(PathBuf, u64, f64, PreparePlan)], limit: u64) {
             verdict
         );
     }
-    let total: u64 = planned.iter().map(|(_, s, _, _)| *s).sum();
+    let total: u64 = planned.iter().map(|c| c.size).sum();
     let after: u64 = planned
         .iter()
-        .map(|(_, s, _, p)| match p.verdict {
-            Verdict::Prepare | Verdict::PrepareStillOversized => p.estimated_bytes,
-            _ => *s,
+        .map(|c| match c.plan.verdict {
+            Verdict::Prepare | Verdict::PrepareStillOversized => c.plan.estimated_bytes,
+            _ => c.size,
         })
         .sum();
     println!(
@@ -368,14 +356,6 @@ fn print_table(planned: &[(PathBuf, u64, f64, PreparePlan)], limit: u64) {
         (total - after) as f64 / 1e9,
         limit as f64 / 1e9
     );
-}
-
-fn working_path(source: &Path) -> PathBuf {
-    let stem = source
-        .file_stem()
-        .map(|s| s.to_string_lossy().to_string())
-        .unwrap_or_else(|| "output".to_string());
-    source.with_file_name(format!("{stem}{PREPARE_WORKING_SUFFIX}"))
 }
 
 fn split_languages(raw: &str) -> Vec<String> {

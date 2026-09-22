@@ -5,11 +5,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 
 use crate::course::plan::is_video;
-
-/// Suffix of the file `prepare` writes beside an original before renaming it
-/// over it. Shares the `.prepared.` marker so a crashed run leaves something
-/// recognisable rather than a plausible-looking video.
-pub const PREPARE_WORKING_SUFFIX: &str = ".prepared.mkv";
+use crate::media::prepare_paths::PREPARE_WORKING_SUFFIX;
 
 /// `path` itself when it is a file; otherwise every video file under it,
 /// recursively and sorted.

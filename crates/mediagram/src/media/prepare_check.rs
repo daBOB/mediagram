@@ -27,20 +27,25 @@ pub enum Rejection {
 /// always far larger than this.
 pub const DURATION_TOLERANCE: f64 = 1.0;
 
+/// A file's size in bytes and its duration in seconds, as probed.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Measured {
+    pub size: u64,
+    pub duration: f64,
+}
+
 /// Whether a prepared file may replace its original.
 pub fn check_prepared(
     prepared_streams: &[Stream],
-    prepared_size: u64,
-    prepared_duration: f64,
-    source_size: u64,
-    source_duration: f64,
+    prepared: Measured,
+    source: Measured,
     expected_languages: &[String],
     // Whether the result may be no smaller than the source. Dropping tracks
     // can only shrink a file, but re-encoding the audio can round the other
     // way on one that had little to drop.
     allow_growth: bool,
 ) -> Result<(), Rejection> {
-    if prepared_size == 0 || prepared_streams.is_empty() {
+    if prepared.size == 0 || prepared_streams.is_empty() {
         return Err(Rejection::Empty);
     }
     if !prepared_streams.iter().any(|s| s.kind == StreamKind::Video) {
@@ -57,16 +62,16 @@ pub fn check_prepared(
             return Err(Rejection::MissingLanguage(language.clone()));
         }
     }
-    if (prepared_duration - source_duration).abs() > DURATION_TOLERANCE {
+    if (prepared.duration - source.duration).abs() > DURATION_TOLERANCE {
         return Err(Rejection::DurationChanged {
-            source: source_duration,
-            prepared: prepared_duration,
+            source: source.duration,
+            prepared: prepared.duration,
         });
     }
-    if !allow_growth && prepared_size >= source_size {
+    if !allow_growth && prepared.size >= source.size {
         return Err(Rejection::NotSmaller {
-            source: source_size,
-            prepared: prepared_size,
+            source: source.size,
+            prepared: prepared.size,
         });
     }
     Ok(())

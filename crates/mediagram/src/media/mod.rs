@@ -7,6 +7,7 @@ pub mod ffmpeg_progress;
 pub mod inspect;
 pub mod mp4_atoms;
 pub mod prepare_check;
+pub mod prepare_paths;
 pub mod prepare_plan;
 pub mod remux;
 pub mod streams;

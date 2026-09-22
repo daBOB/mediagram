@@ -2,7 +2,7 @@
 //! original. They exist because ffmpeg can exit 0 having produced something
 //! that is not a usable replacement, and the replacement is irreversible.
 
-use mediagram::media::prepare_check::{Rejection, check_prepared};
+use mediagram::media::prepare_check::{Measured, Rejection, check_prepared};
 use mediagram::media::prepare_plan::{Stream, StreamKind};
 
 fn stream(index: u32, kind: StreamKind, lang: Option<&str>) -> Stream {
@@ -32,12 +32,16 @@ fn a_good_prepared_file_is_accepted() {
     assert_eq!(
         check_prepared(
             &good(),
-            3_570_000_000,
-            2547.1,
-            4_426_249_518,
-            2547.136,
+            Measured {
+                size: 3_570_000_000,
+                duration: 2547.1
+            },
+            Measured {
+                size: 4_426_249_518,
+                duration: 2547.136
+            },
             &expected(),
-            false
+            false,
         ),
         Ok(())
     );
@@ -48,24 +52,32 @@ fn an_empty_output_is_rejected() {
     assert_eq!(
         check_prepared(
             &good(),
-            0,
-            2547.1,
-            4_426_249_518,
-            2547.136,
+            Measured {
+                size: 0,
+                duration: 2547.1
+            },
+            Measured {
+                size: 4_426_249_518,
+                duration: 2547.136
+            },
             &expected(),
-            false
+            false,
         ),
         Err(Rejection::Empty)
     );
     assert_eq!(
         check_prepared(
             &[],
-            3_570_000_000,
-            2547.1,
-            4_426_249_518,
-            2547.136,
+            Measured {
+                size: 3_570_000_000,
+                duration: 2547.1
+            },
+            Measured {
+                size: 4_426_249_518,
+                duration: 2547.136
+            },
             &expected(),
-            false
+            false,
         ),
         Err(Rejection::Empty)
     );
@@ -81,12 +93,16 @@ fn an_output_with_no_video_is_rejected() {
     assert_eq!(
         check_prepared(
             &audio_only,
-            100,
-            2547.1,
-            4_426_249_518,
-            2547.136,
+            Measured {
+                size: 100,
+                duration: 2547.1
+            },
+            Measured {
+                size: 4_426_249_518,
+                duration: 2547.136
+            },
             &expected(),
-            false
+            false,
         ),
         Err(Rejection::NoVideo)
     );
@@ -101,12 +117,16 @@ fn an_output_missing_a_language_we_meant_to_keep_is_rejected() {
     assert_eq!(
         check_prepared(
             &no_german,
-            100,
-            2547.1,
-            4_426_249_518,
-            2547.136,
+            Measured {
+                size: 100,
+                duration: 2547.1
+            },
+            Measured {
+                size: 4_426_249_518,
+                duration: 2547.136
+            },
             &expected(),
-            false
+            false,
         ),
         Err(Rejection::MissingLanguage("ger".into()))
     );
@@ -117,10 +137,14 @@ fn an_output_missing_a_language_we_meant_to_keep_is_rejected() {
 fn a_truncated_output_is_rejected() {
     let err = check_prepared(
         &good(),
-        1_000_000,
-        1200.0,
-        4_426_249_518,
-        2547.136,
+        Measured {
+            size: 1_000_000,
+            duration: 1200.0,
+        },
+        Measured {
+            size: 4_426_249_518,
+            duration: 2547.136,
+        },
         &expected(),
         false,
     );
@@ -135,12 +159,16 @@ fn a_sub_second_duration_difference_is_tolerated() {
     assert_eq!(
         check_prepared(
             &good(),
-            3_570_000_000,
-            2547.9,
-            4_426_249_518,
-            2547.136,
+            Measured {
+                size: 3_570_000_000,
+                duration: 2547.9
+            },
+            Measured {
+                size: 4_426_249_518,
+                duration: 2547.136
+            },
             &expected(),
-            false
+            false,
         ),
         Ok(())
     );
@@ -150,10 +178,14 @@ fn a_sub_second_duration_difference_is_tolerated() {
 fn an_output_that_grew_is_rejected() {
     let err = check_prepared(
         &good(),
-        5_000_000_000,
-        2547.1,
-        4_426_249_518,
-        2547.136,
+        Measured {
+            size: 5_000_000_000,
+            duration: 2547.1,
+        },
+        Measured {
+            size: 4_426_249_518,
+            duration: 2547.136,
+        },
         &expected(),
         false,
     );
@@ -170,12 +202,16 @@ fn language_matching_is_case_insensitive() {
     assert_eq!(
         check_prepared(
             &upper,
-            100,
-            2547.1,
-            4_426_249_518,
-            2547.136,
+            Measured {
+                size: 100,
+                duration: 2547.1
+            },
+            Measured {
+                size: 4_426_249_518,
+                duration: 2547.136
+            },
             &expected(),
-            false
+            false,
         ),
         Ok(())
     );
