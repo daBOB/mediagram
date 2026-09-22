@@ -97,12 +97,34 @@ fn parts_round_trip_in_idx_order() {
     assert_eq!(pending[1].idx, 1);
     assert_eq!(pending[0].byte_length, 50);
 
-    parts::mark_done(&conn, &row.set_id, 1, -100, 55, 9955, "hash1").unwrap();
+    parts::mark_done(
+        &conn,
+        &row.set_id,
+        1,
+        &parts::Landed {
+            chat_id: -100,
+            message_id: 55,
+            doc_id: 9955,
+            sha256: "hash1".to_string(),
+        },
+    )
+    .unwrap();
     let pending = parts::pending_parts(&conn, &row.set_id).unwrap();
     assert_eq!(pending.len(), 1);
     assert_eq!(pending[0].idx, 0);
 
-    parts::mark_done(&conn, &row.set_id, 0, -100, 54, 9954, "hash0").unwrap();
+    parts::mark_done(
+        &conn,
+        &row.set_id,
+        0,
+        &parts::Landed {
+            chat_id: -100,
+            message_id: 54,
+            doc_id: 9954,
+            sha256: "hash0".to_string(),
+        },
+    )
+    .unwrap();
     assert!(parts::pending_parts(&conn, &row.set_id).unwrap().is_empty());
     assert_eq!(
         parts::done_hashes(&conn, &row.set_id).unwrap(),

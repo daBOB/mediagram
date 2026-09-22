@@ -56,40 +56,31 @@ pub async fn run_set<T: Transport>(
         );
     }
 
-    let started = Instant::now();
+    let upload = SetUpload {
+        transport,
+        template: &template,
+        set,
+        source_path,
+        started: Instant::now(),
+        data_dir,
+    };
     // Parts already in the channel before this run, so a resumed upload
     // reports against the whole set rather than against what it did today.
     let mut bytes_done: u64 = parts::done_bytes(conn, &set.set_id).unwrap_or(0);
     for part in pending {
-        let (message_id, doc_id, sha256) = match adopted.get(&part.idx) {
+        let landed = match adopted.get(&part.idx) {
             Some(found) => {
                 tracing::info!(idx = part.idx, total = total_parts, "adopted existing part");
-                (found.message_id, found.doc_id, found.sha256.clone())
+                parts::Landed {
+                    chat_id: transport.chat_id(),
+                    message_id: found.message_id,
+                    doc_id: found.doc_id,
+                    sha256: found.sha256.clone(),
+                }
             }
-            None => {
-                upload_one(
-                    transport,
-                    &template,
-                    set,
-                    &part,
-                    total_parts,
-                    source_path,
-                    started,
-                    data_dir,
-                    bytes_done,
-                )
-                .await?
-            }
+            None => upload.send(&part, bytes_done).await?,
         };
-        parts::mark_done(
-            conn,
-            &set.set_id,
-            part.idx,
-            transport.chat_id(),
-            message_id,
-            doc_id,
-            &sha256,
-        )?;
+        parts::mark_done(conn, &set.set_id, part.idx, &landed)?;
 
         bytes_done = bytes_done.saturating_add(part.byte_length);
         if throttle_ms > 0 {
@@ -111,88 +102,105 @@ pub async fn run_set<T: Transport>(
     Ok(())
 }
 
-/// Streams one part through `transport`, hashing as it goes, and returns
-/// the ids and hash to record via `mark_done`.
-#[allow(clippy::too_many_arguments)]
-async fn upload_one<T: Transport>(
-    transport: &T,
-    template: &Caption,
-    set: &SetRow,
-    part: &parts::PartRow,
-    total_parts: u32,
-    source_path: &Path,
+/// What stays the same for every part of one set's upload.
+struct SetUpload<'a, T> {
+    transport: &'a T,
+    template: &'a Caption,
+    set: &'a SetRow,
+    source_path: &'a Path,
     started: Instant,
-    data_dir: Option<&Path>,
-    bytes_done: u64,
-) -> Result<(i64, i64, String)> {
-    let reader = PartReader::open(source_path, part.byte_offset, part.byte_length)
-        .await
-        .map_err(|err| {
-            anyhow::anyhow!(
-                "opening part {} of {}: {err}",
-                part.idx,
-                source_path.display()
+    data_dir: Option<&'a Path>,
+}
+
+impl<T: Transport> SetUpload<'_, T> {
+    /// Streams one part through the transport, hashing as it goes, and says
+    /// where it landed. `bytes_done` is how much of the set was already in
+    /// the channel, for the progress a watcher sees.
+    async fn send(&self, part: &parts::PartRow, bytes_done: u64) -> Result<parts::Landed> {
+        let Self {
+            transport,
+            template,
+            set,
+            source_path,
+            started,
+            data_dir,
+        } = *self;
+        let total_parts = set.part_count;
+        let reader = PartReader::open(source_path, part.byte_offset, part.byte_length)
+            .await
+            .map_err(|err| {
+                anyhow::anyhow!(
+                    "opening part {} of {}: {err}",
+                    part.idx,
+                    source_path.display()
+                )
+            })?;
+        // Watched while it is read, so another process can see a part move
+        // rather than waiting for it to land. The reporter stops when it drops
+        // at the end of this function, whether the part succeeded or not.
+        let counter = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
+        let shape = progress::Progress {
+            set_id: set.set_id.clone(),
+            part: part.idx,
+            parts: total_parts,
+            bytes_sent: 0,
+            part_bytes: part.byte_length,
+            bytes_done,
+            set_bytes: set.total,
+            updated_at: crate::clock::now_unix(),
+        };
+        let _reporter = data_dir.map(|dir| {
+            progress::Reporter::start(dir, std::sync::Arc::clone(&counter), shape.clone())
+        });
+        // The same counter also drives the line on the terminal, for whoever is
+        // sitting in front of this one; it draws only when there is a terminal.
+        let _line = progress_line::Line::start(std::sync::Arc::clone(&counter), shape);
+        let mut reader = reader.watched_by(std::sync::Arc::clone(&counter));
+        let base_name = mlib_spec::part_name::base_name(template);
+        let name =
+            mlib_spec::part_name::part_file_name(&base_name, &set.container, part.idx, total_parts);
+        let caption = template.with_part(Part {
+            i: part.idx,
+            n: total_parts,
+            off: part.byte_offset,
+            len: part.byte_length,
+            sha256: String::new(),
+        });
+        let human = format!(
+            "{} — part {}/{}",
+            template.display_name(),
+            part.idx + 1,
+            total_parts
+        );
+
+        let sent = transport
+            .send_part(
+                name,
+                mime_for(&set.container),
+                &caption,
+                &human,
+                &mut reader,
+                part.byte_length,
             )
-        })?;
-    // Watched while it is read, so another process can see a part move
-    // rather than waiting for it to land. The reporter stops when it drops
-    // at the end of this function, whether the part succeeded or not.
-    let counter = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
-    let shape = progress::Progress {
-        set_id: set.set_id.clone(),
-        part: part.idx,
-        parts: total_parts,
-        bytes_sent: 0,
-        part_bytes: part.byte_length,
-        bytes_done,
-        set_bytes: set.total,
-        updated_at: crate::clock::now_unix(),
-    };
-    let _reporter = data_dir
-        .map(|dir| progress::Reporter::start(dir, std::sync::Arc::clone(&counter), shape.clone()));
-    // The same counter also drives the line on the terminal, for whoever is
-    // sitting in front of this one; it draws only when there is a terminal.
-    let _line = progress_line::Line::start(std::sync::Arc::clone(&counter), shape);
-    let mut reader = reader.watched_by(std::sync::Arc::clone(&counter));
-    let base_name = mlib_spec::part_name::base_name(template);
-    let name =
-        mlib_spec::part_name::part_file_name(&base_name, &set.container, part.idx, total_parts);
-    let caption = template.with_part(Part {
-        i: part.idx,
-        n: total_parts,
-        off: part.byte_offset,
-        len: part.byte_length,
-        sha256: String::new(),
-    });
-    let human = format!(
-        "{} — part {}/{}",
-        template.display_name(),
-        part.idx + 1,
-        total_parts
-    );
+            .await?;
+        let sha256 = reader.finalize();
 
-    let sent = transport
-        .send_part(
-            name,
-            mime_for(&set.container),
-            &caption,
-            &human,
-            &mut reader,
-            part.byte_length,
-        )
-        .await?;
-    let sha256 = reader.finalize();
+        let mb = part.byte_length as f64 / (1024.0 * 1024.0);
+        tracing::info!(
+            idx = part.idx,
+            total = total_parts,
+            mb,
+            elapsed_s = started.elapsed().as_secs_f64(),
+            "uploaded part"
+        );
 
-    let mb = part.byte_length as f64 / (1024.0 * 1024.0);
-    tracing::info!(
-        idx = part.idx,
-        total = total_parts,
-        mb,
-        elapsed_s = started.elapsed().as_secs_f64(),
-        "uploaded part"
-    );
-
-    Ok((sent.message_id, sent.doc_id, sha256))
+        Ok(parts::Landed {
+            chat_id: transport.chat_id(),
+            message_id: sent.message_id,
+            doc_id: sent.doc_id,
+            sha256,
+        })
+    }
 }
 
 fn mime_for(container: &str) -> &'static str {

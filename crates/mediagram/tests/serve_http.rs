@@ -113,10 +113,12 @@ fn index() -> (tempfile::TempDir, rusqlite::Connection) {
             &conn,
             SET,
             idx,
-            -1001,
-            100 + idx as i64,
-            900 + idx as i64,
-            &"a".repeat(64),
+            &parts::Landed {
+                chat_id: -1001,
+                message_id: 100 + idx as i64,
+                doc_id: 900 + idx as i64,
+                sha256: "a".repeat(64),
+            },
         )
         .unwrap();
     }

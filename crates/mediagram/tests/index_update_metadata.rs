@@ -65,7 +65,18 @@ fn seeded() -> (tempfile::TempDir, rusqlite::Connection) {
         }],
     )
     .unwrap();
-    parts::mark_done(&conn, SET, 0, -1001, 100, 900, &"a".repeat(64)).unwrap();
+    parts::mark_done(
+        &conn,
+        SET,
+        0,
+        &parts::Landed {
+            chat_id: -1001,
+            message_id: 100,
+            doc_id: 900,
+            sha256: "a".repeat(64),
+        },
+    )
+    .unwrap();
     sets::set_hash_and_complete(&conn, SET, &"b".repeat(64)).unwrap();
     (dir, conn)
 }

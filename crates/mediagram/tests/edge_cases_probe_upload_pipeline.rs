@@ -141,7 +141,7 @@ async fn run_set_transport_send_fails_on_part_1() {
     // Manually mark part 0 as done
     let range0 = plan[0];
     let hash0 = hex_sha256(&data[range0.off as usize..(range0.off + range0.len) as usize]);
-    parts::mark_done(&conn, &set_row.set_id, 0, CHAT_ID, 501, 10_501, &hash0).unwrap();
+    parts::mark_done(&conn, &set_row.set_id, 0, &parts::Landed { chat_id: CHAT_ID, message_id: 501, doc_id: 10_501, sha256: hash0.clone() }).unwrap();
 
     let transport = FakeTransport::new();
     transport.set_fail_on_part(1);
@@ -268,7 +268,7 @@ async fn run_set_already_complete_is_noop() {
     // Pre-mark all parts as done
     let range = plan[0];
     let hash = hex_sha256(&data[range.off as usize..(range.off + range.len) as usize]);
-    parts::mark_done(&conn, &set_row.set_id, 0, CHAT_ID, 999, 10_999, &hash).unwrap();
+    parts::mark_done(&conn, &set_row.set_id, 0, &parts::Landed { chat_id: CHAT_ID, message_id: 999, doc_id: 10_999, sha256: hash.clone() }).unwrap();
 
     // Pre-mark set as complete
     let set_hash = mlib_spec::set_hash::set_hash(std::slice::from_ref(&hash));
@@ -488,15 +488,7 @@ async fn playable_sql_with_deleted_part_row() {
     let data = vec![42u8; 1024 * 1024];
     for range in &plan {
         let hash = hex_sha256(&data[range.off as usize..(range.off + range.len) as usize]);
-        parts::mark_done(
-            &conn,
-            &set_row.set_id,
-            range.idx,
-            CHAT_ID,
-            100 + range.idx as i64,
-            10000 + range.idx as i64,
-            &hash,
-        )
+        parts::mark_done(&conn, &set_row.set_id, range.idx, &parts::Landed { chat_id: CHAT_ID, message_id: 100 + range.idx as i64, doc_id: 10000 + range.idx as i64, sha256: hash.clone() })
         .unwrap();
     }
 

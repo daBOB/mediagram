@@ -68,21 +68,28 @@ pub fn pending_parts(conn: &Connection, set_id: &str) -> Result<Vec<PartRow>> {
     Ok(rows)
 }
 
+/// Where a part landed in the channel, and what its bytes hashed to.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Landed {
+    pub chat_id: i64,
+    pub message_id: i64,
+    pub doc_id: i64,
+    pub sha256: String,
+}
+
 /// Records a part as uploaded (or adopted from an existing channel message).
-#[allow(clippy::too_many_arguments)]
-pub fn mark_done(
-    conn: &Connection,
-    set_id: &str,
-    idx: u32,
-    chat_id: i64,
-    message_id: i64,
-    doc_id: i64,
-    sha256: &str,
-) -> Result<()> {
+pub fn mark_done(conn: &Connection, set_id: &str, idx: u32, landed: &Landed) -> Result<()> {
     conn.execute(
         "UPDATE parts SET chat_id = ?1, message_id = ?2, doc_id = ?3, sha256 = ?4, status = 'done'
          WHERE set_id = ?5 AND idx = ?6",
-        params![chat_id, message_id, doc_id, sha256, set_id, idx],
+        params![
+            landed.chat_id,
+            landed.message_id,
+            landed.doc_id,
+            landed.sha256,
+            set_id,
+            idx
+        ],
     )?;
     Ok(())
 }

@@ -72,7 +72,7 @@ async fn resumes_via_adoption_without_duplicate_upload() {
     // Part 0: already recorded done in a prior run.
     let range0 = plan[0];
     let hash0 = hex_sha256(&data[range0.off as usize..(range0.off + range0.len) as usize]);
-    parts::mark_done(&conn, &set_row.set_id, 0, CHAT_ID, 501, 10_501, &hash0).unwrap();
+    parts::mark_done(&conn, &set_row.set_id, 0, &parts::Landed { chat_id: CHAT_ID, message_id: 501, doc_id: 10_501, sha256: hash0.clone() }).unwrap();
 
     // Part 1: uploaded to Telegram, but the crash happened before mark_done.
     let range1 = plan[1];

@@ -74,10 +74,12 @@ fn complete_set(conn: &rusqlite::Connection, set: &str, spans: &[(u64, u64)]) {
             conn,
             set,
             idx as u32,
-            -1001,
-            100 + idx as i64,
-            900 + idx as i64,
-            &"a".repeat(64),
+            &parts::Landed {
+                chat_id: -1001,
+                message_id: 100 + idx as i64,
+                doc_id: 900 + idx as i64,
+                sha256: "a".repeat(64),
+            },
         )
         .unwrap();
     }
@@ -149,10 +151,12 @@ fn a_set_whose_parts_do_not_sum_to_its_total_is_not_offered() {
         &conn,
         "01SET0000000000000000003",
         0,
-        -1001,
-        100,
-        900,
-        &"a".repeat(64),
+        &parts::Landed {
+            chat_id: -1001,
+            message_id: 100,
+            doc_id: 900,
+            sha256: "a".repeat(64),
+        },
     )
     .unwrap();
     sets::set_hash_and_complete(&conn, "01SET0000000000000000003", &"b".repeat(64)).unwrap();
