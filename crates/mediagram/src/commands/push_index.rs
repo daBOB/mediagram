@@ -6,17 +6,12 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use grammers_client::message::InputMessage;
 use rusqlite::Connection;
-use serde_json::json;
 
 use crate::config::Config;
 use crate::index::{db, snapshot};
 use crate::telegram::client::Tg;
 use crate::telegram::retry::{with_flood_wait_only, with_retry};
 
-/// The marker on the index snapshot's caption. `rescan` matches on the
-/// version-less prefix so a future `v=3` snapshot is still recognised as one.
-pub const INDEX_CAPTION_MARKER: &str = "#mlib-index v=2";
-pub const INDEX_CAPTION_PREFIX: &str = "#mlib-index";
 const META_INDEX_MESSAGE_ID: &str = "index_message_id";
 /// Index messages still pinned that should not be: the one this push
 /// replaces, plus any a previous push failed to unpin or a `rescan`
@@ -55,14 +50,7 @@ async fn push_via_telegram(cfg: &Config, conn: &Connection, temp_path: &Path) ->
         .query_row("SELECT COUNT(*) FROM sets", [], |row| row.get(0))
         .context("counting sets for index caption")?;
     let pushed_at = crate::clock::now_unix();
-    let caption = format!(
-        "{INDEX_CAPTION_MARKER}\n{}",
-        json!({
-            "pushed_at": pushed_at,
-            "sets": sets_count,
-            "schema": mlib_spec::schema::SCHEMA_VERSION,
-        })
-    );
+    let caption = mlib_spec::index_caption::render(pushed_at, sets_count);
 
     let tg = Tg::connect(cfg).await.context("connecting to Telegram")?;
     let result = send_and_pin(&tg, cfg.max_attempts, temp_path, &caption, conn).await;

@@ -17,7 +17,7 @@ use crate::package::{self, PackageError};
 /// How far ahead of now a package may claim to have been built. Clocks
 /// disagree by minutes, not days; a package dated next year is either a
 /// mistake or an attempt to make every later one look stale.
-const FUTURE_TOLERANCE_SECONDS: i64 = 24 * 60 * 60;
+pub(super) const FUTURE_TOLERANCE_SECONDS: i64 = 24 * 60 * 60;
 
 pub(super) async fn refresh_catalog(
     core: &Core,

@@ -10,26 +10,11 @@
 //! what decides, and the pin is only one of the places worth looking.
 
 use grammers_mtsender::InvocationError;
-use serde::Deserialize;
+
+use mlib_spec::index_caption;
 
 use super::CoreError;
-
-/// The marker `mediagram push-index` writes on the index snapshot's caption.
-///
-/// Matched on the version-less prefix, the way the uploader's own `rescan`
-/// matches it, so a future `v=3` snapshot is still recognised as an index.
-/// Duplicated from the uploader rather than shared with it: this is a wire
-/// contract between two programs, like the caption format and the schema,
-/// and this crate cannot depend on the CLI.
-pub(super) const INDEX_CAPTION_PREFIX: &str = "#mlib-index";
-
-/// The JSON line under the marker. Only the timestamp is read: it names the
-/// snapshot, so two devices refreshing the same one land on the same
-/// catalogue version rather than one each.
-#[derive(Deserialize)]
-struct IndexCaption {
-    pushed_at: i64,
-}
+use super::refresh::FUTURE_TOLERANCE_SECONDS;
 
 pub(super) const NOTHING_PINNED: &str = concat!(
     "That channel has nothing pinned. The uploader pins its index after ",
@@ -68,12 +53,12 @@ pub(super) const NO_LONGER_VISIBLE: &str = concat!(
 /// Pure, and given only the captions and their ids: the decision is the part
 /// that has to be right, and it is the part that cannot be exercised against
 /// a live channel in a test suite.
-pub(super) fn pick_index(candidates: &[(&str, i64)]) -> Result<usize, CoreError> {
+pub(super) fn pick_index(candidates: &[(&str, i64)], now: i64) -> Result<usize, CoreError> {
     let newest = candidates
         .iter()
         .enumerate()
-        .filter(|(_, (text, _))| text.starts_with(INDEX_CAPTION_PREFIX))
-        .max_by_key(|(_, (text, id))| (pushed_at_of(text), *id));
+        .filter(|(_, (text, _))| index_caption::is_index(text))
+        .max_by_key(|(_, (text, id))| (pushed_at_of(text, now), *id));
 
     match newest {
         Some((idx, _)) => Ok(idx),
@@ -83,21 +68,21 @@ pub(super) fn pick_index(candidates: &[(&str, i64)]) -> Result<usize, CoreError>
 }
 
 /// The timestamp a caption carries, or nothing when it carries none this
-/// build can read. Kept apart from [`pushed_at`] because choosing between
+/// build can believe. Kept apart from [`pushed_at`] because choosing between
 /// snapshots must not treat an unreadable timestamp as any particular time.
-fn pushed_at_of(caption: &str) -> Option<i64> {
-    caption
-        .split_once('\n')
-        .and_then(|(_, json)| serde_json::from_str::<IndexCaption>(json.trim()).ok())
-        .map(|parsed| parsed.pushed_at)
-        .filter(|pushed| *pushed > 0)
+///
+/// A stamp further ahead of `now` than clocks disagree by is not believed,
+/// for the reason the package path refuses one: dated next year, a snapshot
+/// would win every later choice and make each real one look stale.
+fn pushed_at_of(caption: &str, now: i64) -> Option<i64> {
+    index_caption::pushed_at(caption).filter(|pushed| *pushed <= now + FUTURE_TOLERANCE_SECONDS)
 }
 
 /// When the snapshot behind `caption` was pushed, for naming the catalogue
-/// version it installs. A caption this build cannot parse is not a reason to
+/// version it installs. A caption this build cannot read is not a reason to
 /// refuse a readable index, so the fallback is simply "now".
 pub(super) fn pushed_at(caption: &str, now: i64) -> i64 {
-    pushed_at_of(caption).unwrap_or(now)
+    pushed_at_of(caption, now).unwrap_or(now)
 }
 
 /// Telegram refusing a request about a channel, told apart from the line
@@ -120,11 +105,14 @@ pub(super) fn channel_error(err: &InvocationError) -> CoreError {
 mod tests {
     use super::*;
 
+    /// A moment after every stamp these tests write.
+    const NOW: i64 = 1_800_000_000;
+
     const INDEX: &str = "#mlib-index v=2\n{\"pushed_at\":1781568000,\"sets\":538,\"schema\":6}";
 
     /// An index caption pushed at `at`, as `push-index` writes one.
     fn pushed(at: i64) -> String {
-        format!("#mlib-index v=2\n{{\"pushed_at\":{at},\"sets\":538,\"schema\":6}}")
+        mlib_spec::index_caption::render(at, 538)
     }
 
     /// Captions with ascending ids, which is the order a channel hands them
@@ -134,7 +122,7 @@ mod tests {
     }
 
     fn message(text: &str) -> CoreError {
-        pick_index(&found(&[text])).unwrap_err()
+        pick_index(&found(&[text]), NOW).unwrap_err()
     }
 
     fn reason(err: &CoreError) -> String {
@@ -143,19 +131,19 @@ mod tests {
 
     #[test]
     fn the_one_index_among_other_messages_is_the_one_chosen() {
-        assert_eq!(pick_index(&found(&["a note", INDEX, "another note"])).unwrap(), 1);
+        assert_eq!(pick_index(&found(&["a note", INDEX, "another note"]), NOW).unwrap(), 1);
     }
 
     /// The prefix, not the exact marker: a snapshot written by a later
     /// uploader is still the index this channel holds.
     #[test]
     fn a_later_snapshot_version_is_still_recognised_as_the_index() {
-        assert_eq!(pick_index(&found(&["#mlib-index v=3\n{}"])).unwrap(), 0);
+        assert_eq!(pick_index(&found(&["#mlib-index v=3\n{}"]), NOW).unwrap(), 0);
     }
 
     #[test]
     fn a_channel_holding_no_snapshot_says_so() {
-        assert_eq!(reason(&pick_index(&[]).unwrap_err()), format!("library error: {NOTHING_PINNED}"));
+        assert_eq!(reason(&pick_index(&[], NOW).unwrap_err()), format!("library error: {NOTHING_PINNED}"));
     }
 
     #[test]
@@ -170,8 +158,8 @@ mod tests {
     #[test]
     fn the_later_snapshot_wins_however_the_pins_fell() {
         let (old, new) = (pushed(1_781_568_000), pushed(1_789_946_371));
-        assert_eq!(pick_index(&found(&[&old, &new])).unwrap(), 1);
-        assert_eq!(pick_index(&found(&[&new, &old])).unwrap(), 0);
+        assert_eq!(pick_index(&found(&[&old, &new]), NOW).unwrap(), 1);
+        assert_eq!(pick_index(&found(&[&new, &old]), NOW).unwrap(), 0);
     }
 
     /// A snapshot whose timestamp this build cannot read is still an index,
@@ -179,8 +167,8 @@ mod tests {
     #[test]
     fn a_dated_snapshot_outranks_an_undated_one() {
         let dated = pushed(1_781_568_000);
-        assert_eq!(pick_index(&found(&["#mlib-index v=9", &dated])).unwrap(), 1);
-        assert_eq!(pick_index(&found(&[&dated, "#mlib-index v=9"])).unwrap(), 0);
+        assert_eq!(pick_index(&found(&["#mlib-index v=9", &dated]), NOW).unwrap(), 1);
+        assert_eq!(pick_index(&found(&[&dated, "#mlib-index v=9"]), NOW).unwrap(), 0);
     }
 
     /// Two snapshots pushed in the same second still resolve the same way on
@@ -188,8 +176,8 @@ mod tests {
     #[test]
     fn snapshots_of_one_second_are_broken_by_the_later_message() {
         let same = pushed(1_789_946_371);
-        assert_eq!(pick_index(&[(&same, 10), (&same, 11)]).unwrap(), 1);
-        assert_eq!(pick_index(&[(&same, 11), (&same, 10)]).unwrap(), 0);
+        assert_eq!(pick_index(&[(&same, 10), (&same, 11)], NOW).unwrap(), 1);
+        assert_eq!(pick_index(&[(&same, 11), (&same, 10)], NOW).unwrap(), 0);
     }
 
     /// Every named channel state, one sentence each. A person reading one has to be
@@ -197,7 +185,7 @@ mod tests {
     #[test]
     fn every_named_channel_failure_reads_differently() {
         let messages = [
-            reason(&pick_index(&[]).unwrap_err()),
+            reason(&pick_index(&[], NOW).unwrap_err()),
             reason(&message("welcome")),
             reason(&CoreError::Library(UNREADABLE.into())),
             reason(&CoreError::NotAuthorized(NO_LONGER_VISIBLE.into())),
@@ -222,7 +210,7 @@ mod tests {
 
     #[test]
     fn a_snapshots_own_timestamp_names_the_version_it_installs() {
-        assert_eq!(pushed_at(INDEX, 99), 1_781_568_000);
+        assert_eq!(pushed_at(INDEX, NOW), 1_781_568_000);
     }
 
     #[test]
@@ -258,5 +246,19 @@ mod tests {
     #[test]
     fn a_server_side_failure_is_reported_as_one() {
         assert!(reason(&channel_error(&rpc(500, "INTERNAL"))).starts_with("network error"));
+    }
+
+    /// A snapshot dated far ahead would otherwise win every later choice.
+    /// Its stamp is not believed, so it loses to a real one like any caption
+    /// whose time cannot be read — and still installs, named for now, when it
+    /// is the only index there is.
+    #[test]
+    fn a_stamp_from_the_future_is_not_believed() {
+        let real = pushed(NOW - 60);
+        let future = pushed(NOW + 400 * 24 * 60 * 60);
+        assert_eq!(pick_index(&found(&[&future, &real]), NOW).unwrap(), 1);
+        assert_eq!(pick_index(&found(&[&real, &future]), NOW).unwrap(), 0);
+        assert_eq!(pushed_at(&future, NOW), NOW);
+        assert_eq!(pushed_at(&pushed(NOW + 60), NOW), NOW + 60);
     }
 }

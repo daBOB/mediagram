@@ -4,7 +4,7 @@
 use anyhow::{Context, Result};
 use rusqlite::Connection;
 
-use crate::commands::push_index::{INDEX_CAPTION_PREFIX, record_index_messages};
+use crate::commands::push_index::record_index_messages;
 use crate::config::Config;
 use crate::index::db;
 use crate::index::rescan::{self, RescanSummary};
@@ -99,7 +99,7 @@ async fn pinned_index_messages(tg: &Tg) -> Result<Vec<i32>> {
         .search_messages(tg.channel)
         .filter(grammers_tl_types::enums::MessagesFilter::InputMessagesFilterPinned);
     while let Some(message) = pinned.next().await.context("listing pinned messages")? {
-        if message.text().starts_with(INDEX_CAPTION_PREFIX) {
+        if mlib_spec::index_caption::is_index(message.text()) {
             found.push(message.id());
         }
     }

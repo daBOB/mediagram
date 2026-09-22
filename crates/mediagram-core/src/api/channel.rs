@@ -133,7 +133,7 @@ async fn newest_index(client: &Client, peer: PeerRef) -> Result<(Document, Strin
 
     let mut marked = client
         .search_messages(peer)
-        .query(channel_index::INDEX_CAPTION_PREFIX)
+        .query(mlib_spec::index_caption::PREFIX)
         .limit(MAX_INDEX_CANDIDATES);
     while let Ok(Some(message)) = marked.next().await {
         if !found.iter().any(|seen| seen.id() == message.id()) {
@@ -145,7 +145,7 @@ async fn newest_index(client: &Client, peer: PeerRef) -> Result<(Document, Strin
         .iter()
         .map(|message| (message.text(), i64::from(message.id())))
         .collect();
-    let chosen = channel_index::pick_index(&candidates)?;
+    let chosen = channel_index::pick_index(&candidates, refresh::now_unix())?;
     let message = found.into_iter().nth(chosen).expect("chosen from this list");
     let caption = message.text().to_string();
     match message_document(&message) {
