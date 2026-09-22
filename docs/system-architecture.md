@@ -2,20 +2,30 @@
 
 `mediagram` is a Rust CLI (edition 2024) that uploads a personal video
 library into one private Telegram channel and keeps a local SQLite index of
-it. It is split into two crates so the wire format can be reused by other
-clients (see [§9](#9-backend-portability)).
+it. It is split into four crates so the wire format, the TMDB client and the
+byte path can be reused by other clients — the Android app among them (see
+[§9](#9-backend-portability)).
 
 ## 1. Crates
 
 ```
 crates/
-├── mlib-spec/   caption, part-plan, filename grammar, index schema — pure
-│                data + parsing, no IO, no Telegram dependency
-└── mediagram/   the CLI: Telegram client, media inspection, TMDB lookup,
-                 upload pipeline, local index, verify
+├── mlib-spec/        the contract: caption, part plan, filename grammar,
+│                     index schema and caption, package format — pure data
+│                     and parsing, no IO, no Telegram dependency
+├── mediagram-tmdb/   the TMDB client (with its disk cache and localizing
+│                     wrapper), provider details, and poster download
+├── mediagram-core/   the portable client: the UniFFI surface the Android
+│                     app calls, the catalog store, the range-planned byte
+│                     path over Telegram, and the one HTTP client both
+│                     programs build (ring + webpki roots)
+└── mediagram/        the CLI: media inspection, upload pipeline, local
+                      index, verify, and `serve`
 ```
 
-`mediagram` depends on `mlib-spec`; nothing depends on `mediagram`. The web
+Dependencies run one way: `mediagram` → `mediagram-core` → `mediagram-tmdb`
+→ `mlib-spec`, with `mediagram` also using the two below directly; nothing
+depends on `mediagram`. The web
 player ([§7](#7-playback-the-web-player)) lives in `web/` and depends on
 neither: it reimplements what it needs of the format in TypeScript. The
 wire format itself is documented normatively in
@@ -42,21 +52,24 @@ commands/          one module per subcommand, each exposing `run(...)`
   background.rs      re-runs this binary detached, so an upload outlives the
                      terminal that started it
   resume.rs          finish every set left `pending`
-  push_index.rs       snapshot + upload + pin library.db
+  push_index.rs      snapshot + upload + pin library.db (which pins are
+                     current is kept by index/pins.rs)
   rescan.rs          rebuild the index from channel captions (disaster recovery)
   verify.rs          metadata check, or (--full) re-download + hash
   setup.rs           first-run config: prompts for api_id/api_hash/channel/tmdb_key
   login.rs / whoami.rs / smoke_upload.rs
-  args.rs            `add`'s clap argument struct
+  args.rs            clap argument structs for the larger subcommands
 
 media/             ffprobe inspection, HDR/quality classification,
                    MP4 trailing-moov detection and faststart remux, and the
                    reader that turns `ffmpeg -progress` into a terminal line
-metadata/          TMDB search/lookup, disk-cached HTTP, interactive prompt
-                   for ambiguous matches
-upload/            hashing byte-range reader (part_reader), the Transport
-                   trait + its Telegram implementation, the resumable
-                   per-set pipeline, adoption (resume-without-reupload), the
+metadata/          interactive resolution of provider ids over
+                   `mediagram-tmdb`: search, lookup, and the prompt for an
+                   ambiguous match
+upload/            planning a set into the index (plan), hashing byte-range
+                   reader (part_reader), the Transport trait + its Telegram
+                   implementation, the resumable per-set pipeline and the
+                   step that finishes one set (finish), adoption (resume-without-reupload), the
                    progress note and terminal line, and the flock that makes
                    uploads take turns across processes
 term.rs            drawing a line that rewrites itself, and the percentages
@@ -69,8 +82,9 @@ course/            reading a course folder: which files are lessons and which
                    only those — a document-only folder that joined the
                    numbering would shift every lesson's identity and make a
                    re-run upload the whole course again
-index/             library.db: schema open/migrate, sets/parts CRUD,
-                   rescan folding, snapshot/vacuum
+index/             library.db: schema open/migrate, sets/parts CRUD, typed
+                   set/part status, set labels, pin bookkeeping, rescan
+                   folding, snapshot/vacuum
 telegram/          grammers client construction + login flow, retry policy
 verify/            report (pure verdict logic) + download_hash (Telegram
                    download → SHA-256 streaming)

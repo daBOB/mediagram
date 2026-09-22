@@ -13,9 +13,10 @@ the module map these rules apply to.
   external system (e.g. `verify/mod.rs` states that `download_hash` is the
   only piece of `verify` that talks to Telegram).
 - Each `commands/*.rs` file exposes a `pub async fn run(...)` as its entry
-  point (plus, rarely, one helper another command reuses — `push_index`
-  exposes `push_after_set` for `add`) and is the orchestration layer: it wires config, the index, and Telegram
-  together and prints output. Decision logic that doesn't need IO (e.g.
+  point and is the orchestration layer: it wires config, the index, and
+  Telegram together and prints output. Logic a second command needs lives in
+  a domain module (`index`, `upload`, `media`, ...), not in a sibling
+  command. Decision logic that doesn't need IO (e.g.
   `verify::report`, `index::rescan::apply_seen`) lives in its own module so
   it can be unit-tested without a live connection or a temp database.
 - **Every file under `src/` stays under 200 lines.** Test files in
