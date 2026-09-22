@@ -13,7 +13,7 @@ use std::path::{Path, PathBuf};
 use mlib_spec::Kind;
 
 use mediagram_tmdb::posters::kind_key;
-use mediagram_tmdb::tmdb_client::{DiskCachedApi, Localized, TmdbApi, TmdbClient};
+use mediagram_tmdb::tmdb_client::{DiskCachedApi, HttpStatus, Localized, TmdbApi, TmdbClient};
 
 use crate::catalog::PlayableSet;
 use crate::dto::FetchReport;
@@ -167,17 +167,13 @@ async fn verify_key(api: &impl TmdbApi) -> Result<(), CoreError> {
     }
 }
 
-/// TMDB answers an invalid key with HTTP 401. `TmdbClient::get_json` strips
-/// the request URL — the only place the key appears — before formatting any
-/// error, so this string carries only the endpoint path and the status,
-/// never the key itself. The status is not a bare number: `StatusCode`'s
-/// `Display` renders `"401 Unauthorized"`, and `"failed with 401"` matches
-/// it as a prefix — pinned by the tests below against the exact `bail!` in
-/// `mediagram_tmdb::tmdb_client::TmdbClient::get_json`, so a reword there
-/// fails a test here instead of silently turning a rejected key into a
-/// retry loop.
+/// TMDB answers an invalid key with HTTP 401, which `TmdbClient::get_json`
+/// reports as a typed [`HttpStatus`] wherever in the error chain a cache or
+/// localizing wrapper left it.
 fn rejected_the_key(err: &anyhow::Error) -> bool {
-    err.to_string().contains("failed with 401")
+    err.chain()
+        .filter_map(|cause| cause.downcast_ref::<HttpStatus>())
+        .any(|answer| answer.status == 401)
 }
 
 #[cfg(test)]

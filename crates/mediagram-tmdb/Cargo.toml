@@ -13,6 +13,7 @@ mlib-spec = { path = "../mlib-spec" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
+thiserror = { workspace = true }
 tokio = { workspace = true, features = ["time"] }
 tracing.workspace = true
 # No TLS provider is named here: the client comes from the caller, and

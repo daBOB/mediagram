@@ -48,12 +48,16 @@ fn a_fetched_poster_outlives_the_refreshes_that_follow_it() {
     assert!(poster.exists(), "refreshing to a new version took the artwork with it");
 }
 
-/// Builds the same `anyhow::Error` shape
-/// `mediagram_tmdb::tmdb_client::TmdbClient::get_json` bails with, so this
-/// stays coupled to that crate's actual wording rather than to a guess
-/// about it.
+/// The error `TmdbClient::get_json` returns for a non-success answer, with
+/// the context a caching wrapper adds on top, so the check has to find it
+/// in the chain rather than at the top.
 fn tmdb_style_error(path: &str, status: reqwest::StatusCode, body: &str) -> anyhow::Error {
-    anyhow::anyhow!("tmdb request to {path} failed with {status}: {body}")
+    anyhow::Error::from(HttpStatus {
+        path: path.to_string(),
+        status: status.as_u16(),
+        body: body.to_string(),
+    })
+    .context(format!("asking for {path}"))
 }
 
 #[test]
@@ -78,11 +82,11 @@ fn a_404_response_is_not_mistaken_for_a_rejected_key() {
     assert!(!rejected_the_key(&err));
 }
 
-/// A transport failure never reaches the `{status}` branch at all — the
-/// message this crate's client builds for one carries no status number.
+/// A transport failure has no status at all, even one whose wording
+/// happens to mention 401.
 #[test]
 fn a_transport_failure_is_not_mistaken_for_a_rejected_key() {
-    let err = anyhow::anyhow!("tmdb request to /authentication failed");
+    let err = anyhow::anyhow!("tmdb request to /authentication failed with 401 Unauthorized");
     assert!(!rejected_the_key(&err));
 }
 

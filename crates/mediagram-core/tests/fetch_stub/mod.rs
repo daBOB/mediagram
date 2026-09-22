@@ -65,7 +65,7 @@ impl TmdbApi for StubApi {
 }
 
 /// Answers every request the way TMDB answers a credential it will not
-/// accept, in the wording `TmdbClient::get_json` builds for one.
+/// accept: the error `TmdbClient::get_json` returns for a 401.
 pub struct RejectingApi;
 
 impl TmdbApi for RejectingApi {
@@ -74,9 +74,12 @@ impl TmdbApi for RejectingApi {
         path: &str,
         _query: &[(&str, String)],
     ) -> anyhow::Result<serde_json::Value> {
-        anyhow::bail!(
-            r#"tmdb request to {path} failed with 401 Unauthorized: {{"status_code":7,"status_message":"Invalid API key."}}"#
-        )
+        Err(mediagram_tmdb::tmdb_client::HttpStatus {
+            path: path.to_string(),
+            status: 401,
+            body: r#"{"status_code":7,"status_message":"Invalid API key."}"#.to_string(),
+        }
+        .into())
     }
 }
 

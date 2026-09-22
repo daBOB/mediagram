@@ -13,7 +13,7 @@
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
@@ -138,6 +138,17 @@ impl TmdbClient {
     }
 }
 
+/// TMDB answered, with a status other than success. A caller that has to
+/// tell a rejected key (401) from anything else matches on `status`, not on
+/// how the message happens to be worded.
+#[derive(Debug, thiserror::Error)]
+#[error("tmdb request to {path} failed with {status}: {body}")]
+pub struct HttpStatus {
+    pub path: String,
+    pub status: u16,
+    pub body: String,
+}
+
 impl TmdbApi for TmdbClient {
     async fn get_json(&self, path: &str, query: &[(&str, String)]) -> Result<Value> {
         // Built by hand (not `RequestBuilder::query`) since the crate's `query`
@@ -181,14 +192,22 @@ impl TmdbApi for TmdbClient {
             }
 
             let status = resp.status();
+            if !status.is_success() {
+                // Read as text: an error page from a proxy or an outage is
+                // not JSON, and must still say which status it was.
+                let body = resp.text().await.unwrap_or_default();
+                return Err(HttpStatus {
+                    path: path.to_string(),
+                    status: status.as_u16(),
+                    body,
+                }
+                .into());
+            }
             let body: Value = resp
                 .json()
                 .await
                 .map_err(reqwest::Error::without_url)
                 .with_context(|| format!("tmdb response for {path} was not JSON"))?;
-            if !status.is_success() {
-                bail!("tmdb request to {path} failed with {status}: {body}");
-            }
             return Ok(body);
         }
     }
