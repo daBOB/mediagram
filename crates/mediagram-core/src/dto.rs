@@ -169,3 +169,10 @@ pub struct AccountSummary {
     pub name: String,
     pub username: Option<String>,
 }
+
+/// Outcome of a completed sign-in step.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+pub enum AuthOutcome {
+    Done,
+    PasswordNeeded,
+}

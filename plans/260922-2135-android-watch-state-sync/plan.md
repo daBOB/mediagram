@@ -20,7 +20,7 @@ Supersedes, on landing: `260922-0124-android-web-parity` phases 4, 5, 8, 9 and
 | # | Phase | Track | Blocked by | Effort | Status |
 |---|---|---|---|---|---|
 | 01 | [Shared fixtures from the web's behaviour](phase-01-shared-watch-state-fixtures.md) | web tests | – | 3h | done |
-| 02 | [Core state store, record, merge](phase-02-core-state-store-record-and-merge.md) | rust | 01 | 6h | pending |
+| 02 | [Core state store, record, merge](phase-02-core-state-store-record-and-merge.md) | rust | 01 | 6h | done |
 | 03 | [Core channel sync](phase-03-core-state-channel-sync.md) | rust | 02 | 4h | pending |
 | 04 | [Android repository, profiles, sync schedule](phase-04-android-repository-profiles-and-sync-schedule.md) | android | 03 | 6h | pending |
 | 05 | [Player records and resumes](phase-05-android-player-records-and-resumes.md) | android | 04 | 5h | pending |

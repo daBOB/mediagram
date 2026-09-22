@@ -55,6 +55,14 @@ serde_json = { workspace = true }
 sha2 = { workspace = true }
 tar.workspace = true
 thiserror = { workspace = true }
+# NFC normalisation for viewer names: `André` typed as a composed character on
+# one device and as an `e` plus a combining accent on another must match, the
+# same way `sync-record.ts`'s `normalName` normalises before comparing.
+unicode-normalization = "0.1.25"
+# Same generator `add.rs`/`add_document.rs` already use for `set_id`: opaque,
+# unique, no reason to add a second id scheme for profile/collection/device
+# ids here.
+ulid = { workspace = true }
 tracing.workspace = true
 url = "2"
 # The version reaching Android: chosen because it is the newest release

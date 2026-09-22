@@ -1,0 +1,137 @@
+//! Progress, watched marks, the watchlist and Kids — the per-title facts a
+//! profile (or, for Kids, the whole player) holds. A port of the matching
+//! methods on `WatchState` in `web/src/state/store.ts`.
+
+use rusqlite::{Connection, params};
+
+use super::profiles::now_ms;
+
+/// Where a profile is in one title. `at`/`duration` are seconds, never a
+/// percentage — a set's runtime can be unknown, and a percentage recorded
+/// against an unknown length cannot be turned back into a position to seek
+/// to.
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct ProgressRow {
+    pub set_id: String,
+    pub at: f64,
+    pub duration: Option<f64>,
+    pub updated_at: i64,
+}
+
+/// One title a profile watched to the end, and when.
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct WatchedRow {
+    pub set_id: String,
+    pub finished_at: i64,
+}
+
+pub fn progress_for(conn: &Connection, profile_id: &str) -> rusqlite::Result<Vec<ProgressRow>> {
+    let mut stmt = conn.prepare(
+        "SELECT set_id, at_seconds, duration, updated_at
+           FROM progress WHERE profile_id = ?1 ORDER BY updated_at DESC",
+    )?;
+    let rows = stmt.query_map([profile_id], |row| {
+        Ok(ProgressRow { set_id: row.get(0)?, at: row.get(1)?, duration: row.get(2)?, updated_at: row.get(3)? })
+    })?;
+    rows.collect()
+}
+
+/// Sets where a profile is in `set_id`. Clamped to non-negative, like the
+/// web: a negative position has no title to seek to.
+pub fn set_progress(
+    conn: &Connection,
+    profile_id: &str,
+    set_id: &str,
+    at: f64,
+    duration: Option<f64>,
+) -> rusqlite::Result<()> {
+    conn.execute(
+        "INSERT INTO progress(profile_id, set_id, at_seconds, duration, updated_at)
+           VALUES (?1, ?2, ?3, ?4, ?5)
+           ON CONFLICT(profile_id, set_id) DO UPDATE SET
+             at_seconds = excluded.at_seconds,
+             duration = excluded.duration,
+             updated_at = excluded.updated_at",
+        params![profile_id, set_id, at.max(0.0), duration, now_ms()],
+    )?;
+    Ok(())
+}
+
+/// Forgets a position: started again, or watched to the end.
+pub fn clear_progress(conn: &Connection, profile_id: &str, set_id: &str) -> rusqlite::Result<()> {
+    conn.execute("DELETE FROM progress WHERE profile_id = ?1 AND set_id = ?2", params![profile_id, set_id])?;
+    Ok(())
+}
+
+pub fn watched_for(conn: &Connection, profile_id: &str) -> rusqlite::Result<Vec<WatchedRow>> {
+    let mut stmt = conn.prepare(
+        "SELECT set_id, finished_at FROM watched WHERE profile_id = ?1 ORDER BY finished_at DESC",
+    )?;
+    let rows =
+        stmt.query_map([profile_id], |row| Ok(WatchedRow { set_id: row.get(0)?, finished_at: row.get(1)? }))?;
+    rows.collect()
+}
+
+/// Records that a title was watched to the end, or takes it back.
+///
+/// The position is cleared at the same moment — a finished title has no
+/// resume point — so this is the only thing that survives it.
+pub fn set_watched(conn: &Connection, profile_id: &str, set_id: &str, finished: bool) -> rusqlite::Result<()> {
+    if finished {
+        conn.execute(
+            "INSERT INTO watched(profile_id, set_id, finished_at) VALUES (?1, ?2, ?3)
+               ON CONFLICT(profile_id, set_id) DO UPDATE SET finished_at = excluded.finished_at",
+            params![profile_id, set_id, now_ms()],
+        )?;
+        clear_progress(conn, profile_id, set_id)?;
+    } else {
+        conn.execute("DELETE FROM watched WHERE profile_id = ?1 AND set_id = ?2", params![profile_id, set_id])?;
+    }
+    Ok(())
+}
+
+pub fn watchlist_for(conn: &Connection, profile_id: &str) -> rusqlite::Result<Vec<String>> {
+    let mut stmt =
+        conn.prepare("SELECT set_id FROM watchlist WHERE profile_id = ?1 ORDER BY added_at DESC")?;
+    let rows = stmt.query_map([profile_id], |row| row.get(0))?;
+    rows.collect()
+}
+
+pub fn set_watchlisted(conn: &Connection, profile_id: &str, set_id: &str, listed: bool) -> rusqlite::Result<()> {
+    if listed {
+        conn.execute(
+            "INSERT OR IGNORE INTO watchlist(profile_id, set_id, added_at) VALUES (?1, ?2, ?3)",
+            params![profile_id, set_id, now_ms()],
+        )?;
+    } else {
+        conn.execute(
+            "DELETE FROM watchlist WHERE profile_id = ?1 AND set_id = ?2",
+            params![profile_id, set_id],
+        )?;
+    }
+    Ok(())
+}
+
+/// The titles marked as a child's, for everyone on this player. Not scoped
+/// to a profile: see `schema.rs` on why.
+pub fn kids(conn: &Connection) -> rusqlite::Result<Vec<String>> {
+    let mut stmt = conn.prepare("SELECT set_id FROM kids ORDER BY marked_at DESC")?;
+    let rows = stmt.query_map([], |row| row.get(0))?;
+    rows.collect()
+}
+
+pub fn set_kids(conn: &Connection, set_id: &str, marked: bool) -> rusqlite::Result<()> {
+    if marked {
+        conn.execute(
+            "INSERT OR IGNORE INTO kids(set_id, marked_at) VALUES (?1, ?2)",
+            params![set_id, now_ms()],
+        )?;
+    } else {
+        conn.execute("DELETE FROM kids WHERE set_id = ?1", [set_id])?;
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+#[path = "rows_tests.rs"]
+mod tests;

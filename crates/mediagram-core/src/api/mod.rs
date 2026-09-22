@@ -17,6 +17,7 @@ pub mod enrich;
 mod events;
 mod read;
 mod refresh;
+mod state;
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -26,15 +27,8 @@ use tokio::sync::Mutex as AsyncMutex;
 use account::auth::{PendingLogin, PendingPassword};
 use account::session::ClientHandle;
 use crate::transport::documents::PartDocuments;
-pub use crate::dto::LibraryChoice;
+pub use crate::dto::{AuthOutcome, LibraryChoice};
 pub use crate::error::CoreError;
-
-/// Outcome of a completed sign-in step.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
-pub enum AuthOutcome {
-    Done,
-    PasswordNeeded,
-}
 
 /// State a running app keeps between calls: the connection once opened,
 /// whichever login step is in flight, and where the set being played lives.
@@ -67,14 +61,19 @@ pub struct Core {
     installing: AsyncMutex<()>,
     /// The update listener, apart from `state` so waiting never blocks a read.
     events: AsyncMutex<Option<events::Listener>>,
+    /// Positions, watched marks, the watchlist, collections and Kids — its
+    /// own file beside `catalog/`, opened lazily. See `crate::state`.
+    state_db: crate::state::StateDb,
 }
 
 #[uniffi::export(async_runtime = "tokio")]
 impl Core {
     #[uniffi::constructor]
     pub fn new(data_dir: String, api_id: i32, api_hash: String, device_name: String) -> Arc<Self> {
+        let data_dir = PathBuf::from(data_dir);
         Arc::new(Core {
-            data_dir: PathBuf::from(data_dir),
+            state_db: crate::state::StateDb::new(data_dir.clone()),
+            data_dir,
             api_id,
             device_name,
             api_hash,

@@ -1586,7 +1586,7 @@ checksum = "7ebb8d8732c6a6df3d8f032a82911cfc747e00efb95cc46e8d0acd5b5b88570c"
 
 [[package]]
 name = "mediagram"
-version = "0.30.1"
+version = "0.31.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -1624,7 +1624,7 @@ dependencies = [
 
 [[package]]
 name = "mediagram-core"
-version = "0.30.1"
+version = "0.31.0"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -1652,6 +1652,8 @@ dependencies = [
  "thiserror 2.0.20",
  "tokio",
  "tracing",
+ "ulid",
+ "unicode-normalization",
  "uniffi",
  "url",
  "webpki-roots",
@@ -1659,7 +1661,7 @@ dependencies = [
 
 [[package]]
 name = "mediagram-tmdb"
-version = "0.30.1"
+version = "0.31.0"
 dependencies = [
  "anyhow",
  "hex",
@@ -1724,7 +1726,7 @@ dependencies = [
 
 [[package]]
 name = "mlib-spec"
-version = "0.30.1"
+version = "0.31.0"
 dependencies = [
  "hex",
  "regex",
@@ -2834,6 +2836,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "tinyvec"
+version = "1.13.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd3ca314f692efd6c868f8408f53fe444634a845f96c028b97d35f6a1f79f0ee"
+
+[[package]]
 name = "tokio"
 version = "1.53.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3048,6 +3056,15 @@ name = "unicode-ident"
 version = "1.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d245f478577f809a851594d02313b640fb437e0bb33866753cff937863096954"
+
+[[package]]
+name = "unicode-normalization"
+version = "0.1.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5fd4f6878c9cb28d874b009da9e8d183b5abc80117c40bbd187a1fde336be6e8"
+dependencies = [
+ "tinyvec",
+]
 
 [[package]]
 name = "unicode-width"

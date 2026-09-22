@@ -7,6 +7,16 @@ to `main`. Full phase-by-phase detail lives in
 
 ## 2026-09-23
 
+**Added (groundwork)**
+
+- The Android core keeps watch state: profiles, positions, finished titles,
+  watchlist, kids and collections, in its own `state.db` beside — never
+  inside — the catalog a refresh replaces. The record and the merge are
+  ports of the web player's, held to it by the web's own fixtures in both
+  merge orders; import only ever corrects, never deletes what a merge did
+  not mention. Nothing calls it yet: the channel sync and the app's shelves
+  come next.
+
 **Fixed**
 
 - Settings on Android, after review. Changing the cache size while a film

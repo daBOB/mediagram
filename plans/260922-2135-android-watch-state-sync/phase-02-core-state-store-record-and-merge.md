@@ -9,7 +9,7 @@
 
 ## Overview
 
-- Priority: P1. Status: pending. Blocked by 01.
+- Priority: P1. Status: done. Blocked by 01.
 - A local store in `mediagram-core`, same tables and names as the web's, plus the record and merge ported line for line. UniFFI methods to read and write it. No network.
 
 ## Key insights
@@ -64,13 +64,16 @@ UniFFI surface (names follow the web store): `profiles()`, `create_profile(name)
 
 ## Todo
 
-- [ ] record.rs + parse fixture green
-- [ ] merge.rs + merge fixture green (both orders)
-- [ ] schema + migrations
-- [ ] profiles / rows / lists
-- [ ] export/import + golden
-- [ ] UniFFI wrappers + regenerated binding
-- [ ] clippy + tests
+- [x] record.rs + parse fixture green
+- [x] merge.rs + merge fixture green (both orders)
+- [x] schema + migrations
+- [x] profiles / rows / lists
+- [x] export/import (golden JSON skipped — would require writing into `web/`,
+      out of scope for this phase's session; the three corrective-import
+      rules and the state.db-survives-a-refresh property are unit tested in
+      `state/exchange_tests.rs` instead)
+- [x] UniFFI wrappers + regenerated binding
+- [x] clippy + tests
 
 ## Success criteria
 

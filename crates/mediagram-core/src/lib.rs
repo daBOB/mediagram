@@ -12,6 +12,7 @@ pub mod http;
 pub mod package;
 pub mod range;
 pub mod shows;
+pub mod state;
 pub mod transport;
 pub mod updates;
 pub mod versions;

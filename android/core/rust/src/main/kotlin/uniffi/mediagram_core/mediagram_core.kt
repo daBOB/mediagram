@@ -716,6 +716,34 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_next_library_event(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_choose_profile(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_chosen_profile(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_clear_progress(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_create_collection(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_create_profile(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_delete_collection(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_profiles(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_rename_collection(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_set_in_collection(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_set_kids(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_set_progress(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_set_watched(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_set_watchlisted(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_snapshot(
+    ): Int
     external fun uniffi_mediagram_core_checksum_constructor_core_new(
     ): Int
     external fun ffi_mediagram_core_uniffi_contract_version(
@@ -777,6 +805,34 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_sign_out(`ptr`: Long,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_next_library_event(`ptr`: Long,`handle`: RustBuffer.ByValue,`ownDevice`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_choose_profile(`ptr`: Long,`id`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_chosen_profile(`ptr`: Long,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_clear_progress(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_create_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_create_profile(`ptr`: Long,`name`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_delete_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_profiles(`ptr`: Long,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_rename_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_set_in_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`included`: Byte,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_set_kids(`ptr`: Long,`setId`: RustBuffer.ByValue,`marked`: Byte,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_set_progress(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`at`: Double,`duration`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_set_watched(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`finished`: Byte,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_set_watchlisted(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`listed`: Byte,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_snapshot(`ptr`: Long,`profileId`: RustBuffer.ByValue,
     ): Long
     external fun ffi_mediagram_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -930,7 +986,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_request_code() and 0xFFFF) != 6400) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_sign_in() and 0xFFFF) != 62083) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_sign_in() and 0xFFFF) != 53031) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_title_info() and 0xFFFF) != 51771) {
@@ -949,6 +1005,48 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_next_library_event() and 0xFFFF) != 13174) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_choose_profile() and 0xFFFF) != 50286) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_chosen_profile() and 0xFFFF) != 18139) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_clear_progress() and 0xFFFF) != 16322) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_create_collection() and 0xFFFF) != 13558) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_create_profile() and 0xFFFF) != 1194) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_delete_collection() and 0xFFFF) != 22663) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_profiles() and 0xFFFF) != 5418) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_rename_collection() and 0xFFFF) != 52280) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_in_collection() and 0xFFFF) != 24986) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_kids() and 0xFFFF) != 54511) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_progress() and 0xFFFF) != 26278) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_watched() and 0xFFFF) != 5429) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_watchlisted() and 0xFFFF) != 9722) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_snapshot() and 0xFFFF) != 28194) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_constructor_core_new() and 0xFFFF) != 35315) {
@@ -1590,6 +1688,65 @@ public interface CoreInterface {
      */
     suspend fun `nextLibraryEvent`(`handle`: kotlin.String, `ownDevice`: kotlin.String): LibraryEvent
     
+    /**
+     * Records the choice. `false` when `id` names no profile, or nothing
+     * could be written.
+     */
+    suspend fun `chooseProfile`(`id`: kotlin.String): kotlin.Boolean
+    
+    /**
+     * This install's remembered "who's watching".
+     */
+    suspend fun `chosenProfile`(): kotlin.String?
+    
+    /**
+     * Forgets a position: started again, or watched to the end.
+     */
+    suspend fun `clearProgress`(`profileId`: kotlin.String, `setId`: kotlin.String)
+    
+    suspend fun `createCollection`(`profileId`: kotlin.String, `name`: kotlin.String): ListRow?
+    
+    suspend fun `createProfile`(`name`: kotlin.String): Profile?
+    
+    /**
+     * Items go with it: `collection_items` cascades.
+     */
+    suspend fun `deleteCollection`(`profileId`: kotlin.String, `id`: kotlin.String): kotlin.Boolean
+    
+    /**
+     * Who watches this library. Empty until someone says.
+     */
+    suspend fun `profiles`(): List<Profile>
+    
+    /**
+     * Whether the list was there to rename.
+     */
+    suspend fun `renameCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `name`: kotlin.String): kotlin.Boolean
+    
+    /**
+     * Adds or removes `set_id` from a collection. `false` when the list is
+     * not this profile's.
+     */
+    suspend fun `setInCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `setId`: kotlin.String, `included`: kotlin.Boolean): kotlin.Boolean
+    
+    /**
+     * Marks (or unmarks) a title as a child's. Not scoped to a profile —
+     * see `state::schema` on why.
+     */
+    suspend fun `setKids`(`setId`: kotlin.String, `marked`: kotlin.Boolean)
+    
+    suspend fun `setProgress`(`profileId`: kotlin.String, `setId`: kotlin.String, `at`: kotlin.Double, `duration`: kotlin.Double?)
+    
+    suspend fun `setWatched`(`profileId`: kotlin.String, `setId`: kotlin.String, `finished`: kotlin.Boolean)
+    
+    suspend fun `setWatchlisted`(`profileId`: kotlin.String, `setId`: kotlin.String, `listed`: kotlin.Boolean)
+    
+    /**
+     * This profile's positions, watched marks, watchlist, Kids and
+     * collections, in one round trip. Empty throughout on any failure.
+     */
+    suspend fun `snapshot`(`profileId`: kotlin.String): StateSnapshot
+    
     companion object
 }
 
@@ -2169,6 +2326,350 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     }
 
     
+    /**
+     * Records the choice. `false` when `id` names no profile, or nothing
+     * could be written.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `chooseProfile`(`id`: kotlin.String) : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_choose_profile(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`id`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * This install's remembered "who's watching".
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `chosenProfile`() : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_chosen_profile(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Forgets a position: started again, or watched to the end.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `clearProgress`(`profileId`: kotlin.String, `setId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_clear_progress(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`setId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `createCollection`(`profileId`: kotlin.String, `name`: kotlin.String) : ListRow? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_create_collection(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`name`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalTypeListRow.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `createProfile`(`name`: kotlin.String) : Profile? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_create_profile(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`name`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalTypeProfile.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Items go with it: `collection_items` cascades.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `deleteCollection`(`profileId`: kotlin.String, `id`: kotlin.String) : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_delete_collection(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`id`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Who watches this library. Empty until someone says.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `profiles`() : List<Profile> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_profiles(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypeProfile.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Whether the list was there to rename.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `renameCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `name`: kotlin.String) : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_rename_collection(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`id`),
+        FfiConverterString.lower(`name`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Adds or removes `set_id` from a collection. `false` when the list is
+     * not this profile's.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setInCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `setId`: kotlin.String, `included`: kotlin.Boolean) : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_set_in_collection(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`id`),
+        FfiConverterString.lower(`setId`),
+        FfiConverterBoolean.lower(`included`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Marks (or unmarks) a title as a child's. Not scoped to a profile —
+     * see `state::schema` on why.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setKids`(`setId`: kotlin.String, `marked`: kotlin.Boolean) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_set_kids(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`setId`),
+        FfiConverterBoolean.lower(`marked`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setProgress`(`profileId`: kotlin.String, `setId`: kotlin.String, `at`: kotlin.Double, `duration`: kotlin.Double?) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_set_progress(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`setId`),
+        FfiConverterDouble.lower(`at`),
+        FfiConverterOptionalDouble.lower(`duration`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setWatched`(`profileId`: kotlin.String, `setId`: kotlin.String, `finished`: kotlin.Boolean) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_set_watched(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`setId`),
+        FfiConverterBoolean.lower(`finished`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setWatchlisted`(`profileId`: kotlin.String, `setId`: kotlin.String, `listed`: kotlin.Boolean) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_set_watchlisted(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`setId`),
+        FfiConverterBoolean.lower(`listed`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * This profile's positions, watched marks, watchlist, Kids and
+     * collections, in one round trip. Empty throughout on any failure.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `snapshot`(`profileId`: kotlin.String) : StateSnapshot {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_snapshot(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`profileId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeStateSnapshot.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
 
     
 
@@ -2445,6 +2946,141 @@ public object FfiConverterTypeLibraryChoice: FfiConverterRustBuffer<LibraryChoic
 
 
 
+data class ListRow (
+    var `id`: kotlin.String
+    , 
+    var `name`: kotlin.String
+    , 
+    var `items`: List<kotlin.String>
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeListRow: FfiConverterRustBuffer<ListRow> {
+    override fun read(buf: ByteBuffer): ListRow {
+        return ListRow(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterSequenceString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: ListRow) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterString.allocationSize(value.`name`) +
+            FfiConverterSequenceString.allocationSize(value.`items`)
+    )
+
+    override fun write(value: ListRow, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterString.write(value.`name`, buf)
+            FfiConverterSequenceString.write(value.`items`, buf)
+    }
+}
+
+
+
+data class Profile (
+    var `id`: kotlin.String
+    , 
+    var `name`: kotlin.String
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeProfile: FfiConverterRustBuffer<Profile> {
+    override fun read(buf: ByteBuffer): Profile {
+        return Profile(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: Profile) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterString.allocationSize(value.`name`)
+    )
+
+    override fun write(value: Profile, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterString.write(value.`name`, buf)
+    }
+}
+
+
+
+/**
+ * Where a profile is in one title. `at`/`duration` are seconds, never a
+ * percentage — a set's runtime can be unknown, and a percentage recorded
+ * against an unknown length cannot be turned back into a position to seek
+ * to.
+ */
+data class ProgressRow (
+    var `setId`: kotlin.String
+    , 
+    var `at`: kotlin.Double
+    , 
+    var `duration`: kotlin.Double?
+    , 
+    var `updatedAt`: kotlin.Long
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeProgressRow: FfiConverterRustBuffer<ProgressRow> {
+    override fun read(buf: ByteBuffer): ProgressRow {
+        return ProgressRow(
+            FfiConverterString.read(buf),
+            FfiConverterDouble.read(buf),
+            FfiConverterOptionalDouble.read(buf),
+            FfiConverterLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: ProgressRow) = (
+            FfiConverterString.allocationSize(value.`setId`) +
+            FfiConverterDouble.allocationSize(value.`at`) +
+            FfiConverterOptionalDouble.allocationSize(value.`duration`) +
+            FfiConverterLong.allocationSize(value.`updatedAt`)
+    )
+
+    override fun write(value: ProgressRow, buf: ByteBuffer) {
+            FfiConverterString.write(value.`setId`, buf)
+            FfiConverterDouble.write(value.`at`, buf)
+            FfiConverterOptionalDouble.write(value.`duration`, buf)
+            FfiConverterLong.write(value.`updatedAt`, buf)
+    }
+}
+
+
+
 /**
  * One title, flattened for a player that never sees `Episode`, `set_id`
  * internals, or where the bytes live.
@@ -2588,6 +3224,62 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
 
 
 /**
+ * One profile's everything, in one read. The page asks once and holds it.
+ */
+data class StateSnapshot (
+    var `progress`: List<ProgressRow>
+    , 
+    var `watched`: List<WatchedRow>
+    , 
+    var `watchlist`: List<kotlin.String>
+    , 
+    var `kids`: List<kotlin.String>
+    , 
+    var `collections`: List<ListRow>
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeStateSnapshot: FfiConverterRustBuffer<StateSnapshot> {
+    override fun read(buf: ByteBuffer): StateSnapshot {
+        return StateSnapshot(
+            FfiConverterSequenceTypeProgressRow.read(buf),
+            FfiConverterSequenceTypeWatchedRow.read(buf),
+            FfiConverterSequenceString.read(buf),
+            FfiConverterSequenceString.read(buf),
+            FfiConverterSequenceTypeListRow.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: StateSnapshot) = (
+            FfiConverterSequenceTypeProgressRow.allocationSize(value.`progress`) +
+            FfiConverterSequenceTypeWatchedRow.allocationSize(value.`watched`) +
+            FfiConverterSequenceString.allocationSize(value.`watchlist`) +
+            FfiConverterSequenceString.allocationSize(value.`kids`) +
+            FfiConverterSequenceTypeListRow.allocationSize(value.`collections`)
+    )
+
+    override fun write(value: StateSnapshot, buf: ByteBuffer) {
+            FfiConverterSequenceTypeProgressRow.write(value.`progress`, buf)
+            FfiConverterSequenceTypeWatchedRow.write(value.`watched`, buf)
+            FfiConverterSequenceString.write(value.`watchlist`, buf)
+            FfiConverterSequenceString.write(value.`kids`, buf)
+            FfiConverterSequenceTypeListRow.write(value.`collections`, buf)
+    }
+}
+
+
+
+/**
  * What a provider said about a title, flattened for the binding surface.
  */
 data class TitleInfo (
@@ -2643,6 +3335,47 @@ public object FfiConverterTypeTitleInfo: FfiConverterRustBuffer<TitleInfo> {
             FfiConverterOptionalDouble.write(value.`rating`, buf)
             FfiConverterOptionalString.write(value.`network`, buf)
             FfiConverterOptionalString.write(value.`status`, buf)
+    }
+}
+
+
+
+/**
+ * One title a profile watched to the end, and when.
+ */
+data class WatchedRow (
+    var `setId`: kotlin.String
+    , 
+    var `finishedAt`: kotlin.Long
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeWatchedRow: FfiConverterRustBuffer<WatchedRow> {
+    override fun read(buf: ByteBuffer): WatchedRow {
+        return WatchedRow(
+            FfiConverterString.read(buf),
+            FfiConverterLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: WatchedRow) = (
+            FfiConverterString.allocationSize(value.`setId`) +
+            FfiConverterLong.allocationSize(value.`finishedAt`)
+    )
+
+    override fun write(value: WatchedRow, buf: ByteBuffer) {
+            FfiConverterString.write(value.`setId`, buf)
+            FfiConverterLong.write(value.`finishedAt`, buf)
     }
 }
 
@@ -3059,6 +3792,70 @@ public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?>
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeListRow: FfiConverterRustBuffer<ListRow?> {
+    override fun read(buf: ByteBuffer): ListRow? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeListRow.read(buf)
+    }
+
+    override fun allocationSize(value: ListRow?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeListRow.allocationSize(value)
+        }
+    }
+
+    override fun write(value: ListRow?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeListRow.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeProfile: FfiConverterRustBuffer<Profile?> {
+    override fun read(buf: ByteBuffer): Profile? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeProfile.read(buf)
+    }
+
+    override fun allocationSize(value: Profile?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeProfile.allocationSize(value)
+        }
+    }
+
+    override fun write(value: Profile?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeProfile.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeTitleInfo: FfiConverterRustBuffer<TitleInfo?> {
     override fun read(buf: ByteBuffer): TitleInfo? {
         if (buf.get().toInt() == 0) {
@@ -3081,6 +3878,34 @@ public object FfiConverterOptionalTypeTitleInfo: FfiConverterRustBuffer<TitleInf
         } else {
             buf.put(1)
             FfiConverterTypeTitleInfo.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.String>> {
+    override fun read(buf: ByteBuffer): List<kotlin.String> {
+        val len = buf.getInt()
+        return List<kotlin.String>(len) {
+            FfiConverterString.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<kotlin.String>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterString.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<kotlin.String>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterString.write(it, buf)
         }
     }
 }
@@ -3119,6 +3944,90 @@ public object FfiConverterSequenceTypeLibraryChoice: FfiConverterRustBuffer<List
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypeListRow: FfiConverterRustBuffer<List<ListRow>> {
+    override fun read(buf: ByteBuffer): List<ListRow> {
+        val len = buf.getInt()
+        return List<ListRow>(len) {
+            FfiConverterTypeListRow.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<ListRow>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeListRow.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<ListRow>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeListRow.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeProfile: FfiConverterRustBuffer<List<Profile>> {
+    override fun read(buf: ByteBuffer): List<Profile> {
+        val len = buf.getInt()
+        return List<Profile>(len) {
+            FfiConverterTypeProfile.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<Profile>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeProfile.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<Profile>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeProfile.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeProgressRow: FfiConverterRustBuffer<List<ProgressRow>> {
+    override fun read(buf: ByteBuffer): List<ProgressRow> {
+        val len = buf.getInt()
+        return List<ProgressRow>(len) {
+            FfiConverterTypeProgressRow.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<ProgressRow>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeProgressRow.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<ProgressRow>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeProgressRow.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeSetSummary: FfiConverterRustBuffer<List<SetSummary>> {
     override fun read(buf: ByteBuffer): List<SetSummary> {
         val len = buf.getInt()
@@ -3137,6 +4046,34 @@ public object FfiConverterSequenceTypeSetSummary: FfiConverterRustBuffer<List<Se
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeSetSummary.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeWatchedRow: FfiConverterRustBuffer<List<WatchedRow>> {
+    override fun read(buf: ByteBuffer): List<WatchedRow> {
+        val len = buf.getInt()
+        return List<WatchedRow>(len) {
+            FfiConverterTypeWatchedRow.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<WatchedRow>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeWatchedRow.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<WatchedRow>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeWatchedRow.write(it, buf)
         }
     }
 }
