@@ -54,6 +54,8 @@ export class StateSync {
   private mine: number | null = null;
   /** The last body sent, so an unchanged one is not sent again. */
   private lastSent: string | null = null;
+  /** The round in progress, if any. Never rejects: `round` catches. */
+  private running: Promise<unknown> = Promise.resolve();
 
   constructor(
     private readonly state: WatchState,
@@ -70,6 +72,16 @@ export class StateSync {
    * this one had the information to do.
    */
   async once(): Promise<SyncOutcome> {
+    // One round at a time. The timer and a pushed update can both ask for one,
+    // and two rounds overlapping on a device's first send would each find no
+    // document of its own and each send one. Queued, not skipped: a round
+    // asked for mid-round may carry news the running one already missed.
+    const round = this.running.then(() => this.round());
+    this.running = round;
+    return round;
+  }
+
+  private async round(): Promise<SyncOutcome> {
     try {
       const documents = await this.channel.list();
       const pulled = this.take(documents);

@@ -213,3 +213,24 @@ describe("a channel that cannot be reached", () => {
     expect(puts).toHaveLength(1);
   });
 });
+
+describe("two rounds asked for at once", () => {
+  test("run one after the other, so a first send happens once", async () => {
+    const { state, me } = machine();
+    state.setProgress(me, "01A", 742, 1204);
+    const { channel, puts } = fakeChannel();
+    // Hold every listing until released, so the two rounds would overlap if
+    // nothing kept them apart — the timer and a pushed update, say.
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const slow: StateChannel = { list: async () => (await gate, channel.list()), put: channel.put };
+    const sync = new StateSync(state, slow, "laptop");
+
+    const first = sync.once();
+    const second = sync.once();
+    release();
+    await Promise.all([first, second]);
+
+    expect(puts.map((p) => p.messageId)).toEqual([null]);
+  });
+});

@@ -122,7 +122,18 @@ export class TelegramStateChannel implements StateChannel {
     // in place, so the pin stays and this costs one service message per device
     // for the life of the install. Silent, because nobody wants a notification
     // that a machine has recorded where a film got to.
-    await this.telegram.client.pinMessage(this.telegram.peer, sent.id, { notify: false });
+    try {
+      await this.telegram.client.pinMessage(this.telegram.peer, sent.id, { notify: false });
+    } catch (error) {
+      // Unpinned, the document is invisible — discovery is the pin list — so
+      // the next round would send another beside it, and nothing would ever
+      // clean either up. Pins are flood-limited hard (a wait of over ten
+      // minutes, measured), so this is not hypothetical. Take the document
+      // back and let the next round start over: a refused pin then costs a
+      // round, not a stray document per round.
+      await this.telegram.client.deleteMessages(this.telegram.peer, [sent.id], { revoke: true }).catch(() => {});
+      throw error;
+    }
     return sent.id;
   }
 }

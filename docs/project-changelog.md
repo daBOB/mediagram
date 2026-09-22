@@ -7,6 +7,17 @@ to `main`. Full phase-by-phase detail lives in
 
 ## 2026-09-23
 
+**Fixed**
+
+- The web player no longer leaves stray watch-state documents in the channel
+  when Telegram refuses to pin one. Pins are flood-limited hard (a wait of
+  over ten minutes was measured), and an unpinned document is invisible —
+  devices find each other's through the pin list — so each later round sent
+  another beside it. A first send whose pin is refused now deletes the
+  document and fails the round, and the next round starts over. Sync rounds
+  also run one at a time now: a pushed update and the timer could otherwise
+  overlap on a device's first send and each send a document.
+
 **Added**
 
 - Push updates. Telegram tells every signed-in session about a change in the
