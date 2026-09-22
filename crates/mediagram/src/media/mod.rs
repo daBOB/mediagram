@@ -1,5 +1,7 @@
-//! ffprobe inspection, HDR/quality classification, faststart detection, remux,
-//! and the progress ffmpeg reports while it works.
+//! What a media file is and what can be done to it: one ffprobe report read
+//! as caption fields or as streams, HDR/quality classification, the rules a
+//! file name follows, faststart detection and remux, the direct-play policy,
+//! `prepare`'s pipeline, and the progress ffmpeg reports while it works.
 
 pub mod classify;
 pub mod direct_play;

@@ -37,18 +37,24 @@ is put together around it.
 ```
 main.rs            clap CLI surface; parses args, loads config, dispatches
 lib.rs             re-exports every module below for the binary and tests
-config.rs          TOML config + MEDIAGRAM_* env overrides, secret redaction
-paths.rs           XDG config/data directory resolution
+config.rs          TOML config + MEDIAGRAM_* env overrides, secret redaction,
+                   and the one TMDB client every command builds from it
+paths.rs           XDG config/data directory resolution, owner-only dirs/files
+clock.rs           wall-clock time as the index records it
+term.rs            drawing a line that rewrites itself, and the percentages
+                   and durations on it; a no-op off a terminal, so `prepare`
+                   and `upload` stay readable in a pipe
 
-commands/          one module per subcommand, each exposing `run(...)`
-  add.rs             inspect → resolve → remux → plan → index, then hand the
-                     upload to finish_set (--watch) or to a background process
+commands/          one module per subcommand, each exposing `run(...)`; thin
+                   entry points over the domain modules below
+  add.rs             turn flags into a NewSet, upload::plan_set it, then hand
+                     the bytes to finish_set (--watch) or a background process
+  add_show/          walk a series folder, survey what will play badly, plan
+                     and upload each episode, push the index once at the end
   add_course.rs      walk a course folder, upload each lesson then each
                      document, push the index once at the end
-  add_document.rs    upload one course document: the same parts, captions and
-                     finish_set a lesson gets, with no probe and no remux —
-                     a PDF has no duration, codecs or languages to read
-  finish_set.rs      upload one planned set: the half that is only bytes
+  finish_set.rs      upload one planned set, then push: what `add` runs, in
+                     this process or a background one
   background.rs      re-runs this binary detached, so an upload outlives the
                      terminal that started it
   resume.rs          finish every set left `pending`
@@ -56,36 +62,59 @@ commands/          one module per subcommand, each exposing `run(...)`
                      current is kept by index/pins.rs)
   rescan.rs          rebuild the index from channel captions (disaster recovery)
   verify.rs          metadata check, or (--full) re-download + hash
+  edit.rs            correct a set's metadata in place (see edit/)
+  remove.rs          destroy a set in the channel and the index (see remove/)
+  status/            what the library holds and what is still going in
+  prepare/           drop unwanted tracks / convert a file before adding it
+  metadata.rs        record TMDB descriptions for every title in the index
+  posters.rs         fetch cover art beside library.db for a local player
+  export_package.rs  build, encrypt and optionally publish the metadata
+                     package (see export/)
+  serve.rs           the local playback API (see serve/)
   setup.rs           first-run config: prompts for api_id/api_hash/channel/tmdb_key
+  accept_login.rs    approve the player's QR login from this session
+  login_code.rs      read the login code Telegram just sent to the account
   login.rs / whoami.rs / smoke_upload.rs
   args.rs            clap argument structs for the larger subcommands
 
-media/             ffprobe inspection, HDR/quality classification,
-                   MP4 trailing-moov detection and faststart remux, and the
+upload/            getting a file into the channel. Planning: new_set (what
+                   to add), plan_set (inspect → resolve → remux → record, for
+                   a video), plan_document (a course PDF, no probe or remux),
+                   plan (the one transaction that records a set). Sending:
+                   hashing byte-range reader (part_reader), the Transport
+                   trait + its Telegram implementation, the resumable per-set
+                   pipeline, finish (one set) and finish_set (the lock, the
+                   source deletion, and the Uploader a bulk command holds),
+                   adoption (resume-without-reupload), the progress note and
+                   terminal line, and the flock that makes uploads take turns
+media/             probe (the one ffprobe runner and report), inspect (what a
+                   caption records), streams (the stream model), HDR/quality
+                   classification, file_names (video/document/number rules),
+                   MP4 trailing-moov detection and faststart remux, the
+                   direct-play policy, prepare/ (plan, paths, check), and the
                    reader that turns `ffmpeg -progress` into a terminal line
 metadata/          interactive resolution of provider ids over
                    `mediagram-tmdb`: search, lookup, and the prompt for an
                    ambiguous match
-upload/            planning a set into the index (plan), hashing byte-range
-                   reader (part_reader), the Transport trait + its Telegram
-                   implementation, the resumable per-set pipeline and the
-                   step that finishes one set (finish), adoption (resume-without-reupload), the
-                   progress note and terminal line, and the flock that makes
-                   uploads take turns across processes
-term.rs            drawing a line that rewrites itself, and the percentages
-                   and durations on it; a no-op off a terminal, so `prepare`
-                   and `upload` stay readable in a pipe
 course/            reading a course folder: which files are lessons and which
-                   are documents, the numbers and titles inferred from their
-                   names, the sidecars beside a lesson, and the dry-run table.
-                   Chapter numbers come from the folders holding video and
-                   only those — a document-only folder that joined the
-                   numbering would shift every lesson's identity and make a
-                   re-run upload the whole course again
-index/             library.db: schema open/migrate, sets/parts CRUD, typed
-                   set/part status, set labels, pin bookkeeping, rescan
-                   folding, snapshot/vacuum
-telegram/          grammers client construction + login flow, retry policy
+                   are documents, the numbers inferred from their names, its
+                   identity (title, collection id), the sidecars beside a
+                   lesson, and the dry-run table. Chapter numbers come from
+                   the folders holding video and only those — a document-only
+                   folder that joined the numbering would shift every lesson's
+                   identity and make a re-run upload the whole course again
+index/             library.db: open/migrate (after letting the session store
+                   configure SQLite, see sqlite_init), sets/parts CRUD and
+                   counts, typed set/part status, set labels, pin
+                   bookkeeping, rescan folding, snapshot/vacuum
+edit/              planning and applying a metadata correction: one caption
+                   rewrite per part
+remove/            planning and applying a set's destruction
+export/            staging, posters, archive, pointer and publishing of the
+                   metadata package
+serve/             the playback HTTP API: routes and Range responses
+telegram/          grammers client construction + login flow, retry policy,
+                   unpinning
 verify/            report (pure verdict logic) + download_hash (Telegram
                    download → SHA-256 streaming)
 ```
