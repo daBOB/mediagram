@@ -31,7 +31,7 @@ fn install_version(core: &Core, version: &str) {
 #[test]
 fn a_fetched_poster_outlives_the_refreshes_that_follow_it() {
     let data = tempfile::tempdir().unwrap();
-    let core = Core::new(data.path().display().to_string(), 1, "h".into());
+    let core = Core::at(data.path());
     install_version(&core, "v-1");
 
     let plan = plan_fetch(&core, "en-US").expect("the installed catalog is readable");

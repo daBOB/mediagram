@@ -5,6 +5,7 @@ uniffi::setup_scaffolding!();
 
 pub mod api;
 pub mod catalog;
+pub mod connection_params;
 pub mod dto;
 mod error;
 pub mod http;

@@ -10,7 +10,7 @@ use mediagram_core::api::enrich::details;
 use mediagram_tmdb::details::TitleDetailsRow;
 
 fn core_at(dir: &std::path::Path) -> std::sync::Arc<Core> {
-    Core::new(dir.display().to_string(), 1, "test-hash".into())
+    Core::new(dir.display().to_string(), 1, "test-hash".into(), "test-device".into())
 }
 
 /// The downloaded index's own database, carrying the shared schema and no

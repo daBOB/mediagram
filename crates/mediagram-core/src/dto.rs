@@ -149,3 +149,15 @@ pub struct FetchReport {
     /// is counted once, because these are titles.
     pub failed: u32,
 }
+
+/// One library the signed-in account could choose, as the caller sees it.
+///
+/// A title to render and a handle to send back, and nothing else. The handle
+/// is a random name this data directory minted for the channel — see
+/// `api::channel::library` — so a caller holding one learns nothing about where the
+/// bytes live, which is the same rule the byte path is held to.
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct LibraryChoice {
+    pub handle: String,
+    pub title: String,
+}

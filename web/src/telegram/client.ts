@@ -8,6 +8,7 @@
 
 import { Api, TelegramClient, sessions } from "teleproto";
 import type { Config } from "../config";
+import { sessionName } from "./session-name";
 
 /** Bot-API dialog ids are `-100` followed by the bare channel id. */
 export function bareChannelId(chatId: number): number {
@@ -45,7 +46,7 @@ export class Telegram {
       new sessions.StringSession(config.session),
       config.apiId,
       config.apiHash,
-      { connectionRetries: 3 },
+      { connectionRetries: 3, ...sessionName() },
     );
     await client.connect();
 

@@ -4,6 +4,10 @@
 
 use rusqlite::Connection;
 
+fn core_at(dir: &std::path::Path) -> std::sync::Arc<mediagram_core::api::Core> {
+    mediagram_core::api::Core::new(dir.display().to_string(), 1, "h".into(), "test-device".into())
+}
+
 fn catalog_with(dir: &std::path::Path, sets: usize, posters: usize) {
     let current = dir.join("catalog").join("current");
     std::fs::create_dir_all(&current).unwrap();
@@ -39,7 +43,7 @@ fn catalog_with(dir: &std::path::Path, sets: usize, posters: usize) {
 async fn a_channel_catalog_counts_its_sets_and_its_artwork() {
     let dir = tempfile::tempdir().unwrap();
     catalog_with(dir.path(), 3, 2);
-    let core = mediagram_core::api::Core::new(dir.path().display().to_string(), 1, "h".into());
+    let core = core_at(dir.path());
 
     let facts = core.clone().catalog_facts().await;
 
@@ -55,7 +59,7 @@ async fn a_channel_catalog_counts_its_sets_and_its_artwork() {
 async fn a_catalog_with_no_artwork_says_none_rather_than_failing() {
     let dir = tempfile::tempdir().unwrap();
     catalog_with(dir.path(), 1, 0);
-    let core = mediagram_core::api::Core::new(dir.path().display().to_string(), 1, "h".into());
+    let core = core_at(dir.path());
 
     assert_eq!(core.clone().catalog_facts().await.posters, 0);
 }
@@ -64,7 +68,7 @@ async fn a_catalog_with_no_artwork_says_none_rather_than_failing() {
 #[tokio::test]
 async fn no_catalog_at_all_reports_zeroes_rather_than_failing() {
     let dir = tempfile::tempdir().unwrap();
-    let core = mediagram_core::api::Core::new(dir.path().display().to_string(), 1, "h".into());
+    let core = core_at(dir.path());
 
     let facts = core.clone().catalog_facts().await;
 

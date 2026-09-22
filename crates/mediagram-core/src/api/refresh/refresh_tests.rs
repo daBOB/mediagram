@@ -116,10 +116,6 @@ fn fixture_package(created_at: i64) -> (LatestPointer, Vec<u8>) {
     (pointer, sealed)
 }
 
-fn core_at(dir: &std::path::Path) -> std::sync::Arc<Core> {
-    Core::new(dir.display().to_string(), 1, "test-hash".into())
-}
-
 /// Neither the pointer's `bytes` field nor a `Content-Length` header is
 /// authenticated, so trusting either gives no real ceiling. This response
 /// declares no length at all; only counting bytes as they arrive can still
@@ -135,7 +131,7 @@ async fn the_download_cap_trips_against_bytes_actually_received() {
 
     let dir = tempfile::tempdir().unwrap();
     let err = refresh_catalog(
-        &core_at(dir.path()),
+        &Core::at(dir.path()),
         format!("{base}/latest.json"),
         STANDARD.encode(KEY),
     )
@@ -153,7 +149,7 @@ async fn the_download_cap_trips_against_bytes_actually_received() {
 #[tokio::test]
 async fn an_older_package_is_refused_and_current_is_left_untouched() {
     let dir = tempfile::tempdir().unwrap();
-    let core = core_at(dir.path());
+    let core = Core::at(dir.path());
     let current = store::current_dir(&core);
     std::fs::create_dir_all(&current).unwrap();
     let held = identity::Identity {
@@ -183,7 +179,7 @@ async fn an_older_package_is_refused_and_current_is_left_untouched() {
 #[tokio::test]
 async fn a_successful_refresh_swaps_current_atomically() {
     let dir = tempfile::tempdir().unwrap();
-    let core = core_at(dir.path());
+    let core = Core::at(dir.path());
     let (pointer, sealed) = fixture_package(700);
     let base = serve(vec![pointer_response(&pointer), http_response(&sealed)]).await;
 
@@ -206,7 +202,7 @@ async fn a_successful_refresh_swaps_current_atomically() {
 #[test]
 fn reinstalling_the_current_version_keeps_current_whole() {
     let dir = tempfile::tempdir().unwrap();
-    let core = core_at(dir.path());
+    let core = Core::at(dir.path());
     let root = store::dir(&core);
     let stage = |marker: &str| {
         let incoming = root.join("incoming");
@@ -238,7 +234,7 @@ async fn a_package_that_does_not_match_its_pointer_is_refused() {
     let base = serve(vec![pointer_response(&pointer), http_response(&sealed)]).await;
 
     let dir = tempfile::tempdir().unwrap();
-    let core = core_at(dir.path());
+    let core = Core::at(dir.path());
     let err = refresh_catalog(&core, format!("{base}/latest.json"), STANDARD.encode(KEY))
         .await
         .unwrap_err();

@@ -708,6 +708,12 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_total_size(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_account(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_dc_id(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_sign_out(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_next_library_event(
     ): Int
     external fun uniffi_mediagram_core_checksum_constructor_core_new(
@@ -734,7 +740,7 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_free_core(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
-    external fun uniffi_mediagram_core_fn_constructor_core_new(`dataDir`: RustBuffer.ByValue,`apiId`: Int,`apiHash`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_mediagram_core_fn_constructor_core_new(`dataDir`: RustBuffer.ByValue,`apiId`: Int,`apiHash`: RustBuffer.ByValue,`deviceName`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_catalog_facts(`ptr`: Long,
     ): Long
@@ -763,6 +769,12 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_title_info(`ptr`: Long,`posterKey`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_total_size(`ptr`: Long,`setId`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_account(`ptr`: Long,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_dc_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_mediagram_core_fn_method_core_sign_out(`ptr`: Long,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_next_library_event(`ptr`: Long,`handle`: RustBuffer.ByValue,`ownDevice`: RustBuffer.ByValue,
     ): Long
@@ -897,7 +909,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_is_authorized() and 0xFFFF) != 30182) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_list_libraries() and 0xFFFF) != 31313) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_list_libraries() and 0xFFFF) != 44487) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_list_sets() and 0xFFFF) != 11887) {
@@ -927,10 +939,19 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_total_size() and 0xFFFF) != 8277) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_account() and 0xFFFF) != 26652) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_dc_id() and 0xFFFF) != 49095) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_sign_out() and 0xFFFF) != 40268) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if ((lib.uniffi_mediagram_core_checksum_method_core_next_library_event() and 0xFFFF) != 13174) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_constructor_core_new() and 0xFFFF) != 57756) {
+    if ((lib.uniffi_mediagram_core_checksum_constructor_core_new() and 0xFFFF) != 35315) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
 }
@@ -1539,6 +1560,26 @@ public interface CoreInterface {
     suspend fun `totalSize`(`setId`: kotlin.String): kotlin.ULong
     
     /**
+     * The signed-in account's name and username.
+     */
+    suspend fun `account`(): AccountSummary
+    
+    /**
+     * The datacentre this login lives on, read from the stored key — no
+     * network. `None` before any login.
+     */
+    fun `dcId`(): kotlin.Int?
+    
+    /**
+     * Signs this device out: at Telegram first, so the login stops working
+     * everywhere rather than only here — deleting the key file alone left it
+     * listed and valid in the account's sessions — then the connection and
+     * the stored key. The key is removed even when Telegram cannot be
+     * reached. Safe to call when already signed out.
+     */
+    suspend fun `signOut`()
+    
+    /**
      * Waits until the library `handle` names changes in a way worth a
      * round: another device's watch state (`State`) or a newly published
      * index (`Index`). Only a hint — run the ordinary sync or refresh on it,
@@ -1586,7 +1627,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         this.handle = 0
         this.cleanable = null
     }
-    constructor(`dataDir`: kotlin.String, `apiId`: kotlin.Int, `apiHash`: kotlin.String) :
+    constructor(`dataDir`: kotlin.String, `apiId`: kotlin.Int, `apiHash`: kotlin.String, `deviceName`: kotlin.String) :
         this(UniffiWithHandle, 
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mediagram_core_fn_constructor_core_new(
@@ -1594,7 +1635,8 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         
         FfiConverterString.lower(`dataDir`),
         FfiConverterInt.lower(`apiId`),
-        FfiConverterString.lower(`apiHash`),_status)
+        FfiConverterString.lower(`apiHash`),
+        FfiConverterString.lower(`deviceName`),_status)
 }
     )
 
@@ -2026,6 +2068,76 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
     
     /**
+     * The signed-in account's name and username.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `account`() : AccountSummary {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_account(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeAccountSummary.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * The datacentre this login lives on, read from the stored key — no
+     * network. `None` before any login.
+     */override fun `dcId`(): kotlin.Int? {
+            return FfiConverterOptionalInt.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_mediagram_core_fn_method_core_dc_id(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Signs this device out: at Telegram first, so the login stops working
+     * everywhere rather than only here — deleting the key file alone left it
+     * listed and valid in the account's sessions — then the connection and
+     * the stored key. The key is removed even when Telegram cannot be
+     * reached. Safe to call when already signed out.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `signOut`() {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_sign_out(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Waits until the library `handle` names changes in a way worth a
      * round: another device's watch state (`State`) or a newly published
      * index (`Index`). Only a hint — run the ordinary sync or refresh on it,
@@ -2091,6 +2203,48 @@ public object FfiConverterTypeCore: FfiConverter<Core, Long> {
 
     override fun write(value: Core, buf: ByteBuffer) {
         buf.putLong(lower(value))
+    }
+}
+
+
+
+/**
+ * Who the signed-in account is, for a screen that shows the connection.
+ * Never the phone number: nothing here needs it, so nothing carries it.
+ */
+data class AccountSummary (
+    var `name`: kotlin.String
+    , 
+    var `username`: kotlin.String?
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeAccountSummary: FfiConverterRustBuffer<AccountSummary> {
+    override fun read(buf: ByteBuffer): AccountSummary {
+        return AccountSummary(
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: AccountSummary) = (
+            FfiConverterString.allocationSize(value.`name`) +
+            FfiConverterOptionalString.allocationSize(value.`username`)
+    )
+
+    override fun write(value: AccountSummary, buf: ByteBuffer) {
+            FfiConverterString.write(value.`name`, buf)
+            FfiConverterOptionalString.write(value.`username`, buf)
     }
 }
 
@@ -2250,7 +2404,7 @@ public object FfiConverterTypeFetchReport: FfiConverterRustBuffer<FetchReport> {
  *
  * A title to render and a handle to send back, and nothing else. The handle
  * is a random name this data directory minted for the channel — see
- * `library` — so a caller holding one learns nothing about where the
+ * `api::channel::library` — so a caller holding one learns nothing about where the
  * bytes live, which is the same rule the byte path is held to.
  */
 data class LibraryChoice (
@@ -2767,6 +2921,38 @@ public object FfiConverterOptionalUInt: FfiConverterRustBuffer<kotlin.UInt?> {
         } else {
             buf.put(1)
             FfiConverterUInt.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalInt: FfiConverterRustBuffer<kotlin.Int?> {
+    override fun read(buf: ByteBuffer): kotlin.Int? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterInt.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.Int?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterInt.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.Int?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterInt.write(value, buf)
         }
     }
 }

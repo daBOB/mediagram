@@ -28,6 +28,7 @@ import { Logger } from "teleproto/extensions";
 import { createInterface } from "node:readline/promises";
 import { chmodSync, writeFileSync } from "node:fs";
 import { stderr, stdin } from "node:process";
+import { sessionName } from "./telegram/session-name";
 
 const forceSMS = process.argv.includes("--sms");
 const useQr = process.argv.includes("--qr");
@@ -108,6 +109,7 @@ const client = new TelegramClient(
   {
     baseLogger: quietLogger,
     connectionRetries: 3,
+    ...sessionName(),
     // Surface flood waits instead of sleeping through them. teleproto otherwise
     // sleeps inside the request loop for any wait up to a minute and never
     // raises it, which looks exactly like "I asked for a code and nothing

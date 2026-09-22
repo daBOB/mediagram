@@ -119,7 +119,7 @@ fn catalog_with_sets(dir: &Path, rows: &[(&str, Option<i64>, Option<&str>)]) {
 }
 
 pub fn core_at(dir: &Path) -> std::sync::Arc<Core> {
-    Core::new(dir.display().to_string(), 1, "test-hash".into())
+    Core::new(dir.display().to_string(), 1, "test-hash".into(), "test-device".into())
 }
 
 /// Drops a poster already on disk where a fetch would write one, so a test

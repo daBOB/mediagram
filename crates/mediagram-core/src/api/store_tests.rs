@@ -3,10 +3,6 @@ use std::os::unix::fs::symlink;
 use super::*;
 use crate::versions::CURRENT;
 
-fn core_at(dir: &std::path::Path) -> std::sync::Arc<Core> {
-    Core::new(dir.display().to_string(), 1, "test-hash".into())
-}
-
 /// Points `current` at `version`, the way `versions::install_staged`'s swap
 /// does, creating the version directory first.
 fn point_current_at(core: &Core, version: &str) {
@@ -29,7 +25,7 @@ fn write_poster(base: &std::path::Path, key: &str) {
 #[test]
 fn a_fetched_poster_is_found_after_the_catalogue_is_replaced() {
     let data = tempfile::tempdir().unwrap();
-    let core = core_at(data.path());
+    let core = Core::at(data.path());
     point_current_at(&core, "v-1");
 
     let key = "tmdb-movie-550";
@@ -61,7 +57,7 @@ fn a_fetched_poster_is_found_after_the_catalogue_is_replaced() {
 #[test]
 fn artwork_is_deleted_along_with_the_library_it_was_fetched_for() {
     let data = tempfile::tempdir().unwrap();
-    let core = core_at(data.path());
+    let core = Core::at(data.path());
 
     assert!(
         artwork_dir(&core).starts_with(dir(&core)),
@@ -76,7 +72,7 @@ fn artwork_is_deleted_along_with_the_library_it_was_fetched_for() {
 #[test]
 fn a_packages_own_poster_wins_over_a_fetched_one() {
     let data = tempfile::tempdir().unwrap();
-    let core = core_at(data.path());
+    let core = Core::at(data.path());
     point_current_at(&core, "v-1");
 
     let key = "tmdb-movie-550";
@@ -93,7 +89,7 @@ fn a_packages_own_poster_wins_over_a_fetched_one() {
 #[test]
 fn a_key_held_in_both_places_is_counted_once() {
     let data = tempfile::tempdir().unwrap();
-    let core = core_at(data.path());
+    let core = Core::at(data.path());
     point_current_at(&core, "v-1");
 
     let key = "tmdb-movie-550";
@@ -108,7 +104,7 @@ fn a_key_held_in_both_places_is_counted_once() {
 #[test]
 fn an_invalid_key_resolves_to_nothing_in_either_location() {
     let data = tempfile::tempdir().unwrap();
-    let core = core_at(data.path());
+    let core = Core::at(data.path());
     point_current_at(&core, "v-1");
 
     // A file happens to sit at the path each location would build for this
@@ -129,7 +125,7 @@ fn an_invalid_key_resolves_to_nothing_in_either_location() {
 #[test]
 fn the_installed_catalogues_push_time_is_read_off_the_symlink() {
     let data = tempfile::tempdir().unwrap();
-    let core = core_at(data.path());
+    let core = Core::at(data.path());
     point_current_at(&core, "v-1758300000");
 
     assert_eq!(facts(&core).published_at, Some(1_758_300_000));
@@ -141,7 +137,7 @@ fn the_installed_catalogues_push_time_is_read_off_the_symlink() {
 #[test]
 fn a_catalogue_with_no_push_time_in_its_name_reports_none() {
     let data = tempfile::tempdir().unwrap();
-    let core = core_at(data.path());
+    let core = Core::at(data.path());
     point_current_at(&core, "not-one-of-ours");
 
     assert_eq!(facts(&core).published_at, None);

@@ -7,6 +7,16 @@ to `main`. Full phase-by-phase detail lives in
 
 ## 2026-09-23
 
+**Changed**
+
+- Every mediagram client names itself in the account's session list:
+  `mediagram uploader · <host>`, `mediagram web · <host>` and
+  `mediagram Android · <maker model>`, each with the project's version. They
+  showed as "CachyOS Linux 64-bit" and "Android 64-bit" before, and could not
+  be told apart — from each other, or from a stale session worth signing
+  out. A client takes its new name the next time it connects. The Android
+  core's constructor gains the device name, since only Kotlin can read it.
+
 **Fixed**
 
 - Update library on the Android app now shows the posters it fetches. Each

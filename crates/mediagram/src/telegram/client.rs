@@ -71,7 +71,13 @@ pub async fn open_client(cfg: &Config) -> Result<(Client, SenderPoolFatHandle, J
     // The session file holds the account's authorization key.
     crate::paths::restrict_file(&path)?;
 
-    let SenderPool { runner, handle, .. } = SenderPool::new(Arc::clone(&session), cfg.api_id);
+    // Named so the account's session list tells this machine apart from the
+    // players and phones signed in beside it.
+    let params = mediagram_core::connection_params::connection_params(
+        "uploader",
+        &mediagram_core::connection_params::host_name(),
+    );
+    let SenderPool { runner, handle, .. } = SenderPool::with_configuration(Arc::clone(&session), cfg.api_id, params);
     let client = Client::new(handle.clone());
     let pool_task = tokio::spawn(runner.run());
     Ok((client, handle, pool_task))

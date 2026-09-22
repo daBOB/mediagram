@@ -77,7 +77,7 @@ fn core_with_one_part(
         rusqlite::params![set_id, part_len as i64],
     )
     .unwrap();
-    Core::new(dir.display().to_string(), 1, "test-hash".into())
+    Core::at(dir)
 }
 
 /// `len == 0` at an in-range, nonzero `offset` is the exact shape that

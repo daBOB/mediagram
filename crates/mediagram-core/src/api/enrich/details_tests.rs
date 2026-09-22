@@ -4,10 +4,6 @@ use crate::versions::install_staged;
 
 use super::*;
 
-fn core_at(dir: &std::path::Path) -> std::sync::Arc<Core> {
-    Core::new(dir.display().to_string(), 1, "test-hash".into())
-}
-
 /// A row as a fetch would record it. `TitleDetailsRow` carries no source of its own
 /// — `upsert` writes the one the index writes — and names the kind with the
 /// provider's own enum rather than with text.
@@ -28,7 +24,7 @@ fn described(kind: Kind, id: u64, overview: &str) -> TitleDetailsRow {
 #[test]
 fn the_sidecar_survives_the_refreshes_that_follow_it() {
     let data = tempfile::tempdir().unwrap();
-    let core = core_at(data.path());
+    let core = Core::at(data.path());
     std::fs::create_dir_all(store::dir(&core).join("v-1")).unwrap();
 
     let conn = open_or_create(&core).unwrap();
@@ -58,7 +54,7 @@ fn the_sidecar_survives_the_refreshes_that_follow_it() {
 #[test]
 fn the_sidecar_is_deleted_along_with_the_library_it_describes() {
     let data = tempfile::tempdir().unwrap();
-    let core = core_at(data.path());
+    let core = Core::at(data.path());
 
     assert!(
         details_db(&core).starts_with(store::dir(&core)),
@@ -77,7 +73,7 @@ fn the_sidecar_is_deleted_along_with_the_library_it_describes() {
 #[test]
 fn an_injection_payload_is_refused_against_the_sidecar_too() {
     let data = tempfile::tempdir().unwrap();
-    let core = core_at(data.path());
+    let core = Core::at(data.path());
 
     let kind = "movie'; DROP TABLE shows;";
     let conn = open_or_create(&core).unwrap();

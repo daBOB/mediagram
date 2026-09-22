@@ -9,7 +9,15 @@
 - Phases 05 (settings router, gate), 06 (web page), 07 (core account exports), 08 (Android screen)
 
 ## Overview
-Priority P2. Status: pending. Settings shows which devices are signed in to the library account through
+Priority P2. Status: **step 1 (naming) done 2026-09-23**; steps 2–7 blocked by phases 05, 06, 08 (no settings
+router/admin gate, no web page, no Android Settings screen yet — user chose to build 07 next).
+
+Step 1 as built: `mediagram-core::connection_params` (`device_model`, `connection_params`, `host_name`) used by the
+uploader (`uploader · <hostname>`) and the core (`Android · <manufacturer model>`, passed into `Core::new` as
+`device_name` — only Kotlin can read `Build`); web `src/telegram/session-name.ts` (`web · <hostname>`) in both
+`Telegram.connect` and `login.ts`. App version = project version everywhere. Verified with `account.getAuthorizations`
+on the live account: all three listed under their new names. `LibraryChoice` moved to `dto.rs` (re-exported) to keep
+`api/mod.rs` under 200 lines. Settings shows which devices are signed in to the library account through
 mediagram, and lets the viewer sign one out remotely. It's for a lost phone or a retired server. Every
 mediagram surface holds its own auth key (`login.ts:4-8`), so these sessions pile up quietly today and
 are named "Linux 64-bit" / "Android 64-bit", which tells nobody which is which.
@@ -67,7 +75,7 @@ web settings page (06), regenerated uniffi Kotlin (script only).
    Device check on the phone: revoke a throwaway web session and see the web player drop to signed-out.
 
 ## Todo
-- [ ] connection params (web, core, uploader)
+- [x] connection params (web, core, uploader)
 - [ ] shared fixture
 - [ ] Rust shape + revoke + tests
 - [ ] TS shape + revoke + tests

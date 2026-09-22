@@ -8,7 +8,7 @@ use std::path::Path;
 use rusqlite::Connection;
 
 fn core(dir: &Path) -> std::sync::Arc<mediagram_core::api::Core> {
-    mediagram_core::api::Core::new(dir.display().to_string(), 1, "test-hash".into())
+    mediagram_core::api::Core::new(dir.display().to_string(), 1, "test-hash".into(), "test-device".into())
 }
 
 /// Builds `<dir>/catalog/current/library.db` directly — bypassing

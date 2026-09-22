@@ -26,6 +26,7 @@ use tokio::sync::Mutex as AsyncMutex;
 use account::auth::{PendingLogin, PendingPassword};
 use account::session::ClientHandle;
 use crate::transport::documents::PartDocuments;
+pub use crate::dto::LibraryChoice;
 pub use crate::error::CoreError;
 
 /// Outcome of a completed sign-in step.
@@ -33,18 +34,6 @@ pub use crate::error::CoreError;
 pub enum AuthOutcome {
     Done,
     PasswordNeeded,
-}
-
-/// One library the signed-in account could choose, as the caller sees it.
-///
-/// A title to render and a handle to send back, and nothing else. The handle
-/// is a random name this data directory minted for the channel — see
-/// `library` — so a caller holding one learns nothing about where the
-/// bytes live, which is the same rule the byte path is held to.
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
-pub struct LibraryChoice {
-    pub handle: String,
-    pub title: String,
 }
 
 /// State a running app keeps between calls: the connection once opened,
@@ -69,6 +58,8 @@ struct State {
 pub struct Core {
     data_dir: PathBuf,
     api_id: i32,
+    /// This device's name in the account's session list; only Kotlin knows it.
+    device_name: String,
     api_hash: String,
     state: AsyncMutex<State>,
     /// Held by whichever refresh is installing a catalog, so two cannot
@@ -81,10 +72,11 @@ pub struct Core {
 #[uniffi::export(async_runtime = "tokio")]
 impl Core {
     #[uniffi::constructor]
-    pub fn new(data_dir: String, api_id: i32, api_hash: String) -> Arc<Self> {
+    pub fn new(data_dir: String, api_id: i32, api_hash: String, device_name: String) -> Arc<Self> {
         Arc::new(Core {
             data_dir: PathBuf::from(data_dir),
             api_id,
+            device_name,
             api_hash,
             state: AsyncMutex::new(State::default()),
             installing: AsyncMutex::new(()),
@@ -195,5 +187,13 @@ impl Core {
         language: String,
     ) -> Result<crate::dto::FetchReport, CoreError> {
         enrich::artwork::fetch_missing(self, tmdb_key, language).await
+    }
+}
+
+#[cfg(test)]
+impl Core {
+    /// A core over `dir` with placeholder credentials, for tests that never connect.
+    pub(crate) fn at(dir: &std::path::Path) -> Arc<Self> {
+        Core::new(dir.display().to_string(), 1, "test-hash".into(), "test-device".into())
     }
 }

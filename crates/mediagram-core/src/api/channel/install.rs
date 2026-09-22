@@ -75,7 +75,7 @@ mod tests {
     #[tokio::test]
     async fn a_staged_file_that_is_not_a_library_never_becomes_the_current_one() {
         let dir = tempfile::tempdir().unwrap();
-        let core = Core::new(dir.path().display().to_string(), 1, "test-hash".into());
+        let core = Core::at(dir.path());
         let root = store::dir(&core);
 
         let working = Staging::begin(&core.installing, &root).await.unwrap();

@@ -1,6 +1,7 @@
 package com.mediagram.android.di
 
 import android.content.Context
+import android.os.Build
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -37,6 +38,12 @@ object CoreModule {
                 dataDir = context.filesDir.absolutePath,
                 apiId = credentials.apiId,
                 apiHash = credentials.apiHash,
+                // What this device is called in the account's session list, so
+                // a lost phone can be told from the others and signed out.
+                deviceName = listOf(Build.MANUFACTURER, Build.MODEL)
+                    .filter { it.isNotBlank() }
+                    .distinct()
+                    .joinToString(" "),
             ),
         )
     }

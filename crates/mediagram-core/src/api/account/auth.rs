@@ -38,7 +38,7 @@ fn opaque_id() -> String {
 pub(in crate::api) async fn request_code(core: &Core, phone: String) -> Result<String, CoreError> {
     let mut state = core.state.lock().await;
     if state.client.is_none() {
-        state.client = Some(session::connect(&core.data_dir, core.api_id));
+        state.client = Some(session::connect(core));
     }
     let client = state.client.as_ref().expect("just set").client.clone();
     drop(state);

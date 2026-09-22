@@ -108,11 +108,12 @@ fn session_data(data_dir: &Path) -> SessionData {
     data
 }
 
-/// Connects a client against `data_dir`'s persisted session — or a
-/// bootstrap one, before any login — and starts its sender pool.
-pub(in crate::api) fn connect(data_dir: &Path, api_id: i32) -> ClientHandle {
-    let session = Arc::new(MemorySession::from(session_data(data_dir)));
-    let SenderPool { runner, handle, updates } = SenderPool::new(session, api_id);
+/// Connects a client against the core's persisted session — or a bootstrap
+/// one, before any login — and starts its sender pool, named for the device.
+pub(in crate::api) fn connect(core: &Core) -> ClientHandle {
+    let session = Arc::new(MemorySession::from(session_data(&core.data_dir)));
+    let params = crate::connection_params::connection_params("Android", &core.device_name);
+    let SenderPool { runner, handle, updates } = SenderPool::with_configuration(session, core.api_id, params);
     let client = Client::new(handle.clone());
     let pool_task = tokio::spawn(runner.run());
     ClientHandle {
@@ -132,7 +133,7 @@ pub(in crate::api) fn connect(data_dir: &Path, api_id: i32) -> ClientHandle {
 pub(in crate::api) async fn client(core: &Core) -> grammers_client::Client {
     let mut state = core.state.lock().await;
     if state.client.is_none() {
-        state.client = Some(connect(&core.data_dir, core.api_id));
+        state.client = Some(connect(core));
     }
     state.client.as_ref().expect("just set").client.clone()
 }
@@ -146,7 +147,7 @@ pub(in crate::api) async fn updates_receiver(
     let mut state = core.state.lock().await;
     let live = state
         .client
-        .get_or_insert_with(|| connect(&core.data_dir, core.api_id));
+        .get_or_insert_with(|| connect(core));
     (live.client.clone(), live.updates.take())
 }
 

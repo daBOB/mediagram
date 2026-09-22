@@ -27,7 +27,7 @@ fn a_flood_wait_or_server_fault_is_a_network_error() {
 #[tokio::test]
 async fn signing_in_with_no_login_under_way_is_not_authorized() {
     let dir = tempfile::tempdir().unwrap();
-    let core = Core::new(dir.path().to_string_lossy().into_owned(), 1, "hash".into());
+    let core = Core::at(dir.path());
     let err = sign_in(&core, "nope".into(), "12345".into()).await.unwrap_err();
     assert!(matches!(err, CoreError::NotAuthorized(_)));
     let err = check_password(&core, "secret".into()).await.unwrap_err();
