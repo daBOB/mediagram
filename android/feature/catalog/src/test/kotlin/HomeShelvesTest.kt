@@ -53,6 +53,7 @@ class HomeShelvesTest {
 
         val row = homeRowsOf(shelvesOf(many)).single()
         assertEquals(HOME_ROW_LIMIT, row.entries.size)
+        assertEquals(20, row.total, "the heading counts the whole shelf")
         assertEquals("Film 20", (row.entries.first() as Entry.Film).set.title, "newest leads")
     }
 

@@ -7,6 +7,13 @@ to `main`. Full phase-by-phase detail lives in
 
 ## 2026-09-22
 
+**Added**
+
+- Each row on the start page names how much is behind it — "Latest films ·
+  124" — on the web player and the Android app alike. A row shows six; the
+  figure is the whole shelf "See all" opens, so Continue counts every started
+  title, as its own shelf does, including the ones moved to Next up.
+
 **Fixed**
 
 - The web player no longer drops a healthy title to the lowest quality. Its

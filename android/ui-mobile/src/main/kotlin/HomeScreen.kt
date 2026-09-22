@@ -19,6 +19,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import catalog.Entry
 import catalog.HomeRow
@@ -90,7 +93,16 @@ private fun RowHeading(row: HomeRow, onSeeAll: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Bottom,
         ) {
-            Text(text = row.title, style = MaterialTheme.typography.titleMedium)
+            // The same " · n" the web player's row heading carries.
+            Text(
+                text = buildAnnotatedString {
+                    append(row.title)
+                    withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)) {
+                        append(" \u00b7 ${row.total}")
+                    }
+                },
+                style = MaterialTheme.typography.titleMedium,
+            )
             Text(
                 text = "See all",
                 style = MaterialTheme.typography.labelLarge,

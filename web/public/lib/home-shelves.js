@@ -45,18 +45,31 @@ export function homeShelves({ library, byId, progress = [], watchedAt = () => nu
   // appear twice within a single screen — as the episode in progress, and
   // again as the same episode under Next up.
   const shown = new Set(nextUp.map((entry) => entry.set.setId));
-  const continues = progress
-    .filter((row) => resumeAt(row) !== null && !shown.has(row.setId))
+  const started = progress
+    .filter((row) => resumeAt(row) !== null)
     .map((row) => byId.get(row.setId))
-    .filter(Boolean)
-    .slice(0, limit);
+    .filter(Boolean);
+  const underwaySets = started.filter((set) => !shown.has(set.setId));
 
   return {
-    continues,
+    continues: underwaySets.slice(0, limit),
     nextUp,
     latestMovies: byArrival(library.movies, addedAt).slice(0, limit),
     latestSeries: byArrival(library.series, newestIn).slice(0, limit),
     latestCourses: byArrival(library.tutorials, newestIn).slice(0, limit),
+    // How much is behind each row, for its heading. A row shows six; the
+    // number is the whole of what "See all" would open, which is the thing
+    // the six cannot tell a viewer on their own.
+    // Continue counts every started title, as its own shelf does, including
+    // the ones this page moved to Next up: the figure has to agree with the
+    // page "See all" opens.
+    totals: {
+      continues: started.length,
+      nextUp: underway.length,
+      latestMovies: library.movies.length,
+      latestSeries: library.series.length,
+      latestCourses: library.tutorials.length,
+    },
   };
 }
 

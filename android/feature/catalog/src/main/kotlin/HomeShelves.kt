@@ -10,9 +10,10 @@ const val HOME_ROW_LIMIT = 6
  *
  * [shelf] is carried so that "See all" can put the viewer on the whole of
  * it rather than on a search for its name: the row is a window onto a
- * shelf, not a category of its own.
+ * shelf, not a category of its own. [total] is how much that shelf holds,
+ * for the heading: the six plates cannot say it on their own.
  */
-data class HomeRow(val title: String, val shelf: String, val entries: List<Entry>)
+data class HomeRow(val title: String, val shelf: String, val entries: List<Entry>, val total: Int)
 
 /**
  * What the start page shows, decided before anything is drawn.
@@ -30,7 +31,14 @@ data class HomeRow(val title: String, val shelf: String, val entries: List<Entry
  */
 fun homeRowsOf(shelves: List<Shelf>, limit: Int = HOME_ROW_LIMIT): List<HomeRow> =
     shelves
-        .map { shelf -> HomeRow(latestTitleFor(shelf.title), shelf.title, newestFirst(shelf.entries, limit)) }
+        .map { shelf ->
+            HomeRow(
+                title = latestTitleFor(shelf.title),
+                shelf = shelf.title,
+                entries = newestFirst(shelf.entries, limit),
+                total = shelf.entries.size,
+            )
+        }
         .filter { it.entries.isNotEmpty() }
 
 /**

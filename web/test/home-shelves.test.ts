@@ -106,6 +106,8 @@ describe("what arrived recently", () => {
     const many = Array.from({ length: 12 }, (_, n) => set({ title: `Film ${n}`, addedAt: n }));
 
     expect(shelvesOf(many).latestMovies).toHaveLength(6);
+    // The heading still counts the whole shelf, not the six on the row.
+    expect(shelvesOf(many).totals.latestMovies).toBe(12);
     expect(shelvesOf(many, {}, 3).latestMovies).toHaveLength(3);
   });
 
@@ -225,6 +227,9 @@ describe("the same title never appears twice", () => {
 
     expect(shelves.nextUp[0]!.set.setId).toBe(show[0]!.setId);
     expect(shelves.continues.map((one) => one.setId)).toEqual([film.setId]);
+    // The count still agrees with the Continue shelf, which lists both.
+    expect(shelves.totals.continues).toBe(2);
+    expect(shelves.totals.nextUp).toBe(1);
   });
 
   test("an episode Next up had no room for still reaches Continue", () => {

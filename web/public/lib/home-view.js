@@ -23,9 +23,13 @@ import { progressOf } from "./watch-state.js";
  * is five pages, to a reader and to anything reading the outline aloud; the
  * page's own title is the hidden one below.
  */
-function rowHead(title, hash) {
+function rowHead(title, total, hash) {
   const head = el("header", "row-head");
-  head.append(el("h2", null, title));
+  const h2 = el("h2", null, title);
+  // The same " · n" a course's folder heading carries, and for the same
+  // reason: the name says what, the figure says how much.
+  h2.append(el("span", "count", ` \u00b7 ${total}`));
+  head.append(h2);
   const link = el("a", "see-all", "See all");
   link.href = hash;
   head.append(link);
@@ -45,12 +49,12 @@ export function renderHome(main, shelves, { play, open }) {
   // be saying it twice.
   main.append(el("h1", "page-title", "Home"));
 
-  const row = (title, hash, contents) => {
-    main.append(rowHead(title, hash), contents);
+  const row = (key, title, hash, contents) => {
+    main.append(rowHead(title, shelves.totals[key], hash), contents);
   };
 
   if (shelves.continues.length > 0) {
-    row("Continue", "#/continue", setGrid(shelves.continues, play, { mode: GRID }));
+    row("continues", "Continue", "#/continue", setGrid(shelves.continues, play, { mode: GRID }));
   }
 
   if (shelves.nextUp.length > 0) {
@@ -60,6 +64,7 @@ export function renderHome(main, shelves, { play, open }) {
     // not be worth having.
     const resume = new Map(shelves.nextUp.map((entry) => [entry.set.setId, entry.resume]));
     row(
+      "nextUp",
       "Next up",
       "#/series",
       setGrid(
@@ -75,11 +80,12 @@ export function renderHome(main, shelves, { play, open }) {
   }
 
   if (shelves.latestMovies.length > 0) {
-    row("Latest films", "#/movies", movieGrid(shelves.latestMovies, play, GRID));
+    row("latestMovies", "Latest films", "#/movies", movieGrid(shelves.latestMovies, play, GRID));
   }
 
   if (shelves.latestSeries.length > 0) {
     row(
+      "latestSeries",
       "Latest series",
       "#/series",
       collectionGrid("series", shelves.latestSeries, (name) => open("series", name), GRID),
@@ -92,6 +98,7 @@ export function renderHome(main, shelves, { play, open }) {
     // id and a course has none — so a plate is a poster-shaped blank with
     // an initial in it. Six of those is worse than a row that reads.
     row(
+      "latestCourses",
       "Latest courses",
       "#/tutorials",
       collectionGrid("tutorials", shelves.latestCourses, (name) => open("tutorials", name), LIST),

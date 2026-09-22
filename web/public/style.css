@@ -551,6 +551,14 @@ main > .page-title + .row-head { margin-top: 0; }
   min-width: 0;
 }
 
+/* How much the row is a window onto; quieter than the name it follows. */
+.row-head h2 .count {
+  color: var(--ink-3);
+  font-family: var(--text);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .see-all {
   flex: none;
   color: var(--ink-3);
