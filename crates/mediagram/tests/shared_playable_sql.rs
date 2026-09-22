@@ -16,12 +16,11 @@ const PLAYER_CATALOG: &str = "../../web/src/catalog.ts";
 #[test]
 fn the_player_holds_the_uploader_s_definition_of_playable() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(PLAYER_CATALOG);
-    let Ok(source) = std::fs::read_to_string(&path) else {
-        // The player is a separate deliverable; its absence is not a failure
-        // of the uploader, but its divergence would be.
-        eprintln!("skipping: {} is not present", path.display());
-        return;
-    };
+    // The player lives in this repository, so a missing file means it moved:
+    // skipping would stop checking at exactly the moment the copy is easiest
+    // to lose track of.
+    let source = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("reading {}: {e}; if the player moved, point this test at it", path.display()));
 
     assert!(
         source.contains(mlib_spec::schema::PLAYABLE_SQL),
