@@ -141,10 +141,8 @@ pub struct CatalogFacts {
 /// one card: a film, or a whole series or course however many episodes or
 /// lessons it holds. Every episode of a series shares one provider id, one
 /// poster and one description, so a season of eight is one here and not
-/// eight. `no_provider_id` used to be the exception, counting sets while
-/// its neighbours counted titles, which made a 162-lesson course read as
-/// "162 titles have no provider entry" beside "3 posters fetched" — two
-/// numbers of two different things, side by side, with nothing saying so.
+/// eight — and a course of 162 lessons is one title without a provider
+/// entry, so every count on the screen measures the same thing.
 ///
 /// Six counts rather than a verdict, because most of what can happen to a
 /// title is not a failure and a viewer reading "0 fetched" needs to know

@@ -40,8 +40,7 @@ use super::details as store;
 /// payload the poster path came from. A title it refused is asked twice —
 /// `DiskCachedApi` stores nothing for a call that failed — and that second
 /// refusal is what puts the title in `failed` rather than leaving it
-/// silently undescribed. Counted in `tests/fetch_cache.rs`, because a doc
-/// comment cannot notice the cache being taken out of the composition.
+/// silently undescribed. `tests/fetch_cache.rs` counts the requests.
 pub async fn fetch_into(
     core: &Core,
     api: &impl TmdbApi,

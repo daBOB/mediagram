@@ -22,24 +22,14 @@ use crate::shows::{ShowRecord, key_parts, read};
 use super::catalog;
 use super::{Core, CoreError};
 
-/// Where descriptions this device fetched are kept.
+/// Where descriptions this device fetched are kept. Two things must both
+/// hold, exactly as for [`super::catalog::artwork_dir`]:
 ///
-/// Two things have to be true of this path at once, and naming only the
-/// first is how fetched artwork came to be deleted by the very refreshes it
-/// was fetched between — counted on a device at 0, then 236, then 0 again
-/// across a restart.
-///
-/// **Out of the version directory**, so a refresh cannot delete it.
-/// `remove_other_versions` clears every version but the one just published,
-/// and a refresh runs on every catalog load. Neither
-/// pass touches a sibling: both remove only entries named `v-…` or
-/// `incoming`, and a version is always named `v-…`.
-///
-/// **Inside `catalog/`**, so forgetting the library forgets these too.
-/// Signing out deletes that directory whole; rows held anywhere else would
-/// outlive it, leaving the next account to set this device up reading
-/// synopses of the previous one's titles — and growing without bound, since
-/// nothing else would ever remove them.
+/// - **outside every version directory**, so a refresh — which removes
+///   every `v-…` and `incoming` entry but the version it installs — keeps it;
+/// - **inside `catalog/`**, so signing out, which deletes that directory
+///   whole, takes it too, and the next account never reads the previous
+///   one's synopses.
 pub fn details_db(core: &Core) -> PathBuf {
     catalog::dir(core).join("details.db")
 }

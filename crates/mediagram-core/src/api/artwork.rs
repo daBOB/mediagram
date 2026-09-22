@@ -3,9 +3,9 @@
 //! Split so each part can be driven by a stub in tests, and so the two
 //! decisions worth pinning are readable from outside: [`plan_fetch`] settles
 //! what a run asks for, in which language, and where what comes back goes,
-//! before the key is spent; [`verify_then_fetch`] puts the key check ahead
-//! of [`super::fetch::fetch_into`] and the disk cache around it, for the
-//! reason its own comment gives.
+//! before the key is spent; [`verify_then_fetch`] checks the key against the
+//! provider itself before [`super::fetch::fetch_into`] reads anything
+//! through the disk cache, so a rejected key cannot pass on cached answers.
 
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -25,8 +25,8 @@ use super::{Core, CoreError, http};
 /// What a fetch will ask the provider for, and where what comes back is kept.
 ///
 /// The directory is part of this answer rather than chosen where the writing
-/// happens, so that it is a value a test can read. Where artwork lands is
-/// the whole of a defect this crate has shipped once already.
+/// happens, so that it is a value a test can read: where artwork lands
+/// decides whether a refresh or a sign-out removes it.
 pub struct FetchPlan {
     pub artwork_dir: PathBuf,
     pub titles: Vec<(Kind, u64)>,

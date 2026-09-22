@@ -36,23 +36,15 @@ pub(super) fn current_dir(core: &Core) -> PathBuf {
     dir(core).join(CURRENT)
 }
 
-/// Where fetched poster artwork and the TMDB provider-id cache live.
+/// Where fetched poster artwork and the TMDB provider-id cache live. Two
+/// things must both hold:
 ///
-/// Two things have to be true of this path at once, and naming only the
-/// first is how artwork came to outlive a start-over meant to forget it.
-///
-/// **Out of the version directory**, so a refresh cannot delete it.
-/// `remove_other_versions` clears every version but the one just published,
-/// and a refresh runs on every catalog load. Artwork kept there
-/// was counted on a device at 0, then 236, then 0 again across a restart.
-/// Neither pass touches a sibling: both remove only entries named `v-…` or
-/// `incoming`, and a version is always named `v-…`.
-///
-/// **Inside `catalog/`**, so forgetting the library forgets its artwork too.
-/// Signing out deletes this directory whole; artwork held anywhere else
-/// would survive it, leaving the next account to set the device up looking
-/// at cached payloads naming the previous one's titles — and growing without
-/// bound, since nothing else ever removes it.
+/// - **outside every version directory**, so a refresh — which removes
+///   every `v-…` and `incoming` entry but the version it installs, and runs
+///   on every catalog load — keeps it;
+/// - **inside `catalog/`**, so signing out, which deletes that directory
+///   whole, takes it too: the next account never sees cached payloads
+///   naming the previous one's titles, and nothing grows without bound.
 pub(super) fn artwork_dir(core: &Core) -> PathBuf {
     dir(core).join("artwork")
 }
