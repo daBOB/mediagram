@@ -67,36 +67,50 @@ internal fun backLabelFor(destination: Destination): String? = when (destination
 }
 
 /**
- * The five things the overflow menu can do, in the order they are shown.
+ * The four things the overflow menu can do, in the order they are shown.
  *
- * One of them — the TMDB key, which sits directly under the fetch it
- * configures — is named with an ellipsis, because it opens a screen to fill
- * in rather than doing anything itself. Fetching details and artwork carried
- * one too, and it promised a dialog that never came: that tap starts minutes
- * of HTTP over hundreds of titles there and then. What it owes a viewer is
- * not a warning but the news that it is running, which it now says where a
- * reload of the library says it — on the progress line above the shelves.
+ * Refreshing the library and fetching its details were two items and are
+ * one. They were always done in that order and only in that order: a
+ * refresh brings sets the channel has gained, and those are exactly the
+ * sets with no synopsis and no artwork yet, so fetching without refreshing
+ * first fills in gaps while leaving new ones unlisted. Two items made a
+ * viewer remember a sequence the app already knew.
  *
- * Refreshing is second and start over last, three items apart: refreshing
- * is the most-used of the five and starting over discards this device's
- * Telegram session, and the most frequent should not sit beside the most
+ * It is named "Update library" and not "Refresh library", though refreshing
+ * is the half anyone would name. Refreshing is a few seconds of one round
+ * trip; fetching is minutes of HTTP over hundreds of titles, and a word
+ * promising the first while doing the second is a lie a viewer only catches
+ * by waiting.
+ *
+ * The TMDB key sits directly under the update it configures, and is named
+ * with an ellipsis because it opens a screen to fill in rather than doing
+ * anything itself.
+ *
+ * Updating is second and start over last, two items apart: updating is the
+ * most-used of the four and starting over discards this device's Telegram
+ * session, and the most frequent should not sit beside the most
  * destructive. The confirmation dialog is a backstop, not a reason to
  * invite the mis-tap.
  *
- * The two disabled reasons are `null` when their action is available and a
- * sentence when it is not — no key stored, or a run already in flight. An
- * item that silently does nothing is worse than one that says why it
- * cannot, so the reason is shown, not just the disabled state.
+ * [updateDisabledReason] is `null` when the action is available and a
+ * sentence when it is not — a run already in flight. [updateNote] is said
+ * under the label while the item stays tappable: with no TMDB key the
+ * refresh still works and only the artwork half is skipped, which is worth
+ * doing and worth saying. An item that silently does less than its name is
+ * worse than one that says what it will leave out.
  */
 data class MenuActions(
     val onSystem: () -> Unit,
-    val onRefresh: () -> Unit,
-    /** Both halves in one run: the artwork an index has no room for, and the descriptions nobody wrote. */
-    val onFetch: () -> Unit,
+    /**
+     * Re-read the channel's newest index, then fill in what it has no room
+     * for: the descriptions nobody wrote and the artwork no index carries.
+     * In that order, because the second is about what the first brought in.
+     */
+    val onUpdate: () -> Unit,
     val onTmdbKey: () -> Unit,
     val onStartOver: () -> Unit,
-    val refreshDisabledReason: String? = null,
-    val fetchDisabledReason: String? = null,
+    val updateDisabledReason: String? = null,
+    val updateNote: String? = null,
 )
 
 /**
@@ -166,14 +180,10 @@ fun LibraryScaffold(
                             onClick = { menuExpanded = false; menu.onSystem() },
                         )
                         MenuItem(
-                            label = "Refresh library",
-                            disabledReason = menu.refreshDisabledReason,
-                            onClick = { menuExpanded = false; menu.onRefresh() },
-                        )
-                        MenuItem(
-                            label = "Fetch details and artwork",
-                            disabledReason = menu.fetchDisabledReason,
-                            onClick = { menuExpanded = false; menu.onFetch() },
+                            label = "Update library",
+                            note = menu.updateDisabledReason ?: menu.updateNote,
+                            enabled = menu.updateDisabledReason == null,
+                            onClick = { menuExpanded = false; menu.onUpdate() },
                         )
                         DropdownMenuItem(
                             text = { Text("TMDB key…") },
@@ -200,20 +210,23 @@ fun LibraryScaffold(
 }
 
 /**
- * An item that can be unavailable, and says why underneath its own label
- * when it is. A greyed row with nothing under it leaves a viewer tapping at
- * it to find out what is wrong.
+ * An item that says something under its own label.
+ *
+ * Two cases, and the note reads the same in both: unavailable, where a
+ * greyed row with nothing under it leaves a viewer tapping at it to find
+ * out what is wrong; and available but about to do less than its name says,
+ * where the note is the part it will skip.
  */
 @Composable
-private fun MenuItem(label: String, disabledReason: String?, onClick: () -> Unit) {
+private fun MenuItem(label: String, note: String?, enabled: Boolean, onClick: () -> Unit) {
     DropdownMenuItem(
         text = {
             Column {
                 Text(label)
-                disabledReason?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                note?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
             }
         },
-        enabled = disabledReason == null,
+        enabled = enabled,
         onClick = onClick,
     )
 }

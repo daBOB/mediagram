@@ -19,7 +19,7 @@ import androidx.compose.runtime.Composable
  * whose one accent means something; a wallpaper cannot be allowed to decide
  * what the catalogue warns in.
  */
-private val CatalogueColors = darkColorScheme(
+internal val CatalogueColors = darkColorScheme(
     background = Palette.Ground,
     onBackground = Palette.Text,
     surface = Palette.Page,
@@ -39,6 +39,31 @@ private val CatalogueColors = darkColorScheme(
     onTertiary = Palette.Ground,
     outline = Palette.RuleStrong,
     outlineVariant = Palette.Rule,
+    // The container roles, and every role a component might reach for
+    // without this app ever naming it. `darkColorScheme` fills anything
+    // left out with Material's baseline, which is violet, so an unset role
+    // is not a neutral default — it is the one colour this scheme exists to
+    // get rid of, waiting for a component to ask. The progress line asked:
+    // `LinearProgressIndicator` draws its track from `secondaryContainer`,
+    // and drew it in lavender over the catalogue for as long as that role
+    // went unnamed.
+    primaryContainer = Palette.Sunk,
+    onPrimaryContainer = Palette.Imprint,
+    secondaryContainer = Palette.Sunk,
+    onSecondaryContainer = Palette.Text,
+    tertiaryContainer = Palette.Sunk,
+    onTertiaryContainer = Palette.Sage,
+    errorContainer = Palette.Sunk,
+    onErrorContainer = Palette.Ochre,
+    surfaceBright = Palette.Sunk,
+    surfaceDim = Palette.Ground,
+    // Elevation is tinted with this, and nothing here is elevated; naming
+    // it keeps the tint the page's own colour if anything ever is.
+    surfaceTint = Palette.Imprint,
+    inverseSurface = Palette.Text,
+    inverseOnSurface = Palette.Ground,
+    inversePrimary = Palette.Imprint,
+    scrim = Palette.Ground,
     // A refresh that failed is the catalogue warning, not an alarm: the
     // library on screen is still every bit of the one that was there
     // before it was tried. Ochre is what the web player says that in, and

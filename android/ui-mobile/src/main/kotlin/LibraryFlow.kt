@@ -5,7 +5,12 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.flow.first
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogUiState
@@ -47,23 +52,53 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
     val collection = at.collection?.let(catalogState::collection)
     val title = at.titleId?.let(catalogState::mediaSet)
 
+    // Counts updates asked for, so each one runs the wait below once.
+    // Deliberately not `rememberSaveable`: a request that did not survive
+    // the process is a request whose refresh did not either, and waking up
+    // to wait for a read nobody started would wait for ever.
+    var updatesAsked by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(updatesAsked) {
+        if (updatesAsked == 0) return@LaunchedEffect
+        // Both edges, in order, read off the catalog's own flow. The fetch
+        // cannot go out beside the refresh: `fetchMissing` works through the
+        // catalog as it stands when it is called, so one fired alongside
+        // would walk the library this device had before the channel was
+        // asked — and the sets it would have filled in are precisely the
+        // ones the refresh just brought home.
+        //
+        // Waiting on the flow rather than on a recomposition is what makes
+        // that true. `reload()` only bumps a counter, so the frame after the
+        // tap still says the catalog is settled, and an effect that trusted
+        // it would fetch immediately — the very race this exists to avoid.
+        // The flow emits `refreshing` before it reads anything, so the first
+        // wait always has an edge to catch.
+        catalogViewModel.state.first(::isReadingChannel)
+        catalogViewModel.state.first { !isReadingChannel(it) }
+        // Whatever the refresh made of the channel. A read that failed
+        // leaves the library this device already had, and its gaps are
+        // still gaps worth filling from a provider that has nothing to do
+        // with Telegram.
+        fetchViewModel.fetch()
+    }
+
     val menuActions = MenuActions(
         onSystem = { at.menuScreen = MenuScreen.System },
-        // The menu is the same wherever it opens, so this is reachable from
-        // the system and key screens, where a reloading catalog is
-        // invisible. You asked for the library; the library is what you are
-        // shown.
-        onRefresh = { at.toCatalog(); catalogViewModel.reload() },
-        // To the shelves as well, and for a second reason besides that
-        // one: a fetch is minutes of network over hundreds of titles, the
-        // menu that started it is already closed, and the shelves are both
-        // where the progress line lives and where the artwork it fetches
-        // lands.
-        onFetch = { at.toCatalog(); fetchViewModel.fetch() },
+        // To the shelves, wherever the menu was opened from. The menu is the
+        // same on the system and key screens, where a reloading catalog is
+        // invisible; and an update is minutes of network over hundreds of
+        // titles, so the shelves are both where the progress line lives and
+        // where the artwork it fetches lands. You asked for the library; the
+        // library is what you are shown.
+        onUpdate = {
+            at.toCatalog()
+            updatesAsked += 1
+            catalogViewModel.reload()
+        },
         onTmdbKey = { at.menuScreen = MenuScreen.TmdbKey },
         onStartOver = onStartOver,
-        refreshDisabledReason = refreshDisabledReason(catalogState),
-        fetchDisabledReason = fetchDisabledReason(fetchState.running, fetchState.hasKey),
+        updateDisabledReason = updateDisabledReason(catalogState, fetchState.running),
+        updateNote = if (fetchState.hasKey) null else "Artwork and descriptions need a TMDB key",
     )
 
     when {
@@ -147,26 +182,29 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit) {
     }
 }
 
-/** Why "Fetch details and artwork" cannot be tapped right now, or `null` when it can. */
-private fun fetchDisabledReason(running: Boolean, hasKey: Boolean): String? = when {
-    running -> "Fetching…"
-    !hasKey -> "No TMDB key stored"
+/**
+ * Why "Update library" cannot be tapped right now, or `null` when it can.
+ *
+ * A missing TMDB key is not one of the reasons. It stops the second half
+ * and leaves the first worth doing, so the item stays tappable and says
+ * what it will skip instead; that is `updateNote`, not this.
+ */
+private fun updateDisabledReason(state: CatalogUiState, fetching: Boolean): String? = when {
+    isReadingChannel(state) -> "Reading the channel…"
+    fetching -> "Fetching details and artwork…"
     else -> null
 }
 
 /**
- * Why "Refresh library" cannot be tapped right now, or `null` when it can.
+ * Whether the channel is being read right now.
  *
  * Read off the catalog's own state rather than a flag beside it, so the two
- * cannot disagree. A read of the channel in flight looks like one of two
- * things: [CatalogUiState.Loading] when there were no shelves to keep, and
- * a [CatalogUiState.Ready] that says it is refreshing when there were.
+ * cannot disagree. A read in flight looks like one of two things:
+ * [CatalogUiState.Loading] when there were no shelves to keep, and a
+ * [CatalogUiState.Ready] that says it is refreshing when there were.
  */
-private fun refreshDisabledReason(state: CatalogUiState): String? = when {
-    state is CatalogUiState.Loading -> "Refreshing…"
-    state is CatalogUiState.Ready && state.refreshing -> "Refreshing…"
-    else -> null
-}
+private fun isReadingChannel(state: CatalogUiState): Boolean =
+    state is CatalogUiState.Loading || (state is CatalogUiState.Ready && state.refreshing)
 
 /** The sentence a finished or failed fetch leaves behind, or `null` while there is nothing to say. */
 private fun fetchResultMessage(report: FetchReport?, error: String?): String? = when {
@@ -189,7 +227,7 @@ private fun FetchResultDialog(message: String?, onDismiss: () -> Unit) {
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Fetch details and artwork") },
+        title = { Text("Update library") },
         text = { Text(message) },
         confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } },
     )
