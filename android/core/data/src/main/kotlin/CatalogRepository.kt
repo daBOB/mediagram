@@ -126,6 +126,7 @@ class DefaultCatalogRepository(
             hdr = summary.hdr,
             partCount = summary.partCount.toInt(),
             posterKey = summary.posterKey,
+            addedAt = summary.addedAt,
         )
     }
 }

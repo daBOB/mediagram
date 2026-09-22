@@ -26,6 +26,7 @@ fn playable_with(episode: Option<&str>) -> PlayableSet {
         duration: Some(3000),
         total: 1_000_000,
         part_count: 1,
+        created_at: 1_781_568_000,
     }
 }
 
@@ -108,6 +109,7 @@ fn playable_set_fixture() -> PlayableSet {
         duration: None,
         total: 0,
         part_count: 1,
+        created_at: 1_781_568_000,
     }
 }
 

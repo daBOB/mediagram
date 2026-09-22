@@ -17,6 +17,7 @@ import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -26,6 +27,7 @@ import androidx.window.core.layout.WindowWidthSizeClass
 import catalog.CatalogUiState
 import catalog.CollectionKind
 import catalog.Entry
+import catalog.homeRowsOf
 import catalog.Shelf
 import designsystem.Spacing
 
@@ -72,10 +74,15 @@ private fun Shelves(
         CenteredMessage("The library is empty.")
         return
     }
+    // Home is the first entry and the one the app opens on, as the web
+    // player's start page is. The shelves follow it, so index 0 is Home and
+    // shelf n is index n + 1.
+    val titles = remember(shelves) { listOf(HOME) + shelves.map(Shelf::title) }
     var chosen by rememberSaveable { mutableIntStateOf(0) }
     // A refresh can return a library with fewer shelves than the one that
     // was on screen when it started.
-    val selected = chosen.coerceIn(0, shelves.lastIndex)
+    val selected = chosen.coerceIn(0, titles.lastIndex)
+    val columns = posterColumnsFor(currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass)
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Pinned above the wall rather than scrolling inside it: it reports
@@ -85,7 +92,7 @@ private fun Shelves(
         if (state.refreshing || fetching) {
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
         }
-        ShelfTabs(shelves = shelves, selected = selected, onSelect = { chosen = it })
+        ShelfTabs(titles = titles, selected = selected, onSelect = { chosen = it })
         // Above the shelf, not instead of it: the library below is the one
         // that was on this device before the refresh was tried, and it is
         // still every bit of it.
@@ -97,9 +104,22 @@ private fun Shelves(
                 modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small),
             )
         }
-        ShelfWall(shelves[selected], onOpenTitle, onOpenCollection)
+        if (selected == 0) {
+            HomeScreen(
+                rows = remember(shelves) { homeRowsOf(shelves) },
+                columns = columns,
+                onOpenTitle = onOpenTitle,
+                onOpenCollection = onOpenCollection,
+                onSeeAll = { shelf -> chosen = titles.indexOf(shelf).coerceAtLeast(0) },
+            )
+        } else {
+            ShelfWall(shelves[selected - 1], columns, onOpenTitle, onOpenCollection)
+        }
     }
 }
+
+/** The first thing in the masthead, and not a shelf. */
+private const val HOME = "Home"
 
 /**
  * Everything one shelf holds, on one wall, in one direction of travel.
@@ -117,10 +137,10 @@ private fun Shelves(
 @Composable
 private fun ShelfWall(
     shelf: Shelf,
+    columns: Int,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
 ) {
-    val columns = posterColumnsFor(currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass)
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
         modifier = Modifier.fillMaxSize(),
@@ -159,7 +179,7 @@ private fun ShelfWall(
     }
 }
 
-private fun keyOf(entry: Entry): String = when (entry) {
+internal fun keyOf(entry: Entry): String = when (entry) {
     is Entry.Film -> entry.set.setId
     is Entry.Collection -> entry.key
 }
@@ -169,7 +189,7 @@ private fun keyOf(entry: Entry): String = when (entry) {
  * and a course is measured in the chapters a viewer will work through
  * rather than in its total number of videos.
  */
-private fun extentOf(collection: Entry.Collection): String = when (collection.kind) {
+internal fun extentOf(collection: Entry.Collection): String = when (collection.kind) {
     CollectionKind.SHOW -> "${collection.count} ${plural(collection.count, "episode")}"
     CollectionKind.COURSE -> "${collection.chapters} ${plural(collection.chapters, "chapter")}"
 }

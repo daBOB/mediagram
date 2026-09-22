@@ -103,6 +103,7 @@ fun summary(
     posterKey: String? = null,
     total: Long = 0L,
     partCount: Int = 1,
+    addedAt: Long = 0,
 ): SetSummary = SetSummary(
     setId = setId,
     kind = kind,
@@ -123,6 +124,7 @@ fun summary(
     posterKey = posterKey,
     total = total.toULong(),
     partCount = partCount.toUInt(),
+    addedAt = addedAt,
 )
 
 fun settingsWithAChosenLibrary(handle: String = "a1b2c3"): LibrarySettings =

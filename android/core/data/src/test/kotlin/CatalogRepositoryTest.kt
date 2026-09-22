@@ -37,6 +37,17 @@ class CatalogRepositoryTest {
     }
 
     /**
+     * The start page ranks by arrival, so a catalog row that lost its
+     * arrival time on the way through would leave every title equally new.
+     */
+    @Test
+    fun aSetKeepsTheTimeItArrived() = runTest {
+        val core = FakeCore(sets = listOf(summary(kind = "movie", addedAt = 1_781_568_000)))
+        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+        assertEquals(1_781_568_000, repo.sets().single().addedAt)
+    }
+
+    /**
      * A course handout is a kind of its own, not a lesson and not a film.
      * The shelves place it; this only has to stop calling it nothing.
      */

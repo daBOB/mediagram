@@ -38,6 +38,10 @@ pub struct SetSummary {
     pub poster_key: Option<String>,
     pub total: u64,
     pub part_count: u32,
+    /// When this set arrived, as a Unix time. Named as the web player names
+    /// it, because two surfaces over one library should not need a
+    /// translation table for the same fact.
+    pub added_at: i64,
 }
 
 /// Flattens one catalog row. Never fails: a set whose episode field this
@@ -71,6 +75,7 @@ pub fn summary_from(set: &PlayableSet) -> SetSummary {
         poster_key: poster_key_for(&set.kind, set.tmdb),
         total: set.total,
         part_count: set.part_count,
+        added_at: set.created_at,
     }
 }
 

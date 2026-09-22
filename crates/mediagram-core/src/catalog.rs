@@ -40,6 +40,10 @@ pub struct PlayableSet {
     pub duration: Option<u32>,
     pub total: u64,
     pub part_count: u32,
+    /// When the uploader recorded this set, as a Unix time. The row has
+    /// always carried it — `list_playable` orders by it — but nothing read
+    /// it until a surface wanted to say what arrived recently.
+    pub created_at: i64,
 }
 
 /// Where one part lives: its place in the virtual file, and the message
@@ -52,7 +56,7 @@ pub struct PartLocation {
 }
 
 const COLUMNS: &str = "set_id, kind, title, show, chap, path, season, episode, tmdb, year, container,
-     vcodec, acodec, quality, hdr, duration, total, part_count";
+     vcodec, acodec, quality, hdr, duration, total, part_count, created_at";
 
 fn read_set(row: &rusqlite::Row<'_>) -> rusqlite::Result<PlayableSet> {
     let total: i64 = row.get("total")?;
@@ -75,6 +79,7 @@ fn read_set(row: &rusqlite::Row<'_>) -> rusqlite::Result<PlayableSet> {
         duration: row.get("duration")?,
         total: total.max(0) as u64,
         part_count: row.get("part_count")?,
+        created_at: row.get("created_at")?,
     })
 }
 

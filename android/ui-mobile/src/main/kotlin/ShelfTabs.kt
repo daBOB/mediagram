@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import catalog.Shelf
 import designsystem.Spacing
 
 /**
@@ -32,7 +31,7 @@ import designsystem.Spacing
  */
 @Composable
 internal fun ShelfTabs(
-    shelves: List<Shelf>,
+    titles: List<String>,
     selected: Int,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
@@ -42,12 +41,12 @@ internal fun ShelfTabs(
     // and "Tutorials" at opposite edges of the glass, which reads as three
     // unrelated buttons rather than as one masthead.
     Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Masthead(shelves, selected, onSelect)
+        Masthead(titles, selected, onSelect)
     }
 }
 
 @Composable
-private fun Masthead(shelves: List<Shelf>, selected: Int, onSelect: (Int) -> Unit) {
+private fun Masthead(titles: List<String>, selected: Int, onSelect: (Int) -> Unit) {
     PrimaryTabRow(
         selectedTabIndex = selected,
         modifier = Modifier.widthIn(max = MASTHEAD_MAX_WIDTH),
@@ -58,13 +57,13 @@ private fun Masthead(shelves: List<Shelf>, selected: Int, onSelect: (Int) -> Uni
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
-        shelves.forEachIndexed { index, shelf ->
+        titles.forEachIndexed { index, name ->
             Tab(
                 selected = index == selected,
                 onClick = { onSelect(index) },
                 text = {
                     Text(
-                        text = shelf.title,
+                        text = name,
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

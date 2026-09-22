@@ -40,6 +40,13 @@ data class MediaSet(
     val partCount: Int = 1,
     /** The raw key a title-detail screen asks the core to resolve a poster for. */
     val posterKey: String? = null,
+    /**
+     * When this set arrived, as a Unix time, or 0 from an index that did
+     * not record one. It is what "latest" means here: a library is added to
+     * over years, and what turned up last week is the question a start page
+     * exists to answer.
+     */
+    val addedAt: Long = 0,
 )
 
 enum class Kind {

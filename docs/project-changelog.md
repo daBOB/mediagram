@@ -9,6 +9,42 @@ to `main`. Full phase-by-phase detail lives in
 
 **Shipped**
 
+- A start page on the phone, and the app opens on it. Three rows — latest
+  movies, latest series, latest courses — six plates each, with **See all**
+  through to the whole shelf. Home is the first entry in the masthead, as it
+  is in the web player's.
+
+  Arrival time had to reach Kotlin first. The `sets` table has carried
+  `created_at` all along and `list_playable` already ordered by it, but the
+  column stopped at the SQL: neither `PlayableSet` nor `SetSummary` held it.
+  It is now `addedAt` on both sides of the UniFFI boundary, named as the web
+  player names it, because two surfaces over one library should not need a
+  translation table for the same fact.
+
+  A collection is dated by its newest episode rather than its first, so a
+  series still being uploaded keeps its place and one finished two years ago
+  does not hold the top of the row for having been started recently.
+
+  **Continue and Next up are not there.** The web player's start page has
+  five rows and this has three: the phone keeps no watch state at all, so
+  those two have nothing to read. They are absent rather than empty, because
+  a row that is always empty teaches a viewer to ignore the place it sits in.
+  They arrive with the local store, which is
+  [`plans/260922-0124-android-web-parity/`](../plans/260922-0124-android-web-parity/phase-04-somewhere-to-remember.md).
+
+
+- The web player says when a title is cached. An episode held in full on the
+  player's disk still read "ready · 0:52 ahead, filling 3.1×" with a thin
+  buffered band, exactly like one crossing the network, because both came
+  from the browser's own minute-long read-ahead. The player now asks
+  `/api/sets/:id/held` as it opens a title and, for a held file played
+  directly, reads "ready · cached" and paints the whole track. It asks rather
+  than trusting the catalog's `offline` flag, which the page fetched once at
+  load and which went stale for anything cached since; the route checks that
+  one set's chunk directory on the spot rather than serving the 30 s scan.
+  Conversions keep their real buffer, since the encoder is still the limit.
+  Android's player is owed the same (surface parity).
+
 - The Android catalogue has a design. It had none: `darkColorScheme()` was
   called with no arguments, so every colour in the app was Material 3's
   baseline violet, and every word was Roboto. It now carries the web player's

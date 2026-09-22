@@ -2241,6 +2241,13 @@ data class SetSummary (
     var `total`: kotlin.ULong
     , 
     var `partCount`: kotlin.UInt
+    , 
+    /**
+     * When this set arrived, as a Unix time. Named as the web player names
+     * it, because two surfaces over one library should not need a
+     * translation table for the same fact.
+     */
+    var `addedAt`: kotlin.Long
     
 ){
     
@@ -2276,6 +2283,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.read(buf),
             FfiConverterULong.read(buf),
             FfiConverterUInt.read(buf),
+            FfiConverterLong.read(buf),
         )
     }
 
@@ -2298,7 +2306,8 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalUInt.allocationSize(value.`duration`) +
             FfiConverterOptionalString.allocationSize(value.`posterKey`) +
             FfiConverterULong.allocationSize(value.`total`) +
-            FfiConverterUInt.allocationSize(value.`partCount`)
+            FfiConverterUInt.allocationSize(value.`partCount`) +
+            FfiConverterLong.allocationSize(value.`addedAt`)
     )
 
     override fun write(value: SetSummary, buf: ByteBuffer) {
@@ -2321,6 +2330,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.write(value.`posterKey`, buf)
             FfiConverterULong.write(value.`total`, buf)
             FfiConverterUInt.write(value.`partCount`, buf)
+            FfiConverterLong.write(value.`addedAt`, buf)
     }
 }
 
