@@ -189,7 +189,7 @@ fn an_injection_payload_is_refused_against_the_sidecar_too() {
     conn.execute(
         "INSERT INTO shows(source, kind, id, lang, overview)
          VALUES ('tmdb', ?1, 550, 'en-US', 'should never be read')",
-        params![kind],
+        rusqlite::params![kind],
     )
     .unwrap();
     drop(conn);

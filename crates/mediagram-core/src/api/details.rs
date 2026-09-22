@@ -12,22 +12,15 @@
 
 use std::path::PathBuf;
 
-use mlib_spec::schema;
-use rusqlite::{Connection, OpenFlags, params};
-
 use mediagram_tmdb::details::ShowRow;
-use mediagram_tmdb::posters::kind_key;
+use mlib_spec::schema;
+use rusqlite::{Connection, OpenFlags};
 
 use crate::dto::ShowInfo;
 use crate::shows::{ShowRecord, key_parts, read};
 
 use super::catalog;
 use super::{Core, CoreError};
-
-/// The provider these rows come from, spelled the way the index spells it so
-/// that one key finds a row in either database. The column exists so a
-/// second provider would not need a migration to sit beside this one.
-const SOURCE: &str = "tmdb";
 
 /// Where descriptions this device fetched are kept.
 ///
@@ -112,44 +105,9 @@ fn preparing() -> CoreError {
     CoreError::Io("preparing the description store".into())
 }
 
-/// Records what a fetch learned about one title, replacing whatever was
-/// there.
-///
-/// Replacing rather than merging is the point twice over: a later fetch is a
-/// correction and not a second opinion, and asking again in another language
-/// must not leave half the row in the old one.
+/// Records what a fetch learned about one title; see [`crate::shows::upsert`].
 pub fn upsert(conn: &Connection, row: &ShowRow) -> Result<(), CoreError> {
-    conn.execute(
-        "INSERT INTO shows(source, kind, id, lang, overview, tagline, genres, rating,
-                           network, status, first_air, last_air,
-                           total_seasons, total_episodes)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
-         ON CONFLICT(source, kind, id) DO UPDATE SET
-             lang = excluded.lang, overview = excluded.overview,
-             tagline = excluded.tagline, genres = excluded.genres,
-             rating = excluded.rating, network = excluded.network,
-             status = excluded.status, first_air = excluded.first_air,
-             last_air = excluded.last_air, total_seasons = excluded.total_seasons,
-             total_episodes = excluded.total_episodes",
-        params![
-            SOURCE,
-            kind_key(row.kind),
-            row.id as i64,
-            row.lang,
-            row.overview,
-            row.tagline,
-            row.genres,
-            row.rating,
-            row.network,
-            row.status,
-            row.first_air,
-            row.last_air,
-            row.total_seasons,
-            row.total_episodes,
-        ],
-    )
-    .map_err(|_| CoreError::Io("recording a description".into()))?;
-    Ok(())
+    crate::shows::upsert(conn, row).map_err(|_| CoreError::Io("recording a description".into()))
 }
 
 /// What is known about a title: the index's own row first, whatever this

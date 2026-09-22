@@ -9,52 +9,17 @@
 //! read of the cache on disk, not a round of requests.
 
 use anyhow::{Context, Result};
+use mediagram_core::shows::SOURCE;
+use mediagram_tmdb::details::ShowRow;
+use mediagram_tmdb::posters::kind_key;
 use mlib_spec::Kind;
 use rusqlite::{Connection, OptionalExtension, params};
 
-use mediagram_tmdb::details::ShowRow;
-use mediagram_tmdb::posters::kind_key;
-
-/// The provider this table records. Only TMDB is written today; the column
-/// exists so a second one would not need a migration to sit beside it.
-const SOURCE: &str = "tmdb";
-
-/// Writes a show's entry, replacing whatever was there.
-///
-/// Replacing rather than merging is the point: asking again in another
-/// language must not leave half the row in the old one.
+/// Writes a show's entry, replacing whatever was there; see
+/// [`mediagram_core::shows::upsert`], the table's one writer.
 pub fn upsert(conn: &Connection, row: &ShowRow) -> Result<()> {
-    conn.execute(
-        "INSERT INTO shows(source, kind, id, lang, overview, tagline, genres, rating,
-                           network, status, first_air, last_air,
-                           total_seasons, total_episodes)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
-         ON CONFLICT(source, kind, id) DO UPDATE SET
-             lang = excluded.lang, overview = excluded.overview,
-             tagline = excluded.tagline, genres = excluded.genres,
-             rating = excluded.rating, network = excluded.network,
-             status = excluded.status, first_air = excluded.first_air,
-             last_air = excluded.last_air, total_seasons = excluded.total_seasons,
-             total_episodes = excluded.total_episodes",
-        params![
-            SOURCE,
-            kind_key(row.kind),
-            row.id as i64,
-            row.lang,
-            row.overview,
-            row.tagline,
-            row.genres,
-            row.rating,
-            row.network,
-            row.status,
-            row.first_air,
-            row.last_air,
-            row.total_seasons,
-            row.total_episodes,
-        ],
-    )
-    .with_context(|| format!("recording {} {}", kind_key(row.kind), row.id))?;
-    Ok(())
+    mediagram_core::shows::upsert(conn, row)
+        .with_context(|| format!("recording {} {}", kind_key(row.kind), row.id))
 }
 
 /// One show's entry, or `None` when nothing has been recorded for it.
