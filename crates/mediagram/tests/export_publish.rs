@@ -6,7 +6,7 @@ use std::path::Path;
 
 use mediagram::export::latest::complete;
 use mediagram::export::pointer;
-use mediagram::export::publish::{run_publish, substitute};
+use mediagram::export::publish::{child_env, run_publish, substitute};
 
 fn draft() -> mlib_spec::package::LatestPointer {
     pointer::draft(1_781_568_000, &[5u8; 32])
@@ -111,28 +111,36 @@ async fn an_empty_command_is_refused_rather_than_spawning_something_odd() {
 }
 
 /// The upload tool needs its own credentials, not mediagram's Telegram hash
-/// or TMDB key.
+/// or TMDB key. Decided on a given environment rather than by setting a
+/// variable on this process, which every other test thread shares.
+#[test]
+fn the_child_does_not_inherit_mediagram_secrets() {
+    let given = [
+        ("MEDIAGRAM_API_HASH", "leaked-secret-value"),
+        ("MEDIAGRAM_TMDB_KEY", "another"),
+        ("RCLONE_CONFIG", "/home/me/rclone.conf"),
+    ]
+    .map(|(key, value)| (key.into(), value.into()));
+
+    let kept = child_env(given);
+
+    assert_eq!(kept, vec![("RCLONE_CONFIG".into(), "/home/me/rclone.conf".into())]);
+}
+
+/// The filtered environment is the one the child actually runs with, and
+/// what it keeps still reaches it.
 #[tokio::test]
-async fn the_child_does_not_inherit_mediagram_secrets() {
-    unsafe {
-        std::env::set_var("MEDIAGRAM_API_HASH", "leaked-secret-value");
-    }
+async fn the_child_runs_with_the_rest_of_the_environment() {
     let dir = tempfile::tempdir().unwrap();
     let out = dir.path().join("env.txt");
-    // `env` writes its environment; the test then reads it back.
     let argv = vec![
         "sh".to_string(), // a real binary, invoked with explicit args, not a shell string
         "-c".to_string(),
         format!("env > {}", out.display()),
     ];
-    let _ = run_publish(&argv, Path::new("/tmp/pkg.enc")).await;
-    let seen = std::fs::read_to_string(&out).unwrap_or_default();
+    run_publish(&argv, Path::new("/tmp/pkg.enc")).await.unwrap();
 
-    unsafe {
-        std::env::remove_var("MEDIAGRAM_API_HASH");
-    }
-    assert!(
-        !seen.contains("leaked-secret-value"),
-        "child environment must not carry MEDIAGRAM_* values"
-    );
+    let seen = std::fs::read_to_string(&out).unwrap();
+    assert!(seen.lines().any(|line| line.starts_with("PATH=")), "{seen}");
+    assert!(!seen.lines().any(|line| line.starts_with("MEDIAGRAM_")), "{seen}");
 }

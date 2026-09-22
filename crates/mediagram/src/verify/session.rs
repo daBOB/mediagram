@@ -12,7 +12,7 @@ use rusqlite::Connection;
 
 use super::download_hash::{fetch_messages, hash_document};
 use super::report::{self, ExpectedPart, ObservedMessage, PartVerdict, SetReport};
-use super::{LocalPart, clear_verified, mark_verified, verified_since};
+use super::{LocalPart, forget_stale_success, mark_verified, verified_since};
 use crate::index::sets::SetRow;
 use crate::index::status::PartStatus;
 use crate::telegram::client::Tg;
@@ -140,12 +140,7 @@ async fn verify_part(
         }
     }
 
-    // A part that fails today must not keep advertising an old success: the
-    // row is what `push-index` snapshots to the channel for other clients.
-    if verdict.failed() && part.verified_at.is_some() {
-        clear_verified(conn, set_id, part.idx)?;
-        verdict.verified_at = None;
-    }
+    forget_stale_success(conn, set_id, part, &mut verdict)?;
     Ok(verdict)
 }
 

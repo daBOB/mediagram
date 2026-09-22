@@ -136,3 +136,54 @@ fn message_ids_are_deduplicated_and_ordered() {
 
     assert_eq!(removal.message_ids, vec![100, 101]);
 }
+
+/// What `delete_rows` must take with a set, and what it must leave: its
+/// parts and assets go by cascade (which needs foreign keys on for this
+/// connection), its per-set meta keys go by name, and another set is not
+/// touched at all.
+mod deleting_rows {
+    use mediagram::index::{assets, db, parts, sets};
+    use mediagram::remove::apply::delete_rows;
+    use mlib_spec::part_plan::PartRange;
+
+    use super::row;
+
+    fn count(conn: &rusqlite::Connection, sql: &str) -> i64 {
+        conn.query_row(sql, [], |r| r.get(0)).unwrap()
+    }
+
+    #[test]
+    fn a_set_goes_with_its_parts_assets_and_meta_and_nothing_else() {
+        let dir = tempfile::tempdir().unwrap();
+        let conn = db::open(dir.path()).unwrap();
+        let ranges = [PartRange { idx: 0, off: 0, len: 10 }, PartRange { idx: 1, off: 10, len: 20 }];
+        for id in ["01SET0000000000000000001", "01SET0000000000000000002"] {
+            sets::insert_set(&conn, &row(id, "An Episode")).unwrap();
+            parts::insert_parts(&conn, id, &ranges).unwrap();
+            assets::put(&conn, id, assets::Kind::Summary, "en", "text").unwrap();
+            for key in db::set_keys(id) {
+                db::set_meta(&conn, &key, "/some/file.mkv").unwrap();
+            }
+        }
+        // A connection opened without the helper has foreign keys off, which
+        // is the case the pragma inside `delete_rows` is there for.
+        drop(conn);
+        let conn = rusqlite::Connection::open(db::index_path(dir.path())).unwrap();
+
+        delete_rows(&conn, "01SET0000000000000000001").unwrap();
+
+        assert!(sets::get_set(&conn, "01SET0000000000000000001").unwrap().is_none());
+        assert_eq!(count(&conn, "SELECT COUNT(*) FROM parts WHERE set_id = '01SET0000000000000000001'"), 0);
+        assert_eq!(count(&conn, "SELECT COUNT(*) FROM assets WHERE set_id = '01SET0000000000000000001'"), 0);
+        for key in db::set_keys("01SET0000000000000000001") {
+            assert_eq!(db::get_meta(&conn, &key).unwrap(), None, "{key} survived");
+        }
+
+        assert!(sets::get_set(&conn, "01SET0000000000000000002").unwrap().is_some());
+        assert_eq!(count(&conn, "SELECT COUNT(*) FROM parts WHERE set_id = '01SET0000000000000000002'"), 2);
+        assert_eq!(count(&conn, "SELECT COUNT(*) FROM assets WHERE set_id = '01SET0000000000000000002'"), 1);
+        for key in db::set_keys("01SET0000000000000000002") {
+            assert!(db::get_meta(&conn, &key).unwrap().is_some(), "{key} was taken too");
+        }
+    }
+}

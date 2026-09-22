@@ -8,7 +8,7 @@ use mediagram::verify::report::{
     ExpectedPart, ObservedMessage, PartVerdict, SetReport, apply_hash, check_local_invariant,
     verify_size,
 };
-use mediagram::verify::{LocalPart, verified_since};
+use mediagram::verify::{LocalPart, forget_stale_success, load_parts, mark_verified, verified_since};
 
 fn expected() -> ExpectedPart {
     ExpectedPart {
@@ -277,4 +277,49 @@ fn since_skips_only_parts_verified_at_or_after_the_cutoff() {
     assert!(!verified_since(&part(Some(999)), Some(1_000)));
     assert!(!verified_since(&part(None), Some(1_000)));
     assert!(!verified_since(&part(Some(1_000)), None));
+}
+
+/// A part that fails today loses the `verified_at` an earlier `--full` run
+/// gave it — in the index, which `push-index` snapshots for other clients,
+/// and in the verdict the report prints — while a part that passes keeps its
+/// stamp.
+#[test]
+fn a_failing_part_forgets_its_old_success_and_a_passing_one_keeps_it() {
+    use mediagram::index::{db, parts};
+    use mlib_spec::part_plan::PartRange;
+
+    let dir = tempfile::tempdir().unwrap();
+    let conn = db::open(dir.path()).unwrap();
+    let set_id = "01SET0000000000000000001";
+    conn.execute(
+        "INSERT INTO sets(set_id, kind, container, total, part_count, status, created_at, spec_version)
+         VALUES (?1, 'movie', 'mkv', 2048, 2, 'complete', 0, 1)",
+        [set_id],
+    )
+    .unwrap();
+    let ranges = [PartRange { idx: 0, off: 0, len: 1024 }, PartRange { idx: 1, off: 1024, len: 1024 }];
+    parts::insert_parts(&conn, set_id, &ranges).unwrap();
+    mark_verified(&conn, set_id, 0, 1_700_000_000).unwrap();
+    mark_verified(&conn, set_id, 1, 1_700_000_000).unwrap();
+    let stored = load_parts(&conn, set_id).unwrap();
+
+    let mut failing = verify_size(&expected(), &ObservedMessage::MessageMissing);
+    failing.verified_at = Some(1_700_000_000);
+    forget_stale_success(&conn, set_id, &stored[0], &mut failing).unwrap();
+
+    let mut passing = PartVerdict {
+        idx: 1,
+        size_ok: true,
+        hash_ok: None,
+        warning: None,
+        failure: None,
+        verified_at: Some(1_700_000_000),
+    };
+    forget_stale_success(&conn, set_id, &stored[1], &mut passing).unwrap();
+
+    let after = load_parts(&conn, set_id).unwrap();
+    assert_eq!(failing.verified_at, None);
+    assert_eq!(after[0].verified_at, None);
+    assert_eq!(passing.verified_at, Some(1_700_000_000));
+    assert_eq!(after[1].verified_at, Some(1_700_000_000));
 }

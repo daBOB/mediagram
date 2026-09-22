@@ -9,6 +9,7 @@
 //! The child does not inherit `MEDIAGRAM_*` variables. An upload tool needs
 //! its own storage credentials, not this process's Telegram hash or TMDB key.
 
+use std::ffi::OsString;
 use std::path::Path;
 
 use anyhow::{Context, Result, bail};
@@ -26,6 +27,16 @@ pub fn substitute(argv: &[String], file: &Path) -> Vec<String> {
         .collect()
 }
 
+/// The environment the publish command runs with: the one given, minus every
+/// `MEDIAGRAM_*` variable.
+pub fn child_env(
+    vars: impl IntoIterator<Item = (OsString, OsString)>,
+) -> Vec<(OsString, OsString)> {
+    vars.into_iter()
+        .filter(|(key, _)| !key.to_string_lossy().starts_with("MEDIAGRAM_"))
+        .collect()
+}
+
 /// Runs the publish command for one file, failing the run if it does.
 pub async fn run_publish(argv: &[String], file: &Path) -> Result<()> {
     let args = substitute(argv, file);
@@ -36,12 +47,7 @@ pub async fn run_publish(argv: &[String], file: &Path) -> Result<()> {
     };
 
     let mut command = Command::new(program);
-    command.args(rest);
-    for (key, _) in std::env::vars() {
-        if key.starts_with("MEDIAGRAM_") {
-            command.env_remove(key);
-        }
-    }
+    command.args(rest).env_clear().envs(child_env(std::env::vars_os()));
 
     let status = command
         .status()

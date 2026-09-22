@@ -5,11 +5,11 @@
 //! (kept here rather than in `index::parts`, which only tracks the upload
 //! side of a part, not verification).
 
-use crate::index::status::PartStatus;
 use anyhow::{Context, Result, bail};
 use rusqlite::Connection;
 
 use crate::index::sets;
+use crate::index::status::PartStatus;
 
 pub mod download_hash;
 pub mod render;
@@ -96,6 +96,24 @@ fn set_verified_at(conn: &Connection, set_id: &str, idx: u32, at: Option<i64>) -
         rusqlite::params![at, set_id, idx],
     )
     .with_context(|| format!("recording verified_at for set {set_id} part {idx}"))?;
+    Ok(())
+}
+
+/// Clears a part's old `verified_at` when today's verdict failed.
+///
+/// A part that fails today must not keep advertising an old success: the row
+/// is what `push-index` snapshots to the channel for other clients, and the
+/// printed report reads the verdict's copy.
+pub fn forget_stale_success(
+    conn: &Connection,
+    set_id: &str,
+    part: &LocalPart,
+    verdict: &mut report::PartVerdict,
+) -> Result<()> {
+    if verdict.failed() && part.verified_at.is_some() {
+        clear_verified(conn, set_id, part.idx)?;
+        verdict.verified_at = None;
+    }
     Ok(())
 }
 
