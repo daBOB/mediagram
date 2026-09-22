@@ -2,7 +2,7 @@
 //!
 //! The router is generic over where bytes come from, so the whole contract —
 //! statuses, `Content-Length`, `Content-Range`, part-boundary crossings — is
-//! testable without Telegram. [`super::telegram::TelegramSource`] is the real
+//! testable without Telegram. [`mediagram_core::telegram::TelegramSource`] is the real
 //! implementation; a test supplies a known file instead.
 
 use std::sync::{Arc, Mutex};
@@ -15,8 +15,9 @@ use axum::routing::get;
 use axum::{Json, Router};
 use rusqlite::Connection;
 
-use super::catalog;
-use super::range::{PartSpan, plan_reads, total_size};
+use mediagram_core::catalog;
+use mediagram_core::range::{PartSpan, plan_reads, total_size};
+
 use super::response::plan_response;
 
 pub use mediagram_core::stream::{ByteSource, ByteStream};

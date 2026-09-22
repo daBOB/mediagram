@@ -9,10 +9,10 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
+use mediagram_tmdb::posters::{PosterRef, download_into};
 use mlib_spec::package::{PackageManifest, PosterEntry};
 use rusqlite::Connection;
 
-use mediagram_tmdb::posters::{PosterRef, download_into};
 use crate::export::{restrict, restrict_dir};
 use crate::index::snapshot;
 

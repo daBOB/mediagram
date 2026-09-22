@@ -10,6 +10,7 @@
 //! time anyone ran it.
 
 use anyhow::{Context, Result, bail};
+use mediagram_tmdb::tmdb_client::{TmdbApi, TmdbClient};
 
 use crate::commands::args::EditArgs;
 use crate::config::Config;
@@ -17,7 +18,6 @@ use crate::edit::apply::write_captions;
 use crate::edit::plan::{Clearable, Edits, apply_checked, captions, editable_kind};
 use crate::index::{db, parts, sets};
 use crate::telegram::client::Tg;
-use mediagram_tmdb::tmdb_client::{TmdbApi, TmdbClient};
 use mlib_spec::Kind;
 
 pub async fn run(cfg: &Config, args: EditArgs) -> Result<()> {

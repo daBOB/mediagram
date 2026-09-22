@@ -5,7 +5,7 @@
 //! `Content-Length` makes ffmpeg read from byte zero instead of seeking, and a
 //! `Content-Range` that disagrees with the body makes Safari refuse to play.
 
-use super::range::{ByteRange, RangeError, parse_range};
+use mediagram_core::range::{ByteRange, RangeError, parse_range};
 
 /// The answer to a stream request, decided before a single byte is fetched.
 #[derive(Debug, Clone, PartialEq, Eq)]

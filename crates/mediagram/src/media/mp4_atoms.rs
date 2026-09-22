@@ -1,6 +1,3 @@
-// Not wired into any command yet; the add command calls this once a source
-// file's container is known.
-
 //! Minimal MP4/ISO-BMFF top-level box reader. We only need to know whether
 //! `mdat` (the media data box) appears before `moov` (the movie metadata
 //! box), which determines whether `ffmpeg -movflags +faststart` must run

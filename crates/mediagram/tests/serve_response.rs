@@ -5,8 +5,8 @@
 //! Safari rejects a malformed `Content-Range` outright. Both are decided here,
 //! away from the transport, so they can be asserted without a network.
 
-use mediagram::serve::range::ByteRange;
 use mediagram::serve::response::plan_response;
+use mediagram_core::range::ByteRange;
 
 const TOTAL: u64 = 7_011_563_463;
 

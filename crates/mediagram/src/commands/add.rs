@@ -2,6 +2,7 @@
 //! last step either watched here or handed to a background process.
 
 use anyhow::{Context, Result, bail};
+use mediagram_tmdb::tmdb_client::TmdbClient;
 use mlib_spec::{Caption, Part};
 
 use super::args::AddArgs;
@@ -13,7 +14,6 @@ use crate::media::{classify, inspect, remux};
 use crate::metadata::prompt::DialoguerPrompter;
 use crate::metadata::resolve::{self, ResolveInput};
 use crate::metadata::show_details;
-use mediagram_tmdb::tmdb_client::TmdbClient;
 
 pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
     let info = inspect::inspect(&args.file)
@@ -205,7 +205,7 @@ fn store_sidecars(
     source: &std::path::Path,
     caption: &mlib_spec::Caption,
 ) -> Result<()> {
-    let found = crate::course::sidecars::find_sidecars(source)?;
+    let found = crate::course::sidecars::find_sidecars(source);
 
     if let Some(subtitle) = &found.subtitle {
         // The subtitle is the audio written down, so it is in the audio's

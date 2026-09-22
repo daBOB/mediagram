@@ -101,7 +101,7 @@ pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
 
     println!("\n{uploaded} uploaded, {skipped} already held, {failed} failed");
     if uploaded > 0 && !args.no_push {
-        super::push_index::push_after_set(cfg)
+        super::push_index::run(cfg)
             .await
             .context("pushing the index after the show")?;
     }

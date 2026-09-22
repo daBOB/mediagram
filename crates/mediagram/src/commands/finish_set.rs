@@ -45,7 +45,7 @@ pub async fn run(cfg: &Config, set_id: &str, delete: Option<&Path>, no_push: boo
         report_deletion(path, complete, set.total);
     }
     if complete && !no_push {
-        push_index::push_after_set(cfg).await.with_context(|| {
+        push_index::run(cfg).await.with_context(|| {
             format!("set {set_id} is complete but the index push failed; run `mediagram push-index`")
         })?;
     }

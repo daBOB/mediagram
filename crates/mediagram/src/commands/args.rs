@@ -1,6 +1,4 @@
-//! Arguments for the commands that take more than a flag or two. Kept
-//! separate so the CLI surface is stable
-//! while the command body is implemented.
+//! clap argument structs for the commands that take more than a flag or two.
 
 use std::path::PathBuf;
 

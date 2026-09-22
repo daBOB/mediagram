@@ -99,7 +99,7 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
     }
 
     if summary.uploaded_anything() && !args.no_push {
-        super::push_index::push_after_set(cfg)
+        super::push_index::run(cfg)
             .await
             .context("pushing the index after the course")?;
     }

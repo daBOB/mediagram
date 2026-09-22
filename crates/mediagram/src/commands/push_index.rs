@@ -35,12 +35,6 @@ pub async fn run(cfg: &Config) -> Result<()> {
     Ok(())
 }
 
-/// Same push, for callers that only care about it happening as a side
-/// effect of finishing a set (`add`/`resume`, unless `--no-push`).
-pub async fn push_after_set(cfg: &Config) -> Result<()> {
-    run(cfg).await
-}
-
 async fn push_snapshot(cfg: &Config) -> Result<i32> {
     let data_dir = cfg.data_dir()?;
     let conn = db::open(&data_dir)?;

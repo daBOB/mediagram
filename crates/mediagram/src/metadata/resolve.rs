@@ -3,14 +3,14 @@
 //! prompting only when the search is ambiguous. `--manual` bypasses TMDB.
 
 use anyhow::{Context, Result, bail};
+use mediagram_tmdb::tmdb_client::TmdbApi;
+use mediagram_tmdb::tmdb_types::{DetailsResponse, EpisodeDetails, FindResponse};
 use mlib_spec::filename::{Guess, parse_filename};
 use mlib_spec::ids::normalize_imdb;
 use mlib_spec::{Episode, Kind, ProviderIds};
 
 use super::prompt::Prompter;
 use super::search::search_and_resolve;
-use mediagram_tmdb::tmdb_client::TmdbApi;
-use mediagram_tmdb::tmdb_types::{DetailsResponse, EpisodeDetails, FindResponse};
 
 /// Everything `resolve` needs beyond the file name; mirrors `AddArgs`
 /// without depending on the CLI or config types.

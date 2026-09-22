@@ -51,7 +51,7 @@ async fn rescan_all(conn: &mut Connection, tg: &Tg, chat_id: i64) -> Result<Resc
     let mut iter = tg.client.iter_messages(tg.channel);
 
     while let Some(message) = iter.next().await.context("scanning channel history")? {
-        let doc_id = crate::telegram::document::message_document(&message).map(|(_, id)| id);
+        let doc_id = mediagram_core::document::message_document(&message).map(|(_, id)| id);
         let caption = message.text().to_string();
         if doc_id.is_none() || !mlib_spec::caption_codec::is_mlib(&caption) {
             continue;

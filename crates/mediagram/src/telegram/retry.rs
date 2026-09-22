@@ -39,8 +39,9 @@ fn is_retryable(err: &InvocationError) -> bool {
 }
 
 /// Runs `op` up to `max_attempts` times. A `FLOOD_WAIT` error sleeps for the
-/// server-specified duration before retrying; any other error backs off
-/// exponentially. Returns the last error once `max_attempts` is reached.
+/// server-specified duration before retrying, and any other retryable error
+/// (see [`is_retryable`]) backs off exponentially. A non-retryable error is
+/// returned at once, as is the last error once `max_attempts` is reached.
 pub async fn with_retry<T, F, Fut>(max_attempts: u32, op: F) -> Result<T>
 where
     F: FnMut() -> Fut,

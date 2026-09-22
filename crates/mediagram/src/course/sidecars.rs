@@ -12,8 +12,6 @@
 
 use std::path::Path;
 
-use anyhow::Result;
-
 use crate::index::assets::MAX_ASSET_BYTES;
 
 /// Suffixes a summary may use, in the order they are looked for.
@@ -32,9 +30,9 @@ pub struct Sidecars {
 /// that was never transcribed has no subtitles. Only a file that exists and
 /// cannot be used is worth a word, and that word is a warning rather than an
 /// error — a lesson is still worth uploading without its subtitle.
-pub fn find_sidecars(video: &Path) -> Result<Sidecars> {
+pub fn find_sidecars(video: &Path) -> Sidecars {
     let Some(stem) = base_stem(video) else {
-        return Ok(Sidecars::default());
+        return Sidecars::default();
     };
     let folder = video.parent().unwrap_or(Path::new("."));
 
@@ -43,7 +41,7 @@ pub fn find_sidecars(video: &Path) -> Result<Sidecars> {
         .iter()
         .find_map(|suffix| read_text(&folder.join(format!("{stem}{suffix}"))));
 
-    Ok(Sidecars { subtitle, summary })
+    Sidecars { subtitle, summary }
 }
 
 /// The stem a lesson's sidecars are named after.
@@ -52,12 +50,11 @@ pub fn find_sidecars(video: &Path) -> Result<Sidecars> {
 /// and its sidecars still sit under `name`.
 fn base_stem(video: &Path) -> Option<String> {
     let stem = video.file_stem()?.to_string_lossy().to_string();
-    Ok::<_, ()>(
+    Some(
         stem.strip_suffix(".faststart")
             .map(str::to_string)
             .unwrap_or(stem),
     )
-    .ok()
 }
 
 /// Reads a file as text, or `None` if it is missing, too large, or not UTF-8.

@@ -6,8 +6,8 @@
 //! is not an error message but a corrupt video, so this is checked against a
 //! synthetic file whose bytes are known.
 
-use mediagram::serve::range::{ByteRange, CHUNK, PartSpan, Step, plan_reads};
-use mediagram::serve::stream::StepCursor;
+use mediagram_core::range::{ByteRange, CHUNK, PartSpan, Step, plan_reads};
+use mediagram_core::stream::StepCursor;
 
 fn step(skip_chunks: u32, head_drop: u64, take: u64) -> Step {
     Step {

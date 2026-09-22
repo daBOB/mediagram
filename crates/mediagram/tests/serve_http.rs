@@ -11,9 +11,9 @@
 use std::sync::Arc;
 
 use mediagram::index::{db, parts, set_row::SetRow, sets};
-use mediagram::serve::catalog::PartLocation;
-use mediagram::serve::range::{CHUNK, Step};
 use mediagram::serve::routes::{ByteSource, ByteStream, router};
+use mediagram_core::catalog::PartLocation;
+use mediagram_core::range::{CHUNK, Step};
 use mlib_spec::PartRange;
 use mlib_spec::caption::{Caption, Kind, Part};
 use mlib_spec::ids::ProviderIds;

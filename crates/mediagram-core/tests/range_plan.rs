@@ -8,7 +8,7 @@
 //! The fixture is the real film uploaded and verified against the channel:
 //! two parts, 3,758,096,384 + 3,253,467,079 = 7,011,563,463 bytes.
 
-use mediagram::serve::range::{
+use mediagram_core::range::{
     ByteRange, CHUNK, PartSpan, RangeError, parse_range, plan_reads, total_size,
 };
 

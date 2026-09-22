@@ -64,7 +64,7 @@ pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
         let probed = streams::probe(file).await?;
         let size = probed
             .size
-            .unwrap_or(std::fs::metadata(file).map(|m| m.len()).unwrap_or(0));
+            .unwrap_or_else(|| std::fs::metadata(file).map(|m| m.len()).unwrap_or(0));
         let plan = plan_prepare(
             &probed.streams,
             size,

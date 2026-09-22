@@ -5,13 +5,13 @@
 //! ffmpeg transcode — is a client of this and never talks to Telegram itself.
 
 use anyhow::{Context, Result};
+use mediagram_core::catalog;
+use mediagram_core::telegram::TelegramSource;
 use tokio::net::TcpListener;
 
 use crate::config::Config;
 use crate::index::db;
-use crate::serve::catalog;
 use crate::serve::routes::router;
-use crate::serve::telegram::TelegramSource;
 use crate::telegram::client::Tg;
 
 /// Loopback only. Reaching the library from outside this machine is a

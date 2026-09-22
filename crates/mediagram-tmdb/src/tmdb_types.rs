@@ -19,7 +19,9 @@ pub struct SearchHit {
 }
 
 impl SearchHit {
-    /// Movie title or show name, whichever the payload carried.
+    /// Movie title or show name, whichever the payload carried, or empty if
+    /// neither: a hit is only ever shown as a line in a pick list, where a
+    /// blank label is still a choice the person can see and skip.
     pub fn display_title(&self) -> String {
         self.title
             .clone()
@@ -116,7 +118,9 @@ pub struct NamedRef {
 }
 
 impl DetailsResponse {
-    /// Movie title or show name, whichever the payload carried.
+    /// Movie title or show name, whichever the payload carried. `None` when
+    /// neither, so a caller filling a record leaves the field empty rather
+    /// than writing a blank title over nothing.
     pub fn display_title(&self) -> Option<String> {
         self.title.clone().or_else(|| self.name.clone())
     }

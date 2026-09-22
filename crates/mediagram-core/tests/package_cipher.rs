@@ -2,7 +2,7 @@
 //! pointer's identifying fields as associated data so a replayed archive
 //! under an edited pointer fails its tag instead of being accepted.
 
-use mediagram::export::encrypt::{EncryptError, open, parse_key, seal};
+use mediagram_core::package::cipher::{EncryptError, open, parse_key, seal};
 
 const AAD: &[u8] =
     br#"{"format":1,"created_at":1781568000,"key_id":"9f2c41ab","schema":1,"spec":2}"#;

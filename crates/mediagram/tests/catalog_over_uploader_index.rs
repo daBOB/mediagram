@@ -4,9 +4,13 @@
 //! crate already defines it as complete, with every part done and the lengths
 //! summing to the recorded total. The catalog must use that and not a second
 //! opinion, or the player will offer titles that stall halfway.
+//!
+//! The catalog is `mediagram_core`'s, but these tests live beside the uploader
+//! on purpose: every row is written through the uploader's own index code, so
+//! what is checked is that the two crates agree, not either one alone.
 
 use mediagram::index::{db, parts, set_row::SetRow, sets};
-use mediagram::serve::catalog::{list_playable, part_locations};
+use mediagram_core::catalog::{list_playable, part_locations};
 use mlib_spec::PartRange;
 use mlib_spec::caption::{Caption, Kind, Part};
 use mlib_spec::ids::ProviderIds;
@@ -200,7 +204,7 @@ fn a_single_set_can_be_looked_up_by_id() {
     let (_d, conn) = open();
     complete_set(&conn, "01SET0000000000000000005", &[(0, 4096)]);
 
-    let found = mediagram::serve::catalog::playable_set(&conn, "01SET0000000000000000005")
+    let found = mediagram_core::catalog::playable_set(&conn, "01SET0000000000000000005")
         .unwrap()
         .expect("a complete set is playable");
 
@@ -217,12 +221,12 @@ fn looking_up_a_set_that_is_not_playable_finds_nothing() {
     sets::insert_set(&conn, &row).unwrap();
 
     assert!(
-        mediagram::serve::catalog::playable_set(&conn, "01SET0000000000000000006")
+        mediagram_core::catalog::playable_set(&conn, "01SET0000000000000000006")
             .unwrap()
             .is_none()
     );
     assert!(
-        mediagram::serve::catalog::playable_set(&conn, "01NOSUCHSET00000000000001")
+        mediagram_core::catalog::playable_set(&conn, "01NOSUCHSET00000000000001")
             .unwrap()
             .is_none()
     );

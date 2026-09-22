@@ -9,12 +9,12 @@
 //! about the distinction.
 
 use anyhow::{Result, bail};
+use mediagram_tmdb::tmdb_client::TmdbClient;
 
 use crate::config::Config;
 use crate::export::titles::distinct_titles;
 use crate::index::{db, shows};
 use crate::metadata::show_details;
-use mediagram_tmdb::tmdb_client::TmdbClient;
 
 pub async fn run(cfg: &Config) -> Result<()> {
     let data_dir = cfg.data_dir()?;

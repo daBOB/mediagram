@@ -3,7 +3,7 @@
 
 use mediagram::export::archive::{pack_dir, unpack_to};
 use mediagram::export::budget::{Verdict, estimate_bytes, verdict_for};
-use mediagram::export::encrypt::{EncryptError, NONCE_LEN, TAG_LEN, open, seal};
+use mediagram_core::package::cipher::{EncryptError, NONCE_LEN, TAG_LEN, open, seal};
 use mediagram::export::pointer;
 use mediagram::export::titles::{counts, distinct_titles};
 use mediagram::index::db;

@@ -28,7 +28,7 @@ fn the_vtt_beside_a_video_is_its_subtitle() {
         ("Begrüßung.vtt", "WEBVTT\n\nhallo"),
     ]);
 
-    let found = find_sidecars(&dir.path().join("Begrüßung.mp4")).unwrap();
+    let found = find_sidecars(&dir.path().join("Begrüßung.mp4"));
 
     assert_eq!(found.subtitle.as_deref(), Some("WEBVTT\n\nhallo"));
 }
@@ -45,7 +45,7 @@ fn transcripts_and_working_files_are_left_behind() {
         ("L.tsv", "start\tend\ttext"),
     ]);
 
-    let found = find_sidecars(&dir.path().join("L.mp4")).unwrap();
+    let found = find_sidecars(&dir.path().join("L.mp4"));
 
     assert_eq!(found, Sidecars::default());
 }
@@ -55,7 +55,7 @@ fn a_summary_is_taken_from_its_own_suffix() {
     for name in ["L.summary.md", "L.summary.txt"] {
         let dir = folder(&[("L.mp4", "video"), (name, "Worum es geht.")]);
 
-        let found = find_sidecars(&dir.path().join("L.mp4")).unwrap();
+        let found = find_sidecars(&dir.path().join("L.mp4"));
 
         assert_eq!(found.summary.as_deref(), Some("Worum es geht."), "{name}");
     }
@@ -67,7 +67,7 @@ fn a_transcript_is_not_mistaken_for_a_summary() {
     let dir = folder(&[("L.mp4", "video"), ("L.txt", "the whole transcript")]);
 
     assert_eq!(
-        find_sidecars(&dir.path().join("L.mp4")).unwrap().summary,
+        find_sidecars(&dir.path().join("L.mp4")).summary,
         None
     );
 }
@@ -77,7 +77,7 @@ fn a_lesson_with_nothing_beside_it_has_no_sidecars() {
     let dir = folder(&[("L.mp4", "video")]);
 
     assert_eq!(
-        find_sidecars(&dir.path().join("L.mp4")).unwrap(),
+        find_sidecars(&dir.path().join("L.mp4")),
         Sidecars::default()
     );
 }
@@ -92,7 +92,7 @@ fn a_remuxed_video_still_finds_the_originals_sidecars() {
         ("L.summary.md", "kurz"),
     ]);
 
-    let found = find_sidecars(&dir.path().join("L.faststart.mp4")).unwrap();
+    let found = find_sidecars(&dir.path().join("L.faststart.mp4"));
 
     assert_eq!(found.subtitle.as_deref(), Some("WEBVTT\n\nhallo"));
     assert_eq!(found.summary.as_deref(), Some("kurz"));
@@ -110,7 +110,7 @@ fn an_oversized_sidecar_is_skipped_rather_than_stored() {
         ),
     ]);
 
-    let found = find_sidecars(&dir.path().join("L.mp4")).unwrap();
+    let found = find_sidecars(&dir.path().join("L.mp4"));
 
     assert_eq!(found.subtitle, None, "an oversized subtitle is not carried");
 }
@@ -122,7 +122,7 @@ fn a_file_that_is_not_text_is_not_carried() {
     fs::write(dir.path().join("L.vtt"), [0xff, 0xfe, 0x00, 0x01]).unwrap();
 
     assert_eq!(
-        find_sidecars(&dir.path().join("L.mp4")).unwrap().subtitle,
+        find_sidecars(&dir.path().join("L.mp4")).subtitle,
         None
     );
 }

@@ -8,15 +8,15 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use anyhow::Result;
 use grammers_client::media::Document;
 use grammers_client::message::Message;
+use mediagram_core::document::message_document;
 use rusqlite::Connection;
 
 use super::download_hash::{fetch_messages, hash_document};
 use super::report::{self, ExpectedPart, ObservedMessage, PartVerdict, SetReport};
 use super::{LocalPart, clear_verified, mark_verified, verified_since};
-use crate::index::status::PartStatus;
 use crate::index::sets::SetRow;
+use crate::index::status::PartStatus;
 use crate::telegram::client::Tg;
-use crate::telegram::document::message_document;
 
 /// One set queued for verification: its index row plus every part row.
 pub struct SetPlan {
