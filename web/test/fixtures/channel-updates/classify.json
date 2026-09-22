@@ -1,0 +1,246 @@
+[
+  {
+    "name": "another device's first state document is a state change",
+    "context": {
+      "channel": 3816522481,
+      "ownDevice": "laptop"
+    },
+    "update": {
+      "kind": "new",
+      "channel": 3816522481,
+      "caption": "#mlib-state v=1 device=phone"
+    },
+    "expect": "state"
+  },
+  {
+    "name": "another device editing its state document is a state change",
+    "context": {
+      "channel": 3816522481,
+      "ownDevice": "laptop"
+    },
+    "update": {
+      "kind": "edit",
+      "channel": 3816522481,
+      "caption": "#mlib-state v=1 device=phone"
+    },
+    "expect": "state"
+  },
+  {
+    "name": "this device's own state document is its own echo, not news",
+    "context": {
+      "channel": 3816522481,
+      "ownDevice": "laptop"
+    },
+    "update": {
+      "kind": "edit",
+      "channel": 3816522481,
+      "caption": "#mlib-state v=1 device=laptop"
+    },
+    "expect": null
+  },
+  {
+    "name": "a state caption that names no device is not trusted",
+    "context": {
+      "channel": 3816522481,
+      "ownDevice": "laptop"
+    },
+    "update": {
+      "kind": "edit",
+      "channel": 3816522481,
+      "caption": "#mlib-state v=1 device="
+    },
+    "expect": null
+  },
+  {
+    "name": "a state caption with no space after the marker is not a state caption",
+    "context": {
+      "channel": 3816522481,
+      "ownDevice": "laptop"
+    },
+    "update": {
+      "kind": "edit",
+      "channel": 3816522481,
+      "caption": "#mlib-statev=1 device=phone"
+    },
+    "expect": null
+  },
+  {
+    "name": "the device is read at a word boundary, as the web reads it",
+    "context": {
+      "channel": 3816522481,
+      "ownDevice": "laptop"
+    },
+    "update": {
+      "kind": "edit",
+      "channel": 3816522481,
+      "caption": "#mlib-state v=1 x-device=phone"
+    },
+    "expect": "state"
+  },
+  {
+    "name": "a device named inside a longer word is not a device",
+    "context": {
+      "channel": 3816522481,
+      "ownDevice": "laptop"
+    },
+    "update": {
+      "kind": "edit",
+      "channel": 3816522481,
+      "caption": "#mlib-state v=1 nodevice=phone"
+    },
+    "expect": null
+  },
+  {
+    "name": "a newly sent index is a library change",
+    "context": {
+      "channel": 3816522481,
+      "ownDevice": "laptop"
+    },
+    "update": {
+      "kind": "new",
+      "channel": 3816522481,
+      "caption": "#mlib-index v=2\n{\"pushed_at\":1781568000,\"sets\":538,\"schema\":6}"
+    },
+    "expect": "index"
+  },
+  {
+    "name": "an edited index is not how an index is published",
+    "context": {
+      "channel": 3816522481,
+      "ownDevice": "laptop"
+    },
+    "update": {
+      "kind": "edit",
+      "channel": 3816522481,
+      "caption": "#mlib-index v=2\n{}"
+    },
+    "expect": null
+  },
+  {
+    "name": "a part caption shares the #mlib hashtag and is neither",
+    "context": {
+      "channel": 3816522481,
+      "ownDevice": "laptop"
+    },
+    "update": {
+      "kind": "new",
+      "channel": 3816522481,
+      "caption": "#mlib v=4\n{\"t\":\"movie\"}"
+    },
+    "expect": null
+  },
+  {
+    "name": "a pin in the library channel is a library change",
+    "context": {
+      "channel": 3816522481,
+      "ownDevice": "laptop"
+    },
+    "update": {
+      "kind": "pinned",
+      "channel": 3816522481,
+      "pinned": true
+    },
+    "expect": "index"
+  },
+  {
+    "name": "an unpin is the old index leaving in the same burst",
+    "context": {
+      "channel": 3816522481,
+      "ownDevice": "laptop"
+    },
+    "update": {
+      "kind": "pinned",
+      "channel": 3816522481,
+      "pinned": false
+    },
+    "expect": null
+  },
+  {
+    "name": "the 'pinned a message' notice is not a document",
+    "context": {
+      "channel": 3816522481,
+      "ownDevice": "laptop"
+    },
+    "update": {
+      "kind": "new",
+      "channel": 3816522481,
+      "service": true
+    },
+    "expect": null
+  },
+  {
+    "name": "a deletion changes nothing a reader acts on",
+    "context": {
+      "channel": 3816522481,
+      "ownDevice": "laptop"
+    },
+    "update": {
+      "kind": "delete",
+      "channel": 3816522481
+    },
+    "expect": null
+  },
+  {
+    "name": "a read receipt is not a change",
+    "context": {
+      "channel": 3816522481,
+      "ownDevice": "laptop"
+    },
+    "update": {
+      "kind": "other",
+      "channel": 3816522481
+    },
+    "expect": null
+  },
+  {
+    "name": "another channel's state document is not this library's",
+    "context": {
+      "channel": 3816522481,
+      "ownDevice": "laptop"
+    },
+    "update": {
+      "kind": "edit",
+      "channel": 1234567890,
+      "caption": "#mlib-state v=1 device=phone"
+    },
+    "expect": null
+  },
+  {
+    "name": "another channel's index is not this library's",
+    "context": {
+      "channel": 3816522481,
+      "ownDevice": "laptop"
+    },
+    "update": {
+      "kind": "new",
+      "channel": 1234567890,
+      "caption": "#mlib-index v=2\n{}"
+    },
+    "expect": null
+  },
+  {
+    "name": "another channel's pin is not this library's",
+    "context": {
+      "channel": 3816522481,
+      "ownDevice": "laptop"
+    },
+    "update": {
+      "kind": "pinned",
+      "channel": 1234567890,
+      "pinned": true
+    },
+    "expect": null
+  },
+  {
+    "name": "a message with no caption is nothing",
+    "context": {
+      "channel": 3816522481,
+      "ownDevice": "laptop"
+    },
+    "update": {
+      "kind": "new",
+      "channel": 3816522481
+    },
+    "expect": null
+  }
+]

@@ -708,6 +708,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_total_size(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_next_library_event(
+    ): Int
     external fun uniffi_mediagram_core_checksum_constructor_core_new(
     ): Int
     external fun ffi_mediagram_core_uniffi_contract_version(
@@ -761,6 +763,8 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_title_info(`ptr`: Long,`posterKey`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_total_size(`ptr`: Long,`setId`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_next_library_event(`ptr`: Long,`handle`: RustBuffer.ByValue,`ownDevice`: RustBuffer.ByValue,
     ): Long
     external fun ffi_mediagram_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -921,6 +925,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_total_size() and 0xFFFF) != 8277) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_next_library_event() and 0xFFFF) != 13174) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_constructor_core_new() and 0xFFFF) != 57756) {
@@ -1531,6 +1538,17 @@ public interface CoreInterface {
     
     suspend fun `totalSize`(`setId`: kotlin.String): kotlin.ULong
     
+    /**
+     * Waits until the library `handle` names changes in a way worth a
+     * round: another device's watch state (`State`) or a newly published
+     * index (`Index`). Only a hint — run the ordinary sync or refresh on it,
+     * and run one when you start listening, since nothing missed while not
+     * listening is replayed. `own_device` is this device's watch-state id,
+     * so its own writes are not reported back. Cancelling the call stops
+     * the wait; an error means listening stopped — back off and call again.
+     */
+    suspend fun `nextLibraryEvent`(`handle`: kotlin.String, `ownDevice`: kotlin.String): LibraryEvent
+    
     companion object
 }
 
@@ -2001,6 +2019,38 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_u64(future) },
         // lift function
         { FfiConverterULong.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Waits until the library `handle` names changes in a way worth a
+     * round: another device's watch state (`State`) or a newly published
+     * index (`Index`). Only a hint — run the ordinary sync or refresh on it,
+     * and run one when you start listening, since nothing missed while not
+     * listening is replayed. `own_device` is this device's watch-state id,
+     * so its own writes are not reported back. Cancelling the call stops
+     * the wait; an error means listening stopped — back off and call again.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `nextLibraryEvent`(`handle`: kotlin.String, `ownDevice`: kotlin.String) : LibraryEvent {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_next_library_event(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`handle`),
+        FfiConverterString.lower(`ownDevice`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeLibraryEvent.lift(it) },
         // Error FFI converter
         CoreException.ErrorHandler,
     )
@@ -2654,6 +2704,40 @@ public object FfiConverterTypeCoreError : FfiConverterRustBuffer<CoreException> 
     }
 
 }
+
+
+
+
+enum class LibraryEvent {
+    
+    STATE,
+    INDEX;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLibraryEvent: FfiConverterRustBuffer<LibraryEvent> {
+    override fun read(buf: ByteBuffer) = try {
+        LibraryEvent.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: LibraryEvent) = 4UL
+
+    override fun write(value: LibraryEvent, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
 
 
 

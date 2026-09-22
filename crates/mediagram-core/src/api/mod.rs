@@ -14,6 +14,7 @@ mod blocking;
 mod store;
 mod channel;
 pub mod enrich;
+mod events;
 mod read;
 mod refresh;
 
@@ -46,7 +47,6 @@ pub struct LibraryChoice {
     pub title: String,
 }
 
-
 /// State a running app keeps between calls: the connection once opened,
 /// whichever login step is in flight, and where the set being played lives.
 #[derive(Default)]
@@ -56,7 +56,6 @@ struct State {
     pending_password: Option<PendingPassword>,
     documents: Arc<PartDocuments>,
 }
-
 
 /// One player's whole Telegram surface, kept alive by Kotlin for the life of
 /// the app.
@@ -75,6 +74,8 @@ pub struct Core {
     /// Held by whichever refresh is installing a catalog, so two cannot
     /// assemble in the same staging directory at once.
     installing: AsyncMutex<()>,
+    /// The update listener, apart from `state` so waiting never blocks a read.
+    events: AsyncMutex<Option<events::Listener>>,
 }
 
 #[uniffi::export(async_runtime = "tokio")]
@@ -87,6 +88,7 @@ impl Core {
             api_hash,
             state: AsyncMutex::new(State::default()),
             installing: AsyncMutex::new(()),
+            events: AsyncMutex::new(None),
         })
     }
 

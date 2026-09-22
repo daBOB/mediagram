@@ -1,0 +1,141 @@
+[
+  {
+    "name": "one event is held for the window, then released once",
+    "window": 5000,
+    "steps": [
+      {
+        "offer": "state",
+        "at": 0
+      },
+      {
+        "take": 4999,
+        "expect": []
+      },
+      {
+        "take": 5000,
+        "expect": [
+          "state"
+        ]
+      },
+      {
+        "take": 9000,
+        "expect": []
+      }
+    ]
+  },
+  {
+    "name": "a burst folds into one, timed from its first event",
+    "window": 5000,
+    "steps": [
+      {
+        "offer": "index",
+        "at": 0
+      },
+      {
+        "offer": "index",
+        "at": 1000
+      },
+      {
+        "offer": "index",
+        "at": 4900
+      },
+      {
+        "take": 5000,
+        "expect": [
+          "index"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "a steady stream still releases every window rather than never",
+    "window": 5000,
+    "steps": [
+      {
+        "offer": "state",
+        "at": 0
+      },
+      {
+        "offer": "state",
+        "at": 3000
+      },
+      {
+        "take": 5000,
+        "expect": [
+          "state"
+        ]
+      },
+      {
+        "offer": "state",
+        "at": 6000
+      },
+      {
+        "take": 10999,
+        "expect": []
+      },
+      {
+        "take": 11000,
+        "expect": [
+          "state"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "each kind keeps its own window",
+    "window": 5000,
+    "steps": [
+      {
+        "offer": "state",
+        "at": 0
+      },
+      {
+        "offer": "index",
+        "at": 2000
+      },
+      {
+        "take": 5000,
+        "expect": [
+          "state"
+        ]
+      },
+      {
+        "take": 7000,
+        "expect": [
+          "index"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "two kinds due together come out in a fixed order",
+    "window": 5000,
+    "steps": [
+      {
+        "offer": "index",
+        "at": 0
+      },
+      {
+        "offer": "state",
+        "at": 0
+      },
+      {
+        "take": 6000,
+        "expect": [
+          "state",
+          "index"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nothing offered, nothing due",
+    "window": 5000,
+    "steps": [
+      {
+        "take": 100000,
+        "expect": []
+      }
+    ]
+  }
+]

@@ -12,4 +12,5 @@ pub mod package;
 pub mod range;
 pub mod shows;
 pub mod transport;
+pub mod updates;
 pub mod versions;

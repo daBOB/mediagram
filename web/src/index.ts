@@ -15,6 +15,7 @@ import { startServer } from "./server";
 import { SheetStore } from "./thumbs/sheets";
 import { StateSync } from "./state/sync";
 import { TelegramStateChannel } from "./telegram/state-channel";
+import { listenForLibraryEvents } from "./telegram/channel-events";
 import { isExposed, reachableUrls } from "./listen-address";
 import { CachedReader } from "./cache/reader";
 import { detectEncoder } from "./transcode/encoders";
@@ -31,7 +32,7 @@ import { refreshCatalog } from "./package/refresh";
 import { createStatusRouter } from "./status/routes";
 import { dirBytes } from "./status/dir-bytes";
 import type { StartupFacts } from "./status/facts";
-import { Telegram } from "./telegram/client";
+import { Telegram, bareChannelId } from "./telegram/client";
 import { TelegramSource } from "./telegram/source";
 
 const config = load();
@@ -194,6 +195,17 @@ async function syncOnce(why: string): Promise<void> {
   }
 }
 
+// Another device's write reaches this one in milliseconds instead of at the
+// next timer. Subscribed before the first round, which covers whatever was
+// written before the subscription existed. A new index is only noted: this
+// player's catalog comes from the published package, not the channel.
+const stopListening = sync
+  ? listenForLibraryEvents(telegram.client, { channel: bareChannelId(config.chatId), ownDevice: state.deviceId() }, (event) => {
+      if (event === "state") void syncOnce("push");
+      else console.log("library: the channel pinned a new index");
+    })
+  : null;
+
 // Awaited, so the first page load already shows what the other devices knew
 // rather than showing this machine's answer and correcting it a moment later.
 if (sync) {
@@ -322,6 +334,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
       console.log("\nstopping");
       clearInterval(reaper);
       if (syncTimer !== null) clearInterval(syncTimer);
+      stopListening?.();
       // One last round before the session goes: the position from the title
       // that was playing when this was interrupted is the one most worth
       // having on the other machine.

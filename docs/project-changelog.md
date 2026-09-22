@@ -5,6 +5,23 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 2026-09-23
+
+**Added**
+
+- Push updates. Telegram tells every signed-in session about a change in the
+  library channel within milliseconds (measured, both client libraries), and
+  the players now listen. The web player runs its ordinary watch-state sync
+  about five seconds after another device writes, instead of at the next
+  five-minute timer; a new index is noted in the log only, because its catalog
+  comes from the published package. The Android core exposes the same events
+  as `next_library_event` for the app to act on (not yet wired in the app).
+  Updates are hints, never data: the timer stays, a missed update costs what it
+  did before, and whoever starts listening runs one round first, because
+  catching up after a disconnect replays nothing. Which updates count is one
+  rule, pinned by fixtures both the web and the core read
+  (`web/test/fixtures/channel-updates/`).
+
 ## 2026-09-22
 
 **Fixed**

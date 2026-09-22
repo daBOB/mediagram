@@ -16,6 +16,8 @@ use grammers_client::Client;
 use grammers_mtsender::{SenderPool, SenderPoolFatHandle};
 use grammers_session::SessionData;
 use grammers_session::storages::MemorySession;
+use grammers_session::updates::UpdatesLike;
+use tokio::sync::mpsc::UnboundedReceiver;
 use tokio::task::JoinHandle;
 
 use crate::api::{Core, CoreError};
@@ -28,6 +30,9 @@ const AUTH_KEY_LEN: usize = 256;
 pub(in crate::api) struct ClientHandle {
     pub(in crate::api) client: Client,
     pub(in crate::api) handle: SenderPoolFatHandle,
+    /// What Telegram pushes down this connection, until the event listener
+    /// takes it. One receiver per connection: a reconnect brings a new one.
+    updates: Option<UnboundedReceiver<UpdatesLike>>,
     // Never polled again after `connect`, but dropping it would detach the
     // runner from anything keeping it alive for the compiler's purposes;
     // `Drop` below is what actually stops it.
@@ -106,12 +111,13 @@ fn session_data(data_dir: &Path) -> SessionData {
 /// bootstrap one, before any login — and starts its sender pool.
 pub(in crate::api) fn connect(data_dir: &Path, api_id: i32) -> ClientHandle {
     let session = Arc::new(MemorySession::from(session_data(data_dir)));
-    let SenderPool { runner, handle, .. } = SenderPool::new(session, api_id);
+    let SenderPool { runner, handle, updates } = SenderPool::new(session, api_id);
     let client = Client::new(handle.clone());
     let pool_task = tokio::spawn(runner.run());
     ClientHandle {
         client,
         handle,
+        updates: Some(updates),
         _pool_task: pool_task,
     }
 }
@@ -128,6 +134,19 @@ pub(in crate::api) async fn client(core: &Core) -> grammers_client::Client {
         state.client = Some(connect(&core.data_dir, core.api_id));
     }
     state.client.as_ref().expect("just set").client.clone()
+}
+
+/// The connection's client together with its update receiver, opening the
+/// connection on first demand like [`client`]. The receiver is handed out
+/// once per connection; `None` means a listener already holds it.
+pub(in crate::api) async fn updates_receiver(
+    core: &Core,
+) -> (grammers_client::Client, Option<UnboundedReceiver<UpdatesLike>>) {
+    let mut state = core.state.lock().await;
+    let live = state
+        .client
+        .get_or_insert_with(|| connect(&core.data_dir, core.api_id));
+    (live.client.clone(), live.updates.take())
 }
 
 /// Persists whatever auth key the session now holds for its home
