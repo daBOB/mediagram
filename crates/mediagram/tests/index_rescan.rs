@@ -4,7 +4,7 @@
 
 use mediagram::index::status::SetStatus;
 use mediagram::index::{rescan, sets};
-use mediagram::upload::transport::Seen;
+use mediagram::index::rescan::Seen;
 
 mod support;
 use support::rescan::{CHAT_ID, open_db, part_seen, template};

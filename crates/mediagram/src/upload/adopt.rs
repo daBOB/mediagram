@@ -4,7 +4,7 @@
 
 use std::collections::HashMap;
 
-use crate::upload::transport::Seen;
+use crate::index::rescan::Seen;
 
 /// An existing channel message already carrying one of our parts, found by
 /// scanning recent history instead of re-uploading.

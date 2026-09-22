@@ -173,6 +173,21 @@ fn a_set_with_no_name_falls_back_to_its_id() {
     assert_eq!(label(&bare), "01ABC");
 }
 
+/// A file holding two episodes, and a lesson, are named by the codes the
+/// rest of the library uses rather than by the index's raw JSON.
+#[test]
+fn a_double_episode_and_a_lesson_read_the_way_the_shelf_names_them() {
+    let mut double = waiting(Some("Star City"), None);
+    double.episode = Some("[1,2]".into());
+    assert_eq!(label(&double), "Star City  S01E01-E02");
+
+    let mut lesson = waiting(Some("Rust"), Some("Ownership"));
+    lesson.kind = "tut".into();
+    lesson.season = Some(2);
+    lesson.episode = Some("3".into());
+    assert_eq!(label(&lesson), "Rust  C02L03  Ownership");
+}
+
 #[test]
 fn progress_states_parts_bytes_and_age() {
     let mut half = waiting(Some("S"), Some("T"));

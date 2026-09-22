@@ -14,7 +14,7 @@ use super::part_reader::PartReader;
 use super::progress;
 use super::progress_line;
 use super::transport::Transport;
-use crate::index::sets::SetRow;
+use crate::index::set_row::SetRow;
 use crate::index::{db, parts, sets};
 use crate::upload::adopt::adoption_map;
 

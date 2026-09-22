@@ -4,7 +4,7 @@
 //! caption template plus a way to stamp a part block onto it.
 
 use mediagram::index::db;
-use mediagram::upload::transport::Seen;
+use mediagram::index::rescan::Seen;
 use mlib_spec::caption::{Caption, Kind, Part};
 use mlib_spec::ids::ProviderIds;
 

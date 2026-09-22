@@ -9,7 +9,7 @@
 use mediagram::index::status::PartStatus;
 use mediagram::edit::plan::{Edits, apply, captions};
 use mediagram::index::parts::PartRow;
-use mediagram::index::sets::SetRow;
+use mediagram::index::set_row::SetRow;
 use mlib_spec::caption::{Caption, Episode, Kind, Part};
 use mlib_spec::ids::ProviderIds;
 

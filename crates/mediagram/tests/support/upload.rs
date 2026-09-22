@@ -7,9 +7,11 @@
 use std::sync::Mutex;
 
 use anyhow::Result;
+use mediagram::index::set_row::SetRow;
 use mediagram::index::{db, parts, sets};
 use mediagram::upload::part_reader::PartReader;
-use mediagram::upload::transport::{Seen, Sent, Transport};
+use mediagram::index::rescan::Seen;
+use mediagram::upload::transport::{Sent, Transport};
 use mlib_spec::caption::{Caption, Episode, Kind, Part};
 use mlib_spec::ids::ProviderIds;
 use mlib_spec::schema::PLAYABLE_SQL;
@@ -201,11 +203,11 @@ pub async fn seeded_index(
 ) -> (
     tempfile::TempDir,
     rusqlite::Connection,
-    sets::SetRow,
+    SetRow,
     Vec<mlib_spec::PartRange>,
 ) {
     let plan = mlib_spec::plan_parts(caption.total, PART_SIZE).unwrap();
-    let set_row = sets::SetRow::from_caption(caption, 1_700_000_000).unwrap();
+    let set_row = SetRow::from_caption(caption, 1_700_000_000).unwrap();
     let db_dir = tempfile::tempdir().unwrap();
     let mut conn = db::open(db_dir.path()).unwrap();
     {

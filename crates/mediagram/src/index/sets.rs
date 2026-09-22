@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 
 use rusqlite::{Connection, OptionalExtension, params};
 
-pub use crate::index::set_row::SetRow;
+use crate::index::set_row::SetRow;
 use crate::index::status::SetStatus;
 
 const COLUMNS: &str =

@@ -11,11 +11,19 @@ use anyhow::Result;
 use mlib_spec::caption::Caption;
 use rusqlite::Connection;
 
-use crate::index::status::SetStatus;
 use crate::index::rescan_parts::upsert_part;
 use crate::index::set_row::SetRow;
 use crate::index::sets;
-use crate::upload::transport::Seen;
+use crate::index::status::SetStatus;
+
+/// One channel message as seen by a history scan: what a rescan rebuilds the
+/// index from, and what an upload matches against a pending part to adopt it
+/// instead of sending it twice.
+pub struct Seen {
+    pub message_id: i64,
+    pub doc_id: Option<i64>,
+    pub caption: String,
+}
 
 /// Counts produced by one [`apply_seen`] pass, printed by `mediagram rescan`.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]

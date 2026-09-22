@@ -3,6 +3,7 @@
 
 pub mod assets;
 pub mod db;
+pub mod label;
 pub mod parts;
 pub mod pins;
 pub mod progress;

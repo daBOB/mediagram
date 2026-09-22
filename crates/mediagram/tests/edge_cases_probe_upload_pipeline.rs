@@ -1,6 +1,7 @@
 //! Comprehensive edge case probes for the upload path: streaming part upload,
 //! PartReader behavior, adoption logic, database constraints, and concurrency.
 
+use mediagram::index::set_row::SetRow;
 use mediagram::index::status::SetStatus;
 use mediagram::index::{db, parts, sets};
 use mediagram::upload::part_reader::PartReader;
@@ -318,10 +319,10 @@ async fn list_pending_excludes_complete_sets() {
 
     // Insert two sets
     let caption1 = sample_caption("01J0000000000000000000FST8", 1024 * 1024, 1);
-    let set1 = sets::SetRow::from_caption(&caption1, 1_700_000_000).unwrap();
+    let set1 = SetRow::from_caption(&caption1, 1_700_000_000).unwrap();
 
     let caption2 = sample_caption("01J0000000000000000000FST9", 1024 * 1024, 1);
-    let set2 = sets::SetRow::from_caption(&caption2, 1_700_000_001).unwrap();
+    let set2 = SetRow::from_caption(&caption2, 1_700_000_001).unwrap();
 
     {
         let tx = conn.transaction().unwrap();
@@ -474,7 +475,7 @@ async fn playable_sql_with_deleted_part_row() {
     let mut conn = db::open(db_dir.path()).unwrap();
 
     let caption = sample_caption("01J0000000000000000000FSPL", 1024 * 1024, 2);
-    let set_row = sets::SetRow::from_caption(&caption, 1_700_000_000).unwrap();
+    let set_row = SetRow::from_caption(&caption, 1_700_000_000).unwrap();
     let plan = mlib_spec::plan_parts(caption.total, PART_SIZE).unwrap();
 
     {

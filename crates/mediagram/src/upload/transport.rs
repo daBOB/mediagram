@@ -10,6 +10,7 @@ use mediagram_core::document;
 use mlib_spec::caption::{Caption, Part};
 
 use super::part_reader::PartReader;
+use crate::index::rescan::Seen;
 use crate::telegram::client::Tg;
 use crate::telegram::retry::{self, with_flood_wait_only};
 
@@ -17,14 +18,6 @@ use crate::telegram::retry::{self, with_flood_wait_only};
 pub struct Sent {
     pub message_id: i64,
     pub doc_id: i64,
-}
-
-/// One channel message as seen by a history scan, kept minimal to what
-/// `adopt` needs to match it against a pending part.
-pub struct Seen {
-    pub message_id: i64,
-    pub doc_id: Option<i64>,
-    pub caption: String,
 }
 
 /// Sends one part and lists recent messages to support resume-by-adoption.

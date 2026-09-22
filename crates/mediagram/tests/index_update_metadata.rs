@@ -5,6 +5,7 @@
 //! a player seeks with them, so an update that touched them would turn a
 //! correction into corruption.
 
+use mediagram::index::set_row::SetRow;
 use mediagram::index::status::SetStatus;
 use mediagram::index::{db, parts, sets};
 use mlib_spec::caption::{Caption, Episode, Kind, Part};
@@ -53,7 +54,7 @@ fn caption() -> Caption {
 fn seeded() -> (tempfile::TempDir, rusqlite::Connection) {
     let dir = tempfile::tempdir().unwrap();
     let conn = db::open(dir.path()).unwrap();
-    let row = sets::SetRow::from_caption(&caption(), 1_700_000_000).unwrap();
+    let row = SetRow::from_caption(&caption(), 1_700_000_000).unwrap();
     sets::insert_set(&conn, &row).unwrap();
     parts::insert_parts(
         &conn,

@@ -1,5 +1,6 @@
 //! `index::sets` and `index::parts` round trips against a real sqlite file.
 
+use mediagram::index::set_row::SetRow;
 use mediagram::index::status::SetStatus;
 use mediagram::index::{db, parts, sets};
 use mlib_spec::caption::{Caption, Episode, Kind, Part};
@@ -48,7 +49,7 @@ fn sample_caption() -> Caption {
 fn sets_insert_get_list_pending_and_complete() {
     let dir = tempfile::tempdir().unwrap();
     let conn = db::open(dir.path()).unwrap();
-    let row = sets::SetRow::from_caption(&sample_caption(), 1_700_000_000).unwrap();
+    let row = SetRow::from_caption(&sample_caption(), 1_700_000_000).unwrap();
     sets::insert_set(&conn, &row).unwrap();
 
     let fetched = sets::get_set(&conn, &row.set_id).unwrap().unwrap();
@@ -74,7 +75,7 @@ fn parts_round_trip_in_idx_order() {
     let dir = tempfile::tempdir().unwrap();
     let conn = db::open(dir.path()).unwrap();
     let caption = sample_caption();
-    let row = sets::SetRow::from_caption(&caption, 1_700_000_000).unwrap();
+    let row = SetRow::from_caption(&caption, 1_700_000_000).unwrap();
     sets::insert_set(&conn, &row).unwrap();
 
     let ranges = vec![

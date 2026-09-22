@@ -14,7 +14,7 @@ use anyhow::{Context, Result, bail};
 use mlib_spec::Kind;
 
 use crate::index::parts::PartRow;
-use crate::index::sets::SetRow;
+use crate::index::set_row::SetRow;
 
 /// A field that can be emptied.
 ///

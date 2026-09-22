@@ -10,6 +10,7 @@ use anyhow::Result;
 
 use crate::config::Config;
 use crate::index::db;
+use crate::index::label::Named;
 use crate::index::progress::{self, ShowProgress, Unfinished};
 use crate::upload::lock;
 use crate::upload::progress::{self as upload_progress, Progress};
@@ -159,20 +160,15 @@ pub fn episodes_of(show: &ShowProgress) -> String {
 
 /// What a set is, in the words the shelf uses.
 pub fn label(set: &Unfinished) -> String {
-    let mut parts = Vec::new();
-    if let Some(show) = &set.show {
-        parts.push(show.clone());
+    Named {
+        set_id: &set.set_id,
+        kind: &set.kind,
+        show: set.show.as_deref(),
+        title: set.title.as_deref(),
+        season: set.season,
+        episode: set.episode.as_deref(),
     }
-    if let (Some(season), Some(episode)) = (set.season, set.episode.as_deref()) {
-        parts.push(format!("S{season:02}E{:0>2}", episode.trim_matches('"')));
-    }
-    if let Some(title) = &set.title {
-        parts.push(title.clone());
-    }
-    if parts.is_empty() {
-        parts.push(set.set_id.clone());
-    }
-    parts.join("  ")
+    .label()
 }
 
 /// What a set that is not moving has behind it: `2 of 2 parts sent · 3.50

@@ -7,7 +7,7 @@ use anyhow::{Context, Result};
 use mlib_spec::{Caption, PartRange};
 use rusqlite::Connection;
 
-use crate::index::sets::SetRow;
+use crate::index::set_row::SetRow;
 use crate::index::{db, parts, sets};
 
 /// Where a set's bytes come from.

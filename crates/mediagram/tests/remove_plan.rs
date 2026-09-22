@@ -7,7 +7,7 @@
 
 use mediagram::index::status::PartStatus;
 use mediagram::index::parts::PartRow;
-use mediagram::index::sets::SetRow;
+use mediagram::index::set_row::SetRow;
 use mediagram::remove::plan::{Removal, plan_removal};
 use mlib_spec::caption::{Caption, Episode, Kind, Part};
 use mlib_spec::ids::ProviderIds;

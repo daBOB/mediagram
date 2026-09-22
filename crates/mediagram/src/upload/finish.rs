@@ -5,7 +5,8 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result, bail};
 use rusqlite::Connection;
 
-use crate::index::{db, parts, sets};
+use crate::index::set_row::SetRow;
+use crate::index::{db, parts};
 use crate::upload::pipeline::run_set;
 use crate::upload::transport::Transport;
 
@@ -18,7 +19,7 @@ pub async fn finish_one(
     conn: &Connection,
     transport: &impl Transport,
     throttle_ms: u64,
-    set: &sets::SetRow,
+    set: &SetRow,
     data_dir: &Path,
 ) -> Result<bool> {
     let source_key = db::source_key(&set.set_id);

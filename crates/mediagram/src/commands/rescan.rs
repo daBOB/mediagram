@@ -9,7 +9,7 @@ use crate::config::Config;
 use crate::index::db;
 use crate::index::rescan::{self, RescanSummary};
 use crate::telegram::client::Tg;
-use crate::upload::transport::Seen;
+use crate::index::rescan::Seen;
 
 /// Messages are folded into `library.db` this many at a time, each inside
 /// its own transaction, so a channel with years of history never needs to

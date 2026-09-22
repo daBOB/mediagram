@@ -17,6 +17,7 @@ use crate::commands::args::EditArgs;
 use crate::config::Config;
 use crate::edit::apply::write_captions;
 use crate::edit::plan::{Clearable, Edits, apply_checked, captions, editable_kind};
+use crate::index::set_row::SetRow;
 use crate::index::{db, parts, sets};
 use crate::metadata::resolve::fetch_episode_title;
 use crate::telegram::client::Tg;
@@ -141,7 +142,7 @@ struct Fetched {
 async fn refresh_from_tmdb(
     cfg: &Config,
     data_dir: &std::path::Path,
-    row: &sets::SetRow,
+    row: &SetRow,
 ) -> Result<Fetched> {
     let Some(key) = cfg.tmdb_key.as_deref() else {
         bail!("--refresh needs tmdb_key in the config");

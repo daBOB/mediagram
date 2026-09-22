@@ -4,7 +4,7 @@
 
 use mediagram::index::status::SetStatus;
 use mediagram::index::{db, rescan, snapshot};
-use mediagram::upload::transport::Seen;
+use mediagram::index::rescan::Seen;
 use mlib_spec::caption::Part;
 
 mod support;

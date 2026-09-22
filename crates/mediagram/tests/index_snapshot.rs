@@ -2,7 +2,7 @@
 //! file opens independently and carries the same data as the live db.
 
 use mediagram::index::{db, rescan, snapshot};
-use mediagram::upload::transport::Seen;
+use mediagram::index::rescan::Seen;
 use mlib_spec::caption::{Caption, Kind, Part};
 use mlib_spec::ids::ProviderIds;
 

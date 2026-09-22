@@ -4,8 +4,9 @@
 //! something anyone recognises and "are you sure?" is worthless if the answer
 //! cannot be checked against what the operator meant.
 
+use crate::index::label::Named;
 use crate::index::parts::PartRow;
-use crate::index::sets::SetRow;
+use crate::index::set_row::SetRow;
 
 /// One set's removal: the messages to delete and what they hold.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -62,18 +63,16 @@ pub fn plan_removal(set: &SetRow, parts: &[PartRow]) -> Removal {
     .normalized()
 }
 
-/// A line a person can match against what they meant to delete.
+/// A line a person can match against what they meant to delete: the label
+/// every listing uses, and the container, which tells two copies apart.
 fn label_of(set: &SetRow) -> String {
-    let mut parts = Vec::new();
-    if let Some(show) = &set.show {
-        parts.push(show.clone());
-    }
-    if let (Some(season), Some(episode)) = (set.season, set.episode.as_deref()) {
-        parts.push(format!("S{season:02}E{episode}"));
-    }
-    if let Some(title) = &set.title {
-        parts.push(title.clone());
-    }
-    parts.push(format!("[{}]", set.container));
-    parts.join("  ")
+    let named = Named {
+        set_id: &set.set_id,
+        kind: set.kind.as_str(),
+        show: set.show.as_deref(),
+        title: set.title.as_deref(),
+        season: set.season,
+        episode: set.episode.as_deref(),
+    };
+    format!("{}  [{}]", named.label(), set.container)
 }
