@@ -503,6 +503,38 @@ async function viewSearch(query) {
   }
 }
 
+/**
+ * The catalog exactly as the server last sent it.
+ *
+ * Kept as text so a refresh can tell "the same again" from "something
+ * arrived" with one comparison — including a title that finished caching,
+ * whose only change is its offline badge.
+ */
+let catalogText = "";
+
+/**
+ * Reads the catalog and rebuilds the shelves' data from it.
+ *
+ * Answers whether anything changed, so a caller can leave the page alone when
+ * nothing did: redrawing an unchanged shelf would throw away where the viewer
+ * had scrolled to.
+ */
+async function loadCatalog() {
+  const response = await fetch("/api/sets");
+  if (!response.ok) throw new Error(`the catalog answered ${response.status}`);
+  const text = await response.text();
+  if (text === catalogText) return false;
+  catalogText = text;
+  const sets = JSON.parse(text);
+  library = groupLibrary(sets);
+  byId = new Map(sets.map((set) => [set.setId, set]));
+  document.getElementById("n-movies").textContent = String(library.movies.length);
+  document.getElementById("n-series").textContent = String(library.series.length);
+  document.getElementById("n-tutorials").textContent = String(library.tutorials.length);
+  renderColophon(sets);
+  return true;
+}
+
 /** What the whole library adds up to, across the foot of the page. */
 function renderColophon(sets) {
   document.getElementById("foot").textContent = colophonLine(sets, catalogOf());
@@ -615,6 +647,35 @@ searchBox.addEventListener("input", () => {
 
 window.addEventListener("hashchange", route);
 
+/**
+ * Coming back to the tab reads the catalog again.
+ *
+ * The page fetched it once, at load, so a tab left open through an upload
+ * kept showing the library as it was the evening before. The return is the
+ * moment the viewer looks, and the only one that matters. A title playing
+ * defers the redraw to its close, as a marked title does, rather than
+ * rebuilding the shelf behind the dialog.
+ */
+let refreshing = false;
+document.addEventListener("visibilitychange", async () => {
+  // Not before the first load has finished: that one draws the page itself.
+  if (document.visibilityState !== "visible" || refreshing || catalogText === "") return;
+  refreshing = true;
+  try {
+    if (!(await loadCatalog())) return;
+    if (player.open) {
+      shelfStale = true;
+      return;
+    }
+    route();
+  } catch {
+    // A server that is restarting answers nothing for a moment. The shelves
+    // already showing are still true, and the next return asks again.
+  } finally {
+    refreshing = false;
+  }
+});
+
 try {
   // Asked for first: every shelf badge depends on whether this page is being
   // watched from the sofa or from somewhere with an uplink in between.
@@ -624,11 +685,7 @@ try {
   await state.loadKids();
   // Who, before anything else: every shelf below is one profile's, and the
   // first render already draws progress rules.
-  const [response] = await Promise.all([fetch("/api/sets"), state.loadProfiles()]);
-  if (!response.ok) throw new Error(`the catalog answered ${response.status}`);
-  const sets = await response.json();
-  library = groupLibrary(sets);
-  byId = new Map(sets.map((set) => [set.setId, set]));
+  await Promise.all([loadCatalog(), state.loadProfiles()]);
 
   // Remembered on this device, if that profile is still one of them; asked
   // otherwise, which is also the first run on a new player.
@@ -637,10 +694,6 @@ try {
   else await chooseProfile(document.body);
   showProfile();
 
-  document.getElementById("n-movies").textContent = String(library.movies.length);
-  document.getElementById("n-series").textContent = String(library.series.length);
-  document.getElementById("n-tutorials").textContent = String(library.tutorials.length);
-  renderColophon(sets);
   void offerSystem();
   refreshKept();
 
