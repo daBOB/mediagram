@@ -254,6 +254,21 @@ describe("carrying the picture across instead of encoding it", () => {
     expect(args.indexOf("-ss")).toBeLessThan(args.indexOf("-i"));
   });
 
+  test("a seek starts the sound on the picture's keyframe, not the exact second", () => {
+    // Trimmed to the second, the sound starts after the copied picture and
+    // fMP4 says so only in an edit list Firefox on Android ignores: the
+    // sound then plays ahead of the lips by the keyframe gap.
+    const args = argsFor({ copyVideo: true, seekSeconds: 900 });
+    expect(args.indexOf("-noaccurate_seek")).toBeGreaterThanOrEqual(0);
+    expect(args.indexOf("-noaccurate_seek")).toBeLessThan(args.indexOf("-i"));
+  });
+
+  test("an encode still seeks to the exact second", () => {
+    // An encoder can begin anywhere, so both tracks already start together.
+    expect(argsFor({ seekSeconds: 900 })).not.toContain("-noaccurate_seek");
+    expect(argsFor({ copyVideo: true, seekSeconds: 0 })).not.toContain("-noaccurate_seek");
+  });
+
   test("absent means encode, which is what every older caller meant", () => {
     expect(valueOf(argsFor(), "-c:v")).toBe("libx264");
     expect(valueOf(argsFor({ copyVideo: false }), "-c:v")).toBe("libx264");

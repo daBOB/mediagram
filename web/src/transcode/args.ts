@@ -68,6 +68,13 @@ export function transcodeArgs(request: TranscodeRequest): string[] {
   }
 
   if (request.seekSeconds > 0) {
+    // A copied picture can only begin on the keyframe before the seek, while
+    // the encoded sound would be trimmed to the exact second. The fMP4 muxer
+    // records that gap only as an empty edit on the audio track, which
+    // Firefox on Android ignores — so after a jump the sound ran ahead of
+    // the lips by however far the keyframe was. Not trimming the sound
+    // starts both at the keyframe, with no gap to record.
+    if (request.copyVideo === true) args.push("-noaccurate_seek");
     // Before -i: ffmpeg seeks the input rather than decoding and discarding
     // everything up to that point, which for a film is the whole difference.
     args.push("-ss", String(request.seekSeconds));
