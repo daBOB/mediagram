@@ -11,13 +11,23 @@
  * prefer whole documents, and whichever device pushed last would overwrite a
  * position it had never heard of.
  *
- * **Scope: positions and completions, and nothing else yet.** Those are what
- * the Continue shelf is made of, and they are also the two whose removals
- * survive a merge — see `merge.ts` on why `watched` is the tombstone for
- * `progress`. A watchlist entry is deleted outright, leaving nothing to
- * carry the fact that it *was* deleted, so syncing it would resurrect on
- * every merge whatever another device had not yet heard was gone. That needs
- * tombstones in the schema, and it is not what was asked for.
+ * **Positions and completions carry their removal for free.** See `merge.ts`
+ * on why `watched` is the tombstone for `progress` — no separate row needed.
+ *
+ * **Watchlist, Kids and collections carry an explicit one.** A watchlist
+ * entry used to be deleted outright, leaving nothing to say it *was*
+ * deleted, so a merge would resurrect it from whichever device had not yet
+ * heard. `removed` is that missing fact, on the row itself, with its own
+ * `updatedAt` — the same last-writer-wins rule as everything else here, kept
+ * to a row rather than a whole document so one removal cannot cost another
+ * device's unrelated addition.
+ *
+ * **`kids?` and its optional siblings are new keys, not a format bump.** A
+ * format-1 reader older than this drops a key it does not recognise
+ * (`parseRecord` below) and keeps merging positions — see `SYNC_FORMAT`.
+ * They are optional here for the same reason `localId` is: a document from
+ * before they existed has none, and that must parse as "nothing said" rather
+ * than "nothing there".
  */
 
 /** Bumped when a reader could no longer make sense of an older document. */
@@ -35,6 +45,25 @@ export interface WatchedRow {
   updatedAt: number;
 }
 
+/** A watchlist entry or a Kids mark: a title, when it last changed, and
+ * whether that change was taking it off rather than putting it on. */
+export interface ListRow {
+  setId: string;
+  updatedAt: number;
+  /** Present, and `true`, only for a tombstone — absent means still on. */
+  removed?: true;
+}
+
+/** A hand-built list, whole: merged as one row, not title by title — see
+ * `merge.ts` on why. */
+export interface CollectionRow {
+  id: string;
+  name: string;
+  items: string[];
+  updatedAt: number;
+  removed?: true;
+}
+
 export interface ProfileState {
   /** The viewer. See the plan's Identity section: the name, not the id. */
   name: string;
@@ -42,6 +71,9 @@ export interface ProfileState {
   localId?: string;
   progress: ProgressRow[];
   watched: WatchedRow[];
+  /** Absent on a document from before this existed — not the same as empty. */
+  watchlist?: ListRow[];
+  collections?: CollectionRow[];
 }
 
 export interface SyncRecord {
@@ -50,6 +82,8 @@ export interface SyncRecord {
   device: string;
   writtenAt: number;
   profiles: ProfileState[];
+  /** Not scoped to a profile — see `schema.ts` on why `kids` alone has none. */
+  kids?: ListRow[];
 }
 
 /**
@@ -110,10 +144,18 @@ export function parseRecord(text: string): SyncRecord | null {
         const at = watchedRow(entry as Record<string, unknown>);
         return at === null ? [] : [at];
       }),
+      watchlist: row.watchlist === undefined ? undefined : parseListRows(row.watchlist),
+      collections: row.collections === undefined ? undefined : parseCollectionRows(row.collections),
     });
   }
 
-  return { format, device, writtenAt: Number(held.writtenAt) || 0, profiles };
+  return {
+    format,
+    device,
+    writtenAt: Number(held.writtenAt) || 0,
+    profiles,
+    kids: held.kids === undefined ? undefined : parseListRows(held.kids),
+  };
 }
 
 function progressRow(raw: Record<string, unknown>): ProgressRow | null {
@@ -138,6 +180,45 @@ function watchedRow(raw: Record<string, unknown>): WatchedRow | null {
   const updatedAt = Number(raw.updatedAt);
   if (setId === null || !Number.isFinite(updatedAt) || updatedAt <= 0) return null;
   return { setId, updatedAt };
+}
+
+function parseListRows(value: unknown): ListRow[] {
+  return asArray(value).flatMap((entry) => {
+    const row = listRow(entry as Record<string, unknown>);
+    return row === null ? [] : [row];
+  });
+}
+
+function listRow(raw: Record<string, unknown>): ListRow | null {
+  const setId = text_(raw.setId);
+  const updatedAt = Number(raw.updatedAt);
+  if (setId === null || !Number.isFinite(updatedAt) || updatedAt <= 0) return null;
+  return raw.removed === true ? { setId, updatedAt, removed: true } : { setId, updatedAt };
+}
+
+function parseCollectionRows(value: unknown): CollectionRow[] {
+  return asArray(value).flatMap((entry) => {
+    const row = collectionRow(entry as Record<string, unknown>);
+    return row === null ? [] : [row];
+  });
+}
+
+/** How long a list's name from another device's document may be — not
+ * `store.ts`'s `MAX_NAME`: that caps what this player lets someone type,
+ * this caps what a stranger's document is allowed to claim. */
+const MAX_LIST_NAME = 200;
+
+function collectionRow(raw: Record<string, unknown>): CollectionRow | null {
+  const id = text_(raw.id);
+  const updatedAt = Number(raw.updatedAt);
+  if (id === null || !Number.isFinite(updatedAt) || updatedAt <= 0) return null;
+  const name = text_(raw.name)?.slice(0, MAX_LIST_NAME);
+  if (name === undefined || name === "") return null;
+  const items = asArray(raw.items).flatMap((entry) => {
+    const setId = text_(entry);
+    return setId === null ? [] : [setId];
+  });
+  return raw.removed === true ? { id, name, items, updatedAt, removed: true } : { id, name, items, updatedAt };
 }
 
 function asArray(value: unknown): unknown[] {

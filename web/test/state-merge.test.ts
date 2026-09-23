@@ -134,9 +134,12 @@ describe("who the viewer is", () => {
 
 describe("nothing to merge", () => {
   test("is not an error", () => {
-    expect(mergeStates([])).toEqual({ profiles: [] });
+    expect(mergeStates([])).toEqual({ profiles: [], kids: [] });
     expect(mergeStates([from("laptop", "André")])).toEqual({
-      profiles: [{ name: "andré", displayName: "André", progress: [], watched: [] }],
+      profiles: [
+        { name: "andré", displayName: "André", progress: [], watched: [], watchlist: [], collections: [] },
+      ],
+      kids: [],
     });
   });
 });

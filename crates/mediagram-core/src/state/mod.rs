@@ -17,6 +17,7 @@
 pub(crate) mod channel;
 pub mod exchange;
 pub mod lists;
+mod lists_exchange;
 pub mod merge;
 pub mod profiles;
 pub mod record;

@@ -19,6 +19,14 @@ import { dirname } from "node:path";
 import { GROUPS } from "./schema";
 import { normalName, SYNC_FORMAT, type SyncRecord } from "./sync-record";
 import type { MergedState } from "./merge";
+import {
+  exportCollections,
+  exportKids,
+  exportWatchlist,
+  importCollections,
+  importKids,
+  importWatchlist,
+} from "./lists-exchange";
 
 export interface Progress {
   setId: string;
@@ -169,7 +177,7 @@ export class WatchState {
       .all(profileId) as Progress[];
 
     const watchlist = this.setIds(
-      "SELECT set_id AS setId FROM watchlist WHERE profile_id = ?1 ORDER BY added_at DESC",
+      "SELECT set_id AS setId FROM watchlist WHERE profile_id = ?1 AND removed_at IS NULL ORDER BY added_at DESC",
       profileId,
     );
 
@@ -177,7 +185,7 @@ export class WatchState {
       this.db
         .query(
           `SELECT id, name, created_at AS createdAt FROM collections
-            WHERE profile_id = ?1 ORDER BY created_at`,
+            WHERE profile_id = ?1 AND removed_at IS NULL ORDER BY created_at`,
         )
         .all(profileId) as Omit<Collection, "items">[]
     ).map((row) => ({
@@ -223,17 +231,29 @@ export class WatchState {
     this.db?.query("DELETE FROM progress WHERE profile_id = ?1 AND set_id = ?2").run(profileId, setId);
   }
 
+  /**
+   * Adds, or removes, this profile's watchlist mark for `setId`.
+   *
+   * A removal is kept as a tombstone (`removed_at`) rather than a deleted
+   * row — see `sync-record.ts` on why — so re-adding clears the tombstone
+   * instead of inserting a duplicate; the `WHERE removed_at IS NOT NULL`
+   * keeps a second `true` in a row from bumping `added_at` for no reason.
+   */
   setWatchlisted(profileId: string, setId: string, listed: boolean): void {
     if (listed) {
       tolerate(() =>
         this.db
-          ?.query("INSERT OR IGNORE INTO watchlist(profile_id, set_id, added_at) VALUES (?1, ?2, ?3)")
+          ?.query(
+            `INSERT INTO watchlist(profile_id, set_id, added_at, removed_at) VALUES (?1, ?2, ?3, NULL)
+               ON CONFLICT(profile_id, set_id) DO UPDATE SET added_at = excluded.added_at, removed_at = NULL
+                 WHERE removed_at IS NOT NULL`,
+          )
           .run(profileId, setId, Date.now()),
       );
     } else {
       this.db
-        ?.query("DELETE FROM watchlist WHERE profile_id = ?1 AND set_id = ?2")
-        .run(profileId, setId);
+        ?.query("UPDATE watchlist SET removed_at = ?3 WHERE profile_id = ?1 AND set_id = ?2 AND removed_at IS NULL")
+        .run(profileId, setId, Date.now());
     }
   }
 
@@ -360,8 +380,10 @@ export class WatchState {
       watched: (this.db
         ?.query("SELECT set_id AS setId, finished_at AS updatedAt FROM watched WHERE profile_id = ?1")
         .all(profile.id) ?? []) as SyncRecord["profiles"][number]["watched"],
+      watchlist: exportWatchlist(this.db, profile.id),
+      collections: exportCollections(this.db, profile.id),
     }));
-    return { format: SYNC_FORMAT, device, writtenAt: Date.now(), profiles };
+    return { format: SYNC_FORMAT, device, writtenAt: Date.now(), profiles, kids: exportKids(this.db) };
   }
 
   /**
@@ -378,7 +400,10 @@ export class WatchState {
    */
   importMerged(merged: MergedState): number {
     if (!this.db) return 0;
-    let changed = 0;
+    // `?? []` throughout: a caller that built a `MergedState` by hand — a
+    // test, or a future format that predates these three — says nothing
+    // about them, which must read as "no change" rather than a crash.
+    let changed = importKids(this.db, merged.kids ?? []);
 
     for (const profile of merged.profiles) {
       // The identity to match on, and the spelling to create with.
@@ -427,6 +452,9 @@ export class WatchState {
         );
         changed += 1;
       }
+
+      changed += importWatchlist(this.db, profileId, profile.watchlist ?? []);
+      changed += importCollections(this.db, profileId, profile.collections ?? []);
     }
     return changed;
   }
@@ -456,18 +484,24 @@ export class WatchState {
    * shows what was just marked at the top.
    */
   kids(): string[] {
-    return this.setIds("SELECT set_id AS setId FROM kids ORDER BY marked_at DESC");
+    return this.setIds("SELECT set_id AS setId FROM kids WHERE removed_at IS NULL ORDER BY marked_at DESC");
   }
 
+  /** A removal is a tombstone, not a delete — the same reason and the same
+   * shape as `setWatchlisted`. */
   setKids(setId: string, marked: boolean): void {
     if (marked) {
       tolerate(() =>
         this.db
-          ?.query("INSERT OR IGNORE INTO kids(set_id, marked_at) VALUES (?1, ?2)")
+          ?.query(
+            `INSERT INTO kids(set_id, marked_at, removed_at) VALUES (?1, ?2, NULL)
+               ON CONFLICT(set_id) DO UPDATE SET marked_at = excluded.marked_at, removed_at = NULL
+                 WHERE removed_at IS NOT NULL`,
+          )
           .run(setId, Date.now()),
       );
     } else {
-      this.db?.query("DELETE FROM kids WHERE set_id = ?1").run(setId);
+      this.db?.query("UPDATE kids SET removed_at = ?2 WHERE set_id = ?1 AND removed_at IS NULL").run(setId, Date.now());
     }
   }
 
@@ -482,7 +516,9 @@ export class WatchState {
     let made = false;
     tolerate(() => {
       this.db!
-        .query("INSERT INTO collections(id, profile_id, name, created_at) VALUES (?1, ?2, ?3, ?4)")
+        .query(
+          "INSERT INTO collections(id, profile_id, name, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?4)",
+        )
         .run(id, profileId, clean, createdAt);
       made = true;
     });
@@ -496,18 +532,28 @@ export class WatchState {
     if (clean === null) return false;
     return (
       this.db
-        .query("UPDATE collections SET name = ?3 WHERE id = ?2 AND profile_id = ?1")
-        .run(profileId, id, clean).changes > 0
+        .query(
+          "UPDATE collections SET name = ?3, updated_at = ?4 WHERE id = ?2 AND profile_id = ?1 AND removed_at IS NULL",
+        )
+        .run(profileId, id, clean, Date.now()).changes > 0
     );
   }
 
-  /** Items go with it: `collection_items` cascades. */
+  /**
+   * Kept as a tombstone, like `setWatchlisted` — items are left where they
+   * are rather than cascaded away, since a newer live copy arriving from
+   * another device (importCollections) has to find the same row to update
+   * rather than a gap it would re-create from scratch under a new id.
+   */
   deleteCollection(profileId: string, id: string): boolean {
     if (!this.db) return false;
+    const at = Date.now();
     return (
       this.db
-        .query("DELETE FROM collections WHERE id = ?2 AND profile_id = ?1")
-        .run(profileId, id).changes > 0
+        .query(
+          "UPDATE collections SET removed_at = ?3, updated_at = ?3 WHERE id = ?2 AND profile_id = ?1 AND removed_at IS NULL",
+        )
+        .run(profileId, id, at).changes > 0
     );
   }
 
@@ -520,36 +566,41 @@ export class WatchState {
    */
   addToCollection(profileId: string, id: string, setId: string): boolean {
     if (!this.db) return false;
-    // Scoped, so a list belonging to someone else is simply not there.
+    // Scoped, so a list belonging to someone else — or a deleted one, which
+    // is a tombstoned row rather than a gone one — is simply not there.
     const exists = this.db
-      .query("SELECT 1 FROM collections WHERE id = ?2 AND profile_id = ?1")
+      .query("SELECT 1 FROM collections WHERE id = ?2 AND profile_id = ?1 AND removed_at IS NULL")
       .get(profileId, id);
     if (!exists) return false;
 
     const last = this.db
       .query("SELECT COALESCE(MAX(position), -1) AS last FROM collection_items WHERE collection_id = ?1")
       .get(id) as { last: number };
-    this.db
+    const inserted = this.db
       .query(
         `INSERT INTO collection_items(collection_id, set_id, position) VALUES (?1, ?2, ?3)
            ON CONFLICT(collection_id, set_id) DO NOTHING`,
       )
-      .run(id, setId, last.last + 1);
+      .run(id, setId, last.last + 1).changes;
+    // Only a real change moves the list's own clock — an add that held it
+    // where it already was must not out-race another device's edit.
+    if (inserted > 0) this.db.query("UPDATE collections SET updated_at = ?2 WHERE id = ?1").run(id, Date.now());
     return true;
   }
 
   removeFromCollection(profileId: string, id: string, setId: string): boolean {
     if (!this.db) return false;
-    return (
+    const removed =
       this.db
         .query(
           `DELETE FROM collection_items
             WHERE collection_id = ?2 AND set_id = ?3
               AND EXISTS(SELECT 1 FROM collections c
-                          WHERE c.id = ?2 AND c.profile_id = ?1)`,
+                          WHERE c.id = ?2 AND c.profile_id = ?1 AND c.removed_at IS NULL)`,
         )
-        .run(profileId, id, setId).changes > 0
-    );
+        .run(profileId, id, setId).changes > 0;
+    if (removed) this.db.query("UPDATE collections SET updated_at = ?2 WHERE id = ?1").run(id, Date.now());
+    return removed;
   }
 
   close(): void {

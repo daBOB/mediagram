@@ -11,7 +11,7 @@
  * different database and the two must never be confused.
  */
 
-export const STATE_SCHEMA = 5;
+export const STATE_SCHEMA = 6;
 
 /**
  * Statements grouped by the version they produce, the same shape the index's
@@ -174,6 +174,30 @@ export const GROUPS: readonly (readonly string[])[] = [
        updated_at INTEGER NOT NULL,
        PRIMARY KEY(profile_id, scope, name)
      )`,
+  ],
+
+  // v5 -> v6: a removal a merge can see.
+  //
+  // A watchlist row, a kids mark and a collection were each deleted outright,
+  // so nothing about a removal survived to tell another device it had
+  // happened — a sync would just resurrect it from whichever machine had not
+  // yet caught up. `removed_at` is that row now kept instead of dropped: a
+  // tombstone with its own timestamp, so the same last-writer-wins rule
+  // `merge.ts` already applies to a position applies to these. Nullable, so
+  // an unmigrated reader of this file (there is none — this is the schema
+  // every reader shares) would see nothing but rows it already understood.
+  //
+  // `collections` alone also gains `updated_at`: a list is one row on the
+  // wire, merged whole rather than item by item (`plan.md`'s decision on
+  // collections), so renaming it or changing its membership has to move a
+  // timestamp `created_at` was never meant to carry. Backfilled from
+  // `created_at` — the oldest fact this file has about a list already made.
+  [
+    `ALTER TABLE watchlist ADD COLUMN removed_at INTEGER`,
+    `ALTER TABLE kids ADD COLUMN removed_at INTEGER`,
+    `ALTER TABLE collections ADD COLUMN removed_at INTEGER`,
+    `ALTER TABLE collections ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0`,
+    `UPDATE collections SET updated_at = created_at WHERE updated_at = 0`,
   ],
 ];
 

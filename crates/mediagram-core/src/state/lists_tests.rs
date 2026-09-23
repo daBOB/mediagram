@@ -42,7 +42,7 @@ fn a_list_is_scoped_to_the_profile_that_made_it() {
 }
 
 #[test]
-fn deleting_a_collection_drops_its_items_too() {
+fn deleting_a_collection_takes_it_off_the_list_of_lists() {
     let dir = tempfile::tempdir().unwrap();
     let db = StateDb::new(dir.path().to_path_buf());
     let id = profile(&db);
@@ -51,4 +51,18 @@ fn deleting_a_collection_drops_its_items_too() {
 
     assert!(db.with(|conn| delete(conn, &id, &list.id)).unwrap());
     assert_eq!(db.with(|conn| collections_for(conn, &id)).unwrap(), Vec::new());
+}
+
+/// A deleted list is a tombstoned row, not a gone one — checked rather than
+/// assumed: a stale row here would let a title be added back to a list
+/// nobody can see.
+#[test]
+fn a_deleted_collection_cannot_be_added_to_again() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = StateDb::new(dir.path().to_path_buf());
+    let id = profile(&db);
+    let list = db.with(|conn| create(conn, &id, "Weg")).unwrap().unwrap();
+    db.with(|conn| delete(conn, &id, &list.id)).unwrap();
+
+    assert!(!db.with(|conn| set_in_collection(conn, &id, &list.id, "01B", true)).unwrap());
 }

@@ -53,11 +53,17 @@ describe("merge fixtures", () => {
 
   // Profiles and rows compared as sets, not by the order a Map iterates them
   // in, so a runner does not have to reproduce that order to agree with one.
+  //
+  // Picked explicitly, not spread: `merge.json` predates watchlist, Kids and
+  // collections and its `expect` objects say nothing about them, so this
+  // must not surface fields `mergeStates` now always fills in — that is
+  // `lists-merge.json`'s job, below, with its own comparison.
   function canonical(state: MergedState): MergedState {
     return {
       profiles: state.profiles
         .map((profile) => ({
-          ...profile,
+          name: profile.name,
+          displayName: profile.displayName,
           progress: [...profile.progress].sort((a, b) => a.setId.localeCompare(b.setId)),
           watched: [...profile.watched].sort((a, b) => a.setId.localeCompare(b.setId)),
         }))
@@ -71,6 +77,40 @@ describe("merge fixtures", () => {
       // Order-independent, spelling included: devices see each other's
       // documents in whatever order Telegram hands them over.
       expect(canonical(mergeStates([...one.records].reverse()))).toEqual(one.expect);
+    });
+  }
+});
+
+describe("lists-merge fixtures", () => {
+  interface Case {
+    name: string;
+    records: SyncRecord[];
+    expect: {
+      kids: unknown[];
+      profiles: Array<{ name: string; displayName: string; watchlist: unknown[]; collections: unknown[] }>;
+    };
+  }
+
+  /** The list-carrying fields only — progress and watched are `merge.json`'s
+   * concern, not this fixture's. */
+  function canonicalLists(state: MergedState) {
+    return {
+      kids: [...(state.kids ?? [])].sort((a, b) => a.setId.localeCompare(b.setId)),
+      profiles: (state.profiles ?? [])
+        .map((profile) => ({
+          name: profile.name,
+          displayName: profile.displayName,
+          watchlist: [...(profile.watchlist ?? [])].sort((a, b) => a.setId.localeCompare(b.setId)),
+          collections: [...(profile.collections ?? [])].sort((a, b) => a.id.localeCompare(b.id)),
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    };
+  }
+
+  for (const one of load<Case[]>("lists-merge.json")) {
+    test(one.name, () => {
+      expect(canonicalLists(mergeStates(one.records))).toEqual(one.expect);
+      expect(canonicalLists(mergeStates([...one.records].reverse()))).toEqual(one.expect);
     });
   }
 });

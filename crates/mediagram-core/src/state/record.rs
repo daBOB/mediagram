@@ -10,14 +10,25 @@
 //! only prefer whole documents, and whichever device pushed last would
 //! overwrite a position it had never heard of.
 //!
-//! **Scope: positions and completions, and nothing else yet.** A watchlist
-//! entry is deleted outright, leaving nothing to carry the fact that it
-//! *was* deleted, so syncing it would resurrect on every merge whatever
-//! another device had not yet heard was gone.
+//! **Positions and completions carry their removal for free** — see
+//! `merge.rs` on why `watched` is the tombstone for `progress`.
+//!
+//! **Watchlist, Kids and collections carry an explicit one.** `removed` on
+//! `ListRow`/`CollectionRow` is that fact, with the row's own `updated_at`
+//! so the same last-writer-wins rule applies to it. `#[serde(default)]`
+//! throughout these three: a document from before they existed has none,
+//! which must parse as empty, never as an error that drops the rest of the
+//! document with it.
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use unicode_normalization::UnicodeNormalization;
+
+mod hostile_json;
+mod list_record;
+use hostile_json::{as_array, is_integer, js_number, text_};
+pub use list_record::{CollectionRow, ListRow};
+use list_record::{collection_row, list_row};
 
 /// Bumped when a reader could no longer make sense of an older document.
 pub const SYNC_FORMAT: i64 = 1;
@@ -50,6 +61,10 @@ pub struct ProfileState {
     pub progress: Vec<ProgressRow>,
     #[serde(default)]
     pub watched: Vec<WatchedRow>,
+    #[serde(default)]
+    pub watchlist: Vec<ListRow>,
+    #[serde(default)]
+    pub collections: Vec<CollectionRow>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -61,6 +76,10 @@ pub struct SyncRecord {
     pub written_at: f64,
     #[serde(default)]
     pub profiles: Vec<ProfileState>,
+    /// Not scoped to a profile — see `schema.rs` on why `kids` alone has
+    /// none.
+    #[serde(default)]
+    pub kids: Vec<ListRow>,
 }
 
 /// How a viewer is the same person on two machines.
@@ -99,13 +118,14 @@ pub fn parse_record(text: &str) -> Option<SyncRecord> {
     let device = text_(held.get("device"))?;
 
     let profiles = as_array(held.get("profiles")).iter().filter_map(profile_state).collect();
+    let kids = as_array(held.get("kids")).iter().filter_map(list_row).collect();
 
     // `Number(held.writtenAt) || 0`: NaN and 0 both fall back to 0, and a
     // negative or positive finite number passes through unchanged.
     let written_at = js_number(held.get("writtenAt"));
     let written_at = if written_at.is_nan() { 0.0 } else { written_at };
 
-    Some(SyncRecord { format: format as i64, device, written_at, profiles })
+    Some(SyncRecord { format: format as i64, device, written_at, profiles, kids })
 }
 
 fn profile_state(raw: &Value) -> Option<ProfileState> {
@@ -116,6 +136,8 @@ fn profile_state(raw: &Value) -> Option<ProfileState> {
         local_id: text_(row.get("localId")),
         progress: as_array(row.get("progress")).iter().filter_map(progress_row).collect(),
         watched: as_array(row.get("watched")).iter().filter_map(watched_row).collect(),
+        watchlist: as_array(row.get("watchlist")).iter().filter_map(list_row).collect(),
+        collections: as_array(row.get("collections")).iter().filter_map(collection_row).collect(),
     })
 }
 
@@ -147,42 +169,3 @@ fn watched_row(raw: &Value) -> Option<WatchedRow> {
     Some(WatchedRow { set_id, updated_at })
 }
 
-fn as_array(value: Option<&Value>) -> &[Value] {
-    match value {
-        Some(Value::Array(items)) => items,
-        _ => &[],
-    }
-}
-
-/// A non-empty string, trimmed — the only kind of text worth keeping here.
-fn text_(value: Option<&Value>) -> Option<String> {
-    let clean = value?.as_str()?.trim();
-    (!clean.is_empty()).then(|| clean.to_string())
-}
-
-/// `Number(value)`, the coercion `parseRecord` leans on throughout: a
-/// missing key is `undefined` and becomes NaN, `null` becomes 0, booleans
-/// become 0/1, a numeric string is parsed and anything else is NaN.
-fn js_number(value: Option<&Value>) -> f64 {
-    let Some(value) = value else { return f64::NAN };
-    match value {
-        Value::Null => 0.0,
-        Value::Bool(b) => {
-            if *b {
-                1.0
-            } else {
-                0.0
-            }
-        }
-        Value::Number(n) => n.as_f64().unwrap_or(f64::NAN),
-        Value::String(s) => {
-            let trimmed = s.trim();
-            if trimmed.is_empty() { 0.0 } else { trimmed.parse::<f64>().unwrap_or(f64::NAN) }
-        }
-        Value::Array(_) | Value::Object(_) => f64::NAN,
-    }
-}
-
-fn is_integer(n: f64) -> bool {
-    n.is_finite() && n.fract() == 0.0
-}

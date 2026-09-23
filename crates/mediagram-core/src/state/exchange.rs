@@ -4,6 +4,7 @@
 
 use rusqlite::{Connection, OptionalExtension, params};
 
+use super::lists_exchange;
 use super::merge::MergedState;
 use super::profiles;
 use super::record::{ProfileState, ProgressRow, SyncRecord, WatchedRow, SYNC_FORMAT};
@@ -31,9 +32,25 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
             .into_iter()
             .map(|row| WatchedRow { set_id: row.set_id, updated_at: row.finished_at as f64 })
             .collect();
-        profiles.push(ProfileState { name: profile.name, local_id: Some(profile.id), progress, watched });
+        let watchlist = lists_exchange::export_watchlist(conn, &profile.id)?;
+        let collections = lists_exchange::export_collections(conn, &profile.id)?;
+        profiles.push(ProfileState {
+            name: profile.name,
+            local_id: Some(profile.id),
+            progress,
+            watched,
+            watchlist,
+            collections,
+        });
     }
-    Ok(SyncRecord { format: SYNC_FORMAT, device: device.to_string(), written_at: profiles::now_ms() as f64, profiles })
+    let kids = lists_exchange::export_kids(conn)?;
+    Ok(SyncRecord {
+        format: SYNC_FORMAT,
+        device: device.to_string(),
+        written_at: profiles::now_ms() as f64,
+        profiles,
+        kids,
+    })
 }
 
 /// Takes in what the devices agreed on.
@@ -47,7 +64,7 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
 /// Returns how many rows changed, so a caller can tell a merge that did
 /// something from one that did not.
 pub fn import_merged(conn: &Connection, merged: &MergedState) -> rusqlite::Result<u64> {
-    let mut changed = 0u64;
+    let mut changed = lists_exchange::import_kids(conn, &merged.kids)?;
     for profile in &merged.profiles {
         // The identity to match on, and the spelling to create with.
         let Some(profile_id) = profiles::profile_named(conn, &profile.name, Some(&profile.display_name))?
@@ -61,6 +78,8 @@ pub fn import_merged(conn: &Connection, merged: &MergedState) -> rusqlite::Resul
         for row in &profile.watched {
             changed += import_watched(conn, &profile_id, row)?;
         }
+        changed += lists_exchange::import_watchlist(conn, &profile_id, &profile.watchlist)?;
+        changed += lists_exchange::import_collections(conn, &profile_id, &profile.collections)?;
     }
     Ok(changed)
 }

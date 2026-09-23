@@ -91,22 +91,30 @@ pub fn set_watched(conn: &Connection, profile_id: &str, set_id: &str, finished: 
 }
 
 pub fn watchlist_for(conn: &Connection, profile_id: &str) -> rusqlite::Result<Vec<String>> {
-    let mut stmt =
-        conn.prepare("SELECT set_id FROM watchlist WHERE profile_id = ?1 ORDER BY added_at DESC")?;
+    let mut stmt = conn
+        .prepare("SELECT set_id FROM watchlist WHERE profile_id = ?1 AND removed_at IS NULL ORDER BY added_at DESC")?;
     let rows = stmt.query_map([profile_id], |row| row.get(0))?;
     rows.collect()
 }
 
+/// Adds, or removes, this profile's watchlist mark for `set_id`.
+///
+/// A removal is kept as a tombstone (`removed_at`) rather than a deleted
+/// row — see `record.rs` on why — so re-adding clears the tombstone instead
+/// of inserting a duplicate; the `WHERE removed_at IS NOT NULL` keeps a
+/// second `true` in a row from bumping `added_at` for no reason.
 pub fn set_watchlisted(conn: &Connection, profile_id: &str, set_id: &str, listed: bool) -> rusqlite::Result<()> {
     if listed {
         conn.execute(
-            "INSERT OR IGNORE INTO watchlist(profile_id, set_id, added_at) VALUES (?1, ?2, ?3)",
+            "INSERT INTO watchlist(profile_id, set_id, added_at, removed_at) VALUES (?1, ?2, ?3, NULL)
+               ON CONFLICT(profile_id, set_id) DO UPDATE SET added_at = excluded.added_at, removed_at = NULL
+                 WHERE removed_at IS NOT NULL",
             params![profile_id, set_id, now_ms()],
         )?;
     } else {
         conn.execute(
-            "DELETE FROM watchlist WHERE profile_id = ?1 AND set_id = ?2",
-            params![profile_id, set_id],
+            "UPDATE watchlist SET removed_at = ?3 WHERE profile_id = ?1 AND set_id = ?2 AND removed_at IS NULL",
+            params![profile_id, set_id, now_ms()],
         )?;
     }
     Ok(())
@@ -115,19 +123,26 @@ pub fn set_watchlisted(conn: &Connection, profile_id: &str, set_id: &str, listed
 /// The titles marked as a child's, for everyone on this player. Not scoped
 /// to a profile: see `schema.rs` on why.
 pub fn kids(conn: &Connection) -> rusqlite::Result<Vec<String>> {
-    let mut stmt = conn.prepare("SELECT set_id FROM kids ORDER BY marked_at DESC")?;
+    let mut stmt = conn.prepare("SELECT set_id FROM kids WHERE removed_at IS NULL ORDER BY marked_at DESC")?;
     let rows = stmt.query_map([], |row| row.get(0))?;
     rows.collect()
 }
 
+/// A removal is a tombstone, not a delete — the same reason and the same
+/// shape as `set_watchlisted`.
 pub fn set_kids(conn: &Connection, set_id: &str, marked: bool) -> rusqlite::Result<()> {
     if marked {
         conn.execute(
-            "INSERT OR IGNORE INTO kids(set_id, marked_at) VALUES (?1, ?2)",
+            "INSERT INTO kids(set_id, marked_at, removed_at) VALUES (?1, ?2, NULL)
+               ON CONFLICT(set_id) DO UPDATE SET marked_at = excluded.marked_at, removed_at = NULL
+                 WHERE removed_at IS NOT NULL",
             params![set_id, now_ms()],
         )?;
     } else {
-        conn.execute("DELETE FROM kids WHERE set_id = ?1", [set_id])?;
+        conn.execute(
+            "UPDATE kids SET removed_at = ?2 WHERE set_id = ?1 AND removed_at IS NULL",
+            params![set_id, now_ms()],
+        )?;
     }
     Ok(())
 }

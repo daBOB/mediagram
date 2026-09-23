@@ -28,7 +28,9 @@ fn import_never_deletes_a_row_the_merge_did_not_mention() {
             display_name: "André".into(),
             progress: vec![ProgressRow { set_id: "02B".into(), at: 5.0, duration: None, updated_at: 1.0 }],
             watched: vec![],
+            ..Default::default()
         }],
+        ..Default::default()
     };
     db.with(|conn| import_merged(conn, &merged)).unwrap();
 
@@ -50,7 +52,9 @@ fn a_completion_deletes_a_position_no_newer_than_it() {
             display_name: "André".into(),
             progress: vec![],
             watched: vec![WatchedRow { set_id: "01A".into(), updated_at: 9_999_999_999_999.0 }],
+            ..Default::default()
         }],
+        ..Default::default()
     };
     db.with(|conn| import_merged(conn, &merged)).unwrap();
 
@@ -70,7 +74,9 @@ fn an_unknown_viewer_is_created_from_the_display_name() {
             display_name: "Robin".into(),
             progress: vec![ProgressRow { set_id: "01A".into(), at: 5.0, duration: None, updated_at: 1.0 }],
             watched: vec![],
+            ..Default::default()
         }],
+        ..Default::default()
     };
     db.with(|conn| import_merged(conn, &merged)).unwrap();
 

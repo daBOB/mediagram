@@ -22,6 +22,8 @@
 
 import {
   normalName,
+  type CollectionRow,
+  type ListRow,
   type ProgressRow,
   type SyncRecord,
   type WatchedRow,
@@ -43,10 +45,17 @@ export interface MergedProfile {
   displayName: string;
   progress: ProgressRow[];
   watched: WatchedRow[];
+  /** `mergeStates` always fills these; optional only so a hand-built
+   * `MergedState` — a test, or `importMerged`'s caller — need not repeat an
+   * empty array for every kind it has nothing to say about. */
+  watchlist?: ListRow[];
+  collections?: CollectionRow[];
 }
 
 export interface MergedState {
   profiles: MergedProfile[];
+  /** Not scoped to a profile — see `schema.ts` on why `kids` alone has none. */
+  kids?: ListRow[];
 }
 
 /**
@@ -66,18 +75,33 @@ export function mergeStates(records: SyncRecord[]): MergedState {
       nameFrom: string;
       progress: Map<string, Held<ProgressRow>>;
       watched: Map<string, Held<WatchedRow>>;
+      watchlist: Map<string, Held<ListRow>>;
+      collections: Map<string, Held<CollectionRow>>;
     }
   >();
+  // Kids sits at the top level, not per viewer: marking a title as a
+  // child's is a fact about the title, the same reason it has no profile in
+  // `schema.ts`.
+  const kids = new Map<string, Held<ListRow>>();
 
   for (const record of records) {
     const device = typeof record?.device === "string" ? record.device : "";
+    for (const row of record?.kids ?? []) keep(kids, row.setId, row, device);
+
     for (const profile of record?.profiles ?? []) {
       const name = normalName(profile.name);
       if (name === null) continue;
 
       let held = byViewer.get(name);
       if (held === undefined) {
-        held = { displayName: profile.name.trim(), nameFrom: device, progress: new Map(), watched: new Map() };
+        held = {
+          displayName: profile.name.trim(),
+          nameFrom: device,
+          progress: new Map(),
+          watched: new Map(),
+          watchlist: new Map(),
+          collections: new Map(),
+        };
         byViewer.set(name, held);
       } else if (device > held.nameFrom) {
         // One viewer typed two ways on two devices. The spelling shown is
@@ -89,6 +113,12 @@ export function mergeStates(records: SyncRecord[]): MergedState {
 
       for (const row of profile.progress ?? []) keep(held.progress, row.setId, row, device);
       for (const row of profile.watched ?? []) keep(held.watched, row.setId, row, device);
+      for (const row of profile.watchlist ?? []) keep(held.watchlist, row.setId, row, device);
+      // A collection is one row on the wire — the whole list, `removed`
+      // included — so it is kept by its id rather than reconciled item by
+      // item: two devices editing the same list within a merge round have
+      // the later edit win outright, name and membership together.
+      for (const row of profile.collections ?? []) keep(held.collections, row.id, row, device);
     }
   }
 
@@ -105,9 +135,16 @@ export function mergeStates(records: SyncRecord[]): MergedState {
       // mean to leave a position in it.
       .filter((row) => (finishedAt.get(row.setId) ?? -1) < row.updatedAt);
 
-    profiles.push({ name, displayName: held.displayName, progress, watched });
+    profiles.push({
+      name,
+      displayName: held.displayName,
+      progress,
+      watched,
+      watchlist: [...held.watchlist.values()].map((one) => one.row),
+      collections: [...held.collections.values()].map((one) => one.row),
+    });
   }
-  return { profiles };
+  return { profiles, kids: [...kids.values()].map((one) => one.row) };
 }
 
 interface Held<T> {

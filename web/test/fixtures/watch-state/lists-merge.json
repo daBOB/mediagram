@@ -1,0 +1,239 @@
+[
+  {
+    "name": "an add to the watchlist is merged",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [],
+            "watchlist": [{ "setId": "01A", "updatedAt": 1000 }],
+            "collections": []
+          }
+        ],
+        "kids": []
+      }
+    ],
+    "expect": {
+      "kids": [],
+      "profiles": [
+        { "name": "andré", "displayName": "André", "watchlist": [{ "setId": "01A", "updatedAt": 1000 }], "collections": [] }
+      ]
+    }
+  },
+  {
+    "name": "a kids mark travels from one device to another, with no profile of its own",
+    "records": [
+      { "format": 1, "device": "laptop", "writtenAt": 0, "profiles": [], "kids": [{ "setId": "K1", "updatedAt": 500 }] }
+    ],
+    "expect": { "kids": [{ "setId": "K1", "updatedAt": 500 }], "profiles": [] }
+  },
+  {
+    "name": "a removed watchlist entry beats an older live one",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [{ "name": "André", "progress": [], "watched": [], "watchlist": [{ "setId": "01A", "updatedAt": 1000 }], "collections": [] }],
+        "kids": []
+      },
+      {
+        "format": 1,
+        "device": "desktop",
+        "writtenAt": 0,
+        "profiles": [
+          { "name": "André", "progress": [], "watched": [], "watchlist": [{ "setId": "01A", "updatedAt": 2000, "removed": true }], "collections": [] }
+        ],
+        "kids": []
+      }
+    ],
+    "expect": {
+      "kids": [],
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "watchlist": [{ "setId": "01A", "updatedAt": 2000, "removed": true }],
+          "collections": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "re-adding after a remove wins when it is the newer row",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          { "name": "André", "progress": [], "watched": [], "watchlist": [{ "setId": "01A", "updatedAt": 1000, "removed": true }], "collections": [] }
+        ],
+        "kids": []
+      },
+      {
+        "format": 1,
+        "device": "desktop",
+        "writtenAt": 0,
+        "profiles": [{ "name": "André", "progress": [], "watched": [], "watchlist": [{ "setId": "01A", "updatedAt": 2000 }], "collections": [] }],
+        "kids": []
+      }
+    ],
+    "expect": {
+      "kids": [],
+      "profiles": [
+        { "name": "andré", "displayName": "André", "watchlist": [{ "setId": "01A", "updatedAt": 2000 }], "collections": [] }
+      ]
+    }
+  },
+  {
+    "name": "a tie between a tombstone and a live row breaks on device id, not on which arrived first",
+    "records": [
+      {
+        "format": 1,
+        "device": "a",
+        "writtenAt": 0,
+        "profiles": [{ "name": "André", "progress": [], "watched": [], "watchlist": [{ "setId": "01A", "updatedAt": 5000, "removed": true }], "collections": [] }],
+        "kids": []
+      },
+      {
+        "format": 1,
+        "device": "b",
+        "writtenAt": 0,
+        "profiles": [{ "name": "André", "progress": [], "watched": [], "watchlist": [{ "setId": "01A", "updatedAt": 5000 }], "collections": [] }],
+        "kids": []
+      }
+    ],
+    "expect": {
+      "kids": [],
+      "profiles": [
+        { "name": "andré", "displayName": "André", "watchlist": [{ "setId": "01A", "updatedAt": 5000 }], "collections": [] }
+      ]
+    }
+  },
+  {
+    "name": "a newer collection edit replaces the whole list, not just what changed",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          { "name": "André", "progress": [], "watched": [], "watchlist": [], "collections": [{ "id": "c1", "name": "Sunday", "items": ["01A"], "updatedAt": 1000 }] }
+        ],
+        "kids": []
+      },
+      {
+        "format": 1,
+        "device": "desktop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [],
+            "watchlist": [],
+            "collections": [{ "id": "c1", "name": "Sunday night", "items": ["01A", "01B"], "updatedAt": 2000 }]
+          }
+        ],
+        "kids": []
+      }
+    ],
+    "expect": {
+      "kids": [],
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "watchlist": [],
+          "collections": [{ "id": "c1", "name": "Sunday night", "items": ["01A", "01B"], "updatedAt": 2000 }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "a deleted collection beats an older live copy of the same list",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          { "name": "André", "progress": [], "watched": [], "watchlist": [], "collections": [{ "id": "c1", "name": "Sunday", "items": ["01A"], "updatedAt": 1000 }] }
+        ],
+        "kids": []
+      },
+      {
+        "format": 1,
+        "device": "desktop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [],
+            "watchlist": [],
+            "collections": [{ "id": "c1", "name": "Sunday", "items": ["01A"], "updatedAt": 2000, "removed": true }]
+          }
+        ],
+        "kids": []
+      }
+    ],
+    "expect": {
+      "kids": [],
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "watchlist": [],
+          "collections": [{ "id": "c1", "name": "Sunday", "items": ["01A"], "updatedAt": 2000, "removed": true }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "a kids removal beats an older mark, the same rule as the watchlist",
+    "records": [
+      { "format": 1, "device": "laptop", "writtenAt": 0, "profiles": [], "kids": [{ "setId": "K1", "updatedAt": 1000 }] },
+      { "format": 1, "device": "desktop", "writtenAt": 0, "profiles": [], "kids": [{ "setId": "K1", "updatedAt": 2000, "removed": true }] }
+    ],
+    "expect": { "kids": [{ "setId": "K1", "updatedAt": 2000, "removed": true }], "profiles": [] }
+  },
+  {
+    "name": "a document with none of these keys leaves what another device said about them alone",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [],
+            "watchlist": [{ "setId": "01A", "updatedAt": 1000 }],
+            "collections": [{ "id": "c1", "name": "X", "items": [], "updatedAt": 1000 }]
+          }
+        ],
+        "kids": [{ "setId": "K1", "updatedAt": 1000 }]
+      },
+      { "format": 1, "device": "desktop", "writtenAt": 0, "profiles": [{ "name": "André", "progress": [], "watched": [] }] }
+    ],
+    "expect": {
+      "kids": [{ "setId": "K1", "updatedAt": 1000 }],
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "watchlist": [{ "setId": "01A", "updatedAt": 1000 }],
+          "collections": [{ "id": "c1", "name": "X", "items": [], "updatedAt": 1000 }]
+        }
+      ]
+    }
+  }
+]

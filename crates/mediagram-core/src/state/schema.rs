@@ -2,10 +2,12 @@
 //! its v4 (its v5, `preferences`, is out of scope here — see phase 06).
 //!
 //! The web got there by four `ALTER`-shaped migrations, because its file
-//! predates profiles and had rows to carry forward. This store has no such
-//! history — every Android install starts empty — so version 1 here is
-//! already that final shape, created directly rather than replayed through
-//! the steps that produced it.
+//! predates profiles and had rows to carry forward. This store had no such
+//! history when it was created — every Android install starts empty — so
+//! version 1 was already that final shape, created directly rather than
+//! replayed through the steps that produced it. A real install may by now
+//! hold rows of its own, though, so everything since v1 is a proper
+//! migration like the web's: `ALTER`, never a rebuild that would need one.
 
 /// Statements grouped by the version they produce, the same shape
 /// `mlib_spec::schema::GROUPS` and `web/src/state/schema.ts`'s `GROUPS` use:
@@ -67,7 +69,30 @@ const GROUPS: &[&[&str]] = &[&[
        PRIMARY KEY(profile_id, set_id)
      )",
     "CREATE TABLE IF NOT EXISTS state_meta(key TEXT PRIMARY KEY, value TEXT NOT NULL)",
-]];
+],
+    // v1 -> v2: a removal a merge can see.
+    //
+    // A watchlist row, a kids mark and a collection were each deleted
+    // outright, so nothing about a removal survived to tell another device
+    // it had happened — a sync would resurrect it from whichever machine had
+    // not yet caught up. `removed_at` is that row kept instead of dropped: a
+    // tombstone with its own timestamp, the same last-writer-wins rule
+    // `merge.rs` already applies to a position. Nullable, so a row untouched
+    // by this migration reads exactly as it did before it.
+    //
+    // `collections` alone also gains `updated_at`: a list is one row on the
+    // wire, merged whole rather than item by item, so renaming it or
+    // changing its membership has to move a timestamp `created_at` was never
+    // meant to carry. Backfilled from `created_at` — the oldest fact this
+    // file has about a list already made.
+    &[
+        "ALTER TABLE watchlist ADD COLUMN removed_at INTEGER",
+        "ALTER TABLE kids ADD COLUMN removed_at INTEGER",
+        "ALTER TABLE collections ADD COLUMN removed_at INTEGER",
+        "ALTER TABLE collections ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0",
+        "UPDATE collections SET updated_at = created_at WHERE updated_at = 0",
+    ],
+];
 
 pub const VERSION: i64 = GROUPS.len() as i64;
 

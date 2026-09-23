@@ -12,7 +12,7 @@
 
 ## Overview
 
-- Priority: P2. Status: pending. Blocked by 03 and 07.
+- Priority: P2. Status: done (web + rust; Android tablet validation deferred to 09, as planned).
 - Add removal-aware rows for watchlist, kids and collections to the record, on both surfaces, so the kept shelves are the same everywhere.
 
 ## Key insights
@@ -51,11 +51,11 @@ Web writes enumerated (all must stamp/respect `removed_at`): `store.ts:171-173` 
 
 ## Todo
 
-- [ ] lists-merge.json
-- [ ] web migration + store + record + merge + exchange
-- [ ] rust group 2 + same
-- [ ] both fixture runners green
-- [ ] two-machine no-resurrection tests
+- [x] lists-merge.json
+- [x] web migration + store + record + merge + exchange
+- [x] rust group 2 + same
+- [x] both fixture runners green
+- [x] two-machine no-resurrection tests
 
 ## Success criteria
 
@@ -78,6 +78,28 @@ Same channel, same doc; list names are user text, parsed as hostile (trim, non-e
 
 Revert both halves together. Columns added are nullable; an older build ignores them.
 
+## Implementation notes
+
+- Schema: web took `STATE_SCHEMA = 6` (the settings plan was not running, per Q5). Android core's
+  `state.db` gained its own `schema::VERSION` bump (1 → 2) for the same columns — it turned out not
+  to be a from-nothing store any more (05/06/07 landed on `main`), so this is a real `ALTER`
+  migration, not a rewrite of `GROUPS[0]`.
+- `removed` on the wire is an optional `true` (web) that a stranger's document may also omit or send
+  as `false`; the Rust `ListRow`/`CollectionRow` always carry a `bool` (`#[serde(default)]` on
+  deserialize) — both read the other's documents fine, they just don't write byte-identical JSON.
+- Rust's `record.rs` split into `record/list_record.rs` and `record/hostile_json.rs` to stay under
+  the 200-line cap; nothing outside the module noticed (`ListRow`/`CollectionRow` are re-exported
+  from `record`).
+- Consequential fix outside this phase's file list: `web/test/state-merge.test.ts`'s two
+  whole-`MergedState` assertions needed `kids: []`/`watchlist: []`/`collections: []` added — those
+  fields are new and always present on `mergeStates`'s output, so the literals no longer matched.
+  No behaviour in that file changed otherwise.
+- Two-machine test needed `Bun.sleepSync(2)` between the add and the remove (existing convention in
+  this suite) — without it, an add and a remixed inside the same millisecond tie on `updatedAt` and
+  the removal is indistinguishable from "no news" to the importer's own staleness check.
+
 ## Next steps
 
-09.
+09. Device validation there should rebuild the core `.so` (`scripts/generate-android-bindings.sh`
+    is not needed — the UniFFI surface did not change, so the committed Kotlin bindings still match;
+    only the native library needs rebuilding to pick up the new schema and tombstone logic).
