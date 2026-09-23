@@ -7,6 +7,14 @@ to `main`. Full phase-by-phase detail lives in
 
 ## 2026-09-23
 
+**Fixed**
+
+- The Android player's Watchlist, Kids and Add to list sit below the status
+  bar's band. Flush to the top of a full-screen film they shared the strip
+  the system keeps for its own gestures, and taps there often went to the
+  system; they are now inset by the bars' height even while the bars are
+  hidden, so they do not move when the picture goes full screen.
+
 **Added**
 
 - Watchlist, Kids and Collections travel between devices, web and Android

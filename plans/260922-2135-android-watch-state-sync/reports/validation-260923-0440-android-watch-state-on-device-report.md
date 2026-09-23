@@ -20,4 +20,4 @@ Date: 2026-09-23 · Tablet `caad49da` (signed in, library Mediagram), web player
 - Web ↔ tablet latency in seconds via push: the tablet → web direction was within half a minute; a stopwatch run both ways was not done.
 
 ## Unresolved
-- The player's top-bar toggles sit in the status-bar band (y≈61–116 px on this tablet) and are hard to hit; worth moving lower. Not a sync issue.
+- ~~The player's top-bar toggles sit in the status-bar band~~ — fixed: inset by the system bars (now y≈195–250 px); plain taps toggle them, and a remove then re-add on the tablet left the web's watchlist row on the list.
