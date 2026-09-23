@@ -9,6 +9,13 @@ to `main`. Full phase-by-phase detail lives in
 
 **Added**
 
+- The Android app has the web player's kept shelves: Continue, Watchlist,
+  Collections and Kids, as tabs set apart after Home, Movies, Series and
+  Tutorials. Collections can be made, renamed and deleted, and the player
+  carries the web's three toggles — Watchlist, Kids and Add to list (a
+  checklist of lists with a New list field, where the web asks for a
+  number). The start page's rows now read "Latest films", as the web's do.
+  These lists stay on the device until the sync record carries them.
 - The Android start page opens on Continue and Next up, by the web player's
   rules and with its "See all" targets, and every card and episode row shows
   how far it got or a tick once finished. Next up is held to the web's own

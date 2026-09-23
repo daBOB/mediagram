@@ -24,6 +24,7 @@ class LibraryPositionsTest {
         titleId = Slot<String?>(null),
         collection = Slot<String?>(null),
         season = Slot<String?>(null),
+        listId = Slot<String?>(null),
         menuScreen = Slot<MenuScreen?>(null),
     )
 
@@ -66,6 +67,7 @@ class LibraryPositionsTest {
         at.season = "Season 1"
         at.titleId = "set-1"
         at.setId = "set-1"
+        at.listId = "list-1"
         at.menuScreen = MenuScreen.TmdbKey
 
         at.toCatalog()
@@ -74,6 +76,19 @@ class LibraryPositionsTest {
         assertNull(at.titleId)
         assertNull(at.collection)
         assertNull(at.season)
+        assertNull(at.listId)
         assertNull(at.menuScreen)
+    }
+
+    /** An open list is its own position, untouched by opening and leaving a title over it. */
+    @Test
+    fun anOpenListSurvivesATitleOpenedOverIt() {
+        val at = positions()
+        at.listId = "list-1"
+        at.titleId = "set-1"
+
+        at.titleId = null
+
+        assertEquals("list-1", at.listId)
     }
 }

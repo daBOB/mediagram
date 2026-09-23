@@ -1,30 +1,34 @@
 package ui
 
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import designsystem.Spacing
 
 /**
- * Which shelf the wall is showing, as the masthead the web player has.
+ * The masthead the web player has: the three catalog shelves, then the
+ * four that come from what has been watched rather than from the catalog —
+ * `index.html`'s own order, Home, Movies, Series, Tutorials, Continue,
+ * Watchlist, Collections, Kids.
  *
- * One shelf at a time, not all three stacked. A wall puts everything a
- * shelf holds on the page, and this library's film shelf alone is three
- * hundred plates deep — so with the shelves stacked, the courses would sit
- * fifty screens below the fold and nothing would say they were there. The
- * web player answers this with separate routes and a masthead; tabs are the
- * same answer in the platform's own vocabulary.
+ * Scrollable rather than fixed-width: eight labels do not fit a phone's
+ * width the way three did, and a `PrimaryScrollableTabRow` is the platform's
+ * own answer to a masthead too wide for its screen — a tablet's own width
+ * shows every tab at once regardless. [firstKeptIndex] draws a thin rule
+ * before the first kept tab, the web's `class="kept"` said in this
+ * platform's own vocabulary: a `TabRow` lays its tabs in one row with
+ * nothing between them, so the break is drawn on the tab itself rather than
+ * inserted as a sibling.
  *
  * Text and no icons, because there are no icons in this world and a drawn
  * one would be inventing a mark for a shelf that already has a name.
@@ -33,23 +37,14 @@ import designsystem.Spacing
 internal fun ShelfTabs(
     titles: List<String>,
     selected: Int,
+    firstKeptIndex: Int,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Held to a readable measure instead of filling the window. Three
-    // labels spread across a tablet's twelve hundred points put "Movies"
-    // and "Tutorials" at opposite edges of the glass, which reads as three
-    // unrelated buttons rather than as one masthead.
-    Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Masthead(titles, selected, onSelect)
-    }
-}
-
-@Composable
-private fun Masthead(titles: List<String>, selected: Int, onSelect: (Int) -> Unit) {
-    PrimaryTabRow(
+    val ruleColor = MaterialTheme.colorScheme.outlineVariant
+    PrimaryScrollableTabRow(
         selectedTabIndex = selected,
-        modifier = Modifier.widthIn(max = MASTHEAD_MAX_WIDTH),
+        modifier = modifier.fillMaxWidth(),
         // Transparent, so the masthead is type on the page rather than a
         // band laid over it. Given its own colour it becomes a filled
         // container floating between the bar and the wall, which is the one
@@ -72,7 +67,9 @@ private fun Masthead(titles: List<String>, selected: Int, onSelect: (Int) -> Uni
                 // The label is the whole target, and a tab that hugs its
                 // text is under Material's 48dp on a short word like
                 // "Series".
-                modifier = Modifier.padding(vertical = Spacing.extraSmall),
+                modifier = Modifier
+                    .padding(vertical = Spacing.extraSmall)
+                    .let { if (index == firstKeptIndex) it.leadingRule(ruleColor) else it },
                 selectedContentColor = MaterialTheme.colorScheme.onSurface,
                 unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -80,5 +77,12 @@ private fun Masthead(titles: List<String>, selected: Int, onSelect: (Int) -> Uni
     }
 }
 
-/** As wide as three names need, and no wider. */
-private val MASTHEAD_MAX_WIDTH = 560.dp
+/** A hairline down the tab's leading edge — see [ShelfTabs]'s own note on why it is drawn here rather than between tabs. */
+private fun Modifier.leadingRule(color: Color): Modifier = drawBehind {
+    drawLine(
+        color = color,
+        start = Offset(0f, size.height * 0.25f),
+        end = Offset(0f, size.height * 0.75f),
+        strokeWidth = 1.dp.toPx(),
+    )
+}

@@ -97,9 +97,7 @@ internal fun HomeScreen(
 }
 
 /**
- * A row's name, and the way through to the whole shelf behind it, or none
- * yet — [onSeeAll] is `null` for Continue until the kept-shelves phase gives
- * it a tab of its own.
+ * A row's name, and the way through to the whole shelf behind it.
  *
  * "See all" is the row admitting it is a window. Six plates out of three
  * hundred is a glance, and a viewer who wants the rest should not have to

@@ -10,11 +10,10 @@ import model.WatchSnapshot
 const val HOME_ROW_LIMIT = 6
 
 /**
- * One row of the start page. [seeAll] is the shelf "See all" opens, or
- * `null` while the row has nowhere to send it yet — Continue, until the
- * kept-shelves phase gives it a tab of its own. [total] is how much the row
- * is a window onto, for the heading: the plates on screen cannot say it on
- * their own.
+ * One row of the start page. [seeAll] is the shelf "See all" opens; `null`
+ * only for a row with no wall of its own to send it to. [total] is how much
+ * the row is a window onto, for the heading: the plates on screen cannot say
+ * it on their own.
  */
 data class HomeRow(val title: String, val seeAll: String?, val total: Int, val content: RowContent)
 
@@ -49,7 +48,9 @@ fun homeRowsOf(shelves: List<Shelf>, watch: WatchSnapshot, limit: Int = HOME_ROW
     if (underway.continues.isNotEmpty()) {
         rows += HomeRow(
             title = "Continue",
-            seeAll = null,
+            // Its own masthead tab, the same wall this row is a window onto
+            // — see catalog.continueWall.
+            seeAll = "Continue",
             total = underway.continuesTotal,
             content = RowContent.Sets(
                 underway.continues.map { set -> setCard(set, resumeLine(positions[set.setId]), positions, watchedIds) },
@@ -96,8 +97,13 @@ private fun setCard(
     return SetCard(set, caption, progress?.toFloat(), set.setId in watchedIds)
 }
 
-/** Every set anywhere in [shelves], keyed by id — a film as much as an episode or a lesson. */
-private fun indexById(shelves: List<Shelf>): Map<String, MediaSet> {
+/**
+ * Every set anywhere in [shelves], keyed by id — a film as much as an
+ * episode or a lesson. Internal rather than private: [continueWall],
+ * [watchlistWall] and [kidsWall] in `KeptShelves.kt` resolve the same ids
+ * the same way, against the same shelves.
+ */
+internal fun indexById(shelves: List<Shelf>): Map<String, MediaSet> {
     val byId = HashMap<String, MediaSet>()
     for (shelf in shelves) {
         for (entry in shelf.entries) {
@@ -115,12 +121,17 @@ private fun indexById(shelves: List<Shelf>): Map<String, MediaSet> {
 /**
  * A row's name, from the shelf it draws on.
  *
- * The shelf titles are the vocabulary a viewer already reads in the
- * masthead, so the rows borrow them rather than introducing a second set of
- * words for the same three things.
+ * Not a mechanical "Latest " + the shelf's own word: the web's row titles
+ * (`home-view.js`) use "films" and "courses" where the masthead itself says
+ * "Movies" and "Tutorials", and this keeps that literal wording rather than
+ * deriving one that only agrees with the masthead by coincidence.
  */
-private fun latestTitleFor(shelf: String): String = "Latest $shelf".lowercase()
-    .replaceFirstChar(Char::uppercase)
+private fun latestTitleFor(shelf: String): String = when (shelf) {
+    "Movies" -> "Latest films"
+    "Series" -> "Latest series"
+    "Tutorials" -> "Latest courses"
+    else -> "Latest $shelf"
+}
 
 /** Newest first, on a copy — the shelf keeps the order it was built in. */
 private fun newestFirst(entries: List<Entry>, limit: Int): List<Entry> =

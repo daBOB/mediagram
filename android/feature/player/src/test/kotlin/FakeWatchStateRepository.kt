@@ -58,17 +58,58 @@ class FakeWatchStateRepository(
         }
     }
 
-    override suspend fun setWatchlisted(setId: String, listed: Boolean) = Unit
+    override suspend fun setWatchlisted(setId: String, listed: Boolean) {
+        if (chosenProfileId.value == null) return
+        calls += "setWatchlisted $setId $listed"
+        _snapshot.value = _snapshot.value.copy(
+            watchlist = if (listed) _snapshot.value.watchlist + setId else _snapshot.value.watchlist - setId,
+        )
+    }
 
-    override suspend fun setKids(setId: String, marked: Boolean) = Unit
+    override suspend fun setKids(setId: String, marked: Boolean) {
+        if (chosenProfileId.value == null) return
+        calls += "setKids $setId $marked"
+        _snapshot.value = _snapshot.value.copy(
+            kids = if (marked) _snapshot.value.kids + setId else _snapshot.value.kids - setId,
+        )
+    }
 
-    override suspend fun createList(name: String): ListOfSets? = null
+    override suspend fun createList(name: String): ListOfSets? {
+        if (chosenProfileId.value == null) return null
+        calls += "createList $name"
+        val made = ListOfSets(id = "list-${_snapshot.value.collections.size + 1}", name = name, items = emptyList())
+        _snapshot.value = _snapshot.value.copy(collections = _snapshot.value.collections + made)
+        return made
+    }
 
-    override suspend fun renameList(id: String, name: String) = false
+    override suspend fun renameList(id: String, name: String): Boolean {
+        if (chosenProfileId.value == null || _snapshot.value.collections.none { it.id == id }) return false
+        calls += "renameList $id $name"
+        _snapshot.value = _snapshot.value.copy(
+            collections = _snapshot.value.collections.map { if (it.id == id) it.copy(name = name) else it },
+        )
+        return true
+    }
 
-    override suspend fun deleteList(id: String) = false
+    override suspend fun deleteList(id: String): Boolean {
+        if (chosenProfileId.value == null || _snapshot.value.collections.none { it.id == id }) return false
+        calls += "deleteList $id"
+        _snapshot.value = _snapshot.value.copy(collections = _snapshot.value.collections.filterNot { it.id == id })
+        return true
+    }
 
-    override suspend fun setInList(id: String, setId: String, included: Boolean) = false
+    override suspend fun setInList(id: String, setId: String, included: Boolean): Boolean {
+        if (chosenProfileId.value == null || _snapshot.value.collections.none { it.id == id }) return false
+        calls += "setInList $id $setId $included"
+        _snapshot.value = _snapshot.value.copy(
+            collections = _snapshot.value.collections.map { list ->
+                if (list.id != id) return@map list
+                val items = if (included) list.items + setId else list.items - setId
+                list.copy(items = items)
+            },
+        )
+        return true
+    }
 
     override suspend fun reload() = Unit
 }

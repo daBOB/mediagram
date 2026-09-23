@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.TitleInfo
 import javax.inject.Inject
@@ -177,4 +178,26 @@ class CatalogViewModel @Inject constructor(
      * whole library's worth.
      */
     suspend fun posterPath(posterKey: String): String? = repository.posterPath(posterKey)
+
+    // The four writes the Collections tab and its list screen make. Each is
+    // a fire-and-forget wrapper over [WatchStateRepository], the same shape
+    // ProfileViewModel.add already uses: the write goes to the core on
+    // [viewModelScope] and [state] picks up the result on its own, through
+    // the snapshot already combined into it — a caller in Compose has
+    // nothing to await.
+    fun createList(name: String) {
+        viewModelScope.launch { watchState.createList(name) }
+    }
+
+    fun renameList(id: String, name: String) {
+        viewModelScope.launch { watchState.renameList(id, name) }
+    }
+
+    fun deleteList(id: String) {
+        viewModelScope.launch { watchState.deleteList(id) }
+    }
+
+    fun setInList(id: String, setId: String, included: Boolean) {
+        viewModelScope.launch { watchState.setInList(id, setId, included) }
+    }
 }

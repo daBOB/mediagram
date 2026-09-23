@@ -56,6 +56,7 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
     val viewModel: PlayerViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val player by viewModel.player.collectAsStateWithLifecycle()
+    val marks by viewModel.marks.collectAsStateWithLifecycle()
     val activity = LocalContext.current.findActivity()
 
     LaunchedEffect(setId) { viewModel.open(setId) }
@@ -123,6 +124,21 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
                     statsShown = statsShown,
                     onToggleStats = { statsShown = !statsShown },
                     modifier = Modifier.align(Alignment.BottomCenter),
+                )
+                // Top-right, opposite back: the web keeps these in the
+                // player because "this is where a viewer is when they find
+                // out what a film actually is", not because of where on the
+                // page they sit — this platform's own transport bar already
+                // owns the bottom edge.
+                PlayerMarks(
+                    marks = marks,
+                    actions = PlayerMarksActions(
+                        onToggleWatchlist = viewModel::toggleWatchlist,
+                        onToggleKids = viewModel::toggleKids,
+                        onSetInList = viewModel::setInList,
+                        onCreateList = viewModel::createListAndAdd,
+                    ),
+                    modifier = Modifier.align(Alignment.TopEnd),
                 )
             }
         }

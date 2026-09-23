@@ -28,14 +28,17 @@ import androidx.compose.ui.semantics.semantics
  * collection is named after whatever course or show it opened; a season is
  * named after itself and is reachable from a show's collection screen, when
  * that show has more than one; a title is named after itself, and is
- * reachable from any of them; the system screen sits alongside all of them
- * rather than under any.
+ * reachable from any of them; a hand-built list is named after itself and is
+ * reachable from the Collections tab; the system screen sits alongside all
+ * of them rather than under any.
  */
 sealed interface Destination {
     data object Catalog : Destination
     data class Collection(val name: String) : Destination
     data class Season(val name: String) : Destination
     data class Title(val name: String) : Destination
+    /** One hand-built list, opened from the Collections tab. */
+    data class List(val name: String) : Destination
     data object System : Destination
     data object TmdbKey : Destination
     data object Settings : Destination
@@ -51,6 +54,7 @@ internal fun barTitleFor(destination: Destination): String = when (destination) 
     is Destination.Collection -> destination.name
     is Destination.Season -> destination.name
     is Destination.Title -> destination.name
+    is Destination.List -> destination.name
     Destination.System -> "System"
     Destination.TmdbKey -> "TMDB key"
     Destination.Settings -> "Settings"
@@ -66,6 +70,7 @@ internal fun backLabelFor(destination: Destination): String? = when (destination
     is Destination.Collection -> "Back"
     is Destination.Season -> "Back"
     is Destination.Title -> "Back"
+    is Destination.List -> "Back"
     Destination.System -> "Back"
     Destination.TmdbKey -> "Back"
     Destination.Settings -> "Back"

@@ -26,16 +26,25 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * A snapshot this test can hold still — [CatalogViewModel] only ever reads
- * [snapshot], so everything else here is an unused stub. Named apart from
- * [ProfileViewModelTest]'s own fake for the same interface: Kotlin does not
- * let two private top-level classes in the same package share a name, file
- * scope or not.
+ * A snapshot this test can hold still — [CatalogViewModel] reads [snapshot]
+ * for [CatalogUiState.Ready.watch] and writes the four list operations
+ * through the rest; everything else here is an unused stub, [choose] and
+ * [create] included. Named apart from [ProfileViewModelTest]'s own fake for
+ * the same interface: Kotlin does not let two private top-level classes in
+ * the same package share a name, file scope or not.
+ *
+ * The four writes land in [snapshot] itself, the same way the real
+ * repository's own write lands in its snapshot before [CatalogViewModel]
+ * ever asks again — a test asserting on [CatalogUiState.Ready.watch] after
+ * one of them needs nothing more than that flow to already read the answer.
  */
 private class FakeCatalogWatchState(watch: WatchSnapshot = WatchSnapshot.Empty) : WatchStateRepository {
     override val profiles = MutableStateFlow(emptyList<Profile>())
     override val chosenProfileId = MutableStateFlow<String?>(null)
     override val snapshot = MutableStateFlow(watch)
+
+    /** Every list write this fake was asked for, in order, e.g. `"createList Favourites"`. */
+    val calls = mutableListOf<String>()
 
     override suspend fun reload() = Unit
     override suspend fun choose(id: String) = false
@@ -45,10 +54,41 @@ private class FakeCatalogWatchState(watch: WatchSnapshot = WatchSnapshot.Empty) 
     override suspend fun setWatched(setId: String, finished: Boolean) = Unit
     override suspend fun setWatchlisted(setId: String, listed: Boolean) = Unit
     override suspend fun setKids(setId: String, marked: Boolean) = Unit
-    override suspend fun createList(name: String): ListOfSets? = null
-    override suspend fun renameList(id: String, name: String) = false
-    override suspend fun deleteList(id: String) = false
-    override suspend fun setInList(id: String, setId: String, included: Boolean) = false
+
+    override suspend fun createList(name: String): ListOfSets? {
+        calls += "createList $name"
+        val made = ListOfSets(id = "list-${snapshot.value.collections.size + 1}", name = name, items = emptyList())
+        snapshot.value = snapshot.value.copy(collections = snapshot.value.collections + made)
+        return made
+    }
+
+    override suspend fun renameList(id: String, name: String): Boolean {
+        calls += "renameList $id $name"
+        if (snapshot.value.collections.none { it.id == id }) return false
+        snapshot.value = snapshot.value.copy(
+            collections = snapshot.value.collections.map { if (it.id == id) it.copy(name = name) else it },
+        )
+        return true
+    }
+
+    override suspend fun deleteList(id: String): Boolean {
+        calls += "deleteList $id"
+        if (snapshot.value.collections.none { it.id == id }) return false
+        snapshot.value = snapshot.value.copy(collections = snapshot.value.collections.filterNot { it.id == id })
+        return true
+    }
+
+    override suspend fun setInList(id: String, setId: String, included: Boolean): Boolean {
+        calls += "setInList $id $setId $included"
+        if (snapshot.value.collections.none { it.id == id }) return false
+        snapshot.value = snapshot.value.copy(
+            collections = snapshot.value.collections.map { list ->
+                if (list.id != id) return@map list
+                list.copy(items = if (included) list.items + setId else list.items - setId)
+            },
+        )
+        return true
+    }
 }
 
 /**
@@ -287,6 +327,62 @@ class CatalogViewModelTest {
             val after = awaitItem() as CatalogUiState.Ready
             assertEquals(listOf(progress), after.watch.progress)
             assertEquals(1, repository.refreshes, "a changed snapshot is not a reason to read the channel again")
+        }
+    }
+
+    /** The Collections tab's "New list", and its rename, delete and membership writes — each a fire-and-forget wrapper over the repository. */
+    @Test
+    fun createListReachesTheRepositoryAndTheNextSnapshot() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val watchState = FakeCatalogWatchState()
+        val vm = CatalogViewModel(FakeCatalogRepository(movies = 1), watchState)
+        vm.state.test {
+            awaitItem()
+            awaitItem()
+
+            vm.createList("Favourites")
+            val after = awaitItem() as CatalogUiState.Ready
+
+            assertEquals(listOf("Favourites"), after.watch.collections.map(ListOfSets::name))
+            assertEquals(listOf("createList Favourites"), watchState.calls)
+        }
+    }
+
+    @Test
+    fun renameAndDeleteListReachTheRepository() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val watchState = FakeCatalogWatchState(
+            watch = WatchSnapshot.Empty.copy(collections = listOf(ListOfSets("l1", "Old name", emptyList()))),
+        )
+        val vm = CatalogViewModel(FakeCatalogRepository(movies = 1), watchState)
+        vm.state.test {
+            awaitItem()
+            awaitItem()
+
+            vm.renameList("l1", "New name")
+            assertEquals(listOf("New name"), (awaitItem() as CatalogUiState.Ready).watch.collections.map(ListOfSets::name))
+
+            vm.deleteList("l1")
+            assertTrue((awaitItem() as CatalogUiState.Ready).watch.collections.isEmpty())
+        }
+    }
+
+    @Test
+    fun setInListFilesAndRemovesATitle() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val watchState = FakeCatalogWatchState(
+            watch = WatchSnapshot.Empty.copy(collections = listOf(ListOfSets("l1", "Favourites", emptyList()))),
+        )
+        val vm = CatalogViewModel(FakeCatalogRepository(movies = 1), watchState)
+        vm.state.test {
+            awaitItem()
+            awaitItem()
+
+            vm.setInList("l1", "movie-0", true)
+            assertEquals(listOf("movie-0"), (awaitItem() as CatalogUiState.Ready).watch.collections.single().items)
+
+            vm.setInList("l1", "movie-0", false)
+            assertTrue((awaitItem() as CatalogUiState.Ready).watch.collections.single().items.isEmpty())
         }
     }
 }

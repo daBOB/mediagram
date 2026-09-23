@@ -1,15 +1,9 @@
 package ui
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -20,15 +14,15 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.window.core.layout.WindowWidthSizeClass
 import catalog.CatalogUiState
-import catalog.CollectionKind
-import catalog.Entry
-import catalog.homeRowsOf
+import catalog.KeptKind
 import catalog.Shelf
+import catalog.continueWall
+import catalog.homeRowsOf
+import catalog.kidsWall
+import catalog.watchlistWall
 import designsystem.Spacing
 import model.WatchSnapshot
 
@@ -46,18 +40,22 @@ fun CatalogScreen(
     fetching: Boolean,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
+    onOpenList: (id: String) -> Unit,
+    onCreateList: (name: String) -> Unit,
 ) {
     when (state) {
         CatalogUiState.Loading -> CenteredMessage("Loading your library…")
         CatalogUiState.Empty -> CenteredMessage("The library is empty.")
         is CatalogUiState.Failed -> CenteredMessage(state.message)
-        is CatalogUiState.Ready -> Shelves(state, fetching, onOpenTitle, onOpenCollection)
+        is CatalogUiState.Ready -> Shelves(state, fetching, onOpenTitle, onOpenCollection, onOpenList, onCreateList)
     }
 }
 
 /**
  * One shelf on screen, chosen from the masthead above it.
  *
+ * The masthead carries eight entries, the web's own order: Home, the three
+ * catalog shelves, then the four kept from watch state — see [ShelfTabs].
  * The shelf a viewer was last on is kept across a rotation and a process
  * death, because coming back to the top of the film shelf after glancing
  * at something else is the kind of small forgetting that makes an app feel
@@ -69,6 +67,8 @@ private fun Shelves(
     fetching: Boolean,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
+    onOpenList: (id: String) -> Unit,
+    onCreateList: (name: String) -> Unit,
 ) {
     val shelves = state.shelves
     if (shelves.isEmpty()) {
@@ -76,9 +76,11 @@ private fun Shelves(
         return
     }
     // Home is the first entry and the one the app opens on, as the web
-    // player's start page is. The shelves follow it, so index 0 is Home and
-    // shelf n is index n + 1.
-    val titles = remember(shelves) { listOf(HOME) + shelves.map(Shelf::title) }
+    // player's start page is; the catalog shelves follow it, and the four
+    // kept entries follow those — so index 0 is Home, shelf n is index
+    // n + 1, and [firstKept] is the first of the four.
+    val titles = remember(shelves) { listOf(HOME) + shelves.map(Shelf::title) + KEPT_TITLES }
+    val firstKept = 1 + shelves.size
     var chosen by rememberSaveable { mutableIntStateOf(0) }
     // A refresh can return a library with fewer shelves than the one that
     // was on screen when it started.
@@ -93,7 +95,7 @@ private fun Shelves(
         if (state.refreshing || fetching) {
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
         }
-        ShelfTabs(titles = titles, selected = selected, onSelect = { chosen = it })
+        ShelfTabs(titles = titles, selected = selected, firstKeptIndex = firstKept, onSelect = { chosen = it })
         // Above the shelf, not instead of it: the library below is the one
         // that was on this device before the refresh was tried, and it is
         // still every bit of it.
@@ -105,20 +107,27 @@ private fun Shelves(
                 modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small),
             )
         }
-        if (selected == 0) {
-            HomeScreen(
+        when {
+            selected == 0 -> HomeScreen(
                 rows = remember(shelves, state.watch) { homeRowsOf(shelves, state.watch) },
                 watch = state.watch,
                 columns = columns,
                 onOpenTitle = onOpenTitle,
                 onOpenCollection = onOpenCollection,
-                // A row whose "See all" has nowhere to go yet (Continue,
-                // until the kept-shelves phase) never calls this — its link
-                // is hidden rather than sent to a shelf that isn't there.
                 onSeeAll = { shelf -> chosen = titles.indexOf(shelf).coerceAtLeast(0) },
             )
-        } else {
-            ShelfWall(shelves[selected - 1], state.watch, columns, onOpenTitle, onOpenCollection)
+
+            selected < firstKept -> ShelfWall(shelves[selected - 1], state.watch, columns, onOpenTitle, onOpenCollection)
+
+            else -> KeptTabContent(
+                kind = KeptKind.entries[selected - firstKept],
+                shelves = shelves,
+                watch = state.watch,
+                columns = columns,
+                onOpenTitle = onOpenTitle,
+                onOpenList = onOpenList,
+                onCreateList = onCreateList,
+            )
         }
     }
 }
@@ -126,115 +135,24 @@ private fun Shelves(
 /** The first thing in the masthead, and not a shelf. */
 private const val HOME = "Home"
 
-/**
- * Everything one shelf holds, on one wall, in one direction of travel.
- *
- * Not a side-scrolling rail. A rail hides how much is on a shelf and puts
- * whatever it happens to show first in front of everything behind it, which
- * is how a storefront ranks stock. This library is finite and already
- * owned, so all of it is on the page and none of it is ranked.
- *
- * The column count comes from the window's width class rather than from how
- * many titles the shelf holds, so a shelf with one course in it keeps a
- * plate the size of a plate instead of stretching one across the width and
- * saying something untrue about how much is there.
- */
+/** The four kept labels, in the web's own order — `index.html`'s Continue, Watchlist, Collections, Kids. */
+private val KEPT_TITLES: List<String> = KeptKind.entries.map(KeptKind::label)
+
+/** Which of the masthead's four kept tabs is selected, dispatched to what draws it. */
 @Composable
-private fun ShelfWall(
-    shelf: Shelf,
+private fun KeptTabContent(
+    kind: KeptKind,
+    shelves: List<Shelf>,
     watch: WatchSnapshot,
     columns: Int,
     onOpenTitle: (setId: String) -> Unit,
-    onOpenCollection: (key: String) -> Unit,
+    onOpenList: (id: String) -> Unit,
+    onCreateList: (name: String) -> Unit,
 ) {
-    val positions = remember(watch) { watch.progress.associateBy { it.setId } }
-    val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
-
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(Spacing.medium),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
-        verticalArrangement = Arrangement.spacedBy(Spacing.medium),
-    ) {
-        items(items = shelf.entries, key = ::keyOf) { entry ->
-            when (entry) {
-                // A film opens the screen that describes it; a show or a
-                // course opens what is inside it, because the plate stands
-                // for everything there and there is no one thing it could
-                // sensibly start.
-                is Entry.Film -> PosterCard(
-                    posterPath = entry.set.posterPath,
-                    title = entry.set.title,
-                    // The year and the runtime, in the figures the detail
-                    // screen already sets them in. A shelf of three hundred
-                    // films with nothing but names under them is a wall of
-                    // artwork; the line under the name is what tells two
-                    // versions of the same title apart.
-                    caption = factsLine(entry.set.year, entry.set.durationSecs),
-                    progress = watchedFractionOf(positions[entry.set.setId]),
-                    watched = entry.set.setId in watchedIds,
-                    modifier = Modifier,
-                    onClick = { onOpenTitle(entry.set.setId) },
-                )
-
-                // No mark of its own, same as the web's `collectionGrid`: a
-                // show or a course is not one title to finish.
-                is Entry.Collection -> PosterCard(
-                    posterPath = entry.posterPath,
-                    title = entry.name,
-                    caption = extentOf(entry),
-                    modifier = Modifier,
-                    onClick = { onOpenCollection(entry.key) },
-                )
-            }
-        }
-    }
-}
-
-internal fun keyOf(entry: Entry): String = when (entry) {
-    is Entry.Film -> entry.set.setId
-    is Entry.Collection -> entry.key
-}
-
-/**
- * What the plate counts in. A catalogue says "12 episodes", not "12 items",
- * and a course is measured in the chapters a viewer will work through
- * rather than in its total number of videos.
- */
-internal fun extentOf(collection: Entry.Collection): String = when (collection.kind) {
-    CollectionKind.SHOW -> "${collection.count} ${plural(collection.count, "episode")}"
-    CollectionKind.COURSE -> "${collection.chapters} ${plural(collection.chapters, "chapter")}"
-}
-
-private fun plural(count: Int, word: String): String = if (count == 1) word else "${word}s"
-
-/** A tablet fits more plates across the page than a phone does. */
-internal fun posterColumnsFor(widthSizeClass: WindowWidthSizeClass): Int = when (widthSizeClass) {
-    WindowWidthSizeClass.EXPANDED -> 6
-    WindowWidthSizeClass.MEDIUM -> 4
-    else -> 3
-}
-
-/**
- * What the screen says when it has nothing to show.
- *
- * Set in the catalogue's own reading face rather than left at the default,
- * because a first run, an empty library and a failed load are the three
- * moments a viewer reads a whole sentence here, and they are exactly the
- * moments the app would otherwise stop sounding like itself.
- */
-@Composable
-private fun CenteredMessage(message: String) {
-    Box(
-        modifier = Modifier.fillMaxSize().padding(Spacing.extraLarge),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
+    when (kind) {
+        KeptKind.CONTINUE -> KeptWall(kind, continueWall(shelves, watch), watch, columns, onOpenTitle)
+        KeptKind.WATCHLIST -> KeptWall(kind, watchlistWall(shelves, watch), watch, columns, onOpenTitle)
+        KeptKind.KIDS -> KeptWall(kind, kidsWall(shelves, watch), watch, columns, onOpenTitle)
+        KeptKind.COLLECTIONS -> ListsScreen(lists = watch.collections, onOpen = onOpenList, onCreate = onCreateList)
     }
 }

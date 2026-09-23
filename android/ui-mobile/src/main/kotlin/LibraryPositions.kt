@@ -29,33 +29,37 @@ internal enum class MenuScreen(val destination: Destination) {
 /**
  * Where in the library a viewer currently is: whichever show or course the
  * catalog opened, whichever season of it that opened from its wall,
- * whichever title that described, whichever set that played, and whichever
- * screen the menu opened over them.
+ * whichever title that described, whichever set that played, whichever
+ * hand-built list the Collections tab opened, and whichever screen the menu
+ * opened over them.
  *
- * All five are saved rather than remembered: the Activity is fully
+ * All six are saved rather than remembered: the Activity is fully
  * destroyed and recreated on rotation (there is no `android:configChanges`),
  * and the singleton player survives that regardless — without this,
  * rotating away from an open set would drop back to the catalog while the
  * film kept playing underneath it.
  *
- * The collection, the season within it, and the opened title are held as
- * keys and looked up again, not kept as trees or sets: a saved position has
- * to survive the process being killed, and a key is a short string where a
- * course is a few hundred sets. A season is keyed by its division's title
- * rather than its number, so "Episodes" and specials — which carry no
- * number — resolve the same way a numbered season does.
+ * The collection, the season within it, the opened title, and the open list
+ * are held as keys and looked up again, not kept as trees or sets: a saved
+ * position has to survive the process being killed, and a key is a short
+ * string where a course is a few hundred sets. A season is keyed by its
+ * division's title rather than its number, so "Episodes" and specials —
+ * which carry no number — resolve the same way a numbered season does.
  */
 internal class LibraryPositions(
     setId: MutableState<String?>,
     titleId: MutableState<String?>,
     collection: MutableState<String?>,
     season: MutableState<String?>,
+    listId: MutableState<String?>,
     menuScreen: MutableState<MenuScreen?>,
 ) {
     var setId: String? by setId
     var titleId: String? by titleId
     var collection: String? by collection
     var season: String? by season
+    /** Which hand-built list is open, by its own id — the Collections tab's counterpart to [collection]. */
+    var listId: String? by listId
     var menuScreen: MenuScreen? by menuScreen
 
     /**
@@ -68,6 +72,7 @@ internal class LibraryPositions(
         titleId = null
         collection = null
         season = null
+        listId = null
         menuScreen = null
     }
 }
@@ -78,6 +83,7 @@ internal fun rememberLibraryPositions(): LibraryPositions = LibraryPositions(
     titleId = rememberSaveable { mutableStateOf<String?>(null) },
     collection = rememberSaveable { mutableStateOf<String?>(null) },
     season = rememberSaveable { mutableStateOf<String?>(null) },
+    listId = rememberSaveable { mutableStateOf<String?>(null) },
     menuScreen = rememberSaveable { mutableStateOf<MenuScreen?>(null) },
 )
 

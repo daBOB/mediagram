@@ -20,10 +20,11 @@ import system.FetchViewModel
 
 /**
  * The catalog, whichever show or course it opened, whichever title that
- * described, whichever set that played, the system screen, and the TMDB key
- * screen — the first screens here with a real back-stack need. Where those
- * positions are kept, and why, is [LibraryPositions]. Gated on a chosen
- * profile by [ProfileGate], which is what decides whose shelves these are.
+ * described, whichever set that played, whichever hand-built list the
+ * Collections tab opened, the system screen, and the TMDB key screen — the
+ * first screens here with a real back-stack need. Where those positions are
+ * kept, and why, is [LibraryPositions]. Gated on a chosen profile by
+ * [ProfileGate], which is what decides whose shelves these are.
  *
  * The library branches below run from the top of the stack down: the player
  * sits over a title, a title over the collection it was opened from, and
@@ -64,6 +65,11 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
     // same viewer's same snapshot, and neither has another way to reach it —
     // the catalog's own state is the one place it is already collected.
     val watch = (catalogState as? CatalogUiState.Ready)?.watch ?: WatchSnapshot.Empty
+    // Resolved the same way a collection is: a saved id, looked up again
+    // against whatever the snapshot currently holds, so a list renamed or
+    // filled on another device resolves to the current row rather than a
+    // stale copy.
+    val list = at.listId?.let { id -> watch.collections.find { it.id == id } }
 
     // Counts updates asked for, so each one runs the wait below once.
     // Deliberately not `rememberSaveable`: a request that did not survive
@@ -205,6 +211,25 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
             )
         }
 
+        // A hand-built list, opened from the Collections tab — a peer of
+        // the collection branch above rather than something under it: a
+        // list is never reached through the catalog shelves.
+        list != null -> LibraryBranch(
+            destination = Destination.List(list.name),
+            menu = menuActions,
+            profile = profileBar,
+            onLeave = { at.listId = null },
+        ) {
+            ListScreen(
+                list = list,
+                sets = list.items.mapNotNull(catalogState::mediaSet),
+                onPlay = { at.setId = it },
+                onRename = { name -> catalogViewModel.renameList(list.id, name) },
+                onDelete = { catalogViewModel.deleteList(list.id); at.listId = null },
+                onRemove = { removedId -> catalogViewModel.setInList(list.id, removedId, false) },
+            )
+        }
+
         // Also where a saved key lands while the library is still loading,
         // and where one that no longer names anything stays: the shelves are
         // the right thing to show in both cases, and clearing the key here
@@ -227,6 +252,8 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
                     // whichever collection is opened next; see the note on
                     // the collection branch's own onLeave above.
                     onOpenCollection = { at.collection = it; at.season = null },
+                    onOpenList = { at.listId = it },
+                    onCreateList = catalogViewModel::createList,
                 )
             }
         }

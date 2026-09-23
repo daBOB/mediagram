@@ -11,7 +11,7 @@
 
 ## Overview
 
-- Priority: P2. Status: pending. Blocked by 06.
+- Priority: P2. Status: code complete, tablet validation pending. Blocked by 06.
 - The masthead gains the web's four kept entries; each opens a wall like the web's view; the player gains the three controls that fill them.
 
 ## Key insights
@@ -61,11 +61,11 @@ One source: every wall reads `Ready.watch`; no screen queries the core directly.
 
 ## Todo
 
-- [ ] KeptShelves + tests
-- [ ] tabs (eight, scrollable, set apart)
-- [ ] Continue / Watchlist / Kids walls
-- [ ] Collections list + list screen + dialogs
-- [ ] player Watchlist / Kids / Add to list
+- [x] KeptShelves + tests
+- [x] tabs (eight, scrollable, set apart)
+- [x] Continue / Watchlist / Kids walls
+- [x] Collections list + list screen + dialogs
+- [x] player Watchlist / Kids / Add to list
 - [ ] tablet walk-through
 
 ## Success criteria (tablet)
@@ -90,3 +90,11 @@ None new.
 ## Next steps
 
 08 (if Q1 = yes) makes these shelves travel; 09 validates.
+
+## Implementation notes
+
+- Parity fix while here: the start page's own row titles read "Latest movies"/"Latest series"/"Latest tutorials" (mechanically derived from the masthead's own shelf names); the web's `home-view.js` actually says "Latest films"/"Latest series"/"Latest courses" — literal, not derived. `latestTitleFor` in `HomeShelves.kt` now matches those three strings exactly; `HomeShelvesTest.kt` updated.
+- `KeptWall`'s heading reads "Title · n" (the Home rows' own convention), not the web's spelled-out `countOf` wording ("three titles") — the Requirements section asks for this explicitly, so the two Android surfaces (start page, kept tab) agree with each other rather than one of them agreeing with the web's standalone-page wording.
+- The player's "Add to list" is a checkbox per list plus inline "New list", not the web's numbered `window.prompt()` — called for by this phase's own Related Code Files (`AddToListDialog.kt`), and documented in that file: the web's Collections shelf, where a list is made, is one click away on the same page; the player has no such shelf on screen.
+- Files touched beyond the phase's own list, all within `ui-mobile`/`feature:*` and needed to keep files under ~200 lines or to plumb the new `Destination.List`: `ShelfWall.kt` (new — `CatalogScreen.kt`'s catalog-shelf grid, extracted once the masthead grew past three shelves), `PlayerMarksState.kt` (new — the data `PlayerViewModel.marks` publishes), `AppChrome.kt` (new `Destination.List` case), `HomeScreen.kt`/`HomeShelvesTest.kt` (doc/test updates only), `FakeWatchStateRepository.kt` and `CatalogViewModelTest.kt`'s `FakeCatalogWatchState` (now record list writes and mutate their snapshot, needed to test the new wrappers).
+- `PlayerViewModel.kt` is 207 lines (over the 200-line guideline) — the toggle/list methods share `openSetId`/`marks` state tightly enough that splitting them out would separate a method from the field it reads, judged worse than the overage.

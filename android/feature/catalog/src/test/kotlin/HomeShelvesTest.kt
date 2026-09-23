@@ -22,7 +22,7 @@ class HomeShelvesTest {
     fun filmsAreNewestFirst() {
         val rows = homeRowsOf(shelvesOf(listOf(film("Old", at = 100), film("New", at = 900))), WatchSnapshot.Empty)
 
-        val films = rows.single { it.title == "Latest movies" }.entries()
+        val films = rows.single { it.title == "Latest films" }.entries()
         assertEquals(listOf("New", "Old"), films.map { (it as Entry.Film).set.title })
     }
 
@@ -67,7 +67,7 @@ class HomeShelvesTest {
         val rows = homeRowsOf(shelvesOf(listOf(film("Alien", at = 1), lesson("Steuerkurs", at = 2))), WatchSnapshot.Empty)
 
         assertEquals(setOf("Movies", "Tutorials"), rows.map { it.seeAll }.toSet())
-        assertTrue(rows.all { it.title.startsWith("Latest ") }, "rows borrow the shelf's own word")
+        assertTrue(rows.all { it.title.startsWith("Latest ") }, "rows read Latest, same as the web's own row titles")
     }
 
     /** An empty library has nothing to say, and says nothing. */
@@ -107,7 +107,7 @@ class HomeShelvesTest {
         val cards = (continueRow.content as RowContent.Sets).cards
         assertEquals(listOf(alien.setId), cards.map { it.set.setId })
         assertEquals(1, continueRow.total)
-        assertNull(continueRow.seeAll, "Continue has no tab to open until the kept-shelves phase")
+        assertEquals("Continue", continueRow.seeAll, "See all opens the Continue tab")
     }
 
     /** A finished episode offers the next one under Next up, whose "See all" opens Series. */

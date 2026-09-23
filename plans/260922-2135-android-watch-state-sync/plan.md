@@ -25,7 +25,7 @@ Supersedes, on landing: `260922-0124-android-web-parity` phases 4, 5, 8, 9 and
 | 04 | [Android repository, profiles, sync schedule](phase-04-android-repository-profiles-and-sync-schedule.md) | android | 03 | 6h | done |
 | 05 | [Player records and resumes](phase-05-android-player-records-and-resumes.md) | android | 04 | 5h | code complete, tablet validation pending |
 | 06 | [Start page: Continue, Next up, card marks](phase-06-android-start-page-continue-and-next-up.md) | android | 05 | 5h | code complete, tablet validation pending |
-| 07 | [Kept shelves: Continue, Watchlist, Collections, Kids](phase-07-android-kept-shelves-and-player-toggles.md) | android | 06 | 7h | pending |
+| 07 | [Kept shelves: Continue, Watchlist, Collections, Kids](phase-07-android-kept-shelves-and-player-toggles.md) | android | 06 | 7h | code complete, tablet validation pending |
 | 08 | [List sync: watchlist, kids, collections in the record](phase-08-list-sync-record-extension.md) | web+rust | 03, 07; **Q1** | 6h | pending |
 | 09 | [Docs, versions, device validation](phase-09-docs-versions-and-device-validation.md) | all | 07 (08 if taken) | 2h | pending |
 
