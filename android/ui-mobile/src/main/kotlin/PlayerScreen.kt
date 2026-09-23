@@ -10,6 +10,10 @@ import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.systemBarsIgnoringVisibility
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -51,6 +55,9 @@ import player.PlayerViewModel
  * A tap toggles the transport bar, which takes itself away while a film runs
  * and stays while it is paused or being scrubbed; see [controlsShouldFade].
  */
+// The toggles are inset by the system bars even while the player hides them,
+// which Compose still marks experimental.
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PlayerScreen(setId: String, onBack: () -> Unit) {
     val viewModel: PlayerViewModel = hiltViewModel()
@@ -130,6 +137,12 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
                 // out what a film actually is", not because of where on the
                 // page they sit — this platform's own transport bar already
                 // owns the bottom edge.
+                //
+                // Below the status bar's band, not in it: flush to the top
+                // they shared the strip the system reserves for its own
+                // gestures, and taps there went to the system. Measured
+                // against the bars even while they are hidden, so the row
+                // does not jump up when the picture goes full screen.
                 PlayerMarks(
                     marks = marks,
                     actions = PlayerMarksActions(
@@ -138,7 +151,10 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
                         onSetInList = viewModel::setInList,
                         onCreateList = viewModel::createListAndAdd,
                     ),
-                    modifier = Modifier.align(Alignment.TopEnd),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .windowInsetsPadding(WindowInsets.systemBarsIgnoringVisibility)
+                        .padding(Spacing.medium),
                 )
             }
         }
