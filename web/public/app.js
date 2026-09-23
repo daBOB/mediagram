@@ -727,7 +727,29 @@ searchBox.addEventListener("input", () => {
   }, 200);
 });
 
-window.addEventListener("hashchange", route);
+/**
+ * Turns the page when the viewer goes somewhere, and only then.
+ *
+ * A catalog refresh redraws through `route()` directly and stays still: the
+ * viewer did not move, so the page should not either. Typing a search moves
+ * the hash every pause, and animating each one would make the results swim
+ * under the cursor. A browser without view transitions, or a viewer who asked
+ * for less motion, gets the plain swap.
+ */
+const lessMotion = matchMedia("(prefers-reduced-motion: reduce)");
+let shownHash = location.hash;
+window.addEventListener("hashchange", () => {
+  const refining = shownHash.startsWith("#/search/") && location.hash.startsWith("#/search/");
+  shownHash = location.hash;
+  if (refining || lessMotion.matches || !document.startViewTransition) {
+    route();
+    return;
+  }
+  // Not `startViewTransition(route)`: a view that returns a promise would
+  // hold the old page frozen until it settled.
+  document.startViewTransition(() => {
+    route();
+  });
 });
 
 /**

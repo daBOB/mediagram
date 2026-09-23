@@ -505,6 +505,30 @@ main {
   max-width: var(--measure);
   margin: 0 auto;
   padding: 2.75rem var(--gutter) 4.5rem;
+  view-transition-name: page;
+}
+
+/* ---- turning the page ----
+ *
+ * Only the page changes hands; the masthead stays where it is, so the eye
+ * has something fixed while the content below it turns over. The old page
+ * lifts away quickly and the new one settles in a beat behind it, rather
+ * than the two sliding across each other like a carousel. The group's own
+ * resize is switched off: animating the height of a shelf into a film page
+ * reads as the page stretching, not turning.
+ */
+::view-transition-group(page) { animation: none; }
+::view-transition-old(page) {
+  animation: page-out 140ms ease-in both;
+}
+::view-transition-new(page) {
+  animation: page-in 280ms cubic-bezier(0.2, 0.7, 0.2, 1) 60ms both;
+}
+@keyframes page-out {
+  to { opacity: 0; transform: translateY(-6px); }
+}
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(10px); }
 }
 
 /* ---- the start page ----

@@ -9,6 +9,9 @@ to `main`. Full phase-by-phase detail lives in
 
 **Added**
 
+- Page changes in the web player turn over with a short fade (View
+  Transitions); catalog refreshes and search typing stay still, and reduced
+  motion gets the plain swap.
 - Age ratings decide the Kids shelf. `mediagram add` and `mediagram metadata`
   now record each title's TMDB age rating for the library's country — the
   FSK, with `tmdb_language = "de-DE"` — in `shows.certification` (index
