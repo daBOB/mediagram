@@ -1,7 +1,7 @@
 ---
 title: "Android watch state, synced with the web player"
 description: "Core-side state store + merge + channel sync; Continue, Next up, Watchlist, Collections, Kids on Android, same rules as the web."
-status: pending
+status: done
 priority: P1
 effort: 44h
 branch: main
@@ -27,7 +27,7 @@ Supersedes, on landing: `260922-0124-android-web-parity` phases 4, 5, 8, 9 and
 | 06 | [Start page: Continue, Next up, card marks](phase-06-android-start-page-continue-and-next-up.md) | android | 05 | 5h | code complete, tablet validation pending |
 | 07 | [Kept shelves: Continue, Watchlist, Collections, Kids](phase-07-android-kept-shelves-and-player-toggles.md) | android | 06 | 7h | code complete, tablet validation pending |
 | 08 | [List sync: watchlist, kids, collections in the record](phase-08-list-sync-record-extension.md) | web+rust | 03, 07; **Q1** | 6h | done (web+rust; tablet validation in 09) |
-| 09 | [Docs, versions, device validation](phase-09-docs-versions-and-device-validation.md) | all | 07 (08 if taken) | 2h | pending |
+| 09 | [Docs, versions, device validation](phase-09-docs-versions-and-device-validation.md) | all | 07 (08 if taken) | 2h | done — [validation](reports/validation-260923-0440-android-watch-state-on-device-report.md) |
 
 Sequential except: 08's web half can run beside 07 (disjoint files).
 

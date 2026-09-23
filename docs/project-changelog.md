@@ -146,6 +146,13 @@ to `main`. Full phase-by-phase detail lives in
 
 **Docs**
 
+- `system-architecture.md` §8 describes the Android app's watch state — where
+  it lives, how it syncs and when, "Who's watching?", and the deliberate
+  differences from the web (no profile rename or delete, sync on by default,
+  Add to list as a checklist); "What it does not have yet" no longer lists
+  resume, watched marks or lists. §7 notes the state documents are written by
+  Android too. The earlier parity and watch-state plans' overlapping phases
+  are marked superseded.
 - `system-architecture.md` now describes push updates on both players (§7,
   §8): what counts as a change, that an update is only a hint beside the
   ordinary round, and that the Android app listens only while its catalog is

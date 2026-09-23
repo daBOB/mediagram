@@ -26,7 +26,7 @@ Research: `plans/reports/research-260922-2212-telegram-api-premium-opportunities
 | 01 | [Spike: are the updates delivered?](phase-01-spike-measure-update-delivery.md) | rust+ts probe | – | 2h | done — GO ([report](reports/spike-260922-2240-update-delivery-report.md), [clean redo](reports/spike-260922-2305-update-delivery-redo-report.md)) |
 | 02 | [Classify updates (shared fixture)](phase-02-classify-channel-updates-shared-fixture.md) | rust+ts | 01 | 2h | done |
 | 03 | [Rust core: update stream export](phase-03-rust-core-update-stream.md) | rust | 02 | 4h | done |
-| 04 | [Android: react while foregrounded](phase-04-android-react-while-foregrounded.md) | android | 03, watch-state-sync 04 | 3h | index half done; state half blocked |
+| 04 | [Android: react while foregrounded](phase-04-android-react-while-foregrounded.md) | android | 03, watch-state-sync 04 | 3h | done (state half: `STATE` → `WatchSync.soon()`, own writes filtered by `stateDeviceId`) |
 | 05 | [Web: sync on push](phase-05-web-sync-on-push.md) | web | 02 | 3h | done |
 | 06 | [Docs, versions, device validation](phase-06-docs-versions-and-validation.md) | all | 04, 05 | 2h | done; watch-state latency handed on |
 

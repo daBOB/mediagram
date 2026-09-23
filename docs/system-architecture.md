@@ -449,7 +449,8 @@ update costs exactly the wait it always did. Nothing missed while the
 connection was down is replayed — a `StringSession` keeps no update state —
 so the listener is subscribed before the start-up round, which covers what
 came before it. An index event is only logged: this player's catalog is the
-published package, not the channel.
+published package, not the channel. The state documents it reads are written
+by the Android app too, in the same format; see [§8](#8-playback-the-android-app).
 
 The rule is shared with the Android core and pinned by one set of fixtures
 both read, `web/test/fixtures/channel-updates/`.
@@ -540,13 +541,41 @@ finishes after the read that built them; so once a fetch lays down artwork
 the shelves are rebuilt from the catalog on the device, without asking the
 channel again.
 
+### Watch state
+
+Positions, finished titles, watchlist, kids and collections live in the core's
+own `state.db`, beside the catalog and never inside the directory a refresh
+replaces. The record and the merge are ports of the web player's
+(`crates/mediagram-core/src/state/`), held to it by the shared fixtures in
+`web/test/fixtures/watch-state/` in both merge orders; the resume point and
+Next up are Kotlin ports held to the same fixtures. Nothing is decided twice:
+Android computes what the web computes, from the same data.
+
+Sync is the web's channel sync. Each device keeps one pinned
+`#mlib-state v=1 device=<id>` document in the library channel, edited in
+place; a round reads every device's, merges them with its own export, takes
+in what is newer and sends its own only when something changed. A first
+document whose pin is refused is taken back and the round fails, since an
+unpinned document is invisible and the next round would send another. Lists
+travel as rows with times, and a removal as a tombstone, so a merge cannot
+bring back what was taken off. `WatchSync` runs a round on start, every five
+minutes while the app is in front, when a film is left, when the app goes to
+the background, and within seconds of another device's write, heard through
+the push listener; rounds never overlap. The device id is a random UUID in
+`state.db`, never the host name.
+
+"Who's watching?" chooses among the account's profiles, which arrive from the
+other devices' documents. Deliberate differences from the web, not gaps:
+profiles cannot be renamed or deleted on the phone, since the record cannot
+express either; sync is on by default, where the web player needs
+`MEDIAGRAM_SYNC_STATE`; "Add to list" is a checklist rather than the web's
+numbered prompt.
+
 ### What it does not have yet
 
 Parity with the web player is partial and tracked, not assumed. The phone has
-no watch state of any kind — no resume, no watched marks, no watchlist, no
-lists — because `mediagram-core` exposes nothing that touches progress; no
-audio-track or subtitle selection; no search; no notes. The plan that closes
-these, in order, is
+no audio-track or subtitle selection, no search and no notes; and Play all
+and a Kids run wait for a player queue. The plan that closes these is
 [`plans/260922-0124-android-web-parity/`](../plans/260922-0124-android-web-parity/plan.md),
 and the deliberate differences that will *not* be closed are recorded in
 `docs/superpowers/specs/2026-09-20-android-system-menu-and-playback-stats-design.md` §9.

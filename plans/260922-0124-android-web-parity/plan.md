@@ -43,12 +43,12 @@ the module that already made the decision rather than deciding it again.
 | 1 | [Audio a viewer can choose](phase-01-audio-tracks.md) | Not started |
 | 2 | [Subtitles that draw](phase-02-subtitles.md) | Not started |
 | 3 | [Speed, and how the picture is fitted](phase-03-speed-and-picture.md) | Not started |
-| 4 | [Somewhere to remember](phase-04-somewhere-to-remember.md) | Not started |
-| 5 | [Resume, and what has been watched](phase-05-resume-and-watched.md) | Not started |
+| 4 | [Somewhere to remember](phase-04-somewhere-to-remember.md) | Superseded — done by [android watch-state sync](../260922-2135-android-watch-state-sync/plan.md) |
+| 5 | [Resume, and what has been watched](phase-05-resume-and-watched.md) | Superseded — done by [android watch-state sync](../260922-2135-android-watch-state-sync/plan.md) |
 | 6 | [Choices that stick](phase-06-choices-that-stick.md) | Not started |
 | 7 | [The next episode](phase-07-the-next-episode.md) | Not started |
-| 8 | [Watchlist, kids and lists](phase-08-watchlist-kids-and-lists.md) | Not started |
-| 9 | [A start page](phase-09-a-start-page.md) | Not started |
+| 8 | [Watchlist, kids and lists](phase-08-watchlist-kids-and-lists.md) | Superseded — done by [android watch-state sync](../260922-2135-android-watch-state-sync/plan.md) |
+| 9 | [A start page](phase-09-a-start-page.md) | Superseded — done by [android watch-state sync](../260922-2135-android-watch-state-sync/plan.md) |
 | 10 | [Search, notes and documents](phase-10-search-notes-and-documents.md) | Not started |
 
 Phases 1–5 are written out. Phases 6–10 are sketched: they are real work with a
