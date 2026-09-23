@@ -18,6 +18,7 @@ import { helpers } from "teleproto";
 import type { CachedReader } from "../cache/reader";
 import type { PartLocation } from "../catalog";
 import { requestSizeFor, type Step } from "../range";
+import { DownloadGate } from "./download-gate";
 import type { ByteSource } from "../routes";
 import type { Telegram } from "./client";
 
@@ -140,24 +141,38 @@ export class TelegramSource implements ByteSource {
  * nothing about MTProto and this file stays the only place that does.
  */
 export function partFetcher(telegram: Telegram, messageId: number) {
-  return async (offset: number, length: number): Promise<Uint8Array> => {
-    const media = await telegram.partMedia(messageId);
-    const out: Uint8Array[] = [];
-    let got = 0;
-    for await (const chunk of telegram.client.iterDownload(media as never, {
-      offset: helpers.returnBigInt(offset) as never,
-      requestSize: requestSizeFor(length),
-    })) {
-      out.push(chunk);
-      got += chunk.length;
-      if (got >= length) break;
-    }
-    const joined = new Uint8Array(got);
-    let at = 0;
-    for (const piece of out) {
-      joined.set(piece, at);
-      at += piece.length;
-    }
-    return joined.subarray(0, Math.min(length, got));
-  };
+  return (offset: number, length: number): Promise<Uint8Array> =>
+    downloads.run(() => fetchPart(telegram, messageId, offset, length));
+}
+
+/**
+ * One gate for the whole process: the limit is Telegram's, per account, so
+ * every reader of every title shares it.
+ */
+const downloads = new DownloadGate();
+
+async function fetchPart(
+  telegram: Telegram,
+  messageId: number,
+  offset: number,
+  length: number,
+): Promise<Uint8Array> {
+  const media = await telegram.partMedia(messageId);
+  const out: Uint8Array[] = [];
+  let got = 0;
+  for await (const chunk of telegram.client.iterDownload(media as never, {
+    offset: helpers.returnBigInt(offset) as never,
+    requestSize: requestSizeFor(length),
+  })) {
+    out.push(chunk);
+    got += chunk.length;
+    if (got >= length) break;
+  }
+  const joined = new Uint8Array(got);
+  let at = 0;
+  for (const piece of out) {
+    joined.set(piece, at);
+    at += piece.length;
+  }
+  return joined.subarray(0, Math.min(length, got));
 }

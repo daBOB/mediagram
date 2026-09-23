@@ -69,6 +69,12 @@ to `main`. Full phase-by-phase detail lives in
   title description on the phone failed to load. The column is now read only
   where it exists, as the web does. A v6 metadata package is also accepted
   again: v7 had narrowed `SUPPORTED_SCHEMA` to `[7]`.
+- Starting a film no longer trips Telegram's flood limit. The browser's range
+  requests, the audio-track probe and readahead each turned every cache miss
+  into its own `upload.getFile` stream, and a dozen in the same moment drew
+  `FLOOD_WAIT` of 1–2 s that stalled every reader, the viewer's included. Part
+  downloads now pass one process-wide gate of four (`web/src/telegram/download-gate.ts`);
+  the rest queue for milliseconds instead.
 - The Android player's Watchlist, Kids and Add to list sit below the status
   bar's band. Flush to the top of a full-screen film they shared the strip
   the system keeps for its own gestures, and taps there often went to the
