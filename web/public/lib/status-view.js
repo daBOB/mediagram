@@ -26,6 +26,9 @@ import {
   uptime,
 } from "./status-lines.js";
 
+/** Where the catalogue comes from, in the words the Source row uses. */
+const SOURCES = { package: "published package", channel: "the channel's index" };
+
 function block(heading, rows) {
   const section = el("section", "status-block");
   section.append(el("h3", null, heading));
@@ -87,7 +90,7 @@ export function renderStatus(root, snapshot, previous = null) {
 
   panel.append(
     block("Catalogue", [
-      ["Source", catalog.origin === "package" ? "published package" : "this machine"],
+      ["Source", SOURCES[catalog.origin] ?? "this machine"],
       ["Refresh", refreshLine(catalog)],
       ["Holds", `${catalog.sets} playable sets, ${catalog.posters} posters`],
       ["Schema", `v${catalog.schema}`],

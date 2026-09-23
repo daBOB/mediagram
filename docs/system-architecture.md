@@ -232,7 +232,8 @@ has to speak MTProto itself.
 ```
 browser ──HTTP──> Bun (web/src) ──MTProto──> the channel
                     │
-                    ├─ catalog:  a published package, or a local library.db
+                    ├─ catalog:  a published package, else the channel's pinned index
+                    │            (this machine's library.db only as a fallback)
                     ├─ bytes:    Range over the parts, through a disk cache
                     └─ ffmpeg:   HLS, for what the browser will not decode
 ```
@@ -337,7 +338,7 @@ rather than implied:
 | `mediagram` (add, resume, edit, remove, rescan, verify) | `library.db` | `library.db` |
 | `mediagram export-package` | `library.db`, read-only | the package |
 | `mediagram serve` | `library.db`, read-only | nothing |
-| the web player | a package's `library.db`, or a local one, read-only | nothing |
+| the web player | a package's `library.db`, the channel's snapshot, or a local one, read-only | its installed channel snapshots |
 | the Android app | a channel snapshot's `library.db`, read-only | its own sidecars |
 
 Every read-only consumer opens SQLite with `SQLITE_OPEN_READ_ONLY` rather
@@ -448,9 +449,23 @@ which reads the pin list itself; the five-minute timer stays, and a missed
 update costs exactly the wait it always did. Nothing missed while the
 connection was down is replayed — a `StringSession` keeps no update state —
 so the listener is subscribed before the start-up round, which covers what
-came before it. An index event is only logged: this player's catalog is the
-published package, not the channel. The state documents it reads are written
-by the Android app too, in the same format; see [§8](#8-playback-the-android-app).
+came before it. The listener runs whether or not state is shared.
+
+An index event installs the channel's newest snapshot, chosen as the Android
+core chooses it (`channel-index/pick-newest-index.ts`, pinned to core's
+`pick_index` by `web/test/fixtures/pick-index/`): proven to be a library while
+staged, then swapped in under `MEDIAGRAM_CHANNEL_INDEX_DIR`. The server builds
+its router again over the new handle, rescans which titles are held, and tells
+every open page over `GET /api/events` — server-sent events, one way, with a
+heartbeat. The page never speaks to Telegram: it reads `/api/sets` again when
+told, and whenever its event stream reconnects, since an event sent while it
+was away is not sent again. A title playing defers the redraw to its close.
+The snapshot has descriptions but no artwork, so the server then runs the
+uploader's own `mediagram posters --index <snapshot>` — one TMDB client, not a
+third — and sends a second notice once the covers are on disk.
+A configured package is still the catalog; the channel's pins do not override
+it. The state documents the listener reads are written by the Android app too,
+in the same format; see [§8](#8-playback-the-android-app).
 
 The rule is shared with the Android core and pinned by one set of fixtures
 both read, `web/test/fixtures/channel-updates/`.
@@ -524,9 +539,9 @@ way: without it the stream opened and stayed silent.
 
 The app listens **only while the catalog is on screen**. `CatalogViewModel`
 merges `INDEX` events beside the Update button's reloads, and its state is
-collected only while visible, so a phone in a pocket holds nothing open. This
-is a deliberate difference from the web player, which is a server and always
-listening. On an index event the catalog reads the channel again and then
+collected only while visible, so a phone in a pocket holds nothing open. The
+web player follows the same index events; it is a server, so it listens
+always, and tells its open pages itself. On an index event the catalog reads the channel again and then
 runs the artwork and description fetch quietly — no result dialog for work
 nobody asked for. There is no read on returning to the app: a read downloads
 the whole index, and the catalog already reads once per start. `STATE` is

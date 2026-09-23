@@ -35,6 +35,9 @@ import { listControls, listsView, listView } from "./lib/collections-view.js";
 import { chooseProfile } from "./lib/profile-picker.js";
 import { homeShelves } from "./lib/home-shelves.js";
 import { renderHome } from "./lib/home-view.js";
+import { describeFilm, filmPage } from "./lib/film-page.js";
+import { genreShelf } from "./lib/genres.js";
+import { kidsShelf } from "./lib/age-rating.js";
 
 const main = document.getElementById("main");
 const player = document.getElementById("player");
@@ -53,7 +56,7 @@ let library = { movies: [], series: [], tutorials: [] };
 let byId = new Map();
 
 /** Views that are neither a catalog shelf nor one built from watch state. */
-const PAGES = new Set(["home", "search", "system"]);
+const PAGES = new Set(["home", "search", "system", "film", "genre"]);
 
 /** The shelves that come from what has been watched rather than the catalog. */
 const KEPT = {
@@ -62,7 +65,7 @@ const KEPT = {
   collections: { label: "Collections", empty: "No lists yet." },
   kids: {
     label: "Kids",
-    empty: "Nothing marked yet. Open a title and press Kids in the player.",
+    empty: "Nothing rated FSK 12 or younger, and nothing marked. An unrated title can be marked with Kids in the player.",
   },
 };
 
@@ -153,6 +156,7 @@ function viewHome() {
 
   renderHome(main, shelves, {
     play: (set) => play(set),
+    openFilm,
     open: (section, name) => {
       location.hash = `#/${section}/${encodeURIComponent(name)}`;
     },
@@ -170,7 +174,61 @@ function viewMovies() {
     library.movies.length > 0 ? shelfToggle() : null,
   );
   if (library.movies.length === 0) return main.append(emptyState("movies"));
-  main.append(movieGrid(library.movies, play, mode));
+  main.append(movieGrid(library.movies, openFilm, mode));
+}
+
+/** A film's card opens its page; the page's button plays it. */
+function openFilm(set) {
+  location.hash = `#/film/${encodeURIComponent(set.setId)}`;
+}
+
+/**
+ * One film's page. The provider's description, score and genres are asked
+ * for after the facts are drawn, as a series header's are.
+ */
+function viewFilm(setId) {
+  const set = byId.get(setId);
+  if (!set || set.kind !== "movie") {
+    heading(SECTIONS.movies.label);
+    main.append(el("p", "error", "That film is not in the library any more."));
+    return;
+  }
+  heading(set.title ?? set.setId);
+  const page = filmPage(set, {
+    resume: resumeAt(state.progressOf(set.setId)),
+    onPlay: (film) => play(film),
+  });
+  main.append(page);
+  if (set.showKey) {
+    fetch(`/api/shows/${encodeURIComponent(set.showKey)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((meta) => describeFilm(page, meta))
+      .catch(() => {});
+  }
+}
+
+/** Everything tagged with one genre: films first, then series. */
+function viewGenre(name) {
+  const { films, series } = genreShelf(library, name);
+  heading(name, countOf(films.length + series.length, "title"));
+  if (films.length + series.length === 0) {
+    main.append(el("p", "empty", "Nothing in the library is tagged with this genre."));
+    return;
+  }
+  // Labelled only when both are there; a shelf of one kind says what it is.
+  const both = films.length > 0 && series.length > 0;
+  if (films.length > 0) {
+    if (both) main.append(el("h2", "shelf-sub", SECTIONS.movies.label));
+    main.append(movieGrid(films, openFilm, GRID));
+  }
+  if (series.length > 0) {
+    if (both) main.append(el("h2", "shelf-sub", SECTIONS.series.label));
+    main.append(
+      collectionGrid("series", series, (title) => {
+        location.hash = `#/series/${encodeURIComponent(title)}`;
+      }, GRID),
+    );
+  }
 }
 
 /** Shows and courses: a grid of collections, each opening its own view. */
@@ -406,7 +464,8 @@ function refreshKept() {
   document.getElementById("n-continue").textContent = String(started.length);
   document.getElementById("n-watchlist").textContent = String(setsFor(state.watchlist()).length);
   document.getElementById("n-collections").textContent = String(state.collections().length);
-  document.getElementById("n-kids").textContent = String(setsFor(state.kids()).length);
+  const kids = kidsShelf(library, setsFor(state.kids()));
+  document.getElementById("n-kids").textContent = String(kids.films.length + kids.series.length + kids.byHand.length);
 }
 
 /** Whose shelves these are, and the way to become somebody else. */
@@ -444,11 +503,32 @@ function viewWatchlist() {
  * Played as a run, the way a list is: a child handed a tablet should not have
  * to come back to the shelf between one film and the next.
  */
+/**
+ * What a child may watch: everything rated FSK 12 or younger, and anything
+ * unrated someone marked by hand. The rules are `age-rating.js`'s.
+ */
 function viewKids() {
-  const marked = setsFor(state.kids());
-  heading(KEPT.kids.label, countOf(marked.length, "title"));
-  if (marked.length === 0) return main.append(el("p", "empty", KEPT.kids.empty));
-  main.append(setGrid(marked, (set) => play(set, marked)));
+  const { films, series, byHand } = kidsShelf(library, setsFor(state.kids()));
+  heading(KEPT.kids.label, countOf(films.length + series.length + byHand.length, "title"));
+  if (films.length + series.length + byHand.length === 0) {
+    return main.append(el("p", "empty", KEPT.kids.empty));
+  }
+  const parts = [
+    [films, SECTIONS.movies.label, () => movieGrid(films, openFilm, GRID)],
+    [
+      series,
+      SECTIONS.series.label,
+      () =>
+        collectionGrid("series", series, (title) => {
+          location.hash = `#/series/${encodeURIComponent(title)}`;
+        }, GRID),
+    ],
+    [byHand, "Marked by hand", () => setGrid(byHand, (set) => play(set, byHand))],
+  ].filter(([items]) => items.length > 0);
+  for (const [, label, grid] of parts) {
+    if (parts.length > 1) main.append(el("h2", "shelf-sub", label));
+    main.append(grid());
+  }
 }
 
 /** The lists themselves. */
@@ -611,6 +691,8 @@ function route() {
   if (searchBox.value !== "") searchBox.value = "";
 
   if (known === "home") return viewHome();
+  if (known === "film") return viewFilm(decodeURIComponent(name ?? ""));
+  if (known === "genre") return viewGenre(decodeURIComponent(name ?? ""));
   if (known === "system") return viewSystem();
   if (known === "continue") return viewContinue();
   if (known === "watchlist") return viewWatchlist();
@@ -646,23 +728,43 @@ searchBox.addEventListener("input", () => {
 });
 
 window.addEventListener("hashchange", route);
+});
 
 /**
- * Coming back to the tab reads the catalog again.
+ * Reads the catalog again and redraws what changed, or defers the redraw
+ * while a title plays — rebuilding the shelf behind the dialog would lose the
+ * viewer's place for a change they cannot see yet.
  *
- * The page fetched it once, at load, so a tab left open through an upload
- * kept showing the library as it was the evening before. The return is the
- * moment the viewer looks, and the only one that matters. A title playing
- * defers the redraw to its close, as a marked title does, rather than
- * rebuilding the shelf behind the dialog.
+ * One read at a time, but never a notice dropped: one that arrives while a
+ * read is running may be about a catalog that read has already missed, so it
+ * earns exactly one more.
  */
 let refreshing = false;
-document.addEventListener("visibilitychange", async () => {
+let askedAgain = false;
+async function refreshCatalog() {
   // Not before the first load has finished: that one draws the page itself.
-  if (document.visibilityState !== "visible" || refreshing || catalogText === "") return;
+  if (catalogText === "") return;
+  if (refreshing) {
+    askedAgain = true;
+    return;
+  }
   refreshing = true;
   try {
+    do {
+      askedAgain = false;
+      await readCatalogOnce();
+    } while (askedAgain);
+  } finally {
+    refreshing = false;
+  }
+}
+
+async function readCatalogOnce() {
+  try {
     if (!(await loadCatalog())) return;
+    // The colophon says how old the catalogue is, and that just changed.
+    await loadLink();
+    renderColophon(JSON.parse(catalogText));
     if (player.open) {
       shelfStale = true;
       return;
@@ -670,11 +772,39 @@ document.addEventListener("visibilitychange", async () => {
     route();
   } catch {
     // A server that is restarting answers nothing for a moment. The shelves
-    // already showing are still true, and the next return asks again.
-  } finally {
-    refreshing = false;
+    // already showing are still true, and the next event asks again.
   }
+}
+
+/**
+ * The server says when the library changes; the page never polls for it.
+ *
+ * It hears a new index from Telegram the moment it is pinned and tells every
+ * open page here. Every (re)connect is treated as news too — the server
+ * restarted, the laptop woke up — because an event sent while the page was
+ * away is not sent again. `EventSource` reconnects by itself.
+ *
+ * Open only while the tab is visible. Without HTTP/2 a browser allows about
+ * six connections to one host, and a stream held by every background tab
+ * would leave the tab being watched none for its video. A tab brought back
+ * opens its stream again, and that open reads the catalog.
+ */
+let libraryEvents = null;
+function listenForLibrary() {
+  if (libraryEvents !== null) return;
+  libraryEvents = new EventSource("/api/events");
+  libraryEvents.addEventListener("catalog", () => void refreshCatalog());
+  libraryEvents.addEventListener("open", () => void refreshCatalog());
+}
+function stopListeningForLibrary() {
+  libraryEvents?.close();
+  libraryEvents = null;
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") listenForLibrary();
+  else stopListeningForLibrary();
 });
+if (document.visibilityState === "visible") listenForLibrary();
 
 try {
   // Asked for first: every shelf badge depends on whether this page is being

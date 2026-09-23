@@ -15,8 +15,10 @@ use thiserror::Error;
 
 use super::cipher::{self, EncryptError};
 
-/// Schema versions this build's catalog code can read.
-pub const SUPPORTED_SCHEMA: &[i64] = &[mlib_spec::schema::SCHEMA_VERSION];
+/// Schema versions this build's catalog code can read: its own, and the
+/// older one a publisher not yet upgraded still writes. v7 only added
+/// `shows.certification`, which every read here treats as optional.
+pub const SUPPORTED_SCHEMA: &[i64] = &[mlib_spec::schema::OLDEST_READABLE_SCHEMA, mlib_spec::schema::SCHEMA_VERSION];
 
 #[derive(Debug, Error)]
 pub enum PackageError {

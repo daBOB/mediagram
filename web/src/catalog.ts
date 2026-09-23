@@ -21,7 +21,17 @@ import type { PartSpan } from "./range";
  * `crates/mediagram/tests/shared_playable_sql.rs`, which fails if the two
  * drift — the player reads the uploader's database and cannot migrate it.
  */
-export const EXPECTED_SCHEMA = 6;
+export const EXPECTED_SCHEMA = 7;
+
+/**
+ * The oldest layout this build still reads.
+ *
+ * v7 only adds `shows.certification`, which every reader of it treats as
+ * optional. Keeping v6 readable is what lets the player follow a channel whose
+ * uploader has not been upgraded yet: refusing its snapshots would freeze the
+ * shelf until someone upgraded another machine.
+ */
+export const OLDEST_READABLE_SCHEMA = 6;
 
 /**
  * Refuses an index written by an older uploader.
@@ -36,9 +46,9 @@ export function assertSchema(db: Database): void {
     .get() as { value: string } | null;
   const found = Number(row?.value ?? 0);
 
-  if (!Number.isFinite(found) || found < EXPECTED_SCHEMA) {
+  if (!Number.isFinite(found) || found < OLDEST_READABLE_SCHEMA) {
     throw new Error(
-      `this index is at schema v${found || "unknown"}, and the player needs v${EXPECTED_SCHEMA}. ` +
+      `this index is at schema v${found || "unknown"}, and the player needs v${OLDEST_READABLE_SCHEMA} or later. ` +
         "Run any writing mediagram command once (`mediagram verify --all` will do) to migrate it.",
     );
   }

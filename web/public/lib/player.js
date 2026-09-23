@@ -28,6 +28,7 @@ import { scopeOf } from "./preference-scope.js";
 import { placeCues } from "./subtitle-style.js";
 import { subtitlePanel } from "./subtitle-panel.js";
 import { thumbStrip } from "./thumb-strip.js";
+import { ageLabel, kidsVerdict } from "./age-rating.js";
 
 const dialog = document.getElementById("player");
 const video = document.getElementById("video");
@@ -907,11 +908,23 @@ function keptChanged() {
   document.dispatchEvent(new CustomEvent("mediagram:kept-changed"));
 }
 
-/** Whether this title is a child's, and the way to say it is or is not. */
+/**
+ * Whether this title is a child's, and the way to say it is or is not.
+ *
+ * A rated title is decided by its rating, not by a mark: the button says what
+ * the rating decided and cannot be pressed. Only an unrated title is marked by
+ * hand — see `age-rating.js`.
+ */
 function refreshKids() {
-  const marked = playing !== null && state.isKids(playing.setId);
-  kidsButton.setAttribute("aria-pressed", String(marked));
-  kidsButton.textContent = marked ? "For kids" : "Kids";
+  const verdict = playing === null ? "unrated" : kidsVerdict(playing);
+  const rating = playing === null ? null : ageLabel(playing);
+  const forKids = verdict === "safe" || (verdict === "unrated" && playing !== null && state.isKids(playing.setId));
+  kidsButton.setAttribute("aria-pressed", String(forKids));
+  kidsButton.disabled = verdict !== "unrated";
+  kidsButton.textContent =
+    verdict === "safe" ? `For kids \u00b7 ${rating}` : verdict === "unsafe" ? `${rating} \u00b7 not for kids` : forKids ? "For kids" : "Kids";
+  kidsButton.title =
+    verdict === "unrated" ? "" : "Decided by the title's age rating, not by a mark";
 }
 
 watchlistButton.addEventListener("click", () => {
@@ -924,7 +937,8 @@ watchlistButton.addEventListener("click", () => {
 // Marked here rather than on a shelf, because this is where a viewer is when
 // they find out what a film actually is.
 kidsButton.addEventListener("click", () => {
-  if (!playing) return;
+  // A rated title is not marked: its rating already decided.
+  if (!playing || kidsVerdict(playing) !== "unrated") return;
   state.setKids(playing.setId, !state.isKids(playing.setId));
   refreshKids();
   keptChanged();

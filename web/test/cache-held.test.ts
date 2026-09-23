@@ -84,6 +84,16 @@ describe("which sets are held", () => {
     expect(held.has(HALF)).toBe(false);
   });
 
+  test("a swapped catalog is answered against its own sizes, at once", async () => {
+    // Started from a catalog that did not know the whole set at all, as a
+    // player does when the channel's next index adds a title it already has.
+    const held = new HeldSets(root, new Map());
+    await held.refresh();
+    expect(held.has(WHOLE)).toBe(false);
+    await held.replaceExpected(expectedChunks(db));
+    expect(held.has(WHOLE)).toBe(true);
+  });
+
   test("does not count a set with nothing cached", async () => {
     const held = new HeldSets(root, expectedChunks(db));
     await held.refresh();

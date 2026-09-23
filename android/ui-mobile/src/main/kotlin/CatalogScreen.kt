@@ -21,7 +21,7 @@ import catalog.KeptKind
 import catalog.Shelf
 import catalog.continueWall
 import catalog.homeRowsOf
-import catalog.kidsWall
+import catalog.kidsShelf
 import catalog.watchlistWall
 import designsystem.Spacing
 import model.WatchSnapshot
@@ -125,6 +125,7 @@ private fun Shelves(
                 watch = state.watch,
                 columns = columns,
                 onOpenTitle = onOpenTitle,
+                onOpenCollection = onOpenCollection,
                 onOpenList = onOpenList,
                 onCreateList = onCreateList,
             )
@@ -146,13 +147,14 @@ private fun KeptTabContent(
     watch: WatchSnapshot,
     columns: Int,
     onOpenTitle: (setId: String) -> Unit,
+    onOpenCollection: (key: String) -> Unit,
     onOpenList: (id: String) -> Unit,
     onCreateList: (name: String) -> Unit,
 ) {
     when (kind) {
         KeptKind.CONTINUE -> KeptWall(kind, continueWall(shelves, watch), watch, columns, onOpenTitle)
         KeptKind.WATCHLIST -> KeptWall(kind, watchlistWall(shelves, watch), watch, columns, onOpenTitle)
-        KeptKind.KIDS -> KeptWall(kind, kidsWall(shelves, watch), watch, columns, onOpenTitle)
+        KeptKind.KIDS -> KidsWall(kidsShelf(shelves, watch), watch, columns, onOpenTitle, onOpenCollection)
         KeptKind.COLLECTIONS -> ListsScreen(lists = watch.collections, onOpen = onOpenList, onCreate = onCreateList)
     }
 }

@@ -41,7 +41,7 @@ export function uptime(seconds) {
  * serving a current one, and nothing else here would say otherwise.
  */
 export function refreshLine(catalog, now = Date.now()) {
-  if (catalog.origin !== "package") return "read from this machine";
+  if (catalog.origin !== "package" && catalog.origin !== "channel") return "read from this machine";
   const age = catalogueAge(catalog.publishedAt ?? null, now);
   if (catalog.refresh === "kept") {
     const reason = catalog.reason ?? "no reason given";

@@ -30,6 +30,7 @@ fn row(kind: Kind, id: u64) -> TitleDetailsRow {
         last_air: None,
         total_seasons: Some(2),
         total_episodes: Some(16),
+        certification: Some("12".into()),
     }
 }
 

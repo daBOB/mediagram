@@ -98,6 +98,8 @@ Everything is environment variables. `web/.env` is read at startup and is in
 | `MEDIAGRAM_PACKAGE_URL` | — | Base URL of a published package, the directory holding `latest.json` |
 | `MEDIAGRAM_PACKAGE_KEY` | — | 32 bytes, base64. The only thing protecting the package |
 | `MEDIAGRAM_CATALOG_DIR` | `~/.cache/mediagram-catalog` | Where decrypted catalogs are kept |
+| `MEDIAGRAM_CHANNEL_INDEX_DIR` | `~/.cache/mediagram-channel-index` | Where the channel's index snapshots are installed |
+| `MEDIAGRAM_POSTERS_COMMAND` | `mediagram` | The CLI run as `<command> posters --index <snapshot>` to fetch covers for a new snapshot |
 | `MEDIAGRAM_PLAYER_ADDR` | `127.0.0.1:8770` | Where to listen. **Leave it on loopback in production** |
 | `MEDIAGRAM_TRUST_PROXY` | `0` | Believe `X-Forwarded-For`. Set to `1` **only** behind a proxy |
 | `MEDIAGRAM_CACHE_DIR`, `MEDIAGRAM_CACHE_MAX` | `~/.cache/mediagram-player`, `8G` | Chunk cache and its quota |
@@ -322,14 +324,31 @@ instead.
 
 ### Where the catalog comes from
 
-Two ways, and the second is what makes the player independent of the machine
-that did the uploading.
+Three ways, in this order: a published package when one is configured, else
+the channel's pinned index, else the index on this machine.
+
+**The channel's pinned index.** Without a package, the player reads the newest
+index snapshot the uploader pinned to the channel — the same one the Android
+app reads — at startup and again the moment a new one is pinned, with no
+restart and no reload: open pages are told over `/api/events` and redraw
+themselves. Snapshots are installed under `MEDIAGRAM_CHANNEL_INDEX_DIR`, one
+directory per version with `current` naming the live one. An uploader on
+another machine is followed as closely as one on this machine. A channel that
+cannot be read leaves the last installed snapshot in service.
+
+A snapshot carries descriptions but no artwork, so after each one — and once at
+startup — the player runs `mediagram posters --index <snapshot>` itself
+(`MEDIAGRAM_POSTERS_COMMAND`, default `mediagram` on the `PATH`). That fetches
+the missing covers from TMDB into the folder beside `MEDIAGRAM_LIBRARY_DB`,
+where the player reads them, and open pages redraw with them. It needs the
+uploader's CLI and its TMDB key on this machine; without them the new titles
+show initials, and the player says why in its log.
 
 **The index on this machine.** `MEDIAGRAM_LIBRARY_DB` points at the
 `library.db` that `mediagram` writes, and the player opens it read-only. It
-has no default — `bun run login` writes the usual path into `.env` for you —
-and it is what the player uses unless a package is configured. Only useful
-where the player runs beside the uploader.
+has no default — `bun run login` writes the usual path into `.env` for you. It
+is served only when the channel has never been read and nothing is installed,
+such as a first start with no network.
 
 **A published package.** Set `MEDIAGRAM_PACKAGE_URL` and
 `MEDIAGRAM_PACKAGE_KEY`, and at startup the player fetches `latest.json`,

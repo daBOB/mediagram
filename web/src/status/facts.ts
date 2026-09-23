@@ -12,7 +12,7 @@
  */
 
 export interface CatalogFacts {
-  origin: "package" | "local";
+  origin: "package" | "channel" | "local";
   /** When the package was built, in milliseconds. `null` for a local index. */
   publishedAt: number | null;
   /** This run's refresh verdict, or `null` when no package is configured. */

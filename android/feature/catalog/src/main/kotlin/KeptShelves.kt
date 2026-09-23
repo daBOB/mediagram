@@ -2,9 +2,11 @@ package catalog
 
 import data.ProgressPoint
 import data.ResumePoint
+import model.KidsVerdict
 import model.MediaSet
 import model.Progress
 import model.WatchSnapshot
+import model.kidsVerdict
 
 /**
  * The masthead's four kept entries — Continue, Watchlist, Collections, Kids
@@ -21,7 +23,7 @@ enum class KeptKind(val label: String, val empty: String) {
     CONTINUE("Continue", "Nothing started yet."),
     WATCHLIST("Watchlist", "Nothing on the list."),
     COLLECTIONS("Collections", "No lists yet."),
-    KIDS("Kids", "Nothing marked yet. Open a title and press Kids in the player."),
+    KIDS("Kids", "Nothing rated FSK 12 or younger, and nothing marked. An unrated title can be marked with Kids in the player."),
 }
 
 /**
@@ -45,11 +47,31 @@ fun continueWall(shelves: List<Shelf>, watch: WatchSnapshot): List<MediaSet> {
 fun watchlistWall(shelves: List<Shelf>, watch: WatchSnapshot): List<MediaSet> = setsFor(shelves, watch.watchlist)
 
 /**
- * Titles marked for a child — `viewKids` in app.js. Newest-marked-first for
- * the same reason [watchlistWall] is: the core's own ordering, not one built
- * here.
+ * What a child may watch — `kidsShelf` in `age-rating.js`, which `viewKids`
+ * draws: films and shows rated FSK 12 or younger, then whatever unrated was
+ * marked by hand. The rules are [model.kidsVerdict]'s.
  */
-fun kidsWall(shelves: List<Shelf>, watch: WatchSnapshot): List<MediaSet> = setsFor(shelves, watch.kids)
+data class KidsShelf(val films: List<Entry.Film>, val series: List<Entry.Collection>, val byHand: List<MediaSet>) {
+    val total: Int get() = films.size + series.size + byHand.size
+}
+
+/**
+ * A show is rated as a show, so its first episode answers for all of it, as
+ * it does on the web. A course has no rating and only reaches the shelf a
+ * lesson at a time, by hand. Marked titles keep the core's own
+ * newest-marked-first order, as [watchlistWall] does; a mark on anything
+ * rated no longer counts, since its rating already decided.
+ */
+fun kidsShelf(shelves: List<Shelf>, watch: WatchSnapshot): KidsShelf {
+    val entries = shelves.flatMap(Shelf::entries)
+    val films = entries.filterIsInstance<Entry.Film>().filter { it.set.kidsVerdict() == KidsVerdict.SAFE }
+    val series = entries.filterIsInstance<Entry.Collection>().filter { collection ->
+        collection.kind == CollectionKind.SHOW &&
+            firstItemOf(collection.divisions)?.kidsVerdict() == KidsVerdict.SAFE
+    }
+    val byHand = setsFor(shelves, watch.kids).filter { it.kidsVerdict() == KidsVerdict.UNRATED }
+    return KidsShelf(films, series, byHand)
+}
 
 /** Ids to sets, quietly dropping any the catalog no longer holds — `setsFor` in app.js. */
 private fun setsFor(shelves: List<Shelf>, ids: List<String>): List<MediaSet> {

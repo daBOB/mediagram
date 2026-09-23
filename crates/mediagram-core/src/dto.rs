@@ -36,6 +36,10 @@ pub struct SetSummary {
     /// it, because two surfaces over one library should not need a
     /// translation table for the same fact.
     pub added_at: i64,
+    /// The age rating in the library's country (`"12"`), or `None` when the
+    /// title has none. A series is rated as a show, so every episode carries
+    /// its show's. Named as the web player names it.
+    pub fsk: Option<String>,
 }
 
 /// Flattens one catalog row. Never fails: a set whose episode field this
@@ -70,6 +74,9 @@ pub fn summary_from(set: &PlayableSet) -> SetSummary {
         total: set.total,
         part_count: set.part_count,
         added_at: set.created_at,
+        // Not on the row: the index keeps it per title, and the listing
+        // attaches it by poster key — see `store::list_sets`.
+        fsk: None,
     }
 }
 

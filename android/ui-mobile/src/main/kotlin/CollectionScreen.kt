@@ -21,12 +21,14 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import catalog.Division
 import catalog.Entry
+import catalog.firstItemOf
 import catalog.seasonPlatesOf
 import designsystem.Spacing
 import model.Kind
 import model.MediaSet
 import model.Progress
 import model.WatchSnapshot
+import model.ageLabel
 import uniffi.mediagram_core.TitleInfo
 
 /**
@@ -85,15 +87,18 @@ fun CollectionScreen(
                 modifier = Modifier.padding(bottom = Spacing.medium),
             )
         }
-        if (info != null || collection.posterPath != null) {
+        // A show is rated as a show, so any episode speaks for it — the
+        // first, as `series-header.js` asks. A course has no rating.
+        val age = firstItemOf(collection.divisions)?.ageLabel()
+        if (info != null || collection.posterPath != null || age != null) {
             item(key = "header") {
                 TitleHeader(
                     posterPath = collection.posterPath,
                     title = collection.name,
                     // A show is not a file: it has no one year and no one
                     // runtime, and the seasons below already say how much
-                    // of it there is.
-                    facts = null,
+                    // of it there is. Its age rating is the show's own.
+                    facts = age,
                     info = info,
                     modifier = Modifier.padding(bottom = Spacing.medium),
                 )

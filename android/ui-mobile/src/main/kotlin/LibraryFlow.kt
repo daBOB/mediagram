@@ -143,7 +143,11 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
             // The player gets the whole window; a film is the one thing here
             // that wants the space under the system bars.
             BackHandler { at.setId = null }
-            PlayerScreen(setId = setId, onBack = { at.setId = null })
+            PlayerScreen(
+                setId = setId,
+                fsk = catalogState.mediaSet(setId)?.fsk,
+                onBack = { at.setId = null },
+            )
         }
 
         // One branch for both, over the whole enum: a screen the menu

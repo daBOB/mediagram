@@ -11,6 +11,8 @@
 //! key a poster by, so `titles::distinct_titles` never yields one and nothing
 //! in this file has to know about the distinction.
 
+use std::path::Path;
+
 use anyhow::Result;
 use mediagram_tmdb::poster_files::{already_held, download_into};
 use mediagram_tmdb::posters::resolve_posters;
@@ -20,9 +22,15 @@ use crate::export::stage::POSTER_DIR;
 use crate::export::titles::distinct_titles;
 use crate::index::db;
 
-pub async fn run(cfg: &Config) -> Result<()> {
+pub async fn run(cfg: &Config, index: Option<&Path>) -> Result<()> {
     let data_dir = cfg.data_dir()?;
-    let titles = distinct_titles(&db::open_read_only(&data_dir, "illustrate")?)?;
+    let conn = match index {
+        // A snapshot from the uploading machine, which may be a schema behind
+        // this build; the titles this reads have been there since long before.
+        Some(path) => db::open_snapshot(path)?,
+        None => db::open_read_only(&data_dir, "illustrate")?,
+    };
+    let titles = distinct_titles(&conn)?;
     if titles.is_empty() {
         println!("no films or series in the index; nothing to fetch");
         return Ok(());

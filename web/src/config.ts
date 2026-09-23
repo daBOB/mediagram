@@ -97,6 +97,16 @@ export interface Config {
   /** Where decrypted catalogs are kept, one directory per version. */
   catalogDir: string;
   /**
+   * Where the channel's index snapshots are installed, one directory per
+   * version. Only used when no package is configured.
+   */
+  channelIndexDir: string;
+  /**
+   * The uploader's CLI, run as `<command> posters --index <snapshot>` to fetch
+   * cover art for what a channel snapshot brought in.
+   */
+  postersCommand: string;
+  /**
    * Whether `X-Forwarded-For` may be believed.
    *
    * Set it only where a reverse proxy really is in front. Anywhere else the
@@ -179,6 +189,9 @@ export function load(): Config {
     packageKey: process.env.MEDIAGRAM_PACKAGE_KEY || null,
     catalogDir:
       process.env.MEDIAGRAM_CATALOG_DIR ?? `${process.env.HOME}/.cache/mediagram-catalog`,
+    channelIndexDir:
+      process.env.MEDIAGRAM_CHANNEL_INDEX_DIR ?? `${process.env.HOME}/.cache/mediagram-channel-index`,
+    postersCommand: process.env.MEDIAGRAM_POSTERS_COMMAND || "mediagram",
     trustProxy: /^(1|true|yes)$/i.test(process.env.MEDIAGRAM_TRUST_PROXY ?? ""),
     hostname: addr.slice(0, colon) || "127.0.0.1",
     port: Number(addr.slice(colon + 1)),
@@ -209,6 +222,8 @@ export function describe(config: Config): Record<string, unknown> {
     // reaches a log, the same way the Telegram session does not.
     packageKey: config.packageKey === null ? null : "<redacted>",
     catalogDir: config.catalogDir,
+    channelIndexDir: config.channelIndexDir,
+    postersCommand: config.postersCommand,
     address: `${config.hostname}:${config.port}`,
   };
 }

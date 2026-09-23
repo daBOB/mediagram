@@ -13,6 +13,7 @@
  * trade costs nothing that matters.
  */
 
+import type { CatalogEvents } from "./catalog-events";
 import type { Database } from "bun:sqlite";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { clientAddress } from "./client-reach";
@@ -33,6 +34,16 @@ import type { SheetStore } from "./thumbs/sheets";
 export interface RunningServer {
   port: number;
   close(): Promise<void>;
+  /**
+   * Serves another catalog from the next request on.
+   *
+   * The router is rebuilt rather than patched: everything it derives from the
+   * index — the search index, every query's handle — is derived in
+   * `createRouter`, so building it again over the new handle is the one place
+   * that cannot forget something. A request already running keeps the router
+   * it started with, so a stream in flight finishes on the catalog it opened.
+   */
+  replaceCatalog(next: { db: Database; catalog: CatalogOrigin }): void;
 }
 
 /**
@@ -151,20 +162,25 @@ export function startServer(options: {
   held?: HeldSets;
   /** Makes and serves scrub-bar preview sheets, where this player makes them. */
   thumbs?: SheetStore;
+  /** Where open pages hear that the catalog changed. */
+  events?: CatalogEvents;
 }): Promise<RunningServer> {
-  const route = createRouter({
-    db: options.db,
-    source: options.source,
-    hls: options.hls,
-    posters: options.posters,
-    audio: options.audio,
-    state: options.state,
-    maxBitrate: options.maxBitrate,
-    catalog: options.catalog,
-    status: options.status,
-    held: options.held,
-    thumbs: options.thumbs,
-  });
+  const routerFor = (db: Database, catalog: CatalogOrigin | undefined) =>
+    createRouter({
+      db,
+      source: options.source,
+      hls: options.hls,
+      posters: options.posters,
+      audio: options.audio,
+      state: options.state,
+      maxBitrate: options.maxBitrate,
+      catalog,
+      status: options.status,
+      held: options.held,
+      thumbs: options.thumbs,
+      events: options.events,
+    });
+  let route = routerFor(options.db, options.catalog);
   const trustProxy = options.trustProxy ?? false;
 
   const server = createServer((request, response) => {
@@ -208,6 +224,9 @@ export function startServer(options: {
             server.closeAllConnections?.();
             server.close(() => done());
           }),
+        replaceCatalog: (next) => {
+          route = routerFor(next.db, next.catalog);
+        },
       });
     });
   });

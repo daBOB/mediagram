@@ -47,6 +47,10 @@ pub struct TitleDetailsRow {
     /// What the provider says exists, against which a library can be counted.
     pub total_seasons: Option<u32>,
     pub total_episodes: Option<u32>,
+    /// The age rating in the library's country — an FSK in Germany: `0`, `6`,
+    /// `12`, `16`, `18`. Not part of the details payload; see
+    /// [`crate::certification`], which fills it.
+    pub certification: Option<String>,
 }
 
 /// Reads a details payload into a row, keeping only what a viewer would read.
@@ -81,5 +85,7 @@ pub fn from_details(kind: Kind, lang: &str, details: &DetailsResponse) -> TitleD
         // Zero seasons is a record nobody has filled in, not a show with none.
         total_seasons: details.number_of_seasons.filter(|n| *n > 0),
         total_episodes: details.number_of_episodes.filter(|n| *n > 0),
+        // A separate request; see `crate::certification`.
+        certification: None,
     }
 }

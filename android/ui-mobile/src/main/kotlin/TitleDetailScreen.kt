@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import designsystem.Spacing
 import model.MediaSet
+import model.ageLabel
 import uniffi.mediagram_core.TitleInfo
 
 /** Wide enough to recognise a poster by, narrow enough to leave the facts a column. */
@@ -56,7 +57,7 @@ fun TitleDetailScreen(set: MediaSet, info: TitleInfo?, onPlay: () -> Unit) {
         TitleHeader(
             posterPath = set.posterPath,
             title = set.title,
-            facts = factsLine(set.year, set.durationSecs),
+            facts = factsLine(set.year, set.durationSecs, set.ageLabel()),
             info = info,
         )
 

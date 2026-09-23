@@ -43,6 +43,7 @@ fn a_fully_populated_row() -> TitleDetailsRow {
         last_air: Some("2023-06-02".into()),
         total_seasons: Some(2),
         total_episodes: Some(18),
+        certification: Some("16".into()),
     }
 }
 

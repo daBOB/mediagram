@@ -172,9 +172,9 @@ dependencies = [
 
 [[package]]
 name = "async-compat"
-version = "0.2.5"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1ba85bc55464dcbf728b56d97e119d673f4cf9062be330a9a26f3acf504a590"
+checksum = "4c97d7ff3c25d6c10d64170c12acaf5d4245e76dece3779c1d92b153a64f11df"
 dependencies = [
  "futures-core",
  "futures-io",
@@ -1170,9 +1170,9 @@ dependencies = [
 
 [[package]]
 name = "hyper-rustls"
-version = "0.27.9"
+version = "0.27.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33ca68d021ef39cf6463ab54c1d0f5daf03377b70561305bb89a8f83aab66e0f"
+checksum = "dfa8e654703247911e29c23fbeaa261834bd9bb74efba2f9acddc37bfb127f53"
 dependencies = [
  "http",
  "hyper",
@@ -1462,9 +1462,9 @@ dependencies = [
 
 [[package]]
 name = "libredox"
-version = "0.1.24"
+version = "0.1.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6480ccc157a1389bb2e4891b24751b0f798ba640d22386f23143fbcc89da195a"
+checksum = "61ff90caf6077a803a240f62fdbe88645a890bbca49ef8174c3cb0404362171d"
 dependencies = [
  "libc",
 ]
@@ -1586,7 +1586,7 @@ checksum = "7ebb8d8732c6a6df3d8f032a82911cfc747e00efb95cc46e8d0acd5b5b88570c"
 
 [[package]]
 name = "mediagram"
-version = "0.33.0"
+version = "0.38.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -1624,7 +1624,7 @@ dependencies = [
 
 [[package]]
 name = "mediagram-core"
-version = "0.33.0"
+version = "0.38.0"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -1661,7 +1661,7 @@ dependencies = [
 
 [[package]]
 name = "mediagram-tmdb"
-version = "0.33.0"
+version = "0.38.0"
 dependencies = [
  "anyhow",
  "hex",
@@ -1726,7 +1726,7 @@ dependencies = [
 
 [[package]]
 name = "mlib-spec"
-version = "0.33.0"
+version = "0.38.0"
 dependencies = [
  "hex",
  "regex",

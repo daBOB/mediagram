@@ -3221,6 +3221,13 @@ data class SetSummary (
      * translation table for the same fact.
      */
     var `addedAt`: kotlin.Long
+    , 
+    /**
+     * The age rating in the library's country (`"12"`), or `None` when the
+     * title has none. A series is rated as a show, so every episode carries
+     * its show's. Named as the web player names it.
+     */
+    var `fsk`: kotlin.String?
     
 ){
     
@@ -3257,6 +3264,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterULong.read(buf),
             FfiConverterUInt.read(buf),
             FfiConverterLong.read(buf),
+            FfiConverterOptionalString.read(buf),
         )
     }
 
@@ -3280,7 +3288,8 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.allocationSize(value.`posterKey`) +
             FfiConverterULong.allocationSize(value.`total`) +
             FfiConverterUInt.allocationSize(value.`partCount`) +
-            FfiConverterLong.allocationSize(value.`addedAt`)
+            FfiConverterLong.allocationSize(value.`addedAt`) +
+            FfiConverterOptionalString.allocationSize(value.`fsk`)
     )
 
     override fun write(value: SetSummary, buf: ByteBuffer) {
@@ -3304,6 +3313,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterULong.write(value.`total`, buf)
             FfiConverterUInt.write(value.`partCount`, buf)
             FfiConverterLong.write(value.`addedAt`, buf)
+            FfiConverterOptionalString.write(value.`fsk`, buf)
     }
 }
 

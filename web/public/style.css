@@ -1909,3 +1909,28 @@ dialog.with-notes .hud { right: var(--notes-width); }
 .series-tagline { font-style: italic; color: var(--dim); font-size: 13px; margin-top: 10px; }
 .series-provenance { color: var(--dim); font-size: 13px; }
 .series-overview { font-size: 14px; line-height: 1.55; max-width: 68ch; margin-top: 8px; }
+
+/* Genres as links to their shelves, on a film's page and a show's header. */
+.genre-links { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; font-size: 13px; }
+.genre-links .genre {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.genre-links .genre:hover, .genre-links .genre:focus-visible { border-bottom-color: var(--accent); }
+.film-score { color: var(--ink-2); font-size: 13px; margin-top: 10px; }
+.film-page .series-art { flex-basis: 150px; }
+@media (max-width: 560px) { .film-page .series-art { flex-basis: 96px; } }
+.film-play {
+  margin-top: 14px;
+  padding: 0.45rem 1.1rem;
+  font: inherit;
+  font-size: 14px;
+  color: var(--accent);
+  background: none;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  cursor: pointer;
+}
+.film-play:hover { color: #fff; background: var(--accent); }
+.shelf-sub { font-size: 15px; font-weight: 600; margin: 22px 0 10px; color: var(--ink-2); }

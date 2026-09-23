@@ -47,6 +47,12 @@ data class MediaSet(
      * exists to answer.
      */
     val addedAt: Long = 0,
+    /**
+     * The age rating in the library's country (`"12"`), or null when the
+     * title has none. An episode carries its show's. Named as the web
+     * player names it; what it decides is in `AgeRating.kt`.
+     */
+    val fsk: String? = null,
 )
 
 enum class Kind {

@@ -57,10 +57,22 @@ pub fn open(data_dir: &Path) -> Result<Connection> {
 /// rather than upgraded behind the uploader's back. `purpose` finishes the
 /// sentence "nothing to ..." when there is no index at all.
 pub fn open_read_only(data_dir: &Path, purpose: &str) -> Result<Connection> {
-    let path = require_index(data_dir, purpose)?;
+    open_at_least(&require_index(data_dir, purpose)?, mlib_spec::schema::SCHEMA_VERSION)
+}
+
+/// A snapshot someone else wrote — the channel's index a player installed —
+/// opened for reading. Accepted down to
+/// [`mlib_spec::schema::OLDEST_READABLE_SCHEMA`]: it cannot be migrated here,
+/// and the machine that wrote it may not be upgraded yet. A reader of one must
+/// treat anything newer than that floor as possibly absent.
+pub fn open_snapshot(path: &Path) -> Result<Connection> {
+    open_at_least(path, mlib_spec::schema::OLDEST_READABLE_SCHEMA)
+}
+
+fn open_at_least(path: &Path, oldest: i64) -> Result<Connection> {
     super::sqlite_init::configure();
     let conn = Connection::open_with_flags(
-        &path,
+        path,
         rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
     )
     .with_context(|| format!("opening {} read-only", path.display()))?;
@@ -72,11 +84,10 @@ pub fn open_read_only(data_dir: &Path, purpose: &str) -> Result<Connection> {
         )
         .map(|v| v.parse().unwrap_or(0))
         .unwrap_or(0);
-    if version < mlib_spec::schema::SCHEMA_VERSION {
+    if version < oldest {
         anyhow::bail!(
-            "{} is at schema v{version}, this build expects v{}; run any writing command once to migrate it",
+            "{} is at schema v{version}, this build expects v{oldest}; run any writing command once to migrate it",
             path.display(),
-            mlib_spec::schema::SCHEMA_VERSION
         );
     }
     Ok(conn)

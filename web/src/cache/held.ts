@@ -33,8 +33,8 @@ const SCAN_BATCH = 24;
  * in one pass over a table that is already indexed by set. Only `done` parts
  * count: a set still uploading cannot be complete on a player's disk either.
  *
- * Folded once by the caller and never again — the catalog is read-only for
- * the life of the process, so what a set needs cannot change under us.
+ * Folded again only when the server swaps in another catalog (see
+ * `HeldSets.replaceExpected`): what a set needs cannot change under a handle.
  */
 export function expectedChunks(db: Database): Map<string, number> {
   const rows = db
@@ -74,9 +74,23 @@ export class HeldSets {
   constructor(
     /** The cache directory itself; the chunk size is a level inside it. */
     private readonly root: string,
-    private readonly expected: Map<string, number>,
+    private expected: Map<string, number>,
     private readonly now: () => number = () => Date.now(),
   ) {}
+
+  /**
+   * Answers against another catalog from now on, and rescans at once.
+   *
+   * A swapped catalog can hold titles the old one did not, and a title's size
+   * is what says whether it is held; the old sizes would call a new title
+   * streaming for as long as the process ran.
+   */
+  replaceExpected(expected: Map<string, number>): Promise<void> {
+    this.expected = expected;
+    this.scannedAt = 0;
+    // A scan already running is over the old sizes; the next one is not.
+    return (this.scanning ?? Promise.resolve()).then(() => this.refresh());
+  }
 
   /**
    * Whether this set plays without the network, as of the last scan.

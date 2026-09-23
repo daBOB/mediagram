@@ -156,3 +156,45 @@ fn a_stamp_from_the_future_is_not_believed() {
     assert_eq!(pushed_at(&future, NOW), NOW);
     assert_eq!(pushed_at(&pushed(NOW + 60), NOW), NOW + 60);
 }
+
+/// The cases the web's port is checked against, run here as well so the
+/// two cannot choose different snapshots. Core is the authority: a case that
+/// passes only after a change on the web does not belong in the file.
+#[test]
+fn the_shared_pick_index_fixtures_hold() {
+    #[derive(serde::Deserialize)]
+    struct Fixture {
+        now: i64,
+        cases: Vec<Case>,
+    }
+    #[derive(serde::Deserialize)]
+    struct Case {
+        name: String,
+        candidates: Vec<Candidate>,
+        expect: serde_json::Value,
+    }
+    #[derive(serde::Deserialize)]
+    struct Candidate {
+        text: String,
+        id: i64,
+    }
+
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../web/test/fixtures/pick-index/cases.json");
+    // Skipped without the web checkout, as the other shared fixtures are.
+    let Ok(text) = std::fs::read_to_string(&path) else {
+        eprintln!("skipping: {} is not present", path.display());
+        return;
+    };
+    let fixture: Fixture = serde_json::from_str(&text).unwrap();
+    for case in fixture.cases {
+        let candidates: Vec<(&str, i64)> = case.candidates.iter().map(|c| (c.text.as_str(), c.id)).collect();
+        let got = match pick_index(&candidates, fixture.now) {
+            Ok(index) => serde_json::json!(index),
+            Err(err) if err.to_string().ends_with(NOTHING_PINNED) => serde_json::json!("nothing-pinned"),
+            Err(err) if err.to_string().ends_with(NOT_AN_INDEX) => serde_json::json!("not-an-index"),
+            Err(err) => panic!("{}: unexpected {err}", case.name),
+        };
+        assert_eq!(got, case.expect, "{}", case.name);
+    }
+}

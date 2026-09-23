@@ -60,7 +60,15 @@ pub(super) fn list_sets(core: &Core) -> Result<Vec<SetSummary>, CoreError> {
     }
     let conn = open_ro(&path)?;
     let sets = queries::list_playable(&conn).map_err(CoreError::io("reading the catalog"))?;
-    Ok(sets.iter().map(dto::summary_from).collect())
+    let ratings = crate::shows::certifications(&conn).map_err(CoreError::io("reading age ratings"))?;
+    Ok(sets
+        .iter()
+        .map(|set| {
+            let mut summary = dto::summary_from(set);
+            summary.fsk = summary.poster_key.as_ref().and_then(|key| ratings.get(key).cloned());
+            summary
+        })
+        .collect())
 }
 
 /// Looks in the current version's own `posters/` first, then in the

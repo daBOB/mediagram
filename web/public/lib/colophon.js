@@ -90,11 +90,13 @@ export function colophonLine(sets, catalog, now = new Date()) {
 
   if (catalog) {
     // A local index has no publication date because nothing published it —
-    // the player is reading the uploader's own library off this disk.
+    // the player is reading the uploader's own library off this disk. A
+    // package and a channel snapshot were both published, and say when.
     parts.push(
-      catalog.origin === "package"
-        ? (catalogueAge(catalog.publishedAt ?? null, now.getTime()) ?? "published catalogue")
-        : "read from this machine",
+      catalog.origin === "local"
+        ? "read from this machine"
+        : (catalogueAge(catalog.publishedAt ?? null, now.getTime()) ??
+            (catalog.origin === "channel" ? "the channel's index" : "published catalogue")),
     );
     if (Number.isFinite(catalog.schema)) parts.push(`schema ${catalog.schema}`);
   }

@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import designsystem.Spacing
+import model.KidsVerdict
 import player.PlayerMarksState
 
 /**
@@ -34,8 +35,10 @@ internal fun PlayerMarks(marks: PlayerMarksState?, actions: PlayerMarksActions, 
             onClick = actions.onToggleWatchlist,
         )
         MarkButton(
-            label = if (marks.kids) "For kids" else "Kids",
+            label = kidsLabel(marks),
             onClick = actions.onToggleKids,
+            // A rated title's rating decided; there is nothing to press.
+            enabled = marks.kidsVerdict == KidsVerdict.UNRATED,
         )
         MarkButton(label = "Add to list", onClick = { addingToList = true })
     }
@@ -59,9 +62,24 @@ internal data class PlayerMarksActions(
     val onCreateList: (name: String) -> Unit,
 )
 
+/** What the Kids button says — the three wordings `refreshKids` in `player.js` chooses between. */
+internal fun kidsLabel(marks: PlayerMarksState): String = when (marks.kidsVerdict) {
+    KidsVerdict.SAFE -> "For kids · ${marks.ageLabel}"
+    KidsVerdict.UNSAFE -> "${marks.ageLabel} · not for kids"
+    KidsVerdict.UNRATED -> if (marks.kids) "For kids" else "Kids"
+}
+
 @Composable
-private fun MarkButton(label: String, onClick: () -> Unit) {
-    TextButton(onClick = onClick) {
-        Text(text = label, color = Color.White, style = MaterialTheme.typography.labelLarge)
+private fun MarkButton(label: String, onClick: () -> Unit, enabled: Boolean = true) {
+    TextButton(onClick = onClick, enabled = enabled) {
+        // Dimmed rather than hidden when it cannot be pressed: the rating
+        // it reports is still worth reading.
+        Text(
+            text = label,
+            color = if (enabled) Color.White else Color.White.copy(alpha = DISABLED_ALPHA),
+            style = MaterialTheme.typography.labelLarge,
+        )
     }
 }
+
+private const val DISABLED_ALPHA = 0.7f

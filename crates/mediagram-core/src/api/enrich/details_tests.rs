@@ -14,7 +14,7 @@ fn described(kind: Kind, id: u64, overview: &str) -> TitleDetailsRow {
         lang: "en-US".into(),
         overview: Some(overview.into()),
         tagline: None, genres: None, rating: None, network: None, status: None,
-        first_air: None, last_air: None, total_seasons: None, total_episodes: None,
+        first_air: None, last_air: None, total_seasons: None, total_episodes: None, certification: None,
     }
 }
 

@@ -29,7 +29,7 @@ export async function loadLink() {
     const said = await response.json();
     link = { ...link, remote: said.remote === true, maxBitrate: Number(said.maxBitrate) || 0 };
     catalog = {
-      origin: said.catalog?.origin === "package" ? "package" : "local",
+      origin: ["package", "channel"].includes(said.catalog?.origin) ? said.catalog.origin : "local",
       publishedAt: Number.isFinite(said.catalog?.publishedAt) ? said.catalog.publishedAt : null,
       schema: Number(said.schema) || null,
     };

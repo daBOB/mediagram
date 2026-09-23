@@ -22,8 +22,10 @@ import androidx.compose.ui.Modifier
 import catalog.Division
 import catalog.Entry
 import catalog.SeasonPlate
+import catalog.firstItemOf
 import designsystem.Spacing
 import model.WatchSnapshot
+import model.ageLabel
 import uniffi.mediagram_core.TitleInfo
 
 /**
@@ -57,12 +59,15 @@ internal fun SeasonWall(
                 modifier = Modifier.padding(bottom = Spacing.medium),
             )
         }
-        if (info != null || collection.posterPath != null) {
+        // A show is rated as a show, so any episode speaks for it — the
+        // first, as `series-header.js` asks. A course has no rating.
+        val age = firstItemOf(collection.divisions)?.ageLabel()
+        if (info != null || collection.posterPath != null || age != null) {
             item(key = "header", span = { GridItemSpan(maxLineSpan) }) {
                 TitleHeader(
                     posterPath = collection.posterPath,
                     title = collection.name,
-                    facts = null,
+                    facts = age,
                     info = info,
                     modifier = Modifier.padding(bottom = Spacing.medium),
                 )

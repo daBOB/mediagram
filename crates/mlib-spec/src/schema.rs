@@ -1,7 +1,17 @@
 //! SQLite DDL for `library.db`. The uploader keeps this file locally as the
 //! canonical index and pushes a snapshot to the channel as a pinned document.
 
-pub const SCHEMA_VERSION: i64 = 6;
+pub const SCHEMA_VERSION: i64 = 7;
+
+/// The oldest index a *reader* of someone else's snapshot still accepts.
+///
+/// A channel snapshot is written by whichever machine uploads, and that
+/// machine is upgraded on its own schedule; refusing its snapshot until then
+/// would stop every reader. v7 only added `shows.certification`, which every
+/// reader treats as optional. The web player's `OLDEST_READABLE_SCHEMA`
+/// (`web/src/catalog.ts`) is the same number. The uploader's own index is
+/// still held to [`SCHEMA_VERSION`]: that one it can migrate.
+pub const OLDEST_READABLE_SCHEMA: i64 = 6;
 
 /// The index's file name, wherever a copy of it sits: the uploader's data
 /// directory, the snapshot pinned in the channel, and a metadata package all
@@ -15,7 +25,7 @@ pub const INDEX_FILE: &str = "library.db";
 /// what lets a migration do something other than `CREATE ... IF NOT EXISTS`.
 /// SQLite has no `ADD COLUMN IF NOT EXISTS`, so an idempotent-by-wording list
 /// could never gain a column.
-pub const GROUPS: &[&[&str]] = &[V1, V2, V3, V4, V5, V6];
+pub const GROUPS: &[&[&str]] = &[V1, V2, V3, V4, V5, V6, V7];
 
 /// Every statement needed to reach `version` from an empty database. Used by
 /// tests and by anyone reconstructing an older layout.
@@ -118,6 +128,13 @@ const V6: &[&str] = &[
     "ALTER TABLE shows ADD COLUMN total_seasons INTEGER",
     "ALTER TABLE shows ADD COLUMN total_episodes INTEGER",
 ];
+
+/// v6 → v7: the age rating a title carries in the library's country.
+///
+/// What decides whether a title may sit on the Kids shelf without anyone
+/// having marked it. Text, as the provider writes it (`12`, `FSK 16` is never
+/// the form), because some countries rate with letters.
+const V7: &[&str] = &["ALTER TABLE shows ADD COLUMN certification TEXT"];
 
 /// How `sets.status` and `parts.status` spell each state. Written once here,
 /// beside the one SQL fragment that has to spell them inline; every other

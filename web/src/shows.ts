@@ -50,3 +50,51 @@ export function showMeta(db: Database, key: string): ShowMeta | null {
     return null;
   }
 }
+
+/** What the catalog rows carry about a title from its provider entry. */
+export interface ProviderFacts {
+  genres: string[];
+  /** The age rating in the library's country (`12`), or `null` when none. */
+  fsk: string | null;
+}
+
+/**
+ * Every show's genres and age rating, by the key `posterKeyFor` gives it
+ * (`tmdb-movie-603`).
+ *
+ * Read once per catalog rather than per row: the catalog route builds every
+ * row in one pass, and a genre or Kids shelf needs all of them. Split here so
+ * the page never has to know the provider's separator.
+ *
+ * The rating is schema v7. A v6 index — a channel whose uploader is not
+ * upgraded yet — has no such column, and its titles read as unrated.
+ */
+export function providerFactsByShow(db: Database): Map<string, ProviderFacts> {
+  const byKey = new Map<string, ProviderFacts>();
+  let rows: { kind: string; id: number; genres: string | null; fsk: string | null }[];
+  try {
+    rows = readRows(db, "certification");
+  } catch {
+    try {
+      rows = readRows(db, "NULL");
+    } catch {
+      // No such table: an index written before descriptions were recorded.
+      return byKey;
+    }
+  }
+  for (const row of rows) {
+    const genres = (row.genres ?? "")
+      .split(",")
+      .map((name) => name.trim())
+      .filter((name) => name !== "");
+    const fsk = row.fsk?.trim() || null;
+    byKey.set(`tmdb-${row.kind}-${row.id}`, { genres, fsk });
+  }
+  return byKey;
+}
+
+function readRows(db: Database, certification: "certification" | "NULL") {
+  return db
+    .query(`SELECT kind, id, genres, ${certification} AS fsk FROM shows WHERE source = 'tmdb'`)
+    .all() as { kind: string; id: number; genres: string | null; fsk: string | null }[];
+}

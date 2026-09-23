@@ -16,7 +16,7 @@
  */
 
 import { createHash } from "node:crypto";
-import { mkdir, readFile, readdir, rename, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { openPackage } from "./open";
@@ -28,11 +28,11 @@ import {
   type Pointer,
 } from "./pointer";
 import { unpackTo } from "./unpack";
+import { CURRENT, FUTURE_TOLERANCE_SECONDS, removeOtherVersions, swapCurrent } from "./catalog-versions";
 
 export type { Pointer };
 
 /** Where the live catalog is, whichever version that currently is. */
-const CURRENT = "current";
 /** Written into a version directory so identity and catalog cannot disagree. */
 const IDENTITY_FILE = "identity.json";
 const MANIFEST_FILE = "manifest.json";
@@ -43,7 +43,6 @@ const MANIFEST_FILE = "manifest.json";
  * Clocks disagree by minutes, not days. A package dated next year is either a
  * mistake or an attempt to make every later one look stale.
  */
-const FUTURE_TOLERANCE_SECONDS = 24 * 60 * 60;
 
 /** The five fields the cipher authenticates. What "already held" means. */
 export interface Identity {
@@ -255,30 +254,5 @@ async function checkManifest(dir: string, pointer: Pointer): Promise<void> {
   }
   if (manifest.schema !== pointer.schema) {
     throw new Error("the package manifest disagrees with the pointer about its schema");
-  }
-}
-
-/**
- * Points `current` at `version`, atomically.
- *
- * A symlink renamed over another is a single operation, so a reader that dies
- * mid-refresh is looking at one whole catalog or the other, never at half of
- * each. An already-open SQLite handle keeps the version it opened, which is
- * what should happen: a refresh must not pull the database out from under a
- * query in flight.
- */
-async function swapCurrent(root: string, version: string): Promise<void> {
-  const staged = join(root, `.current-${process.pid}`);
-  await rm(staged, { force: true });
-  await symlink(version, staged);
-  await rename(staged, join(root, CURRENT));
-}
-
-async function removeOtherVersions(root: string, keepName: string): Promise<void> {
-  const entries = await readdir(root).catch(() => [] as string[]);
-  for (const name of entries) {
-    if (name === keepName || name === CURRENT) continue;
-    if (!name.startsWith("v-") && !name.startsWith("incoming-")) continue;
-    await rm(join(root, name), { recursive: true, force: true });
   }
 }

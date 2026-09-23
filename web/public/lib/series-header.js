@@ -19,6 +19,9 @@ import {
   summarize,
   yearLine,
 } from "./series-summary.js";
+import { genreLinks } from "./film-page.js";
+import { ageLabel } from "./age-rating.js";
+import { firstItemOf } from "./library.js";
 
 /**
  * @param {object} collection a grouped show, as `groupLibrary` builds one
@@ -47,6 +50,8 @@ export function seriesHeader(collection, poster, meta = null) {
     if (text) body.append(el("p", className, text));
   };
   line(scaleLine(facts, meta), "series-scale");
+  // A show is rated once, so any episode answers for all of them.
+  line(ageLabel(firstItemOf(collection.divisions)), "series-age");
   line(yearLine(facts, meta), "series-years");
   line(pictureLine(facts), "series-picture");
 
@@ -88,9 +93,20 @@ export function describeSeries(header, meta) {
 
   for (const [text, className] of [
     [meta.tagline ?? null, "series-tagline"],
-    [provenance(meta), "series-provenance"],
-    [meta.overview ?? null, "series-overview"],
+    // The genres leave this line to become links of their own, below.
+    [provenance({ ...meta, genres: null }), "series-provenance"],
   ]) {
     if (text) body.append(el("p", className, text));
   }
+  const links = genreLinks(splitGenres(meta.genres));
+  if (links) body.append(links);
+  if (meta.overview) body.append(el("p", "series-overview", meta.overview));
+}
+
+/** The provider's comma-separated genres, as names. */
+function splitGenres(genres) {
+  return String(genres ?? "")
+    .split(",")
+    .map((name) => name.trim())
+    .filter((name) => name !== "");
 }

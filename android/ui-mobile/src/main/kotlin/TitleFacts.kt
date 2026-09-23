@@ -30,15 +30,17 @@ internal fun humanDuration(seconds: Int?): String? {
 }
 
 /**
- * The line beside a poster: `2004 · 1h 53m`, or whichever half of it the
- * index recorded, or nothing when it recorded neither.
+ * The line beside a poster: `2004 · 1h 53m · FSK 12`, or whichever parts of
+ * it are known, or nothing when none is. The age rating sits after the
+ * runtime, where the web's film page puts it; a shelf card leaves it off.
  *
  * A year of zero is what an index writes when it has no year rather than a
  * title from the year zero, so it is not printed.
  */
-internal fun factsLine(year: Int?, durationSecs: Int?): String? = listOfNotNull(
+internal fun factsLine(year: Int?, durationSecs: Int?, ageLabel: String? = null): String? = listOfNotNull(
     year?.takeIf { it > 0 }?.toString(),
     humanDuration(durationSecs),
+    ageLabel,
 ).joinToString(" · ").takeIf(String::isNotEmpty)
 
 /**

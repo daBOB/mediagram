@@ -6,6 +6,7 @@
 //! what a poster path is allowed to look like — and the two would drift
 //! apart the first time only one of them was fixed.
 
+pub mod certification;
 pub mod details;
 pub mod disk_cache;
 pub mod localized;

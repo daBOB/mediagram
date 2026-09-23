@@ -7,8 +7,65 @@ to `main`. Full phase-by-phase detail lives in
 
 ## 2026-09-23
 
+**Added**
+
+- Age ratings decide the Kids shelf. `mediagram add` and `mediagram metadata`
+  now record each title's TMDB age rating for the library's country — the
+  FSK, with `tmdb_language = "de-DE"` — in `shows.certification` (index
+  schema v7). Its own cached request (`/movie/{id}/release_dates`,
+  `/tv/{id}/content_ratings`), so the details payloads already cached stay
+  hits. On the web player, a title rated FSK 12 or younger is on the Kids
+  shelf without being marked; one rated 16 or 18 cannot be marked and an old
+  mark no longer counts; an unrated title is marked by hand as before. The
+  film page and the series header show the rating. The web keeps reading v6
+  indexes, so a channel whose uploader is not upgraded yet still plays — its
+  titles just read as unrated. Measured on this machine's index: 509 of 525
+  titles rated in 68 s. **Upgrade `mediagram` on the uploading machine and run
+  `mediagram metadata` there once** so the channel's snapshots carry ratings.
+
+- The Android app follows the same age-rating rules. Each catalog row now
+  carries its title's rating (`SetSummary.fsk`, attached by poster key, so an
+  episode carries its show's). The Kids tab holds films and shows rated FSK 12
+  or younger, then unrated titles marked by hand, under the web's own
+  headings. In the player, the Kids button reads `For kids · FSK 6` or
+  `FSK 16 · not for kids` and cannot be pressed for a rated title. The title
+  page and the series header show the rating.
+
+- A film has a page on the web player. Its card opens it — poster, year,
+  runtime, the TMDB user score, its genres, the description and a Play (or
+  Resume) button — instead of starting playback at once; the Continue shelf
+  still resumes directly. Every genre, on a film's page and on a series
+  header, is a link to a shelf of the films and series tagged with it
+  (`#/genre/<name>`). No new fetching: genres and score were already recorded
+  by `mediagram metadata` and carried in every index; `/api/sets` rows now
+  include each title's `genres`. The Android app's title page still shows
+  genres as plain text — porting the links and the shelf is the next step
+  (plan `260923-1551-film-page-and-genre-shelves`).
+
+- The web player follows the channel's index, as the Android app does. Its
+  server installs the newest pinned snapshot at startup and again the moment
+  the uploader pins a new one — pushed by Telegram, not polled — and tells
+  open pages over server-sent events, so a new upload appears on a page
+  nobody touched. Before, it read this machine's `library.db` only, and
+  uploads from another machine reached it only after a hand-run
+  `mediagram rescan`. The newest snapshot is chosen by core's rule, shared
+  through `web/test/fixtures/pick-index/`. A package, when configured, is
+  still the catalog; this machine's index is only the offline fallback. The
+  tab-return refresh added earlier today is replaced by the event stream.
+- New titles from the channel get their covers without anyone running
+  anything: after each snapshot, and once at startup, the web player runs
+  `mediagram posters --index <snapshot>`, which reads the snapshot's titles
+  and writes their art where the player looks, then tells open pages again.
+  Descriptions already travel in the snapshot. Measured: 20 missing covers
+  fetched in about a second, every film on the shelf then had one.
+
 **Fixed**
 
+- The core read `shows.certification` unconditionally, so on a v6 index
+  (what the channel holds until the uploading machine is upgraded) every
+  title description on the phone failed to load. The column is now read only
+  where it exists, as the web does. A v6 metadata package is also accepted
+  again: v7 had narrowed `SUPPORTED_SCHEMA` to `[7]`.
 - The Android player's Watchlist, Kids and Add to list sit below the status
   bar's band. Flush to the top of a full-screen film they shared the strip
   the system keeps for its own gestures, and taps there often went to the

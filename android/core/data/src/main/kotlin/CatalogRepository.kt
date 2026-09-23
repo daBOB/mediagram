@@ -129,6 +129,7 @@ class DefaultCatalogRepository(
             partCount = summary.partCount.toInt(),
             posterKey = summary.posterKey,
             addedAt = summary.addedAt,
+            fsk = summary.fsk,
         )
     }
 }

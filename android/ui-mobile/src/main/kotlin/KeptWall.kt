@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.HorizontalDivider
@@ -18,7 +19,9 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import catalog.Entry
 import catalog.KeptKind
+import catalog.KidsShelf
 import catalog.SetCard
 import catalog.resumeLine
 import designsystem.Spacing
@@ -98,4 +101,67 @@ private fun WallHeading(title: String, total: Int) {
             color = MaterialTheme.colorScheme.outlineVariant,
         )
     }
+}
+
+/**
+ * The Kids tab — `viewKids` in app.js: what the ratings put there, then what
+ * was marked by hand, each under its own heading once there is more than one
+ * kind to tell apart. A show's card opens the show, as it does on its own
+ * shelf; a hand-marked title is a plate, as on the other kept walls.
+ */
+@Composable
+internal fun KidsWall(
+    shelf: KidsShelf,
+    watch: WatchSnapshot,
+    columns: Int,
+    onOpenTitle: (setId: String) -> Unit,
+    onOpenCollection: (key: String) -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        WallHeading(KeptKind.KIDS.label, shelf.total)
+        if (shelf.total == 0) {
+            CenteredMessage(KeptKind.KIDS.empty)
+            return
+        }
+        val positions = watch.progress.associateBy { it.setId }
+        val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
+        val parts = listOf("Movies" to shelf.films, "Series" to shelf.series, "Marked by hand" to shelf.byHand)
+            .filter { (_, items) -> items.isNotEmpty() }
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(columns),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(Spacing.medium),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+        ) {
+            for ((label, items) in parts) {
+                if (parts.size > 1) {
+                    item(key = "heading-$label", span = { GridItemSpan(maxLineSpan) }) {
+                        Text(text = label, style = MaterialTheme.typography.titleMedium)
+                    }
+                }
+                items(items = items, key = { it.keyOfKids() }) { item ->
+                    when (item) {
+                        is Entry -> EntryCard(item, positions, watchedIds, onOpenTitle, onOpenCollection)
+                        is MediaSet -> SetPlate(
+                            card = SetCard(
+                                set = item,
+                                caption = resumeLine(positions[item.setId]),
+                                progress = watchedFractionOf(positions[item.setId]),
+                                watched = item.setId in watchedIds,
+                            ),
+                            onClick = { onOpenTitle(item.setId) },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** A set may be on the shelf as a film and never again as a hand-marked plate, so ids do not collide. */
+private fun Any.keyOfKids(): String = when (this) {
+    is Entry -> keyOf(this)
+    is MediaSet -> "hand-$setId"
+    else -> error("not a Kids item: $this")
 }

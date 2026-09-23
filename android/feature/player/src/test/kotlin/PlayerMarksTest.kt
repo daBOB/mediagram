@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import model.KidsVerdict
 import model.ListOfSets
 import model.WatchSnapshot
 import org.junit.After
@@ -87,6 +88,43 @@ class PlayerMarksTest {
             vm.toggleKids()
             advanceUntilIdle()
             assertEquals(false, expectMostRecentItem()?.kids)
+        }
+    }
+
+    @Test
+    fun aRatedTitleIsDecidedByItsRatingAndCannotBeMarked() = runTest {
+        installMainDispatcher()
+        val repository = FakeWatchStateRepository()
+        val vm = viewModel(repository)
+
+        vm.marks.test {
+            assertNull(awaitItem())
+            vm.open("s1", fsk = "16")
+            val marks = awaitItem()
+            assertEquals(KidsVerdict.UNSAFE, marks?.kidsVerdict)
+            assertEquals("FSK 16", marks?.ageLabel)
+            assertEquals(false, marks?.forKids)
+
+            // Refused: nothing is written, so nothing changes.
+            vm.toggleKids()
+            advanceUntilIdle()
+            expectNoEvents()
+            assertTrue(repository.snapshot.value.kids.isEmpty())
+        }
+    }
+
+    @Test
+    fun aTitleRatedForKidsIsForKidsWithoutAMark() = runTest {
+        installMainDispatcher()
+        val vm = viewModel()
+
+        vm.marks.test {
+            assertNull(awaitItem())
+            vm.open("s1", fsk = "6")
+            val marks = awaitItem()
+            assertEquals(KidsVerdict.SAFE, marks?.kidsVerdict)
+            assertEquals(true, marks?.forKids)
+            assertEquals(false, marks?.kids)
         }
     }
 

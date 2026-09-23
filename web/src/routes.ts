@@ -37,10 +37,11 @@ import type { SheetStore } from "./thumbs/sheets";
 // @ts-expect-error — plain JS shared with the browser, like `playable.js`.
 import { spritePlan } from "../public/lib/sprite-plan.js";
 import type { SessionSpec } from "./transcode/registry";
+import type { CatalogEvents } from "./catalog-events";
 import type { HeldSets } from "./cache/held";
 import { SearchIndex } from "./search/index";
 import { PosterStore, posterKeyFor, posterKeyIsValid, seasonPosterKeyFor } from "./package/posters";
-import { showMeta } from "./shows";
+import { providerFactsByShow, showMeta } from "./shows";
 import type { AudioTrackReader } from "./audio-tracks";
 import { createStateRouter } from "./state/routes";
 import type { WatchState } from "./state/store";
@@ -268,8 +269,8 @@ const empty = bodiless;
  * ago looks exactly like a current one until something says so.
  */
 export interface CatalogOrigin {
-  origin: "package" | "local";
-  /** When the package was built, in milliseconds. `null` for a local index. */
+  origin: "package" | "channel" | "local";
+  /** When the package was built or the channel snapshot pushed, in milliseconds. `null` for a local index. */
   publishedAt: number | null;
 }
 
@@ -303,6 +304,8 @@ export interface RouterOptions {
    * behaves exactly as it did before previews existed.
    */
   thumbs?: SheetStore;
+  /** Where open pages hear that the catalog changed. Absent in most tests. */
+  events?: CatalogEvents;
   /**
    * Reads which audio streams a title holds, for the player's chooser.
    *
@@ -352,6 +355,9 @@ export function createRouter(options: RouterOptions) {
    * hit is opened by the same player dialog a shelf row is. `tmdb` is dropped
    * — the page asks for artwork by key, so the id buys it nothing.
    */
+  // Folded once per router, which is once per catalog: a swap builds another.
+  const provider = providerFactsByShow(db);
+
   function forBrowser({ tmdb, ...set }: PlayableSet) {
     const key = posterKeyFor(set.kind, tmdb);
     return {
@@ -363,6 +369,12 @@ export function createRouter(options: RouterOptions) {
       // asks about the show by this even when the shelf has nothing to show.
       showKey: key,
       poster: posters.has(key) ? key : null,
+      // The provider's genres for the title, so a genre shelf can be built
+      // from the catalog the page already holds. Empty when none is recorded.
+      genres: (key === null ? undefined : provider.get(key))?.genres ?? [],
+      // The age rating, which decides whether the title may sit on the Kids
+      // shelf without anyone having marked it. `null` is unrated.
+      fsk: (key === null ? undefined : provider.get(key))?.fsk ?? null,
       // A season's own artwork, for the wall a show's page opens on. Only an
       // episode has one; `null` leaves the page to fall back to the show's.
       seasonPoster: set.kind === "ep" ? heldOrNull(seasonPosterKeyFor(key, set.season)) : null,
@@ -406,6 +418,21 @@ export function createRouter(options: RouterOptions) {
 
     const readOnlyMethod = request.method === "GET" || request.method === "HEAD";
     if (!readOnlyMethod) return empty(405);
+
+    if (request.path === "/api/events") {
+      if (!options.events) return empty(404);
+      return {
+        status: 200,
+        headers: {
+          "content-type": "text/event-stream",
+          // Never cached, and never buffered by a proxy in front: an event
+          // that sits in a buffer is one the page hears late or not at all.
+          "cache-control": "no-cache",
+          "x-accel-buffering": "no",
+        },
+        body: request.method === "HEAD" ? null : options.events.subscribe(),
+      };
+    }
 
     if (request.path === "/api/player") {
       // Which link this viewer is on, which the page cannot work out for
@@ -742,3 +769,4 @@ function streamSet(
 
   return { status: plan.status, headers, body };
 }
+

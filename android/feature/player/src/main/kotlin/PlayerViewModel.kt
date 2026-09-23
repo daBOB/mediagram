@@ -17,6 +17,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import model.KidsVerdict
+import model.ageLabelOf
+import model.kidsVerdictOf
 import playback.PlaybackCounters
 import playback.PlaybackTotals
 import javax.inject.Inject
@@ -56,6 +59,9 @@ class PlayerViewModel @Inject constructor(
 
     private val _openSetId = MutableStateFlow<String?>(null)
 
+    /** The open title's age rating, as the catalog listed it; see [open]. */
+    private val openFsk = MutableStateFlow<String?>(null)
+
     /**
      * The Watchlist, Kids and Add-to-list controls' own state for whichever
      * set is open — `null` between titles, the same gate `player.js` puts
@@ -64,13 +70,15 @@ class PlayerViewModel @Inject constructor(
      * behind it updates a pressed toggle's label without the screen having
      * to ask again.
      */
-    val marks: StateFlow<PlayerMarksState?> = combine(_openSetId, repository.snapshot) { setId, snapshot ->
+    val marks: StateFlow<PlayerMarksState?> = combine(_openSetId, openFsk, repository.snapshot) { setId, fsk, snapshot ->
         setId?.let {
             PlayerMarksState(
                 watchlisted = it in snapshot.watchlist,
                 kids = it in snapshot.kids,
                 lists = snapshot.collections,
                 memberOf = snapshot.collections.filter { list -> it in list.items }.mapTo(HashSet()) { list -> list.id },
+                kidsVerdict = kidsVerdictOf(fsk),
+                ageLabel = ageLabelOf(fsk),
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -82,8 +90,14 @@ class PlayerViewModel @Inject constructor(
         handle.setListener(this)
     }
 
-    fun open(setId: String) {
+    /**
+     * [fsk] is the title's age rating as the catalog listed it, handed in
+     * rather than looked up: the player holds no catalog of its own, and the
+     * screen that opened it already has the set in hand.
+     */
+    fun open(setId: String, fsk: String? = null) {
         openSetId = setId
+        openFsk.value = fsk
         _openSetId.value = setId
         _state.value = PlayerUiState.Preparing
         val progress = repository.snapshot.value.progress.find { it.setId == setId }
@@ -101,6 +115,7 @@ class PlayerViewModel @Inject constructor(
         val durationMs = handle.durationMs()
         handle.stop()
         openSetId = null
+        openFsk.value = null
         _openSetId.value = null
         viewModelScope.launch {
             if (setId != null && atMs != null) {
@@ -146,6 +161,8 @@ class PlayerViewModel @Inject constructor(
     /** Marked here rather than on a shelf: "this is where a viewer is when they find out what a film actually is." */
     fun toggleKids() {
         val setId = openSetId ?: return
+        // A rated title is not marked: its rating already decided.
+        if (kidsVerdictOf(openFsk.value) != KidsVerdict.UNRATED) return
         val marked = setId in repository.snapshot.value.kids
         viewModelScope.launch { repository.setKids(setId, !marked) }
     }

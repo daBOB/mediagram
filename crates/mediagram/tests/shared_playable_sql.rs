@@ -39,4 +39,14 @@ fn the_player_holds_the_uploader_s_definition_of_playable() {
         path.display(),
         expected
     );
+
+    // And the oldest it still reads, which is the floor a snapshot from an
+    // uploader not yet upgraded is held to on both sides.
+    let oldest = format!("OLDEST_READABLE_SCHEMA = {}", mlib_spec::schema::OLDEST_READABLE_SCHEMA);
+    assert!(
+        source.contains(&oldest),
+        "{} should declare `{}`, the floor `mediagram posters --index` also uses.",
+        path.display(),
+        oldest
+    );
 }

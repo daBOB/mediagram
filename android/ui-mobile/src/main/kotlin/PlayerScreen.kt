@@ -59,14 +59,14 @@ import player.PlayerViewModel
 // which Compose still marks experimental.
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun PlayerScreen(setId: String, onBack: () -> Unit) {
+fun PlayerScreen(setId: String, fsk: String?, onBack: () -> Unit) {
     val viewModel: PlayerViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val player by viewModel.player.collectAsStateWithLifecycle()
     val marks by viewModel.marks.collectAsStateWithLifecycle()
     val activity = LocalContext.current.findActivity()
 
-    LaunchedEffect(setId) { viewModel.open(setId) }
+    LaunchedEffect(setId) { viewModel.open(setId, fsk) }
     DisposableEffect(Unit) {
         onDispose {
             if (shouldStopOnDispose(activity?.isChangingConfigurations == true)) {

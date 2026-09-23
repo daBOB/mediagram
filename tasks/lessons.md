@@ -8,6 +8,24 @@ Newest first.
 
 ---
 
+## 2026-09-23 — A schema bump checked the web reader and missed the CLI one
+
+**What happened.** Moving the index to v7, the web player was kept reading v6
+so a not-yet-upgraded uploader's channel snapshots still played. But
+`mediagram posters --index <snapshot>`, which the web player runs after every
+new snapshot, went through the uploader's strict opener and refused every v6
+snapshot. New titles silently stopped getting covers; the user found it in
+the player's log.
+
+**Rule.** When the schema moves, list every reader of a snapshot *someone else
+wrote* — web catalog, package refresh, channel install, and any CLI handed
+`--index` — and hold each to `OLDEST_READABLE_SCHEMA`, not `SCHEMA_VERSION`.
+Only the uploader's own index is held to the current schema, because only
+that one can be migrated. Run the new code against a real older snapshot
+before calling the bump done.
+
+---
+
 ## 2026-09-18 — A fix applied to one of two parallel implementations
 
 **What happened.** RFC 9110 §14.2 says a server must ignore a `Range` header in

@@ -63,7 +63,13 @@ enum Cmd {
     Metadata,
     /// Fetch cover art for the films and series in the index, for a player
     /// reading this machine's index rather than a published package
-    Posters,
+    Posters {
+        /// Read the titles from this index instead of this machine's own —
+        /// the channel snapshot a web player is serving. The art is still
+        /// written beside this machine's index, where that player looks.
+        #[arg(long)]
+        index: Option<PathBuf>,
+    },
     /// Assemble the encrypted prebuilt metadata package for a player
     ExportPackage {
         /// Where to write the package (default: <data dir>/export)
@@ -157,7 +163,7 @@ async fn main() -> Result<()> {
         } => commands::verify::run(&cfg, set_id, all, full, since).await,
         Cmd::Status => commands::status::run(&cfg).await,
         Cmd::Metadata => commands::metadata::run(&cfg).await,
-        Cmd::Posters => commands::posters::run(&cfg).await,
+        Cmd::Posters { index } => commands::posters::run(&cfg, index.as_deref()).await,
         Cmd::ExportPackage {
             out,
             dry_run,

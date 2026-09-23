@@ -1,5 +1,6 @@
 package player
 
+import model.KidsVerdict
 import model.ListOfSets
 
 /**
@@ -17,4 +18,15 @@ data class PlayerMarksState(
     val kids: Boolean,
     val lists: List<ListOfSets>,
     val memberOf: Set<String>,
-)
+    /**
+     * What the open title's rating decides — `kidsVerdict` in `player.js`'s
+     * `refreshKids`. Only an [KidsVerdict.UNRATED] title is marked by hand;
+     * a rated one is shown what its rating decided, and cannot be pressed.
+     */
+    val kidsVerdict: KidsVerdict = KidsVerdict.UNRATED,
+    /** `"FSK 12"`, or null for an unrated title. */
+    val ageLabel: String? = null,
+) {
+    /** Whether a child may watch this: rated for it, or unrated and marked. */
+    val forKids: Boolean get() = kidsVerdict == KidsVerdict.SAFE || (kidsVerdict == KidsVerdict.UNRATED && kids)
+}

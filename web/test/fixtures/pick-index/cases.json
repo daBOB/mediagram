@@ -1,0 +1,170 @@
+{
+  "now": 1800000000,
+  "cases": [
+    {
+      "name": "the one index among other messages is the one chosen",
+      "candidates": [
+        {
+          "text": "a note",
+          "id": 0
+        },
+        {
+          "text": "#mlib-index v=2\n{\"pushed_at\":1781568000,\"schema\":6,\"sets\":538}",
+          "id": 1
+        },
+        {
+          "text": "another note",
+          "id": 2
+        }
+      ],
+      "expect": 1
+    },
+    {
+      "name": "a later snapshot version is still recognised as the index",
+      "candidates": [
+        {
+          "text": "#mlib-index v=3\n{}",
+          "id": 0
+        }
+      ],
+      "expect": 0
+    },
+    {
+      "name": "a channel holding no snapshot says so",
+      "candidates": [],
+      "expect": "nothing-pinned"
+    },
+    {
+      "name": "pins that are not an index say so rather than nothing is pinned",
+      "candidates": [
+        {
+          "text": "welcome to the channel",
+          "id": 0
+        }
+      ],
+      "expect": "not-an-index"
+    },
+    {
+      "name": "a part document is not an index",
+      "candidates": [
+        {
+          "text": "#mlib v=4\n{}",
+          "id": 0
+        }
+      ],
+      "expect": "not-an-index"
+    },
+    {
+      "name": "the later snapshot wins listed second",
+      "candidates": [
+        {
+          "text": "#mlib-index v=2\n{\"pushed_at\":1781568000,\"schema\":6,\"sets\":538}",
+          "id": 0
+        },
+        {
+          "text": "#mlib-index v=2\n{\"pushed_at\":1789946371,\"schema\":6,\"sets\":538}",
+          "id": 1
+        }
+      ],
+      "expect": 1
+    },
+    {
+      "name": "the later snapshot wins listed first",
+      "candidates": [
+        {
+          "text": "#mlib-index v=2\n{\"pushed_at\":1789946371,\"schema\":6,\"sets\":538}",
+          "id": 0
+        },
+        {
+          "text": "#mlib-index v=2\n{\"pushed_at\":1781568000,\"schema\":6,\"sets\":538}",
+          "id": 1
+        }
+      ],
+      "expect": 0
+    },
+    {
+      "name": "a dated snapshot outranks an undated one listed second",
+      "candidates": [
+        {
+          "text": "#mlib-index v=9",
+          "id": 0
+        },
+        {
+          "text": "#mlib-index v=2\n{\"pushed_at\":1781568000,\"schema\":6,\"sets\":538}",
+          "id": 1
+        }
+      ],
+      "expect": 1
+    },
+    {
+      "name": "a dated snapshot outranks an undated one listed first",
+      "candidates": [
+        {
+          "text": "#mlib-index v=2\n{\"pushed_at\":1781568000,\"schema\":6,\"sets\":538}",
+          "id": 0
+        },
+        {
+          "text": "#mlib-index v=9",
+          "id": 1
+        }
+      ],
+      "expect": 0
+    },
+    {
+      "name": "snapshots of one second are broken by the later message",
+      "candidates": [
+        {
+          "text": "#mlib-index v=2\n{\"pushed_at\":1789946371,\"schema\":6,\"sets\":538}",
+          "id": 10
+        },
+        {
+          "text": "#mlib-index v=2\n{\"pushed_at\":1789946371,\"schema\":6,\"sets\":538}",
+          "id": 11
+        }
+      ],
+      "expect": 1
+    },
+    {
+      "name": "snapshots of one second are broken by the later message, listed backwards",
+      "candidates": [
+        {
+          "text": "#mlib-index v=2\n{\"pushed_at\":1789946371,\"schema\":6,\"sets\":538}",
+          "id": 11
+        },
+        {
+          "text": "#mlib-index v=2\n{\"pushed_at\":1789946371,\"schema\":6,\"sets\":538}",
+          "id": 10
+        }
+      ],
+      "expect": 0
+    },
+    {
+      "name": "a stamp from the future is not believed",
+      "candidates": [
+        {
+          "text": "#mlib-index v=2\n{\"pushed_at\":1834560000,\"schema\":6,\"sets\":538}",
+          "id": 0
+        },
+        {
+          "text": "#mlib-index v=2\n{\"pushed_at\":1799999940,\"schema\":6,\"sets\":538}",
+          "id": 1
+        }
+      ],
+      "expect": 1
+    },
+    {
+      "name": "a stamp from the future is not believed, listed second",
+      "candidates": [
+        {
+          "text": "#mlib-index v=2\n{\"pushed_at\":1799999940,\"schema\":6,\"sets\":538}",
+          "id": 0
+        },
+        {
+          "text": "#mlib-index v=2\n{\"pushed_at\":1834560000,\"schema\":6,\"sets\":538}",
+          "id": 1
+        }
+      ],
+      "expect": 0
+    }
+  ]
+}

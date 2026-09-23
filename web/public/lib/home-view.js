@@ -41,9 +41,9 @@ function rowHead(title, total, hash) {
  *
  * @param {HTMLElement} main
  * @param {import("./home-shelves.js").HomeShelves} shelves
- * @param {{play: Function, open: Function}} on
+ * @param {{play: Function, open: Function, openFilm?: Function}} on
  */
-export function renderHome(main, shelves, { play, open }) {
+export function renderHome(main, shelves, { play, open, openFilm }) {
   // Every page needs one, and this one has no visible title: the rows name
   // themselves and a heading saying "Home" above the word "mediagram" would
   // be saying it twice.
@@ -80,7 +80,7 @@ export function renderHome(main, shelves, { play, open }) {
   }
 
   if (shelves.latestMovies.length > 0) {
-    row("latestMovies", "Latest films", "#/movies", movieGrid(shelves.latestMovies, play, GRID));
+    row("latestMovies", "Latest films", "#/movies", movieGrid(shelves.latestMovies, openFilm ?? play, GRID));
   }
 
   if (shelves.latestSeries.length > 0) {
