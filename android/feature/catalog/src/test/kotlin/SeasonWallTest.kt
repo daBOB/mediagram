@@ -74,6 +74,18 @@ class SeasonWallTest {
         val plates = seasonPlatesOf(show)!!
         assertNull(plates[0].posterKey)
     }
+
+    /** A season is watched only once every episode under it is — one straggler keeps the plate untouched. */
+    @Test
+    fun aSeasonIsWatchedOnlyOnceEveryEpisodeIs() {
+        val show = collection(divisions = listOf(season(1, episodes = 2), season(2, episodes = 2)))
+        val allOfSeasonOne = show.divisions[0].items.map { it.setId }.toSet()
+        val allButOneOfSeasonTwo = show.divisions[1].items.map { it.setId }.drop(1).toSet()
+
+        val plates = seasonPlatesOf(show, watchedIds = allOfSeasonOne + allButOneOfSeasonTwo)!!
+        assertEquals(true, plates[0].watched)
+        assertEquals(false, plates[1].watched)
+    }
 }
 
 private fun collection(

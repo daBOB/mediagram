@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import data.CatalogRepository
 import data.LibraryEvents
+import data.WatchStateRepository
 import data.refreshSentence
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
@@ -25,11 +27,18 @@ import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.TitleInfo
 import javax.inject.Inject
 
-/** Refreshes the catalog on request, then groups it into shelves for the screen to render. */
+/**
+ * Refreshes the catalog on request, groups it into shelves, and joins it
+ * with this viewer's own watch state — [WatchStateRepository.snapshot] is
+ * combined in rather than read once, so a sync round or a title just left in
+ * the player carries the start page's Continue and Next up rows forward
+ * without the screen having to ask for a reload of its own.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CatalogViewModel @Inject constructor(
     private val repository: CatalogRepository,
+    private val watchState: WatchStateRepository,
     libraryEvents: LibraryEvents = LibraryEvents.None,
 ) : ViewModel() {
 
@@ -114,7 +123,7 @@ class CatalogViewModel @Inject constructor(
                 val failure = repository.refresh().exceptionOrNull()
                 val shelves = shelvesOf(runCatching { repository.sets() }.getOrDefault(emptyList()))
                 val answer = when {
-                    shelves.isNotEmpty() -> CatalogUiState.Ready(shelves, failure?.refreshSentence())
+                    shelves.isNotEmpty() -> CatalogUiState.Ready(shelves, notice = failure?.refreshSentence())
                     failure != null -> CatalogUiState.Failed(failure.refreshSentence())
                     else -> CatalogUiState.Empty
                 }
@@ -129,6 +138,12 @@ class CatalogViewModel @Inject constructor(
         // Beside the channel reads rather than among them: through the same
         // flatMapLatest, a fetch finishing mid-read would cancel that read.
         .let { reads -> merge(reads, refetched.mapNotNull { regrouped() }) }
+        // Joined with the watch snapshot last, so a write from the player or
+        // a pulled sync round updates Continue and Next up on its own,
+        // without waiting for the channel to be read again.
+        .combine(watchState.snapshot) { uiState, watch ->
+            if (uiState is CatalogUiState.Ready) uiState.copy(watch = watch) else uiState
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CatalogUiState.Loading)
 
     /**

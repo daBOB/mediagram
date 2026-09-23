@@ -16,6 +16,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -25,25 +26,31 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import catalog.Entry
 import catalog.HomeRow
+import catalog.RowContent
 import designsystem.Spacing
+import model.WatchSnapshot
 
 /**
- * What arrived recently, by shelf.
+ * What was already underway, and what arrived recently.
  *
- * The page a viewer lands on, and the one row of questions this app can
- * currently answer about its own library. Continue and Next up belong here
- * too and are not here: the phone keeps no watch state, so there is nothing
- * to read for them, and a row that is always empty is worse than a row that
- * is absent.
+ * The page a viewer lands on. Continue and Next up lead it when there is
+ * anything on them — the viewer's own place in the library, ahead of what
+ * merely turned up — and both are absent rather than empty, same as the
+ * Latest rows below them: a row that is always empty is worse than a row
+ * that is not there at all.
  */
 @Composable
 internal fun HomeScreen(
     rows: List<HomeRow>,
+    watch: WatchSnapshot,
     columns: Int,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
     onSeeAll: (shelf: String) -> Unit,
 ) {
+    val positions = remember(watch) { watch.progress.associateBy { it.setId } }
+    val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
+
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
         modifier = Modifier.fillMaxSize(),
@@ -53,25 +60,36 @@ internal fun HomeScreen(
     ) {
         for (row in rows) {
             item(key = row.title, span = { GridItemSpan(maxLineSpan) }) {
-                RowHeading(row = row, onSeeAll = { onSeeAll(row.shelf) })
+                RowHeading(row = row, onSeeAll = row.seeAll?.let { target -> { onSeeAll(target) } })
             }
-            items(items = row.entries, key = { "${row.shelf}/${keyOf(it)}" }) { entry ->
-                when (entry) {
-                    is Entry.Film -> PosterCard(
-                        posterPath = entry.set.posterPath,
-                        title = entry.set.title,
-                        caption = factsLine(entry.set.year, entry.set.durationSecs),
-                        modifier = Modifier,
-                        onClick = { onOpenTitle(entry.set.setId) },
-                    )
+            when (val content = row.content) {
+                is RowContent.Entries -> items(items = content.entries, key = { "${row.title}/${keyOf(it)}" }) { entry ->
+                    when (entry) {
+                        // A collection card carries no mark of its own — the
+                        // web's `collectionGrid` never draws one either, a
+                        // show or a course is not one title to finish.
+                        is Entry.Film -> PosterCard(
+                            posterPath = entry.set.posterPath,
+                            title = entry.set.title,
+                            caption = factsLine(entry.set.year, entry.set.durationSecs),
+                            progress = watchedFractionOf(positions[entry.set.setId]),
+                            watched = entry.set.setId in watchedIds,
+                            modifier = Modifier,
+                            onClick = { onOpenTitle(entry.set.setId) },
+                        )
 
-                    is Entry.Collection -> PosterCard(
-                        posterPath = entry.posterPath,
-                        title = entry.name,
-                        caption = extentOf(entry),
-                        modifier = Modifier,
-                        onClick = { onOpenCollection(entry.key) },
-                    )
+                        is Entry.Collection -> PosterCard(
+                            posterPath = entry.posterPath,
+                            title = entry.name,
+                            caption = extentOf(entry),
+                            modifier = Modifier,
+                            onClick = { onOpenCollection(entry.key) },
+                        )
+                    }
+                }
+
+                is RowContent.Sets -> items(items = content.cards, key = { "${row.title}/${it.set.setId}" }) { card ->
+                    SetPlate(card = card, modifier = Modifier, onClick = { onOpenTitle(card.set.setId) })
                 }
             }
         }
@@ -79,14 +97,16 @@ internal fun HomeScreen(
 }
 
 /**
- * A row's name, and the way through to the whole shelf behind it.
+ * A row's name, and the way through to the whole shelf behind it, or none
+ * yet — [onSeeAll] is `null` for Continue until the kept-shelves phase gives
+ * it a tab of its own.
  *
  * "See all" is the row admitting it is a window. Six plates out of three
  * hundred is a glance, and a viewer who wants the rest should not have to
  * work out that the masthead is where it lives.
  */
 @Composable
-private fun RowHeading(row: HomeRow, onSeeAll: () -> Unit) {
+private fun RowHeading(row: HomeRow, onSeeAll: (() -> Unit)?) {
     Column(modifier = Modifier.fillMaxWidth().padding(top = Spacing.medium)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -98,19 +118,21 @@ private fun RowHeading(row: HomeRow, onSeeAll: () -> Unit) {
                 text = buildAnnotatedString {
                     append(row.title)
                     withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)) {
-                        append(" \u00b7 ${row.total}")
+                        append(" · ${row.total}")
                     }
                 },
                 style = MaterialTheme.typography.titleMedium,
             )
-            Text(
-                text = "See all",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .clickable(role = Role.Button, onClick = onSeeAll)
-                    .padding(start = Spacing.medium, top = Spacing.small, bottom = Spacing.small),
-            )
+            if (onSeeAll != null) {
+                Text(
+                    text = "See all",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .clickable(role = Role.Button, onClick = onSeeAll)
+                        .padding(start = Spacing.medium, top = Spacing.small, bottom = Spacing.small),
+                )
+            }
         }
         HorizontalDivider(
             modifier = Modifier.padding(top = Spacing.small),

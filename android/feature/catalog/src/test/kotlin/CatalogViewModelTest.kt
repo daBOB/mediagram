@@ -1,8 +1,10 @@
 package catalog
 
 import app.cash.turbine.test
+import data.WatchStateRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -12,12 +14,42 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import model.ListOfSets
+import model.Profile
+import model.Progress
+import model.WatchSnapshot
 import org.junit.After
 import uniffi.mediagram_core.LibraryEvent
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+
+/**
+ * A snapshot this test can hold still — [CatalogViewModel] only ever reads
+ * [snapshot], so everything else here is an unused stub. Named apart from
+ * [ProfileViewModelTest]'s own fake for the same interface: Kotlin does not
+ * let two private top-level classes in the same package share a name, file
+ * scope or not.
+ */
+private class FakeCatalogWatchState(watch: WatchSnapshot = WatchSnapshot.Empty) : WatchStateRepository {
+    override val profiles = MutableStateFlow(emptyList<Profile>())
+    override val chosenProfileId = MutableStateFlow<String?>(null)
+    override val snapshot = MutableStateFlow(watch)
+
+    override suspend fun reload() = Unit
+    override suspend fun choose(id: String) = false
+    override suspend fun create(name: String): Profile? = null
+    override suspend fun setProgress(setId: String, at: Double, duration: Double?) = Unit
+    override suspend fun clearProgress(setId: String) = Unit
+    override suspend fun setWatched(setId: String, finished: Boolean) = Unit
+    override suspend fun setWatchlisted(setId: String, listed: Boolean) = Unit
+    override suspend fun setKids(setId: String, marked: Boolean) = Unit
+    override suspend fun createList(name: String): ListOfSets? = null
+    override suspend fun renameList(id: String, name: String) = false
+    override suspend fun deleteList(id: String) = false
+    override suspend fun setInList(id: String, setId: String, included: Boolean) = false
+}
 
 /**
  * Uses a standard (queued, not eager) test dispatcher tied to the same
@@ -37,7 +69,7 @@ class CatalogViewModelTest {
     @Test
     fun shelvesAreGroupedByKind() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-        val vm = CatalogViewModel(FakeCatalogRepository(movies = 2, episodes = 1, tutorials = 0))
+        val vm = CatalogViewModel(FakeCatalogRepository(movies = 2, episodes = 1, tutorials = 0), FakeCatalogWatchState())
         vm.state.test {
             assertEquals(CatalogUiState.Loading, awaitItem())
             val ready = awaitItem() as CatalogUiState.Ready
@@ -54,7 +86,7 @@ class CatalogViewModelTest {
     @Test
     fun aFailedRefreshKeepsTheLibraryAlreadyOnThisDevice() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-        val vm = CatalogViewModel(FakeCatalogRepository(movies = 2, refreshFails = true))
+        val vm = CatalogViewModel(FakeCatalogRepository(movies = 2, refreshFails = true), FakeCatalogWatchState())
         vm.state.test {
             awaitItem()
             val ready = awaitItem() as CatalogUiState.Ready
@@ -66,7 +98,7 @@ class CatalogViewModelTest {
     @Test
     fun aRefreshThatFailedIsSaidRatherThanSwallowed() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-        val vm = CatalogViewModel(FakeCatalogRepository(movies = 1, refreshFails = true))
+        val vm = CatalogViewModel(FakeCatalogRepository(movies = 1, refreshFails = true), FakeCatalogWatchState())
         vm.state.test {
             awaitItem()
             assertEquals("refresh failed", (awaitItem() as CatalogUiState.Ready).notice)
@@ -83,7 +115,7 @@ class CatalogViewModelTest {
     fun askingAgainReadsTheChannelAgain() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val repository = FakeCatalogRepository(movies = 2)
-        val vm = CatalogViewModel(repository)
+        val vm = CatalogViewModel(repository, FakeCatalogWatchState())
         vm.state.test {
             awaitItem()
             awaitItem() as CatalogUiState.Ready
@@ -106,7 +138,7 @@ class CatalogViewModelTest {
     @Test
     fun askingAgainKeepsTheShelvesItIsAboutToReplace() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-        val vm = CatalogViewModel(FakeCatalogRepository(movies = 2))
+        val vm = CatalogViewModel(FakeCatalogRepository(movies = 2), FakeCatalogWatchState())
         vm.state.test {
             assertEquals(CatalogUiState.Loading, awaitItem())
             val before = awaitItem() as CatalogUiState.Ready
@@ -124,7 +156,7 @@ class CatalogViewModelTest {
     @Test
     fun aFailedRefreshWithNothingOnDiskSurfacesAsFailed() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-        val vm = CatalogViewModel(FakeCatalogRepository(refreshFails = true, onDisk = false))
+        val vm = CatalogViewModel(FakeCatalogRepository(refreshFails = true, onDisk = false), FakeCatalogWatchState())
         vm.state.test {
             awaitItem()
             assertTrue(awaitItem() is CatalogUiState.Failed)
@@ -141,7 +173,7 @@ class CatalogViewModelTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val pushed = MutableSharedFlow<LibraryEvent>()
         val repository = FakeCatalogRepository(movies = 2)
-        val vm = CatalogViewModel(repository) { pushed }
+        val vm = CatalogViewModel(repository, FakeCatalogWatchState()) { pushed }
         vm.state.test {
             assertEquals(CatalogUiState.Loading, awaitItem())
             awaitItem() as CatalogUiState.Ready
@@ -168,7 +200,7 @@ class CatalogViewModelTest {
     fun onlyAPushedReadThatSucceededAsksForAFetch() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val pushed = MutableSharedFlow<LibraryEvent>()
-        val vm = CatalogViewModel(FakeCatalogRepository(movies = 1)) { pushed }
+        val vm = CatalogViewModel(FakeCatalogRepository(movies = 1), FakeCatalogWatchState()) { pushed }
         val asked = mutableListOf<Unit>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.published.toList(asked) }
         vm.state.test {
@@ -192,7 +224,7 @@ class CatalogViewModelTest {
     fun aPushedReadThatFailedAsksForNothing() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val pushed = MutableSharedFlow<LibraryEvent>()
-        val vm = CatalogViewModel(FakeCatalogRepository(movies = 1, refreshFails = true)) { pushed }
+        val vm = CatalogViewModel(FakeCatalogRepository(movies = 1, refreshFails = true), FakeCatalogWatchState()) { pushed }
         val asked = mutableListOf<Unit>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.published.toList(asked) }
         vm.state.test {
@@ -217,7 +249,7 @@ class CatalogViewModelTest {
     fun artworkAFetchLaidDownIsShownWithoutAskingTheChannel() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val repository = FakeCatalogRepository(movies = 1)
-        val vm = CatalogViewModel(repository)
+        val vm = CatalogViewModel(repository, FakeCatalogWatchState())
         vm.state.test {
             awaitItem()
             val before = awaitItem() as CatalogUiState.Ready
@@ -230,6 +262,31 @@ class CatalogViewModelTest {
             assertFalse(after.refreshing)
             assertEquals(listOf("/artwork/movie-0.jpg"), after.shelves.flatMap { it.entries }.map { (it as Entry.Film).set.posterPath })
             assertEquals(1, repository.refreshes, "showing artwork is not a read of the channel")
+        }
+    }
+
+    /**
+     * Neither a sync round nor a write from the player is a catalog change,
+     * so [WatchStateRepository.snapshot] is joined in rather than re-read —
+     * a later value on that flow alone must still reach [CatalogUiState.Ready.watch].
+     */
+    @Test
+    fun aChangedSnapshotReachesReadyWithoutARereadOfTheChannel() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val repository = FakeCatalogRepository(movies = 1)
+        val watchState = FakeCatalogWatchState()
+        val vm = CatalogViewModel(repository, watchState)
+        vm.state.test {
+            awaitItem()
+            val before = awaitItem() as CatalogUiState.Ready
+            assertEquals(WatchSnapshot.Empty, before.watch)
+
+            val progress = Progress(setId = "movie-0", at = 30.0, duration = 3_600.0, updatedAt = 1)
+            watchState.snapshot.value = WatchSnapshot(listOf(progress), emptyList(), emptyList(), emptyList(), emptyList())
+
+            val after = awaitItem() as CatalogUiState.Ready
+            assertEquals(listOf(progress), after.watch.progress)
+            assertEquals(1, repository.refreshes, "a changed snapshot is not a reason to read the channel again")
         }
     }
 }

@@ -8,7 +8,11 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,8 +27,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import data.ProgressPoint
+import data.ResumePoint
 import designsystem.Spacing
 import java.io.File
+import model.Progress
 
 /**
  * A plate, named underneath rather than across its face.
@@ -40,6 +47,12 @@ import java.io.File
  * does not open what it names is a dead patch in the middle of a wall.
  * Merging the semantics is the other half of that: a screen reader should
  * meet one plate once, not an image and then its title again.
+ *
+ * [meta] is a fact about the title itself — an episode's show and number —
+ * and sits above [caption], a fact about this viewer's own place in it
+ * (`shelf-view.js`'s `card()` keeps the same two lines in the same order).
+ * [progress] and [watched] draw the rule and the tick a collection card
+ * never carries — only a film or a set on Continue or Next up does.
  */
 @Composable
 internal fun PosterCard(
@@ -48,13 +61,16 @@ internal fun PosterCard(
     caption: String?,
     modifier: Modifier,
     onClick: () -> Unit,
+    meta: String? = null,
+    progress: Float? = null,
+    watched: Boolean = false,
 ) {
     Column(
         modifier = modifier
             .clickable(role = Role.Button, onClick = onClick)
             .semantics(mergeDescendants = true) {},
     ) {
-        PosterArt(posterPath = posterPath, title = title)
+        PosterArt(posterPath = posterPath, title = title, progress = progress, watched = watched)
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall,
@@ -62,6 +78,14 @@ internal fun PosterCard(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = Spacing.small),
         )
+        if (meta != null) {
+            Text(
+                text = meta,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
         if (caption != null) {
             Text(
                 text = caption,
@@ -101,9 +125,23 @@ internal fun PosterCard(
  * art without a name beneath it — the name is already in the bar above. One
  * `AsyncImage` over one `File`, in one place: a second image path would be
  * free to load, scale and fall back differently from the shelves.
+ *
+ * [progress] draws a rule along the foot of the plate, only when there is a
+ * runtime to measure it against — see `ResumePoint.watchedFraction`, which
+ * is where `null` already means "cannot be measured" rather than "zero".
+ * [watched] draws a tick instead: a finished title has no progress rule of
+ * its own, because finishing clears the position that would have drawn one,
+ * so without the tick a plate watched to the end would look untouched.
+ * Ported from `plate.js`'s own two marks.
  */
 @Composable
-internal fun PosterArt(posterPath: String?, title: String, modifier: Modifier = Modifier) {
+internal fun PosterArt(
+    posterPath: String?,
+    title: String,
+    modifier: Modifier = Modifier,
+    progress: Float? = null,
+    watched: Boolean = false,
+) {
     BoxWithConstraints(
         modifier = modifier
             .aspectRatio(2f / 3f)
@@ -137,8 +175,36 @@ internal fun PosterArt(posterPath: String?, title: String, modifier: Modifier = 
                 .matchParentSize()
                 .border(HAIRLINE, MaterialTheme.colorScheme.outlineVariant),
         )
+        if (progress != null) {
+            LinearProgressIndicator(
+                progress = { progress.coerceIn(0f, 1f) },
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
+            )
+        }
+        if (watched) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(Spacing.small)
+                    .size(TICK_SIZE)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "✓",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+            }
+        }
     }
 }
+
+private val TICK_SIZE = 20.dp
+
+/** [PosterCard.progress] from a raw position — shared by every screen that draws a mark from [model.WatchSnapshot]. */
+internal fun watchedFractionOf(progress: Progress?): Float? =
+    ResumePoint.watchedFraction(progress?.let { ProgressPoint(it.at, it.duration) })?.toFloat()
 
 /**
  * How much of a plate's width one line of initials takes. Two letters at

@@ -10,17 +10,21 @@ package catalog
  * a show that has no poster key of its own to build one from; either way
  * the plate falls back to the show's poster, the same way any other
  * missing poster does.
+ *
+ * [watched] is true once every episode under it is — the only sense in
+ * which a season is watched, ported from `shelf-view.js`'s `seasonGrid`.
  */
 data class SeasonPlate(
     val title: String,
     val caption: String,
     val posterKey: String?,
     val division: Division,
+    val watched: Boolean,
 )
 
 /**
  * The seasons wall for [collection], or `null` when there is nothing to
- * wall.
+ * wall. [watchedIds] is this viewer's finished sets, for [SeasonPlate.watched].
  *
  * A course is never walled: it drills into chapters, not seasons, and
  * those are shown as the nested tree they already are. Nor is a show with
@@ -28,17 +32,18 @@ data class SeasonPlate(
  * list of its episodes did not already say, so that case is left to fall
  * through to the flat list too.
  */
-fun seasonPlatesOf(collection: Entry.Collection): List<SeasonPlate>? {
+fun seasonPlatesOf(collection: Entry.Collection, watchedIds: Set<String> = emptySet()): List<SeasonPlate>? {
     if (collection.kind != CollectionKind.SHOW || collection.divisions.size <= 1) return null
     return collection.divisions.map { division ->
-        val episodes = division.walk().sumOf { it.items.size }
+        val items = division.walk().flatMap { it.items }.toList()
         SeasonPlate(
             title = division.title,
-            caption = "$episodes ${plural(episodes, "episode")}",
+            caption = "${items.size} ${plural(items.size, "episode")}",
             posterKey = collection.posterKey?.let { showKey ->
                 division.season?.let { season -> seasonPosterKey(showKey, season) }
             },
             division = division,
+            watched = items.isNotEmpty() && items.all { it.setId in watchedIds },
         )
     }
 }

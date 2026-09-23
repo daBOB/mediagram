@@ -23,6 +23,7 @@ import catalog.Division
 import catalog.Entry
 import catalog.SeasonPlate
 import designsystem.Spacing
+import model.WatchSnapshot
 import uniffi.mediagram_core.TitleInfo
 
 /**
@@ -73,6 +74,7 @@ internal fun SeasonWall(
                 posterPath = seasonPoster ?: collection.posterPath,
                 title = plate.title,
                 caption = plate.caption,
+                watched = plate.watched,
                 modifier = Modifier,
                 onClick = { onOpenSeason(plate.division) },
             )
@@ -86,14 +88,16 @@ internal fun SeasonWall(
  * plate stood for, so it is shown the same way.
  */
 @Composable
-internal fun SeasonScreen(division: Division, onOpenTitle: (setId: String) -> Unit) {
+internal fun SeasonScreen(division: Division, watch: WatchSnapshot, onOpenTitle: (setId: String) -> Unit) {
     val rows = remember(division) { rowsOf(listOf(division)) }
+    val positions = remember(watch) { watch.progress.associateBy { it.setId } }
+    val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(Spacing.large),
         verticalArrangement = Arrangement.spacedBy(Spacing.small),
     ) {
-        items(rows, onOpenTitle)
+        items(rows, positions, watchedIds, onOpenTitle)
     }
 }
 

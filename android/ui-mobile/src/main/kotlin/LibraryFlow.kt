@@ -11,9 +11,11 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.flow.first
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.collection
 import catalog.mediaSet
+import model.WatchSnapshot
 import system.FetchViewModel
 
 /**
@@ -58,6 +60,10 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
     // belongs to does, and a stale key from a different show simply fails
     // to find a match here rather than opening the wrong season.
     val season = at.season?.let { name -> collection?.divisions?.find { it.title == name } }
+    // Read here rather than at each of the two screens below: both want the
+    // same viewer's same snapshot, and neither has another way to reach it —
+    // the catalog's own state is the one place it is already collected.
+    val watch = (catalogState as? CatalogUiState.Ready)?.watch ?: WatchSnapshot.Empty
 
     // Counts updates asked for, so each one runs the wait below once.
     // Deliberately not `rememberSaveable`: a request that did not survive
@@ -176,7 +182,7 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
             profile = profileBar,
             onLeave = { at.season = null },
         ) {
-            SeasonScreen(division = season, onOpenTitle = { at.titleId = it })
+            SeasonScreen(division = season, watch = watch, onOpenTitle = { at.titleId = it })
         }
 
         collection != null -> LibraryBranch(
@@ -192,6 +198,7 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
             CollectionScreen(
                 collection = collection,
                 info = rememberTitleInfo(collection.posterKey, catalogViewModel::titleInfo),
+                watch = watch,
                 posterPath = catalogViewModel::posterPath,
                 onOpenTitle = { at.titleId = it },
                 onOpenSeason = { at.season = it.title },

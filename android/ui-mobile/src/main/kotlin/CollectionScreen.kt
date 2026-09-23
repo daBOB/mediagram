@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,6 +25,8 @@ import catalog.seasonPlatesOf
 import designsystem.Spacing
 import model.Kind
 import model.MediaSet
+import model.Progress
+import model.WatchSnapshot
 import uniffi.mediagram_core.TitleInfo
 
 /**
@@ -53,11 +56,13 @@ import uniffi.mediagram_core.TitleInfo
 fun CollectionScreen(
     collection: Entry.Collection,
     info: TitleInfo?,
+    watch: WatchSnapshot,
     posterPath: suspend (key: String) -> String?,
     onOpenTitle: (setId: String) -> Unit,
     onOpenSeason: (Division) -> Unit,
 ) {
-    val seasons = remember(collection) { seasonPlatesOf(collection) }
+    val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
+    val seasons = remember(collection, watchedIds) { seasonPlatesOf(collection, watchedIds) }
     if (seasons != null) {
         SeasonWall(collection, info, seasons, posterPath, onOpenSeason)
         return
@@ -67,6 +72,7 @@ fun CollectionScreen(
     // becomes an indent here because a lazy list cannot nest, and a viewer
     // still has to see which folder holds what.
     val rows = remember(collection) { rowsOf(collection.divisions) }
+    val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(Spacing.large),
@@ -93,7 +99,7 @@ fun CollectionScreen(
                 )
             }
         }
-        items(rows, onOpenTitle)
+        items(rows, positions, watchedIds, onOpenTitle)
     }
 }
 
@@ -130,6 +136,8 @@ internal fun rowsOf(divisions: List<Division>, depth: Int = 0): List<Row> =
 
 internal fun LazyListScope.items(
     rows: List<Row>,
+    positions: Map<String, Progress>,
+    watchedIds: Set<String>,
     onOpenTitle: (setId: String) -> Unit,
 ) {
     items(
@@ -143,7 +151,7 @@ internal fun LazyListScope.items(
                 modifier = Modifier.padding(start = indentOf(row.depth), top = Spacing.medium),
             )
 
-            is Row.Item -> ItemRow(row, onOpenTitle)
+            is Row.Item -> ItemRow(row, positions[row.set.setId], row.set.setId in watchedIds, onOpenTitle)
         }
     }
 }
@@ -157,13 +165,19 @@ internal fun LazyListScope.items(
  * already behaves. Leaving it out was the older behaviour and the worse
  * one: a workbook that is simply absent reads as an upload that failed, and
  * a folder holding nothing else disappears with it.
+ *
+ * [progress] and [watched] are `null`/`false` for a document — it is never
+ * played, so it carries neither. Ported from `course-view.js`'s
+ * `lessonRow`: a tick before the title rather than after it, so a column of
+ * them down a season reads at a glance, and a progress rule along the foot
+ * of the row, the same rule a plate draws along its own.
  */
 @Composable
-private fun ItemRow(row: Row.Item, onOpenTitle: (setId: String) -> Unit) {
+private fun ItemRow(row: Row.Item, progress: Progress?, watched: Boolean, onOpenTitle: (setId: String) -> Unit) {
     val document = row.set.kind == Kind.DOCUMENT
     Column(modifier = Modifier.padding(start = indentOf(row.depth))) {
         Text(
-            text = "${row.position}. ${row.set.title}",
+            text = "${row.position}. ${if (watched) "✓ " else ""}${row.set.title}",
             style = MaterialTheme.typography.bodyLarge,
             color = if (document) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
             modifier = Modifier
@@ -177,7 +191,7 @@ private fun ItemRow(row: Row.Item, onOpenTitle: (setId: String) -> Unit) {
                         Modifier.clickable(role = Role.Button) { onOpenTitle(row.set.setId) }
                     },
                 )
-                .padding(vertical = Spacing.small),
+                .padding(top = Spacing.small, bottom = if (document) 0.dp else Spacing.small),
         )
         if (document) {
             Text(
@@ -185,6 +199,12 @@ private fun ItemRow(row: Row.Item, onOpenTitle: (setId: String) -> Unit) {
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = Spacing.small),
+            )
+        }
+        watchedFractionOf(progress)?.let { fraction ->
+            LinearProgressIndicator(
+                progress = { fraction },
+                modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.small),
             )
         }
         HorizontalDivider()

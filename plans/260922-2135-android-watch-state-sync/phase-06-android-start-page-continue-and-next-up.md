@@ -13,7 +13,7 @@
 
 ## Overview
 
-- Priority: P1. Status: pending. Blocked by 05.
+- Priority: P1. Status: code complete, tablet walk-through pending. Blocked by 05.
 - The start page gains the web's first two rows, Continue and Next up, above the three Latest rows; every set card gains the progress rule and the watched tick.
 
 ## Key insights
@@ -49,7 +49,8 @@ PosterCard      : + progress: Float?, watched: Boolean
 ## Related code files
 
 - Create: `feature/catalog/src/main/kotlin/NextUp.kt`, `feature/catalog/src/main/kotlin/ResumeLine.kt`, `feature/catalog/src/test/kotlin/NextUpFixtureTest.kt` (reads `next-up.json`), `feature/catalog/src/test/kotlin/PlayOrderTest.kt`, `ui-mobile/src/main/kotlin/SetPlate.kt` (set card: meta + caption + marks, over `PosterCard`).
-- Modify: `feature/catalog/src/main/kotlin/HomeShelves.kt` (new rows, doc comment no longer says "no watch state"), `HomeShelvesTest.kt`, `CatalogUiState.kt` (`Ready.watch`), `CatalogViewModel.kt` (combine with snapshot), `ui-mobile/src/main/kotlin/HomeScreen.kt` (set rows, KDoc), `CatalogScreen.kt` (See all mapping), `PosterCard.kt` (rule + tick), `CollectionScreen.kt` (tick on rows), `SeasonWall.kt` (season tick), `feature/catalog/build.gradle.kts` (test JSON dep).
+- Modify: `feature/catalog/src/main/kotlin/HomeShelves.kt` (new rows, doc comment no longer says "no watch state"), `HomeShelvesTest.kt`, `CatalogUiState.kt` (`Ready.watch`), `CatalogViewModel.kt` (combine with snapshot), `ui-mobile/src/main/kotlin/HomeScreen.kt` (set rows, KDoc), `CatalogScreen.kt` (See all mapping, ShelfWall marks), `PosterCard.kt` (rule + tick), `CollectionScreen.kt` (tick on rows), `SeasonWall.kt` — both the `feature/catalog` one (`SeasonPlate.watched`) and the `ui-mobile` one (season tick, `SeasonScreen` marks), `feature/catalog/build.gradle.kts` (test JSON dep).
+- Modify, not in the original list: `ui-mobile/src/main/kotlin/LibraryFlow.kt` (reads `Ready.watch` once and threads it to `CollectionScreen`/`SeasonScreen` — neither had another way to reach it), `feature/catalog/src/test/kotlin/CatalogViewModelTest.kt` and `feature/catalog/src/test/kotlin/SeasonWallTest.kt` (both construct the types this phase changed; left untouched they would not compile, or would leave the new `watched` rule unverified).
 - Delete: none.
 
 ## Implementation steps
@@ -63,11 +64,11 @@ PosterCard      : + progress: Float?, watched: Boolean
 
 ## Todo
 
-- [ ] playOrder + tests
-- [ ] NextUp port + fixture test
-- [ ] homeRowsOf rows + totals + tests
-- [ ] VM combine
-- [ ] SetPlate, rule, tick, See all
+- [x] playOrder + tests
+- [x] NextUp port + fixture test
+- [x] homeRowsOf rows + totals + tests
+- [x] VM combine
+- [x] SetPlate, rule, tick, See all
 - [ ] tablet walk-through below
 
 ## Success criteria (tablet, with a web player on the same channel)

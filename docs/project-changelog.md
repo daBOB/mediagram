@@ -9,6 +9,14 @@ to `main`. Full phase-by-phase detail lives in
 
 **Added**
 
+- The Android start page opens on Continue and Next up, by the web player's
+  rules and with its "See all" targets, and every card and episode row shows
+  how far it got or a tick once finished. Next up is held to the web's own
+  fixture cases, and a course level now interleaves its lessons and folders
+  by number as the web does, which Next up's order depends on. Measured
+  across devices: a position recorded on the tablet was in the web player's
+  state moments later, and the web's positions were on the tablet's
+  Continue row.
 - The Android player remembers where each viewer got to and starts from
   there, by the web player's rules — the same resume thresholds and finish
   line, held to the web's own fixture cases. It saves every ten seconds, on

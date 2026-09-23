@@ -30,6 +30,7 @@ import catalog.Entry
 import catalog.homeRowsOf
 import catalog.Shelf
 import designsystem.Spacing
+import model.WatchSnapshot
 
 /**
  * The shelves, and one line above them while the library is being worked
@@ -106,14 +107,18 @@ private fun Shelves(
         }
         if (selected == 0) {
             HomeScreen(
-                rows = remember(shelves) { homeRowsOf(shelves) },
+                rows = remember(shelves, state.watch) { homeRowsOf(shelves, state.watch) },
+                watch = state.watch,
                 columns = columns,
                 onOpenTitle = onOpenTitle,
                 onOpenCollection = onOpenCollection,
+                // A row whose "See all" has nowhere to go yet (Continue,
+                // until the kept-shelves phase) never calls this — its link
+                // is hidden rather than sent to a shelf that isn't there.
                 onSeeAll = { shelf -> chosen = titles.indexOf(shelf).coerceAtLeast(0) },
             )
         } else {
-            ShelfWall(shelves[selected - 1], columns, onOpenTitle, onOpenCollection)
+            ShelfWall(shelves[selected - 1], state.watch, columns, onOpenTitle, onOpenCollection)
         }
     }
 }
@@ -137,10 +142,14 @@ private const val HOME = "Home"
 @Composable
 private fun ShelfWall(
     shelf: Shelf,
+    watch: WatchSnapshot,
     columns: Int,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
 ) {
+    val positions = remember(watch) { watch.progress.associateBy { it.setId } }
+    val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
+
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
         modifier = Modifier.fillMaxSize(),
@@ -163,10 +172,14 @@ private fun ShelfWall(
                     // artwork; the line under the name is what tells two
                     // versions of the same title apart.
                     caption = factsLine(entry.set.year, entry.set.durationSecs),
+                    progress = watchedFractionOf(positions[entry.set.setId]),
+                    watched = entry.set.setId in watchedIds,
                     modifier = Modifier,
                     onClick = { onOpenTitle(entry.set.setId) },
                 )
 
+                // No mark of its own, same as the web's `collectionGrid`: a
+                // show or a course is not one title to finish.
                 is Entry.Collection -> PosterCard(
                     posterPath = entry.posterPath,
                     title = entry.name,

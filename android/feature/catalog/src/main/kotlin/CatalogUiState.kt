@@ -1,6 +1,7 @@
 package catalog
 
 import model.MediaSet
+import model.WatchSnapshot
 
 /** What the catalog screen renders; the television surface renders the same states. */
 sealed interface CatalogUiState {
@@ -20,6 +21,7 @@ sealed interface CatalogUiState {
      */
     data class Ready(
         val shelves: List<Shelf>,
+        val watch: WatchSnapshot = WatchSnapshot.Empty,
         val notice: String? = null,
         val refreshing: Boolean = false,
     ) : CatalogUiState
