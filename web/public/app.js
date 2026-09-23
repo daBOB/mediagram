@@ -405,6 +405,12 @@ function viewCourseLevel(collection, folders) {
  * watching it would be the stranger behaviour.
  */
 function play(set, queue = null, options = {}) {
+  // The position to resume from is read fresh: this tab may have been open
+  // while the same viewer watched further on another device.
+  void state.refreshState().finally(() => openTitle(set, queue, options));
+}
+
+function openTitle(set, queue, options) {
   // `autoplay` is set only by the player handing over to what follows, and
   // says which kind of start that is. Opening a title from a shelf never
   // carries one, so it loads and waits for the viewer as it always has.
@@ -843,8 +849,14 @@ function stopListeningForLibrary() {
   libraryEvents = null;
 }
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") listenForLibrary();
-  else stopListeningForLibrary();
+  if (document.visibilityState === "visible") {
+    listenForLibrary();
+    // Positions saved on another device while this tab was away: redrawn
+    // only if one changed, and never behind a playing title.
+    void state.refreshState().then((changed) => {
+      if (changed && !player.open) route();
+    });
+  } else stopListeningForLibrary();
 });
 if (document.visibilityState === "visible") listenForLibrary();
 

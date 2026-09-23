@@ -73,6 +73,13 @@ to `main`. Full phase-by-phase detail lives in
 
 **Fixed**
 
+- The web player resumes from the newest position, not the one the tab
+  loaded with. A tab read its profile's positions once, when the profile was
+  chosen, so after watching further on the phone or in another browser the
+  open tab resumed at the old place. Opening a title now reads the positions
+  again first (at most 1.5 s, then it goes with what it has), and returning to
+  the tab refreshes the shelves if one changed. Newest wins per title, so a
+  position this tab has just saved is not undone by the server's older copy.
 - The core read `shows.certification` unconditionally, so on a v6 index
   (what the channel holds until the uploading machine is upgraded) every
   title description on the phone failed to load. The column is now read only

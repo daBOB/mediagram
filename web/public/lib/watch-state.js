@@ -144,33 +144,82 @@ export async function useProfile(id) {
   held.preferences = new Map();
   if (id === null) return;
 
+  const said = await readState();
+  if (said) adopt(said);
+}
+
+/**
+ * Reads this profile's state again, for a page that has been open a while.
+ *
+ * The page reads it once, when a profile is chosen — so a tab left open while
+ * the same viewer watched on the phone kept the position from before, and
+ * resumed there. The server has the newer one; this fetches it.
+ *
+ * Positions are merged newest-wins rather than replaced: one this page wrote
+ * a moment ago may still be on its way, and the server's older copy must not
+ * put it back. Everything else is taken as the server has it.
+ *
+ * Gives up after `timeoutMs` and keeps what it had: this runs on the way to
+ * playing a title, and a slow answer must not hold the title up. Resolves to
+ * whether any position or completion changed.
+ */
+export async function refreshState(timeoutMs = 1500) {
+  const asked = held.profileId;
+  if (asked === null) return false;
+  const said = await readState(AbortSignal.timeout(timeoutMs));
+  // Another profile chosen while this was in flight: its state is not this.
+  if (!said || held.profileId !== asked) return false;
+  const before = progressSignature();
+  const local = held.progress;
+  adopt(said);
+  for (const [setId, mine] of local) {
+    const theirs = held.progress.get(setId);
+    const finished = held.watched.get(setId) ?? 0;
+    if ((theirs === undefined || mine.updatedAt > theirs.updatedAt) && mine.updatedAt > finished) {
+      held.progress.set(setId, mine);
+    }
+  }
+  return progressSignature() !== before;
+}
+
+/** Every position and completion as one string, to tell whether a refresh changed any. */
+function progressSignature() {
+  return JSON.stringify([[...held.progress], [...held.watched]]);
+}
+
+/** The profile's state as the server has it, or `null` if it cannot be read. */
+async function readState(signal) {
   try {
-    const response = await fetch(under("/state"));
-    if (!response.ok) return;
-    const said = await response.json();
-    held.progress = new Map(
-      (said.progress ?? []).map((row) => [
-        row.setId,
-        { at: Number(row.at) || 0, duration: row.duration ?? null, updatedAt: row.updatedAt },
-      ]),
-    );
-    held.watchlist = new Set(said.watchlist ?? []);
-    held.collections = said.collections ?? [];
-    // Both shapes: a state file written before completions were dated
-    // serves bare ids, and the first load after an upgrade must not lose
-    // every tick. An undated one keeps 0, which sorts behind anything with
-    // a date and still counts as watched.
-    held.watched = new Map(
-      (said.watched ?? []).map((row) =>
-        typeof row === "string" ? [row, 0] : [row.setId, Number(row.finishedAt) || 0],
-      ),
-    );
-    held.preferences = new Map(
-      (said.preferences ?? []).map((row) => [preferenceKey(row.scope, row.name), row.value]),
-    );
+    const response = await fetch(under("/state"), { signal });
+    return response.ok ? await response.json() : null;
   } catch {
     // A profile whose state cannot be read is one with none yet.
+    return null;
   }
+}
+
+/** Takes the server's answer as what this page holds. */
+function adopt(said) {
+  held.progress = new Map(
+    (said.progress ?? []).map((row) => [
+      row.setId,
+      { at: Number(row.at) || 0, duration: row.duration ?? null, updatedAt: row.updatedAt },
+    ]),
+  );
+  held.watchlist = new Set(said.watchlist ?? []);
+  held.collections = said.collections ?? [];
+  // Both shapes: a state file written before completions were dated
+  // serves bare ids, and the first load after an upgrade must not lose
+  // every tick. An undated one keeps 0, which sorts behind anything with
+  // a date and still counts as watched.
+  held.watched = new Map(
+    (said.watched ?? []).map((row) =>
+      typeof row === "string" ? [row, 0] : [row.setId, Number(row.finishedAt) || 0],
+    ),
+  );
+  held.preferences = new Map(
+    (said.preferences ?? []).map((row) => [preferenceKey(row.scope, row.name), row.value]),
+  );
 }
 
 /** Whether anything written here is being kept. */
