@@ -31,6 +31,15 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                 
                 testOptions {
                     animationsDisabled = true
+                    // A local unit test runs on the plain JVM, with no real
+                    // android.jar behind it — every framework call other
+                    // than a handful AGP stubs throws rather than doing
+                    // anything, `android.util.Log` included. Returning
+                    // defaults instead is what lets a class log a caught
+                    // failure — WatchSync's own failed-round line, for one —
+                    // without every test of it needing to stand up
+                    // Robolectric just to survive that one call.
+                    unitTests.isReturnDefaultValues = true
                 }
                 
                 configureGradleManagedDevices(this)

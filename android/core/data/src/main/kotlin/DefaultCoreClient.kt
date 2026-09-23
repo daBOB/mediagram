@@ -7,7 +7,11 @@ import uniffi.mediagram_core.Core
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.LibraryEvent
+import uniffi.mediagram_core.ListRow
+import uniffi.mediagram_core.Profile
 import uniffi.mediagram_core.SetSummary
+import uniffi.mediagram_core.StateSnapshot
+import uniffi.mediagram_core.SyncOutcome
 import uniffi.mediagram_core.TitleInfo
 
 /** Delegates every call straight through to the generated native core. */
@@ -52,6 +56,45 @@ class DefaultCoreClient(private val core: Core) : CoreClient {
 
     override suspend fun fetchMissing(tmdbKey: String, language: String): FetchReport =
         core.fetchMissing(tmdbKey, language)
+
+    override suspend fun profiles(): List<Profile> = core.profiles()
+
+    override suspend fun createProfile(name: String): Profile? = core.createProfile(name)
+
+    override suspend fun chosenProfile(): String? = core.chosenProfile()
+
+    override suspend fun chooseProfile(id: String): Boolean = core.chooseProfile(id)
+
+    override suspend fun snapshot(profileId: String): StateSnapshot = core.snapshot(profileId)
+
+    override suspend fun setProgress(profileId: String, setId: String, at: Double, duration: Double?) =
+        core.setProgress(profileId, setId, at, duration)
+
+    override suspend fun clearProgress(profileId: String, setId: String) = core.clearProgress(profileId, setId)
+
+    override suspend fun setWatched(profileId: String, setId: String, finished: Boolean) =
+        core.setWatched(profileId, setId, finished)
+
+    override suspend fun setWatchlisted(profileId: String, setId: String, listed: Boolean) =
+        core.setWatchlisted(profileId, setId, listed)
+
+    override suspend fun setKids(setId: String, marked: Boolean) = core.setKids(setId, marked)
+
+    override suspend fun createCollection(profileId: String, name: String): ListRow? =
+        core.createCollection(profileId, name)
+
+    override suspend fun renameCollection(profileId: String, id: String, name: String): Boolean =
+        core.renameCollection(profileId, id, name)
+
+    override suspend fun deleteCollection(profileId: String, id: String): Boolean =
+        core.deleteCollection(profileId, id)
+
+    override suspend fun setInCollection(profileId: String, id: String, setId: String, included: Boolean): Boolean =
+        core.setInCollection(profileId, id, setId, included)
+
+    override fun stateDeviceId(): String = core.stateDeviceId()
+
+    override suspend fun syncState(handle: String): SyncOutcome = core.syncState(handle)
 
     // The generated object is a handle on a Rust value; closing it releases
     // that value and every connection inside it. A later call on a closed

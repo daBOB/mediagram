@@ -15,7 +15,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
+import data.WatchSync
 import ui.MobileApp
+import javax.inject.Inject
 
 /**
  * Nothing is gated here any more. A freshly installed APK carries no
@@ -26,6 +28,13 @@ import ui.MobileApp
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    // Field-injected rather than read from a ViewModel: the watch-state
+    // cadence is a property of the process, not of this screen, and
+    // onStart/onStop are Activity lifecycle callbacks a Composable has no
+    // equivalent for that also fires on a phone simply being locked.
+    @Inject
+    lateinit var watchSync: WatchSync
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Before the first frame, and before Hilt: the bars are told they
@@ -52,6 +61,16 @@ class MainActivity : ComponentActivity() {
                 MobileApp()
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        watchSync.onForeground()
+    }
+
+    override fun onStop() {
+        watchSync.onBackground()
+        super.onStop()
     }
 }
 

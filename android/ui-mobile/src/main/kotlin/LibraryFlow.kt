@@ -20,7 +20,8 @@ import system.FetchViewModel
  * The catalog, whichever show or course it opened, whichever title that
  * described, whichever set that played, the system screen, and the TMDB key
  * screen — the first screens here with a real back-stack need. Where those
- * positions are kept, and why, is [LibraryPositions].
+ * positions are kept, and why, is [LibraryPositions]. Gated on a chosen
+ * profile by [ProfileGate], which is what decides whose shelves these are.
  *
  * The library branches below run from the top of the stack down: the player
  * sits over a title, a title over the collection it was opened from, and
@@ -33,6 +34,11 @@ import system.FetchViewModel
  */
 @Composable
 internal fun CatalogAndPlayer(onStartOver: () -> Unit, onSignedOut: () -> Unit) {
+    ProfileGate { profileBar -> Library(profileBar, onStartOver, onSignedOut) }
+}
+
+@Composable
+private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSignedOut: () -> Unit) {
     val catalogViewModel: CatalogViewModel = hiltViewModel()
     val catalogState by catalogViewModel.state.collectAsStateWithLifecycle()
     val fetchViewModel: FetchViewModel = hiltViewModel()
@@ -134,6 +140,7 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit, onSignedOut: () -> Unit) 
         menuScreen != null -> LibraryBranch(
             destination = menuScreen.destination,
             menu = menuActions,
+            profile = profileBar,
             onLeave = { at.menuScreen = null },
         ) {
             when (menuScreen) {
@@ -147,7 +154,12 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit, onSignedOut: () -> Unit) 
             }
         }
 
-        title != null -> LibraryBranch(Destination.Title(title.title), menuActions, { at.titleId = null }) {
+        title != null -> LibraryBranch(
+            destination = Destination.Title(title.title),
+            menu = menuActions,
+            profile = profileBar,
+            onLeave = { at.titleId = null },
+        ) {
             TitleDetailScreen(
                 set = title,
                 info = rememberTitleInfo(title.posterKey, catalogViewModel::titleInfo),
@@ -158,13 +170,19 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit, onSignedOut: () -> Unit) 
         // Checked ahead of the collection itself: a season is a screen the
         // wall opened over it, and back from here has to land on that wall
         // rather than skip past it to the catalog.
-        season != null -> LibraryBranch(Destination.Season(season.title), menuActions, { at.season = null }) {
+        season != null -> LibraryBranch(
+            destination = Destination.Season(season.title),
+            menu = menuActions,
+            profile = profileBar,
+            onLeave = { at.season = null },
+        ) {
             SeasonScreen(division = season, onOpenTitle = { at.titleId = it })
         }
 
         collection != null -> LibraryBranch(
             destination = Destination.Collection(collection.name),
             menu = menuActions,
+            profile = profileBar,
             // Both cleared together: a season position left behind here
             // would resolve against whichever collection is opened next,
             // and a different show can easily have a division of the same
@@ -192,6 +210,7 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit, onSignedOut: () -> Unit) 
                 destination = Destination.Catalog,
                 onBack = {},
                 menu = menuActions,
+                profile = profileBar,
             ) {
                 CatalogScreen(
                     state = catalogState,

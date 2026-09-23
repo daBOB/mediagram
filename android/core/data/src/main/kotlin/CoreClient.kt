@@ -7,7 +7,11 @@ import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.LibraryEvent
+import uniffi.mediagram_core.ListRow
+import uniffi.mediagram_core.Profile
 import uniffi.mediagram_core.SetSummary
+import uniffi.mediagram_core.StateSnapshot
+import uniffi.mediagram_core.SyncOutcome
 import uniffi.mediagram_core.TitleInfo
 
 /**
@@ -89,6 +93,59 @@ interface CoreClient {
      * need not say so; [DefaultCoreClient] is the only real implementation.
      */
     suspend fun nextLibraryEvent(handle: String, ownDevice: String): LibraryEvent = awaitCancellation()
+
+    /**
+     * Everyone this account's devices have created. A local read — nothing
+     * here touches the network — refreshed by whatever asked, never by this
+     * call itself.
+     */
+    suspend fun profiles(): List<Profile> = emptyList()
+
+    /** Adds a new viewer under [name], or `null` when the write failed. */
+    suspend fun createProfile(name: String): Profile? = null
+
+    /**
+     * Who this device is set to watch as, or `null` before the picker has
+     * run. Local to this device — a sync round never sets it, the same way
+     * a television keeps its own choice rather than inheriting a laptop's.
+     */
+    suspend fun chosenProfile(): String? = null
+
+    /** Sets which profile this device watches as. `false` when [id] names nobody. */
+    suspend fun chooseProfile(id: String): Boolean = false
+
+    /** One profile's everything, in one read: progress, watched, lists. */
+    suspend fun snapshot(profileId: String): StateSnapshot =
+        StateSnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
+
+    suspend fun setProgress(profileId: String, setId: String, at: Double, duration: Double?) = Unit
+    suspend fun clearProgress(profileId: String, setId: String) = Unit
+    suspend fun setWatched(profileId: String, setId: String, finished: Boolean) = Unit
+    suspend fun setWatchlisted(profileId: String, setId: String, listed: Boolean) = Unit
+
+    /**
+     * Marks a set for kids, or not. Global rather than per-profile — every
+     * profile on this account sees the same marks, the way the player loads
+     * it once for the whole session rather than per viewer.
+     */
+    suspend fun setKids(setId: String, marked: Boolean) = Unit
+
+    suspend fun createCollection(profileId: String, name: String): ListRow? = null
+    suspend fun renameCollection(profileId: String, id: String, name: String): Boolean = false
+    suspend fun deleteCollection(profileId: String, id: String): Boolean = false
+    suspend fun setInCollection(profileId: String, id: String, setId: String, included: Boolean): Boolean = false
+
+    /** This device's watch-state identity, minted once and kept beside `state.db`. */
+    fun stateDeviceId(): String = ""
+
+    /**
+     * One round with the library's state channel: what it took in, whether
+     * it sent anything, what went wrong. Never throws — a round that could
+     * not run at all answers with [uniffi.mediagram_core.SyncOutcome.failed]
+     * set rather than raising, so a caller with no network never has to
+     * wrap this in its own try/catch to stay usable offline.
+     */
+    suspend fun syncState(handle: String): SyncOutcome = SyncOutcome(0uL, false, null)
 
     /** The datacentre this login lives on, read from the stored key; `null` before any login. */
     fun dcId(): Int? = null

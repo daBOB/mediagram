@@ -11,6 +11,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -71,10 +72,17 @@ internal fun backLabelFor(destination: Destination): String? = when (destination
 }
 
 /**
+ * Whose shelves these are, and the way to become somebody else — the bar's
+ * counterpart to the web's `#who` button. Shown as the chosen name; tapping
+ * it reopens [ui.ProfilePickerScreen] over whatever is on screen.
+ */
+data class ProfileBarState(val name: String, val onChoose: () -> Unit)
+
+/**
  * The app's one piece of chrome: a bar with a title, a way back where the
- * destination has one, and an overflow menu that is the same five items
- * wherever it is opened from. Every non-player screen renders its content
- * through this.
+ * destination has one, who is watching, and an overflow menu that is the
+ * same five items wherever it is opened from. Every non-player screen
+ * renders its content through this.
  *
  * The title and the back affordance are both derived from [destination]
  * here, in one place, rather than handed in already decided — [barTitleFor]
@@ -95,6 +103,7 @@ fun LibraryScaffold(
     destination: Destination,
     onBack: () -> Unit,
     menu: MenuActions,
+    profile: ProfileBarState,
     content: @Composable () -> Unit,
 ) {
     var askingStartOver by remember { mutableStateOf(false) }
@@ -128,6 +137,7 @@ fun LibraryScaffold(
                     }
                 },
                 actions = {
+                    ProfileButton(profile)
                     OverflowMenu(menu = menu, onAskStartOver = { askingStartOver = true })
                 },
             )
@@ -142,4 +152,14 @@ fun LibraryScaffold(
         onDismiss = { askingStartOver = false },
         onConfirm = menu.onStartOver,
     )
+}
+
+@Composable
+private fun ProfileButton(profile: ProfileBarState) {
+    TextButton(
+        onClick = profile.onChoose,
+        modifier = Modifier.semantics { contentDescription = "Who's watching: ${profile.name}" },
+    ) {
+        Text(profile.name, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
 }

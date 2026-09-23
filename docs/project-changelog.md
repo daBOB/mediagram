@@ -7,6 +7,16 @@ to `main`. Full phase-by-phase detail lives in
 
 ## 2026-09-23
 
+**Added**
+
+- The Android app keeps and syncs watch state with the web player. It asks
+  "Who's watching?" with the same profiles, syncs on start, every five
+  minutes while open, when a film is left and when the app goes to the
+  background, and within seconds of another device writing — its own writes
+  do not wake it. Start over now also removes this device's watch state.
+  Measured on the tablet: its first round took in the web's viewer, 8
+  positions and 31 finished titles, and pinned its own document once.
+
 **Added (groundwork)**
 
 - The Android core can sync that watch state through the library's channel,

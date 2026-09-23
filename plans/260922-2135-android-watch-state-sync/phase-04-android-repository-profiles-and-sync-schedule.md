@@ -11,7 +11,7 @@
 
 ## Overview
 
-- Priority: P1. Status: pending. Blocked by 03.
+- Priority: P1. Status: done. Blocked by 03.
 - Kotlin gets a `WatchStateRepository` over the core, a `WatchSync` scheduler, and the "Who's watching?" picker. After this phase the phone syncs and has a viewer; nothing yet records or shows positions.
 
 ## Key insights
@@ -62,14 +62,14 @@ Lifetime: repository and `WatchSync` are `@Singleton` (process). Snapshot is per
 
 ## Todo
 
-- [ ] core `.so` rebuilt
-- [ ] CoreClient + DefaultCoreClient
-- [ ] WatchSnapshot + repository + tests
-- [ ] WatchSync + tests
-- [ ] MainActivity lifecycle hooks
-- [ ] picker VM/screen + LibraryFlow gate + bar action
-- [ ] Start over (per Q4)
-- [ ] tablet: picker lists the web's viewers after first sync
+- [x] core `.so` rebuilt — the checked-in bindings already exported the state surface (35b90db, 188ab32); no Rust changes were needed for this phase
+- [x] CoreClient + DefaultCoreClient
+- [x] WatchSnapshot + repository + tests
+- [x] WatchSync + tests
+- [x] MainActivity lifecycle hooks
+- [x] picker VM/screen + LibraryFlow gate + bar action
+- [x] Start over (per Q4)
+- [ ] tablet: picker lists the web's viewers after first sync — device validation left to the user, per standing instruction
 
 ## Success criteria
 

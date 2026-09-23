@@ -1,13 +1,16 @@
 package data
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.shareIn
 import settings.LibrarySettings
 import uniffi.mediagram_core.LibraryEvent
 import kotlin.time.Duration
@@ -58,7 +61,7 @@ class CoreLibraryEvents(
         while (true) {
             val handle = settings.read() ?: return@flow
             val event = try {
-                core.nextLibraryEvent(handle, OWN_DEVICE)
+                core.nextLibraryEvent(handle, core.stateDeviceId())
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -70,13 +73,30 @@ class CoreLibraryEvents(
             emit(event)
         }
     }
+}
 
-    private companion object {
-        /**
-         * No watch-state device id exists on this device yet, so nothing is
-         * filtered as this device's own. Harmless while only index events are
-         * acted on; the watch-state sync passes its real id when it lands.
-         */
-        const val OWN_DEVICE = ""
-    }
+/**
+ * One collection of [LibraryEvents], shared by every subscriber.
+ *
+ * The core serves one update stream per connection: a second, uncoordinated
+ * `nextLibraryEvent` wait would steal whichever event comes next from
+ * whichever caller was already waiting. [delegate] is collected at most
+ * once, through [shareIn], and every caller here — the catalog's INDEX
+ * handling, [WatchSync]'s STATE handling — reads the same events from that
+ * one collection instead.
+ *
+ * [SharingStarted.WhileSubscribed] keeps the collection alive only while at
+ * least one caller is listening, for a short grace period after the last one
+ * stops — the same lifetime a lone collector already had, so the catalog's
+ * screen-only listening is unchanged: no service, no socket held open for a
+ * phone in a pocket.
+ */
+class SharedLibraryEvents(
+    delegate: LibraryEvents,
+    scope: CoroutineScope,
+) : LibraryEvents {
+
+    private val shared = delegate.events().shareIn(scope, SharingStarted.WhileSubscribed(5_000))
+
+    override fun events(): Flow<LibraryEvent> = shared
 }

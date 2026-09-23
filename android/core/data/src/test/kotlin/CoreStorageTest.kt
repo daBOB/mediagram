@@ -50,6 +50,31 @@ class CoreStorageTest {
     }
 
     /**
+     * A start-over promises a clean device, and this device's own watch
+     * state — its viewers, its positions — is exactly the kind of thing
+     * left behind that would surprise whoever sets it up next.
+     */
+    @Test
+    fun theWatchStateGoesWithItsWalAndShmSidecars() = runTest {
+        File(dataDir.root, "state.db").writeText("rows")
+        File(dataDir.root, "state.db-wal").writeText("uncheckpointed rows")
+        File(dataDir.root, "state.db-shm").writeText("shared index")
+
+        storage().clear()
+
+        assertFalse(File(dataDir.root, "state.db").exists())
+        assertFalse(File(dataDir.root, "state.db-wal").exists())
+        assertFalse(File(dataDir.root, "state.db-shm").exists())
+    }
+
+    @Test
+    fun noWatchStateOnDiskYetIsNotAFailure() = runTest {
+        storage().clear()
+
+        assertFalse(File(dataDir.root, "state.db").exists())
+    }
+
+    /**
      * `delete()` returns a Boolean and a discarded one is a silent
      * failure: the app would go back to the first step with a live auth key
      * still on disk, and the next identity typed in would inherit the

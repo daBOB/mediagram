@@ -11,11 +11,18 @@ import data.CoreProvider
 import data.CoreStorage
 import data.DefaultCatalogRepository
 import data.CoreLibraryEvents
+import data.DefaultWatchStateRepository
+import data.DefaultWatchSync
 import data.FileCoreStorage
 import data.LibraryEvents
 import data.RefreshLog
+import data.SharedLibraryEvents
+import data.WatchStateRepository
+import data.WatchSync
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import settings.EncryptedLibrarySettings
 import settings.EncryptedTelegramSettings
 import settings.EncryptedTmdbSettings
@@ -77,11 +84,39 @@ object DataModule {
         refreshes: RefreshLog,
     ): CatalogRepository = DefaultCatalogRepository(coreProvider, settings, refreshes)
 
-    // The core serves one update stream: a second collector's wait queues
-    // behind the first and takes whichever event comes next. The catalog is
-    // the only collector today; a second one should share its collection.
+    // Process-lifetime work that is not the player: see AppScope's own doc
+    // for why it is a second scope rather than the one PlaybackModule binds.
     @Provides
     @Singleton
-    fun provideLibraryEvents(coreProvider: CoreProvider, settings: LibrarySettings): LibraryEvents =
-        CoreLibraryEvents(coreProvider, settings)
+    @AppScope
+    fun provideAppScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    // The core serves one update stream: a second collector's wait queues
+    // behind the first and takes whichever event comes next. Both the
+    // catalog's INDEX handling and WatchSync's STATE handling read this one
+    // shared collection instead of asking the core each on their own.
+    @Provides
+    @Singleton
+    fun provideLibraryEvents(
+        coreProvider: CoreProvider,
+        settings: LibrarySettings,
+        @AppScope scope: CoroutineScope,
+    ): LibraryEvents = SharedLibraryEvents(CoreLibraryEvents(coreProvider, settings), scope)
+
+    @Provides
+    @Singleton
+    fun provideWatchStateRepository(
+        coreProvider: CoreProvider,
+        dispatcher: CoroutineDispatcher,
+    ): WatchStateRepository = DefaultWatchStateRepository(coreProvider, dispatcher)
+
+    @Provides
+    @Singleton
+    fun provideWatchSync(
+        coreProvider: CoreProvider,
+        settings: LibrarySettings,
+        repository: WatchStateRepository,
+        libraryEvents: LibraryEvents,
+        @AppScope scope: CoroutineScope,
+    ): WatchSync = DefaultWatchSync(coreProvider, settings, repository, libraryEvents, scope)
 }

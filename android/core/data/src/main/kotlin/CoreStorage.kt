@@ -17,14 +17,19 @@ import java.io.IOException
  */
 interface CoreStorage {
     /**
-     * Deletes the persisted sign-in, the decrypted catalog and the names
-     * this device minted for the channels it could read, all together.
+     * Deletes the persisted sign-in, the decrypted catalog, the names this
+     * device minted for the channels it could read, and this device's own
+     * watch state, all together.
      *
      * Together on purpose: a catalog is the contents of one library, read
      * by one account. Keeping it after that account has been signed out
      * would show the next person to set this device up a library they were
      * never given, and keeping the names would leave a list of that
      * account's channels behind on a device it no longer has a session on.
+     * The watch state goes for the same reason a signed-out session does —
+     * starting over promises a clean device, and a profile or a position
+     * left behind is exactly the kind of thing the next person to set it up
+     * would not expect to find.
      */
     suspend fun clear()
 }
@@ -73,6 +78,16 @@ class FileCoreStorage(
             if (libraries.exists() && !libraries.delete()) {
                 throw IOException("the stored list of libraries could not be deleted")
             }
+            // SQLite's WAL mode leaves two sidecar files beside the database
+            // itself; deleting only state.db would leave whatever was still
+            // sitting in the write-ahead log to resurrect the state this
+            // call promised was gone the next time something opened it.
+            for (name in STATE_FILES) {
+                val file = File(dataDir, name)
+                if (file.exists() && !file.delete()) {
+                    throw IOException("this device's watch state could not be deleted")
+                }
+            }
         }
     }
 
@@ -80,5 +95,6 @@ class FileCoreStorage(
         const val SESSION_FILE = "session.key"
         const val CATALOG_DIR = "catalog"
         const val LIBRARIES_FILE = "libraries.json"
+        val STATE_FILES = listOf("state.db", "state.db-wal", "state.db-shm")
     }
 }

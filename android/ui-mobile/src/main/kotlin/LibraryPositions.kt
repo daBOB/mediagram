@@ -94,9 +94,10 @@ internal fun rememberLibraryPositions(): LibraryPositions = LibraryPositions(
 internal fun LibraryBranch(
     destination: Destination,
     menu: MenuActions,
+    profile: ProfileBarState,
     onLeave: () -> Unit,
     content: @Composable () -> Unit,
 ) {
     BackHandler(onBack = onLeave)
-    LibraryScaffold(destination = destination, onBack = onLeave, menu = menu, content = content)
+    LibraryScaffold(destination = destination, onBack = onLeave, menu = menu, profile = profile, content = content)
 }
