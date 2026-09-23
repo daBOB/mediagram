@@ -114,6 +114,13 @@ export interface Config {
    * anyone claim to be on the local network and ask for the original file.
    */
   trustProxy: boolean;
+  /**
+   * Whether opening an episode takes the next two into the cache in full.
+   *
+   * On unless turned off: it only spends cache the budget already allows,
+   * and a player without a cache ignores it.
+   */
+  seriesPreload: boolean;
   hostname: string;
   port: number;
 }
@@ -193,6 +200,7 @@ export function load(): Config {
       process.env.MEDIAGRAM_CHANNEL_INDEX_DIR ?? `${process.env.HOME}/.cache/mediagram-channel-index`,
     postersCommand: process.env.MEDIAGRAM_POSTERS_COMMAND || "mediagram",
     trustProxy: /^(1|true|yes)$/i.test(process.env.MEDIAGRAM_TRUST_PROXY ?? ""),
+    seriesPreload: !/^(0|false|no|off)$/i.test(process.env.MEDIAGRAM_SERIES_PRELOAD ?? ""),
     hostname: addr.slice(0, colon) || "127.0.0.1",
     port: Number(addr.slice(colon + 1)),
   };
@@ -217,6 +225,7 @@ export function describe(config: Config): Record<string, unknown> {
     stateDb: config.stateDb,
     transcodeMaxrate: config.transcodeMaxrate,
     trustProxy: config.trustProxy,
+    seriesPreload: config.seriesPreload,
     packageUrl: config.packageUrl,
     // The key is the only thing protecting a published package; it never
     // reaches a log, the same way the Telegram session does not.

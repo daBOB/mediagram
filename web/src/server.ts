@@ -30,6 +30,7 @@ import type { AudioTrackReader } from "./audio-tracks";
 import type { WatchState } from "./state/store";
 import type { HeldSets } from "./cache/held";
 import type { SheetStore } from "./thumbs/sheets";
+import type { SeriesPreload } from "./cache/series-preload";
 
 export interface RunningServer {
   port: number;
@@ -164,6 +165,8 @@ export function startServer(options: {
   thumbs?: SheetStore;
   /** Where open pages hear that the catalog changed. */
   events?: CatalogEvents;
+  /** Takes the next episodes into the cache while one plays. */
+  preload?: SeriesPreload;
 }): Promise<RunningServer> {
   const routerFor = (db: Database, catalog: CatalogOrigin | undefined) =>
     createRouter({
@@ -179,6 +182,7 @@ export function startServer(options: {
       held: options.held,
       thumbs: options.thumbs,
       events: options.events,
+      preload: options.preload,
     });
   let route = routerFor(options.db, options.catalog);
   const trustProxy = options.trustProxy ?? false;

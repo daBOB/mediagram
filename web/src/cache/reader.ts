@@ -192,6 +192,26 @@ export class CachedReader {
   }
 
   /**
+   * Fetches every chunk of a part that is not on disk yet, and keeps none of
+   * it in memory beyond the run in hand.
+   *
+   * For taking a whole title ahead of time. No readahead: that exists to stay
+   * in front of a viewer, and there is no viewer here — it would only fetch
+   * the chunks this loop is about to fetch anyway.
+   */
+  async fill(setId: string, partIdx: number, partLength: number, fetch: FetchRange): Promise<void> {
+    const lastInPart = Math.floor((partLength - 1) / CACHE_CHUNK);
+    const missing: number[] = [];
+    for (let index = 0; index <= lastInPart; index++) {
+      const held = await this.cache.get(setId, partIdx, index, expectedSize(index, partLength));
+      if (held === null) missing.push(index);
+    }
+    for (const run of runsOf(missing)) {
+      await this.fillRun(setId, partIdx, run, partLength, fetch, new Map());
+    }
+  }
+
+  /**
    * Fetches one run in a single request and caches each chunk of it.
    *
    * A short answer throws rather than caching what arrived. The end of a part

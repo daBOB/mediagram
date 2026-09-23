@@ -421,11 +421,31 @@ function play(set, queue = null, options = {}) {
   const collection = [...library.series, ...library.tutorials].find((entry) =>
     entry.name === set.show,
   );
+  if (collection && set.kind === "ep") preloadAfter(collection, set.setId);
   openPlayer(set, {
     next: collection ? nextAfter(collection, set.setId) : null,
     onOpenNext: (following, how) => play(following, null, how),
     autoplay,
   });
+}
+
+/**
+ * Asks the server to take the next two episodes into its cache.
+ *
+ * Named here, with the `nextAfter` that decides Play next, so what is fetched
+ * ahead is exactly what would play next. Fire and forget: a player with
+ * preload turned off answers 404, and either way this episode plays the same.
+ */
+function preloadAfter(collection, setId) {
+  const first = nextAfter(collection, setId);
+  const second = first ? nextAfter(collection, first.setId) : null;
+  const setIds = [first, second].filter(Boolean).map((next) => next.setId);
+  if (setIds.length === 0) return;
+  fetch("/api/preload", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ setIds }),
+  }).catch(() => {});
 }
 
 /** The counts beside the shelves that come from watch state. */

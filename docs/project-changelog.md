@@ -9,6 +9,15 @@ to `main`. Full phase-by-phase detail lives in
 
 **Added**
 
+- Smart series preload. Opening an episode in the web player takes the next
+  two into the player's cache in full, in the background, so they start and
+  seek with no Telegram wait and play offline. The page names them with the
+  same `nextAfter` that drives Play next; `POST /api/preload` accepts at most
+  two, episodes only. One set and one run at a time, so a preload holds at
+  most one of the four download slots and playback keeps the rest. On by
+  default; `MEDIAGRAM_SERIES_PRELOAD=0` turns it off. Measured: a 214 MB
+  episode held in about 2.5 minutes. Android plays straight from Telegram with
+  no cache, so it has nothing to preload into yet.
 - Page changes in the web player turn over with a short fade (View
   Transitions); catalog refreshes and search typing stay still, and reduced
   motion gets the plain swap.

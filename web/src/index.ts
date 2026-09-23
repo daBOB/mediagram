@@ -33,7 +33,8 @@ import { createStatusRouter } from "./status/routes";
 import { dirBytes } from "./status/dir-bytes";
 import type { StartupFacts } from "./status/facts";
 import { Telegram, bareChannelId } from "./telegram/client";
-import { TelegramSource } from "./telegram/source";
+import { TelegramSource, partFetcher } from "./telegram/source";
+import { SeriesPreload } from "./cache/series-preload";
 import { CatalogEvents } from "./catalog-events";
 import { findNewestChannelIndex } from "./channel-index/find-newest-channel-index";
 import { oneAtATime, refreshFromChannel, type ChannelRefresh } from "./channel-index/refresh-from-channel";
@@ -310,6 +311,25 @@ const thumbs = held
     })
   : undefined;
 
+/**
+ * The next two episodes, taken into the cache while one plays.
+ *
+ * Needs the cache to have somewhere to put them and `held` to know when one
+ * is already there; without either there is nothing to preload into.
+ */
+const preload =
+  config.seriesPreload && reader && held
+    ? new SeriesPreload({
+        fill: (setId, partIdx, partLength, fetch) => reader.fill(setId, partIdx, partLength, fetch),
+        fetcherFor: (messageId) => partFetcher(telegram, messageId),
+        isHeld: (setId) => held.check(setId),
+        // So the shelf's offline badge follows at once, not a scan later.
+        onHeld: () => void held.refresh(),
+        log: (line) => console.log(line),
+      })
+    : undefined;
+console.log(`preload: next 2 episodes ${preload ? "on" : "off"}`);
+
 // Where open pages hear that the library changed.
 const events = new CatalogEvents();
 
@@ -328,6 +348,7 @@ const server = await startServer({
   maxBitrate: config.transcodeMaxrate,
   catalog: { origin: catalog.origin, publishedAt: catalog.publishedAt },
   held: held ?? undefined,
+  preload,
   status: createStatusRouter({
     facts,
     live: () => {

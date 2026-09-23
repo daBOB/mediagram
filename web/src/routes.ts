@@ -34,6 +34,7 @@ import { planReads, totalSize, type PartSpan, type Step } from "./range";
 import { isLocalAddress } from "./client-reach";
 import { copyVideoAs } from "./transcode/video-copy";
 import type { SheetStore } from "./thumbs/sheets";
+import type { SeriesPreload } from "./cache/series-preload";
 // @ts-expect-error — plain JS shared with the browser, like `playable.js`.
 import { spritePlan } from "../public/lib/sprite-plan.js";
 import type { SessionSpec } from "./transcode/registry";
@@ -304,6 +305,13 @@ export interface RouterOptions {
    * behaves exactly as it did before previews existed.
    */
   thumbs?: SheetStore;
+  /**
+   * Takes the next episodes into the cache while one plays.
+   *
+   * Absent when the player has no cache or the config turned it off, in which
+   * case `/api/preload` is not a route and the page's call is a quiet 404.
+   */
+  preload?: SeriesPreload;
   /** Where open pages hear that the catalog changed. Absent in most tests. */
   events?: CatalogEvents;
   /**
@@ -414,6 +422,26 @@ export function createRouter(options: RouterOptions) {
       if (!session || !hls) return empty(404);
       await hls.end(session[1]!);
       return empty(204);
+    }
+
+    // Before the method gate too: the one other write, and only a request to
+    // spend cache, never a change to anything a viewer sees.
+    if (request.path === "/api/preload") {
+      if (!options.preload) return empty(404);
+      if (request.method !== "POST") return empty(405);
+      // Only what is playable, and only episodes: this is series preload, and
+      // a caller naming a two-hour film here is not asking for what it says.
+      // Capped because a remote caller can send anything, and each id is a
+      // whole title's worth of download.
+      const items = preloadIds(request.body)
+        .slice(0, MAX_PRELOAD)
+        .flatMap((setId) => {
+          const set = playableSet(db, setId);
+          if (set === null || set.kind !== "ep") return [];
+          return [{ setId, title: set.title ?? setId, locations: partLocations(db, setId) }];
+        });
+      options.preload.want(items);
+      return empty(202);
     }
 
     const readOnlyMethod = request.method === "GET" || request.method === "HEAD";
@@ -770,3 +798,15 @@ function streamSet(
   return { status: plan.status, headers, body };
 }
 
+/** How many titles one preload request may name: the next two episodes. */
+const MAX_PRELOAD = 2;
+
+/** The set ids in a preload request's body, or none if it is not one. */
+function preloadIds(body: string | null | undefined): string[] {
+  try {
+    const ids = (JSON.parse(body ?? "") as { setIds?: unknown })?.setIds;
+    return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
+}
