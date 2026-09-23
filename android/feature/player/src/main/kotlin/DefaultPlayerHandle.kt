@@ -1,5 +1,6 @@
 package player
 
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -45,7 +46,9 @@ class DefaultPlayerHandle @Inject constructor(
     private var listener: PlayerHandle.Listener? = null
 
     /** A set requested through [open] before the player finished building. */
-    private var pendingSetId: String? = null
+    private var pendingOpen: PendingOpen? = null
+
+    private data class PendingOpen(val setId: String, val startAtMs: Long)
 
     /** Whichever set was last handed to the player; [stop] clears it. */
     private var currentSetId: String? = null
@@ -76,9 +79,9 @@ class DefaultPlayerHandle @Inject constructor(
                 val built = playerDeferred.await()
                 built.addListener(playerListener)
                 _player.value = built
-                pendingSetId?.let { setId ->
-                    pendingSetId = null
-                    openOn(built, setId)
+                pendingOpen?.let { pending ->
+                    pendingOpen = null
+                    openOn(built, pending.setId, pending.startAtMs)
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -107,7 +110,7 @@ class DefaultPlayerHandle @Inject constructor(
      * left strictly alone, and anything else — a different set, an errored
      * player, a stopped one — is loaded for real.
      */
-    override fun open(setId: String) {
+    override fun open(setId: String, startAtMs: Long) {
         constructionError?.let { message ->
             // There will never be a player to open this on, and the caller
             // has just reset itself to "preparing" expecting one. Nothing
@@ -117,14 +120,14 @@ class DefaultPlayerHandle @Inject constructor(
         }
         val current = _player.value
         if (current == null) {
-            pendingSetId = setId
+            pendingOpen = PendingOpen(setId, startAtMs)
             return
         }
         if (setId == currentSetId && current.playbackState != Player.STATE_IDLE) {
             republishPlaybackState(current)
             return
         }
-        openOn(current, setId)
+        openOn(current, setId, startAtMs)
     }
 
     override fun setListener(listener: PlayerHandle.Listener?) {
@@ -139,13 +142,26 @@ class DefaultPlayerHandle @Inject constructor(
         // set requested just before the screen was left must not start
         // playing the moment construction finishes on a screen the user
         // has already backed out of.
-        pendingSetId = null
+        pendingOpen = null
         currentSetId = null
         _player.value?.stop()
     }
 
     override fun release() {
         listener = null
+    }
+
+    override fun positionMs(): Long? {
+        val current = _player.value ?: return null
+        if (current.playbackState == Player.STATE_IDLE) return null
+        return current.currentPosition
+    }
+
+    override fun durationMs(): Long? {
+        val current = _player.value ?: return null
+        if (current.playbackState == Player.STATE_IDLE) return null
+        val duration = current.duration
+        return duration.takeIf { it != C.TIME_UNSET && it > 0 }
     }
 
     /**
@@ -170,13 +186,16 @@ class DefaultPlayerHandle @Inject constructor(
      */
     private fun failConstruction(message: String) {
         constructionError = message
-        pendingSetId = null
+        pendingOpen = null
         listener?.onError(message)
     }
 
-    private fun openOn(player: Player, setId: String) {
+    private fun openOn(player: Player, setId: String, startAtMs: Long) {
         currentSetId = setId
-        player.setMediaItem(MediaItem.fromUri(setUri(setId)))
+        // The two-argument overload, not `setMediaItem(item)` then a seek:
+        // seeking after `prepare()` starts a frame at zero and jumps from
+        // it, briefly showing the top of the title before the resume point.
+        player.setMediaItem(MediaItem.fromUri(setUri(setId)), startAtMs)
         player.prepare()
         player.playWhenReady = true
     }

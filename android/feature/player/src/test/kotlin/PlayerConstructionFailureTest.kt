@@ -2,9 +2,11 @@ package player
 
 import androidx.media3.exoplayer.ExoPlayer
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import playback.PlaybackCounters
+import org.junit.After
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -19,8 +21,12 @@ import kotlin.test.assertEquals
  */
 class PlayerConstructionFailureTest {
 
+    @After
+    fun tearDown() = Dispatchers.resetMain()
+
     @Test
     fun aFailureThatLandsBeforeAnyoneSubscribesIsStillDelivered() = runTest {
+        installMainDispatcher()
         val deferred = CompletableDeferred<ExoPlayer>()
         val handle = DefaultPlayerHandle(deferred, this)
 
@@ -28,16 +34,17 @@ class PlayerConstructionFailureTest {
         advanceUntilIdle()
 
         // Only now does the screen exist to care about it.
-        val viewModel = PlayerViewModel(handle, PlaybackCounters())
+        val viewModel = testViewModel(handle)
 
         assertEquals(PlayerUiState.Failed("no space left for the cache"), viewModel.state.value)
     }
 
     @Test
     fun openingASetAfterTheFailureReportsItRatherThanWaitingForAPlayer() = runTest {
+        installMainDispatcher()
         val deferred = CompletableDeferred<ExoPlayer>()
         val handle = DefaultPlayerHandle(deferred, this)
-        val viewModel = PlayerViewModel(handle, PlaybackCounters())
+        val viewModel = testViewModel(handle)
         deferred.completeExceptionally(IOException("no space left for the cache"))
         advanceUntilIdle()
         assertEquals(PlayerUiState.Failed("no space left for the cache"), viewModel.state.value)

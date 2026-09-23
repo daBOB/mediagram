@@ -13,11 +13,19 @@ class FakePlayerHandle : PlayerHandle {
     var openedSetId: String? = null
         private set
 
+    var openedStartAtMs: Long? = null
+        private set
+
     var stopCalled: Boolean = false
         private set
 
-    override fun open(setId: String) {
+    /** What [positionMs]/[durationMs] answer; a test sets these to model where playback is. */
+    var fakePositionMs: Long? = null
+    var fakeDurationMs: Long? = null
+
+    override fun open(setId: String, startAtMs: Long) {
         openedSetId = setId
+        openedStartAtMs = startAtMs
     }
 
     override fun setListener(listener: PlayerHandle.Listener?) {
@@ -29,6 +37,10 @@ class FakePlayerHandle : PlayerHandle {
     }
 
     override fun release() = Unit
+
+    override fun positionMs(): Long? = fakePositionMs
+
+    override fun durationMs(): Long? = fakeDurationMs
 
     fun emitError(message: String) {
         listener?.onError(message)

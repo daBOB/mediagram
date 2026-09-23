@@ -31,6 +31,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Spacing
 import kotlinx.coroutines.delay
@@ -63,6 +66,21 @@ fun PlayerScreen(setId: String, onBack: () -> Unit) {
             }
         }
     }
+
+    // Backstop for a kill that skips onDispose entirely — recents swiped,
+    // the process trimmed. Not a duplicate of the DisposableEffect above:
+    // that one only runs when this Composition is actually torn down, and
+    // an Activity can reach ON_STOP (screen off, task-switched away) while
+    // the Composition it hosts is still there, primed to resume.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) viewModel.save()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     KeepScreenOnWhile(isPlaying = state is PlayerUiState.Playing)
 
     // Shown when the screen opens, so a viewer finds out the bar is there at

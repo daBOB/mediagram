@@ -16,4 +16,9 @@ dependencies {
     implementation(project(":core:model"))
 
     androidTestImplementation(libs.findLibrary("kotlinx.coroutines.test").get())
+
+    // ResumePointFixtureTest reads the web's own resume-point.json as plain
+    // JSON — no @Serializable models, so the compiler plugin isn't needed,
+    // just the runtime's JsonElement parser.
+    testImplementation(libs.findLibrary("kotlinx.serialization").get())
 }

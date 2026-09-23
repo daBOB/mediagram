@@ -19,7 +19,8 @@ interface PlayerHandle {
      */
     val player: StateFlow<Player?>
 
-    fun open(setId: String)
+    /** @param startAtMs where to seek once the set is loaded; 0 for the top. */
+    fun open(setId: String, startAtMs: Long)
     fun setListener(listener: Listener?)
 
     /** Stops playback and releases the decoder/audio focus the player is holding. */
@@ -27,6 +28,18 @@ interface PlayerHandle {
 
     /** Detaches whichever listener is currently subscribed. Safe to call more than once. */
     fun release()
+
+    /**
+     * The playhead, or `null` when there is nothing to trust it against — no
+     * player yet, or one sitting in `STATE_IDLE` (never prepared, stopped,
+     * or just failed). A recorder that saw `null` here has nothing to save,
+     * which is the point: a position from before the first frame or after
+     * an error is not a place to resume to.
+     */
+    fun positionMs(): Long?
+
+    /** As [positionMs], for the set's length; `null` on the same terms, or while media3 hasn't measured it yet. */
+    fun durationMs(): Long?
 
     /** Playback facts; [PlayerViewModel] maps these onto [PlayerUiState]. */
     interface Listener {

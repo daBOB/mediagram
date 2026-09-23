@@ -11,7 +11,7 @@
 
 ## Overview
 
-- Priority: P1. Status: pending. Blocked by 04.
+- Priority: P1. Status: code complete, tablet validation pending. Blocked by 04.
 - The phone records where a viewer is, marks a title watched at the end, and opens a title where it was left — the same rules as the web, pinned by the shared fixture.
 
 ## Key insights
@@ -54,11 +54,11 @@ PlayerViewModel.stop() ─► recorder.save(final) ─► WatchSync.soon()
 
 ## Todo
 
-- [ ] ResumePoint.kt + fixture test
-- [ ] PlayerHandle start position + position/duration
-- [ ] ProgressRecorder + tests
-- [ ] PlayerViewModel wiring
-- [ ] PlayerScreen ON_STOP save
+- [x] ResumePoint.kt + fixture test
+- [x] PlayerHandle start position + position/duration
+- [x] ProgressRecorder + tests
+- [x] PlayerViewModel wiring
+- [x] PlayerScreen ON_STOP save
 - [ ] tablet checks below
 
 ## Success criteria (tablet)

@@ -9,6 +9,12 @@ to `main`. Full phase-by-phase detail lives in
 
 **Added**
 
+- The Android player remembers where each viewer got to and starts from
+  there, by the web player's rules — the same resume thresholds and finish
+  line, held to the web's own fixture cases. It saves every ten seconds, on
+  pause and on leaving, marks a title finished at the end, and syncs as the
+  film is left. On the tablet: 37 s into Justice League, left, reopened —
+  playback picked up at 0:43.
 - The Android app keeps and syncs watch state with the web player. It asks
   "Who's watching?" with the same profiles, syncs on start, every five
   minutes while open, when a film is left and when the app goes to the
