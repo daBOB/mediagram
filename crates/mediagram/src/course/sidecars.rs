@@ -62,7 +62,14 @@ fn base_stem(video: &Path) -> Option<String> {
 /// Size is checked before reading: the point of the limit is not to load the
 /// file in the first place.
 fn read_text(path: &Path) -> Option<String> {
-    let metadata = std::fs::metadata(path).ok()?;
+    let metadata = match std::fs::metadata(path) {
+        Ok(metadata) => metadata,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return None,
+        Err(err) => {
+            tracing::warn!("skipping {}: {err}", path.display());
+            return None;
+        }
+    };
     if metadata.len() > MAX_ASSET_BYTES as u64 {
         tracing::warn!(
             "skipping {}: {} bytes, over the {MAX_ASSET_BYTES}-byte limit",
