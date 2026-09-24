@@ -11,15 +11,6 @@ android {
     testOptions.unitTests.isIncludeAndroidResources = true
 }
 
-configurations.all {
-    // `app.android.library.compose` bundles material3 in for every module
-    // it touches, which every other Compose module here still wants from
-    // it. This is the one module both surfaces depend on, so it is excluded
-    // here instead: material3 is ui-mobile's choice and androidx.tv is
-    // ui-tv's, and a module both of them import cannot commit to either.
-    exclude(group = "androidx.compose.material3")
-}
-
 dependencies {
     implementation(project(":feature:catalog"))
     implementation(project(":feature:player"))

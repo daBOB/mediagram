@@ -35,4 +35,8 @@ dependencies {
     // Provides the Core/CoreClient DI wiring in di/CoreModule.kt and the
     // PackageSettings field MainActivity injects to route between screens.
     implementation(project(":core:data"))
+    // MainActivity's TvPlaceholder still draws with M3 until TvApp replaces
+    // it; the shared compose bundle no longer carries material3 so this
+    // module declares it itself.
+    implementation(libs.findLibrary("androidx.compose.material3").get())
 }
