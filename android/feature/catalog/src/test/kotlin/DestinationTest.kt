@@ -1,4 +1,4 @@
-package ui
+package catalog
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -10,7 +10,7 @@ import kotlin.test.assertTrue
  * has to change per destination, and getting it from a function rather than
  * from each screen is what stops five screens inventing five spellings.
  */
-class AppChromeTest {
+class DestinationTest {
     @Test
     fun theCatalogIsTheAppItself() {
         assertEquals("Mediagram", barTitleFor(Destination.Catalog))

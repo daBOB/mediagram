@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import catalog.CatalogUiState
 import catalog.KeptKind
 import catalog.Shelf
+import catalog.catalogTabsOf
 import catalog.continueWall
 import catalog.homeRowsOf
 import catalog.kidsShelf
@@ -75,12 +76,11 @@ private fun Shelves(
         CenteredMessage("The library is empty.")
         return
     }
-    // Home is the first entry and the one the app opens on, as the web
-    // player's start page is; the catalog shelves follow it, and the four
-    // kept entries follow those — so index 0 is Home, shelf n is index
-    // n + 1, and [firstKept] is the first of the four.
-    val titles = remember(shelves) { listOf(HOME) + shelves.map(Shelf::title) + KEPT_TITLES }
-    val firstKept = 1 + shelves.size
+    // Ordering, index-to-tab mapping and the tab labels themselves are
+    // catalogTabsOf's — see CatalogTabs for why Home comes first.
+    val tabs = remember(shelves) { catalogTabsOf(shelves) }
+    val titles = tabs.titles
+    val firstKept = tabs.firstKept
     var chosen by rememberSaveable { mutableIntStateOf(0) }
     // A refresh can return a library with fewer shelves than the one that
     // was on screen when it started.
@@ -138,12 +138,6 @@ private fun Shelves(
         }
     }
 }
-
-/** The first thing in the masthead, and not a shelf. */
-private const val HOME = "Home"
-
-/** The four kept labels, in the web's own order — `index.html`'s Continue, Watchlist, Collections, Kids. */
-private val KEPT_TITLES: List<String> = KeptKind.entries.map(KeptKind::label)
 
 /** Which of the masthead's four kept tabs is selected, dispatched to what draws it. */
 @Composable

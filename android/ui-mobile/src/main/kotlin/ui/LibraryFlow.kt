@@ -7,7 +7,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
-import catalog.collection
+import catalog.Destination
+import catalog.MenuScreen
+import catalog.ResolvedPosition
 import catalog.fetchResultMessage
 import catalog.mediaSet
 import catalog.updateDisabledReason
@@ -33,8 +35,12 @@ import ui.system.SystemScreen
  * described, whichever set that played, whichever hand-built list the
  * Collections tab opened, the system screen, and the TMDB key screen — the
  * first screens here with a real back-stack need. Where those positions are
- * kept, and why, is [LibraryPositions]. Gated on a chosen profile by
- * [ProfileGate], which is what decides whose shelves these are.
+ * kept, and why, is [LibraryPositionsHolder]; which one of them wins and
+ * what leaving it clears is [catalog.LibraryPositions.resolve] and
+ * [catalog.leave] — read here rather than re-decided, so a second surface
+ * asking the same six keys the same question gets the same answer. Gated on
+ * a chosen profile by [ProfileGate], which is what decides whose shelves
+ * these are.
  *
  * The library branches below run from the top of the stack down: the player
  * sits over a title, a title over the collection it was opened from, and
@@ -65,28 +71,15 @@ private fun Library(
     val fetchState by fetchViewModel.state.collectAsStateWithLifecycle()
     val at = rememberLibraryPositions()
 
-    val setId = at.setId
-    val menuScreen = at.menuScreen
-    // Derived from the collected state, so the collection appears of its
-    // own accord when the library finishes loading — which is what brings a
-    // restored position back to the course it was in. The opened title is
-    // resolved the same way and for the same reason.
-    val collection = at.collection?.let(catalogState::collection)
-    val title = at.titleId?.let(catalogState::mediaSet)
-    // Resolved from the collection rather than saved as a tree: a season is
-    // one of its show's own divisions, so it only exists once the show it
-    // belongs to does, and a stale key from a different show simply fails
-    // to find a match here rather than opening the wrong season.
-    val season = at.season?.let { name -> collection?.divisions?.find { it.title == name } }
+    // The branch priority and what each one resolves to — the player, a
+    // menu screen, a title, a season, a collection, a hand-built list, or
+    // the shelves underneath all of them — is the shared model's; see its
+    // own doc for why a stale key resolves to nothing rather than an error.
+    val resolved = at.snapshot().resolve(catalogState)
     // Read here rather than at each of the two screens below: both want the
     // same viewer's same snapshot, and neither has another way to reach it —
     // the catalog's own state is the one place it is already collected.
     val watch = (catalogState as? CatalogUiState.Ready)?.watch ?: WatchSnapshot.Empty
-    // Resolved the same way a collection is: a saved id, looked up again
-    // against whatever the snapshot currently holds, so a list renamed or
-    // filled on another device resolves to the current row rather than a
-    // stale copy.
-    val list = at.listId?.let { id -> watch.collections.find { it.id == id } }
 
     SettingsOutcomes(onLibraryChanged = catalogViewModel::reload, onSignedOut = onSignedOut)
 
@@ -110,29 +103,30 @@ private fun Library(
             updateNote = if (fetchState.hasKey) null else "Artwork and descriptions need a TMDB key",
         )
 
-    when {
-        setId != null -> {
+    when (resolved) {
+        is ResolvedPosition.Player -> {
             // The player gets the whole window; a film is the one thing here
             // that wants the space under the system bars.
-            BackHandler { at.setId = null }
+            BackHandler { at.leaveFrom(resolved) }
             PlayerScreen(
-                setId = setId,
-                fsk = catalogState.mediaSet(setId)?.fsk,
-                onBack = { at.setId = null },
+                setId = resolved.setId,
+                fsk = catalogState.mediaSet(resolved.setId)?.fsk,
+                onBack = { at.leaveFrom(resolved) },
             )
         }
 
         // One branch for both, over the whole enum: a screen the menu
         // opened is left the same way whichever it was, and a second
         // branch here is what let one of them hide the other.
-        menuScreen != null -> {
+        is ResolvedPosition.Menu -> {
+            val screen = resolved.screen
             LibraryBranch(
-                destination = menuScreen.destination,
+                destination = screen.destination,
                 menu = menuActions,
                 profile = profileBar,
-                onLeave = { at.menuScreen = null },
+                onLeave = { at.leaveFrom(resolved) },
             ) {
-                when (menuScreen) {
+                when (screen) {
                     MenuScreen.System -> {
                         SystemScreen()
                     }
@@ -152,12 +146,13 @@ private fun Library(
             }
         }
 
-        title != null -> {
+        is ResolvedPosition.TitleOpen -> {
+            val title = resolved.title
             LibraryBranch(
                 destination = Destination.Title(title.title),
                 menu = menuActions,
                 profile = profileBar,
-                onLeave = { at.titleId = null },
+                onLeave = { at.leaveFrom(resolved) },
             ) {
                 TitleDetailScreen(
                     set = title,
@@ -170,18 +165,20 @@ private fun Library(
         // Checked ahead of the collection itself: a season is a screen the
         // wall opened over it, and back from here has to land on that wall
         // rather than skip past it to the catalog.
-        season != null -> {
+        is ResolvedPosition.SeasonOpen -> {
+            val season = resolved.season
             LibraryBranch(
                 destination = Destination.Season(season.title),
                 menu = menuActions,
                 profile = profileBar,
-                onLeave = { at.season = null },
+                onLeave = { at.leaveFrom(resolved) },
             ) {
                 SeasonScreen(division = season, watch = watch, onOpenTitle = { at.titleId = it })
             }
         }
 
-        collection != null -> {
+        is ResolvedPosition.CollectionOpen -> {
+            val collection = resolved.collection
             LibraryBranch(
                 destination = Destination.Collection(collection.name),
                 menu = menuActions,
@@ -189,11 +186,9 @@ private fun Library(
                 // Both cleared together: a season position left behind here
                 // would resolve against whichever collection is opened next,
                 // and a different show can easily have a division of the same
-                // name — "Season 1" is not a fact about one show.
-                onLeave = {
-                    at.collection = null
-                    at.season = null
-                },
+                // name — "Season 1" is not a fact about one show. See
+                // [catalog.leave] for where that clear is actually decided.
+                onLeave = { at.leaveFrom(resolved) },
             ) {
                 CollectionScreen(
                     collection = collection,
@@ -209,12 +204,13 @@ private fun Library(
         // A hand-built list, opened from the Collections tab — a peer of
         // the collection branch above rather than something under it: a
         // list is never reached through the catalog shelves.
-        list != null -> {
+        is ResolvedPosition.ListOpen -> {
+            val list = resolved.list
             LibraryBranch(
                 destination = Destination.List(list.name),
                 menu = menuActions,
                 profile = profileBar,
-                onLeave = { at.listId = null },
+                onLeave = { at.leaveFrom(resolved) },
             ) {
                 ListScreen(
                     list = list,
@@ -223,7 +219,7 @@ private fun Library(
                     onRename = { name -> catalogViewModel.renameList(list.id, name) },
                     onDelete = {
                         catalogViewModel.deleteList(list.id)
-                        at.listId = null
+                        at.leaveFrom(resolved)
                     },
                     onRemove = { removedId -> catalogViewModel.setInList(list.id, removedId, false) },
                 )
@@ -234,7 +230,7 @@ private fun Library(
         // and where one that no longer names anything stays: the shelves are
         // the right thing to show in both cases, and clearing the key here
         // would throw away a position that is about to resolve.
-        else -> {
+        ResolvedPosition.Catalog -> {
             // onBack is never invoked: LibraryScaffold only wires it up when
             // backLabelFor(Destination.Catalog) says there is a way back,
             // and there is not — the catalog is the top of the tree.
@@ -267,7 +263,7 @@ private fun Library(
     // put its tally over the film; the result is held until it is dismissed,
     // so it is still there when the film is left, which is when there is
     // somebody to read it.
-    if (setId == null) {
+    if (resolved !is ResolvedPosition.Player) {
         FetchResultDialog(
             message = fetchResultMessage(fetchState.report, fetchState.error),
             onDismiss = fetchViewModel::dismissResult,

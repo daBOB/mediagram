@@ -7,48 +7,26 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import catalog.Destination
+import catalog.LibraryPositions
+import catalog.MenuScreen
+import catalog.ResolvedPosition
+import catalog.leave
 
 /**
- * A screen the overflow menu opens, over whatever the library is showing,
- * and the name the bar gives it.
+ * The six keys [catalog.LibraryPositions] resolves, kept across a rotation
+ * and a process death — the Activity is fully destroyed and recreated on
+ * rotation (there is no `android:configChanges`), and the singleton player
+ * survives that regardless — without this, rotating away from an open set
+ * would drop back to the catalog while the film kept playing underneath it.
  *
- * One value rather than a flag each, because only one of them is ever on
- * screen and the menu that opens them is reachable from both of them. As
- * two independent flags, asking for the key screen from the system screen
- * set a flag the branch below never reached — nothing happened, and back
- * then cleared the system screen and landed on a key screen the viewer had
- * long since stopped asking for. A slot that holds one thing cannot do
- * that: asking for a screen is a move, not an addition.
+ * The resolving, the branch priority and what back clears are
+ * [catalog.LibraryPositions]'s own, so they work the same on a second
+ * surface without being written twice; this only holds the six keys as
+ * Compose state and hands a plain copy of them to the pure model and back —
+ * [snapshot] out, [applyFrom] in.
  */
-internal enum class MenuScreen(
-    val destination: Destination,
-) {
-    System(Destination.System),
-    TmdbKey(Destination.TmdbKey),
-    Settings(Destination.Settings),
-}
-
-/**
- * Where in the library a viewer currently is: whichever show or course the
- * catalog opened, whichever season of it that opened from its wall,
- * whichever title that described, whichever set that played, whichever
- * hand-built list the Collections tab opened, and whichever screen the menu
- * opened over them.
- *
- * All six are saved rather than remembered: the Activity is fully
- * destroyed and recreated on rotation (there is no `android:configChanges`),
- * and the singleton player survives that regardless — without this,
- * rotating away from an open set would drop back to the catalog while the
- * film kept playing underneath it.
- *
- * The collection, the season within it, the opened title, and the open list
- * are held as keys and looked up again, not kept as trees or sets: a saved
- * position has to survive the process being killed, and a key is a short
- * string where a course is a few hundred sets. A season is keyed by its
- * division's title rather than its number, so "Episodes" and specials —
- * which carry no number — resolve the same way a numbered season does.
- */
-internal class LibraryPositions(
+internal class LibraryPositionsHolder(
     setId: MutableState<String?>,
     titleId: MutableState<String?>,
     collection: MutableState<String?>,
@@ -65,24 +43,41 @@ internal class LibraryPositions(
     var listId: String? by listId
     var menuScreen: MenuScreen? by menuScreen
 
+    /** A plain copy of these six keys, for [catalog.LibraryPositions.resolve] to read and [leave] to clear. */
+    fun snapshot(): LibraryPositions = LibraryPositions(setId, titleId, collection, season, listId, menuScreen)
+
+    /** Writes a resolved snapshot's clears back to these Compose states — see [leaveFrom]. */
+    private fun applyFrom(positions: LibraryPositions) {
+        setId = positions.setId
+        titleId = positions.titleId
+        collection = positions.collection
+        season = positions.season
+        listId = positions.listId
+        menuScreen = positions.menuScreen
+    }
+
+    /** What leaving [resolved] clears here — [ResolvedPosition.leave] decides what, this only carries it out. */
+    fun leaveFrom(resolved: ResolvedPosition) {
+        val positions = snapshot()
+        resolved.leave(positions)
+        applyFrom(positions)
+    }
+
     /**
      * Back to the shelves from wherever, all at once. Asked for by an
      * action whose result is the shelves themselves: a viewer who requests
      * the library from a screen that cannot show it has to be shown it.
      */
     fun toCatalog() {
-        setId = null
-        titleId = null
-        collection = null
-        season = null
-        listId = null
-        menuScreen = null
+        val positions = snapshot()
+        positions.toCatalog()
+        applyFrom(positions)
     }
 }
 
 @Composable
-internal fun rememberLibraryPositions(): LibraryPositions =
-    LibraryPositions(
+internal fun rememberLibraryPositions(): LibraryPositionsHolder =
+    LibraryPositionsHolder(
         setId = rememberSaveable { mutableStateOf<String?>(null) },
         titleId = rememberSaveable { mutableStateOf<String?>(null) },
         collection = rememberSaveable { mutableStateOf<String?>(null) },

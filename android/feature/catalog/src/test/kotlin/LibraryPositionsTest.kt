@@ -1,34 +1,16 @@
-package ui
+package catalog
 
-import androidx.compose.runtime.MutableState
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 /**
- * Unit coverage for the position holder. [LibraryFlowTest] exercises the actual
- * routing callbacks, destination precedence and saved-state restoration through
- * the production composition; these small checks only pin the holder's values.
+ * Unit coverage for the position holder's six keys. [resolve] and [leave]
+ * — the branch priority and the back order — are covered by
+ * [LibraryPositionsResolveTest]; these only pin how the keys themselves
+ * behave.
  */
 class LibraryPositionsTest {
-    private class Slot<T>(
-        override var value: T,
-    ) : MutableState<T> {
-        override fun component1(): T = value
-
-        override fun component2(): (T) -> Unit = { value = it }
-    }
-
-    private fun positions() =
-        LibraryPositions(
-            setId = Slot<String?>(null),
-            titleId = Slot<String?>(null),
-            collection = Slot<String?>(null),
-            season = Slot<String?>(null),
-            listId = Slot<String?>(null),
-            menuScreen = Slot<MenuScreen?>(null),
-        )
-
     /**
      * The one that was wrong. Held as a flag each, asking for the key
      * screen from the system screen set both; the branch that renders them
@@ -39,7 +21,7 @@ class LibraryPositionsTest {
      */
     @Test
     fun askingForOneMenuScreenFromTheOtherMovesToIt() {
-        val at = positions()
+        val at = LibraryPositions()
         at.menuScreen = MenuScreen.System
 
         at.menuScreen = MenuScreen.TmdbKey
@@ -50,7 +32,7 @@ class LibraryPositionsTest {
     /** A menu screen sits over the library, not in it: leaving one uncovers what it covered. */
     @Test
     fun leavingAMenuScreenUncoversTheTitleItOpenedOver() {
-        val at = positions()
+        val at = LibraryPositions()
         at.titleId = "set-1"
         at.menuScreen = MenuScreen.System
 
@@ -63,7 +45,7 @@ class LibraryPositionsTest {
     /** Asked for the library from anywhere, the library is what is shown — every other position goes. */
     @Test
     fun theCatalogIsReachedByLeavingEveryOtherPositionAtOnce() {
-        val at = positions()
+        val at = LibraryPositions()
         at.collection = "spartacus"
         at.season = "Season 1"
         at.titleId = "set-1"
@@ -84,7 +66,7 @@ class LibraryPositionsTest {
     /** An open list is its own position, untouched by opening and leaving a title over it. */
     @Test
     fun anOpenListSurvivesATitleOpenedOverIt() {
-        val at = positions()
+        val at = LibraryPositions()
         at.listId = "list-1"
         at.titleId = "set-1"
 
