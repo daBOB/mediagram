@@ -1,5 +1,6 @@
 package data
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import model.Kind
 import settings.InMemoryLibrarySettings
@@ -92,5 +93,35 @@ class CatalogRepositoryTest {
 
         assertEquals("/cache/1396-s2.jpg", repo.posterPath("tmdb-tv-1396-s2"))
         assertEquals(null, repo.posterPath("tmdb-tv-1396-s9"))
+    }
+
+    /**
+     * The player asks for one title at a time; walking the whole catalog's
+     * worth of poster lookups to answer it would be the same main-thread
+     * cost [sets] pays once per rebuild, paid again on every open.
+     */
+    @Test
+    fun mediaSetLooksUpOnlyTheMatchedSetsPoster() = runTest {
+        val core = FakeCore(
+            sets = listOf(
+                summary(setId = "s1", posterKey = "key-1"),
+                summary(setId = "s2", posterKey = "key-2"),
+                summary(setId = "s3", posterKey = "key-3"),
+            ),
+        )
+        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog(), dispatcher = Dispatchers.Unconfined)
+
+        val found = repo.mediaSet("s2")
+
+        assertEquals("s2", found?.setId)
+        assertEquals(listOf("key-2"), core.posterPathCalls)
+    }
+
+    @Test
+    fun mediaSetAnswersNothingForAnUnknownId() = runTest {
+        val core = FakeCore(sets = listOf(summary(setId = "s1")))
+        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog(), dispatcher = Dispatchers.Unconfined)
+
+        assertEquals(null, repo.mediaSet("nobody"))
     }
 }

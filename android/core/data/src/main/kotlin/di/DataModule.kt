@@ -11,10 +11,12 @@ import data.CoreProvider
 import data.CoreStorage
 import data.DefaultCatalogRepository
 import data.CoreLibraryEvents
+import data.DefaultPlayerPreferences
 import data.DefaultWatchStateRepository
 import data.DefaultWatchSync
 import data.FileCoreStorage
 import data.LibraryEvents
+import data.PlayerPreferences
 import data.RefreshLog
 import data.SharedLibraryEvents
 import data.WatchStateRepository
@@ -82,7 +84,8 @@ object DataModule {
         coreProvider: CoreProvider,
         settings: LibrarySettings,
         refreshes: RefreshLog,
-    ): CatalogRepository = DefaultCatalogRepository(coreProvider, settings, refreshes)
+        dispatcher: CoroutineDispatcher,
+    ): CatalogRepository = DefaultCatalogRepository(coreProvider, settings, refreshes, dispatcher)
 
     // Process-lifetime work that is not the player: see AppScope's own doc
     // for why it is a second scope rather than the one PlaybackModule binds.
@@ -109,6 +112,11 @@ object DataModule {
         coreProvider: CoreProvider,
         dispatcher: CoroutineDispatcher,
     ): WatchStateRepository = DefaultWatchStateRepository(coreProvider, dispatcher)
+
+    @Provides
+    @Singleton
+    fun providePlayerPreferences(coreProvider: CoreProvider): PlayerPreferences =
+        DefaultPlayerPreferences(coreProvider)
 
     @Provides
     @Singleton

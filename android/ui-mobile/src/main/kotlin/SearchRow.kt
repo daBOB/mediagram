@@ -13,12 +13,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import catalog.SearchRow
-import catalog.episodeLabel
 import catalog.searchWhy
 import designsystem.Spacing
 import model.Kind
 import model.MediaSet
 import model.Progress
+import model.episodeLabel
 
 /**
  * One hit: title, where it sits, why it matched, what it is, and — if this

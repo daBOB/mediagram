@@ -3,7 +3,7 @@ package ui
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import catalog.SetCard
-import catalog.episodeLabel
+import model.episodeLabel
 
 /**
  * A card for a raw set — a film, an episode or a lesson — as Continue and

@@ -4,22 +4,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
 import dagger.hilt.android.lifecycle.HiltViewModel
+import data.CatalogRepository
+import data.PlayerPreferences
 import data.ProgressPoint
 import data.ResumePoint
 import data.WatchStateRepository
 import data.WatchSync
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import model.KidsVerdict
-import model.ageLabelOf
-import model.kidsVerdictOf
+import model.MediaSet
 import playback.PlaybackCounters
 import playback.PlaybackTotals
 import javax.inject.Inject
@@ -32,6 +27,8 @@ class PlayerViewModel @Inject constructor(
     private val repository: WatchStateRepository,
     private val recorder: ProgressRecorder,
     private val watchSync: WatchSync,
+    catalogRepository: CatalogRepository,
+    preferences: PlayerPreferences,
 ) : ViewModel(), PlayerHandle.Listener {
 
     private val _state = MutableStateFlow<PlayerUiState>(PlayerUiState.Preparing)
@@ -54,37 +51,25 @@ class PlayerViewModel @Inject constructor(
      */
     val player: StateFlow<Player?> = handle.player
 
-    /** Which set [save] and the ticker below write against; `null` between titles. */
-    private var openSetId: String? = null
+    /** The ten-second save ticker and which set it saves against. */
+    private val session = PlayerSession(viewModelScope, handle, recorder)
 
     private val _openSetId = MutableStateFlow<String?>(null)
 
     /** The open title's age rating, as the catalog listed it; see [open]. */
     private val openFsk = MutableStateFlow<String?>(null)
 
-    /**
-     * The Watchlist, Kids and Add-to-list controls' own state for whichever
-     * set is open — `null` between titles, the same gate `player.js` puts
-     * in front of its own three buttons. Joined from [_openSetId] rather
-     * than read once, so a write from this screen or a sync round pulled in
-     * behind it updates a pressed toggle's label without the screen having
-     * to ask again.
-     */
-    val marks: StateFlow<PlayerMarksState?> = combine(_openSetId, openFsk, repository.snapshot) { setId, fsk, snapshot ->
-        setId?.let {
-            PlayerMarksState(
-                watchlisted = it in snapshot.watchlist,
-                kids = it in snapshot.kids,
-                lists = snapshot.collections,
-                memberOf = snapshot.collections.filter { list -> it in list.items }.mapTo(HashSet()) { list -> list.id },
-                kidsVerdict = kidsVerdictOf(fsk),
-                ageLabel = ageLabelOf(fsk),
-            )
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    private val choicesController =
+        PlayerChoicesController(viewModelScope, session, repository, catalogRepository, preferences, handle)
 
-    /** Runs every ten seconds while playing, same cadence as the web's own timer. */
-    private var tickerJob: Job? = null
+    /** The resolved set behind the open id, for the title line — null before it resolves, or with nothing open. */
+    val openSet: StateFlow<MediaSet?> = choicesController.openSet
+
+    /** What this viewer has chosen for the open title — speed today; audio, subtitles and framing join it later. */
+    val choices: StateFlow<PlayerChoices> = choicesController.choices
+
+    private val marksController = PlayerMarksController(viewModelScope, session, repository, _openSetId, openFsk)
+    val marks: StateFlow<PlayerMarksState?> = marksController.marks
 
     init {
         handle.setListener(this)
@@ -92,31 +77,74 @@ class PlayerViewModel @Inject constructor(
 
     /**
      * [fsk] is the title's age rating as the catalog listed it, handed in
-     * rather than looked up: the player holds no catalog of its own, and the
-     * screen that opened it already has the set in hand.
+     * rather than looked up: the screen that opened this already has the
+     * set in hand from whichever shelf it came from, and a lookup here
+     * could still be racing the catalog on a cold start. The set itself is
+     * resolved anyway, in [PlayerChoicesController.resolve], for the title
+     * line and the preference scope — both can wait the moment it takes.
+     *
+     * A rotation destroys and recreates the whole screen, which re-runs the
+     * `LaunchedEffect` that calls this with the *same* [setId] —
+     * [sameTitle] is what tells that apart from a genuinely new title.
+     * Retracing any of this for it is exactly what turned a rotation
+     * mid-film into a flicker of the title, a reset of the chosen speed,
+     * and (a leftover `setPlaybackSpeed(1f)` used to run here regardless)
+     * an audible drop to 1x — none of which the handle needs help with:
+     * asking it to open a set that is already loaded and playing
+     * republishes rather than reloading (`DefaultPlayerHandle.open`), and
+     * only a real reload floors the rate to 1x (`DefaultPlayerHandle.openOn`).
      */
     fun open(setId: String, fsk: String? = null) {
-        openSetId = setId
+        val sameTitle = session.openSetId == setId
+        session.open(setId)
         openFsk.value = fsk
         _openSetId.value = setId
+        // Reset unconditionally, same as always: for a rotation reopening
+        // an already-playing title this is corrected straight back by the
+        // handle's own synchronous republish (below), within this same
+        // call — never actually shown — and for one still buffering it is
+        // exactly what has to stay put until the player's own ready event
+        // ends the wait (`PlayerReopenTest`). Only the choice, title and
+        // scope skip resetting for [sameTitle], since those really would
+        // otherwise flicker and reset for no reload at all.
         _state.value = PlayerUiState.Preparing
+        if (!sameTitle) choicesController.reset()
         val progress = repository.snapshot.value.progress.find { it.setId == setId }
         val resumeSeconds = ResumePoint.resumeAt(progress?.let { ProgressPoint(it.at, it.duration) })
         val startAtMs = ((resumeSeconds ?: 0.0) * 1000).toLong()
         handle.open(setId, startAtMs)
+        if (!sameTitle) viewModelScope.launch { choicesController.resolve(setId) }
     }
+
+    /**
+     * Re-opens the title that just failed, at wherever it was last saved
+     * to — the phone's touch equivalent of the web's seek-to-retry. [open]
+     * takes its "same title" path here (nothing about the choice already
+     * made needs re-resolving), but the failed player was left in
+     * `STATE_IDLE`, so this *is* a real reload and does floor the rate to
+     * 1x inside the handle; unlike a fresh title, nothing corrects that
+     * back on its own, so it is corrected here.
+     */
+    fun retry() {
+        val setId = session.openSetId ?: return
+        open(setId, openFsk.value)
+        handle.setPlaybackSpeed(choicesController.choices.value.speed)
+    }
+
+    fun setSpeed(rate: Float) = choicesController.setSpeed(rate)
 
     /** Called when the player screen leaves composition, so codecs and audio focus aren't held idle. */
     fun stop() {
         // Read before handle.stop(), which drops the player to STATE_IDLE —
         // positionMs()/durationMs() would already answer null afterwards.
-        val setId = openSetId
+        val setId = session.openSetId
         val atMs = handle.positionMs()
         val durationMs = handle.durationMs()
         handle.stop()
-        openSetId = null
+        session.clear()
         openFsk.value = null
         _openSetId.value = null
+        choicesController.reset()
         viewModelScope.launch {
             if (setId != null && atMs != null) {
                 recorder.save(setId, atMs / 1000.0, durationMs?.let { it / 1000.0 })
@@ -132,92 +160,27 @@ class PlayerViewModel @Inject constructor(
     /**
      * Writes wherever the player currently is, against whichever set is
      * open. Called by the ten-second ticker, on pause, on leaving the
-     * player, and by the screen's own `ON_STOP` observer — every one of the
-     * web's save points except `pagehide`, which Android has no equivalent
-     * of stopping to spare. A no-op with nothing open or nothing trustworthy
-     * yet ([PlayerHandle.positionMs] is `null` before the player is ready or
-     * after an error).
+     * player, and by the screen's own `ON_STOP` observer.
      */
-    fun save() {
-        val setId = openSetId ?: return
-        val atMs = handle.positionMs() ?: return
-        val durationMs = handle.durationMs()
-        viewModelScope.launch {
-            recorder.save(setId, atMs / 1000.0, durationMs?.let { it / 1000.0 })
-        }
-    }
+    fun save() = session.save()
 
-    /**
-     * The three writes [marks] feeds a label to — ported from `player.js`'s
-     * `watchlistButton`/`kidsButton`/`addToButton` click handlers. Each is a
-     * no-op with nothing open, the same guard those handlers open with.
-     */
-    fun toggleWatchlist() {
-        val setId = openSetId ?: return
-        val listed = setId in repository.snapshot.value.watchlist
-        viewModelScope.launch { repository.setWatchlisted(setId, !listed) }
-    }
-
-    /** Marked here rather than on a shelf: "this is where a viewer is when they find out what a film actually is." */
-    fun toggleKids() {
-        val setId = openSetId ?: return
-        // A rated title is not marked: its rating already decided.
-        if (kidsVerdictOf(openFsk.value) != KidsVerdict.UNRATED) return
-        val marked = setId in repository.snapshot.value.kids
-        viewModelScope.launch { repository.setKids(setId, !marked) }
-    }
-
-    /** Files the open title into an existing list, or takes it back off one. */
-    fun setInList(listId: String, included: Boolean) {
-        val setId = openSetId ?: return
-        viewModelScope.launch { repository.setInList(listId, setId, included) }
-    }
-
-    /**
-     * Makes a new list and puts the open title straight on it — one action
-     * where the web's `addToButton` needs two, since its list of lists lives
-     * on the Collections shelf and this dialog does not want to send a
-     * viewer mid-film away from the player to reach it. See `AddToListDialog`.
-     */
-    fun createListAndAdd(name: String) {
-        val setId = openSetId ?: return
-        viewModelScope.launch {
-            val created = repository.createList(name) ?: return@launch
-            repository.setInList(created.id, setId, true)
-        }
-    }
+    fun toggleWatchlist() = marksController.toggleWatchlist()
+    fun toggleKids() = marksController.toggleKids()
+    fun setInList(listId: String, included: Boolean) = marksController.setInList(listId, included)
+    fun createListAndAdd(name: String) = marksController.createListAndAdd(name)
 
     override fun onPlayingChanged(isPlaying: Boolean) {
         _state.value = if (isPlaying) PlayerUiState.Playing else PlayerUiState.Paused
-        if (isPlaying) startTicking() else { stopTicking(); save() }
+        session.onPlayingChanged(isPlaying)
     }
 
     override fun onError(message: String) {
-        stopTicking()
+        session.stopTicking()
         _state.value = PlayerUiState.Failed(message)
     }
 
     override fun onCleared() {
-        stopTicking()
+        session.stopTicking()
         handle.release()
-    }
-
-    private fun startTicking() {
-        if (tickerJob?.isActive == true) return
-        tickerJob = viewModelScope.launch {
-            while (true) {
-                delay(TICK_MS)
-                save()
-            }
-        }
-    }
-
-    private fun stopTicking() {
-        tickerJob?.cancel()
-        tickerJob = null
-    }
-
-    private companion object {
-        const val TICK_MS = 10_000L
     }
 }

@@ -1,15 +1,15 @@
 package catalog
 
 import kotlin.math.roundToLong
-import model.Kind
-import model.MediaSet
 import model.Progress
 
 /**
  * The two lines a set card says about a viewer's own place in it, ported
- * from `web/public/lib/format.js`'s `resumeLine`, `clockTime` and
- * `episodeLabel` — the web is authoritative, and these exist to agree with
- * it rather than redefine it.
+ * from `web/public/lib/format.js`'s `resumeLine` and `clockTime` — the web
+ * is authoritative, and these exist to agree with it rather than redefine
+ * it. `episodeLabel` is the same kind of port but lives in `core:model`'s
+ * `EpisodeLabel.kt`: `feature:player` needs it too, and a feature module
+ * borrowing from another feature module would be backwards.
  */
 
 /**
@@ -39,15 +39,4 @@ fun clockTime(seconds: Double): String {
     val minutes = (total % 3600) / 60
     val rest = (total % 60).toString().padStart(2, '0')
     return if (hours == 0L) "$minutes:$rest" else "$hours:${minutes.toString().padStart(2, '0')}:$rest"
-}
-
-/**
- * `S1E4` for an episode, `4` for a lesson, a `4-5` range for a set spanning
- * more than one, empty when unnumbered.
- */
-fun episodeLabel(set: MediaSet): String {
-    val first = set.episodeFirst ?: return ""
-    val last = set.episodeLast
-    val number = if (last != null && last != first) "$first-$last" else "$first"
-    return if (set.kind == Kind.EPISODE && set.season != null) "S${set.season}E$number" else number
 }

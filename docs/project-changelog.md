@@ -9,6 +9,18 @@ to `main`. Full phase-by-phase detail lives in
 
 **Added**
 
+- Android player: a settings sheet (gear button in the transport bar) with
+  a Speed section — the six steps `web/public/lib/transport.js` offers,
+  remembered per show through `state.db`'s `preferences` table and
+  reapplied on every open, never inherited from whichever title played
+  last on the app's one singleton player. A title line at the top (show ·
+  episode · title, the web's `titleLine` order) and an `ends HH:MM` label
+  beside the transport bar's own clock, both dividing by the chosen speed.
+  A failed set now shows a Retry button that re-opens at the last saved
+  position — a phone-only touch equivalent of the web's seek-to-retry,
+  recorded as deliberate rather than web debt. `episodeLabel` moved from
+  `feature:catalog` to `core:model` so the player can use the same port
+  without one feature module reaching into another.
 - The catalog core now carries what the web player's `forBrowser` already
   attached to every row: `genres`, `subtitles` (languages, sorted), and
   `hasSummary`, joined into `list_sets` by poster key and by set id. Genres

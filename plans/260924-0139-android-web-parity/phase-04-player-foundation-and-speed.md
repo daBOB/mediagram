@@ -12,7 +12,7 @@
 - `android/feature/catalog/src/main/kotlin/ResumeLine.kt:48` (`episodeLabel`, already a web port)
 
 ## Overview
-Priority P1 · Status pending · The shell 05-08 and 11 plug into; speed is the
+Priority P1 · Status done (device check pending) · The shell 05-08 and 11 plug into; speed is the
 first remembered choice, proving the store end to end.
 
 ## Key insights
@@ -69,12 +69,13 @@ Modify:
 7. Device: set 1.5× on an episode, open the next episode (1.5×), open a film (1×).
 
 ## Todo
-- [ ] split PlayerViewModel / DefaultPlayerHandle / PlayerScreen
-- [ ] PreferenceScope + PlayerPreferences
-- [ ] PlayerChoices + reset-on-open
-- [ ] settings sheet + speed
-- [ ] title line, ends-at, retry
-- [ ] check.sh, bump, changelog, device run
+- [x] split PlayerViewModel / DefaultPlayerHandle / PlayerScreen
+- [x] PreferenceScope + PlayerPreferences
+- [x] PlayerChoices + reset-on-open
+- [x] settings sheet + speed
+- [x] title line, ends-at, retry
+- [x] check.sh, bump, changelog
+- [x] device run 2026-09-24 on the tablet (0.44.0): title line "Brooklyn Nine-Nine · S8E2 · Das Haus am See"; ends-at correct at 1× and 1.5×; the gear sheet lists 0.75×–2×; 1.5× is stored as `key:tmdb-tv-48891 / speed / 1.5` (the web's format), the next episode of that show opens at 1.5× and a film at 1×; rotating mid-episode keeps 1.5×, the ends-at and the position; set lookup 30 ms off the main thread. The first tap on search after launch worked 2 times out of 3; the miss was the first launch after install. Retry was not forced on the device (it needs the network cut); unit tests cover it.
 
 ## Success criteria
 - Tests above green; `PlayerChoicesResetTest` proves no leak across titles.

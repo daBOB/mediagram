@@ -9,10 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
@@ -22,7 +19,6 @@ import androidx.compose.ui.platform.LocalView
 import androidx.media3.common.Player
 import androidx.media3.ui.compose.PlayerSurface
 import androidx.media3.ui.compose.state.rememberPresentationState
-import designsystem.Spacing
 
 /**
  * The pieces `PlayerScreen` draws, apart from the screen that arranges
@@ -77,12 +73,5 @@ internal fun KeepScreenOnWhile(isPlaying: Boolean) {
 internal fun CenteredSpinner() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator(color = Color.White)
-    }
-}
-
-@Composable
-internal fun CenteredError(message: String) {
-    Box(modifier = Modifier.fillMaxSize().padding(Spacing.large), contentAlignment = Alignment.Center) {
-        Text(text = message, color = Color.White, style = MaterialTheme.typography.bodyLarge)
     }
 }

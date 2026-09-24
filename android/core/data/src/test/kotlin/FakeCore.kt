@@ -96,7 +96,14 @@ class FakeCore(
 
     override suspend fun refreshCatalog(url: String, keyB64: String): Long = refreshResult
     override suspend fun listSets(): List<SetSummary> = sets
-    override fun posterPath(posterKey: String): String? = posters[posterKey]
+
+    /** Every key [posterPath] was asked for, in order — a test's way of seeing how many sets a lookup actually mapped. */
+    val posterPathCalls: MutableList<String> = mutableListOf()
+
+    override fun posterPath(posterKey: String): String? {
+        posterPathCalls += posterKey
+        return posters[posterKey]
+    }
     override suspend fun titleInfo(posterKey: String): TitleInfo? = null
     override suspend fun totalSize(setId: String): Long = 0
     override suspend fun catalogFacts(): CatalogFacts =

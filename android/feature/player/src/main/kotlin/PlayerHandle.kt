@@ -41,6 +41,13 @@ interface PlayerHandle {
     /** As [positionMs], for the set's length; `null` on the same terms, or while media3 hasn't measured it yet. */
     fun durationMs(): Long?
 
+    /**
+     * Sets the transport's playback rate. Queued rather than dropped when
+     * there is no player yet — [DefaultPlayerHandle] applies it the moment
+     * one exists, the same as a queued [open].
+     */
+    fun setPlaybackSpeed(rate: Float)
+
     /** Playback facts; [PlayerViewModel] maps these onto [PlayerUiState]. */
     interface Listener {
         fun onPlayingChanged(isPlaying: Boolean)

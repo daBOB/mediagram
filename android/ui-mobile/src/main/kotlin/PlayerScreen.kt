@@ -5,9 +5,6 @@
 
 package ui
 
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -18,9 +15,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +35,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Spacing
 import kotlinx.coroutines.delay
+import player.titleLine
 import player.PlayerUiState
 import player.PlayerViewModel
 
@@ -53,7 +48,8 @@ import player.PlayerViewModel
  * survive regardless; see [shouldStopOnDispose].
  *
  * A tap toggles the transport bar, which takes itself away while a film runs
- * and stays while it is paused or being scrubbed; see [controlsShouldFade].
+ * and stays while it is paused, being scrubbed, or the settings sheet is
+ * open; see [controlsShouldFade].
  */
 // The toggles are inset by the system bars even while the player hides them,
 // which Compose still marks experimental.
@@ -64,6 +60,8 @@ fun PlayerScreen(setId: String, fsk: String?, onBack: () -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val player by viewModel.player.collectAsStateWithLifecycle()
     val marks by viewModel.marks.collectAsStateWithLifecycle()
+    val openSet by viewModel.openSet.collectAsStateWithLifecycle()
+    val choices by viewModel.choices.collectAsStateWithLifecycle()
     val activity = LocalContext.current.findActivity()
 
     LaunchedEffect(setId) { viewModel.open(setId, fsk) }
@@ -95,15 +93,13 @@ fun PlayerScreen(setId: String, fsk: String?, onBack: () -> Unit) {
     // all, then left to take itself away.
     var controlsShown by remember { mutableStateOf(true) }
     var scrubbing by remember { mutableStateOf(false) }
+    var settingsShown by remember { mutableStateOf(false) }
     // Saved, because a rotation destroys this composition and a viewer who
     // turned the phone to read a wider row did not ask for the numbers back.
     var statsShown by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(controlsShown, state, scrubbing) {
-        if (!controlsShown) return@LaunchedEffect
-        val fades = controlsShouldFade(
-            isPlaying = state is PlayerUiState.Playing,
-            isScrubbing = scrubbing,
-        )
+    LaunchedEffect(controlsShown, state, scrubbing, settingsShown) {
+        if (!controlsShown || settingsShown) return@LaunchedEffect
+        val fades = controlsShouldFade(isPlaying = state is PlayerUiState.Playing, isScrubbing = scrubbing)
         if (!fades) return@LaunchedEffect
         delay(CONTROLS_LINGER_MS)
         controlsShown = false
@@ -130,19 +126,17 @@ fun PlayerScreen(setId: String, fsk: String?, onBack: () -> Unit) {
                     onScrubbingChanged = { scrubbing = it },
                     statsShown = statsShown,
                     onToggleStats = { statsShown = !statsShown },
+                    speed = choices.speed,
+                    onOpenSettings = { settingsShown = true },
+                    catalogedDurationSecs = openSet?.durationSecs,
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
-                // Top-right, opposite back: the web keeps these in the
-                // player because "this is where a viewer is when they find
-                // out what a film actually is", not because of where on the
-                // page they sit — this platform's own transport bar already
-                // owns the bottom edge.
-                //
-                // Below the status bar's band, not in it: flush to the top
-                // they shared the strip the system reserves for its own
-                // gestures, and taps there went to the system. Measured
-                // against the bars even while they are hidden, so the row
-                // does not jump up when the picture goes full screen.
+                // Top-right, opposite back: the web keeps these in the player
+                // because "this is where a viewer finds out what a film
+                // actually is", not because of where on the page they sit —
+                // this platform's transport bar already owns the bottom edge.
+                // Below the status bar's band, measured against the system
+                // bars even while hidden, so the row does not jump on fullscreen.
                 PlayerMarks(
                     marks = marks,
                     actions = PlayerMarksActions(
@@ -157,25 +151,27 @@ fun PlayerScreen(setId: String, fsk: String?, onBack: () -> Unit) {
                         .padding(Spacing.medium),
                 )
             }
+            if (settingsShown) {
+                PlayerSettingsSheet(
+                    currentSpeed = choices.speed,
+                    onSpeedChosen = viewModel::setSpeed,
+                    onDismiss = { settingsShown = false },
+                )
+            }
         }
 
         when (state) {
             PlayerUiState.Preparing -> CenteredSpinner()
-            is PlayerUiState.Failed -> CenteredError((state as PlayerUiState.Failed).message)
+            is PlayerUiState.Failed -> PlayerFailure((state as PlayerUiState.Failed).message, onRetry = viewModel::retry)
             PlayerUiState.Playing, PlayerUiState.Paused -> Unit
         }
 
-        // Placed explicitly: the box centres its children so the picture
-        // sits in the middle of its letterbox, and back would otherwise be
-        // centred with it, in the middle of the film.
-        //
-        // The statistics sit under back in a column rather than at their own
-        // corner, so there is no arithmetic anywhere that has to know how
-        // tall the arrow is in order to clear it.
+        // Placed explicitly: the box centres its children, and the top bar
+        // would otherwise be centred with the picture rather than pinned to
+        // its corner. The statistics sit under it in the same column, so
+        // nothing here has to know how tall the bar is to clear it.
         Column(modifier = Modifier.align(Alignment.TopStart)) {
-            IconButton(onClick = onBack, modifier = Modifier.padding(Spacing.medium)) {
-                Text(text = "←", color = Color.White, style = MaterialTheme.typography.headlineSmall)
-            }
+            PlayerTopBar(title = titleLine(openSet), showTitle = barShown, onBack = onBack)
             // Gated on the bar being shown as well as on the toggle, so the
             // statistics have no visibility rule of their own: a viewer who
             // leaves the numbers on gets the picture back when the bar takes
@@ -201,17 +197,3 @@ fun PlayerScreen(setId: String, fsk: String?, onBack: () -> Unit) {
  * turns, which is worse than the drop-to-catalog bug this replaced.
  */
 internal fun shouldStopOnDispose(isChangingConfigurations: Boolean): Boolean = !isChangingConfigurations
-
-/**
- * `LocalContext.current` is not necessarily the Activity itself — a
- * `ContextThemeWrapper` or a dialog host wraps it, and a naive
- * `as? Activity` cast would silently see neither and always stop. This
- * unwraps `ContextWrapper.baseContext` until it finds one, matching how
- * `MainActivity` (no such wrapper today) and any future one both resolve
- * correctly.
- */
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
-}

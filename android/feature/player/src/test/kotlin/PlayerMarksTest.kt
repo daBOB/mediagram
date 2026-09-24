@@ -42,8 +42,15 @@ class PlayerMarksTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel(repository: FakeWatchStateRepository = FakeWatchStateRepository()) =
-        PlayerViewModel(FakePlayerHandle(), PlaybackCounters(), repository, ProgressRecorder(repository), SilentWatchSync)
+    private fun viewModel(repository: FakeWatchStateRepository = FakeWatchStateRepository()) = PlayerViewModel(
+        FakePlayerHandle(),
+        PlaybackCounters(),
+        repository,
+        ProgressRecorder(repository),
+        SilentWatchSync,
+        FakeCatalogRepository(),
+        FakePlayerPreferences(),
+    )
 
     @Test
     fun marksIsNullWithNothingOpen() = runTest {

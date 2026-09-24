@@ -12,7 +12,15 @@ import playback.PlaybackCounters
  */
 internal fun testViewModel(handle: PlayerHandle): PlayerViewModel {
     val repository = FakeWatchStateRepository()
-    return PlayerViewModel(handle, PlaybackCounters(), repository, ProgressRecorder(repository), NoopWatchSync)
+    return PlayerViewModel(
+        handle,
+        PlaybackCounters(),
+        repository,
+        ProgressRecorder(repository),
+        NoopWatchSync,
+        FakeCatalogRepository(),
+        FakePlayerPreferences(),
+    )
 }
 
 private object NoopWatchSync : WatchSync {

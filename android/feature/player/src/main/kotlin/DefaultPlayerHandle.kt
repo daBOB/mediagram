@@ -1,8 +1,6 @@
 package player
 
-import androidx.media3.common.C
 import androidx.media3.common.MediaItem
-import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import kotlinx.coroutines.CancellationException
@@ -31,9 +29,8 @@ import javax.inject.Inject
  * future subscriber, since this setup never runs a second time to
  * re-attach it.
  *
- * Subscribers therefore come and go for reasons that have nothing to do
- * with playback, and ask to [open] sets that are already open; what that
- * has to mean is worked out at [open].
+ * Subscribers therefore come and go for reasons unrelated to playback, and
+ * ask to [open] sets that are already open; [open] works out what that means.
  */
 class DefaultPlayerHandle @Inject constructor(
     private val playerDeferred: @JvmSuppressWildcards Deferred<ExoPlayer>,
@@ -56,22 +53,14 @@ class DefaultPlayerHandle @Inject constructor(
     /** Set once the player has failed to build; see [failConstruction]. */
     private var constructionError: String? = null
 
-    private val playerListener = object : Player.Listener {
-        override fun onIsPlayingChanged(isPlaying: Boolean) = notifyPlaying(isPlaying)
+    /** A speed requested through [setPlaybackSpeed] before the player finished building. */
+    private var pendingSpeed: Float? = null
 
-        override fun onPlaybackStateChanged(playbackState: Int) {
-            val current = _player.value ?: return
-            if (playbackState == Player.STATE_READY) notifyPlaying(current.isPlaying)
-        }
-
-        // A failed player drops back to STATE_IDLE and then stays silent,
-        // so nothing more arrives on its own to move a subscriber off the
-        // error. That is exactly the state open() reloads from, which is
-        // what makes trying the same set again work rather than hang.
-        override fun onPlayerError(error: PlaybackException) {
-            listener?.onError(error.message ?: "Playback failed")
-        }
-    }
+    private val playerListener = PlayerHandleListener(
+        isCurrentlyPlaying = { _player.value?.isPlaying ?: false },
+        notifyPlaying = ::notifyPlaying,
+        notifyError = { message -> listener?.onError(message) },
+    )
 
     init {
         scope.launch {
@@ -82,6 +71,11 @@ class DefaultPlayerHandle @Inject constructor(
                 pendingOpen?.let { pending ->
                     pendingOpen = null
                     openOn(built, pending.setId, pending.startAtMs)
+                }
+                // After the pending open, whose own reset to 1x this overrides.
+                pendingSpeed?.let { rate ->
+                    pendingSpeed = null
+                    built.setPlaybackSpeed(rate)
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -151,18 +145,9 @@ class DefaultPlayerHandle @Inject constructor(
         listener = null
     }
 
-    override fun positionMs(): Long? {
-        val current = _player.value ?: return null
-        if (current.playbackState == Player.STATE_IDLE) return null
-        return current.currentPosition
-    }
+    override fun positionMs(): Long? = _player.value?.trustedPositionMs()
 
-    override fun durationMs(): Long? {
-        val current = _player.value ?: return null
-        if (current.playbackState == Player.STATE_IDLE) return null
-        val duration = current.duration
-        return duration.takeIf { it != C.TIME_UNSET && it > 0 }
-    }
+    override fun durationMs(): Long? = _player.value?.trustedDurationMs()
 
     /**
      * A settled player does not repeat the event that settled it, so a
@@ -190,6 +175,10 @@ class DefaultPlayerHandle @Inject constructor(
         listener?.onError(message)
     }
 
+    override fun setPlaybackSpeed(rate: Float) {
+        _player.value?.setPlaybackSpeed(rate) ?: run { pendingSpeed = rate }
+    }
+
     private fun openOn(player: Player, setId: String, startAtMs: Long) {
         currentSetId = setId
         // The two-argument overload, not `setMediaItem(item)` then a seek:
@@ -198,6 +187,10 @@ class DefaultPlayerHandle @Inject constructor(
         player.setMediaItem(MediaItem.fromUri(setUri(setId)), startAtMs)
         player.prepare()
         player.playWhenReady = true
+        // The singleton player never resets this itself; PlayerViewModel
+        // corrects to the remembered speed once it knows one, but this is
+        // the floor under that, so a title never inherits a leftover rate.
+        player.setPlaybackSpeed(1f)
     }
 
     private fun notifyPlaying(isPlaying: Boolean) {

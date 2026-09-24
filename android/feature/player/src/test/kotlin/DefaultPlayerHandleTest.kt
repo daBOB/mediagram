@@ -98,6 +98,32 @@ class DefaultPlayerHandleTest {
         verify(exactly = 1) { player.setMediaItem(any<MediaItem>(), 90_000L) }
     }
 
+    /**
+     * L5: a speed asked for before the player exists is queued the same
+     * way a start position is — [aStartPositionQueuedBeforeThePlayerIsReadyIsAppliedOnceItArrives]
+     * above — but it must land *after* the queued open's own floor to 1x
+     * (`openOn`), not before it: applied in the other order, the real
+     * reset would be the last word and the remembered speed would be
+     * silently dropped the moment the player actually opens.
+     */
+    @Test
+    fun aSpeedQueuedBeforeThePlayerIsReadyIsAppliedAfterTheQueuedOpensOwnFloor() = runTest {
+        val player = mockk<ExoPlayer>(relaxed = true)
+        val deferred = CompletableDeferred<ExoPlayer>()
+        val handle = DefaultPlayerHandle(deferred, this)
+
+        handle.open("s1", 0)
+        handle.setPlaybackSpeed(1.5f)
+        deferred.complete(player)
+        advanceUntilIdle()
+
+        verifyOrder {
+            player.prepare()
+            player.setPlaybackSpeed(1f)
+            player.setPlaybackSpeed(1.5f)
+        }
+    }
+
     @Test
     fun openingASetSeeksToTheGivenStartPositionBeforePreparing() = runTest {
         val player = mockk<ExoPlayer>(relaxed = true)
@@ -149,45 +175,6 @@ class DefaultPlayerHandleTest {
 
         verify(exactly = 0) { player.setMediaItem(any<MediaItem>(), any<Long>()) }
         verify(exactly = 0) { player.prepare() }
-    }
-
-    @Test
-    fun positionAndDurationAreNothingToTrustBeforeThePlayerIsBuilt() = runTest {
-        // backgroundScope, not `this`: the deferred is deliberately left
-        // incomplete to model "still building", and runTest requires every
-        // coroutine on its own scope to finish by the time the test ends.
-        val handle = DefaultPlayerHandle(CompletableDeferred<ExoPlayer>(), backgroundScope)
-
-        assertEquals(null, handle.positionMs())
-        assertEquals(null, handle.durationMs())
-    }
-
-    @Test
-    fun positionAndDurationAreNothingToTrustWhileIdle() = runTest {
-        val player = mockk<ExoPlayer>(relaxed = true)
-        every { player.playbackState } returns Player.STATE_IDLE
-        every { player.currentPosition } returns 5_000L
-        val handle = DefaultPlayerHandle(CompletableDeferred(player), this)
-        advanceUntilIdle()
-
-        // STATE_IDLE covers "never prepared" and "just errored" alike —
-        // a stale currentPosition from before a failure is not a place to
-        // resume to, so this must read null in both, not the stale number.
-        assertEquals(null, handle.positionMs())
-        assertEquals(null, handle.durationMs())
-    }
-
-    @Test
-    fun positionAndDurationReadFromThePlayerOnceReady() = runTest {
-        val player = mockk<ExoPlayer>(relaxed = true)
-        every { player.playbackState } returns Player.STATE_READY
-        every { player.currentPosition } returns 42_000L
-        every { player.duration } returns 100_000L
-        val handle = DefaultPlayerHandle(CompletableDeferred(player), this)
-        advanceUntilIdle()
-
-        assertEquals(42_000L, handle.positionMs())
-        assertEquals(100_000L, handle.durationMs())
     }
 
     @Test

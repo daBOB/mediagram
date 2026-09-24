@@ -32,7 +32,10 @@ import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
 import androidx.media3.ui.compose.state.rememberSeekBackButtonState
 import androidx.media3.ui.compose.state.rememberSeekForwardButtonState
+import data.ResumePoint
 import designsystem.Spacing
+import player.endsAtLabel
+import player.speedLabel
 
 /**
  * How often the readout catches up with the playhead. Twice a second: a clock
@@ -59,9 +62,8 @@ internal const val SCRIM_ALPHA = 0.55f
  * holders start and stop observing with the composition, so nothing here runs
  * a timer or removes a listener.
  *
- * Glyphs rather than icons: this module has no Material icons dependency, and
- * `PlayerScreen` already draws its back arrow as text. Five more characters do
- * not earn an artifact.
+ * Glyphs rather than icons: `PlayerScreen` already draws its back arrow as
+ * text, and five more characters do not earn an artifact.
  */
 @Composable
 fun PlayerControls(
@@ -69,6 +71,10 @@ fun PlayerControls(
     onScrubbingChanged: (Boolean) -> Unit,
     statsShown: Boolean,
     onToggleStats: () -> Unit,
+    speed: Float,
+    onOpenSettings: () -> Unit,
+    /** The catalogue's own runtime, in whole seconds — trusted over media3's until it has one; see [ResumePoint.trustedRuntime]. */
+    catalogedDurationSecs: Int?,
     modifier: Modifier = Modifier,
 ) {
     val playPause = rememberPlayPauseButtonState(player)
@@ -76,15 +82,31 @@ fun PlayerControls(
     val seekForward = rememberSeekForwardButtonState(player)
     val progress = rememberProgressStateWithTickInterval(player, TICK_MS)
 
-    // Null except while a drag is under way, when it holds where the thumb is
-    // rather than where the film is. A slider snapped back to the playhead
-    // twice a second could not be dragged at all — the same problem the web
-    // player solves by refusing to move its slider while it holds focus.
+    // Null except mid-drag, when it holds where the thumb is rather than
+    // where the film is. A slider snapped back to the playhead twice a
+    // second could not be dragged at all — the web solves this the same way.
     var scrubbingTo by remember { mutableStateOf<Float?>(null) }
     LaunchedEffect(scrubbingTo == null) { onScrubbingChanged(scrubbingTo != null) }
 
     val durationMs = progress.durationMs.coerceAtLeast(0L)
     val positionMs = scrubbingTo?.toLong() ?: progress.currentPositionMs.coerceAtLeast(0L)
+
+    // The catalogue's runtime first (known before media3 has buffered
+    // enough to report its own), falling back to media3's once there is
+    // one — never a transcode's still-growing length here, unlike the
+    // web's own case. Counted from the playhead, not the scrub thumb,
+    // which only previews where a seek would land.
+    val runtimeSeconds = ResumePoint.trustedRuntime(
+        catalogued = catalogedDurationSecs?.toDouble(),
+        observed = progress.durationMs.takeIf { it > 0 }?.let { it / 1_000.0 },
+        direct = true,
+    ).takeIf { it > 0 }
+    val endsLabel = endsAtLabel(
+        runtimeSeconds = runtimeSeconds,
+        positionSeconds = progress.currentPositionMs.coerceAtLeast(0L) / 1_000.0,
+        speed = speed,
+        nowMs = System.currentTimeMillis(),
+    )
 
     // The app draws edge to edge, and the route that hosts this bar gives the
     // whole window to the picture, system bars included — a film is the one
@@ -131,21 +153,17 @@ fun PlayerControls(
                 enabled = seekForward.isEnabled,
                 onClick = seekForward::onClick,
             )
-            // Last, after the three that move the film, because it does not
-            // move it: the transport controls stay a group of three and the
-            // one that only reports sits at the end of the row rather than
-            // in among them.
-            //
-            // The name says which way the press goes, the way play/pause
-            // beside it does. A glyph that stays put while what it does
-            // reverses tells a screen reader nothing about which it is
-            // about to do.
+            // Last, after the three that move the film: it does not move
+            // it, so it sits apart from that group rather than inside it.
             GlyphButton(
                 glyph = "ⓘ",
                 description = if (statsShown) "Hide playback statistics" else "Show playback statistics",
                 enabled = true,
                 onClick = onToggleStats,
             )
+            // As the web shows it: a number beside the gear only while it differs from the default.
+            if (speed != 1f) TimeText(speedLabel(speed))
+            GlyphButton(glyph = "⚙", description = "Playback settings", enabled = true, onClick = onOpenSettings)
         }
         Slider(
             value = positionMs.toFloat(),
@@ -172,7 +190,10 @@ fun PlayerControls(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             TimeText(clockTime(positionMs))
-            TimeText(clockTime(durationMs))
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
+                TimeText(clockTime(durationMs))
+                if (endsLabel.isNotEmpty()) TimeText(endsLabel)
+            }
         }
     }
 }

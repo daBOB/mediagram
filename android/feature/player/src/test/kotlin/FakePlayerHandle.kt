@@ -23,9 +23,19 @@ class FakePlayerHandle : PlayerHandle {
     var fakePositionMs: Long? = null
     var fakeDurationMs: Long? = null
 
+    /** Every rate [setPlaybackSpeed] was asked for, in order — a test's way of seeing the reset-then-correct sequence. */
+    val speedCalls: MutableList<Float> = mutableListOf()
+
+    /** The last rate asked for, or `null` if never. */
+    val lastSpeed: Float? get() = speedCalls.lastOrNull()
+
     override fun open(setId: String, startAtMs: Long) {
         openedSetId = setId
         openedStartAtMs = startAtMs
+    }
+
+    override fun setPlaybackSpeed(rate: Float) {
+        speedCalls += rate
     }
 
     override fun setListener(listener: PlayerHandle.Listener?) {

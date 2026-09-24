@@ -59,6 +59,15 @@ data class MediaSet(
     val subtitleLanguages: List<String> = emptyList(),
     /** Whether the index holds a plot summary for this set. */
     val hasSummary: Boolean = false,
+    /**
+     * What the index actually named this set, before [title]'s own fallback
+     * to [show] or [setId] filled in for a title that was never given one.
+     * [title] is right for anything that needs *some* string to show; this
+     * is for the one thing that needs to tell "titled" apart from "not" —
+     * the player's title line, which drops a segment rather than repeat
+     * the show's name or print a raw set id back at the viewer.
+     */
+    val rawTitle: String? = null,
 )
 
 enum class Kind {
