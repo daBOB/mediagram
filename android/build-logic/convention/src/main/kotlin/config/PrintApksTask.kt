@@ -12,9 +12,7 @@ import org.gradle.kotlin.dsl.register
  * Configure task to print all APK paths for a project
  * Usage: ./gradlew print<Variant>Apks
  */
-internal fun Project.configurePrintApksTask(
-    extension: AndroidComponentsExtension<*, *, *>,
-) {
+internal fun Project.configurePrintApksTask(extension: AndroidComponentsExtension<*, *, *>) {
     extension.onVariants { variant ->
         val apkFolder = variant.artifacts.get(SingleArtifact.APK)
         val variantName = variant.name
@@ -25,7 +23,9 @@ internal fun Project.configurePrintApksTask(
 
             doLast {
                 println("APKs for $variantName:")
-                apkFolder.get().asFile
+                apkFolder
+                    .get()
+                    .asFile
                     .walkTopDown()
                     .filter { it.extension == "apk" }
                     .forEach { apk -> println("  - ${apk.absolutePath}") }

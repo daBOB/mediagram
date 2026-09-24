@@ -1,0 +1,3 @@
+[*.{kt,kts}]
+# Compose UI functions use PascalCase, matching their component names.
+ktlint_function_naming_ignore_when_annotated_with = Composable

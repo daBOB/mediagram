@@ -15,11 +15,13 @@ class AndroidLintConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
             when {
-                pluginManager.hasPlugin("com.android.application") ->
+                pluginManager.hasPlugin("com.android.application") -> {
                     configure<ApplicationExtension> { lint(Lint::configureLint) }
+                }
 
-                pluginManager.hasPlugin("com.android.library") ->
+                pluginManager.hasPlugin("com.android.library") -> {
                     configure<LibraryExtension> { lint(Lint::configureLint) }
+                }
 
                 else -> {
                     apply(plugin = "com.android.lint")
@@ -34,7 +36,7 @@ private fun Lint.configureLint() {
     xmlReport = true
     sarifReport = true
     checkDependencies = true
-    
+
     // Disable noisy dependency warnings
     disable += "GradleDependency"
 }
