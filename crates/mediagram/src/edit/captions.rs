@@ -24,7 +24,7 @@ pub struct CaptionWrite {
 /// Every caption is rendered before any is sent, so an edit that overflows
 /// the caption budget fails with nothing written rather than halfway through.
 pub fn captions(row: &SetRow, parts: &[PartRow]) -> Result<Vec<CaptionWrite>> {
-    let template = row.caption_template()?;
+    let template = row.caption_template();
     let mut writes = Vec::new();
 
     for part in parts {

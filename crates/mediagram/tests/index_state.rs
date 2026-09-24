@@ -2,7 +2,7 @@
 
 use mediagram::index::set_row::SetRow;
 use mediagram::index::status::SetStatus;
-use mediagram::index::{db, parts, sets};
+use mediagram::index::{db, parts, set_lookup, sets};
 use mlib_spec::caption::{Caption, Episode, Kind, Part};
 use mlib_spec::ids::ProviderIds;
 use mlib_spec::part_plan::PartRange;
@@ -49,7 +49,7 @@ fn sample_caption() -> Caption {
 fn sets_insert_get_list_pending_and_complete() {
     let dir = tempfile::tempdir().unwrap();
     let conn = db::open(dir.path()).unwrap();
-    let row = SetRow::from_caption(&sample_caption(), 1_700_000_000).unwrap();
+    let row = SetRow::from_caption(&sample_caption(), 1_700_000_000);
     sets::insert_set(&conn, &row).unwrap();
 
     let fetched = sets::get_set(&conn, &row.set_id).unwrap().unwrap();
@@ -71,11 +71,48 @@ fn get_set_is_none_for_unknown_id() {
 }
 
 #[test]
+fn provider_ids_at_the_database_limit_round_trip() {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = db::open(dir.path()).unwrap();
+    let mut row = SetRow::from_caption(&sample_caption(), 100);
+    row.kind = Kind::Ep;
+    row.season = Some(1);
+    row.episode = Some(Episode::Single(2));
+    row.tmdb = Some(i64::MAX as u64);
+    row.tvdb = Some(i64::MAX as u64);
+    sets::insert_set(&conn, &row).unwrap();
+    assert_eq!(sets::get_set(&conn, &row.set_id).unwrap().unwrap(), row);
+    assert_eq!(
+        set_lookup::episode_status(&conn, i64::MAX as u64, 1, 2).unwrap(),
+        Some(SetStatus::Pending)
+    );
+}
+
+#[test]
+fn oversized_provider_ids_are_rejected_before_insertion() {
+    for provider in ["tmdb", "tvdb"] {
+        for id in [i64::MAX as u64 + 1, u64::MAX] {
+            let dir = tempfile::tempdir().unwrap();
+            let conn = db::open(dir.path()).unwrap();
+            let mut row = SetRow::from_caption(&sample_caption(), 100);
+            if provider == "tmdb" {
+                row.tmdb = Some(id);
+            } else {
+                row.tvdb = Some(id);
+            }
+            assert!(sets::insert_set(&conn, &row).is_err(), "{provider} {id}");
+            assert_eq!(sets::count(&conn).unwrap(), 0);
+            assert!(set_lookup::episode_status(&conn, id, 1, 2).is_err());
+        }
+    }
+}
+
+#[test]
 fn parts_round_trip_in_idx_order() {
     let dir = tempfile::tempdir().unwrap();
     let conn = db::open(dir.path()).unwrap();
     let caption = sample_caption();
-    let row = SetRow::from_caption(&caption, 1_700_000_000).unwrap();
+    let row = SetRow::from_caption(&caption, 1_700_000_000);
     sets::insert_set(&conn, &row).unwrap();
 
     let ranges = vec![

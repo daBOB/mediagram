@@ -27,7 +27,7 @@ pub async fn run_set<T: Transport>(
     source_path: &Path,
     data_dir: Option<&Path>,
 ) -> Result<()> {
-    let template = set.caption_template()?;
+    let template = set.caption_template();
     let total_parts = set.part_count;
 
     let pending = parts::pending_parts(conn, &set.set_id)?;

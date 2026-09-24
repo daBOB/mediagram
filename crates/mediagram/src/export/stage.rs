@@ -14,8 +14,8 @@ use mediagram_tmdb::posters::PosterRef;
 use mlib_spec::package::{PackageManifest, PosterEntry};
 use rusqlite::Connection;
 
-use crate::paths::{private_dir, restrict_file, write_private};
 use crate::index::snapshot;
+use crate::paths::{ensure_private_dir, restrict_file, write_private};
 
 pub const POSTER_DIR: &str = "posters";
 pub const MANIFEST_FILE: &str = "manifest.json";
@@ -35,7 +35,7 @@ impl Staging {
                 .with_context(|| format!("clearing stale staging dir {}", path.display()))?;
         }
         // Staged files hold the private channel id and every message id.
-        private_dir(&path)?;
+        ensure_private_dir(&path)?;
         Ok(Staging { path })
     }
 

@@ -16,8 +16,16 @@ const COLUMNS: &str =
 pub fn insert_set(conn: &Connection, row: &SetRow) -> Result<()> {
     let alang = serde_json::to_string(&row.alang)?;
     let slang = serde_json::to_string(&row.slang)?;
-    let tmdb = row.tmdb.map(|v| v as i64);
-    let tvdb = row.tvdb.map(|v| v as i64);
+    let tmdb = row
+        .tmdb
+        .map(i64::try_from)
+        .transpose()
+        .context("storing TMDB id")?;
+    let tvdb = row
+        .tvdb
+        .map(i64::try_from)
+        .transpose()
+        .context("storing TVDB id")?;
     let total = row.total as i64;
     conn.execute(
         &format!(
@@ -92,6 +100,16 @@ pub fn date_no_later_than(conn: &Connection, set_id: &str, at: i64) -> Result<()
 /// set. The guard is here rather than at the call site because a row is an
 /// easy thing to hand over with the wrong numbers in it.
 pub fn update_metadata(conn: &Connection, row: &SetRow) -> Result<()> {
+    let tmdb = row
+        .tmdb
+        .map(i64::try_from)
+        .transpose()
+        .context("storing TMDB id")?;
+    let tvdb = row
+        .tvdb
+        .map(i64::try_from)
+        .transpose()
+        .context("storing TVDB id")?;
     conn.execute(
         "UPDATE sets SET kind = ?1, show = ?2, chap = ?3, path = ?4, title = ?5, year = ?6,
                          season = ?7, episode = ?8, abs = ?9, tmdb = ?10, tvdb = ?11, imdb = ?12
@@ -106,8 +124,8 @@ pub fn update_metadata(conn: &Connection, row: &SetRow) -> Result<()> {
             row.season,
             row.episode_json()?,
             row.abs,
-            row.tmdb.map(|v| v as i64),
-            row.tvdb.map(|v| v as i64),
+            tmdb,
+            tvdb,
             row.imdb,
             row.set_id,
         ],
@@ -155,12 +173,13 @@ pub fn count(conn: &Connection) -> Result<u64> {
 
 /// How many sets are wholly in the channel.
 pub fn count_complete(conn: &Connection) -> Result<u64> {
-    conn.query_row("SELECT COUNT(*) FROM sets WHERE status = ?1", [SetStatus::Complete], |row| {
-        row.get(0)
-    })
+    conn.query_row(
+        "SELECT COUNT(*) FROM sets WHERE status = ?1",
+        [SetStatus::Complete],
+        |row| row.get(0),
+    )
     .context("counting complete sets")
 }
 
 // Covered by `tests/index_state.rs`: insert/get/list_pending/complete round
 // trip through a real sqlite file, plus the not-found case.
-

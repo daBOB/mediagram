@@ -58,3 +58,65 @@ fn reopen_is_idempotent() {
     // Migrations run again on an existing database without error.
     open(dir.path()).unwrap();
 }
+
+#[test]
+fn malformed_schema_versions_are_refused_before_migration() {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = super::super::sqlite_init::open(index_path(dir.path())).unwrap();
+    conn.execute_batch("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+        .unwrap();
+    set_meta(&conn, "schema_version", "broken").unwrap();
+
+    let error = open(dir.path()).unwrap_err();
+
+    assert!(format!("{error:#}").contains("invalid schema version"));
+    assert_eq!(
+        get_meta(&conn, "schema_version").unwrap().as_deref(),
+        Some("broken")
+    );
+    assert_eq!(
+        conn.query_row(
+            "SELECT count(*) FROM sqlite_schema WHERE name = 'sets'",
+            [],
+            |row| row.get::<_, i64>(0)
+        )
+        .unwrap(),
+        0
+    );
+}
+
+#[test]
+fn unreadable_schema_versions_keep_the_query_error() {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = super::super::sqlite_init::open(index_path(dir.path())).unwrap();
+    conn.execute_batch("CREATE TABLE meta (key TEXT PRIMARY KEY)")
+        .unwrap();
+
+    let error = open(dir.path()).unwrap_err();
+
+    assert!(format!("{error:#}").contains("reading meta key schema_version"));
+    assert_eq!(
+        conn.query_row(
+            "SELECT count(*) FROM sqlite_schema WHERE name = 'sets'",
+            [],
+            |row| row.get::<_, i64>(0)
+        )
+        .unwrap(),
+        0
+    );
+}
+
+#[test]
+fn an_absent_schema_version_bootstraps_the_database() {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = super::super::sqlite_init::open(index_path(dir.path())).unwrap();
+    conn.execute_batch("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+        .unwrap();
+
+    open(dir.path()).unwrap();
+
+    assert_eq!(
+        get_meta(&conn, "schema_version").unwrap(),
+        Some(mlib_spec::schema::SCHEMA_VERSION.to_string())
+    );
+}

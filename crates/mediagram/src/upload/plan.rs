@@ -35,7 +35,7 @@ pub fn record_planned(
     mlib_spec::check_budget(caption).context(
         "caption exceeds Telegram's budget; shorten the variant, the title or the language lists",
     )?;
-    let row = SetRow::from_caption(caption, crate::clock::now_unix())?;
+    let row = SetRow::from_caption(caption, crate::clock::now_unix());
     let source_value = source
         .path
         .canonicalize()

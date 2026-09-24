@@ -77,16 +77,10 @@ fn prompt_nonempty(prompt: &str) -> Result<String> {
 
 /// Serializes through `toml` so a title holding quotes or backslashes comes
 /// back out of the file unchanged.
-fn write(
-    path: &Path,
-    api_id: i32,
-    api_hash: &str,
-    channel: &str,
-    tmdb_key: &str,
-) -> Result<()> {
+fn write(path: &Path, api_id: i32, api_hash: &str, channel: &str, tmdb_key: &str) -> Result<()> {
     if let Some(dir) = path.parent() {
         // The file holds api_hash, so the directory it sits in is private too.
-        crate::paths::private_dir(dir)?;
+        crate::paths::ensure_private_dir(dir)?;
     }
     let body = toml::to_string(&Initial {
         api_id,
