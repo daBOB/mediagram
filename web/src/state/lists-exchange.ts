@@ -7,9 +7,9 @@
  * off the wire back into that column — is one job, not a dozen methods on
  * `WatchState` that only ever look at the live half of these tables.
  *
- * Every function here takes the raw `Database | null` `WatchState` holds,
- * the same tolerance the rest of `store.ts` has: a player that cannot write
- * answers "nothing changed" rather than throwing into a request handler.
+ * Every function takes the raw `Database | null` that `WatchState` holds.
+ * A null database yields empty reads or zero changes. SQLite failures
+ * propagate so `importMerged` can roll back its complete transaction.
  */
 
 import type { Database } from "bun:sqlite";

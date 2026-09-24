@@ -301,7 +301,7 @@ describe("a local import that fails", () => {
         expect(here.state.kids()).toEqual([]);
 
         db.exec("DROP TRIGGER refuse_import");
-        expect(await sync.once()).toEqual({ pulled: 5, pushed: true });
+        expect(await sync.once()).toEqual({ pulled: 6, pushed: true });
         expect(puts).toHaveLength(1);
         const sam = here.state.profiles().find((profile) => profile.name === "Sam")!;
         expect(here.state.snapshot(sam.id)).toMatchObject({

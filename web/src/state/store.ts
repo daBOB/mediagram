@@ -395,7 +395,8 @@ export class WatchState {
    * that removes a position is a completion that supersedes it, which is the
    * one removal the format can actually express.
    *
-   * Returns how many rows it changed, so a caller can tell a merge that did
+   * Returns how many rows it changed, including newly created profiles,
+   * so a caller can tell a merge that did
    * something from one that did not. All changes commit together; a write
    * failure rolls them back and reaches the sync round before it can send.
    */
@@ -410,8 +411,10 @@ export class WatchState {
 
       for (const profile of merged.profiles) {
         // The identity to match on, and the spelling to create with.
-        const profileId = this.findOrCreateProfileId(profile.name, profile.displayName);
-        if (profileId === null) continue;
+        const matched = this.findOrCreateProfile(profile.name, profile.displayName);
+        if (matched === null) continue;
+        const profileId = matched.id;
+        if (matched.created) changed += 1;
 
         for (const row of profile.progress) {
           const standing = this.db
@@ -474,13 +477,15 @@ export class WatchState {
    * one would mean the sync could only ever flow towards a machine that had
    * already met them.
    */
-  private findOrCreateProfileId(name: string, displayName?: string): string | null {
+  private findOrCreateProfile(name: string, displayName?: string): { id: string; created: boolean } | null {
     const wanted = normalName(name);
     if (wanted === null) return null;
     const found = this.profiles().find((profile) => normalName(profile.name) === wanted);
     // Created from the spelling somebody typed, never from the normalised
     // identity — that would greet a viewer as "andré" on every new machine.
-    return found ? found.id : (this.createProfile(displayName ?? name)?.id ?? null);
+    if (found) return { id: found.id, created: false };
+    const created = this.createProfile(displayName ?? name);
+    return created ? { id: created.id, created: true } : null;
   }
 
   /**

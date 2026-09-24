@@ -433,6 +433,14 @@ describe("what this player tells other devices", () => {
 });
 
 describe("what this player takes back", () => {
+  test("an imported empty profile counts as a change only when it is created", () => {
+    const { state } = stateIn();
+    const merged = { profiles: [{ name: "new viewer", displayName: "New viewer", progress: [], watched: [] }] };
+    expect(state.importMerged(merged)).toBe(1);
+    expect(state.profiles().some((profile) => profile.name === "New viewer")).toBe(true);
+    expect(state.importMerged(merged)).toBe(0);
+    expect(state.importMerged({ profiles: [{ ...merged.profiles[0]!, name: " NEW VIEWER " }] })).toBe(0);
+  });
   test("a position it has never seen arrives", () => {
     const { state, me } = stateIn();
     const name = state.profiles().find((p) => p.id === me)!.name;

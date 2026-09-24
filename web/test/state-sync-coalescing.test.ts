@@ -109,7 +109,7 @@ test("news arriving during a follow-up read is retained in one more round", asyn
   const outcomes = await Promise.all([first, second, ...burst]);
 
   expect(lists).toBe(3);
-  expect(outcomes.every((outcome) => outcome.pulled === 1 && outcome.pushed)).toBe(true);
+  expect(outcomes.every((outcome) => outcome.pulled === 2 && outcome.pushed)).toBe(true);
   expect(state.snapshot(state.profiles()[0]!.id).progress[0]!.at).toBe(42);
   expect(JSON.parse(sent.at(-1)!).profiles[0].progress[0].at).toBe(42);
 });
@@ -149,8 +149,8 @@ test.each([
   release.resolve();
 
   expect(await Promise.all([first, second])).toEqual([
-    { pulled: 1, pushed: true, failed: message },
-    { pulled: 1, pushed: true, failed: message },
+    { pulled: 2, pushed: true, failed: message },
+    { pulled: 2, pushed: true, failed: message },
   ]);
   expect(lists).toBe(2);
   expect(state.snapshot(state.profiles()[0]!.id).progress[0]!.at).toBe(42);

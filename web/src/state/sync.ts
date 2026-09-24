@@ -42,7 +42,7 @@ export interface StateChannel {
 }
 
 export interface SyncOutcome {
-  /** Rows this machine took in. */
+  /** Rows this machine took in, including newly created profiles. */
   pulled: number;
   /** Whether a document was actually sent. */
   pushed: boolean;
