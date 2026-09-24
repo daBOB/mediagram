@@ -40,6 +40,9 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
         profiles.push(ProfileState {
             name: profile.name,
             local_id: Some(profile.id),
+            // The real value is wired up once profiles carry the flag
+            // themselves.
+            kids: false,
             progress,
             watched,
             watchlist,

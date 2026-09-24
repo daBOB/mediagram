@@ -48,6 +48,10 @@ pub struct ProfileState {
     /// identity.
     #[serde(default)]
     pub local_id: Option<String>,
+    /// Present only on a kids profile. Written only when true, so an
+    /// ordinary profile's entry reads exactly as it did before the flag.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub kids: bool,
     #[serde(default)]
     pub progress: Vec<ProgressRow>,
     #[serde(default)]
@@ -131,12 +135,20 @@ pub fn parse_record(text: &str) -> Option<SyncRecord> {
     })
 }
 
+/// For `skip_serializing_if`: an ordinary profile carries no `kids` key.
+pub(crate) fn is_false(value: &bool) -> bool {
+    !*value
+}
+
 fn profile_state(raw: &Value) -> Option<ProfileState> {
     let row = raw.as_object()?;
     let name = text_(row.get("name"))?;
     Some(ProfileState {
         name,
         local_id: text_(row.get("localId")),
+        // Only a literal `true`, as on the web: a restricting flag must not
+        // be switched on by a value that merely looks truthy.
+        kids: row.get("kids") == Some(&Value::Bool(true)),
         progress: as_array(row.get("progress"))
             .iter()
             .filter_map(progress_row)

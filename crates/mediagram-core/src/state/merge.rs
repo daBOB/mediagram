@@ -30,6 +30,9 @@ pub struct MergedProfile {
     /// The name as somebody actually typed it. Carried separately because
     /// the identity is normalised and a name is not.
     pub display_name: String,
+    /// A kids profile if any device's document says so.
+    #[serde(default, skip_serializing_if = "crate::state::record::is_false")]
+    pub kids: bool,
     // `#[serde(default)]` throughout: a fixture's `expect` need only name
     // the fields it is testing, the same tolerance `record.rs` has.
     #[serde(default)]
@@ -61,6 +64,7 @@ struct ViewerState {
     display_name: String,
     /// The device `display_name` was taken from.
     name_from: String,
+    kids: bool,
     progress: HashMap<String, Held<ProgressRow>>,
     watched: HashMap<String, Held<WatchedRow>>,
     watchlist: HashMap<String, Held<ListRow>>,
@@ -90,6 +94,7 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
             let held = by_viewer.entry(name).or_insert_with(|| ViewerState {
                 display_name: profile.name.trim().to_string(),
                 name_from: device.to_string(),
+                kids: false,
                 progress: HashMap::new(),
                 watched: HashMap::new(),
                 watchlist: HashMap::new(),
@@ -100,6 +105,12 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
             if device > held.name_from.as_str() {
                 held.display_name = profile.name.trim().to_string();
                 held.name_from = device.to_string();
+            }
+            // Sticky: a document lacking the flag — an older device's —
+            // cannot undo another device's word that this viewer is a kids
+            // profile.
+            if profile.kids {
+                held.kids = true;
             }
 
             for row in &profile.progress {
@@ -146,6 +157,7 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
         profiles.push(MergedProfile {
             name,
             display_name: held.display_name,
+            kids: held.kids,
             progress,
             watched,
             watchlist: held.watchlist.into_values().map(|h| h.row).collect(),
