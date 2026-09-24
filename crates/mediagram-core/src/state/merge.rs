@@ -20,6 +20,9 @@ use serde::{Deserialize, Serialize};
 
 use super::record::{CollectionRow, ListRow, ProgressRow, SyncRecord, WatchedRow, normal_name};
 
+mod tie_break;
+use tie_break::{Held, keep};
+
 /// Everything the devices agree on, once they have been reconciled.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -52,12 +55,6 @@ pub struct MergedState {
     /// none.
     #[serde(default)]
     pub kids: Vec<ListRow>,
-}
-
-/// Which device a held row (or spelling) came from, for the tie-break below.
-struct Held<T> {
-    row: T,
-    device: String,
 }
 
 struct ViewerState {
@@ -167,45 +164,5 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
     MergedState {
         profiles,
         kids: kids.into_values().map(|h| h.row).collect(),
-    }
-}
-
-/// Any row this merge keeps by timestamp: a position, a completion, a
-/// watchlist or Kids mark, or a collection.
-trait Timestamped {
-    fn updated_at(&self) -> f64;
-}
-
-macro_rules! timestamped_by_own_field {
-    ($($row:ty),+) => {
-        $(impl Timestamped for $row {
-            fn updated_at(&self) -> f64 {
-                self.updated_at
-            }
-        })+
-    };
-}
-timestamped_by_own_field!(ProgressRow, WatchedRow, ListRow, CollectionRow);
-
-/// Keeps whichever of two rows should win.
-///
-/// A tie breaks on the device id — arbitrary, but *consistently* arbitrary,
-/// which is the property that matters. Two machines merging the same pair of
-/// documents have to reach the same answer, or they will push their
-/// disagreement back and forth for ever.
-fn keep<T: Timestamped>(into: &mut HashMap<String, Held<T>>, key: String, row: T, device: &str) {
-    let replace = into.get(&key).is_none_or(|standing| {
-        let standing_at = standing.row.updated_at();
-        let row_at = row.updated_at();
-        row_at > standing_at || (row_at == standing_at && device > standing.device.as_str())
-    });
-    if replace {
-        into.insert(
-            key,
-            Held {
-                row,
-                device: device.to_string(),
-            },
-        );
     }
 }
