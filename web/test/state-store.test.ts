@@ -540,3 +540,45 @@ describe("what this player takes back", () => {
     expect(state.snapshot(me)).toEqual(before);
   });
 });
+
+describe("kids profiles", () => {
+  test("a profile is created as a kids profile only when asked", () => {
+    const { state } = stateIn();
+    const mia = state.createProfile("Mia", true)!;
+    expect(mia.kids).toBe(true);
+    expect(state.profiles().map((p) => [p.name, p.kids])).toEqual([["André", false], ["Mia", true]]);
+  });
+
+  test("the record carries kids only on the kids profile", () => {
+    const { state } = stateIn();
+    state.createProfile("Mia", true);
+    const record = state.exportRecord("laptop");
+    const byName = new Map(record.profiles.map((p) => [p.name, p]));
+    expect(byName.get("Mia")!.kids).toBe(true);
+    expect("kids" in byName.get("André")!).toBe(false);
+  });
+
+  test("an import makes an existing ordinary profile of that name a kids profile", () => {
+    const { state } = stateIn();
+    state.createProfile("Mia");
+    const changed = state.importMerged({
+      profiles: [{ name: "mia", displayName: "Mia", kids: true, progress: [], watched: [] }],
+    });
+    expect(changed).toBe(1);
+    expect(state.profiles().find((p) => p.name === "Mia")!.kids).toBe(true);
+  });
+
+  test("an import creates a profile it has never met with the flag", () => {
+    const { state } = stateIn();
+    state.importMerged({ profiles: [{ name: "ben", displayName: "Ben", kids: true, progress: [], watched: [] }] });
+    expect(state.profiles().find((p) => p.name === "Ben")!.kids).toBe(true);
+  });
+
+  test("an import never turns a kids profile back into an ordinary one", () => {
+    const { state } = stateIn();
+    state.createProfile("Mia", true);
+    const changed = state.importMerged({ profiles: [{ name: "mia", displayName: "Mia", progress: [], watched: [] }] });
+    expect(changed).toBe(0);
+    expect(state.profiles().find((p) => p.name === "Mia")!.kids).toBe(true);
+  });
+});

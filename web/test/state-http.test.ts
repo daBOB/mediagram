@@ -272,6 +272,27 @@ describe("profiles", () => {
     expect((await rawRequest(server.port, "/api/profiles/nobody/state")).status).toBe(404);
     expect((await send("/api/profiles/nobody/progress/" + SET, "PUT", { at: 5 })).status).toBe(404);
   });
+
+  test("a profile can be created as a kids profile and is listed as one", async () => {
+    const made = await rawRequest(server.port, "/api/profiles", {
+      method: "POST",
+      headers: JSON_HEAD,
+      body: JSON.stringify({ name: "Mia", kids: true }),
+    });
+    expect(made.status).toBe(201);
+    expect(JSON.parse(new TextDecoder().decode(made.body))).toMatchObject({ name: "Mia", kids: true });
+
+    // Anything but a literal true makes an ordinary profile.
+    const loose = await rawRequest(server.port, "/api/profiles", {
+      method: "POST",
+      headers: JSON_HEAD,
+      body: JSON.stringify({ name: "Ben", kids: "yes" }),
+    });
+    expect(JSON.parse(new TextDecoder().decode(loose.body))).toMatchObject({ name: "Ben", kids: false });
+
+    const listed = JSON.parse(new TextDecoder().decode((await rawRequest(server.port, "/api/profiles")).body));
+    expect(listed.profiles.find((p: { name: string }) => p.name === "Mia").kids).toBe(true);
+  });
 });
 
 describe("marking a title as a child's", () => {

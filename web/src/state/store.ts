@@ -55,6 +55,8 @@ export interface Profile {
   id: string;
   name: string;
   createdAt: number;
+  /** Sees only titles rated FSK 12 or under, or marked for Kids by hand. */
+  kids: boolean;
 }
 
 export interface StateSnapshot {
@@ -118,22 +120,22 @@ export class WatchState {
   /** Who watches this library. Empty until someone says. */
   profiles(): Profile[] {
     if (!this.db) return [];
-    return this.db
-      .query("SELECT id, name, created_at AS createdAt FROM profiles ORDER BY created_at")
-      .all() as Profile[];
+    const rows = this.db
+      .query("SELECT id, name, created_at AS createdAt, kids FROM profiles ORDER BY created_at")
+      .all() as { id: string; name: string; createdAt: number; kids: number }[];
+    return rows.map((row) => ({ ...row, kids: row.kids !== 0 }));
   }
 
-  createProfile(name: unknown): Profile | null {
+  createProfile(name: unknown, kids = false): Profile | null {
     if (!this.db) return null;
     const clean = cleanName(name);
     if (clean === null) return null;
 
-    const profile = { id: crypto.randomUUID(), name: clean, createdAt: Date.now() };
+    const profile = { id: crypto.randomUUID(), name: clean, createdAt: Date.now(), kids };
     this.db
-      .query("INSERT INTO profiles(id, name, created_at) VALUES (?1, ?2, ?3)")
-      .run(profile.id, profile.name, profile.createdAt);
+      .query("INSERT INTO profiles(id, name, created_at, kids) VALUES (?1, ?2, ?3, ?4)")
+      .run(profile.id, profile.name, profile.createdAt, kids ? 1 : 0);
     return profile;
-
   }
 
   renameProfile(id: string, name: unknown): boolean {
@@ -367,6 +369,7 @@ export class WatchState {
     const profiles = this.profiles().map((profile) => ({
       name: profile.name,
       localId: profile.id,
+      ...(profile.kids ? { kids: true as const } : {}),
       progress: (this.db
         ?.query(
           `SELECT set_id AS setId, at_seconds AS at, duration, updated_at AS updatedAt
@@ -407,10 +410,16 @@ export class WatchState {
 
       for (const profile of merged.profiles) {
         // The identity to match on, and the spelling to create with.
-        const matched = this.findOrCreateProfile(profile.name, profile.displayName);
+        const matched = this.findOrCreateProfile(profile.name, profile.displayName, profile.kids === true);
         if (matched === null) continue;
         const profileId = matched.id;
         if (matched.created) changed += 1;
+        // Another device made this viewer a kids profile. Only ever upgraded:
+        // a merge without the flag says nothing, it does not say "not kids".
+        if (profile.kids === true && !matched.kids) {
+          this.db.query("UPDATE profiles SET kids = 1 WHERE id = ?1").run(profileId);
+          changed += 1;
+        }
 
         for (const row of profile.progress) {
           const standing = this.db
@@ -473,15 +482,19 @@ export class WatchState {
    * one would mean the sync could only ever flow towards a machine that had
    * already met them.
    */
-  private findOrCreateProfile(name: string, displayName?: string): { id: string; created: boolean } | null {
+  private findOrCreateProfile(
+    name: string,
+    displayName?: string,
+    kids = false,
+  ): { id: string; created: boolean; kids: boolean } | null {
     const wanted = normalName(name);
     if (wanted === null) return null;
     const found = this.profiles().find((profile) => normalName(profile.name) === wanted);
     // Created from the spelling somebody typed, never from the normalised
     // identity — that would greet a viewer as "andré" on every new machine.
-    if (found) return { id: found.id, created: false };
-    const created = this.createProfile(displayName ?? name);
-    return created ? { id: created.id, created: true } : null;
+    if (found) return { id: found.id, created: false, kids: found.kids };
+    const created = this.createProfile(displayName ?? name, kids);
+    return created ? { id: created.id, created: true, kids } : null;
   }
 
   /**

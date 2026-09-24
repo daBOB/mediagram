@@ -159,7 +159,10 @@ describe("profile initialization", () => {
 
 describe.each(creations)("creating a %s", (_kind, create, records, path) => {
   test.each(failures)("returns null without local changes on %s", async (_failure, response) => {
-    const before = [...records()];
+    // `.slice()`, not a spread: a spread of a union of arrays collapses to an
+    // array of the element union, which is no longer assignable back to
+    // `Collection[] | Profile[]` now that the two shapes fully diverge.
+    const before = records().slice();
     serve(response);
 
     expect(await create("New")).toBeNull();
@@ -168,7 +171,7 @@ describe.each(creations)("creating a %s", (_kind, create, records, path) => {
 
   test("adds the successfully decoded record once", async () => {
     const made = { id: "new", name: "New", createdAt: 1, items: [] };
-    const before = [...records()];
+    const before = records().slice();
     const writes: Array<{ url: string; method?: string; body?: RequestInit["body"] }> = [];
     serve(async (url, init) => {
       writes.push({ url: String(url), method: init?.method, body: init?.body });
@@ -176,7 +179,12 @@ describe.each(creations)("creating a %s", (_kind, create, records, path) => {
     });
 
     expect(await create("New")).toEqual(made);
-    expect(records()).toEqual([...before, made]);
+    // The static type of a spread over `before` cannot keep the correlation
+    // between `create`/`records`/`made` that this parameterized test relies
+    // on at runtime — a profile row always sees profile-shaped values, a
+    // collection row always sees collection-shaped ones — so it is asserted
+    // back to what `records()` itself returns.
+    expect(records()).toEqual([...before, made] as typeof before);
     expect(writes).toEqual([{ url: path, method: "POST", body: JSON.stringify({ name: "New" }) }]);
   });
 });

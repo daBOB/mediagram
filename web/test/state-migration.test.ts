@@ -14,7 +14,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { GROUPS } from "../src/state/schema";
+import { GROUPS, migrationsUpTo } from "../src/state/schema";
 import { WatchState } from "../src/state/store";
 
 const dirs: string[] = [];
@@ -268,5 +268,20 @@ describe("v4 to v5", () => {
       { scope: "show:Geldhochschule", name: "speed", value: "1.5" },
     ]);
     second.close();
+  });
+});
+
+describe("v6 to v7", () => {
+  test("profiles that existed before kids profiles stay ordinary", () => {
+    const path = tempPath();
+    const db = new Database(path, { create: true });
+    for (const statement of migrationsUpTo(6)) db.exec(statement);
+    db.query("INSERT INTO state_meta(key, value) VALUES ('schema_version', '6')").run();
+    db.query("INSERT INTO profiles(id, name, created_at) VALUES ('p1', 'André', 1)").run();
+    db.close();
+
+    const state = new WatchState(path);
+    expect(state.profiles()).toEqual([{ id: "p1", name: "André", createdAt: 1, kids: false }]);
+    state.close();
   });
 });

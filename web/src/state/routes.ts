@@ -92,7 +92,9 @@ export function createStateRouter(options: StateRouterOptions) {
       if (method !== "POST") return status(405);
       const refusal = refuseUnsafeBrowserWrite(request);
       if (refusal) return refusal;
-      const made = state.createProfile((parse(request.body) as { name?: unknown })?.name);
+      const body = parse(request.body) as { name?: unknown; kids?: unknown } | null;
+      // Only a literal true: a restricting flag is not switched on by accident.
+      const made = state.createProfile(body?.name, body?.kids === true);
       return made === null ? status(400) : json(JSON.stringify(made), false, 201);
     }
 
