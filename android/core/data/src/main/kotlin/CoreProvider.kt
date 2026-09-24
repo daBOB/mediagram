@@ -50,6 +50,13 @@ interface CoreProvider {
         apiHash: String,
     )
 
+    /**
+     * Closes the current core and clears its account files while reopening is excluded.
+     * Device credentials are retained. Cleanup completes despite caller cancellation;
+     * failures propagate and a failed close remains owned for a later retry.
+     */
+    suspend fun resetAccount(storage: CoreStorage)
+
     /** Closes the core and forgets the identity it was built from. */
     suspend fun forget()
 
@@ -88,12 +95,14 @@ class StoredCoreProvider(
     private val mutex = Mutex()
 
     private val built = MutableStateFlow<CoreClient?>(null)
+    private var pendingClose: CoreClient? = null
     override val core: StateFlow<CoreClient?> = built.asStateFlow()
 
     override suspend fun awaitCore(): CoreClient = coreOrNull() ?: built.filterNotNull().first()
 
     override suspend fun coreOrNull(): CoreClient? =
         mutex.withLock {
+            if (pendingClose != null) withContext(NonCancellable + dispatcher) { closeHeld() }
             built.value?.let { return@withLock it }
             var candidate: CoreClient? = null
             try {
@@ -117,6 +126,7 @@ class StoredCoreProvider(
         apiId: Int,
         apiHash: String,
     ) = mutex.withLock {
+        if (pendingClose != null) withContext(NonCancellable + dispatcher) { closeHeld() }
         val credentials = TelegramCredentials(apiId, apiHash)
         var candidate: CoreClient? = null
         try {
@@ -141,8 +151,7 @@ class StoredCoreProvider(
         apiHash: String,
     ): Unit =
         mutex.withLock {
-            built.value?.let { open -> withContext(dispatcher) { open.close() } }
-            built.value = null
+            withContext(NonCancellable + dispatcher) { closeHeld() }
             // Capture ownership before returning across a cancellable dispatcher handoff.
             var candidate: CoreClient? = null
             try {
@@ -174,16 +183,32 @@ class StoredCoreProvider(
         throw failure
     }
 
+    override suspend fun resetAccount(storage: CoreStorage): Unit =
+        mutex.withLock {
+            withContext(NonCancellable + dispatcher) {
+                closeHeld()
+                storage.clear()
+            }
+        }
+
+    /** Under the lifecycle mutex and on [dispatcher]; a failed close remains owned. */
+    private fun closeHeld() {
+        if (pendingClose == null) pendingClose = built.value
+        built.value = null
+        pendingClose?.close()
+        pendingClose = null
+    }
+
     override suspend fun forget(): Unit =
         mutex.withLock {
-            val previous = built.value
+            if (pendingClose == null) pendingClose = built.value
             built.value = null
             withContext(NonCancellable + dispatcher) {
                 val cleared = runCatching { settings.clear() }
                 // Closing, not just dropping: the core holds a live, authorised
                 // Telegram connection, and deleting the auth key file on disk
                 // does nothing to one that is already open.
-                val closed = runCatching { previous?.close() }
+                val closed = runCatching { closeHeld() }
                 val failure = cleared.exceptionOrNull()
                 if (failure != null) {
                     closed.exceptionOrNull()?.takeUnless { it === failure }?.let(failure::addSuppressed)

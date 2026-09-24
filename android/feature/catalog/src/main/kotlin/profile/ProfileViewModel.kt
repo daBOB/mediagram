@@ -71,13 +71,9 @@ class ProfileViewModel
         }
 
         private val mode = MutableStateFlow<Mode>(Mode.Loading)
+        private var operation = 0L
 
-        // Restarted, via WhileSubscribed, every time this is subscribed to after
-        // five seconds with nobody watching — the same self-healing shape
-        // CatalogViewModel's own state uses. That is what makes a profile
-        // signed out from under a start-over resolve again rather than going on
-        // showing the account that owned it: the setup flow this app returns to
-        // for that takes far longer than five seconds to get back through.
+        // Each profile-owner entry re-reads the repository, even if setup completed immediately.
         val state: StateFlow<ProfileUiState> =
             combine(mode, repository.profiles) { current, profiles ->
                 when (current) {
@@ -99,27 +95,35 @@ class ProfileViewModel
                     }
                 }
             }.onStart { settle() }
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProfileUiState.Loading)
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(stopTimeoutMillis = 0, replayExpirationMillis = 0),
+                    ProfileUiState.Loading,
+                )
 
         /** Re-derives what to show from scratch: this device's own choice first, a sync round only when it has none. */
         private suspend fun settle() {
+            val started = ++operation
             val previousId = repository.chosenProfileId.value
             val canStay = (mode.value as? Mode.Picking)?.canStay ?: (mode.value is Mode.Chosen)
             mode.value = Mode.Loading
             try {
                 repository.reload()
+                if (operation != started) return
                 val chosenId = repository.chosenProfileId.value
                 if (chosenId != null) {
                     mode.value = Mode.Chosen(chosenId)
                     return
                 }
                 withTimeoutOrNull(5.seconds) { sync.awaitFirstRound() }
+                if (operation != started) return
                 mode.value = Mode.Picking(canStay = false)
             } catch (e: CancellationException) {
                 throw e
             } catch (
                 @Suppress("TooGenericExceptionCaught") e: Exception,
             ) {
+                if (operation != started) return
                 mode.value =
                     Mode.Picking(
                         canStay = canStay && previousId == repository.chosenProfileId.value,
@@ -134,6 +138,7 @@ class ProfileViewModel
         }
 
         fun choose(id: String) {
+            val started = ++operation
             viewModelScope.launch {
                 val previousId = repository.chosenProfileId.value
                 val chosen =
@@ -146,6 +151,7 @@ class ProfileViewModel
                     ) {
                         false
                     }
+                if (operation != started) return@launch
                 if (chosen) {
                     mode.value = Mode.Chosen(id)
                 } else {
@@ -155,6 +161,7 @@ class ProfileViewModel
         }
 
         fun add(name: String) {
+            val started = ++operation
             viewModelScope.launch {
                 val previousId = repository.chosenProfileId.value
                 val created =
@@ -167,6 +174,7 @@ class ProfileViewModel
                     ) {
                         false
                     }
+                if (operation != started) return@launch
                 if (created) {
                     (mode.value as? Mode.Picking)?.let { mode.value = it.copy(error = null) }
                 } else {
@@ -187,12 +195,14 @@ class ProfileViewModel
 
         /** The bar action: shows the picker again, with a way to change nothing. */
         fun reopen() {
+            operation++
             mode.value = Mode.Picking(canStay = true)
         }
 
         /** "Stay as I am" — back to whoever was already chosen. */
         fun stay() {
             if ((mode.value as? Mode.Picking)?.canStay != true) return
+            operation++
             repository.chosenProfileId.value?.let { mode.value = Mode.Chosen(it) }
         }
     }

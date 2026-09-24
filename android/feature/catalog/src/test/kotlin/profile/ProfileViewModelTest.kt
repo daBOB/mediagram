@@ -43,6 +43,12 @@ private class FakeWatchStateRepository(
         reloadFailure?.let { throw it }
     }
 
+    override fun invalidate() {
+        profiles.value = emptyList()
+        chosenProfileId.value = null
+        snapshot.value = WatchSnapshot.Empty
+    }
+
     override suspend fun chooseProfile(id: String): Boolean {
         chooseFailure?.let { throw it }
         if (refuseWrites) return false
@@ -123,6 +129,30 @@ private class FakeWatchSync(
  * collection.
  */
 class ProfileViewModelTest {
+    @Test
+    fun immediateReentryReconcilesARetainedViewModelAfterReset() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val repository = FakeWatchStateRepository(listOf(Profile("p1", "Alice")), "p1")
+            val vm = ProfileViewModel(repository, FakeWatchSync())
+            vm.state.test {
+                awaitItem()
+                assertEquals(ProfileUiState.Chosen(Profile("p1", "Alice")), awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+            runCurrent()
+            // Setup has cleared the repository while this Activity's ViewModel survives.
+            repository.profiles.value = emptyList()
+            repository.chosenProfileId.value = null
+            runCurrent()
+            vm.state.test {
+                runCurrent()
+                assertEquals(ProfileUiState.Picking(emptyList(), false), vm.state.value)
+                assertEquals(2, repository.reloadCalls)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
     @Test
     fun anInitialReadFailureKeepsKnownProfilesAndExitsLoading() =
         runTest {

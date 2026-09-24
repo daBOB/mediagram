@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import data.CoreProvider
 import data.CoreStorage
+import data.WatchStateRepository
 import data.coreSentence
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -48,6 +49,7 @@ class SetupViewModel
         private val tmdbSettings: TmdbSettings,
         private val coreStorage: CoreStorage,
         private val dispatcher: CoroutineDispatcher,
+        private val watchState: WatchStateRepository,
     ) : ViewModel() {
         private val _state = MutableStateFlow<SetupUiState>(SetupUiState.Checking)
         val state: StateFlow<SetupUiState> = _state.asStateFlow()
@@ -137,10 +139,11 @@ class SetupViewModel
          */
         fun startOver() {
             settle(onFailure = RESET_FAILED) {
-                coreStorage.clear()
+                coreProvider.resetAccount(coreStorage)
                 libraries.forget()
                 tmdbSettings.clear()
                 coreProvider.forget()
+                watchState.invalidate()
                 outstandingStep()
             }
         }

@@ -20,14 +20,20 @@ class FakeWatchStateRepository(
     profileChosen: Boolean = true,
     initialSnapshot: WatchSnapshot = WatchSnapshot.Empty,
 ) : WatchStateRepository {
-    override val profiles: StateFlow<List<Profile>> = MutableStateFlow(emptyList())
-    override val chosenProfileId: StateFlow<String?> = MutableStateFlow(if (profileChosen) "p1" else null)
+    override val profiles = MutableStateFlow<List<Profile>>(emptyList())
+    override val chosenProfileId = MutableStateFlow(if (profileChosen) "p1" else null)
 
     private val _snapshot = MutableStateFlow(initialSnapshot)
     override val snapshot: StateFlow<WatchSnapshot> = _snapshot
 
     /** Every write this fake was asked for, in order, e.g. `"setProgress s1 12.0 100.0"`. */
     val calls = mutableListOf<String>()
+
+    override fun invalidate() {
+        profiles.value = emptyList()
+        chosenProfileId.value = null
+        _snapshot.value = WatchSnapshot.Empty
+    }
 
     override suspend fun chooseProfile(id: String) = true
 

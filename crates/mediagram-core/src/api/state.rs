@@ -27,6 +27,15 @@ pub struct StateSnapshot {
 
 #[uniffi::export(async_runtime = "tokio")]
 impl Core {
+    /// Permanently stops this core's local watch-state access and closes its
+    /// database after any current action. Call before clearing files or
+    /// releasing the native handle: queued calls must not reopen old state.
+    /// Stored data is preserved for a replacement core. This call may block
+    /// briefly on an existing database action; it does not wait for network IO.
+    pub fn retire_local_state(&self) {
+        self.state_db.retire();
+    }
+
     /// Who watches this library. Empty until someone says.
     pub async fn profiles(self: Arc<Self>) -> Vec<profiles::Profile> {
         self.blocking(|core| core.state_db.with(profiles::list).unwrap_or_default())

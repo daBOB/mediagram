@@ -732,6 +732,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_rename_collection(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_retire_local_state(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_in_collection(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_kids(
@@ -826,6 +828,8 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_rename_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
     ): Long
+    external fun uniffi_mediagram_core_fn_method_core_retire_local_state(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+    ): Unit
     external fun uniffi_mediagram_core_fn_method_core_set_in_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`included`: Byte,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_kids(`ptr`: Long,`setId`: RustBuffer.ByValue,`marked`: Byte,
@@ -1037,6 +1041,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_rename_collection() and 0xFFFF) != 62657) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_retire_local_state() and 0xFFFF) != 24465) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_in_collection() and 0xFFFF) != 24986) {
@@ -1727,6 +1734,15 @@ public interface CoreInterface {
      * `false` for a blank name, an unavailable list, or a storage failure.
      */
     suspend fun `renameCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `name`: kotlin.String): kotlin.Boolean
+
+    /**
+     * Permanently stops this core's local watch-state access and closes its
+     * database after any current action. Call before clearing files or
+     * releasing the native handle: queued calls must not reopen old state.
+     * Stored data is preserved for a replacement core. This call may block
+     * briefly on an existing database action; it does not wait for network IO.
+     */
+    fun `retireLocalState`()
 
     /**
      * Adds or removes `set_id` from a collection. `false` when the list is
@@ -2533,6 +2549,25 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         UniffiNullRustCallStatusErrorHandler,
     )
     }
+
+
+    /**
+     * Permanently stops this core's local watch-state access and closes its
+     * database after any current action. Call before clearing files or
+     * releasing the native handle: queued calls must not reopen old state.
+     * Stored data is preserved for a replacement core. This call may block
+     * briefly on an existing database action; it does not wait for network IO.
+     */override fun `retireLocalState`()
+        =
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_mediagram_core_fn_method_core_retire_local_state(
+        it,
+        _status)
+}
+    }
+
+
 
 
     /**

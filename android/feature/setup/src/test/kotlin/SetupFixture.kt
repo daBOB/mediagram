@@ -1,6 +1,7 @@
 package setup
 
 import data.CoreStorage
+import data.DefaultWatchStateRepository
 import data.InMemoryCoreStorage
 import data.StoredCoreProvider
 import kotlinx.coroutines.CoroutineDispatcher
@@ -28,16 +29,14 @@ internal class SetupFixture(
     private val build: () -> data.CoreClient = { core },
 ) {
     val dispatcher: CoroutineDispatcher = UnconfinedTestDispatcher()
+    val provider = StoredCoreProvider(telegram, dispatcher) { build() }
+    val watchState = DefaultWatchStateRepository(provider, dispatcher)
 
-    fun viewModel(): SetupViewModel {
-        val provider = StoredCoreProvider(telegram, dispatcher) { build() }
-        return SetupViewModel(provider, Libraries(provider, library, dispatcher), tmdb, storage, dispatcher)
-    }
+    fun viewModel(): SetupViewModel =
+        SetupViewModel(provider, Libraries(provider, library, dispatcher), tmdb, storage, dispatcher, watchState)
 
-    fun settingsViewModel(): SettingsViewModel {
-        val provider = StoredCoreProvider(telegram, dispatcher) { build() }
-        return SettingsViewModel(provider, Libraries(provider, library, dispatcher), storage, telegram, dispatcher)
-    }
+    fun settingsViewModel(): SettingsViewModel =
+        SettingsViewModel(provider, Libraries(provider, library, dispatcher), storage, telegram, dispatcher, watchState)
 
     /** A device that has answered everything up to the library question. */
     suspend fun signedIn(): SetupFixture =

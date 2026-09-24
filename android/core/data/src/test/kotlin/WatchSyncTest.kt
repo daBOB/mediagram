@@ -49,6 +49,12 @@ private class RecordingRepository : WatchStateRepository {
     override val chosenProfileId = MutableStateFlow<String?>(null)
     override val snapshot = MutableStateFlow(WatchSnapshot.Empty)
 
+    override fun invalidate() {
+        profiles.value = emptyList()
+        chosenProfileId.value = null
+        snapshot.value = WatchSnapshot.Empty
+    }
+
     override suspend fun chooseProfile(id: String) = false
 
     override suspend fun createProfile(name: String): Profile? = null

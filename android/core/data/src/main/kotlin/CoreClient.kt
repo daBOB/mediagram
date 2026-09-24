@@ -20,6 +20,10 @@ import uniffi.mediagram_core.TitleInfo
  * above this line depends on it directly — every ViewModel and repository
  * depends on this interface instead. [DefaultCoreClient] wraps the real
  * thing; a fake stands in for it under test.
+ *
+ * Operational fallbacks described below do not suppress coroutine
+ * cancellation or failures from an invalid or closed native handle. A
+ * caller must still respect the owning core's lifecycle.
  */
 interface CoreClient {
     fun isAuthorized(): Boolean
@@ -69,9 +73,8 @@ interface CoreClient {
     /**
      * What the installed catalog is, for the System screen's "Catalogue"
      * block: where it came from, how much it holds, and which schema it
-     * was written with. Never fails — a count that could not be taken
-     * reads back as zero, because a screen that cannot draw is worse than
-     * one that says a library is empty.
+     * was written with. Ordinary count-read failures fall back to zero.
+     * Cancellation and invalid or closed native-handle failures may propagate.
      */
     suspend fun catalogFacts(): CatalogFacts
 
@@ -202,10 +205,10 @@ interface CoreClient {
 
     /**
      * One round with the library's state channel: what it took in, whether
-     * it sent anything, what went wrong. Never throws — a round that could
-     * not run at all answers with [uniffi.mediagram_core.SyncOutcome.failed]
-     * set rather than raising, so a caller with no network never has to
-     * wrap this in its own try/catch to stay usable offline.
+     * it sent anything, what went wrong. Ordinary operational failures set
+     * [uniffi.mediagram_core.SyncOutcome.failed], including an unavailable
+     * network. Cancellation and invalid or closed native-handle failures
+     * may still propagate.
      */
     suspend fun syncState(handle: String): SyncOutcome = SyncOutcome(0uL, false, null)
 
@@ -223,11 +226,13 @@ interface CoreClient {
     suspend fun signOut() = Unit
 
     /**
-     * Drops the native core and, with it, the authenticated connection it
-     * holds open. Deleting the auth key file does not close a connection
-     * that is already up — it stays authorised as the account it signed in
-     * as, for as long as anything can still reach it. Signing a device out
-     * has to mean this as well.
+     * Permanently retires local watch-state access, then releases the native
+     * handle. Retirement waits for active local database work and prevents
+     * queued state calls from reopening it. Files remain for a replacement
+     * core; account reset removes them after this returns.
+     *
+     * Other in-flight native operations may finish separately. Successful
+     * close is idempotent; failures propagate so the owner can retry cleanup.
      */
     fun close()
 }

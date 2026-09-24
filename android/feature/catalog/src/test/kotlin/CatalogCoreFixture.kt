@@ -76,5 +76,7 @@ class CatalogCoreProvider(
         apiHash: String,
     ) = Unit
 
+    override suspend fun resetAccount(storage: data.CoreStorage) = error("this fixture does not reset accounts")
+
     override suspend fun forget() = Unit
 }

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
 import data.CoreClient
+import data.DefaultWatchStateRepository
 import data.InMemoryCoreStorage
 import data.StoredCoreProvider
 import io.mockk.coEvery
@@ -72,9 +73,10 @@ internal class MobileAppFixture :
             installReady.await()
             2L
         }
-        val settings = SettingsViewModel(provider, libraries, storage, telegram, dispatcher)
+        val watchState = DefaultWatchStateRepository(provider, dispatcher)
+        val settings = SettingsViewModel(provider, libraries, storage, telegram, dispatcher, watchState)
         flow = LibraryFlowFixture(settingsModel = settings)
-        setup = SetupViewModel(provider, libraries, InMemoryTmdbSettings(), storage, dispatcher)
+        setup = SetupViewModel(provider, libraries, InMemoryTmdbSettings(), storage, dispatcher, watchState)
         login = LoginViewModel(provider, dispatcher)
         val models =
             mapOf<Class<out ViewModel>, ViewModel>(

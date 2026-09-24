@@ -66,6 +66,12 @@ private class FakeCatalogWatchState(
 
     override suspend fun reload() = Unit
 
+    override fun invalidate() {
+        profiles.value = emptyList()
+        chosenProfileId.value = null
+        snapshot.value = WatchSnapshot.Empty
+    }
+
     override suspend fun chooseProfile(id: String) = false
 
     override suspend fun createProfile(name: String): Profile? = null

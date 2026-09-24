@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import data.CoreProvider
 import data.CoreStorage
+import data.WatchStateRepository
 import data.coreSentence
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -39,6 +40,7 @@ class SettingsViewModel
         private val coreStorage: CoreStorage,
         private val telegramSettings: TelegramSettings,
         private val dispatcher: CoroutineDispatcher,
+        private val watchState: WatchStateRepository,
     ) : ViewModel() {
         private val _state = MutableStateFlow(SettingsUiState())
         val state: StateFlow<SettingsUiState> = _state.asStateFlow()
@@ -160,8 +162,9 @@ class SettingsViewModel
         fun signOut() =
             act(onFailure = SIGN_OUT_FAILED) {
                 coreProvider.awaitCore().signOut()
-                coreStorage.clear()
+                coreProvider.resetAccount(coreStorage)
                 libraries.forget()
+                watchState.invalidate()
                 completed(SettingsEvent.SignedOut)
             }
 

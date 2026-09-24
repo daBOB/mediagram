@@ -136,8 +136,11 @@ class DefaultCoreClient(
 
     override suspend fun syncState(handle: String): SyncOutcome = core.syncState(handle)
 
-    // The generated object is a handle on a Rust value; closing it releases
-    // that value and every connection inside it. A later call on a closed
-    // handle throws rather than quietly working, which is the point.
-    override fun close() = core.close()
+    // Fence local state before releasing the handle: queued native work can outlive it.
+    @Synchronized
+    override fun close() {
+        if (core.uniffiIsDestroyed) return
+        core.retireLocalState()
+        core.close()
+    }
 }
