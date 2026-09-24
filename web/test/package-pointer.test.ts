@@ -10,7 +10,7 @@ import {
   MAX_PACKAGE_BYTES,
   associatedData,
   parsePointer,
-  pointerIsReadable,
+  pointerReadabilityRefusal,
 } from "../src/package/pointer";
 
 const GOOD = {
@@ -27,7 +27,7 @@ const GOOD = {
 };
 
 const readable = (over: Record<string, unknown> = {}) =>
-  pointerIsReadable(parsePointer(JSON.stringify({ ...GOOD, ...over })), [4]);
+  pointerReadabilityRefusal(parsePointer(JSON.stringify({ ...GOOD, ...over })), [4]);
 
 describe("reading a pointer", () => {
   test("a well-formed one is accepted", () => {

@@ -16,7 +16,7 @@
  */
 
 import { createHash } from "node:crypto";
-import { mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { openPackage } from "./open";
@@ -24,25 +24,17 @@ import {
   MAX_PACKAGE_BYTES,
   associatedData,
   parsePointer,
-  pointerIsReadable,
+  pointerReadabilityRefusal,
   type Pointer,
 } from "./pointer";
 import { unpackTo } from "./unpack";
-import { CURRENT, FUTURE_TOLERANCE_SECONDS, removeOtherVersions, swapCurrent } from "./catalog-versions";
+import { CURRENT, FUTURE_TOLERANCE_SECONDS, availableVersionName, cleanupCatalogDirectory, removeOtherVersions, swapCurrent } from "./catalog-versions";
 
 export type { Pointer };
 
-/** Where the live catalog is, whichever version that currently is. */
 /** Written into a version directory so identity and catalog cannot disagree. */
 const IDENTITY_FILE = "identity.json";
 const MANIFEST_FILE = "manifest.json";
-
-/**
- * How far ahead of now a package may claim to have been built.
- *
- * Clocks disagree by minutes, not days. A package dated next year is either a
- * mistake or an attempt to make every later one look stale.
- */
 
 /** The five fields the cipher authenticates. What "already held" means. */
 export interface Identity {
@@ -61,7 +53,7 @@ export interface RefreshOptions {
   root: string;
   supportedSchema: number[];
   now?: () => number;
-  fetch?: typeof globalThis.fetch;
+  fetch?: (url: string) => Promise<Response>;
 }
 
 export interface RefreshResult {
@@ -106,8 +98,20 @@ function sameIdentity(a: Identity, b: Identity): boolean {
 async function heldIdentity(root: string): Promise<Identity | null> {
   try {
     const text = await readFile(join(root, CURRENT, IDENTITY_FILE), "utf8");
-    const value = JSON.parse(text) as Identity;
-    return Number.isInteger(value.created_at) ? value : null;
+    const value: unknown = JSON.parse(text);
+    if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+    const fields = value as Record<string, unknown>;
+    for (const field of ["format", "created_at", "schema", "spec"]) {
+      if (!Number.isInteger(fields[field])) return null;
+    }
+    if (typeof fields.key_id !== "string") return null;
+    return {
+      format: fields.format as number,
+      created_at: fields.created_at as number,
+      key_id: fields.key_id,
+      schema: fields.schema as number,
+      spec: fields.spec as number,
+    };
   } catch {
     return null;
   }
@@ -133,6 +137,12 @@ async function keep(root: string, reason: string): Promise<RefreshResult> {
   };
 }
 
+/** A rejection's description must not turn keeping the catalog into a throw. */
+function failureMessage(error: unknown): string {
+  try { return String(error instanceof Error ? error.message : error); }
+  catch { return "unprintable rejection"; }
+}
+
 /**
  * Fetches the pointer, and the package it names if it is worth having.
  *
@@ -144,7 +154,11 @@ export async function refreshCatalog(options: RefreshOptions): Promise<RefreshRe
   const { root, key, supportedSchema } = options;
   const get = options.fetch ?? globalThis.fetch;
   const now = options.now ?? (() => Math.floor(Date.now() / 1000));
-  await mkdir(root, { recursive: true });
+  try {
+    await mkdir(root, { recursive: true });
+  } catch (error) {
+    return keep(root, failureMessage(error));
+  }
 
   const pointerUrl = `${options.baseUrl.replace(/\/+$/, "")}/latest.json`;
   let pointer: Pointer;
@@ -153,10 +167,10 @@ export async function refreshCatalog(options: RefreshOptions): Promise<RefreshRe
     if (!response.ok) throw new Error(`the pointer answered ${response.status}`);
     pointer = parsePointer(await response.text());
   } catch (error) {
-    return keep(root, `could not read the pointer: ${(error as Error).message}`);
+    return keep(root, `could not read the pointer: ${failureMessage(error)}`);
   }
 
-  const refusal = pointerIsReadable(pointer, supportedSchema);
+  const refusal = pointerReadabilityRefusal(pointer, supportedSchema);
   if (refusal) return keep(root, refusal.reason);
 
   const expectedKeyId = createHash("sha256").update(key).digest("hex").slice(0, 8);
@@ -195,7 +209,7 @@ export async function refreshCatalog(options: RefreshOptions): Promise<RefreshRe
     if (!response.ok) throw new Error(`the package answered ${response.status}`);
     sealed = new Uint8Array(await response.arrayBuffer());
   } catch (error) {
-    return keep(root, `could not fetch the package: ${(error as Error).message}`);
+    return keep(root, `could not fetch the package: ${failureMessage(error)}`);
   }
 
   // The pointer's own number decided whether to start; this decides whether
@@ -215,25 +229,27 @@ export async function refreshCatalog(options: RefreshOptions): Promise<RefreshRe
   try {
     plaintext = openPackage(key, sealed, associatedData(pointer));
   } catch (error) {
-    return keep(root, (error as Error).message);
+    return keep(root, failureMessage(error));
   }
 
   const incoming = join(root, `incoming-${pointer.created_at}-${process.pid}`);
-  await rm(incoming, { recursive: true, force: true });
+  let version: string;
+  let staged = incoming;
   try {
+    await rm(incoming, { recursive: true, force: true });
     await unpackTo(plaintext, incoming);
     await checkManifest(incoming, pointer);
     await writeFile(join(incoming, IDENTITY_FILE), JSON.stringify(identityOf(pointer)));
+    version = await availableVersionName(root, pointer.created_at);
+    await rename(incoming, join(root, version));
+    staged = join(root, version);
+    await swapCurrent(root, version);
   } catch (error) {
-    await rm(incoming, { recursive: true, force: true });
-    return keep(root, (error as Error).message);
+    await cleanupCatalogDirectory(staged);
+    return keep(root, failureMessage(error));
   }
 
-  const version = join(root, `v-${pointer.created_at}`);
-  await rm(version, { recursive: true, force: true });
-  await rename(incoming, version);
-  await swapCurrent(root, `v-${pointer.created_at}`);
-  await removeOtherVersions(root, `v-${pointer.created_at}`);
+  await removeOtherVersions(root, version);
 
   return { status: "updated", dir: join(root, CURRENT), identity: identityOf(pointer) };
 }

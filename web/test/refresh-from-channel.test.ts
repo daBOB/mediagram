@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { EXPECTED_SCHEMA } from "../src/catalog";
@@ -58,6 +58,26 @@ describe("what the server serves after asking the channel", () => {
       kind: "none",
       reason: "the channel has nothing pinned; run `mediagram push-index` on the uploading machine",
     });
+  });
+
+  test("a filesystem refusal keeps serving the snapshot installed before", async () => {
+    await refreshFromChannel(root, found(100));
+    await mkdir(join(root, `.current-${process.pid}`));
+
+    const outcome = await refreshFromChannel(root, found(200));
+
+    expect(outcome).toMatchObject({ kind: "installed", pushedAt: 100, refresh: "kept" });
+    expect(outcome.reason).toMatch(/EISDIR/);
+  });
+
+  test("an unusable installation path falls back to this machine's own index", async () => {
+    const blocked = join(root, "not-a-directory");
+    await writeFile(blocked, "file");
+
+    const outcome = await refreshFromChannel(join(blocked, "catalog"), found(100));
+
+    expect(outcome.kind).toBe("none");
+    expect(outcome.reason).toMatch(/ENOTDIR/);
   });
 });
 

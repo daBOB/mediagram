@@ -134,7 +134,7 @@ function isLowerHex(text: string, length: number): boolean {
  * problem found rather than the first sends whoever is debugging a failed
  * refresh after the wrong one.
  */
-export function pointerIsReadable(pointer: Pointer, supportedSchema: number[]): Refusal | null {
+export function pointerReadabilityRefusal(pointer: Pointer, supportedSchema: number[]): Refusal | null {
   if (pointer.format !== PACKAGE_FORMAT) {
     return { reason: `package format ${pointer.format} is newer than this reader understands` };
   }
