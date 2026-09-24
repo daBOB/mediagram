@@ -17,6 +17,7 @@
 
 import { Api } from "teleproto";
 import { Raw } from "teleproto/events";
+import { failureMessage } from "../failure-message";
 
 import { Debouncer, classify, type ChannelUpdate, type ClassifyContext, type LibraryEvent } from "./updates";
 
@@ -99,7 +100,7 @@ export function listenForLibraryEvents(
         onEvent(event);
       } catch (error) {
         // A hint that failed to act is the same as one never received.
-        console.warn(`updates: acting on ${event} failed: ${error}`);
+        console.warn(`updates: acting on ${event} failed: ${failureMessage(error)}`);
       }
     }
     arm();
