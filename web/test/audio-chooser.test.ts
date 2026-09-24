@@ -7,7 +7,12 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { channelLabel, defaultTrack, trackForLanguage, trackLabel } from "../public/lib/audio-chooser.js";
+import {
+  channelLabel,
+  defaultTrack,
+  trackForLanguage,
+  trackLabel,
+} from "../public/lib/playback/audio-chooser.js";
 
 const track = (over: Record<string, unknown> = {}) => ({
   index: 0,
@@ -69,6 +74,10 @@ describe("rows", () => {
 });
 
 describe("where to start", () => {
+  test("returns the stream ordinal even when the list is sparse", () => {
+    expect(defaultTrack([track({ index: 2 }), track({ index: 5, isDefault: true })])).toBe(5);
+    expect(defaultTrack([track({ index: 2 })])).toBe(2);
+  });
   test("the stream the file marks as its default", () => {
     expect(defaultTrack([track(), track({ index: 1, isDefault: true })])).toBe(1);
   });
@@ -111,4 +120,3 @@ describe("matching a remembered language", () => {
     expect(trackForLanguage(tracks, "1")).toBeNull();
   });
 });
-

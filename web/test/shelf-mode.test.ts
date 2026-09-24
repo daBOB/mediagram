@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { GRID, LIST, modeFrom, setShelfMode, shelfMode } from "../public/lib/shelf-mode.js";
+import { GRID, LIST, modeFrom, setShelfMode, shelfMode } from "../public/lib/catalog/shelf-mode.js";
 
 /** A `localStorage` that can be told to behave like a blocked one. */
 function fakeStorage(options: { throws?: boolean } = {}) {

@@ -16,7 +16,7 @@ import { mergeStates, type MergedState } from "../src/state/merge";
 import { parseRecord, type SyncRecord } from "../src/state/sync-record";
 import type { CatalogSet } from "../public/lib/library.js";
 import { groupLibrary } from "../public/lib/library.js";
-import { homeShelves } from "../public/lib/home-shelves.js";
+import { homeShelves } from "../public/lib/catalog/home-shelves.js";
 import {
   isFinished,
   resumeAt,
@@ -85,10 +85,7 @@ describe("lists-merge fixtures", () => {
   interface Case {
     name: string;
     records: SyncRecord[];
-    expect: {
-      kids: unknown[];
-      profiles: Array<{ name: string; displayName: string; watchlist: unknown[]; collections: unknown[] }>;
-    };
+    expect: ReturnType<typeof canonicalLists>;
   }
 
   /** The list-carrying fields only — progress and watched are `merge.json`'s

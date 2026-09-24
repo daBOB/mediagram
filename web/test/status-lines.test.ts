@@ -7,7 +7,7 @@ import {
   throughput,
   transcodeRows,
   uptime,
-} from "../public/lib/status-lines.js";
+} from "../public/lib/status/status-lines.js";
 
 describe("what the cache is holding", () => {
   test("is said against the budget it was given", () => {
@@ -152,10 +152,7 @@ describe("the poller", () => {
   });
 
   test("drops a reply that lands after it was stopped", async () => {
-    let release: (() => void) | null = null;
-    const inFlight = new Promise<void>((resolve) => {
-      release = resolve;
-    });
+    const { promise: inFlight, resolve: release } = Promise.withResolvers<void>();
     let rendered = 0;
 
     const stop = pollStatus({
@@ -174,7 +171,7 @@ describe("the poller", () => {
     });
 
     stop();
-    release?.();
+    release();
     await inFlight;
     await Promise.resolve();
     await Promise.resolve();

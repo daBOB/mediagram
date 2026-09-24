@@ -1,7 +1,7 @@
 /** Covers `player-keys`: which keystrokes the player takes, and which it leaves. */
 
 import { describe, expect, test } from "bun:test";
-import { keyAction, wantsKeys } from "../public/lib/player-keys.js";
+import { keyAction, wantsKeys } from "../public/lib/playback/player-keys.js";
 
 describe("the keys the player takes", () => {
   test("space and k both play and pause", () => {

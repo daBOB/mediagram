@@ -16,7 +16,7 @@ import {
   scaleLine,
   summarize,
   yearLine,
-} from "../public/lib/series-summary.js";
+} from "../public/lib/catalog/series-summary.js";
 
 /** A collection shaped the way `groupLibrary` builds one: seasons of items. */
 function show(...seasons: Array<Array<Record<string, unknown>>>) {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { genreHash, genreShelf, genresOf, scoreLabel } from "../public/lib/genres.js";
+import { genreHash, genreShelf, genresOf, scoreLabel } from "../public/lib/catalog/genres.js";
 
 const film = (title: string, genres?: string[]) => ({ setId: title, kind: "movie", title, genres });
 const show = (name: string, genres: string[]) => ({

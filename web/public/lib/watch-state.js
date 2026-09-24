@@ -15,7 +15,29 @@
 /** Where this device's answer to "who is watching" is kept. */
 const CHOSEN = "mediagram.profile";
 
-/** @type {{remembers: boolean, profiles: any[], profileId: string|null, progress: Map<string, {at: number, duration: number|null, updatedAt: number}>, watchlist: Set<string>, collections: any[]}} */
+/** Distinguishes separate visits to the same profile while reads are in flight. */
+let profileSelection = 0;
+const changeListeners = new Set();
+
+/** Observe shelf-affecting state changes; the application owns redraw timing. */
+export function subscribeChanges(listener) {
+  changeListeners.add(listener);
+  return () => changeListeners.delete(listener);
+}
+
+function changed() {
+  for (const listener of changeListeners) {
+    try { listener(); }
+    catch (error) { console.error("Could not update a watch-state view", error); }
+  }
+}
+
+/**
+ * @type {{remembers: boolean, profiles: any[], profileId: string|null,
+ *   progress: Map<string, {at: number, duration: number|null, updatedAt: number}>,
+ *   watchlist: Set<string>, collections: any[], watched: Map<string, number>,
+ *   kids: Set<string>, preferences: Map<string, string>}}
+ */
 const held = {
   remembers: false,
   profiles: [],
@@ -79,6 +101,16 @@ async function write(path, method, body) {
   }
 }
 
+/** A creation also needs a readable response before it can be held locally. */
+async function createRecord(path, name) {
+  try {
+    const response = await write(path, "POST", { name });
+    return response ? await response.json() : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Who watches this library. Asked before anything else, because every other
  * question here is about one of them.
@@ -112,9 +144,8 @@ export function rememberedProfile() {
 }
 
 export async function createProfile(name) {
-  const response = await write("/api/profiles", "POST", { name });
-  if (!response) return null;
-  const made = await response.json();
+  const made = await createRecord("/api/profiles", name);
+  if (!made) return null;
   held.profiles.push(made);
   return made;
 }
@@ -135,6 +166,7 @@ export async function deleteProfile(id) {
 
 /** Chooses a profile and loads what is theirs. */
 export async function useProfile(id) {
+  const selection = ++profileSelection;
   held.profileId = id;
   remember(id);
   held.progress = new Map();
@@ -142,35 +174,87 @@ export async function useProfile(id) {
   held.collections = [];
   held.watched = new Map();
   held.preferences = new Map();
-  if (id === null) return;
+  if (id === null) { changed(); return; }
 
+  const said = await readState();
+  if (selection !== profileSelection || held.profileId !== id) return;
+  if (said) adopt(said);
+  changed();
+}
+
+/**
+ * Reads this profile's state again, for a page that has been open a while.
+ *
+ * The page reads it once, when a profile is chosen — so a tab left open while
+ * the same viewer watched on the phone kept the position from before, and
+ * resumed there. The server has the newer one; this fetches it.
+ *
+ * Positions are merged newest-wins rather than replaced: one this page wrote
+ * a moment ago may still be on its way, and the server's older copy must not
+ * put it back. Everything else is taken as the server has it.
+ *
+ * Gives up after `timeoutMs` and keeps what it had: this runs on the way to
+ * playing a title, and a slow answer must not hold the title up. Resolves to
+ * whether any position or completion changed.
+ */
+export async function refreshState(timeoutMs = 1500) {
+  const asked = held.profileId;
+  const selection = profileSelection;
+  if (asked === null) return false;
+  const said = await readState(AbortSignal.timeout(timeoutMs));
+  // Another profile chosen while this was in flight: its state is not this.
+  if (!said || selection !== profileSelection || held.profileId !== asked) return false;
+  const before = progressSignature();
+  const shelvesBefore = shelfSignature();
+  const local = held.progress;
+  adopt(said);
+  for (const [setId, mine] of local) {
+    const theirs = held.progress.get(setId);
+    const finished = held.watched.get(setId) ?? 0;
+    if ((theirs === undefined || mine.updatedAt > theirs.updatedAt) && mine.updatedAt > finished) {
+      held.progress.set(setId, mine);
+    }
+  }
+  if (shelfSignature() !== shelvesBefore) changed();
+  return progressSignature() !== before;
+}
+
+function shelfSignature() {
+  return JSON.stringify([[...held.progress], [...held.watched], [...held.watchlist], held.collections]);
+}
+
+/** Every position and completion as one string, to tell whether a refresh changed any. */
+function progressSignature() {
+  return JSON.stringify([[...held.progress], [...held.watched]]);
+}
+
+/** The profile's state as the server has it, or `null` if it cannot be read. */
+async function readState(signal) {
   try {
-    const response = await fetch(under("/state"));
-    if (!response.ok) return;
-    const said = await response.json();
-    held.progress = new Map(
-      (said.progress ?? []).map((row) => [
-        row.setId,
-        { at: Number(row.at) || 0, duration: row.duration ?? null, updatedAt: row.updatedAt },
-      ]),
-    );
-    held.watchlist = new Set(said.watchlist ?? []);
-    held.collections = said.collections ?? [];
-    // Both shapes: a state file written before completions were dated
-    // serves bare ids, and the first load after an upgrade must not lose
-    // every tick. An undated one keeps 0, which sorts behind anything with
-    // a date and still counts as watched.
-    held.watched = new Map(
-      (said.watched ?? []).map((row) =>
-        typeof row === "string" ? [row, 0] : [row.setId, Number(row.finishedAt) || 0],
-      ),
-    );
-    held.preferences = new Map(
-      (said.preferences ?? []).map((row) => [preferenceKey(row.scope, row.name), row.value]),
-    );
+    const response = await fetch(under("/state"), { signal });
+    return response.ok ? await response.json() : null;
   } catch {
     // A profile whose state cannot be read is one with none yet.
+    return null;
   }
+}
+
+/** Takes the server's answer as what this page holds. */
+function adopt(said) {
+  held.progress = new Map(
+    (said.progress ?? []).map((row) => [
+      row.setId,
+      { at: Number(row.at) || 0, duration: row.duration ?? null, updatedAt: row.updatedAt },
+    ]),
+  );
+  held.watchlist = new Set(said.watchlist ?? []);
+  held.collections = said.collections ?? [];
+  held.watched = new Map(
+    (said.watched ?? []).map((row) => [row.setId, Number(row.finishedAt) || 0]),
+  );
+  held.preferences = new Map(
+    (said.preferences ?? []).map((row) => [preferenceKey(row.scope, row.name), row.value]),
+  );
 }
 
 /** Whether anything written here is being kept. */
@@ -195,6 +279,7 @@ export function inProgress() {
 export function setProgress(setId, at, duration) {
   held.progress.set(setId, { at, duration: duration ?? null, updatedAt: Date.now() });
   void write(under(`/progress/${encodeURIComponent(setId)}`), "PUT", { at, duration });
+  changed();
 }
 
 /**
@@ -205,6 +290,7 @@ export function setProgress(setId, at, duration) {
  */
 export function flushProgress(setId, at, duration) {
   held.progress.set(setId, { at, duration: duration ?? null, updatedAt: Date.now() });
+  changed();
   try {
     const body = new Blob([JSON.stringify({ at, duration })], { type: "application/json" });
     if (navigator.sendBeacon(under(`/progress/${encodeURIComponent(setId)}`), body)) return;
@@ -218,6 +304,7 @@ export function flushProgress(setId, at, duration) {
 export function clearProgress(setId) {
   held.progress.delete(setId);
   void write(under(`/progress/${encodeURIComponent(setId)}`), "DELETE");
+  changed();
 }
 
 export const isWatchlisted = (setId) => held.watchlist.has(setId);
@@ -227,6 +314,7 @@ export function setWatchlisted(setId, listed) {
   if (listed) held.watchlist.add(setId);
   else held.watchlist.delete(setId);
   void write(under(`/watchlist/${encodeURIComponent(setId)}`), listed ? "PUT" : "DELETE");
+  changed();
 }
 
 export const isWatched = (setId) => held.watched.has(setId);
@@ -252,6 +340,7 @@ export function setWatched(setId, finished) {
   if (finished) held.watched.set(setId, Date.now());
   else held.watched.delete(setId);
   void write(under(`/watched/${encodeURIComponent(setId)}`), finished ? "PUT" : "DELETE", finished ? {} : undefined);
+  changed();
 }
 
 /**
@@ -267,6 +356,7 @@ export async function loadKids() {
     if (!response.ok) return;
     const said = await response.json();
     held.kids = new Set(Array.isArray(said.kids) ? said.kids : []);
+    changed();
   } catch {
     // A player that cannot ask simply has an empty shelf, which is the same
     // thing it has before anything is marked.
@@ -280,15 +370,18 @@ export function setKids(setId, marked) {
   if (marked) held.kids.add(setId);
   else held.kids.delete(setId);
   void write(`/api/kids/${encodeURIComponent(setId)}`, marked ? "PUT" : "DELETE", marked ? {} : undefined);
+  changed();
 }
 
 export const collections = () => held.collections;
 
 export async function createCollection(name) {
-  const response = await write(under("/collections"), "POST", { name });
-  if (!response) return null;
-  const made = await response.json();
+  const selection = profileSelection;
+  const asked = held.profileId;
+  const made = await createRecord(under("/collections"), name);
+  if (!made || selection !== profileSelection || held.profileId !== asked) return null;
   held.collections.push(made);
+  changed();
   return made;
 }
 
@@ -296,12 +389,14 @@ export async function renameCollection(id, name) {
   if (!(await write(under(`/collections/${encodeURIComponent(id)}`), "PATCH", { name }))) return false;
   const list = held.collections.find((entry) => entry.id === id);
   if (list) list.name = name;
+  changed();
   return true;
 }
 
 export async function deleteCollection(id) {
   if (!(await write(under(`/collections/${encodeURIComponent(id)}`), "DELETE"))) return false;
   held.collections = held.collections.filter((entry) => entry.id !== id);
+  changed();
   return true;
 }
 
@@ -317,6 +412,7 @@ export function setInCollection(id, setId, member) {
     member ? "PUT" : "DELETE",
     member ? {} : undefined,
   );
+  changed();
 }
 
 /**

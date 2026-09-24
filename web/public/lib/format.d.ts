@@ -35,7 +35,7 @@ export function technicalLine(set: {
 }): string;
 
 /** Where someone got to: `42% · 12:30`, or the position alone if unmeasured. */
-export function resumeLine(progress: { at?: number; duration?: number | null } | null): string;
+export function resumeLine(progress?: { at?: number; duration?: number | null } | null): string;
 
 /** A position on a scrub bar: `1:23`, or `1:23:45` once past an hour. */
 export function clockTime(seconds: number | null): string;

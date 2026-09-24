@@ -1,7 +1,7 @@
 /** Covers `subtitle-style`: legible subtitles, and ones that are on time. */
 
 import { describe, expect, test } from "bun:test";
-import { cueStyle, placeCues, shiftedTimes } from "../public/lib/subtitle-style.js";
+import { cueStyle, placeCues, shiftedTimes } from "../public/lib/playback/subtitle-style.js";
 
 /** A cue, as far as anything here touches one. */
 const cue = (start: number, end: number) => ({

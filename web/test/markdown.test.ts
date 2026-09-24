@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { parseMarkdown, parseSpans } from "../public/lib/markdown.js";
+import { parseMarkdown, parseSpans } from "../public/lib/playback/markdown.js";
 
 /** The text of a span tree, so a test can assert on words not structure. */
 const textOf = (spans: any[]): string =>

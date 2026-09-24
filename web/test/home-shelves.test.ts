@@ -10,7 +10,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { groupLibrary, type CatalogSet } from "../public/lib/library.js";
-import { homeShelves } from "../public/lib/home-shelves.js";
+import { homeShelves } from "../public/lib/catalog/home-shelves.js";
 
 const set = (over: Record<string, unknown> = {}): CatalogSet => ({
   setId: `01SET${Math.random().toString(36).slice(2, 10).toUpperCase()}`,

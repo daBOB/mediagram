@@ -33,6 +33,7 @@ const set = (over: Record<string, unknown> = {}): CatalogSet => ({
   duration: 60,
   total: 1000,
   partCount: 1,
+  addedAt: 0,
   ...over,
 });
 

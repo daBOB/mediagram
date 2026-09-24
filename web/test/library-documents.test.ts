@@ -36,6 +36,7 @@ const set = (over: Record<string, unknown> = {}): CatalogSet => ({
   duration: 60,
   total: 1000,
   partCount: 1,
+  addedAt: 0,
   ...over,
 });
 
@@ -122,6 +123,17 @@ describe("a document is not in the playback order", () => {
     ]).tutorials[0]!;
 
     expect(firstItemOf(course.divisions)?.setId).toBe("L1");
+  });
+
+  test("a numbered child folder can precede its parent's first lesson", () => {
+    const course = groupLibrary([
+      lesson({ setId: "L2", path: "Chapter", episode: "2" }),
+      document({ setId: "D0", path: "Chapter/1. Earlier", episode: "0" }),
+      lesson({ setId: "L1", path: "Chapter/1. Earlier", episode: "1" }),
+    ]).tutorials[0]!;
+
+    expect(firstItemOf(course.divisions)?.setId).toBe("L1");
+    expect(flattenCollection(course).map((item) => item.setId)).toEqual(["L1", "L2"]);
   });
 });
 

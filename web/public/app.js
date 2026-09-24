@@ -12,36 +12,33 @@
 
 import { el } from "./lib/dom.js";
 import { countOf } from "./lib/format.js";
-import { renderSearch } from "./lib/search-view.js";
+import { renderSearch } from "./lib/catalog/search-view.js";
 import {
-  divisionAt,
-  firstItemOf,
   groupLibrary,
   nextAfter,
   nextInQueue,
 } from "./lib/library.js";
 import { catalogOf, loadLink } from "./lib/link.js";
 import { colophonLine } from "./lib/colophon.js";
-import { watchStatus } from "./lib/status-view.js";
-import { openPlayer } from "./lib/player.js";
-import { divisionBlock, extentOf, levelBlock, seasonBlock } from "./lib/course-view.js";
-import { describeSeries, seriesHeader } from "./lib/series-header.js";
-import { SECTIONS, collectionGrid, emptyState, movieGrid, seasonGrid, setGrid } from "./lib/shelf-view.js";
-import { hasSeasonWall, seasonNamed } from "./lib/season-wall.js";
-import { GRID, LIST, setShelfMode, shelfMode } from "./lib/shelf-mode.js";
+import { watchStatus } from "./lib/status/status-view.js";
+import { initializePlayer, openPlayer } from "./lib/playback/player.js";
+import { renderCollection } from "./lib/catalog/course-view.js";
+import { SECTIONS, collectionGrid, emptyState, heading, movieGrid, setGrid } from "./lib/catalog/shelf-view.js";
+import { GRID, LIST, setShelfMode, shelfMode } from "./lib/catalog/shelf-mode.js";
 import * as state from "./lib/watch-state.js";
 import { resumeAt } from "./lib/resume-point.js";
-import { listControls, listsView, listView } from "./lib/collections-view.js";
+import { renderLists, renderList } from "./lib/catalog/collections-view.js";
 import { chooseProfile } from "./lib/profile-picker.js";
-import { homeShelves } from "./lib/home-shelves.js";
-import { renderHome } from "./lib/home-view.js";
-import { describeFilm, filmPage } from "./lib/film-page.js";
-import { genreShelf } from "./lib/genres.js";
+import { homeShelves } from "./lib/catalog/home-shelves.js";
+import { renderHome } from "./lib/catalog/home-view.js";
+import { describeFilm, filmPage } from "./lib/catalog/film-page.js";
+import { genreShelf } from "./lib/catalog/genres.js";
 import { kidsShelf } from "./lib/age-rating.js";
 
 const main = document.getElementById("main");
 const player = document.getElementById("player");
 const searchBox = document.getElementById("search");
+initializePlayer();
 
 /** @type {{movies: any[], series: any[], tutorials: any[]}} */
 let library = { movies: [], series: [], tutorials: [] };
@@ -71,26 +68,6 @@ const KEPT = {
 
 /** Ids to sets, quietly dropping any the catalog no longer holds. */
 const setsFor = (ids) => ids.map((id) => byId.get(id)).filter(Boolean);
-
-/**
- * A shelf's title and how much is on it, as one block.
- *
- * Together rather than as two siblings because the stylesheet sets them on a
- * shared baseline with the extent flush right, which two separate children
- * of `main` could not do.
- */
-function heading(title, subtitle, control) {
-  const head = el("header", "shelf-head");
-  head.append(el("h1", null, title));
-  // The count and the control travel together on the right, so the header
-  // stays a two-ended line rather than becoming three things spread across
-  // the page.
-  const aside = el("div", "shelf-aside");
-  if (subtitle) aside.append(el("p", "sub", subtitle));
-  if (control) aside.append(control);
-  if (aside.childElementCount > 0) head.append(aside);
-  main.append(head);
-}
 
 /**
  * List or plates, for the two shelves that have artwork worth showing.
@@ -150,7 +127,7 @@ function viewHome() {
 
   const empty = Object.values(shelves).every((row) => row.length === 0);
   if (empty) {
-    heading(SECTIONS.movies.label, countOf(0, SECTIONS.movies.extent));
+    heading(main, SECTIONS.movies.label, countOf(0, SECTIONS.movies.extent));
     return main.append(emptyState("movies"));
   }
 
@@ -166,7 +143,7 @@ function viewHome() {
 /** Films: a flat grid, since a film is one thing. */
 function viewMovies() {
   const mode = shelfMode();
-  heading(
+  heading(main,
     SECTIONS.movies.label,
     countOf(library.movies.length, SECTIONS.movies.extent),
     // No control over an empty shelf: there is nothing to lay out either way,
@@ -174,7 +151,7 @@ function viewMovies() {
     library.movies.length > 0 ? shelfToggle() : null,
   );
   if (library.movies.length === 0) return main.append(emptyState("movies"));
-  main.append(movieGrid(library.movies, openFilm, mode));
+  main.append(movieGrid(library.movies, openFilm, { mode }));
 }
 
 /** A film's card opens its page; the page's button plays it. */
@@ -189,11 +166,11 @@ function openFilm(set) {
 function viewFilm(setId) {
   const set = byId.get(setId);
   if (!set || set.kind !== "movie") {
-    heading(SECTIONS.movies.label);
+    heading(main, SECTIONS.movies.label);
     main.append(el("p", "error", "That film is not in the library any more."));
     return;
   }
-  heading(set.title ?? set.setId);
+  heading(main, set.title ?? set.setId);
   const page = filmPage(set, {
     resume: resumeAt(state.progressOf(set.setId)),
     onPlay: (film) => play(film),
@@ -210,7 +187,7 @@ function viewFilm(setId) {
 /** Everything tagged with one genre: films first, then series. */
 function viewGenre(name) {
   const { films, series } = genreShelf(library, name);
-  heading(name, countOf(films.length + series.length, "title"));
+  heading(main, name, countOf(films.length + series.length, "title"));
   if (films.length + series.length === 0) {
     main.append(el("p", "empty", "Nothing in the library is tagged with this genre."));
     return;
@@ -219,14 +196,14 @@ function viewGenre(name) {
   const both = films.length > 0 && series.length > 0;
   if (films.length > 0) {
     if (both) main.append(el("h2", "shelf-sub", SECTIONS.movies.label));
-    main.append(movieGrid(films, openFilm, GRID));
+    main.append(movieGrid(films, openFilm, { mode: GRID }));
   }
   if (series.length > 0) {
     if (both) main.append(el("h2", "shelf-sub", SECTIONS.series.label));
     main.append(
       collectionGrid("series", series, (title) => {
         location.hash = `#/series/${encodeURIComponent(title)}`;
-      }, GRID),
+      }, { mode: GRID }),
     );
   }
 }
@@ -239,7 +216,7 @@ function viewCollections(section) {
   // wall of initials, and a hundred and seventy lessons are a list anyway.
   const offersModes = section === "series" && collections.length > 0;
   const mode = offersModes ? shelfMode() : LIST;
-  heading(
+  heading(main,
     SECTIONS[section].label,
     countOf(collections.length, SECTIONS[section].extent),
     offersModes ? shelfToggle() : null,
@@ -253,133 +230,7 @@ function viewCollections(section) {
       (name) => {
         location.hash = `#/${section}/${encodeURIComponent(name)}`;
       },
-      mode,
-    ),
-  );
-}
-
-/**
- * The way back up, as far as here.
- *
- * Ancestors only: where you are is the heading directly below, and printing
- * it twice says nothing the second time. Real links rather than buttons,
- * because every one of these is a URL that works on its own.
- */
-function crumbs(section, collectionName, folders) {
-  const nav = el("nav", "crumbs");
-  let hash = `#/${section}`;
-  const trail = [{ label: (SECTIONS[section] ?? KEPT[section]).label, hash }];
-
-  if (collectionName !== null) {
-    hash += `/${encodeURIComponent(collectionName)}`;
-    trail.push({ label: collectionName, hash });
-  }
-  for (const folder of folders) {
-    hash += `/${encodeURIComponent(folder)}`;
-    trail.push({ label: folder, hash });
-  }
-  // The last entry is where the viewer already is — unless it is the only
-  // one, in which case it is the shelf above and the way back out.
-  if (trail.length > 1) trail.pop();
-
-  for (const [index, step] of trail.entries()) {
-    if (index > 0) nav.append(el("span", "sep", "\u203a"));
-    const link = el("a", null, step.label);
-    link.href = step.hash;
-    nav.append(link);
-  }
-  return nav;
-}
-
-/**
- * One show, or one level of one course.
- *
- * The two part company here because the containers do. A show's seasons are
- * one flat level holding episodes, so they are a wall of season posters and
- * each opens its own page; a show of one season skips the wall. A course is
- * four levels and 162 lessons, so one floor goes on the page and the folders
- * are doors.
- */
-function viewCollection(section, name, folders) {
-  const collection = library[section].find((entry) => entry.name === name);
-  if (!collection) {
-    main.append(el("p", "error", `No ${section === "series" ? "show" : "course"} called "${name}".`));
-    return;
-  }
-
-  if (section === "tutorials") return viewCourseLevel(collection, folders);
-
-  // A season opened from the wall: its episodes, under the show's trail.
-  if (folders.length > 0) {
-    const season = seasonNamed(collection, folders[0]);
-    main.append(crumbs(section, collection.name, [folders[0]]));
-    if (!season) {
-      main.append(el("p", "error", `"${collection.name}" has no ${folders[0]}.`));
-      return;
-    }
-    heading(season.title, countOf(season.items.length, "episode"));
-    main.append(seasonBlock(season, play));
-    return;
-  }
-
-  main.append(crumbs(section, collection.name, []));
-  heading(collection.name, countOf(collection.count, "episode"));
-  // The artwork a show's episodes share is the show's own; `firstItemOf`
-  // is what the shelf card already uses to find it.
-  const first = firstItemOf(collection.divisions);
-  const header = seriesHeader(collection, first?.poster ?? null);
-  main.append(header);
-  // Asked for separately, and late: the description is one page's worth of
-  // text, and putting it on every catalog row would send all of it to build
-  // a shelf that shows none of it. The facts are already on screen; what the
-  // provider says is added to them rather than rebuilding the header, which
-  // would recount every episode and swap the poster under the viewer.
-  if (first?.showKey) {
-    fetch(`/api/shows/${encodeURIComponent(first.showKey)}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((meta) => describeSeries(header, meta))
-      .catch(() => {});
-  }
-  if (hasSeasonWall(collection)) {
-    main.append(
-      seasonGrid(collection.divisions, (title) => {
-        location.hash = `#/series/${[collection.name, title].map(encodeURIComponent).join("/")}`;
-      }),
-    );
-    return;
-  }
-  for (const division of collection.divisions) main.append(divisionBlock(division, 0, play));
-}
-
-/** One floor of a course: the lessons in this folder, and the doors below. */
-function viewCourseLevel(collection, folders) {
-  const level = divisionAt(collection.divisions, folders);
-  if (level === null) {
-    // A stale or hand-typed URL. Says which folder, because "not found" about
-    // a four-deep trail leaves the viewer to work out which part was wrong.
-    main.append(crumbs("tutorials", collection.name, []));
-    main.append(
-      el("p", "error", `"${collection.name}" has no folder called "${folders.join(" › ")}".`),
-    );
-    return;
-  }
-
-  main.append(crumbs("tutorials", collection.name, folders));
-  // `title` is null only for the stand-in at the top, where the course's own
-  // name is the heading.
-  // Both counts, because a folder of workbooks holds no lessons at all and
-  // "zero lessons" is a worse description of it than "two documents".
-  heading(level.title ?? collection.name, extentOf(level));
-
-  main.append(
-    levelBlock(
-      level,
-      (folder) => {
-        location.hash = `#/tutorials/${[collection.name, ...folders, folder]
-          .map(encodeURIComponent)
-          .join("/")}`;
-      },
-      play,
+      { mode },
     ),
   );
 }
@@ -405,6 +256,12 @@ function viewCourseLevel(collection, folders) {
  * watching it would be the stranger behaviour.
  */
 function play(set, queue = null, options = {}) {
+  // The position to resume from is read fresh: this tab may have been open
+  // while the same viewer watched further on another device.
+  void state.refreshState().finally(() => openTitle(set, queue, options));
+}
+
+function openTitle(set, queue, options) {
   // `autoplay` is set only by the player handing over to what follows, and
   // says which kind of start that is. Opening a title from a shelf never
   // carries one, so it loads and waits for the viewer as it always has.
@@ -448,36 +305,39 @@ function preloadAfter(collection, setId) {
   }).catch(() => {});
 }
 
-/** The counts beside the shelves that come from watch state. */
-// The player marks a title; the masthead counts them. Without this the count
-// beside Watchlist or Kids stays as it was until the next navigation, which
-// is exactly when nobody is looking at it.
 /**
- * Whether a shelf needs rebuilding once the player is out of the way.
+ * State changes update counts immediately; the application chooses when to
+ * rebuild the shelf. Playback and list editing retain their current nodes
+ * until the dialog or picker closes, preserving the viewer's place.
  *
- * The counts beside the masthead can be refreshed the moment a title is
- * marked; the shelf behind the dialog cannot, because rebuilding it would
- * throw away where the viewer had scrolled to for a change they cannot see.
- * Rebuilding is the router's job, so the deferral is too — the player only
- * says that something changed.
+ * Startup renders once after catalog and profile selection are complete.
  */
 let shelfStale = false;
+let shelfEditing = false;
+let pageReady = false;
 
-document.addEventListener("mediagram:kept-changed", () => {
+function invalidateShelf() {
   refreshKept();
-  if (player.open) {
+  if (player.open || shelfEditing) {
     shelfStale = true;
     return;
   }
   shelfStale = false;
   route();
+}
+
+state.subscribeChanges(() => {
+  if (pageReady) invalidateShelf();
 });
 
 player.addEventListener("close", () => {
-  if (!shelfStale) return;
-  shelfStale = false;
-  route();
+  if (shelfStale) invalidateShelf();
 });
+
+function setShelfEditing(editing) {
+  shelfEditing = editing;
+  if (!editing && shelfStale) invalidateShelf();
+}
 
 function refreshKept() {
   const started = state.inProgress().filter((row) => resumeAt(row) !== null && byId.has(row.setId));
@@ -504,7 +364,7 @@ function viewContinue() {
     .map((row) => byId.get(row.setId))
     .filter(Boolean);
 
-  heading(KEPT.continue.label, countOf(started.length, "title"));
+  heading(main, KEPT.continue.label, countOf(started.length, "title"));
   if (started.length === 0) return main.append(el("p", "empty", KEPT.continue.empty));
   main.append(setGrid(started, play));
 }
@@ -512,7 +372,7 @@ function viewContinue() {
 /** Titles marked to come back to. */
 function viewWatchlist() {
   const listed = setsFor(state.watchlist());
-  heading(KEPT.watchlist.label, countOf(listed.length, "title"));
+  heading(main, KEPT.watchlist.label, countOf(listed.length, "title"));
   if (listed.length === 0) return main.append(el("p", "empty", KEPT.watchlist.empty));
   main.append(setGrid(listed, play));
 }
@@ -529,19 +389,19 @@ function viewWatchlist() {
  */
 function viewKids() {
   const { films, series, byHand } = kidsShelf(library, setsFor(state.kids()));
-  heading(KEPT.kids.label, countOf(films.length + series.length + byHand.length, "title"));
+  heading(main, KEPT.kids.label, countOf(films.length + series.length + byHand.length, "title"));
   if (films.length + series.length + byHand.length === 0) {
     return main.append(el("p", "empty", KEPT.kids.empty));
   }
   const parts = [
-    [films, SECTIONS.movies.label, () => movieGrid(films, openFilm, GRID)],
+    [films, SECTIONS.movies.label, () => movieGrid(films, openFilm, { mode: GRID })],
     [
       series,
       SECTIONS.series.label,
       () =>
         collectionGrid("series", series, (title) => {
           location.hash = `#/series/${encodeURIComponent(title)}`;
-        }, GRID),
+        }, { mode: GRID }),
     ],
     [byHand, "Marked by hand", () => setGrid(byHand, (set) => play(set, byHand))],
   ].filter(([items]) => items.length > 0);
@@ -551,53 +411,18 @@ function viewKids() {
   }
 }
 
-/** The lists themselves. */
-function viewLists() {
-  heading(KEPT.collections.label, countOf(state.collections().length, "list"));
-  main.append(listsView((id) => (location.hash = `#/collections/${encodeURIComponent(id)}`), route));
-}
-
-/** Inside one list. */
-function viewList(id) {
-  const list = state.collections().find((entry) => entry.id === id);
-  if (!list) {
-    main.append(crumbs("collections", null, []));
-    main.append(el("p", "error", "That list is not here any more."));
-    return;
-  }
-
-  main.append(crumbs("collections", null, []));
-  heading(list.name, countOf(list.items.length, "title"));
-
-  // Read before the controls are built: "Play all" needs the run it would
-  // start, and the same run is what each row plays into.
-  const sets = setsFor(list.items);
-  main.append(
-    listControls(
-      list,
-      route,
-      () => (location.hash = "#/collections"),
-      sets.length > 0 ? () => play(sets[0], sets) : null,
-    ),
-  );
-
-  if (sets.length === 0) {
-    main.append(el("p", "empty", "Nothing in this list yet. Use Add titles above, or Add to\u2026 in the player."));
-    return;
-  }
-  main.append(listView(list, sets, (set) => play(set, sets), route));
-}
-
 /** Asks the server, because summaries live there and are not in the catalog. */
-async function viewSearch(query) {
+async function viewSearch(query, generation) {
   main.append(el("p", "empty", "Searching…"));
   try {
     const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
     if (!response.ok) throw new Error(`the server answered ${response.status}`);
     const { hits } = await response.json();
+    if (generation !== routeGeneration) return;
     main.textContent = "";
     renderSearch(main, query, hits, play);
   } catch (error) {
+    if (generation !== routeGeneration) return;
     main.textContent = "";
     main.append(el("p", "error", `Search failed: ${error.message}`));
   }
@@ -624,10 +449,12 @@ async function loadCatalog() {
   if (!response.ok) throw new Error(`the catalog answered ${response.status}`);
   const text = await response.text();
   if (text === catalogText) return false;
-  catalogText = text;
   const sets = JSON.parse(text);
-  library = groupLibrary(sets);
-  byId = new Map(sets.map((set) => [set.setId, set]));
+  const nextLibrary = groupLibrary(sets);
+  const nextById = new Map(sets.map((set) => [set.setId, set]));
+  library = nextLibrary;
+  byId = nextById;
+  catalogText = text;
   document.getElementById("n-movies").textContent = String(library.movies.length);
   document.getElementById("n-series").textContent = String(library.series.length);
   document.getElementById("n-tutorials").textContent = String(library.tutorials.length);
@@ -670,13 +497,17 @@ let stopStatus = null;
  * from anywhere else, and the poller renders that as the error it is.
  */
 function viewSystem() {
-  heading("System", "What this player is doing, refreshed as it happens");
+  heading(main, "System", "What this player is doing, refreshed as it happens");
   const panel = el("div", "status-panel");
   main.append(panel);
   stopStatus = watchStatus(panel);
 }
 
+let routeGeneration = 0;
 function route() {
+  const generation = ++routeGeneration;
+  shelfEditing = false;
+  shelfStale = false;
   // A panel left polling after the viewer has gone is the failure mode of
   // every panel like this. Stopped on the way out of *any* route, so there is
   // one place it can happen rather than one per way of leaving.
@@ -704,7 +535,7 @@ function route() {
   if (known === "search") {
     const query = decodeURIComponent(name ?? "");
     searchBox.value = query;
-    void viewSearch(query);
+    void viewSearch(query, generation);
     return;
   }
   // Leaving a search clears the box, so the shelf and the field agree.
@@ -718,10 +549,21 @@ function route() {
   if (known === "watchlist") return viewWatchlist();
   if (known === "kids") return viewKids();
   if (known === "collections") {
-    return name ? viewList(decodeURIComponent(name)) : viewLists();
+    const list = state.collections().find((entry) => entry.id === decodeURIComponent(name ?? ""));
+    return name
+      ? renderList(main, list, list ? setsFor(list.items) : [], {
+          play, onEditing: setShelfEditing, onGone: () => { location.hash = "#/collections"; },
+        })
+      : renderLists(main, (id) => { location.hash = `#/collections/${encodeURIComponent(id)}`; });
   }
 
-  if (name) viewCollection(known, decodeURIComponent(name), folders.map(decodeURIComponent));
+  if (name) {
+    const decoded = decodeURIComponent(name);
+    renderCollection(main, known, library[known].find((entry) => entry.name === decoded), decoded,
+      folders.map(decodeURIComponent), { play, open: (section, collection, path) => {
+        location.hash = `#/${section}/${[collection, ...path].map(encodeURIComponent).join("/")}`;
+      } });
+  }
   else if (known === "movies") viewMovies();
   else viewCollections(known);
 }
@@ -807,11 +649,7 @@ async function readCatalogOnce() {
     // The colophon says how old the catalogue is, and that just changed.
     await loadLink();
     renderColophon(JSON.parse(catalogText));
-    if (player.open) {
-      shelfStale = true;
-      return;
-    }
-    route();
+    invalidateShelf();
   } catch {
     // A server that is restarting answers nothing for a moment. The shelves
     // already showing are still true, and the next event asks again.
@@ -843,8 +681,12 @@ function stopListeningForLibrary() {
   libraryEvents = null;
 }
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") listenForLibrary();
-  else stopListeningForLibrary();
+  if (document.visibilityState === "visible") {
+    listenForLibrary();
+    // State saved on another device while this tab was away follows the same
+    // notification and deferred-redraw path as a local mutation.
+    void state.refreshState();
+  } else stopListeningForLibrary();
 });
 if (document.visibilityState === "visible") listenForLibrary();
 
@@ -873,6 +715,7 @@ try {
   // here: what was left unfinished, and — for a viewer who finished
   // everything — what has arrived since.
   if (!location.hash) location.hash = "#/home";
+  pageReady = true;
   route();
 } catch (error) {
   main.textContent = "";
