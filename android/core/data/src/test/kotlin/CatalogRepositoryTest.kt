@@ -3,6 +3,7 @@ package data
 import kotlinx.coroutines.test.runTest
 import model.Kind
 import settings.InMemoryLibrarySettings
+import uniffi.mediagram_core.SearchHit
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -70,6 +71,17 @@ class CatalogRepositoryTest {
 
         val set = repo.sets().single()
         assertEquals(Kind.MOVIE, set.kind)
+    }
+
+    /** A thin pass-through: the ranking and the joining both happen above this line. */
+    @Test
+    fun searchDelegatesToTheCoreUnjoined() = runTest {
+        val hit = SearchHit(setId = "set-1", matched = "title", excerpt = null)
+        val core = FakeCore(searchHits = listOf(hit))
+        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+
+        assertEquals(listOf(hit), repo.search("steuer"))
+        assertEquals("steuer", core.searchedFor)
     }
 
     /** A season poster has no set of its own to carry it, so it is asked for by key directly. */

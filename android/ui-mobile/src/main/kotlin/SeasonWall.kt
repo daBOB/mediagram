@@ -43,6 +43,7 @@ internal fun SeasonWall(
     plates: List<SeasonPlate>,
     posterPath: suspend (key: String) -> String?,
     onOpenSeason: (Division) -> Unit,
+    onOpenGenre: (String) -> Unit,
 ) {
     val columns = posterColumnsFor(currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass)
     LazyVerticalGrid(
@@ -61,14 +62,18 @@ internal fun SeasonWall(
         }
         // A show is rated as a show, so any episode speaks for it — the
         // first, as `series-header.js` asks. A course has no rating.
-        val age = firstItemOf(collection.divisions)?.ageLabel()
-        if (info != null || collection.posterPath != null || age != null) {
+        val firstEpisode = firstItemOf(collection.divisions)
+        val age = firstEpisode?.ageLabel()
+        val genres = firstEpisode?.genres ?: emptyList()
+        if (info != null || collection.posterPath != null || age != null || genres.isNotEmpty()) {
             item(key = "header", span = { GridItemSpan(maxLineSpan) }) {
                 TitleHeader(
                     posterPath = collection.posterPath,
                     title = collection.name,
                     facts = age,
                     info = info,
+                    genres = genres,
+                    onOpenGenre = onOpenGenre,
                     modifier = Modifier.padding(bottom = Spacing.medium),
                 )
             }

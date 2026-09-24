@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +40,10 @@ sealed interface Destination {
     data class Title(val name: String) : Destination
     /** One hand-built list, opened from the Collections tab. */
     data class List(val name: String) : Destination
+    /** Every result for one query, ranked flat rather than shelved. */
+    data object Search : Destination
+    /** Everything tagged with one genre: films, then series. */
+    data class Genre(val name: String) : Destination
     data object System : Destination
     data object TmdbKey : Destination
     data object Settings : Destination
@@ -55,6 +60,8 @@ internal fun barTitleFor(destination: Destination): String = when (destination) 
     is Destination.Season -> destination.name
     is Destination.Title -> destination.name
     is Destination.List -> destination.name
+    Destination.Search -> "Search"
+    is Destination.Genre -> destination.name
     Destination.System -> "System"
     Destination.TmdbKey -> "TMDB key"
     Destination.Settings -> "Settings"
@@ -71,6 +78,8 @@ internal fun backLabelFor(destination: Destination): String? = when (destination
     is Destination.Season -> "Back"
     is Destination.Title -> "Back"
     is Destination.List -> "Back"
+    Destination.Search -> "Back"
+    is Destination.Genre -> "Back"
     Destination.System -> "Back"
     Destination.TmdbKey -> "Back"
     Destination.Settings -> "Back"
@@ -82,6 +91,9 @@ internal fun backLabelFor(destination: Destination): String? = when (destination
  * it reopens [ui.ProfilePickerScreen] over whatever is on screen.
  */
 data class ProfileBarState(val name: String, val onChoose: () -> Unit)
+
+/** Whether the search action belongs in the bar — everywhere except the search screen itself. */
+internal fun showsSearchAction(destination: Destination): Boolean = destination != Destination.Search
 
 /**
  * The app's one piece of chrome: a bar with a title, a way back where the
@@ -101,6 +113,12 @@ data class ProfileBarState(val name: String, val onChoose: () -> Unit)
  * [StartOverConfirmation] is the shared dialog behind both. The menu itself
  * — the icon, the dropdown, and what each item does — is [OverflowMenu];
  * this only owns the confirmation the destructive item leads to.
+ *
+ * [onSearch] sits beside the profile button on every screen this renders
+ * except the search screen itself — the touch equivalent of the web's own
+ * search box, which sits in its header on every page rather than only on
+ * the catalog's own, but an icon that reopens the screen already on
+ * screen is a control with nothing left for it to do.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -109,6 +127,7 @@ fun LibraryScaffold(
     onBack: () -> Unit,
     menu: MenuActions,
     profile: ProfileBarState,
+    onSearch: () -> Unit,
     content: @Composable () -> Unit,
 ) {
     var askingStartOver by remember { mutableStateOf(false) }
@@ -142,6 +161,12 @@ fun LibraryScaffold(
                     }
                 },
                 actions = {
+                    if (showsSearchAction(destination)) {
+                        IconButton(
+                            onClick = onSearch,
+                            modifier = Modifier.semantics { contentDescription = "Search" },
+                        ) { Icon(imageVector = Icons.Default.Search, contentDescription = null) }
+                    }
                     ProfileButton(profile)
                     OverflowMenu(menu = menu, onAskStartOver = { askingStartOver = true })
                 },

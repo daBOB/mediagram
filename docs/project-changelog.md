@@ -42,6 +42,14 @@ to `main`. Full phase-by-phase detail lives in
   web's `SearchIndex` and this port, so a case that would only pass one of
   them fails the build. Kotlin gets `CoreClient.search`; no screen reads it
   yet.
+- Android search screen: a search icon in the library's top bar opens a
+  field, debounced 200 ms like the web's own box, ranking through
+  `Core::search` and joining each hit back onto its `MediaSet` for the row's
+  facts — a flat list, no shelves, matching `search-view.js`. A film or
+  show's genres are now links (`GenreLinks`) rather than a plain provider
+  sentence, opening a genre page (films then series, headed only when both
+  are there) ported from the web's `genreShelf`. `LibraryFlow.kt`'s
+  navigation `when` moved to `LibraryFlowBranches.kt` to make room.
 
 ## 2026-09-23
 

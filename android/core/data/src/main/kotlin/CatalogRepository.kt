@@ -4,12 +4,21 @@ import kotlinx.coroutines.CancellationException
 import model.Kind
 import model.MediaSet
 import settings.LibrarySettings
+import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.TitleInfo
 
 interface CatalogRepository {
     suspend fun refresh(): Result<Int>
     suspend fun sets(): List<MediaSet>
+
+    /**
+     * The catalog's sets matching every word of [query], best first — the
+     * same ranking [CoreClient.search] runs. A thin pass-through rather than
+     * a join onto [sets]: the caller already holds that list and joining it
+     * here would be a second copy of the same lookup.
+     */
+    suspend fun search(query: String): List<SearchHit>
 
     /**
      * What the index records about the title a poster key names, or nothing.
@@ -81,6 +90,8 @@ class DefaultCatalogRepository(
         val core = coreProvider.awaitCore()
         return core.listSets().map { toMediaSet(core, it) }
     }
+
+    override suspend fun search(query: String): List<SearchHit> = coreProvider.awaitCore().search(query)
 
     /** The core is awaited here rather than captured, as everywhere else. */
     override suspend fun titleInfo(posterKey: String): TitleInfo? =

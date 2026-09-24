@@ -13,6 +13,7 @@ import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.LibraryEvent
+import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.TitleInfo
 
@@ -41,7 +42,17 @@ class FakeCore(
     private val events: List<Result<LibraryEvent>> = emptyList(),
     /** What [account] answers, or throws: whether Telegram accepts this core's identity. */
     private val account: Result<AccountSummary> = Result.success(AccountSummary("A Viewer", "viewer")),
+    /** What [search] answers, regardless of the query asked. */
+    private val searchHits: List<SearchHit> = emptyList(),
 ) : CoreClient {
+
+    var searchedFor: String? = null
+        private set
+
+    override suspend fun search(query: String): List<SearchHit> {
+        searchedFor = query
+        return searchHits
+    }
 
     override suspend fun account(): AccountSummary = account.getOrThrow()
 

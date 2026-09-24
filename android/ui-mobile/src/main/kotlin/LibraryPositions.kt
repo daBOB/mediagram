@@ -1,6 +1,5 @@
 package ui
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -11,14 +10,6 @@ import androidx.compose.runtime.setValue
 /**
  * A screen the overflow menu opens, over whatever the library is showing,
  * and the name the bar gives it.
- *
- * One value rather than a flag each, because only one of them is ever on
- * screen and the menu that opens them is reachable from both of them. As
- * two independent flags, asking for the key screen from the system screen
- * set a flag the branch below never reached — nothing happened, and back
- * then cleared the system screen and landed on a key screen the viewer had
- * long since stopped asking for. A slot that holds one thing cannot do
- * that: asking for a screen is a move, not an addition.
  */
 internal enum class MenuScreen(val destination: Destination) {
     System(Destination.System),
@@ -26,84 +17,142 @@ internal enum class MenuScreen(val destination: Destination) {
     Settings(Destination.Settings),
 }
 
+/** Which kind of screen a [Frame] stands for. */
+internal enum class FrameKind { PLAYER, MENU, SEARCH, GENRE, TITLE, SEASON, COLLECTION, LIST }
+
 /**
- * Where in the library a viewer currently is: whichever show or course the
- * catalog opened, whichever season of it that opened from its wall,
- * whichever title that described, whichever set that played, whichever
- * hand-built list the Collections tab opened, and whichever screen the menu
- * opened over them.
- *
- * All six are saved rather than remembered: the Activity is fully
- * destroyed and recreated on rotation (there is no `android:configChanges`),
- * and the singleton player survives that regardless — without this,
- * rotating away from an open set would drop back to the catalog while the
- * film kept playing underneath it.
- *
- * The collection, the season within it, the opened title, and the open list
- * are held as keys and looked up again, not kept as trees or sets: a saved
- * position has to survive the process being killed, and a key is a short
- * string where a course is a few hundred sets. A season is keyed by its
- * division's title rather than its number, so "Episodes" and specials —
- * which carry no number — resolve the same way a numbered season does.
+ * One screen on [LibraryPositions]'s stack: which kind it is, and the one
+ * key it needs to be shown again — a set id for the player, a genre's name,
+ * and so on. A plain pair rather than a sealed class of its own: every kind
+ * carries exactly one string, and encoding one shape is simpler than eight.
  */
-internal class LibraryPositions(
-    setId: MutableState<String?>,
-    titleId: MutableState<String?>,
-    collection: MutableState<String?>,
-    season: MutableState<String?>,
-    listId: MutableState<String?>,
-    menuScreen: MutableState<MenuScreen?>,
-) {
-    var setId: String? by setId
-    var titleId: String? by titleId
-    var collection: String? by collection
-    var season: String? by season
+private data class Frame(val kind: FrameKind, val payload: String)
+
+private const val FIELD_SEP = "\u001F"
+private const val FRAME_SEP = "\u001E"
+
+private fun encode(frames: List<Frame>): String = frames.joinToString(FRAME_SEP) { "${it.kind.name}$FIELD_SEP${it.payload}" }
+
+/**
+ * Never throws: a token with no [FIELD_SEP], or a kind this build does not
+ * know, is dropped rather than crashing every recomposition. The one way
+ * either could happen — a payload that contained [FRAME_SEP] itself, so
+ * splitting on it cut a single frame into two broken ones — is guarded at
+ * the write side by [LibraryPositions.typeSearch]; this is what stops an
+ * already-saved string from an older build, or from a `Bundle` doing
+ * something stranger than that, from taking the screen down with it.
+ */
+private fun decode(raw: String): List<Frame> {
+    if (raw.isEmpty()) return emptyList()
+    return raw.split(FRAME_SEP).mapNotNull { token ->
+        val parts = token.split(FIELD_SEP, limit = 2)
+        if (parts.size != 2) return@mapNotNull null
+        val kind = runCatching { FrameKind.valueOf(parts[0]) }.getOrNull() ?: return@mapNotNull null
+        Frame(kind, parts[1])
+    }
+}
+
+/**
+ * Where in the library a viewer currently is, as a stack of screens each
+ * opened over the one beneath it — a title over the collection it was
+ * opened from, a genre page over the title whose chip opened it, search
+ * over whatever it was opened from, however deep any of them goes. [top]
+ * alone decides which is on screen; [pop] leaves it, uncovering whatever
+ * is next.
+ *
+ * Every field below is derived from the stack rather than held beside it:
+ * [titleId] is the payload of the most recent [FrameKind.TITLE] frame,
+ * wherever in the stack it sits, not a value shared by every title the
+ * stack has ever held. That is what lets the same kind recur — a title
+ * opened from a genre page opened from another title — without the inner
+ * one overwriting the outer one's own key once it is no longer on top.
+ *
+ * The stack is kept as one string, encoded with control characters no
+ * title, genre or query is ever going to contain, because a plain `String`
+ * is what a `Bundle` already knows how to carry across a killed process
+ * with no `Saver` of its own to write — the same reason every payload
+ * below is a key rather than a tree. The Activity is fully destroyed and
+ * recreated on rotation (there is no `android:configChanges`), and the
+ * singleton player survives that regardless — without this, rotating away
+ * from an open set would drop back to the catalog while the film kept
+ * playing underneath it.
+ */
+internal class LibraryPositions(frames: MutableState<String>) {
+    private var raw: String by frames
+    private val stack: List<Frame> get() = decode(raw)
+    private fun setStack(next: List<Frame>) {
+        raw = encode(next)
+    }
+
+    /** Which screen is on top, or `null` for the catalog itself. */
+    val top: FrameKind? get() = stack.lastOrNull()?.kind
+
+    private fun payloadOf(kind: FrameKind): String? = stack.lastOrNull { it.kind == kind }?.payload
+
+    val setId: String? get() = payloadOf(FrameKind.PLAYER)
+    val titleId: String? get() = payloadOf(FrameKind.TITLE)
+    val collection: String? get() = payloadOf(FrameKind.COLLECTION)
+    val season: String? get() = payloadOf(FrameKind.SEASON)
     /** Which hand-built list is open, by its own id — the Collections tab's counterpart to [collection]. */
-    var listId: String? by listId
-    var menuScreen: MenuScreen? by menuScreen
+    val listId: String? get() = payloadOf(FrameKind.LIST)
+    /** The search field's own text, or `null` while it is closed. */
+    val search: String? get() = payloadOf(FrameKind.SEARCH)
+    /** The genre a chip opened, by its own name. */
+    val genre: String? get() = payloadOf(FrameKind.GENRE)
+    val menuScreen: MenuScreen? get() = payloadOf(FrameKind.MENU)?.let { runCatching { MenuScreen.valueOf(it) }.getOrNull() }
+
+    private fun push(kind: FrameKind, payload: String) = setStack(stack + Frame(kind, payload))
+
+    fun openPlayer(id: String) = push(FrameKind.PLAYER, id)
+    fun openSearch() = push(FrameKind.SEARCH, "")
+    fun openGenre(name: String) = push(FrameKind.GENRE, name)
+    fun openTitle(id: String) = push(FrameKind.TITLE, id)
+    fun openSeason(name: String) = push(FrameKind.SEASON, name)
+    fun openCollection(key: String) = push(FrameKind.COLLECTION, key)
+    fun openList(id: String) = push(FrameKind.LIST, id)
+
+    /**
+     * Moves between menu screens rather than stacking them — asking for the
+     * key screen from the system screen replaces it, the same as it always
+     * has: asking for a screen is a move, not an addition. Opened from
+     * anywhere else, it goes on top of whatever was already showing, the
+     * same as every other `openX`.
+     */
+    fun openMenu(screen: MenuScreen) {
+        val current = stack
+        val base = if (current.lastOrNull()?.kind == FrameKind.MENU) current.dropLast(1) else current
+        setStack(base + Frame(FrameKind.MENU, screen.name))
+    }
+
+    /**
+     * Updates the open search field's own text in place — typing is not a
+     * new screen. ISO control characters are stripped first: [FIELD_SEP]
+     * and [FRAME_SEP] are two of them, and a query holding either would
+     * corrupt the very frame it is saved into the instant it round-trips
+     * through [encode] and [decode]. A viewer typing loses nothing real —
+     * a search query has no legitimate use for a control character.
+     */
+    fun typeSearch(text: String) {
+        val current = stack
+        if (current.lastOrNull()?.kind != FrameKind.SEARCH) return
+        val sanitized = text.filterNot(Character::isISOControl)
+        setStack(current.dropLast(1) + Frame(FrameKind.SEARCH, sanitized))
+    }
+
+    /** Leaves whichever screen is on top. A no-op with nothing open. */
+    fun pop() {
+        val current = stack
+        if (current.isNotEmpty()) setStack(current.dropLast(1))
+    }
 
     /**
      * Back to the shelves from wherever, all at once. Asked for by an
      * action whose result is the shelves themselves: a viewer who requests
      * the library from a screen that cannot show it has to be shown it.
      */
-    fun toCatalog() {
-        setId = null
-        titleId = null
-        collection = null
-        season = null
-        listId = null
-        menuScreen = null
-    }
+    fun toCatalog() = setStack(emptyList())
 }
 
 @Composable
-internal fun rememberLibraryPositions(): LibraryPositions = LibraryPositions(
-    setId = rememberSaveable { mutableStateOf<String?>(null) },
-    titleId = rememberSaveable { mutableStateOf<String?>(null) },
-    collection = rememberSaveable { mutableStateOf<String?>(null) },
-    season = rememberSaveable { mutableStateOf<String?>(null) },
-    listId = rememberSaveable { mutableStateOf<String?>(null) },
-    menuScreen = rememberSaveable { mutableStateOf<MenuScreen?>(null) },
-)
-
-/**
- * One screen of the library under the app's chrome, and what leaving it
- * means.
- *
- * The system back gesture and the bar's back arrow are the same departure
- * said twice, so they are given the same lambda here rather than at each
- * branch — a screen that wired one and forgot the other would go back in
- * two different places depending on which the viewer reached for.
- */
-@Composable
-internal fun LibraryBranch(
-    destination: Destination,
-    menu: MenuActions,
-    profile: ProfileBarState,
-    onLeave: () -> Unit,
-    content: @Composable () -> Unit,
-) {
-    BackHandler(onBack = onLeave)
-    LibraryScaffold(destination = destination, onBack = onLeave, menu = menu, profile = profile, content = content)
-}
+internal fun rememberLibraryPositions(): LibraryPositions =
+    LibraryPositions(rememberSaveable { mutableStateOf("") })
