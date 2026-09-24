@@ -9,12 +9,16 @@
 
 import { languageLabel } from "../language-label.js";
 
+/** @typedef {import("../../../src/catalog/audio-tracks").AudioTrack} AudioTrack */
+
 /**
  * A channel count as a viewer would say it.
  *
  * Worth saying because it is often the only thing separating two rows: a film
  * routinely carries the same language twice, once as 5.1 and once as a stereo
  * downmix, and "German / German" is not a menu.
+ * @param {number|null|undefined} channels
+ * @returns {string}
  */
 export function channelLabel(channels) {
   if (!Number.isFinite(channels) || channels <= 0) return "";
@@ -33,6 +37,8 @@ export function channelLabel(channels) {
  * The track's own title wins over everything when it has one, because a file
  * that bothered to name a stream "Director's Commentary" has said something
  * the language code cannot.
+ * @param {AudioTrack} track
+ * @returns {string}
  */
 export function trackLabel(track) {
   const parts = [languageLabel(track.lang, `Track ${track.index + 1}`)];
@@ -47,6 +53,8 @@ export function trackLabel(track) {
  * Which track to start on: the one the file marks as its default, else the
  * first. Not "the one with the most channels" — that is the guess ffmpeg
  * makes, and on a film it routinely lands on a commentary.
+ * @param {AudioTrack[]} tracks
+ * @returns {number}
  */
 export function defaultTrack(tracks) {
   return (tracks.find((track) => track.isDefault) ?? tracks[0])?.index ?? 0;
@@ -63,6 +71,9 @@ export function defaultTrack(tracks) {
  * Returning `null` rather than falling back is the point: the caller then
  * uses the file's own default, which is the right answer for a file that no
  * longer carries the language somebody once chose.
+ * @param {AudioTrack[]} tracks
+ * @param {unknown} lang
+ * @returns {number|null}
  */
 export function trackForLanguage(tracks, lang) {
   if (typeof lang !== "string" || lang.trim() === "") return null;
@@ -78,6 +89,8 @@ export function trackForLanguage(tracks, lang) {
  * the probe could not read, and both mean the same thing to the page: no
  * choice to offer. A failure is never raised — a chooser that cannot be built
  * is not a reason to interrupt a film.
+ * @param {string} setId
+ * @returns {Promise<AudioTrack[]>}
  */
 export async function loadAudioTracks(setId) {
   try {
@@ -95,6 +108,10 @@ export async function loadAudioTracks(setId) {
  *
  * Returns whether there is a choice worth showing: one track is not a menu,
  * it is a label for something nobody can change.
+ * @param {HTMLSelectElement} select
+ * @param {AudioTrack[]} tracks
+ * @param {number} chosen
+ * @returns {boolean}
  */
 export function fillChooser(select, tracks, chosen) {
   select.textContent = "";

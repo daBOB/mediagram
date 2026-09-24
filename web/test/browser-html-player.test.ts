@@ -114,6 +114,31 @@ test("subtitle language and explicit Off survive episode track order changes", a
   expect(app.state.preferenceOf("show:Series", "subtitle")).toBe("off");
 });
 
+test("subtitle shortcut restores the selected track and resets its ordinal for a new title", async () => {
+  await start();
+  const toggle = () => env.node("player").dispatchEvent(Object.assign(new Event("keydown"), { key: "c" }));
+  app.player.openPlayer(episode("one", ["en", "fr", "de"]));
+  pick("2");
+  toggle();
+  expect(selected()).toEqual([]);
+  toggle();
+  expect(selected()).toEqual(["de"]);
+  expect(env.node("sub-track").value).toBe("2");
+  pick("off");
+  toggle();
+  expect(selected()).toEqual(["de"]);
+  // The remembered Off preference applies to the next episode. Its first
+  // track is the fallback when the shortcut enables subtitles again.
+  app.player.openPlayer(episode("two", ["fr", "en"]));
+  expect(selected()).toEqual([]);
+  toggle();
+  expect(selected()).toEqual(["fr"]);
+  toggle();
+  expect(selected()).toEqual([]);
+  toggle();
+  expect(selected()).toEqual(["fr"]);
+});
+
 test("late cue load and TextTrackList change apply remembered offsets without drift", async () => {
   await start();
   app.state.setPreference("show:Series", "cue-offset", "0.4");

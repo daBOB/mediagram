@@ -278,8 +278,11 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime, recall, rem
   });
 
   /** Puts the element's tracks where the picker says they should be. */
+  let lastSubtitle = "0";
+
   function applySubtitles() {
     const chosen = subPicker.value;
+    if (chosen !== "off") lastSubtitle = chosen;
     for (const [index, track] of [...video.textTracks].entries()) {
       track.mode = String(index) === chosen ? "showing" : "disabled";
     }
@@ -300,7 +303,7 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime, recall, rem
    */
   function toggleSubtitles() {
     if (subs.hidden) return;
-    subPicker.value = subPicker.value === "off" ? "0" : "off";
+    subPicker.value = subPicker.value === "off" ? lastSubtitle : "off";
     applySubtitles();
   }
 
@@ -346,6 +349,7 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime, recall, rem
 
   /** Rebuilt per title: a film's tracks are not the last film's tracks. */
   function offerSubtitles() {
+    lastSubtitle = "0";
     const tracks = [...video.textTracks].filter((track) => track.kind === "subtitles");
     const options = subtitleOptions(video.textTracks);
     subPicker.replaceChildren();

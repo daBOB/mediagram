@@ -90,8 +90,8 @@ describe("where to start", () => {
 
 describe("matching a remembered language", () => {
   const tracks = [
-    { index: 0, lang: "de", channels: 6, codec: "ac3", isDefault: true },
-    { index: 1, lang: "en", channels: 2, codec: "aac", isDefault: false },
+    { index: 0, lang: "de", channels: 6, codec: "ac3", title: null, isDefault: true },
+    { index: 1, lang: "en", channels: 2, codec: "aac", title: null, isDefault: false },
   ];
 
   test("finds the track carrying it", () => {

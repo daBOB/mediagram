@@ -35,9 +35,10 @@ function loadHls() {
 }
 
 /**
- * Asks the server to transcode `setId` from `seekSeconds` and returns the
- * playlist URL. The server does not answer until a first segment exists, so a
- * player handed this URL has something to play.
+ * Asks the server to transcode `setId` from `seekSeconds`, returning its
+ * playlist and whether the video stream was copied. The server does not
+ * answer until a first segment exists, so the playlist is ready to play.
+ * @returns {Promise<{playlist: string, copied: boolean}>}
  */
 async function beginTranscode(setId, seekSeconds, maxrateBits, audioTrack) {
   const seek = `seek=${Math.max(0, Math.floor(seekSeconds))}`;
