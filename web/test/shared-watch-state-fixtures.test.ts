@@ -65,6 +65,7 @@ describe("merge fixtures", () => {
         .map((profile) => ({
           name: profile.name,
           displayName: profile.displayName,
+          ...(profile.kids ? { kids: profile.kids } : {}),
           progress: [...profile.progress].sort((a, b) => a.setId.localeCompare(b.setId)),
           watched: [...profile.watched].sort((a, b) => a.setId.localeCompare(b.setId)),
         }))

@@ -69,6 +69,11 @@ export interface ProfileState {
   name: string;
   /** The writing device's own id for this profile — provenance, not identity. */
   localId?: string;
+  /**
+   * Present only on a kids profile. Written only when true, so an ordinary
+   * profile's entry reads exactly as it did before the flag existed.
+   */
+  kids?: true;
   progress: ProgressRow[];
   watched: WatchedRow[];
   /** Absent on a document from before this existed — not the same as empty. */
@@ -136,6 +141,9 @@ export function parseRecord(text: string): SyncRecord | null {
     profiles.push({
       name,
       localId: text_(row.localId) ?? undefined,
+      // Only a literal `true`: a flag that restricts what a child sees must
+      // not be switched on by a string that merely looks truthy.
+      ...(row.kids === true ? { kids: true as const } : {}),
       progress: asArray(row.progress).flatMap((entry) => {
         const at = progressRow(entry);
         return at === null ? [] : [at];
