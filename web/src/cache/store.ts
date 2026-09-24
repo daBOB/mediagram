@@ -167,8 +167,9 @@ export class ChunkCache {
       let listing;
       try {
         listing = await readdir(directory, { withFileTypes: true });
-      } catch {
-        return;
+      } catch (error) {
+        if (isMissing(error)) return;
+        throw error;
       }
       for (const item of listing) {
         const path = join(directory, item.name);
@@ -178,8 +179,9 @@ export class ChunkCache {
           try {
             const info = await stat(path);
             found.push({ path, size: info.size, usedAt: info.atimeMs });
-          } catch {
+          } catch (error) {
             // Evicted by someone else between the listing and the stat.
+            if (!isMissing(error)) throw error;
           }
         }
       }
@@ -187,4 +189,8 @@ export class ChunkCache {
     await walk(this.root);
     return found;
   }
+}
+
+function isMissing(error: unknown): boolean {
+  return error instanceof Error && "code" in error && error.code === "ENOENT";
 }

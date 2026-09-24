@@ -8,7 +8,7 @@
 
 import { collectRead } from "./support/cache-reader";
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
-import { chmod, mkdtemp, rm, stat, utimes, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, rm, stat, symlink, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -27,6 +27,54 @@ afterEach(async () => {
 });
 
 const block = (byte: number, size = 1024) => new Uint8Array(size).fill(byte);
+
+describe("inventory failures", () => {
+  test("a missing cache remains an empty inventory", async () => {
+    const cache = new ChunkCache(join(root, "missing"), 0);
+    expect(await cache.sizeOnDisk()).toBe(0);
+    expect(await cache.evict()).toBe(0);
+  });
+
+  test("a non-directory cache path reports its error instead of zero usage", async () => {
+    const obstruction = join(root, "file");
+    await writeFile(obstruction, "not a directory");
+    const cache = new ChunkCache(join(obstruction, "chunks"), 0);
+    await expect(cache.sizeOnDisk()).rejects.toMatchObject({ code: "ENOTDIR" });
+    await expect(cache.evict()).rejects.toMatchObject({ code: "ENOTDIR" });
+  });
+
+  test("a vanished entry is harmless but other stat errors cannot become partial totals", async () => {
+    await symlink("missing", join(root, "vanished"));
+    const cache = new ChunkCache(root, 0);
+    expect(await cache.sizeOnDisk()).toBe(0);
+    await symlink("loop", join(root, "loop"));
+    await expect(cache.sizeOnDisk()).rejects.toMatchObject({ code: "ELOOP" });
+    await expect(cache.evict()).rejects.toMatchObject({ code: "ELOOP" });
+  });
+
+  test.skipIf(process.getuid?.() === 0)("an unreadable subtree reports maintenance failure without rejecting delivered bytes", async () => {
+    const seed = new ChunkCache(root, 10_000);
+    await seed.put(SET, 0, 0, block(1));
+    const locked = dirname(chunkPath(root, SET, 0, 0));
+    await chmod(locked, 0o000);
+    const warning = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const cache = new ChunkCache(root, 10_000);
+      const payload = block(2, 256);
+      const delivered = await collectRead(new CachedReader(cache), {
+        setId: "NEXT", partIdx: 0, start: 0, length: payload.length,
+        partLength: payload.length, fetch: async () => payload,
+      });
+      expect(delivered).toEqual(payload);
+      expect(warning).toHaveBeenCalledWith("cache eviction failed:", expect.objectContaining({ code: "EACCES" }));
+      await expect(cache.sizeOnDisk()).rejects.toMatchObject({ code: "EACCES" });
+      await expect(cache.evict()).rejects.toMatchObject({ code: "EACCES" });
+    } finally {
+      await chmod(locked, 0o700);
+      warning.mockRestore();
+    }
+  });
+});
 
 describe("storing and reading", () => {
   test("a chunk survives the round trip", async () => {

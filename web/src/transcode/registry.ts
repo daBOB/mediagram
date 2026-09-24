@@ -269,8 +269,15 @@ export class TranscodeRegistry {
   async reapIdle(): Promise<number> {
     const deadline = this.now() - this.idleMs;
     const stale = [...this.sessions.values()].filter((s) => s.lastUsed <= deadline);
-    for (const session of stale) await this.stop(session.id);
-    return stale.length;
+    let reaped = 0;
+    for (const session of stale) {
+      // Earlier cleanup awaited process exit. A queued candidate may have
+      // been read, acquired again, or replaced under the same deterministic id.
+      if (this.sessions.get(session.id) !== session || session.lastUsed > deadline) continue;
+      await this.stop(session.id);
+      reaped += 1;
+    }
+    return reaped;
   }
 
   /** Used on shutdown: an orphaned ffmpeg outlives the server otherwise. */

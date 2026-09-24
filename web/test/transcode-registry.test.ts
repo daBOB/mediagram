@@ -188,6 +188,47 @@ describe("stopping", () => {
     expect(await registry.reapIdle()).toBe(1);
     expect(stopped).toEqual([session.id]);
   });
+
+  test.each(["touch", "acquire", "replace"])("idle reaping rechecks a queued session after %s during earlier cleanup", async (activity) => {
+    let now = 1_000;
+    const stopping = deferred<void>();
+    const release = deferred<void>();
+    const registry = new TranscodeRegistry(work, {
+      start(id, _directory, asked) {
+        return { stop: async () => {
+          stopped.push(id);
+          if (asked.setId === "FIRST") { stopping.resolve(); await release.promise; }
+        } };
+      },
+    }, { idleMs: 50, now: () => now });
+    const first = await registry.acquireSession(spec("FIRST", 0, 8_000_000));
+    const secondSpec = spec("SECOND", 0, 8_000_000);
+    const second = await registry.acquireSession(secondSpec);
+    now = 1_100;
+    const reaping = registry.reapIdle();
+    try {
+      await stopping.promise;
+      if (activity === "touch") registry.touch(second.id);
+      else {
+        if (activity === "replace") {
+          await registry.stop(second.id);
+          // Keep the replacement itself old enough to be eligible, so only
+          // tracked-object identity can distinguish it from the stale candidate.
+          now = 1_000;
+        }
+        await registry.acquireSession(secondSpec);
+      }
+      release.resolve();
+      expect(await reaping).toBe(1);
+      expect(registry.has(first.id)).toBe(false);
+      expect(registry.has(second.id)).toBe(true);
+      expect(stopped.filter((id) => id === second.id)).toHaveLength(activity === "replace" ? 1 : 0);
+    } finally {
+      release.resolve();
+      await reaping;
+      await registry.stopAll();
+    }
+  });
 });
 
 describe("session ids", () => {
