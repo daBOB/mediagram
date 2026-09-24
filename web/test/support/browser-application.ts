@@ -3,6 +3,7 @@ import { browserEnvironment, Node, Video, settle } from "./player-environment";
 /** DOM operations used by page rendering, layered on the media IO fixture. */
 export class PageNode extends Node {
   href = "";
+  async decode() {}
   get childElementCount() { return this.children.length; }
   focus() {}
   override append(...nodes: Array<Node | string>) {
@@ -57,8 +58,21 @@ export function applicationEnvironment() {
   env.replace("location", location);
   env.replace("matchMedia", () => ({ matches: true }));
   env.replace("EventSource", LibraryStream);
+  env.replace("requestAnimationFrame", (run: (time: number) => void) => { queueMicrotask(() => run(0)); return 0; });
+  // Session history as far as the page uses it: entries pushed without a
+  // hash change, and a back() that reports itself the way a browser does.
+  const entries: unknown[] = [null];
+  const history = {
+    get state() { return entries.at(-1) ?? null; },
+    pushState(state: unknown) { entries.push(state); },
+    back() {
+      if (entries.length > 1) entries.pop();
+      queueMicrotask(() => env.window.dispatchEvent(new Event("popstate")));
+    },
+  };
+  env.replace("history", history);
   return {
-    ...env, document, location, streams, scrolls,
+    ...env, document, location, streams, scrolls, history,
     async navigate(hash: string) { location.hash = hash; env.window.dispatchEvent(new Event("hashchange")); await settle(); },
     async visibility(value: string) { document.visibilityState = value; document.dispatchEvent(new Event("visibilitychange")); await settle(); },
   };

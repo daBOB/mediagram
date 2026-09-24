@@ -5,9 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Unreleased — 0.41.0
+## Unreleased — 0.42.0
 
 **Added**
+
+- A Featured reel on the web player's Movies shelf. The Featured button opens
+  a dark, full-window run of up to twelve films this profile has not watched,
+  shuffled: each poster drifts slowly over a blurred copy of itself, fades into
+  the next after seven seconds, and carries its title, year, genres, score and
+  tagline. Play and Details act on the film shown; arrows, the dots, Space
+  (pause), Esc and the back button steer it. Reduced motion gets still posters.
+  Android has no equivalent: its catalog carries no posters.
 
 - The web player's Movies shelf is paged, 48 films at a time, with a row of
   page links under the grid. The page is in the address (`#/movies/page/3`),

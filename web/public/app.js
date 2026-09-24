@@ -26,6 +26,8 @@ import { renderCollection } from "./lib/catalog/course-view.js";
 import { SECTIONS, collectionGrid, emptyState, heading, movieGrid, setGrid } from "./lib/catalog/shelf-view.js";
 import { GRID, LIST, setShelfMode, shelfMode } from "./lib/catalog/shelf-mode.js";
 import { pageOf, pager, parsePage } from "./lib/catalog/pager.js";
+import { pickFeatured } from "./lib/catalog/featured-picks.js";
+import { openFeatured } from "./lib/catalog/featured-reel.js";
 import * as state from "./lib/watch-state.js";
 import { resumeAt } from "./lib/resume-point.js";
 import { renderLists, renderList } from "./lib/catalog/collections-view.js";
@@ -156,7 +158,7 @@ function viewMovies(requested) {
     pages > 1 ? `${extent} \u00b7 page ${page} of ${pages}` : extent,
     // No control over an empty shelf: there is nothing to lay out either way,
     // and offering the choice would be offering it about nothing.
-    library.movies.length > 0 ? shelfToggle() : null,
+    library.movies.length > 0 ? movieControls() : null,
   );
   // A new page starts at its top; a redraw of the same page after a catalog
   // refresh keeps the viewer where they were.
@@ -166,6 +168,23 @@ function viewMovies(requested) {
   main.append(movieGrid(items, openFilm, { mode }));
   const links = pager("movies", page, pages);
   if (links) main.append(links);
+}
+
+/**
+ * The Movies heading's controls: the Featured reel, when there is a film
+ * left to suggest, beside the list-or-grid choice.
+ */
+function movieControls() {
+  const controls = el("div", "shelf-modes");
+  const picks = () => pickFeatured(library.movies, state.isWatched, Math.random);
+  if (picks().length > 0) {
+    const featured = el("button", "mode featured-open", "Featured");
+    featured.type = "button";
+    featured.addEventListener("click", () => openFeatured(picks(), { play: (set) => play(set), openFilm }));
+    controls.append(featured);
+  }
+  controls.append(shelfToggle());
+  return controls;
 }
 
 /** A film's card opens its page; the page's button plays it. */

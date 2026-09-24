@@ -533,3 +533,24 @@ test("the Movies shelf is drawn a page at a time, with its page in the address",
   stream().fire("catalog"); await settle();
   expect(env.scrolls.length).toBe(scrolled + 1);
 });
+
+test("Featured suggests unwatched films and opens the one chosen after leaving its history entry", async () => {
+  const withPoster = (setId: string) => ({ ...film(setId), poster: `tmdb-movie-${setId}` });
+  catalog = JSON.stringify([withPoster("Seen"), withPoster("Unseen")]);
+  snapshot = { progress: [], watched: [{ setId: "Seen", finishedAt: 1 }], collections: [] };
+  await start();
+  const button = descendants(env.node("main")).find((node) => node.tagName === "BUTTON" && node.textContent === "Featured")!;
+  button.fire("click"); await settle();
+
+  const reel = env.node("featured");
+  expect(reel.open).toBe(true);
+  expect(env.history.state).toEqual({ featured: true });
+  expect(textOf(reel)).toContain("Unseen");
+  expect(textOf(reel)).not.toContain("Seen·");
+  expect(textOf(reel)).toContain("Featured · 1 / 1");
+
+  descendants(reel).find((node) => node.className === "featured-details")!.fire("click"); await settle();
+  expect(reel.open).toBe(false);
+  expect(env.history.state).toBeNull();
+  expect(env.location.hash).toBe("#/film/Unseen");
+});

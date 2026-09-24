@@ -323,6 +323,20 @@ a shared link all land on it. The library is already whole in the page:
 router matches `page` before any collection name. Series and Tutorials shelves
 are short enough not to page, and the Android catalog does not page yet.
 
+### The Featured reel
+
+The Movies heading's Featured button opens `<dialog id="featured">`, drawn by
+`public/lib/catalog/featured-reel.js`. Which films it shows is the pure rule in
+`featured-picks.js`: films with a poster that the profile has not watched,
+shuffled, at most twelve. Each slide is built when shown and crossfaded over
+the last; the drift, fade and rising text are CSS, so reduced motion is the
+stylesheet's global rule. Opening pushes a history entry: back closes the
+reel, and Play or Details wait for that entry to be popped before acting, so
+the film's page is not undone by it. Taglines and scores come from
+`/api/shows/:key`, asked once per film and for the next film while one holds.
+The Android catalog has no posters, since the pinned index carries none, so it
+has no reel; that is a deliberate difference, not a gap.
+
 ### Where the player opens
 
 `#/home`, and the rows on it are decided in `public/lib/catalog/home-shelves.js` and
