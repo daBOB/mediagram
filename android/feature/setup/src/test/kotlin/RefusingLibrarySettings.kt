@@ -1,5 +1,6 @@
 package setup
 
+import kotlinx.coroutines.flow.flow
 import settings.LibrarySettings
 
 /**
@@ -14,6 +15,10 @@ import settings.LibrarySettings
  */
 class RefusingLibrarySettings : LibrarySettings {
     override suspend fun read(): String? = null
+
+    override fun selections() = flow { emit(read()) }
+
     override suspend fun write(handle: String): Unit = throw SecurityException("keystore unavailable")
+
     override suspend fun clear(): Unit = throw SecurityException("keystore unavailable")
 }

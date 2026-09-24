@@ -1,8 +1,8 @@
 package data
 
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,7 +26,6 @@ import settings.TelegramSettings
  * everything above it gets a core that works or gets nothing.
  */
 interface CoreProvider {
-
     /**
      * Which core is current, for callers that cannot suspend to ask — a
      * data source being created on a loader thread, a ViewModel deciding
@@ -46,7 +45,10 @@ interface CoreProvider {
     suspend fun coreOrNull(): CoreClient?
 
     /** Stores an identity and builds the core from it. */
-    suspend fun supply(apiId: Int, apiHash: String)
+    suspend fun supply(
+        apiId: Int,
+        apiHash: String,
+    )
 
     /** Closes the core and forgets the identity it was built from. */
     suspend fun forget()
@@ -62,29 +64,25 @@ interface CoreProvider {
      * checks an api_hash only when signing in, so a mistyped one surfaces at
      * the next sign-in rather than here.
      */
-    suspend fun replace(apiId: Int, apiHash: String)
+    suspend fun replace(
+        apiId: Int,
+        apiHash: String,
+    )
 }
 
 /**
- * Builds at most one core per stored identity, on first demand, on
- * [dispatcher].
+ * Builds at most one core per stored identity on [dispatcher]. Native library,
+ * keystore, and auth-key filesystem work stay off the calling thread.
  *
- * Never on the calling thread: the first build loads the native library,
- * decrypts the stored identity through the keystore and stats the auth key
- * file, and both callers reach this from the main dispatcher.
- *
- * [build] is passed in rather than called directly because the generated
- * `Core` class is final and belongs behind the dependency-injection seam;
- * this class knows only that something can turn credentials into a
- * [CoreClient]. That also lets a test drive the whole lifecycle without a
- * native library.
+ * [build] hides the final generated Core behind [CoreClient], allowing lifecycle
+ * tests without a native library. Unpublished clients are closed on failure,
+ * including cancellation at dispatcher handoffs; close failures are suppressed.
  */
 class StoredCoreProvider(
     private val settings: TelegramSettings,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val build: (TelegramCredentials) -> CoreClient,
 ) : CoreProvider {
-
     // Guards the read-then-build sequence: two screens resolving at once
     // must not each construct a core over the same data directory.
     private val mutex = Mutex()
@@ -94,11 +92,20 @@ class StoredCoreProvider(
 
     override suspend fun awaitCore(): CoreClient = coreOrNull() ?: built.filterNotNull().first()
 
-    override suspend fun coreOrNull(): CoreClient? = mutex.withLock {
-        built.value ?: withContext(dispatcher) {
-            settings.read()?.let { credentials -> build(credentials) }
-        }?.also { built.value = it }
-    }
+    override suspend fun coreOrNull(): CoreClient? =
+        mutex.withLock {
+            built.value?.let { return@withLock it }
+            var candidate: CoreClient? = null
+            try {
+                withContext(dispatcher) {
+                    settings.read()?.let { credentials -> build(credentials).also { candidate = it } }
+                }?.also { built.value = it }
+            } catch (
+                @Suppress("TooGenericExceptionCaught") failure: Throwable,
+            ) {
+                discard(candidate, failure)
+            }
+        }
 
     /**
      * Built before it is stored, so an identity that cannot produce a core
@@ -106,40 +113,83 @@ class StoredCoreProvider(
      * failure that had already been written would turn one bad entry into a
      * crash loop with no way back to the first step.
      */
-    override suspend fun supply(apiId: Int, apiHash: String) = mutex.withLock {
+    override suspend fun supply(
+        apiId: Int,
+        apiHash: String,
+    ) = mutex.withLock {
         val credentials = TelegramCredentials(apiId, apiHash)
-        val client = withContext(dispatcher) {
-            build(credentials).also { settings.write(apiId, apiHash) }
-        }
-        // Assigning last is what resumes whoever is parked in awaitCore().
-        built.value = client
-    }
-
-    override suspend fun replace(apiId: Int, apiHash: String): Unit = mutex.withLock {
-        built.value?.let { open -> withContext(dispatcher) { open.close() } }
-        built.value = null
-        val candidate = withContext(dispatcher) { build(TelegramCredentials(apiId, apiHash)) }
-        // From here the candidate is always either kept or closed, cancelled
-        // or not: one left open would hold a connection nothing can close.
+        var candidate: CoreClient? = null
         try {
-            candidate.account()
-        } catch (@Suppress("TooGenericExceptionCaught") failure: Throwable) {
-            withContext(NonCancellable + dispatcher) { candidate.close() }
-            throw failure
+            val client =
+                withContext(dispatcher) {
+                    build(credentials).also {
+                        candidate = it
+                        settings.write(apiId, apiHash)
+                    }
+                }
+            // Assigning last is what resumes whoever is parked in awaitCore().
+            built.value = client
+        } catch (
+            @Suppress("TooGenericExceptionCaught") failure: Throwable,
+        ) {
+            discard(candidate, failure)
         }
-        withContext(NonCancellable + dispatcher) { settings.write(apiId, apiHash) }
-        built.value = candidate
     }
 
-    override suspend fun forget(): Unit = mutex.withLock {
-        val previous = built.value
-        built.value = null
-        withContext(dispatcher) {
-            settings.clear()
-            // Closing, not just dropping: the core holds a live, authorised
-            // Telegram connection, and deleting the auth key file on disk
-            // does nothing to one that is already open.
-            previous?.close()
+    override suspend fun replace(
+        apiId: Int,
+        apiHash: String,
+    ): Unit =
+        mutex.withLock {
+            built.value?.let { open -> withContext(dispatcher) { open.close() } }
+            built.value = null
+            // Capture ownership before returning across a cancellable dispatcher handoff.
+            var candidate: CoreClient? = null
+            try {
+                val client =
+                    withContext(dispatcher) {
+                        build(TelegramCredentials(apiId, apiHash)).also { candidate = it }
+                    }
+                client.account()
+                withContext(NonCancellable + dispatcher) { settings.write(apiId, apiHash) }
+                built.value = client
+            } catch (
+                @Suppress("TooGenericExceptionCaught") failure: Throwable,
+            ) {
+                discard(candidate, failure)
+            }
         }
+
+    private suspend fun discard(
+        candidate: CoreClient?,
+        failure: Throwable,
+    ): Nothing {
+        val closed =
+            withContext(NonCancellable) {
+                withContext(dispatcher) { runCatching { candidate?.close() } }
+            }
+        // Attach after the dispatcher handoff: coroutine stack recovery can
+        // replace a rethrown exception and lose suppression added before it.
+        closed.exceptionOrNull()?.takeUnless { it === failure }?.let(failure::addSuppressed)
+        throw failure
     }
+
+    override suspend fun forget(): Unit =
+        mutex.withLock {
+            val previous = built.value
+            built.value = null
+            withContext(NonCancellable + dispatcher) {
+                val cleared = runCatching { settings.clear() }
+                // Closing, not just dropping: the core holds a live, authorised
+                // Telegram connection, and deleting the auth key file on disk
+                // does nothing to one that is already open.
+                val closed = runCatching { previous?.close() }
+                val failure = cleared.exceptionOrNull()
+                if (failure != null) {
+                    closed.exceptionOrNull()?.takeUnless { it === failure }?.let(failure::addSuppressed)
+                    throw failure
+                }
+                closed.getOrThrow()
+            }
+        }
 }

@@ -14,13 +14,14 @@ internal fun keyOrNull(key: String?): String? = if (!key.isNullOrBlank()) key el
 
 interface TmdbSettings {
     suspend fun read(): String?
+
     suspend fun write(key: String)
+
     suspend fun clear()
 }
 
 /** In-memory implementation for tests; nothing here ever touches disk. */
 class InMemoryTmdbSettings : TmdbSettings {
-
     @Volatile
     private var stored: String? = null
 
@@ -47,12 +48,12 @@ class InMemoryTmdbSettings : TmdbSettings {
  * crash on every launch, with no screen reached to say so or to offer
  * starting over.
  */
-class EncryptedTmdbSettings(private val context: Context) : TmdbSettings {
-
+class EncryptedTmdbSettings(
+    private val context: Context,
+) : TmdbSettings {
     private val preferences by lazy { encryptedPreferences(context, PREFS_FILE_NAME) }
 
-    override suspend fun read(): String? =
-        keyOrNull(preferences.getString(KEY_TMDB, null))
+    override suspend fun read(): String? = keyOrNull(preferences.getString(KEY_TMDB, null))
 
     override suspend fun write(key: String) {
         preferences.edit().putString(KEY_TMDB, key).apply()

@@ -1,6 +1,15 @@
 package settings
 
 import android.content.Context
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
 
 /**
  * Which library this device reads, as the handle the core minted for it.
@@ -16,41 +25,56 @@ import android.content.Context
 interface LibrarySettings {
     /** The chosen handle, or `null` when no library has been picked yet. */
     suspend fun read(): String?
+
+    /** The current choice and successful changes to it, including clearing it. */
+    fun selections(): Flow<String?>
+
     suspend fun write(handle: String)
+
     suspend fun clear()
 }
 
 /** In-memory implementation for tests; nothing here ever touches disk. */
 class InMemoryLibrarySettings : LibrarySettings {
+    private val stored = MutableStateFlow<String?>(null)
 
-    @Volatile
-    private var stored: String? = null
+    override suspend fun read(): String? = stored.value
 
-    override suspend fun read(): String? = stored
+    override fun selections(): Flow<String?> = stored.asStateFlow()
 
     override suspend fun write(handle: String) {
-        stored = handle
+        stored.value = handle
     }
 
     override suspend fun clear() {
-        stored = null
+        stored.value = null
     }
 }
 
-class EncryptedLibrarySettings(private val context: Context) : LibrarySettings {
-
+class EncryptedLibrarySettings(
+    private val context: Context,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
+) : LibrarySettings {
     // Opened on first use, not in the constructor: see EncryptedTelegramSettings
     // for why a keystore failure must not happen where nothing can catch it.
     private val preferences by lazy { encryptedPreferences(context, PREFS_FILE_NAME) }
+    private val revision = MutableStateFlow(0L)
 
-    override suspend fun read(): String? = preferences.getString(KEY_HANDLE, null)
+    override suspend fun read(): String? = withContext(dispatcher) { preferences.getString(KEY_HANDLE, null) }
+
+    // Read lazily for each collector and after a successful mutation. A
+    // keystore refusal reaches the collector's recovery boundary, and a
+    // retry opens it again rather than keeping a failed initial snapshot.
+    override fun selections(): Flow<String?> = revision.map { read() }.distinctUntilChanged()
 
     override suspend fun write(handle: String) {
         preferences.edit().putString(KEY_HANDLE, handle).apply()
+        revision.update { it + 1 }
     }
 
     override suspend fun clear() {
         preferences.edit().clear().apply()
+        revision.update { it + 1 }
     }
 
     private companion object {

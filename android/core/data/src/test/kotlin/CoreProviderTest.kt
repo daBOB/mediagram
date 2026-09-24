@@ -1,12 +1,16 @@
 package data
 
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import settings.InMemoryTelegramSettings
+import settings.TelegramSettings
 import java.util.concurrent.Executors
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
@@ -22,12 +26,17 @@ import kotlin.test.assertTrue
 private const val WELL_FORMED_HASH = "0123456789abcdef0123456789abcdef"
 
 /** Delegates every dispatch to [delegate], recording the thread each one actually ran on. */
-private class RecordingDispatcher(private val delegate: CoroutineDispatcher) : CoroutineDispatcher() {
+private class RecordingDispatcher(
+    private val delegate: CoroutineDispatcher,
+) : CoroutineDispatcher() {
     @Volatile
     var lastDispatchThread: Thread? = null
         private set
 
-    override fun dispatch(context: CoroutineContext, block: Runnable) {
+    override fun dispatch(
+        context: CoroutineContext,
+        block: Runnable,
+    ) {
         delegate.dispatch(context) {
             lastDispatchThread = Thread.currentThread()
             block.run()
@@ -36,7 +45,6 @@ private class RecordingDispatcher(private val delegate: CoroutineDispatcher) : C
 }
 
 class CoreProviderTest {
-
     private val probeExecutor = Executors.newSingleThreadExecutor()
 
     @After
@@ -45,52 +53,57 @@ class CoreProviderTest {
     }
 
     @Test
-    fun withNoStoredIdentityThereIsNoCore() = runTest {
-        val provider = StoredCoreProvider(InMemoryTelegramSettings()) { FakeCore() }
-        assertNull(provider.coreOrNull())
-    }
-
-    @Test
-    fun oneCoreIsBuiltAndThereafterHandedOutAgain() = runTest {
-        var builds = 0
-        val settings = InMemoryTelegramSettings()
-        settings.write(1234, WELL_FORMED_HASH)
-        val provider = StoredCoreProvider(settings) {
-            builds++
-            FakeCore()
+    fun withNoStoredIdentityThereIsNoCore() =
+        runTest {
+            val provider = StoredCoreProvider(InMemoryTelegramSettings()) { FakeCore() }
+            assertNull(provider.coreOrNull())
         }
 
-        val first = provider.coreOrNull()
-        val second = provider.awaitCore()
+    @Test
+    fun oneCoreIsBuiltAndThereafterHandedOutAgain() =
+        runTest {
+            var builds = 0
+            val settings = InMemoryTelegramSettings()
+            settings.write(1234, WELL_FORMED_HASH)
+            val provider =
+                StoredCoreProvider(settings) {
+                    builds++
+                    FakeCore()
+                }
 
-        assertSame(first, second)
-        assertEquals(1, builds, "the core opens one data directory; a second over the same one is a defect")
-    }
+            val first = provider.coreOrNull()
+            val second = provider.awaitCore()
+
+            assertSame(first, second)
+            assertEquals(1, builds, "the core opens one data directory; a second over the same one is a defect")
+        }
 
     @Test
-    fun awaitingHandsBackNothingUntilAnIdentityIsSupplied() = runTest {
-        val provider = StoredCoreProvider(InMemoryTelegramSettings()) { FakeCore() }
+    fun awaitingHandsBackNothingUntilAnIdentityIsSupplied() =
+        runTest {
+            val provider = StoredCoreProvider(InMemoryTelegramSettings()) { FakeCore() }
 
-        val waiting = async { provider.awaitCore() }
-        runCurrent()
-        assertFalse(waiting.isCompleted, "there is no core to hand out before an identity is stored")
+            val waiting = async { provider.awaitCore() }
+            runCurrent()
+            assertFalse(waiting.isCompleted, "there is no core to hand out before an identity is stored")
 
-        provider.supply(1234, WELL_FORMED_HASH)
+            provider.supply(1234, WELL_FORMED_HASH)
 
-        assertSame(provider.coreOrNull(), waiting.await())
-    }
+            assertSame(provider.coreOrNull(), waiting.await())
+        }
 
     @Test
-    fun forgettingDropsTheIdentityAndTheCoreBuiltFromIt() = runTest {
-        val settings = InMemoryTelegramSettings()
-        val provider = StoredCoreProvider(settings) { FakeCore() }
-        provider.supply(1234, WELL_FORMED_HASH)
+    fun forgettingDropsTheIdentityAndTheCoreBuiltFromIt() =
+        runTest {
+            val settings = InMemoryTelegramSettings()
+            val provider = StoredCoreProvider(settings) { FakeCore() }
+            provider.supply(1234, WELL_FORMED_HASH)
 
-        provider.forget()
+            provider.forget()
 
-        assertNull(settings.read())
-        assertNull(provider.coreOrNull())
-    }
+            assertNull(settings.read())
+            assertNull(provider.coreOrNull())
+        }
 
     /**
      * Dropping the reference is not enough. The core holds a live,
@@ -101,48 +114,103 @@ class CoreProviderTest {
      * out.
      */
     @Test
-    fun forgettingClosesTheCoreRatherThanOnlyLettingGoOfIt() = runTest {
-        val discarded = FakeCore()
-        val provider = StoredCoreProvider(InMemoryTelegramSettings()) { discarded }
-        provider.supply(1234, WELL_FORMED_HASH)
+    fun forgettingClosesTheCoreRatherThanOnlyLettingGoOfIt() =
+        runTest {
+            val discarded = FakeCore()
+            val provider = StoredCoreProvider(InMemoryTelegramSettings()) { discarded }
+            provider.supply(1234, WELL_FORMED_HASH)
 
-        provider.forget()
+            provider.forget()
 
-        assertTrue(discarded.closed, "an open Telegram connection outlives the auth key file")
-    }
-
-    @Test
-    fun theCurrentCoreIsVisibleWithoutSuspendingAndChangesWhenItIsReplaced() = runTest {
-        val cores = ArrayDeque(listOf(FakeCore(), FakeCore()))
-        val provider = StoredCoreProvider(InMemoryTelegramSettings()) { cores.removeFirst() }
-
-        assertNull(provider.core.value)
-        provider.supply(1234, WELL_FORMED_HASH)
-        val first = provider.core.value
-        assertNotNull(first)
-
-        provider.forget()
-        assertNull(provider.core.value, "between signing out and setting up again there is no core to read through")
-
-        provider.supply(5678, WELL_FORMED_HASH)
-        assertNotEquals(first, provider.core.value)
-    }
-
-    @Test
-    fun theCoreAfterAResetIsBuiltFromTheIdentityTypedInAfterIt() = runTest {
-        val identities = mutableListOf<Int>()
-        val settings = InMemoryTelegramSettings()
-        val provider = StoredCoreProvider(settings) {
-            identities += it.apiId
-            FakeCore()
+            assertTrue(discarded.closed, "an open Telegram connection outlives the auth key file")
         }
 
-        provider.supply(1234, WELL_FORMED_HASH)
-        provider.forget()
-        provider.supply(5678, WELL_FORMED_HASH)
+    @Test
+    fun refusingToClearCredentialsStillClosesTheCoreAndReportsTheOriginalFailure() =
+        runTest {
+            val refusal = SecurityException("keystore unavailable")
+            val stored = InMemoryTelegramSettings()
+            val settings =
+                object : TelegramSettings by stored {
+                    override suspend fun clear(): Unit = throw refusal
+                }
+            val discarded = FakeCore()
+            val provider = StoredCoreProvider(settings, StandardTestDispatcher(testScheduler)) { discarded }
+            provider.supply(1234, WELL_FORMED_HASH)
 
-        assertEquals(listOf(1234, 5678), identities)
-    }
+            val failure = assertFailsWith<SecurityException> { provider.forget() }
+            assertEquals(refusal.message, failure.message)
+            // Coroutine stack-trace recovery may copy the exception while keeping
+            // its original as the cause across the dispatcher boundary.
+            assertTrue(generateSequence<Throwable>(failure) { it.cause }.any { it === refusal })
+            assertTrue(discarded.closed)
+            assertNull(provider.core.value)
+        }
+
+    @Test
+    fun cancellationDuringCredentialClearingStillClosesTheCore() =
+        runTest {
+            val entered = CompletableDeferred<Unit>()
+            val release = CompletableDeferred<Unit>()
+            val stored = InMemoryTelegramSettings()
+            val settings =
+                object : TelegramSettings by stored {
+                    override suspend fun clear() {
+                        entered.complete(Unit)
+                        release.await()
+                        stored.clear()
+                    }
+                }
+            val discarded = FakeCore()
+            val provider = StoredCoreProvider(settings, StandardTestDispatcher(testScheduler)) { discarded }
+            provider.supply(1234, WELL_FORMED_HASH)
+            val forgetting = launch { provider.forget() }
+            runCurrent()
+            assertTrue(entered.isCompleted)
+
+            forgetting.cancel()
+            release.complete(Unit)
+            runCurrent()
+
+            assertTrue(forgetting.isCancelled)
+            assertTrue(discarded.closed)
+        }
+
+    @Test
+    fun theCurrentCoreIsVisibleWithoutSuspendingAndChangesWhenItIsReplaced() =
+        runTest {
+            val cores = ArrayDeque(listOf(FakeCore(), FakeCore()))
+            val provider = StoredCoreProvider(InMemoryTelegramSettings()) { cores.removeFirst() }
+
+            assertNull(provider.core.value)
+            provider.supply(1234, WELL_FORMED_HASH)
+            val first = provider.core.value
+            assertNotNull(first)
+
+            provider.forget()
+            assertNull(provider.core.value, "between signing out and setting up again there is no core to read through")
+
+            provider.supply(5678, WELL_FORMED_HASH)
+            assertNotEquals(first, provider.core.value)
+        }
+
+    @Test
+    fun theCoreAfterAResetIsBuiltFromTheIdentityTypedInAfterIt() =
+        runTest {
+            val identities = mutableListOf<Int>()
+            val settings = InMemoryTelegramSettings()
+            val provider =
+                StoredCoreProvider(settings) {
+                    identities += it.apiId
+                    FakeCore()
+                }
+
+            provider.supply(1234, WELL_FORMED_HASH)
+            provider.forget()
+            provider.supply(5678, WELL_FORMED_HASH)
+
+            assertEquals(listOf(1234, 5678), identities)
+        }
 
     /**
      * An identity written before the core it produces is proven to build
@@ -151,14 +219,15 @@ class CoreProviderTest {
      * could clear it.
      */
     @Test
-    fun anIdentityThatCannotBuildACoreIsNotStored() = runTest {
-        val settings = InMemoryTelegramSettings()
-        val provider = StoredCoreProvider(settings) { error("the native core would not load") }
+    fun anIdentityThatCannotBuildACoreIsNotStored() =
+        runTest {
+            val settings = InMemoryTelegramSettings()
+            val provider = StoredCoreProvider(settings) { error("the native core would not load") }
 
-        assertFailsWith<IllegalStateException> { provider.supply(1234, WELL_FORMED_HASH) }
+            assertFailsWith<IllegalStateException> { provider.supply(1234, WELL_FORMED_HASH) }
 
-        assertNull(settings.read())
-    }
+            assertNull(settings.read())
+        }
 
     /**
      * The first build loads the native library, decrypts the stored
@@ -166,18 +235,19 @@ class CoreProviderTest {
      * callers reach this from the main dispatcher.
      */
     @Test
-    fun constructionRunsOnTheGivenDispatcherNotTheCallingThread() = runTest {
-        val callingThread = Thread.currentThread()
-        val recording = RecordingDispatcher(probeExecutor.asCoroutineDispatcher())
-        val settings = InMemoryTelegramSettings()
-        settings.write(1234, WELL_FORMED_HASH)
+    fun constructionRunsOnTheGivenDispatcherNotTheCallingThread() =
+        runTest {
+            val callingThread = Thread.currentThread()
+            val recording = RecordingDispatcher(probeExecutor.asCoroutineDispatcher())
+            val settings = InMemoryTelegramSettings()
+            settings.write(1234, WELL_FORMED_HASH)
 
-        StoredCoreProvider(settings, recording) { FakeCore() }.coreOrNull()
+            StoredCoreProvider(settings, recording) { FakeCore() }.coreOrNull()
 
-        // Both halves matter: a dispatcher that's never actually invoked
-        // would leave lastDispatchThread null, which is also "not equal
-        // to callingThread" but proves nothing.
-        assertNotNull(recording.lastDispatchThread, "the given dispatcher was never actually used")
-        assertNotEquals(callingThread, recording.lastDispatchThread)
-    }
+            // Both halves matter: a dispatcher that's never actually invoked
+            // would leave lastDispatchThread null, which is also "not equal
+            // to callingThread" but proves nothing.
+            assertNotNull(recording.lastDispatchThread, "the given dispatcher was never actually used")
+            assertNotEquals(callingThread, recording.lastDispatchThread)
+        }
 }

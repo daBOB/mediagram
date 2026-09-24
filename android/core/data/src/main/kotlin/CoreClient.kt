@@ -23,8 +23,14 @@ import uniffi.mediagram_core.TitleInfo
  */
 interface CoreClient {
     fun isAuthorized(): Boolean
+
     suspend fun requestCode(phone: String): String
-    suspend fun signIn(token: String, code: String): AuthOutcome
+
+    suspend fun signIn(
+        token: String,
+        code: String,
+    ): AuthOutcome
+
     suspend fun checkPassword(password: String)
 
     /**
@@ -38,12 +44,17 @@ interface CoreClient {
     suspend fun refreshLibrary(handle: String): Long
 
     /**
-     * The published-package reader, which is the only path that carries
-     * poster art. Nothing in the first-run flow reaches it any more; it is
-     * kept whole for the round that brings posters back.
+     * Installs an encrypted published package, including its bundled posters.
+     * First-run setup selects a channel library instead; [fetchMissing] can
+     * supply artwork and descriptions for those channel snapshots.
      */
-    suspend fun refreshCatalog(url: String, keyB64: String): Long
+    suspend fun refreshCatalog(
+        url: String,
+        keyB64: String,
+    ): Long
+
     suspend fun listSets(): List<SetSummary>
+
     fun posterPath(posterKey: String): String?
 
     /**
@@ -52,6 +63,7 @@ interface CoreClient {
      * at all; both are ordinary, so neither is an error.
      */
     suspend fun titleInfo(posterKey: String): TitleInfo?
+
     suspend fun totalSize(setId: String): Long
 
     /**
@@ -62,7 +74,12 @@ interface CoreClient {
      * one that says a library is empty.
      */
     suspend fun catalogFacts(): CatalogFacts
-    suspend fun read(setId: String, offset: Long, len: Int): ByteArray
+
+    suspend fun read(
+        setId: String,
+        offset: Long,
+        len: Int,
+    ): ByteArray
 
     /**
      * Fills in both of the things a library can arrive without: the poster
@@ -79,7 +96,10 @@ interface CoreClient {
      * owns holding it, so the start-over dialog's promise to clear it stays
      * true from exactly one place.
      */
-    suspend fun fetchMissing(tmdbKey: String, language: String): FetchReport
+    suspend fun fetchMissing(
+        tmdbKey: String,
+        language: String,
+    ): FetchReport
 
     /**
      * Waits until library [handle] changes in a way worth a round: another
@@ -92,7 +112,10 @@ interface CoreClient {
      * Waits for ever by default, so a test fake that has no events to give
      * need not say so; [DefaultCoreClient] is the only real implementation.
      */
-    suspend fun nextLibraryEvent(handle: String, ownDevice: String): LibraryEvent = awaitCancellation()
+    suspend fun nextLibraryEvent(
+        handle: String,
+        ownDevice: String,
+    ): LibraryEvent = awaitCancellation()
 
     /**
      * Everyone this account's devices have created. A local read — nothing
@@ -115,28 +138,67 @@ interface CoreClient {
     suspend fun chooseProfile(id: String): Boolean = false
 
     /** One profile's everything, in one read: progress, watched, lists. */
-    suspend fun snapshot(profileId: String): StateSnapshot =
-        StateSnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
+    suspend fun snapshot(profileId: String): StateSnapshot = StateSnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
 
-    suspend fun setProgress(profileId: String, setId: String, at: Double, duration: Double?) = Unit
-    suspend fun clearProgress(profileId: String, setId: String) = Unit
-    suspend fun setWatched(profileId: String, setId: String, finished: Boolean) = Unit
-    suspend fun setWatchlisted(profileId: String, setId: String, listed: Boolean) = Unit
+    suspend fun setProgress(
+        profileId: String,
+        setId: String,
+        at: Double,
+        duration: Double?,
+    ) = Unit
+
+    suspend fun clearProgress(
+        profileId: String,
+        setId: String,
+    ) = Unit
+
+    suspend fun setWatched(
+        profileId: String,
+        setId: String,
+        finished: Boolean,
+    ) = Unit
+
+    suspend fun setWatchlisted(
+        profileId: String,
+        setId: String,
+        listed: Boolean,
+    ) = Unit
 
     /**
      * Marks a set for kids, or not. Global rather than per-profile — every
      * profile on this account sees the same marks, the way the player loads
      * it once for the whole session rather than per viewer.
      */
-    suspend fun setKids(setId: String, marked: Boolean) = Unit
+    suspend fun setKids(
+        setId: String,
+        marked: Boolean,
+    ) = Unit
 
-    suspend fun createCollection(profileId: String, name: String): ListRow? = null
-    suspend fun renameCollection(profileId: String, id: String, name: String): Boolean = false
-    suspend fun deleteCollection(profileId: String, id: String): Boolean = false
-    suspend fun setInCollection(profileId: String, id: String, setId: String, included: Boolean): Boolean = false
+    suspend fun createCollection(
+        profileId: String,
+        name: String,
+    ): ListRow? = null
+
+    suspend fun renameCollection(
+        profileId: String,
+        id: String,
+        name: String,
+    ): Boolean = false
+
+    suspend fun deleteCollection(
+        profileId: String,
+        id: String,
+    ): Boolean = false
+
+    suspend fun setInCollection(
+        profileId: String,
+        id: String,
+        setId: String,
+        included: Boolean,
+    ): Boolean = false
 
     /** This device's watch-state identity, minted once and kept beside `state.db`. */
-    fun stateDeviceId(): String = ""
+    suspend fun stateDeviceId(): String = ""
 
     /**
      * One round with the library's state channel: what it took in, whether

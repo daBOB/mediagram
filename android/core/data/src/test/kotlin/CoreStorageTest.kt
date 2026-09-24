@@ -17,37 +17,39 @@ import kotlin.test.assertFalse
  * which is exactly the stuck state this path exists to escape.
  */
 class CoreStorageTest {
-
     @get:Rule
     val dataDir = TemporaryFolder()
 
     private fun storage() = FileCoreStorage(dataDir.root, Dispatchers.Unconfined)
 
     @Test
-    fun theSessionFileIsDeletedRatherThanForgotten() = runTest {
-        val session = File(dataDir.root, "session.key").apply { writeText("an auth key") }
+    fun theSessionFileIsDeletedRatherThanForgotten() =
+        runTest {
+            val session = File(dataDir.root, "session.key").apply { writeText("an auth key") }
 
-        storage().clear()
+            storage().clear()
 
-        assertFalse(session.exists())
-    }
-
-    @Test
-    fun theCatalogGoesWithTheKeyThatDecryptedIt() = runTest {
-        val catalog = File(dataDir.root, "catalog/current").apply { mkdirs() }
-        File(catalog, "library.db").writeText("rows")
-
-        storage().clear()
-
-        assertFalse(File(dataDir.root, "catalog").exists())
-    }
+            assertFalse(session.exists())
+        }
 
     @Test
-    fun clearingADirectoryThatHoldsNothingYetIsNotAFailure() = runTest {
-        storage().clear()
+    fun theCatalogGoesWithTheKeyThatDecryptedIt() =
+        runTest {
+            val catalog = File(dataDir.root, "catalog/current").apply { mkdirs() }
+            File(catalog, "library.db").writeText("rows")
 
-        assertFalse(File(dataDir.root, "session.key").exists())
-    }
+            storage().clear()
+
+            assertFalse(File(dataDir.root, "catalog").exists())
+        }
+
+    @Test
+    fun clearingADirectoryThatHoldsNothingYetIsNotAFailure() =
+        runTest {
+            storage().clear()
+
+            assertFalse(File(dataDir.root, "session.key").exists())
+        }
 
     /**
      * A start-over promises a clean device, and this device's own watch
@@ -55,24 +57,26 @@ class CoreStorageTest {
      * left behind that would surprise whoever sets it up next.
      */
     @Test
-    fun theWatchStateGoesWithItsWalAndShmSidecars() = runTest {
-        File(dataDir.root, "state.db").writeText("rows")
-        File(dataDir.root, "state.db-wal").writeText("uncheckpointed rows")
-        File(dataDir.root, "state.db-shm").writeText("shared index")
+    fun theWatchStateGoesWithItsWalAndShmSidecars() =
+        runTest {
+            File(dataDir.root, "state.db").writeText("rows")
+            File(dataDir.root, "state.db-wal").writeText("uncheckpointed rows")
+            File(dataDir.root, "state.db-shm").writeText("shared index")
 
-        storage().clear()
+            storage().clear()
 
-        assertFalse(File(dataDir.root, "state.db").exists())
-        assertFalse(File(dataDir.root, "state.db-wal").exists())
-        assertFalse(File(dataDir.root, "state.db-shm").exists())
-    }
+            assertFalse(File(dataDir.root, "state.db").exists())
+            assertFalse(File(dataDir.root, "state.db-wal").exists())
+            assertFalse(File(dataDir.root, "state.db-shm").exists())
+        }
 
     @Test
-    fun noWatchStateOnDiskYetIsNotAFailure() = runTest {
-        storage().clear()
+    fun noWatchStateOnDiskYetIsNotAFailure() =
+        runTest {
+            storage().clear()
 
-        assertFalse(File(dataDir.root, "state.db").exists())
-    }
+            assertFalse(File(dataDir.root, "state.db").exists())
+        }
 
     /**
      * `delete()` returns a Boolean and a discarded one is a silent
@@ -82,10 +86,11 @@ class CoreStorageTest {
      * cheapest way to make the call fail for real.
      */
     @Test
-    fun aSessionThatCannotBeDeletedIsReportedRatherThanSwallowed() = runTest {
-        val blocked = File(dataDir.root, "session.key").apply { mkdirs() }
-        File(blocked, "occupied").writeText("in the way")
+    fun aSessionThatCannotBeDeletedIsReportedRatherThanSwallowed() =
+        runTest {
+            val blocked = File(dataDir.root, "session.key").apply { mkdirs() }
+            File(blocked, "occupied").writeText("in the way")
 
-        assertFailsWith<IOException> { storage().clear() }
-    }
+            assertFailsWith<IOException> { storage().clear() }
+        }
 }

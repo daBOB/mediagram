@@ -40,8 +40,9 @@ interface CoreStorage {
  * a directory a restore left owned by nobody — which is the case the reset
  * path has to survive rather than half-finish.
  */
-class InMemoryCoreStorage(private val failWith: Exception? = null) : CoreStorage {
-
+class InMemoryCoreStorage(
+    private val failWith: Exception? = null,
+) : CoreStorage {
     @Volatile
     var cleared: Boolean = false
         private set
@@ -56,7 +57,6 @@ class FileCoreStorage(
     private val dataDir: File,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : CoreStorage {
-
     /**
      * Both deletes report whether they worked, and both answers are
      * checked. A delete that silently failed would leave the app back at

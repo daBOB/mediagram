@@ -23,7 +23,6 @@ import kotlin.test.assertTrue
  * exists to agree with it, not redefine it.
  */
 class ResumePointFixtureTest {
-
     @Test
     fun matchesTheWebsFixtures() {
         val file = locateFixture("resume-point.json")
@@ -37,23 +36,29 @@ class ResumePointFixtureTest {
             val name = obj.getValue("name").jsonPrimitive.content
             val args = obj.getValue("args").jsonArray
             when (val fn = obj.getValue("fn").jsonPrimitive.content) {
-                "resumeAt" -> assertEquals(
-                    obj.expectDoubleOrNull(),
-                    ResumePoint.resumeAt(args[0].toProgressPoint()),
-                    "case: $name",
-                )
+                "resumeAt" -> {
+                    assertEquals(
+                        obj.expectDoubleOrNull(),
+                        ResumePoint.resumeAt(args[0].toProgressPoint()),
+                        "case: $name",
+                    )
+                }
 
-                "isFinished" -> assertEquals(
-                    obj.getValue("expect").jsonPrimitive.boolean,
-                    ResumePoint.isFinished(args[0].asJsNumber(), args[1].asJsNumber()),
-                    "case: $name",
-                )
+                "isFinished" -> {
+                    assertEquals(
+                        obj.getValue("expect").jsonPrimitive.boolean,
+                        ResumePoint.isFinished(args[0].asJsNumber(), args[1].asJsNumber()),
+                        "case: $name",
+                    )
+                }
 
-                "watchedFraction" -> assertEquals(
-                    obj.expectDoubleOrNull(),
-                    ResumePoint.watchedFraction(args[0].toProgressPoint()),
-                    "case: $name",
-                )
+                "watchedFraction" -> {
+                    assertEquals(
+                        obj.expectDoubleOrNull(),
+                        ResumePoint.watchedFraction(args[0].toProgressPoint()),
+                        "case: $name",
+                    )
+                }
 
                 "trustedRuntime" -> {
                     val row = args[0].jsonObject
@@ -68,14 +73,15 @@ class ResumePointFixtureTest {
                     )
                 }
 
-                else -> error("unknown fixture function: $fn")
+                else -> {
+                    error("unknown fixture function: $fn")
+                }
             }
         }
     }
 }
 
-private fun JsonObject.expectDoubleOrNull(): Double? =
-    getValue("expect").let { if (it is JsonNull) null else it.jsonPrimitive.double }
+private fun JsonObject.expectDoubleOrNull(): Double? = getValue("expect").let { if (it is JsonNull) null else it.jsonPrimitive.double }
 
 /** `progress` arguments are either `null` or `{at, duration}`; the fixture never omits either key. */
 private fun JsonElement.toProgressPoint(): ProgressPoint? {
@@ -91,10 +97,11 @@ private fun JsonElement.asJsNumber(): Double {
 }
 
 /** `null` and an absent key both mean "nothing recorded", not zero. */
-private fun JsonElement?.asNullableJsNumber(): Double? = when (this) {
-    null, is JsonNull -> null
-    else -> asJsNumber()
-}
+private fun JsonElement?.asNullableJsNumber(): Double? =
+    when (this) {
+        null, is JsonNull -> null
+        else -> asJsNumber()
+    }
 
 /** Walks up from the working directory until it finds the web's fixture directory, or gives up at the filesystem root. */
 private fun locateFixture(name: String): File? {
