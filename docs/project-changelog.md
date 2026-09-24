@@ -5,7 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Unreleased — 0.40.2
+## Unreleased — 0.41.0
+
+**Added**
+
+- The web player's Movies shelf is paged, 48 films at a time, with a row of
+  page links under the grid. The page is in the address (`#/movies/page/3`),
+  so back, reload and shared links return to it; `#/movies` is still page one.
+  The Android catalog does not page yet.
 
 **Fixed**
 

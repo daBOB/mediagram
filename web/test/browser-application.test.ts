@@ -510,3 +510,26 @@ test.each([true, false])("successful empty profile discovery (remembers=%s) offe
     await finishProfilePicker(starting);
   }
 });
+
+test("the Movies shelf is drawn a page at a time, with its page in the address", async () => {
+  catalog = JSON.stringify(Array.from({ length: 50 }, (_, index) => film(`Film ${String(index + 1).padStart(2, "0")}`)));
+  await start();
+  expect(page()).toContain("50 films · page 1 of 2");
+  expect(page()).toContain("Film 48");
+  expect(page()).not.toContain("Film 49");
+  const pager = descendants(env.node("main")).find((node) => node.className === "pager")!;
+  expect(descendants(pager).filter((node) => node.tagName === "A").map((node) => (node as unknown as { href: string }).href))
+    .toEqual(["#/movies/page/2", "#/movies/page/2"]);
+
+  const scrolled = env.scrolls.length;
+  await env.navigate("#/movies/page/2");
+  expect(page()).toContain("Film 50");
+  expect(page()).not.toContain("Film 48");
+  expect(env.scrolls.length).toBe(scrolled + 1);
+
+  // A page past the end is the last one; a catalog redraw keeps the viewer's place.
+  await env.navigate("#/movies/page/9");
+  expect(page()).toContain("page 2 of 2");
+  stream().fire("catalog"); await settle();
+  expect(env.scrolls.length).toBe(scrolled + 1);
+});

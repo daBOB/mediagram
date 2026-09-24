@@ -47,7 +47,8 @@ export function applicationEnvironment() {
   });
   const location = { hash: "#/movies" };
   const storage = new Map([["mediagram.profile", "viewer"]]);
-  Object.assign(env.window, { localStorage: {
+  const scrolls: Array<[number, number]> = [];
+  Object.assign(env.window, { scrollTo: (x: number, y: number) => { scrolls.push([x, y]); }, localStorage: {
     getItem: (key: string) => storage.get(key) ?? null,
     setItem: (key: string, value: string) => { storage.set(key, value); },
     removeItem: (key: string) => { storage.delete(key); },
@@ -57,7 +58,7 @@ export function applicationEnvironment() {
   env.replace("matchMedia", () => ({ matches: true }));
   env.replace("EventSource", LibraryStream);
   return {
-    ...env, document, location, streams,
+    ...env, document, location, streams, scrolls,
     async navigate(hash: string) { location.hash = hash; env.window.dispatchEvent(new Event("hashchange")); await settle(); },
     async visibility(value: string) { document.visibilityState = value; document.dispatchEvent(new Event("visibilitychange")); await settle(); },
   };

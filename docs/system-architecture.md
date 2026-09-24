@@ -313,6 +313,16 @@ existing warming to finish before disconnecting Telegram. The HTTP listener
 also drains routing, streaming and cancellation cleanup; the shared source
 remains available until those owners release it.
 
+### Pages of the Movies shelf
+
+The Movies shelf draws 48 films a page, which fills the last row of plates
+at every column count the grid uses. The page is part of the address
+(`#/movies/page/3`; page one stays the plain `#/movies`), so back, reload and
+a shared link all land on it. The library is already whole in the page:
+`public/lib/catalog/pager.js` only slices it and draws the links, and the
+router matches `page` before any collection name. Series and Tutorials shelves
+are short enough not to page, and the Android catalog does not page yet.
+
 ### Where the player opens
 
 `#/home`, and the rows on it are decided in `public/lib/catalog/home-shelves.js` and

@@ -637,6 +637,7 @@ main > .page-title + .row-head { margin-top: 0; }
 
 .shelf-modes .mode:hover { color: var(--ink); }
 
+
 /* The one you are on, marked the way the masthead marks the shelf you are
    on. Not `disabled`: it keeps its focus when the shelf rebuilds beneath it. */
 .shelf-modes .mode.on {
@@ -687,6 +688,33 @@ main > .page-title + .row-head { margin-top: 0; }
 }
 .crumbs a:hover { color: var(--accent); border-bottom-color: var(--accent); }
 .crumbs .sep { color: var(--rule); }
+
+/* The way through a long shelf, set like the crumbs: a running foot rather
+   than a row of buttons. */
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.35rem 0.9rem;
+  margin-top: 2rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+.pager a {
+  color: var(--ink-3);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 0.1rem;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+.pager a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.pager .here { color: var(--ink); border-bottom: 1px solid var(--ink); padding-bottom: 0.1rem; }
+.pager .off, .pager .pager-gap { color: var(--rule); }
 
 /* ---- plates ----
  *
@@ -1958,3 +1986,4 @@ dialog.with-notes .hud { right: var(--notes-width); }
 }
 .film-play:hover { color: #fff; background: var(--accent); }
 .shelf-sub { font-size: 15px; font-weight: 600; margin: 22px 0 10px; color: var(--ink-2); }
+

@@ -25,6 +25,7 @@ import { initializePlayer, openPlayer } from "./lib/playback/player.js";
 import { renderCollection } from "./lib/catalog/course-view.js";
 import { SECTIONS, collectionGrid, emptyState, heading, movieGrid, setGrid } from "./lib/catalog/shelf-view.js";
 import { GRID, LIST, setShelfMode, shelfMode } from "./lib/catalog/shelf-mode.js";
+import { pageOf, pager, parsePage } from "./lib/catalog/pager.js";
 import * as state from "./lib/watch-state.js";
 import { resumeAt } from "./lib/resume-point.js";
 import { renderLists, renderList } from "./lib/catalog/collections-view.js";
@@ -140,18 +141,31 @@ function viewHome() {
   });
 }
 
-/** Films: a flat grid, since a film is one thing. */
-function viewMovies() {
+// A multiple of two, three, four, six and eight, so a wall of plates ends
+// on a full row at any width.
+const FILMS_PER_PAGE = 48;
+let shownMoviesPage = 0;
+
+/** Films: a flat grid, since a film is one thing, one page of it at a time. */
+function viewMovies(requested) {
   const mode = shelfMode();
+  const { items, page, pages } = pageOf(library.movies, requested, FILMS_PER_PAGE);
+  const extent = countOf(library.movies.length, SECTIONS.movies.extent);
   heading(main,
     SECTIONS.movies.label,
-    countOf(library.movies.length, SECTIONS.movies.extent),
+    pages > 1 ? `${extent} \u00b7 page ${page} of ${pages}` : extent,
     // No control over an empty shelf: there is nothing to lay out either way,
     // and offering the choice would be offering it about nothing.
     library.movies.length > 0 ? shelfToggle() : null,
   );
+  // A new page starts at its top; a redraw of the same page after a catalog
+  // refresh keeps the viewer where they were.
+  if (page !== shownMoviesPage) window.scrollTo(0, 0);
+  shownMoviesPage = page;
   if (library.movies.length === 0) return main.append(emptyState("movies"));
-  main.append(movieGrid(library.movies, openFilm, { mode }));
+  main.append(movieGrid(items, openFilm, { mode }));
+  const links = pager("movies", page, pages);
+  if (links) main.append(links);
 }
 
 /** A film's card opens its page; the page's button plays it. */
@@ -565,6 +579,10 @@ function route() {
       : renderLists(main, (id) => { location.hash = `#/collections/${encodeURIComponent(id)}`; });
   }
 
+  // Checked before a collection name: films have no collections, and "page"
+  // must never be looked up as one.
+  if (known === "movies") return viewMovies(name === "page" ? parsePage(folders[0]) : 1);
+
   if (name) {
     const decoded = decodeURIComponent(name);
     renderCollection(main, known, library[known].find((entry) => entry.name === decoded), decoded,
@@ -572,7 +590,6 @@ function route() {
         location.hash = `#/${section}/${[collection, ...path].map(encodeURIComponent).join("/")}`;
       } });
   }
-  else if (known === "movies") viewMovies();
   else viewCollections(known);
 }
 
