@@ -23,15 +23,25 @@ pub struct Profile {
 
 pub fn list(conn: &Connection) -> rusqlite::Result<Vec<Profile>> {
     let mut stmt = conn.prepare("SELECT id, name FROM profiles ORDER BY created_at")?;
-    let rows = stmt.query_map([], |row| Ok(Profile { id: row.get(0)?, name: row.get(1)? }))?;
+    let rows = stmt.query_map([], |row| {
+        Ok(Profile {
+            id: row.get(0)?,
+            name: row.get(1)?,
+        })
+    })?;
     rows.collect()
 }
 
 /// `None` for a name with nothing left after trimming — never a stored
 /// profile with no way to show it.
 pub fn create(conn: &Connection, name: &str) -> rusqlite::Result<Option<Profile>> {
-    let Some(clean) = clean_name(name) else { return Ok(None) };
-    let profile = Profile { id: ulid::Ulid::new().to_string(), name: clean };
+    let Some(clean) = clean_name(name) else {
+        return Ok(None);
+    };
+    let profile = Profile {
+        id: ulid::Ulid::new().to_string(),
+        name: clean,
+    };
     conn.execute(
         "INSERT INTO profiles(id, name, created_at) VALUES (?1, ?2, ?3)",
         params![profile.id, profile.name, now_ms()],
@@ -40,7 +50,9 @@ pub fn create(conn: &Connection, name: &str) -> rusqlite::Result<Option<Profile>
 }
 
 pub fn exists(conn: &Connection, id: &str) -> rusqlite::Result<bool> {
-    conn.query_row("SELECT 1 FROM profiles WHERE id = ?1", [id], |_| Ok(())).optional().map(|r| r.is_some())
+    conn.query_row("SELECT 1 FROM profiles WHERE id = ?1", [id], |_| Ok(()))
+        .optional()
+        .map(|r| r.is_some())
 }
 
 /// This install's remembered "who's watching" — cleared implicitly if the
@@ -48,7 +60,11 @@ pub fn exists(conn: &Connection, id: &str) -> rusqlite::Result<bool> {
 /// rather than trusted at write time.
 pub fn chosen(conn: &Connection) -> rusqlite::Result<Option<String>> {
     let id: Option<String> = conn
-        .query_row("SELECT value FROM state_meta WHERE key = ?1", [CHOSEN_KEY], |row| row.get(0))
+        .query_row(
+            "SELECT value FROM state_meta WHERE key = ?1",
+            [CHOSEN_KEY],
+            |row| row.get(0),
+        )
         .optional()?;
     match id {
         Some(id) if exists(conn, &id)? => Ok(Some(id)),
@@ -81,7 +97,9 @@ pub fn profile_named(
     name: &str,
     display_name: Option<&str>,
 ) -> rusqlite::Result<Option<String>> {
-    let Some(wanted) = normal_name(name) else { return Ok(None) };
+    let Some(wanted) = normal_name(name) else {
+        return Ok(None);
+    };
     for profile in list(conn)? {
         if normal_name(&profile.name).as_deref() == Some(wanted.as_str()) {
             return Ok(Some(profile.id));
@@ -94,7 +112,7 @@ pub fn profile_named(
 
 /// A name with its edges trimmed and internal whitespace collapsed, or
 /// `None` when there is nothing left.
-fn clean_name(name: &str) -> Option<String> {
+pub(super) fn clean_name(name: &str) -> Option<String> {
     let collapsed = name.split_whitespace().collect::<Vec<_>>().join(" ");
     let clean: String = collapsed.chars().take(MAX_NAME).collect();
     (!clean.is_empty()).then_some(clean)
@@ -152,8 +170,17 @@ mod tests {
     #[test]
     fn profile_named_creates_an_unseen_viewer_and_reuses_them_after() {
         let (_dir, db) = db();
-        let first = db.with(|conn| profile_named(conn, "andré", Some("André"))).unwrap().unwrap();
-        let second = db.with(|conn| profile_named(conn, "ANDRÉ", Some("ANDRÉ"))).unwrap().unwrap();
-        assert_eq!(first, second, "the same viewer, spelled differently, is one profile");
+        let first = db
+            .with(|conn| profile_named(conn, "andré", Some("André")))
+            .unwrap()
+            .unwrap();
+        let second = db
+            .with(|conn| profile_named(conn, "ANDRÉ", Some("ANDRÉ")))
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            first, second,
+            "the same viewer, spelled differently, is one profile"
+        );
     }
 }

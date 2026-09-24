@@ -45,7 +45,10 @@ pub struct StateDb {
 
 impl StateDb {
     pub fn new(data_dir: PathBuf) -> Self {
-        StateDb { data_dir, conn: Mutex::new(None) }
+        StateDb {
+            data_dir,
+            conn: Mutex::new(None),
+        }
     }
 
     /// Runs `f` against the open connection, opening (and migrating) it on
@@ -101,7 +104,10 @@ fn migrate(conn: &Connection) -> anyhow::Result<()> {
 
     let applied = schema::migrations_up_to(at).len();
     conn.execute_batch("BEGIN")?;
-    for statement in schema::migrations_up_to(schema::VERSION).into_iter().skip(applied) {
+    for statement in schema::migrations_up_to(schema::VERSION)
+        .into_iter()
+        .skip(applied)
+    {
         if let Err(err) = conn.execute(statement, []) {
             let _ = conn.execute_batch("ROLLBACK");
             return Err(err.into());
@@ -114,6 +120,10 @@ fn migrate(conn: &Connection) -> anyhow::Result<()> {
     conn.execute_batch("COMMIT")?;
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "migration_tests.rs"]
+mod migration_tests;
 
 #[cfg(test)]
 mod tests {
@@ -138,7 +148,12 @@ mod tests {
             db.with(|conn| profiles::create(conn, "André")).unwrap();
         }
         let db = StateDb::new(dir.path().to_path_buf());
-        let names: Vec<String> = db.with(profiles::list).unwrap().into_iter().map(|p| p.name).collect();
+        let names: Vec<String> = db
+            .with(profiles::list)
+            .unwrap()
+            .into_iter()
+            .map(|p| p.name)
+            .collect();
         assert_eq!(names, vec!["André".to_string()]);
     }
 }

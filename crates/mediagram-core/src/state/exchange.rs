@@ -7,7 +7,7 @@ use rusqlite::{Connection, OptionalExtension, params};
 use super::lists_exchange;
 use super::merge::MergedState;
 use super::profiles;
-use super::record::{ProfileState, ProgressRow, SyncRecord, WatchedRow, SYNC_FORMAT};
+use super::record::{ProfileState, ProgressRow, SYNC_FORMAT, SyncRecord, WatchedRow};
 use super::rows;
 
 /// What this device has to say about where things were left off.
@@ -30,7 +30,10 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
             .collect();
         let watched = rows::watched_for(conn, &profile.id)?
             .into_iter()
-            .map(|row| WatchedRow { set_id: row.set_id, updated_at: row.finished_at as f64 })
+            .map(|row| WatchedRow {
+                set_id: row.set_id,
+                updated_at: row.finished_at as f64,
+            })
             .collect();
         let watchlist = lists_exchange::export_watchlist(conn, &profile.id)?;
         let collections = lists_exchange::export_collections(conn, &profile.id)?;
@@ -61,13 +64,16 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
 /// that removes a position is a completion that supersedes it, which is the
 /// one removal the format can actually express.
 ///
-/// Returns how many rows changed, so a caller can tell a merge that did
-/// something from one that did not.
+/// The entire import commits together, including newly created profiles.
+/// Returns the number of committed changes; an error leaves every row alone.
 pub fn import_merged(conn: &Connection, merged: &MergedState) -> rusqlite::Result<u64> {
+    let transaction = conn.unchecked_transaction()?;
+    let conn = &transaction;
     let mut changed = lists_exchange::import_kids(conn, &merged.kids)?;
     for profile in &merged.profiles {
         // The identity to match on, and the spelling to create with.
-        let Some(profile_id) = profiles::profile_named(conn, &profile.name, Some(&profile.display_name))?
+        let Some(profile_id) =
+            profiles::profile_named(conn, &profile.name, Some(&profile.display_name))?
         else {
             continue;
         };
@@ -81,10 +87,15 @@ pub fn import_merged(conn: &Connection, merged: &MergedState) -> rusqlite::Resul
         changed += lists_exchange::import_watchlist(conn, &profile_id, &profile.watchlist)?;
         changed += lists_exchange::import_collections(conn, &profile_id, &profile.collections)?;
     }
+    transaction.commit()?;
     Ok(changed)
 }
 
-fn import_progress(conn: &Connection, profile_id: &str, row: &ProgressRow) -> rusqlite::Result<u64> {
+fn import_progress(
+    conn: &Connection,
+    profile_id: &str,
+    row: &ProgressRow,
+) -> rusqlite::Result<u64> {
     let standing: Option<i64> = conn
         .query_row(
             "SELECT updated_at FROM progress WHERE profile_id = ?1 AND set_id = ?2",
@@ -102,7 +113,13 @@ fn import_progress(conn: &Connection, profile_id: &str, row: &ProgressRow) -> ru
              at_seconds = excluded.at_seconds,
              duration = excluded.duration,
              updated_at = excluded.updated_at",
-        params![profile_id, row.set_id, row.at, row.duration, row.updated_at as i64],
+        params![
+            profile_id,
+            row.set_id,
+            row.at,
+            row.duration,
+            row.updated_at as i64
+        ],
     )?;
     Ok(1)
 }

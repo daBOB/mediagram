@@ -1,24 +1,15 @@
 //! What one device says about where things were left off.
 //!
-//! A line-for-line port of `web/src/state/sync-record.ts`: the two have to
-//! agree on every byte of this format, because a document one of them wrote
-//! is read by the other. The fixtures under
-//! `web/test/fixtures/watch-state/` pin the agreement; this file exists to
-//! pass them, not the other way round.
+//! Matches `web/src/state/sync-record.ts`, with shared compatibility fixtures
+//! under `web/test/fixtures/watch-state/`.
 //!
-//! **Every row carries its own `updated_at`.** Without one a merge could
-//! only prefer whole documents, and whichever device pushed last would
-//! overwrite a position it had never heard of.
+//! Each row has its own `updated_at`, so a device cannot overwrite unseen
+//! changes merely by publishing a newer document.
 //!
-//! **Positions and completions carry their removal for free** — see
-//! `merge.rs` on why `watched` is the tombstone for `progress`.
+//! `watched` acts as the tombstone for `progress`; see `merge.rs`.
 //!
-//! **Watchlist, Kids and collections carry an explicit one.** `removed` on
-//! `ListRow`/`CollectionRow` is that fact, with the row's own `updated_at`
-//! so the same last-writer-wins rule applies to it. `#[serde(default)]`
-//! throughout these three: a document from before they existed has none,
-//! which must parse as empty, never as an error that drops the rest of the
-//! document with it.
+//! Watchlist, Kids and collections use `removed` with their row timestamp.
+//! Defaults let older documents omit these lists without losing other rows.
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -117,15 +108,27 @@ pub fn parse_record(text: &str) -> Option<SyncRecord> {
 
     let device = text_(held.get("device"))?;
 
-    let profiles = as_array(held.get("profiles")).iter().filter_map(profile_state).collect();
-    let kids = as_array(held.get("kids")).iter().filter_map(list_row).collect();
+    let profiles = as_array(held.get("profiles"))
+        .iter()
+        .filter_map(profile_state)
+        .collect();
+    let kids = as_array(held.get("kids"))
+        .iter()
+        .filter_map(list_row)
+        .collect();
 
     // `Number(held.writtenAt) || 0`: NaN and 0 both fall back to 0, and a
     // negative or positive finite number passes through unchanged.
     let written_at = js_number(held.get("writtenAt"));
     let written_at = if written_at.is_nan() { 0.0 } else { written_at };
 
-    Some(SyncRecord { format: format as i64, device, written_at, profiles, kids })
+    Some(SyncRecord {
+        format: format as i64,
+        device,
+        written_at,
+        profiles,
+        kids,
+    })
 }
 
 fn profile_state(raw: &Value) -> Option<ProfileState> {
@@ -134,10 +137,22 @@ fn profile_state(raw: &Value) -> Option<ProfileState> {
     Some(ProfileState {
         name,
         local_id: text_(row.get("localId")),
-        progress: as_array(row.get("progress")).iter().filter_map(progress_row).collect(),
-        watched: as_array(row.get("watched")).iter().filter_map(watched_row).collect(),
-        watchlist: as_array(row.get("watchlist")).iter().filter_map(list_row).collect(),
-        collections: as_array(row.get("collections")).iter().filter_map(collection_row).collect(),
+        progress: as_array(row.get("progress"))
+            .iter()
+            .filter_map(progress_row)
+            .collect(),
+        watched: as_array(row.get("watched"))
+            .iter()
+            .filter_map(watched_row)
+            .collect(),
+        watchlist: as_array(row.get("watchlist"))
+            .iter()
+            .filter_map(list_row)
+            .collect(),
+        collections: as_array(row.get("collections"))
+            .iter()
+            .filter_map(collection_row)
+            .collect(),
     })
 }
 
@@ -155,8 +170,17 @@ fn progress_row(raw: &Value) -> Option<ProgressRow> {
         return None;
     }
     let runtime = js_number(row.get("duration"));
-    let duration = if runtime.is_finite() && runtime > 0.0 { Some(runtime) } else { None };
-    Some(ProgressRow { set_id, at, duration, updated_at })
+    let duration = if runtime.is_finite() && runtime > 0.0 {
+        Some(runtime)
+    } else {
+        None
+    };
+    Some(ProgressRow {
+        set_id,
+        at,
+        duration,
+        updated_at,
+    })
 }
 
 fn watched_row(raw: &Value) -> Option<WatchedRow> {
@@ -168,4 +192,3 @@ fn watched_row(raw: &Value) -> Option<WatchedRow> {
     }
     Some(WatchedRow { set_id, updated_at })
 }
-

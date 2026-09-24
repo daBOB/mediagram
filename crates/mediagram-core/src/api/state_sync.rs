@@ -9,6 +9,7 @@
 //! than under `crate::state` so it can reach the revoked-login handling
 //! every other Telegram call here goes through.
 
+mod publish;
 mod telegram_channel;
 
 use std::sync::Arc;
@@ -27,8 +28,9 @@ impl Core {
     /// once and kept in `state.db`, never the hostname. Kotlin passes it on
     /// to `next_library_event` as `own_device`, so this device's own writes
     /// never come back to it as a change worth a round.
-    pub fn state_device_id(&self) -> String {
-        self.state_db.with(sync::device_id).unwrap_or_default()
+    pub async fn state_device_id(self: Arc<Self>) -> String {
+        self.blocking(|core| core.state_db.with(sync::device_id).unwrap_or_default())
+            .await
     }
 
     /// One round of watch-state sync against the library `handle` names:
@@ -36,22 +38,25 @@ impl Core {
     /// and pushes this device's own document if anything changed.
     ///
     /// Never throws — a channel that cannot be reached, a login Telegram
-    /// has revoked, or a refused send all come back as `failed` and leave
-    /// `state.db` exactly as it was. At most one round runs at a time on
+    /// has revoked, or a refused send all come back as `failed`. Successful
+    /// imports stay committed and are counted even if sending fails, so the
+    /// caller can reload the local state. At most one round runs at a time on
     /// this `Core`: a second call made while one is in flight waits for it,
     /// so a first send is never issued twice.
     pub async fn sync_state(self: Arc<Self>, handle: String) -> SyncOutcome {
-        let device = self.state_device_id();
-        let mut memo = self.sync_memo.lock().await;
-        let slot = memo.entry(&handle);
+        let device = Arc::clone(&self).state_device_id().await;
 
         match peer_for(&self, &handle) {
             Ok(peer) => {
                 let client = session::client(&self).await;
                 let channel = TelegramStateChannel::new(&self, client, peer);
-                sync::once(&self.state_db, &channel, &device, slot).await
+                sync::serialized(&self.sync_memo, &handle, &self.state_db, &channel, &device).await
             }
-            Err(err) => SyncOutcome { pulled: 0, pushed: false, failed: Some(err.to_string()) },
+            Err(err) => SyncOutcome {
+                pulled: 0,
+                pushed: false,
+                failed: Some(err.to_string()),
+            },
         }
     }
 }
@@ -60,5 +65,7 @@ impl Core {
 /// found the same way `next_library_event` finds it.
 fn peer_for(core: &Core, handle: &str) -> Result<PeerRef, CoreError> {
     let entry = library::lookup(core, handle)?;
-    entry.peer().ok_or_else(|| CoreError::NotFound("this device no longer has that library stored".into()))
+    entry
+        .peer()
+        .ok_or_else(|| CoreError::NotFound("this device no longer has that library stored".into()))
 }

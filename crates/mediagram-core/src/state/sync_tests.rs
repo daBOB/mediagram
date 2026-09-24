@@ -17,7 +17,10 @@ fn db() -> (tempfile::TempDir, StateDb) {
 }
 
 fn profile(db: &StateDb) -> String {
-    db.with(|conn| profiles::create(conn, "André")).unwrap().unwrap().id
+    db.with(|conn| profiles::create(conn, "André"))
+        .unwrap()
+        .unwrap()
+        .id
 }
 
 /// A channel in memory, counting what it was asked to do — the Rust twin of
@@ -30,7 +33,11 @@ struct FakeChannel {
 
 impl FakeChannel {
     fn new(held: Vec<ChannelDocument>) -> Self {
-        FakeChannel { next_id: Cell::new(100), held: RefCell::new(held), puts: RefCell::new(Vec::new()) }
+        FakeChannel {
+            next_id: Cell::new(100),
+            held: RefCell::new(held),
+            puts: RefCell::new(Vec::new()),
+        }
     }
 }
 
@@ -44,15 +51,26 @@ impl StateChannel for FakeChannel {
     async fn put(&self, body: String, message_id: Option<i32>) -> Result<i32, String> {
         self.puts.borrow_mut().push((body.clone(), message_id));
         if let Some(id) = message_id {
-            if let Some(held) = self.held.borrow_mut().iter_mut().find(|d| d.message_id == id) {
+            if let Some(held) = self
+                .held
+                .borrow_mut()
+                .iter_mut()
+                .find(|d| d.message_id == id)
+            {
                 held.text = body;
             }
             return Ok(id);
         }
         let made = self.next_id.get() + 1;
         self.next_id.set(made);
-        let device = parse_record(&body).map(|record| record.device).unwrap_or_default();
-        self.held.borrow_mut().push(ChannelDocument { message_id: made, device, text: body });
+        let device = parse_record(&body)
+            .map(|record| record.device)
+            .unwrap_or_default();
+        self.held.borrow_mut().push(ChannelDocument {
+            message_id: made,
+            device,
+            text: body,
+        });
         Ok(made)
     }
 }
@@ -126,7 +144,8 @@ mod a_round_of_sync {
     async fn sends_this_devices_document_when_it_has_never_written_one() {
         let (_dir, db) = db();
         let id = profile(&db);
-        db.with(|conn| rows::set_progress(conn, &id, "01A", 742.0, None)).unwrap();
+        db.with(|conn| rows::set_progress(conn, &id, "01A", 742.0, None))
+            .unwrap();
         let channel = FakeChannel::new(Vec::new());
         let mut memo = SyncMemo::default();
 
@@ -147,9 +166,11 @@ mod a_round_of_sync {
         let channel = FakeChannel::new(Vec::new());
         let mut memo = SyncMemo::default();
 
-        db.with(|conn| rows::set_progress(conn, &id, "01A", 100.0, None)).unwrap();
+        db.with(|conn| rows::set_progress(conn, &id, "01A", 100.0, None))
+            .unwrap();
         once(&db, &channel, "laptop", memo.entry("handle")).await;
-        db.with(|conn| rows::set_progress(conn, &id, "01A", 200.0, None)).unwrap();
+        db.with(|conn| rows::set_progress(conn, &id, "01A", 200.0, None))
+            .unwrap();
         once(&db, &channel, "laptop", memo.entry("handle")).await;
 
         let puts = channel.puts.borrow();
@@ -164,11 +185,13 @@ mod a_round_of_sync {
         // `SyncMemo` stands in for a restarted app.
         let (_dir, db) = db();
         let id = profile(&db);
-        db.with(|conn| rows::set_progress(conn, &id, "01A", 100.0, None)).unwrap();
+        db.with(|conn| rows::set_progress(conn, &id, "01A", 100.0, None))
+            .unwrap();
         let channel = FakeChannel::new(Vec::new());
         once(&db, &channel, "laptop", SyncMemo::default().entry("handle")).await;
 
-        db.with(|conn| rows::set_progress(conn, &id, "01A", 300.0, None)).unwrap();
+        db.with(|conn| rows::set_progress(conn, &id, "01A", 300.0, None))
+            .unwrap();
         once(&db, &channel, "laptop", SyncMemo::default().entry("handle")).await;
 
         assert_eq!(channel.puts.borrow()[1].1, Some(101));
@@ -182,7 +205,8 @@ mod not_sending_the_same_thing_twice {
     async fn a_second_round_with_nothing_new_sends_nothing() {
         let (_dir, db) = db();
         let id = profile(&db);
-        db.with(|conn| rows::set_progress(conn, &id, "01A", 742.0, None)).unwrap();
+        db.with(|conn| rows::set_progress(conn, &id, "01A", 742.0, None))
+            .unwrap();
         let channel = FakeChannel::new(Vec::new());
         let mut memo = SyncMemo::default();
 
@@ -217,8 +241,12 @@ mod what_comes_back {
     async fn another_machines_position_arrives() {
         let (_odir, other) = db();
         let other_id = profile(&other);
-        other.with(|conn| rows::set_progress(conn, &other_id, "01FILM", 900.0, None)).unwrap();
-        let other_record = other.with(|conn| exchange::export_record(conn, "desktop")).unwrap();
+        other
+            .with(|conn| rows::set_progress(conn, &other_id, "01FILM", 900.0, None))
+            .unwrap();
+        let other_record = other
+            .with(|conn| exchange::export_record(conn, "desktop"))
+            .unwrap();
         let channel = FakeChannel::new(vec![ChannelDocument {
             message_id: 7,
             device: "desktop".into(),
@@ -227,10 +255,18 @@ mod what_comes_back {
 
         let (_dir, here) = db();
         let here_id = profile(&here);
-        let outcome = once(&here, &channel, "laptop", SyncMemo::default().entry("handle")).await;
+        let outcome = once(
+            &here,
+            &channel,
+            "laptop",
+            SyncMemo::default().entry("handle"),
+        )
+        .await;
 
         assert!(outcome.pulled > 0);
-        let progress = here.with(|conn| rows::progress_for(conn, &here_id)).unwrap();
+        let progress = here
+            .with(|conn| rows::progress_for(conn, &here_id))
+            .unwrap();
         assert_eq!(progress[0].set_id, "01FILM");
         assert_eq!(progress[0].at, 900.0);
     }
@@ -239,10 +275,17 @@ mod what_comes_back {
     async fn a_document_that_cannot_be_read_is_skipped_not_fatal() {
         let (_gdir, good) = db();
         let good_id = profile(&good);
-        good.with(|conn| rows::set_progress(conn, &good_id, "01FILM", 900.0, None)).unwrap();
-        let good_record = good.with(|conn| exchange::export_record(conn, "desktop")).unwrap();
+        good.with(|conn| rows::set_progress(conn, &good_id, "01FILM", 900.0, None))
+            .unwrap();
+        let good_record = good
+            .with(|conn| exchange::export_record(conn, "desktop"))
+            .unwrap();
         let channel = FakeChannel::new(vec![
-            ChannelDocument { message_id: 6, device: "junk".into(), text: "{{{ not json".into() },
+            ChannelDocument {
+                message_id: 6,
+                device: "junk".into(),
+                text: "{{{ not json".into(),
+            },
             ChannelDocument {
                 message_id: 7,
                 device: "desktop".into(),
@@ -252,9 +295,17 @@ mod what_comes_back {
 
         let (_dir, here) = db();
         let here_id = profile(&here);
-        once(&here, &channel, "laptop", SyncMemo::default().entry("handle")).await;
+        once(
+            &here,
+            &channel,
+            "laptop",
+            SyncMemo::default().entry("handle"),
+        )
+        .await;
 
-        let progress = here.with(|conn| rows::progress_for(conn, &here_id)).unwrap();
+        let progress = here
+            .with(|conn| rows::progress_for(conn, &here_id))
+            .unwrap();
         assert_eq!(progress[0].set_id, "01FILM");
     }
 
@@ -265,7 +316,8 @@ mod what_comes_back {
         // matched anything real.
         let (_dir, db) = db();
         let id = profile(&db);
-        db.with(|conn| rows::set_progress(conn, &id, "01A", 742.0, None)).unwrap();
+        db.with(|conn| rows::set_progress(conn, &id, "01A", 742.0, None))
+            .unwrap();
         let channel = FakeChannel::new(Vec::new());
         let mut memo = SyncMemo::default();
         once(&db, &channel, "laptop", memo.entry("handle")).await;
@@ -278,13 +330,110 @@ mod what_comes_back {
 mod a_channel_that_cannot_be_reached {
     use super::*;
 
+    fn remote_document() -> ChannelDocument {
+        ChannelDocument {
+            message_id: 42,
+            device: "remote".into(),
+            text: serde_json::json!({
+                "format": 1,
+                "device": "remote",
+                "writtenAt": 100,
+                "profiles": [{
+                    "name": "André",
+                    "progress": [{"setId": "01REMOTE", "at": 120, "updatedAt": 100}]
+                }],
+                "kids": [{"setId": "01KIDS", "updatedAt": 100, "removed": false}]
+            })
+            .to_string(),
+        }
+    }
+
+    #[tokio::test]
+    async fn a_failed_import_rolls_back_and_does_not_publish_partial_state() {
+        let (_dir, db) = db();
+        let id = profile(&db);
+        db.with(|conn| {
+            conn.execute_batch(
+                "CREATE TRIGGER reject_remote_progress BEFORE INSERT ON progress
+             WHEN NEW.set_id = '01REMOTE'
+             BEGIN SELECT RAISE(ABORT, 'storage refused the import'); END;",
+            )
+        })
+        .unwrap();
+        let channel = FakeChannel::new(vec![remote_document()]);
+        let mut memo = SyncMemo::default();
+
+        let outcome = once(&db, &channel, "laptop", memo.entry("handle")).await;
+
+        assert_eq!(
+            outcome.failed.as_deref(),
+            Some("the local state could not be imported"),
+        );
+        assert_eq!(outcome.pulled, 0);
+        assert!(!outcome.pushed);
+        assert!(channel.puts.borrow().is_empty());
+        assert!(
+            db.with(rows::kids).unwrap().is_empty(),
+            "earlier imported rows must roll back"
+        );
+        assert!(
+            db.with(|conn| rows::progress_for(conn, &id))
+                .unwrap()
+                .is_empty()
+        );
+
+        db.with(|conn| conn.execute_batch("DROP TRIGGER reject_remote_progress"))
+            .unwrap();
+        let retry = once(&db, &channel, "laptop", memo.entry("handle")).await;
+        assert_eq!(retry.failed, None);
+        assert_eq!(retry.pulled, 2);
+        assert!(retry.pushed);
+    }
+
+    #[tokio::test]
+    async fn a_failed_push_reports_committed_imports_and_retries_the_send() {
+        let (_dir, db) = db();
+        let id = profile(&db);
+        let channel = FlakyPut {
+            refused: Cell::new(true),
+            inner: FakeChannel::new(vec![remote_document()]),
+        };
+        let mut memo = SyncMemo::default();
+
+        let outcome = once(&db, &channel, "laptop", memo.entry("handle")).await;
+
+        assert_eq!(outcome.failed.as_deref(), Some("upload refused"));
+        assert_eq!(
+            outcome.pulled, 2,
+            "the local imports have already committed"
+        );
+        assert!(!outcome.pushed);
+        assert_eq!(
+            db.with(|conn| rows::progress_for(conn, &id)).unwrap()[0].at,
+            120.0
+        );
+
+        let retry = once(&db, &channel, "laptop", memo.entry("handle")).await;
+        assert_eq!(retry.failed, None);
+        assert_eq!(retry.pulled, 0);
+        assert!(retry.pushed);
+        assert_eq!(channel.inner.puts.borrow().len(), 1);
+    }
+
     #[tokio::test]
     async fn costs_a_message_and_nothing_else() {
         let (_dir, db) = db();
         let id = profile(&db);
-        db.with(|conn| rows::set_progress(conn, &id, "01A", 742.0, None)).unwrap();
+        db.with(|conn| rows::set_progress(conn, &id, "01A", 742.0, None))
+            .unwrap();
 
-        let outcome = once(&db, &BrokenList, "laptop", SyncMemo::default().entry("handle")).await;
+        let outcome = once(
+            &db,
+            &BrokenList,
+            "laptop",
+            SyncMemo::default().entry("handle"),
+        )
+        .await;
 
         assert_eq!(outcome.failed.as_deref(), Some("no network"));
         assert_eq!(outcome.pulled, 0);
@@ -297,9 +446,16 @@ mod a_channel_that_cannot_be_reached {
     async fn a_send_that_fails_does_not_pretend_to_have_worked() {
         let (_dir, db) = db();
         let id = profile(&db);
-        db.with(|conn| rows::set_progress(conn, &id, "01A", 742.0, None)).unwrap();
+        db.with(|conn| rows::set_progress(conn, &id, "01A", 742.0, None))
+            .unwrap();
 
-        let outcome = once(&db, &RefusedPut, "laptop", SyncMemo::default().entry("handle")).await;
+        let outcome = once(
+            &db,
+            &RefusedPut,
+            "laptop",
+            SyncMemo::default().entry("handle"),
+        )
+        .await;
 
         assert!(!outcome.pushed);
         assert_eq!(outcome.failed.as_deref(), Some("upload refused"));
@@ -309,8 +465,12 @@ mod a_channel_that_cannot_be_reached {
     async fn so_the_next_round_tries_again_rather_than_believing_it_is_in_sync() {
         let (_dir, db) = db();
         let id = profile(&db);
-        db.with(|conn| rows::set_progress(conn, &id, "01A", 742.0, None)).unwrap();
-        let channel = FlakyPut { refused: Cell::new(true), inner: FakeChannel::new(Vec::new()) };
+        db.with(|conn| rows::set_progress(conn, &id, "01A", 742.0, None))
+            .unwrap();
+        let channel = FlakyPut {
+            refused: Cell::new(true),
+            inner: FakeChannel::new(Vec::new()),
+        };
         let mut memo = SyncMemo::default();
 
         once(&db, &channel, "laptop", memo.entry("handle")).await;
@@ -321,28 +481,23 @@ mod a_channel_that_cannot_be_reached {
     }
 }
 
-/// Rounds never overlap in production because `Core` holds one
-/// `tokio::sync::Mutex<SyncMemo>` for the whole round. This proves the
-/// pattern itself: two rounds racing for the same mutex-guarded memo run one
-/// after the other, so a first send happens exactly once even when the
-/// channel is slow to answer.
+/// Exercise the same serialized entry point as the Android adapter so a
+/// regression in production locking cannot hide behind a test-owned guard.
 #[tokio::test]
-async fn two_rounds_guarded_by_one_mutex_run_one_after_the_other() {
+async fn concurrent_rounds_use_the_production_guard_and_send_once() {
     let (_dir, db) = db();
     let id = profile(&db);
-    db.with(|conn| rows::set_progress(conn, &id, "01A", 742.0, None)).unwrap();
-    let channel =
-        GatedFirstList { gated: AtomicBool::new(false), gate: tokio::sync::Notify::new(), inner: FakeChannel::new(Vec::new()) };
+    db.with(|conn| rows::set_progress(conn, &id, "01A", 742.0, None))
+        .unwrap();
+    let channel = GatedFirstList {
+        gated: AtomicBool::new(false),
+        gate: tokio::sync::Notify::new(),
+        inner: FakeChannel::new(Vec::new()),
+    };
     let memo = tokio::sync::Mutex::new(SyncMemo::default());
 
-    let first = async {
-        let mut guard = memo.lock().await;
-        once(&db, &channel, "laptop", guard.entry("handle")).await
-    };
-    let second = async {
-        let mut guard = memo.lock().await;
-        once(&db, &channel, "laptop", guard.entry("handle")).await
-    };
+    let first = serialized(&memo, "handle", &db, &channel, "laptop");
+    let second = serialized(&memo, "handle", &db, &channel, "laptop");
     let release = async {
         tokio::time::sleep(std::time::Duration::from_millis(20)).await;
         channel.gate.notify_waiters();
@@ -350,7 +505,13 @@ async fn two_rounds_guarded_by_one_mutex_run_one_after_the_other() {
 
     tokio::join!(first, second, release);
 
-    let sent: Vec<Option<i32>> = channel.inner.puts.borrow().iter().map(|(_, id)| *id).collect();
+    let sent: Vec<Option<i32>> = channel
+        .inner
+        .puts
+        .borrow()
+        .iter()
+        .map(|(_, id)| *id)
+        .collect();
     assert_eq!(sent, vec![None], "a first send must happen exactly once");
 }
 
@@ -368,11 +529,21 @@ mod two_machines_one_channel {
         let desktop_id = profile(&desktop);
         let channel = FakeChannel::new(Vec::new());
 
-        laptop.with(|conn| rows::set_progress(conn, &laptop_id, "01FILM", 742.0, None)).unwrap();
+        laptop
+            .with(|conn| rows::set_progress(conn, &laptop_id, "01FILM", 742.0, None))
+            .unwrap();
         once(&laptop, &channel, "laptop", SyncMemo::default().entry("h")).await;
-        once(&desktop, &channel, "desktop", SyncMemo::default().entry("h")).await;
+        once(
+            &desktop,
+            &channel,
+            "desktop",
+            SyncMemo::default().entry("h"),
+        )
+        .await;
 
-        let progress = desktop.with(|conn| rows::progress_for(conn, &desktop_id)).unwrap();
+        let progress = desktop
+            .with(|conn| rows::progress_for(conn, &desktop_id))
+            .unwrap();
         assert_eq!(progress[0].set_id, "01FILM");
         assert_eq!(progress[0].at, 742.0);
     }
@@ -385,9 +556,13 @@ mod two_machines_one_channel {
         let phone_id = profile(&phone);
         let channel = FakeChannel::new(Vec::new());
 
-        laptop.with(|conn| rows::set_progress(conn, &laptop_id, "01E9", 700.0, None)).unwrap();
+        laptop
+            .with(|conn| rows::set_progress(conn, &laptop_id, "01E9", 700.0, None))
+            .unwrap();
         once(&laptop, &channel, "laptop", SyncMemo::default().entry("h")).await;
-        phone.with(|conn| rows::set_progress(conn, &phone_id, "01E4", 300.0, None)).unwrap();
+        phone
+            .with(|conn| rows::set_progress(conn, &phone_id, "01E4", 300.0, None))
+            .unwrap();
         once(&phone, &channel, "phone", SyncMemo::default().entry("h")).await;
         // A second round on each takes in what the other just sent.
         once(&laptop, &channel, "laptop", SyncMemo::default().entry("h")).await;
@@ -413,28 +588,69 @@ mod two_machines_one_channel {
         let desktop_id = profile(&desktop);
         let channel = FakeChannel::new(Vec::new());
 
-        laptop.with(|conn| rows::set_progress(conn, &laptop_id, "01FILM", 900.0, None)).unwrap();
+        laptop
+            .with(|conn| rows::set_progress(conn, &laptop_id, "01FILM", 900.0, None))
+            .unwrap();
         once(&laptop, &channel, "laptop", SyncMemo::default().entry("h")).await;
-        once(&desktop, &channel, "desktop", SyncMemo::default().entry("h")).await;
-        assert_eq!(desktop.with(|conn| rows::progress_for(conn, &desktop_id)).unwrap().len(), 1);
+        once(
+            &desktop,
+            &channel,
+            "desktop",
+            SyncMemo::default().entry("h"),
+        )
+        .await;
+        assert_eq!(
+            desktop
+                .with(|conn| rows::progress_for(conn, &desktop_id))
+                .unwrap()
+                .len(),
+            1
+        );
 
         // What the player does at the end of a title: both, together.
-        laptop.with(|conn| rows::clear_progress(conn, &laptop_id, "01FILM")).unwrap();
-        laptop.with(|conn| rows::set_watched(conn, &laptop_id, "01FILM", true)).unwrap();
+        laptop
+            .with(|conn| rows::clear_progress(conn, &laptop_id, "01FILM"))
+            .unwrap();
+        laptop
+            .with(|conn| rows::set_watched(conn, &laptop_id, "01FILM", true))
+            .unwrap();
         once(&laptop, &channel, "laptop", SyncMemo::default().entry("h")).await;
-        once(&desktop, &channel, "desktop", SyncMemo::default().entry("h")).await;
+        once(
+            &desktop,
+            &channel,
+            "desktop",
+            SyncMemo::default().entry("h"),
+        )
+        .await;
 
-        assert_eq!(desktop.with(|conn| rows::progress_for(conn, &desktop_id)).unwrap(), Vec::new());
-        let watched = desktop.with(|conn| rows::watched_for(conn, &desktop_id)).unwrap();
-        assert_eq!(watched.iter().map(|row| row.set_id.as_str()).collect::<Vec<_>>(), vec!["01FILM"]);
+        assert_eq!(
+            desktop
+                .with(|conn| rows::progress_for(conn, &desktop_id))
+                .unwrap(),
+            Vec::new()
+        );
+        let watched = desktop
+            .with(|conn| rows::watched_for(conn, &desktop_id))
+            .unwrap();
+        assert_eq!(
+            watched
+                .iter()
+                .map(|row| row.set_id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["01FILM"]
+        );
     }
 
     #[tokio::test]
     async fn a_machine_joining_late_gets_the_history_it_never_had_profile_and_all() {
         let (_ldir, laptop) = db();
         let laptop_id = profile(&laptop);
-        laptop.with(|conn| rows::set_progress(conn, &laptop_id, "01A", 100.0, None)).unwrap();
-        laptop.with(|conn| rows::set_watched(conn, &laptop_id, "01B", true)).unwrap();
+        laptop
+            .with(|conn| rows::set_progress(conn, &laptop_id, "01A", 100.0, None))
+            .unwrap();
+        laptop
+            .with(|conn| rows::set_watched(conn, &laptop_id, "01B", true))
+            .unwrap();
         let channel = FakeChannel::new(Vec::new());
         once(&laptop, &channel, "laptop", SyncMemo::default().entry("h")).await;
 
@@ -445,10 +661,20 @@ mod two_machines_one_channel {
         let them = fresh.with(profiles::list).unwrap();
         assert_eq!(them.len(), 1);
         assert_eq!(them[0].name, "André");
-        let progress = fresh.with(|conn| rows::progress_for(conn, &them[0].id)).unwrap();
+        let progress = fresh
+            .with(|conn| rows::progress_for(conn, &them[0].id))
+            .unwrap();
         assert_eq!(progress[0].set_id, "01A");
-        let watched = fresh.with(|conn| rows::watched_for(conn, &them[0].id)).unwrap();
-        assert_eq!(watched.iter().map(|row| row.set_id.as_str()).collect::<Vec<_>>(), vec!["01B"]);
+        let watched = fresh
+            .with(|conn| rows::watched_for(conn, &them[0].id))
+            .unwrap();
+        assert_eq!(
+            watched
+                .iter()
+                .map(|row| row.set_id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["01B"]
+        );
     }
 }
 
@@ -462,8 +688,10 @@ mod the_body_a_round_sends {
     async fn round_trips_through_parse_record_byte_for_byte() {
         let (_dir, db) = db();
         let id = profile(&db);
-        db.with(|conn| rows::set_progress(conn, &id, "01A", 742.0, Some(1204.0))).unwrap();
-        db.with(|conn| rows::set_watched(conn, &id, "01B", true)).unwrap();
+        db.with(|conn| rows::set_progress(conn, &id, "01A", 742.0, Some(1204.0)))
+            .unwrap();
+        db.with(|conn| rows::set_watched(conn, &id, "01B", true))
+            .unwrap();
         let channel = FakeChannel::new(Vec::new());
 
         once(&db, &channel, "laptop", SyncMemo::default().entry("h")).await;
@@ -480,8 +708,10 @@ mod the_body_a_round_sends {
     async fn uses_the_camelcase_keys_sync_record_ts_writes() {
         let (_dir, db) = db();
         let id = profile(&db);
-        db.with(|conn| rows::set_progress(conn, &id, "01A", 742.0, Some(1204.0))).unwrap();
-        db.with(|conn| rows::set_watched(conn, &id, "01B", true)).unwrap();
+        db.with(|conn| rows::set_progress(conn, &id, "01A", 742.0, Some(1204.0)))
+            .unwrap();
+        db.with(|conn| rows::set_watched(conn, &id, "01B", true))
+            .unwrap();
         let channel = FakeChannel::new(Vec::new());
 
         once(&db, &channel, "laptop", SyncMemo::default().entry("h")).await;
@@ -496,11 +726,15 @@ mod the_body_a_round_sends {
         for key in ["name", "localId", "progress", "watched"] {
             assert!(profile.contains_key(key), "missing profile key {key}");
         }
-        let progress_row = profile["progress"].as_array().unwrap()[0].as_object().unwrap();
+        let progress_row = profile["progress"].as_array().unwrap()[0]
+            .as_object()
+            .unwrap();
         for key in ["setId", "at", "duration", "updatedAt"] {
             assert!(progress_row.contains_key(key), "missing progress key {key}");
         }
-        let watched_row = profile["watched"].as_array().unwrap()[0].as_object().unwrap();
+        let watched_row = profile["watched"].as_array().unwrap()[0]
+            .as_object()
+            .unwrap();
         for key in ["setId", "updatedAt"] {
             assert!(watched_row.contains_key(key), "missing watched key {key}");
         }
@@ -526,5 +760,113 @@ mod the_device_id {
         if let Ok(host) = std::env::var("HOSTNAME") {
             assert_ne!(made, host);
         }
+    }
+}
+
+mod typed_failures {
+    use super::*;
+
+    // Intentionally neither Debug nor std::error::Error, and not 'static:
+    // StateChannel only requires Display from its error type.
+    struct ChannelFailure<'a> {
+        code: u16,
+        renders: &'a Cell<usize>,
+    }
+
+    impl std::fmt::Display for ChannelFailure<'_> {
+        fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            self.renders.set(self.renders.get() + 1);
+            write!(formatter, "channel refused ({})", self.code)
+        }
+    }
+
+    struct RefusingChannel<'a> {
+        list_fails: bool,
+        renders: &'a Cell<usize>,
+    }
+
+    impl<'a> StateChannel for RefusingChannel<'a> {
+        type Error = ChannelFailure<'a>;
+
+        async fn list(&self) -> Result<Vec<ChannelDocument>, Self::Error> {
+            if self.list_fails {
+                Err(ChannelFailure {
+                    code: 503,
+                    renders: self.renders,
+                })
+            } else {
+                Ok(Vec::new())
+            }
+        }
+
+        async fn put(&self, _: String, _: Option<i32>) -> Result<i32, Self::Error> {
+            assert!(!self.list_fails, "a failed list must not publish");
+            Err(ChannelFailure {
+                code: 403,
+                renders: self.renders,
+            })
+        }
+    }
+
+    #[tokio::test]
+    async fn channel_causes_survive_the_private_round_without_being_formatted() {
+        for list_fails in [true, false] {
+            let (_dir, db) = db();
+            let renders = Cell::new(0);
+            let channel = RefusingChannel {
+                list_fails,
+                renders: &renders,
+            };
+            let mut memo = Memo::default();
+            let mut outcome = SyncOutcome::default();
+            let error = round(&db, &channel, "laptop", &mut memo, &mut outcome)
+                .await
+                .unwrap_err();
+            let SyncError::Channel(cause) = error else {
+                panic!("channel cause was lost")
+            };
+            assert_eq!(cause.code, if list_fails { 503 } else { 403 });
+            assert_eq!(renders.get(), 0);
+            assert_eq!(outcome, SyncOutcome::default());
+            assert!(memo.mine.is_none());
+            assert!(memo.last_sent.is_none());
+
+            let outcome = once(&db, &channel, "laptop", &mut memo).await;
+            assert_eq!(
+                outcome.failed,
+                Some(format!("channel refused ({})", cause.code))
+            );
+            assert_eq!(
+                renders.get(),
+                1,
+                "only the public outcome renders a failure"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn inaccessible_storage_retains_distinct_import_and_read_messages() {
+        let dir = tempfile::tempdir().unwrap();
+        let occupied = dir.path().join("not-a-directory");
+        std::fs::write(&occupied, b"held file").unwrap();
+        let db = StateDb::new(occupied.clone());
+        let channel = FakeChannel::new(Vec::new());
+        let mut memo = Memo::default();
+        let outcome = once(&db, &channel, "laptop", &mut memo).await;
+        assert_eq!(
+            outcome.failed.as_deref(),
+            Some("the local state could not be imported")
+        );
+        assert_eq!(outcome.pulled, 0);
+        assert!(!outcome.pushed);
+
+        let error = publish_state_if_changed(&db, &channel, "laptop", &mut memo)
+            .await
+            .unwrap_err();
+        assert!(matches!(error, SyncError::Read));
+        assert_eq!(error.to_string(), "the local state could not be read");
+        assert!(channel.puts.borrow().is_empty());
+        assert!(memo.last_sent.is_none());
+        assert_eq!(std::fs::read(occupied).unwrap(), b"held file");
     }
 }

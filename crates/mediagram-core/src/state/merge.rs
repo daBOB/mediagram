@@ -1,9 +1,7 @@
 //! Reconciling what several devices say about the same viewing.
 //!
-//! A line-for-line port of `web/src/state/merge.ts`, pinned by the same
-//! fixtures. Every mistake here is silent: a merge that picks the older of
-//! two positions loses an evening's watching; one that resurrects a
-//! finished title puts it back on the Continue shelf for ever.
+//! Matches `web/src/state/merge.ts`, pinned by shared fixtures to prevent
+//! lost positions or resurrected Continue entries.
 //!
 //! **Last writer wins, per row** — the record for *one title* with the
 //! highest `updated_at`, not per device and not per document.
@@ -85,35 +83,25 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
         }
 
         for profile in &record.profiles {
-            let Some(name) = normal_name(&profile.name) else { continue };
+            let Some(name) = normal_name(&profile.name) else {
+                continue;
+            };
 
-            match by_viewer.get_mut(&name) {
-                None => {
-                    by_viewer.insert(
-                        name.clone(),
-                        ViewerState {
-                            display_name: profile.name.trim().to_string(),
-                            name_from: device.to_string(),
-                            progress: HashMap::new(),
-                            watched: HashMap::new(),
-                            watchlist: HashMap::new(),
-                            collections: HashMap::new(),
-                        },
-                    );
-                }
-                Some(held) => {
-                    // One viewer typed two ways on two devices. The
-                    // spelling shown is decided by device id, as a tie
-                    // between rows is, so it does not depend on which
-                    // document Telegram happened to hand over first.
-                    if device > held.name_from.as_str() {
-                        held.display_name = profile.name.trim().to_string();
-                        held.name_from = device.to_string();
-                    }
-                }
+            let held = by_viewer.entry(name).or_insert_with(|| ViewerState {
+                display_name: profile.name.trim().to_string(),
+                name_from: device.to_string(),
+                progress: HashMap::new(),
+                watched: HashMap::new(),
+                watchlist: HashMap::new(),
+                collections: HashMap::new(),
+            });
+            // Device id determines spelling as well as row ties, independent
+            // of the order in which documents arrive.
+            if device > held.name_from.as_str() {
+                held.display_name = profile.name.trim().to_string();
+                held.name_from = device.to_string();
             }
 
-            let held = by_viewer.get_mut(&name).expect("just inserted or already present");
             for row in &profile.progress {
                 keep(&mut held.progress, row.set_id.clone(), row.clone(), device);
             }
@@ -134,8 +122,10 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
     let mut profiles = Vec::with_capacity(by_viewer.len());
     for (name, held) in by_viewer {
         let watched: Vec<WatchedRow> = held.watched.into_values().map(|h| h.row).collect();
-        let finished_at: HashMap<&str, f64> =
-            watched.iter().map(|row| (row.set_id.as_str(), row.updated_at)).collect();
+        let finished_at: HashMap<&str, f64> = watched
+            .iter()
+            .map(|row| (row.set_id.as_str(), row.updated_at))
+            .collect();
 
         let progress: Vec<ProgressRow> = held
             .progress
@@ -144,7 +134,13 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
             // The tombstone rule. `>=` rather than `>`: the two writes
             // happen in one moment and can carry the same millisecond, and
             // in a tie the completion is the later intention.
-            .filter(|row| finished_at.get(row.set_id.as_str()).copied().unwrap_or(-1.0) < row.updated_at)
+            .filter(|row| {
+                finished_at
+                    .get(row.set_id.as_str())
+                    .copied()
+                    .unwrap_or(-1.0)
+                    < row.updated_at
+            })
             .collect();
 
         profiles.push(MergedProfile {
@@ -156,7 +152,10 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
             collections: held.collections.into_values().map(|h| h.row).collect(),
         });
     }
-    MergedState { profiles, kids: kids.into_values().map(|h| h.row).collect() }
+    MergedState {
+        profiles,
+        kids: kids.into_values().map(|h| h.row).collect(),
+    }
 }
 
 /// Any row this merge keeps by timestamp: a position, a completion, a
@@ -183,16 +182,18 @@ timestamped_by_own_field!(ProgressRow, WatchedRow, ListRow, CollectionRow);
 /// documents have to reach the same answer, or they will push their
 /// disagreement back and forth for ever.
 fn keep<T: Timestamped>(into: &mut HashMap<String, Held<T>>, key: String, row: T, device: &str) {
-    match into.get(&key) {
-        None => {
-            into.insert(key, Held { row, device: device.to_string() });
-        }
-        Some(standing) => {
-            let standing_at = standing.row.updated_at();
-            let row_at = row.updated_at();
-            if row_at > standing_at || (row_at == standing_at && device > standing.device.as_str()) {
-                into.insert(key, Held { row, device: device.to_string() });
-            }
-        }
+    let replace = into.get(&key).is_none_or(|standing| {
+        let standing_at = standing.row.updated_at();
+        let row_at = row.updated_at();
+        row_at > standing_at || (row_at == standing_at && device > standing.device.as_str())
+    });
+    if replace {
+        into.insert(
+            key,
+            Held {
+                row,
+                device: device.to_string(),
+            },
+        );
     }
 }
