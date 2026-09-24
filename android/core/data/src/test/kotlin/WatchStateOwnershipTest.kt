@@ -44,9 +44,12 @@ private class DelayedStateCore(
         return true
     }
 
-    override suspend fun createProfile(name: String): Profile {
+    override suspend fun createProfile(
+        name: String,
+        kids: Boolean,
+    ): Profile {
         write()
-        return Profile("created", name)
+        return Profile("created", name, kids)
     }
 
     override suspend fun snapshot(profileId: String): StateSnapshot {

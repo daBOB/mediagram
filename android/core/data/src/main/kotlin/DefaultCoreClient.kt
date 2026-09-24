@@ -72,7 +72,10 @@ class DefaultCoreClient(
 
     override suspend fun profiles(): List<Profile> = core.profiles()
 
-    override suspend fun createProfile(name: String): Profile? = core.createProfile(name)
+    override suspend fun createProfile(
+        name: String,
+        kids: Boolean,
+    ): Profile? = core.createProfile(name, kids)
 
     override suspend fun chosenProfile(): String? = core.chosenProfile()
 

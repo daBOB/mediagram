@@ -128,7 +128,10 @@ interface CoreClient {
     suspend fun profiles(): List<Profile> = emptyList()
 
     /** Adds a new viewer under [name], or `null` when the write failed. */
-    suspend fun createProfile(name: String): Profile? = null
+    suspend fun createProfile(
+        name: String,
+        kids: Boolean = false,
+    ): Profile? = null
 
     /**
      * Who this device is set to watch as, or `null` before the picker has

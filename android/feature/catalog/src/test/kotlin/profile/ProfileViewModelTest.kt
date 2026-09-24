@@ -58,11 +58,14 @@ private class FakeWatchStateRepository(
         return true
     }
 
-    override suspend fun createProfile(name: String): Profile? {
+    override suspend fun createProfile(
+        name: String,
+        kids: Boolean,
+    ): Profile? {
         createFailure?.let { throw it }
         if (refuseWrites) return null
         created += name
-        val made = Profile("new-${created.size}", name)
+        val made = Profile("new-${created.size}", name, kids)
         profiles.value = profiles.value + made
         return made
     }

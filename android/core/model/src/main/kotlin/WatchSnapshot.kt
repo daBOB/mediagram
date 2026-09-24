@@ -39,6 +39,8 @@ data class ListOfSets(
 data class Profile(
     val id: String,
     val name: String,
+    /** Sees only titles rated FSK 12 or under, or marked for Kids by hand. */
+    val kids: Boolean = false,
 )
 
 /**

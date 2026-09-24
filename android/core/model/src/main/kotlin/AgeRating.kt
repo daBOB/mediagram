@@ -35,3 +35,20 @@ fun MediaSet.ageLabel(): String? = ageLabelOf(fsk)
 fun MediaSet.kidsVerdict(): KidsVerdict = kidsVerdictOf(fsk)
 
 private val AGE = Regex("""\d{1,2}""")
+
+/**
+ * The catalog a kids profile sees: rated for kids, or unrated and marked by
+ * hand — the web player's `forKidsProfile`. A rating decides on its own; a
+ * hand mark on a title rated too old does not let it through.
+ */
+fun forKidsProfile(
+    sets: List<MediaSet>,
+    marked: Set<String>,
+): List<MediaSet> =
+    sets.filter {
+        when (it.kidsVerdict()) {
+            KidsVerdict.SAFE -> true
+            KidsVerdict.UNSAFE -> false
+            KidsVerdict.UNRATED -> it.setId in marked
+        }
+    }

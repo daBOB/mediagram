@@ -74,7 +74,10 @@ private class FakeCatalogWatchState(
 
     override suspend fun chooseProfile(id: String) = false
 
-    override suspend fun createProfile(name: String): Profile? = null
+    override suspend fun createProfile(
+        name: String,
+        kids: Boolean,
+    ): Profile? = null
 
     override suspend fun setProgress(
         setId: String,

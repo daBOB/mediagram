@@ -31,8 +31,11 @@ private class StateCoreClient(
 
     override suspend fun profiles(): List<CoreProfile> = profileList.toList()
 
-    override suspend fun createProfile(name: String): CoreProfile {
-        val created = CoreProfile("p${profileList.size + 1}", name)
+    override suspend fun createProfile(
+        name: String,
+        kids: Boolean,
+    ): CoreProfile {
+        val created = CoreProfile("p${profileList.size + 1}", name, kids)
         profileList += created
         return created
     }
@@ -136,6 +139,18 @@ class WatchStateRepositoryTest {
             assertEquals("Bea", created?.name)
             assertEquals(listOf(Profile(created!!.id, "Bea")), repository.profiles.value)
             assertNull(repository.chosenProfileId.value)
+        }
+
+    @Test
+    fun aKidsProfileIsCreatedAndListedAsOne() =
+        runTest {
+            val core = StateCoreClient()
+            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+
+            val created = repository.createProfile("Mia", kids = true)
+
+            assertEquals(true, created?.kids)
+            assertEquals(listOf(Profile(created!!.id, "Mia", kids = true)), repository.profiles.value)
         }
 
     @Test

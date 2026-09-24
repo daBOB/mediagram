@@ -37,7 +37,10 @@ class FakeWatchStateRepository(
 
     override suspend fun chooseProfile(id: String) = true
 
-    override suspend fun createProfile(name: String): Profile? = null
+    override suspend fun createProfile(
+        name: String,
+        kids: Boolean,
+    ): Profile? = null
 
     override suspend fun setProgress(
         setId: String,

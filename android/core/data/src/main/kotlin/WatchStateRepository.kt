@@ -49,7 +49,10 @@ interface WatchStateRepository {
     suspend fun chooseProfile(id: String): Boolean
 
     /** Creates without choosing; null means refused or the owning account was reset/replaced. */
-    suspend fun createProfile(name: String): Profile?
+    suspend fun createProfile(
+        name: String,
+        kids: Boolean = false,
+    ): Profile?
 
     /** Saves progress for the chosen profile; does nothing without one. */
     suspend fun setProgress(
@@ -208,10 +211,13 @@ class DefaultWatchStateRepository(
         return true
     }
 
-    override suspend fun createProfile(name: String): Profile? {
+    override suspend fun createProfile(
+        name: String,
+        kids: Boolean,
+    ): Profile? {
         val started = synchronized(publicationLock) { resetRevision }
         val core = coreProvider.awaitCore()
-        val created = withContext(dispatcher) { core.createProfile(name) } ?: return null
+        val created = withContext(dispatcher) { core.createProfile(name, kids) } ?: return null
         synchronized(publicationLock) {
             if (resetRevision != started || coreProvider.core.value !== core) return null
             _profiles.value = _profiles.value + toProfile(created)
@@ -320,7 +326,7 @@ class DefaultWatchStateRepository(
     ): Boolean = revision == started && coreProvider.core.value === core
 }
 
-private fun toProfile(profile: uniffi.mediagram_core.Profile): Profile = Profile(profile.id, profile.name)
+private fun toProfile(profile: uniffi.mediagram_core.Profile): Profile = Profile(profile.id, profile.name, profile.kids)
 
 private fun ProgressRow.toModel(): Progress = Progress(setId, at, duration, updatedAt)
 
