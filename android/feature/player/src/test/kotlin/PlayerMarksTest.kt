@@ -8,6 +8,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import model.KidsVerdict
 import model.ListOfSets
+import model.Profile
 import model.WatchSnapshot
 import org.junit.After
 import playback.PlaybackCounters
@@ -135,6 +136,30 @@ class PlayerMarksTest {
                 assertEquals(KidsVerdict.SAFE, marks?.kidsVerdict)
                 assertEquals(true, marks?.forKids)
                 assertEquals(false, marks?.kids)
+            }
+        }
+
+    @Test
+    fun aKidsProfileCannotMarkTitlesForKids() =
+        runTest {
+            installMainDispatcher()
+            val repository = FakeWatchStateRepository()
+            repository.profiles.value = listOf(Profile("p1", "Mia", kids = true))
+            val vm = viewModel(repository)
+
+            vm.marks.test {
+                assertNull(awaitItem())
+                vm.open("s1")
+                assertEquals(false, awaitItem()?.canMarkKids)
+
+                // Refused: nothing is written, so nothing changes.
+                vm.toggleKids()
+                advanceUntilIdle()
+                expectNoEvents()
+                assertTrue(
+                    repository.snapshot.value.kids
+                        .isEmpty(),
+                )
             }
         }
 

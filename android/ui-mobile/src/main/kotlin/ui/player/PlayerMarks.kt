@@ -39,12 +39,14 @@ internal fun PlayerMarks(
             label = if (marks.watchlisted) "On the list" else "Watchlist",
             onClick = actions.onToggleWatchlist,
         )
-        MarkButton(
-            label = kidsLabel(marks),
-            onClick = actions.onToggleKids,
-            // A rated title's rating decided; there is nothing to press.
-            enabled = marks.kidsVerdict == KidsVerdict.UNRATED,
-        )
+        if (marks.canMarkKids) {
+            MarkButton(
+                label = kidsLabel(marks),
+                onClick = actions.onToggleKids,
+                // A rated title's rating decided; there is nothing to press.
+                enabled = marks.kidsVerdict == KidsVerdict.UNRATED,
+            )
+        }
         MarkButton(label = "Add to list", onClick = { addingToList = true })
     }
 

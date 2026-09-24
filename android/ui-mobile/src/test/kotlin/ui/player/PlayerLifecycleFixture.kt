@@ -41,6 +41,8 @@ internal class PlayerLifecycleFixture : AutoCloseable {
 
     init {
         every { repository.snapshot } returns MutableStateFlow(WatchSnapshot.Empty)
+        every { repository.profiles } returns MutableStateFlow(emptyList())
+        every { repository.chosenProfileId } returns MutableStateFlow(null)
         every { media.applicationLooper } returns Looper.getMainLooper()
         every { media.videoSize } returns VideoSize.UNKNOWN
         every { media.currentTracks } returns Tracks.EMPTY

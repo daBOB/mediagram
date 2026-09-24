@@ -71,6 +71,12 @@ class PlayerViewModel
         /** The open title's age rating, as the catalog listed it; see [open]. */
         private val openFsk = MutableStateFlow<String?>(null)
 
+        /** Whether the chosen profile is a kids profile — a child does not approve titles for themselves. */
+        private val onKidsProfile =
+            combine(repository.profiles, repository.chosenProfileId) { profiles, chosen ->
+                profiles.firstOrNull { it.id == chosen }?.kids == true
+            }
+
         /**
          * The Watchlist, Kids and Add-to-list controls' own state for whichever
          * set is open — `null` between titles, the same gate `player.js` puts
@@ -80,7 +86,7 @@ class PlayerViewModel
          * to ask again.
          */
         val marks: StateFlow<PlayerMarksState?> =
-            combine(openSetId, openFsk, repository.snapshot) { setId, fsk, snapshot ->
+            combine(openSetId, openFsk, repository.snapshot, onKidsProfile) { setId, fsk, snapshot, kidsProfile ->
                 setId?.let {
                     PlayerMarksState(
                         watchlisted = it in snapshot.watchlist,
@@ -89,6 +95,7 @@ class PlayerViewModel
                         memberOf = snapshot.collections.filter { list -> it in list.items }.mapTo(HashSet()) { list -> list.id },
                         kidsVerdict = kidsVerdictOf(fsk),
                         ageLabel = ageLabelOf(fsk),
+                        canMarkKids = !kidsProfile,
                     )
                 }
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -181,6 +188,8 @@ class PlayerViewModel
         /** Marked here rather than on a shelf: "this is where a viewer is when they find out what a film actually is." */
         fun toggleKids() {
             val setId = openSetId.value ?: return
+            // A kids profile does not approve titles for itself.
+            if (marks.value?.canMarkKids == false) return
             // A rated title is not marked: its rating already decided.
             if (kidsVerdictOf(openFsk.value) != KidsVerdict.UNRATED) return
             val marked = setId in repository.snapshot.value.kids
