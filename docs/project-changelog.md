@@ -47,6 +47,23 @@ to `main`. Full phase-by-phase detail lives in
   success, with a separate retry when reconciliation fails. Cache settings show
   recoverable failures even before the first reading; login, catalog and playback
   failures use controlled text while retaining their diagnostic causes.
+  Initial provisioning refuses to overwrite an identity that is already installed.
+- Session revocation and update listeners are bound to the connection that
+  created them, so cleanup of a replaced login no longer disturbs its successor.
+  Abandoned downloads stop polling Telegram once their reader closes.
+- The channel index rejects provider identifiers outside SQLite bounds and keeps
+  metadata unchanged on rejected writes; schema read and migration failures are
+  reported instead of hidden. Upload plans with oversized part counts are refused
+  before allocation, and mixed-case IMDb prefixes are normalized.
+- CLI commands settle their work before disconnecting Telegram, and course
+  imports report unreadable metadata sidecars instead of treating them as absent.
+- Web thumbnail requests read only from disk and never fall back to Telegram.
+  Cache inventory errors other than a missing file are surfaced, and idle
+  transcode cleanup rechecks each session before stopping it, so a reused one
+  survives. Concurrent audio probes for one title are coalesced, and cancelled
+  Telegram reads finish before their stream closes.
+- Library update hints keep arriving after a callback throws a value that cannot
+  be printed.
 
 ## 2026-09-23
 
