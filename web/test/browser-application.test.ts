@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, beforeEach, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -146,6 +146,9 @@ test("an older search cannot overwrite a newer search", async () => {
 });
 
 test("returning to a search does not admit its earlier response", async () => {
+  // The search result checked below must be a real catalog title: search
+  // results are now kept only when they are in this profile's library.
+  catalog = JSON.stringify([film("First"), film("Latest result")]);
   await start();
   const old = deferred<Response>();
   const latest = deferred<Response>();
@@ -532,6 +535,79 @@ test("the Movies shelf is drawn a page at a time, with its page in the address",
   expect(page()).toContain("page 2 of 2");
   stream().fire("catalog"); await settle();
   expect(env.scrolls.length).toBe(scrolled + 1);
+});
+
+describe("kids profiles", () => {
+  const rated = (setId: string, fsk: string | null) => ({ ...film(setId), fsk });
+  const profiles = [
+    { id: "viewer", name: "Viewer", createdAt: 1, kids: true },
+    { id: "adult", name: "Adult", createdAt: 2, kids: false },
+  ];
+  beforeEach(() => {
+    catalog = JSON.stringify([rated("Family", "6"), rated("Grown", "16"), rated("Unknown", null), rated("Marked", null)]);
+    intercept = (url) => {
+      if (url === "/api/profiles") return Promise.resolve(Response.json({ remembers: true, profiles }));
+      if (url === "/api/kids") return Promise.resolve(Response.json({ kids: ["Marked"] }));
+      if (url.startsWith("/api/search")) {
+        return Promise.resolve(Response.json({ query: "x", hits: [rated("Family", "6"), rated("Grown", "16")] }));
+      }
+      return null;
+    };
+  });
+
+  test("a kids profile's shelves hold only what is rated for kids or marked by hand", async () => {
+    await start();
+    expect(env.node("n-movies").textContent).toBe("2");
+    await env.navigate("#/movies");
+    expect(page()).toContain("Family");
+    expect(page()).toContain("Marked");
+    expect(page()).not.toContain("Grown");
+    expect(page()).not.toContain("Unknown");
+  });
+
+  test("search on a kids profile drops hits outside its library", async () => {
+    await start();
+    await env.navigate("#/search/x");
+    expect(page()).toContain("Family");
+    expect(page()).not.toContain("Grown");
+  });
+
+  test("a catalog refresh on a kids profile is filtered too", async () => {
+    await start();
+    catalog = JSON.stringify([rated("Family", "6"), rated("Grown", "16"), rated("Later", "18"), rated("Also", "0")]);
+    stream().fire("catalog");
+    await settle();
+    expect(env.node("n-movies").textContent).toBe("2");
+  });
+
+  test("choosing an adult profile brings the whole library back without fetching it again", async () => {
+    await start();
+    const fetched = env.requests.filter((request) => request.url === "/api/sets").length;
+    env.node("who").fire("click");
+    await settle();
+    const adult = descendants(env.document.body)
+      .find((node) => node.className === "who-tile" && textOf(node).includes("Adult"))!;
+    adult.fire("click");
+    await settle();
+    expect(env.node("who").textContent).toBe("Adult");
+    expect(env.node("n-movies").textContent).toBe("4");
+    expect(env.requests.filter((request) => request.url === "/api/sets").length).toBe(fetched);
+  });
+
+  test("an empty kids library says what it is waiting for", async () => {
+    catalog = JSON.stringify([rated("Grown", "16")]);
+    await start();
+    await env.navigate("#/movies");
+    expect(page()).toContain("Nothing rated FSK 12 or under yet.");
+  });
+
+  test("the player offers no Kids mark on a kids profile", async () => {
+    await start();
+    await env.navigate("#/film/Family");
+    descendants(env.node("main")).find((node) => node.className === "film-play")!.fire("click");
+    await settle();
+    expect(env.node("kids").hidden).toBe(true);
+  });
 });
 
 test("Featured suggests unwatched films and opens the one chosen after leaving its history entry", async () => {

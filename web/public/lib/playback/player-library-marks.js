@@ -15,6 +15,9 @@ export function mountPlayerLibraryMarks() {
   }
 
   function refreshKids() {
+    // A child does not approve titles for themselves; marking is for the
+    // grown-ups' profiles.
+    kids.hidden = state.profile()?.kids === true;
     const verdict = title === null ? "unrated" : kidsVerdict(title);
     const rating = title === null ? null : ageLabel(title);
     const forKids =
@@ -44,7 +47,7 @@ export function mountPlayerLibraryMarks() {
     refreshWatchlist();
   });
   kids.addEventListener("click", () => {
-    if (!title || kidsVerdict(title) !== "unrated") return;
+    if (!title || kids.hidden || kidsVerdict(title) !== "unrated") return;
     state.setKids(title.setId, !state.isKids(title.setId));
     refreshKids();
   });

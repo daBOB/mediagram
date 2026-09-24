@@ -36,7 +36,7 @@ import { homeShelves } from "./lib/catalog/home-shelves.js";
 import { renderHome } from "./lib/catalog/home-view.js";
 import { describeFilm, filmPage } from "./lib/catalog/film-page.js";
 import { genreShelf } from "./lib/catalog/genres.js";
-import { kidsShelf } from "./lib/age-rating.js";
+import { forKidsProfile, kidsShelf } from "./lib/age-rating.js";
 
 const main = document.getElementById("main");
 const player = document.getElementById("player");
@@ -131,7 +131,7 @@ function viewHome() {
   const empty = Object.values(shelves).every((row) => row.length === 0);
   if (empty) {
     heading(main, SECTIONS.movies.label, countOf(0, SECTIONS.movies.extent));
-    return main.append(emptyState("movies"));
+    return main.append(emptyState("movies", { kids: kidsProfile() }));
   }
 
   renderHome(main, shelves, {
@@ -164,7 +164,7 @@ function viewMovies(requested) {
   // refresh keeps the viewer where they were.
   if (page !== shownMoviesPage) window.scrollTo(0, 0);
   shownMoviesPage = page;
-  if (library.movies.length === 0) return main.append(emptyState("movies"));
+  if (library.movies.length === 0) return main.append(emptyState("movies", { kids: kidsProfile() }));
   main.append(movieGrid(items, openFilm, { mode }));
   const links = pager("movies", page, pages);
   if (links) main.append(links);
@@ -254,7 +254,7 @@ function viewCollections(section) {
     countOf(collections.length, SECTIONS[section].extent),
     offersModes ? shelfToggle() : null,
   );
-  if (collections.length === 0) return main.append(emptyState(section));
+  if (collections.length === 0) return main.append(emptyState(section, { kids: kidsProfile() }));
 
   main.append(
     collectionGrid(
@@ -389,6 +389,18 @@ function showProfile() {
   button.hidden = false;
 }
 
+// The name in the header is also the way to become somebody else. A kids
+// profile is a filter, not a lock, so anyone can switch back from here.
+document.getElementById("who").addEventListener("click", async () => {
+  const before = state.profileId();
+  const chosen = await chooseProfile(document.body, { canCancel: true });
+  if (chosen === before) return;
+  showProfile();
+  applyCatalog();
+  refreshShelfCounts();
+  route();
+});
+
 /** What was started and not finished, most recent first. */
 function viewContinue() {
   const started = state
@@ -453,7 +465,8 @@ async function viewSearch(query, generation) {
     const { hits } = await response.json();
     if (generation !== routeGeneration) return;
     main.textContent = "";
-    renderSearch(main, query, hits, play);
+    // The server's search knows no profile; keep only what this one can see.
+    renderSearch(main, query, hits.filter((hit) => byId.has(hit.setId)), play);
   } catch (error) {
     if (generation !== routeGeneration) return;
     main.textContent = "";
@@ -470,6 +483,39 @@ async function viewSearch(query, generation) {
  */
 let catalogText = "";
 
+/** The catalog as the server last sent it, before any profile's filter. */
+let catalogSets = [];
+
+const kidsProfile = () => state.profile()?.kids === true;
+
+/** What the given profile may see of a catalog; the last one committed by default. */
+const visibleSets = (sets = catalogSets) =>
+  kidsProfile() ? forKidsProfile(sets, new Set(state.kids())) : sets;
+
+/**
+ * Builds the library the current profile sees from a catalog.
+ *
+ * The one place a kids profile's filter is applied: every shelf, search,
+ * reel and Play next reads `library` or `byId`, so none can miss it. Cheap
+ * enough to run on every profile change, which is what lets switching
+ * profile skip a second download.
+ *
+ * Takes the sets explicitly, defaulting to what is already committed, so
+ * `loadCatalog` can build against a freshly parsed body and let a
+ * construction failure (an entry `groupLibrary` cannot make sense of) throw
+ * before that body is recorded as the current catalog — the same guarantee
+ * a bad parse already had.
+ */
+function applyCatalog(sets = catalogSets) {
+  const visible = visibleSets(sets);
+  library = groupLibrary(visible);
+  byId = new Map(visible.map((set) => [set.setId, set]));
+  document.getElementById("n-movies").textContent = String(library.movies.length);
+  document.getElementById("n-series").textContent = String(library.series.length);
+  document.getElementById("n-tutorials").textContent = String(library.tutorials.length);
+  renderColophon(visible);
+}
+
 /**
  * Reads the catalog and rebuilds the shelves' data from it.
  *
@@ -483,15 +529,12 @@ async function loadCatalog() {
   const text = await response.text();
   if (text === catalogText) return false;
   const sets = JSON.parse(text);
-  const nextLibrary = groupLibrary(sets);
-  const nextById = new Map(sets.map((set) => [set.setId, set]));
-  library = nextLibrary;
-  byId = nextById;
+  // Nothing is recorded until this succeeds: a body that parses but that
+  // `groupLibrary` cannot make sense of must throw before `catalogSets` or
+  // `catalogText` change, exactly as a body that fails to parse already did.
+  applyCatalog(sets);
+  catalogSets = sets;
   catalogText = text;
-  document.getElementById("n-movies").textContent = String(library.movies.length);
-  document.getElementById("n-series").textContent = String(library.series.length);
-  document.getElementById("n-tutorials").textContent = String(library.tutorials.length);
-  renderColophon(sets);
   return true;
 }
 
@@ -692,8 +735,10 @@ async function readCatalogOnce() {
   try {
     if (!(await loadCatalog())) return;
     // The colophon says how old the catalogue is, and that just changed.
+    // Filtered the same way `applyCatalog` left it, or a kids profile would
+    // see the whole library's totals return on every refresh.
     await loadLink();
-    renderColophon(JSON.parse(catalogText));
+    renderColophon(visibleSets());
     invalidateShelf();
   } catch {
     // A server that is restarting answers nothing for a moment. The shelves
@@ -755,6 +800,8 @@ try {
     stateFailed: known !== null,
   });
   showProfile();
+  // Read before anyone was chosen; a kids profile sees less of it.
+  applyCatalog();
 
   void offerSystem();
   refreshShelfCounts();

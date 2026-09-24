@@ -82,8 +82,14 @@ function card({ name, meta, resume, initials, onClick, badges, poster, progress,
   return button;
 }
 
-/** What to say when a shelf is empty: the command that would fill it. */
-export function emptyState(section) {
+/**
+ * What to say when a shelf is empty: the command that would fill it.
+ * @param {"movies"|"series"|"tutorials"} section
+ * @param {{kids?: boolean}} [options] a kids profile is waiting for ratings,
+ *   not uploads, so it is told that instead of how to upload
+ */
+export function emptyState(section, { kids = false } = {}) {
+  if (kids) return el("p", "empty", "Nothing rated FSK 12 or under yet.");
   const p = el("p", "empty");
   p.append(SECTIONS[section].empty + " ");
   if (section === "movies") p.append("Upload one with "), p.append(el("code", null, "mediagram add <file> --tmdb <id>"));
