@@ -3,10 +3,13 @@ resolver = "3"
 members = ["crates/mlib-spec", "crates/mediagram", "crates/mediagram-tmdb", "crates/mediagram-core"]
 
 [workspace.package]
-version = "0.40.0"
+version = "0.40.2"
 edition = "2024"
 license = "MIT"
 rust-version = "1.87"
+repository = "https://github.com/daBOB/mediagram"
+readme = "README.md"
+keywords = ["telegram", "media", "video", "library"]
 
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
