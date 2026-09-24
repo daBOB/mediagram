@@ -1,7 +1,7 @@
 /** Covers `listen-address`: which binds count as exposed, and which URLs are shown. */
 
 import { describe, expect, test } from "bun:test";
-import { isExposed, reachableUrls } from "../src/listen-address";
+import { isExposed, reachableUrls } from "../src/application/listen-address";
 
 const interfaces = {
   lo: [{ address: "127.0.0.1", family: "IPv4", internal: true }],

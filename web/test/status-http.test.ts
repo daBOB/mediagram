@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { createStatusRouter } from "../src/status/routes";
 import type { StartupFacts } from "../src/status/facts";
-import type { PlayerRequest } from "../src/routes";
+import type { PlayerRequest } from "../src/http/contracts";
 
 const facts: StartupFacts = {
   catalog: {

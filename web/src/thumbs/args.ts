@@ -6,7 +6,15 @@
  * looks exactly like a sheet of the right ones until someone hovers the bar.
  */
 
-import type { SpritePlan } from "./sheets";
+/** The layout `sprite-plan.js` decided. Re-declared for the server's types. */
+export interface SpritePlan {
+  interval: number;
+  tiles: number;
+  columns: number;
+  rows: number;
+  tileWidth: number;
+  tileHeight: number;
+}
 
 export interface SheetRequest {
   /** The player's own Range route for this set. */

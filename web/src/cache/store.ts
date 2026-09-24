@@ -126,7 +126,9 @@ export class ChunkCache {
       // A cache that cannot write is a slow cache, not a broken player.
       return;
     }
-    await this.evict();
+    // Maintenance must not reject bytes already fetched for playback. An
+    // explicit evict() still reports failures to its caller.
+    await this.evict().catch((error) => console.warn("cache eviction failed:", error));
   }
 
   /** Total bytes currently held. */

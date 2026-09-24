@@ -15,7 +15,9 @@ import { CACHE_CHUNK } from "../src/cache/key";
 import { CachedReader } from "../src/cache/reader";
 import { SeriesPreload, type PreloadItem } from "../src/cache/series-preload";
 import { ChunkCache } from "../src/cache/store";
-import { createRouter, type ByteSource, type PlayerRequest } from "../src/routes";
+import { createRouter } from "../src/routes";
+import type { ByteSource } from "../src/http/stream";
+import type { PlayerRequest } from "../src/http/contracts";
 import { emptyIndex } from "./index-fixture";
 
 const SET = "01SET0000000000000000001";
@@ -50,7 +52,7 @@ describe("CachedReader.fill", () => {
 
     await reader.fill(SET, 0, part.bytes.length, part.fetch);
     const asked = part.asked.length;
-    const whole = await reader.read(SET, 0, 0, part.bytes.length, part.bytes.length, part.fetch);
+    const whole = await reader.read({ setId: SET, partIdx: 0, start: 0, length: part.bytes.length, partLength: part.bytes.length, fetch: part.fetch });
 
     expect(whole).toEqual(part.bytes);
     expect(asked).toBeGreaterThan(0);
@@ -60,7 +62,7 @@ describe("CachedReader.fill", () => {
   test("fetches only the chunks that are missing", async () => {
     const part = upstream(CACHE_CHUNK * 4);
     const reader = new CachedReader(new ChunkCache(root, 100_000_000));
-    await reader.read(SET, 0, 0, CACHE_CHUNK, part.bytes.length, part.fetch);
+    await reader.read({ setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK, partLength: part.bytes.length, fetch: part.fetch });
     part.asked.length = 0;
 
     await reader.fill(SET, 0, part.bytes.length, part.fetch);
@@ -83,7 +85,7 @@ function preloadWith(held: Set<string> = new Set(), failing: Set<string> = new S
     },
     fetcherFor: () => async () => new Uint8Array(),
     isHeld: async (setId) => held.has(setId),
-    onHeld: (setId) => became.push(setId),
+    onHeld: (setId) => { became.push(setId); },
   });
   return {
     preload,
@@ -187,8 +189,45 @@ describe("POST /api/preload", () => {
   }
 
   function post(body: unknown): PlayerRequest {
-    return { method: "POST", path: "/api/preload", range: null, body: JSON.stringify(body) };
+    return { method: "POST", path: "/api/preload", range: null, body: JSON.stringify(body), contentType: "application/json" };
   }
+
+  test.each([
+    { origin: "https://unrelated.example", contentType: "application/json", status: 403 },
+    { origin: "not an origin", contentType: "application/json", status: 403 },
+    { origin: "http://127.0.0.1:8770", contentType: "text/plain", status: 415 },
+    { origin: null, contentType: null, status: 415 },
+  ])("refuses unsafe browser writes before changing the preload queue: %j", async (request) => {
+    const asked: PreloadItem[][] = [];
+    const preload = { want: (items: PreloadItem[]) => asked.push(items) } as never;
+    const db = catalog();
+    try {
+      const route = createRouter({ db, source: NO_BYTES, preload });
+      const response = await route({ ...post({ setIds: [] }), ...request, host: "127.0.0.1:8770" });
+      expect(response.status).toBe(request.status);
+      expect(asked).toEqual([]);
+    } finally {
+      db.close();
+    }
+  });
+
+  test("accepts a same-origin JSON write", async () => {
+    const asked: PreloadItem[][] = [];
+    const preload = { want: (items: PreloadItem[]) => asked.push(items) } as never;
+    const db = catalog();
+    try {
+      const route = createRouter({ db, source: NO_BYTES, preload });
+      const response = await route({
+        ...post({ setIds: ["01EP00000000000000000002"] }),
+        origin: "http://127.0.0.1:8770",
+        host: "127.0.0.1:8770",
+      });
+      expect(response.status).toBe(202);
+      expect(asked[0]?.map((item) => item.setId)).toEqual(["01EP00000000000000000002"]);
+    } finally {
+      db.close();
+    }
+  });
 
   test("passes on the episodes named, as many as two, and nothing else", async () => {
     const asked: PreloadItem[][] = [];

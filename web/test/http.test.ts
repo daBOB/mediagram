@@ -13,7 +13,8 @@
 import type { Database } from "bun:sqlite";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { startServer, type RunningServer } from "../src/server";
-import type { ByteSource, HlsFile, HlsServer } from "../src/routes";
+import type { ByteSource } from "../src/http/stream";
+import type { HlsFile, HlsServer } from "../src/transcode/routes";
 import { rawRequest } from "./raw-http";
 import { emptyIndex } from "./index-fixture";
 import { ALIGN, type Step } from "../src/range";
@@ -400,6 +401,24 @@ describe("releasing a transcode", () => {
     ended = [];
     const response = await rawRequest(hlsServer.port, `/hls/${SESSION}`, { method: "DELETE" });
 
+    expect(response.status).toBe(204);
+    expect(ended).toEqual([SESSION]);
+  });
+
+  test("cross-origin deletion cannot stop a session", async () => {
+    ended = [];
+    const response = await rawRequest(hlsServer.port, `/hls/${SESSION}`, {
+      method: "DELETE", headers: { Origin: "https://elsewhere.example" },
+    });
+    expect(response.status).toBe(403);
+    expect(ended).toEqual([]);
+  });
+
+  test("same-origin deletion retains the bodyless DELETE contract", async () => {
+    ended = [];
+    const response = await rawRequest(hlsServer.port, `/hls/${SESSION}`, {
+      method: "DELETE", headers: { Origin: `http://127.0.0.1:${hlsServer.port}` },
+    });
     expect(response.status).toBe(204);
     expect(ended).toEqual([SESSION]);
   });

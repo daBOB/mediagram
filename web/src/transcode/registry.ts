@@ -87,29 +87,35 @@ export class TranscodeRegistry {
   private readonly sessions = new Map<string, Tracked>();
   /** Starts in flight, so two viewers arriving together share one ffmpeg. */
   private readonly starting = new Map<string, Promise<Session>>();
+  private readonly stopping = new Set<Promise<void>>();
   private readonly idleMs: number;
   private readonly maxSessions: number;
+  private readonly now: () => number;
+  private closed = false;
+  private shutdown: Promise<void> | null = null;
 
   constructor(
     private readonly workDir: string,
     private readonly runner: Runner,
-    options: { idleMs?: number; maxSessions?: number } = {},
+    options: { idleMs?: number; maxSessions?: number; now?: () => number } = {},
   ) {
     this.idleMs = options.idleMs ?? DEFAULT_IDLE_MS;
     this.maxSessions = options.maxSessions ?? DEFAULT_MAX_SESSIONS;
+    this.now = options.now ?? Date.now;
   }
 
   /**
-   * The session for this title at this offset, started if it is not running.
+   * Acquires one viewer's share of a session, starting it if necessary.
    *
    * Identified by what it transcodes rather than by a random id, so two
    * viewers of the same thing share one encode instead of racing.
    */
-  async sessionFor(spec: SessionSpec): Promise<Session> {
+  async acquireSession(spec: SessionSpec): Promise<Session> {
+    if (this.closed) throw new Error("the conversion registry is shutting down");
     const id = sessionId(spec);
     const existing = this.sessions.get(id);
     if (existing) {
-      existing.lastUsed = Date.now();
+      existing.lastUsed = this.now();
       existing.watchers += 1;
       return existing;
     }
@@ -124,7 +130,7 @@ export class TranscodeRegistry {
       const session = await pending;
       const tracked = this.sessions.get(session.id);
       if (tracked) {
-        tracked.lastUsed = Date.now();
+        tracked.lastUsed = this.now();
         tracked.watchers += 1;
       }
       return session;
@@ -156,7 +162,7 @@ export class TranscodeRegistry {
       directory,
       process,
       exited: process.exited,
-      lastUsed: Date.now(),
+      lastUsed: this.now(),
       watchers: 1,
     };
     this.sessions.set(id, tracked);
@@ -180,7 +186,7 @@ export class TranscodeRegistry {
   /** Marks a session as still wanted, so `reapIdle` leaves it alone. */
   touch(id: string): void {
     const session = this.sessions.get(id);
-    if (session) session.lastUsed = Date.now();
+    if (session) session.lastUsed = this.now();
   }
 
   has(id: string): boolean {
@@ -206,6 +212,8 @@ export class TranscodeRegistry {
       seekSeconds: tracked.seekSeconds,
       maxrateBits: tracked.maxrateBits,
       audioTrack: tracked.audioTrack,
+      copyVideo: tracked.copyVideo,
+      hevcCopy: tracked.hevcCopy,
       watchers: tracked.watchers,
     }));
   }
@@ -220,11 +228,16 @@ export class TranscodeRegistry {
   }
 
   /** Stops a session and removes its segments. Absent is not an error. */
-  async stop(id: string): Promise<void> {
+  stop(id: string): Promise<void> {
     const session = this.sessions.get(id);
-    if (!session) return;
+    if (!session) return Promise.resolve();
     this.sessions.delete(id);
+    const stopped = this.stopSession(session).finally(() => this.stopping.delete(stopped));
+    this.stopping.add(stopped);
+    return stopped;
+  }
 
+  private async stopSession(session: Tracked): Promise<void> {
     // Moved aside before ffmpeg is waited on, because ids are deterministic:
     // a session restarted during the three seconds ffmpeg gets to exit would
     // otherwise have its fresh directory deleted out from under it, and the
@@ -241,15 +254,28 @@ export class TranscodeRegistry {
 
   /** Stops every session that has not been read within the idle limit. */
   async reapIdle(): Promise<number> {
-    const deadline = Date.now() - this.idleMs;
+    const deadline = this.now() - this.idleMs;
     const stale = [...this.sessions.values()].filter((s) => s.lastUsed <= deadline);
     for (const session of stale) await this.stop(session.id);
     return stale.length;
   }
 
   /** Used on shutdown: an orphaned ffmpeg outlives the server otherwise. */
-  async stopAll(): Promise<void> {
-    for (const id of [...this.sessions.keys()]) await this.stop(id);
+  stopAll(): Promise<void> {
+    if (this.shutdown) return this.shutdown;
+    this.closed = true;
+    this.shutdown = this.finishShutdown();
+    return this.shutdown;
+  }
+
+  private async finishShutdown(): Promise<void> {
+    // Admitted starts may still be making directories. Drain them before
+    // collecting processes, including releases already waiting for exit.
+    await Promise.allSettled(this.starting.values());
+    const stops = [...this.stopping, ...[...this.sessions.keys()].map((id) => this.stop(id))];
+    const results = await Promise.allSettled(stops);
+    const failures = results.filter((result) => result.status === "rejected");
+    if (failures.length) throw new AggregateError(failures.map((result) => result.reason), "could not stop every conversion");
   }
 }
 

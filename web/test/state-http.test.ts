@@ -14,7 +14,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { startServer, type RunningServer } from "../src/server";
-import type { ByteSource } from "../src/routes";
+import type { ByteSource } from "../src/http/stream";
 import type { PartLocation } from "../src/catalog";
 import type { Step } from "../src/range";
 import { WatchState } from "../src/state/store";

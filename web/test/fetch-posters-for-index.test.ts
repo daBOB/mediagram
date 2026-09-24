@@ -25,7 +25,7 @@ describe("fetching posters for a snapshot", () => {
     const log = join(dir, "args");
     const command = await fakeCommand(`echo "$@" > ${log}; echo working; echo "3 poster(s) in x: 1 fetched, 2 already held"`);
     const outcome = await fetchPostersForIndex(command, "/snap/library.db");
-    expect(outcome).toEqual({ ok: true, said: "3 poster(s) in x: 1 fetched, 2 already held" });
+    expect(outcome).toEqual({ ok: true, summary: "3 poster(s) in x: 1 fetched, 2 already held" });
     expect((await Bun.file(log).text()).trim()).toBe("posters --index /snap/library.db");
   });
 

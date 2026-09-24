@@ -12,7 +12,9 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, utimesSync } from "node:
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { createRouter, type ByteSource, type PlayerRequest } from "../src/routes";
+import { createRouter } from "../src/routes";
+import type { ByteSource } from "../src/http/stream";
+import type { PlayerRequest } from "../src/http/contracts";
 import { PosterStore, posterKeyFor } from "../src/package/posters";
 import { emptyIndex } from "./index-fixture";
 
@@ -109,13 +111,13 @@ describe("serving artwork from a local index", () => {
     const route = createRouter({ db, source: NO_BYTES, posters: new PosterStore(dir) });
 
     const catalog = await route(get("/api/sets"));
-    const [set] = JSON.parse(new TextDecoder().decode(catalog.body!));
+    const [set] = JSON.parse(await new Response(catalog.body).text());
     expect(set.poster).toBe("tmdb-movie-36648");
 
     const image = await route(get("/api/posters/tmdb-movie-36648.jpg"));
     expect(image.status).toBe(200);
     expect(image.headers["content-type"]).toBe("image/jpeg");
-    expect(new TextDecoder().decode(image.body!)).toBe("bytes of tmdb-movie-36648.jpg");
+    expect(await new Response(image.body).text()).toBe("bytes of tmdb-movie-36648.jpg");
   });
 
   test("a course keeps its initials rather than borrowing someone's artwork", async () => {
@@ -126,7 +128,7 @@ describe("serving artwork from a local index", () => {
     const route = createRouter({ db, source: NO_BYTES, posters: new PosterStore(dir) });
 
     const catalog = await route(get("/api/sets"));
-    const [set] = JSON.parse(new TextDecoder().decode(catalog.body!));
+    const [set] = JSON.parse(await new Response(catalog.body).text());
     expect(set.poster).toBeNull();
   });
 
@@ -136,7 +138,7 @@ describe("serving artwork from a local index", () => {
     const route = createRouter({ db, source: NO_BYTES, posters: new PosterStore(withPosters()) });
 
     const catalog = await route(get("/api/sets"));
-    const [set] = JSON.parse(new TextDecoder().decode(catalog.body!));
+    const [set] = JSON.parse(await new Response(catalog.body).text());
     expect(set.poster).toBeNull();
     expect((await route(get("/api/posters/tmdb-movie-999999.jpg"))).status).toBe(404);
   });
@@ -153,7 +155,7 @@ describe("a season's own artwork", () => {
     const route = createRouter({ db, source: NO_BYTES, posters: new PosterStore(dir) });
 
     const catalog = await route(get("/api/sets"));
-    const sets = JSON.parse(new TextDecoder().decode(catalog.body!));
+    const sets = JSON.parse(await new Response(catalog.body).text());
     const bySeason = new Map(sets.map((set: any) => [set.season, set]));
     expect((bySeason.get(2) as any).seasonPoster).toBe("tmdb-tv-1396-s2");
     // Season three has no artwork of its own; the page falls back to the show's.
@@ -168,7 +170,7 @@ describe("a season's own artwork", () => {
     completeSet(db, "01SET0000000000000000012", "movie", 5);
     const route = createRouter({ db, source: NO_BYTES, posters: new PosterStore(withPosters()) });
 
-    const [set] = JSON.parse(new TextDecoder().decode((await route(get("/api/sets"))).body!));
+    const [set] = JSON.parse(await new Response((await route(get("/api/sets"))).body).text());
     expect(set.seasonPoster).toBeNull();
   });
 });

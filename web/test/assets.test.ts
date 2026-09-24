@@ -8,7 +8,7 @@
 
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { subtitle, subtitleLanguages, summary } from "../src/assets";
+import { subtitle, subtitleLanguages, summary } from "../src/catalog/assets";
 import { emptyIndex as fixture } from "./index-fixture";
 
 const SET = "01SET0000000000000000001";

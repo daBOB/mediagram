@@ -13,27 +13,16 @@
  * trade costs nothing that matters.
  */
 
-import type { CatalogEvents } from "./catalog-events";
 import type { Database } from "bun:sqlite";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { clientAddress } from "./client-reach";
-import type { PosterStore } from "./package/posters";
-import {
-  createRouter,
-  type ByteSource,
-  type CatalogOrigin,
-  type HlsServer,
-  type PlayerRequest,
-  type PlayerResponse,
-} from "./routes";
-import type { AudioTrackReader } from "./audio-tracks";
-import type { WatchState } from "./state/store";
-import type { HeldSets } from "./cache/held";
-import type { SheetStore } from "./thumbs/sheets";
-import type { SeriesPreload } from "./cache/series-preload";
+import { createRouter, type CatalogOrigin, type RouterOptions } from "./routes";
+import type { PlayerRequest } from "./http/contracts";
 
 export interface RunningServer {
   port: number;
+  /** This listener's reachable local endpoint, including its actual bound port. */
+  baseUrl: string;
   close(): Promise<void>;
   /**
    * Serves another catalog from the next request on.
@@ -137,13 +126,7 @@ export function write(response: ServerResponse, chunk: Uint8Array): Promise<void
   });
 }
 
-export function startServer(options: {
-  db: Database;
-  source: ByteSource;
-  hls?: HlsServer;
-  posters?: PosterStore;
-  audio?: AudioTrackReader;
-  state?: WatchState;
+export function startServer(options: RouterOptions & {
   port?: number;
   hostname?: string;
   /**
@@ -154,36 +137,9 @@ export function startServer(options: {
    * anyone claim to be on the local network.
    */
   trustProxy?: boolean;
-  maxBitrate?: number;
-  /** Where the catalog came from, for the colophon. */
-  catalog?: CatalogOrigin;
-  /** Answers `/api/status`, for a viewer on this network. */
-  status?: (request: PlayerRequest) => Promise<PlayerResponse | null>;
-  /** Which sets are held in full, for the offline badge. */
-  held?: HeldSets;
-  /** Makes and serves scrub-bar preview sheets, where this player makes them. */
-  thumbs?: SheetStore;
-  /** Where open pages hear that the catalog changed. */
-  events?: CatalogEvents;
-  /** Takes the next episodes into the cache while one plays. */
-  preload?: SeriesPreload;
 }): Promise<RunningServer> {
   const routerFor = (db: Database, catalog: CatalogOrigin | undefined) =>
-    createRouter({
-      db,
-      source: options.source,
-      hls: options.hls,
-      posters: options.posters,
-      audio: options.audio,
-      state: options.state,
-      maxBitrate: options.maxBitrate,
-      catalog,
-      status: options.status,
-      held: options.held,
-      thumbs: options.thumbs,
-      events: options.events,
-      preload: options.preload,
-    });
+    createRouter({ ...options, db, catalog });
   let route = routerFor(options.db, options.catalog);
   const trustProxy = options.trustProxy ?? false;
 
@@ -217,12 +173,23 @@ export function startServer(options: {
     });
   });
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    server.once("error", reject);
     server.listen(options.port ?? 0, options.hostname ?? "127.0.0.1", () => {
+      server.off("error", reject);
       const address = server.address();
-      const port = typeof address === "object" && address !== null ? address.port : 0;
+      if (address === null || typeof address === "string") {
+        server.close();
+        reject(new Error("HTTP listener did not bind a TCP address"));
+        return;
+      }
+      const port = address.port;
+      const hostname = address.address === "0.0.0.0" ? "127.0.0.1"
+        : address.address === "::" ? "::1" : address.address;
+      const host = hostname.includes(":") ? `[${hostname}]` : hostname;
       resolve({
         port,
+        baseUrl: `http://${host}:${port}`,
         close: () =>
           new Promise<void>((done) => {
             server.closeAllConnections?.();

@@ -13,7 +13,7 @@
  * a TMDB key, serves initials where posters would be, as it always did.
  */
 
-export type PosterFetch = { ok: true; said: string } | { ok: false; reason: string };
+export type PosterFetch = { ok: true; summary: string } | { ok: false; reason: string };
 
 export async function fetchPostersForIndex(command: string, indexPath: string): Promise<PosterFetch> {
   let proc: ReturnType<typeof Bun.spawn>;
@@ -29,6 +29,6 @@ export async function fetchPostersForIndex(command: string, indexPath: string): 
   ]);
   // Its last line is the summary: "565 poster(s) in …: 20 fetched, 545 already held".
   const last = (text: string) => text.trim().split("\n").at(-1) ?? "";
-  if (code === 0) return { ok: true, said: last(out) };
+  if (code === 0) return { ok: true, summary: last(out) };
   return { ok: false, reason: `\`${command} posters\` exited ${code}: ${last(err) || last(out)}` };
 }

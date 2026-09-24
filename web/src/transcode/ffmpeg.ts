@@ -20,8 +20,30 @@ export interface FfmpegOptions {
   segmentSeconds: number;
 }
 
+interface ChildProcess {
+  stderr: ReadableStream<Uint8Array>;
+  exited: Promise<number>;
+  kill(signal: "SIGTERM" | "SIGKILL"): void;
+}
+
+/** Raw process, log, and timer IO; supervision remains in the runner. */
+interface ProcessIo {
+  spawn(command: string[]): ChildProcess;
+  appendLog(path: string, text: string): void;
+  schedule(callback: () => void, milliseconds: number): () => void;
+}
+
+const processIo: ProcessIo = {
+  spawn: (command) => Bun.spawn(command, { stdout: "ignore", stderr: "pipe" }),
+  appendLog: appendFileSync,
+  schedule(callback, milliseconds) {
+    const timer = setTimeout(callback, milliseconds);
+    return () => clearTimeout(timer);
+  },
+};
+
 export class FfmpegRunner implements Runner {
-  constructor(private readonly options: FfmpegOptions) {}
+  constructor(private readonly options: FfmpegOptions, private readonly io: ProcessIo = processIo) {}
 
   start(_sessionId: string, directory: string, spec: SessionSpec): Running {
     const args = transcodeArgs({
@@ -40,11 +62,7 @@ export class FfmpegRunner implements Runner {
     });
 
     const log = join(directory, "ffmpeg.log");
-    const proc = Bun.spawn(["ffmpeg", ...args], {
-      stdout: "ignore",
-      stderr: "pipe",
-      // Detached would outlive us; this process must die with the server.
-    });
+    const proc = this.io.spawn(["ffmpeg", ...args]);
 
     // Appended as it arrives rather than collected and written at exit: the
     // failure worth catching is an ffmpeg that stops making progress and
@@ -53,9 +71,9 @@ export class FfmpegRunner implements Runner {
     void (async () => {
       try {
         const decoder = new TextDecoder();
-        for await (const chunk of proc.stderr as ReadableStream<Uint8Array>) {
+        for await (const chunk of proc.stderr) {
           const text = decoder.decode(chunk, { stream: true });
-          if (text) appendFileSync(log, text);
+          if (text) this.io.appendLog(log, text);
         }
       } catch {
         // A lost log is not worth failing a playback for.
@@ -67,15 +85,24 @@ export class FfmpegRunner implements Runner {
       // dies, rather than polling for output that is never coming.
       exited: proc.exited,
       stop: async () => {
+        let cancel = () => {};
         try {
           // SIGTERM lets ffmpeg finish the segment it is writing and close
           // the playlist; SIGKILL would leave a truncated segment behind.
           proc.kill("SIGTERM");
-          await Promise.race([proc.exited, Bun.sleep(3000)]);
-          proc.kill("SIGKILL");
+          const exited = await Promise.race([
+            proc.exited.then(() => true),
+            new Promise<boolean>((resolve) => {
+              cancel = this.io.schedule(() => resolve(false), 3000);
+            }),
+          ]);
+          if (!exited) proc.kill("SIGKILL");
         } catch {
-          // Already gone.
+          // Already gone; still wait for its exit notification below.
+        } finally {
+          cancel();
         }
+        await proc.exited;
       },
     };
   }

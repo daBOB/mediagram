@@ -32,6 +32,16 @@ export const MAX_RUN_BYTES = 8 * CACHE_CHUNK;
 /** Fetches `length` bytes at `offset` within a part, from upstream. */
 export type FetchRange = (offset: number, length: number) => Promise<Uint8Array>;
 
+/** The requested range and the enclosing part's cache/upstream identity. */
+export interface CachedReadRequest {
+  setId: string;
+  partIdx: number;
+  start: number;
+  length: number;
+  partLength: number;
+  fetch: FetchRange;
+}
+
 /** A stretch of consecutive chunk indexes that all need fetching. */
 interface Run {
   first: number;
@@ -80,12 +90,7 @@ export class CachedReader {
    * fetched in a single request and then yielded chunk by chunk.
    */
   async *readStream(
-    setId: string,
-    partIdx: number,
-    start: number,
-    length: number,
-    partLength: number,
-    fetch: FetchRange,
+    { setId, partIdx, start, length, partLength, fetch }: CachedReadRequest,
   ): AsyncGenerator<Uint8Array, void, unknown> {
     const slices = chunksCovering(start, length);
     let at = 0;
@@ -149,14 +154,7 @@ export class CachedReader {
    * message, so there is no one upstream to bind to. It also keeps this file
    * free of any knowledge of where bytes come from.
    */
-  async read(
-    setId: string,
-    partIdx: number,
-    start: number,
-    length: number,
-    partLength: number,
-    fetch: FetchRange,
-  ): Promise<Uint8Array> {
+  async read({ setId, partIdx, start, length, partLength, fetch }: CachedReadRequest): Promise<Uint8Array> {
     const slices = chunksCovering(start, length);
     const chunks = new Map<number, Uint8Array>();
 

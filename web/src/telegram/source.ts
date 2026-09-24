@@ -19,7 +19,7 @@ import type { CachedReader } from "../cache/reader";
 import type { PartLocation } from "../catalog";
 import { requestSizeFor, type Step } from "../range";
 import { DownloadGate } from "./download-gate";
-import type { ByteSource } from "../routes";
+import type { ByteSource } from "../http/stream";
 import type { Telegram } from "./client";
 
 export class TelegramSource implements ByteSource {
@@ -91,14 +91,14 @@ export class TelegramSource implements ByteSource {
         // Streamed, not collected: the response has already promised a
         // length and must start sending immediately, and a whole-file request
         // would otherwise be held in memory.
-        yield* this.reader.readStream(
+        yield* this.reader.readStream({
           setId,
-          step.partIdx,
-          step.offset + step.headDrop,
-          step.take,
-          location.span.len,
-          partFetcher(this.telegram, location.messageId),
-        );
+          partIdx: step.partIdx,
+          start: step.offset + step.headDrop,
+          length: step.take,
+          partLength: location.span.len,
+          fetch: partFetcher(this.telegram, location.messageId),
+        });
         continue;
       }
 

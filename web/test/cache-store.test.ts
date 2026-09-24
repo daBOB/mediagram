@@ -6,12 +6,13 @@
  * quota is the point of the thing, so most of these tests are about eviction.
  */
 
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdtemp, rm, stat, writeFile } from "node:fs/promises";
+import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
+import { chmod, mkdtemp, rm, stat, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 import { ChunkCache } from "../src/cache/store";
+import { CachedReader } from "../src/cache/reader";
 import { CACHE_CHUNK, chunkPath } from "../src/cache/key";
 
 const SET = "01SET0000000000000000001";
@@ -53,6 +54,35 @@ describe("storing and reading", () => {
 });
 
 describe("the quota", () => {
+  // Root bypasses filesystem write permissions, so it cannot reproduce EACCES.
+  test.skipIf(process.getuid?.() === 0)("automatic eviction failure preserves playback while explicit eviction reports it", async () => {
+    const seed = new ChunkCache(root, 10_000);
+    await seed.put(SET, 0, 0, block(1));
+    const locked = chunkPath(root, SET, 0, 0);
+    await utimes(locked, new Date(0), new Date(0));
+    await chmod(dirname(locked), 0o500);
+    const warning = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const cache = new ChunkCache(root, 1024);
+      const payload = block(3, 256);
+      const reader = new CachedReader(cache);
+
+      const delivered = await reader.read({ setId: "NEXT", partIdx: 0, start: 0, length: payload.length, partLength: payload.length, fetch: async () => payload });
+
+      expect(delivered).toEqual(payload);
+      expect(await cache.get(SET, 0, 0)).toEqual(block(1));
+      expect(await cache.get("NEXT", 0, 0)).toEqual(payload);
+      expect(await cache.sizeOnDisk()).toBe(1280);
+      expect(cache.stats().evicted).toBe(0);
+      expect(warning).toHaveBeenCalledWith("cache eviction failed:", expect.objectContaining({ code: "EACCES" }));
+      await utimes(locked, new Date(0), new Date(0));
+      await expect(cache.evict()).rejects.toMatchObject({ code: "EACCES" });
+    } finally {
+      warning.mockRestore();
+      await chmod(dirname(locked), 0o700);
+    }
+  });
+
   test("stays under the budget as chunks are added", async () => {
     const cache = new ChunkCache(root, 4096);
 
@@ -70,15 +100,29 @@ describe("the quota", () => {
     await cache.put(SET, 0, 1, block(1));
     await cache.put(SET, 0, 2, block(2));
 
-    // Touch chunk 0 so chunk 1 becomes the oldest use.
-    await new Promise((r) => setTimeout(r, 15));
+    // Give every use a distinct time; adjacent writes can share a filesystem
+    // timestamp, which leaves eviction free to choose either tied chunk.
+    const oldest = Date.now() - 60_000;
+    for (let index = 0; index < 3; index++) {
+      const used = new Date(oldest + index * 1000);
+      await utimes(chunkPath(root, SET, 0, index), used, used);
+    }
+
+    // get() touches in the background. Observe that write before eviction
+    // instead of relying on a fixed sleep to outlast filesystem scheduling.
     await cache.get(SET, 0, 0);
-    await new Promise((r) => setTimeout(r, 15));
+    const touched = chunkPath(root, SET, 0, 0);
+    const deadline = Date.now() + 1000;
+    while ((await stat(touched)).atimeMs <= oldest + 2000 && Date.now() < deadline) {
+      await Bun.sleep(1);
+    }
+    expect((await stat(touched)).atimeMs).toBeGreaterThan(oldest + 2000);
 
     await cache.put(SET, 0, 3, block(3));
 
     expect(await cache.get(SET, 0, 0)).not.toBeNull();
     expect(await cache.get(SET, 0, 1)).toBeNull();
+    expect(await cache.get(SET, 0, 2)).not.toBeNull();
   });
 
   test("a budget of zero keeps nothing, rather than failing", async () => {

@@ -100,7 +100,7 @@ export class AudioTrackReader {
   private readonly cache = new Map<string, AudioTrack[]>();
 
   constructor(
-    private readonly baseUrl: string,
+    private readonly endpoint: { readonly baseUrl: string },
     private readonly probe: Prober = ffprobeStreams,
   ) {}
 
@@ -108,7 +108,7 @@ export class AudioTrackReader {
     const held = this.cache.get(setId);
     if (held) return held;
 
-    const url = `${this.baseUrl}/api/sets/${encodeURIComponent(setId)}/stream`;
+    const url = `${this.endpoint.baseUrl}/api/sets/${encodeURIComponent(setId)}/stream`;
     let tracks: AudioTrack[] = [];
     try {
       const json = await this.probe(url);

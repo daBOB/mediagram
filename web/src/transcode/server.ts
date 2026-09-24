@@ -10,7 +10,7 @@
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
-import type { HlsFile, HlsServer } from "../routes";
+import type { HlsFile, HlsServer } from "./routes";
 import type { SessionSpec, TranscodeRegistry } from "./registry";
 
 const TYPES: Record<string, string> = {
@@ -52,7 +52,7 @@ export class TranscodeFiles implements HlsServer {
    * session rather than racing for the hardware.
    */
   async begin(spec: SessionSpec): Promise<string> {
-    const session = await this.registry.sessionFor(spec);
+    const session = await this.registry.acquireSession(spec);
 
     // Not returned until there is something to play. hls.js gives a manifest
     // one retry and then reports a fatal error, so a URL handed over early is
@@ -83,7 +83,7 @@ export class TranscodeFiles implements HlsServer {
     });
 
     for (;;) {
-      const text = await readFile(playlist, "utf8").catch(() => null);
+      const text = await readFile(playlist, "utf8").catch(pendingOutput);
       // The header alone is written before anything is encoded; a segment
       // line is the first evidence that there is a picture.
       if (text !== null && /^[^#\r\n]+\.(?:ts|m4s)\s*$/m.test(text)) return;
@@ -125,7 +125,7 @@ export class TranscodeFiles implements HlsServer {
     const body = await Bun.file(path)
       .arrayBuffer()
       .then((bytes) => new Uint8Array(bytes))
-      .catch(() => null);
+      .catch(pendingOutput);
     if (body === null) return "not-ready";
 
     // Someone is watching; do not reap this session out from under them.
@@ -134,4 +134,10 @@ export class TranscodeFiles implements HlsServer {
     const dot = name.lastIndexOf(".");
     return { body, type: TYPES[name.slice(dot)] ?? "application/octet-stream" };
   }
+}
+
+/** Output can disappear while a session stops; other disk failures need diagnosis. */
+function pendingOutput(error: unknown): null {
+  if (error instanceof Error && "code" in error && error.code === "ENOENT") return null;
+  throw error;
 }

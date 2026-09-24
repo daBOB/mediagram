@@ -9,14 +9,14 @@
 import { Database } from "bun:sqlite";
 import { rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { describe, load } from "./config";
-import { EXPECTED_SCHEMA, OLDEST_READABLE_SCHEMA, assertSchema, listPlayable } from "./catalog";
+import { describe, load, type Config } from "./config";
+import { EXPECTED_SCHEMA, assertSchema, listPlayable } from "./catalog";
 import { startServer } from "./server";
 import { SheetStore } from "./thumbs/sheets";
 import { StateSync } from "./state/sync";
 import { TelegramStateChannel } from "./telegram/state-channel";
 import { listenForLibraryEvents } from "./telegram/channel-events";
-import { isExposed, reachableUrls } from "./listen-address";
+import { isExposed, reachableUrls } from "./application/listen-address";
 import { CachedReader } from "./cache/reader";
 import { detectEncoder } from "./transcode/encoders";
 import { FfmpegRunner } from "./transcode/ffmpeg";
@@ -24,11 +24,10 @@ import { TranscodeRegistry } from "./transcode/registry";
 import { TranscodeFiles } from "./transcode/server";
 import { ChunkCache } from "./cache/store";
 import { HeldSets, expectedChunks } from "./cache/held";
-import { AudioTrackReader } from "./audio-tracks";
+import { AudioTrackReader } from "./catalog/audio-tracks";
 import { WatchState } from "./state/store";
-import { parseKey } from "./package/open";
 import { PosterStore } from "./package/posters";
-import { refreshCatalog } from "./package/refresh";
+import type { RefreshOptions } from "./package/refresh";
 import { createStatusRouter } from "./status/routes";
 import { dirBytes } from "./status/dir-bytes";
 import type { StartupFacts } from "./status/facts";
@@ -37,476 +36,316 @@ import { TelegramSource, partFetcher } from "./telegram/source";
 import { SeriesPreload } from "./cache/series-preload";
 import { CatalogEvents } from "./catalog-events";
 import { findNewestChannelIndex } from "./channel-index/find-newest-channel-index";
-import { oneAtATime, refreshFromChannel, type ChannelRefresh } from "./channel-index/refresh-from-channel";
 import { fetchPostersForIndex } from "./channel-index/fetch-posters-for-index";
 
-const config = load();
-console.log("player:", describe(config));
+import { openCatalog } from "./application/open-catalog";
+import { CatalogFollower } from "./application/catalog-follow";
+import { LibraryUpdates, installShutdownSignals, shutdownFor, syncOnce, type ApplicationResources } from "./application/lifecycle";
 
-/**
- * Which catalog is open, and where it came from.
- *
- * A `dir` of `null` means there is no package configured and the index on
- * this machine is the catalog. The rest is what the player is asked about
- * afterwards — by the colophon, which says how old the catalogue is, and by
- * the status route, which says whether the last refresh actually worked.
- */
-interface OpenedCatalog {
-  dir: string | null;
-  origin: "package" | "channel" | "local";
-  /** When the package was built or the snapshot pushed, in milliseconds. `null` for a local index. */
-  publishedAt: number | null;
-  /** The verdict of this run's refresh, or `null` when none was attempted. */
-  refresh: "updated" | "unchanged" | "kept" | null;
-  /** Why a refresh was refused, when it was. */
-  reason: string | null;
+/** Only external network, process, and subscription IO is replaceable. */
+interface StartupIo {
+  connect: typeof Telegram.connect;
+  findIndex: typeof findNewestChannelIndex;
+  detectEncoder: typeof detectEncoder;
+  listen: typeof listenForLibraryEvents;
+  fetchPosters: typeof fetchPostersForIndex;
+  fetch?: RefreshOptions["fetch"];
 }
-
-/**
- * Refreshes the published catalog, and says which directory to read.
- *
- * A refresh that fails never stops the player: it keeps the catalog it
- * already had, and only a first run with nothing held is fatal.
- */
-async function openCatalog(cfg: ReturnType<typeof load>, telegram: Telegram): Promise<OpenedCatalog> {
-  if (cfg.packageUrl === null || cfg.packageKey === null) {
-    return fromChannel(await refreshFromChannel(cfg.channelIndexDir, () => findNewestChannelIndex(telegram)));
-  }
-
-  const result = await refreshCatalog({
-    baseUrl: cfg.packageUrl,
-    key: parseKey(cfg.packageKey),
-    root: cfg.catalogDir,
-    supportedSchema: [OLDEST_READABLE_SCHEMA, EXPECTED_SCHEMA],
-  });
-  if (result.status === "kept") {
-    console.log(`catalog: ${result.reason}`);
-    if (result.dir === null) {
-      throw new Error("no catalog: the package could not be read and none was held");
-    }
-    console.log("catalog: keeping the one already held");
-  } else {
-    console.log(`catalog: ${result.status} from ${cfg.packageUrl}`);
-  }
-  return {
-    dir: result.dir,
-    origin: "package",
-    // Seconds in the package, milliseconds everywhere a browser will read it.
-    publishedAt: result.identity ? result.identity.created_at * 1000 : null,
-    refresh: result.status,
-    reason: result.reason ?? null,
-  };
-}
-
-/**
- * What a channel refresh means for the catalog served.
- *
- * With nothing installed and the channel unreadable, the index on this
- * machine is served, and the status route says why.
- */
-function fromChannel(result: ChannelRefresh): OpenedCatalog {
-  if (result.kind === "none") {
-    console.log(`catalog: ${result.reason}; reading this machine's index`);
-    return { dir: null, origin: "local", publishedAt: null, refresh: null, reason: result.reason };
-  }
-  console.log(
-    result.refresh === "kept"
-      ? `catalog: ${result.reason}; keeping the channel index pushed at ${result.pushedAt}`
-      : `catalog: ${result.refresh} from the channel, pushed at ${result.pushedAt}`,
-  );
-  return {
-    dir: result.dir,
-    origin: "channel",
-    publishedAt: result.pushedAt * 1000,
-    refresh: result.refresh,
-    reason: result.reason,
-  };
-}
-
-// Connected before the catalog is chosen: without a package, the catalog is
-// whatever the channel last pinned.
-const telegram = await Telegram.connect(config);
-
-// Where the catalog comes from. A published package makes the player
-// independent of the uploader's filesystem: it fetches `latest.json`,
-// decrypts what it names, and reads the index out of it. Without one it
-// takes the channel's newest index instead, as the Android app does, and
-// reads the index on this disk only when neither can be had.
-const catalog = await openCatalog(config, telegram);
-const catalogDir = catalog.dir;
-
-// One or the other is always set: `load()` requires a local index unless a
-// package supplies the catalog, and `openCatalog` throws rather than return
-// null when a configured package cannot be read and none is held.
-const indexPath = catalogDir ? join(catalogDir, "library.db") : config.libraryDb;
-if (indexPath === null) throw new Error("no catalog: neither a package nor a local index");
-
-// Read-only: the player never writes, and a writable handle would let it
-// checkpoint or migrate an index the uploader owns. `let`, because a channel
-// index is swapped for the next one while the player runs.
-let db = new Database(indexPath, { readonly: true });
-assertSchema(db);
-// Artwork lives beside the index when the index brought it: inside the
-// catalog a package unpacked, or next to the library on this machine, where
-// `mediagram posters` puts it. A channel snapshot is only `library.db`, so a
-// player following the channel reads the posters on this machine too.
-const posterDir =
-  catalog.origin === "channel" && config.libraryDb !== null ? dirname(config.libraryDb) : dirname(indexPath);
-const posters = new PosterStore(posterDir);
-const playableCount = listPlayable(db).length;
-console.log(`catalog: ${playableCount} playable sets, ${posters.count()} poster(s)`);
-
-// A budget of zero turns caching off, which is a legitimate choice on a
-// machine with no disk to spare.
-const cache = config.cacheMaxBytes > 0 ? new ChunkCache(config.cacheDir, config.cacheMaxBytes) : null;
-if (cache) {
-  const held = await cache.sizeOnDisk();
-  console.log(
-    `cache: ${(held / 1024 ** 3).toFixed(2)} GB of ${(config.cacheMaxBytes / 1024 ** 3).toFixed(2)} GB in ${config.cacheDir}` +
-      `, readahead ${config.cacheReadahead} chunk(s)`,
-  );
-} else {
-  console.log("cache: disabled");
-}
-
-// Probed once here rather than at first play: `ffmpeg -encoders` lists what
-// was compiled in, not what initialises, and discovering that when someone
-// presses play is too late.
-const encoder = await detectEncoder();
-console.log(`encoder: ${encoder.name}${encoder.kind === "vaapi" ? ` on ${encoder.device}` : ""}`);
-
-// Cleared on startup. ffmpeg dies with this process, so anything here is a
-// previous run's segments: stale playlists that a restarted session would
-// otherwise be handed, and directories nobody will ever delete.
-await rm(config.transcodeDir, { recursive: true, force: true });
-
-const transcodes = new TranscodeRegistry(
-  config.transcodeDir,
-  new FfmpegRunner({
-    encoder,
-    baseUrl: `http://127.0.0.1:${config.port}`,
-    segmentSeconds: 2,
-  }),
-);
-// Idle sessions hold an encoder and write segments nobody reads.
-const reaper = setInterval(() => void transcodes.reapIdle(), 60_000);
-
-// Reads a title's audio streams off the file, through this server's own Range
-// route, the first time a viewer opens it. The index cannot answer this: it
-// stores distinct language codes, not stream ordinals.
-const audio = new AudioTrackReader(`http://127.0.0.1:${config.port}`);
-
-// The one thing this process writes. A store that cannot be opened says so
-// and the player carries on without a memory, because a watch position is
-// not worth refusing to play a library over.
-const state = new WatchState(config.stateDb);
-console.log(state.remembers ? `state: ${config.stateDb}` : "state: not remembered");
-
-/**
- * Sharing that state with this account's other devices, if asked.
- *
- * Off unless `MEDIAGRAM_SYNC_STATE` says otherwise. A player that uploads to
- * the channel on its own is a different kind of thing from one that only ever
- * reads it, and that should be a decision rather than a default somebody
- * discovers afterwards.
- *
- * Nothing here can stop the player: `StateSync.once` does not throw, and a
- * round that fails leaves the local database — which remains the source of
- * truth for this machine — exactly as it was.
- */
-const sync =
-  config.syncState && state.remembers
-    ? new StateSync(state, new TelegramStateChannel(telegram), state.deviceId())
-    : null;
-
-async function syncOnce(why: string): Promise<void> {
-  if (!sync) return;
-  const outcome = await sync.once();
-  if (outcome.failed !== undefined) console.warn(`sync (${why}): ${outcome.failed}`);
-  else if (outcome.pulled > 0 || outcome.pushed) {
-    console.log(`sync (${why}): took ${outcome.pulled}, ${outcome.pushed ? "sent" : "sent nothing"}`);
-  }
-}
-
-/**
- * What a new index in the channel sets off: the install below, once the
- * server is up. One pinned while the player is still starting is remembered
- * and followed as soon as it can be — the startup read may have been before it.
- */
-let missedIndex = false;
-let onNewIndex: () => void = () => {
-  missedIndex = true;
+const startupIo: StartupIo = {
+  connect: (config) => Telegram.connect(config), findIndex: findNewestChannelIndex,
+  detectEncoder, listen: listenForLibraryEvents, fetchPosters: fetchPostersForIndex,
 };
 
-// Another device's write, and the uploader's next index, reach this one in
-// milliseconds instead of at the next timer. Subscribed before the first sync
-// round, which covers whatever was written before the subscription existed.
-// Always on: a player that does not share state still follows the library.
-const stopListening = listenForLibraryEvents(
-  telegram.client,
-  { channel: bareChannelId(config.chatId), ownDevice: state.deviceId() },
-  (event) => {
-    if (event === "state") void syncOnce("push");
-    else onNewIndex();
-  },
-);
-
-// Awaited, so the first page load already shows what the other devices knew
-// rather than showing this machine's answer and correcting it a moment later.
-if (sync) {
-  console.log(`sync: ${state.deviceId()} every ${Math.round(config.syncEveryMs / 1000)}s`);
-  await syncOnce("start");
-}
-const syncTimer = sync ? setInterval(() => void syncOnce("timer"), config.syncEveryMs) : null;
-
-// The same facts the lines above printed, kept this time. Everything here was
-// already decided; none of it is worked out twice.
-const reader = cache ? new CachedReader(cache, config.cacheReadahead) : null;
-const bytes = new TelegramSource(telegram, reader ?? undefined);
-
-// Which titles are on this disk in full, for the shelf's offline badge. The
-// expectation is folded again whenever the catalog is swapped, and the first
-// scan is awaited so the first page load is already right.
-const held = cache ? new HeldSets(config.cacheDir, expectedChunks(db)) : null;
-if (held) {
-  await held.refresh();
-  console.log(`held: ${held.count} title(s) cached in full`);
-}
-const facts: StartupFacts = {
-  catalog: {
-    origin: catalog.origin,
-    publishedAt: catalog.publishedAt,
-    refresh: catalog.refresh,
-    reason: catalog.reason,
-    schema: EXPECTED_SCHEMA,
-    sets: playableCount,
-    posters: posters.count(),
-  },
-  encoder: {
-    name: encoder.name,
-    kind: encoder.kind,
-    device: encoder.kind === "vaapi" ? encoder.device : null,
-  },
-  transcodeDir: config.transcodeDir,
-  cache: cache
-    ? { dir: config.cacheDir, budget: cache.budget, readahead: config.cacheReadahead }
-    : null,
-  state: { remembered: state.remembers, path: state.remembers ? config.stateDb : null },
-  startedAt: Date.now(),
-};
-
-/**
- * Preview frames for the scrub bar.
- *
- * Only ever made from sets `held` reports as complete, so generating one never
- * reaches Telegram — see `thumbs/sheets.ts`. Without a cache there is nothing
- * complete to make them from, so there are no previews and the bar is what it
- * always was.
- */
-const thumbs = held
-  ? new SheetStore({
-      directory: config.thumbsDir,
-      baseUrl: `http://127.0.0.1:${config.port}`,
-      isHeld: (setId) => held.has(setId),
-    })
-  : undefined;
-
-/**
- * The next two episodes, taken into the cache while one plays.
- *
- * Needs the cache to have somewhere to put them and `held` to know when one
- * is already there; without either there is nothing to preload into.
- */
-const preload =
-  config.seriesPreload && reader && held
-    ? new SeriesPreload({
-        fill: (setId, partIdx, partLength, fetch) => reader.fill(setId, partIdx, partLength, fetch),
-        fetcherFor: (messageId) => partFetcher(telegram, messageId),
-        isHeld: (setId) => held.check(setId),
-        // So the shelf's offline badge follows at once, not a scan later.
-        onHeld: () => void held.refresh(),
-        log: (line) => console.log(line),
-      })
-    : undefined;
-console.log(`preload: next 2 episodes ${preload ? "on" : "off"}`);
-
-// Where open pages hear that the library changed.
-const events = new CatalogEvents();
-
-const server = await startServer({
-  db,
-  events,
-  state,
-  hls: new TranscodeFiles(transcodes),
-  audio,
-  source: bytes,
-  posters,
-  thumbs,
-  port: config.port,
-  hostname: config.hostname,
-  trustProxy: config.trustProxy,
-  maxBitrate: config.transcodeMaxrate,
-  catalog: { origin: catalog.origin, publishedAt: catalog.publishedAt },
-  held: held ?? undefined,
-  preload,
-  status: createStatusRouter({
-    facts,
-    live: () => {
-      const stats = cache?.stats();
-      return {
-      cacheHits: stats?.hits ?? 0,
-      cacheMisses: stats?.misses ?? 0,
-      cacheEvicted: stats?.evicted ?? 0,
-      fetchedBytes: reader?.stats().fetchedBytes ?? 0,
-      transcodes: {
-        running: transcodes.count(),
-        capacity: transcodes.capacity,
-        sessions: transcodes.list().map(({ setId, seekSeconds, maxrateBits, audioTrack, watchers }) => ({
-          setId,
-          seekSeconds,
-          maxrateBits,
-          audioTrack,
-          watchers,
-        })),
-      },
-      telegramConnected: telegram.connected,
-      failedReads: bytes.stats().failedReads,
-      // Resident set size: the figure that says whether a player left running
-      // for a week is still the size it started at.
-      memoryBytes: process.memoryUsage.rss(),
-      };
-    },
-    heldBytes: cache ? () => cache.sizeOnDisk() : undefined,
-    transcodeBytes: () => dirBytes(config.transcodeDir),
-  }),
-});
-
-/**
- * Brings in the channel's newest index and, when it is new, serves it.
- *
- * The new handle is opened and proven before anything is switched, the
- * router is rebuilt over it, and the old handle is closed only after any
- * request that began on it has had time to finish — a stream already holds
- * its part locations, so nothing it still needs lives in the old file.
- */
-async function followChannel(): Promise<void> {
-  const result = await refreshFromChannel(config.channelIndexDir, () => findNewestChannelIndex(telegram));
-  if (result.kind === "none") {
-    console.warn(`catalog: ${result.reason}`);
-    facts.catalog = { ...facts.catalog, reason: result.reason };
-    return;
-  }
-  // Compared with what is served rather than trusting "updated": a swap that
-  // failed last time left the new version installed, and would otherwise be
-  // reported "unchanged" for the rest of the run while the old one was served.
-  if (result.pushedAt === servingPushedAt) {
-    if (result.reason) console.warn(`catalog: ${result.reason}`);
-    facts.catalog = { ...facts.catalog, refresh: result.refresh === "kept" ? "kept" : "unchanged", reason: result.reason };
-    return;
-  }
-  let next: Database | null = null;
+/** Starts the real application; importing this module neither connects nor listens. */
+export async function startPlayer(config: Config = load(), overrides: Partial<StartupIo> = {}) {
+  const io = { ...startupIo, ...overrides };
+  const resources: ApplicationResources = { timers: [] };
+  const stop = shutdownFor(resources);
   try {
-    next = new Database(join(result.dir, "library.db"), { readonly: true });
-    assertSchema(next);
+    console.log("player:", describe(config));
+
+    // Connected before the catalog is chosen: without a package, the catalog is
+    // whatever the channel last pinned.
+    const telegram = await io.connect(config);
+    resources.telegram = telegram;
+
+    // Where the catalog comes from. A published package makes the player
+    // independent of the uploader's filesystem: it fetches `latest.json`,
+    // decrypts what it names, and reads the index out of it. Without one it
+    // takes the channel's newest index instead, as the Android app does, and
+    // reads the index on this disk only when neither can be had.
+    const catalog = await openCatalog(config, () => io.findIndex(telegram), io.fetch);
+    const catalogDir = catalog.dir;
+
+    // One or the other is always set: `load()` requires a local index unless a
+    // package supplies the catalog, and `openCatalog` throws rather than return
+    // null when a configured package cannot be read and none is held.
+    const indexPath = catalogDir ? join(catalogDir, "library.db") : config.libraryDb;
+    if (indexPath === null) throw new Error("no catalog: neither a package nor a local index");
+
+    // Read-only: the player never writes, and a writable handle would let it
+    // checkpoint or migrate an index the uploader owns. CatalogFollower owns
+    // this handle once the listener starts and replaces it when an index arrives.
+    const db = new Database(indexPath, { readonly: true });
+    resources.catalog = { close: () => db.close() };
+    assertSchema(db);
+    // Artwork lives beside the index when the index brought it: inside the
+    // catalog a package unpacked, or next to the library on this machine, where
+    // `mediagram posters` puts it. A channel snapshot is only `library.db`, so a
+    // player following the channel reads the posters on this machine too.
+    const posterDir =
+      catalog.origin === "channel" && config.libraryDb !== null ? dirname(config.libraryDb) : dirname(indexPath);
+    const posters = new PosterStore(posterDir);
+    const playableCount = listPlayable(db).length;
+    console.log(`catalog: ${playableCount} playable sets, ${posters.count()} poster(s)`);
+
+    // A budget of zero turns caching off, which is a legitimate choice on a
+    // machine with no disk to spare.
+    const cache = config.cacheMaxBytes > 0 ? new ChunkCache(config.cacheDir, config.cacheMaxBytes) : null;
+    if (cache) {
+      const held = await cache.sizeOnDisk();
+      console.log(
+        `cache: ${(held / 1024 ** 3).toFixed(2)} GB of ${(config.cacheMaxBytes / 1024 ** 3).toFixed(2)} GB in ${config.cacheDir}` +
+          `, readahead ${config.cacheReadahead} chunk(s)`,
+      );
+    } else {
+      console.log("cache: disabled");
+    }
+
+    // Probed once here rather than at first play: `ffmpeg -encoders` lists what
+    // was compiled in, not what initialises, and discovering that when someone
+    // presses play is too late.
+    const encoder = await io.detectEncoder();
+    console.log(`encoder: ${encoder.name}${encoder.kind === "vaapi" ? ` on ${encoder.device}` : ""}`);
+
+    // Cleared on startup. ffmpeg dies with this process, so anything here is a
+    // previous run's segments: stale playlists that a restarted session would
+    // otherwise be handed, and directories nobody will ever delete.
+    await rm(config.transcodeDir, { recursive: true, force: true });
+
+    // Constructors perform no requests. The listener resolves before a request
+    // can start media work, including when the OS chooses the port.
+    let boundUrl: string | undefined;
+    const endpoint = {
+      get baseUrl(): string {
+        if (boundUrl === undefined) throw new Error("the media listener is not bound");
+        return boundUrl;
+      },
+    };
+    const transcodes = new TranscodeRegistry(
+      config.transcodeDir,
+      new FfmpegRunner({
+        encoder,
+        get baseUrl() { return endpoint.baseUrl; },
+        segmentSeconds: 2,
+      }),
+    );
+    resources.transcodes = transcodes;
+    // Idle sessions hold an encoder and write segments nobody reads.
+    resources.timers.push(setInterval(() => {
+      void transcodes.reapIdle().catch((error) => console.warn("transcode cleanup failed:", error));
+    }, 60_000));
+
+    // Reads a title's audio streams off the file, through this server's own Range
+    // route, the first time a viewer opens it. The index cannot answer this: it
+    // stores distinct language codes, not stream ordinals.
+    const audio = new AudioTrackReader(endpoint);
+
+    // The one thing this process writes. A store that cannot be opened says so
+    // and the player carries on without a memory, because a watch position is
+    // not worth refusing to play a library over.
+    const state = new WatchState(config.stateDb);
+    resources.state = state;
+    console.log(state.remembers ? `state: ${config.stateDb}` : "state: not remembered");
+
+    /**
+     * Sharing that state with this account's other devices, if asked.
+     *
+     * Off unless `MEDIAGRAM_SYNC_STATE` says otherwise. A player that uploads to
+     * the channel on its own is a different kind of thing from one that only ever
+     * reads it, and that should be a decision rather than a default somebody
+     * discovers afterwards.
+     *
+     * Nothing here can stop the player: `StateSync.once` reports failures, and
+     * the local database remains the source of truth for this machine.
+     */
+    const sync =
+      config.syncState && state.remembers
+        ? new StateSync(state, new TelegramStateChannel(telegram), state.deviceId())
+        : null;
+
+    resources.sync = sync;
+    const updates = new LibraryUpdates(
+      (onEvent) => io.listen(telegram.client, { channel: bareChannelId(config.chatId), ownDevice: state.deviceId() }, onEvent),
+      sync,
+    );
+    resources.updates = updates;
+    if (sync) console.log(`sync: ${state.deviceId()} every ${Math.round(config.syncEveryMs / 1000)}s`);
+    await updates.start();
+    if (sync) resources.timers.push(setInterval(() => void syncOnce(sync, "timer"), config.syncEveryMs));
+
+    // The same facts the lines above printed, kept this time. Everything here was
+    // already decided; none of it is worked out twice.
+    const reader = cache ? new CachedReader(cache, config.cacheReadahead) : null;
+    const bytes = new TelegramSource(telegram, reader ?? undefined);
+
+    // Which titles are on this disk in full, for the shelf's offline badge. The
+    // expectation is folded again whenever the catalog is swapped, and the first
+    // scan is awaited so the first page load is already right.
+    const held = cache ? new HeldSets(config.cacheDir, expectedChunks(db)) : null;
+    if (held) {
+      await held.refresh();
+      console.log(`held: ${held.count} title(s) cached in full`);
+    }
+    const facts: StartupFacts = {
+      catalog: {
+        origin: catalog.origin,
+        publishedAt: catalog.publishedAt,
+        refresh: catalog.refresh,
+        reason: catalog.reason,
+        schema: EXPECTED_SCHEMA,
+        sets: playableCount,
+        posters: posters.count(),
+      },
+      encoder: {
+        name: encoder.name,
+        kind: encoder.kind,
+        device: encoder.kind === "vaapi" ? encoder.device : null,
+      },
+      transcodeDir: config.transcodeDir,
+      cache: cache
+        ? { dir: config.cacheDir, budget: cache.budget, readahead: config.cacheReadahead }
+        : null,
+      state: { remembered: state.remembers, path: state.remembers ? config.stateDb : null },
+      startedAt: Date.now(),
+    };
+
+    /**
+     * Preview frames for the scrub bar.
+     *
+     * Only ever made from sets `held` reports as complete, so generating one never
+     * reaches Telegram — see `thumbs/sheets.ts`. Without a cache there is nothing
+     * complete to make them from, so there are no previews and the bar is what it
+     * always was.
+     */
+    const thumbs = held
+      ? new SheetStore({
+          directory: config.thumbsDir,
+          get baseUrl() { return endpoint.baseUrl; },
+          isHeld: (setId) => held.has(setId),
+        })
+      : undefined;
+    resources.sheets = thumbs;
+
+    /**
+     * The next two episodes, taken into the cache while one plays.
+     *
+     * Needs the cache to have somewhere to put them and `held` to know when one
+     * is already there; without either there is nothing to preload into.
+     */
+    const preload =
+      config.seriesPreload && reader && held
+        ? new SeriesPreload({
+            fill: (setId, partIdx, partLength, fetch) => reader.fill(setId, partIdx, partLength, fetch),
+            fetcherFor: (messageId) => partFetcher(telegram, messageId),
+            isHeld: (setId) => held.check(setId),
+            // So the shelf's offline badge follows at once, not a scan later.
+            onHeld: () => held.refresh(),
+            log: (line) => console.log(line),
+          })
+        : undefined;
+    resources.preload = preload;
+    console.log(`preload: next 2 episodes ${preload ? "on" : "off"}`);
+
+    // Where open pages hear that the library changed.
+    const events = new CatalogEvents();
+    resources.events = events;
+
+    const server = await startServer({
+      db,
+      events,
+      state,
+      hls: new TranscodeFiles(transcodes),
+      audio,
+      source: bytes,
+      posters,
+      thumbs,
+      port: config.port,
+      hostname: config.hostname,
+      trustProxy: config.trustProxy,
+      maxBitrate: config.transcodeMaxrate,
+      catalog: { origin: catalog.origin, publishedAt: catalog.publishedAt },
+      held: held ?? undefined,
+      preload,
+      status: createStatusRouter({
+        facts,
+        live: () => {
+          const stats = cache?.stats();
+          return {
+          cacheHits: stats?.hits ?? 0,
+          cacheMisses: stats?.misses ?? 0,
+          cacheEvicted: stats?.evicted ?? 0,
+          fetchedBytes: reader?.stats().fetchedBytes ?? 0,
+          transcodes: {
+            running: transcodes.count(),
+            capacity: transcodes.capacity,
+            sessions: transcodes.list().map(({ setId, seekSeconds, maxrateBits, audioTrack, watchers }) => ({
+              setId,
+              seekSeconds,
+              maxrateBits,
+              audioTrack,
+              watchers,
+            })),
+          },
+          telegramConnected: telegram.connected,
+          failedReads: bytes.stats().failedReads,
+          // Resident set size: the figure that says whether a player left running
+          // for a week is still the size it started at.
+          memoryBytes: process.memoryUsage.rss(),
+          };
+        },
+        heldBytes: cache ? () => cache.sizeOnDisk() : undefined,
+        transcodeBytes: () => dirBytes(config.transcodeDir),
+      }),
+    });
+
+    boundUrl = server.baseUrl;
+    resources.server = server;
+    const follower = new CatalogFollower({
+      db, catalog, server, facts, events, held: held ?? undefined,
+      root: config.channelIndexDir,
+      find: () => io.findIndex(telegram),
+      fetchPosters: (index) => io.fetchPosters(config.postersCommand, index),
+      posterCount: () => posters.count(),
+    });
+    resources.catalog = follower;
+    const ready = updates.followCatalog(catalog.origin === "package" ? null : follower);
+    if (catalog.origin === "channel" && catalog.dir !== null) void follower.refreshPosters(catalog.dir);
+
+    const urls = reachableUrls(config.hostname, server.port);
+    console.log(`serving on ${urls[0]}`);
+    for (const url of urls.slice(1)) console.log(`          ${url}`);
+
+    if (isExposed(config.hostname)) {
+      // This API has no authentication of its own. Anyone who can reach the port
+      // can browse and stream the whole library, so say so rather than leaving it
+      // to be discovered.
+      console.log(
+        "\n  ! Reachable from the network, and this API has no authentication.\n" +
+          "    Anyone who can reach this port can stream the whole library.\n" +
+          "    Put a reverse proxy in front of it before exposing it beyond a\n" +
+          "    network you trust.\n",
+      );
+    }
+
+    return { server, stop, ready };
   } catch (error) {
-    next?.close();
-    console.error(`catalog: the installed channel index could not be opened: ${(error as Error).message}`);
-    return;
+    await stop().catch((cleanup) => console.error("startup cleanup failed:", cleanup));
+    throw error;
   }
-  const publishedAt = result.pushedAt * 1000;
-  server.replaceCatalog({ db: next, catalog: { origin: "channel", publishedAt } });
-  const previous = db;
-  db = next;
-  servingPushedAt = result.pushedAt;
-  setTimeout(() => previous.close(), OLD_CATALOG_GRACE_MS);
-  await held?.replaceExpected(expectedChunks(next));
-  const sets = listPlayable(next).length;
-  facts.catalog = {
-    ...facts.catalog,
-    origin: "channel",
-    publishedAt,
-    refresh: result.refresh === "kept" ? "kept" : "updated",
-    reason: result.reason,
-    sets,
-  };
-  console.log(`catalog: now serving the channel index pushed at ${result.pushedAt}, ${sets} playable sets`);
-  // Twice, on purpose: the titles now, their posters once they are on disk.
-  events.catalogChanged(publishedAt);
-  await illustrate(result.dir);
 }
 
-/**
- * Fetches cover art for a channel snapshot's titles, then tells open pages —
- * each card looks its poster up when the catalog is read, so a page that
- * reads it again shows art that was not there a moment ago. The Android app
- * does the same after an index event, quietly, with no one asking.
- */
-async function illustrate(dir: string): Promise<void> {
-  const outcome = await fetchPostersForIndex(config.postersCommand, join(dir, "library.db"));
-  if (!outcome.ok) {
-    console.warn(`posters: ${outcome.reason}`);
-    return;
-  }
-  console.log(`posters: ${outcome.said}`);
-  facts.catalog = { ...facts.catalog, posters: posters.count() };
-  events.catalogChanged(facts.catalog.publishedAt);
-}
-
-/** The channel snapshot being served, in seconds; `null` while serving none. */
-let servingPushedAt: number | null =
-  catalog.origin === "channel" && catalog.publishedAt !== null ? catalog.publishedAt / 1000 : null;
-
-/** Long enough for any ordinary request that began on the old catalog. */
-const OLD_CATALOG_GRACE_MS = 5 * 60_000;
-
-// A package is the catalog when one is configured; the channel's pins do not
-// override it.
-if (catalog.origin !== "package") {
-  const follow = oneAtATime(followChannel);
-  onNewIndex = () => void follow();
-  if (missedIndex) onNewIndex();
-  // Art for whatever the snapshot served at startup brought in while this
-  // player was not running. In the background: the shelves do not wait for it.
-  if (catalog.origin === "channel" && catalog.dir !== null) void illustrate(catalog.dir);
-}
-
-const urls = reachableUrls(config.hostname, server.port);
-console.log(`serving on ${urls[0]}`);
-for (const url of urls.slice(1)) console.log(`          ${url}`);
-
-if (isExposed(config.hostname)) {
-  // This API has no authentication of its own. Anyone who can reach the port
-  // can browse and stream the whole library, so say so rather than leaving it
-  // to be discovered.
-  console.log(
-    "\n  ! Reachable from the network, and this API has no authentication.\n" +
-      "    Anyone who can reach this port can stream the whole library.\n" +
-      "    Put a reverse proxy in front of it before exposing it beyond a\n" +
-      "    network you trust.\n",
-  );
-}
-
-for (const signal of ["SIGINT", "SIGTERM"] as const) {
-  process.on(signal, () => {
-    void (async () => {
-      console.log("\nstopping");
-      clearInterval(reaper);
-      if (syncTimer !== null) clearInterval(syncTimer);
-      stopListening();
-      // Before the server: an open event stream would hold its close open.
-      events.close();
-      // One last round before the session goes: the position from the title
-      // that was playing when this was interrupted is the one most worth
-      // having on the other machine.
-      await syncOnce("stopping");
-      // Before the server: an ffmpeg outlives its parent otherwise, and keeps
-      // a hardware encoder session with it.
-      await transcodes.stopAll();
-      await server.close();
-      state.close();
-      await telegram.disconnect();
-      db.close();
-      process.exit(0);
-    })();
-  });
+if (import.meta.main) {
+  const player = await startPlayer();
+  installShutdownSignals(player.stop);
 }

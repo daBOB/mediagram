@@ -16,8 +16,9 @@ import type { Database } from "bun:sqlite";
 function tolerate<T>(read: () => T, fallback: T): T {
   try {
     return read();
-  } catch {
-    return fallback;
+  } catch (error) {
+    if (error instanceof Error && error.message === "no such table: assets") return fallback;
+    throw error;
   }
 }
 

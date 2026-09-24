@@ -45,9 +45,10 @@ export function showMeta(db: Database, key: string): ShowMeta | null {
       )
       .get(source!, kind!, Number(id)) as ShowMeta | null;
     return row ?? null;
-  } catch {
+  } catch (error) {
     // No such table: an index written before this existed.
-    return null;
+    if (error instanceof Error && error.message === "no such table: shows") return null;
+    throw error;
   }
 }
 
@@ -74,13 +75,11 @@ export function providerFactsByShow(db: Database): Map<string, ProviderFacts> {
   let rows: { kind: string; id: number; genres: string | null; fsk: string | null }[];
   try {
     rows = readRows(db, "certification");
-  } catch {
-    try {
-      rows = readRows(db, "NULL");
-    } catch {
-      // No such table: an index written before descriptions were recorded.
-      return byKey;
-    }
+  } catch (error) {
+    if (!(error instanceof Error)) throw error;
+    if (error.message === "no such table: shows") return byKey;
+    if (error.message !== "no such column: certification") throw error;
+    rows = readRows(db, "NULL");
   }
   for (const row of rows) {
     const genres = (row.genres ?? "")
