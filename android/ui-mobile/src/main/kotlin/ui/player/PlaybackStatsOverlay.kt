@@ -23,7 +23,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
 import designsystem.Spacing
 import playback.PlaybackTotals
-import player.TICK_MS
+import player.READOUT_TICK_MS
 import player.audioStatLine
 import player.bufferStatLine
 import player.cacheStatLine
@@ -69,7 +69,7 @@ fun PlaybackStatsOverlay(
     // only thing that recomposes it: every other figure below is a plain
     // property read that nothing observes, and without this one nothing would
     // ever bring them up to date.
-    val progress = rememberProgressStateWithTickInterval(player, TICK_MS)
+    val progress = rememberProgressStateWithTickInterval(player, READOUT_TICK_MS)
     val aheadMs = (progress.bufferedPositionMs - progress.currentPositionMs).coerceAtLeast(0L)
 
     // The decoded formats and the renderer's counters belong to ExoPlayer,

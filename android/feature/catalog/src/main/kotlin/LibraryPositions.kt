@@ -34,9 +34,8 @@ enum class MenuScreen(
  * The six keys are plain properties rather than Compose state: this class
  * only holds and resolves them. A caller that wants them to survive
  * rotation and process death wraps this in its own `rememberSaveable`
- * holder — see `ui.rememberLibraryPositions` — so this class stays usable
- * from a plain unit test and from a second surface that renders the keys
- * differently.
+ * holder, so this class stays usable from a plain unit test and from a
+ * second surface that renders the keys differently.
  *
  * The collection, the season within it, the opened title, and the open list
  * are held as keys and looked up again, not kept as trees or sets: a saved
@@ -69,14 +68,15 @@ class LibraryPositions(
     }
 
     /**
-     * What the library shows for these keys against [state] — the branch
-     * priority the library composition used to re-decide at every
-     * recomposition: the player first, since it is the one destination that
-     * fills the whole window; then whatever the menu opened, since it sits
-     * over any of the rest; then a title, a season within its collection
-     * (checked ahead of the collection itself, since a season is a screen
-     * the collection's wall opened over it), the collection, a hand-built
-     * list, and last the shelves underneath all of them.
+     * What the library shows for these keys against [state] — a fixed
+     * branch priority so every caller checking these keys agrees on the
+     * order rather than each deciding it separately: the player first,
+     * since it is the one destination that fills the whole window; then
+     * whatever the menu opened, since it sits over any of the rest; then a
+     * title, a season within its collection (checked ahead of the
+     * collection itself, since a season is a screen the collection's wall
+     * opened over it), the collection, a hand-built list, and last the
+     * shelves underneath all of them.
      *
      * Keys that name something the library no longer holds — a stale id
      * from before a reload, or one still resolving while the library loads
@@ -108,7 +108,7 @@ class LibraryPositions(
 }
 
 /** The snapshot a position's list lookup reads against, or none while the library is not yet ready. */
-private fun CatalogUiState.watchSnapshot(): WatchSnapshot = (this as? CatalogUiState.Ready)?.watch ?: WatchSnapshot.Empty
+fun CatalogUiState.watchSnapshot(): WatchSnapshot = (this as? CatalogUiState.Ready)?.watch ?: WatchSnapshot.Empty
 
 /**
  * What [LibraryPositions.resolve] found for a set of keys — the destination

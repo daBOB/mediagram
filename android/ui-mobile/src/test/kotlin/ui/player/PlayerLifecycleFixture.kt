@@ -35,9 +35,6 @@ internal class PlayerLifecycleFixture : AutoCloseable {
     private val listeners = mutableListOf<Player.Listener>()
     private var playbackState = Player.STATE_IDLE
     var positionMs = 42_000L
-    var compositions = 0
-    val disposals = mutableListOf<Boolean>()
-    var createdViewModels = 0
 
     init {
         every { repository.snapshot } returns MutableStateFlow(WatchSnapshot.Empty)
@@ -69,7 +66,6 @@ internal class PlayerLifecycleFixture : AutoCloseable {
     val factory =
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                createdViewModels++
                 @Suppress("UNCHECKED_CAST")
                 return PlayerViewModel(
                     handle,

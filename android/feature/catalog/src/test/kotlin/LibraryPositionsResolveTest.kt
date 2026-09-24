@@ -9,10 +9,9 @@ import kotlin.test.assertEquals
 
 /**
  * What [LibraryPositions.resolve] shows when every key is set at once, and
- * what leaving each one in turn uncovers — the priority [LibraryFlow] in
- * ui-mobile used to re-decide at every recomposition, pinned here so a
- * second surface reading the same six keys gets the same answer without
- * rewriting the branch order.
+ * what leaving each one in turn uncovers — pinned here so every surface
+ * reading the same six keys gets the same answer without each one
+ * rewriting the branch order for itself.
  */
 class LibraryPositionsResolveTest {
     @Test

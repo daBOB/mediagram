@@ -33,7 +33,7 @@ import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
 import androidx.media3.ui.compose.state.rememberSeekBackButtonState
 import androidx.media3.ui.compose.state.rememberSeekForwardButtonState
 import designsystem.Spacing
-import player.TICK_MS
+import player.READOUT_TICK_MS
 import player.clockTime
 
 /**
@@ -67,7 +67,7 @@ fun PlayerControls(
     val playPause = rememberPlayPauseButtonState(player)
     val seekBack = rememberSeekBackButtonState(player)
     val seekForward = rememberSeekForwardButtonState(player)
-    val progress = rememberProgressStateWithTickInterval(player, TICK_MS)
+    val progress = rememberProgressStateWithTickInterval(player, READOUT_TICK_MS)
 
     // Null except while a drag is under way, when it holds where the thumb is
     // rather than where the film is. A slider snapped back to the playhead

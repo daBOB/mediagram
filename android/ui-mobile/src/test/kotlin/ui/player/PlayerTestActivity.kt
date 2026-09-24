@@ -7,7 +7,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -30,10 +29,6 @@ class PlayerTestActivity : ComponentActivity() {
                 MaterialTheme {
                     var showingPlayer by rememberSaveable { mutableStateOf(true) }
                     if (showingPlayer) {
-                        DisposableEffect(Unit) {
-                            fixture.compositions++
-                            onDispose { fixture.disposals += isChangingConfigurations }
-                        }
                         PlayerScreen("set-one", null, onBack = { showingPlayer = false }, viewModel = playerViewModel)
                     } else {
                         Text("Library")

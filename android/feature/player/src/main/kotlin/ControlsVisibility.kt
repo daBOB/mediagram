@@ -20,7 +20,7 @@ const val CONTROLS_LINGER_MS = 4_000L
  * copied, so the two read the player on one interval instead of drifting
  * apart on two.
  */
-const val TICK_MS = 500L
+const val READOUT_TICK_MS = 500L
 
 /**
  * Whether there is anything to control.

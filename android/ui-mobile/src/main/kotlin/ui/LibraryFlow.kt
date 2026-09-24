@@ -13,7 +13,7 @@ import catalog.ResolvedPosition
 import catalog.fetchResultMessage
 import catalog.mediaSet
 import catalog.updateDisabledReason
-import model.WatchSnapshot
+import catalog.watchSnapshot
 import system.FetchViewModel
 import ui.catalog.CatalogScreen
 import ui.catalog.CollectionScreen
@@ -79,7 +79,7 @@ private fun Library(
     // Read here rather than at each of the two screens below: both want the
     // same viewer's same snapshot, and neither has another way to reach it —
     // the catalog's own state is the one place it is already collected.
-    val watch = (catalogState as? CatalogUiState.Ready)?.watch ?: WatchSnapshot.Empty
+    val watch = catalogState.watchSnapshot()
 
     SettingsOutcomes(onLibraryChanged = catalogViewModel::reload, onSignedOut = onSignedOut)
 

@@ -19,9 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import catalog.CollectionRow
 import catalog.Division
 import catalog.Entry
-import catalog.Row
 import catalog.firstItemOf
 import catalog.rowsOf
 import catalog.seasonPlatesOf
@@ -111,7 +111,7 @@ fun CollectionScreen(
 }
 
 internal fun LazyListScope.items(
-    rows: List<Row>,
+    rows: List<CollectionRow>,
     positions: Map<String, Progress>,
     watchedIds: Set<String>,
     onOpenTitle: (setId: String) -> Unit,
@@ -121,7 +121,7 @@ internal fun LazyListScope.items(
         key = { index -> keyOf(rows[index], index) },
     ) { index ->
         when (val row = rows[index]) {
-            is Row.Heading -> {
+            is CollectionRow.Heading -> {
                 Text(
                     text = row.title,
                     style = MaterialTheme.typography.titleMedium,
@@ -129,7 +129,7 @@ internal fun LazyListScope.items(
                 )
             }
 
-            is Row.Item -> {
+            is CollectionRow.Item -> {
                 ItemRow(row, positions[row.set.setId], row.set.setId in watchedIds, onOpenTitle)
             }
         }
@@ -154,7 +154,7 @@ internal fun LazyListScope.items(
  */
 @Composable
 private fun ItemRow(
-    row: Row.Item,
+    row: CollectionRow.Item,
     progress: Progress?,
     watched: Boolean,
     onOpenTitle: (setId: String) -> Unit,
@@ -204,12 +204,12 @@ private const val DOCUMENT_REASON = "Document — the phone cannot open one yet"
  * folder called "Grundlagen" — so a heading is keyed by where it sits.
  */
 private fun keyOf(
-    row: Row,
+    row: CollectionRow,
     index: Int,
 ): String =
     when (row) {
-        is Row.Heading -> "heading-$index-${row.title}"
-        is Row.Item -> row.set.setId
+        is CollectionRow.Heading -> "heading-$index-${row.title}"
+        is CollectionRow.Item -> row.set.setId
     }
 
 private fun indentOf(depth: Int) = (depth * INDENT_STEP).dp

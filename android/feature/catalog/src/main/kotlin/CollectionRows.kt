@@ -10,19 +10,19 @@ import model.MediaSet
  * rows for the one division a season plate was opened from, and a set of
  * episodes is not something worth two rendering paths.
  */
-sealed interface Row {
+sealed interface CollectionRow {
     val depth: Int
 
     data class Heading(
         override val depth: Int,
         val title: String,
-    ) : Row
+    ) : CollectionRow
 
     data class Item(
         override val depth: Int,
         val set: MediaSet,
         val position: Int,
-    ) : Row
+    ) : CollectionRow
 }
 
 /**
@@ -36,11 +36,11 @@ sealed interface Row {
 fun rowsOf(
     divisions: List<Division>,
     depth: Int = 0,
-): List<Row> =
+): List<CollectionRow> =
     divisions.flatMap { division ->
         buildList {
-            add(Row.Heading(depth, division.title))
-            division.items.forEachIndexed { index, set -> add(Row.Item(depth, set, index + 1)) }
+            add(CollectionRow.Heading(depth, division.title))
+            division.items.forEachIndexed { index, set -> add(CollectionRow.Item(depth, set, index + 1)) }
             addAll(rowsOf(division.children, depth + 1))
         }
     }
