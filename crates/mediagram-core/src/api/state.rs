@@ -42,10 +42,14 @@ impl Core {
             .await
     }
 
-    pub async fn create_profile(self: Arc<Self>, name: String) -> Option<profiles::Profile> {
+    pub async fn create_profile(
+        self: Arc<Self>,
+        name: String,
+        kids: bool,
+    ) -> Option<profiles::Profile> {
         self.blocking(move |core| {
             core.state_db
-                .with(|conn| profiles::create(conn, &name))
+                .with(|conn| profiles::create(conn, &name, kids))
                 .flatten()
         })
         .await

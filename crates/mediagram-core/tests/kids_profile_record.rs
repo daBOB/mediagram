@@ -19,14 +19,23 @@ fn only_a_literal_true_marks_a_kids_profile() {
 fn an_ordinary_profile_is_written_without_the_key() {
     let record = parse_record(KIDS_AND_NOT).unwrap();
     let written = serde_json::to_value(&record).unwrap();
-    assert_eq!(written["profiles"][0]["kids"], serde_json::Value::Bool(true));
+    assert_eq!(
+        written["profiles"][0]["kids"],
+        serde_json::Value::Bool(true)
+    );
     assert!(written["profiles"][1].get("kids").is_none());
 }
 
 #[test]
 fn any_device_saying_kids_makes_the_merged_viewer_kids() {
-    let with = parse_record(r#"{"format":1,"device":"laptop","writtenAt":0,"profiles":[{"name":"Mia","kids":true}]}"#).unwrap();
-    let without = parse_record(r#"{"format":1,"device":"desktop","writtenAt":0,"profiles":[{"name":"mia"}]}"#).unwrap();
+    let with = parse_record(
+        r#"{"format":1,"device":"laptop","writtenAt":0,"profiles":[{"name":"Mia","kids":true}]}"#,
+    )
+    .unwrap();
+    let without = parse_record(
+        r#"{"format":1,"device":"desktop","writtenAt":0,"profiles":[{"name":"mia"}]}"#,
+    )
+    .unwrap();
     for order in [vec![with.clone(), without.clone()], vec![without, with]] {
         let merged = merge_states(&order);
         assert_eq!(merged.profiles.len(), 1);

@@ -22,10 +22,21 @@ fn populated_v1(path: &Path) -> Connection {
     conn
 }
 
+/// Checked against both a fully migrated connection and one rolled back to
+/// v1 by a later failed migration, so this reads columns common to both —
+/// never `profiles::list`, which reaches for `kids` and would fail on the
+/// rolled-back shape before that column exists.
 fn assert_kept_rows(conn: &Connection) {
-    let viewers = profiles::list(conn).unwrap();
-    assert_eq!(viewers.len(), 1);
-    assert_eq!((&*viewers[0].id, &*viewers[0].name), ("viewer", "André"));
+    let count: i64 = conn
+        .query_row("SELECT COUNT(*) FROM profiles", [], |row| row.get(0))
+        .unwrap();
+    assert_eq!(count, 1);
+    let name: String = conn
+        .query_row("SELECT name FROM profiles WHERE id = 'viewer'", [], |row| {
+            row.get(0)
+        })
+        .unwrap();
+    assert_eq!(name, "André");
     assert_eq!(profiles::chosen(conn).unwrap(), Some("viewer".into()));
     for (query, expected) in [
         ("SELECT created_at FROM profiles WHERE id = 'viewer'", 11),
@@ -92,6 +103,8 @@ fn assert_migrated(conn: &Connection) {
         .collect::<Result<_, _>>()
         .unwrap();
     assert_eq!(times, [(66, 66), (77, 77)]);
+    assert!(columns(conn, "profiles").iter().any(|c| c == "kids"));
+    assert!(!profiles::list(conn).unwrap()[0].kids);
     let version: i64 = conn
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .unwrap();

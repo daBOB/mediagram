@@ -92,8 +92,16 @@ async fn watch_state_is_profile_scoped_except_kids_and_survives_reopening() {
     let player = core(dir.path());
     assert!(player.clone().profiles().await.is_empty());
     assert_eq!(player.clone().chosen_profile().await, None);
-    let andre = player.clone().create_profile("André".into()).await.unwrap();
-    let bea = player.clone().create_profile("Bea".into()).await.unwrap();
+    let andre = player
+        .clone()
+        .create_profile("André".into(), false)
+        .await
+        .unwrap();
+    let bea = player
+        .clone()
+        .create_profile("Bea".into(), false)
+        .await
+        .unwrap();
     assert!(player.clone().choose_profile(andre.id.clone()).await);
     assert!(!player.clone().choose_profile("missing".into()).await);
 
@@ -213,13 +221,13 @@ async fn a_collection_can_only_be_changed_by_its_owner() {
     let player = core(dir.path());
     let owner = player
         .clone()
-        .create_profile("Owner".into())
+        .create_profile("Owner".into(), false)
         .await
         .unwrap()
         .id;
     let other = player
         .clone()
-        .create_profile("Other".into())
+        .create_profile("Other".into(), false)
         .await
         .unwrap()
         .id;
@@ -309,7 +317,10 @@ async fn unavailable_state_storage_returns_safe_defaults_and_can_be_retried() {
     let player = core(dir.path());
     assert!(player.clone().profiles().await.is_empty());
     assert_eq!(player.clone().chosen_profile().await, None);
-    assert_eq!(player.clone().create_profile("Viewer".into()).await, None);
+    assert_eq!(
+        player.clone().create_profile("Viewer".into(), false).await,
+        None
+    );
     assert!(!player.clone().choose_profile("viewer".into()).await);
     assert_eq!(
         player.clone().snapshot("viewer".into()).await,
@@ -365,7 +376,7 @@ async fn unavailable_state_storage_returns_safe_defaults_and_can_be_retried() {
     std::fs::remove_dir(obstruction).unwrap();
     let viewer = player
         .clone()
-        .create_profile("Viewer".into())
+        .create_profile("Viewer".into(), false)
         .await
         .unwrap();
     assert_eq!(

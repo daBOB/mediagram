@@ -20,7 +20,7 @@ fn retiring_an_open_store_closes_it_without_removing_persisted_profiles() {
     let dir = tempfile::tempdir().unwrap();
     let db = StateDb::new(dir.path().to_path_buf());
     let profile = db
-        .with(|conn| profiles::create(conn, "Kept"))
+        .with(|conn| profiles::create(conn, "Kept", false))
         .flatten()
         .unwrap();
     db.retire();

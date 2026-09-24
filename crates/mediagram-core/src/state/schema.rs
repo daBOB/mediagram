@@ -93,6 +93,10 @@ const GROUPS: &[&[&str]] = &[
         "ALTER TABLE collections ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0",
         "UPDATE collections SET updated_at = created_at WHERE updated_at = 0",
     ],
+    // v2 -> v3: a kids profile sees only titles rated for children. One fact
+    // about the profile, set when it is made; every existing profile is
+    // ordinary.
+    &["ALTER TABLE profiles ADD COLUMN kids INTEGER NOT NULL DEFAULT 0"],
 ];
 
 pub const VERSION: i64 = GROUPS.len() as i64;

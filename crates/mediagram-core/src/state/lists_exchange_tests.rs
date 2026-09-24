@@ -9,7 +9,7 @@ fn db() -> (tempfile::TempDir, StateDb) {
 }
 
 fn profile(db: &StateDb) -> String {
-    db.with(|conn| profiles::create(conn, "André"))
+    db.with(|conn| profiles::create(conn, "André", false))
         .unwrap()
         .unwrap()
         .id

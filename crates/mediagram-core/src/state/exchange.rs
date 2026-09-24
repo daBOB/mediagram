@@ -40,9 +40,7 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
         profiles.push(ProfileState {
             name: profile.name,
             local_id: Some(profile.id),
-            // The real value is wired up once profiles carry the flag
-            // themselves.
-            kids: false,
+            kids: profile.kids,
             progress,
             watched,
             watchlist,
@@ -75,15 +73,22 @@ pub fn import_merged(conn: &Connection, merged: &MergedState) -> rusqlite::Resul
     let mut changed = lists_exchange::import_kids(conn, &merged.kids)?;
     for profile in &merged.profiles {
         // The identity to match on, and the spelling to create with.
-        let Some((profile_id, created)) = profiles::profile_named_with_creation(
+        let Some((profile_id, created, already_kids)) = profiles::profile_named_with_creation(
             conn,
             &profile.name,
             Some(&profile.display_name),
+            profile.kids,
         )?
         else {
             continue;
         };
         changed += u64::from(created);
+        // Another device made this viewer a kids profile. Only ever upgraded:
+        // a merge without the flag says nothing, it does not say "not kids".
+        if profile.kids && !already_kids {
+            conn.execute("UPDATE profiles SET kids = 1 WHERE id = ?1", [&profile_id])?;
+            changed += 1;
+        }
 
         for row in &profile.progress {
             changed += import_progress(conn, &profile_id, row)?;

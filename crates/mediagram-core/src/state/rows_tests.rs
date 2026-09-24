@@ -3,7 +3,7 @@ use crate::state::StateDb;
 use crate::state::profiles;
 
 fn profile(db: &StateDb) -> String {
-    db.with(|conn| profiles::create(conn, "André"))
+    db.with(|conn| profiles::create(conn, "André", false))
         .unwrap()
         .unwrap()
         .id

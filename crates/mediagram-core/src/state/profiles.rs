@@ -19,14 +19,20 @@ const MAX_NAME: usize = 120;
 pub struct Profile {
     pub id: String,
     pub name: String,
+    /// Sees only titles rated FSK 12 or under, or marked for Kids by hand.
+    /// Defaulted in the generated Kotlin (uniffi 0.32 supports field
+    /// defaults), so existing `Profile(id, name)` call sites keep compiling.
+    #[uniffi(default = false)]
+    pub kids: bool,
 }
 
 pub fn list(conn: &Connection) -> rusqlite::Result<Vec<Profile>> {
-    let mut stmt = conn.prepare("SELECT id, name FROM profiles ORDER BY created_at")?;
+    let mut stmt = conn.prepare("SELECT id, name, kids FROM profiles ORDER BY created_at")?;
     let rows = stmt.query_map([], |row| {
         Ok(Profile {
             id: row.get(0)?,
             name: row.get(1)?,
+            kids: row.get::<_, i64>(2)? != 0,
         })
     })?;
     rows.collect()
@@ -34,17 +40,18 @@ pub fn list(conn: &Connection) -> rusqlite::Result<Vec<Profile>> {
 
 /// `None` for a name with nothing left after trimming — never a stored
 /// profile with no way to show it.
-pub fn create(conn: &Connection, name: &str) -> rusqlite::Result<Option<Profile>> {
+pub fn create(conn: &Connection, name: &str, kids: bool) -> rusqlite::Result<Option<Profile>> {
     let Some(clean) = clean_name(name) else {
         return Ok(None);
     };
     let profile = Profile {
         id: ulid::Ulid::new().to_string(),
         name: clean,
+        kids,
     };
     conn.execute(
-        "INSERT INTO profiles(id, name, created_at) VALUES (?1, ?2, ?3)",
-        params![profile.id, profile.name, now_ms()],
+        "INSERT INTO profiles(id, name, created_at, kids) VALUES (?1, ?2, ?3, ?4)",
+        params![profile.id, profile.name, now_ms(), i64::from(kids)],
     )?;
     Ok(Some(profile))
 }
@@ -97,26 +104,28 @@ pub fn profile_named(
     name: &str,
     display_name: Option<&str>,
 ) -> rusqlite::Result<Option<String>> {
-    Ok(profile_named_with_creation(conn, name, display_name)?.map(|(id, _)| id))
+    Ok(profile_named_with_creation(conn, name, display_name, false)?.map(|(id, _, _)| id))
 }
 
-/// Resolves an id and reports whether this call created its profile row.
+/// Resolves an id and reports whether this call created its profile row, and
+/// whether that profile is a kids one now (already so, or made as one).
 pub(super) fn profile_named_with_creation(
     conn: &Connection,
     name: &str,
     display_name: Option<&str>,
-) -> rusqlite::Result<Option<(String, bool)>> {
+    kids: bool,
+) -> rusqlite::Result<Option<(String, bool, bool)>> {
     let Some(wanted) = normal_name(name) else {
         return Ok(None);
     };
     for profile in list(conn)? {
         if normal_name(&profile.name).as_deref() == Some(wanted.as_str()) {
-            return Ok(Some((profile.id, false)));
+            return Ok(Some((profile.id, false, profile.kids)));
         }
     }
     // Created from the spelling somebody typed, never from the normalised
     // identity — that would greet a viewer as "andré" on every new machine.
-    Ok(create(conn, display_name.unwrap_or(name))?.map(|p| (p.id, true)))
+    Ok(create(conn, display_name.unwrap_or(name), kids)?.map(|p| (p.id, true, kids)))
 }
 
 /// A name with its edges trimmed and internal whitespace collapsed, or
@@ -148,7 +157,7 @@ mod tests {
     #[test]
     fn creating_and_listing_round_trips_a_name() {
         let (_dir, db) = db();
-        db.with(|conn| create(conn, "André")).unwrap();
+        db.with(|conn| create(conn, "André", false)).unwrap();
         let names: Vec<String> = db.with(list).unwrap().into_iter().map(|p| p.name).collect();
         assert_eq!(names, vec!["André".to_string()]);
     }
@@ -156,7 +165,7 @@ mod tests {
     #[test]
     fn a_blank_name_creates_nothing() {
         let (_dir, db) = db();
-        assert_eq!(db.with(|conn| create(conn, "   ")).unwrap(), None);
+        assert_eq!(db.with(|conn| create(conn, "   ", false)).unwrap(), None);
     }
 
     #[test]
@@ -169,7 +178,11 @@ mod tests {
     #[test]
     fn choosing_a_real_profile_is_remembered() {
         let (_dir, db) = db();
-        let id = db.with(|conn| create(conn, "André")).unwrap().unwrap().id;
+        let id = db
+            .with(|conn| create(conn, "André", false))
+            .unwrap()
+            .unwrap()
+            .id;
         db.with(|conn| choose(conn, &id)).unwrap();
         assert_eq!(db.with(chosen).unwrap(), Some(id));
     }

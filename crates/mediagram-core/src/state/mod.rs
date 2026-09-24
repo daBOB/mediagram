@@ -144,6 +144,9 @@ fn migrate(conn: &Connection) -> anyhow::Result<()> {
 mod migration_tests;
 
 #[cfg(test)]
+mod kids_profile_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -163,7 +166,8 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         {
             let db = StateDb::new(dir.path().to_path_buf());
-            db.with(|conn| profiles::create(conn, "André")).unwrap();
+            db.with(|conn| profiles::create(conn, "André", false))
+                .unwrap();
         }
         let db = StateDb::new(dir.path().to_path_buf());
         let names: Vec<String> = db

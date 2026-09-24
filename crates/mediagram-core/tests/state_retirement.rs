@@ -29,7 +29,7 @@ fn queued_create_cannot_reopen_retired_state(opened: bool) {
         if opened {
             assert!(
                 old.clone()
-                    .create_profile("Before reset".into())
+                    .create_profile("Before reset".into(), false)
                     .await
                     .is_some()
             );
@@ -46,7 +46,10 @@ fn queued_create_cannot_reopen_retired_state(opened: bool) {
 
         // Poll the actual API until its spawn_blocking job is queued behind
         // the held slot. That queued job owns its own Arc to the old Core.
-        let mut late = Box::pin(old.clone().create_profile("Late old-owner write".into()));
+        let mut late = Box::pin(
+            old.clone()
+                .create_profile("Late old-owner write".into(), false),
+        );
         assert!(
             late.as_mut()
                 .poll(&mut Context::from_waker(Waker::noop()))
@@ -83,12 +86,16 @@ fn retired_open_core_cannot_restore_deleted_storage_from_a_queued_write() {
 async fn replacing_a_retired_core_preserves_profiles_without_reviving_its_owner() {
     let dir = tempfile::tempdir().unwrap();
     let old = core(dir.path());
-    let retained = old.clone().create_profile("Retained".into()).await.unwrap();
+    let retained = old
+        .clone()
+        .create_profile("Retained".into(), false)
+        .await
+        .unwrap();
     old.retire_local_state();
 
     let replacement = core(dir.path());
     assert_eq!(replacement.clone().profiles().await, vec![retained.clone()]);
-    assert_eq!(old.clone().create_profile("Late".into()).await, None);
+    assert_eq!(old.clone().create_profile("Late".into(), false).await, None);
     assert_eq!(old.profiles().await, vec![]);
     assert_eq!(replacement.profiles().await, vec![retained]);
 }

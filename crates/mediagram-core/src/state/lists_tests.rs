@@ -3,7 +3,7 @@ use crate::state::StateDb;
 use crate::state::profiles;
 
 fn profile(db: &StateDb) -> String {
-    db.with(|conn| profiles::create(conn, "André"))
+    db.with(|conn| profiles::create(conn, "André", false))
         .unwrap()
         .unwrap()
         .id
@@ -53,7 +53,7 @@ fn a_list_is_scoped_to_the_profile_that_made_it() {
     let db = StateDb::new(dir.path().to_path_buf());
     let mine = profile(&db);
     let theirs = db
-        .with(|conn| profiles::create(conn, "Robin"))
+        .with(|conn| profiles::create(conn, "Robin", false))
         .unwrap()
         .unwrap()
         .id;
