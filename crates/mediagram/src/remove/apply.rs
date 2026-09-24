@@ -25,6 +25,21 @@ pub async fn delete_messages(
     removal: &Removal,
     max_attempts: u32,
 ) -> Result<usize> {
+    delete_messages_with(removal, async |batch| {
+        with_retry(max_attempts, || {
+            let client = client.clone();
+            let batch = batch.to_vec();
+            async move { client.delete_messages(channel, &batch).await }
+        })
+        .await
+    })
+    .await
+}
+
+async fn delete_messages_with(
+    removal: &Removal,
+    delete: impl AsyncFn(&[i32]) -> Result<usize>,
+) -> Result<usize> {
     let ids: Vec<i32> = removal
         .message_ids
         .iter()
@@ -34,14 +49,24 @@ pub async fn delete_messages(
 
     let mut affected = 0;
     for batch in ids.chunks(DELETE_BATCH) {
-        let batch = batch.to_vec();
-        affected += with_retry(max_attempts, || {
-            let client = client.clone();
-            let batch = batch.clone();
-            async move { client.delete_messages(channel, &batch).await }
-        })
-        .await
-        .with_context(|| format!("deleting the messages of {}", removal.set_id))?;
+        affected += delete(batch)
+            .await
+            .with_context(|| format!("deleting the messages of {}", removal.set_id))?;
+    }
+    Ok(affected)
+}
+
+/// Finish each remote removal before dropping its local recovery information.
+pub(crate) async fn apply_removals(
+    conn: &Connection,
+    removals: &[Removal],
+    delete: impl AsyncFn(&Removal) -> Result<usize>,
+) -> Result<usize> {
+    let mut affected = 0;
+    for removal in removals {
+        affected += delete(removal).await?;
+        delete_rows(conn, &removal.set_id)?;
+        println!("removed {}", removal.set_id);
     }
     Ok(affected)
 }
@@ -62,3 +87,7 @@ pub fn delete_rows(conn: &Connection, set_id: &str) -> Result<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "apply_tests.rs"]
+mod tests;
