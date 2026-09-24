@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
+import { mkdtemp, rm, symlink, unlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createStatusRouter } from "../src/status/routes";
+import { dirBytes } from "../src/status/dir-bytes";
 import type { StartupFacts } from "../src/status/facts";
 import type { PlayerRequest } from "../src/http/contracts";
 
@@ -36,6 +40,28 @@ function ask(over: Partial<PlayerRequest> = {}): PlayerRequest {
 }
 
 describe("the status route", () => {
+  test("a failed transcode scan retains its measured total and recovers on retry", async () => {
+    const root = await mkdtemp(join(tmpdir(), "mediagram-status-disk-"));
+    try {
+      let now = 0;
+      const route = createStatusRouter({ facts, live, transcodeBytes: () => dirBytes(root), now: () => now });
+      const bytes = async () => {
+        const response = await route(ask());
+        if (!(response?.body instanceof Uint8Array)) throw new Error("Missing status response");
+        return JSON.parse(new TextDecoder().decode(response.body)).transcodes.heldBytes;
+      };
+      await writeFile(join(root, "segment"), new Uint8Array(80));
+      expect(await bytes()).toBe(80);
+      await writeFile(join(root, "segment"), new Uint8Array(200));
+      await symlink("loop", join(root, "loop"));
+      now = 20_000;
+      expect(await bytes()).toBe(80);
+      await unlink(join(root, "loop"));
+      expect(await bytes()).toBe(200);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
   test("answers a viewer on this machine", async () => {
     const route = createStatusRouter({ facts, live });
     const answer = await route(ask());
