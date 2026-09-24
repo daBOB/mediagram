@@ -65,3 +65,18 @@ export function kidsShelf(library, marked) {
   );
   return { films, series, byHand };
 }
+
+/**
+ * The catalog a kids profile sees: rated for kids, or unrated and marked by
+ * hand. Applied once to the whole catalog, so every shelf, search and reel
+ * built from it agrees. A rating decides on its own — a hand mark on a title
+ * rated too old does not let it through, as on the Kids shelf.
+ * @param {import("./library.js").CatalogSet[]} sets
+ * @param {Set<string>} marked set ids marked for Kids by hand
+ */
+export function forKidsProfile(sets, marked) {
+  return sets.filter((set) => {
+    const verdict = kidsVerdict(set);
+    return verdict === "safe" || (verdict === "unrated" && marked.has(set.setId));
+  });
+}
