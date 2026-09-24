@@ -8,8 +8,8 @@
 //! staging and atomic swap the published-package path uses.
 
 pub(super) mod index;
-pub(super) mod library;
 mod install;
+pub(super) mod library;
 
 use grammers_client::Client;
 use grammers_client::media::Document;
@@ -17,14 +17,14 @@ use grammers_client::message::Message;
 use grammers_session::types::PeerRef;
 use grammers_tl_types::enums::MessagesFilter;
 
-use index::NOT_AN_INDEX;
-use install::install;
-use library::LibraryEntry;
 use crate::api::account::revoked::checked;
 use crate::api::account::session;
 use crate::api::{Core, CoreError, LibraryChoice};
-use crate::versions::now_unix;
 use crate::transport::document::message_document;
+use crate::versions::now_unix;
+use index::NOT_AN_INDEX;
+use install::install;
+use library::LibraryEntry;
 
 /// How far down the dialog list to look. Telegram orders it the way the
 /// account's own Telegram app does — pinned first, then most recent — so the
@@ -41,7 +41,6 @@ const MAX_PINNED: usize = 100;
 /// accumulates one per publish, so this is generous for finding the newest
 /// few without paging years of history onto a phone.
 const MAX_INDEX_CANDIDATES: usize = 50;
-
 
 /// Every broadcast channel the signed-in account can see, newest activity
 /// first, each under a handle that means nothing outside this crate.
@@ -60,7 +59,7 @@ pub(super) async fn list_libraries(core: &Core) -> Result<Vec<LibraryChoice>, Co
             continue;
         };
         let title = entry.title.clone();
-        let handle = library::handle_for(&mut handles, entry);
+        let handle = library::register_or_refresh_library(&mut handles, entry);
         choices.push(LibraryChoice { handle, title });
     }
 
@@ -72,16 +71,13 @@ pub(super) async fn list_libraries(core: &Core) -> Result<Vec<LibraryChoice>, Co
 /// the current catalog, returning how many sets it holds.
 pub(super) async fn refresh_library(core: &Core, handle: String) -> Result<u64, CoreError> {
     let entry = library::lookup(core, &handle)?;
-    let peer = entry
-        .peer()
-        .ok_or_else(|| CoreError::NotFound("this device no longer has that library stored".into()))?;
+    let peer = entry.peer().ok_or_else(|| {
+        CoreError::NotFound("this device no longer has that library stored".into())
+    })?;
     let client = session::client(core).await;
 
     let (document, caption) = newest_index(core, &client, peer).await?;
-    let version = format!(
-        "v-{}",
-        index::pushed_at(&caption, now_unix())
-    );
+    let version = format!("v-{}", index::pushed_at(&caption, now_unix()));
     install(core, &client, &document, &version).await
 }
 
@@ -152,7 +148,10 @@ async fn newest_index(
         .map(|message| (message.text(), i64::from(message.id())))
         .collect();
     let chosen = index::pick_index(&candidates, now_unix())?;
-    let message = found.into_iter().nth(chosen).expect("chosen from this list");
+    let message = found
+        .into_iter()
+        .nth(chosen)
+        .expect("chosen from this list");
     let caption = message.text().to_string();
     match message_document(&message) {
         Some((document, _)) => Ok((document, caption)),

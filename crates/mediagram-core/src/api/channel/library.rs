@@ -86,7 +86,8 @@ pub(in crate::api) fn write(path: &Path, handles: &Handles) -> Result<(), CoreEr
         .create_new(true)
         .open(&staged)
         .map_err(CoreError::io(RECORDING))?;
-    file.write_all(text.as_bytes()).map_err(CoreError::io(RECORDING))?;
+    file.write_all(text.as_bytes())
+        .map_err(CoreError::io(RECORDING))?;
     drop(file);
     std::fs::rename(&staged, path).map_err(CoreError::io(RECORDING))
 }
@@ -96,7 +97,10 @@ pub(in crate::api) fn write(path: &Path, handles: &Handles) -> Result<(), CoreEr
 /// Stable across listings, because the handle a caller stored has to keep
 /// resolving; refreshed in place, because a channel can be renamed and an
 /// `access_hash` reissued without becoming a different channel.
-pub(in crate::api) fn handle_for(handles: &mut Handles, entry: LibraryEntry) -> String {
+pub(in crate::api) fn register_or_refresh_library(
+    handles: &mut Handles,
+    entry: LibraryEntry,
+) -> String {
     let existing = handles
         .iter()
         .find(|(_, held)| held.chat == entry.chat)
@@ -123,9 +127,9 @@ pub(in crate::api) fn peer_for_chat(handles: &Handles, chat: i64) -> Option<Peer
 }
 
 pub(in crate::api) fn lookup(core: &Core, handle: &str) -> Result<LibraryEntry, CoreError> {
-    read(&path(core))?.remove(handle).ok_or_else(|| {
-        CoreError::NotFound("this device no longer has that library stored".into())
-    })
+    read(&path(core))?
+        .remove(handle)
+        .ok_or_else(|| CoreError::NotFound("this device no longer has that library stored".into()))
 }
 
 /// 128 bits from the OS, which is what makes a handle unguessable and, more
