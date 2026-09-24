@@ -102,7 +102,7 @@ export function chooseProfile(root, { canCancel = false, discoveryFailed = false
         const kids = el("input");
         kids.type = "checkbox";
         kidsChoice.append(kids, " Kids profile — only FSK 12 and under");
-        const create = el("button", null, "Create");
+        const create = el("button", "who-create", "Create");
         create.type = "submit";
         const cancel = el("button", "quiet", "Cancel");
         cancel.type = "button";

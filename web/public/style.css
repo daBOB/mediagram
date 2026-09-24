@@ -334,6 +334,25 @@ body {
   min-width: 12rem;
 }
 .who-kids-choice { font-size: 0.9rem; color: var(--ink-2); }
+/* The form's one primary action, set apart from Cancel's plain word by a
+   hairline in the imprint red rather than a filled button — the same
+   restraint `.film-play` marks Play with, in the small capitals every
+   other control here uses. */
+.who-create {
+  background: none;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  padding: 0.3rem 0.9rem;
+  margin: 0;
+  color: var(--accent);
+  font-family: var(--text);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 120ms ease, background 120ms ease;
+}
+.who-create:hover { color: #fff; background: var(--accent); }
 .who-note {
   margin: 1.6rem auto 0;
   max-width: 44ch;
