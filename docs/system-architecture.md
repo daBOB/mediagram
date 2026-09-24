@@ -627,6 +627,29 @@ finishes after the read that built them; so once a fetch lays down artwork
 the shelves are rebuilt from the catalog on the device, without asking the
 channel again.
 
+### Kids profiles
+
+A profile made with "Kids profile" ticked sees only titles rated FSK 12 or
+under, plus unrated titles someone marked for Kids by hand; everything else —
+FSK 16 and 18, unrated titles, and so every course unless marked — is hidden.
+The rule is `forKidsProfile` in `web/public/lib/age-rating.js`, ported to
+`android/core/model/src/main/kotlin/AgeRating.kt`, and each surface applies
+it once, where it takes in its catalog (`applyCatalog` in `app.js`,
+`CatalogViewModel` on the phone), so every shelf, search, reel and title page
+inherits it.
+
+It is a filter, not a lock: anyone can choose another profile, the server
+does not know which profile is asking, and a direct stream URL still plays.
+The chunk cache is device-wide and shared by every profile.
+
+The flag is `profiles.kids` (web state v7, core state v3) and travels as an
+optional `"kids": true` on the profile in the sync record — written only when
+true, `format` still 1. Merging is "any device says yes": no device's
+document can switch it off, so the flag is set at creation and never changed.
+A profile made by mistake is removed and made again, from the web (the phone
+cannot remove profiles). A device that has not been updated reads the key as
+absent and shows that profile everything until it is.
+
 ### Watch state
 
 Positions, finished titles, watchlist, kids and collections live in the core's
@@ -644,9 +667,10 @@ in what is newer and sends its own only when something changed. A first
 document whose pin is refused is taken back and the round fails, since an
 unpinned document is invisible and the next round would send another. Lists
 travel as rows with times, and a removal as a tombstone, so a merge cannot
-bring back what was taken off. `WatchSync` runs a round on start, every five
-minutes while the app is in front, when a film is left, when the app goes to
-the background, and within seconds of another device's write, heard through
+bring back what was taken off. A kids profile also carries `kids: true`; see
+Kids profiles. `WatchSync` runs a round on start, every five minutes while
+the app is in front, when a film is left, when the app goes to the
+background, and within seconds of another device's write, heard through
 the shared push listener; rounds never overlap. Picker callers join work for
 the current core and library, while a pushed update during a round retains one
 follow-up read. Changing identity invalidates the old work. The device id is a

@@ -5,9 +5,16 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Unreleased — 0.42.0
+## Unreleased — 0.43.0
 
 **Added**
+
+- Kids profiles. Tick "Kids profile" when creating a profile, on the web or
+  the phone, and that profile sees only titles rated FSK 12 or under plus
+  unrated titles marked for Kids by hand — on every shelf, in search, in
+  Featured and in Play next. The flag syncs between devices and cannot be
+  switched off by a sync. It is a filter, not a lock. The web header's
+  profile name now opens "Who's watching?" to switch profile without a reload.
 
 - A Featured reel on the web player's Movies shelf. The Featured button opens
   a dark, full-window run of up to twelve films this profile has not watched,
