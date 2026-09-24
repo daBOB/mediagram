@@ -7,6 +7,7 @@ pub const MAX_NAME_LEN: usize = 60;
 const MAX_EXT_LEN: usize = 8;
 
 /// `Title (Year)`, `Show (Year) - s02e01`, `Show (Year) - s01e01-e02`, or `Show - 1075`.
+#[must_use]
 pub fn base_name(c: &Caption) -> String {
     let with_year = |name: &str| match c.year {
         Some(y) => format!("{name} ({y})"),
@@ -46,6 +47,7 @@ pub fn base_name(c: &Caption) -> String {
 }
 
 /// `<base>.<ext>` for single-part sets, `<base>.<ext>.pNNN` otherwise; ≤60 chars.
+#[must_use]
 pub fn part_file_name(base: &str, ext: &str, idx: u32, n: u32) -> String {
     // Real container extensions are short; cap so the suffix can never eat the budget.
     let ext: String = ext.chars().take(MAX_EXT_LEN).collect();

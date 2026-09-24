@@ -7,6 +7,7 @@ use super::{FILE_PREFIX, FILE_SUFFIX, NAME_HASH_BYTES};
 /// start of the ciphertext's sha256. Two exports on one day cannot collide,
 /// and the name depends on nothing but the bytes being published, so a
 /// cleaned output directory can never cause a silent overwrite.
+#[must_use]
 pub fn package_file_name(created_at: i64, ciphertext_sha256: &[u8; 32]) -> String {
     // The digest arrives as bytes rather than text so no caller can put a
     // path separator, a `..`, or anything else unprintable into a file name.
@@ -20,7 +21,7 @@ pub fn package_file_name(created_at: i64, ciphertext_sha256: &[u8; 32]) -> Strin
 
 /// Civil date (UTC) from a Unix timestamp, by Howard Hinnant's `civil_from_days`.
 /// Implemented here so the spec crate stays dependency-free on time handling.
-fn civil_from_unix(secs: i64) -> (i64, u32, u32) {
+fn civil_from_unix(secs: i64) -> (i64, i64, i64) {
     let days = secs.div_euclid(86_400);
     let z = days + 719_468;
     let era = z.div_euclid(146_097);
@@ -28,8 +29,8 @@ fn civil_from_unix(secs: i64) -> (i64, u32, u32) {
     let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365;
     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
     let mp = (5 * doy + 2) / 153;
-    let day = (doy - (153 * mp + 2) / 5 + 1) as u32;
-    let month = if mp < 10 { mp + 3 } else { mp - 9 } as u32;
+    let day = doy - (153 * mp + 2) / 5 + 1;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 };
     let year = yoe + era * 400 + i64::from(month <= 2);
     (year, month, day)
 }

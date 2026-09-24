@@ -96,6 +96,7 @@ struct AssociatedData<'a> {
 /// this package" from `sha256`, because an attacker can set it to the digest
 /// of the copy the reader already holds and suppress an update without ever
 /// invoking the cipher.
+#[must_use]
 pub fn associated_data(pointer: &LatestPointer) -> Vec<u8> {
     let identifying = AssociatedData {
         format: pointer.format,
@@ -111,6 +112,7 @@ pub fn associated_data(pointer: &LatestPointer) -> Vec<u8> {
 /// A short, public fingerprint of the package key, so a reader holding the
 /// wrong key can stop before downloading the archive. Not a security control:
 /// it only distinguishes keys, it never proves possession of one.
+#[must_use]
 pub fn key_id(key: &[u8; 32]) -> String {
     let digest = Sha256::digest(key);
     hex::encode(&digest[..4])
@@ -136,6 +138,7 @@ pub fn poster_key_is_valid(key: &str) -> bool {
 }
 
 /// The key a season's artwork is stored under, beside its show's `show_key`.
+#[must_use]
 pub fn season_poster_key(show_key: &str, season: u32) -> String {
     format!("{show_key}-s{season}")
 }
@@ -157,6 +160,10 @@ pub enum PointerError {
 /// Whether a reader can use the package a pointer names, decided before any
 /// download. `supported_schema` is the set of `library.db` layouts the caller
 /// can read.
+///
+/// # Errors
+/// Rejects unsupported formats, ciphers or schemas; malformed fingerprints,
+/// timestamps or lengths; and packages exceeding [`MAX_PACKAGE_BYTES`].
 pub fn pointer_is_readable(
     pointer: &LatestPointer,
     supported_schema: &[i64],

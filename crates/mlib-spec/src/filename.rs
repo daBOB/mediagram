@@ -22,6 +22,7 @@ pub struct Guess {
 }
 
 impl Guess {
+    #[must_use]
     pub fn is_episode(&self) -> bool {
         self.episode.is_some() || self.abs.is_some()
     }
