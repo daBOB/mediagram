@@ -17,7 +17,7 @@ use crate::upload::lock;
 use crate::upload::progress as upload_progress;
 use text::{count, episodes_of, heading, label, live_progress, progress_of};
 
-pub async fn run(cfg: &Config) -> Result<()> {
+pub fn run(cfg: &Config) -> Result<()> {
     let data_dir = cfg.data_dir()?;
     // Read-only at the SQLite level: reporting on a library must not migrate
     // it, and least of all while an upload is writing to it.
@@ -117,4 +117,3 @@ pub async fn run(cfg: &Config) -> Result<()> {
     }
     Ok(())
 }
-
