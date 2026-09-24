@@ -1,4 +1,4 @@
-package system
+package model
 
 private val UNITS = listOf("B", "KB", "MB", "GB", "TB")
 
