@@ -14,6 +14,7 @@ import data.refreshSentence
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -51,13 +52,24 @@ class CatalogViewModel
          * `snapshot` — do not regroup the shelves.
          */
         private val kidsFilter: Flow<Set<String>?> =
-            combine(watchState.profiles, watchState.chosenProfileId, watchState.snapshot) { profiles, chosen, watch ->
-                if (profiles.firstOrNull { it.id == chosen }?.kids == true) watch.kids.toSet() else null
-            }.distinctUntilChanged()
+            combine(watchState.profiles, watchState.chosenProfileId, watchState.snapshot) { _, _, _ -> currentKids() }
+                .distinctUntilChanged()
 
-        // Listening follows visible state collection. An explicitly requested update
-        // belongs to viewModelScope and survives the composition that submitted it.
-        val state: StateFlow<CatalogUiState> =
+        /** [currentKids] as a synchronous read, for a value computed outside collection. */
+        private fun currentKids(): Set<String>? {
+            val chosen = watchState.chosenProfileId.value
+            val kids = watchState.profiles.value.firstOrNull { it.id == chosen }?.kids == true
+            return if (kids) watchState.snapshot.value.kids.toSet() else null
+        }
+
+        /**
+         * The channel read and its reaction to library-update events — kept
+         * exactly as it read before kids profiles existed, so a gap in
+         * collection still means refresh-on-resubscribe. Not filtered: that
+         * is [state]'s job, applied over this pipe's always-current [value][StateFlow.value]
+         * rather than baked into what this one caches.
+         */
+        private val unfiltered: StateFlow<CatalogUiState> =
             channelFlow {
                 launch { refresh(LibraryUpdateKind.Read) }
                 launch {
@@ -65,23 +77,54 @@ class CatalogViewModel
                         if (event == LibraryEvent.INDEX) refresh(LibraryUpdateKind.Published)
                     }
                 }
-                combine(catalog, updates.refreshing, watchState.snapshot, kidsFilter) { shown, refreshing, watch, kids ->
+                combine(catalog, updates.refreshing, watchState.snapshot) { shown, refreshing, watch ->
                     when {
-                        shown is CatalogUiState.Ready -> {
-                            // One place the filter applies: every wall and title page
-                            // on the phone is built from these shelves.
-                            val shelves = if (kids == null) shown.shelves else shelvesOf(forKidsProfile(lastSets, kids))
-                            if (kids != null && shelves.isEmpty()) {
-                                CatalogUiState.KidsEmpty
-                            } else {
-                                shown.copy(shelves = shelves, refreshing = refreshing, watch = watch)
-                            }
-                        }
+                        shown is CatalogUiState.Ready -> shown.copy(refreshing = refreshing, watch = watch)
                         refreshing -> CatalogUiState.Loading
                         else -> shown
                     }
                 }.collect { send(it) }
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CatalogUiState.Loading)
+
+        /**
+         * [unfiltered], projected for whoever is chosen right now.
+         *
+         * The picker takes the library out of composition while it is shown,
+         * and [unfiltered] itself may have stopped producing after five
+         * seconds with nobody collecting it — so a profile switch made while
+         * nothing was collecting [state] must not leave a stale [unfiltered]
+         * value, filtered for whoever was chosen before, as the next
+         * collector's first item. [value] recomputes the filter from
+         * [unfiltered]'s own always-current value on every read instead of
+         * caching it, so there is nothing here to go stale.
+         */
+        @OptIn(kotlinx.coroutines.ExperimentalForInheritanceCoroutinesApi::class)
+        val state: StateFlow<CatalogUiState> =
+            object : StateFlow<CatalogUiState> {
+                override val value: CatalogUiState
+                    get() = project(unfiltered.value, currentKids())
+
+                override val replayCache: List<CatalogUiState>
+                    get() = listOf(value)
+
+                override suspend fun collect(collector: FlowCollector<CatalogUiState>): Nothing {
+                    combine(unfiltered, kidsFilter) { shown, kids -> project(shown, kids) }.collect(collector)
+                    error("unreachable: a StateFlow-backed combine never completes")
+                }
+            }
+
+        /** One place the filter applies: every wall and title page on the phone is built from these shelves. */
+        private fun project(
+            shown: CatalogUiState,
+            kids: Set<String>?,
+        ): CatalogUiState =
+            when {
+                shown is CatalogUiState.Ready && kids != null -> {
+                    val shelves = shelvesOf(forKidsProfile(lastSets, kids))
+                    if (shelves.isEmpty()) CatalogUiState.KidsEmpty else shown.copy(shelves = shelves)
+                }
+                else -> shown
+            }
 
         /** Settings changed the library; its first read is separate from enrichment requests. */
         fun reload() {

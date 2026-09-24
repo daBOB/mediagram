@@ -751,4 +751,54 @@ class CatalogViewModelTest {
                 assertEquals(CatalogUiState.KidsEmpty, awaitItem())
             }
         }
+
+    /**
+     * The picker takes the library out of composition while it is shown; if
+     * nobody was collecting for more than the five-second `WhileSubscribed`
+     * window, a switch to a kids profile must not surface as the adult's
+     * shelves for even the first frame once collection resumes.
+     */
+    @Test
+    fun switchingToAKidsProfileAfterAGapNeverShowsAnotherProfilesShelvesFirst() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val repository =
+                FakeCatalogRepository(
+                    given =
+                        listOf(
+                            fakeSet(Kind.MOVIE, "Family").copy(fsk = "6"),
+                            fakeSet(Kind.MOVIE, "Grown").copy(fsk = "16"),
+                        ),
+                )
+            val watch = FakeCatalogWatchState()
+            watch.profiles.value = listOf(Profile("k", "Mia", kids = true), Profile("a", "Ana"))
+            watch.chosenProfileId.value = "a"
+            val vm = catalogViewModel(repository, watch)
+
+            vm.state.test {
+                awaitItem()
+                val adultView = awaitItem() as CatalogUiState.Ready
+                val all = adultView.shelves.flatMap { it.entries }.filterIsInstance<Entry.Film>().map { it.set.setId }
+                assertEquals(setOf("Family", "Grown"), all.toSet())
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            advanceTimeBy(6_000)
+            runCurrent()
+
+            watch.chosenProfileId.value = "k"
+
+            vm.state.test {
+                val first = awaitItem()
+                val ids =
+                    when (first) {
+                        is CatalogUiState.Ready ->
+                            first.shelves.flatMap { it.entries }.filterIsInstance<Entry.Film>().map { it.set.setId }.toSet()
+                        CatalogUiState.KidsEmpty -> emptySet()
+                        else -> error("unexpected first item after resubscribing: $first")
+                    }
+                assertEquals(setOf("Family"), ids)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
 }
