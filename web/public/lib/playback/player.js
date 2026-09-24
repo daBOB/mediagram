@@ -14,7 +14,7 @@ import { playTranscoded } from "./streaming/hls-playback.js";
 import { sourceBitrate, watchPlayback } from "./streaming/adapt-playback.js";
 import { clockTime, endsAt, episodeLabel, technicalLine } from "../format.js";
 import { languageLabel } from "../language-label.js";
-import { defaultTrack, fillChooser, loadAudioTracks, trackForLanguage } from "./audio-chooser.js";
+import { defaultTrack, fillChooser, loadAudioTracks, trackIndexForLanguage } from "./audio-chooser.js";
 import { bufferedAhead, preloadReadout } from "./preload-readout.js";
 import { seekModel, skipTo } from "./seek-model.js";
 import { mountTransport } from "./transport.js";
@@ -33,12 +33,24 @@ import { thumbStrip } from "./thumb-strip.js";
 
 let mounted = null;
 
+/**
+ * @typedef {import("../library.js").CatalogSet} CatalogSet
+ * @typedef {Object} PlayerOptions
+ * @property {"buffered"|"asap"|null} [autoplay]
+ * @property {CatalogSet|null} [next]
+ * @property {(set: CatalogSet, options: PlayerOptions) => void} [onOpenNext]
+ */
+
 /** Mount controls after the page exists. Repeated initialization is a no-op. */
 export function initializePlayer() {
   if (mounted === null) mounted = mountPlayer();
 }
 
-/** Opens a title on the player initialized by the application entrypoint. */
+/**
+ * Opens a title on the player initialized by the application entrypoint.
+ * @param {CatalogSet} set
+ * @param {PlayerOptions} [options]
+ */
 export function openPlayer(set, options = {}) {
   if (mounted === null) throw new Error("The player has not been initialized");
   mounted.openPlayer(set, options);
@@ -561,7 +573,11 @@ function mountPlayer() {
     });
   }
 
-  /** Opens the dialog on `set` and starts it playing, whichever way it plays. */
+  /**
+   * Opens the dialog on `set` and starts it playing, whichever way it plays.
+   * @param {CatalogSet} set
+   * @param {PlayerOptions} [options]
+   */
   function openPlayer(set, options = {}) {
     saveProgress(true);
     stop();
@@ -689,7 +705,7 @@ function mountPlayer() {
      * a re-upload that dropped a language leaves a title that opens correctly
      * instead of one that opens in a commentary.
      */
-    const remembered = trackForLanguage(found, state.preferenceOf(scope, "audio"));
+    const remembered = trackIndexForLanguage(found, state.preferenceOf(scope, "audio"));
     audioTrack = remembered ?? defaultTrack(found);
     audio.hidden = !fillChooser(audioTrackPicker, found, audioTrack);
     applyAudioTrack();
@@ -721,7 +737,7 @@ function mountPlayer() {
     const chosen = Number(audioTrackPicker.value);
     if (!playing || !Number.isInteger(chosen) || chosen < 0) return;
     audioTrack = chosen;
-    // The language, never the ordinal — see `trackForLanguage`. Taken from the
+    // The language, never the ordinal — see `trackIndexForLanguage`. Taken from the
     // option's own label rather than kept in a second list beside the menu.
     const picked = audioTrackPicker.selectedOptions[0]?.dataset.lang;
     if (picked) state.setPreference(scope, "audio", picked);

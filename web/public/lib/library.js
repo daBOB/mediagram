@@ -190,7 +190,7 @@ export function levelEntries(level) {
 }
 
 /**
- * Every set in a collection, in the order its pages walk them.
+ * Every playable set in a collection, in display order. Documents are excluded.
  *
  * One rule for a show and for a course, because `levelEntries` already covers
  * both: a season holds episodes and no folders, so its order is the episodes;

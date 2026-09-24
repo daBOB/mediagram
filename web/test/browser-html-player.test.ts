@@ -15,6 +15,7 @@ let app: { state: typeof import("../public/lib/watch-state.js"); player: typeof 
 const episode = (id: string, subtitles = ["en", "de"], converted = false) => ({
   setId: id, title: id, kind: "ep", show: "Series", season: 1, episode: "1", duration: 600,
   addedAt: 1, total: 1000, container: converted ? "mkv" : "mp4", vcodec: "h264", acodec: "aac", subtitles,
+  chap: null, path: null, year: null, partCount: 1,
 });
 const tracks = () => env.video.querySelectorAll("track").filter((node): node is TrackElement => node instanceof TrackElement);
 const selected = () => [...env.video.textTracks].filter((track) => track.mode === "showing").map((track) => track.language);

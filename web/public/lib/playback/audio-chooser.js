@@ -75,7 +75,7 @@ export function defaultTrack(tracks) {
  * @param {unknown} lang
  * @returns {number|null}
  */
-export function trackForLanguage(tracks, lang) {
+export function trackIndexForLanguage(tracks, lang) {
   if (typeof lang !== "string" || lang.trim() === "") return null;
   const wanted = lang.trim().toLowerCase();
   const found = tracks.findIndex((track) => (track.lang ?? "").toLowerCase() === wanted);

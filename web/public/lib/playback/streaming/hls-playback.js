@@ -11,6 +11,18 @@
 import { decodesParam } from "../../link.js";
 
 /**
+ * @typedef {Object} TranscodeOptions
+ * @property {AbortSignal} [signal]
+ * @property {number} [seekSeconds]
+ * @property {number|null} [maxrateBits]
+ * @property {number} [audioTrack]
+ * @typedef {TranscodeOptions & {
+ *   onFatal?: (error: Error) => void,
+ *   onStarted?: (result: {copied: boolean}) => void
+ * }} PlaybackOptions
+ */
+
+/**
  * Only engines without Media Source Extensions use native HLS. Chromium's
  * canPlayType("application/vnd.apple.mpegurl") may claim support it lacks.
  */
@@ -132,7 +144,12 @@ async function acquireSession(setId, options) {
   return session;
 }
 
-/** Warms the next title; its eventual open joins this session before release. */
+/**
+ * Warms the next title; its eventual open joins this session before release.
+ * @param {string} setId
+ * @param {TranscodeOptions} [options]
+ * @returns {Promise<() => void>} Releases this warming watcher.
+ */
 export async function warmTranscode(setId, options = {}) {
   const session = await acquireSession(setId, options);
   try {
@@ -149,6 +166,10 @@ export async function warmTranscode(setId, options = {}) {
  * Plays a conversion and returns an idempotent release. `signal` also owns
  * startup, before there is a release function to return. Rate, seek and audio
  * identify the requested conversion; onStarted reports whether video is copied.
+ * @param {HTMLVideoElement} video
+ * @param {string} setId
+ * @param {PlaybackOptions} [options]
+ * @returns {Promise<() => void>}
  */
 export async function playTranscoded(video, setId, options = {}) {
   const session = await acquireSession(setId, options);

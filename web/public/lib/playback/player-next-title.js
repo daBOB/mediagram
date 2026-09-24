@@ -8,6 +8,11 @@ import { COUNTDOWN_SECONDS, upNextPhase } from "./up-next.js";
 
 const PRELOAD_BYTES = 8 * 1024 * 1024;
 
+/**
+ * @typedef {import("../library.js").CatalogSet} CatalogSet
+ * @typedef {import("./player.js").PlayerOptions} PlayerOptions
+ * @param {{showControls: () => void, openTitle: (set: CatalogSet, options: PlayerOptions) => void}} options
+ */
 export function mountPlayerNextTitle({ showControls, openTitle }) {
   const button = document.getElementById("play-next");
   const panel = document.getElementById("up-next");
@@ -41,6 +46,7 @@ export function mountPlayerNextTitle({ showControls, openTitle }) {
     button.title = next === null ? "" : titleLine(next);
   }
 
+  /** @param {CatalogSet} set @param {PlayerOptions} [options] */
   function open(set, options = {}) {
     hide();
     // The pending source must join before we release its warm watcher.
