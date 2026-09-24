@@ -13,16 +13,21 @@ import androidx.tv.material3.CardBorder
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.CardGlow
 import androidx.tv.material3.CardScale
+import androidx.tv.material3.CardShape
 import androidx.tv.material3.ClickableSurfaceBorder
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.ClickableSurfaceGlow
 import androidx.tv.material3.ClickableSurfaceScale
+import androidx.tv.material3.ClickableSurfaceShape
 import designsystem.Palette
 
 /**
  * One focus treatment for every TV screen, so a card or a text row reads
  * "this is what the remote is on" the same way wherever it appears instead
- * of each screen inventing its own emphasis.
+ * of each screen inventing its own emphasis. A call site takes its shape,
+ * scale, border and glow from here together — never the border alone — so
+ * the frame a focused card grows a border in is always the frame the card
+ * itself is already drawn in.
  *
  * A television is worked from a couch several metres away, where a phone's
  * subtle tap states would be invisible. Focus has to read across a room:
@@ -33,12 +38,20 @@ import designsystem.Palette
  * accent keeps one meaning across both surfaces instead of TV picking a
  * second colour for the same idea.
  *
- * No glow, anywhere. A blurred highlight reads against a bright wallpaper
- * carousel; on this catalogue's ink ground it only softens into another
- * warm smear next to the one accent this app allows itself, rather than
- * reading as a second cue. A text-only row — a menu line, a toggle — has
- * no card shape to put a border on at all, so it carries the same colour
- * plus an underline instead of a frame.
+ * Square corners, not tv-material's own rounded default: the web player —
+ * this catalogue's reference — draws every plate with square corners and
+ * hairline rules, and a television plate is the same catalogue, not a
+ * second design. [Shape] is the one constant the container and its focus
+ * border are both cut from, so there is nowhere for a call site to pass a
+ * shape to the card and forget to pass the same one to the border.
+ *
+ * No glow, anywhere, on a card or on a plain surface. A blurred highlight
+ * reads against a bright wallpaper carousel; on this catalogue's ink
+ * ground it only softens into another warm smear next to the one accent
+ * this app allows itself, rather than reading as a second cue. A text-only
+ * row — a menu line, a toggle — has no card shape to put a border on at
+ * all, so it carries that same accent colour plus an underline instead of
+ * a frame.
  */
 object TvFocus {
     /** How far a focused element grows. Legible from the couch, not just the palm. */
@@ -47,13 +60,24 @@ object TvFocus {
     /** Width of the accent border a focused card or surface gains. */
     val BorderWidth: Dp = 3.dp
 
+    /**
+     * Every TV container's corner, focused or not: square, like the web
+     * player's plates. Not exposed as a per-call parameter — a shape a
+     * caller could vary here is a shape that could drift from the border
+     * built on top of it, which is the bug this constant exists to close off.
+     */
+    private val Shape: Shape = RectangleShape
+
+    @Composable
+    fun cardShape(): CardShape = CardDefaults.shape(shape = Shape, focusedShape = Shape, pressedShape = Shape)
+
     @Composable
     fun cardScale(): CardScale = CardDefaults.scale(focusedScale = Scale, pressedScale = Scale)
 
     @Composable
-    fun cardBorder(shape: Shape = RectangleShape): CardBorder =
+    fun cardBorder(): CardBorder =
         CardDefaults.border(
-            focusedBorder = Border(border = BorderStroke(BorderWidth, Palette.Imprint), shape = shape),
+            focusedBorder = Border(border = BorderStroke(BorderWidth, Palette.Imprint), shape = Shape),
         )
 
     /** Explicit, not just the tv-material default: this catalogue never glows. */
@@ -61,15 +85,26 @@ object TvFocus {
     fun cardGlow(): CardGlow = CardDefaults.glow()
 
     @Composable
+    fun surfaceShape(): ClickableSurfaceShape =
+        ClickableSurfaceDefaults.shape(
+            shape = Shape,
+            focusedShape = Shape,
+            pressedShape = Shape,
+            disabledShape = Shape,
+            focusedDisabledShape = Shape,
+        )
+
+    @Composable
     fun surfaceScale(): ClickableSurfaceScale =
         ClickableSurfaceDefaults.scale(focusedScale = Scale, pressedScale = Scale)
 
     @Composable
-    fun surfaceBorder(shape: Shape = RectangleShape): ClickableSurfaceBorder =
+    fun surfaceBorder(): ClickableSurfaceBorder =
         ClickableSurfaceDefaults.border(
-            focusedBorder = Border(border = BorderStroke(BorderWidth, Palette.Imprint), shape = shape),
+            focusedBorder = Border(border = BorderStroke(BorderWidth, Palette.Imprint), shape = Shape),
         )
 
+    /** Explicit for the same reason as [cardGlow]: no glow on a plain surface either. */
     @Composable
     fun surfaceGlow(): ClickableSurfaceGlow = ClickableSurfaceDefaults.glow()
 
