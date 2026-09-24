@@ -6,6 +6,7 @@
  * the route passes on only episodes — never a film someone named instead.
  */
 
+import { collectRead } from "./support/cache-reader";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -52,7 +53,7 @@ describe("CachedReader.fill", () => {
 
     await reader.fill(SET, 0, part.bytes.length, part.fetch);
     const asked = part.asked.length;
-    const whole = await reader.read({ setId: SET, partIdx: 0, start: 0, length: part.bytes.length, partLength: part.bytes.length, fetch: part.fetch });
+    const whole = await collectRead(reader, { setId: SET, partIdx: 0, start: 0, length: part.bytes.length, partLength: part.bytes.length, fetch: part.fetch });
 
     expect(whole).toEqual(part.bytes);
     expect(asked).toBeGreaterThan(0);
@@ -62,7 +63,7 @@ describe("CachedReader.fill", () => {
   test("fetches only the chunks that are missing", async () => {
     const part = upstream(CACHE_CHUNK * 4);
     const reader = new CachedReader(new ChunkCache(root, 100_000_000));
-    await reader.read({ setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK, partLength: part.bytes.length, fetch: part.fetch });
+    await collectRead(reader, { setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK, partLength: part.bytes.length, fetch: part.fetch });
     part.asked.length = 0;
 
     await reader.fill(SET, 0, part.bytes.length, part.fetch);

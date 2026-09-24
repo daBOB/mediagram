@@ -43,13 +43,21 @@ export class TelegramSource implements ByteSource {
     private readonly reader?: CachedReader,
   ) {}
 
-  /** What has gone wrong upstream since startup. */
+  /** Byte streams that failed since startup, including unavailable cached bytes. */
   stats(): { failedReads: number } {
     return { failedReads: this.failedReads };
   }
 
   stream(locations: PartLocation[], steps: Step[], setId: string): ReadableStream<Uint8Array> {
-    const bytes = this.bytesOf(setId, locations, steps);
+    return this.streamBytes(this.bytesOf(setId, locations, steps, false));
+  }
+
+  /** Disk-only delivery: neither a cache miss nor sequential reads contact Telegram. */
+  streamCached(locations: PartLocation[], steps: Step[], setId: string): ReadableStream<Uint8Array> {
+    return this.streamBytes(this.bytesOf(setId, locations, steps, true));
+  }
+
+  private streamBytes(bytes: AsyncGenerator<Uint8Array, void, unknown>): ReadableStream<Uint8Array> {
     // Captured rather than `this`: the stream's callbacks are plain functions
     // and are not called with this instance as their receiver.
     const failed = () => {
@@ -80,7 +88,9 @@ export class TelegramSource implements ByteSource {
     setId: string,
     locations: PartLocation[],
     steps: Step[],
+    cacheOnly: boolean,
   ): AsyncGenerator<Uint8Array, void, unknown> {
+    if (cacheOnly && !this.reader) throw new Error("cached streaming is unavailable");
     for (const step of steps) {
       const location = locations.find((l) => l.span.idx === step.partIdx);
       if (!location) throw new Error(`part ${step.partIdx} has no message`);
@@ -97,7 +107,7 @@ export class TelegramSource implements ByteSource {
           start: step.offset + step.headDrop,
           length: step.take,
           partLength: location.span.len,
-          fetch: partFetcher(this.telegram, location.messageId),
+          fetch: cacheOnly ? undefined : partFetcher(this.telegram, location.messageId),
         });
         continue;
       }

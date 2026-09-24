@@ -6,6 +6,7 @@
  * quota is the point of the thing, so most of these tests are about eviction.
  */
 
+import { collectRead } from "./support/cache-reader";
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { chmod, mkdtemp, rm, stat, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -67,7 +68,7 @@ describe("the quota", () => {
       const payload = block(3, 256);
       const reader = new CachedReader(cache);
 
-      const delivered = await reader.read({ setId: "NEXT", partIdx: 0, start: 0, length: payload.length, partLength: payload.length, fetch: async () => payload });
+      const delivered = await collectRead(reader, { setId: "NEXT", partIdx: 0, start: 0, length: payload.length, partLength: payload.length, fetch: async () => payload });
 
       expect(delivered).toEqual(payload);
       expect(await cache.get(SET, 0, 0)).toEqual(block(1));

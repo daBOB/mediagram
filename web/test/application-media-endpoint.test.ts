@@ -80,7 +80,7 @@ test.each(["127.0.0.2", "0.0.0.0", "::1", "::"])(
       await sheetExited.promise;
       expect(inputs.toSorted((a, b) => a.kind.localeCompare(b.kind))).toEqual([
         { kind: "audio", url: `${setUrl}/stream` },
-        { kind: "sheet", url: `${setUrl}/stream` },
+        { kind: "sheet", url: `${setUrl}/cached-stream` },
         { kind: "transcode", url: `${setUrl}/stream` },
       ]);
       expect(await Promise.all(children.map((child) => child.exited))).toEqual([0, 0, 0]);

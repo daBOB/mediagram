@@ -47,7 +47,7 @@ test("concurrent requests share generation and publish only after successful exi
     await ready;
     expect(await store.ensure("SET", PLAN)).toBe(false);
     expect(commands).toHaveLength(1);
-    expect(commands[0]![commands[0]!.indexOf("-i") + 1]).toBe("http://127.0.0.1:8770/api/sets/SET/stream");
+    expect(commands[0]![commands[0]!.indexOf("-i") + 1]).toBe("http://127.0.0.1:8770/api/sets/SET/cached-stream");
     expect(await store.sizeOf("SET")).toBeNull();
     expect(await readdir(root)).toEqual(["SET.making.jpg"]);
   } finally {

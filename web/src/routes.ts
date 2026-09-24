@@ -19,6 +19,7 @@ import type { WatchState } from "./state/store";
 import { beginTranscode, hlsResponse, type HlsServer } from "./transcode/routes";
 
 const STREAM_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/stream$/;
+const CACHED_STREAM_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/cached-stream$/;
 const TRANSCODE_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/transcode$/;
 // Both captures reach a filesystem path, so constrain their complete shape.
 const HLS_PATH = /^\/hls\/([a-f0-9]{16})\/([A-Za-z0-9_-]{1,64}\.(?:m3u8|ts|m4s|mp4))$/;
@@ -33,6 +34,8 @@ export interface CatalogOrigin {
 
 export interface RouterOptions extends CatalogRouterOptions {
   source: ByteSource;
+  /** Optional disk-only source; absent support answers 404. */
+  cacheSource?: ByteSource;
   catalog?: CatalogOrigin;
   /** Absent optional features answer 404, except transcode startup (501). */
   status?: (request: PlayerRequest) => Promise<PlayerResponse | null>;
@@ -95,6 +98,9 @@ export function createRouter(options: RouterOptions) {
     }
     const streaming = STREAM_PATH.exec(request.path);
     if (streaming) return streamSet(db, source, request, streaming[1]!);
+    const cached = CACHED_STREAM_PATH.exec(request.path);
+    if (cached) return options.cacheSource
+      ? streamSet(db, options.cacheSource, request, cached[1]!) : bodiless(404);
 
     const catalog = await catalogRoute(request);
     if (catalog) return catalog;

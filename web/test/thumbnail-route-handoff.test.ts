@@ -86,7 +86,7 @@ test("missing previews return while ffmpeg is pending, then GET and HEAD frame t
     // generation in the route would hit the failure guard instead of returning.
     expectMissing(await f.request());
     const args = await within(f.started.promise, "ffmpeg start");
-    expect(args[args.indexOf("-i") + 1]).toBe(`http://127.0.0.1:8770/api/sets/${SET}/stream`);
+    expect(args[args.indexOf("-i") + 1]).toBe(`http://127.0.0.1:8770/api/sets/${SET}/cached-stream`);
     expect(args.at(-1)).toBe(join(f.directory, `${SET}.making.jpg`));
     expect(await f.sheets.sizeOf(SET)).toBeNull();
     expect((await readdir(f.directory)).filter((name) => name.endsWith(".jpg")))

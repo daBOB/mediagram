@@ -9,8 +9,9 @@
  * the channel is several gigabytes, and reading all of it to make a few
  * hundred kilobytes of pictures would be the most wasteful thing this program
  * does — a whole library pulled down so a bar can be prettier. So generation
- * is offered only for a set `HeldSets` reports as complete, which is the same
- * predicate behind the offline badge and means the read never leaves the disk.
+ * is offered only for a set `HeldSets` reports as complete, then reads through
+ * the disk-only stream route. A chunk evicted or truncated after that initial
+ * check fails the read instead of fetching it again from Telegram.
  *
  * Which gives the honest behaviour, and it is worth stating plainly because a
  * viewer will notice it: **a title you have watched has previews, and one you
@@ -130,7 +131,7 @@ export class SheetStore {
        */
       partial = join(this.options.directory, `${setId}.making.jpg`);
       const args = sheetArgs({
-        input: `${this.options.baseUrl}/api/sets/${encodeURIComponent(setId)}/stream`,
+        input: `${this.options.baseUrl}/api/sets/${encodeURIComponent(setId)}/cached-stream`,
         output: partial,
         plan,
       });

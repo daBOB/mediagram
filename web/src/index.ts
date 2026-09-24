@@ -224,10 +224,10 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     /**
      * Preview frames for the scrub bar.
      *
-     * Only ever made from sets `held` reports as complete, so generating one never
-     * reaches Telegram — see `thumbs/sheets.ts`. Without a cache there is nothing
-     * complete to make them from, so there are no previews and the bar is what it
-     * always was.
+     * Admitted when `held` reports a complete set, then read through the disk-only
+     * route: eviction during generation fails without reaching Telegram.
+     * Without a cache there is nothing complete to make them from, so there are
+     * no previews and the bar is what it always was.
      */
     const thumbs = held
       ? new SheetStore({
@@ -269,6 +269,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
       hls: new TranscodeFiles(transcodes),
       audio,
       source: bytes,
+      cacheSource: reader ? { stream: (...args) => bytes.streamCached(...args) } : undefined,
       posters,
       thumbs,
       port: config.port,
