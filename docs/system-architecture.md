@@ -308,6 +308,11 @@ rendering; `status/` owns the system
 panel. Shared catalog, state, formatting, and playback-policy helpers remain
 at the library root. The installed HLS client is still served at `/lib/hls.mjs`.
 
+Application shutdown closes admission to speculative cache reads and waits for
+existing warming to finish before disconnecting Telegram. The HTTP listener
+also drains routing, streaming and cancellation cleanup; the shared source
+remains available until those owners release it.
+
 ### Where the player opens
 
 `#/home`, and the rows on it are decided in `public/lib/catalog/home-shelves.js` and
@@ -639,6 +644,12 @@ reference. Retirement preserves files for ordinary core replacement; account
 reset deletes them only after retirement. This boundary does not drain network
 operations. Profile state is invalidated after a completed reset, and asynchronous
 reads publish only while their originating core and selection are current.
+
+Initial provisioning refuses to overwrite an installed core. Application
+replacement reloads watch-state ownership before reporting success. If the
+replacement is refused after retiring the old core, Settings restores ownership
+using the retained credentials and preserves the refusal. A failed reload offers
+a separate profile-read retry without submitting replacement credentials again.
 
 "Who's watching?" chooses among the account's profiles, which arrive from the
 other devices' documents. Deliberate differences from the web, not gaps:

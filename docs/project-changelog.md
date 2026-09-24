@@ -40,6 +40,13 @@ to `main`. Full phase-by-phase detail lives in
 - Malformed MP4 box sizes produce an error without overflowing the parser.
   Sign-out holds the session lock through stored-key removal, and private core
   diagnostics retain their nested causes while public errors stay sanitized.
+- Web shutdown drains speculative cache reads before disconnecting Telegram.
+  Failed metadata reads preserve stored identity and migration state, and a
+  rejected browser Play request offers retry without disturbing newer playback.
+- Android application changes restore watch-state ownership before reporting
+  success, with a separate retry when reconciliation fails. Cache settings show
+  recoverable failures even before the first reading; login, catalog and playback
+  failures use controlled text while retaining their diagnostic causes.
 
 ## 2026-09-23
 
