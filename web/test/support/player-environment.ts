@@ -94,6 +94,57 @@ export class Node extends EventTarget {
   }
 }
 
+export interface Cue { startTime: number; endTime: number }
+
+/** Controllable browser text tracks: selection changes and load are real events. */
+export class TrackElement extends Node {
+  kind = "subtitles";
+  srclang = "";
+  label = "";
+  src = "";
+  default = false;
+  readonly track: { kind: string; language: string; label: string; mode: string; cues: Cue[] | null };
+  constructor() {
+    super("TRACK");
+    const element = this;
+    let mode = "disabled";
+    this.track = {
+      get kind() { return element.kind; },
+      get language() { return element.srclang; },
+      get label() { return element.label; },
+      get mode() { return mode; },
+      set mode(value) {
+        if (mode === value) return;
+        mode = value;
+        if (element.parent instanceof Video) element.parent.textTracks.fire("change");
+      },
+      cues: null,
+    };
+  }
+  loadCues(cues: Cue[]) {
+    this.track.cues = cues;
+    this.fire("load");
+  }
+  override remove() {
+    const video = this.parent;
+    super.remove();
+    this.parent = null;
+    if (video instanceof Video) {
+      const index = video.textTracks.indexOf(this.track);
+      if (index >= 0) video.textTracks.splice(index, 1);
+      video.textTracks.fire("removetrack");
+    }
+  }
+}
+
+class TextTracks extends Array<TrackElement["track"]> {
+  private events = new EventTarget();
+  addEventListener(type: string, listener: Parameters<EventTarget["addEventListener"]>[1]) {
+    this.events.addEventListener(type, listener);
+  }
+  fire(type: string) { this.events.dispatchEvent(new Event(type)); }
+}
+
 export class Video extends Node {
   src = "";
   attachments: string[] = [];
@@ -107,7 +158,7 @@ export class Video extends Node {
   muted = false;
   bufferEnd = 0;
   buffered = { length: 1, start: () => 0, end: () => this.bufferEnd };
-  textTracks = Object.assign([], { addEventListener() {} });
+  textTracks = new TextTracks();
   constructor() {
     super("VIDEO");
     let source = "";
@@ -121,6 +172,15 @@ export class Video extends Node {
   }
   canPlayType() {
     return "";
+  }
+  override append(...nodes: Node[]) {
+    super.append(...nodes);
+    for (const node of nodes) {
+      if (node instanceof TrackElement) {
+        this.textTracks.push(node.track);
+        this.textTracks.fire("addtrack");
+      }
+    }
   }
   pause() {
     if (!this.paused) {
@@ -184,7 +244,7 @@ export function browserEnvironment() {
   const document = Object.assign(new EventTarget(), {
     getElementById: node,
     querySelector: node,
-    createElement: (tag: string) => (tag === "video" ? new Video() : new Node(tag.toUpperCase())),
+    createElement: (tag: string) => tag === "video" ? new Video() : tag === "track" ? new TrackElement() : new Node(tag.toUpperCase()),
     createElementNS: (_ns: string, tag: string) => new Node(tag.toUpperCase()),
     createTextNode: (text: string) => {
       const node = new Node("#text");

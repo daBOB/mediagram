@@ -1,7 +1,7 @@
 import { browserEnvironment, Node, Video, settle } from "./player-environment";
 
 /** DOM operations used by page rendering, layered on the media IO fixture. */
-class PageNode extends Node {
+export class PageNode extends Node {
   href = "";
   get childElementCount() { return this.children.length; }
   focus() {}
