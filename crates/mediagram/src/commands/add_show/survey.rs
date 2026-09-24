@@ -83,3 +83,7 @@ fn reasons(blockers: &[&Blocker]) -> Vec<String> {
     named.dedup();
     named
 }
+
+#[cfg(test)]
+#[path = "survey_tests.rs"]
+mod tests;
