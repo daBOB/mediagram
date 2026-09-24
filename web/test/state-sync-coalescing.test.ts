@@ -114,22 +114,33 @@ test("news arriving during a follow-up read is retained in one more round", asyn
   expect(JSON.parse(sent.at(-1)!).profiles[0].progress[0].at).toBe(42);
 });
 
-test("a failed round does not discard its queued follow-up or reject its callers", async () => {
+test.each([
+  ["Error", new Error("temporary refusal"), "temporary refusal"],
+  ["null", null, "null"],
+  ["undefined", undefined, "undefined"],
+  ["string", "temporary refusal", "temporary refusal"],
+  ["unprintable value", Object.create(null) as unknown, "unprintable rejection"],
+])("%s rejections preserve queued follow-ups without rejecting callers", async (_, rejection, message) => {
   const state = machine();
   const release = gate<void>();
   const started = gate<void>();
   let lists = 0;
+  const sent: string[] = [];
+  const documents = [{ messageId: 2, device: "z", text: JSON.stringify({
+    format: 1, device: "z", writtenAt: 100,
+    profiles: [{ name: "André", progress: [{ setId: "01A", at: 42, updatedAt: 100 }], watched: [] }],
+  }) }];
   const channel: StateChannel = {
     list: async () => {
       lists += 1;
       if (lists === 1) {
         started.resolve();
         await release.promise;
-        throw new Error("temporary refusal");
+        throw rejection;
       }
-      return [];
+      return documents;
     },
-    put: async () => 1,
+    put: async (body) => { sent.push(body); return 1; },
   };
   const sync = new StateSync(state, channel, "a");
   const first = sync.once();
@@ -138,9 +149,12 @@ test("a failed round does not discard its queued follow-up or reject its callers
   release.resolve();
 
   expect(await Promise.all([first, second])).toEqual([
-    { pulled: 0, pushed: true, failed: "temporary refusal" },
-    { pulled: 0, pushed: true, failed: "temporary refusal" },
+    { pulled: 1, pushed: true, failed: message },
+    { pulled: 1, pushed: true, failed: message },
   ]);
   expect(lists).toBe(2);
+  expect(state.snapshot(state.profiles()[0]!.id).progress[0]!.at).toBe(42);
+  expect(JSON.parse(sent[0]!).profiles[0].progress[0].at).toBe(42);
   expect(await sync.once()).toEqual({ pulled: 0, pushed: false });
+  expect(sent).toHaveLength(1);
 });

@@ -17,6 +17,7 @@
 import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { failureMessage } from "../failure-message";
 
 import { GROUPS } from "./schema";
 import { normalName, SYNC_FORMAT, type SyncRecord } from "./sync-record";
@@ -671,8 +672,7 @@ function open(path: string): Database | null {
     db.exec("PRAGMA foreign_keys = ON");
     return db;
   } catch (error) {
-    const why = error instanceof Error ? error.message : String(error);
-    console.warn(`state: not remembering anything (${why})`);
+    console.warn(`state: not remembering anything (${failureMessage(error)})`);
     return null;
   }
 }

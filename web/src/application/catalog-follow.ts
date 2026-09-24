@@ -11,6 +11,7 @@ import type { NoIndex } from "../channel-index/pick-newest-index";
 import type { PosterFetch } from "../channel-index/fetch-posters-for-index";
 import { oneAtATime, refreshFromChannel } from "../channel-index/refresh-from-channel";
 import type { OpenedCatalog } from "./open-catalog";
+import { failureMessage } from "../failure-message";
 
 interface FollowOptions {
   db: Database;
@@ -97,7 +98,7 @@ export class CatalogFollower {
       server.replaceCatalog({ db: next, catalog: { origin: "channel", publishedAt } });
     } catch (error) {
       next?.close();
-      console.error(`catalog: the installed channel index could not be served: ${(error as Error).message}`);
+      console.error(`catalog: the installed channel index could not be served: ${failureMessage(error)}`);
       return;
     }
     const previous = this.db;

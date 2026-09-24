@@ -215,7 +215,10 @@ describe("a channel that cannot be reached", () => {
     expect(puts).toHaveLength(1);
   });
 
-  test("reports committed imports when sending fails and retries the send next round", async () => {
+  test.each([
+    ["Error", new Error("upload refused"), "upload refused"],
+    ["unprintable value", Object.create(null) as unknown, "unprintable rejection"],
+  ])("reports committed imports after %s send failures and retries next round", async (_, rejection, message) => {
     const other = machine();
     other.state.setProgress(other.me, "01FILM", 900, 1204);
     const { channel, puts } = fakeChannel([
@@ -225,7 +228,7 @@ describe("a channel that cannot be reached", () => {
     const flaky: StateChannel = {
       list: channel.list,
       put: async (body, messageId) => {
-        if (refuse) throw new Error("upload refused");
+        if (refuse) throw rejection;
         return channel.put(body, messageId);
       },
     };
@@ -235,7 +238,7 @@ describe("a channel that cannot be reached", () => {
     const first = await sync.once();
 
     expect(here.state.snapshot(here.me).progress[0]).toMatchObject({ setId: "01FILM", at: 900 });
-    expect(first).toEqual({ pulled: 1, pushed: false, failed: "upload refused" });
+    expect(first).toEqual({ pulled: 1, pushed: false, failed: message });
     expect(puts).toHaveLength(0);
 
     refuse = false;

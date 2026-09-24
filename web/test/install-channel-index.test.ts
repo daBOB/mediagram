@@ -103,6 +103,32 @@ describe("installing a channel's index", () => {
 });
 
 describe("filesystem failures while installing a channel snapshot", () => {
+  test.each([
+    ["Error", new Error("download interrupted"), "download interrupted"],
+    ["null", null, "null"],
+    ["undefined", undefined, "undefined"],
+    ["string", "download interrupted", "download interrupted"],
+    ["unprintable value", Object.create(null) as unknown, "unprintable rejection"],
+  ])("%s download rejections keep the catalog and permit the same timestamp retry", async (_, rejection, message) => {
+    const bytes = library();
+    await installChannelIndex(root, 100, snapshot(bytes));
+    const interrupted = async function* () {
+      yield bytes.subarray(0, 512);
+      throw rejection;
+    };
+
+    expect(await installChannelIndex(root, 200, interrupted)).toEqual({ status: "kept", reason: message });
+    expect(await installedPushedAt(root)).toBe(100);
+    expect(await readFile(join(currentDir(root), "library.db"))).toEqual(Buffer.from(bytes));
+    expect((await readdir(root)).sort()).toEqual(["current", "v-100"]);
+
+    expect((await installChannelIndex(root, 200, snapshot(bytes))).status).toBe("updated");
+    expect(await installedPushedAt(root)).toBe(200);
+    const db = new Database(join(currentDir(root), "library.db"), { readonly: true });
+    try { expect(db.query("SELECT count(*) AS n FROM sets").get()).toEqual({ n: 0 }); }
+    finally { db.close(); }
+  });
+
   test("database-open failures retain their cause and the installed catalog", async () => {
     const bytes = library();
     await installChannelIndex(root, 100, snapshot(bytes));

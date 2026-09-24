@@ -13,6 +13,7 @@ import { Database } from "bun:sqlite";
 import { readlink, rename, rm, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { assertSchema, listPlayable } from "../catalog";
+import { failureMessage } from "../failure-message";
 import { CURRENT, availableVersionName, cleanupCatalogDirectory, removeOtherVersions, swapCurrent } from "../package/catalog-versions";
 
 /**
@@ -74,14 +75,14 @@ export async function installChannelIndex(
     await rm(incoming, { recursive: true, force: true });
     await mkdir(incoming);
     await download(join(incoming, INDEX_FILE), chunks());
-    sets = prove(join(incoming, INDEX_FILE));
+    sets = validateAndCountPlayableSets(join(incoming, INDEX_FILE));
     version = await availableVersionName(root, pushedAt);
     await rename(incoming, join(root, version));
     staged = join(root, version);
     await swapCurrent(root, version);
   } catch (error) {
     await cleanupCatalogDirectory(staged);
-    return { status: "kept", reason: describe(error) };
+    return { status: "kept", reason: failureMessage(error) };
   }
 
   // An open handle on the version just replaced keeps reading it: unlinking a
@@ -110,23 +111,19 @@ async function download(path: string, chunks: AsyncIterable<Uint8Array>): Promis
  * Counts what the staged snapshot can play, which is also the proof: a file
  * that is not a catalog of this schema cannot be counted.
  */
-function prove(path: string): number {
+function validateAndCountPlayableSets(path: string): number {
   let db: Database;
   try {
     db = new Database(path, { readonly: true });
   } catch (error) {
-    throw new Error(`the pinned index could not be opened as a library: ${describe(error)}`, { cause: error });
+    throw new Error(`the pinned index could not be opened as a library: ${failureMessage(error)}`, { cause: error });
   }
   try {
     assertSchema(db);
     return listPlayable(db).length;
   } catch (error) {
-    throw new Error(`the pinned index could not be read as a library: ${describe(error)}`, { cause: error });
+    throw new Error(`the pinned index could not be read as a library: ${failureMessage(error)}`, { cause: error });
   } finally {
     db.close();
   }
-}
-
-function describe(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }

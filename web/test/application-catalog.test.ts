@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, test } from "bun:test";
+import { afterEach, beforeEach, expect, spyOn, test } from "bun:test";
 import type { Database } from "bun:sqlite";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -16,9 +16,11 @@ let root: string;
 let server: RunningServer | undefined;
 let follower: CatalogFollower | undefined;
 const databases: Database[] = [];
+const restoreDiagnostics: Array<() => void> = [];
 const events = new CatalogEvents();
 beforeEach(async () => { root = await mkdtemp(join(tmpdir(), "application-catalog-")); });
 afterEach(async () => {
+  for (const restore of restoreDiagnostics.splice(0)) restore();
   await follower?.stopFollowing();
   events.close();
   await server?.close();
@@ -38,7 +40,15 @@ async function titles(): Promise<string[]> {
   return ((await response.json()) as Array<{ title: string }>).map((set) => set.title);
 }
 
-test("a failed router swap keeps the served catalog and retries the same installed timestamp", async () => {
+test.each([
+  ["Error", new Error("router build refused"), "router build refused"],
+  ["null", null, "null"],
+  ["undefined", undefined, "undefined"],
+  ["string", "router build refused", "router build refused"],
+  ["unprintable value", Object.create(null) as unknown, "unprintable rejection"],
+])("%s router rejections keep the served catalog and retry the installed timestamp", async (_, rejection, message) => {
+  const errors = spyOn(console, "error").mockImplementation(() => {});
+  restoreDiagnostics.push(() => errors.mockRestore());
   const before = library("Before", "01OLD");
   databases.push(before);
   server = await startServer({ db: before, source: { stream: () => new ReadableStream<Uint8Array>() }, events });
@@ -59,7 +69,7 @@ test("a failed router swap keeps the served catalog and retries the same install
     server: { replaceCatalog(next) {
       attempts.push(next.db);
       databases.push(next.db);
-      if (attempts.length === 1) throw new Error("router build refused");
+      if (attempts.length === 1) throw rejection;
       server!.replaceCatalog(next);
     } },
     facts: status,
@@ -78,6 +88,7 @@ test("a failed router swap keeps the served catalog and retries the same install
   expect(replacements).toEqual([]);
   expect(changes).toEqual([]);
   expect(await held.check("01NEW")).toBe(false);
+  expect(errors.mock.calls).toEqual([[`catalog: the installed channel index could not be served: ${message}`]]);
 
   const stream = events.subscribe().getReader();
   await stream.read();

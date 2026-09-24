@@ -17,6 +17,7 @@
 import { mergeStates } from "./merge";
 import { parseRecord, type SyncRecord } from "./sync-record";
 import type { WatchState } from "./store";
+import { failureMessage } from "../failure-message";
 
 /** One device's document, as it sits on the channel. */
 export interface ChannelDocument {
@@ -111,7 +112,7 @@ export class StateSync {
     } catch (error) {
       // Swallowed on purpose. A channel that cannot be reached costs a log
       // line, and the player carries on against its own database.
-      return { pulled, pushed: false, failed: describe(error) };
+      return { pulled, pushed: false, failed: failureMessage(error) };
     }
   }
 
@@ -150,8 +151,4 @@ export class StateSync {
     this.lastSent = comparable;
     return true;
   }
-}
-
-function describe(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
