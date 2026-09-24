@@ -1,5 +1,6 @@
 package catalog
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -8,6 +9,7 @@ import data.LibraryEvents
 import data.LibraryUpdateCoordinator
 import data.LibraryUpdateKind
 import data.WatchStateRepository
+import data.coreSentence
 import data.refreshSentence
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -77,8 +79,9 @@ class CatalogViewModel
         private suspend fun readCatalog(refreshed: Result<Int>) {
             val answer =
                 try {
-                    val shelves = shelvesOf(repository.sets())
                     val failure = refreshed.exceptionOrNull()
+                    failure?.let { Log.w("Catalog", "could not refresh the library", it) }
+                    val shelves = shelvesOf(repository.sets())
                     when {
                         shelves.isNotEmpty() -> CatalogUiState.Ready(shelves, notice = failure?.refreshSentence())
                         failure != null -> CatalogUiState.Failed(failure.refreshSentence())
@@ -89,7 +92,9 @@ class CatalogViewModel
                 } catch (
                     @Suppress("TooGenericExceptionCaught") e: Exception,
                 ) {
-                    lastReady?.copy(notice = e.refreshSentence()) ?: CatalogUiState.Failed(e.refreshSentence())
+                    Log.w("Catalog", "could not read the library", e)
+                    val notice = e.coreSentence() ?: "Could not read the library. Try again."
+                    lastReady?.copy(notice = notice) ?: CatalogUiState.Failed(notice)
                 }
             show(answer)
         }
@@ -104,7 +109,9 @@ class CatalogViewModel
             } catch (
                 @Suppress("TooGenericExceptionCaught") e: Exception,
             ) {
-                show(lastReady?.copy(notice = e.refreshSentence()) ?: CatalogUiState.Failed(e.refreshSentence()))
+                Log.w("Catalog", "could not reread the library after enrichment", e)
+                val notice = e.coreSentence() ?: "Could not read the library. Try again."
+                show(lastReady?.copy(notice = notice) ?: CatalogUiState.Failed(notice))
             }
         }
 

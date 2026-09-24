@@ -180,7 +180,7 @@ class CatalogViewModelTest {
                 val after = awaitItem()
                 assertTrue(after is CatalogUiState.Ready)
                 assertEquals(before.shelves, after.shelves)
-                assertEquals("catalog unreadable", after.notice)
+                assertEquals("Could not read the library. Try again.", after.notice)
                 assertFalse(after.refreshing)
             }
         }
@@ -193,7 +193,7 @@ class CatalogViewModelTest {
             val vm = catalogViewModel(repository, FakeCatalogWatchState())
             vm.state.test {
                 awaitItem()
-                assertEquals(CatalogUiState.Failed("catalog unreadable"), awaitItem())
+                assertEquals(CatalogUiState.Failed("Could not read the library. Try again."), awaitItem())
             }
         }
 
@@ -370,7 +370,7 @@ class CatalogViewModelTest {
                 vm.createList("Favourite")
                 val after = awaitItem() as CatalogUiState.Ready
                 assertEquals(before.notice, after.notice)
-                assertEquals("refresh failed", after.notice)
+                assertEquals("Could not refresh the library", after.notice)
                 assertEquals(listOf("Favourite"), after.watch.collections.map { it.name })
             }
         }
@@ -437,7 +437,7 @@ class CatalogViewModelTest {
             val vm = catalogViewModel(FakeCatalogRepository(movies = 1, refreshFails = true), FakeCatalogWatchState())
             vm.state.test {
                 awaitItem()
-                assertEquals("refresh failed", (awaitItem() as CatalogUiState.Ready).notice)
+                assertEquals("Could not refresh the library", (awaitItem() as CatalogUiState.Ready).notice)
             }
         }
 

@@ -18,6 +18,82 @@ class LoginViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
+    fun unknownFailuresUseStepSpecificCopyAndRetainRetryState() =
+        runTest {
+            for (step in LoginStep.entries) {
+                for (message in listOf("private-storage-path-and-input", null)) {
+                    val core = FakeCore(signInOutcome = AuthOutcome.PASSWORD_NEEDED)
+                    val vm = LoginViewModel(ResolvedCoreProvider(core), UnconfinedTestDispatcher())
+                    val failure = java.io.IOException(message)
+                    if (step != LoginStep.PHONE) vm.submitPhone("+49...")
+                    if (step == LoginStep.PASSWORD) vm.submitCode("12345")
+                    when (step) {
+                        LoginStep.PHONE -> {
+                            core.requestFailure = failure
+                            vm.submitPhone("+49...")
+                        }
+
+                        LoginStep.CODE -> {
+                            core.signInFailure = failure
+                            vm.submitCode("12345")
+                        }
+
+                        LoginStep.PASSWORD -> {
+                            core.passwordFailure = failure
+                            vm.submitPassword("secret")
+                        }
+                    }
+                    val expected =
+                        when (step) {
+                            LoginStep.PHONE -> "Could not request a sign-in code. Try again."
+                            LoginStep.CODE -> "Could not complete sign-in. Try the code again."
+                            LoginStep.PASSWORD -> "Could not check the password. Try again."
+                        }
+                    assertEquals(LoginUiState.Failed(step, expected), vm.state.value)
+                    core.requestFailure = null
+                    core.signInFailure = null
+                    core.passwordFailure = null
+                    when (step) {
+                        LoginStep.PHONE -> {
+                            vm.submitPhone("+49...")
+                            assertEquals(LoginUiState.NeedsCode, vm.state.value)
+                        }
+
+                        LoginStep.CODE -> {
+                            vm.submitCode("12345")
+                            assertEquals(LoginUiState.NeedsPassword, vm.state.value)
+                        }
+
+                        LoginStep.PASSWORD -> {
+                            vm.submitPassword("secret")
+                            assertEquals(LoginUiState.Authorized, vm.state.value)
+                        }
+                    }
+                }
+            }
+        }
+
+    @Test
+    fun typedCoreRefusalsKeepTheirSpecificMessageAtEverySignInStep() =
+        runTest {
+            val core = FakeCore(signInOutcome = AuthOutcome.PASSWORD_NEEDED)
+            val vm = LoginViewModel(ResolvedCoreProvider(core), UnconfinedTestDispatcher())
+            core.requestFailure = uniffi.mediagram_core.CoreException.Network("Cannot reach Telegram. Try again.")
+            vm.submitPhone("+49...")
+            assertEquals(LoginUiState.Failed(LoginStep.PHONE, "Cannot reach Telegram. Try again."), vm.state.value)
+            core.requestFailure = null
+            vm.submitPhone("+49...")
+            core.signInFailure = uniffi.mediagram_core.CoreException.NotAuthorized("That code was not accepted.")
+            vm.submitCode("wrong")
+            assertEquals(LoginUiState.Failed(LoginStep.CODE, "That code was not accepted."), vm.state.value)
+            core.signInFailure = null
+            vm.submitCode("12345")
+            core.passwordFailure = uniffi.mediagram_core.CoreException.NotAuthorized("That password was not accepted.")
+            vm.submitPassword("wrong")
+            assertEquals(LoginUiState.Failed(LoginStep.PASSWORD, "That password was not accepted."), vm.state.value)
+        }
+
+    @Test
     fun reenteringAfterAuthorizationLossDiscardsTheCompletedLoginToken() =
         runTest {
             val core = FakeCore()

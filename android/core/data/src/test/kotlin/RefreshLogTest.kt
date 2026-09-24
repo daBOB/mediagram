@@ -15,9 +15,24 @@ import kotlin.test.assertNull
  */
 class RefreshLogTest {
     private fun repositoryOver(
-        core: FakeCore,
+        core: CoreClient,
         log: RefreshLog,
     ) = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), log)
+
+    @Test
+    fun unknownRefreshFailuresKeepTheirCauseButDoNotExposeItInTheDisplayedLog() =
+        runTest {
+            val refusal = java.io.IOException("private-state-path")
+            val core =
+                object : CoreClient by FakeCore() {
+                    override suspend fun refreshLibrary(handle: String): Long = throw refusal
+                }
+            val log = RefreshLog()
+            val repository = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), log)
+            val outcome = repository.refresh()
+            kotlin.test.assertSame(refusal, outcome.exceptionOrNull())
+            assertEquals(RefreshOutcome.Refused("Could not refresh the library"), log.last())
+        }
 
     /** A refresh that installs a newer snapshot is the case worth reporting. */
     @Test
@@ -66,7 +81,11 @@ class RefreshLogTest {
     @Test
     fun aFailedRefreshKeepsTheCoresOwnSentence() =
         runTest {
-            val core = FakeCore(refreshFails = "the channel could not be reached")
+            val core =
+                object : CoreClient by FakeCore() {
+                    override suspend fun refreshLibrary(handle: String): Long =
+                        throw uniffi.mediagram_core.CoreException.Network("the channel could not be reached")
+                }
             val log = RefreshLog()
 
             repositoryOver(core, log).refresh()

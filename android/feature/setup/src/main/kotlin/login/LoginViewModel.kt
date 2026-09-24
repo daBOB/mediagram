@@ -1,5 +1,6 @@
 package setup.login
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -117,5 +118,12 @@ class LoginViewModel
  */
 private fun Throwable.failedAt(step: LoginStep): LoginUiState.Failed {
     if (this is CancellationException) throw this
-    return LoginUiState.Failed(step, coreSentence() ?: message ?: "Sign-in failed")
+    Log.w("Login", "sign-in failed at $step", this)
+    val fallback =
+        when (step) {
+            LoginStep.PHONE -> "Could not request a sign-in code. Try again."
+            LoginStep.CODE -> "Could not complete sign-in. Try the code again."
+            LoginStep.PASSWORD -> "Could not check the password. Try again."
+        }
+    return LoginUiState.Failed(step, coreSentence() ?: fallback)
 }
