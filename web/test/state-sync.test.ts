@@ -1,6 +1,7 @@
 /** Covers `sync`: when a machine sends, and what it takes back. */
 
 import { afterEach, describe, expect, test } from "bun:test";
+import { Database } from "bun:sqlite";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -12,8 +13,9 @@ const dirs: string[] = [];
 function machine(name = "André") {
   const dir = mkdtempSync(join(tmpdir(), "mediagram-sync-"));
   dirs.push(dir);
-  const state = new WatchState(join(dir, "state.db"));
-  return { state, me: state.createProfile(name)!.id };
+  const path = join(dir, "state.db");
+  const state = new WatchState(path);
+  return { state, me: state.createProfile(name)!.id, path };
 }
 afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
@@ -212,6 +214,105 @@ describe("a channel that cannot be reached", () => {
     expect(second.pushed).toBe(true);
     expect(puts).toHaveLength(1);
   });
+
+  test("reports committed imports when sending fails and retries the send next round", async () => {
+    const other = machine();
+    other.state.setProgress(other.me, "01FILM", 900, 1204);
+    const { channel, puts } = fakeChannel([
+      { messageId: 7, device: "desktop", text: JSON.stringify(other.state.exportRecord("desktop")) },
+    ]);
+    let refuse = true;
+    const flaky: StateChannel = {
+      list: channel.list,
+      put: async (body, messageId) => {
+        if (refuse) throw new Error("upload refused");
+        return channel.put(body, messageId);
+      },
+    };
+    const here = machine();
+    const sync = new StateSync(here.state, flaky, "laptop");
+
+    const first = await sync.once();
+
+    expect(here.state.snapshot(here.me).progress[0]).toMatchObject({ setId: "01FILM", at: 900 });
+    expect(first).toEqual({ pulled: 1, pushed: false, failed: "upload refused" });
+    expect(puts).toHaveLength(0);
+
+    refuse = false;
+    expect(await sync.once()).toEqual({ pulled: 0, pushed: true });
+    expect(puts).toHaveLength(1);
+    expect(JSON.parse(puts[0]!.body).profiles[0].progress[0]).toMatchObject({
+      setId: "01FILM", at: 900,
+    });
+    expect(await sync.once()).toEqual({ pulled: 0, pushed: false });
+    expect(puts).toHaveLength(1);
+  });
+});
+
+describe("a local import that fails", () => {
+  test("refuses to publish when local storage is unavailable", async () => {
+    const other = machine();
+    other.state.setProgress(other.me, "01FILM", 900, 1204);
+    const { channel, puts } = fakeChannel([
+      { messageId: 7, device: "desktop", text: JSON.stringify(other.state.exportRecord("desktop")) },
+    ]);
+    const state = new WatchState(null);
+
+    expect(await new StateSync(state, channel, "laptop").once()).toEqual({
+      pulled: 0,
+      pushed: false,
+      failed: "watch state database is unavailable",
+    });
+    expect(puts).toHaveLength(0);
+    expect(state.profiles()).toEqual([]);
+  });
+
+  test.each(["profiles", "progress", "watched", "collection_items"])(
+    "rolls back every change and sends nothing when writing %s fails",
+    async (table) => {
+      const other = machine("Sam");
+      other.state.setKids("01KID", true);
+      other.state.setProgress(other.me, "01FILM", 900, 1204);
+      other.state.setWatched(other.me, "01DONE", true);
+      other.state.setWatchlisted(other.me, "01LATER", true);
+      const collection = other.state.createCollection(other.me, "Sunday")!;
+      other.state.addToCollection(other.me, collection.id, "01FILM");
+      const { channel, puts } = fakeChannel([
+        { messageId: 7, device: "desktop", text: JSON.stringify(other.state.exportRecord("desktop")) },
+      ]);
+      const here = machine();
+      here.state.setProgress(here.me, "01MINE", 120, 1204);
+      const before = here.state.snapshot(here.me);
+      const profiles = here.state.profiles();
+      const db = new Database(here.path);
+      try {
+        // Abort a real SQLite write after Kids has been imported.
+        db.exec(`CREATE TRIGGER refuse_import BEFORE INSERT ON ${table}
+          BEGIN SELECT RAISE(ABORT, 'local import refused'); END`);
+        const sync = new StateSync(here.state, channel, "laptop");
+
+        expect(await sync.once()).toEqual({ pulled: 0, pushed: false, failed: "local import refused" });
+        expect(puts).toHaveLength(0);
+        expect(here.state.profiles()).toEqual(profiles);
+        expect(here.state.snapshot(here.me)).toEqual(before);
+        expect(here.state.kids()).toEqual([]);
+
+        db.exec("DROP TRIGGER refuse_import");
+        expect(await sync.once()).toEqual({ pulled: 5, pushed: true });
+        expect(puts).toHaveLength(1);
+        const sam = here.state.profiles().find((profile) => profile.name === "Sam")!;
+        expect(here.state.snapshot(sam.id)).toMatchObject({
+          progress: [{ setId: "01FILM", at: 900 }],
+          watched: [{ setId: "01DONE" }],
+          watchlist: ["01LATER"],
+          collections: [{ id: collection.id, items: ["01FILM"] }],
+        });
+        expect(here.state.kids()).toEqual(["01KID"]);
+      } finally {
+        db.close();
+      }
+    },
+  );
 });
 
 describe("two rounds asked for at once", () => {

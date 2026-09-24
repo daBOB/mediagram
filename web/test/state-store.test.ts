@@ -439,7 +439,7 @@ describe("what this player takes back", () => {
 
     state.importMerged({
       profiles: [
-        { name, progress: [{ setId: "01NEW", at: 500, duration: 1204, updatedAt: 9000 }], watched: [] },
+        { name, displayName: name, progress: [{ setId: "01NEW", at: 500, duration: 1204, updatedAt: 9000 }], watched: [] },
       ],
     });
 
@@ -453,7 +453,7 @@ describe("what this player takes back", () => {
 
     state.importMerged({
       profiles: [
-        { name, progress: [{ setId: "01SET", at: 10, duration: 1204, updatedAt: 1 }], watched: [] },
+        { name, displayName: name, progress: [{ setId: "01SET", at: 10, duration: 1204, updatedAt: 1 }], watched: [] },
       ],
     });
 
@@ -467,7 +467,7 @@ describe("what this player takes back", () => {
     state.setProgress(me, "01SET", 900, 1204);
 
     state.importMerged({
-      profiles: [{ name, progress: [], watched: [{ setId: "01SET", updatedAt: Date.now() + 5000 }] }],
+      profiles: [{ name, displayName: name, progress: [], watched: [{ setId: "01SET", updatedAt: Date.now() + 5000 }] }],
     });
 
     expect(state.snapshot(me).progress).toEqual([]);
@@ -481,7 +481,7 @@ describe("what this player takes back", () => {
     const name = state.profiles().find((p) => p.id === me)!.name;
     state.setProgress(me, "01MINE", 300, 1204);
 
-    state.importMerged({ profiles: [{ name, progress: [], watched: [] }] });
+    state.importMerged({ profiles: [{ name, displayName: name, progress: [], watched: [] }] });
 
     expect(state.snapshot(me).progress[0]!.setId).toBe("01MINE");
   });
@@ -494,7 +494,7 @@ describe("what this player takes back", () => {
 
     state.importMerged({
       profiles: [
-        { name: "Sam", progress: [{ setId: "01A", at: 1, duration: null, updatedAt: 9000 }], watched: [] },
+        { name: "Sam", displayName: "Sam", progress: [{ setId: "01A", at: 1, duration: null, updatedAt: 9000 }], watched: [] },
       ],
     });
 
@@ -512,6 +512,7 @@ describe("what this player takes back", () => {
       profiles: [
         {
           name: ` ${name.toUpperCase()} `,
+          displayName: name,
           progress: [{ setId: "01A", at: 1, duration: null, updatedAt: 9000 }],
           watched: [],
         },

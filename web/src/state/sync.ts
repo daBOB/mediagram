@@ -54,8 +54,9 @@ export class StateSync {
   private mine: number | null = null;
   /** The last body sent, so an unchanged one is not sent again. */
   private lastSent: string | null = null;
-  /** The round in progress, if any. Never rejects: `round` catches. */
-  private running: Promise<unknown> = Promise.resolve();
+  /** The shared drain in progress. Never rejects: `round` catches. */
+  private running: Promise<SyncOutcome> | null = null;
+  private again = false;
 
   constructor(
     private readonly state: WatchState,
@@ -64,45 +65,64 @@ export class StateSync {
   ) {}
 
   /**
-   * One round: read everyone's, merge, take in what is newer, write back.
+   * Read everyone's, merge, apply selected changes, and write back. Calls
+   * arriving during a round share its drain and retain one follow-up read.
    *
    * Pull before push so what this machine sends already reflects what it just
    * learnt. A device that pushed first would publish a document it knew to be
    * out of date, and every other device would have to do the reconciling that
    * this one had the information to do.
    */
-  async once(): Promise<SyncOutcome> {
-    // One round at a time. The timer and a pushed update can both ask for one,
-    // and two rounds overlapping on a device's first send would each find no
-    // document of its own and each send one. Queued, not skipped: a round
-    // asked for mid-round may carry news the running one already missed.
-    const round = this.running.then(() => this.round());
-    this.running = round;
-    return round;
+  once(): Promise<SyncOutcome> {
+    // A burst needs one follow-up, not one queued read per event. News that
+    // arrives during that follow-up asks for another; no active read can
+    // consume an event announcing something it has already missed.
+    if (this.running) {
+      this.again = true;
+      return this.running;
+    }
+    this.running = (async () => {
+      const outcome: SyncOutcome = { pulled: 0, pushed: false };
+      try {
+        do {
+          this.again = false;
+          const round = await this.round();
+          outcome.pulled += round.pulled;
+          outcome.pushed ||= round.pushed;
+          if (round.failed !== undefined) outcome.failed = round.failed;
+        } while (this.again);
+        return outcome;
+      } finally {
+        this.running = null;
+      }
+    })();
+    // Every caller, including shutdown, waits for all retained news. The
+    // result reports work and failures from the whole shared drain.
+    return this.running;
   }
 
   private async round(): Promise<SyncOutcome> {
+    let pulled = 0;
     try {
       const documents = await this.channel.list();
-      const pulled = this.take(documents);
-      const pushed = await this.give();
+      pulled = this.mergeChannelDocuments(documents);
+      const pushed = await this.pushIfChanged();
       return { pulled, pushed };
     } catch (error) {
       // Swallowed on purpose. A channel that cannot be reached costs a log
       // line, and the player carries on against its own database.
-      return { pulled: 0, pushed: false, failed: describe(error) };
+      return { pulled, pushed: false, failed: describe(error) };
     }
   }
 
   /**
    * Merges what the channel holds into this machine.
    *
-   * **This device's own document is part of the merge.** Without it the merge
-   * would answer only what the others knew, and `importMerged` is corrective
-   * rather than wholesale precisely so that this cannot erase anything — but
-   * including it is what makes the answer complete rather than merely safe.
+   * This device contributes its current local export. Its channel document
+   * only recovers the message ID to edit on the next push; merging that stale
+   * copy back in could restore state the viewer has since removed locally.
    */
-  private take(documents: ChannelDocument[]): number {
+  private mergeChannelDocuments(documents: ChannelDocument[]): number {
     const records: SyncRecord[] = [this.state.exportRecord(this.device)];
     for (const document of documents) {
       // A device's own message is recognised here rather than filtered out, so
@@ -117,7 +137,7 @@ export class StateSync {
   }
 
   /** Writes this machine's document, unless it would be the same one again. */
-  private async give(): Promise<boolean> {
+  private async pushIfChanged(): Promise<boolean> {
     const record = this.state.exportRecord(this.device);
     // `writtenAt` changes on every export and nothing reads it during a merge,
     // so it is left out of the comparison: including it would make every

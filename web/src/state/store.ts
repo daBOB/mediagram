@@ -6,10 +6,12 @@
  * and would put a scheduling boundary between a viewer pressing pause and the
  * position being written.
  *
- * Tolerant throughout, too. A state directory that cannot be written is a
- * player that forgets where you were, which is a bad afternoon; a player that
- * refuses to start because of it is a broken one. Every method degrades to
- * "remembers nothing" rather than throwing into a request handler.
+ * If storage cannot open, the player can still browse without remembering
+ * state. Once open, unexpected SQLite failures propagate to the request
+ * boundary rather than falsely acknowledging a saved change. Writes for a
+ * profile deleted by another device are expected foreign-key refusals and
+ * are ignored. Sync imports propagate every failure so a partial import is
+ * rolled back and never published.
  */
 
 import { Database } from "bun:sqlite";
@@ -260,10 +262,8 @@ export class WatchState {
   /**
    * Records that a title was watched to the end, or takes it back.
    *
-   * The position is cleared at the same moment — a finished title has no
-   * resume point — so this is the only thing that survives it. Without it the
-   * Continue shelf would be right and everything else would believe the title
-   * had never been opened.
+   * Only the completion marker changes here. Finishing playback also calls
+   * clearProgress separately, so the title no longer has a resume point.
    */
   setWatched(profileId: string, setId: string, finished: boolean): void {
     if (finished) {
@@ -310,7 +310,7 @@ export class WatchState {
       return true;
     }
 
-    tolerate(() =>
+    return tolerate(() =>
       this.db
         ?.query(
           `INSERT INTO preferences(profile_id, scope, name, value, updated_at)
@@ -320,7 +320,6 @@ export class WatchState {
         )
         .run(profileId, at, called, held, Date.now()),
     );
-    return true;
   }
 
   /**
@@ -396,28 +395,33 @@ export class WatchState {
    * one removal the format can actually express.
    *
    * Returns how many rows it changed, so a caller can tell a merge that did
-   * something from one that did not.
+   * something from one that did not. All changes commit together; a write
+   * failure rolls them back and reaches the sync round before it can send.
    */
   importMerged(merged: MergedState): number {
-    if (!this.db) return 0;
-    // `?? []` throughout: a caller that built a `MergedState` by hand — a
-    // test, or a future format that predates these three — says nothing
-    // about them, which must read as "no change" rather than a crash.
-    let changed = importKids(this.db, merged.kids ?? []);
+    if (!this.db) throw new Error("watch state database is unavailable");
+    this.db.exec("BEGIN");
+    try {
+      // `?? []` throughout: a caller that built a `MergedState` by hand — a
+      // test, or a future format that predates these three — says nothing
+      // about them, which must read as "no change" rather than a crash.
+      let changed = importKids(this.db, merged.kids ?? []);
 
-    for (const profile of merged.profiles) {
-      // The identity to match on, and the spelling to create with.
-      const profileId = this.profileNamed(profile.name, profile.displayName);
-      if (profileId === null) continue;
+      for (const profile of merged.profiles) {
+        // The identity to match on, and the spelling to create with.
+        const profileId = this.profileNamed(profile.name, profile.displayName);
+        if (profileId === null) continue;
 
-      for (const row of profile.progress) {
-        const standing = this.db
-          .query("SELECT updated_at AS updatedAt FROM progress WHERE profile_id = ?1 AND set_id = ?2")
-          .get(profileId, row.setId) as { updatedAt: number } | null;
-        if (standing !== null && standing.updatedAt >= row.updatedAt) continue;
-        tolerate(() =>
+        for (const row of profile.progress) {
+          const standing = this.db
+            .query("SELECT at_seconds AS at, duration, updated_at AS updatedAt FROM progress WHERE profile_id = ?1 AND set_id = ?2")
+            .get(profileId, row.setId) as Omit<Progress, "setId"> | null;
+          // The merge already broke equal-time ties by device. Keep strictly
+          // newer local news, but apply a changed winner with the same clock.
+          if (standing !== null && (standing.updatedAt > row.updatedAt ||
+            (standing.updatedAt === row.updatedAt && standing.at === row.at && standing.duration === row.duration))) continue;
           this.db
-            ?.query(
+            .query(
               `INSERT INTO progress(profile_id, set_id, at_seconds, duration, updated_at)
                  VALUES (?1, ?2, ?3, ?4, ?5)
                  ON CONFLICT(profile_id, set_id) DO UPDATE SET
@@ -425,38 +429,40 @@ export class WatchState {
                    duration = excluded.duration,
                    updated_at = excluded.updated_at`,
             )
-            .run(profileId, row.setId, row.at, row.duration, row.updatedAt),
-        );
-        changed += 1;
-      }
+            .run(profileId, row.setId, row.at, row.duration, row.updatedAt);
+          changed += 1;
+        }
 
-      for (const row of profile.watched) {
-        const standing = this.db
-          .query("SELECT finished_at AS updatedAt FROM watched WHERE profile_id = ?1 AND set_id = ?2")
-          .get(profileId, row.setId) as { updatedAt: number } | null;
-        // The position goes whether or not the completion itself is news: a
-        // device that learns of a completion it already had may still be
-        // holding the position another device has only now told it about.
-        const dropped = this.db
-          .query("DELETE FROM progress WHERE profile_id = ?1 AND set_id = ?2 AND updated_at <= ?3")
-          .run(profileId, row.setId, row.updatedAt);
-        changed += dropped.changes;
-        if (standing !== null && standing.updatedAt >= row.updatedAt) continue;
-        tolerate(() =>
+        for (const row of profile.watched) {
+          const standing = this.db
+            .query("SELECT finished_at AS updatedAt FROM watched WHERE profile_id = ?1 AND set_id = ?2")
+            .get(profileId, row.setId) as { updatedAt: number } | null;
+          // The position goes whether or not the completion itself is news: a
+          // device that learns of a completion it already had may still be
+          // holding the position another device has only now told it about.
+          const dropped = this.db
+            .query("DELETE FROM progress WHERE profile_id = ?1 AND set_id = ?2 AND updated_at <= ?3")
+            .run(profileId, row.setId, row.updatedAt);
+          changed += dropped.changes;
+          if (standing !== null && standing.updatedAt >= row.updatedAt) continue;
           this.db
-            ?.query(
+            .query(
               `INSERT INTO watched(profile_id, set_id, finished_at) VALUES (?1, ?2, ?3)
                  ON CONFLICT(profile_id, set_id) DO UPDATE SET finished_at = excluded.finished_at`,
             )
-            .run(profileId, row.setId, row.updatedAt),
-        );
-        changed += 1;
-      }
+            .run(profileId, row.setId, row.updatedAt);
+          changed += 1;
+        }
 
-      changed += importWatchlist(this.db, profileId, profile.watchlist ?? []);
-      changed += importCollections(this.db, profileId, profile.collections ?? []);
+        changed += importWatchlist(this.db, profileId, profile.watchlist ?? []);
+        changed += importCollections(this.db, profileId, profile.collections ?? []);
+      }
+      this.db.exec("COMMIT");
+      return changed;
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
     }
-    return changed;
   }
 
   /**
@@ -513,14 +519,12 @@ export class WatchState {
 
     const id = crypto.randomUUID();
     const createdAt = Date.now();
-    let made = false;
-    tolerate(() => {
+    const made = tolerate(() => {
       this.db!
         .query(
           "INSERT INTO collections(id, profile_id, name, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?4)",
         )
         .run(id, profileId, clean, createdAt);
-      made = true;
     });
     return made ? { id, name: clean, createdAt, items: [] } : null;
   }
@@ -617,11 +621,15 @@ export class WatchState {
  * and not one worth ending a request over — the write simply has nowhere to
  * go. Reads are already safe; only mutations pass through here.
  */
-function tolerate(write: () => void): void {
+function tolerate(write: () => void): boolean {
   try {
     write();
-  } catch {
-    /* Nowhere to put it. See above. */
+    return true;
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "SQLITE_CONSTRAINT_FOREIGNKEY") {
+      return false;
+    }
+    throw error;
   }
 }
 
