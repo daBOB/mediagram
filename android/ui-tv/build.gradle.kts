@@ -33,4 +33,8 @@ dependencies {
     testImplementation(libs.findLibrary("robolectric").get())
     testImplementation(libs.findLibrary("mockk").get())
     testImplementation(libs.findLibrary("androidx.compose.ui.test.junit4").get())
+    // Only to build a real SetupViewModel against a mocked CoreClient in
+    // TvAppTest, the way ui-mobile's own MobileAppFixture does; TvApp
+    // itself never reaches core:data.
+    testImplementation(project(":core:data"))
 }
