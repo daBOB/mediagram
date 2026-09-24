@@ -17,8 +17,14 @@ import androidx.compose.ui.graphics.Color
  * player's `#8c3b2e` lifted until it did the same, because it lands on the
  * line saying where a viewer got to, which is small text and not
  * decoration.
+ *
+ * Public so every surface reads it, not just the phone's M3 theme. A
+ * television theme can't build a `ColorScheme` from this at all — it never
+ * has material3 on its compile classpath — but it still needs these exact
+ * values to build its own `darkColorScheme`, and a hex retyped into a
+ * second file is a hex that can drift from this one unnoticed.
  */
-internal object Palette {
+object Palette {
     /** The deepest ground: what the window is cleared to. */
     val Ground = Color(0xFF16130F)
 
