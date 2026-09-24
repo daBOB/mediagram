@@ -188,6 +188,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     // The same facts the lines above printed, kept this time. Everything here was
     // already decided; none of it is worked out twice.
     const reader = cache ? new CachedReader(cache, config.cacheReadahead) : null;
+    resources.reader = reader ?? undefined;
     const bytes = new TelegramSource(telegram, reader ?? undefined);
 
     // Which titles are on this disk in full, for the shelf's offline badge. The

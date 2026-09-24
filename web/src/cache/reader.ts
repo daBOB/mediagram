@@ -53,6 +53,7 @@ export class CachedReader {
   private readonly tracker: ReadaheadTracker;
   /** Readahead fetches in flight, so tests and shutdown can wait for them. */
   private readonly warming = new Set<Promise<void>>();
+  private stopping: Promise<void> | null = null;
   /**
    * Bytes that actually crossed the wire, as opposed to coming off disk.
    *
@@ -78,6 +79,11 @@ export class CachedReader {
   /** Resolves once speculative fetches have finished. For tests. */
   async settle(): Promise<void> {
     await Promise.all([...this.warming]);
+  }
+
+  /** Prevent new speculative reads and await those already admitted. Foreground reads remain usable. */
+  stop(): Promise<void> {
+    return this.stopping ??= this.settle();
   }
 
   /**
@@ -223,6 +229,7 @@ export class CachedReader {
     partLength: number,
     fetch: FetchRange,
   ): void {
+    if (this.stopping) return;
     const ahead = this.tracker.aheadFor(setId, partIdx, start, length);
     if (ahead === 0) return;
 

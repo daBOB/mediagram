@@ -103,7 +103,11 @@ export class ChunkCache {
     }
   }
 
-  /** Stores a chunk, then brings the cache back under its budget. */
+  /**
+   * Attempts to store a chunk and enforce the budget without interrupting playback.
+   * Write failures are ignored and eviction failures are logged; successful
+   * resolution guarantees neither persistence nor compliance with the budget.
+   */
   async put(setId: string, partIdx: number, index: number, bytes: Uint8Array): Promise<void> {
     const path = chunkPath(this.root, setId, partIdx, index);
 

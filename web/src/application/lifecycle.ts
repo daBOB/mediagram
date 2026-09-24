@@ -8,6 +8,7 @@ import type { CatalogFollower } from "./catalog-follow";
 import type { SeriesPreload } from "../cache/series-preload";
 import type { SheetStore } from "../thumbs/sheets";
 import type { AudioTrackReader } from "../catalog/audio-tracks";
+import type { CachedReader } from "../cache/reader";
 
 type Sync = Pick<StateSync, "once"> | null;
 
@@ -59,6 +60,7 @@ export interface ApplicationResources {
   preload?: Pick<SeriesPreload, "stop">;
   sheets?: Pick<SheetStore, "stop">;
   audio?: Pick<AudioTrackReader, "stop">;
+  reader?: Pick<CachedReader, "stop">;
   server?: Pick<RunningServer, "close">;
   state?: { close(): void };
   telegram?: { disconnect(): Promise<void> };
@@ -79,6 +81,7 @@ export function shutdownFor(resources: ApplicationResources): () => Promise<void
       attempt(() => resources.preload?.stop()),
       attempt(() => resources.sheets?.stop()),
       attempt(() => resources.audio?.stop()),
+      attempt(() => resources.reader?.stop()),
     ];
     for (const timer of resources.timers.splice(0)) clearInterval(timer);
     await attempt(() => resources.updates?.stop());
