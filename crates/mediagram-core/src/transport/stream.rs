@@ -11,6 +11,7 @@ use anyhow::{Context, Result, anyhow, bail};
 use bytes::Bytes;
 use futures::Stream;
 use grammers_client::Client;
+use grammers_client::client::DownloadIter;
 use grammers_client::media::Document;
 use grammers_session::types::PeerRef;
 use tokio::sync::mpsc;
@@ -103,11 +104,36 @@ pub async fn pump_step(
     cursor: &mut StepCursor,
     out: &mpsc::Sender<Result<Vec<u8>>>,
 ) -> Result<()> {
-    let mut chunks = client
+    let chunks = client
         .iter_download(document)
         .skip_chunks(i32::try_from(step.skip_chunks).unwrap_or(i32::MAX));
+    pump_chunks(chunks, step, cursor, out).await
+}
+
+/// Raw chunk IO, kept apart from range trimming and delivery for local tests.
+pub(super) trait ChunkSource {
+    fn next(&mut self) -> impl Future<Output = Result<Option<Vec<u8>>>> + Send;
+}
+
+impl ChunkSource for DownloadIter {
+    async fn next(&mut self) -> Result<Option<Vec<u8>>> {
+        Ok(DownloadIter::next(self).await?)
+    }
+}
+
+pub(super) async fn pump_chunks(
+    mut chunks: impl ChunkSource,
+    step: &Step,
+    cursor: &mut StepCursor,
+    out: &mpsc::Sender<Result<Vec<u8>>>,
+) -> Result<()> {
     while !cursor.is_done() {
-        let chunk = match chunks.next().await.context("downloading chunk")? {
+        let next = tokio::select! {
+            biased;
+            _ = out.closed() => return Ok(()),
+            next = chunks.next() => next.context("downloading chunk")?,
+        };
+        let chunk = match next {
             Some(chunk) => chunk,
             None => bail!(
                 "download ended with {} bytes of part {} still owed",

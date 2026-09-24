@@ -21,3 +21,7 @@ impl Core {
             .unwrap_or_else(|err| std::panic::resume_unwind(err.into_panic()))
     }
 }
+
+#[cfg(test)]
+#[path = "blocking_tests.rs"]
+mod tests;
