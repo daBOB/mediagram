@@ -5,6 +5,42 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Unreleased — 0.40.2
+
+**Fixed**
+
+- Catalog updates validate downloaded libraries before publication and reject
+  stale concurrent completions. Failed state uploads retain successfully imported
+  changes and leave retries possible.
+- Upload resumption continues past unavailable source files, and repeated series
+  imports direct pending episodes to `resume` instead of creating duplicate work.
+- Browser playback and library navigation discard obsolete asynchronous replies,
+  release cancelled playback resources, and follow the displayed episode order.
+- Web storage and filesystem failures retain their causes; HLS session deletion
+  follows the same browser-origin checks as other writes. Login diagnostics no
+  longer redirect unrelated output during authentication.
+- Android sync, refresh, login and playback operations now respect their owning
+  lifetimes and report persistence failures without discarding retry state.
+- Browser profile and list controls report failed saves, and shelf choices remain
+  usable when browser storage is blocked. Switching audio no longer treats a
+  partial conversion's duration as a completed title.
+- Delayed transcode cleanup preserves replacement sessions. Audio probes are
+  cancelled and reaped before the web server finishes shutting down.
+- Upload surveys report files whose compatibility could not be checked; cancelled
+  or failed CLI conversions stop their child processes.
+- Web setup hides password input on Bun terminals while restoring normal echo
+  for subsequent prompts. Failed profile discovery offers a retry, and the
+  subtitle shortcut restores the selected language after toggling it off.
+- Failed browser profile-state reads now offer retry before showing shelves and
+  preserve the previously loaded profile. Disk measurements retain the last
+  successful total when a scan fails, and sync counts newly imported profiles.
+- Android account resets close local state before deleting it, and queued work
+  from the old core cannot recreate the database. Profile choices reject stale
+  completions; System diagnostics keep previous readings and offer retry.
+- Malformed MP4 box sizes produce an error without overflowing the parser.
+  Sign-out holds the session lock through stored-key removal, and private core
+  diagnostics retain their nested causes while public errors stay sanitized.
+
 ## 2026-09-23
 
 **Added**
@@ -73,6 +109,13 @@ to `main`. Full phase-by-phase detail lives in
 
 **Fixed**
 
+- The web player resumes from the newest position, not the one the tab
+  loaded with. A tab read its profile's positions once, when the profile was
+  chosen, so after watching further on the phone or in another browser the
+  open tab resumed at the old place. Opening a title now reads the positions
+  again first (at most 1.5 s, then it goes with what it has), and returning to
+  the tab refreshes the shelves if one changed. Newest wins per title, so a
+  position this tab has just saved is not undone by the server's older copy.
 - The core read `shows.certification` unconditionally, so on a v6 index
   (what the channel holds until the uploading machine is upgraded) every
   title description on the phone failed to load. The column is now read only
