@@ -101,9 +101,9 @@ class SettingsViewModelTest {
             assertEquals(TelegramCredentials(1234, WELL_FORMED_HASH), fixture.telegram.read())
         }
 
-    /** An identity Telegram will not answer through is not kept, and the one in use stays. */
+    /** An unverified replacement does not imply Telegram rejected the application id. */
     @Test
-    fun anIdentityTelegramRefusesLeavesThePreviousOneInUse() =
+    fun anUnverifiedIdentityKeepsThePreviousCredentials() =
         runTest {
             val core = FakeCore(libraries = libraries)
             val fixture = signedInWithLibrary(core)
@@ -114,7 +114,7 @@ class SettingsViewModelTest {
 
             assertTrue(
                 viewModel.state.value.notice!!
-                    .startsWith("Telegram did not accept"),
+                    .startsWith("The application identity could not be changed"),
             )
             assertFalse(viewModel.state.value.busy)
             assertEquals(TelegramCredentials(1234, WELL_FORMED_HASH), fixture.telegram.read())

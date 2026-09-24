@@ -15,16 +15,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import settings.TelegramSettings
-import uniffi.mediagram_core.CoreException
 import javax.inject.Inject
 
 private const val UNKNOWN = "—"
-private const val REFUSED_IDENTITY =
-    "Telegram did not accept that application id. " +
-        "The previous one is still in use."
-private const val UNREACHABLE_IDENTITY =
-    "Telegram could not be reached to try that application id. " +
-        "The previous one is still in use."
+private const val IDENTITY_CHANGE_FAILED = "The application identity could not be changed. Try again."
 private const val SIGN_OUT_FAILED = "Signing out did not finish. Try again, or start over."
 
 /**
@@ -142,9 +136,10 @@ class SettingsViewModel
                         } catch (
                             @Suppress("TooGenericExceptionCaught") e: Exception,
                         ) {
-                            // An offline phone is not a refused id; the two ask for
-                            // different things next.
-                            throw SettingsFailure(if (e is CoreException.Network) UNREACHABLE_IDENTITY else REFUSED_IDENTITY)
+                            // Replacement also closes native resources and writes
+                            // local credentials; none of these failures establishes
+                            // that Telegram rejected the application identity.
+                            throw SettingsFailure(IDENTITY_CHANGE_FAILED, e)
                         }
                         completed(SettingsEvent.ApplicationChanged)
                         // Outside the refusal's catch: the new identity is already in
@@ -207,4 +202,5 @@ private suspend fun <T> optionalRow(read: suspend () -> T): T? =
 /** A failure this ViewModel has already put into words. */
 private class SettingsFailure(
     val sentence: String,
-) : Exception(sentence)
+    cause: Exception,
+) : Exception(sentence, cause)
