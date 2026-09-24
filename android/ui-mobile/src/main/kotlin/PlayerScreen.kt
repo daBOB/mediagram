@@ -155,6 +155,8 @@ fun PlayerScreen(setId: String, fsk: String?, onBack: () -> Unit) {
                 PlayerSettingsSheet(
                     currentSpeed = choices.speed,
                     onSpeedChosen = viewModel::setSpeed,
+                    audioOptions = choices.audioOptions,
+                    onAudioChosen = viewModel::chooseAudioTrack,
                     onDismiss = { settingsShown = false },
                 )
             }
@@ -188,12 +190,3 @@ fun PlayerScreen(setId: String, fsk: String?, onBack: () -> Unit) {
         }
     }
 }
-
-/**
- * A rotation disposes and recreates this screen's whole composition
- * exactly the way leaving it for the catalog does; the two are told apart
- * by whether the Activity itself is mid configuration change. Stopping on
- * a rotation would restart the same set from zero every time the device
- * turns, which is worse than the drop-to-catalog bug this replaced.
- */
-internal fun shouldStopOnDispose(isChangingConfigurations: Boolean): Boolean = !isChangingConfigurations

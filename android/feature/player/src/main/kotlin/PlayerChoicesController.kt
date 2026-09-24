@@ -10,13 +10,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import model.MediaSet
+import playback.AudioOption
 
 /**
  * What this viewer has chosen for the open title, and how a choice made
  * for one show is kept from leaking into the next — split out of
  * [PlayerViewModel] to keep that file under the project's line guideline.
- * Speed is the only field [PlayerChoices] carries this phase; audio,
- * subtitles and framing join it, and this controller, later.
+ * Speed is resolved here directly; the audio menu's own races (it depends
+ * on the file's tracks as well as a remembered preference) are guarded by
+ * [audioChoice] instead, which this controller only feeds the scope and
+ * the stored value it loads for it.
  */
 class PlayerChoicesController(
     private val launchScope: CoroutineScope,
@@ -31,6 +34,10 @@ class PlayerChoicesController(
 
     private val _choices = MutableStateFlow(PlayerChoices.Default)
     val choices: StateFlow<PlayerChoices> = _choices.asStateFlow()
+
+    private val audioChoice = AudioChoiceController(launchScope, handle, preferences) { options ->
+        _choices.value = _choices.value.copy(audioOptions = options)
+    }
 
     /** Where [setSpeed] remembers a choice; null before the open title's set resolves. */
     private var openScope: String? = null
@@ -49,21 +56,31 @@ class PlayerChoicesController(
         _openSet.value = null
         _choices.value = PlayerChoices.Default
         userChoseSpeed = false
+        audioChoice.reset()
     }
+
+    /** Detaches the audio listener this controller's [audioChoice] holds on the player. */
+    fun release() = audioChoice.release()
 
     /**
      * Resolves the set behind [setId], its preference scope, and the
-     * speed remembered under it, applying it to [handle]. Falls back to a
-     * raw `set:<id>` scope when the set itself cannot be resolved — a cold
-     * start straight into the player with the catalog not yet loaded.
+     * speed and audio choice remembered under it, applying each to
+     * [handle]. Falls back to a raw `set:<id>` scope when the set itself
+     * cannot be resolved — a cold start straight into the player with the
+     * catalog not yet loaded.
      *
      * Every read here is checked against [PlayerSession.openSetId] before
      * it is acted on: a later [PlayerViewModel.open] racing ahead of this
      * must win, never be overwritten by a resolution landing after it —
-     * and [userChoseSpeed] guards the same race for a choice made by
-     * hand: whichever speed the viewer picked while this was still
-     * working wins, and is remembered under the scope this resolves
-     * rather than lost or overwritten by it.
+     * and [userChoseSpeed] (audio's own equivalent lives in [audioChoice])
+     * guards the same race for a choice made by hand: whichever speed the
+     * viewer picked while this was still working wins, and is remembered
+     * under the scope this resolves rather than lost or overwritten by it.
+     *
+     * Speed and audio are applied independently rather than behind one
+     * shared early return: a speed picked by hand while this was in
+     * flight must not also suppress loading the audio preference, which
+     * has nothing to do with it.
      */
     suspend fun resolve(setId: String) {
         val set = safely(null) { catalogRepository.mediaSet(setId) }
@@ -72,17 +89,19 @@ class PlayerChoicesController(
         val scope = scopeOf(set) ?: "set:$setId"
         openScope = scope
 
-        if (userChoseSpeed) {
-            rememberSpeed(scope, _choices.value.speed)
-            return
-        }
-
         val profileId = repository.chosenProfileId.value
         val loaded = if (profileId == null) emptyMap() else safely(emptyMap()) { preferences.load(profileId, scope) }
-        val speed = speedOrDefault(loaded["speed"])
-        if (session.openSetId != setId || userChoseSpeed) return
-        _choices.value = PlayerChoices(speed = speed)
-        handle.setPlaybackSpeed(speed)
+        if (session.openSetId != setId) return
+
+        if (userChoseSpeed) {
+            rememberSpeed(scope, _choices.value.speed)
+        } else {
+            val speed = speedOrDefault(loaded["speed"])
+            _choices.value = _choices.value.copy(speed = speed)
+            handle.setPlaybackSpeed(speed)
+        }
+
+        audioChoice.onPreferencesLoaded(scope, profileId, loaded["audio"])
     }
 
     /** Applies a chosen speed and remembers it for this show; a no-op write with no profile chosen. */
@@ -94,6 +113,9 @@ class PlayerChoicesController(
         val scope = openScope ?: return
         rememberSpeed(scope, rate)
     }
+
+    /** The viewer picked an audio track by hand. */
+    fun chooseAudioTrack(option: AudioOption) = audioChoice.choose(option)
 
     /** Fire-and-forget: a core round trip failing to remember a speed is not a reason to crash the player. */
     private fun rememberSpeed(scope: String, rate: Float) {

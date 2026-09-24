@@ -62,6 +62,37 @@ to `main`. Full phase-by-phase detail lives in
   sentence, opening a genre page (films then series, headed only when both
   are there) ported from the web's `genreShelf`. `LibraryFlow.kt`'s
   navigation `when` moved to `LibraryFlowBranches.kt` to make room.
+- The settings sheet's Audio section: rows built and labelled the way
+  `web/public/lib/audio-chooser.js` builds them (language · title ·
+  channels · codec, `Track N` for one the file names nothing), remembered
+  per show the same way speed is, under the same `preferences` scope.
+  Codec names match ffprobe's own (`ac3`, `eac3`, `dts`, `truehd`, …, the
+  same names the web's probe already returns), and language names are
+  always English, the same fixed locale the web and this app's stats
+  overlay already use — never the device's own, which the phase this
+  built from had said, wrongly against that same web reference. The
+  language is matched, never the ordinal — a re-rip can reorder a file's
+  streams — and a pick with no usable language (blank, or `und`) is
+  honoured for the session but never saved over a real choice already on
+  record, the same restraint `player.js`'s own change handler has. A track
+  this build has no decoder for (DTS, TrueHD — there is no FFmpeg
+  extension here) is left off the menu entirely and never pinned, even if
+  it is what a viewer once chose; with nothing remembered, the row already
+  marked is whichever one ExoPlayer's own selector picked, never a guess
+  invented here. Only shown for more than one (decodable) track. The sheet
+  itself now scrolls and pads for the navigation bar, so Audio's rows are
+  reachable under three-button navigation in either orientation.
+  Mechanically different from the web, deliberately: the web can only
+  switch by asking the server to re-encode into a new response; ExoPlayer
+  switches inside the decoder with a `TrackSelectionOverride`, no re-fetch,
+  same decision either way. `AudioChoiceController` attaches its own
+  listener straight to the app's singleton player rather than through
+  `DefaultPlayerHandle`'s permanent one, and undoes that when its own
+  `PlayerViewModel` is cleared — that permanent listener has exactly one
+  caller today (playback state), and stays that way. Guards against a
+  synthetic empty tracks report `ExoPlayerImpl` fires while reloading for
+  a new title, which had been read as "this file has no audio" and
+  silently dropped every real track that followed.
 
 ## 2026-09-23
 

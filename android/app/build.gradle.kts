@@ -9,8 +9,8 @@ android {
 
     defaultConfig {
         applicationId = "com.mediagram.android"
-        versionCode = 9
-        versionName = "0.44.0"
+        versionCode = 10
+        versionName = "0.45.0"
     }
 
     buildTypes {

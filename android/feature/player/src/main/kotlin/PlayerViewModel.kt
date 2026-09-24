@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import model.MediaSet
+import playback.AudioOption
 import playback.PlaybackCounters
 import playback.PlaybackTotals
 import javax.inject.Inject
@@ -132,6 +133,7 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun setSpeed(rate: Float) = choicesController.setSpeed(rate)
+    fun chooseAudioTrack(option: AudioOption) = choicesController.chooseAudioTrack(option)
 
     /** Called when the player screen leaves composition, so codecs and audio focus aren't held idle. */
     fun stop() {
@@ -181,6 +183,7 @@ class PlayerViewModel @Inject constructor(
 
     override fun onCleared() {
         session.stopTicking()
+        choicesController.release()
         handle.release()
     }
 }

@@ -6,7 +6,13 @@ import kotlinx.coroutines.flow.StateFlow
 
 class FakePlayerHandle : PlayerHandle {
 
-    override val player: StateFlow<Player?> = MutableStateFlow(null)
+    private val _player = MutableStateFlow<Player?>(null)
+    override val player: StateFlow<Player?> = _player
+
+    /** Installs a (typically mocked) player, so a test can exercise whatever attaches to [player] directly — [AudioChoiceController]'s own listener among them. */
+    fun installPlayer(player: Player?) {
+        _player.value = player
+    }
 
     private var listener: PlayerHandle.Listener? = null
 
