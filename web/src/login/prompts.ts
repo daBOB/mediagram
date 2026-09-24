@@ -1,6 +1,7 @@
 /** Terminal IO for setup; importing this module does not open stdin. */
 import { createInterface } from "node:readline/promises";
 import { stderr, stdin } from "node:process";
+import { Writable } from "node:stream";
 
 export interface LoginPrompts {
   ask(question: string): Promise<string>;
@@ -9,17 +10,27 @@ export interface LoginPrompts {
 }
 
 export function loginPrompts(): LoginPrompts {
-  const rl = createInterface({ input: stdin, output: stderr, terminal: true });
+  let hidden = false;
+  const output = new Writable({
+    write(chunk, _encoding, done) {
+      if (!hidden) stderr.write(chunk);
+      done();
+    },
+  });
+  Object.defineProperty(output, "columns", { get: () => stderr.columns });
+  const resized = () => { output.emit("resize"); };
+  stderr.on("resize", resized);
+  const rl = createInterface({ input: stdin, output, terminal: true });
   return {
     ask: (question) => rl.question(question),
     async hidden(question) {
-      // A second reader of stdin competes with readline; mute its echo instead.
-      const muted = rl as unknown as { _writeToOutput?: (text: string) => void };
-      const original = muted._writeToOutput;
-      muted._writeToOutput = (text) => { if (text.includes(question)) stderr.write(question); };
-      try { return await rl.question(question); }
-      finally { muted._writeToOutput = original; stderr.write("\n"); }
+      // Gate the public output stream: Bun does not use readline's private
+      // _writeToOutput hook. Keep one stdin reader for both kinds of prompt.
+      hidden = true;
+      stderr.write(question);
+      try { return await rl.question(""); }
+      finally { hidden = false; stderr.write("\n"); }
     },
-    close: () => rl.close(),
+    close() { rl.close(); stderr.off("resize", resized); output.destroy(); },
   };
 }
