@@ -820,7 +820,7 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_create_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_create_profile(`ptr`: Long,`name`: RustBuffer.ByValue,
+    external fun uniffi_mediagram_core_fn_method_core_create_profile(`ptr`: Long,`name`: RustBuffer.ByValue,`kids`: Byte,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_delete_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,
     ): Long
@@ -1031,7 +1031,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_create_collection() and 0xFFFF) != 13558) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_create_profile() and 0xFFFF) != 1194) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_create_profile() and 0xFFFF) != 6077) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_delete_collection() and 0xFFFF) != 8199) {
@@ -1718,7 +1718,7 @@ public interface CoreInterface {
 
     suspend fun `createCollection`(`profileId`: kotlin.String, `name`: kotlin.String): ListRow?
 
-    suspend fun `createProfile`(`name`: kotlin.String): Profile?
+    suspend fun `createProfile`(`name`: kotlin.String, `kids`: kotlin.Boolean): Profile?
 
     /**
      * Tombstones the list, retaining its items for sync reconciliation.
@@ -2457,13 +2457,14 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `createProfile`(`name`: kotlin.String) : Profile? {
+    override suspend fun `createProfile`(`name`: kotlin.String, `kids`: kotlin.Boolean) : Profile? {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_create_profile(
                 uniffiHandle,
 
         FfiConverterString.lower(`name`),
+        FfiConverterBoolean.lower(`kids`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -3105,6 +3106,13 @@ data class Profile (
     var `id`: kotlin.String
     ,
     var `name`: kotlin.String
+    ,
+    /**
+     * Sees only titles rated FSK 12 or under, or marked for Kids by hand.
+     * Defaulted in the generated Kotlin (uniffi 0.32 supports field
+     * defaults), so existing `Profile(id, name)` call sites keep compiling.
+     */
+    var `kids`: kotlin.Boolean = false
 
 ){
 
@@ -3123,17 +3131,20 @@ public object FfiConverterTypeProfile: FfiConverterRustBuffer<Profile> {
         return Profile(
             FfiConverterString.read(buf),
             FfiConverterString.read(buf),
+            FfiConverterBoolean.read(buf),
         )
     }
 
     override fun allocationSize(value: Profile) = (
             FfiConverterString.allocationSize(value.`id`) +
-            FfiConverterString.allocationSize(value.`name`)
+            FfiConverterString.allocationSize(value.`name`) +
+            FfiConverterBoolean.allocationSize(value.`kids`)
     )
 
     override fun write(value: Profile, buf: ByteBuffer) {
             FfiConverterString.write(value.`id`, buf)
             FfiConverterString.write(value.`name`, buf)
+            FfiConverterBoolean.write(value.`kids`, buf)
     }
 }
 
