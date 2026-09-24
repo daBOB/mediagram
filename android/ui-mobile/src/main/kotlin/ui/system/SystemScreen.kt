@@ -1,9 +1,13 @@
 package ui.system
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -36,21 +40,39 @@ import ui.formatting.humanSize
 @Composable
 fun SystemScreen() {
     val viewModel: SystemViewModel = hiltViewModel()
-    // Null only for the moment before the core resolves — this screen is
-    // reached from inside an already-open library, so that moment does not
-    // last long enough to be worth a loading state of its own.
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val current = state ?: return
+    val failure by viewModel.failure.collectAsStateWithLifecycle()
+    SystemContent(state, failure, viewModel::retry)
+}
 
+/** A failed read leaves earlier facts visible and offers the same retry on a first visit. */
+@Composable
+internal fun SystemContent(
+    current: SystemUiState?,
+    failure: String?,
+    onRetry: () -> Unit,
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(Spacing.large),
         verticalArrangement = Arrangement.spacedBy(Spacing.large),
     ) {
-        item { CatalogueBlock(current) }
-        item { CacheBlock(current) }
-        item { UpstreamBlock(current) }
-        item { ThisAppBlock(current) }
+        if (failure != null) {
+            item {
+                Column {
+                    Text(failure, color = MaterialTheme.colorScheme.error)
+                    TextButton(onClick = onRetry) { Text("Try again") }
+                }
+            }
+        }
+        if (current != null) {
+            item { CatalogueBlock(current) }
+            item { CacheBlock(current) }
+            item { UpstreamBlock(current) }
+            item { ThisAppBlock(current) }
+        } else if (failure == null) {
+            item { Text("Reading system information…") }
+        }
     }
 }
 

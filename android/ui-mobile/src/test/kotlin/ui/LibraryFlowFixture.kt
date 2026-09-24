@@ -75,6 +75,7 @@ internal class LibraryFlowFixture(
             every { settings.completions } returns MutableStateFlow<List<SettingsCompletion>>(emptyList())
         }
         val system = mockk<SystemViewModel>(relaxed = true)
+        every { system.failure } returns MutableStateFlow(null)
         every { system.state } returns
             MutableStateFlow(
                 SystemUiState("channel", sets.size.toLong(), 0, 4, null, null, 0, 1_000_000, 0, 0, 0, 0, true, "test", 0),
