@@ -43,7 +43,7 @@ class SettingsIdentityFailureTest {
                 }).signedIn()
 
             assertFailedReplacement(fixture, fixture.settingsViewModel())
-            assertEquals(2, builds)
+            assertEquals(3, builds)
         }
 
     @Test

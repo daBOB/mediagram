@@ -72,11 +72,15 @@ internal fun SettingsScreen(cache: @Composable () -> Unit) {
 
         SettingsPanel.Application -> {
             BackHandler { panel = null }
-            TelegramApplicationScreen(
-                error = state.notice,
-                onSubmit = viewModel::changeApplication,
-                initialApiId = state.apiId?.toString().orEmpty(),
-            )
+            if (state.profileReloadNeeded) {
+                ProfileReload(state, viewModel::retryProfiles)
+            } else {
+                TelegramApplicationScreen(
+                    error = state.notice,
+                    onSubmit = viewModel::changeApplication,
+                    initialApiId = state.apiId?.toString().orEmpty(),
+                )
+            }
         }
 
         null -> {
@@ -94,6 +98,7 @@ internal fun SettingsScreen(cache: @Composable () -> Unit) {
                     panel = SettingsPanel.Application
                 },
                 onSignOut = { askingSignOut = true },
+                onRetryProfiles = viewModel::retryProfiles,
                 cache = cache,
             )
         }
@@ -112,6 +117,7 @@ private fun SettingsRows(
     onChangeLibrary: () -> Unit,
     onChangeApplication: () -> Unit,
     onSignOut: () -> Unit,
+    onRetryProfiles: () -> Unit,
     cache: @Composable () -> Unit,
 ) {
     LazyColumn(
@@ -129,10 +135,26 @@ private fun SettingsRows(
                     Text("Application id and hash…")
                 }
                 OutlinedButton(onClick = onSignOut, enabled = !state.busy) { Text("Sign out") }
-                state.notice?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                if (state.profileReloadNeeded) {
+                    ProfileReload(state, onRetryProfiles)
+                } else {
+                    state.notice?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                }
             }
         }
         item { cache() }
+    }
+}
+
+@Composable
+private fun ProfileReload(
+    state: SettingsUiState,
+    onRetry: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
+        state.notice?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+        Text(if (state.busy) "Loading profiles…" else "Reload profiles to continue.", style = MaterialTheme.typography.bodySmall)
+        TextButton(onClick = onRetry, enabled = !state.busy) { Text("Try again") }
     }
 }
 

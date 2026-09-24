@@ -21,6 +21,7 @@ import javax.inject.Inject
 private const val UNKNOWN = "—"
 private const val IDENTITY_CHANGE_FAILED = "The application identity could not be changed. Try again."
 private const val SIGN_OUT_FAILED = "Signing out did not finish. Try again, or start over."
+private const val PROFILE_RELOAD_FAILED = "Application identity changed, but profiles could not be loaded. Try again."
 
 /**
  * The Telegram half of Settings: who is signed in, to which library, on
@@ -47,6 +48,7 @@ class SettingsViewModel
 
         private val _completions = MutableStateFlow<List<SettingsCompletion>>(emptyList())
         val completions: StateFlow<List<SettingsCompletion>> = _completions.asStateFlow()
+        private var completeApplicationChangeAfterReload = false
 
         /** Acknowledge only the handled action; newer completions stay pending. */
         fun acknowledgeCompletion(id: Long) {
@@ -69,7 +71,8 @@ class SettingsViewModel
          * sign-in would name the previous account.
          */
         fun refresh() {
-            _state.update { SettingsUiState(completedActionId = it.completedActionId) }
+            if (_state.value.busy) return
+            _state.update { it.copy(account = null, library = null, datacenter = null, connection = null, choices = null) }
             act { readRows() }
         }
 
@@ -118,6 +121,7 @@ class SettingsViewModel
             apiId: String,
             apiHash: String,
         ) {
+            if (_state.value.busy || _state.value.profileReloadNeeded) return
             val id = apiIdOrNull(apiId)
             val hash = apiHashOrNull(apiHash)
             when {
@@ -134,6 +138,7 @@ class SettingsViewModel
                         try {
                             coreProvider.replace(id, hash)
                         } catch (e: CancellationException) {
+                            _state.update { it.copy(profileReloadNeeded = true) }
                             throw e
                         } catch (
                             @Suppress("TooGenericExceptionCaught") e: Exception,
@@ -141,15 +146,53 @@ class SettingsViewModel
                             // Replacement also closes native resources and writes
                             // local credentials; none of these failures establishes
                             // that Telegram rejected the application identity.
+                            // Even a refused replacement retired the old core. Restore
+                            // its watch owner from the credentials still stored on disk.
+                            _state.update { it.copy(profileReloadNeeded = true) }
+                            try {
+                                reconcileProfiles()
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (
+                                @Suppress("TooGenericExceptionCaught") recovery: Exception,
+                            ) {
+                                e.addSuppressed(recovery)
+                            }
                             throw SettingsFailure(IDENTITY_CHANGE_FAILED, e)
                         }
-                        completed(SettingsEvent.ApplicationChanged)
-                        // Outside the refusal's catch: the new identity is already in
-                        // use here, and a row that fails to read says nothing about it.
-                        optionalRow { readRows() }
+                        completeApplicationChangeAfterReload = true
+                        _state.update { it.copy(apiId = id, profileReloadNeeded = true) }
+                        reconcileProfiles()
                     }
                 }
             }
+        }
+
+        /** Restores the watch owner without attempting another credential replacement. */
+        fun retryProfiles() {
+            if (_state.value.busy || !_state.value.profileReloadNeeded) return
+            act { reconcileProfiles() }
+        }
+
+        private suspend fun reconcileProfiles() {
+            try {
+                watchState.reload()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (
+                @Suppress("TooGenericExceptionCaught") e: Exception,
+            ) {
+                val sentence = if (completeApplicationChangeAfterReload) PROFILE_RELOAD_FAILED else "Could not load profiles. Try again."
+                throw SettingsFailure(sentence, e)
+            }
+            _state.update { it.copy(profileReloadNeeded = false) }
+            if (completeApplicationChangeAfterReload) {
+                completeApplicationChangeAfterReload = false
+                completed(SettingsEvent.ApplicationChanged)
+            }
+            // The identity and profile owner are committed; unavailable decorative
+            // rows must not turn this completed change into a refusal.
+            optionalRow { readRows() }
         }
 
         /**
@@ -165,6 +208,8 @@ class SettingsViewModel
                 coreProvider.resetAccount(coreStorage)
                 libraries.forget()
                 watchState.invalidate()
+                completeApplicationChangeAfterReload = false
+                _state.update { it.copy(profileReloadNeeded = false) }
                 completed(SettingsEvent.SignedOut)
             }
 
@@ -172,8 +217,8 @@ class SettingsViewModel
             onFailure: String? = null,
             work: suspend () -> Unit,
         ) {
+            _state.update { it.copy(busy = true, notice = null) }
             viewModelScope.launch {
-                _state.update { it.copy(busy = true, notice = null) }
                 try {
                     work()
                 } catch (e: CancellationException) {
