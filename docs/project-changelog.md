@@ -5,6 +5,30 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 2026-09-24
+
+**Added**
+
+- The catalog core now carries what the web player's `forBrowser` already
+  attached to every row: `genres`, `subtitles` (languages, sorted), and
+  `hasSummary`, joined into `list_sets` by poster key and by set id. Genres
+  read the index's `shows.genres` first, then this device's own fetched
+  sidecar for a title the index says nothing about — a deliberate difference
+  from the web, which has no such sidecar and reads the index alone.
+- `Core::set_text(setId, kind, lang)` reads a stored summary or subtitle
+  track straight off the index, the same query the web player's
+  `web/src/assets.ts` runs, ready for the subtitle and notes panels.
+- `state.db` gains a `preferences` table, ported verbatim from the web's
+  schema v5: what a viewer chose per show (audio language, subtitle
+  language, playback speed), capped at 200 characters per string, unsynced
+  and per profile.
+- Profiles can now be deleted (`Core::delete_profile`), the same "remove
+  only" the web offers — a device still holding the profile brings it back
+  on its next sync round. The chosen-profile pointer clears itself on the
+  next read if it named the profile removed.
+- Android's `MediaSet` carries the same three new fields (`genres`,
+  `subtitleLanguages`, `hasSummary`); no UI reads them yet.
+
 ## 2026-09-23
 
 **Added**

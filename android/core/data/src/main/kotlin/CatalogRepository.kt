@@ -130,6 +130,9 @@ class DefaultCatalogRepository(
             posterKey = summary.posterKey,
             addedAt = summary.addedAt,
             fsk = summary.fsk,
+            genres = summary.genres,
+            subtitleLanguages = summary.subtitles,
+            hasSummary = summary.hasSummary,
         )
     }
 }

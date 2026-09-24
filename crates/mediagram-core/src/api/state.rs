@@ -47,6 +47,14 @@ impl Core {
         self.blocking(move |core| core.state_db.with(|conn| profiles::choose(conn, &id)).unwrap_or(false)).await
     }
 
+    /// Takes everything that was theirs with it — every table cascades.
+    /// `chosen_profile` clears itself the moment this was the profile it
+    /// named: see `profiles::chosen`, which checks a profile still exists on
+    /// every read rather than trusting what was last written.
+    pub async fn delete_profile(self: Arc<Self>, id: String) -> bool {
+        self.blocking(move |core| core.state_db.with(|conn| profiles::delete(conn, &id)).unwrap_or(false)).await
+    }
+
     /// This profile's positions, watched marks, watchlist, Kids and
     /// collections, in one round trip. Empty throughout on any failure.
     pub async fn snapshot(self: Arc<Self>, profile_id: String) -> StateSnapshot {

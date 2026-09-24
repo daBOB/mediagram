@@ -53,6 +53,12 @@ data class MediaSet(
      * player names it; what it decides is in `AgeRating.kt`.
      */
     val fsk: String? = null,
+    /** The provider's genres for this title. An episode carries its show's. */
+    val genres: List<String> = emptyList(),
+    /** Languages this set has a subtitle track for. */
+    val subtitleLanguages: List<String> = emptyList(),
+    /** Whether the index holds a plot summary for this set. */
+    val hasSummary: Boolean = false,
 )
 
 enum class Kind {

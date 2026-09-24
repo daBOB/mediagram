@@ -1,5 +1,5 @@
 //! `state.db`'s tables, in the shape `web/src/state/schema.ts` reached by
-//! its v4 (its v5, `preferences`, is out of scope here — see phase 06).
+//! its v5.
 //!
 //! The web got there by four `ALTER`-shaped migrations, because its file
 //! predates profiles and had rows to carry forward. This store had no such
@@ -92,6 +92,21 @@ const GROUPS: &[&[&str]] = &[&[
         "ALTER TABLE collections ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0",
         "UPDATE collections SET updated_at = created_at WHERE updated_at = 0",
     ],
+    // v2 -> v3: what a viewer chose, so they do not choose it again.
+    //
+    // Web's `preferences` table (`web/src/state/schema.ts`'s v5), verbatim:
+    // `scope`/`name`/`value` as rows rather than a column each, because a
+    // column per preference would be a migration per preference and these
+    // arrive steadily. Scoped to a profile, like everything above but
+    // `kids`: which language you watch a series in is a fact about you.
+    &["CREATE TABLE IF NOT EXISTS preferences(
+       profile_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+       scope TEXT NOT NULL,
+       name TEXT NOT NULL,
+       value TEXT NOT NULL,
+       updated_at INTEGER NOT NULL,
+       PRIMARY KEY(profile_id, scope, name)
+     )"],
 ];
 
 pub const VERSION: i64 = GROUPS.len() as i64;

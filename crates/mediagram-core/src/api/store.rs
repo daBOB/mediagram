@@ -61,11 +61,45 @@ pub(super) fn list_sets(core: &Core) -> Result<Vec<SetSummary>, CoreError> {
     let conn = open_ro(&path)?;
     let sets = queries::list_playable(&conn).map_err(CoreError::io("reading the catalog"))?;
     let ratings = crate::shows::certifications(&conn).map_err(CoreError::io("reading age ratings"))?;
+    let subtitles =
+        crate::catalog_assets::subtitle_languages(&conn).map_err(CoreError::io("reading subtitle languages"))?;
+    let summarized = crate::catalog_assets::summaries(&conn).map_err(CoreError::io("reading which sets have a summary"))?;
+
+    // The index's own genres first; for a title whose index row has none —
+    // absent altogether, or present with the genres column empty — whatever
+    // this device fetched fills in instead. Coarser-grained than
+    // `enrich::details::title_info`, which picks an index row whole the
+    // moment one exists and never opens the fetched sidecar for it: a genre
+    // shelf can therefore show a fetched genre list for a title whose
+    // overview still comes straight from the index. Deliberate difference
+    // from the web player, which has no device-side sidecar and reads the
+    // index alone: a title this device fetched but the index says nothing
+    // about should file the same as one the index does describe, not
+    // disappear off every genre shelf.
+    let mut genres = crate::shows::genres(&conn).map_err(CoreError::io("reading genres"))?;
+    if let Some(fetched) = super::enrich::details::open_fetched_ro(core) {
+        // Tolerant, unlike the index read above: this store is only ever a
+        // fallback, so a sidecar that cannot be read — a partial file a
+        // rolled-back migration left behind, say — must not take the whole
+        // catalog down over genres it was never depended on for.
+        match crate::shows::genres(&fetched) {
+            Ok(more) => {
+                for (key, list) in more {
+                    genres.entry(key).or_insert(list);
+                }
+            }
+            Err(err) => tracing::warn!(error = %err, "fetched genres could not be read"),
+        }
+    }
+
     Ok(sets
         .iter()
         .map(|set| {
             let mut summary = dto::summary_from(set);
             summary.fsk = summary.poster_key.as_ref().and_then(|key| ratings.get(key).cloned());
+            summary.genres = summary.poster_key.as_ref().and_then(|key| genres.get(key).cloned()).unwrap_or_default();
+            summary.subtitles = subtitles.get(&set.set_id).cloned().unwrap_or_default();
+            summary.has_summary = summarized.contains(&set.set_id);
             summary
         })
         .collect())

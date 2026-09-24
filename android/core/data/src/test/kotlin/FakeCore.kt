@@ -139,6 +139,9 @@ fun summary(
     partCount: Int = 1,
     addedAt: Long = 0,
     fsk: String? = null,
+    genres: List<String> = emptyList(),
+    subtitles: List<String> = emptyList(),
+    hasSummary: Boolean = false,
 ): SetSummary = SetSummary(
     setId = setId,
     kind = kind,
@@ -161,6 +164,9 @@ fun summary(
     partCount = partCount.toUInt(),
     addedAt = addedAt,
     fsk = fsk,
+    genres = genres,
+    subtitles = subtitles,
+    hasSummary = hasSummary,
 )
 
 fun settingsWithAChosenLibrary(handle: String = "a1b2c3"): LibrarySettings =

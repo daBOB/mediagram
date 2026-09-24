@@ -1,10 +1,13 @@
-//! Who's watching: list, create, and which one is chosen — a port of the
-//! profile half of `web/src/state/store.ts`.
+//! Who's watching: list, create, choose, and delete — a port of the profile
+//! half of `web/src/state/store.ts`.
 //!
-//! Rename and delete are deferred (see the plan's decision 4): a sync can
-//! only ever add a profile from another device's document, never carry a
-//! rename or a deletion, so offering them here would let this device drift
-//! from what the others still believe.
+//! Rename stays deferred: a sync can only ever add a profile from another
+//! device's document, never carry a rename, and offering one here would let
+//! this device drift from what the others still believe. Delete is safe in
+//! a way rename is not — a profile removed here simply returns the moment
+//! another device that still holds it syncs, the same as the web's own
+//! `DELETE FROM profiles`, so nothing here can make two devices disagree for
+//! longer than one round.
 
 use rusqlite::{Connection, OptionalExtension, params};
 
@@ -41,6 +44,15 @@ pub fn create(conn: &Connection, name: &str) -> rusqlite::Result<Option<Profile>
 
 pub fn exists(conn: &Connection, id: &str) -> rusqlite::Result<bool> {
     conn.query_row("SELECT 1 FROM profiles WHERE id = ?1", [id], |_| Ok(())).optional().map(|r| r.is_some())
+}
+
+/// Takes everything that was theirs with it: every table that scopes a row
+/// to a profile cascades on `profile_id`. `false` when `id` names nobody —
+/// nothing to cascade from. `chosen` clears itself implicitly the moment
+/// this was the profile it named; see `chosen` on why that needs no code
+/// here.
+pub fn delete(conn: &Connection, id: &str) -> rusqlite::Result<bool> {
+    Ok(conn.execute("DELETE FROM profiles WHERE id = ?1", params![id])? > 0)
 }
 
 /// This install's remembered "who's watching" — cleared implicitly if the
@@ -108,52 +120,5 @@ pub(crate) fn now_ms() -> i64 {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::state::StateDb;
-
-    fn db() -> (tempfile::TempDir, StateDb) {
-        let dir = tempfile::tempdir().unwrap();
-        let db = StateDb::new(dir.path().to_path_buf());
-        (dir, db)
-    }
-
-    #[test]
-    fn creating_and_listing_round_trips_a_name() {
-        let (_dir, db) = db();
-        db.with(|conn| create(conn, "André")).unwrap();
-        let names: Vec<String> = db.with(list).unwrap().into_iter().map(|p| p.name).collect();
-        assert_eq!(names, vec!["André".to_string()]);
-    }
-
-    #[test]
-    fn a_blank_name_creates_nothing() {
-        let (_dir, db) = db();
-        assert_eq!(db.with(|conn| create(conn, "   ")).unwrap(), None);
-    }
-
-    #[test]
-    fn choosing_an_unknown_id_is_reported_false_and_remembers_nothing() {
-        let (_dir, db) = db();
-        assert!(!db.with(|conn| choose(conn, "nope")).unwrap());
-        assert_eq!(db.with(chosen).unwrap(), None);
-    }
-
-    #[test]
-    fn choosing_a_real_profile_is_remembered() {
-        let (_dir, db) = db();
-        let id = db.with(|conn| create(conn, "André")).unwrap().unwrap().id;
-        db.with(|conn| choose(conn, &id)).unwrap();
-        assert_eq!(db.with(chosen).unwrap(), Some(id));
-    }
-
-    /// A second machine's document mentions a viewer this one has never
-    /// seen: `profile_named` has to create them rather than drop the sync.
-    #[test]
-    fn profile_named_creates_an_unseen_viewer_and_reuses_them_after() {
-        let (_dir, db) = db();
-        let first = db.with(|conn| profile_named(conn, "andré", Some("André"))).unwrap().unwrap();
-        let second = db.with(|conn| profile_named(conn, "ANDRÉ", Some("ANDRÉ"))).unwrap().unwrap();
-        assert_eq!(first, second, "the same viewer, spelled differently, is one profile");
-    }
-}
+#[path = "profiles_tests.rs"]
+mod tests;

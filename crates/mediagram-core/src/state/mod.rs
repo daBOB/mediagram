@@ -19,6 +19,7 @@ pub mod exchange;
 pub mod lists;
 mod lists_exchange;
 pub mod merge;
+pub mod preferences;
 pub mod profiles;
 pub mod record;
 pub mod rows;
@@ -140,5 +141,34 @@ mod tests {
         let db = StateDb::new(dir.path().to_path_buf());
         let names: Vec<String> = db.with(profiles::list).unwrap().into_iter().map(|p| p.name).collect();
         assert_eq!(names, vec!["André".to_string()]);
+    }
+
+    /// A real device may already hold a v2 file — profiles, progress, and
+    /// the rest, but no `preferences` table yet. Gaining it must not disturb
+    /// what is already there.
+    #[test]
+    fn an_older_store_upgrades_to_preferences_with_its_rows_intact() {
+        let dir = tempfile::tempdir().unwrap();
+        {
+            let conn = Connection::open(dir.path().join(STATE_FILE)).unwrap();
+            for statement in schema::migrations_up_to(2) {
+                conn.execute(statement, []).unwrap();
+            }
+            conn.pragma_update(None, "user_version", 2i64).unwrap();
+            conn.execute("INSERT INTO profiles(id, name, created_at) VALUES ('p1', 'André', 0)", []).unwrap();
+            conn.execute(
+                "INSERT INTO progress(profile_id, set_id, at_seconds, duration, updated_at)
+                   VALUES ('p1', 'set1', 12.5, 90.0, 0)",
+                [],
+            )
+            .unwrap();
+        }
+
+        let db = StateDb::new(dir.path().to_path_buf());
+
+        let names: Vec<String> = db.with(profiles::list).unwrap().into_iter().map(|p| p.name).collect();
+        assert_eq!(names, vec!["André".to_string()]);
+        assert_eq!(db.with(|conn| rows::progress_for(conn, "p1")).unwrap().len(), 1);
+        assert!(db.with(|conn| preferences::set(conn, "p1", "show:x", "audio", Some("en"))).unwrap());
     }
 }

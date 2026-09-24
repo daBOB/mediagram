@@ -8,6 +8,7 @@ import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.ListRow
+import uniffi.mediagram_core.PreferenceRow
 import uniffi.mediagram_core.Profile
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.StateSnapshot
@@ -65,6 +66,8 @@ class DefaultCoreClient(private val core: Core) : CoreClient {
 
     override suspend fun chooseProfile(id: String): Boolean = core.chooseProfile(id)
 
+    override suspend fun deleteProfile(id: String): Boolean = core.deleteProfile(id)
+
     override suspend fun snapshot(profileId: String): StateSnapshot = core.snapshot(profileId)
 
     override suspend fun setProgress(profileId: String, setId: String, at: Double, duration: Double?) =
@@ -91,6 +94,14 @@ class DefaultCoreClient(private val core: Core) : CoreClient {
 
     override suspend fun setInCollection(profileId: String, id: String, setId: String, included: Boolean): Boolean =
         core.setInCollection(profileId, id, setId, included)
+
+    override suspend fun preferences(profileId: String): List<PreferenceRow> = core.preferences(profileId)
+
+    override suspend fun setPreference(profileId: String, scope: String, name: String, value: String?): Boolean =
+        core.setPreference(profileId, scope, name, value)
+
+    override suspend fun setText(setId: String, kind: String, lang: String): String? =
+        core.setText(setId, kind, lang)
 
     override fun stateDeviceId(): String = core.stateDeviceId()
 

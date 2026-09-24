@@ -15,10 +15,14 @@ mod store;
 mod channel;
 pub mod enrich;
 mod events;
+mod preferences;
 mod read;
 mod refresh;
+mod set_text;
 mod state;
 mod state_sync;
+#[cfg(test)]
+mod test_support;
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -188,13 +192,5 @@ impl Core {
         language: String,
     ) -> Result<crate::dto::FetchReport, CoreError> {
         enrich::artwork::fetch_missing(self, tmdb_key, language).await
-    }
-}
-
-#[cfg(test)]
-impl Core {
-    /// A core over `dir` with placeholder credentials, for tests that never connect.
-    pub(crate) fn at(dir: &std::path::Path) -> Arc<Self> {
-        Core::new(dir.display().to_string(), 1, "test-hash".into(), "test-device".into())
     }
 }

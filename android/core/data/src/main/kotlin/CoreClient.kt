@@ -8,6 +8,7 @@ import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.ListRow
+import uniffi.mediagram_core.PreferenceRow
 import uniffi.mediagram_core.Profile
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.StateSnapshot
@@ -114,6 +115,14 @@ interface CoreClient {
     /** Sets which profile this device watches as. `false` when [id] names nobody. */
     suspend fun chooseProfile(id: String): Boolean = false
 
+    /**
+     * Takes everything that was theirs with it. The web only ever removes a
+     * profile the same way — no rename on either surface — so a device
+     * still holding it brings it back on its next sync round rather than
+     * this being the one true delete.
+     */
+    suspend fun deleteProfile(id: String): Boolean = false
+
     /** One profile's everything, in one read: progress, watched, lists. */
     suspend fun snapshot(profileId: String): StateSnapshot =
         StateSnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
@@ -134,6 +143,23 @@ interface CoreClient {
     suspend fun renameCollection(profileId: String, id: String, name: String): Boolean = false
     suspend fun deleteCollection(profileId: String, id: String): Boolean = false
     suspend fun setInCollection(profileId: String, id: String, setId: String, included: Boolean): Boolean = false
+
+    /**
+     * Every choice this profile has made, in one round trip: there are a
+     * handful of these per show, and a page needs one the instant a title
+     * opens — exactly when it has no time to ask for it.
+     */
+    suspend fun preferences(profileId: String): List<PreferenceRow> = emptyList()
+
+    /** Remembers a choice, or forgets it ([value] `null`). */
+    suspend fun setPreference(profileId: String, scope: String, name: String, value: String?): Boolean = false
+
+    /**
+     * A summary or subtitle track already sitting in the index. [kind] is
+     * `"summary"` or `"subtitle"`; anything else, or a set with no such
+     * text, answers `null`.
+     */
+    suspend fun setText(setId: String, kind: String, lang: String): String? = null
 
     /** This device's watch-state identity, minted once and kept beside `state.db`. */
     fun stateDeviceId(): String = ""
