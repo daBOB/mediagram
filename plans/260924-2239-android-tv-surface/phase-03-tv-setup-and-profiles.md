@@ -16,6 +16,12 @@
 - "Who's watching?" matches the web: initial-letter tiles, choice kept per device, a convenience not a login. Tiles in a single centred row; first (or last-used) tile focused.
 - Start over: reachable on every step after the first, as on phone, behind a confirm dialog. On TV dialogs: compose `Dialog` hosting tv `Surface` + tv `Button`s; the **safe** button (Cancel) takes initial focus.
 - Secret fields (API hash, 2FA password) masked — a TV is read by the whole room.
+- **Safe area is the screen's job.** `TvShell` only provides colour; each screen pads itself with `Overscan` (lazy containers via `contentPadding`, so focus growth isn't clipped). This is the first edge-aligned TV screen — check the 48×27dp margin on the emulator screenshot.
+- **How TV screens are tested (decided here, used by phases 4–5):**
+  - *Robolectric* for state and appearance only: which screen, what text, content colour, selection. On tv-material nodes, `assertIsDisplayed()` and `performClick()` misbehave (seen in phase 2) — use `assertExists()`, `performSemanticsAction(SemanticsActions.OnClick)` to activate, `performSemanticsAction(SemanticsActions.RequestFocus)` + `assertIsFocused()` for focus, `performKeyInput { pressKey(Key.DirectionRight) }` for D-pad. First try `@Config(qualifiers = "w960dp-h540dp-land-television")` so layout runs at TV size; if D-pad traversal still doesn't work under Robolectric, stop using it for traversal rather than weakening assertions.
+  - *Pure JVM* for focus-restoration logic (which key regains focus on return) — keep it in a plain function/state holder.
+  - *Instrumented* (`ui-tv/src/androidTest`, TV emulator `emulator-5554` only, fixture ViewModels as in `TvAppFixture` — no real account or profile touched): per screen, initial focus on appear, one D-pad traversal, Back leads somewhere; focus restored after Back once walls exist. Not part of `scripts/check.sh` (needs the emulator); each phase's verification lists them.
+  - Replace the weak `TvFocusTest` (composes + clickable) with a real focus test the first time the instrumented set exists.
 
 ## Requirements
 

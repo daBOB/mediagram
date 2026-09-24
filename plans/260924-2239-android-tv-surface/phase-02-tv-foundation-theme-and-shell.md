@@ -5,7 +5,7 @@
 ## Overview
 
 - **Priority:** High
-- **Status:** pending
+- **Status:** done — commits ba114e6..f594b5f. Decisions: square corners and no glow in the focus set (the web draws square plates with hairlines); `TvShell` only provides colour — each screen owns its safe area (`Overscan` as lazy `contentPadding`; video full-bleed); M3 is checked off `:ui-tv`'s compile classpath (it still rides the runtime classpath via `core:designsystem`, harmless). Screenshot: `reports/tv-shell-first-launch.png`.
 - **Deliverable:** the placeholder is gone. On TV the app draws in the catalogue's dark palette at 10-foot scale inside a safe area, through a `TvApp` that already routes setup-vs-library (screens stubbed until phases 3–4).
 
 ## Key insights
@@ -62,10 +62,10 @@ MainActivity (TV branch) ─► TvApp()
 - [ ] **4.4** Commit — `feat(android): television shell in the catalogue theme`.
 
 ## Todo list
-- [ ] tv-material pinned, ui-tv deps complete
-- [ ] Overscan + TV type + public palette, tested
-- [ ] `TvTheme` + shared focus treatment
-- [ ] `TvApp` replaces placeholder, seen on emulator
+- [x] tv-material pinned, ui-tv deps complete
+- [x] Overscan + TV type + public palette, tested
+- [x] `TvTheme` + shared focus treatment
+- [x] `TvApp` replaces placeholder, seen on emulator
 
 ## Success criteria
 Emulator shows the dark catalogue ground with the right setup-state stub; phone unchanged; `:ui-mobile` dependency tree still has no `androidx.tv`.
