@@ -12,14 +12,14 @@ import java.io.IOException
  *
  * Forgetting a credential in encrypted preferences signs nobody out: the
  * auth key is a file the core wrote, and it keeps working until the file is
- * gone. The core's surface has no call that removes it, so the names are
- * matched here — an external contract, the same way a file format is.
+ * gone. Resetting also removes catalogs and per-device state, so the names
+ * are matched here as an external persistence contract.
  */
 interface CoreStorage {
     /**
      * Deletes the persisted sign-in, the decrypted catalog, the names this
      * device minted for the channels it could read, and this device's own
-     * watch state, all together.
+     * watch state.
      *
      * Together on purpose: a catalog is the contents of one library, read
      * by one account. Keeping it after that account has been signed out
@@ -30,6 +30,11 @@ interface CoreStorage {
      * starting over promises a clean device, and a profile or a position
      * left behind is exactly the kind of thing the next person to set it up
      * would not expect to find.
+     *
+     * Deletion is sequential and non-atomic. Failures propagate immediately;
+     * a failed call may already have removed some state while leaving the
+     * rest untouched. Callers must retain recovery and retry handling until
+     * clearing succeeds, rather than treating a failure as a completed reset.
      */
     suspend fun clear()
 }
@@ -58,7 +63,7 @@ class FileCoreStorage(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : CoreStorage {
     /**
-     * Both deletes report whether they worked, and both answers are
+     * Each deletion reports whether it worked, and every answer is
      * checked. A delete that silently failed would leave the app back at
      * the first step with a live auth key still on disk, and the next
      * identity typed in would inherit the previous account's session —
