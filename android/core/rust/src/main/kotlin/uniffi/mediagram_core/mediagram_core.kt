@@ -722,19 +722,11 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_clear_progress(
     ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_create_collection(
-    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_create_profile(
-    ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_delete_collection(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_profiles(
     ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_rename_collection(
-    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_retire_local_state(
-    ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_set_in_collection(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_kids(
     ): Int
@@ -745,6 +737,14 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_mediagram_core_checksum_method_core_set_watchlisted(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_snapshot(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_create_collection(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_delete_collection(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_rename_collection(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_set_in_collection(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_state_device_id(
     ): Int
@@ -818,20 +818,12 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_clear_progress(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_create_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
-    ): Long
     external fun uniffi_mediagram_core_fn_method_core_create_profile(`ptr`: Long,`name`: RustBuffer.ByValue,`kids`: Byte,
-    ): Long
-    external fun uniffi_mediagram_core_fn_method_core_delete_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_profiles(`ptr`: Long,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_rename_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
-    ): Long
     external fun uniffi_mediagram_core_fn_method_core_retire_local_state(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Unit
-    external fun uniffi_mediagram_core_fn_method_core_set_in_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`included`: Byte,
-    ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_kids(`ptr`: Long,`setId`: RustBuffer.ByValue,`marked`: Byte,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_progress(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`at`: Double,`duration`: RustBuffer.ByValue,
@@ -841,6 +833,14 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_set_watchlisted(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`listed`: Byte,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_snapshot(`ptr`: Long,`profileId`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_create_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_delete_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_rename_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_set_in_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`included`: Byte,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_state_device_id(`ptr`: Long,
     ): Long
@@ -1028,25 +1028,13 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_clear_progress() and 0xFFFF) != 16322) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_create_collection() and 0xFFFF) != 13558) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if ((lib.uniffi_mediagram_core_checksum_method_core_create_profile() and 0xFFFF) != 6077) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_delete_collection() and 0xFFFF) != 8199) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_profiles() and 0xFFFF) != 5418) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_rename_collection() and 0xFFFF) != 62657) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if ((lib.uniffi_mediagram_core_checksum_method_core_retire_local_state() and 0xFFFF) != 24465) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_set_in_collection() and 0xFFFF) != 24986) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_kids() and 0xFFFF) != 54511) {
@@ -1062,6 +1050,18 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_snapshot() and 0xFFFF) != 28194) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_create_collection() and 0xFFFF) != 745) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_delete_collection() and 0xFFFF) != 47335) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_rename_collection() and 0xFFFF) != 18371) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_in_collection() and 0xFFFF) != 28898) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_state_device_id() and 0xFFFF) != 19133) {
@@ -1716,24 +1716,12 @@ public interface CoreInterface {
      */
     suspend fun `clearProgress`(`profileId`: kotlin.String, `setId`: kotlin.String)
 
-    suspend fun `createCollection`(`profileId`: kotlin.String, `name`: kotlin.String): ListRow?
-
     suspend fun `createProfile`(`name`: kotlin.String, `kids`: kotlin.Boolean): Profile?
-
-    /**
-     * Tombstones the list, retaining its items for sync reconciliation.
-     */
-    suspend fun `deleteCollection`(`profileId`: kotlin.String, `id`: kotlin.String): kotlin.Boolean
 
     /**
      * Who watches this library. Empty until someone says.
      */
     suspend fun `profiles`(): List<Profile>
-
-    /**
-     * `false` for a blank name, an unavailable list, or a storage failure.
-     */
-    suspend fun `renameCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `name`: kotlin.String): kotlin.Boolean
 
     /**
      * Permanently stops this core's local watch-state access and closes its
@@ -1743,12 +1731,6 @@ public interface CoreInterface {
      * briefly on an existing database action; it does not wait for network IO.
      */
     fun `retireLocalState`()
-
-    /**
-     * Adds or removes `set_id` from a collection. `false` when the list is
-     * not this profile's.
-     */
-    suspend fun `setInCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `setId`: kotlin.String, `included`: kotlin.Boolean): kotlin.Boolean
 
     /**
      * Marks (or unmarks) a title as a child's. Not scoped to a profile —
@@ -1767,6 +1749,24 @@ public interface CoreInterface {
      * collections, in one round trip. Empty throughout on any failure.
      */
     suspend fun `snapshot`(`profileId`: kotlin.String): StateSnapshot
+
+    suspend fun `createCollection`(`profileId`: kotlin.String, `name`: kotlin.String): ListRow?
+
+    /**
+     * Tombstones the list, retaining its items for sync reconciliation.
+     */
+    suspend fun `deleteCollection`(`profileId`: kotlin.String, `id`: kotlin.String): kotlin.Boolean
+
+    /**
+     * `false` for a blank name, an unavailable list, or a storage failure.
+     */
+    suspend fun `renameCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `name`: kotlin.String): kotlin.Boolean
+
+    /**
+     * Adds or removes `set_id` from a collection. `false` when the list is
+     * not this profile's.
+     */
+    suspend fun `setInCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `setId`: kotlin.String, `included`: kotlin.Boolean): kotlin.Boolean
 
     /**
      * This install's own id in the sync channel — a random string made
@@ -2435,28 +2435,6 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `createCollection`(`profileId`: kotlin.String, `name`: kotlin.String) : ListRow? {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_create_collection(
-                uniffiHandle,
-
-        FfiConverterString.lower(`profileId`),
-        FfiConverterString.lower(`name`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
-        // lift function
-        { FfiConverterOptionalTypeListRow.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
-
-
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `createProfile`(`name`: kotlin.String, `kids`: kotlin.Boolean) : Profile? {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
@@ -2472,31 +2450,6 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterOptionalTypeProfile.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
-
-
-    /**
-     * Tombstones the list, retaining its items for sync reconciliation.
-     */
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `deleteCollection`(`profileId`: kotlin.String, `id`: kotlin.String) : kotlin.Boolean {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_delete_collection(
-                uniffiHandle,
-
-        FfiConverterString.lower(`profileId`),
-        FfiConverterString.lower(`id`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
-        // lift function
-        { FfiConverterBoolean.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
@@ -2527,32 +2480,6 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
-     * `false` for a blank name, an unavailable list, or a storage failure.
-     */
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `renameCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `name`: kotlin.String) : kotlin.Boolean {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_rename_collection(
-                uniffiHandle,
-
-        FfiConverterString.lower(`profileId`),
-        FfiConverterString.lower(`id`),
-        FfiConverterString.lower(`name`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
-        // lift function
-        { FfiConverterBoolean.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
-
-
-    /**
      * Permanently stops this core's local watch-state access and closes its
      * database after any current action. Call before clearing files or
      * releasing the native handle: queued calls must not reopen old state.
@@ -2569,34 +2496,6 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     }
 
 
-
-
-    /**
-     * Adds or removes `set_id` from a collection. `false` when the list is
-     * not this profile's.
-     */
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `setInCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `setId`: kotlin.String, `included`: kotlin.Boolean) : kotlin.Boolean {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_set_in_collection(
-                uniffiHandle,
-
-        FfiConverterString.lower(`profileId`),
-        FfiConverterString.lower(`id`),
-        FfiConverterString.lower(`setId`),
-        FfiConverterBoolean.lower(`included`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
-        // lift function
-        { FfiConverterBoolean.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
 
 
     /**
@@ -2718,6 +2617,107 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterTypeStateSnapshot.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `createCollection`(`profileId`: kotlin.String, `name`: kotlin.String) : ListRow? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_create_collection(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`name`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalTypeListRow.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Tombstones the list, retaining its items for sync reconciliation.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `deleteCollection`(`profileId`: kotlin.String, `id`: kotlin.String) : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_delete_collection(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`id`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * `false` for a blank name, an unavailable list, or a storage failure.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `renameCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `name`: kotlin.String) : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_rename_collection(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`id`),
+        FfiConverterString.lower(`name`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Adds or removes `set_id` from a collection. `false` when the list is
+     * not this profile's.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setInCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `setId`: kotlin.String, `included`: kotlin.Boolean) : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_set_in_collection(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`id`),
+        FfiConverterString.lower(`setId`),
+        FfiConverterBoolean.lower(`included`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
