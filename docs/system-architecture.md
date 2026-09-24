@@ -646,9 +646,16 @@ The flag is `profiles.kids` (web state v7, core state v3) and travels as an
 optional `"kids": true` on the profile in the sync record — written only when
 true, `format` still 1. Merging is "any device says yes": no device's
 document can switch it off, so the flag is set at creation and never changed.
-A profile made by mistake is removed and made again, from the web (the phone
-cannot remove profiles). A device that has not been updated reads the key as
-absent and shows that profile everything until it is.
+The kids flag is therefore permanent for that profile name across every
+device on the account: a sync record cannot express a deletion, so once
+another device has synced the name, that device's record still says
+`"kids": true` and re-imports it on the next sync — an ordinary profile
+recreated under the same name is upgraded straight back. Removing and
+recreating a mistaken profile only works while no other device has synced
+it (and even then, only from the web; the phone cannot remove profiles).
+The dependable correction is a new profile under a different name.
+A device that has not been updated reads the key as absent and shows that
+profile everything until it is.
 
 ### Watch state
 

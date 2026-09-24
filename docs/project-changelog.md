@@ -15,6 +15,8 @@ to `main`. Full phase-by-phase detail lives in
   Featured and in Play next. The flag syncs between devices and cannot be
   switched off by a sync. It is a filter, not a lock. The web header's
   profile name now opens "Who's watching?" to switch profile without a reload.
+  On a kids profile, the player (web and phone) doesn't offer the "Kids"
+  mark, so a child can't approve titles for themselves.
 
 - A Featured reel on the web player's Movies shelf. The Featured button opens
   a dark, full-window run of up to twelve films this profile has not watched,
