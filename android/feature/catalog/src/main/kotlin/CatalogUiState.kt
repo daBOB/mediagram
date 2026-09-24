@@ -29,6 +29,9 @@ sealed interface CatalogUiState {
 
     data object Empty : CatalogUiState
 
+    /** A kids profile over a library with nothing rated for kids yet. */
+    data object KidsEmpty : CatalogUiState
+
     data class Failed(
         val message: String,
     ) : CatalogUiState

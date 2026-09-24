@@ -160,13 +160,16 @@ class ProfileViewModel
             }
         }
 
-        fun add(name: String) {
+        fun add(
+            name: String,
+            kids: Boolean,
+        ) {
             val started = ++operation
             viewModelScope.launch {
                 val previousId = repository.chosenProfileId.value
                 val created =
                     try {
-                        repository.createProfile(name) != null
+                        repository.createProfile(name, kids) != null
                     } catch (e: CancellationException) {
                         throw e
                     } catch (

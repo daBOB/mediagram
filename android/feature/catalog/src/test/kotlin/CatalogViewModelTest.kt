@@ -19,6 +19,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import model.Kind
 import model.ListOfSets
 import model.Profile
 import model.Progress
@@ -155,6 +156,7 @@ private class FakeCatalogWatchState(
         return true
     }
 }
+
 
 /**
  * Uses a standard (queued, not eager) test dispatcher tied to the same
@@ -700,6 +702,53 @@ class CatalogViewModelTest {
                         .items
                         .isEmpty(),
                 )
+            }
+        }
+
+    @Test
+    fun aKidsProfileSeesOnlyItsTitlesAndSwitchingBackRestoresTheRest() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val repository =
+                FakeCatalogRepository(
+                    given =
+                        listOf(
+                            fakeSet(Kind.MOVIE, "Family").copy(fsk = "6"),
+                            fakeSet(Kind.MOVIE, "Grown").copy(fsk = "16"),
+                            fakeSet(Kind.MOVIE, "Marked"),
+                        ),
+                )
+            val watch = FakeCatalogWatchState(WatchSnapshot.Empty.copy(kids = listOf("Marked")))
+            watch.profiles.value = listOf(Profile("k", "Mia", kids = true), Profile("a", "Ana"))
+            watch.chosenProfileId.value = "k"
+            val vm = catalogViewModel(repository, watch)
+            vm.state.test {
+                awaitItem()
+                val kidsView = awaitItem() as CatalogUiState.Ready
+                val ids = kidsView.shelves.flatMap { it.entries }.filterIsInstance<Entry.Film>().map { it.set.setId }
+                assertEquals(setOf("Family", "Marked"), ids.toSet())
+                val readsBefore = repository.reads
+
+                watch.chosenProfileId.value = "a"
+                val adultView = awaitItem() as CatalogUiState.Ready
+                val all = adultView.shelves.flatMap { it.entries }.filterIsInstance<Entry.Film>().map { it.set.setId }
+                assertEquals(setOf("Family", "Grown", "Marked"), all.toSet())
+                assertEquals(readsBefore, repository.reads)
+            }
+        }
+
+    @Test
+    fun aKidsProfileWithNothingAllowedSaysWhatItIsWaitingFor() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val repository = FakeCatalogRepository(given = listOf(fakeSet(Kind.MOVIE, "Grown").copy(fsk = "16")))
+            val watch = FakeCatalogWatchState()
+            watch.profiles.value = listOf(Profile("k", "Mia", kids = true))
+            watch.chosenProfileId.value = "k"
+            val vm = catalogViewModel(repository, watch)
+            vm.state.test {
+                awaitItem()
+                assertEquals(CatalogUiState.KidsEmpty, awaitItem())
             }
         }
 }

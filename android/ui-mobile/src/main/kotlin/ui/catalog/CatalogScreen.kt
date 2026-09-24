@@ -45,6 +45,7 @@ fun CatalogScreen(
     when (state) {
         CatalogUiState.Loading -> CenteredMessage("Loading your library…")
         CatalogUiState.Empty -> CenteredMessage("The library is empty.")
+        CatalogUiState.KidsEmpty -> CenteredMessage("Nothing rated FSK 12 or under yet.")
         is CatalogUiState.Failed -> CenteredMessage(state.message)
         is CatalogUiState.Ready -> Shelves(state, fetching, onOpenTitle, onOpenCollection, onOpenList, onCreateList)
     }

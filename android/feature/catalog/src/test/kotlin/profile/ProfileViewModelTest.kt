@@ -9,6 +9,7 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -32,6 +33,7 @@ private class FakeWatchStateRepository(
     var reloadCalls = 0
         private set
     val created = mutableListOf<String>()
+    val createdKids = mutableListOf<Boolean>()
     var reloadFailure: Exception? = null
     var chooseFailure: Exception? = null
     var createFailure: Exception? = null
@@ -65,6 +67,7 @@ private class FakeWatchStateRepository(
         createFailure?.let { throw it }
         if (refuseWrites) return null
         created += name
+        createdKids += kids
         val made = Profile("new-${created.size}", name, kids)
         profiles.value = profiles.value + made
         return made
@@ -184,7 +187,7 @@ class ProfileViewModelTest {
             vm.state.test {
                 awaitItem()
                 awaitItem()
-                vm.add("Bea")
+                vm.add("Bea", kids = false)
                 assertEquals(ProfileUiState.Picking(profiles, false, "Could not create the profile. Please try again."), awaitItem())
                 assertEquals(emptyList(), repository.created)
                 assertEquals(null, repository.chosenProfileId.value)
@@ -264,7 +267,7 @@ class ProfileViewModelTest {
             vm.state.test {
                 awaitItem()
                 awaitItem()
-                vm.add("Bea")
+                vm.add("Bea", kids = false)
                 assertEquals("Could not create the profile. Please try again.", (awaitItem() as ProfileUiState.Picking).error)
                 vm.choose("p1")
                 assertEquals("Could not choose that profile. Please try again.", (awaitItem() as ProfileUiState.Picking).error)
@@ -284,7 +287,7 @@ class ProfileViewModelTest {
             vm.state.test {
                 awaitItem()
                 val before = awaitItem()
-                vm.add("Bea")
+                vm.add("Bea", kids = false)
                 vm.choose("p1")
                 runCurrent()
                 expectNoEvents()
@@ -374,12 +377,24 @@ class ProfileViewModelTest {
                 awaitItem()
                 awaitItem() as ProfileUiState.Picking
 
-                vm.add("Bea")
+                vm.add("Bea", kids = false)
 
                 val after = awaitItem() as ProfileUiState.Picking
                 assertEquals(listOf("Bea"), after.profiles.map { it.name })
                 assertEquals(listOf("Bea"), repository.created)
             }
+        }
+
+    @Test
+    fun addingAKidsProfilePassesTheFlagThrough() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val repository = FakeWatchStateRepository(emptyList())
+            val vm = ProfileViewModel(repository, FakeWatchSync())
+            vm.add("Mia", kids = true)
+            advanceUntilIdle()
+            assertEquals(listOf(true), repository.createdKids)
+            assertEquals(true, repository.profiles.value.single().kids)
         }
 
     /** The bar action: reopens the picker over whoever was already chosen, with a way back. */

@@ -13,9 +13,12 @@ class FakeCatalogRepository(
     private val refreshFails: Boolean = false,
     /** A catalog already on this device, which a failed refresh must not take away. */
     private val onDisk: Boolean = true,
+    /** Sets given whole, for tests that need a rating or a particular id. */
+    private val given: List<MediaSet> = emptyList(),
 ) : CatalogRepository {
     private val allSets: List<MediaSet> =
-        (0 until movies).map { fakeSet(Kind.MOVIE, "movie-$it") } +
+        given +
+            (0 until movies).map { fakeSet(Kind.MOVIE, "movie-$it") } +
             (0 until episodes).map { fakeSet(Kind.EPISODE, "episode-$it") } +
             (0 until tutorials).map { fakeSet(Kind.TUTORIAL, "tutorial-$it") }
 
@@ -57,7 +60,7 @@ class FakeCatalogRepository(
     override suspend fun posterPath(posterKey: String): String? = null
 }
 
-private fun fakeSet(
+internal fun fakeSet(
     kind: Kind,
     id: String,
 ) = MediaSet(

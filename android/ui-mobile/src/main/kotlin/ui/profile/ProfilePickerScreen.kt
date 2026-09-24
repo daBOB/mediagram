@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -11,12 +12,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -48,7 +51,7 @@ private const val NAME_PROMPT = "Name for this profile"
 fun ProfilePickerScreen(
     state: ProfileUiState,
     onChoose: (String) -> Unit,
-    onAdd: (String) -> Unit,
+    onAdd: (String, Boolean) -> Unit,
     onStay: () -> Unit,
     onRetry: () -> Unit,
 ) {
@@ -73,7 +76,7 @@ fun ProfilePickerScreen(
 private fun PickerBody(
     state: ProfileUiState.Picking,
     onChoose: (String) -> Unit,
-    onAdd: (String) -> Unit,
+    onAdd: (String, Boolean) -> Unit,
     onStay: () -> Unit,
     onRetry: () -> Unit,
 ) {
@@ -92,7 +95,7 @@ private fun PickerBody(
             verticalArrangement = Arrangement.spacedBy(Spacing.medium),
         ) {
             items(items = state.profiles, key = Profile::id) { profile ->
-                ProfileTile(name = profile.name, onClick = { onChoose(profile.id) })
+                ProfileTile(name = profile.name, kids = profile.kids, onClick = { onChoose(profile.id) })
             }
             item { AddTile(onClick = { naming = true }) }
         }
@@ -110,9 +113,9 @@ private fun PickerBody(
 
     if (naming) {
         NameDialog(
-            onConfirm = { name ->
+            onConfirm = { name, kids ->
                 naming = false
-                onAdd(name)
+                onAdd(name, kids)
             },
             onDismiss = { naming = false },
         )
@@ -122,6 +125,7 @@ private fun PickerBody(
 @Composable
 private fun ProfileTile(
     name: String,
+    kids: Boolean,
     onClick: () -> Unit,
 ) {
     Column(
@@ -133,6 +137,13 @@ private fun ProfileTile(
     ) {
         Initial(name)
         Text(name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = Spacing.small))
+        if (kids) {
+            Text(
+                "KIDS",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
     }
 }
 
@@ -169,17 +180,29 @@ private fun initialOf(name: String): String =
 
 @Composable
 private fun NameDialog(
-    onConfirm: (String) -> Unit,
+    onConfirm: (String, Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
+    var kids by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(NAME_PROMPT) },
-        text = { OutlinedTextField(value = name, onValueChange = { name = it }, singleLine = true) },
+        text = {
+            Column {
+                OutlinedTextField(value = name, onValueChange = { name = it }, singleLine = true)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = Spacing.medium).toggleable(value = kids, role = Role.Switch, onValueChange = { kids = it }),
+                ) {
+                    Text("Kids profile — only FSK 12 and under", modifier = Modifier.weight(1f))
+                    Switch(checked = kids, onCheckedChange = null)
+                }
+            }
+        },
         confirmButton = {
-            TextButton(onClick = { onConfirm(name) }, enabled = name.isNotBlank()) { Text("Add") }
+            TextButton(onClick = { onConfirm(name, kids) }, enabled = name.isNotBlank()) { Text("Add") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )

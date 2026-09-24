@@ -13,13 +13,17 @@ import data.coreSentence
 import data.refreshSentence
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import model.MediaSet
+import model.forKidsProfile
 import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.TitleInfo
 import javax.inject.Inject
@@ -38,6 +42,19 @@ class CatalogViewModel
         private var lastReady: CatalogUiState.Ready? = null
         private var manualUpdate: Job? = null
 
+        /** The sets behind the last Ready state, before any profile's filter. */
+        private var lastSets: List<MediaSet> = emptyList()
+
+        /**
+         * The marked-by-hand set when the chosen profile is a kids profile,
+         * `null` otherwise. Distinct, so progress updates — which also move
+         * `snapshot` — do not regroup the shelves.
+         */
+        private val kidsFilter: Flow<Set<String>?> =
+            combine(watchState.profiles, watchState.chosenProfileId, watchState.snapshot) { profiles, chosen, watch ->
+                if (profiles.firstOrNull { it.id == chosen }?.kids == true) watch.kids.toSet() else null
+            }.distinctUntilChanged()
+
         // Listening follows visible state collection. An explicitly requested update
         // belongs to viewModelScope and survives the composition that submitted it.
         val state: StateFlow<CatalogUiState> =
@@ -48,9 +65,18 @@ class CatalogViewModel
                         if (event == LibraryEvent.INDEX) refresh(LibraryUpdateKind.Published)
                     }
                 }
-                combine(catalog, updates.refreshing, watchState.snapshot) { shown, refreshing, watch ->
+                combine(catalog, updates.refreshing, watchState.snapshot, kidsFilter) { shown, refreshing, watch, kids ->
                     when {
-                        shown is CatalogUiState.Ready -> shown.copy(refreshing = refreshing, watch = watch)
+                        shown is CatalogUiState.Ready -> {
+                            // One place the filter applies: every wall and title page
+                            // on the phone is built from these shelves.
+                            val shelves = if (kids == null) shown.shelves else shelvesOf(forKidsProfile(lastSets, kids))
+                            if (kids != null && shelves.isEmpty()) {
+                                CatalogUiState.KidsEmpty
+                            } else {
+                                shown.copy(shelves = shelves, refreshing = refreshing, watch = watch)
+                            }
+                        }
                         refreshing -> CatalogUiState.Loading
                         else -> shown
                     }
@@ -81,7 +107,9 @@ class CatalogViewModel
                 try {
                     val failure = refreshed.exceptionOrNull()
                     failure?.let { Log.w("Catalog", "could not refresh the library", it) }
-                    val shelves = shelvesOf(repository.sets())
+                    val sets = repository.sets()
+                    lastSets = sets
+                    val shelves = shelvesOf(sets)
                     when {
                         shelves.isNotEmpty() -> CatalogUiState.Ready(shelves, notice = failure?.refreshSentence())
                         failure != null -> CatalogUiState.Failed(failure.refreshSentence())
@@ -101,9 +129,13 @@ class CatalogViewModel
 
         private suspend fun regrouped() {
             try {
-                val shelves = shelvesOf(repository.sets())
+                val sets = repository.sets()
+                val shelves = shelvesOf(sets)
                 val kept = lastReady ?: return
-                if (shelves.isNotEmpty()) show(kept.copy(shelves = shelves))
+                if (shelves.isNotEmpty()) {
+                    lastSets = sets
+                    show(kept.copy(shelves = shelves))
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (
