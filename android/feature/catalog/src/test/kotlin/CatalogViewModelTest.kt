@@ -753,6 +753,35 @@ class CatalogViewModelTest {
         }
 
     /**
+     * A snapshot change that leaves the kids projection at [CatalogUiState.KidsEmpty]
+     * both before and after must not surface as a second, equal emission —
+     * [state] is a [kotlinx.coroutines.flow.StateFlow] and a StateFlow must
+     * never emit the same value twice in a row.
+     */
+    @Test
+    fun aKidsEmptyProjectionDoesNotRepeatOnAnUnrelatedSnapshotChange() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val repository = FakeCatalogRepository(given = listOf(fakeSet(Kind.MOVIE, "Grown").copy(fsk = "16")))
+            val watch = FakeCatalogWatchState()
+            watch.profiles.value = listOf(Profile("k", "Mia", kids = true))
+            watch.chosenProfileId.value = "k"
+            val vm = catalogViewModel(repository, watch)
+            vm.state.test {
+                awaitItem()
+                assertEquals(CatalogUiState.KidsEmpty, awaitItem())
+
+                // Changes the catalog's watch payload, not which titles are kids-marked —
+                // the projection stays KidsEmpty, so this must not re-emit it.
+                val progress = Progress(setId = "movie-0", at = 30.0, duration = 3_600.0, updatedAt = 1)
+                watch.snapshot.value = WatchSnapshot(listOf(progress), emptyList(), emptyList(), emptyList(), emptyList())
+                advanceUntilIdle()
+
+                expectNoEvents()
+            }
+        }
+
+    /**
      * The picker takes the library out of composition while it is shown; if
      * nobody was collecting for more than the five-second `WhileSubscribed`
      * window, a switch to a kids profile must not surface as the adult's

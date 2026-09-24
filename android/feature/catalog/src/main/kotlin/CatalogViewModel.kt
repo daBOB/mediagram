@@ -108,7 +108,9 @@ class CatalogViewModel
                     get() = listOf(value)
 
                 override suspend fun collect(collector: FlowCollector<CatalogUiState>): Nothing {
-                    combine(unfiltered, kidsFilter) { shown, kids -> project(shown, kids) }.collect(collector)
+                    combine(unfiltered, kidsFilter) { shown, kids -> project(shown, kids) }
+                        .distinctUntilChanged()
+                        .collect(collector)
                     error("unreachable: a StateFlow-backed combine never completes")
                 }
             }
