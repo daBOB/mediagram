@@ -1,6 +1,7 @@
 package playback
 
 import android.content.Context
+import androidx.media3.common.C
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.test.runTest
@@ -47,6 +48,26 @@ class PlayerFactoryTest {
         try {
             assertEquals(10_000L, player.seekBackIncrement)
             assertEquals(10_000L, player.seekForwardIncrement)
+        } finally {
+            player.release()
+        }
+    }
+
+    /**
+     * This app's subtitles are the index's own VTT text, drawn by
+     * `SubtitleLayer` — never a container's embedded track. Disabling the
+     * type outright is what keeps a forced or default track from a
+     * container ever flashing up uninvited, matching the web, which never
+     * extracts one to begin with.
+     */
+    @Test
+    fun theTextRendererIsDisabled() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        val player = buildPlayer(context, PlaybackCounters()) { FakeCore() }
+
+        try {
+            assertTrue(player.trackSelectionParameters.disabledTrackTypes.contains(C.TRACK_TYPE_TEXT))
         } finally {
             player.release()
         }

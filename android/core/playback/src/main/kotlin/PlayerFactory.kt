@@ -6,6 +6,7 @@
 package playback
 
 import android.content.Context
+import androidx.media3.common.C
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.exoplayer.ExoPlayer
@@ -50,6 +51,13 @@ suspend fun cacheDataSourceFactory(
  * main-dispatched coroutine resumes the cheap `ExoPlayer.Builder().build()`
  * call back on its own (main) thread once the cache's I/O — the only real
  * work here — has finished on whatever dispatcher [CacheProvider.get] used.
+ *
+ * The text renderer is disabled outright, once, here — never per open. This
+ * app's subtitles are never embedded in the container (the web never
+ * extracts one either; both read the index's own VTT text instead — see
+ * `SubtitleTrack.kt`), so there is nothing for ExoPlayer's own text
+ * selection to offer, and disabling it rules out a forced or default track
+ * a container happens to carry ever flashing up uninvited.
  */
 suspend fun buildPlayer(context: Context, counters: PlaybackCounters, currentCore: () -> CoreClient?): ExoPlayer =
     ExoPlayer.Builder(context)
@@ -64,6 +72,11 @@ suspend fun buildPlayer(context: Context, counters: PlaybackCounters, currentCor
         .setSeekBackIncrementMs(SKIP_MS)
         .setSeekForwardIncrementMs(SKIP_MS)
         .build()
+        .apply {
+            trackSelectionParameters = trackSelectionParameters.buildUpon()
+                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
+                .build()
+        }
 
 /**
  * How far one skip moves. Ten seconds is long enough to clear a line of

@@ -23,6 +23,7 @@ internal fun buildViewModel(
     watchSync: FakeWatchSync = FakeWatchSync(),
     catalogRepository: FakeCatalogRepository = FakeCatalogRepository(),
     preferences: FakePlayerPreferences = FakePlayerPreferences(),
+    subtitleTrackSource: FakeSubtitleTrackSource = FakeSubtitleTrackSource(),
 ) = PlayerViewModel(
     handle,
     PlaybackCounters(),
@@ -31,4 +32,5 @@ internal fun buildViewModel(
     watchSync,
     catalogRepository,
     preferences,
+    subtitleTrackSource,
 )

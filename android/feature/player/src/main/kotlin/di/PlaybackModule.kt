@@ -13,7 +13,9 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import playback.DefaultSubtitleTrackSource
 import playback.PlaybackCounters
+import playback.SubtitleTrackSource
 import playback.buildPlayer
 import player.DefaultPlayerHandle
 import player.PlayerHandle
@@ -71,4 +73,9 @@ object PlaybackModule {
         playerDeferred: @JvmSuppressWildcards Deferred<ExoPlayer>,
         scope: CoroutineScope,
     ): PlayerHandle = DefaultPlayerHandle(playerDeferred, scope)
+
+    @Provides
+    @Singleton
+    fun provideSubtitleTrackSource(coreProvider: CoreProvider): SubtitleTrackSource =
+        DefaultSubtitleTrackSource(coreProvider)
 }

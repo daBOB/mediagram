@@ -41,8 +41,8 @@ Supersedes the unbuilt phases 1-3, 6, 7, 10 of
 | 02 | [Core: search ported from the web](phase-02-core-search.md) | 01 | 5h | done |
 | 03 | [Android: search screen and genre pages](phase-03-android-search-and-genres.md) | 02 | 5h | done |
 | 04 | [Player foundation: sheet, per-show store, title, ends-at, retry, speed](phase-04-player-foundation-and-speed.md) | 01 | 6h | done (device check pending) |
-| 05 | [Audio track chooser](phase-05-audio-tracks.md) | 04 | 3h | done (device check pending) |
-| 06 | [Subtitles](phase-06-subtitles.md) | 04 | 6h | pending |
+| 05 | [Audio track chooser](phase-05-audio-tracks.md) | 04 | 3h | done |
+| 06 | [Subtitles](phase-06-subtitles.md) | 04 | 6h | done |
 | 07 | [Up next and queues](phase-07-up-next-and-queues.md) | 04 | 6h | pending |
 | 08 | [Fullscreen, double-tap, framing](phase-08-fullscreen-gestures-framing.md) | 04 | 5h | pending |
 | 09 | [Picture-in-picture and MediaSession](phase-09-pip-and-media-session.md) | 08 | 5h | pending |

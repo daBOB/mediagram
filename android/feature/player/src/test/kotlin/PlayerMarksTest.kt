@@ -50,6 +50,7 @@ class PlayerMarksTest {
         SilentWatchSync,
         FakeCatalogRepository(),
         FakePlayerPreferences(),
+        FakeSubtitleTrackSource(),
     )
 
     @Test

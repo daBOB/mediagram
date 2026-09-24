@@ -18,6 +18,8 @@ import model.MediaSet
 import playback.AudioOption
 import playback.PlaybackCounters
 import playback.PlaybackTotals
+import playback.SubtitleTrackSource
+import playback.TimedCue
 import javax.inject.Inject
 
 /** Tracks what the player is doing for whichever set is currently open. */
@@ -30,6 +32,7 @@ class PlayerViewModel @Inject constructor(
     private val watchSync: WatchSync,
     catalogRepository: CatalogRepository,
     preferences: PlayerPreferences,
+    subtitleTrackSource: SubtitleTrackSource,
 ) : ViewModel(), PlayerHandle.Listener {
 
     private val _state = MutableStateFlow<PlayerUiState>(PlayerUiState.Preparing)
@@ -61,13 +64,16 @@ class PlayerViewModel @Inject constructor(
     private val openFsk = MutableStateFlow<String?>(null)
 
     private val choicesController =
-        PlayerChoicesController(viewModelScope, session, repository, catalogRepository, preferences, handle)
+        PlayerChoicesController(viewModelScope, session, repository, catalogRepository, preferences, handle, subtitleTrackSource)
 
     /** The resolved set behind the open id, for the title line — null before it resolves, or with nothing open. */
     val openSet: StateFlow<MediaSet?> = choicesController.openSet
 
-    /** What this viewer has chosen for the open title — speed today; audio, subtitles and framing join it later. */
+    /** What this viewer has chosen for the open title — speed, audio and subtitle style; framing joins it later. */
     val choices: StateFlow<PlayerChoices> = choicesController.choices
+
+    /** The open title's subtitle cues, once its chosen language's VTT has resolved — empty for "off" or a file with none. */
+    val subtitleCues: StateFlow<List<TimedCue>> = choicesController.subtitleCues
 
     private val marksController = PlayerMarksController(viewModelScope, session, repository, _openSetId, openFsk)
     val marks: StateFlow<PlayerMarksState?> = marksController.marks
@@ -134,6 +140,11 @@ class PlayerViewModel @Inject constructor(
 
     fun setSpeed(rate: Float) = choicesController.setSpeed(rate)
     fun chooseAudioTrack(option: AudioOption) = choicesController.chooseAudioTrack(option)
+    fun chooseSubtitleLanguage(languageOrOff: String) = choicesController.chooseSubtitleLanguage(languageOrOff)
+    fun setSubtitleSize(percent: Int) = choicesController.setSubtitleSize(percent)
+    fun setSubtitleBacking(stored: String) = choicesController.setSubtitleBacking(stored)
+    fun nudgeSubtitleOffset(steps: Int) = choicesController.nudgeSubtitleOffset(steps)
+    fun resetSubtitleOffset() = choicesController.resetSubtitleOffset()
 
     /** Called when the player screen leaves composition, so codecs and audio focus aren't held idle. */
     fun stop() {

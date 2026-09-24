@@ -63,12 +63,13 @@ Modify:
 7. Device: a course lesson with VTT: on by default; switch Off; next lesson stays Off; nudge +1.0 s visibly shifts.
 
 ## Todo
-- [ ] parser decision
-- [ ] SubtitleChoice, ActiveCues, CueStyle + tests
-- [ ] loading + layer
-- [ ] sheet sections + persistence
-- [ ] text renderer disabled
-- [ ] check.sh, bump, changelog, device run
+- [x] parser decision — media3 1.10.1 ships `WebvttParser` in `media3-extractor`, already an `api` dependency of `media3-exoplayer`; no hand-written parser needed
+- [x] SubtitleChoice, ActiveCues, CueStyle + tests
+- [x] loading + layer
+- [x] sheet sections + persistence
+- [x] text renderer disabled
+- [x] check.sh, bump, changelog
+- [x] device run 2026-09-24 (see Device check)
 
 ## Success criteria
 - Web and phone pick the same default for the same set and profile.
@@ -83,5 +84,60 @@ Modify:
 ## Security
 VTT markup is rendered as plain text (tags stripped); no HTML/links interpreted.
 
+## Deliberate differences
+- No `c`-key equivalent. The web's `c` toggles subtitles off and back to
+  whatever they were, without persisting the toggle — a keyboard shortcut a
+  touch device has no equivalent gesture for, the same reasoning that
+  already excludes the web's other keyboard-only features on this surface
+  (plan.md's own list: A-B loop, frame step, number jumps, `[`/`]`). The
+  sheet's "Off" row is the one control this surface offers, and it does
+  persist, matching every other row in the same section.
+- Implementation is split into two sibling controllers,
+  `SubtitleChoiceController` (language, cues) and `SubtitleStyleController`
+  (size, backing, offset), where the phase's own file list named one
+  `SubtitleChoice.kt`/helper — the file guideline (200 lines) would not fit
+  both concerns in one class once each carries its own reset/resolve/remember
+  machinery, the same reason `AudioChoiceController` is already split out of
+  `PlayerChoicesController` rather than folded into it.
+- `SubtitleTrackSource` (`core:playback`) is a small addition the phase's
+  file list did not name outright, covered by its own "`CoreClient.kt`
+  consumers only if a helper is needed" — it is that helper: fetches
+  `CoreClient.setText` and parses the result, kept in `core:playback` rather
+  than `core:data` because `core:data` cannot depend on `core:playback`
+  (the parser it calls lives there) without a cycle.
+
+## Device check (2026-09-24, tablet, 0.46.0, throwaway `test` profile)
+The earlier note here was wrong: the 162 local `subtitle` rows belong to
+Geldhochschule, which *is* on the phone. The channel index the phone
+installs simply carries no `assets` rows at all (0), so the check ran on a
+fixture: the tablet's installed `library.db` with those real rows copied
+in, applied after the app's launch refresh (which re-downloads and
+reinstalls the index every time) and restored to the channel copy after.
+- Einführung: section shows `und` as "Subtitles", on by default; cues draw.
+- Off → saved `test / show:Geldhochschule / subtitle=off`; lesson 2 opens
+  with Off selected and draws nothing.
+- On + Large + Box + `+1.0s` → saved as four separate values; lesson 1
+  reopens with all of them. At 3:25 the cue ending 3:24.237 is still drawn:
+  the offset shifts later, as on the web.
+- Found and fixed: with the bar shown the cue sat on the progress bar (a
+  fixed 96dp clearance). Now measured: lifted by the part of the picture
+  the bar covers, back to the bottom when it hides. Also settles review L2.
+- The `andre` profile's preferences were not touched.
+
+## Review fixes (reports/code-reviewer-260924-2235-phase-06-subtitles-report.md)
+- M1 fixed: nothing is chosen until languages and preferences have both
+  answered; re-picking the row already on does not refetch. Covered with a
+  gated preference fake.
+- L1 fixed: size and backing flags and writes are separate.
+- L2 fixed by the measured placement above.
+- L3 not changed: while paused the tick writes an unchanged position, which
+  neither recomposes nor recomputes cues; the cost is one read per 100ms.
+- L4: tests split into choice, lifecycle and style files, all under 200.
+- Also found: `SubtitleTrackTest` hung forever on the bare android.jar —
+  `WebvttParser` skips the header with `while (!TextUtils.isEmpty(...))`
+  and the stub answers `false` always. Runs under Robolectric now; the app
+  itself was never affected.
+
 ## Next steps
-08 must re-verify cue placement under Fill/16:9/4:3.
+08 must re-verify cue placement under Fill/16:9/4:3 (placement is measured
+against the bar now, so framing changes should carry through).

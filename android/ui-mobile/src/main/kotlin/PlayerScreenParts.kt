@@ -7,6 +7,7 @@ package ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -40,9 +41,14 @@ import androidx.media3.ui.compose.state.rememberPresentationState
  * listener written here: it already folds in the pixel shape that makes
  * anamorphic video 2.4:1 rather than 1.78:1, and it already knows when the
  * surface is showing a frame that no longer belongs to what is playing.
+ *
+ * [overlay] draws inside this same box — the picture's own rectangle, not
+ * the screen's — which is what lets `SubtitleLayer` sit bottom-centred
+ * against the video itself rather than against whatever letterbox surrounds
+ * it.
  */
 @Composable
-internal fun Video(player: Player) {
+internal fun Video(player: Player, overlay: @Composable BoxScope.() -> Unit = {}) {
     val presentation = rememberPresentationState(player)
     val size = presentation.videoSizeDp
     val shaped = if (size != null && size.width > 0f && size.height > 0f) {
@@ -50,13 +56,16 @@ internal fun Video(player: Player) {
     } else {
         Modifier.fillMaxSize()
     }
-    PlayerSurface(player = player, modifier = shaped)
-    // Between one set and the next the surface still holds the last frame
-    // of the old one. Covering it is what media3 asks callers to do, and
-    // the alternative is a still from the previous film over the new one's
-    // audio.
-    if (presentation.coverSurface) {
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black))
+    Box(modifier = shaped) {
+        PlayerSurface(player = player, modifier = Modifier.fillMaxSize())
+        // Between one set and the next the surface still holds the last
+        // frame of the old one. Covering it is what media3 asks callers to
+        // do, and the alternative is a still from the previous film over
+        // the new one's audio.
+        if (presentation.coverSurface) {
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black))
+        }
+        overlay()
     }
 }
 

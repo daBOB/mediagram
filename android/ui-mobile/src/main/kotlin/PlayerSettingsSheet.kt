@@ -20,23 +20,27 @@ import androidx.compose.ui.semantics.Role
 import designsystem.Spacing
 import playback.AudioOption
 import player.PLAYBACK_SPEEDS
+import player.SubtitleOption
 import player.speedLabel
 
 /**
- * The settings sheet the control bar's gear opens. Speed and Audio are the
- * sections built so far; Subtitles and Framing join them beside it, in the
- * same sheet rather than one each — a viewer reaching for one setting
- * mid-film should not have to remember which button opens which.
+ * The settings sheet the control bar's gear opens. Speed, Audio, Subtitles
+ * and Subtitle style are the sections built so far; Framing joins them
+ * beside it, in the same sheet rather than one each — a viewer reaching for
+ * one setting mid-film should not have to remember which button opens which.
  *
  * [audioOptions] is empty for a title with only one audio track (or before
  * the file's own tracks and any remembered choice have both resolved),
  * which is exactly when the Audio section stays off the sheet entirely.
+ * [subtitleOptions] is empty on the same terms for a file with no subtitles
+ * at all, which hides both subtitle sections — a size or a backing is
+ * nothing to offer for text that never appears.
  *
  * Scrolls (more sections than fit a short landscape sheet is routine once
- * Audio joins Speed) and pads for the navigation bar itself, rather than
- * trusting `ModalBottomSheet`'s own default insets — a phone with
- * three-button navigation otherwise sits its home/back row over the last
- * item, on top of the row rather than below it.
+ * Audio and Subtitles join Speed) and pads for the navigation bar itself,
+ * rather than trusting `ModalBottomSheet`'s own default insets — a phone
+ * with three-button navigation otherwise sits its home/back row over the
+ * last item, on top of the row rather than below it.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +49,15 @@ fun PlayerSettingsSheet(
     onSpeedChosen: (Float) -> Unit,
     audioOptions: List<AudioOption>,
     onAudioChosen: (AudioOption) -> Unit,
+    subtitleOptions: List<SubtitleOption>,
+    onSubtitleChosen: (String) -> Unit,
+    subtitleSizePercent: Int,
+    onSubtitleSizeChosen: (Int) -> Unit,
+    subtitleBacking: String,
+    onSubtitleBackingChosen: (String) -> Unit,
+    subtitleOffsetMs: Long,
+    onSubtitleNudge: (Int) -> Unit,
+    onSubtitleOffsetReset: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -61,6 +74,18 @@ fun PlayerSettingsSheet(
             }
             if (audioOptions.isNotEmpty()) {
                 AudioSection(options = audioOptions, onChosen = onAudioChosen)
+            }
+            if (subtitleOptions.isNotEmpty()) {
+                SubtitleSection(options = subtitleOptions, onChosen = onSubtitleChosen)
+                SubtitleStyleSection(
+                    sizePercent = subtitleSizePercent,
+                    onSizeChosen = onSubtitleSizeChosen,
+                    backing = subtitleBacking,
+                    onBackingChosen = onSubtitleBackingChosen,
+                    offsetMs = subtitleOffsetMs,
+                    onNudge = onSubtitleNudge,
+                    onResetOffset = onSubtitleOffsetReset,
+                )
             }
         }
     }

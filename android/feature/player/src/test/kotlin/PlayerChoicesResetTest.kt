@@ -38,6 +38,7 @@ class PlayerChoicesResetTest {
         NoopWatchSync,
         FakeCatalogRepository(mapOf(episode.setId to episode, film.setId to film)),
         preferences,
+        FakeSubtitleTrackSource(),
     )
 
     private object NoopWatchSync : data.WatchSync {
@@ -151,6 +152,7 @@ class PlayerChoicesResetTest {
             NoopWatchSync,
             FakeCatalogRepository(mapOf(episode.setId to episode), gate),
             preferences,
+            FakeSubtitleTrackSource(),
         )
 
         vm.open(episode.setId) // resolve() suspends on the gate, mid-flight

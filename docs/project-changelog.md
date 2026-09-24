@@ -93,6 +93,36 @@ to `main`. Full phase-by-phase detail lives in
   synthetic empty tracks report `ExoPlayerImpl` fires while reloading for
   a new title, which had been read as "this file has no audio" and
   silently dropped every real track that followed.
+- The settings sheet's Subtitles and Subtitle style sections. Off is a
+  remembered choice like any other (`transport.js`'s own rule: nothing
+  remembered or a language the file has lost defaults to the first track;
+  a remembered "off" stays off); size (Small/Normal/Large/Larger), backing
+  (Shadow/Box/None) and a `+/-30s` timing offset (`0.1s` steps, a Reset
+  button) are ported from `subtitle-panel.js`/`subtitle-style.js`, all
+  remembered per show under the same `preferences` scope speed and audio
+  already use. ExoPlayer never renders a subtitle: its text renderer is
+  disabled outright (`PlayerFactory.buildPlayer`, once, not per open), and
+  a title's VTT (already in the index via `Core::set_text`, phase 01) is
+  parsed with media3's own `WebvttParser` — confirmed present in this app's
+  1.10.1 media3-extractor dependency — into plain cues an app-owned
+  `SubtitleLayer` draws inside the video's own rectangle, bottom-centred,
+  lifted by exactly as much of the picture as the transport bar covers
+  while it is shown (measured, not a fixed clearance: a guessed 96dp left
+  cues on top of the bar on the tablet). An offset is applied fresh
+  from each cue's parsed times on every read rather than accumulated onto
+  a mutable cue (there is nothing here for a second nudge to drift away
+  from, unlike the web's own `TextTrackCue` mutation). No position control,
+  the same restraint and for the same reason `subtitle-style.js` records.
+  `SubtitleChoiceController`'s language pick alone races two sources (a
+  title's own languages, known as soon as the set resolves, and this
+  profile's remembered choice, known once the preference round trip that
+  follows it lands) and chooses nothing until both have answered: a
+  default applied from the languages alone fetched a file the remembered
+  choice then turned off, and could flash its cues on a show the viewer
+  had switched off. A language picked by hand while that round trip is
+  still in flight wins over whatever it answers late. Size and backing are
+  remembered one value at a time, as the web does, so a size picked early
+  never writes the default backing over a remembered one.
 
 ## 2026-09-23
 

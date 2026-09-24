@@ -20,6 +20,7 @@ internal fun testViewModel(handle: PlayerHandle): PlayerViewModel {
         NoopWatchSync,
         FakeCatalogRepository(),
         FakePlayerPreferences(),
+        FakeSubtitleTrackSource(),
     )
 }
 

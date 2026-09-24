@@ -25,6 +25,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -62,6 +64,7 @@ fun PlayerScreen(setId: String, fsk: String?, onBack: () -> Unit) {
     val marks by viewModel.marks.collectAsStateWithLifecycle()
     val openSet by viewModel.openSet.collectAsStateWithLifecycle()
     val choices by viewModel.choices.collectAsStateWithLifecycle()
+    val subtitleCues by viewModel.subtitleCues.collectAsStateWithLifecycle()
     val activity = LocalContext.current.findActivity()
 
     LaunchedEffect(setId) { viewModel.open(setId, fsk) }
@@ -97,6 +100,7 @@ fun PlayerScreen(setId: String, fsk: String?, onBack: () -> Unit) {
     // Saved, because a rotation destroys this composition and a viewer who
     // turned the phone to read a wider row did not ask for the numbers back.
     var statsShown by rememberSaveable { mutableStateOf(false) }
+    var barTop by remember { mutableStateOf<Float?>(null) }
     LaunchedEffect(controlsShown, state, scrubbing, settingsShown) {
         if (!controlsShown || settingsShown) return@LaunchedEffect
         val fades = controlsShouldFade(isPlaying = state is PlayerUiState.Playing, isScrubbing = scrubbing)
@@ -119,7 +123,7 @@ fun PlayerScreen(setId: String, fsk: String?, onBack: () -> Unit) {
         contentAlignment = Alignment.Center,
     ) {
         player?.let { current ->
-            Video(current)
+            VideoWithSubtitles(current, subtitleCues, choices, barTop = barTop.takeIf { barShown })
             if (barShown) {
                 PlayerControls(
                     player = current,
@@ -129,7 +133,7 @@ fun PlayerScreen(setId: String, fsk: String?, onBack: () -> Unit) {
                     speed = choices.speed,
                     onOpenSettings = { settingsShown = true },
                     catalogedDurationSecs = openSet?.durationSecs,
-                    modifier = Modifier.align(Alignment.BottomCenter),
+                    modifier = Modifier.align(Alignment.BottomCenter).onGloballyPositioned { barTop = it.boundsInRoot().top },
                 )
                 // Top-right, opposite back: the web keeps these in the player
                 // because "this is where a viewer finds out what a film
@@ -152,11 +156,9 @@ fun PlayerScreen(setId: String, fsk: String?, onBack: () -> Unit) {
                 )
             }
             if (settingsShown) {
-                PlayerSettingsSheet(
-                    currentSpeed = choices.speed,
-                    onSpeedChosen = viewModel::setSpeed,
-                    audioOptions = choices.audioOptions,
-                    onAudioChosen = viewModel::chooseAudioTrack,
+                PlayerSettingsSheetForViewModel(
+                    choices = choices,
+                    viewModel = viewModel,
                     onDismiss = { settingsShown = false },
                 )
             }

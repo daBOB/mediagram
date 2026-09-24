@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import model.MediaSet
 import playback.AudioOption
+import playback.SubtitleTrackSource
+import playback.TimedCue
 
 /**
  * What this viewer has chosen for the open title, and how a choice made
@@ -28,6 +30,7 @@ class PlayerChoicesController(
     private val catalogRepository: CatalogRepository,
     private val preferences: PlayerPreferences,
     private val handle: PlayerHandle,
+    private val subtitleTrackSource: SubtitleTrackSource,
 ) {
     private val _openSet = MutableStateFlow<MediaSet?>(null)
     val openSet: StateFlow<MediaSet?> = _openSet.asStateFlow()
@@ -35,8 +38,26 @@ class PlayerChoicesController(
     private val _choices = MutableStateFlow(PlayerChoices.Default)
     val choices: StateFlow<PlayerChoices> = _choices.asStateFlow()
 
+    private val _subtitleCues = MutableStateFlow<List<TimedCue>>(emptyList())
+
+    /** The open title's subtitle cues, once its chosen language's VTT has been fetched and parsed — kept apart from [choices], which a feature film's whole transcript has no business being copied onto with every speed or size change. */
+    val subtitleCues: StateFlow<List<TimedCue>> = _subtitleCues.asStateFlow()
+
     private val audioChoice = AudioChoiceController(launchScope, handle, preferences) { options ->
         _choices.value = _choices.value.copy(audioOptions = options)
+    }
+
+    private val subtitleChoice = SubtitleChoiceController(launchScope, subtitleTrackSource, preferences) { options, cues ->
+        _choices.value = _choices.value.copy(subtitleOptions = options)
+        _subtitleCues.value = cues
+    }
+
+    private val subtitleStyle = SubtitleStyleController(launchScope, preferences) { sizePercent, backing, offsetMs ->
+        _choices.value = _choices.value.copy(
+            subtitleSizePercent = sizePercent,
+            subtitleBacking = backing,
+            subtitleOffsetMs = offsetMs,
+        )
     }
 
     /** Where [setSpeed] remembers a choice; null before the open title's set resolves. */
@@ -57,6 +78,8 @@ class PlayerChoicesController(
         _choices.value = PlayerChoices.Default
         userChoseSpeed = false
         audioChoice.reset()
+        subtitleChoice.reset()
+        subtitleStyle.reset()
     }
 
     /** Detaches the audio listener this controller's [audioChoice] holds on the player. */
@@ -88,6 +111,9 @@ class PlayerChoicesController(
         _openSet.value = set
         val scope = scopeOf(set) ?: "set:$setId"
         openScope = scope
+        // Ahead of the preference round trip below: a title's own languages
+        // are a fact about the set, not about this profile's choices for it.
+        subtitleChoice.onLanguagesKnown(setId, set?.subtitleLanguages.orEmpty())
 
         val profileId = repository.chosenProfileId.value
         val loaded = if (profileId == null) emptyMap() else safely(emptyMap()) { preferences.load(profileId, scope) }
@@ -102,6 +128,8 @@ class PlayerChoicesController(
         }
 
         audioChoice.onPreferencesLoaded(scope, profileId, loaded["audio"])
+        subtitleChoice.onPreferencesLoaded(scope, profileId, loaded["subtitle"])
+        subtitleStyle.onPreferencesLoaded(scope, profileId, loaded)
     }
 
     /** Applies a chosen speed and remembers it for this show; a no-op write with no profile chosen. */
@@ -116,6 +144,14 @@ class PlayerChoicesController(
 
     /** The viewer picked an audio track by hand. */
     fun chooseAudioTrack(option: AudioOption) = audioChoice.choose(option)
+
+    /** The viewer picked a subtitle row by hand — "off" or one of the offered languages. */
+    fun chooseSubtitleLanguage(languageOrOff: String) = subtitleChoice.choose(languageOrOff)
+
+    fun setSubtitleSize(percent: Int) = subtitleStyle.setSize(percent)
+    fun setSubtitleBacking(stored: String) = subtitleStyle.setBacking(stored)
+    fun nudgeSubtitleOffset(steps: Int) = subtitleStyle.nudgeOffset(steps)
+    fun resetSubtitleOffset() = subtitleStyle.resetOffset()
 
     /** Fire-and-forget: a core round trip failing to remember a speed is not a reason to crash the player. */
     private fun rememberSpeed(scope: String, rate: Float) {
