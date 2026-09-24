@@ -134,9 +134,18 @@ fn a_folder_of_documents_alone_is_shown_with_its_documents() {
 
     let text = dry_run_table("C", "c", &walked).join("\n");
 
-    assert!(text.contains("Ressourcen  (0 lesson(s), 2 document(s))"), "{text}");
-    assert!(text.contains("Arbeitsbuch") && text.contains("Checkliste"), "{text}");
-    assert!(text.contains("1 lesson(s), 2 document(s) across 2 folder(s)"), "{text}");
+    assert!(
+        text.contains("Ressourcen  (0 lesson(s), 2 document(s))"),
+        "{text}"
+    );
+    assert!(
+        text.contains("Arbeitsbuch") && text.contains("Checkliste"),
+        "{text}"
+    );
+    assert!(
+        text.contains("1 lesson(s), 2 document(s) across 2 folder(s)"),
+        "{text}"
+    );
 }
 
 /// A course of pure video reads exactly as it did before documents existed.

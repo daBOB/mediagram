@@ -27,7 +27,8 @@ pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
     // Asked before the child is started, because the child is what will be
     // holding it a moment later.
     let queued = crate::upload::lock::is_held(&cfg.data_dir()?);
-    let started = background::spawn_finish_set(cfg, &planned.set_id, to_delete.as_deref(), no_push)?;
+    let started =
+        background::spawn_finish_set(cfg, &planned.set_id, to_delete.as_deref(), no_push)?;
     println!(
         "set {} planned · {} · {:.2} GB",
         planned.set_id,

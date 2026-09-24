@@ -24,7 +24,9 @@ fn sources(dir: &Path, out: &mut Vec<PathBuf>) {
 
 #[test]
 fn every_source_file_stays_under_the_line_limit() {
-    let crates = Path::new(env!("CARGO_MANIFEST_DIR")).parent().expect("the crates directory");
+    let crates = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("the crates directory");
     let mut files = Vec::new();
     for member in std::fs::read_dir(crates).expect("the crates directory") {
         let src = member.expect("a crate").path().join("src");
@@ -32,13 +34,21 @@ fn every_source_file_stays_under_the_line_limit() {
             sources(&src, &mut files);
         }
     }
-    assert!(!files.is_empty(), "found no source files under {}", crates.display());
+    assert!(
+        !files.is_empty(),
+        "found no source files under {}",
+        crates.display()
+    );
 
     let mut over: Vec<String> = files
         .iter()
         .filter_map(|file| {
-            let lines = std::fs::read_to_string(file).expect("a readable file").lines().count();
-            (lines > LIMIT).then(|| format!("{} ({lines})", file.strip_prefix(crates).unwrap().display()))
+            let lines = std::fs::read_to_string(file)
+                .expect("a readable file")
+                .lines()
+                .count();
+            (lines > LIMIT)
+                .then(|| format!("{} ({lines})", file.strip_prefix(crates).unwrap().display()))
         })
         .collect();
     over.sort();
@@ -63,14 +73,20 @@ fn every_sqlite_open_in_the_uploader_configures_sqlite_first() {
     }
     let bare: Vec<String> = files
         .iter()
-        .filter(|file| !file.ends_with("index/sqlite_init.rs") && !file.ends_with("code_standards.rs"))
+        .filter(|file| {
+            !file.ends_with("index/sqlite_init.rs") && !file.ends_with("code_standards.rs")
+        })
         .filter(|file| {
             let text = std::fs::read_to_string(file).expect("a readable file");
             text.contains("Connection::open(") || text.contains("Connection::open_in_memory(")
         })
         .map(|file| file.display().to_string())
         .collect();
-    assert!(bare.is_empty(), "open SQLite through index::sqlite_init::open instead:\n{}", bare.join("\n"));
+    assert!(
+        bare.is_empty(),
+        "open SQLite through index::sqlite_init::open instead:\n{}",
+        bare.join("\n")
+    );
 }
 
 fn collect_rs(dir: &Path, out: &mut Vec<PathBuf>) {

@@ -25,7 +25,13 @@ pub(super) async fn install(
     version: &str,
 ) -> Result<u64, CoreError> {
     let staging = Staging::begin(&core.installing, &store::dir(core)).await?;
-    download(core, client, document, &staging.dir().join(mlib_spec::schema::INDEX_FILE)).await?;
+    download(
+        core,
+        client,
+        document,
+        &staging.dir().join(mlib_spec::schema::INDEX_FILE),
+    )
+    .await?;
     install_proven(staging, version)
 }
 
@@ -35,7 +41,8 @@ pub(super) async fn install(
 /// counted, and this happens while it is still staged, so a channel with
 /// something else pinned in it never replaces a library that works.
 fn install_proven(staging: Staging<'_>, version: &str) -> Result<u64, CoreError> {
-    let sets = count_playable(staging.dir()).map_err(CoreError::Library(UNREADABLE.into()).logged())?;
+    let sets =
+        count_playable(staging.dir()).map_err(CoreError::Library(UNREADABLE.into()).logged())?;
     staging.install(version)?;
     Ok(sets)
 }
@@ -50,11 +57,9 @@ async fn download(
     let mut file = std::fs::File::create(path).map_err(CoreError::io(WRITING))?;
     let mut written: u64 = 0;
     let mut chunks = client.iter_download(document);
-    while let Some(chunk) = checked(
-        core,
-        chunks.next().await,
-        |err| CoreError::network("the index download was interrupted")(err),
-    )
+    while let Some(chunk) = checked(core, chunks.next().await, |err| {
+        CoreError::network("the index download was interrupted")(err)
+    })
     .await?
     {
         written += chunk.len() as u64;
@@ -79,7 +84,8 @@ mod tests {
         let root = store::dir(&core);
 
         let working = Staging::begin(&core.installing, &root).await.unwrap();
-        let conn = rusqlite::Connection::open(working.dir().join(mlib_spec::schema::INDEX_FILE)).unwrap();
+        let conn =
+            rusqlite::Connection::open(working.dir().join(mlib_spec::schema::INDEX_FILE)).unwrap();
         for stmt in mlib_spec::schema::migrations_up_to(mlib_spec::schema::SCHEMA_VERSION) {
             conn.execute(stmt, []).unwrap();
         }
@@ -88,10 +94,17 @@ mod tests {
         let before = std::fs::canonicalize(store::current_dir(&core)).unwrap();
 
         let broken = Staging::begin(&core.installing, &root).await.unwrap();
-        std::fs::write(broken.dir().join(mlib_spec::schema::INDEX_FILE), b"not a database").unwrap();
+        std::fs::write(
+            broken.dir().join(mlib_spec::schema::INDEX_FILE),
+            b"not a database",
+        )
+        .unwrap();
         let refused = install_proven(broken, "v-2").unwrap_err();
 
         assert_eq!(refused.to_string(), format!("library error: {UNREADABLE}"));
-        assert_eq!(std::fs::canonicalize(store::current_dir(&core)).unwrap(), before);
+        assert_eq!(
+            std::fs::canonicalize(store::current_dir(&core)).unwrap(),
+            before
+        );
     }
 }

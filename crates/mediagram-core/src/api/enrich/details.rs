@@ -38,7 +38,9 @@ pub(in crate::api) fn title_info(core: &Core, poster_key: String) -> Option<Titl
     // the same question the same way for the two places artwork can sit: a
     // second lookup location must never become a second way past the check.
     title_of(&poster_key)?;
-    in_index(core, &poster_key).or_else(|| fetched(core, &poster_key)).map(Into::into)
+    in_index(core, &poster_key)
+        .or_else(|| fetched(core, &poster_key))
+        .map(Into::into)
 }
 
 /// The row the downloaded index carries, if it carries one.

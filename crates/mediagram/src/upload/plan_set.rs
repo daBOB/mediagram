@@ -126,4 +126,3 @@ pub async fn plan_set(cfg: &Config, new: &NewSet) -> Result<Planned> {
         total,
     })
 }
-

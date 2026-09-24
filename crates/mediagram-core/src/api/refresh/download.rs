@@ -6,8 +6,8 @@ use std::path::Path;
 
 use mlib_spec::package::LatestPointer;
 
-use crate::versions;
 use crate::api::CoreError;
+use crate::versions;
 
 /// Derives the package's download URL from the same base `pointer_url` was
 /// fetched from — never from the pointer's own `url` field, which is not
@@ -76,11 +76,9 @@ pub(in crate::api) async fn fetch_capped(
         ));
     }
     let mut out = Vec::new();
-    while let Some(chunk) = response
-        .chunk()
-        .await
-        .map_err(CoreError::network("the package download ended before it finished"))?
-    {
+    while let Some(chunk) = response.chunk().await.map_err(CoreError::network(
+        "the package download ended before it finished",
+    ))? {
         out.extend_from_slice(&chunk);
         if out.len() as u64 > cap {
             return Err(CoreError::Network(
@@ -99,7 +97,11 @@ pub(in crate::api) fn check_manifest(dir: &Path, pointer: &LatestPointer) -> Res
         .map_err(CoreError::Cipher("the package has no manifest".into()).logged())?;
     let manifest: serde_json::Value = serde_json::from_str(&text)
         .map_err(CoreError::Cipher("the package manifest is not JSON".into()).logged())?;
-    if manifest.get("created_at").and_then(serde_json::Value::as_i64) != Some(pointer.created_at) {
+    if manifest
+        .get("created_at")
+        .and_then(serde_json::Value::as_i64)
+        != Some(pointer.created_at)
+    {
         return Err(CoreError::Cipher(
             "the package manifest disagrees with the pointer about when it was built".into(),
         ));

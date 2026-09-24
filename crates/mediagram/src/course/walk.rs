@@ -163,4 +163,3 @@ fn number_chapters(
     }
     chapters
 }
-

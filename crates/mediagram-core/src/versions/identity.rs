@@ -57,8 +57,8 @@ pub fn read_identity(dir: &Path) -> Result<Option<Identity>, CoreError> {
 }
 
 pub fn write_identity(dir: &Path, identity: &Identity) -> Result<(), CoreError> {
-    let text = serde_json::to_string(identity)
-        .map_err(CoreError::io("recording the package identity"))?;
+    let text =
+        serde_json::to_string(identity).map_err(CoreError::io("recording the package identity"))?;
     std::fs::write(dir.join(IDENTITY_FILE), text)
         .map_err(CoreError::io("recording the package identity"))
 }

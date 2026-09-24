@@ -40,7 +40,10 @@ mod tests {
     fn a_caption_this_player_wrote_names_the_device_and_reads_back_as_it() {
         let caption = state_caption("b398013d-986b");
         assert!(caption.starts_with(STATE_MARKER));
-        assert_eq!(device_from_caption(&caption).as_deref(), Some("b398013d-986b"));
+        assert_eq!(
+            device_from_caption(&caption).as_deref(),
+            Some("b398013d-986b")
+        );
     }
 
     #[test]
@@ -59,7 +62,10 @@ mod tests {
 
     #[test]
     fn a_caption_that_merely_mentions_the_marker_is_not_one() {
-        assert_eq!(device_from_caption("talking about #mlib-state device=x"), None);
+        assert_eq!(
+            device_from_caption("talking about #mlib-state device=x"),
+            None
+        );
     }
 
     #[test]
@@ -71,11 +77,17 @@ mod tests {
 
     #[test]
     fn a_device_id_stops_at_whitespace_rather_than_swallowing_the_rest() {
-        assert_eq!(device_from_caption("#mlib-state v=1 device=laptop and more").as_deref(), Some("laptop"));
+        assert_eq!(
+            device_from_caption("#mlib-state v=1 device=laptop and more").as_deref(),
+            Some("laptop")
+        );
     }
 
     #[test]
     fn a_device_id_is_found_wherever_it_sits_in_the_caption() {
-        assert_eq!(device_from_caption("#mlib-state device=laptop v=1").as_deref(), Some("laptop"));
+        assert_eq!(
+            device_from_caption("#mlib-state device=laptop v=1").as_deref(),
+            Some("laptop")
+        );
     }
 }

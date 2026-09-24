@@ -12,9 +12,9 @@ use crate::range::{self, ByteRange, PartSpan};
 use crate::transport::fetch::Parts;
 use crate::transport::source::BUFFERED_CHUNKS;
 
+use super::account::revoked;
 use super::account::session;
 use super::channel::library;
-use super::account::revoked;
 use super::{Core, CoreError, store};
 
 /// Where a set's parts live, if it may be played. Blocking: a catalog query.
@@ -24,9 +24,12 @@ use super::{Core, CoreError, store};
 /// not be readable here while being refused everywhere else.
 pub(super) fn locations(core: &Core, set_id: &str) -> Result<Vec<PartLocation>, CoreError> {
     let conn = store::open(core)?;
-    let playable = queries::playable_set(&conn, set_id).map_err(CoreError::io("reading the catalog"))?;
+    let playable =
+        queries::playable_set(&conn, set_id).map_err(CoreError::io("reading the catalog"))?;
     let locations = match playable {
-        Some(_) => queries::part_locations(&conn, set_id).map_err(CoreError::io("reading the catalog"))?,
+        Some(_) => {
+            queries::part_locations(&conn, set_id).map_err(CoreError::io("reading the catalog"))?
+        }
         None => Vec::new(),
     };
     if locations.is_empty() {
@@ -46,7 +49,9 @@ pub(super) async fn read(
     let spans: Vec<PartSpan> = locations.iter().map(|location| location.span).collect();
     let total = range::total_size(&spans);
     if total == 0 || offset >= total {
-        return Err(CoreError::NotFound("read is past the end of the set".into()));
+        return Err(CoreError::NotFound(
+            "read is past the end of the set".into(),
+        ));
     }
     // A zero-length request is trivially satisfied, and must return before
     // `end` is computed: `end = offset - 1` below is only ever valid because

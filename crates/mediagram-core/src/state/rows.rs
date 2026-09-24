@@ -31,7 +31,12 @@ pub fn progress_for(conn: &Connection, profile_id: &str) -> rusqlite::Result<Vec
            FROM progress WHERE profile_id = ?1 ORDER BY updated_at DESC",
     )?;
     let rows = stmt.query_map([profile_id], |row| {
-        Ok(ProgressRow { set_id: row.get(0)?, at: row.get(1)?, duration: row.get(2)?, updated_at: row.get(3)? })
+        Ok(ProgressRow {
+            set_id: row.get(0)?,
+            at: row.get(1)?,
+            duration: row.get(2)?,
+            updated_at: row.get(3)?,
+        })
     })?;
     rows.collect()
 }
@@ -59,7 +64,10 @@ pub fn set_progress(
 
 /// Forgets a position: started again, or watched to the end.
 pub fn clear_progress(conn: &Connection, profile_id: &str, set_id: &str) -> rusqlite::Result<()> {
-    conn.execute("DELETE FROM progress WHERE profile_id = ?1 AND set_id = ?2", params![profile_id, set_id])?;
+    conn.execute(
+        "DELETE FROM progress WHERE profile_id = ?1 AND set_id = ?2",
+        params![profile_id, set_id],
+    )?;
     Ok(())
 }
 
@@ -67,8 +75,12 @@ pub fn watched_for(conn: &Connection, profile_id: &str) -> rusqlite::Result<Vec<
     let mut stmt = conn.prepare(
         "SELECT set_id, finished_at FROM watched WHERE profile_id = ?1 ORDER BY finished_at DESC",
     )?;
-    let rows =
-        stmt.query_map([profile_id], |row| Ok(WatchedRow { set_id: row.get(0)?, finished_at: row.get(1)? }))?;
+    let rows = stmt.query_map([profile_id], |row| {
+        Ok(WatchedRow {
+            set_id: row.get(0)?,
+            finished_at: row.get(1)?,
+        })
+    })?;
     rows.collect()
 }
 
@@ -76,7 +88,12 @@ pub fn watched_for(conn: &Connection, profile_id: &str) -> rusqlite::Result<Vec<
 ///
 /// The position is cleared at the same moment — a finished title has no
 /// resume point — so this is the only thing that survives it.
-pub fn set_watched(conn: &Connection, profile_id: &str, set_id: &str, finished: bool) -> rusqlite::Result<()> {
+pub fn set_watched(
+    conn: &Connection,
+    profile_id: &str,
+    set_id: &str,
+    finished: bool,
+) -> rusqlite::Result<()> {
     if finished {
         conn.execute(
             "INSERT INTO watched(profile_id, set_id, finished_at) VALUES (?1, ?2, ?3)
@@ -85,7 +102,10 @@ pub fn set_watched(conn: &Connection, profile_id: &str, set_id: &str, finished: 
         )?;
         clear_progress(conn, profile_id, set_id)?;
     } else {
-        conn.execute("DELETE FROM watched WHERE profile_id = ?1 AND set_id = ?2", params![profile_id, set_id])?;
+        conn.execute(
+            "DELETE FROM watched WHERE profile_id = ?1 AND set_id = ?2",
+            params![profile_id, set_id],
+        )?;
     }
     Ok(())
 }
@@ -103,7 +123,12 @@ pub fn watchlist_for(conn: &Connection, profile_id: &str) -> rusqlite::Result<Ve
 /// row — see `record.rs` on why — so re-adding clears the tombstone instead
 /// of inserting a duplicate; the `WHERE removed_at IS NOT NULL` keeps a
 /// second `true` in a row from bumping `added_at` for no reason.
-pub fn set_watchlisted(conn: &Connection, profile_id: &str, set_id: &str, listed: bool) -> rusqlite::Result<()> {
+pub fn set_watchlisted(
+    conn: &Connection,
+    profile_id: &str,
+    set_id: &str,
+    listed: bool,
+) -> rusqlite::Result<()> {
     if listed {
         conn.execute(
             "INSERT INTO watchlist(profile_id, set_id, added_at, removed_at) VALUES (?1, ?2, ?3, NULL)
@@ -123,7 +148,8 @@ pub fn set_watchlisted(conn: &Connection, profile_id: &str, set_id: &str, listed
 /// The titles marked as a child's, for everyone on this player. Not scoped
 /// to a profile: see `schema.rs` on why.
 pub fn kids(conn: &Connection) -> rusqlite::Result<Vec<String>> {
-    let mut stmt = conn.prepare("SELECT set_id FROM kids WHERE removed_at IS NULL ORDER BY marked_at DESC")?;
+    let mut stmt =
+        conn.prepare("SELECT set_id FROM kids WHERE removed_at IS NULL ORDER BY marked_at DESC")?;
     let rows = stmt.query_map([], |row| row.get(0))?;
     rows.collect()
 }

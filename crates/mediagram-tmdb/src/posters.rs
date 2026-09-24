@@ -7,8 +7,8 @@
 //! from the cache is fetched if a key is configured, and skipped otherwise:
 //! a missing poster is a cosmetic loss, never a failed export.
 
-use std::time::Duration;
 use mlib_spec::Kind;
+use std::time::Duration;
 
 use crate::tmdb_client::TmdbApi;
 
@@ -64,7 +64,10 @@ async fn posters_for(api: &impl TmdbApi, kind: Kind, id: u64, key: &str) -> Vec<
     let show = details
         .poster_path
         .filter(|p| is_image_path(p))
-        .map(|path| PosterRef { key: key.to_owned(), path });
+        .map(|path| PosterRef {
+            key: key.to_owned(),
+            path,
+        });
     let seasons = details.seasons.into_iter().filter_map(|season| {
         let path = season.poster_path.filter(|p| is_image_path(p))?;
         let key = mlib_spec::package::season_poster_key(key, season.season_number);

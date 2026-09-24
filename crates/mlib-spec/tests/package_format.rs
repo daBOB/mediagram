@@ -91,7 +91,9 @@ fn manifest_round_trips_with_zero_posters() {
 #[test]
 fn manifest_allows_duplicate_poster_keys() {
     let mut with_duplicate = manifest();
-    with_duplicate.posters.push(with_duplicate.posters[0].clone());
+    with_duplicate
+        .posters
+        .push(with_duplicate.posters[0].clone());
     let text = serde_json::to_string(&with_duplicate).unwrap();
     let back: PackageManifest = serde_json::from_str(&text).unwrap();
     assert_eq!(back.posters.len(), 2);
@@ -248,10 +250,19 @@ fn poster_keys_accept_the_documented_shapes() {
     assert!(poster_key_is_valid("a-b-1"));
     // A season's artwork: one more part, `s` and digits, nothing else.
     assert!(poster_key_is_valid("tmdb-tv-550-s2"));
-    for bad in ["tmdb-tv-550-s", "tmdb-tv-550-2", "tmdb-tv-550-x2", "tmdb-tv-550-s2-s3", "tmdb-tv-550-S2"] {
+    for bad in [
+        "tmdb-tv-550-s",
+        "tmdb-tv-550-2",
+        "tmdb-tv-550-x2",
+        "tmdb-tv-550-s2-s3",
+        "tmdb-tv-550-S2",
+    ] {
         assert!(!poster_key_is_valid(bad), "`{bad}` must be rejected");
     }
-    assert_eq!(mlib_spec::package::season_poster_key("tmdb-tv-550", 2), "tmdb-tv-550-s2");
+    assert_eq!(
+        mlib_spec::package::season_poster_key("tmdb-tv-550", 2),
+        "tmdb-tv-550-s2"
+    );
 }
 
 /// The key reaches a file name, a manifest path and a tar member name, so
@@ -408,7 +419,10 @@ fn package_file_name_changes_only_at_the_day_boundary() {
     let just_after = package_file_name(midnight + 1, &digest([0; 4]));
     let last_second = package_file_name(midnight + 86_399, &digest([0; 4]));
     let next_midnight = package_file_name(midnight + 86_400, &digest([0; 4]));
-    assert_ne!(before, at, "the previous day must not share a name with this one");
+    assert_ne!(
+        before, at,
+        "the previous day must not share a name with this one"
+    );
     assert_eq!(at, just_after, "the same day must share one name");
     assert_ne!(
         last_second, next_midnight,

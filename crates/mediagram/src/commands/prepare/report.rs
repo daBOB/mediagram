@@ -11,7 +11,10 @@ pub(super) fn print_table(planned: &[Candidate], limit: u64) {
         "{:<44} {:>9} {:>6} {:>5} {:>11}  verdict",
         "file", "size", "audio", "subs", "estimated"
     );
-    for Candidate { file, size, plan, .. } in planned {
+    for Candidate {
+        file, size, plan, ..
+    } in planned
+    {
         let verdict = match plan.verdict {
             Verdict::AlreadyFits => "already fits".to_string(),
             Verdict::NothingToDrop => "nothing to drop".to_string(),
@@ -70,7 +73,6 @@ pub(super) fn warn_about_video_codecs(planned: &[Candidate]) {
         names.join(" / ")
     );
 }
-
 
 pub(super) fn truncate(s: &str, max: usize) -> String {
     if s.chars().count() <= max {

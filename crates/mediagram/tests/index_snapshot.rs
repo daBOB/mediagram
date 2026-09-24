@@ -1,8 +1,8 @@
 //! `index::snapshot::snapshot_to` against a real sqlite file: the resulting
 //! file opens independently and carries the same data as the live db.
 
-use mediagram::index::{db, rescan, snapshot};
 use mediagram::index::rescan::Seen;
+use mediagram::index::{db, rescan, snapshot};
 use mlib_spec::caption::{Caption, Kind, Part};
 use mlib_spec::ids::ProviderIds;
 

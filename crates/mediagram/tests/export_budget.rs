@@ -72,10 +72,7 @@ fn an_absurd_poster_count_cannot_overflow_the_estimate() {
 #[test]
 fn the_warn_threshold_includes_its_own_boundary_byte() {
     assert_eq!(verdict_for(24 * 1024 * 1024 - 1), Verdict::Fine);
-    assert!(matches!(
-        verdict_for(24 * 1024 * 1024),
-        Verdict::Large(_)
-    ));
+    assert!(matches!(verdict_for(24 * 1024 * 1024), Verdict::Large(_)));
     assert!(matches!(
         verdict_for(24 * 1024 * 1024 + 1),
         Verdict::Large(_)

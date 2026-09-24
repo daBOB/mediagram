@@ -39,7 +39,11 @@ fn an_unknown_field_leaves_the_last_known_position_standing() {
 fn one_file_of_a_folder_says_which_one_and_how_far_it_has_to_go() {
     // Four minutes of a 45 minute episode, done in 12 seconds: 20x, so
     // the 41 minutes still to copy take another two.
-    let line = render(&job(2, 10, 2700.0), &at(4.0, 1_200_000_000), Duration::from_secs(12));
+    let line = render(
+        &job(2, 10, 2700.0),
+        &at(4.0, 1_200_000_000),
+        Duration::from_secs(12),
+    );
     assert_eq!(
         line,
         "  [3/10] S01E03.mkv · 4.0 of 45.0 min (9%) · 1.20 GB · 20x · eta 2m03s"
@@ -48,13 +52,21 @@ fn one_file_of_a_folder_says_which_one_and_how_far_it_has_to_go() {
 
 #[test]
 fn a_single_file_is_not_counted_against_itself() {
-    let line = render(&job(0, 1, 2700.0), &at(4.0, 1_200_000_000), Duration::from_secs(12));
+    let line = render(
+        &job(0, 1, 2700.0),
+        &at(4.0, 1_200_000_000),
+        Duration::from_secs(12),
+    );
     assert!(line.starts_with("  S01E03.mkv · 4.0 of 45.0 min"));
 }
 
 #[test]
 fn a_source_of_unknown_length_reports_a_position_and_promises_nothing() {
-    let line = render(&job(0, 1, 0.0), &at(4.0, 1_200_000_000), Duration::from_secs(12));
+    let line = render(
+        &job(0, 1, 0.0),
+        &at(4.0, 1_200_000_000),
+        Duration::from_secs(12),
+    );
     assert_eq!(line, "  S01E03.mkv · 4.0 min · 1.20 GB · 20x");
 }
 

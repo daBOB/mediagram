@@ -91,10 +91,7 @@ fn empty_associated_data_still_authenticates() {
     assert_eq!(open(&key(), &sealed, b"").unwrap(), plaintext);
 
     let other = [8u8; 32];
-    assert!(matches!(
-        open(&other, &sealed, b""),
-        Err(EncryptError::Tag)
-    ));
+    assert!(matches!(open(&other, &sealed, b""), Err(EncryptError::Tag)));
 }
 
 /// The associated data is a JSON pointer, not a fixed-size field, so nothing

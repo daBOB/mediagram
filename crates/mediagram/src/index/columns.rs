@@ -31,7 +31,8 @@ where
     E: std::error::Error + Send + Sync + 'static,
 {
     let text: Option<String> = row.get(column)?;
-    text.map(|text| decode_text(row, column, &text, decode)).transpose()
+    text.map(|text| decode_text(row, column, &text, decode))
+        .transpose()
 }
 
 fn decode_text<T, E>(
@@ -47,4 +48,3 @@ where
     decode(text)
         .map_err(|err| rusqlite::Error::FromSqlConversionFailure(index, Type::Text, Box::new(err)))
 }
-

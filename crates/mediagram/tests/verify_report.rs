@@ -2,13 +2,13 @@
 //! index invariant check, and row/summary rendering. No Telegram connection
 //! is needed since `report` never performs IO.
 
+use mediagram::index::parts::{PartRow, all_parts};
 use mediagram::index::status::PartStatus;
 use mediagram::verify::render::{render_rows, summary_line};
 use mediagram::verify::report::{
     ExpectedPart, ObservedMessage, PartVerdict, SetReport, apply_hash, check_local_invariant,
     verify_size,
 };
-use mediagram::index::parts::{PartRow, all_parts};
 use mediagram::verify::{forget_stale_success, mark_verified, other_chat, verified_since};
 
 fn expected() -> ExpectedPart {
@@ -337,7 +337,12 @@ fn hash_check_overwrites_a_prior_verified_at() {
         size: Some(1024),
     };
     let v = verify_size(&expected, &observed);
-    let v = apply_hash(v, &"a".repeat(64), expected.sha256.as_deref(), 1_700_000_000);
+    let v = apply_hash(
+        v,
+        &"a".repeat(64),
+        expected.sha256.as_deref(),
+        1_700_000_000,
+    );
     assert_eq!(v.verified_at, Some(1_700_000_000));
 }
 
@@ -523,7 +528,18 @@ fn a_failing_part_forgets_its_old_success_and_a_passing_one_keeps_it() {
         [set_id],
     )
     .unwrap();
-    let ranges = [PartRange { idx: 0, off: 0, len: 1024 }, PartRange { idx: 1, off: 1024, len: 1024 }];
+    let ranges = [
+        PartRange {
+            idx: 0,
+            off: 0,
+            len: 1024,
+        },
+        PartRange {
+            idx: 1,
+            off: 1024,
+            len: 1024,
+        },
+    ];
     parts::insert_parts(&conn, set_id, &ranges).unwrap();
     mark_verified(&conn, set_id, 0, 1_700_000_000).unwrap();
     mark_verified(&conn, set_id, 1, 1_700_000_000).unwrap();

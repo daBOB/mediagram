@@ -160,8 +160,9 @@ pub(super) async fn fetch_details(api: &impl TmdbApi, id: u64, kind: Kind) -> Re
 /// Metadata for a course lesson. No lookup: TMDB has no courses, so
 /// everything comes from what the caller passed and from the file name.
 pub fn lesson(course: &str, input: &ResolveInput) -> ResolvedItem {
-    let (_, title) =
-        crate::media::file_names::split_number_and_title(crate::media::file_names::stem(&input.file_name));
+    let (_, title) = crate::media::file_names::split_number_and_title(
+        crate::media::file_names::stem(&input.file_name),
+    );
     ResolvedItem {
         kind: Kind::Tut,
         ids: ProviderIds::default(),

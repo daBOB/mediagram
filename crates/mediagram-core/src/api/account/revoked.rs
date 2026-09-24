@@ -84,7 +84,8 @@ mod tests {
     #[test]
     fn a_401_is_a_revoked_login_even_wrapped() {
         assert!(is_revoked(&rpc(401, "SESSION_REVOKED")));
-        let wrapped = anyhow::Error::new(rpc(401, "AUTH_KEY_UNREGISTERED")).context("downloading a chunk");
+        let wrapped =
+            anyhow::Error::new(rpc(401, "AUTH_KEY_UNREGISTERED")).context("downloading a chunk");
         assert!(is_revoked(wrapped.as_ref()));
     }
 

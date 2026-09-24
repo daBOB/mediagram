@@ -113,7 +113,10 @@ fn a_staging_directory_is_owner_only() {
     let parent = tempfile::tempdir().unwrap();
     let staging = Staging::create(parent.path(), "test_stage").unwrap();
 
-    let mode = std::fs::metadata(staging.path()).unwrap().permissions().mode();
+    let mode = std::fs::metadata(staging.path())
+        .unwrap()
+        .permissions()
+        .mode();
     assert_eq!(mode & 0o777, 0o700);
 }
 

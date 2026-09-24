@@ -273,9 +273,21 @@ fn an_empty_set_has_no_size_and_plans_nothing() {
 #[test]
 fn a_zero_length_part_inside_the_range_is_skipped() {
     let parts = vec![
-        PartSpan { idx: 0, off: 0, len: 10 },
-        PartSpan { idx: 1, off: 10, len: 0 },
-        PartSpan { idx: 2, off: 10, len: 10 },
+        PartSpan {
+            idx: 0,
+            off: 0,
+            len: 10,
+        },
+        PartSpan {
+            idx: 1,
+            off: 10,
+            len: 0,
+        },
+        PartSpan {
+            idx: 2,
+            off: 10,
+            len: 10,
+        },
     ];
     let steps = plan_reads(&parts, &ByteRange { start: 5, end: 14 });
     let read: Vec<u32> = steps.iter().map(|step| step.part_idx).collect();

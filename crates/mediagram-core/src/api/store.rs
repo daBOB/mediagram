@@ -60,12 +60,16 @@ pub(super) fn list_sets(core: &Core) -> Result<Vec<SetSummary>, CoreError> {
     }
     let conn = open_ro(&path)?;
     let sets = queries::list_playable(&conn).map_err(CoreError::io("reading the catalog"))?;
-    let ratings = crate::shows::certifications(&conn).map_err(CoreError::io("reading age ratings"))?;
+    let ratings =
+        crate::shows::certifications(&conn).map_err(CoreError::io("reading age ratings"))?;
     Ok(sets
         .iter()
         .map(|set| {
             let mut summary = dto::summary_from(set);
-            summary.fsk = summary.poster_key.as_ref().and_then(|key| ratings.get(key).cloned());
+            summary.fsk = summary
+                .poster_key
+                .as_ref()
+                .and_then(|key| ratings.get(key).cloned());
             summary
         })
         .collect())
@@ -88,7 +92,9 @@ pub(super) fn poster_path(core: &Core, poster_key: String) -> Option<String> {
         return Some(in_version.display().to_string());
     }
     let in_artwork = artwork_dir(core).join(&name);
-    in_artwork.exists().then(|| in_artwork.display().to_string())
+    in_artwork
+        .exists()
+        .then(|| in_artwork.display().to_string())
 }
 
 pub(super) fn total_size(core: &Core, set_id: String) -> Result<u64, CoreError> {
@@ -144,7 +150,11 @@ pub(super) fn facts(core: &Core) -> dto::CatalogFacts {
     // for.
     let published_at = std::fs::read_link(&dir)
         .ok()
-        .and_then(|target| target.file_name().map(|name| name.to_string_lossy().into_owned()))
+        .and_then(|target| {
+            target
+                .file_name()
+                .map(|name| name.to_string_lossy().into_owned())
+        })
         .as_deref()
         .and_then(pushed_at_of);
 

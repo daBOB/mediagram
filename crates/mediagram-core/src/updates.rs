@@ -88,7 +88,10 @@ pub fn device_from_caption(caption: &str) -> Option<&str> {
     let mut from = 0;
     while let Some(found) = caption[from..].find("device=") {
         let at = from + found;
-        let boundary = caption[..at].chars().next_back().is_none_or(|c| !is_word(c));
+        let boundary = caption[..at]
+            .chars()
+            .next_back()
+            .is_none_or(|c| !is_word(c));
         let rest = &caption[at + "device=".len()..];
         let end = rest.find(char::is_whitespace).unwrap_or(rest.len());
         if boundary && end > 0 {
@@ -113,7 +116,10 @@ pub struct Debouncer {
 
 impl Debouncer {
     pub fn new(window_ms: u64) -> Self {
-        Self { window_ms, due: [None; 2] }
+        Self {
+            window_ms,
+            due: [None; 2],
+        }
     }
 
     pub fn offer(&mut self, event: LibraryEvent, now_ms: u64) {

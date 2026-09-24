@@ -59,7 +59,9 @@ mod tests {
         }));
         // Wrapped the way `pump_step` wraps it, so the check has to look
         // past the context to find the refusal.
-        Err::<(), _>(error).context("downloading chunk").unwrap_err()
+        Err::<(), _>(error)
+            .context("downloading chunk")
+            .unwrap_err()
     }
 
     #[test]

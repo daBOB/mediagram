@@ -22,5 +22,7 @@ async fn the_session_store_opens_after_the_index_without_any_setup_call() {
 
     // Before the index configured SQLite on the session store's behalf, this
     // is where libsql asserted and took the process down.
-    SqliteSession::open(dir.path().join("session.sqlite")).await.unwrap();
+    SqliteSession::open(dir.path().join("session.sqlite"))
+        .await
+        .unwrap();
 }

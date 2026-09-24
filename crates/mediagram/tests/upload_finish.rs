@@ -16,7 +16,9 @@ async fn a_set_with_no_recorded_source_is_refused_before_sending() {
     let (dir, conn, set, _) = seeded_index(&caption).await;
     let transport = FakeTransport::new();
 
-    let refused = finish_one(&conn, &transport, 0, &set, dir.path()).await.unwrap_err();
+    let refused = finish_one(&conn, &transport, 0, &set, dir.path())
+        .await
+        .unwrap_err();
 
     assert!(format!("{refused:#}").contains("no recorded source path"));
     assert_eq!(transport.send_count(), 0);
@@ -30,7 +32,9 @@ async fn a_source_that_is_gone_is_refused_before_sending() {
     db::set_meta(&conn, &db::source_key(&set.set_id), gone.to_str().unwrap()).unwrap();
     let transport = FakeTransport::new();
 
-    let refused = finish_one(&conn, &transport, 0, &set, dir.path()).await.unwrap_err();
+    let refused = finish_one(&conn, &transport, 0, &set, dir.path())
+        .await
+        .unwrap_err();
 
     assert!(format!("{refused:#}").contains("unavailable"));
     assert_eq!(transport.send_count(), 0);
@@ -42,10 +46,17 @@ async fn a_source_that_changed_size_is_refused_before_sending() {
     let (dir, conn, set, _) = seeded_index(&caption).await;
     let source = dir.path().join("movie.mkv");
     std::fs::write(&source, vec![0u8; SIZE - 1]).unwrap();
-    db::set_meta(&conn, &db::source_key(&set.set_id), source.to_str().unwrap()).unwrap();
+    db::set_meta(
+        &conn,
+        &db::source_key(&set.set_id),
+        source.to_str().unwrap(),
+    )
+    .unwrap();
     let transport = FakeTransport::new();
 
-    let refused = finish_one(&conn, &transport, 0, &set, dir.path()).await.unwrap_err();
+    let refused = finish_one(&conn, &transport, 0, &set, dir.path())
+        .await
+        .unwrap_err();
 
     assert!(format!("{refused:#}").contains("changed since add"));
     assert_eq!(transport.send_count(), 0);
@@ -61,7 +72,9 @@ async fn a_finished_set_forgets_its_source() {
     db::set_meta(&conn, &key, source.to_str().unwrap()).unwrap();
     let transport = FakeTransport::new();
 
-    let complete = finish_one(&conn, &transport, 0, &set, dir.path()).await.unwrap();
+    let complete = finish_one(&conn, &transport, 0, &set, dir.path())
+        .await
+        .unwrap();
 
     assert!(complete);
     assert_eq!(transport.send_count(), 3);

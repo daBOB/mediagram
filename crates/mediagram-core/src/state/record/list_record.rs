@@ -41,7 +41,11 @@ pub(super) fn list_row(raw: &Value) -> Option<ListRow> {
         return None;
     }
     let removed = row.get("removed").and_then(Value::as_bool).unwrap_or(false);
-    Some(ListRow { set_id, updated_at, removed })
+    Some(ListRow {
+        set_id,
+        updated_at,
+        removed,
+    })
 }
 
 /// How long a list's name from another device's document may be — not
@@ -52,14 +56,26 @@ const MAX_LIST_NAME: usize = 200;
 pub(super) fn collection_row(raw: &Value) -> Option<CollectionRow> {
     let row = raw.as_object()?;
     let id = text_(row.get("id"))?;
-    let name: String = text_(row.get("name"))?.chars().take(MAX_LIST_NAME).collect();
+    let name: String = text_(row.get("name"))?
+        .chars()
+        .take(MAX_LIST_NAME)
+        .collect();
     let updated_at = js_number(row.get("updatedAt"));
     if !updated_at.is_finite() || updated_at <= 0.0 {
         return None;
     }
-    let items = as_array(row.get("items")).iter().filter_map(|value| text_(Some(value))).collect();
+    let items = as_array(row.get("items"))
+        .iter()
+        .filter_map(|value| text_(Some(value)))
+        .collect();
     let removed = row.get("removed").and_then(Value::as_bool).unwrap_or(false);
-    Some(CollectionRow { id, name, items, updated_at, removed })
+    Some(CollectionRow {
+        id,
+        name,
+        items,
+        updated_at,
+        removed,
+    })
 }
 
 #[cfg(test)]

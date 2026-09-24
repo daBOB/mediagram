@@ -169,4 +169,3 @@ impl TmdbApi for TmdbClient {
         }
     }
 }
-
