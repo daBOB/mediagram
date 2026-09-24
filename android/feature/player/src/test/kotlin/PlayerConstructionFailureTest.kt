@@ -36,7 +36,7 @@ class PlayerConstructionFailureTest {
             // Only now does the screen exist to care about it.
             val viewModel = testViewModel(handle)
 
-            assertEquals(PlayerUiState.Failed("no space left for the cache"), viewModel.state.value)
+            assertEquals(PlayerUiState.Failed("Could not prepare the player"), viewModel.state.value)
         }
 
     @Test
@@ -48,10 +48,10 @@ class PlayerConstructionFailureTest {
             val viewModel = testViewModel(handle)
             deferred.completeExceptionally(IOException("no space left for the cache"))
             advanceUntilIdle()
-            assertEquals(PlayerUiState.Failed("no space left for the cache"), viewModel.state.value)
+            assertEquals(PlayerUiState.Failed("Could not prepare the player"), viewModel.state.value)
 
             viewModel.open("s1")
 
-            assertEquals(PlayerUiState.Failed("no space left for the cache"), viewModel.state.value)
+            assertEquals(PlayerUiState.Failed("Could not prepare the player"), viewModel.state.value)
         }
 }

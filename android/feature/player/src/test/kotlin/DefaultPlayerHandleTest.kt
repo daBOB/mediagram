@@ -224,6 +224,6 @@ class DefaultPlayerHandleTest {
             deferred.completeExceptionally(IOException("no space left for the cache"))
             advanceUntilIdle()
 
-            assertEquals("no space left for the cache", errorMessage)
+            assertEquals("Could not prepare the player", errorMessage)
         }
 }

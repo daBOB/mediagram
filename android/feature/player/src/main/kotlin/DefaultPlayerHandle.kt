@@ -1,5 +1,6 @@
 package player
 
+import android.util.Log
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
@@ -74,7 +75,8 @@ class DefaultPlayerHandle
                 // error. That is exactly the state open() reloads from, which is
                 // what makes trying the same set again work rather than hang.
                 override fun onPlayerError(error: PlaybackException) {
-                    listener?.onError(error.message ?: "Playback failed")
+                    Log.w("Player", "playback failed", error)
+                    listener?.onError("Playback failed")
                 }
             }
 
@@ -96,7 +98,8 @@ class DefaultPlayerHandle
                     // Player.Listener.onPlayerError — there is no player yet
                     // to have raised that. Left uncaught, this reaches the
                     // process's default handler, which on a device is a crash.
-                    failConstruction(e.message ?: "Could not prepare the player")
+                    Log.w("Player", "could not prepare the player", e)
+                    failConstruction("Could not prepare the player")
                 }
             }
         }
