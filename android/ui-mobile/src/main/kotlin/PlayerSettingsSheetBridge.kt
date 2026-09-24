@@ -3,6 +3,13 @@ package ui
 import androidx.compose.runtime.Composable
 import player.PlayerChoices
 import player.PlayerViewModel
+import player.chooseAudioTrack
+import player.chooseSubtitleLanguage
+import player.nudgeSubtitleOffset
+import player.resetSubtitleOffset
+import player.setSpeed
+import player.setSubtitleBacking
+import player.setSubtitleSize
 
 /**
  * Wires [PlayerViewModel]'s subtitle methods onto [PlayerSettingsSheet] —

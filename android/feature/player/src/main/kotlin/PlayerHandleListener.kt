@@ -18,15 +18,26 @@ internal class PlayerHandleListener(
     private val isCurrentlyPlaying: () -> Boolean,
     private val notifyPlaying: (isPlaying: Boolean) -> Unit,
     private val notifyError: (message: String) -> Unit,
+    private val notifyEnded: () -> Unit,
+    private val notifySeeked: () -> Unit,
 ) : Player.Listener {
 
     override fun onIsPlayingChanged(isPlaying: Boolean) = notifyPlaying(isPlaying)
 
     override fun onPlaybackStateChanged(playbackState: Int) {
         if (playbackState == Player.STATE_READY) notifyPlaying(isCurrentlyPlaying())
+        if (playbackState == Player.STATE_ENDED) notifyEnded()
     }
 
     override fun onPlayerError(error: PlaybackException) {
         notifyError(error.message ?: "Playback failed")
+    }
+
+    override fun onPositionDiscontinuity(
+        oldPosition: Player.PositionInfo,
+        newPosition: Player.PositionInfo,
+        reason: Int,
+    ) {
+        if (reason == Player.DISCONTINUITY_REASON_SEEK) notifySeeked()
     }
 }

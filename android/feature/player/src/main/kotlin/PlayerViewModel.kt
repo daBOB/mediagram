@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import model.MediaSet
-import playback.AudioOption
 import playback.PlaybackCounters
 import playback.PlaybackTotals
 import playback.SubtitleTrackSource
@@ -25,7 +24,7 @@ import javax.inject.Inject
 /** Tracks what the player is doing for whichever set is currently open. */
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
-    private val handle: PlayerHandle,
+    internal val handle: PlayerHandle,
     counters: PlaybackCounters,
     private val repository: WatchStateRepository,
     private val recorder: ProgressRecorder,
@@ -56,14 +55,14 @@ class PlayerViewModel @Inject constructor(
     val player: StateFlow<Player?> = handle.player
 
     /** The ten-second save ticker and which set it saves against. */
-    private val session = PlayerSession(viewModelScope, handle, recorder)
+    internal val session = PlayerSession(viewModelScope, handle, recorder)
 
     private val _openSetId = MutableStateFlow<String?>(null)
 
     /** The open title's age rating, as the catalog listed it; see [open]. */
-    private val openFsk = MutableStateFlow<String?>(null)
+    internal val openFsk = MutableStateFlow<String?>(null)
 
-    private val choicesController =
+    internal val choicesController =
         PlayerChoicesController(viewModelScope, session, repository, catalogRepository, preferences, handle, subtitleTrackSource)
 
     /** The resolved set behind the open id, for the title line — null before it resolves, or with nothing open. */
@@ -75,8 +74,19 @@ class PlayerViewModel @Inject constructor(
     /** The open title's subtitle cues, once its chosen language's VTT has resolved — empty for "off" or a file with none. */
     val subtitleCues: StateFlow<List<TimedCue>> = choicesController.subtitleCues
 
-    private val marksController = PlayerMarksController(viewModelScope, session, repository, _openSetId, openFsk)
+    internal val marksController = PlayerMarksController(viewModelScope, session, repository, _openSetId, openFsk)
     val marks: StateFlow<PlayerMarksState?> = marksController.marks
+
+    /** What follows the open title, and the countdown that may start it unattended — ported from `refreshUpNext`/`startWhenReady` in `player.js`. */
+    private val upNextController = UpNextController(viewModelScope, handle, session, catalogRepository, choicesController.openSet)
+    val upNext: StateFlow<UpNextUiState> = upNextController.state
+
+    /** A title to navigate to, once — the UI layer owns `LibraryPositions`, so it (not this VM) moves there and calls [switchAcknowledged]. */
+    val pendingSwitch: StateFlow<PendingPlayerSwitch?> = upNextController.pendingSwitch
+    fun switchAcknowledged() = upNextController.switchAcknowledged()
+
+    /** The run changed for the still-open title (the catalog was not Ready yet when it opened). */
+    fun updateRun(setId: String, run: List<String>) = upNextController.updateRun(setId, run)
 
     init {
         handle.setListener(this)
@@ -101,7 +111,7 @@ class PlayerViewModel @Inject constructor(
      * republishes rather than reloading (`DefaultPlayerHandle.open`), and
      * only a real reload floors the rate to 1x (`DefaultPlayerHandle.openOn`).
      */
-    fun open(setId: String, fsk: String? = null) {
+    fun open(setId: String, run: List<String> = emptyList(), fsk: String? = null) {
         val sameTitle = session.openSetId == setId
         session.open(setId)
         openFsk.value = fsk
@@ -119,32 +129,20 @@ class PlayerViewModel @Inject constructor(
         val progress = repository.snapshot.value.progress.find { it.setId == setId }
         val resumeSeconds = ResumePoint.resumeAt(progress?.let { ProgressPoint(it.at, it.duration) })
         val startAtMs = ((resumeSeconds ?: 0.0) * 1000).toLong()
-        handle.open(setId, startAtMs)
-        if (!sameTitle) viewModelScope.launch { choicesController.resolve(setId) }
+        // False only for the one title a gated up-next switch is headed to
+        // — asked before `startTitle`, which consumes the same pending gate.
+        handle.open(setId, startAtMs, upNextController.playWhenReadyFor(setId))
+        if (!sameTitle) {
+            viewModelScope.launch { choicesController.resolve(setId) }
+            upNextController.startTitle(setId, run)
+        }
     }
 
-    /**
-     * Re-opens the title that just failed, at wherever it was last saved
-     * to — the phone's touch equivalent of the web's seek-to-retry. [open]
-     * takes its "same title" path here (nothing about the choice already
-     * made needs re-resolving), but the failed player was left in
-     * `STATE_IDLE`, so this *is* a real reload and does floor the rate to
-     * 1x inside the handle; unlike a fresh title, nothing corrects that
-     * back on its own, so it is corrected here.
-     */
-    fun retry() {
-        val setId = session.openSetId ?: return
-        open(setId, openFsk.value)
-        handle.setPlaybackSpeed(choicesController.choices.value.speed)
-    }
+    /** Starts whatever follows the open title, the same as its own "Play next" button. */
+    fun playNext() = upNextController.playNow()
 
-    fun setSpeed(rate: Float) = choicesController.setSpeed(rate)
-    fun chooseAudioTrack(option: AudioOption) = choicesController.chooseAudioTrack(option)
-    fun chooseSubtitleLanguage(languageOrOff: String) = choicesController.chooseSubtitleLanguage(languageOrOff)
-    fun setSubtitleSize(percent: Int) = choicesController.setSubtitleSize(percent)
-    fun setSubtitleBacking(stored: String) = choicesController.setSubtitleBacking(stored)
-    fun nudgeSubtitleOffset(steps: Int) = choicesController.nudgeSubtitleOffset(steps)
-    fun resetSubtitleOffset() = choicesController.resetSubtitleOffset()
+    /** The viewer dismissed the up-next panel; the standing button stays. */
+    fun cancelUpNext() = upNextController.cancel()
 
     /** Called when the player screen leaves composition, so codecs and audio focus aren't held idle. */
     fun stop() {
@@ -158,6 +156,7 @@ class PlayerViewModel @Inject constructor(
         openFsk.value = null
         _openSetId.value = null
         choicesController.reset()
+        upNextController.stop()
         viewModelScope.launch {
             if (setId != null && atMs != null) {
                 recorder.save(setId, atMs / 1000.0, durationMs?.let { it / 1000.0 })
@@ -177,20 +176,20 @@ class PlayerViewModel @Inject constructor(
      */
     fun save() = session.save()
 
-    fun toggleWatchlist() = marksController.toggleWatchlist()
-    fun toggleKids() = marksController.toggleKids()
-    fun setInList(listId: String, included: Boolean) = marksController.setInList(listId, included)
-    fun createListAndAdd(name: String) = marksController.createListAndAdd(name)
-
     override fun onPlayingChanged(isPlaying: Boolean) {
         _state.value = if (isPlaying) PlayerUiState.Playing else PlayerUiState.Paused
         session.onPlayingChanged(isPlaying)
+        upNextController.onPlayingChanged(isPlaying)
     }
 
     override fun onError(message: String) {
         session.stopTicking()
         _state.value = PlayerUiState.Failed(message)
     }
+
+    override fun onEnded() = upNextController.onEnded()
+
+    override fun onSeeked() = upNextController.onSeeked()
 
     override fun onCleared() {
         session.stopTicking()

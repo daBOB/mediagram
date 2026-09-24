@@ -47,13 +47,19 @@ class PlayerSession(
 
     /**
      * Writes wherever the player currently is, against whichever set is
-     * open. A no-op with nothing open or nothing trustworthy yet
+     * open. A no-op with nothing open, nothing trustworthy yet
      * ([PlayerHandle.positionMs] is `null` before the player is ready or
-     * after an error).
+     * after an error), or a position under [MIN_SAVE_MS]: an up-next switch
+     * opens the next title before the old one's own synchronous "stopped
+     * playing" event has finished landing, and that event still names the
+     * set this now points to — without the floor, its otherwise-ordinary
+     * pause-save would write the next episode onto Continue at 0s, before
+     * a frame of it has actually played.
      */
     fun save() {
         val setId = openSetId ?: return
         val atMs = handle.positionMs() ?: return
+        if (atMs < MIN_SAVE_MS) return
         val durationMs = handle.durationMs()
         scope.launch { recorder.save(setId, atMs / 1000.0, durationMs?.let { it / 1000.0 }) }
     }
@@ -70,5 +76,6 @@ class PlayerSession(
 
     private companion object {
         const val TICK_MS = 10_000L
+        const val MIN_SAVE_MS = 1_000L
     }
 }

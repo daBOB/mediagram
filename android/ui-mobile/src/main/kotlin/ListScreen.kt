@@ -39,6 +39,8 @@ internal fun ListScreen(
     list: ListOfSets,
     sets: List<MediaSet>,
     onPlay: (setId: String) -> Unit,
+    /** Starts the list at its first title — `null` with nothing to play. */
+    onPlayAll: (() -> Unit)?,
     onRename: (String) -> Unit,
     onDelete: () -> Unit,
     onRemove: (setId: String) -> Unit,
@@ -47,9 +49,15 @@ internal fun ListScreen(
     var deleting by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Row(modifier = Modifier.fillMaxWidth().padding(Spacing.medium), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = { renaming = true }) { Text("Rename") }
-            TextButton(onClick = { deleting = true }) { Text("Delete list") }
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(Spacing.medium),
+            horizontalArrangement = if (onPlayAll != null) Arrangement.SpaceBetween else Arrangement.End,
+        ) {
+            onPlayAll?.let { PlayAllButton(onClick = it) }
+            Row {
+                TextButton(onClick = { renaming = true }) { Text("Rename") }
+                TextButton(onClick = { deleting = true }) { Text("Delete list") }
+            }
         }
         if (sets.isEmpty()) {
             CenteredMessage("Nothing on this list yet. Add titles from the player.")

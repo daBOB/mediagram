@@ -1,6 +1,5 @@
 package player
 
-import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import kotlinx.coroutines.CancellationException
@@ -10,7 +9,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import playback.setUri
 import javax.inject.Inject
 
 /**
@@ -45,7 +43,7 @@ class DefaultPlayerHandle @Inject constructor(
     /** A set requested through [open] before the player finished building. */
     private var pendingOpen: PendingOpen? = null
 
-    private data class PendingOpen(val setId: String, val startAtMs: Long)
+    private data class PendingOpen(val setId: String, val startAtMs: Long, val playWhenReady: Boolean)
 
     /** Whichever set was last handed to the player; [stop] clears it. */
     private var currentSetId: String? = null
@@ -60,6 +58,8 @@ class DefaultPlayerHandle @Inject constructor(
         isCurrentlyPlaying = { _player.value?.isPlaying ?: false },
         notifyPlaying = ::notifyPlaying,
         notifyError = { message -> listener?.onError(message) },
+        notifyEnded = { listener?.onEnded() },
+        notifySeeked = { listener?.onSeeked() },
     )
 
     init {
@@ -70,7 +70,7 @@ class DefaultPlayerHandle @Inject constructor(
                 _player.value = built
                 pendingOpen?.let { pending ->
                     pendingOpen = null
-                    openOn(built, pending.setId, pending.startAtMs)
+                    openOn(built, pending.setId, pending.startAtMs, pending.playWhenReady)
                 }
                 // After the pending open, whose own reset to 1x this overrides.
                 pendingSpeed?.let { rate ->
@@ -104,7 +104,7 @@ class DefaultPlayerHandle @Inject constructor(
      * left strictly alone, and anything else — a different set, an errored
      * player, a stopped one — is loaded for real.
      */
-    override fun open(setId: String, startAtMs: Long) {
+    override fun open(setId: String, startAtMs: Long, playWhenReady: Boolean) {
         constructionError?.let { message ->
             // There will never be a player to open this on, and the caller
             // has just reset itself to "preparing" expecting one. Nothing
@@ -114,14 +114,14 @@ class DefaultPlayerHandle @Inject constructor(
         }
         val current = _player.value
         if (current == null) {
-            pendingOpen = PendingOpen(setId, startAtMs)
+            pendingOpen = PendingOpen(setId, startAtMs, playWhenReady)
             return
         }
         if (setId == currentSetId && current.playbackState != Player.STATE_IDLE) {
             republishPlaybackState(current)
             return
         }
-        openOn(current, setId, startAtMs)
+        openOn(current, setId, startAtMs, playWhenReady)
     }
 
     override fun setListener(listener: PlayerHandle.Listener?) {
@@ -149,18 +149,15 @@ class DefaultPlayerHandle @Inject constructor(
 
     override fun durationMs(): Long? = _player.value?.trustedDurationMs()
 
-    /**
-     * A settled player does not repeat the event that settled it, so a
-     * subscriber that has just reset itself to "preparing" needs telling
-     * again that playback is under way. A player still buffering is the one
-     * case to stay quiet for: its own ready event is still coming, and
-     * reporting "paused" ahead of it would replace a truthful spinner with a
-     * false still frame.
-     */
-    private fun republishPlaybackState(player: Player) {
-        if (player.playbackState == Player.STATE_BUFFERING) return
-        notifyPlaying(player.isPlaying)
+    override fun bufferedPositionMs(): Long? = _player.value?.trustedBufferedPositionMs()
+
+    override fun play() {
+        _player.value?.play()
     }
+
+    override fun isLoading(): Boolean = _player.value?.isLoading ?: false
+
+    private fun republishPlaybackState(player: Player) = player.republishTo(::notifyPlaying)
 
     /**
      * A construction failure is permanent — the deferred that failed is the
@@ -179,18 +176,9 @@ class DefaultPlayerHandle @Inject constructor(
         _player.value?.setPlaybackSpeed(rate) ?: run { pendingSpeed = rate }
     }
 
-    private fun openOn(player: Player, setId: String, startAtMs: Long) {
+    private fun openOn(player: Player, setId: String, startAtMs: Long, playWhenReady: Boolean) {
         currentSetId = setId
-        // The two-argument overload, not `setMediaItem(item)` then a seek:
-        // seeking after `prepare()` starts a frame at zero and jumps from
-        // it, briefly showing the top of the title before the resume point.
-        player.setMediaItem(MediaItem.fromUri(setUri(setId)), startAtMs)
-        player.prepare()
-        player.playWhenReady = true
-        // The singleton player never resets this itself; PlayerViewModel
-        // corrects to the remembered speed once it knows one, but this is
-        // the floor under that, so a title never inherits a leftover rate.
-        player.setPlaybackSpeed(1f)
+        player.openReal(setId, startAtMs, playWhenReady)
     }
 
     private fun notifyPlaying(isPlaying: Boolean) {

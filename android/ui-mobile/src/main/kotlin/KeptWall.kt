@@ -107,7 +107,10 @@ private fun WallHeading(title: String, total: Int) {
  * The Kids tab — `viewKids` in app.js: what the ratings put there, then what
  * was marked by hand, each under its own heading once there is more than one
  * kind to tell apart. A show's card opens the show, as it does on its own
- * shelf; a hand-marked title is a plate, as on the other kept walls.
+ * shelf; a hand-marked title plays directly into the marked-by-hand run —
+ * `app.js:552`'s `setGrid(byHand, (set) => play(set, byHand))` — rather than
+ * opening its own show or standing alone; no Play all here, unlike a list's:
+ * the web has none on this wall either.
  */
 @Composable
 internal fun KidsWall(
@@ -116,6 +119,7 @@ internal fun KidsWall(
     columns: Int,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
+    onPlayRun: (setId: String, run: List<String>) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         WallHeading(KeptKind.KIDS.label, shelf.total)
@@ -125,6 +129,7 @@ internal fun KidsWall(
         }
         val positions = watch.progress.associateBy { it.setId }
         val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
+        val byHandIds = shelf.byHand.map(MediaSet::setId)
         val parts = listOf("Movies" to shelf.films, "Series" to shelf.series, "Marked by hand" to shelf.byHand)
             .filter { (_, items) -> items.isNotEmpty() }
         LazyVerticalGrid(
@@ -150,7 +155,7 @@ internal fun KidsWall(
                                 progress = watchedFractionOf(positions[item.setId]),
                                 watched = item.setId in watchedIds,
                             ),
-                            onClick = { onOpenTitle(item.setId) },
+                            onClick = { onPlayRun(item.setId, byHandIds) },
                         )
                     }
                 }

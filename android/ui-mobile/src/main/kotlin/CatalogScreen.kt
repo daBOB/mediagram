@@ -42,12 +42,14 @@ fun CatalogScreen(
     onOpenCollection: (key: String) -> Unit,
     onOpenList: (id: String) -> Unit,
     onCreateList: (name: String) -> Unit,
+    /** Starts a title with an explicit run — the Kids wall's "Marked by hand" own "Play all". */
+    onPlayRun: (setId: String, run: List<String>) -> Unit,
 ) {
     when (state) {
         CatalogUiState.Loading -> CenteredMessage("Loading your library…")
         CatalogUiState.Empty -> CenteredMessage("The library is empty.")
         is CatalogUiState.Failed -> CenteredMessage(state.message)
-        is CatalogUiState.Ready -> Shelves(state, fetching, onOpenTitle, onOpenCollection, onOpenList, onCreateList)
+        is CatalogUiState.Ready -> Shelves(state, fetching, onOpenTitle, onOpenCollection, onOpenList, onCreateList, onPlayRun)
     }
 }
 
@@ -69,6 +71,7 @@ private fun Shelves(
     onOpenCollection: (key: String) -> Unit,
     onOpenList: (id: String) -> Unit,
     onCreateList: (name: String) -> Unit,
+    onPlayRun: (setId: String, run: List<String>) -> Unit,
 ) {
     val shelves = state.shelves
     if (shelves.isEmpty()) {
@@ -128,6 +131,7 @@ private fun Shelves(
                 onOpenCollection = onOpenCollection,
                 onOpenList = onOpenList,
                 onCreateList = onCreateList,
+                onPlayRun = onPlayRun,
             )
         }
     }
@@ -150,11 +154,12 @@ private fun KeptTabContent(
     onOpenCollection: (key: String) -> Unit,
     onOpenList: (id: String) -> Unit,
     onCreateList: (name: String) -> Unit,
+    onPlayRun: (setId: String, run: List<String>) -> Unit,
 ) {
     when (kind) {
         KeptKind.CONTINUE -> KeptWall(kind, continueWall(shelves, watch), watch, columns, onOpenTitle)
         KeptKind.WATCHLIST -> KeptWall(kind, watchlistWall(shelves, watch), watch, columns, onOpenTitle)
-        KeptKind.KIDS -> KidsWall(kidsShelf(shelves, watch), watch, columns, onOpenTitle, onOpenCollection)
+        KeptKind.KIDS -> KidsWall(kidsShelf(shelves, watch), watch, columns, onOpenTitle, onOpenCollection, onPlayRun)
         KeptKind.COLLECTIONS -> ListsScreen(lists = watch.collections, onOpen = onOpenList, onCreate = onCreateList)
     }
 }

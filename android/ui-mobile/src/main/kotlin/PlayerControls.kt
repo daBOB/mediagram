@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -75,6 +73,10 @@ fun PlayerControls(
     onOpenSettings: () -> Unit,
     /** The catalogue's own runtime, in whole seconds — trusted over media3's until it has one; see [ResumePoint.trustedRuntime]. */
     catalogedDurationSecs: Int?,
+    /** Whether a next title exists at all — the standing button stays even once the up-next card is cancelled. */
+    hasNext: Boolean,
+    nextTitleLine: String,
+    onPlayNext: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val playPause = rememberPlayPauseButtonState(player)
@@ -161,39 +163,27 @@ fun PlayerControls(
                 enabled = true,
                 onClick = onToggleStats,
             )
+            // Standing, not just in the card: cancelling the card's own offer
+            // never withdraws this one.
+            if (hasNext) {
+                GlyphButton(
+                    glyph = "⏭",
+                    description = if (nextTitleLine.isNotEmpty()) "Play next: $nextTitleLine" else "Play next",
+                    enabled = true,
+                    onClick = onPlayNext,
+                )
+            }
             // As the web shows it: a number beside the gear only while it differs from the default.
             if (speed != 1f) TimeText(speedLabel(speed))
             GlyphButton(glyph = "⚙", description = "Playback settings", enabled = true, onClick = onOpenSettings)
         }
-        Slider(
-            value = positionMs.toFloat(),
-            onValueChange = { scrubbingTo = it },
-            // On release, not during: every position a thumb passes over
-            // would otherwise be a seek, and every seek is a read from
-            // Telegram at a fresh offset.
-            onValueChangeFinished = {
-                scrubbingTo?.let { player.seekTo(it.toLong()) }
-                scrubbingTo = null
-            },
-            // Never an empty range: a set whose length is not known yet would
-            // give 0f..0f, which Slider rejects.
-            valueRange = 0f..durationMs.coerceAtLeast(1L).toFloat(),
-            enabled = durationMs > 0L,
-            colors = SliderDefaults.colors(
-                thumbColor = Color.White,
-                activeTrackColor = Color.White,
-            ),
-            modifier = Modifier.fillMaxWidth(),
+        PlayerScrubber(
+            positionMs = positionMs,
+            durationMs = durationMs,
+            endsLabel = endsLabel,
+            scrubbingTo = scrubbingTo,
+            onScrubbingToChange = { scrubbingTo = it },
+            onSeek = player::seekTo,
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            TimeText(clockTime(positionMs))
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
-                TimeText(clockTime(durationMs))
-                if (endsLabel.isNotEmpty()) TimeText(endsLabel)
-            }
-        }
     }
 }

@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,17 +28,19 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Spacing
 import kotlinx.coroutines.delay
+import player.UpNextPhase
 import player.titleLine
 import player.PlayerUiState
 import player.PlayerViewModel
+import player.createListAndAdd
+import player.retry
+import player.setInList
+import player.toggleKids
+import player.toggleWatchlist
 
 /**
  * Hosts the shared [PlayerViewModel] behind a `PlayerSurface`, keeping the
@@ -57,7 +58,7 @@ import player.PlayerViewModel
 // which Compose still marks experimental.
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun PlayerScreen(setId: String, fsk: String?, onBack: () -> Unit) {
+fun PlayerScreen(setId: String, run: List<String>, fsk: String?, onBack: () -> Unit, onSwitch: (setId: String, run: List<String>) -> Unit) {
     val viewModel: PlayerViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val player by viewModel.player.collectAsStateWithLifecycle()
@@ -65,32 +66,15 @@ fun PlayerScreen(setId: String, fsk: String?, onBack: () -> Unit) {
     val openSet by viewModel.openSet.collectAsStateWithLifecycle()
     val choices by viewModel.choices.collectAsStateWithLifecycle()
     val subtitleCues by viewModel.subtitleCues.collectAsStateWithLifecycle()
-    val activity = LocalContext.current.findActivity()
+    val upNext by viewModel.upNext.collectAsStateWithLifecycle()
 
-    LaunchedEffect(setId) { viewModel.open(setId, fsk) }
-    DisposableEffect(Unit) {
-        onDispose {
-            if (shouldStopOnDispose(activity?.isChangingConfigurations == true)) {
-                viewModel.stop()
-            }
-        }
-    }
-
-    // Backstop for a kill that skips onDispose entirely — recents swiped,
-    // the process trimmed. Not a duplicate of the DisposableEffect above:
-    // that one only runs when this Composition is actually torn down, and
-    // an Activity can reach ON_STOP (screen off, task-switched away) while
-    // the Composition it hosts is still there, primed to resume.
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) viewModel.save()
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
-    KeepScreenOnWhile(isPlaying = state is PlayerUiState.Playing)
+    PlayerNavigationEffects(viewModel, setId, run, fsk, onSwitch)
+    PlayerLifecycleEffects(
+        viewModel,
+        // The countdown drops `isPlaying` (the title has ended) and the gate
+        // wait pauses on purpose; neither is a viewer looking away.
+        isPlaying = state is PlayerUiState.Playing || upNext.phase != UpNextPhase.HIDDEN || upNext.awaitingStart,
+    )
 
     // Shown when the screen opens, so a viewer finds out the bar is there at
     // all, then left to take itself away.
@@ -115,11 +99,20 @@ fun PlayerScreen(setId: String, fsk: String?, onBack: () -> Unit) {
     // that could drift apart.
     val barShown = controlsShown && controlsMayShow(state)
 
+    // The up-next card appearing is itself a reason to bring the bar back —
+    // a viewer who let it fade is exactly who most wants to see the panel.
+    LaunchedEffect(upNext.phase) { if (upNext.phase != UpNextPhase.HIDDEN) controlsShown = true }
+
+    // The screen's own bottom, in root coordinates — how far the card lifts
+    // to clear the bar, measured the same way `SubtitleLayer` clears it.
+    var screenBottom by remember { mutableStateOf<Float?>(null) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .pointerInput(Unit) { detectTapGestures { controlsShown = !controlsShown } },
+            .pointerInput(Unit) { detectTapGestures { controlsShown = !controlsShown } }
+            .onGloballyPositioned { screenBottom = it.boundsInRoot().bottom },
         contentAlignment = Alignment.Center,
     ) {
         player?.let { current ->
@@ -133,6 +126,9 @@ fun PlayerScreen(setId: String, fsk: String?, onBack: () -> Unit) {
                     speed = choices.speed,
                     onOpenSettings = { settingsShown = true },
                     catalogedDurationSecs = openSet?.durationSecs,
+                    hasNext = upNext.hasNext,
+                    nextTitleLine = upNext.titleLine,
+                    onPlayNext = viewModel::playNext,
                     modifier = Modifier.align(Alignment.BottomCenter).onGloballyPositioned { barTop = it.boundsInRoot().top },
                 )
                 // Top-right, opposite back: the web keeps these in the player
@@ -162,6 +158,15 @@ fun PlayerScreen(setId: String, fsk: String?, onBack: () -> Unit) {
                     onDismiss = { settingsShown = false },
                 )
             }
+            UpNextCard(
+                state = upNext,
+                onPlayNow = viewModel::playNext,
+                onCancel = viewModel::cancelUpNext,
+                // `null` while the bar is hidden — nothing to clear then.
+                barTop = barTop.takeIf { barShown },
+                screenBottom = screenBottom,
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
         }
 
         when (state) {

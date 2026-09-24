@@ -1,11 +1,86 @@
 package ui
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import player.PlayerViewModel
+
+/**
+ * The side effects [PlayerScreen] runs for its own lifecycle rather than for
+ * anything on screen — split out to keep that file under the project's line
+ * guideline. Stops playback when the screen leaves composition for real, not
+ * on a rotation (see [shouldStopOnDispose]), saves on `ON_STOP` as a backstop
+ * for a kill that skips `onDispose` entirely, and keeps the screen awake
+ * while [isPlaying].
+ */
+@Composable
+internal fun PlayerLifecycleEffects(viewModel: PlayerViewModel, isPlaying: Boolean) {
+    val activity = LocalContext.current.findActivity()
+    DisposableEffect(Unit) {
+        onDispose {
+            if (shouldStopOnDispose(activity?.isChangingConfigurations == true)) {
+                viewModel.stop()
+            }
+        }
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) viewModel.save()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    KeepScreenOnWhile(isPlaying = isPlaying)
+}
+
 /**
  * A rotation disposes and recreates `PlayerScreen`'s whole composition
  * exactly the way leaving it for the catalog does; the two are told apart
  * by whether the Activity itself is mid configuration change. Stopping on
  * a rotation would restart the same set from zero every time the device
- * turns, which is worse than the drop-to-catalog bug this replaced. Split
- * out to keep `PlayerScreen.kt` under the project's line guideline.
+ * turns, which is worse than the drop-to-catalog bug this replaced.
  */
 internal fun shouldStopOnDispose(isChangingConfigurations: Boolean): Boolean = !isChangingConfigurations
+
+/**
+ * Opens [setId], keeps its run current, and carries out an up-next switch
+ * once the VM asks for one — split out of [PlayerScreen] to keep that file
+ * under the project's line guideline.
+ *
+ * The switch moves `LibraryPositions` through [onSwitch] before anything
+ * else: a rotation or process restore reads that saved frame, and one still
+ * naming the title that had just finished would replay it instead of the
+ * one actually playing. `viewModel.open` for the new id then runs as usual,
+ * from the `LaunchedEffect(setId)` below, once `onSwitch` recomposes this
+ * with it.
+ */
+@Composable
+internal fun PlayerNavigationEffects(
+    viewModel: PlayerViewModel,
+    setId: String,
+    run: List<String>,
+    fsk: String?,
+    onSwitch: (setId: String, run: List<String>) -> Unit,
+) {
+    val pendingSwitch by viewModel.pendingSwitch.collectAsStateWithLifecycle()
+    LaunchedEffect(setId) { viewModel.open(setId, run, fsk) }
+    // The run alone changing (the catalog finishing its own load after this
+    // title already opened) must not reopen the title — `open` would, since
+    // that is not `sameTitle` to it either; only the run itself moves.
+    LaunchedEffect(setId, run) { viewModel.updateRun(setId, run) }
+    LaunchedEffect(pendingSwitch) {
+        pendingSwitch?.let { switch ->
+            onSwitch(switch.setId, switch.run)
+            viewModel.switchAcknowledged()
+        }
+    }
+}

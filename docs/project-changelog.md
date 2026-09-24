@@ -5,6 +5,39 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 2026-09-25
+
+**Fixed**
+
+- Android player: an up-next switch (autoplay or "Play now") now moves
+  `LibraryPositions` before it reopens anything, through a new
+  `LibraryPositions.replacePlayer(id, run)` and `UpNextController`'s own
+  `pendingSwitch`, rather than calling back into the ViewModel directly.
+  Previously a rotation or process restore right after the switch reopened
+  the episode that had just finished, since the saved frame still named it.
+  The autoplay gate also now treats a stopped loader with anything at all
+  buffered as ready (`PlayerHandle.isLoading()`), on top of the ported 60s
+  threshold: media3's default load control caps how far it will ever buffer
+  ahead well under that figure, so a high-bitrate file previously waited
+  out the full 45s patience ceiling every time. The gate is cancelled the
+  moment playback starts by hand, matching the web's own
+  `stopWaitingToStart`, so a poll landing after a viewer paused again can no
+  longer call `play()` over it; the screen also now stays on through the
+  countdown and the gate wait, both of which used to read as "not playing".
+  Kids "Marked by hand" tiles play into that marked-by-hand run itself, the
+  way `app.js`'s own `play(set, byHand)` does, in place of opening the
+  tile's own title or show — its "Play all" button is removed to match, a
+  deliberate difference recorded in phase 07's own notes since the web has
+  none there either. The run a title opened with is now recomputed once the
+  catalog finishes loading after it (a cold resume or process death could
+  otherwise leave a title with no next at all), a seek while paused updates
+  the up-next card the same way the web's `timeupdate` does, and a save
+  landing against a title switched to less than a second in is now dropped
+  rather than putting an unwatched episode onto Continue at 0s. The up-next
+  card is measured clear of the transport bar and the system's own bottom
+  inset the same way `SubtitleLayer` clears the picture, rather than a fixed
+  padding that clipped under three-button navigation.
+
 ## 2026-09-24
 
 **Added**
@@ -123,6 +156,25 @@ to `main`. Full phase-by-phase detail lives in
   still in flight wins over whatever it answers late. Size and backing are
   remembered one value at a time, as the web does, so a size picked early
   never writes the default backing over a remembered one.
+- Android player: up next and queues, ported from `up-next.js`/`autoplay.js`/
+  `player.js`. In the last 30 seconds a card offers the next title with
+  "Play now" and "Cancel"; once the title actually ends (never before — the
+  bug the web fixed by separating the two) a ten-second countdown starts it
+  unattended, waiting on the same buffer gate the web polls (a minute
+  buffered ahead, or everything a short title has, or 45 seconds' patience,
+  whichever comes first) so a metered link never starts into a stall. A
+  standing "Play next" button in the transport bar stays even after a
+  cancel, which is remembered per title for the app's own lifetime — the
+  phone's equivalent of the web's in-memory `Set`, lost only on a process
+  death the way a reload forgets it there. "Next" is a show's or course's
+  own flattened order (`catalog.runFor`, crossing a season or folder
+  boundary the same way `catalog.playOrder` already does) unless the title
+  opened from a hand-built list or the Kids wall's "Marked by hand", which
+  now also gets a "Play all" button next to Lists' own; both pass their run
+  explicitly rather than have the player guess it. `PlayerHandle.open`
+  gains a `playWhenReady` flag (default true) and a `play()`/
+  `bufferedPositionMs()` pair for the gate to drive; `PlayerHandle.Listener`
+  gains `onEnded()`.
 
 ## 2026-09-23
 

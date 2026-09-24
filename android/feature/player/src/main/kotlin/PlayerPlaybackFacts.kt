@@ -18,3 +18,8 @@ internal fun Player.trustedDurationMs(): Long? {
     if (playbackState == Player.STATE_IDLE) return null
     return duration.takeIf { it != C.TIME_UNSET && it > 0 }
 }
+
+internal fun Player.trustedBufferedPositionMs(): Long? {
+    if (playbackState == Player.STATE_IDLE) return null
+    return bufferedPosition
+}

@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.mediaSet
+import catalog.runFor
 import system.FetchUiState
 import system.FetchViewModel
 
@@ -33,8 +34,13 @@ internal fun LibraryBranches(
         // that wants the space under the system bars.
         FrameKind.PLAYER -> {
             val setId = at.setId ?: return
+            val set = catalogState.mediaSet(setId)
+            // An explicit run (a list, or the Kids marked-by-hand wall) wins;
+            // everything else works its own out from the catalog — a title's
+            // own collection, or nothing for a film.
+            val run = at.run ?: set?.let { runFor(it, catalogState) }.orEmpty()
             BackHandler(onBack = at::pop)
-            PlayerScreen(setId = setId, fsk = catalogState.mediaSet(setId)?.fsk, onBack = at::pop)
+            PlayerScreen(setId = setId, run = run, fsk = set?.fsk, onBack = at::pop, onSwitch = at::replacePlayer)
         }
 
         FrameKind.MENU -> {
@@ -104,10 +110,16 @@ internal fun LibraryBranches(
         // the collection branch above rather than something under it: a
         // list is never reached through the catalog shelves.
         FrameKind.LIST -> ResolvedBranch(resolved.list, catalogState, Destination.List(LOADING), menuActions, profileBar, at, { Destination.List(it.name) }) { list ->
+            val sets = list.items.mapNotNull(catalogState::mediaSet)
+            val ids = sets.map { it.setId }
+            // Every row plays into the list, not just from where it was
+            // tapped onward — the same run either way, `nextInQueue` walks
+            // forward from wherever a viewer started.
             ListScreen(
                 list = list,
-                sets = list.items.mapNotNull(catalogState::mediaSet),
-                onPlay = at::openPlayer,
+                sets = sets,
+                onPlay = { setId -> at.openPlayer(setId, ids) },
+                onPlayAll = sets.firstOrNull()?.let { first -> { at.openPlayer(first.setId, ids) } },
                 onRename = { name -> catalogViewModel.renameList(list.id, name) },
                 onDelete = { catalogViewModel.deleteList(list.id); at.pop() },
                 onRemove = { removedId -> catalogViewModel.setInList(list.id, removedId, false) },
@@ -132,6 +144,7 @@ internal fun LibraryBranches(
                 onOpenCollection = at::openCollection,
                 onOpenList = at::openList,
                 onCreateList = catalogViewModel::createList,
+                onPlayRun = at::openPlayer,
             )
         }
     }

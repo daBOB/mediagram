@@ -30,6 +30,8 @@ private data class Frame(val kind: FrameKind, val payload: String)
 
 private const val FIELD_SEP = "\u001F"
 private const val FRAME_SEP = "\u001E"
+/** Joins a player frame's own setId to the explicit run it was opened with, when it has one — see [LibraryPositions.run]. */
+private const val RUN_SEP = "\u001D"
 
 private fun encode(frames: List<Frame>): String = frames.joinToString(FRAME_SEP) { "${it.kind.name}$FIELD_SEP${it.payload}" }
 
@@ -89,7 +91,20 @@ internal class LibraryPositions(frames: MutableState<String>) {
 
     private fun payloadOf(kind: FrameKind): String? = stack.lastOrNull { it.kind == kind }?.payload
 
-    val setId: String? get() = payloadOf(FrameKind.PLAYER)
+    val setId: String? get() = payloadOf(FrameKind.PLAYER)?.substringBefore(RUN_SEP)
+
+    /**
+     * The explicit run the open title was started on — a hand-built list or
+     * the Kids wall's "Marked by hand", the only two callers of [openPlayer]
+     * that pass one. `null` everywhere else, where the player works out its
+     * own run from the catalog instead (`catalog.runFor`).
+     */
+    val run: List<String>?
+        get() = payloadOf(FrameKind.PLAYER)?.let { payload ->
+            val at = payload.indexOf(RUN_SEP)
+            if (at == -1) null else payload.substring(at + 1).split(RUN_SEP)
+        }
+
     val titleId: String? get() = payloadOf(FrameKind.TITLE)
     val collection: String? get() = payloadOf(FrameKind.COLLECTION)
     val season: String? get() = payloadOf(FrameKind.SEASON)
@@ -103,7 +118,27 @@ internal class LibraryPositions(frames: MutableState<String>) {
 
     private fun push(kind: FrameKind, payload: String) = setStack(stack + Frame(kind, payload))
 
-    fun openPlayer(id: String) = push(FrameKind.PLAYER, id)
+    /** @param run The explicit run [id] belongs to (a list or the Kids marked-by-hand wall); `null` everywhere else. */
+    fun openPlayer(id: String, run: List<String>? = null) {
+        push(FrameKind.PLAYER, playerPayload(id, run))
+    }
+
+    /**
+     * An in-player switch to a different title (up-next's autoplay or "Play
+     * now") — replaces the top PLAYER frame in place rather than pushing a
+     * new one, so back still leaves to whatever opened the player, not to
+     * the title that just finished; and so a rotation or process restore
+     * reopens the title actually playing, not the one that ended. A no-op
+     * with the player not on top, which should not happen.
+     */
+    fun replacePlayer(id: String, run: List<String>) {
+        val current = stack
+        if (current.lastOrNull()?.kind != FrameKind.PLAYER) return
+        setStack(current.dropLast(1) + Frame(FrameKind.PLAYER, playerPayload(id, run)))
+    }
+
+    private fun playerPayload(id: String, run: List<String>?) =
+        if (run.isNullOrEmpty()) id else "$id$RUN_SEP${run.joinToString(RUN_SEP)}"
     fun openSearch() = push(FrameKind.SEARCH, "")
     fun openGenre(name: String) = push(FrameKind.GENRE, name)
     fun openTitle(id: String) = push(FrameKind.TITLE, id)
