@@ -1,12 +1,15 @@
 package ui.player
 
 import android.os.Bundle
+import android.view.ContextThemeWrapper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import player.PlayerViewModel
 
 /**
@@ -18,10 +21,13 @@ class PlayerLifecycleTestActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            var shown by rememberSaveable { mutableStateOf(true) }
-            hide = { shown = false }
-            if (shown) {
-                PlayerLifecycle(viewModel = viewModel, setId = "set-one", fsk = "12")
+            // Exercise the production ContextWrapper traversal as well as the lifecycle observer.
+            CompositionLocalProvider(LocalContext provides ContextThemeWrapper(this, android.R.style.Theme_Material)) {
+                var shown by rememberSaveable { mutableStateOf(true) }
+                hide = { shown = false }
+                if (shown) {
+                    PlayerLifecycle(viewModel = viewModel, setId = "set-one", fsk = "12")
+                }
             }
         }
     }

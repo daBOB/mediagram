@@ -77,5 +77,6 @@ class PlayerLifecycleTest {
         compose.runOnUiThread { controller.pause().stop() }
         compose.waitForIdle()
         verify(exactly = 1) { viewModel.stop() }
+        verify(exactly = 0) { viewModel.save() }
     }
 }
