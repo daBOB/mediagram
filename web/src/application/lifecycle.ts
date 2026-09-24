@@ -7,6 +7,7 @@ import type { CatalogEvents } from "../catalog-events";
 import type { CatalogFollower } from "./catalog-follow";
 import type { SeriesPreload } from "../cache/series-preload";
 import type { SheetStore } from "../thumbs/sheets";
+import type { AudioTrackReader } from "../catalog/audio-tracks";
 
 type Sync = Pick<StateSync, "once"> | null;
 
@@ -57,6 +58,7 @@ export interface ApplicationResources {
   transcodes?: Pick<TranscodeRegistry, "stopAll">;
   preload?: Pick<SeriesPreload, "stop">;
   sheets?: Pick<SheetStore, "stop">;
+  audio?: Pick<AudioTrackReader, "stop">;
   server?: Pick<RunningServer, "close">;
   state?: { close(): void };
   telegram?: { disconnect(): Promise<void> };
@@ -73,7 +75,11 @@ export function shutdownFor(resources: ApplicationResources): () => Promise<void
     };
     // Close admission before the first wait. Keep HTTP and Telegram available
     // until the work already using them has stopped and cleaned up.
-    const mediaStopping = [attempt(() => resources.preload?.stop()), attempt(() => resources.sheets?.stop())];
+    const mediaStopping = [
+      attempt(() => resources.preload?.stop()),
+      attempt(() => resources.sheets?.stop()),
+      attempt(() => resources.audio?.stop()),
+    ];
     for (const timer of resources.timers.splice(0)) clearInterval(timer);
     await attempt(() => resources.updates?.stop());
     await attempt(() => resources.events?.close());

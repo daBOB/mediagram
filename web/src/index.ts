@@ -150,6 +150,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     // route, the first time a viewer opens it. The index cannot answer this: it
     // stores distinct language codes, not stream ordinals.
     const audio = new AudioTrackReader(endpoint);
+    resources.audio = audio;
 
     // The one thing this process writes. A store that cannot be opened says so
     // and the player carries on without a memory, because a watch position is

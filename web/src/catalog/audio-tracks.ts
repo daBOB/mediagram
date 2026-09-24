@@ -85,7 +85,7 @@ function text(value: unknown): string | null {
 }
 
 /** Runs ffprobe. Separated so a test can supply one that does not. */
-export type Prober = (url: string) => Promise<string | null>;
+export type Prober = (url: string, signal: AbortSignal) => Promise<string | null>;
 
 /**
  * Reads a set's audio streams, once per set.
@@ -98,31 +98,47 @@ export type Prober = (url: string) => Promise<string | null>;
  */
 export class AudioTrackReader {
   private readonly cache = new Map<string, AudioTrack[]>();
+  private readonly tasks = new Set<Promise<AudioTrack[]>>();
+  private readonly stopping = new AbortController();
 
   constructor(
     private readonly endpoint: { readonly baseUrl: string },
     private readonly probe: Prober = ffprobeStreams,
   ) {}
 
-  async read(setId: string): Promise<AudioTrack[]> {
+  read(setId: string): Promise<AudioTrack[]> {
+    if (this.stopping.signal.aborted) return Promise.resolve([]);
     const held = this.cache.get(setId);
-    if (held) return held;
+    if (held) return Promise.resolve(held);
+    const task = this.readUncached(setId).finally(() => { this.tasks.delete(task); });
+    this.tasks.add(task);
+    return task;
+  }
 
-    const url = `${this.endpoint.baseUrl}/api/sets/${encodeURIComponent(setId)}/stream`;
+  /** Close admission, cancel active probes and wait for their children to exit. */
+  async stop(): Promise<void> {
+    this.stopping.abort();
+    await Promise.all(this.tasks);
+  }
+
+  private async readUncached(setId: string): Promise<AudioTrack[]> {
     let tracks: AudioTrack[] = [];
     try {
-      const json = await this.probe(url);
+      const url = `${this.endpoint.baseUrl}/api/sets/${encodeURIComponent(setId)}/stream`;
+      const json = await this.probe(url, this.stopping.signal);
+      if (this.stopping.signal.aborted) return [];
       if (json !== null) tracks = parseAudioTracks(json);
     } catch {
       // Left empty on purpose. See the note above.
     }
-    this.cache.set(setId, tracks);
+    if (!this.stopping.signal.aborted) this.cache.set(setId, tracks);
     return tracks;
   }
 }
 
 /** The real prober: ffprobe, bounded, JSON on stdout, or `null`. */
-async function ffprobeStreams(url: string): Promise<string | null> {
+async function ffprobeStreams(url: string, signal: AbortSignal): Promise<string | null> {
+  signal.throwIfAborted();
   const proc = Bun.spawn(
     [
       "ffprobe",
@@ -141,18 +157,31 @@ async function ffprobeStreams(url: string): Promise<string | null> {
     { stdout: "pipe", stderr: "ignore" },
   );
 
-  const timer = setTimeout(() => {
+  const kill = (how: "SIGTERM" | "SIGKILL") => {
     try {
-      proc.kill("SIGKILL");
+      proc.kill(how);
     } catch {
       // Already gone.
     }
-  }, PROBE_TIMEOUT_MS);
+  };
+  let force: ReturnType<typeof setTimeout> | undefined;
+  const abort = () => {
+    kill("SIGTERM");
+    force = setTimeout(() => kill("SIGKILL"), 3000);
+  };
+  signal.addEventListener("abort", abort, { once: true });
+  if (signal.aborted) abort();
+  const timer = setTimeout(() => kill("SIGKILL"), PROBE_TIMEOUT_MS);
 
   try {
     const [json, code] = await Promise.all([new Response(proc.stdout).text(), proc.exited]);
     return code === 0 ? json : null;
   } finally {
+    // A stdout read failure must not leave the child behind either.
+    if (proc.exitCode === null && proc.signalCode === null) kill("SIGKILL");
     clearTimeout(timer);
+    clearTimeout(force);
+    signal.removeEventListener("abort", abort);
+    await proc.exited;
   }
 }
