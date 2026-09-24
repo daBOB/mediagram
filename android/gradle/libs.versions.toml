@@ -172,8 +172,8 @@ turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine
 [bundles]
 # material3 is deliberately not here: this bundle reaches every Compose
 # module including ui-tv, which must never see M3 at compile time. Modules
-# that draw with M3 (core:designsystem, ui-mobile via app.android.mobile.screen,
-# and the app module's still-placeholder TV branch) declare it themselves.
+# that draw with M3 (core:designsystem, ui-mobile via app.android.mobile.screen)
+# declare it themselves.
 compose = [
     "androidx-compose-ui",
     "androidx-compose-ui-tooling-preview",

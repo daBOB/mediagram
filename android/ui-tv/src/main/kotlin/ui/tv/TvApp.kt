@@ -30,10 +30,10 @@ import setup.SetupViewModel
  *
  * What differs from the phone is only how the answer is drawn: a
  * television is read across a room rather than held in the hand, so the
- * content sits inside [Overscan] instead of behind window insets, in the
- * catalogue theme's own [TvTheme] instead of `MediagramTheme`. The two
- * branches below are placeholders — the real library and setup screens are
- * later phases of this same surface.
+ * content composes in the catalogue theme's own [TvTheme] instead of
+ * `MediagramTheme`. The two branches below are stubs until the real
+ * screens exist, so the placeholder text draws inside [TvSafeArea] rather
+ * than whatever safe area a library wall or setup flow will end up owning.
  */
 @Composable
 fun TvApp() {
@@ -44,7 +44,9 @@ fun TvApp() {
         LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { setupViewModel.recheck() }
 
         TvShell {
-            Text(text = stubLabel(setupState))
+            TvSafeArea {
+                Text(text = stubLabel(setupState))
+            }
         }
     }
 }
@@ -60,6 +62,16 @@ fun TvApp() {
  * root M3 `Surface`, so `content` and everything it composes inherit
  * [designsystem.Palette.Text] the same way a phone screen inherits it from
  * `MediagramTheme`'s `Surface` without asking for a colour itself.
+ *
+ * This is colour only: no padding, no centring. Each screen owns its own
+ * safe area, because the right one depends on what the screen draws — a
+ * lazy catalogue wall applies [Overscan] as `contentPadding` on the list
+ * itself rather than a wrapping `Modifier.padding`, so a focused card's
+ * growth under [TvFocus.Scale] lands inside the scrollable viewport
+ * instead of being clipped by a fixed inset; full-bleed content such as
+ * the video player ignores [Overscan] entirely, since filling the frame is
+ * the point. A screen with no layout of its own yet reaches for
+ * [TvSafeArea] instead.
  */
 @Composable
 internal fun TvShell(content: @Composable () -> Unit) {
@@ -71,12 +83,23 @@ internal fun TvShell(content: @Composable () -> Unit) {
                 contentColor = MaterialTheme.colorScheme.onBackground,
             ),
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
-            contentAlignment = Alignment.Center,
-        ) {
-            content()
-        }
+        content()
+    }
+}
+
+/**
+ * The safe area a screen reaches for when it has nothing of its own to
+ * lay out: padded by [Overscan] and centred, the way the stubs in [TvApp]
+ * need to be drawn. A real lazy wall or a full-bleed player does not use
+ * this — see [TvShell] for why each of those owns a different safe area.
+ */
+@Composable
+internal fun TvSafeArea(content: @Composable () -> Unit) {
+    Box(
+        modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
+        contentAlignment = Alignment.Center,
+    ) {
+        content()
     }
 }
 

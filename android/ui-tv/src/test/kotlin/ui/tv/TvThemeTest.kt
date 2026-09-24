@@ -61,6 +61,29 @@ class TvThemeTest {
         assertEquals(TvTypeScale.body.fontSize, bodySize)
     }
 
+    /**
+     * No composition needed for this one: [TvColors] is a plain value, so
+     * the roles a later screen actually reaches for — the ground it draws
+     * on, the plate a card sits on, the text on both, and the two rule
+     * weights a divider or a focus outline would use — can be pinned
+     * straight against [Palette] the way [CatalogueColorsTest] pins the
+     * phone's scheme, without a Robolectric activity in between.
+     */
+    @Test
+    fun coreRolesComeFromThePalette() {
+        assertEquals(Palette.Ground, TvColors.background)
+        assertEquals(Palette.Text, TvColors.onBackground)
+        assertEquals(Palette.Page, TvColors.surface)
+        assertEquals(Palette.Text, TvColors.onSurface)
+        assertEquals(Palette.RuleStrong, TvColors.border)
+        assertEquals(Palette.Rule, TvColors.borderVariant)
+        assertEquals(Palette.Imprint, TvColors.primary)
+        assertEquals(Palette.Sunk, TvColors.surfaceVariant)
+        assertEquals(Palette.Figures, TvColors.onSurfaceVariant)
+        assertEquals(Palette.Ochre, TvColors.error)
+        assertEquals(Palette.Sage, TvColors.tertiary)
+    }
+
     private fun show(content: @Composable () -> Unit) {
         compose.runOnUiThread {
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()

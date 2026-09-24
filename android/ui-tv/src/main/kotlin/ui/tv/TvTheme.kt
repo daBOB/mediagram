@@ -19,7 +19,7 @@ import designsystem.TvTypeScale
  * retyped for the television, so both theme adapters read one palette the
  * same way and a hex changed in one place changes on both surfaces.
  */
-private val TvColors =
+internal val TvColors =
     darkColorScheme(
         primary = Palette.Imprint,
         onPrimary = Palette.Ground,

@@ -19,6 +19,7 @@ import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.ClickableSurfaceGlow
 import androidx.tv.material3.ClickableSurfaceScale
 import androidx.tv.material3.ClickableSurfaceShape
+import androidx.tv.material3.MaterialTheme
 import designsystem.Palette
 
 /**
@@ -74,6 +75,14 @@ object TvFocus {
     @Composable
     fun cardScale(): CardScale = CardDefaults.scale(focusedScale = Scale, pressedScale = Scale)
 
+    /**
+     * `CardBorder` has no disabled slot to leave unset — only `border`,
+     * `focusedBorder` and `pressedBorder` — and tv-material defaults the
+     * two left here to values already cut from [Shape]: `border` falls
+     * back to `Border.None`, itself a `RectangleShape`, and `pressedBorder`
+     * falls back to whatever `focusedBorder` resolved to, which is the
+     * square one passed below. Nothing here can default to a rounded shape.
+     */
     @Composable
     fun cardBorder(): CardBorder =
         CardDefaults.border(
@@ -98,10 +107,23 @@ object TvFocus {
     fun surfaceScale(): ClickableSurfaceScale =
         ClickableSurfaceDefaults.scale(focusedScale = Scale, pressedScale = Scale)
 
+    /**
+     * `ClickableSurfaceBorder` carries two states `CardBorder` does not:
+     * `disabledBorder`, which falls back to `border` (`Border.None`, a
+     * `RectangleShape` — already square), and `focusedDisabledBorder`,
+     * which does not chain from anything passed here and instead falls
+     * back to tv-material's own default — a rounded `ShapeDefaults.Small`
+     * corner nothing on this screen ever draws intentionally. Passed
+     * explicitly here, on [Shape], so a surface that is ever both focused
+     * and disabled still reads as this catalogue's square plate rather
+     * than tv-material's own rounded one.
+     */
     @Composable
     fun surfaceBorder(): ClickableSurfaceBorder =
         ClickableSurfaceDefaults.border(
             focusedBorder = Border(border = BorderStroke(BorderWidth, Palette.Imprint), shape = Shape),
+            focusedDisabledBorder =
+                Border(border = BorderStroke(BorderWidth, MaterialTheme.colorScheme.border), shape = Shape),
         )
 
     /** Explicit for the same reason as [cardGlow]: no glow on a plain surface either. */
