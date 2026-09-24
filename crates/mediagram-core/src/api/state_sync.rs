@@ -48,8 +48,8 @@ impl Core {
 
         match peer_for(&self, &handle) {
             Ok(peer) => {
-                let client = session::client(&self).await;
-                let channel = TelegramStateChannel::new(&self, client, peer);
+                let (client, owner) = session::connection(&self).await;
+                let channel = TelegramStateChannel::new(&self, client, owner, peer);
                 sync::serialized(&self.sync_memo, &handle, &self.state_db, &channel, &device).await
             }
             Err(err) => SyncOutcome {

@@ -1,8 +1,8 @@
 //! Editing state documents and recovering missing messages or refused pins.
 
-use grammers_mtsender::InvocationError;
+use grammers_mtsender::{InvocationError, SenderPoolFatHandle};
 
-use crate::api::account::revoked::{checked, unless_revoked};
+use crate::api::account::revoked::{checked_for, unless_revoked_for};
 use crate::api::{Core, CoreError};
 use crate::state::channel::state_caption;
 
@@ -10,7 +10,7 @@ use crate::state::channel::state_caption;
 pub(super) trait DocumentWriter {
     type Upload: Clone;
 
-    async fn upload(&self, body: &str) -> Result<Self::Upload, CoreError>;
+    async fn upload(&self, body: &str) -> Result<Self::Upload, std::io::Error>;
     async fn edit(
         &self,
         id: i32,
@@ -24,12 +24,16 @@ pub(super) trait DocumentWriter {
 
 pub(super) async fn put(
     core: &Core,
+    owner: &SenderPoolFatHandle,
     writer: &impl DocumentWriter,
     body: String,
     message_id: Option<i32>,
 ) -> Result<i32, CoreError> {
     let caption = state_caption(device_of(&body).as_deref().unwrap_or(""));
-    let uploaded = writer.upload(&body).await?;
+    let uploaded = checked_for(core, owner, writer.upload(&body).await, |err| {
+        CoreError::network("the state document could not be uploaded")(err)
+    })
+    .await?;
     if let Some(id) = message_id {
         match writer.edit(id, caption.clone(), uploaded.clone()).await {
             Ok(()) => return Ok(id),
@@ -38,24 +42,25 @@ pub(super) async fn put(
             Err(InvocationError::Rpc(rpc)) if rpc.name == "MESSAGE_ID_INVALID" => {}
             Err(err) => {
                 let fallback = CoreError::network("the state document could not be edited")(&err);
-                return Err(unless_revoked(core, &err, fallback).await);
+                return Err(unless_revoked_for(core, owner, &err, fallback).await);
             }
         }
     }
-    send_and_pin(core, writer, caption, uploaded).await
+    send_and_pin(core, owner, writer, caption, uploaded).await
 }
 
 async fn send_and_pin<W: DocumentWriter>(
     core: &Core,
+    owner: &SenderPoolFatHandle,
     writer: &W,
     caption: String,
     uploaded: W::Upload,
 ) -> Result<i32, CoreError> {
-    let id = checked(core, writer.send(caption, uploaded).await, |err| {
+    let id = checked_for(core, owner, writer.send(caption, uploaded).await, |err| {
         CoreError::network("the state document could not be sent")(err)
     })
     .await?;
-    if let Err(err) = checked(core, writer.pin(id).await, |err| {
+    if let Err(err) = checked_for(core, owner, writer.pin(id).await, |err| {
         CoreError::network("the state document's pin was refused")(err)
     })
     .await

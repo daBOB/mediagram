@@ -9,6 +9,63 @@ use grammers_tl_types::{enums, types};
 
 use super::*;
 
+async fn list_pinned<C: Responses<Item = Vec<u8>>>(
+    core: &Core,
+    pinned: impl Responses<Item = Message>,
+    download: impl Fn(&Document) -> C,
+) -> Result<Vec<ChannelDocument>, CoreError> {
+    let (_, owner) = crate::api::account::session::connection(core).await;
+    super::list_pinned(core, &owner, pinned, download).await
+}
+
+async fn download_capped(
+    core: &Core,
+    chunks: impl Responses<Item = Vec<u8>>,
+) -> Result<Option<String>, CoreError> {
+    let (_, owner) = crate::api::account::session::connection(core).await;
+    super::download_capped(core, &owner, chunks).await
+}
+
+#[tokio::test]
+async fn stale_listing_and_download_refusals_preserve_the_replacement_login() {
+    use crate::api::account::session;
+
+    for during_download in [false, true] {
+        let dir = tempfile::tempdir().unwrap();
+        let core = Core::at(dir.path());
+        let (_, owner) = session::connection(&core).await;
+        let mut key = vec![9; 260];
+        key[..4].copy_from_slice(&2_i32.to_be_bytes());
+        {
+            let mut state = core.state.lock().await;
+            *state = crate::api::State::default();
+            std::fs::write(dir.path().join("session.key"), key).unwrap();
+            state.client = Some(session::connect(&core));
+        }
+        let replacement = session::connection(&core).await.1;
+        let response = if during_download {
+            Ok(message(
+                &offline_client(),
+                1,
+                "#mlib-state device=x",
+                document(1),
+            ))
+        } else {
+            Err(rpc(401, "SESSION_REVOKED"))
+        };
+
+        let error = super::list_pinned(&core, &owner, Scripted::new(vec![response]), |_| {
+            Scripted::new(vec![Err(rpc(401, "SESSION_REVOKED"))])
+        })
+        .await
+        .unwrap_err();
+
+        assert!(matches!(error, CoreError::Network(_)));
+        assert!(session::is_current(&core, &replacement).await);
+        assert_eq!(session::load_auth_key(dir.path()).unwrap().1, [9; 256]);
+    }
+}
+
 struct Scripted<T> {
     responses: std::vec::IntoIter<Result<T, InvocationError>>,
     polls: Rc<Cell<usize>>,

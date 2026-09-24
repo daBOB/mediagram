@@ -3,11 +3,13 @@
 
 use std::io::Write;
 
+use super::responses::Responses;
 use grammers_client::Client;
 use grammers_client::media::Document;
+use grammers_mtsender::SenderPoolFatHandle;
 
 use super::index::UNREADABLE;
-use crate::api::account::revoked::checked;
+use crate::api::account::revoked::checked_for;
 use crate::api::{Core, CoreError, store};
 use crate::versions::{Staging, count_playable};
 
@@ -21,6 +23,7 @@ const MAX_INDEX_BYTES: u64 = 256 * 1024 * 1024;
 pub(super) async fn install(
     core: &Core,
     client: &Client,
+    owner: &SenderPoolFatHandle,
     document: &Document,
     version: &str,
 ) -> Result<u64, CoreError> {
@@ -28,6 +31,7 @@ pub(super) async fn install(
     download(
         core,
         client,
+        owner,
         document,
         &staging.dir().join(mlib_spec::schema::INDEX_FILE),
     )
@@ -50,14 +54,23 @@ fn install_proven(staging: Staging<'_>, version: &str) -> Result<u64, CoreError>
 async fn download(
     core: &Core,
     client: &Client,
+    owner: &SenderPoolFatHandle,
     document: &Document,
     path: &std::path::Path,
+) -> Result<(), CoreError> {
+    download_with(core, owner, path, client.iter_download(document)).await
+}
+
+async fn download_with(
+    core: &Core,
+    owner: &SenderPoolFatHandle,
+    path: &std::path::Path,
+    mut chunks: impl Responses<Item = Vec<u8>>,
 ) -> Result<(), CoreError> {
     const WRITING: &str = "writing the downloaded index";
     let mut file = std::fs::File::create(path).map_err(CoreError::io(WRITING))?;
     let mut written: u64 = 0;
-    let mut chunks = client.iter_download(document);
-    while let Some(chunk) = checked(core, chunks.next().await, |err| {
+    while let Some(chunk) = checked_for(core, owner, chunks.next_response().await, |err| {
         CoreError::network("the index download was interrupted")(err)
     })
     .await?
@@ -70,6 +83,10 @@ async fn download(
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "download_tests.rs"]
+mod download_tests;
 
 #[cfg(test)]
 mod tests {

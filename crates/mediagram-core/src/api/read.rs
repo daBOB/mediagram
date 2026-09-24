@@ -2,6 +2,7 @@
 //! and download loop `mediagram serve` uses, collected into a buffer rather
 //! than streamed into an HTTP response body.
 
+use grammers_mtsender::SenderPoolFatHandle;
 use std::collections::HashMap;
 
 use grammers_session::types::{PeerId, PeerRef};
@@ -67,7 +68,15 @@ pub(super) async fn read(
         .min(total - 1);
     let steps = range::plan_reads(&spans, &ByteRange { start: offset, end });
 
-    let client = session::client(core).await;
+    let (client, owner, documents) = {
+        let mut state = core.state.lock().await;
+        let live = state.client.get_or_insert_with(|| session::connect(core));
+        (
+            live.client.clone(),
+            live.handle.clone(),
+            state.documents.clone(),
+        )
+    };
     // Every channel is looked up before any byte is fetched, so a part this
     // device cannot address fails the read as that, not as a broken download.
     let handles = library::read(&library::path(core))?;
@@ -75,7 +84,6 @@ pub(super) async fn read(
     for location in &locations {
         channels.insert(location.chat_id, channel_ref(&handles, location.chat_id)?);
     }
-    let documents = core.state.lock().await.documents.clone();
     let parts = Parts {
         client: &client,
         documents: &documents,
@@ -100,7 +108,7 @@ pub(super) async fn read(
     };
     let (fetched, drained) = tokio::join!(fetch, drain);
     if let Err(err) = fetched.and(drained) {
-        return Err(failed(core, INTERRUPTED, err).await);
+        return Err(failed(core, &owner, INTERRUPTED, err).await);
     }
     Ok(out)
 }
@@ -109,9 +117,14 @@ const INTERRUPTED: &str = "the download ended before it finished";
 
 /// What Kotlin is told when a Telegram call fails: `what`, with the cause
 /// logged in Rust — or `NotAuthorized` when the login itself was refused.
-async fn failed(core: &Core, what: &str, err: anyhow::Error) -> CoreError {
+async fn failed(
+    core: &Core,
+    owner: &SenderPoolFatHandle,
+    what: &str,
+    err: anyhow::Error,
+) -> CoreError {
     let fallback = CoreError::network(what)(&err);
-    revoked::unless_revoked(core, err.as_ref(), fallback).await
+    revoked::unless_revoked_for(core, owner, err.as_ref(), fallback).await
 }
 
 /// How to address the channel a part lives in.

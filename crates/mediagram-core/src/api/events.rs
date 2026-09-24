@@ -6,131 +6,25 @@
 //! Events are hints; `catch_up` does not replay offline channel changes.
 //! Callers run an ordinary sync round whenever they start listening.
 
-use std::collections::VecDeque;
-use std::time::Duration;
-
-use grammers_client::client::{UpdateStream, UpdatesConfiguration};
-use grammers_mtsender::InvocationError;
 use grammers_session::types::PeerId;
 use grammers_tl_types as tl;
-use tokio::time::Instant;
 
-use crate::updates::{ChannelUpdate, Debouncer, LibraryEvent, UpdateKind, classify};
+use crate::updates::{ChannelUpdate, LibraryEvent, UpdateKind};
 
-use super::account::{session, subscribe};
 use super::channel::library;
 use super::{Core, CoreError};
 
-/// A burst — an upload's part, index, pin and unpin — folds into one event.
-const WINDOW_MS: u64 = 5_000;
+mod listener;
+mod open;
+pub(super) use listener::Listener;
 
-/// Updates held while nobody is waiting. They are hints, so dropping the
-/// excess when the app is slow to ask loses nothing a round won't find.
-const QUEUE_LIMIT: usize = 100;
-
-/// One connection's update stream, and what it has seen but not yet said.
-pub(super) struct Listener {
-    stream: UpdateStream,
-    debouncer: Debouncer,
-    ready: VecDeque<LibraryEvent>,
-    started: Instant,
-}
-
-/// Waits for the next change worth a round in the library `handle` names.
-///
-/// Holds only the listener's own lock while it waits — never the state lock
-/// every read takes — so a wait of hours does not stall playback.
+/// Holds only the listener lock while waiting, so idle listening never stalls playback.
 pub(super) async fn next(
     core: &Core,
     handle: &str,
     own_device: &str,
 ) -> Result<LibraryEvent, CoreError> {
-    let channel = channel_of(core, handle)?;
-    let mut slot = core.events.lock().await;
-    if slot.is_none() {
-        *slot = Some(open(core).await?);
-    }
-    let listener = slot.as_mut().expect("just set");
-    match listener.wait(channel, own_device).await {
-        Ok(event) => Ok(event),
-        Err(err) => {
-            // A stopped sender pool needs a new listener; other failures keep
-            // the stream so grammers can retry its pending request.
-            if matches!(err, InvocationError::Dropped) {
-                *slot = None;
-            }
-            Err(CoreError::network("stopped listening for library changes")(
-                err,
-            ))
-        }
-    }
-}
-
-async fn open(core: &Core) -> Result<Listener, CoreError> {
-    // Subscribe before taking the one-shot receiver, so failures can retry.
-    subscribe::subscribe(core).await?;
-    let (client, updates) = session::updates_receiver(core).await;
-    let updates = updates.ok_or_else(|| {
-        CoreError::Network("this connection's updates are already being read".into())
-    })?;
-    // Recover from the freshly subscribed state; this does not replay offline
-    // channel changes. Grammers retries getDifference after cancellation.
-    let configuration = UpdatesConfiguration {
-        catch_up: true,
-        update_queue_limit: Some(QUEUE_LIMIT),
-    };
-    let stream = client
-        .stream_updates(updates, configuration)
-        .await
-        .map_err(CoreError::network(
-            "could not start listening for library changes",
-        ))?;
-    Ok(Listener {
-        stream,
-        debouncer: Debouncer::new(WINDOW_MS),
-        ready: VecDeque::new(),
-        started: Instant::now(),
-    })
-}
-
-impl Listener {
-    fn now_ms(&self) -> u64 {
-        u64::try_from(self.started.elapsed().as_millis()).unwrap_or(u64::MAX)
-    }
-
-    async fn wait(
-        &mut self,
-        channel: i64,
-        own_device: &str,
-    ) -> Result<LibraryEvent, InvocationError> {
-        loop {
-            if let Some(event) = self.ready.pop_front() {
-                return Ok(event);
-            }
-            let now = self.now_ms();
-            self.ready.extend(self.debouncer.take(now));
-            if !self.ready.is_empty() {
-                continue;
-            }
-            let raw = match self.debouncer.next_due() {
-                // A window is open: wait for more, but no longer than its end.
-                Some(due) => {
-                    let deadline = self.started + Duration::from_millis(due);
-                    match tokio::time::timeout_at(deadline, self.stream.next_raw()).await {
-                        Ok(raw) => raw?,
-                        Err(_) => continue,
-                    }
-                }
-                None => self.stream.next_raw().await?,
-            };
-            let event =
-                channel_update(&raw.0).and_then(|update| classify(&update, channel, own_device));
-            if let Some(event) = event {
-                let now = self.now_ms();
-                self.debouncer.offer(event, now);
-            }
-        }
-    }
+    listener::next(core, channel_of(core, handle)?, own_device).await
 }
 
 /// The bare channel id behind a library handle, which is how updates name it.

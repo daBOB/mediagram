@@ -22,21 +22,7 @@ impl Core {
 
     /// The signed-in account's name and username.
     pub async fn account(&self) -> Result<AccountSummary, CoreError> {
-        let client = session::client(self).await;
-        let me = revoked::checked(self, client.get_me().await, |err| {
-            CoreError::network("could not ask Telegram who is signed in")(err)
-        })
-        .await?;
-        let name = [me.first_name(), me.last_name()]
-            .into_iter()
-            .flatten()
-            .filter(|part| !part.is_empty())
-            .collect::<Vec<_>>()
-            .join(" ");
-        Ok(AccountSummary {
-            name,
-            username: me.username().map(str::to_string),
-        })
+        account_with(self, |client| async move { client.get_me().await }).await
     }
 
     /// Signs this device out: at Telegram first, so the login stops working
@@ -61,9 +47,65 @@ impl Core {
     }
 }
 
+async fn account_with<F>(
+    core: &Core,
+    request: impl FnOnce(grammers_client::Client) -> F,
+) -> Result<AccountSummary, CoreError>
+where
+    F: std::future::Future<
+            Output = Result<grammers_client::peer::User, grammers_mtsender::InvocationError>,
+        >,
+{
+    let (client, owner) = session::connection(core).await;
+    let me = revoked::checked_for(core, &owner, request(client).await, |err| {
+        CoreError::network("could not ask Telegram who is signed in")(err)
+    })
+    .await?;
+    let name = [me.first_name(), me.last_name()]
+        .into_iter()
+        .flatten()
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ");
+    Ok(AccountSummary {
+        name,
+        username: me.username().map(str::to_string),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn account_refusals_only_revoke_the_originating_login() {
+        use session::fixture::{Fixture, rpc};
+        for code in [401, 500] {
+            let fixture = Fixture::new().await;
+            let error = account_with(&fixture.core, |_| async { Err(rpc(code)) })
+                .await
+                .unwrap_err();
+            if code == 401 {
+                assert!(matches!(error, CoreError::NotAuthorized(_)));
+                fixture.assert_revoked().await;
+            } else {
+                assert!(matches!(error, CoreError::Network(_)));
+                fixture.assert_kept(&fixture.owner, 7).await;
+            }
+        }
+        let fixture = Fixture::new().await;
+        let replacement = std::cell::RefCell::new(None);
+        let error = account_with(&fixture.core, |_| async {
+            *replacement.borrow_mut() = Some(fixture.replace().await);
+            Err(rpc(401))
+        })
+        .await
+        .unwrap_err();
+        assert!(matches!(error, CoreError::Network(_)));
+        fixture
+            .assert_kept(&replacement.into_inner().unwrap(), 9)
+            .await;
+    }
 
     fn core(dir: &std::path::Path) -> std::sync::Arc<Core> {
         Core::new(

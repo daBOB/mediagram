@@ -8,12 +8,12 @@ use grammers_client::Client;
 use grammers_client::client::{DownloadIter, SearchIter};
 use grammers_client::media::{Document, Uploaded};
 use grammers_client::message::{InputMessage, Message};
-use grammers_mtsender::InvocationError;
+use grammers_mtsender::{InvocationError, SenderPoolFatHandle};
 use grammers_session::types::PeerRef;
 use grammers_tl_types::enums::MessagesFilter;
 
 use super::publish::{self, DocumentWriter};
-use crate::api::account::revoked::checked;
+use crate::api::account::revoked::checked_for;
 use crate::api::channel::index::channel_error;
 use crate::api::{Core, CoreError};
 use crate::state::channel::device_from_caption;
@@ -31,12 +31,23 @@ const STATE_DOCUMENT_NAME: &str = "watch-state.json";
 pub(super) struct TelegramStateChannel<'a> {
     core: &'a Core,
     client: Client,
+    owner: SenderPoolFatHandle,
     peer: PeerRef,
 }
 
 impl<'a> TelegramStateChannel<'a> {
-    pub(super) fn new(core: &'a Core, client: Client, peer: PeerRef) -> Self {
-        TelegramStateChannel { core, client, peer }
+    pub(super) fn new(
+        core: &'a Core,
+        client: Client,
+        owner: SenderPoolFatHandle,
+        peer: PeerRef,
+    ) -> Self {
+        TelegramStateChannel {
+            core,
+            client,
+            owner,
+            peer,
+        }
     }
 }
 
@@ -49,28 +60,25 @@ impl StateChannel for TelegramStateChannel<'_> {
             .search_messages(self.peer)
             .filter(MessagesFilter::InputMessagesFilterPinned)
             .limit(MOST);
-        list_pinned(self.core, pinned, |document| {
+        list_pinned(self.core, &self.owner, pinned, |document| {
             self.client.iter_download(document)
         })
         .await
     }
 
     async fn put(&self, body: String, message_id: Option<i32>) -> Result<i32, CoreError> {
-        publish::put(self.core, self, body, message_id).await
+        publish::put(self.core, &self.owner, self, body, message_id).await
     }
 }
 
 impl DocumentWriter for TelegramStateChannel<'_> {
     type Upload = Uploaded;
 
-    async fn upload(&self, body: &str) -> Result<Uploaded, CoreError> {
+    async fn upload(&self, body: &str) -> Result<Uploaded, std::io::Error> {
         let mut cursor = Cursor::new(body.as_bytes());
         self.client
             .upload_stream(&mut cursor, body.len(), STATE_DOCUMENT_NAME.to_string())
             .await
-            .map_err(CoreError::network(
-                "the state document could not be uploaded",
-            ))
     }
 
     async fn edit(
@@ -132,18 +140,21 @@ impl Responses for DownloadIter {
 
 async fn list_pinned<C: Responses<Item = Vec<u8>>>(
     core: &Core,
+    owner: &SenderPoolFatHandle,
     mut pinned: impl Responses<Item = Message>,
     download: impl Fn(&Document) -> C,
 ) -> Result<Vec<ChannelDocument>, CoreError> {
     let mut documents = Vec::new();
-    while let Some(message) = checked(core, pinned.next_response().await, channel_error).await? {
+    while let Some(message) =
+        checked_for(core, owner, pinned.next_response().await, channel_error).await?
+    {
         let Some(device) = device_from_caption(message.text()) else {
             continue;
         };
         let Some((document, _id)) = message_document(&message) else {
             continue;
         };
-        if let Some(text) = download_capped(core, download(&document)).await? {
+        if let Some(text) = download_capped(core, owner, download(&document)).await? {
             documents.push(ChannelDocument {
                 message_id: message.id(),
                 device,
@@ -157,10 +168,11 @@ async fn list_pinned<C: Responses<Item = Vec<u8>>>(
 /// Oversized or non-UTF-8 documents are skipped; transport failures fail the round.
 async fn download_capped(
     core: &Core,
+    owner: &SenderPoolFatHandle,
     mut chunks: impl Responses<Item = Vec<u8>>,
 ) -> Result<Option<String>, CoreError> {
     let mut bytes = Vec::new();
-    while let Some(chunk) = checked(core, chunks.next_response().await, |err| {
+    while let Some(chunk) = checked_for(core, owner, chunks.next_response().await, |err| {
         CoreError::network("a state document could not be downloaded")(err)
     })
     .await?

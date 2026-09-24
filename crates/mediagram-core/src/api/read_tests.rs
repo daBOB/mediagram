@@ -3,6 +3,39 @@ use rusqlite::Connection;
 
 use super::*;
 
+#[tokio::test]
+async fn playback_refusals_only_revoke_the_originating_login() {
+    use session::fixture::{Fixture, rpc};
+    for code in [401, 500] {
+        let fixture = Fixture::new().await;
+        let error = failed(
+            &fixture.core,
+            &fixture.owner,
+            INTERRUPTED,
+            anyhow::Error::new(rpc(code)).context("part 1"),
+        )
+        .await;
+        if code == 401 {
+            assert!(matches!(error, CoreError::NotAuthorized(_)));
+            fixture.assert_revoked().await;
+        } else {
+            assert!(matches!(error, CoreError::Network(_)));
+            fixture.assert_kept(&fixture.owner, 7).await;
+        }
+    }
+    let fixture = Fixture::new().await;
+    let replacement = fixture.replace().await;
+    let error = failed(
+        &fixture.core,
+        &fixture.owner,
+        INTERRUPTED,
+        anyhow::Error::new(rpc(401)).context("part 1"),
+    )
+    .await;
+    assert!(matches!(error, CoreError::Network(_)));
+    fixture.assert_kept(&replacement, 9).await;
+}
+
 fn handles_naming(chat: i64, auth: i64) -> library::Handles {
     let mut handles = library::Handles::new();
     library::register_or_refresh_library(

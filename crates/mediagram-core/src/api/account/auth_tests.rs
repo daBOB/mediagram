@@ -178,8 +178,10 @@ async fn a_revoked_login_invalidates_an_in_flight_completion() {
     let core = Core::at(dir.path());
     let attempt = begin(&core, 1).await;
     let (reply, task) = delayed_password(core.clone(), attempt).await;
-    super::super::revoked::unless_revoked(
+    let owner = session::connection(&core).await.1;
+    super::super::revoked::unless_revoked_for(
         &core,
+        &owner,
         &rpc(401, "SESSION_REVOKED"),
         CoreError::Network("offline".into()),
     )
