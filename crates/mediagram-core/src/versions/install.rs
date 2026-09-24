@@ -124,9 +124,9 @@ fn remove_other_versions(root: &Path, keep: &str) {
 
 #[cfg(test)]
 mod tests {
+    use std::future::Future;
     use std::os::unix::fs::PermissionsExt;
-    use std::sync::Arc;
-    use std::time::Duration;
+    use std::task::{Context, Waker};
 
     use super::*;
 
@@ -165,25 +165,23 @@ mod tests {
     #[tokio::test]
     async fn a_second_install_waits_for_the_first_to_finish() {
         let root = tempfile::tempdir().unwrap();
-        let turn = Arc::new(Mutex::new(()));
+        let turn = Mutex::new(());
         let first = Staging::begin(&turn, root.path()).await.unwrap();
         std::fs::write(first.dir().join("half-written"), b"x").unwrap();
 
-        let (waiting_turn, waiting_root) = (Arc::clone(&turn), root.path().to_path_buf());
-        let second = tokio::spawn(async move {
-            Staging::begin(&waiting_turn, &waiting_root)
-                .await
-                .map(|_| ())
-        });
-        tokio::time::sleep(Duration::from_millis(50)).await;
+        let mut second = std::pin::pin!(Staging::begin(&turn, root.path()));
         assert!(
-            !second.is_finished(),
+            second
+                .as_mut()
+                .poll(&mut Context::from_waker(Waker::noop()))
+                .is_pending(),
             "the second install began while the first held the turn"
         );
         assert!(first.dir().join("half-written").exists());
 
         first.install("v-1").unwrap();
-        second.await.unwrap().unwrap();
+        let second = second.await.unwrap();
+        assert!(second.dir().read_dir().unwrap().next().is_none());
         assert!(root.path().join("v-1").join("half-written").exists());
     }
 }
