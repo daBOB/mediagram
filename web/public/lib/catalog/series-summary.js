@@ -17,8 +17,8 @@ import { languageLabel } from "../language-label.js";
 import { flattenCollection } from "../library.js";
 
 /**
- * @typedef {{totalEpisodes?: number|null, totalSeasons?: number|null,
- *   firstAir?: string|null, lastAir?: string|null}} SeriesMetadata
+ * @typedef {import("../../../src/catalog/shows.ts").ShowMeta} ShowMeta
+ * @typedef {Partial<Pick<ShowMeta, "totalEpisodes"|"totalSeasons"|"firstAir"|"lastAir">>} SeriesMetadata
  */
 
 /** The parts that have something to say, as one line, or `null` if none do. */
@@ -76,6 +76,7 @@ function sortedQualities(values) {
  *
  * Returned as data rather than markup so it can be tested without a DOM, the
  * way the rest of this directory's grouping already is.
+ * @param {Pick<import("../library.js").Collection, "divisions">} collection
  */
 export function summarize(collection) {
   const sets = flattenCollection(collection);
@@ -188,6 +189,7 @@ function year(date) {
  *
  * A rating of zero is what an unrated title scores and is not a rating, so
  * the uploader records nothing for it and nothing is printed.
+ * @param {Partial<Pick<ShowMeta, "genres"|"rating"|"network"|"status">>|null} meta
  */
 export function provenance(meta) {
   if (!meta) return null;

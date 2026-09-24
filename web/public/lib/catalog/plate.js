@@ -56,7 +56,10 @@ export function plate({ poster, name, initials, progress, watched }) {
   return thumb;
 }
 
-/** The plate for one catalog row, with its own artwork and its own place. */
+/**
+ * The plate for one catalog row, with its own artwork and its own place.
+ * @param {Pick<import("../library.js").CatalogSet, "setId"|"title"|"show"|"poster">} set
+ */
 export function plateOf(set) {
   const name = set.title ?? set.show ?? set.setId;
   return plate({

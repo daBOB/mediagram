@@ -6,13 +6,14 @@ import { staticResponse } from "../src/http/static-files";
 import { htmlApplicationEnvironment } from "./support/html-application";
 import { descendants } from "./support/browser-application";
 import { settle, TrackElement } from "./support/player-environment";
+import { catalogSet } from "./support/catalog-set";
 
 let directory: string;
 let html: string;
 let serial = 0;
 let env: Awaited<ReturnType<typeof htmlApplicationEnvironment>>;
 let app: { state: typeof import("../public/lib/watch-state.js"); player: typeof import("../public/lib/playback/player.js") };
-const episode = (id: string, subtitles = ["en", "de"], converted = false) => ({
+const episode = (id: string, subtitles = ["en", "de"], converted = false) => catalogSet({
   setId: id, title: id, kind: "ep", show: "Series", season: 1, episode: "1", duration: 600,
   addedAt: 1, total: 1000, container: converted ? "mkv" : "mp4", vcodec: "h264", acodec: "aac", subtitles,
   chap: null, path: null, year: null, partCount: 1,

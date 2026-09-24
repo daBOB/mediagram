@@ -20,11 +20,25 @@ export interface CatalogSet {
   container: string;
   vcodec: string | null;
   acodec: string | null;
+  quality: string | null;
+  hdr: string | null;
+  /** File-track languages as JSON array strings, or null when unrecorded. */
+  alang: string | null;
+  slang: string | null;
   duration: number | null;
   total: number;
   partCount: number;
   /** When the uploader added this, in epoch milliseconds. Arrival, not release. */
   addedAt: number;
+  /** Browser presentation fields added by the catalog/search projection. */
+  poster: string | null;
+  seasonPoster: string | null;
+  showKey: string | null;
+  genres: string[];
+  fsk: string | null;
+  offline: boolean;
+  hasSummary: boolean;
+  subtitles: string[];
 }
 
 /**
@@ -89,7 +103,7 @@ export type LevelEntry =
 export function levelEntries(level: Pick<Division, "items" | "children">): LevelEntry[];
 
 /** Every playable set in a collection, in the order its pages walk them. */
-export function flattenCollection(collection: Collection): CatalogSet[];
+export function flattenCollection(collection: Pick<Collection, "divisions">): CatalogSet[];
 
 /** What follows `setId` in its collection, or `null` at the end of one. */
 export function nextAfter(collection: Collection, setId: string): CatalogSet | null;

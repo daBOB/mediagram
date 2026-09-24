@@ -9,6 +9,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { catalogSet } from "./support/catalog-set";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -146,7 +147,7 @@ describe("next-up fixtures", () => {
 
   /** One episode of a single synthetic show, numbered by its place in `order`. */
   function episodeOf(setId: string, number: number): CatalogSet {
-    return {
+    return catalogSet({
       setId,
       kind: "ep",
       title: `Show ${number}`,
@@ -163,7 +164,7 @@ describe("next-up fixtures", () => {
       total: 1000,
       partCount: 1,
       addedAt: 1000,
-    };
+    });
   }
 
   for (const one of load<Case[]>("next-up.json")) {

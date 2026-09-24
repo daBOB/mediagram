@@ -24,9 +24,9 @@ import { ageLabel } from "../age-rating.js";
 import { firstItemOf } from "../library.js";
 
 /**
- * @param {object} collection a grouped show, as `groupLibrary` builds one
+ * @param {Pick<import("../library.js").Collection, "divisions">} collection a grouped show's seasons
  * @param {string|null} poster the key its episodes share, if any
- * @param {object|null} meta what the provider says, when the index has it
+ * @param {import("../../../src/catalog/shows.ts").ShowMeta|null} [meta] what the provider says
  */
 export function seriesHeader(collection, poster, meta = null) {
   const facts = summarize(collection);
@@ -82,7 +82,7 @@ export function seriesHeader(collection, poster, meta = null) {
  * recount every episode and swap the poster element under the viewer.
  *
  * @param {HTMLElement} header a header from `seriesHeader`
- * @param {object|null} meta what the provider says, or nothing
+ * @param {import("../../../src/catalog/shows.ts").ShowMeta|null} meta what the provider says, or nothing
  */
 export function describeSeries(header, meta) {
   if (!meta) return;

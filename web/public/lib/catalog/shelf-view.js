@@ -16,7 +16,12 @@ import { offlineBadge, transcodeBadge } from "./set-badge.js";
 import { GRID, LIST } from "./shelf-mode.js";
 import { seasonPlate } from "./season-wall.js";
 
-/** @typedef {{mode?: "list"|"grid"}} GridOptions */
+/**
+ * @typedef {{mode?: "list"|"grid"}} GridOptions
+ * @typedef {import("../library.js").CatalogSet} CatalogSet
+ * @typedef {import("../library.js").Collection} Collection
+ * @typedef {import("../library.js").Division} Division
+ */
 
 // `extent` is what the shelf counts in, for the line under its title: a
 // catalogue says "twelve films", not "12 items".
@@ -91,6 +96,8 @@ export function emptyState(section) {
 /**
  * A show's seasons, as a wall. A season is ticked once every episode in it
  * is, which is the only sense in which a season is watched.
+ * @param {Division[]} divisions
+ * @param {(title: string) => void} onOpen
  */
 export function seasonGrid(divisions, onOpen) {
   const grid = container(GRID);
@@ -112,6 +119,8 @@ export function seasonGrid(divisions, onOpen) {
 
 /**
  * Films: a flat grid, since a film is one thing.
+ * @param {CatalogSet[]} movies
+ * @param {(set: CatalogSet) => void} onPlay
  * @param {GridOptions} [options]
  */
 export function movieGrid(movies, onPlay, options = {}) {
@@ -140,6 +149,8 @@ export function movieGrid(movies, onPlay, options = {}) {
  * A film, an episode and a lesson end up side by side here, which the three
  * catalog shelves never have to deal with — so the caption says where a title
  * came from rather than assuming everything on the shelf is one kind of thing.
+ * @param {CatalogSet[]} sets
+ * @param {(set: CatalogSet) => void} onPlay
  * @param {GridOptions & {caption?: (set: import("../library.js").CatalogSet) => string}} [options]
  */
 export function setGrid(sets, onPlay, options = {}) {
@@ -181,6 +192,9 @@ export function setGrid(sets, onPlay, options = {}) {
 
 /**
  * Shows and courses: a grid of collections, each opening its own view.
+ * @param {"series"|"tutorials"} section
+ * @param {Collection[]} collections
+ * @param {(name: string) => void} onOpen
  * @param {GridOptions} [options]
  */
 export function collectionGrid(section, collections, onOpen, options = {}) {

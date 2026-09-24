@@ -41,7 +41,9 @@ function rowHead(title, total, hash) {
  *
  * @param {HTMLElement} main
  * @param {import("./home-shelves.js").HomeShelves} shelves
- * @param {{play: Function, open: Function, openFilm?: Function}} on
+ * @param {{play: (set: import("../library.js").CatalogSet) => void,
+ *   open: (kind: "series"|"tutorials", name: string) => void,
+ *   openFilm?: (set: import("../library.js").CatalogSet) => void}} on
  */
 export function renderHome(main, shelves, { play, open, openFilm }) {
   // Every page needs one, and this one has no visible title: the rows name

@@ -7,37 +7,34 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { catalogSet } from "./support/catalog-set";
 import {
   divisionAt,
+  flattenCollection,
   groupLibrary,
   lessonsUnder,
   levelEntries,
   nextAfter,
   nextInQueue,
-  type CatalogSet,
 } from "../public/lib/library.js";
 
-const set = (over: Record<string, unknown> = {}): CatalogSet => ({
-  setId: `01SET${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
-  kind: "movie",
-  title: "A Title",
-  show: null,
-  path: null,
-  chap: null,
-  season: null,
-  episode: null,
-  year: null,
-  container: "mp4",
-  vcodec: "h264",
-  acodec: "aac",
-  duration: 60,
-  total: 1000,
-  partCount: 1,
-  addedAt: 0,
-  ...over,
-});
+const set = catalogSet;
 
 describe("shelves", () => {
+  test("grouped episodes retain their typed presentation fields through traversal", () => {
+    const episode = set({
+      kind: "ep", show: "Series", season: 1, episode: "1",
+      poster: "tmdb-tv-42", quality: "2160p", hdr: "HDR10",
+      alang: '["en","de"]', slang: '["en"]',
+    });
+    const library = groupLibrary([episode]);
+    const first = flattenCollection(library.series[0]!)[0]!;
+    expect(first).toBe(episode);
+    expect([first.poster, first.quality, first.hdr, first.alang, first.slang]).toEqual([
+      "tmdb-tv-42", "2160p", "HDR10", '["en","de"]', '["en"]',
+    ]);
+  });
+
   test("a film goes to films, not to shows", () => {
     const library = groupLibrary([set({ kind: "movie", title: "Blade" })]);
 
