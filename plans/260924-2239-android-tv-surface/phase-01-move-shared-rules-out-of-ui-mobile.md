@@ -5,7 +5,7 @@
 ## Overview
 
 - **Priority:** High. Everything after this assumes TV can call these.
-- **Status:** pending
+- **Status:** done — commits 4a91c94..ed7e6b2. Deviations: byte-size formatting landed in `core:model` (both player and system need it); fetch/update helpers in `feature:catalog` and `telegramRows` in `feature:setup` (the modules owning the state they read); `:ui-common` also depends on `core:data` (for `TitleInfo`) and not on `feature:system` (unused).
 - **Deliverable:** every pure rule and lifecycle helper TV needs is reachable outside `ui-mobile`, exists once, and the phone behaves exactly as before.
 
 ## Key insights

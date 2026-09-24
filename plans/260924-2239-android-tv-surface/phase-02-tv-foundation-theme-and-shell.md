@@ -42,6 +42,7 @@ MainActivity (TV branch) ─► TvApp()
 ### Task 1: Artifacts and module deps
 - [ ] **1.1** Catalog: `tvMaterial = "1.1.0"`, library `androidx-tv-material`. Do not add `tv-foundation`: its `TvLazyRow`/`TvLazyColumn` are deprecated in favour of compose foundation's lazy lists, which handle D-pad focus scrolling themselves.
 - [ ] **1.2** `ui-tv` deps: `:ui-common`, all four `feature:*`, `core:designsystem`, `core:model`, `core:playback`, tv-material, coil-compose, lifecycle-runtime-compose, hilt-lifecycle-viewmodel-compose, activity-compose; test: robolectric, mockk, ui-test-junit4, `isIncludeAndroidResources = true`.
+- [ ] **1.2b** `AndroidLibraryComposeConventionPlugin` adds the whole `compose` bundle — including `androidx.compose.material3` — to every compose library, so M3 already reaches `:ui-tv` and `:ui-common` (which excludes it by hand in its own build file). Move material3 out of the base bundle into the mobile-screen convention (only `:ui-mobile` draws with M3), delete `:ui-common`'s `configurations.all { exclude(...) }`, and check `./gradlew :ui-tv:dependencies --configuration releaseRuntimeClasspath | grep androidx.compose.material3` prints nothing.
 - [ ] **1.3** `./gradlew :ui-tv:assembleDebug`. Commit — `build(android): add tv-material 1.1.0 to the television surface`.
 
 ### Task 2: Palette, type scale, overscan in the design system

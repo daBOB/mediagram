@@ -29,6 +29,7 @@
 - Marks rail (Watchlist, Kids, Add to list) from `PlayerViewModel.marks`, hidden Kids mark on kids profiles as phone. Stats overlay reuses the moved stat-line builders.
 - **Up next / autoplay**: check phone first (plan Open Question 3). TV mirrors phone; if phone lacks it, log the gap in phase 6 docs.
 - MediaSession not added: media keys reach the focused activity as key events. Background/ambient control is out of scope.
+- **Carried from phase 1:** two public `clockTime`s exist — `catalog.clockTime(seconds: Double)` and `player.clockTime(ms: Long)` — both implementing the web's `clockTime`. Merge them into one before the TV player reads time, so the surfaces cannot format time differently.
 
 ## Requirements
 

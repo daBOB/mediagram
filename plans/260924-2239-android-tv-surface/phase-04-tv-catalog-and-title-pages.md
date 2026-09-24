@@ -20,6 +20,7 @@
 - **Focus restoration** is the TV-specific rule the web never needed: coming back from a page restores focus to the plate that opened it. Store the last-opened key per destination alongside the positions (saveable), request focus on it when the wall recomposes.
 - **Kids profile**: nothing TV-specific — `CatalogViewModel` already filters; `KidsEmpty` state gets its own message as on phone.
 - Collections: list of user lists → a list's wall; rename/delete via `TvTextQuestion`/`TvConfirmDialog` from phase 3.
+- **Carried from phase 1:** the six position keys are declared five times across `catalog.LibraryPositions` and `ui.LibraryPositionsHolder` (class, holder constructor, `snapshot()`, `applyFrom()`, `rememberLibraryPositions()`). Before TV adds a seventh concern (the focus-restore key), fold them into one immutable data class held in a single `rememberSaveable` with a `Saver`, so a missed field cannot silently skip a clear.
 
 ## Requirements
 
