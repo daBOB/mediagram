@@ -58,6 +58,8 @@ export class TelegramSource implements ByteSource {
   }
 
   private streamBytes(bytes: AsyncGenerator<Uint8Array, void, unknown>): ReadableStream<Uint8Array> {
+    let cancelled = false;
+    let pulling: Promise<IteratorResult<Uint8Array, void>> | undefined;
     // Captured rather than `this`: the stream's callbacks are plain functions
     // and are not called with this instance as their receiver.
     const failed = () => {
@@ -67,19 +69,29 @@ export class TelegramSource implements ByteSource {
     // memory with a set that may be several gigabytes.
     return new ReadableStream<Uint8Array>({
       async pull(controller) {
+        const next = bytes.next();
+        pulling = next;
         try {
-          const { done, value } = await bytes.next();
+          const { done, value } = await next;
+          if (cancelled) return;
           if (done) controller.close();
           else controller.enqueue(value);
         } catch (error) {
+          if (cancelled) return; // Cancellation owns this result and its cleanup.
           failed();
           controller.error(error);
+        } finally {
+          pulling = undefined;
         }
       },
-      cancel() {
-        // The viewer seeked or closed the tab: stop paying for bytes nobody
-        // will read.
-        void bytes.return(undefined);
+      async cancel() {
+        cancelled = true;
+        // return() queues behind next(). That pull may already be unwinding
+        // upstream cleanup, so await both and retain either failure.
+        const outcomes = await Promise.allSettled([pulling, bytes.return(undefined)]);
+        for (const outcome of outcomes) {
+          if (outcome.status === "rejected") throw outcome.reason;
+        }
       },
     });
   }

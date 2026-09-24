@@ -98,7 +98,7 @@ export type Prober = (url: string, signal: AbortSignal) => Promise<string | null
  */
 export class AudioTrackReader {
   private readonly cache = new Map<string, AudioTrack[]>();
-  private readonly tasks = new Set<Promise<AudioTrack[]>>();
+  private readonly tasks = new Map<string, Promise<AudioTrack[]>>();
   private readonly stopping = new AbortController();
 
   constructor(
@@ -110,15 +110,17 @@ export class AudioTrackReader {
     if (this.stopping.signal.aborted) return Promise.resolve([]);
     const held = this.cache.get(setId);
     if (held) return Promise.resolve(held);
-    const task = this.readUncached(setId).finally(() => { this.tasks.delete(task); });
-    this.tasks.add(task);
+    const pending = this.tasks.get(setId);
+    if (pending) return pending;
+    const task = this.readUncached(setId).finally(() => { this.tasks.delete(setId); });
+    this.tasks.set(setId, task);
     return task;
   }
 
   /** Close admission, cancel active probes and wait for their children to exit. */
   async stop(): Promise<void> {
     this.stopping.abort();
-    await Promise.all(this.tasks);
+    await Promise.all(this.tasks.values());
   }
 
   private async readUncached(setId: string): Promise<AudioTrack[]> {

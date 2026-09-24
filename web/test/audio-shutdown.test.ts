@@ -24,7 +24,7 @@ test("audio stop closes admission, cancels all probes and awaits their settlemen
     return streams; // A cancelled probe may still return bytes; do not publish them.
   });
   expect(await reader.read("cached")).toHaveLength(1);
-  const reads = [reader.read("one"), reader.read("two")];
+  const reads = [reader.read("one"), reader.read("two"), reader.read("one")];
   let stopped = false;
   let stopping: Promise<void> | undefined;
   try {
@@ -39,7 +39,7 @@ test("audio stop closes admission, cancels all probes and awaits their settlemen
     await stopping;
     await Promise.all(reads);
   }
-  expect(await Promise.all(reads)).toEqual([[], []]);
+  expect(await Promise.all(reads)).toEqual([[], [], []]);
   await reader.stop();
   expect(calls).toBe(3);
 });
