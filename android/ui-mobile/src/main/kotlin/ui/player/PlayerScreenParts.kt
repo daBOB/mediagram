@@ -14,11 +14,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalView
 import androidx.media3.common.Player
 import androidx.media3.ui.compose.PlayerSurface
 import androidx.media3.ui.compose.state.rememberPresentationState
@@ -62,15 +60,6 @@ internal fun Video(player: Player) {
     // audio.
     if (presentation.coverSurface) {
         Box(modifier = Modifier.fillMaxSize().background(Color.Black))
-    }
-}
-
-@Composable
-internal fun KeepScreenOnWhile(isPlaying: Boolean) {
-    val view = LocalView.current
-    DisposableEffect(isPlaying) {
-        view.keepScreenOn = isPlaying
-        onDispose { view.keepScreenOn = false }
     }
 }
 

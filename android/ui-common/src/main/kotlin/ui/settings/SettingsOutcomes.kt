@@ -18,7 +18,7 @@ import setup.SettingsViewModel
  * the Activity's, so this is the same one the Settings screen drives.
  */
 @Composable
-internal fun SettingsOutcomes(
+fun SettingsOutcomes(
     onLibraryChanged: () -> Unit,
     onSignedOut: () -> Unit,
 ) {

@@ -1,13 +1,11 @@
 package ui
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import catalog.Destination
 import catalog.LibraryPositions
 import catalog.MenuScreen
 import catalog.ResolvedPosition
@@ -26,7 +24,7 @@ import catalog.leave
  * Compose state and hands a plain copy of them to the pure model and back —
  * [snapshot] out, [applyFrom] in.
  */
-internal class LibraryPositionsHolder(
+class LibraryPositionsHolder(
     setId: MutableState<String?>,
     titleId: MutableState<String?>,
     collection: MutableState<String?>,
@@ -76,7 +74,7 @@ internal class LibraryPositionsHolder(
 }
 
 @Composable
-internal fun rememberLibraryPositions(): LibraryPositionsHolder =
+fun rememberLibraryPositions(): LibraryPositionsHolder =
     LibraryPositionsHolder(
         setId = rememberSaveable { mutableStateOf<String?>(null) },
         titleId = rememberSaveable { mutableStateOf<String?>(null) },
@@ -85,24 +83,3 @@ internal fun rememberLibraryPositions(): LibraryPositionsHolder =
         listId = rememberSaveable { mutableStateOf<String?>(null) },
         menuScreen = rememberSaveable { mutableStateOf<MenuScreen?>(null) },
     )
-
-/**
- * One screen of the library under the app's chrome, and what leaving it
- * means.
- *
- * The system back gesture and the bar's back arrow are the same departure
- * said twice, so they are given the same lambda here rather than at each
- * branch — a screen that wired one and forgot the other would go back in
- * two different places depending on which the viewer reached for.
- */
-@Composable
-internal fun LibraryBranch(
-    destination: Destination,
-    menu: MenuActions,
-    profile: ProfileBarState,
-    onLeave: () -> Unit,
-    content: @Composable () -> Unit,
-) {
-    BackHandler(onBack = onLeave)
-    LibraryScaffold(destination = destination, onBack = onLeave, menu = menu, profile = profile, content = content)
-}

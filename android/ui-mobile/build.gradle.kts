@@ -10,6 +10,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":ui-common"))
     implementation(project(":feature:catalog"))
     implementation(project(":feature:player"))
     implementation(project(":feature:setup"))

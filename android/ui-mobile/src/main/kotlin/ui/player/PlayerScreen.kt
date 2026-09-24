@@ -5,9 +5,6 @@
 
 package ui.player
 
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -24,7 +21,6 @@ import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,11 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Spacing
 import kotlinx.coroutines.delay
@@ -69,32 +61,8 @@ fun PlayerScreen(
     val player by viewModel.player.collectAsStateWithLifecycle()
     val marks by viewModel.marks.collectAsStateWithLifecycle()
     val actionNotice by viewModel.actionNotice.collectAsStateWithLifecycle()
-    val activity = LocalContext.current.findActivity()
 
-    LaunchedEffect(setId) { viewModel.open(setId, fsk) }
-    DisposableEffect(Unit) {
-        onDispose {
-            if (activity?.isChangingConfigurations != true) {
-                viewModel.stop()
-            }
-        }
-    }
-
-    // Backstop for a kill that skips onDispose entirely — recents swiped,
-    // the process trimmed. Not a duplicate of the DisposableEffect above:
-    // that one only runs when this Composition is actually torn down, and
-    // an Activity can reach ON_STOP (screen off, task-switched away) while
-    // the Composition it hosts is still there, primed to resume.
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer =
-            LifecycleEventObserver { _, event ->
-                if (event == Lifecycle.Event.ON_STOP) viewModel.save()
-            }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
+    PlayerLifecycle(viewModel = viewModel, setId = setId, fsk = fsk)
     KeepScreenOnWhile(isPlaying = state is PlayerUiState.Playing)
 
     // Shown when the screen opens, so a viewer finds out the bar is there at
@@ -212,11 +180,3 @@ fun PlayerScreen(
         }
     }
 }
-
-/** Compose may supply a theme wrapper; unwrap it to find the hosting Activity. */
-private tailrec fun Context.findActivity(): Activity? =
-    when (this) {
-        is Activity -> this
-        is ContextWrapper -> baseContext.findActivity()
-        else -> null
-    }
