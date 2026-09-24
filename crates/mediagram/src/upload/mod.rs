@@ -15,4 +15,5 @@ pub mod plan_document;
 pub mod plan_set;
 pub mod progress;
 pub mod progress_line;
+pub mod resume;
 pub mod transport;

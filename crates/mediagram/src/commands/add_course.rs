@@ -9,11 +9,12 @@ use anyhow::{Context, Result, bail};
 
 use super::args::AddCourseArgs;
 use crate::config::Config;
-use crate::course::report::{Outcome, Summary, dry_run_table};
 use crate::course::identity::{collection_id, course_title, duplicate_identity};
+use crate::course::report::{Outcome, Summary, dry_run_table};
 use crate::course::walk::walk_course;
 use crate::index::status::SetStatus;
 use crate::index::{db, set_lookup};
+use crate::telegram::index_publish;
 use crate::upload::finish_set::Uploader;
 use crate::upload::new_set::{LessonOf, NewSet};
 use crate::upload::plan_document::{Document, plan_document};
@@ -73,18 +74,21 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
     // Documents after the lessons: the videos are what someone is waiting
     // for, and a handout is worth having a minute later.
     for document in &walked.documents {
-        let outcome = match set_lookup::document_status(&conn, &cid, document.chapter, document.number)? {
-            Some(SetStatus::Complete) => Outcome::AlreadyDone,
-            Some(_) => Outcome::Pending,
-            None => match upload_document(cfg, &mut uploader, &args, &course, &cid, document).await {
-                Ok(()) => Outcome::Uploaded,
-                // One unreadable handout must not abandon the rest.
-                Err(err) => {
-                    println!("  document {}: {err:#}", document.number);
-                    Outcome::Failed
-                }
-            },
-        };
+        let outcome =
+            match set_lookup::document_status(&conn, &cid, document.chapter, document.number)? {
+                Some(SetStatus::Complete) => Outcome::AlreadyDone,
+                Some(_) => Outcome::Pending,
+                None => match upload_document(cfg, &mut uploader, &args, &course, &cid, document)
+                    .await
+                {
+                    Ok(()) => Outcome::Uploaded,
+                    // One unreadable handout must not abandon the rest.
+                    Err(err) => {
+                        println!("  document {}: {err:#}", document.number);
+                        Outcome::Failed
+                    }
+                },
+            };
         summary.record_document(outcome);
     }
     drop(conn);
@@ -95,9 +99,10 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
     }
 
     if summary.uploaded_anything() && !args.no_push {
-        super::push_index::run(cfg)
+        let message_id = index_publish::publish(cfg)
             .await
             .context("pushing the index after the course")?;
+        println!("pushed index as message {message_id}");
     }
     if summary.failed_count() > 0 {
         bail!("{} set(s) failed", summary.failed_count());
@@ -177,4 +182,3 @@ async fn upload_document(
     uploader.finish(&set_id, None).await?;
     Ok(())
 }
-

@@ -22,6 +22,7 @@ use crate::index::status::SetStatus;
 use crate::index::{db, set_lookup};
 use crate::media::show_episodes::{Episode, duplicate_episode, walk};
 use crate::paths::file_name;
+use crate::telegram::index_publish;
 use crate::upload::finish_set::Uploader;
 use crate::upload::new_set::NewSet;
 use crate::upload::plan_set::plan_set;
@@ -69,12 +70,23 @@ pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
 
     let conn = db::open(&cfg.data_dir()?)?;
     let mut uploader = Uploader::new(cfg);
-    let (mut uploaded, mut skipped, mut failed) = (0usize, 0usize, 0usize);
+    let (mut uploaded, mut skipped, mut pending, mut failed) = (0usize, 0usize, 0usize, 0usize);
     for ep in &episodes {
-        if set_lookup::episode_status(&conn, tmdb, ep.season, ep.episode)? == Some(SetStatus::Complete) {
-            println!("S{:02}E{:02} already uploaded", ep.season, ep.episode);
-            skipped += 1;
-            continue;
+        match set_lookup::episode_status(&conn, tmdb, ep.season, ep.episode)? {
+            Some(SetStatus::Complete) => {
+                println!("S{:02}E{:02} already uploaded", ep.season, ep.episode);
+                skipped += 1;
+                continue;
+            }
+            Some(SetStatus::Pending) => {
+                println!(
+                    "S{:02}E{:02} pending; run mediagram resume",
+                    ep.season, ep.episode
+                );
+                pending += 1;
+                continue;
+            }
+            None => {}
         }
         println!(
             "uploading S{:02}E{:02} {}",
@@ -95,10 +107,14 @@ pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
     uploader.close().await;
 
     println!("\n{uploaded} uploaded, {skipped} already held, {failed} failed");
+    if pending > 0 {
+        println!("{pending} pending; run mediagram resume to finish them");
+    }
     if uploaded > 0 && !args.no_push {
-        super::push_index::run(cfg)
+        let message_id = index_publish::publish(cfg)
             .await
             .context("pushing the index after the show")?;
+        println!("pushed index as message {message_id}");
     }
     if failed > 0 {
         bail!("{failed} episode(s) failed");
@@ -122,7 +138,9 @@ async fn upload_one(
     };
     let planned = plan_set(cfg, &new).await?;
     // The index is pushed once when the show is done, not per episode.
-    uploader.finish(&planned.set_id, delete.then_some(ep.path.as_path())).await?;
+    uploader
+        .finish(&planned.set_id, delete.then_some(ep.path.as_path()))
+        .await?;
     Ok(())
 }
 
@@ -148,7 +166,11 @@ fn confirm() -> Result<bool> {
 fn print_table(episodes: &[Episode], tmdb: u64) {
     println!("{} episode(s) for tmdb {tmdb}", episodes.len());
     for ep in episodes {
-        println!("  S{:02}E{:02}  {}", ep.season, ep.episode, file_name(&ep.path));
+        println!(
+            "  S{:02}E{:02}  {}",
+            ep.season,
+            ep.episode,
+            file_name(&ep.path)
+        );
     }
 }
-
