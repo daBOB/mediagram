@@ -31,7 +31,7 @@ afterEach(async () => {
 });
 
 /** A package as the exporter would write it, and the pointer naming it. */
-function build(options: { createdAt: number; dbBody?: string; manifestCreatedAt?: number }) {
+function build(options: { createdAt: number; dbBody?: string; manifestCreatedAt?: number; manifestPath?: string }) {
   const createdAt = options.createdAt;
   const manifest = JSON.stringify({
     format: 1,
@@ -43,7 +43,7 @@ function build(options: { createdAt: number; dbBody?: string; manifestCreatedAt?
     posters: [{ key: "tmdb-movie-36648", file: "posters/tmdb-movie-36648.jpg" }],
   });
   const packed = archive(
-    member("manifest.json", text(manifest)),
+    member(options.manifestPath ?? "manifest.json", text(manifest)),
     member("library.db", text(options.dbBody ?? "SQLite format 3")),
     member("posters/tmdb-movie-36648.jpg", text("jpeg")),
   );
@@ -117,6 +117,18 @@ const refresh = (built: ReturnType<typeof build>, over: Record<string, unknown> 
 };
 
 describe("a first refresh", () => {
+  test.each([
+    ["elsewhere.json", /the package has no manifest/],
+    ["manifest.json/child", /EISDIR|directory/i],
+  ])("a manifest at %s reports the actual refusal while retaining the catalog", async (manifestPath, reason) => {
+    const previous = await refresh(build({ createdAt: NOW - 200, dbBody: "previous catalog" })).run();
+    const result = await refresh(build({ createdAt: NOW - 100, manifestPath })).run();
+    expect(result.status).toBe("kept");
+    expect(result.reason).toMatch(reason);
+    expect(result.dir).toBe(previous.dir);
+    expect(await readFile(join(result.dir!, "library.db"), "utf8")).toBe("previous catalog");
+    expect(await readdir(root)).not.toContain(`incoming-${NOW - 100}-${process.pid}`);
+  });
   test("downloads, opens, unpacks and reports where the catalog is", async () => {
     const { run } = refresh(build({ createdAt: NOW - 100 }));
 
