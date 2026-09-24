@@ -238,6 +238,37 @@ mod what_comes_back {
     use super::*;
 
     #[tokio::test]
+    async fn an_empty_remote_profile_reports_a_change_to_refresh_the_picker() {
+        for failed_upload in [false, true] {
+            let (_remote_dir, remote) = db();
+            profile(&remote);
+            let record = remote
+                .with(|conn| exchange::export_record(conn, "desktop"))
+                .unwrap();
+            let channel = FlakyPut {
+                refused: Cell::new(failed_upload),
+                inner: FakeChannel::new(vec![ChannelDocument {
+                    message_id: 7,
+                    device: "desktop".into(),
+                    text: serde_json::to_string(&record).unwrap(),
+                }]),
+            };
+            let (_dir, here) = db();
+            let mut memo = SyncMemo::default();
+
+            let first = once(&here, &channel, "laptop", memo.entry("handle")).await;
+
+            assert_eq!(first.failed.is_some(), failed_upload);
+            assert_eq!(first.pulled, 1);
+            assert_eq!(here.with(profiles::list).unwrap().len(), 1);
+            let repeated = once(&here, &channel, "laptop", memo.entry("handle")).await;
+            assert_eq!(repeated.failed, None);
+            assert_eq!(repeated.pulled, 0);
+            assert_eq!(repeated.pushed, failed_upload);
+        }
+    }
+
+    #[tokio::test]
     async fn another_machines_position_arrives() {
         let (_odir, other) = db();
         let other_id = profile(&other);

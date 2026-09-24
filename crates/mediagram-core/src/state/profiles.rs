@@ -97,17 +97,26 @@ pub fn profile_named(
     name: &str,
     display_name: Option<&str>,
 ) -> rusqlite::Result<Option<String>> {
+    Ok(profile_named_with_creation(conn, name, display_name)?.map(|(id, _)| id))
+}
+
+/// Resolves an id and reports whether this call created its profile row.
+pub(super) fn profile_named_with_creation(
+    conn: &Connection,
+    name: &str,
+    display_name: Option<&str>,
+) -> rusqlite::Result<Option<(String, bool)>> {
     let Some(wanted) = normal_name(name) else {
         return Ok(None);
     };
     for profile in list(conn)? {
         if normal_name(&profile.name).as_deref() == Some(wanted.as_str()) {
-            return Ok(Some(profile.id));
+            return Ok(Some((profile.id, false)));
         }
     }
     // Created from the spelling somebody typed, never from the normalised
     // identity — that would greet a viewer as "andré" on every new machine.
-    Ok(create(conn, display_name.unwrap_or(name))?.map(|p| p.id))
+    Ok(create(conn, display_name.unwrap_or(name))?.map(|p| (p.id, true)))
 }
 
 /// A name with its edges trimmed and internal whitespace collapsed, or

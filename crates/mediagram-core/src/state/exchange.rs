@@ -72,11 +72,15 @@ pub fn import_merged(conn: &Connection, merged: &MergedState) -> rusqlite::Resul
     let mut changed = lists_exchange::import_kids(conn, &merged.kids)?;
     for profile in &merged.profiles {
         // The identity to match on, and the spelling to create with.
-        let Some(profile_id) =
-            profiles::profile_named(conn, &profile.name, Some(&profile.display_name))?
+        let Some((profile_id, created)) = profiles::profile_named_with_creation(
+            conn,
+            &profile.name,
+            Some(&profile.display_name),
+        )?
         else {
             continue;
         };
+        changed += u64::from(created);
 
         for row in &profile.progress {
             changed += import_progress(conn, &profile_id, row)?;

@@ -16,6 +16,26 @@ fn profile(db: &StateDb) -> String {
         .id
 }
 
+#[test]
+fn importing_an_empty_profile_counts_its_creation_only_once() {
+    let (_dir, db) = db();
+    let mut merged = MergedState {
+        profiles: vec![MergedProfile {
+            name: "robin".into(),
+            display_name: "Robin".into(),
+            ..Default::default()
+        }],
+        ..Default::default()
+    };
+
+    assert_eq!(db.with(|conn| import_merged(conn, &merged)), Some(1));
+    merged.profiles[0].name = "  ROBIN  ".into();
+    assert_eq!(db.with(|conn| import_merged(conn, &merged)), Some(0));
+    let stored = db.with(profiles::list).unwrap();
+    assert_eq!(stored.len(), 1);
+    assert_eq!(stored[0].name, "Robin");
+}
+
 /// A device that never heard about `02B` must not lose the position it does
 /// know about: importing a merge that only mentions `02B` may not touch
 /// `01A`.
