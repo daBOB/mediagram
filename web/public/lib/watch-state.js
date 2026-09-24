@@ -7,9 +7,13 @@
  * reading the same rows, so putting a film down on one and picking it up on
  * the other needs nothing beyond this.
  *
- * Every write fails silently. A player that cannot record a position is still
- * a player, and a viewer interrupted mid-film by an error about bookkeeping
- * has been served worse than one who simply loses their place.
+ * Position, mark, membership and preference setters update local state
+ * immediately and persist best-effort; their void return does not acknowledge
+ * persistence, and failed writes do not roll back that local update.
+ * Shelf-affecting setters notify subscribers immediately. Profile and
+ * collection management waits for the server:
+ * creation returns a record or null, and rename/delete returns a boolean.
+ * Those callers report a failed acknowledgement so the viewer can retry.
  */
 
 /** Where this device's answer to "who is watching" is kept. */
@@ -87,7 +91,7 @@ function remember(id) {
 /** Every state path is under the profile it belongs to. */
 const under = (rest) => `/api/profiles/${encodeURIComponent(held.profileId)}${rest}`;
 
-/** One write, with its failure swallowed. `null` means it did not happen. */
+/** One write. `null` means persistence was not acknowledged, not that it cannot have happened. */
 async function write(path, method, body) {
   try {
     const response = await fetch(path, {
@@ -143,6 +147,7 @@ export function rememberedProfile() {
   return id && held.profiles.some((entry) => entry.id === id) ? id : null;
 }
 
+/** @returns {Promise<{id: string, name: string}|null>} The acknowledged profile, or null on failure. */
 export async function createProfile(name) {
   const made = await createRecord("/api/profiles", name);
   if (!made) return null;
@@ -150,6 +155,7 @@ export async function createProfile(name) {
   return made;
 }
 
+/** @returns {Promise<boolean>} Whether the server acknowledged the rename. */
 export async function renameProfile(id, name) {
   if (!(await write(`/api/profiles/${encodeURIComponent(id)}`, "PATCH", { name }))) return false;
   const found = held.profiles.find((entry) => entry.id === id);
@@ -157,6 +163,7 @@ export async function renameProfile(id, name) {
   return true;
 }
 
+/** @returns {Promise<boolean>} Whether the server acknowledged deletion. */
 export async function deleteProfile(id) {
   if (!(await write(`/api/profiles/${encodeURIComponent(id)}`, "DELETE"))) return false;
   held.profiles = held.profiles.filter((entry) => entry.id !== id);
@@ -275,6 +282,7 @@ export function inProgress() {
  *
  * Kept locally first so the shelf and the progress rules are right straight
  * away, rather than after a round trip that may not come back.
+ * @returns {void} Local update only; persistence is best-effort.
  */
 export function setProgress(setId, at, duration) {
   held.progress.set(setId, { at, duration: duration ?? null, updatedAt: Date.now() });
@@ -287,6 +295,7 @@ export function setProgress(setId, at, duration) {
  *
  * `sendBeacon` because a normal request made while the tab is going away is
  * cancelled with it — which is exactly the moment the position matters most.
+ * @returns {void} Local update only; a queued beacon is not a persistence acknowledgement.
  */
 export function flushProgress(setId, at, duration) {
   held.progress.set(setId, { at, duration: duration ?? null, updatedAt: Date.now() });
@@ -300,7 +309,7 @@ export function flushProgress(setId, at, duration) {
   void write(under(`/progress/${encodeURIComponent(setId)}`), "PUT", { at, duration });
 }
 
-/** Forgets a position: watched to the end, or started again. */
+/** Forgets a position locally and persists best-effort. @returns {void} */
 export function clearProgress(setId) {
   held.progress.delete(setId);
   void write(under(`/progress/${encodeURIComponent(setId)}`), "DELETE");
@@ -310,6 +319,7 @@ export function clearProgress(setId) {
 export const isWatchlisted = (setId) => held.watchlist.has(setId);
 export const watchlist = () => [...held.watchlist];
 
+/** Updates the local watchlist and persists best-effort. @returns {void} */
 export function setWatchlisted(setId, listed) {
   if (listed) held.watchlist.add(setId);
   else held.watchlist.delete(setId);
@@ -335,6 +345,7 @@ export const watchedAt = (setId) => held.watched.get(setId) ?? null;
  * Called from the same branch that clears the position, because a finished
  * title has no resume point and this is the only thing left that remembers
  * it happened.
+ * @returns {void} Local update only; persistence is best-effort.
  */
 export function setWatched(setId, finished) {
   if (finished) held.watched.set(setId, Date.now());
@@ -366,6 +377,7 @@ export async function loadKids() {
 export const isKids = (setId) => held.kids.has(setId);
 export const kids = () => [...held.kids];
 
+/** Updates the shared local Kids mark and persists best-effort. @returns {void} */
 export function setKids(setId, marked) {
   if (marked) held.kids.add(setId);
   else held.kids.delete(setId);
@@ -375,6 +387,10 @@ export function setKids(setId, marked) {
 
 export const collections = () => held.collections;
 
+/**
+ * @returns {Promise<{id: string, name: string, items: string[]}|null>}
+ * The acknowledged list, or null on failure or if the selected profile changed.
+ */
 export async function createCollection(name) {
   const selection = profileSelection;
   const asked = held.profileId;
@@ -385,6 +401,7 @@ export async function createCollection(name) {
   return made;
 }
 
+/** @returns {Promise<boolean>} Whether the server acknowledged the rename. */
 export async function renameCollection(id, name) {
   if (!(await write(under(`/collections/${encodeURIComponent(id)}`), "PATCH", { name }))) return false;
   const list = held.collections.find((entry) => entry.id === id);
@@ -393,6 +410,7 @@ export async function renameCollection(id, name) {
   return true;
 }
 
+/** @returns {Promise<boolean>} Whether the server acknowledged deletion. */
 export async function deleteCollection(id) {
   if (!(await write(under(`/collections/${encodeURIComponent(id)}`), "DELETE"))) return false;
   held.collections = held.collections.filter((entry) => entry.id !== id);
@@ -400,6 +418,7 @@ export async function deleteCollection(id) {
   return true;
 }
 
+/** Updates local membership when the list exists and persists best-effort. @returns {void} */
 export function setInCollection(id, setId, member) {
   const list = held.collections.find((entry) => entry.id === id);
   if (!list) return;
@@ -430,7 +449,7 @@ export function preferenceOf(scope, name) {
   return held.preferences.get(preferenceKey(scope, name)) ?? null;
 }
 
-/** Remembers a choice for this show. An empty value forgets it. */
+/** Remembers a choice locally and persists best-effort. An empty value forgets it. @returns {void} */
 export function setPreference(scope, name, value) {
   if (scope === null || held.profileId === null) return;
   const held_ = value === null || value === undefined ? "" : String(value);

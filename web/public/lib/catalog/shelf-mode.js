@@ -15,6 +15,8 @@ const KEY = "mediagram.shelfView";
 export const LIST = "list";
 export const GRID = "grid";
 
+let remembered = LIST;
+let localOnly = false;
 
 /**
  * @param {string|null} stored what was read out of storage
@@ -35,24 +37,29 @@ export function modeFrom(stored) {
  * than answering null.
  */
 export function shelfMode() {
+  if (localOnly) return remembered;
   try {
-    return modeFrom(window.localStorage.getItem(KEY));
+    remembered = modeFrom(window.localStorage.getItem(KEY));
   } catch {
-    return LIST;
+    // Keep this page's choice when storage becomes unavailable.
   }
+  return remembered;
 }
 
 /** Remembers `mode`, or forgets the setting when it is the default. */
 export function setShelfMode(mode) {
   const chosen = modeFrom(mode);
+  remembered = chosen;
   try {
     // The default is stored as its absence, so a viewer who never chose and a
     // viewer who chose the list are the same viewer — and clearing site data
     // returns both to the same place.
     if (chosen === LIST) window.localStorage.removeItem(KEY);
     else window.localStorage.setItem(KEY, chosen);
+    localOnly = false;
   } catch {
     // The choice lasts this page load instead, which still works.
+    localOnly = true;
   }
   return chosen;
 }

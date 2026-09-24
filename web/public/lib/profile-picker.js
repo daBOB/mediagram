@@ -49,7 +49,10 @@ export function chooseProfile(root, { canCancel = false } = {}) {
       add.addEventListener("click", () => {
         const name = window.prompt("Name for this profile");
         if (name === null) return;
-        void state.createProfile(name).then((made) => made && draw());
+        void state.createProfile(name).then((made) => {
+          if (made) draw();
+          else window.alert("Could not create the profile. Please try again.");
+        });
       });
       tiles.append(add);
     };
@@ -70,7 +73,10 @@ export function chooseProfile(root, { canCancel = false } = {}) {
           return;
         }
         if (!window.confirm(`Remove "${found.name}" and everything they have watched?`)) return;
-        void state.deleteProfile(found.id).then((ok) => ok && draw());
+        void state.deleteProfile(found.id).then((ok) => {
+          if (ok) draw();
+          else window.alert("Could not remove the profile. Please try again.");
+        });
       });
       card.append(manage);
     }

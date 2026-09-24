@@ -62,7 +62,7 @@ function trailOf(set) {
 }
 
 /** Finds or creates the child of `parent` called `name`. */
-function descend(parent, name, season) {
+function getOrCreateChildDivision(parent, name, season) {
   let node = parent.children.find((child) => child.title === name);
   if (!node) {
     node = { title: name, season, items: [], children: [] };
@@ -245,7 +245,7 @@ function collections(sets, fallbackName) {
 
     const { names, season } = trailOf(set);
     let node = byName.get(name);
-    for (const folder of names) node = descend(node, folder, season);
+    for (const folder of names) node = getOrCreateChildDivision(node, folder, season);
     node.items.push(set);
   }
 

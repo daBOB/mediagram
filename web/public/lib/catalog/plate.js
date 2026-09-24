@@ -24,7 +24,7 @@ export function initialsOf(text) {
 
 /**
  * @param {{poster: string|null, name: string, initials: string,
- *          progress?: number, watched?: boolean}} options
+ *          progress?: number|null, watched?: boolean}} options
  */
 export function plate({ poster, name, initials, progress, watched }) {
   const thumb = el("div", "thumb", poster ? undefined : initials);

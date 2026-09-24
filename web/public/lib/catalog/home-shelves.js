@@ -25,8 +25,7 @@ export const SHELF_LIMIT = 6;
  * import so this module can be tested without a store, and so the page
  * cannot accidentally read a third source of truth.
  *
- * @param {{library: any, byId: Map<string, any>, progress?: any[],
- *          watchedAt?: (setId: string) => number|null, limit?: number}} from
+ * @param {import("./home-shelves.js").HomeShelvesInput} from
  */
 export function homeShelves({ library, byId, progress = [], watchedAt = () => null, limit = SHELF_LIMIT }) {
   const positions = new Map(progress.map((row) => [row.setId, row]));

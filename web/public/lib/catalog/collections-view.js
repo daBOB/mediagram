@@ -59,7 +59,9 @@ export function listsView(onOpen) {
     // browser already has — including for a viewer using a screen reader.
     const name = window.prompt("Name for the list");
     if (name === null) return;
-    void state.createCollection(name);
+    void state.createCollection(name).then((made) => {
+      if (!made) window.alert("Could not create the list. Please try again.");
+    });
   });
   block.append(make);
   return block;
@@ -87,7 +89,9 @@ export function listControls(list, onEditing, onGone, onPlayAll) {
   rename.addEventListener("click", () => {
     const name = window.prompt("Name for the list", list.name);
     if (name === null) return;
-    void state.renameCollection(list.id, name);
+    void state.renameCollection(list.id, name).then((ok) => {
+      if (!ok) window.alert("Could not rename the list. Please try again.");
+    });
   });
 
   const remove = el("button", "quiet", "Delete list");
@@ -95,7 +99,10 @@ export function listControls(list, onEditing, onGone, onPlayAll) {
     // Asked, because a list is the one thing here that took effort to build
     // and the only one whose loss cannot be undone by watching something.
     if (!window.confirm(`Delete "${list.name}"? The titles stay in the library.`)) return;
-    void state.deleteCollection(list.id).then((ok) => ok && onGone());
+    void state.deleteCollection(list.id).then((ok) => {
+      if (ok) onGone();
+      else window.alert("Could not delete the list. Please try again.");
+    });
   });
 
   bar.append(rename, remove);

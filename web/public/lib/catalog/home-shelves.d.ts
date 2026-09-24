@@ -46,7 +46,7 @@ export interface ProgressRow {
 
 export const SHELF_LIMIT: number;
 
-export function homeShelves(from: {
+export interface HomeShelvesInput {
   library: Library;
   byId: Map<string, CatalogSet>;
   /** The store's rows, newest first. */
@@ -54,4 +54,6 @@ export function homeShelves(from: {
   /** When a set was finished, or `null`. */
   watchedAt?: (setId: string) => number | null;
   limit?: number;
-}): HomeShelves;
+}
+
+export function homeShelves(from: HomeShelvesInput): HomeShelves;
