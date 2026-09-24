@@ -92,10 +92,10 @@ webpki-roots = "1"
 grammers-session.workspace = true
 rusqlite = { workspace = true, features = ["bundled"] }
 
-# Off Android there is a system libsqlite3 to link against, so rusqlite needs
-# no copy of its own and the session store keeps its sqlite-backed storage.
+# Off Android rusqlite links system libsqlite3. The core uses MemorySession
+# on every platform; only the CLI enables grammers' SQLite session storage.
 [target.'cfg(not(target_os = "android"))'.dependencies]
-grammers-session = { workspace = true, default-features = true }
+grammers-session.workspace = true
 rusqlite.workspace = true
 
 [dev-dependencies]

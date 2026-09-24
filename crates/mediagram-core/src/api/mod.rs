@@ -39,11 +39,8 @@ struct State {
 /// One player's whole Telegram surface, kept alive by Kotlin for the life of
 /// the app.
 ///
-/// `api_id`/`api_hash` identify the *application* to Telegram, not the
-/// account — leaking them lets someone impersonate the app, never sign in as
-/// a user. An Android process has no settable environment to read them from,
-/// so Kotlin passes them in from `BuildConfig`, itself populated at build
-/// time from `local.properties`.
+/// `api_id`/`api_hash` identify the Telegram application, not a signed-in
+/// account. Kotlin passes the identity stored by the app's setup flow.
 #[derive(uniffi::Object)]
 pub struct Core {
     data_dir: PathBuf,
@@ -151,15 +148,18 @@ impl Core {
             .await
     }
 
-    /// What the installed catalog is, for the screen that says so.
-    ///
-    /// Total failure is reported as zeroes rather than an error: this is
-    /// read to draw a screen, and a screen that cannot draw because a count
-    /// failed is worse than one that says a library is empty.
+    /// Installed-catalog status; unavailable counts are reported as zeroes
+    /// so the display remains usable when its local data cannot be read.
     pub async fn catalog_facts(self: Arc<Self>) -> crate::dto::CatalogFacts {
         self.blocking(store::facts).await
     }
 
+    /// Reads at most `len` bytes from `offset`, clamping the result at EOF.
+    /// `NotFound` covers absent/unplayable sets or offsets at/beyond EOF, even
+    /// for `len == 0`. An in-range empty request returns no bytes without
+    /// resolving channels. Nonempty reads also return `NotFound` for missing
+    /// channel addresses. Storage, transport and authorization errors propagate;
+    /// failed downloads never return a partial buffer.
     pub async fn read(
         self: Arc<Self>,
         set_id: String,
