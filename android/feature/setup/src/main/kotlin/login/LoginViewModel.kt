@@ -66,6 +66,17 @@ class LoginViewModel
             }
         }
 
+        /**
+         * Setup has found this session unauthorized and is opening sign-in.
+         * Forget a completed login retained by the Activity, including its old
+         * token. A code/password still being entered or retried stays in hand.
+         */
+        fun enterSignIn() {
+            if (_state.value != LoginUiState.Authorized) return
+            signInToken = null
+            _state.value = LoginUiState.NeedsPhone
+        }
+
         fun submitPhone(phone: String) {
             viewModelScope.launch {
                 runCatching { coreProvider.awaitCore().requestCode(phone) }

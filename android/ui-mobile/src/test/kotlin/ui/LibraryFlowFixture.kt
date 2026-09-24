@@ -36,6 +36,7 @@ import ui.player.PlayerLifecycleFixture
 /** Real routing and catalog/profile/player ViewModels; only external IO and unrelated menu facts are controlled. */
 internal class LibraryFlowFixture(
     loading: Boolean = false,
+    settingsModel: SettingsViewModel? = null,
 ) : ViewModelStoreOwner,
     AutoCloseable {
     override val viewModelStore = ViewModelStore()
@@ -44,7 +45,7 @@ internal class LibraryFlowFixture(
     var refreshes = 0
     var startOvers = 0
     var signedOut = 0
-    val settings = mockk<SettingsViewModel>(relaxed = true)
+    val settings = settingsModel ?: mockk<SettingsViewModel>(relaxed = true)
     val repository = mockk<CatalogRepository>()
     val watch = MutableStateFlow(WatchSnapshot.Empty.copy(collections = listOf(ListOfSets("list", "Favourites", listOf("episode-1")))))
     val catalog: CatalogViewModel
@@ -69,8 +70,10 @@ internal class LibraryFlowFixture(
         val enrichment = CatalogEnrichmentFetcher(mockk<CoreProvider>(), InMemoryTmdbSettings())
         catalog = CatalogViewModel(repository, stored, LibraryUpdateCoordinator(repository, enrichment))
         player = playback.factory.create(PlayerViewModel::class.java)
-        every { settings.state } returns MutableStateFlow(SettingsUiState(account = "Viewer", library = "Library"))
-        every { settings.completions } returns MutableStateFlow<List<SettingsCompletion>>(emptyList())
+        if (settingsModel == null) {
+            every { settings.state } returns MutableStateFlow(SettingsUiState(account = "Viewer", library = "Library"))
+            every { settings.completions } returns MutableStateFlow<List<SettingsCompletion>>(emptyList())
+        }
         val system = mockk<SystemViewModel>(relaxed = true)
         every { system.state } returns
             MutableStateFlow(

@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -21,6 +22,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.MediagramTheme
 import designsystem.Spacing
+import kotlinx.coroutines.flow.first
 import setup.SetupUiState
 import setup.SetupViewModel
 import setup.login.LoginUiState
@@ -124,9 +126,14 @@ private fun SetupStep(
 private fun SignIn(onAuthorized: () -> Unit) {
     val loginViewModel: LoginViewModel = hiltViewModel()
     val loginState by loginViewModel.state.collectAsStateWithLifecycle()
+    val authorized by rememberUpdatedState(onAuthorized)
 
-    LaunchedEffect(loginState) {
-        if (loginState is LoginUiState.Authorized) onAuthorized()
+    LaunchedEffect(loginViewModel) {
+        // Reconcile entry before observing completion: the Activity can retain
+        // Authorized from a session that setup just found was signed out.
+        loginViewModel.enterSignIn()
+        loginViewModel.state.first { it is LoginUiState.Authorized }
+        authorized()
     }
 
     LoginScreen(

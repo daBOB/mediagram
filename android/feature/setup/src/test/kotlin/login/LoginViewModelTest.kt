@@ -18,6 +18,39 @@ class LoginViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
+    fun reenteringAfterAuthorizationLossDiscardsTheCompletedLoginToken() =
+        runTest {
+            val core = FakeCore()
+            val vm = LoginViewModel(ResolvedCoreProvider(core), UnconfinedTestDispatcher())
+            vm.submitPhone("+49...")
+            vm.submitCode("12345")
+            assertEquals(LoginUiState.Authorized, vm.state.value)
+
+            vm.enterSignIn()
+            assertEquals(LoginUiState.NeedsPhone, vm.state.value)
+            vm.submitCode("old code")
+            assertEquals(LoginUiState.NeedsPhone, vm.state.value, "a completed token must not be reused")
+
+            vm.submitPhone("+49...")
+            vm.submitCode("67890")
+            assertEquals(LoginUiState.Authorized, vm.state.value)
+            assertEquals(2, core.requestCodeCalls)
+        }
+
+    @Test
+    fun reenteringWhileACodeIsPendingKeepsTheCurrentAttempt() =
+        runTest {
+            val core = FakeCore()
+            val vm = LoginViewModel(ResolvedCoreProvider(core), UnconfinedTestDispatcher())
+            vm.submitPhone("+49...")
+            vm.enterSignIn()
+            assertEquals(LoginUiState.NeedsCode, vm.state.value)
+            vm.submitCode("12345")
+            assertEquals(LoginUiState.Authorized, vm.state.value)
+            assertEquals(1, core.requestCodeCalls)
+        }
+
+    @Test
     fun cancellingAPhoneRequestDoesNotBecomeASignInFailure() =
         runTest {
             val core = FakeCore().apply { requestFailure = CancellationException("cancelled request") }
@@ -37,6 +70,8 @@ class LoginViewModelTest {
             vm.submitPhone("+49...")
             vm.submitCode("12345")
             assertEquals(LoginUiState.NeedsCode, vm.state.value)
+            vm.enterSignIn()
+            assertEquals(LoginUiState.NeedsCode, vm.state.value)
             core.signInFailure = null
             vm.submitCode("12345")
             assertEquals(LoginUiState.Authorized, vm.state.value)
@@ -54,6 +89,8 @@ class LoginViewModelTest {
             vm.submitPhone("+49...")
             vm.submitCode("12345")
             vm.submitPassword("password")
+            assertEquals(LoginUiState.NeedsPassword, vm.state.value)
+            vm.enterSignIn()
             assertEquals(LoginUiState.NeedsPassword, vm.state.value)
             core.passwordFailure = null
             vm.submitPassword("password")
@@ -101,6 +138,8 @@ class LoginViewModelTest {
 
             vm.submitCode("00000")
             assertEquals(LoginStep.CODE, assertIs<LoginUiState.Failed>(vm.state.value).step)
+            vm.enterSignIn()
+            assertEquals(LoginStep.CODE, assertIs<LoginUiState.Failed>(vm.state.value).step)
 
             vm.submitCode("12345")
             assertEquals(LoginUiState.Authorized, vm.state.value)
@@ -116,6 +155,8 @@ class LoginViewModelTest {
             vm.submitCode("12345")
 
             vm.submitPassword("wrong")
+            assertEquals(LoginStep.PASSWORD, assertIs<LoginUiState.Failed>(vm.state.value).step)
+            vm.enterSignIn()
             assertEquals(LoginStep.PASSWORD, assertIs<LoginUiState.Failed>(vm.state.value).step)
 
             vm.submitPassword("right")
