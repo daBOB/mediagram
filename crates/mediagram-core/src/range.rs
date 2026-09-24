@@ -26,6 +26,11 @@ pub struct ByteRange {
 }
 
 impl ByteRange {
+    /// Inclusive length, for `start <= end` and a length representable in `u64`.
+    /// In particular, `0..=u64::MAX` is not representable. [`parse_range`]
+    /// produces valid bounds; callers constructing public fields must do so too.
+    /// Invalid bounds are not checked: arithmetic panics with overflow checks
+    /// enabled and otherwise wraps.
     pub fn length(&self) -> u64 {
         self.end - self.start + 1
     }
@@ -42,7 +47,9 @@ pub enum RangeError {
     MultiRange,
 }
 
-/// Total size of the virtual file.
+/// Total size of the virtual file, provided the sum of lengths fits in `u64`.
+/// Does not validate offsets or coverage. An overflowing sum panics with
+/// overflow checks enabled and otherwise wraps.
 pub fn total_size(parts: &[PartSpan]) -> u64 {
     parts.iter().map(|p| p.len).sum()
 }
@@ -108,6 +115,15 @@ impl Step {
     /// What is left of this step once `sent` of its bytes are delivered: a
     /// download interrupted midway resumes where it stopped, not from the
     /// top, which would send the delivered bytes twice.
+    ///
+    /// Requires `sent <= self.take`. The resumed part-relative offset
+    /// `skip_chunks * CHUNK + head_drop + sent` must fit in `u64`, and its
+    /// whole-chunk quotient must fit in `u32`. The result aligns that offset
+    /// into whole chunks and a remainder smaller than [`CHUNK`]. Delivering
+    /// exactly `take` bytes returns an empty step, subject to the same bounds.
+    /// These preconditions are unchecked: arithmetic overflow/underflow panics
+    /// with overflow checks enabled and otherwise wraps; an oversized chunk
+    /// quotient truncates when cast to `u32`.
     pub fn after(&self, sent: u64) -> Step {
         let from = u64::from(self.skip_chunks) * CHUNK + self.head_drop + sent;
         Step {
@@ -120,6 +136,19 @@ impl Step {
 }
 
 /// The reads that together cover `range` exactly, in order.
+///
+/// Requires parts ordered by `off`, with contiguous, nonoverlapping coverage
+/// of the entire inclusive range. Zero-length parts are ignored. The range
+/// must satisfy [`ByteRange::length`]'s bounds; every `off + len` (exclusive
+/// part end) and `range.end - off + 1` for an overlapping part must fit in
+/// `u64`. Each part-relative starting offset divided by [`CHUNK`] must fit
+/// in `u32`. Resuming a returned step also requires [`Step::after`]'s bounds.
+///
+/// This helper neither sorts nor validates its inputs and returns no error.
+/// Gaps or missing parts yield incomplete coverage (empty input yields no
+/// steps); overlaps or unordered parts may duplicate or reorder bytes.
+/// Arithmetic overflow/underflow panics with overflow checks enabled and
+/// otherwise wraps, while oversized chunk quotients truncate to `u32`.
 pub fn plan_reads(parts: &[PartSpan], range: &ByteRange) -> Vec<Step> {
     let mut steps = Vec::new();
     for part in parts {
