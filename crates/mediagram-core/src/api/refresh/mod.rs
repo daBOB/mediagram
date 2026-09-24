@@ -9,20 +9,20 @@ mod download;
 
 use mlib_spec::package::LatestPointer;
 
-use download::{check_manifest, fetch, fetch_capped, package_url};
 use crate::api::{Core, CoreError, store};
 use crate::http;
 use crate::package::{self, PackageError};
 use crate::versions::identity::{identity_of, read_identity, write_identity};
 use crate::versions::{FUTURE_TOLERANCE_SECONDS, Staging, count_playable, now_unix};
+use download::{check_manifest, fetch, fetch_capped, package_url};
 
 pub(super) async fn refresh_catalog(
     core: &Core,
     pointer_url: String,
     key_b64: String,
 ) -> Result<u64, CoreError> {
-    let key =
-        package::cipher::parse_key(&key_b64).map_err(CoreError::Cipher("bad key".into()).logged())?;
+    let key = package::cipher::parse_key(&key_b64)
+        .map_err(CoreError::Cipher("bad key".into()).logged())?;
     let client = http::client()?;
 
     let pointer: LatestPointer = fetch(&client, &pointer_url)
@@ -48,20 +48,8 @@ pub(super) async fn refresh_catalog(
     }
 
     let current = store::current_dir(core);
-    if let Some(held) = read_identity(&current)? {
-        let offered = identity_of(&pointer);
-        // Never decided from `sha256`: that field is unauthenticated, so a
-        // host that wants to suppress an update could set it to the digest
-        // of the copy already held, and a reader that skips on that match
-        // would never run the cipher and never notice.
-        if held == offered {
-            return count_playable(&current);
-        }
-        if pointer.created_at <= held.created_at {
-            return Err(CoreError::Cipher(
-                "the package offered is older than the one already held".into(),
-            ));
-        }
+    if let Some(count) = check_replay(&current, &pointer)? {
+        return Ok(count);
     }
 
     let url = package_url(&pointer_url, &pointer.file)?;
@@ -70,24 +58,54 @@ pub(super) async fn refresh_catalog(
 
     let root = store::dir(core);
     let staging = Staging::begin(&core.installing, &root).await?;
+    // Another download may have published while this one was in flight.
+    // Recheck while holding the installation turn, through publication.
+    if let Some(count) = check_replay(&current, &pointer)? {
+        return Ok(count);
+    }
     // Checks the sealed bytes against the pointer's sha256 before opening
     // them, so nothing here needs to.
     package::read_package(&pointer, &sealed, &key, staging.dir()).map_err(package_error)?;
     check_manifest(staging.dir(), &pointer)?;
+    // Authentication proves who sealed the bytes, not that SQLite can read
+    // them. Query while staged, before installation removes the held copy.
+    let count = count_playable(staging.dir())?;
     write_identity(staging.dir(), &identity_of(&pointer))?;
 
-    let installed = staging.install(&format!("v-{}", pointer.created_at))?;
-    count_playable(&root.join(installed))
+    staging.install(&format!("v-{}", pointer.created_at))?;
+    Ok(count)
+}
+
+fn check_replay(
+    current: &std::path::Path,
+    pointer: &LatestPointer,
+) -> Result<Option<u64>, CoreError> {
+    let Some(held) = read_identity(current)? else {
+        return Ok(None);
+    };
+    // Never decided from `sha256`: that field is unauthenticated, so a host
+    // could copy the held digest to suppress an update without cipher checks.
+    if held == identity_of(pointer) {
+        return count_playable(current).map(Some);
+    }
+    if pointer.created_at <= held.created_at {
+        return Err(CoreError::Cipher(
+            "the package offered is older than the one already held".into(),
+        ));
+    }
+    Ok(None)
 }
 
 fn package_error(err: PackageError) -> CoreError {
     match err {
-        PackageError::Cipher(_) => CoreError::Cipher("package failed authentication".into()),
+        cause @ PackageError::Cipher(_) => {
+            CoreError::Cipher("package failed authentication".into()).logged()(cause)
+        }
         PackageError::DigestMismatch => {
             CoreError::Cipher("the package does not match the sha256 in its pointer".into())
         }
-        PackageError::Pointer(_) | PackageError::Archive(_) => {
-            CoreError::Cipher("package failed verification".into())
+        cause @ (PackageError::Pointer(_) | PackageError::Archive(_)) => {
+            CoreError::Cipher("package failed verification".into()).logged()(cause)
         }
         PackageError::Io(msg) => CoreError::Io(msg),
     }
