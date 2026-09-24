@@ -276,3 +276,43 @@ test("opening a film refreshes its position before the real player resumes it", 
   expect(state.progressOf("First")?.at).toBe(140);
   expect(page()).toContain("Resume from 2:20");
 });
+
+test("a superseded play cannot replace the latest title when refreshes finish in reverse order", async () => {
+  catalog = JSON.stringify([film("First"), film("Second")]);
+  await start();
+  const responses = [deferred<Response>(), deferred<Response>()];
+  let reads = 0;
+  intercept = (url) => url.endsWith("/state") ? responses[reads++]!.promise : null;
+  await env.navigate("#/film/First");
+  descendants(env.node("main")).find((node) => node.className === "film-play")!.fire("click");
+  await env.navigate("#/film/Second");
+  descendants(env.node("main")).find((node) => node.className === "film-play")!.fire("click");
+  responses[1]!.resolve(Response.json({}));
+  await settle();
+  expect(env.video.src).toBe("/api/sets/Second/stream");
+  responses[0]!.resolve(Response.json({}));
+  await settle();
+  expect(env.video.src).toBe("/api/sets/Second/stream");
+  expect(env.video.attachments).toEqual(["/api/sets/Second/stream"]);
+});
+
+test.each(["close", "pagehide"])("%s invalidates Play next while its state refresh is pending", async (exit) => {
+  catalog = JSON.stringify([film("First"), film("Second")]);
+  snapshot = { collections: [{ id: "list", name: "My list", items: ["First", "Second"] }] };
+  await start();
+  await env.navigate("#/collections/list");
+  descendants(env.node("main")).find((node) => node.textContent === "Play all")!.fire("click");
+  await settle();
+  expect(env.video.src).toBe("/api/sets/First/stream");
+  const pending = deferred<Response>();
+  intercept = (url) => url.endsWith("/state") ? pending.promise : null;
+  env.node("play-next").fire("click");
+  if (exit === "close") env.node("player").close();
+  else env.window.dispatchEvent(new Event("pagehide"));
+  const attachments = [...env.video.attachments];
+  pending.resolve(Response.json({}));
+  await settle();
+  expect(env.video.src).toBe("");
+  expect(env.video.attachments).toEqual(attachments);
+  if (exit === "close") expect(env.node("player").open).toBe(false);
+});

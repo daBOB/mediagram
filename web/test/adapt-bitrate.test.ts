@@ -9,7 +9,7 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { FLOOR_BITS, decideSwitch } from "../public/lib/playback/adapt-bitrate.js";
+import { FLOOR_BITS, decideSwitch } from "../public/lib/playback/streaming/adapt-bitrate.js";
 
 const behind = (over: Record<string, unknown> = {}) =>
   decideSwitch({ state: "behind", fitting: 4_000_000, currentCapBits: null, ...over });

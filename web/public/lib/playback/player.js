@@ -10,8 +10,8 @@
 
 import { playbackFor } from "../link.js";
 import { conversionNote } from "../playable.js";
-import { playTranscoded, warmTranscode } from "./hls-playback.js";
-import { sourceBitrate, watchPlayback } from "./adapt-playback.js";
+import { playTranscoded } from "./streaming/hls-playback.js";
+import { sourceBitrate, watchPlayback } from "./streaming/adapt-playback.js";
 import { clockTime, endsAt, episodeLabel, technicalLine } from "../format.js";
 import { languageLabel } from "../language-label.js";
 import { defaultTrack, fillChooser, loadAudioTracks, trackForLanguage } from "./audio-chooser.js";
@@ -19,10 +19,10 @@ import { bufferedAhead, preloadReadout } from "./preload-readout.js";
 import { seekModel, skipTo } from "./seek-model.js";
 import { mountTransport } from "./transport.js";
 import { keyAction, wantsKeys } from "./player-keys.js";
-import { mountPlayerNotes } from "./player-notes.js";
+import { mountPlayerNotes } from "./notes/player-notes.js";
 import { mountPlayerLibraryMarks } from "./player-library-marks.js";
 import { mountPlayerHud } from "./player-hud.js";
-import { COUNTDOWN_SECONDS, upNextPhase } from "./up-next.js";
+import { mountPlayerNextTitle } from "./player-next-title.js";
 import { autoplayReady } from "./autoplay.js";
 import * as state from "../watch-state.js";
 import { isFinished, resumeAt, trustedRuntime } from "../resume-point.js";
@@ -61,79 +61,10 @@ function mountPlayer() {
   const audio = document.getElementById("audio");
   const audioTrackPicker = document.getElementById("audio-track");
   const preload = document.getElementById("preload");
-  const playNextButton = document.getElementById("play-next");
-  const upNextPanel = document.getElementById("up-next");
-  const upNextTitle = document.getElementById("up-next-title");
-  const upNextIn = document.getElementById("up-next-in");
-
-  /**
-   * What follows the title being played, and how the page finds it.
-   *
-   * Supplied by whoever opened the player rather than worked out here: the
-   * shelves already hold the collection a title came from, and a player that
-   * went looking would have to be told about the library to do it.
-   */
-  let nextTitle = null;
-  let onOpenNext = null;
-  /** Titles whose countdown was cancelled, so it does not start again. */
-  const cancelled = new Set();
-  let countdown = null;
-  /** The set whose start has already been asked for, so it is asked once. */
-  let preloaded = null;
-  /**
-   * A conversion started for the title that is about to be wanted.
-   *
-   * `{ setId, controller }`, or `null`. Held so it can be let go of — a warmed
-   * session holds a hardware encoder exactly like a played one, and one nobody
-   * ever goes on to watch must not keep it.
-   */
-  let warm = null;
-
-  /** Lets go of a warmed conversion, if there is one. */
-  function dropWarm() {
-    warm?.controller.abort();
-    warm = null;
-  }
-
-  /**
-   * Starts the next title converting, while this one finishes.
-   *
-   * Called when the up-next panel appears, which is half a minute out — long
-   * enough to be worth it and short enough that a viewer who wanders off has
-   * cost one session for forty seconds rather than an encoder for an hour.
-   *
-   * Only for a title that needs converting. A direct one has nothing to start:
-   * `preloadNext` already warms its first bytes into the server's chunk cache,
-   * and it does so *earlier* than this, whenever the current title is
-   * comfortably buffered.
-   *
-   * The arguments have to match the ones `openPlayer` will use or the session
-   * ids differ and this warms something nobody asks for — so the offset is
-   * worked out the same way, and the audio track is the first, which is what an
-   * open starts on before the chooser has answered.
-   */
-  function warmNext() {
-    if (!nextTitle || warm?.setId === nextTitle.setId) return;
-    const next = nextTitle;
-    if (noteFor(next) === null) return;
-
-    dropWarm();
-    const operation = { setId: next.setId, controller: new AbortController() };
-    warm = operation;
-    const at = resumeAt(state.progressOf(next.setId)) ?? 0;
-    void warmTranscode(next.setId, {
-      seekSeconds: at,
-      signal: operation.controller.signal,
-    })
-      .then((release) => {
-        // The viewer may have moved on, or cancelled, while ffmpeg was starting.
-        if (warm !== operation) release();
-      })
-      .catch(() => {
-        if (warm === operation) warm = null;
-        /* A conversion that would not start now is one the open will report. */
-      });
-  }
+  const upNext = mountPlayerNextTitle({
+    showControls: () => hud.show(),
+    openTitle: (set, options) => openPlayer(set, options),
+  });
 
   /** A title owns its probes; each source owns startup, media and its session. */
   let title = null;
@@ -282,7 +213,7 @@ function mountPlayer() {
         if (!current()) return;
         appliedAudioTrack = null;
         operation.controller.abort();
-        if (warm?.setId === set.setId) dropWarm();
+        upNext.releaseWarm(set.setId);
         stopWaitingToStart();
         note.textContent = `The conversion stopped: ${error.message}. Pick a position to start it again.`;
       },
@@ -292,14 +223,14 @@ function mountPlayer() {
         appliedAudioTrack = operation.audioTrack;
         // After the join, never before. A release that took the last watcher
         // would stop the very session this open just joined.
-        if (warm?.setId === set.setId) dropWarm();
+        upNext.releaseWarm(set.setId);
         note.textContent = said;
         refreshEnds();
       })
       .catch((error) => {
         if (!current()) return;
         operation.controller.abort();
-        if (warm?.setId === set.setId) dropWarm();
+        upNext.releaseWarm(set.setId);
         stopWaitingToStart();
         note.textContent = `Could not start the conversion: ${error.message}`;
       });
@@ -322,10 +253,11 @@ function mountPlayer() {
    * nothing" rather than as a length.
    */
   function runtimeSeconds() {
-    const catalogued = Number(playing?.duration) || 0;
-    if (catalogued > 0) return catalogued;
-    if (!converting && Number.isFinite(video.duration)) return video.duration;
-    return 0;
+    return trustedRuntime({
+      catalogued: playing?.duration,
+      observed: video.duration,
+      direct: playing !== null && !converting,
+    });
   }
 
   /**
@@ -470,15 +402,6 @@ function mountPlayer() {
     ends.textContent = at === "" ? "" : `ends ${at}`;
   }
 
-  /** The runtime to judge a position against. The rule is in `resume-point.js`. */
-  function runtimeOf(set) {
-    return trustedRuntime({
-      catalogued: set?.duration,
-      observed: video.duration,
-      direct: set !== null && playbackFor(set).kind === "direct",
-    });
-  }
-
   /**
    * Records where the viewer is.
    *
@@ -488,7 +411,7 @@ function mountPlayer() {
    */
   function saveProgress(final = false) {
     if (!playing) return;
-    const runtime = runtimeOf(playing);
+    const runtime = runtimeSeconds();
     const at = filmTime();
     if (isFinished(at, runtime)) {
       // The position goes, because a finished title has nowhere to resume to.
@@ -513,126 +436,13 @@ function mountPlayer() {
     }, 10_000);
   }
 
-  /**
-   * Warms the next title's first bytes.
-   *
-   * The bytes are dropped; the point is the server's chunk cache, which is what
-   * actually holds them and which the transcoder reads through as well — so it
-   * helps whichever way the next title turns out to play. Bounded to one
-   * request per title, and only once the current one is comfortably buffered,
-   * because a link that cannot keep up with what is playing must not be asked
-   * to fetch something nobody is watching yet.
-   */
-  const PRELOAD_BYTES = 8 * 1024 * 1024;
-  function preloadNext() {
-    if (!nextTitle || preloaded === nextTitle.setId) return;
-    if (bufferedAhead(video.buffered, video.currentTime) < 30) return;
-
-    preloaded = nextTitle.setId;
-    void fetch(`/api/sets/${encodeURIComponent(nextTitle.setId)}/stream`, {
-      headers: { range: `bytes=0-${PRELOAD_BYTES - 1}` },
-    })
-      .then((response) => response.body?.cancel())
-      .catch(() => {
-        /* A warm cache is a convenience; failing to warm one is not an event. */
-      });
-  }
-
-  /** The card over the end of a title, and the countdown that acts on it. */
-  /**
-   * Offers the next title, and — only once this one has ended — starts it.
-   *
-   * The two used to be one call, which is how a ten second countdown came to
-   * expire with twenty seconds of the episode still playing. `upNextPhase`
-   * decides which of them is wanted; this does it.
-   */
-  /**
-   * The phase the panel is currently drawn in, so it is drawn once per change.
-   *
-   * `timeupdate` runs four times a second, and for the last half minute of
-   * every title the phase it reports is the same `waiting` each time. Redrawing
-   * on each of those repeated the card a hundred and twenty times — and, worse,
-   * called `hud.show` with it, which re-arms the rest timer: the controls could
-   * never fade for the whole of a title's last thirty seconds.
-   */
-  let shownPhase = null;
-
   function refreshUpNext({ ended = video.ended } = {}) {
-    const runtime = runtimeOf(playing);
-    const phase = upNextPhase({
-      hasNext: nextTitle !== null && playing !== null,
-      cancelled: playing !== null && cancelled.has(playing.setId),
-      remainingSeconds: runtime > 0 ? runtime - filmTime() : null,
-      ended,
-    });
-
-    if (phase === shownPhase) return;
-    clearInterval(countdown);
-    countdown = null;
-    shownPhase = phase;
-    upNextPanel.hidden = phase === "hidden";
-    if (phase === "hidden") {
-      // A warm session for this title is retained until its pending source joins.
-      if (warm?.setId !== playing?.setId) dropWarm();
-      return;
-    }
-
-    upNextTitle.textContent = titleLine(nextTitle);
-    upNextPanel.hidden = false;
-    hud.show();
-
-    if (phase === "waiting") {
-      // A heads-up, and a way past the credits for anyone who wants one.
-      // Nothing *plays* until the title is over — but the next one can start
-      // converting now, so that when it does there is nothing to wait for.
-      upNextIn.textContent = "when this ends";
-      warmNext();
-      return;
-    }
-
-    let left = COUNTDOWN_SECONDS;
-    upNextIn.textContent = `starting in ${left}…`;
-    countdown = setInterval(() => {
-      left -= 1;
-      upNextIn.textContent = `starting in ${left}…`;
-      if (left <= 0) playNext("buffered");
-    }, 1000);
+    upNext.update({ runtime: runtimeSeconds(), at: filmTime(), ended });
   }
 
-  /** How a title is named to the viewer: the HUD, the up-next card, a tooltip. */
+  /** How a title is named in the current-title HUD. */
   function titleLine(set) {
     return [set.show, episodeLabel(set), set.title].filter(Boolean).join(" · ");
-  }
-
-  /** The standing offer, which cancelling the countdown does not withdraw. */
-  function refreshPlayNext() {
-    const has = nextTitle !== null;
-    playNextButton.hidden = !has;
-    // The rail has no room to spell out a title, and the panel is not always
-    // showing, so the name lives on the tooltip.
-    playNextButton.title = has ? titleLine(nextTitle) : "";
-  }
-
-  function hideUpNext() {
-    clearInterval(countdown);
-    countdown = null;
-    upNextPanel.hidden = true;
-    shownPhase = null;
-  }
-
-  /**
-   * @param {"buffered"|"asap"} how the countdown running out waits for a
-   * buffer, because nobody is watching the screen; a viewer who pressed a
-   * button is, and gets the picture as soon as the browser can give it.
-   */
-  function playNext(how = "asap") {
-    const next = nextTitle;
-    hideUpNext();
-    if (!next) return;
-    // Through the page rather than straight into `openPlayer`, so whatever
-    // opened this player can work out what follows *that* one.
-    if (onOpenNext) onOpenNext(next, { autoplay: how });
-    else openPlayer(next, { autoplay: how });
   }
 
   /**
@@ -708,7 +518,7 @@ function mountPlayer() {
       if (!playing || waitingToStart === null) return stopWaitingToStart();
 
       const ahead = bufferedAhead(video.buffered, video.currentTime);
-      const runtime = runtimeOf(playing);
+      const runtime = runtimeSeconds();
       const ready =
         mode === "asap"
           ? video.readyState >= 3
@@ -759,14 +569,10 @@ function mountPlayer() {
     title = new AbortController();
     const signal = title.signal;
     stopWaitingToStart();
-    hideUpNext();
-    if (warm?.setId !== set.setId) dropWarm();
     // Install the complete title state before controls, media events or probes
     // can read it. Nothing below should observe the preceding title's values.
     playing = set;
-    nextTitle = options.next ?? null;
-    onOpenNext = options.onOpenNext ?? null;
-    preloaded = null;
+    upNext.open(set, options);
     base = 0;
     capBits = null;
     converting = false;
@@ -801,7 +607,6 @@ function mountPlayer() {
     refreshPreload();
     void askHeld(set, signal);
     marks.open(set);
-    refreshPlayNext();
     startSaving();
     hud.open();
     dialog.showModal();
@@ -924,18 +729,6 @@ function mountPlayer() {
     applyAudioTrack();
   });
 
-  // Wrapped, not passed: a listener hands its event to the function, and
-  // `playNext(MouseEvent)` would take the event for the kind of start wanted.
-  document.getElementById("up-next-play").addEventListener("click", () => playNext("asap"));
-  playNextButton.addEventListener("click", () => playNext("asap"));
-  document.getElementById("up-next-cancel").addEventListener("click", () => {
-    // Remembered for this title, so watching the last minute again does not
-    // start the countdown a second time.
-    if (playing) cancelled.add(playing.setId);
-    hideUpNext();
-    dropWarm();
-  });
-
   /**
    * The keyboard, which the native controls used to bring with them.
    *
@@ -966,7 +759,7 @@ function mountPlayer() {
   video.addEventListener("pause", () => saveProgress());
 
   video.addEventListener("timeupdate", () => {
-    preloadNext();
+    upNext.preload(bufferedAhead(video.buffered, video.currentTime));
     // Whether this is near enough the end to offer anything is `upNextPhase`'s
     // to decide, not this listener's.
     refreshUpNext();
@@ -978,10 +771,6 @@ function mountPlayer() {
     saveProgress();
     refreshUpNext({ ended: true });
   });
-
-  // Closing the tab is the moment a position matters most and the moment an
-  // ordinary request does not survive. See `flushProgress`.
-  window.addEventListener("pagehide", () => saveProgress(true));
 
   // Registered before the refresh below, so the flag is already right by the
   // time the readout is rebuilt from it.
@@ -1082,41 +871,29 @@ function mountPlayer() {
     },
   });
 
-  // Closing the tab never fires the dialog's `close`, and a transcode nobody
-  // released keeps the encoder until the reaper notices.
-  window.addEventListener("pagehide", () => {
-    title?.abort();
+  /** Save before detaching resets the media clock; release every shared owner. */
+  function teardown() {
+    if (title === null) return;
+    saveProgress(true);
+    title.abort();
+    title = null;
     stop();
-    dropWarm();
-    hideUpNext();
+    upNext.clear();
     stopWaitingToStart();
     clearInterval(saveTimer);
+    saveTimer = null;
     notes.clear();
     marks.clear();
     hud.clear();
-  });
+  }
+
+  // Page exit does not fire dialog close. Both release playback and warming.
+  window.addEventListener("pagehide", teardown);
 
   document.getElementById("close").addEventListener("click", () => dialog.close());
   dialog.addEventListener("close", () => {
-    // Capture the position before detaching resets the media element's clock.
-    saveProgress(true);
-    title?.abort();
-    // Drops the connection so the server stops pulling bytes from Telegram, and
-    // the transcode so it stops encoding for nobody.
-    stop();
+    teardown();
     for (const track of [...video.querySelectorAll("track")]) track.remove();
-    clearInterval(saveTimer);
-    hideUpNext();
-    stopWaitingToStart();
-    nextTitle = null;
-    onOpenNext = null;
-    dropWarm();
-    // The offer goes with the title it was an offer about.
-    refreshPlayNext();
-    preloaded = null;
-
-    notes.clear();
-    marks.clear();
     // A panel left open belongs to the title it was opened on.
     cuePanel.panel.hidden = true;
     cuePanel.trigger.setAttribute("aria-expanded", "false");
@@ -1130,7 +907,6 @@ function mountPlayer() {
     playing = null;
     capBits = null;
     audioTrack = 0;
-    hud.clear();
     watch.begin({ capBits: null, sourceBits: null });
   });
 

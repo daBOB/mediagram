@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mountPlayerNotes } from "../public/lib/playback/player-notes.js";
+import { mountPlayerNotes } from "../public/lib/playback/notes/player-notes.js";
 import { mountPlayerLibraryMarks } from "../public/lib/playback/player-library-marks.js";
 import { mountPlayerHud } from "../public/lib/playback/player-hud.js";
 import * as state from "../public/lib/watch-state.js";

@@ -10,7 +10,7 @@
  * tested without a document to build into.
  */
 
-import { el } from "../dom.js";
+import { el } from "../../dom.js";
 import { parseMarkdown } from "./markdown.js";
 
 /** Inline spans, appended into `parent`. */

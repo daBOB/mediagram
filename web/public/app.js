@@ -40,7 +40,7 @@ const player = document.getElementById("player");
 const searchBox = document.getElementById("search");
 initializePlayer();
 
-/** @type {{movies: any[], series: any[], tutorials: any[]}} */
+/** @type {import("./lib/library.js").Library} */
 let library = { movies: [], series: [], tutorials: [] };
 
 /**
@@ -235,14 +235,9 @@ function viewCollections(section) {
   );
 }
 
-/**
- * Opens a title, and tells the player what follows it.
- *
- * Worked out here rather than in the player because the collection a title
- * came from is what says — and the page holds the collections. Passing the
- * opener along too means the title after *that* one is found the same way,
- * however many the viewer sits through.
- */
+/** Only the latest request may open, and closing the player withdraws it. */
+let pendingOpen = 0;
+
 /**
  * Opens a title, and says what follows it.
  *
@@ -256,9 +251,12 @@ function viewCollections(section) {
  * watching it would be the stranger behaviour.
  */
 function play(set, queue = null, options = {}) {
+  const request = ++pendingOpen;
   // The position to resume from is read fresh: this tab may have been open
   // while the same viewer watched further on another device.
-  void state.refreshState().finally(() => openTitle(set, queue, options));
+  void state.refreshState().finally(() => {
+    if (request === pendingOpen) openTitle(set, queue, options);
+  });
 }
 
 function openTitle(set, queue, options) {
@@ -331,8 +329,10 @@ state.subscribeChanges(() => {
 });
 
 player.addEventListener("close", () => {
+  pendingOpen++;
   if (shelfStale) invalidateShelf();
 });
+window.addEventListener("pagehide", () => { pendingOpen++; });
 
 function setShelfEditing(editing) {
   shelfEditing = editing;

@@ -5,7 +5,7 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { BufferHealth } from "../public/lib/playback/buffer-health.js";
+import { BufferHealth } from "../public/lib/playback/streaming/buffer-health.js";
 
 /**
  * Plays for `seconds` of wall clock with the buffer gaining `fill` seconds of

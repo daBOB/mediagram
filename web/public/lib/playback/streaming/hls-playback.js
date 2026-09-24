@@ -8,7 +8,7 @@
  * thing this page can load, and most sets never need it.
  */
 
-import { decodesParam } from "../link.js";
+import { decodesParam } from "../../link.js";
 
 /**
  * Only engines without Media Source Extensions use native HLS. Chromium's

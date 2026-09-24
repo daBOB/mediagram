@@ -40,7 +40,7 @@ mock.module("/lib/hls.mjs", async () => {
 });
 
 let env: ReturnType<typeof browserEnvironment>;
-let adapter: typeof import("../public/lib/playback/hls-playback.js");
+let adapter: typeof import("../public/lib/playback/streaming/hls-playback.js");
 let serial = 0;
 const playlist = "/hls/0123456789abcdef/index.m3u8";
 const released = () => env.requests.filter(({ options }) => options?.method === "DELETE");
@@ -52,7 +52,7 @@ beforeEach(async () => {
   Hls.instances = [];
   Hls.supported = true;
   Hls.failure = null;
-  const path = `../public/lib/playback/hls-playback.js?lifetime=${++serial}`;
+  const path = `../public/lib/playback/streaming/hls-playback.js?lifetime=${++serial}`;
   adapter = await import(path);
 });
 afterEach(() => env.restore());

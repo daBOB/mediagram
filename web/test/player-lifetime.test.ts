@@ -16,7 +16,7 @@ const set = (id: string, convert = false) => ({
 });
 const playlist = (id: number) => `/hls/${String(id).padStart(16, "0")}/index.m3u8`;
 const starts = () => env.requests.filter(({ url }) => url.includes("/transcode?"));
-const releases = () => env.requests.filter(({ options }) => options?.method === "DELETE");
+const releases = () => env.requests.filter(({ url, options }) => url.startsWith("/hls/") && options?.method === "DELETE");
 const seek = (at: number) => {
   env.video.ended = false;
   env.node("seek-to").value = String(at);
@@ -356,6 +356,54 @@ test("close records the held position before source teardown resets the media cl
   expect(state.progressOf("progress")?.at).toBe(90);
 });
 
+test.each(["close", "pagehide"])("%s preserves progress after audio conversion of an unknown-duration direct title", async (exit) => {
+  env.respondWith(async (url) => {
+    if (url.endsWith("/audio")) return Response.json({ tracks: [{ index: 0 }, { index: 1 }] });
+    if (url.includes("/transcode?")) return Response.json({ playlist: playlist(10) });
+    return new Response("", { status: 404 });
+  });
+  openPlayer({ ...set("unknown-audio"), duration: null }, { next: set("following", true) });
+  await settle();
+  env.node("audio-track").value = "1";
+  env.node("audio-track").fire("change");
+  await settle();
+  env.video.duration = 120; // Only the portion ffmpeg has encoded.
+  env.video.currentTime = 115;
+  await env.video.play();
+  env.video.fire("timeupdate");
+  const timelineHidden = env.node("seek").hidden;
+  const offerHidden = env.node("up-next").hidden;
+  if (exit === "close") env.node("player").close();
+  else env.window.dispatchEvent(new Event("pagehide"));
+  expect(state.isWatched("unknown-audio")).toBe(false);
+  expect(state.progressOf("unknown-audio")).toMatchObject({ at: 115, duration: null });
+  expect(timelineHidden).toBe(true);
+  expect(offerHidden).toBe(true);
+  expect(starts()).toHaveLength(1);
+  expect(env.video.src).toBe("");
+  expect(releases()).toHaveLength(1);
+});
+
+test("cancelled next-title countdown stays cancelled on revisit while manual next remains available", () => {
+  let opened = 0;
+  const options = { next: set("following"), onOpenNext: () => { opened++; } };
+  openPlayer(set("cancelled-title"), options);
+  env.video.ended = true;
+  env.video.fire("ended");
+  env.node("up-next-cancel").fire("click");
+  env.advance(15000);
+  openPlayer(set("another-title"));
+  openPlayer(set("cancelled-title"), options);
+  env.video.ended = true;
+  env.video.fire("ended");
+  env.advance(15000);
+  expect(opened).toBe(0);
+  expect(env.node("up-next").hidden).toBe(true);
+  expect(env.node("play-next").hidden).toBe(false);
+  env.node("play-next").fire("click");
+  expect(opened).toBe(1);
+});
+
 test("cancelled warm startup releases its late response and cannot become the current source", async () => {
   const response = deferred<Response>();
   env.respondWith(async (url) =>
@@ -394,6 +442,73 @@ test("opening a warmed conversion joins it before releasing the warm watcher", a
   expect(releases().filter(({ url }) => url.startsWith("/hls/"))).toHaveLength(1);
   env.node("player").close();
   expect(releases().filter(({ url }) => url.startsWith("/hls/"))).toHaveLength(2);
+});
+
+test("a warm response arriving after playback joins releases only its own watcher", async () => {
+  const warm = deferred<Response>();
+  let request = 0;
+  env.respondWith(async (url) => url.includes("/transcode?")
+    ? (++request === 1 ? warm.promise : Response.json({ playlist: playlist(11) }))
+    : new Response("", { status: 404 }));
+  const next = set("late-warm", true);
+  openPlayer(set("current"), { next });
+  env.video.currentTime = 580;
+  env.video.fire("timeupdate");
+  env.node("play-next").fire("click");
+  await settle();
+  expect(env.video.src).toBe(playlist(11));
+  expect(releases()).toHaveLength(0);
+  warm.resolve(Response.json({ playlist: playlist(11) }));
+  await settle();
+  expect(releases()).toHaveLength(1);
+  expect(env.video.src).toBe(playlist(11));
+  env.node("player").close();
+  expect(releases()).toHaveLength(2);
+});
+
+test("seeking away releases the next-title warm and permits a fresh offer near the end", async () => {
+  env.respondWith(async (url) => url.includes("/transcode?")
+    ? Response.json({ playlist: playlist(12) }) : new Response("", { status: 404 }));
+  openPlayer(set("rewound"), { next: set("following", true) });
+  env.video.currentTime = 580;
+  env.video.fire("timeupdate");
+  await settle();
+  seek(100);
+  expect(releases()).toHaveLength(1);
+  expect(env.node("up-next").hidden).toBe(true);
+  seek(580);
+  await settle();
+  expect(starts()).toHaveLength(2);
+  expect(env.node("up-next-in").textContent).toBe("when this ends");
+  env.node("player").close();
+  expect(releases()).toHaveLength(2);
+});
+
+test("next-title byte preloading waits for headroom and runs once per open title", async () => {
+  openPlayer(set("first"), { next: set("second") });
+  env.video.bufferEnd = 29;
+  env.video.fire("timeupdate");
+  const preloads = () => env.requests.filter(({ options }) => options?.headers && "range" in options.headers);
+  expect(preloads()).toHaveLength(0);
+  env.video.bufferEnd = 40;
+  env.video.fire("timeupdate");
+  env.video.fire("timeupdate");
+  expect(preloads()).toHaveLength(1);
+  expect(preloads()[0]).toMatchObject({ url: "/api/sets/second/stream", options: { headers: { range: "bytes=0-8388607" } } });
+  openPlayer(set("second"), { next: set("third") });
+  env.video.bufferEnd = 40;
+  env.video.fire("timeupdate");
+  expect(preloads().map(({ url }) => url)).toEqual(["/api/sets/second/stream", "/api/sets/third/stream"]);
+  await settle();
+});
+
+test("page exit followed by dialog close cannot overwrite the position saved before detaching", async () => {
+  openPlayer(set("exit-position"));
+  env.video.currentTime = 90;
+  await env.video.play();
+  env.window.dispatchEvent(new Event("pagehide"));
+  env.node("player").close();
+  expect(state.progressOf("exit-position")?.at).toBe(90);
 });
 
 test("a stale thumbnail HEAD cannot replace the new title's preview", async () => {
