@@ -41,6 +41,8 @@ class CacheBudgetViewModel
     ) : ViewModel() {
         private val _state = MutableStateFlow<CacheOccupancy?>(null)
         val state: StateFlow<CacheOccupancy?> = _state.asStateFlow()
+        private val _failure = MutableStateFlow<String?>(null)
+        val failure: StateFlow<String?> = _failure.asStateFlow()
 
         // One change at a time: two quick taps finishing out of order would leave
         // the live budget and the saved one disagreeing.
@@ -48,29 +50,35 @@ class CacheBudgetViewModel
 
         /** Reads what is held now. Called whenever Settings opens; this outlives it. */
         fun refresh() {
-            viewModelScope.launch { guarded { _state.value = CacheProvider.occupancy(context) } }
+            viewModelScope.launch {
+                guarded("Could not read the cache. Try again.") { _state.value = CacheProvider.occupancy(context) }
+            }
         }
 
         fun choose(bytes: Long) {
             viewModelScope.launch {
-                guarded {
+                guarded("Could not confirm the cache allowance. Try again.") {
                     CacheProvider.setBudget(context, bytes)
                     _state.value = CacheProvider.occupancy(context)
                 }
             }
         }
 
-        /** A cache that cannot be opened leaves the row as it was rather than ending the app. */
-        private suspend fun guarded(work: suspend () -> Unit) =
-            changing.withLock {
-                try {
-                    work()
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (
-                    @Suppress("TooGenericExceptionCaught") e: Exception,
-                ) {
-                    Log.w("CacheBudget", "the cache could not be read or resized", e)
-                }
+        /** Keep the last confirmed occupancy until a read succeeds, with a retryable notice on failure. */
+        private suspend fun guarded(
+            sentence: String,
+            work: suspend () -> Unit,
+        ) = changing.withLock {
+            try {
+                work()
+                _failure.value = null
+            } catch (e: CancellationException) {
+                throw e
+            } catch (
+                @Suppress("TooGenericExceptionCaught") e: Exception,
+            ) {
+                Log.w("CacheBudget", "the cache could not be read or resized", e)
+                _failure.value = sentence
             }
+        }
     }

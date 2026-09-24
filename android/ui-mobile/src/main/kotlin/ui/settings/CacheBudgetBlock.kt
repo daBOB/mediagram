@@ -8,6 +8,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,11 +32,20 @@ import ui.formatting.humanSize
 internal fun CacheBudgetBlock() {
     val viewModel: CacheBudgetViewModel = hiltViewModel()
     val occupancy by viewModel.state.collectAsStateWithLifecycle()
+    val failure by viewModel.failure.collectAsStateWithLifecycle()
     // On every visit, not once per process: Held grows with every film played.
     LaunchedEffect(Unit) { viewModel.refresh() }
-    val current = occupancy ?: return
-
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
+        val current = occupancy
+        if (current == null) {
+            Block(heading = "Cache", rows = emptyList())
+            if (failure == null) Text("Reading the cache…", style = MaterialTheme.typography.bodySmall)
+        }
+        failure?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall)
+            TextButton(onClick = viewModel::refresh) { Text("Try again") }
+        }
+        if (current == null) return@Column
         Block(heading = "Cache", rows = listOf("Held" to heldOfBudget(current.heldBytes, current.budgetBytes)))
         for (bytes in cacheBudgetChoices()) {
             Row(

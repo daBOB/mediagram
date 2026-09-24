@@ -82,6 +82,7 @@ internal class LibraryFlowFixture(
             )
         val cache = mockk<CacheBudgetViewModel>(relaxed = true)
         every { cache.state } returns MutableStateFlow(CacheOccupancy(0, 1_000_000))
+        every { cache.failure } returns MutableStateFlow(null)
         val models =
             mapOf<Class<out ViewModel>, ViewModel>(
                 CatalogViewModel::class.java to catalog,
