@@ -3,6 +3,7 @@
 
 use std::path::Path;
 
+use anyhow::{Context, Result};
 use futures::stream::{self, StreamExt};
 
 use crate::media::direct_play::{self, Blocker};
@@ -13,27 +14,58 @@ use crate::media::streams;
 /// bounded by processes rather than by bandwidth.
 const PROBE_CONCURRENCY: usize = 4;
 
+#[derive(Default)]
+pub(super) struct Survey {
+    blockers: Vec<Vec<Blocker>>,
+    failures: Vec<String>,
+}
+
+impl Survey {
+    pub(super) fn needs_confirmation(&self) -> bool {
+        !self.blockers.is_empty() || !self.failures.is_empty()
+    }
+
+    pub(super) fn report(&self, dir: &Path) {
+        report_blockers(&self.blockers, dir);
+        if !self.failures.is_empty() {
+            println!(
+                "\n{} file(s) have unknown browser compatibility:",
+                self.failures.len()
+            );
+            for failure in &self.failures {
+                println!("  {failure}");
+            }
+        }
+    }
+}
+
 /// Asks each file whether a browser could open it.
 ///
 /// Probes run together: each spawns an ffprobe, and a season of them one at a
 /// time is a minute of nothing happening before the question is even asked.
-pub(super) async fn survey(episodes: &[Episode]) -> Vec<Vec<Blocker>> {
-    stream::iter(episodes)
+pub(super) async fn survey(episodes: &[Episode]) -> Survey {
+    let results = stream::iter(episodes)
         .map(|ep| async move {
-            let probed = streams::probe(&ep.path).await.ok()?;
-            let found = direct_play::blockers(&ep.path, &probed.streams);
-            // Files with nothing wrong are dropped here, so what comes back
-            // is one entry per file that will be converted — which is what
-            // the count reported to the viewer means.
-            (!found.is_empty()).then_some(found)
+            let probed = streams::probe(&ep.path).await.with_context(|| {
+                format!("checking browser compatibility of {}", ep.path.display())
+            })?;
+            Ok::<_, anyhow::Error>(direct_play::blockers(&ep.path, &probed.streams))
         })
         .buffered(PROBE_CONCURRENCY)
-        .filter_map(|found| async move { found })
-        .collect()
-        .await
+        .collect::<Vec<Result<Vec<Blocker>>>>()
+        .await;
+    let mut survey = Survey::default();
+    for result in results {
+        match result {
+            Ok(found) if !found.is_empty() => survey.blockers.push(found),
+            Ok(_) => {}
+            Err(error) => survey.failures.push(format!("{error:#}")),
+        }
+    }
+    survey
 }
 
-pub(super) fn report_blockers(by_file: &[Vec<Blocker>], dir: &Path) {
+fn report_blockers(by_file: &[Vec<Blocker>], dir: &Path) {
     if by_file.is_empty() {
         return;
     }

@@ -26,7 +26,7 @@ use crate::telegram::index_publish;
 use crate::upload::finish_set::Uploader;
 use crate::upload::new_set::NewSet;
 use crate::upload::prepare_set::prepare_and_record_set;
-use survey::{report_blockers, survey};
+use survey::survey;
 
 pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
     let episodes = walk(&args.dir)?;
@@ -56,14 +56,14 @@ pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
 
     print_table(&episodes, tmdb);
 
-    let blockers = survey(&episodes).await;
-    report_blockers(&blockers, &args.dir);
+    let compatibility = survey(&episodes).await;
+    compatibility.report(&args.dir);
 
     if args.dry_run {
         println!("\ndry run: nothing was uploaded.");
         return Ok(());
     }
-    if !blockers.is_empty() && !args.yes && !confirm()? {
+    if compatibility.needs_confirmation() && !args.yes && !confirm()? {
         println!("nothing was uploaded.");
         return Ok(());
     }

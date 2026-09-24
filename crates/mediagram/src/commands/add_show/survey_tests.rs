@@ -34,8 +34,9 @@ async fn probing_a_season_keeps_only_files_needing_conversion_in_input_order() {
         episode,
     })
     .collect();
+    let result = survey(&episodes).await;
     assert_eq!(
-        survey(&episodes).await,
+        result.blockers,
         [
             vec![
                 Blocker::Container("mkv".into()),
@@ -44,7 +45,26 @@ async fn probing_a_season_keeps_only_files_needing_conversion_in_input_order() {
             vec![Blocker::Container("mkv".into())],
         ]
     );
-    assert!(survey(&[]).await.is_empty());
+    assert_eq!(result.failures.len(), 1);
+    assert!(result.failures[0].contains("checking browser compatibility of"));
+    assert!(result.failures[0].contains("missing.mp4"));
+    assert!(result.failures[0].contains("ffprobe exited"));
+    assert!(result.needs_confirmation());
+    assert!(!survey(&[]).await.needs_confirmation());
+}
+
+#[tokio::test]
+async fn a_probe_failure_alone_still_requires_confirmation() {
+    let dir = tempfile::tempdir().unwrap();
+    let result = survey(&[Episode {
+        path: dir.path().join("missing.mp4"),
+        season: 1,
+        episode: 1,
+    }])
+    .await;
+    assert!(result.blockers.is_empty());
+    assert_eq!(result.failures.len(), 1);
+    assert!(result.needs_confirmation());
 }
 
 #[test]
