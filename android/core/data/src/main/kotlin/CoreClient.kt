@@ -10,6 +10,7 @@ import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.ListRow
 import uniffi.mediagram_core.PreferenceRow
 import uniffi.mediagram_core.Profile
+import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.StateSnapshot
 import uniffi.mediagram_core.SyncOutcome
@@ -46,6 +47,16 @@ interface CoreClient {
     suspend fun refreshCatalog(url: String, keyB64: String): Long
     suspend fun listSets(): List<SetSummary>
     fun posterPath(posterKey: String): String?
+
+    /**
+     * The catalog's sets matching every word of [query], best first, ranked
+     * the way the web player's own search is — this runs the same port
+     * over the index rather than a Kotlin filter over [listSets], which has
+     * no summary text to search. A hit carries only [SearchHit.setId] and
+     * why it matched; the caller already holds the full [SetSummary] list
+     * and joins the two by id.
+     */
+    suspend fun search(query: String): List<SearchHit> = emptyList()
 
     /**
      * What the index records about a title, or nothing. A course has no

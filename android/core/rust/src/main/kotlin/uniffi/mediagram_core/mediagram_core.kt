@@ -720,6 +720,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_preference(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_search(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_text(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_choose_profile(
@@ -821,6 +823,8 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_preferences(`ptr`: Long,`profileId`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_preference(`ptr`: Long,`profileId`: RustBuffer.ByValue,`scope`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_search(`ptr`: Long,`query`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_text(`ptr`: Long,`setId`: RustBuffer.ByValue,`kind`: RustBuffer.ByValue,`lang`: RustBuffer.ByValue,
     ): Long
@@ -1035,6 +1039,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_preference() and 0xFFFF) != 56860) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_search() and 0xFFFF) != 53359) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_text() and 0xFFFF) != 64077) {
@@ -1743,6 +1750,13 @@ public interface CoreInterface {
      * be written.
      */
     suspend fun `setPreference`(`profileId`: kotlin.String, `scope`: kotlin.String, `name`: kotlin.String, `value`: kotlin.String?): kotlin.Boolean
+    
+    /**
+     * The catalog's sets matching every word of `query`, best first.
+     * Empty for an empty query or a catalog that has not loaded yet —
+     * neither is an error, both are "nothing to show".
+     */
+    suspend fun `search`(`query`: kotlin.String): List<SearchHit>
     
     /**
      * `kind` is `"summary"` or `"subtitle"`; anything else answers `None`
@@ -2467,6 +2481,32 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
         // lift function
         { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * The catalog's sets matching every word of `query`, best first.
+     * Empty for an empty query or a catalog that has not loaded yet —
+     * neither is an error, both are "nothing to show".
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `search`(`query`: kotlin.String) : List<SearchHit> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_search(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`query`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypeSearchHit.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
@@ -3375,6 +3415,60 @@ public object FfiConverterTypeProgressRow: FfiConverterRustBuffer<ProgressRow> {
             FfiConverterDouble.write(value.`at`, buf)
             FfiConverterOptionalDouble.write(value.`duration`, buf)
             FfiConverterLong.write(value.`updatedAt`, buf)
+    }
+}
+
+
+
+/**
+ * One hit: which set, which field earned it, and the words around a
+ * summary match. Never title, path or any other field a caller already
+ * holds — Kotlin already has the full `SetSummary` list from `list_sets`
+ * and joins this back onto it by `set_id`.
+ */
+data class SearchHit (
+    var `setId`: kotlin.String
+    , 
+    /**
+     * Which field this hit was found on: `"title"`, `"show"`, `"chap"`,
+     * `"path"` or `"summary"` — the same words the web's `/api/search`
+     * answers.
+     */
+    var `matched`: kotlin.String
+    , 
+    var `excerpt`: kotlin.String?
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSearchHit: FfiConverterRustBuffer<SearchHit> {
+    override fun read(buf: ByteBuffer): SearchHit {
+        return SearchHit(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: SearchHit) = (
+            FfiConverterString.allocationSize(value.`setId`) +
+            FfiConverterString.allocationSize(value.`matched`) +
+            FfiConverterOptionalString.allocationSize(value.`excerpt`)
+    )
+
+    override fun write(value: SearchHit, buf: ByteBuffer) {
+            FfiConverterString.write(value.`setId`, buf)
+            FfiConverterString.write(value.`matched`, buf)
+            FfiConverterOptionalString.write(value.`excerpt`, buf)
     }
 }
 
@@ -4433,6 +4527,34 @@ public object FfiConverterSequenceTypeProgressRow: FfiConverterRustBuffer<List<P
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeProgressRow.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeSearchHit: FfiConverterRustBuffer<List<SearchHit>> {
+    override fun read(buf: ByteBuffer): List<SearchHit> {
+        val len = buf.getInt()
+        return List<SearchHit>(len) {
+            FfiConverterTypeSearchHit.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<SearchHit>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeSearchHit.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<SearchHit>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeSearchHit.write(it, buf)
         }
     }
 }

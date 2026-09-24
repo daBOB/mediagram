@@ -18,6 +18,7 @@ mod events;
 mod preferences;
 mod read;
 mod refresh;
+mod search;
 mod set_text;
 mod state;
 mod state_sync;
@@ -69,6 +70,8 @@ pub struct Core {
     state_db: crate::state::StateDb,
     /// One state-sync round at a time, held for the round; see `state::sync::SyncMemo`.
     sync_memo: AsyncMutex<crate::state::sync::SyncMemo>,
+    /// The folded catalog `Core::search` ranks against — blocking, like `state_db`.
+    search_cache: std::sync::Mutex<search::cache::SearchCache>,
 }
 
 #[uniffi::export(async_runtime = "tokio")]
@@ -86,6 +89,7 @@ impl Core {
             installing: AsyncMutex::new(()),
             events: AsyncMutex::new(None),
             sync_memo: AsyncMutex::new(crate::state::sync::SyncMemo::default()),
+            search_cache: std::sync::Mutex::new(search::cache::SearchCache::default()),
         })
     }
 

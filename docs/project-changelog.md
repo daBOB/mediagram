@@ -28,6 +28,20 @@ to `main`. Full phase-by-phase detail lives in
   next read if it named the profile removed.
 - Android's `MediaSet` carries the same three new fields (`genres`,
   `subtitleLanguages`, `hasSummary`); no UI reads them yet.
+- `Core::search(query)` ports the web player's search — `search/normalize.rs`,
+  `search/rank.rs`, `search/excerpt.rs` — so the phone ranks a query against
+  the index the same way the server does, summaries included, rather than a
+  Kotlin filter over the in-memory set list that has no summary to search.
+  A tie within a field is broken by `icu_collator`, ICU4X's pure-Rust German
+  collator, so the order agrees with the web's `localeCompare("de")` rather
+  than approximating it — bundled at compile time (`compiled_data`), no
+  runtime data file. Folding the catalog costs enough (tens of milliseconds
+  over the real library) that it is cached in `Core`, keyed by the catalog's
+  resolved version directory, and only redone after a refresh actually
+  changes it. `web/test/fixtures/search/cases.json` runs against both the
+  web's `SearchIndex` and this port, so a case that would only pass one of
+  them fails the build. Kotlin gets `CoreClient.search`; no screen reads it
+  yet.
 
 ## 2026-09-23
 

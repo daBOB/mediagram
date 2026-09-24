@@ -10,6 +10,7 @@ import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.ListRow
 import uniffi.mediagram_core.PreferenceRow
 import uniffi.mediagram_core.Profile
+import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.StateSnapshot
 import uniffi.mediagram_core.SyncOutcome
@@ -45,6 +46,8 @@ class DefaultCoreClient(private val core: Core) : CoreClient {
     override suspend fun listSets(): List<SetSummary> = core.listSets()
 
     override fun posterPath(posterKey: String): String? = core.posterPath(posterKey)
+
+    override suspend fun search(query: String): List<SearchHit> = core.search(query)
 
     override suspend fun titleInfo(posterKey: String): TitleInfo? = core.titleInfo(posterKey)
 

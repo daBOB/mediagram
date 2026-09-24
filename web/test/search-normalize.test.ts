@@ -50,6 +50,32 @@ describe("folding a string", () => {
     expect(fold(null)).toBe("");
     expect(fold(undefined)).toBe("");
   });
+
+  test("a diacritic that is not a combining mark is dropped like any other", () => {
+    // U+00B4, a standalone acute accent rather than one NFD ever produces —
+    // dropping only NFD's combining marks would leave it behind as a
+    // spurious word break ("geht s").
+    expect(fold("Geht´s")).toBe("gehts");
+    // U+02BC, the apostrophe-shaped modifier letter Diacritic=Yes also
+    // covers, despite reading as a letter rather than a mark.
+    expect(fold("ʼn")).toBe("n");
+  });
+
+  test("a symbol that only looks like a letter is not one", () => {
+    // "Ⓐ" is General_Category=So (Symbol), not Letter — `\p{Letter}` does
+    // not count it, so it collapses to nothing (a lone space, trimmed away),
+    // the same as any other punctuation.
+    expect(fold("Ⓐ")).toBe("");
+  });
+
+  test("a combining mark with Diacritic=No still splits the word it sits in", () => {
+    // U+0363, used in medieval manuscript abbreviations: General_Category
+    // is Mark, so it is not Letter or Number either, and — because it is
+    // one of the marks `\p{Diacritic}` does not cover — it survives the
+    // first pass and is only removed by the second, as a word-splitting
+    // space. A faithful port reproduces this rather than smoothing it over.
+    expect(fold("eͣx")).toBe("e x");
+  });
 });
 
 describe("spelling a string out", () => {

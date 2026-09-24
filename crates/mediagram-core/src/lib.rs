@@ -12,6 +12,7 @@ mod error;
 pub mod http;
 pub mod package;
 pub mod range;
+pub mod search;
 pub mod shows;
 pub mod state;
 pub mod transport;

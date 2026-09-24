@@ -38,7 +38,7 @@ Supersedes the unbuilt phases 1-3, 6, 7, 10 of
 | # | Phase | Depends | Effort | Status |
 |---|-------|---------|--------|--------|
 | 01 | [Core: index extras, preferences, profile delete](phase-01-core-index-extras-and-preferences.md) | - | 5h | done |
-| 02 | [Core: search ported from the web](phase-02-core-search.md) | 01 | 5h | pending |
+| 02 | [Core: search ported from the web](phase-02-core-search.md) | 01 | 5h | done |
 | 03 | [Android: search screen and genre pages](phase-03-android-search-and-genres.md) | 02 | 5h | pending |
 | 04 | [Player foundation: sheet, per-show store, title, ends-at, retry, speed](phase-04-player-foundation-and-speed.md) | 01 | 6h | pending |
 | 05 | [Audio track chooser](phase-05-audio-tracks.md) | 04 | 3h | pending |
