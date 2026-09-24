@@ -44,7 +44,7 @@ interface CoreProvider {
     /** The core if the credentials are already stored, `null` if they are not. */
     suspend fun coreOrNull(): CoreClient?
 
-    /** Stores an identity and builds the core from it. */
+    /** Installs the initial identity. Throws if a core is already published; use [replace] to change it. */
     suspend fun supply(
         apiId: Int,
         apiHash: String,
@@ -126,6 +126,7 @@ class StoredCoreProvider(
         apiId: Int,
         apiHash: String,
     ) = mutex.withLock {
+        check(built.value == null) { "An application identity is already installed" }
         if (pendingClose != null) withContext(NonCancellable + dispatcher) { closeHeld() }
         val credentials = TelegramCredentials(apiId, apiHash)
         var candidate: CoreClient? = null
