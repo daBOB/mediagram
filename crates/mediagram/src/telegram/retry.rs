@@ -42,6 +42,7 @@ fn is_retryable(err: &InvocationError) -> bool {
 /// server-specified duration before retrying, and any other retryable error
 /// (see `is_retryable`) backs off exponentially. A non-retryable error is
 /// returned at once, as is the last error once `max_attempts` is reached.
+/// A zero attempt budget still invokes `op` once.
 pub async fn with_retry<T, F, Fut>(max_attempts: u32, op: F) -> Result<T>
 where
     F: FnMut() -> Fut,
@@ -87,80 +88,5 @@ where
 }
 
 #[cfg(test)]
-mod tests {
-    use std::cell::Cell;
-
-    use grammers_mtsender::RpcError;
-
-    use super::*;
-
-    fn flood_wait(secs: u32) -> InvocationError {
-        InvocationError::Rpc(RpcError {
-            code: 420,
-            name: "FLOOD_WAIT".into(),
-            value: Some(secs),
-            caused_by: None,
-        })
-    }
-
-    fn other_error() -> InvocationError {
-        InvocationError::Rpc(RpcError {
-            code: 500,
-            name: "INTERNAL".into(),
-            value: None,
-            caused_by: None,
-        })
-    }
-
-    #[test]
-    fn flood_wait_secs_adds_one_second_of_slack() {
-        assert_eq!(flood_wait_secs(&flood_wait(5)), Some(6));
-    }
-
-    #[test]
-    fn flood_wait_secs_is_none_for_other_rpc_errors() {
-        assert_eq!(flood_wait_secs(&other_error()), None);
-    }
-
-    #[test]
-    fn backoff_doubles_per_attempt_and_then_stops_growing() {
-        assert_eq!(backoff(1), Duration::from_millis(200));
-        assert_eq!(backoff(2), Duration::from_millis(400));
-        assert_eq!(backoff(3), Duration::from_millis(800));
-        // A large `max_attempts` must not shift the multiplier out of range.
-        assert_eq!(backoff(u32::MAX), backoff(11));
-    }
-
-    #[tokio::test]
-    async fn with_retry_sleeps_and_retries_on_flood_wait() {
-        let calls = Cell::new(0);
-        let result: Result<()> = with_retry(3, || {
-            calls.set(calls.get() + 1);
-            let first_call = calls.get() == 1;
-            async move {
-                if first_call {
-                    Err(flood_wait(0))
-                } else {
-                    Ok(())
-                }
-            }
-        })
-        .await;
-
-        assert!(result.is_ok());
-        assert_eq!(calls.get(), 2);
-    }
-
-    #[tokio::test]
-    async fn with_retry_gives_up_after_max_attempts() {
-        let calls = Cell::new(0);
-        let result: Result<()> = with_retry(3, || {
-            calls.set(calls.get() + 1);
-            async move { Err(other_error()) }
-        })
-        .await;
-
-        assert!(result.is_err());
-        assert_eq!(calls.get(), 3);
-    }
-}
+#[path = "retry_tests.rs"]
+mod tests;
