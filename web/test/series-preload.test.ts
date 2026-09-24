@@ -115,6 +115,32 @@ function item(setId: string, parts = 1): PreloadItem {
 }
 
 describe("SeriesPreload", () => {
+  for (const [description, rejection, message] of [
+    ["null", null, "null"],
+    ["undefined", undefined, "undefined"],
+    ["string", "offline", "offline"],
+    ["unprintable object", { toString() { throw new Error("cannot print"); } }, "unprintable rejection"],
+  ] as const) {
+    test(`${description} rejection is reported and the next queued title is still filled`, async () => {
+      const filled: string[] = [];
+      const messages: string[] = [];
+      const preload = new SeriesPreload({
+        isHeld: async (id) => { if (id === "bad") throw rejection; return false; },
+        fill: async (id) => { filled.push(id); },
+        fetcherFor: () => async () => new Uint8Array(),
+        log: (message) => messages.push(message),
+      });
+      preload.want([item("bad"), item("good")]);
+      await preload.settle();
+      expect(messages).toContain(`preload: bad stopped: ${message}`);
+      expect(filled).toEqual(["good"]);
+      preload.want([item("later")]);
+      await preload.settle();
+      expect(filled).toEqual(["good", "later"]);
+      await preload.stop();
+    });
+  }
+
   test("fills every part of each set in turn, and says when each is held", async () => {
     const run = preloadWith();
     run.preload.want([item("E2", 2), item("E3")]);

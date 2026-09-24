@@ -60,6 +60,25 @@ describe("what the server serves after asking the channel", () => {
     });
   });
 
+  for (const [description, rejection, message] of [
+    ["null", null, "null"],
+    ["undefined", undefined, "undefined"],
+    ["string", "offline", "offline"],
+    ["unprintable object", { toString() { throw new Error("cannot print"); } }, "unprintable rejection"],
+  ] as const) {
+    for (const installed of [false, true]) {
+      test(`${description} discovery rejection preserves ${installed ? "installed" : "local"} fallback`, async () => {
+        if (installed) await refreshFromChannel(root, found(100));
+        const outcome = await refreshFromChannel(root, async () => { throw rejection; });
+        expect(outcome).toMatchObject({
+          kind: installed ? "installed" : "none",
+          reason: `the channel could not be read: ${message}`,
+        });
+        if (installed) expect(outcome).toMatchObject({ pushedAt: 100, refresh: "kept" });
+      });
+    }
+  }
+
   test("a filesystem refusal keeps serving the snapshot installed before", async () => {
     await refreshFromChannel(root, found(100));
     await mkdir(join(root, `.current-${process.pid}`));

@@ -18,6 +18,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { failureMessage } from "../failure-message";
 
 import { openPackage } from "./open";
 import {
@@ -135,12 +136,6 @@ async function keep(root: string, reason: string): Promise<RefreshResult> {
     reason,
     identity: await heldIdentity(root),
   };
-}
-
-/** A rejection's description must not turn keeping the catalog into a throw. */
-function failureMessage(error: unknown): string {
-  try { return String(error instanceof Error ? error.message : error); }
-  catch { return "unprintable rejection"; }
 }
 
 /**

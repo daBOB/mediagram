@@ -103,8 +103,8 @@ export class TranscodeFiles implements HlsServer {
    * One viewer is finished with a session.
    *
    * A release, not a stop: sessions are shared, so the first viewer to close
-   * the dialog must not end the encode the other one is watching. Idempotent,
-   * because a browser saying goodbye to a session already reaped is normal.
+   * the dialog must not end the encode the other one is watching. Release each
+   * acquisition once; only releasing an absent session is harmless to repeat.
    */
   async end(sessionId: string): Promise<void> {
     await this.registry.release(sessionId);

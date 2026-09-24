@@ -32,6 +32,7 @@ export interface PlayerRequest {
 export interface PlayerResponse {
   status: number;
   headers: Record<string, string>;
-  /** `null` for a bodiless response; the byte count is always in the headers. */
+  /** `null` for a bodiless response. Known finite lengths use content-length;
+   * indefinite streams such as server events omit that header. */
   body: ReadableStream<Uint8Array> | Uint8Array | null;
 }

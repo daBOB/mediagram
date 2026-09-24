@@ -8,7 +8,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -500,6 +500,46 @@ describe("shutdown admission", () => {
 });
 
 describe("shutdown cleanup", () => {
+  test.each([false, true])("old cleanup preserves a replacement when its directory was missing: %s", async (missing) => {
+    const stopping = deferred<void>();
+    const release = deferred<void>();
+    let starts = 0;
+    const registry = new TranscodeRegistry(work, {
+      start() {
+        const first = starts++ === 0;
+        return { stop: async () => { if (first) { stopping.resolve(); await release.promise; } } };
+      },
+    });
+    const asked = spec("01SET", 0, 8_000_000);
+    const old = await registry.acquireSession(asked);
+    if (missing) await rm(old.directory, { recursive: true });
+    const stopped = registry.release(old.id);
+    try {
+      await stopping.promise;
+      const current = await registry.acquireSession(asked);
+      const marker = join(current.directory, "new-segment.ts");
+      await writeFile(marker, "replacement bytes");
+      release.resolve();
+      await stopped;
+      expect(registry.has(current.id)).toBe(true);
+      expect(await Bun.file(marker).text()).toBe("replacement bytes");
+    } finally {
+      release.resolve();
+      await stopped;
+      await registry.stopAll();
+    }
+  });
+
+  test("directory isolation failure is reported after the process is stopped", async () => {
+    const registry = new TranscodeRegistry(work, fakeRunner());
+    const session = await registry.acquireSession(spec("01SET", 0, 8_000_000));
+    await rm(work, { recursive: true });
+    await writeFile(work, "directory was replaced by a file");
+    await expect(registry.release(session.id)).rejects.toMatchObject({ code: "ENOTDIR", syscall: "rename" });
+    expect(stopped).toEqual([session.id]);
+    expect((await stat(work)).isFile()).toBe(true);
+  });
+
   test("shutdown waits for a release already stopping a process", async () => {
     const stopping = deferred<void>();
     const release = deferred<void>();

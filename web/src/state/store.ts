@@ -409,7 +409,7 @@ export class WatchState {
 
       for (const profile of merged.profiles) {
         // The identity to match on, and the spelling to create with.
-        const profileId = this.profileNamed(profile.name, profile.displayName);
+        const profileId = this.findOrCreateProfileId(profile.name, profile.displayName);
         if (profileId === null) continue;
 
         for (const row of profile.progress) {
@@ -473,7 +473,7 @@ export class WatchState {
    * one would mean the sync could only ever flow towards a machine that had
    * already met them.
    */
-  private profileNamed(name: string, displayName?: string): string | null {
+  private findOrCreateProfileId(name: string, displayName?: string): string | null {
     const wanted = normalName(name);
     if (wanted === null) return null;
     const found = this.profiles().find((profile) => normalName(profile.name) === wanted);

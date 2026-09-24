@@ -38,8 +38,9 @@ export interface HlsServer {
   file(sessionId: string, name: string): Promise<HlsFile>;
 
   /**
-   * Stops a session and forgets it. A session that is not running is not an
-   * error: the viewer's browser may be saying goodbye to one already reaped.
+   * Releases one acquired viewer share and stops the session after its last
+   * release. Each acquisition must be released exactly once. Releasing an
+   * absent session is harmless: it may already have been reaped.
    */
   end(sessionId: string): Promise<void>;
 }

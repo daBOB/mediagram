@@ -174,6 +174,7 @@ export class TranscodeRegistry {
    *
    * Absent, or held by someone else, is not an error: a browser saying
    * goodbye to a session already reaped is the normal case.
+   * Each acquisition must be released once; repeated releases consume shares.
    */
   async release(id: string): Promise<void> {
     const session = this.sessions.get(id);
@@ -243,13 +244,25 @@ export class TranscodeRegistry {
     // otherwise have its fresh directory deleted out from under it, and the
     // viewer would wait out the whole ready timeout for a 503.
     const discarded = `${session.directory}.stopping.${process.pid}.${discardCount++}`;
-    const moved = await rename(session.directory, discarded).then(
-      () => true,
-      () => false,
-    );
+    const failures: unknown[] = [];
+    let moved = false;
+    try {
+      await rename(session.directory, discarded);
+      moved = true;
+    } catch (error) {
+      if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) failures.push(error);
+    }
 
-    await session.process.stop();
-    await rm(moved ? discarded : session.directory, { recursive: true, force: true });
+    try { await session.process.stop(); }
+    catch (error) { failures.push(error); }
+    // The original path can already belong to a replacement session. Only
+    // successful isolation establishes ownership of a directory to remove.
+    if (moved) {
+      try { await rm(discarded, { recursive: true, force: true }); }
+      catch (error) { failures.push(error); }
+    }
+    if (failures.length === 1) throw failures[0];
+    if (failures.length > 1) throw new AggregateError(failures, "could not clean up the conversion");
   }
 
   /** Stops every session that has not been read within the idle limit. */

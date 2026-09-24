@@ -12,6 +12,7 @@
  */
 
 import type { PartLocation } from "../catalog";
+import { failureMessage } from "../failure-message";
 import type { FetchRange } from "./reader";
 
 /** A set to take, with where its parts live — resolved by the caller, who holds the catalog. */
@@ -94,7 +95,7 @@ export class SeriesPreload {
         // A preload that fails costs nothing but the wait it was meant to
         // save; the episode still streams when it is opened. Said once, and
         // the next one is tried.
-        this.options.log?.(`preload: ${item.title} stopped: ${(error as Error).message}`);
+        this.options.log?.(`preload: ${item.title} stopped: ${failureMessage(error)}`);
       } finally {
         this.current = null;
         if (this.stopped) this.running = false;
