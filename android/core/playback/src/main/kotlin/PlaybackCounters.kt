@@ -23,18 +23,18 @@ data class PlaybackTotals(
  * different and narrower question than the one either surface asks.
  */
 class PlaybackCounters {
-
     private val fromCache = AtomicLong()
     private val fromUpstream = AtomicLong()
     private val fetchCount = AtomicInteger()
     private val failures = AtomicInteger()
 
-    fun totals(): PlaybackTotals = PlaybackTotals(
-        fromCacheBytes = fromCache.get(),
-        fromUpstreamBytes = fromUpstream.get(),
-        fetches = fetchCount.get(),
-        failedReads = failures.get(),
-    )
+    fun totals(): PlaybackTotals =
+        PlaybackTotals(
+            fromCacheBytes = fromCache.get(),
+            fromUpstreamBytes = fromUpstream.get(),
+            fetches = fetchCount.get(),
+            failedReads = failures.get(),
+        )
 
     /** One round trip to Telegram that returned bytes. */
     fun fetched(bytes: Int) {

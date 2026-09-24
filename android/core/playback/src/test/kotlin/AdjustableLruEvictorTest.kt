@@ -20,7 +20,9 @@ import kotlin.test.assertTrue
  * its held bytes actually shrink. Every other member is unused by the
  * evictor under test and left unimplemented.
  */
-private class FakeCache(private val evictor: AdjustableLruEvictor) : Cache {
+private class FakeCache(
+    private val evictor: AdjustableLruEvictor,
+) : Cache {
     val removed = mutableListOf<CacheSpan>()
 
     override fun removeSpan(span: CacheSpan) {
@@ -29,31 +31,86 @@ private class FakeCache(private val evictor: AdjustableLruEvictor) : Cache {
     }
 
     override fun getUid(): Long = 0
+
     override fun release() = Unit
-    override fun addListener(key: String, listener: Cache.Listener) = throw UnsupportedOperationException()
-    override fun removeListener(key: String, listener: Cache.Listener) = Unit
+
+    override fun addListener(
+        key: String,
+        listener: Cache.Listener,
+    ) = throw UnsupportedOperationException()
+
+    override fun removeListener(
+        key: String,
+        listener: Cache.Listener,
+    ) = Unit
+
     override fun getCachedSpans(key: String) = throw UnsupportedOperationException()
+
     override fun getKeys() = throw UnsupportedOperationException()
+
     override fun getCacheSpace(): Long = throw UnsupportedOperationException()
-    override fun startReadWrite(key: String, position: Long, length: Long) = throw UnsupportedOperationException()
-    override fun startReadWriteNonBlocking(key: String, position: Long, length: Long) = throw UnsupportedOperationException()
-    override fun startFile(key: String, position: Long, length: Long): File = throw UnsupportedOperationException()
-    override fun commitFile(file: File, length: Long) = Unit
+
+    override fun startReadWrite(
+        key: String,
+        position: Long,
+        length: Long,
+    ) = throw UnsupportedOperationException()
+
+    override fun startReadWriteNonBlocking(
+        key: String,
+        position: Long,
+        length: Long,
+    ) = throw UnsupportedOperationException()
+
+    override fun startFile(
+        key: String,
+        position: Long,
+        length: Long,
+    ): File = throw UnsupportedOperationException()
+
+    override fun commitFile(
+        file: File,
+        length: Long,
+    ) = Unit
+
     override fun releaseHoleSpan(holeSpan: CacheSpan) = Unit
+
     override fun removeResource(key: String) = Unit
-    override fun isCached(key: String, position: Long, length: Long): Boolean = throw UnsupportedOperationException()
-    override fun getCachedLength(key: String, position: Long, length: Long): Long = throw UnsupportedOperationException()
-    override fun getCachedBytes(key: String, position: Long, length: Long): Long = throw UnsupportedOperationException()
-    override fun applyContentMetadataMutations(key: String, mutations: ContentMetadataMutations) = Unit
+
+    override fun isCached(
+        key: String,
+        position: Long,
+        length: Long,
+    ): Boolean = throw UnsupportedOperationException()
+
+    override fun getCachedLength(
+        key: String,
+        position: Long,
+        length: Long,
+    ): Long = throw UnsupportedOperationException()
+
+    override fun getCachedBytes(
+        key: String,
+        position: Long,
+        length: Long,
+    ): Long = throw UnsupportedOperationException()
+
+    override fun applyContentMetadataMutations(
+        key: String,
+        mutations: ContentMetadataMutations,
+    ) = Unit
+
     override fun getContentMetadata(key: String): ContentMetadata = throw UnsupportedOperationException()
 }
 
 /** A span of [length] bytes last touched at [lastTouchTimestamp], for a key that never needs to resolve to a real file. */
-private fun span(key: String, length: Long, lastTouchTimestamp: Long): CacheSpan =
-    CacheSpan(key, 0L, length, lastTouchTimestamp, File("$key.span"))
+private fun span(
+    key: String,
+    length: Long,
+    lastTouchTimestamp: Long,
+): CacheSpan = CacheSpan(key, 0L, length, lastTouchTimestamp, File("$key.span"))
 
 class AdjustableLruEvictorTest {
-
     @Test
     fun addingBeyondBudgetEvictsTheLeastRecentlyUsedSpanFirst() {
         val evictor = AdjustableLruEvictor(initialBudgetBytes = 100)

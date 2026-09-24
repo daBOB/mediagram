@@ -30,20 +30,22 @@ import java.util.TreeSet
  * [onSpanAdded] over one `TreeSet`. [budgetBytes] stays `@Volatile` for the
  * unlocked read that reports occupancy.
  */
-class AdjustableLruEvictor(initialBudgetBytes: Long) : CacheEvictor {
-
+class AdjustableLruEvictor(
+    initialBudgetBytes: Long,
+) : CacheEvictor {
     @Volatile
     var budgetBytes: Long = initialBudgetBytes
         private set
 
-    private val leastRecentlyUsed = TreeSet<CacheSpan> { lhs, rhs ->
-        val delta = lhs.lastTouchTimestamp - rhs.lastTouchTimestamp
-        when {
-            delta == 0L -> lhs.compareTo(rhs)
-            delta < 0L -> -1
-            else -> 1
+    private val leastRecentlyUsed =
+        TreeSet<CacheSpan> { lhs, rhs ->
+            val delta = lhs.lastTouchTimestamp - rhs.lastTouchTimestamp
+            when {
+                delta == 0L -> lhs.compareTo(rhs)
+                delta < 0L -> -1
+                else -> 1
+            }
         }
-    }
 
     private var heldBytes = 0L
 
@@ -55,24 +57,39 @@ class AdjustableLruEvictor(initialBudgetBytes: Long) : CacheEvictor {
         // correct by the time it does.
     }
 
-    override fun onStartFile(cache: Cache, key: String, position: Long, length: Long) {
+    override fun onStartFile(
+        cache: Cache,
+        key: String,
+        position: Long,
+        length: Long,
+    ) {
         if (length != C.LENGTH_UNSET.toLong()) {
             evict(cache, length)
         }
     }
 
-    override fun onSpanAdded(cache: Cache, span: CacheSpan) {
+    override fun onSpanAdded(
+        cache: Cache,
+        span: CacheSpan,
+    ) {
         leastRecentlyUsed.add(span)
         heldBytes += span.length
         evict(cache, 0)
     }
 
-    override fun onSpanRemoved(cache: Cache, span: CacheSpan) {
+    override fun onSpanRemoved(
+        cache: Cache,
+        span: CacheSpan,
+    ) {
         leastRecentlyUsed.remove(span)
         heldBytes -= span.length
     }
 
-    override fun onSpanTouched(cache: Cache, oldSpan: CacheSpan, newSpan: CacheSpan) {
+    override fun onSpanTouched(
+        cache: Cache,
+        oldSpan: CacheSpan,
+        newSpan: CacheSpan,
+    ) {
         onSpanRemoved(cache, oldSpan)
         onSpanAdded(cache, newSpan)
     }
@@ -83,7 +100,10 @@ class AdjustableLruEvictor(initialBudgetBytes: Long) : CacheEvictor {
      * calls this shows "Held" dropping right away, not the next time
      * something is added to the cache.
      */
-    fun setBudget(bytes: Long, cache: Cache) {
+    fun setBudget(
+        bytes: Long,
+        cache: Cache,
+    ) {
         // The cache's own monitor, and reentrant: the `removeSpan` inside
         // takes it again and calls straight back into [onSpanRemoved].
         synchronized(cache) {
@@ -99,7 +119,10 @@ class AdjustableLruEvictor(initialBudgetBytes: Long) : CacheEvictor {
      * this loop converge on [heldBytes] actually shrinking rather than
      * looping forever.
      */
-    private fun evict(cache: Cache, requiredBytes: Long) {
+    private fun evict(
+        cache: Cache,
+        requiredBytes: Long,
+    ) {
         while (heldBytes + requiredBytes > budgetBytes && leastRecentlyUsed.isNotEmpty()) {
             cache.removeSpan(leastRecentlyUsed.first())
         }

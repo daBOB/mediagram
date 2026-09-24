@@ -18,20 +18,20 @@ import kotlin.test.assertTrue
  */
 @RunWith(RobolectricTestRunner::class)
 class PlayerFactoryTest {
-
     @Before
     fun resetTheSharedCache() {
         CacheProvider.resetForTest()
     }
 
     @Test
-    fun theCacheWrapsTheMlibSource() = runTest {
-        val context = ApplicationProvider.getApplicationContext<Context>()
+    fun theCacheWrapsTheMlibSource() =
+        runTest {
+            val context = ApplicationProvider.getApplicationContext<Context>()
 
-        val factory = cacheDataSourceFactory(context, PlaybackCounters()) { FakeCore() }
+            val factory = cacheDataSourceFactory(context, PlaybackCounters()) { FakeCore() }
 
-        assertTrue(factory.createDataSource() is CacheDataSource)
-    }
+            assertTrue(factory.createDataSource() is CacheDataSource)
+        }
 
     /**
      * Both directions, explicitly. media3 defaults to five seconds back and
@@ -39,16 +39,17 @@ class PlayerFactoryTest {
      * a viewer something the player does not do.
      */
     @Test
-    fun aSkipMovesTenSecondsInEitherDirection() = runTest {
-        val context = ApplicationProvider.getApplicationContext<Context>()
+    fun aSkipMovesTenSecondsInEitherDirection() =
+        runTest {
+            val context = ApplicationProvider.getApplicationContext<Context>()
 
-        val player = buildPlayer(context, PlaybackCounters()) { FakeCore() }
+            val player = buildPlayer(context, PlaybackCounters()) { FakeCore() }
 
-        try {
-            assertEquals(10_000L, player.seekBackIncrement)
-            assertEquals(10_000L, player.seekForwardIncrement)
-        } finally {
-            player.release()
+            try {
+                assertEquals(10_000L, player.seekBackIncrement)
+                assertEquals(10_000L, player.seekForwardIncrement)
+            } finally {
+                player.release()
+            }
         }
-    }
 }

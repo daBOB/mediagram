@@ -9,7 +9,6 @@ import kotlin.test.assertEquals
  * reset per title would answer a different question.
  */
 class PlaybackCountersTest {
-
     @Test
     fun afreshProcessHasDoneNothing() {
         assertEquals(PlaybackTotals(0, 0, 0, 0), PlaybackCounters().totals())
