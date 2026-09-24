@@ -433,8 +433,12 @@ async function finishProfilePicker(starting: Promise<void>) {
     const retry = descendants(env.document.body).find((node) => node.textContent === "Retry profiles");
     if (retry) retry.fire("click");
     else if (!descendants(env.document.body).some((node) => node.className === "who-name" && node.textContent === "Viewer")) {
-      Object.assign(env.window, { prompt: () => "Viewer" });
       descendants(env.document.body).find((node) => node.className === "who-tile who-add")!.fire("click");
+      await settle();
+      const form = descendants(env.document.body).find((node) => node.className === "who-new")!;
+      const name = descendants(form).find((node) => node.tagName === "INPUT") as unknown as { value: string };
+      name.value = "Viewer";
+      form.fire("submit");
     }
     await settle();
     const tile = descendants(env.document.body).find((node) => node.className === "who-tile" && textOf(node).includes("Viewer"));
@@ -607,6 +611,34 @@ describe("kids profiles", () => {
     descendants(env.node("main")).find((node) => node.className === "film-play")!.fire("click");
     await settle();
     expect(env.node("kids").hidden).toBe(true);
+  });
+
+  test("a new profile can be made a kids profile, and its tile says so", async () => {
+    let posted: unknown = null;
+    const base = intercept;
+    intercept = (url, init) => {
+      if (url === "/api/profiles" && init?.method === "POST") {
+        posted = JSON.parse(String(init.body));
+        return Promise.resolve(Response.json({ id: "mia", name: "Mia", createdAt: 3, kids: true }, { status: 201 }));
+      }
+      return base(url, init);
+    };
+    await start();
+    env.node("who").fire("click");
+    await settle();
+    descendants(env.document.body).find((node) => node.className.includes("who-add"))!.fire("click");
+    await settle();
+    const form = descendants(env.document.body).find((node) => node.className === "who-new")!;
+    const [name, kids] = descendants(form).filter((node) => node.tagName === "INPUT") as unknown as
+      [{ value: string; checked: boolean }, { value: string; checked: boolean }];
+    name.value = "Mia";
+    kids.checked = true;
+    form.fire("submit");
+    await settle();
+    expect(posted).toEqual({ name: "Mia", kids: true });
+    const tile = descendants(env.document.body)
+      .find((node) => node.className === "who-tile" && textOf(node).includes("Mia"))!;
+    expect(textOf(tile)).toContain("Kids");
   });
 });
 

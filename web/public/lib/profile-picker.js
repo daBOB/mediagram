@@ -33,6 +33,8 @@ export function chooseProfile(root, { canCancel = false, discoveryFailed = false
     card.append(choices);
     let closed = false;
     let selecting = false;
+    let naming = false;
+    let createFailed = false;
     const selection = new AbortController();
     const draw = () => {
       choices.textContent = "";
@@ -54,6 +56,7 @@ export function chooseProfile(root, { canCancel = false, discoveryFailed = false
         const tile = el("button", "who-tile");
         tile.append(el("span", "who-initial", initialOf(entry.name)));
         tile.append(el("span", "who-name", entry.name));
+        if (entry.kids) tile.append(el("span", "who-kids", "Kids"));
         tile.disabled = selecting;
         tile.addEventListener("click", async () => {
           if (closed || selecting) return;
@@ -81,15 +84,46 @@ export function chooseProfile(root, { canCancel = false, discoveryFailed = false
       add.append(el("span", "who-name", "New profile"));
       add.addEventListener("click", () => {
         if (closed || selecting) return;
-        const name = window.prompt("Name for this profile");
-        if (name === null) return;
-        void state.createProfile(name).then((made) => {
-          if (made) draw();
-          else window.alert("Could not create the profile. Please try again.");
-        });
+        naming = true;
+        createFailed = false;
+        draw();
       });
       tiles.append(add);
       choices.append(tiles);
+
+      if (naming) {
+        const form = el("form", "who-new");
+        const name = el("input");
+        name.required = true;
+        name.maxLength = 120;
+        name.placeholder = "Name";
+        name.setAttribute("aria-label", "Name for this profile");
+        const kidsChoice = el("label", "who-kids-choice");
+        const kids = el("input");
+        kids.type = "checkbox";
+        kidsChoice.append(kids, " Kids profile — only FSK 12 and under");
+        const create = el("button", null, "Create");
+        create.type = "submit";
+        const cancel = el("button", "quiet", "Cancel");
+        cancel.type = "button";
+        cancel.addEventListener("click", () => {
+          naming = false;
+          draw();
+        });
+        form.addEventListener("submit", (event) => {
+          event.preventDefault();
+          void state.createProfile(name.value, kids.checked).then((made) => {
+            if (closed) return;
+            naming = made === null;
+            createFailed = made === null;
+            draw();
+          });
+        });
+        form.append(name, kidsChoice, create, cancel);
+        if (createFailed) form.append(el("p", "error", "Could not create the profile. Please try again."));
+        choices.append(form);
+        name.focus();
+      }
 
       if (state.profiles().length > 0) {
         const manage = el("button", "quiet", "Rename or remove…");

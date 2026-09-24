@@ -106,9 +106,9 @@ async function write(path, method, body) {
 }
 
 /** A creation also needs a readable response before it can be held locally. */
-async function createRecord(path, name) {
+async function createRecord(path, body) {
   try {
-    const response = await write(path, "POST", { name });
+    const response = await write(path, "POST", body);
     return response ? await response.json() : null;
   } catch {
     return null;
@@ -151,8 +151,8 @@ export function rememberedProfile() {
 }
 
 /** @returns {Promise<import("../../src/state/store.ts").Profile|null>} The acknowledged profile, or null on failure. */
-export async function createProfile(name) {
-  const made = await createRecord("/api/profiles", name);
+export async function createProfile(name, kids = false) {
+  const made = await createRecord("/api/profiles", { name, kids });
   if (!made) return null;
   held.profiles.push(made);
   return made;
@@ -398,7 +398,7 @@ export const collections = () => held.collections;
 export async function createCollection(name) {
   const selection = profileSelection;
   const asked = held.profileId;
-  const made = await createRecord(under("/collections"), name);
+  const made = await createRecord(under("/collections"), { name });
   if (!made || selection !== profileSelection || held.profileId !== asked) return null;
   held.collections.push(made);
   changed();

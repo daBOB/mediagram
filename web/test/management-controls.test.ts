@@ -25,6 +25,10 @@ function byClass(root: Node, className: string): Node {
   throw new Error(`Missing class: ${className}`);
 }
 
+function descendants(root: Node): Node[] {
+  return root.children.flatMap((child) => [child, ...descendants(child)]);
+}
+
 beforeEach(async () => {
   env = browserEnvironment();
   alerts = [];
@@ -89,17 +93,22 @@ test("canceling pending profile selection leaves the prior choice and state inta
 test("a rejected new profile remains retryable and reports the failure", async () => {
   const root = new Node();
   void chooseProfile(root, { canCancel: true });
-  env.respondWith(async () => new Response(null, { status: 503 }));
   byClass(root, "who-add").fire("click");
   await settle();
-  expect(alerts).toEqual(["Could not create the profile. Please try again."]);
+  const nameField = () => descendants(root).find((node) => node.tagName === "INPUT")!;
+
+  nameField().value = "New name";
+  env.respondWith(async () => new Response(null, { status: 503 }));
+  byClass(root, "who-new").fire("submit");
+  await settle();
+  expect(byClass(root, "error").textContent).toBe("Could not create the profile. Please try again.");
   expect(state.profiles().map((profile) => profile.name)).toEqual(["Alice"]);
 
-  env.respondWith(async () => Response.json({ id: "new", name: answer }));
-  byClass(root, "who-add").fire("click");
+  nameField().value = "New name";
+  env.respondWith(async () => Response.json({ id: "new", name: "New name" }));
+  byClass(root, "who-new").fire("submit");
   await settle();
   expect(state.profiles().map((profile) => profile.name)).toEqual(["Alice", "New name"]);
-  expect(alerts).toHaveLength(1);
 });
 
 test("profile deletion failure keeps the chooser and the profile", async () => {

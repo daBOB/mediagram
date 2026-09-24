@@ -39,8 +39,12 @@ export class Node extends EventTarget {
   get selectedOptions() {
     return this.children.filter((child) => child.value === this.value);
   }
-  append(...nodes: Node[]) {
-    for (const node of nodes) {
+  append(...nodes: Array<Node | string>) {
+    for (const given of nodes) {
+      // A real `Element.append` turns a bare string into a text node rather
+      // than rejecting it; callers rely on that to mix a control with a
+      // trailing label, as a `<label>` in the real DOM would.
+      const node = typeof given === "string" ? Object.assign(new Node("#TEXT"), { textContent: given }) : given;
       node.parent = this;
       this.children.push(node);
     }
@@ -76,6 +80,7 @@ export class Node extends EventTarget {
   matches(_selector: string) {
     return false;
   }
+  focus() {}
   querySelectorAll(tag: string) {
     return this.children.filter((node) => node.tagName === tag.toUpperCase());
   }

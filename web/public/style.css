@@ -308,6 +308,32 @@ body {
   box-shadow: 0 0 0 1px rgba(140, 59, 46, 0.3), 0 16px 26px -14px rgba(60, 45, 25, 0.6);
 }
 .who-add .who-initial { background: none; box-shadow: inset 0 0 0 1px var(--rule); }
+/* A kids profile's tile says so, quietly: a fact about the profile, set in
+   the same small capitals the page uses for every other such fact. */
+.who-kids {
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--held);
+}
+.who-new {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  margin: 1.4rem 0 0.4rem;
+}
+.who-new input:not([type]) {
+  font: inherit;
+  padding: 0.35rem 0.1rem;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  background: none;
+  color: var(--ink);
+  min-width: 12rem;
+}
+.who-kids-choice { font-size: 0.9rem; color: var(--ink-2); }
 .who-note {
   margin: 1.6rem auto 0;
   max-width: 44ch;
