@@ -1,4 +1,4 @@
-//! Planning one course document as a set.
+//! Recording one course document as a set ready to upload.
 //!
 //! A document takes the same road as a lesson from the moment there are bytes
 //! to send — the same parts, the same captions, the same upload — and skips
@@ -8,7 +8,7 @@
 //! to look up: a document belongs to a course, and a course is described by
 //! hand.
 //!
-//! No subcommand plans a document on its own. Documents are found by walking
+//! No subcommand records a document on its own. Documents are found by walking
 //! a course, so `add-course` is the one caller and a second entry point would
 //! be a second way to get the numbering wrong.
 
@@ -23,6 +23,12 @@ use crate::config::Config;
 use crate::index::db;
 use crate::media::classify;
 use crate::upload::plan::{Source, record_planned};
+
+#[deprecated(
+    since = "0.40.2",
+    note = "Use record_document_set; this operation persists the document"
+)]
+pub use record_document_set as plan_document;
 
 /// One document to upload, as the walk describes it.
 pub struct Document {
@@ -44,7 +50,7 @@ pub struct Document {
 
 /// Writes one document to the index as a set ready to upload, and returns
 /// its id.
-pub fn plan_document(cfg: &Config, doc: &Document) -> Result<String> {
+pub fn record_document_set(cfg: &Config, doc: &Document) -> Result<String> {
     let total = std::fs::metadata(&doc.file)
         .with_context(|| format!("stat {}", doc.file.display()))?
         .len();

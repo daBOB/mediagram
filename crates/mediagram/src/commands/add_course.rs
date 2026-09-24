@@ -17,8 +17,8 @@ use crate::index::{db, set_lookup};
 use crate::telegram::index_publish;
 use crate::upload::finish_set::Uploader;
 use crate::upload::new_set::{LessonOf, NewSet};
-use crate::upload::plan_document::{Document, plan_document};
-use crate::upload::plan_set::plan_set;
+use crate::upload::prepare_set::prepare_and_record_set;
+use crate::upload::record_document::{Document, record_document_set};
 
 pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
     let course = course_title(args.course.as_deref(), &args.dir)?;
@@ -140,7 +140,7 @@ async fn upload_one(
         }),
         ..NewSet::default()
     };
-    let planned = plan_set(cfg, &new).await?;
+    let planned = prepare_and_record_set(cfg, &new).await?;
     // A course is walked from a folder the caller still wants, so nothing is
     // deleted; the index is pushed once when the walk finishes.
     uploader.finish(&planned.set_id, None).await?;
@@ -163,7 +163,7 @@ async fn upload_document(
         document.number,
         document.title.as_deref().unwrap_or("")
     );
-    let set_id = plan_document(
+    let set_id = record_document_set(
         cfg,
         &Document {
             file: document.path.clone(),

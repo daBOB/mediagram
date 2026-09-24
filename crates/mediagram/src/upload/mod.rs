@@ -1,4 +1,4 @@
-//! Getting a file into the channel: planning it as a set, then streaming its
+//! Getting a file into the channel: preparing and recording it, then streaming its
 //! parts — a hashing byte-range reader, the Telegram transport that sends
 //! it, and the resumable per-set pipeline.
 
@@ -11,9 +11,20 @@ pub mod part_reader;
 mod part_upload;
 pub mod pipeline;
 pub mod plan;
-pub mod plan_document;
-pub mod plan_set;
+pub mod prepare_set;
 pub mod progress;
 pub mod progress_line;
+pub mod record_document;
 pub mod resume;
 pub mod transport;
+
+#[deprecated(
+    since = "0.40.2",
+    note = "Use prepare_set for preparation that records the set"
+)]
+pub use prepare_set as plan_set;
+#[deprecated(
+    since = "0.40.2",
+    note = "Use record_document for document persistence"
+)]
+pub use record_document as plan_document;

@@ -25,7 +25,7 @@ use crate::paths::file_name;
 use crate::telegram::index_publish;
 use crate::upload::finish_set::Uploader;
 use crate::upload::new_set::NewSet;
-use crate::upload::plan_set::plan_set;
+use crate::upload::prepare_set::prepare_and_record_set;
 use survey::{report_blockers, survey};
 
 pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
@@ -136,7 +136,7 @@ async fn upload_one(
         episode: Some(ep.episode),
         ..NewSet::default()
     };
-    let planned = plan_set(cfg, &new).await?;
+    let planned = prepare_and_record_set(cfg, &new).await?;
     // The index is pushed once when the show is done, not per episode.
     uploader
         .finish(&planned.set_id, delete.then_some(ep.path.as_path()))

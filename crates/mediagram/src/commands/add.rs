@@ -1,7 +1,7 @@
 //! `mediagram add`: inspect → resolve → remux → plan → index → upload, the
 //! last step either watched here or handed to a background process.
 //!
-//! Everything up to the upload is [`plan_set`], which `add-show` and
+//! Everything up to the upload is [`prepare_and_record_set`], which `add-show` and
 //! `add-course` share; this command only turns its flags into a [`NewSet`].
 
 use anyhow::Result;
@@ -11,12 +11,12 @@ use super::{background, finish_set};
 use crate::config::Config;
 use crate::course::identity::collection_id;
 use crate::upload::new_set::{LessonOf, NewSet};
-use crate::upload::plan_set::plan_set;
+use crate::upload::prepare_set::prepare_and_record_set;
 
 pub async fn run(cfg: &Config, args: AddArgs) -> Result<()> {
     let (watch, no_push) = (args.watch, args.no_push);
     let to_delete = args.delete_source.then(|| args.file.clone());
-    let planned = plan_set(cfg, &new_set(args)?).await?;
+    let planned = prepare_and_record_set(cfg, &new_set(args)?).await?;
 
     // Everything that can ask a question or refuse has happened: the file was
     // inspected, the title resolved, the caption measured, the rows written.

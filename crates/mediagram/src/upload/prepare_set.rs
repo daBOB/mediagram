@@ -1,4 +1,4 @@
-//! Planning one file as a set: inspect, resolve, remux, then write it to the
+//! Preparing one file as a set: inspect, resolve, remux, then write it to the
 //! index ready to upload. `add` runs this for the file it is handed, and
 //! `add-show` and `add-course` for each file they walk.
 
@@ -14,9 +14,15 @@ use crate::metadata::title_details;
 use crate::upload::new_set::{NewSet, Planned};
 use crate::upload::plan::{Source, record_planned};
 
+#[deprecated(
+    since = "0.40.2",
+    note = "Use prepare_and_record_set; this operation persists the set"
+)]
+pub use prepare_and_record_set as plan_set;
+
 /// Inspects, resolves and remuxes one file and writes it to the index as a
 /// set ready to upload.
-pub async fn plan_set(cfg: &Config, new: &NewSet) -> Result<Planned> {
+pub async fn prepare_and_record_set(cfg: &Config, new: &NewSet) -> Result<Planned> {
     let info = inspect::inspect(&new.file)
         .await
         .with_context(|| format!("inspecting {}", new.file.display()))?;
