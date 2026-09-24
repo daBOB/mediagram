@@ -25,10 +25,13 @@ pub(in crate::api) async fn subscribe(core: &Core) -> Result<(), CoreError> {
     let tl::enums::updates::State::State(state) = client
         .invoke(&tl::functions::updates::GetState {})
         .await
-        .map_err(|_| unavailable())?;
+        .map_err(unavailable().logged())?;
     let session = {
         let state = core.state.lock().await;
-        state.client.as_ref().map(|live| live.handle.session.clone())
+        state
+            .client
+            .as_ref()
+            .map(|live| live.handle.session.clone())
     }
     .ok_or_else(unavailable)?;
     session
@@ -40,5 +43,5 @@ pub(in crate::api) async fn subscribe(core: &Core) -> Result<(), CoreError> {
             channels: Vec::new(),
         }))
         .await
-        .map_err(|_| unavailable())
+        .map_err(unavailable().logged())
 }

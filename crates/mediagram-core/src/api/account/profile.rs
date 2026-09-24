@@ -23,8 +23,8 @@ impl Core {
     /// The signed-in account's name and username.
     pub async fn account(&self) -> Result<AccountSummary, CoreError> {
         let client = session::client(self).await;
-        let me = revoked::checked(self, client.get_me().await, |_| {
-            CoreError::Network("could not ask Telegram who is signed in".into())
+        let me = revoked::checked(self, client.get_me().await, |err| {
+            CoreError::network("could not ask Telegram who is signed in")(err)
         })
         .await?;
         let name = [me.first_name(), me.last_name()]
@@ -33,7 +33,10 @@ impl Core {
             .filter(|part| !part.is_empty())
             .collect::<Vec<_>>()
             .join(" ");
-        Ok(AccountSummary { name, username: me.username().map(str::to_string) })
+        Ok(AccountSummary {
+            name,
+            username: me.username().map(str::to_string),
+        })
     }
 
     /// Signs this device out: at Telegram first, so the login stops working
@@ -54,8 +57,7 @@ impl Core {
         // stream, which clears itself; its lock is never taken here, since a
         // listener may hold it for hours.
         *self.state.lock().await = State::default();
-        session::forget_auth_key(&self.data_dir)
-            .map_err(|_| CoreError::Io("removing the stored login".into()))
+        session::forget_auth_key(&self.data_dir).map_err(CoreError::io("removing the stored login"))
     }
 }
 
@@ -64,7 +66,12 @@ mod tests {
     use super::*;
 
     fn core(dir: &std::path::Path) -> std::sync::Arc<Core> {
-        Core::new(dir.display().to_string(), 1, "test-hash".into(), "test-device".into())
+        Core::new(
+            dir.display().to_string(),
+            1,
+            "test-hash".into(),
+            "test-device".into(),
+        )
     }
 
     #[test]

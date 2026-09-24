@@ -21,6 +21,10 @@ pub enum CoreError {
     Library(String),
 }
 
+#[cfg(test)]
+#[path = "error_tests.rs"]
+mod tests;
+
 impl CoreError {
     /// `Io(what)` for a failure whose cause is logged rather than returned.
     ///
