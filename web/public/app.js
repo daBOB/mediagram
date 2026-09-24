@@ -315,7 +315,7 @@ let shelfEditing = false;
 let pageReady = false;
 
 function invalidateShelf() {
-  refreshKept();
+  refreshShelfCounts();
   if (player.open || shelfEditing) {
     shelfStale = true;
     return;
@@ -339,7 +339,7 @@ function setShelfEditing(editing) {
   if (!editing && shelfStale) invalidateShelf();
 }
 
-function refreshKept() {
+function refreshShelfCounts() {
   const started = state.inProgress().filter((row) => resumeAt(row) !== null && byId.has(row.setId));
   document.getElementById("n-continue").textContent = String(started.length);
   document.getElementById("n-watchlist").textContent = String(setsFor(state.watchlist()).length);
@@ -503,8 +503,12 @@ function viewSystem() {
   stopStatus = watchStatus(panel);
 }
 
+// A route visit survives redraws, but not leaving and returning to its hash.
+let navigationGeneration = 0;
 let routeGeneration = 0;
 function route() {
+  const navigation = navigationGeneration;
+  const visitedHash = location.hash;
   const generation = ++routeGeneration;
   shelfEditing = false;
   shelfStale = false;
@@ -531,7 +535,7 @@ function route() {
   }
 
   main.textContent = "";
-  refreshKept();
+  refreshShelfCounts();
   if (known === "search") {
     const query = decodeURIComponent(name ?? "");
     searchBox.value = query;
@@ -552,7 +556,11 @@ function route() {
     const list = state.collections().find((entry) => entry.id === decodeURIComponent(name ?? ""));
     return name
       ? renderList(main, list, list ? setsFor(list.items) : [], {
-          play, onEditing: setShelfEditing, onGone: () => { location.hash = "#/collections"; },
+          play, onEditing: setShelfEditing, onGone: () => {
+            if (navigation === navigationGeneration && location.hash === visitedHash) {
+              location.hash = "#/collections";
+            }
+          },
         })
       : renderLists(main, (id) => { location.hash = `#/collections/${encodeURIComponent(id)}`; });
   }
@@ -601,6 +609,7 @@ searchBox.addEventListener("input", () => {
 const lessMotion = matchMedia("(prefers-reduced-motion: reduce)");
 let shownHash = location.hash;
 window.addEventListener("hashchange", () => {
+  navigationGeneration++;
   const refining = shownHash.startsWith("#/search/") && location.hash.startsWith("#/search/");
   shownHash = location.hash;
   if (refining || lessMotion.matches || !document.startViewTransition) {
@@ -699,17 +708,17 @@ try {
   await state.loadKids();
   // Who, before anything else: every shelf below is one profile's, and the
   // first render already draws progress rules.
-  await Promise.all([loadCatalog(), state.loadProfiles()]);
+  const [, profilesLoaded] = await Promise.all([loadCatalog(), state.loadProfiles()]);
 
   // Remembered on this device, if that profile is still one of them; asked
   // otherwise, which is also the first run on a new player.
-  const known = state.rememberedProfile();
+  const known = profilesLoaded ? state.rememberedProfile() : null;
   if (known) await state.useProfile(known);
-  else await chooseProfile(document.body);
+  else await chooseProfile(document.body, { discoveryFailed: !profilesLoaded });
   showProfile();
 
   void offerSystem();
-  refreshKept();
+  refreshShelfCounts();
 
   // The start page, which answers both halves of what used to be decided
   // here: what was left unfinished, and — for a viewer who finished

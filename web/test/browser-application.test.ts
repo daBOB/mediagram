@@ -316,3 +316,169 @@ test.each(["close", "pagehide"])("%s invalidates Play next while its state refre
   expect(env.video.attachments).toEqual(attachments);
   if (exit === "close") expect(env.node("player").open).toBe(false);
 });
+
+
+test("successful list deletion leaves the deleted list after its state notification redraw", async () => {
+  await start();
+  await env.navigate("#/collections/list");
+  Object.assign(env.window, { confirm: () => true });
+  descendants(env.node("main")).find((node) => node.textContent === "Delete list")!.fire("click");
+  await settle();
+  expect(env.location.hash).toBe("#/collections");
+  expect(state.collections()).toEqual([]);
+});
+
+for (const returnToList of [false, true]) {
+  test(`late list deletion does not navigate after ${returnToList ? "leaving and returning" : "leaving"} the list`, async () => {
+    await start();
+    await env.navigate("#/collections/list");
+    Object.assign(env.window, { confirm: () => true });
+    const pending = deferred<Response>();
+    intercept = (url, init) => url.endsWith("/collections/list") && init?.method === "DELETE" ? pending.promise : null;
+    descendants(env.node("main")).find((node) => node.textContent === "Delete list")!.fire("click");
+    await env.navigate("#/movies");
+    if (returnToList) await env.navigate("#/collections/list");
+    const currentHash = env.location.hash;
+    pending.resolve(new Response(null, { status: 204 }));
+    await settle();
+    expect(env.location.hash).toBe(currentHash);
+    expect(page()).toContain(returnToList ? "That list is not here any more." : "First");
+    expect(state.collections()).toEqual([]);
+  });
+}
+
+const statusSnapshot = (sets: number) => ({
+  catalog: { origin: "package", publishedAt: null, refresh: "current", sets, posters: 2, schema: 6 },
+  cache: null, encoder: { name: "libx264", device: null },
+  transcodes: { running: 0, capacity: 2, sessions: [], heldBytes: 0, dir: "/tmp/conversions" },
+  telegram: { connected: true, failedReads: 0 }, state: { remembered: true, path: "/tmp/state.db" },
+  fetchedBytes: 1000, memoryBytes: 2000, uptimeSeconds: 30,
+});
+
+test("System route renders its initial status, reports a polling failure and recovers", async () => {
+  let reads = 0;
+  intercept = (url, init) => {
+    if (url !== "/api/status") return null;
+    if (init?.method === "HEAD") return Promise.resolve(new Response(null, { status: 204 }));
+    reads++;
+    return Promise.resolve(reads === 2 ? new Response(null, { status: 503 }) : Response.json(statusSnapshot(reads)));
+  };
+  await start();
+  expect(env.node("nav-system").hidden).toBe(false);
+  await env.navigate("#/system");
+  expect(page()).toContain("System");
+  expect(page()).toContain("1 playable sets, 2 posters");
+  env.advance(2000); await settle();
+  expect(page()).toContain("Could not read the player's status: the player answered 503");
+  env.advance(2000); await settle();
+  expect(page()).toContain("3 playable sets, 2 posters");
+  expect(page()).not.toContain("Could not read");
+  await env.navigate("#/movies");
+  env.advance(6000); await settle();
+  expect(reads).toBe(3);
+});
+
+for (const outcome of ["response", "body", "rejection"] as const) {
+  test(`leaving System disposes its poller and isolates a late ${outcome} on return`, async () => {
+    await start();
+    const pending = deferred<Response>();
+    const body = deferred<Uint8Array>();
+    const first = outcome === "body"
+      ? Promise.resolve(new Response(new ReadableStream({ async start(controller) { controller.enqueue(await body.promise); controller.close(); } })))
+      : pending.promise;
+    let reads = 0;
+    intercept = (url) => url === "/api/status" ? (++reads === 1 ? first : Promise.resolve(Response.json(statusSnapshot(42)))) : null;
+    await env.navigate("#/system");
+    const oldPanel = descendants(env.node("main")).find((node) => node.className === "status-panel")!;
+    expect(oldPanel).toBeDefined();
+    const previous = textOf(oldPanel);
+    await env.navigate("#/movies");
+    env.advance(6000); await settle();
+    expect(reads).toBe(1);
+    expect(page()).toContain("First");
+    await env.navigate("#/system");
+    expect(reads).toBe(2);
+    expect(page()).toContain("42 playable sets");
+    if (outcome === "response") pending.resolve(Response.json(statusSnapshot(999)));
+    else if (outcome === "body") body.resolve(new TextEncoder().encode(JSON.stringify(statusSnapshot(999))));
+    else pending.reject(new Error("Old request failed"));
+    await settle();
+    expect(textOf(oldPanel)).toBe(previous);
+    expect(page()).toContain("42 playable sets");
+    expect(page()).not.toContain("999");
+    expect(page()).not.toContain("Old request failed");
+    await env.navigate("#/movies");
+    env.advance(6000); await settle();
+    expect(reads).toBe(2);
+  });
+}
+
+
+async function waitForProfilePicker() {
+  for (let turn = 0; turn < 100 && !descendants(env.document.body).some((node) => node.className === "who"); turn++) {
+    await Bun.sleep(1);
+  }
+  expect(descendants(env.document.body).some((node) => node.className === "who")).toBe(true);
+}
+
+async function finishProfilePicker(starting: Promise<void>) {
+  // Also release startup when a pre-fix assertion fails: use the real creation
+  // and selection callbacks if the old picker has no discovery retry button.
+  if (descendants(env.document.body).some((node) => node.className === "who")) {
+    intercept = (url, init) => url === "/api/profiles" && init?.method === "POST"
+      ? Promise.resolve(Response.json({ id: "viewer", name: "Viewer", createdAt: 1 })) : null;
+    const retry = descendants(env.document.body).find((node) => node.textContent === "Retry profiles");
+    if (retry) retry.fire("click");
+    else if (!descendants(env.document.body).some((node) => node.className === "who-name" && node.textContent === "Viewer")) {
+      Object.assign(env.window, { prompt: () => "Viewer" });
+      descendants(env.document.body).find((node) => node.className === "who-tile who-add")!.fire("click");
+    }
+    await settle();
+    const tile = descendants(env.document.body).find((node) => node.className === "who-tile" && textOf(node).includes("Viewer"));
+    if (!tile) throw new Error("Recovered profile tile missing");
+    tile.fire("click");
+  }
+  await starting;
+}
+
+for (const failure of ["HTTP", "network", "JSON"] as const) {
+  test(`startup profile ${failure} failure shows a retry and recovers without an empty-profile claim`, async () => {
+    intercept = (url) => {
+      if (url !== "/api/profiles") return null;
+      if (failure === "network") return Promise.reject(new Error("offline"));
+      return Promise.resolve(failure === "HTTP" ? new Response(null, { status: 503 }) : new Response("{"));
+    };
+    const starting = start();
+    await waitForProfilePicker();
+    try {
+      expect(textOf(env.document.body)).toContain("Could not load profiles.");
+      expect(textOf(env.document.body)).not.toContain("New profile");
+      expect(textOf(env.document.body)).not.toContain("cannot save anything");
+      const retry = descendants(env.document.body).find((node) => node.textContent === "Retry profiles")!;
+      retry.fire("click");
+      await settle();
+      expect(textOf(env.document.body)).toContain("Could not load profiles.");
+      expect(descendants(env.document.body).find((node) => node.textContent === "Retry profiles")?.disabled).toBe(false);
+      expect(page()).not.toContain("Could not load the catalog");
+    } finally {
+      await finishProfilePicker(starting);
+    }
+    expect(state.profileId()).toBe("viewer");
+    expect(env.node("who").textContent).toBe("Viewer");
+    expect(page()).toContain("First");
+  });
+}
+
+test.each([true, false])("successful empty profile discovery (remembers=%s) offers creation without a retry error", async (remembers) => {
+  intercept = (url) => url === "/api/profiles" ? Promise.resolve(Response.json({ remembers, profiles: [] })) : null;
+  const starting = start();
+  await waitForProfilePicker();
+  try {
+    expect(textOf(env.document.body)).toContain("New profile");
+    expect(textOf(env.document.body)).not.toContain("Could not load profiles.");
+    expect(textOf(env.document.body)).not.toContain("Retry profiles");
+    expect(textOf(env.document.body).includes("cannot save anything")).toBe(!remembers);
+  } finally {
+    await finishProfilePicker(starting);
+  }
+});

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { chooseProfile } from "../public/lib/profile-picker.js";
 import { listControls, listsView } from "../public/lib/catalog/collections-view.js";
 import * as state from "../public/lib/watch-state.js";
-import { browserEnvironment, Node, settle } from "./support/player-environment.js";
+import { browserEnvironment, deferred, Node, settle } from "./support/player-environment.js";
 
 let env: ReturnType<typeof browserEnvironment>;
 let alerts: string[];
@@ -97,6 +97,7 @@ test("an unreadable list creation reply reports failure and leaves the shelf usa
 
 test("a failed rename keeps the old list name and permits another attempt", async () => {
   const list = state.collections()[0];
+  if (!list) throw new Error("Fixture collection missing");
   const root = listControls(list, () => {}, () => {}, null);
   env.respondWith(async () => new Response(null, { status: 503 }));
   button(root, "Rename").fire("click");
@@ -127,4 +128,41 @@ test("a failed list deletion retains the list and navigates only after acknowled
   expect(state.collections()).toHaveLength(0);
   expect(departures).toBe(1);
   expect(alerts).toHaveLength(1);
+});
+
+
+test("profile discovery retry admits one request and redraws recovered management controls", async () => {
+  const root = new Node();
+  const pending = deferred<Response>();
+  let reads = 0;
+  env.respondWith(() => { reads++; return pending.promise; });
+  void chooseProfile(root, { canCancel: true, discoveryFailed: true });
+  const retry = button(root, "Retry profiles");
+  retry.fire("click");
+  retry.fire("click");
+  expect(reads).toBe(1);
+  expect(retry.disabled).toBe(true);
+  pending.resolve(Response.json({ remembers: true, profiles: [{ id: "alice", name: "Alice", createdAt: 1 }] }));
+  await settle();
+  expect(button(root, "Rename or remove…")).toBeDefined();
+  expect(byClass(root, "who-note").textContent).toContain("Profiles keep your places");
+  expect(state.profileId()).toBe("alice");
+  button(root, "Stay as I am").fire("click");
+});
+
+test("canceling a profile discovery retry leaves the selected profile and dismissed view alone", async () => {
+  const root = new Node();
+  const pending = deferred<Response>();
+  env.respondWith(() => pending.promise);
+  const chosen = chooseProfile(root, { canCancel: true, discoveryFailed: true });
+  const screen = root.children[0]!;
+  button(root, "Retry profiles").fire("click");
+  button(root, "Stay as I am").fire("click");
+  expect(await chosen).toBe("alice");
+  expect(root.children).toHaveLength(0);
+  pending.resolve(Response.json({ remembers: true, profiles: [] }));
+  await settle();
+  expect(state.profileId()).toBe("alice");
+  expect(root.children).toHaveLength(0);
+  expect(button(screen, "Retry profiles")).toBeDefined();
 });

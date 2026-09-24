@@ -37,9 +37,9 @@ function changed() {
 }
 
 /**
- * @type {{remembers: boolean, profiles: any[], profileId: string|null,
+ * @type {{remembers: boolean, profiles: import("../../src/state/store.ts").Profile[], profileId: string|null,
  *   progress: Map<string, {at: number, duration: number|null, updatedAt: number}>,
- *   watchlist: Set<string>, collections: any[], watched: Map<string, number>,
+ *   watchlist: Set<string>, collections: import("../../src/state/store.ts").Collection[], watched: Map<string, number>,
  *   kids: Set<string>, preferences: Map<string, string>}}
  */
 const held = {
@@ -118,16 +118,19 @@ async function createRecord(path, name) {
 /**
  * Who watches this library. Asked before anything else, because every other
  * question here is about one of them.
+ * @returns {Promise<boolean>} Whether discovery succeeded, including an empty result.
+ * A failed read leaves the last known profiles intact so the chooser can retry.
  */
 export async function loadProfiles() {
   try {
     const response = await fetch("/api/profiles");
-    if (!response.ok) return;
+    if (!response.ok) return false;
     const said = await response.json();
     held.remembers = said.remembers === true;
     held.profiles = said.profiles ?? [];
+    return true;
   } catch {
-    // A player that cannot list profiles has none, and the page says so.
+    return false;
   }
 }
 
@@ -147,7 +150,7 @@ export function rememberedProfile() {
   return id && held.profiles.some((entry) => entry.id === id) ? id : null;
 }
 
-/** @returns {Promise<{id: string, name: string}|null>} The acknowledged profile, or null on failure. */
+/** @returns {Promise<import("../../src/state/store.ts").Profile|null>} The acknowledged profile, or null on failure. */
 export async function createProfile(name) {
   const made = await createRecord("/api/profiles", name);
   if (!made) return null;
@@ -388,7 +391,7 @@ export function setKids(setId, marked) {
 export const collections = () => held.collections;
 
 /**
- * @returns {Promise<{id: string, name: string, items: string[]}|null>}
+ * @returns {Promise<import("../../src/state/store.ts").Collection|null>}
  * The acknowledged list, or null on failure or if the selected profile changed.
  */
 export async function createCollection(name) {

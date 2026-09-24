@@ -23,20 +23,36 @@ const initialOf = (name) => (name ?? "?").trim().charAt(0).toUpperCase() || "?";
  * catalog render, the shelves, the player — is waiting on the answer and
  * reads better as one await than as a continuation.
  */
-export function chooseProfile(root, { canCancel = false } = {}) {
+export function chooseProfile(root, { canCancel = false, discoveryFailed = false } = {}) {
   return new Promise((resolve) => {
     const screen = el("div", "who");
     const card = el("div", "who-card");
     card.append(el("h1", null, "Who's watching?"));
 
-    const tiles = el("div", "who-tiles");
+    const choices = el("div");
+    card.append(choices);
+    let closed = false;
     const draw = () => {
-      tiles.textContent = "";
+      choices.textContent = "";
+      if (discoveryFailed) {
+        choices.append(el("p", "error", "Could not load profiles. Please try again."));
+        const retry = el("button", "quiet", "Retry profiles");
+        retry.addEventListener("click", async () => {
+          if (retry.disabled) return;
+          retry.disabled = true;
+          discoveryFailed = !(await state.loadProfiles());
+          if (!closed) draw();
+        });
+        choices.append(retry);
+        return;
+      }
+      const tiles = el("div", "who-tiles");
       for (const entry of state.profiles()) {
         const tile = el("button", "who-tile");
         tile.append(el("span", "who-initial", initialOf(entry.name)));
         tile.append(el("span", "who-name", entry.name));
         tile.addEventListener("click", () => {
+          closed = true;
           screen.remove();
           void state.useProfile(entry.id).then(() => resolve(entry.id));
         });
@@ -55,52 +71,52 @@ export function chooseProfile(root, { canCancel = false } = {}) {
         });
       });
       tiles.append(add);
-    };
+      choices.append(tiles);
 
-    draw();
-    card.append(tiles);
-
-    if (state.profiles().length > 0) {
-      const manage = el("button", "quiet", "Rename or remove…");
-      manage.addEventListener("click", () => {
-        const name = window.prompt(
-          "Name of the profile to remove, exactly. Everything of theirs goes with it.",
-        );
-        if (name === null) return;
-        const found = state.profiles().find((entry) => entry.name === name);
-        if (!found) {
-          window.alert("No profile by that name.");
-          return;
-        }
-        if (!window.confirm(`Remove "${found.name}" and everything they have watched?`)) return;
-        void state.deleteProfile(found.id).then((ok) => {
-          if (ok) draw();
-          else window.alert("Could not remove the profile. Please try again.");
+      if (state.profiles().length > 0) {
+        const manage = el("button", "quiet", "Rename or remove…");
+        manage.addEventListener("click", () => {
+          const name = window.prompt(
+            "Name of the profile to remove, exactly. Everything of theirs goes with it.",
+          );
+          if (name === null) return;
+          const found = state.profiles().find((entry) => entry.name === name);
+          if (!found) {
+            window.alert("No profile by that name.");
+            return;
+          }
+          if (!window.confirm(`Remove "${found.name}" and everything they have watched?`)) return;
+          void state.deleteProfile(found.id).then((ok) => {
+            if (ok) draw();
+            else window.alert("Could not remove the profile. Please try again.");
+          });
         });
-      });
-      card.append(manage);
-    }
+        choices.append(manage);
+      }
+
+      // Said plainly rather than implied: somebody will otherwise assume a
+      // profile is a login, and it is not one.
+      choices.append(
+        el(
+          "p",
+          "who-note",
+          state.remembers()
+            ? "Profiles keep your places and lists apart. They are not a login — anyone who can reach this player can pick any of them."
+            : "This player cannot save anything, so nothing here will be kept.",
+        ),
+      );
+    };
+    draw();
 
     if (canCancel) {
       const back = el("button", "quiet", "Stay as I am");
       back.addEventListener("click", () => {
+        closed = true;
         screen.remove();
         resolve(state.profileId());
       });
       card.append(back);
     }
-
-    // Said plainly rather than implied: somebody will otherwise assume a
-    // profile is a login, and it is not one.
-    card.append(
-      el(
-        "p",
-        "who-note",
-        state.remembers()
-          ? "Profiles keep your places and lists apart. They are not a login — anyone who can reach this player can pick any of them."
-          : "This player cannot save anything, so nothing here will be kept.",
-      ),
-    );
 
     screen.append(card);
     root.append(screen);

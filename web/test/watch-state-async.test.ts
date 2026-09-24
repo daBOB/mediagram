@@ -142,7 +142,7 @@ describe.each(creations)("creating a %s", (_kind, create, records, path) => {
   });
 
   test("adds the successfully decoded record once", async () => {
-    const made = { id: "new", name: "New", items: [] };
+    const made = { id: "new", name: "New", createdAt: 1, items: [] };
     const before = [...records()];
     const writes: Array<{ url: string; method?: string; body?: RequestInit["body"] }> = [];
     serve(async (url, init) => {
@@ -153,5 +153,22 @@ describe.each(creations)("creating a %s", (_kind, create, records, path) => {
     expect(await create("New")).toEqual(made);
     expect(records()).toEqual([...before, made]);
     expect(writes).toEqual([{ url: path, method: "POST", body: JSON.stringify({ name: "New" }) }]);
+  });
+});
+
+
+describe("profile discovery", () => {
+  test.each(failures)("reports %s without replacing known profiles", async (_failure, response) => {
+    const before = [...state.profiles()];
+    serve(response);
+    expect(await state.loadProfiles()).toBe(false);
+    expect(state.profiles()).toEqual(before);
+  });
+
+  test.each([true, false])("a successful empty response with remembers=%s is not a discovery failure", async (remembers) => {
+    serve(async () => Response.json({ remembers, profiles: [] }));
+    expect(await state.loadProfiles()).toBe(true);
+    expect(state.profiles()).toEqual([]);
+    expect(state.remembers()).toBe(remembers);
   });
 });
