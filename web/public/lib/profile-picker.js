@@ -23,7 +23,7 @@ const initialOf = (name) => (name ?? "?").trim().charAt(0).toUpperCase() || "?";
  * catalog render, the shelves, the player — is waiting on the answer and
  * reads better as one await than as a continuation.
  */
-export function chooseProfile(root, { canCancel = false, discoveryFailed = false } = {}) {
+export function chooseProfile(root, { canCancel = false, discoveryFailed = false, stateFailed = false } = {}) {
   return new Promise((resolve) => {
     const screen = el("div", "who");
     const card = el("div", "who-card");
@@ -32,6 +32,8 @@ export function chooseProfile(root, { canCancel = false, discoveryFailed = false
     const choices = el("div");
     card.append(choices);
     let closed = false;
+    let selecting = false;
+    const selection = new AbortController();
     const draw = () => {
       choices.textContent = "";
       if (discoveryFailed) {
@@ -46,23 +48,39 @@ export function chooseProfile(root, { canCancel = false, discoveryFailed = false
         choices.append(retry);
         return;
       }
+      if (stateFailed) choices.append(el("p", "error", "Could not load this profile. Choose it again to retry."));
       const tiles = el("div", "who-tiles");
       for (const entry of state.profiles()) {
         const tile = el("button", "who-tile");
         tile.append(el("span", "who-initial", initialOf(entry.name)));
         tile.append(el("span", "who-name", entry.name));
-        tile.addEventListener("click", () => {
+        tile.disabled = selecting;
+        tile.addEventListener("click", async () => {
+          if (closed || selecting) return;
+          selecting = true;
+          stateFailed = false;
+          draw();
+          const applied = await state.useProfile(entry.id, selection.signal);
+          if (closed) return;
+          selecting = false;
+          if (!applied) {
+            stateFailed = true;
+            draw();
+            return;
+          }
           closed = true;
           screen.remove();
-          void state.useProfile(entry.id).then(() => resolve(entry.id));
+          resolve(entry.id);
         });
         tiles.append(tile);
       }
 
       const add = el("button", "who-tile who-add");
+      add.disabled = selecting;
       add.append(el("span", "who-initial", "＋"));
       add.append(el("span", "who-name", "New profile"));
       add.addEventListener("click", () => {
+        if (closed || selecting) return;
         const name = window.prompt("Name for this profile");
         if (name === null) return;
         void state.createProfile(name).then((made) => {
@@ -75,7 +93,9 @@ export function chooseProfile(root, { canCancel = false, discoveryFailed = false
 
       if (state.profiles().length > 0) {
         const manage = el("button", "quiet", "Rename or remove…");
+        manage.disabled = selecting;
         manage.addEventListener("click", () => {
+          if (closed || selecting) return;
           const name = window.prompt(
             "Name of the profile to remove, exactly. Everything of theirs goes with it.",
           );
@@ -112,6 +132,7 @@ export function chooseProfile(root, { canCancel = false, discoveryFailed = false
       const back = el("button", "quiet", "Stay as I am");
       back.addEventListener("click", () => {
         closed = true;
+        selection.abort();
         screen.remove();
         resolve(state.profileId());
       });

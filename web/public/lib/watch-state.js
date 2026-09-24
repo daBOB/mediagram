@@ -174,22 +174,23 @@ export async function deleteProfile(id) {
   return true;
 }
 
-/** Chooses a profile and loads what is theirs. */
-export async function useProfile(id) {
+/**
+ * Chooses and remembers a profile only after its state is available.
+ * Failed or obsolete reads keep the previously acknowledged profile intact.
+ * @param {string|null} id
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<boolean>} Whether this selection was applied.
+ */
+export async function useProfile(id, signal) {
   const selection = ++profileSelection;
+  if (signal?.aborted) return false;
+  const said = id === null ? {} : await readState(id, signal);
+  if (!said || signal?.aborted || selection !== profileSelection) return false;
+  adopt(said);
   held.profileId = id;
   remember(id);
-  held.progress = new Map();
-  held.watchlist = new Set();
-  held.collections = [];
-  held.watched = new Map();
-  held.preferences = new Map();
-  if (id === null) { changed(); return; }
-
-  const said = await readState();
-  if (selection !== profileSelection || held.profileId !== id) return;
-  if (said) adopt(said);
   changed();
+  return true;
 }
 
 /**
@@ -211,7 +212,7 @@ export async function refreshState(timeoutMs = 1500) {
   const asked = held.profileId;
   const selection = profileSelection;
   if (asked === null) return false;
-  const said = await readState(AbortSignal.timeout(timeoutMs));
+  const said = await readState(asked, AbortSignal.timeout(timeoutMs));
   // Another profile chosen while this was in flight: its state is not this.
   if (!said || selection !== profileSelection || held.profileId !== asked) return false;
   const before = progressSignature();
@@ -239,12 +240,12 @@ function progressSignature() {
 }
 
 /** The profile's state as the server has it, or `null` if it cannot be read. */
-async function readState(signal) {
+async function readState(id, signal) {
   try {
-    const response = await fetch(under("/state"), { signal });
+    const response = await fetch(`/api/profiles/${encodeURIComponent(id)}/state`, { signal });
     return response.ok ? await response.json() : null;
   } catch {
-    // A profile whose state cannot be read is one with none yet.
+    // Unavailable state is distinct from a successful empty snapshot.
     return null;
   }
 }

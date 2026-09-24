@@ -442,6 +442,34 @@ async function finishProfilePicker(starting: Promise<void>) {
 }
 
 for (const failure of ["HTTP", "network", "JSON"] as const) {
+  test(`remembered profile state ${failure} failure blocks empty shelves until retry succeeds`, async () => {
+    env.location.hash = "#/continue";
+    snapshot = { progress: [{ setId: "First", at: 90, duration: 600, updatedAt: 1 }] };
+    intercept = (url) => {
+      if (!url.endsWith("/state")) return null;
+      if (failure === "network") return Promise.reject(new Error("offline"));
+      return Promise.resolve(failure === "HTTP" ? new Response(null, { status: 503 }) : new Response("{"));
+    };
+    const starting = start();
+    try {
+      await waitForProfilePicker();
+      expect(textOf(env.document.body)).toContain("Could not load this profile");
+      expect(page()).not.toContain("Nothing started yet");
+      const tile = descendants(env.document.body).find((node) => node.className === "who-tile")!;
+      tile.fire("click");
+      await settle();
+      expect(textOf(env.document.body)).toContain("Could not load this profile");
+      expect(page()).not.toContain("Nothing started yet");
+    } finally {
+      await finishProfilePicker(starting);
+    }
+    expect(env.node("who").textContent).toBe("Viewer");
+    expect(env.node("n-continue").textContent).toBe("1");
+    expect(page()).toContain("First");
+  });
+}
+
+for (const failure of ["HTTP", "network", "JSON"] as const) {
   test(`startup profile ${failure} failure shows a retry and recovers without an empty-profile claim`, async () => {
     intercept = (url) => {
       if (url !== "/api/profiles") return null;

@@ -46,6 +46,46 @@ afterEach(async () => {
   env.restore();
 });
 
+test("failed profile state keeps the chooser open and permits a successful retry", async () => {
+  const root = new Node();
+  let settled = false;
+  const choosing = chooseProfile(root).then((id) => { settled = true; return id; });
+  env.respondWith(async () => new Response(null, { status: 503 }));
+  byClass(root, "who-tile").fire("click");
+  await settle();
+  expect(settled).toBe(false);
+  expect(root.children).toHaveLength(1);
+  expect(byClass(root, "error").textContent).toContain("Could not load this profile");
+  expect(state.collections()[0]?.name).toBe("Old list");
+
+  env.respondWith(async () => Response.json({ watchlist: ["restored"] }));
+  byClass(root, "who-tile").fire("click");
+  expect(await choosing).toBe("alice");
+  expect(root.children).toHaveLength(0);
+  expect(state.watchlist()).toEqual(["restored"]);
+});
+
+test("canceling pending profile selection leaves the prior choice and state intact", async () => {
+  env.respondWith(async () => Response.json({ profiles: [{ id: "bob", name: "Bob" }] }));
+  await state.loadProfiles();
+  const root = new Node();
+  const pending = deferred<Response>();
+  let requests = 0;
+  env.respondWith(() => { requests++; return pending.promise; });
+  const choosing = chooseProfile(root, { canCancel: true });
+  const tile = byClass(root, "who-tile");
+  tile.fire("click");
+  tile.fire("click");
+  expect(requests).toBe(1);
+  button(root, "Stay as I am").fire("click");
+  expect(await choosing).toBe("alice");
+  pending.resolve(Response.json({ watchlist: ["bob-only"] }));
+  await settle();
+  expect(state.profileId()).toBe("alice");
+  expect(state.watchlist()).toEqual([]);
+  expect(state.collections()[0]?.name).toBe("Old list");
+});
+
 test("a rejected new profile remains retryable and reports the failure", async () => {
   const root = new Node();
   void chooseProfile(root, { canCancel: true });

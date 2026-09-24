@@ -713,8 +713,11 @@ try {
   // Remembered on this device, if that profile is still one of them; asked
   // otherwise, which is also the first run on a new player.
   const known = profilesLoaded ? state.rememberedProfile() : null;
-  if (known) await state.useProfile(known);
-  else await chooseProfile(document.body, { discoveryFailed: !profilesLoaded });
+  const selected = known ? await state.useProfile(known) : false;
+  if (!selected) await chooseProfile(document.body, {
+    discoveryFailed: !profilesLoaded,
+    stateFailed: known !== null,
+  });
   showProfile();
 
   void offerSystem();

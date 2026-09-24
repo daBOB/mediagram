@@ -132,6 +132,31 @@ const failures = [
   }), { status: 201 })],
 ] as const;
 
+describe("profile initialization", () => {
+  test.each(failures)("keeps acknowledged data and reports %s", async (_failure, response) => {
+    serve(response);
+    expect(await state.useProfile("base")).toBe(false);
+    expect(state.profileId()).toBe("base");
+    expect(state.progressOf("base")?.at).toBe(30);
+    expect(state.watchlist()).toEqual(["base"]);
+    expect(await state.useProfile("other")).toBe(false);
+    expect(state.profileId()).toBe("base");
+    expect(state.watchlist()).toEqual(["base"]);
+  });
+
+  test("acknowledges an empty profile only after its response arrives", async () => {
+    const pending = Promise.withResolvers<Response>();
+    serve(() => pending.promise);
+    const selecting = state.useProfile("other");
+    expect(state.profileId()).toBe("base");
+    expect(state.watchlist()).toEqual(["base"]);
+    pending.resolve(Response.json({}));
+    expect(await selecting).toBe(true);
+    expect(state.profileId()).toBe("other");
+    expect(state.watchlist()).toEqual([]);
+  });
+});
+
 describe.each(creations)("creating a %s", (_kind, create, records, path) => {
   test.each(failures)("returns null without local changes on %s", async (_failure, response) => {
     const before = [...records()];

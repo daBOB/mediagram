@@ -269,7 +269,8 @@ test("the real buffer monitor falls back to HLS at the measured position and kee
 });
 
 test("remembered language follows stream ordinals between episodes and resumes playback", async () => {
-  await state.useProfile("viewer");
+  env.respondWith(async () => Response.json({}));
+  expect(await state.useProfile("viewer")).toBe(true);
   state.setPreference("show:Series", "audio", "de");
   let response = deferred<Response>();
   env.respondWith(async (url) => {
