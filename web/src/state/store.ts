@@ -341,14 +341,10 @@ export class WatchState {
   }
 
   private meta(key: string): string | null {
-    try {
-      const row = this.db?.query("SELECT value FROM state_meta WHERE key = ?1").get(key) as
-        | { value?: string }
-        | null;
-      return typeof row?.value === "string" ? row.value : null;
-    } catch {
-      return null;
-    }
+    const row = this.db?.query("SELECT value FROM state_meta WHERE key = ?1").get(key) as
+      | { value?: string }
+      | null;
+    return typeof row?.value === "string" ? row.value : null;
   }
 
   private setMeta(key: string, value: string): void {
@@ -363,9 +359,9 @@ export class WatchState {
    * What this player has to say about where things were left off.
    *
    * Every profile, because a document belongs to a device rather than to
-   * whoever happens to be watching on it; and with timestamps, which
-   * `snapshot` drops — it is built for a page that only needs to know *what*,
-   * and a merge has to know *when*.
+   * whoever happens to be watching on it. Unlike a single-profile UI snapshot,
+   * this also includes list timestamps and removal tombstones needed for merging;
+   * snapshots retain progress and watched timestamps for playback and shelves.
    */
   exportRecord(device: string): SyncRecord {
     const profiles = this.profiles().map((profile) => ({
@@ -667,9 +663,10 @@ function cleanName(name: unknown): string | null {
  * traded the whole library for a convenience.
  */
 function open(path: string): Database | null {
+  let db: Database | undefined;
   try {
     mkdirSync(dirname(path), { recursive: true });
-    const db = new Database(path, { create: true });
+    db = new Database(path, { create: true });
     // Survives a kill without taking the file with it, and lets a reader on
     // another device's request run while a position is being written.
     db.exec("PRAGMA journal_mode = WAL");
@@ -677,6 +674,8 @@ function open(path: string): Database | null {
     db.exec("PRAGMA foreign_keys = ON");
     return db;
   } catch (error) {
+    try { db?.close(); }
+    catch (cleanupError) { console.warn("state: failed database cleanup:", cleanupError); }
     console.warn(`state: not remembering anything (${failureMessage(error)})`);
     return null;
   }
@@ -722,13 +721,11 @@ function migrate(db: Database): void {
 
 /** The version this file is at, or 0 for one that has never been touched. */
 function versionOf(db: Database): number {
-  try {
-    const row = db.query("SELECT value FROM state_meta WHERE key = 'schema_version'").get() as
-      | { value: string }
-      | null;
-    return Number(row?.value ?? 0) || 0;
-  } catch {
-    // No `state_meta` at all, which is what an empty file looks like.
-    return 0;
-  }
+  // Check table absence explicitly instead of treating query failures as absence.
+  // Failed reads must not replay migrations over an existing schema.
+  if (db.query("SELECT 1 FROM sqlite_schema WHERE name = 'state_meta'").get() === null) return 0;
+  const row = db.query("SELECT value FROM state_meta WHERE key = 'schema_version'").get() as
+    | { value: string }
+    | null;
+  return Number(row?.value ?? 0) || 0;
 }
