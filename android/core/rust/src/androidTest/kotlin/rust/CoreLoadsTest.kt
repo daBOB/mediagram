@@ -16,7 +16,6 @@ import uniffi.mediagram_core.Core
  */
 @RunWith(AndroidJUnit4::class)
 class CoreLoadsTest {
-
     @Test
     fun theNativeLibraryLoadsAndReportsNoSession() {
         val dir = ApplicationProvider.getApplicationContext<Context>().filesDir

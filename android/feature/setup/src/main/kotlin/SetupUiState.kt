@@ -12,12 +12,13 @@ package setup
  * process killed halfway through leaves nothing to remember.
  */
 sealed interface SetupUiState {
-
     /** Storage has not answered yet — distinct from having answered "nothing stored". */
     data object Checking : SetupUiState
 
     /** Step one: the Telegram application identity, from my.telegram.org. */
-    data class NeedsApplication(val error: String? = null) : SetupUiState
+    data class NeedsApplication(
+        val error: String? = null,
+    ) : SetupUiState
 
     /** Step two: phone, code and any two-factor password, through the login flow. */
     data object NeedsSignIn : SetupUiState
@@ -57,7 +58,9 @@ sealed interface SetupUiState {
      * every launch. The way out is starting over, which is why that offer
      * travels with the message.
      */
-    data class Failed(val message: String) : SetupUiState
+    data class Failed(
+        val message: String,
+    ) : SetupUiState
 }
 
 /**
@@ -69,8 +72,9 @@ sealed interface SetupUiState {
  * it: it is a rule about which of two states wins, and nothing about it
  * needs the ViewModel's coroutines, its storage or its core.
  */
-internal fun SetupUiState.keepingWhatIsOnScreenFrom(previous: SetupUiState): SetupUiState = when {
-    this is SetupUiState.NeedsApplication && previous is SetupUiState.NeedsApplication -> previous
-    this is SetupUiState.NeedsLibrary && previous is SetupUiState.NeedsLibrary -> previous
-    else -> this
-}
+internal fun SetupUiState.keepingWhatIsOnScreenFrom(previous: SetupUiState): SetupUiState =
+    when {
+        this is SetupUiState.NeedsApplication && previous is SetupUiState.NeedsApplication -> previous
+        this is SetupUiState.NeedsLibrary && previous is SetupUiState.NeedsLibrary -> previous
+        else -> this
+    }

@@ -27,14 +27,25 @@ class FakeCore(
     var installFailure: Exception? = null,
     /** Whether Telegram answers who is signed in; `null` is an unreachable Telegram. */
     var accountAnswer: AccountSummary? = AccountSummary("A Viewer", "viewer"),
+    var accountFailure: Exception? = null,
     var datacenter: Int? = 4,
 ) : CoreClient {
-
     var signedOut = false
         private set
 
-    override fun dcId(): Int? = datacenter
-    override suspend fun account(): AccountSummary = accountAnswer ?: error("no answer")
+    var datacenterReads = 0
+        private set
+
+    override fun dcId(): Int? {
+        datacenterReads++
+        return datacenter
+    }
+
+    override suspend fun account(): AccountSummary {
+        accountFailure?.let { throw it }
+        return accountAnswer ?: error("no answer")
+    }
+
     override suspend fun signOut() {
         signedOut = true
         authorized = false
@@ -49,8 +60,14 @@ class FakeCore(
         private set
 
     override fun isAuthorized(): Boolean = authorized
+
     override suspend fun requestCode(phone: String): String = "token"
-    override suspend fun signIn(token: String, code: String): AuthOutcome = AuthOutcome.DONE
+
+    override suspend fun signIn(
+        token: String,
+        code: String,
+    ): AuthOutcome = AuthOutcome.DONE
+
     override suspend fun checkPassword(password: String) = Unit
 
     override suspend fun listLibraries(): List<LibraryChoice> {
@@ -65,18 +82,37 @@ class FakeCore(
         return libraries.size.toLong()
     }
 
-    override suspend fun refreshCatalog(url: String, keyB64: String): Long = 0
+    override suspend fun refreshCatalog(
+        url: String,
+        keyB64: String,
+    ): Long = 0
+
     override suspend fun listSets(): List<SetSummary> = emptyList()
+
     override fun posterPath(posterKey: String): String? = null
+
     override suspend fun titleInfo(posterKey: String): TitleInfo? = null
+
     override suspend fun totalSize(setId: String): Long = 0
+
     override suspend fun catalogFacts(): CatalogFacts = CatalogFacts("channel", 0uL, 0uL, 0u, null)
-    override suspend fun read(setId: String, offset: Long, len: Int): ByteArray = ByteArray(0)
-    override suspend fun fetchMissing(tmdbKey: String, language: String): FetchReport =
-        FetchReport(0u, 0u, 0u, 0u, 0u, 0u)
+
+    override suspend fun read(
+        setId: String,
+        offset: Long,
+        len: Int,
+    ): ByteArray = ByteArray(0)
+
+    override suspend fun fetchMissing(
+        tmdbKey: String,
+        language: String,
+    ): FetchReport = FetchReport(0u, 0u, 0u, 0u, 0u, 0u)
+
     override fun close() = Unit
 }
 
 /** A library as the core would list it, so a test only names its title. */
-fun choice(title: String, handle: String = title.lowercase().replace(" ", "-")): LibraryChoice =
-    LibraryChoice(handle = handle, title = title)
+fun choice(
+    title: String,
+    handle: String = title.lowercase().replace(" ", "-"),
+): LibraryChoice = LibraryChoice(handle = handle, title = title)

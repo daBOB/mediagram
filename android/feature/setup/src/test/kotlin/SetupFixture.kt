@@ -6,9 +6,9 @@ import data.StoredCoreProvider
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import settings.InMemoryLibrarySettings
+import settings.InMemoryTelegramSettings
 import settings.InMemoryTmdbSettings
 import settings.LibrarySettings
-import settings.InMemoryTelegramSettings
 import settings.TelegramSettings
 import settings.TmdbSettings
 
@@ -40,8 +40,9 @@ internal class SetupFixture(
     }
 
     /** A device that has answered everything up to the library question. */
-    suspend fun signedIn(): SetupFixture = apply {
-        telegram.write(1234, WELL_FORMED_HASH)
-        core.authorized = true
-    }
+    suspend fun signedIn(): SetupFixture =
+        apply {
+            telegram.write(1234, WELL_FORMED_HASH)
+            core.authorized = true
+        }
 }

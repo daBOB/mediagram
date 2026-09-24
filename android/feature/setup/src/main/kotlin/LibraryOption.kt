@@ -9,4 +9,7 @@ package setup
  * this learns what it may read and never where the bytes live — the rule
  * the byte path is held to, kept at the same line.
  */
-data class LibraryOption(val handle: String, val title: String)
+data class LibraryOption(
+    val handle: String,
+    val title: String,
+)

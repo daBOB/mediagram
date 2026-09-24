@@ -17,38 +17,47 @@ import javax.inject.Inject
  * thread and does nothing with no profile chosen, so this has neither
  * concern of its own; what it adds is the judgement of which write to make.
  */
-class ProgressRecorder @Inject constructor(private val repository: WatchStateRepository) {
-
-    /**
-     * @param atSeconds where playback is now
-     * @param observedDurationSeconds ExoPlayer's own reading of the set's
-     *   length, trusted because Android always plays the original file
-     *   directly — never a transcode whose reported length is still
-     *   growing, the case [ResumePoint.trustedRuntime]'s `direct` flag
-     *   guards against on the web.
-     */
-    suspend fun save(setId: String, atSeconds: Double, observedDurationSeconds: Double?) {
-        runCatching {
-            val runtime = ResumePoint.trustedRuntime(catalogued = null, observed = observedDurationSeconds, direct = true)
-            if (ResumePoint.isFinished(atSeconds, runtime)) {
-                // The position goes, because a finished title has nowhere
-                // to resume to. The fact that it finished stays, because
-                // otherwise nothing would remember it was ever watched.
-                repository.clearProgress(setId)
-                val alreadyWatched = repository.snapshot.value.watched.any { it.setId == setId }
-                if (!alreadyWatched) repository.setWatched(setId, true)
-            } else {
-                repository.setProgress(setId, atSeconds, runtime.takeIf { it > 0 })
+class ProgressRecorder
+    @Inject
+    constructor(
+        private val repository: WatchStateRepository,
+    ) {
+        /**
+         * @param atSeconds where playback is now
+         * @param observedDurationSeconds ExoPlayer's own reading of the set's
+         *   length, trusted because Android always plays the original file
+         *   directly — never a transcode whose reported length is still
+         *   growing, the case [ResumePoint.trustedRuntime]'s `direct` flag
+         *   guards against on the web.
+         */
+        suspend fun save(
+            setId: String,
+            atSeconds: Double,
+            observedDurationSeconds: Double?,
+        ) {
+            runCatching {
+                val runtime = ResumePoint.trustedRuntime(catalogued = null, observed = observedDurationSeconds, direct = true)
+                if (ResumePoint.isFinished(atSeconds, runtime)) {
+                    // The position goes, because a finished title has nowhere
+                    // to resume to. The fact that it finished stays, because
+                    // otherwise nothing would remember it was ever watched.
+                    repository.clearProgress(setId)
+                    val alreadyWatched =
+                        repository.snapshot.value.watched
+                            .any { it.setId == setId }
+                    if (!alreadyWatched) repository.setWatched(setId, true)
+                } else {
+                    repository.setProgress(setId, atSeconds, runtime.takeIf { it > 0 })
+                }
+            }.onFailure { error ->
+                if (error is CancellationException) throw error
+                // A save is a courtesy to the next time this title is opened,
+                // never a reason to interrupt the one playing now.
+                Log.w(TAG, "save: ${error.message}")
             }
-        }.onFailure { error ->
-            if (error is CancellationException) throw error
-            // A save is a courtesy to the next time this title is opened,
-            // never a reason to interrupt the one playing now.
-            Log.w(TAG, "save: ${error.message}")
+        }
+
+        private companion object {
+            const val TAG = "progress"
         }
     }
-
-    private companion object {
-        const val TAG = "progress"
-    }
-}

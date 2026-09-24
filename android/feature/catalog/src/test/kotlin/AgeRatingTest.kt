@@ -13,7 +13,6 @@ import kotlin.test.assertNull
  * which `age-rating.test.ts` holds to the same limits.
  */
 class AgeRatingTest {
-
     @Test
     fun twelveAndYoungerIsForKidsAndOlderIsNot() {
         assertEquals(KidsVerdict.SAFE, kidsVerdictOf("0"))

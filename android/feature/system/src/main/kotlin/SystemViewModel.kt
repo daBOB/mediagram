@@ -34,52 +34,55 @@ import javax.inject.Inject
  * [CoreProvider.awaitCore], never captured.
  */
 @HiltViewModel
-class SystemViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
-    private val coreProvider: CoreProvider,
-    private val counters: PlaybackCounters,
-    private val refreshes: RefreshLog,
-) : ViewModel() {
+class SystemViewModel
+    @Inject
+    constructor(
+        @ApplicationContext private val context: Context,
+        private val coreProvider: CoreProvider,
+        private val counters: PlaybackCounters,
+        private val refreshes: RefreshLog,
+    ) : ViewModel() {
+        // Read once, not per subscription: the installed package's own version
+        // name cannot change while this process is running.
+        private val versionName: String? =
+            try {
+                context.packageManager.getPackageInfo(context.packageName, 0).versionName
+            } catch (e: PackageManager.NameNotFoundException) {
+                null
+            }
 
-    // Read once, not per subscription: the installed package's own version
-    // name cannot change while this process is running.
-    private val versionName: String? = try {
-        context.packageManager.getPackageInfo(context.packageName, 0).versionName
-    } catch (e: PackageManager.NameNotFoundException) {
-        null
+        val state: StateFlow<SystemUiState?> =
+            flow {
+                val core = coreProvider.awaitCore()
+                val facts = core.catalogFacts()
+                val totals = counters.totals()
+                val occupancy = CacheProvider.occupancy(context)
+                emit(
+                    SystemUiState(
+                        origin = facts.origin,
+                        sets = facts.sets.toLong(),
+                        posters = facts.posters.toLong(),
+                        schema = facts.schema.toInt(),
+                        // Seconds at the core's surface, milliseconds here: the
+                        // row subtracts it from a wall clock.
+                        publishedAt = facts.publishedAt?.times(1_000),
+                        lastRefresh = refreshes.last(),
+                        heldBytes = occupancy.heldBytes,
+                        budgetBytes = occupancy.budgetBytes,
+                        fromCacheBytes = totals.fromCacheBytes,
+                        fromUpstreamBytes = totals.fromUpstreamBytes,
+                        fetches = totals.fetches,
+                        failedReads = totals.failedReads,
+                        // A live session only means something once the catalog is
+                        // bound to a channel; a published package has no
+                        // connection for this row to report on.
+                        connected = if (facts.origin == "channel") core.isAuthorized() else null,
+                        versionName = versionName,
+                        // Process start, not ViewModel construction: a viewer who
+                        // reopens this screen after playing for an hour should read
+                        // an hour, not however long the screen itself has existed.
+                        uptimeSeconds = (SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()) / 1000,
+                    ),
+                )
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
     }
-
-    val state: StateFlow<SystemUiState?> = flow {
-        val core = coreProvider.awaitCore()
-        val facts = core.catalogFacts()
-        val totals = counters.totals()
-        val occupancy = CacheProvider.occupancy(context)
-        emit(
-            SystemUiState(
-                origin = facts.origin,
-                sets = facts.sets.toLong(),
-                posters = facts.posters.toLong(),
-                schema = facts.schema.toInt(),
-                // Seconds at the core's surface, milliseconds here: the
-                // row subtracts it from a wall clock.
-                publishedAt = facts.publishedAt?.times(1_000),
-                lastRefresh = refreshes.last(),
-                heldBytes = occupancy.heldBytes,
-                budgetBytes = occupancy.budgetBytes,
-                fromCacheBytes = totals.fromCacheBytes,
-                fromUpstreamBytes = totals.fromUpstreamBytes,
-                fetches = totals.fetches,
-                failedReads = totals.failedReads,
-                // A live session only means something once the catalog is
-                // bound to a channel; a published package has no
-                // connection for this row to report on.
-                connected = if (facts.origin == "channel") core.isAuthorized() else null,
-                versionName = versionName,
-                // Process start, not ViewModel construction: a viewer who
-                // reopens this screen after playing for an hour should read
-                // an hour, not however long the screen itself has existed.
-                uptimeSeconds = (SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()) / 1000,
-            ),
-        )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
-}

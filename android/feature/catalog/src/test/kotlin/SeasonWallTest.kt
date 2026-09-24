@@ -9,7 +9,6 @@ import kotlin.test.assertNull
  * and what each plate in that wall says about itself.
  */
 class SeasonWallTest {
-
     @Test
     fun aSingleSeasonShowHasNoWall() {
         val show = collection(divisions = listOf(season(1, episodes = 6)))
@@ -18,18 +17,20 @@ class SeasonWallTest {
 
     @Test
     fun aCourseIsNeverWalledEvenWithSeveralChapters() {
-        val course = collection(
-            kind = CollectionKind.COURSE,
-            divisions = listOf(season(1, episodes = 2), season(2, episodes = 3)),
-        )
+        val course =
+            collection(
+                kind = CollectionKind.COURSE,
+                divisions = listOf(season(1, episodes = 2), season(2, episodes = 3)),
+            )
         assertNull(seasonPlatesOf(course))
     }
 
     @Test
     fun oneNumberedSeasonAndOneUnnumberedGetOnePlateEach() {
-        val show = collection(
-            divisions = listOf(season(1, episodes = 6), unnumbered("Episodes", episodes = 2)),
-        )
+        val show =
+            collection(
+                divisions = listOf(season(1, episodes = 6), unnumbered("Episodes", episodes = 2)),
+            )
 
         val plates = seasonPlatesOf(show)!!
         assertEquals(listOf("Season 1", "Episodes"), plates.map { it.title })
@@ -46,10 +47,11 @@ class SeasonWallTest {
 
     @Test
     fun aNumberedSeasonsPosterKeyIsDerivedFromTheShowsOwn() {
-        val show = collection(
-            posterKey = "tmdb-tv-1396",
-            divisions = listOf(season(2, episodes = 3), season(3, episodes = 3)),
-        )
+        val show =
+            collection(
+                posterKey = "tmdb-tv-1396",
+                divisions = listOf(season(2, episodes = 3), season(3, episodes = 3)),
+            )
 
         val plates = seasonPlatesOf(show)!!
         assertEquals("tmdb-tv-1396-s2", plates[0].posterKey)
@@ -58,10 +60,11 @@ class SeasonWallTest {
 
     @Test
     fun anUnnumberedDivisionHasNoSeasonPosterKeyEvenWithAShowKey() {
-        val show = collection(
-            posterKey = "tmdb-tv-1396",
-            divisions = listOf(season(1, episodes = 3), unnumbered("Specials", episodes = 1)),
-        )
+        val show =
+            collection(
+                posterKey = "tmdb-tv-1396",
+                divisions = listOf(season(1, episodes = 3), unnumbered("Specials", episodes = 1)),
+            )
 
         val plates = seasonPlatesOf(show)!!
         assertNull(plates.single { it.title == "Specials" }.posterKey)
@@ -79,8 +82,17 @@ class SeasonWallTest {
     @Test
     fun aSeasonIsWatchedOnlyOnceEveryEpisodeIs() {
         val show = collection(divisions = listOf(season(1, episodes = 2), season(2, episodes = 2)))
-        val allOfSeasonOne = show.divisions[0].items.map { it.setId }.toSet()
-        val allButOneOfSeasonTwo = show.divisions[1].items.map { it.setId }.drop(1).toSet()
+        val allOfSeasonOne =
+            show.divisions[0]
+                .items
+                .map { it.setId }
+                .toSet()
+        val allButOneOfSeasonTwo =
+            show.divisions[1]
+                .items
+                .map { it.setId }
+                .drop(1)
+                .toSet()
 
         val plates = seasonPlatesOf(show, watchedIds = allOfSeasonOne + allButOneOfSeasonTwo)!!
         assertEquals(true, plates[0].watched)
@@ -103,27 +115,35 @@ private fun collection(
     divisions = divisions,
 )
 
-private fun season(number: Int, episodes: Int) = unnumbered("Season $number", episodes, season = number)
+private fun season(
+    number: Int,
+    episodes: Int,
+) = unnumbered("Season $number", episodes, season = number)
 
-private fun unnumbered(title: String, episodes: Int, season: Int? = null) = Division(
+private fun unnumbered(
+    title: String,
+    episodes: Int,
+    season: Int? = null,
+) = Division(
     title = title,
     season = season,
     items = (1..episodes).map { fakeSet("$title-$it") },
     children = emptyList(),
 )
 
-private fun fakeSet(id: String) = model.MediaSet(
-    setId = id,
-    kind = model.Kind.EPISODE,
-    title = id,
-    show = "Show",
-    chapter = null,
-    path = null,
-    season = null,
-    episodeFirst = null,
-    episodeLast = null,
-    year = null,
-    durationSecs = null,
-    posterPath = null,
-    totalBytes = 0,
-)
+private fun fakeSet(id: String) =
+    model.MediaSet(
+        setId = id,
+        kind = model.Kind.EPISODE,
+        title = id,
+        show = "Show",
+        chapter = null,
+        path = null,
+        season = null,
+        episodeFirst = null,
+        episodeLast = null,
+        year = null,
+        durationSecs = null,
+        posterPath = null,
+        totalBytes = 0,
+    )

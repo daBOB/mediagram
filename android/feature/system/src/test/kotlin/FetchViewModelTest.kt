@@ -1,13 +1,13 @@
 package system
 
+import data.CatalogEnrichmentFetcher
+import data.CoreProvider
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import settings.InMemoryTmdbSettings
+import settings.TmdbSettings
 import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.FetchReport
 import java.util.Locale
@@ -17,51 +17,59 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class FetchViewModelTest {
+private fun fetchViewModel(
+    provider: CoreProvider,
+    settings: TmdbSettings,
+) = FetchViewModel(CatalogEnrichmentFetcher(provider, settings))
 
+class FetchViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun aFreshInstallHasNoKeyStored() = runTest {
-        val viewModel = FetchViewModel(FakeCoreProvider(FakeCore()), InMemoryTmdbSettings())
+    fun aFreshInstallHasNoKeyStored() =
+        runTest {
+            val viewModel = fetchViewModel(FakeCoreProvider(FakeCore()), InMemoryTmdbSettings())
 
-        assertFalse(viewModel.state.value.hasKey)
-    }
-
-    @Test
-    fun savingAKeyIsReflectedWithoutEverBeingHeldItself() = runTest {
-        val settings = InMemoryTmdbSettings()
-        val viewModel = FetchViewModel(FakeCoreProvider(FakeCore()), settings)
-
-        viewModel.saveKey("a-fake-key")
-
-        assertTrue(viewModel.state.value.hasKey)
-    }
+            assertFalse(viewModel.state.value.hasKey)
+        }
 
     @Test
-    fun fetchingWithNoKeyStoredDoesNothing() = runTest {
-        val core = FakeCore()
-        val viewModel = FetchViewModel(FakeCoreProvider(core), InMemoryTmdbSettings())
+    fun savingAKeyIsReflectedWithoutEverBeingHeldItself() =
+        runTest {
+            val settings = InMemoryTmdbSettings()
+            val viewModel = fetchViewModel(FakeCoreProvider(FakeCore()), settings)
 
-        viewModel.fetch()
+            viewModel.saveKey("a-fake-key")
 
-        assertNull(core.lastKey)
-        assertNull(viewModel.state.value.report)
-    }
+            assertTrue(viewModel.state.value.hasKey)
+        }
 
     @Test
-    fun aSuccessfulFetchReportsWhatCameBack() = runTest {
-        val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
-        val core = FakeCore(report = FetchReport(2u, 7u, 5u, 1u, 0u, 0u))
-        val viewModel = FetchViewModel(FakeCoreProvider(core), settings)
+    fun fetchingWithNoKeyStoredDoesNothing() =
+        runTest {
+            val core = FakeCore()
+            val viewModel = fetchViewModel(FakeCoreProvider(core), InMemoryTmdbSettings())
 
-        viewModel.fetch()
+            viewModel.fetch()
 
-        assertEquals("a-fake-key", core.lastKey)
-        assertEquals(FetchReport(2u, 7u, 5u, 1u, 0u, 0u), viewModel.state.value.report)
-        assertFalse(viewModel.state.value.running)
-    }
+            assertNull(core.lastKey)
+            assertNull(viewModel.state.value.report)
+        }
+
+    @Test
+    fun aSuccessfulFetchReportsWhatCameBack() =
+        runTest {
+            val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
+            val core = FakeCore(report = FetchReport(2u, 7u, 5u, 1u, 0u, 0u))
+            val viewModel = fetchViewModel(FakeCoreProvider(core), settings)
+
+            viewModel.fetch()
+
+            assertEquals("a-fake-key", core.lastKey)
+            assertEquals(FetchReport(2u, 7u, 5u, 1u, 0u, 0u), viewModel.state.value.report)
+            assertFalse(viewModel.state.value.running)
+        }
 
     /**
      * The defect this closes: the fallback language used to be the constant
@@ -70,15 +78,16 @@ class FetchViewModelTest {
      * knows better, and is the only thing here that does.
      */
     @Test
-    fun theFallbackLanguageIsTheDevicesOwn() = runTest {
-        val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
-        val core = FakeCore()
-        val viewModel = FetchViewModel(FakeCoreProvider(core), settings)
+    fun theFallbackLanguageIsTheDevicesOwn() =
+        runTest {
+            val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
+            val core = FakeCore()
+            val viewModel = fetchViewModel(FakeCoreProvider(core), settings)
 
-        viewModel.fetch()
+            viewModel.fetch()
 
-        assertEquals(Locale.getDefault().toLanguageTag(), core.lastLanguage)
-    }
+            assertEquals(Locale.getDefault().toLanguageTag(), core.lastLanguage)
+        }
 
     /**
      * The real regression this guards against: a fake that returns
@@ -88,95 +97,100 @@ class FetchViewModelTest {
      * the no-key one, actually refuses a second run.
      */
     @Test
-    fun aSecondFetchWhileOneIsInFlightIsRefused() = runTest {
-        val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
-        val gate = CompletableDeferred<Unit>()
-        val core = FakeCore(report = FetchReport(1u, 0u, 0u, 0u, 0u, 0u), gate = gate)
-        val viewModel = FetchViewModel(FakeCoreProvider(core), settings)
+    fun aSecondFetchWhileOneIsInFlightIsRefused() =
+        runTest {
+            val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
+            val gate = CompletableDeferred<Unit>()
+            val core = FakeCore(report = FetchReport(1u, 0u, 0u, 0u, 0u, 0u), gate = gate)
+            val viewModel = fetchViewModel(FakeCoreProvider(core), settings)
 
-        viewModel.fetch()
-        assertTrue(viewModel.state.value.running)
+            viewModel.fetch()
+            assertTrue(viewModel.state.value.running)
 
-        viewModel.fetch()
+            viewModel.fetch()
 
-        assertEquals(1, core.fetchCalls)
+            assertEquals(1, core.fetchCalls)
 
-        gate.complete(Unit)
-        advanceUntilIdle()
+            gate.complete(Unit)
+            advanceUntilIdle()
 
-        assertFalse(viewModel.state.value.running)
-        assertEquals(FetchReport(1u, 0u, 0u, 0u, 0u, 0u), viewModel.state.value.report)
-    }
+            assertFalse(viewModel.state.value.running)
+            assertEquals(FetchReport(1u, 0u, 0u, 0u, 0u, 0u), viewModel.state.value.report)
+        }
 
     /** A rejected key is named as such — never quoted back, and never mistaken for a network fault. */
     @Test
-    fun aRejectedKeyNamesTheKeyRatherThanTheNetwork() = runTest {
-        val settings = InMemoryTmdbSettings().apply { write("a-wrong-key") }
-        val core = FakeCore(failure = CoreException.NotAuthorized("That key was not accepted."))
-        val viewModel = FetchViewModel(FakeCoreProvider(core), settings)
+    fun aRejectedKeyNamesTheKeyRatherThanTheNetwork() =
+        runTest {
+            val settings = InMemoryTmdbSettings().apply { write("a-wrong-key") }
+            val core = FakeCore(failure = CoreException.NotAuthorized("That key was not accepted."))
+            val viewModel = fetchViewModel(FakeCoreProvider(core), settings)
 
-        viewModel.fetch()
+            viewModel.fetch()
 
-        assertEquals("That key was not accepted.", viewModel.state.value.error)
-        assertNull(viewModel.state.value.report)
-    }
+            assertEquals("That key was not accepted.", viewModel.state.value.error)
+            assertNull(viewModel.state.value.report)
+        }
 
     @Test
-    fun dismissingAResultClearsItWithoutTouchingWhetherAKeyIsStored() = runTest {
-        val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
-        val core = FakeCore(report = FetchReport(1u, 0u, 0u, 0u, 0u, 0u))
-        val viewModel = FetchViewModel(FakeCoreProvider(core), settings)
-        viewModel.fetch()
+    fun dismissingAResultClearsItWithoutTouchingWhetherAKeyIsStored() =
+        runTest {
+            val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
+            val core = FakeCore(report = FetchReport(1u, 0u, 0u, 0u, 0u, 0u))
+            val viewModel = fetchViewModel(FakeCoreProvider(core), settings)
+            viewModel.fetch()
 
-        viewModel.dismissResult()
+            viewModel.dismissResult()
 
-        assertNull(viewModel.state.value.report)
-        assertTrue(viewModel.state.value.hasKey)
-    }
+            assertNull(viewModel.state.value.report)
+            assertTrue(viewModel.state.value.hasKey)
+        }
 
     /** The fetch new media brings is nobody's request: it does its work and says nothing. */
     @Test
-    fun aQuietFetchFillsInWithoutAReport() = runTest {
-        val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
-        val core = FakeCore(report = FetchReport(2u, 7u, 5u, 1u, 0u, 0u))
-        val viewModel = FetchViewModel(FakeCoreProvider(core), settings)
+    fun aQuietFetchFillsInWithoutAReport() =
+        runTest {
+            val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
+            val core = FakeCore(report = FetchReport(2u, 7u, 5u, 1u, 0u, 0u))
+            val viewModel = fetchViewModel(FakeCoreProvider(core), settings)
 
-        viewModel.fetch(quiet = true)
+            viewModel.fetch(quiet = true)
 
-        assertEquals("a-fake-key", core.lastKey)
-        assertNull(viewModel.state.value.report)
-        assertNull(viewModel.state.value.error)
-        assertFalse(viewModel.state.value.running)
-    }
+            assertEquals("a-fake-key", core.lastKey)
+            assertNull(viewModel.state.value.report)
+            assertNull(viewModel.state.value.error)
+            assertFalse(viewModel.state.value.running)
+        }
 
     /** A result the viewer has not dismissed yet is theirs; a quiet fetch neither clears nor replaces it. */
     @Test
-    fun aQuietFetchLeavesAResultStillOnScreen() = runTest {
-        val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
-        val core = FakeCore(report = FetchReport(1u, 0u, 0u, 0u, 0u, 0u))
-        val viewModel = FetchViewModel(FakeCoreProvider(core), settings)
-        viewModel.fetch()
+    fun aQuietFetchLeavesAResultStillOnScreen() =
+        runTest {
+            val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
+            val core = FakeCore(report = FetchReport(1u, 0u, 0u, 0u, 0u, 0u))
+            val viewModel = fetchViewModel(FakeCoreProvider(core), settings)
+            viewModel.fetch()
 
-        viewModel.fetch(quiet = true)
+            viewModel.fetch(quiet = true)
 
-        assertEquals(FetchReport(1u, 0u, 0u, 0u, 0u, 0u), viewModel.state.value.report)
-    }
+            assertEquals(FetchReport(1u, 0u, 0u, 0u, 0u, 0u), viewModel.state.value.report)
+        }
 
-    /** New artwork on disk is what the shelves must be rebuilt to show; none, and nothing is said. */
     @Test
-    fun onlyAFetchThatLaidDownPostersSaysSo() = runTest {
-        val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
-        val heard = mutableListOf<Unit>()
-
-        val withPosters = FetchViewModel(FakeCoreProvider(FakeCore(report = FetchReport(2u, 7u, 5u, 1u, 0u, 0u))), settings)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { withPosters.postersArrived.toList(heard) }
-        withPosters.fetch(quiet = true)
-        assertEquals(1, heard.size)
-
-        heard.clear()
-        val without = FetchViewModel(FakeCoreProvider(FakeCore(report = FetchReport(0u, 9u, 0u, 1u, 0u, 0u))), settings)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { without.postersArrived.toList(heard) }
-        without.fetch()
-        assertEquals(0, heard.size)
-    }
+    fun cancellingAFetchClearsItsRunningFlagAndAllowsAnotherAttempt() =
+        runTest {
+            val settings = InMemoryTmdbSettings().apply { write("key") }
+            val gate = CompletableDeferred<Unit>()
+            val core = FakeCore(gate = gate)
+            val vm = fetchViewModel(FakeCoreProvider(core), settings)
+            val job = vm.fetch()
+            assertTrue(vm.state.value.running)
+            job.cancel()
+            advanceUntilIdle()
+            assertFalse(vm.state.value.running)
+            assertNull(vm.state.value.error)
+            gate.complete(Unit)
+            vm.fetch()
+            assertEquals(2, core.fetchCalls)
+        }
 }

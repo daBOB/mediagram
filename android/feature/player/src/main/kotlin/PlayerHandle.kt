@@ -20,7 +20,11 @@ interface PlayerHandle {
     val player: StateFlow<Player?>
 
     /** @param startAtMs where to seek once the set is loaded; 0 for the top. */
-    fun open(setId: String, startAtMs: Long)
+    fun open(
+        setId: String,
+        startAtMs: Long,
+    )
+
     fun setListener(listener: Listener?)
 
     /** Stops playback and releases the decoder/audio focus the player is holding. */
@@ -44,6 +48,7 @@ interface PlayerHandle {
     /** Playback facts; [PlayerViewModel] maps these onto [PlayerUiState]. */
     interface Listener {
         fun onPlayingChanged(isPlaying: Boolean)
+
         fun onError(message: String)
     }
 }

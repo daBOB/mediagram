@@ -5,7 +5,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class SetupInputTest {
-
     @Test
     fun anApiIdIsAPositiveNumber() {
         assertEquals(1234, apiIdOrNull("1234"))
