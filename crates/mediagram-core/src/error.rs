@@ -32,9 +32,10 @@ impl CoreError {
     /// chat, message or document id, and a cause is free to name one. The
     /// cause still matters to whoever diagnoses the failure — permission
     /// denied and disk full read the same without it — so it goes to the log.
+    /// Alternate Display preserves `anyhow` context chains in the diagnostic.
     pub(crate) fn io<E: std::fmt::Display>(what: &str) -> impl FnOnce(E) -> CoreError + '_ {
         move |cause| {
-            tracing::warn!(%cause, "{what}");
+            tracing::warn!(cause = %format_args!("{cause:#}"), "{what}");
             CoreError::Io(what.into())
         }
     }
@@ -42,7 +43,7 @@ impl CoreError {
     /// [`CoreError::io`]'s counterpart for a failure on the network.
     pub(crate) fn network<E: std::fmt::Display>(what: &str) -> impl FnOnce(E) -> CoreError + '_ {
         move |cause| {
-            tracing::warn!(%cause, "{what}");
+            tracing::warn!(cause = %format_args!("{cause:#}"), "{what}");
             CoreError::Network(what.into())
         }
     }
@@ -52,7 +53,7 @@ impl CoreError {
     /// fixed sentence written for the person reading it.
     pub(crate) fn logged<E: std::fmt::Display>(self) -> impl FnOnce(E) -> CoreError {
         move |cause| {
-            tracing::warn!(%cause, "{self}");
+            tracing::warn!(cause = %format_args!("{cause:#}"), "{self}");
             self
         }
     }
