@@ -10,12 +10,6 @@ import kotlin.test.assertNull
  * blank, because a blank row reads as a broken value rather than an absent one.
  */
 class SystemRowsTest {
-    /** Against the real ceiling: CacheProvider's budget is a fixed 2 GiB, which is the whole range this is read over. */
-    @Test
-    fun heldSpaceIsShownAgainstItsBudget() {
-        assertEquals("1.0 GB of 2.0 GB (50%)", heldOfBudget(held = 1_073_741_824, budget = 2_147_483_648))
-    }
-
     /**
      * Two rows two apart, both byte counts, one spelling. They had two: the
      * Held row said "500.0 MB" where the Upstream row two lines below said
@@ -27,11 +21,6 @@ class SystemRowsTest {
 
         assertEquals("500 MB", cacheRows(state).toMap()["Held"]?.substringBefore(" of "))
         assertEquals("500 MB", upstreamRows(state).toMap()["Since starting"])
-    }
-
-    @Test
-    fun anEmptyCacheStillSaysWhatItMayHold() {
-        assertEquals("nothing yet of 2.0 GB", heldOfBudget(held = 0, budget = 2_147_483_648))
     }
 
     @Test

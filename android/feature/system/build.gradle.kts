@@ -13,6 +13,7 @@ android {
 
 dependencies {
     implementation(project(":core:data"))
+    implementation(project(":core:model"))
     // Only for PlaybackCounters — nothing here touches ExoPlayer directly.
     implementation(project(":core:playback"))
 

@@ -17,10 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Spacing
+import model.heldOfBudget
+import model.humanSize
 import system.CacheBudgetViewModel
 import system.cacheBudgetChoices
-import system.heldOfBudget
-import system.humanSize
 import ui.components.Block
 
 /**

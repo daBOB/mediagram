@@ -1,5 +1,6 @@
 package player
 
+import model.humanSize
 import playback.PlaybackTotals
 import java.util.Locale
 
