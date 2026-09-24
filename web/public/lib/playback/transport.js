@@ -112,6 +112,7 @@ function skipButton(button, path, seconds) {
 /**
  * Wires the bar to `video` and returns the one way to refresh it.
  *
+ * `onPlay` owns manual playback failures; `onPause` withdraws a pending request.
  * `onSeekTo` rather than touching `currentTime` here: a title being converted
  * cannot be seeked by moving a playhead, and the player owns that decision.
  * `filmTime` and `runtime` are asked for the same reason — a conversion's own
@@ -121,7 +122,7 @@ function skipButton(button, path, seconds) {
  * the open show. Both are given rather than reached for, because what "this
  * show" means is the player's question and not the bar's.
  */
-export function mountTransport({ video, onSeekTo, filmTime, runtime, recall, remember }) {
+export function mountTransport({ video, onPlay, onPause, onSeekTo, filmTime, runtime, recall, remember }) {
   const playPause = document.getElementById("play-pause");
   const back = document.getElementById("skip-back");
   const forward = document.getElementById("skip-forward");
@@ -182,8 +183,11 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime, recall, rem
    * to disagree.
    */
   function togglePlay() {
-    if (video.paused) void video.play();
-    else video.pause();
+    if (video.paused) void onPlay();
+    else {
+      onPause();
+      video.pause();
+    }
   }
 
   /**

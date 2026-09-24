@@ -81,6 +81,8 @@ function mountPlayer() {
   /** A title owns its probes; each source owns startup, media and its session. */
   let title = null;
   let source = null;
+  let manualPlayRequest = 0;
+  let manualPlayNotice = null;
   /** The set being played, and where in it the current conversion started. */
   let playing = null;
   let base = 0;
@@ -169,6 +171,8 @@ function mountPlayer() {
 
   function stop() {
     const previous = source;
+    manualPlayRequest++;
+    manualPlayNotice = null;
     video.pause();
     source = null;
     appliedAudioTrack = null;
@@ -364,6 +368,8 @@ function mountPlayer() {
 
   const transport = mountTransport({
     video,
+    onPlay: playManually,
+    onPause: () => { manualPlayRequest++; },
     onSeekTo: (seconds) => seekFilmTo(skipTo(seconds, 0, runtimeSeconds())),
     filmTime,
     runtime: runtimeSeconds,
@@ -371,6 +377,31 @@ function mountPlayer() {
     recall: (name) => state.preferenceOf(scope, name),
     remember: (name, value) => state.setPreference(scope, name, value),
   });
+
+  /** A manual refusal stays retryable and belongs to this request and source. */
+  async function playManually() {
+    const operation = source;
+    if (!operation || operation.controller.signal.aborted) return;
+    const request = ++manualPlayRequest;
+    const current = () => request === manualPlayRequest && source === operation && !operation.controller.signal.aborted;
+    try {
+      await video.play();
+      if (!current()) return;
+      if (manualPlayNotice && note.textContent === manualPlayNotice.message) {
+        note.textContent = manualPlayNotice.previousText;
+        note.hidden = manualPlayNotice.previousHidden;
+      }
+      manualPlayNotice = null;
+    } catch (error) {
+      if (!current() || error?.name === "AbortError") return;
+      const message = "Could not start playback. Press Play to try again.";
+      if (!manualPlayNotice || note.textContent !== manualPlayNotice.message) {
+        manualPlayNotice = { message, previousText: note.textContent, previousHidden: note.hidden };
+      }
+      note.textContent = message;
+      note.hidden = false;
+    }
+  }
 
   /**
    * Go to `seconds` of the film, by whichever route this title plays.
