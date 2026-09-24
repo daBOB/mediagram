@@ -7,7 +7,12 @@ use mediagram_tmdb::tmdb_types::{EpisodeDetails, FindResponse};
 use mlib_spec::Kind;
 
 /// Resolves an external id (`imdb_id`/`tvdb_id`) to a TMDB id via `/find`.
-pub(super) async fn find_by_external(api: &impl TmdbApi, id: &str, source: &str, kind: Kind) -> Result<u64> {
+pub(super) async fn find_by_external(
+    api: &impl TmdbApi,
+    id: &str,
+    source: &str,
+    kind: Kind,
+) -> Result<u64> {
     let query = [("external_source", source.to_string())];
     let value = api.get_json(&format!("/find/{id}"), &query).await?;
     let found: FindResponse =

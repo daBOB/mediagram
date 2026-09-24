@@ -6,6 +6,7 @@ plugins {
 
 android {
     namespace = "com.mediagram.android.ui.mobile"
+    testOptions.unitTests.isIncludeAndroidResources = true
 }
 
 dependencies {
@@ -22,4 +23,7 @@ dependencies {
     implementation(project(":core:playback"))
     implementation(libs.findLibrary("androidx.activity.compose").get())
     implementation(libs.findLibrary("androidx.compose.material.icons.core").get())
+    testImplementation(libs.findLibrary("robolectric").get())
+    testImplementation(libs.findLibrary("mockk").get())
+    testImplementation(libs.findLibrary("androidx.compose.ui.test.junit4").get())
 }

@@ -61,11 +61,18 @@ fn recorded_version(conn: &Connection) -> Result<Recorded, CoreError> {
         .map_err(CoreError::io(PREPARING))?;
     if has_meta {
         let in_meta: Option<String> = conn
-            .query_row("SELECT value FROM meta WHERE key = 'schema_version'", [], |row| row.get(0))
+            .query_row(
+                "SELECT value FROM meta WHERE key = 'schema_version'",
+                [],
+                |row| row.get(0),
+            )
             .optional()
             .map_err(CoreError::io(PREPARING))?;
         if let Some(value) = in_meta {
-            return value.parse().map(Recorded::Meta).map_err(CoreError::io(PREPARING));
+            return value
+                .parse()
+                .map(Recorded::Meta)
+                .map_err(CoreError::io(PREPARING));
         }
     }
     conn.pragma_query_value(None, "user_version", |row| row.get(0))
@@ -82,8 +89,11 @@ fn recorded_version(conn: &Connection) -> Result<Recorded, CoreError> {
 /// "duplicate column name". Rolled back instead, the next open retries it.
 fn migrate_from(conn: &Connection, at: i64) -> Result<(), CoreError> {
     let applied = schema::migrations_up_to(at).len();
-    conn.execute_batch("BEGIN").map_err(CoreError::io(PREPARING))?;
-    let pending = schema::migrations_up_to(schema::SCHEMA_VERSION).into_iter().skip(applied);
+    conn.execute_batch("BEGIN")
+        .map_err(CoreError::io(PREPARING))?;
+    let pending = schema::migrations_up_to(schema::SCHEMA_VERSION)
+        .into_iter()
+        .skip(applied);
     for statement in pending {
         if let Err(err) = conn.execute(statement, []) {
             let _ = conn.execute_batch("ROLLBACK");
@@ -100,7 +110,8 @@ fn migrate_from(conn: &Connection, at: i64) -> Result<(), CoreError> {
         let _ = conn.execute_batch("ROLLBACK");
         return Err(CoreError::io(PREPARING)(err));
     }
-    conn.execute_batch("COMMIT").map_err(CoreError::io(PREPARING))
+    conn.execute_batch("COMMIT")
+        .map_err(CoreError::io(PREPARING))
 }
 
 #[cfg(test)]

@@ -21,33 +21,55 @@ class FakeCore(
     private val totalSize: Long = 0L,
     private val bytesOf: (offset: Long, len: Int) -> ByteArray = { _, len -> ByteArray(len) },
 ) : CoreClient {
-
     /** How many times the core was actually asked, which is the cost being counted. */
     var reads = 0
         private set
 
     override fun isAuthorized(): Boolean = true
+
     override suspend fun requestCode(phone: String): String = "token"
-    override suspend fun signIn(token: String, code: String): AuthOutcome = AuthOutcome.DONE
+
+    override suspend fun signIn(
+        token: String,
+        code: String,
+    ): AuthOutcome = AuthOutcome.DONE
+
     override suspend fun checkPassword(password: String) = Unit
+
     override suspend fun listLibraries(): List<LibraryChoice> = emptyList()
+
     override suspend fun refreshLibrary(handle: String): Long = 0
-    override suspend fun refreshCatalog(url: String, keyB64: String): Long = 0
+
+    override suspend fun refreshCatalog(
+        url: String,
+        keyB64: String,
+    ): Long = 0
+
     override suspend fun listSets(): List<SetSummary> = emptyList()
+
     override fun posterPath(posterKey: String): String? = null
+
     override suspend fun titleInfo(posterKey: String): TitleInfo? = null
+
     override suspend fun totalSize(setId: String): Long = totalSize
+
     override suspend fun catalogFacts(): CatalogFacts = CatalogFacts("channel", 0uL, 0uL, 0u, null)
 
-    override suspend fun read(setId: String, offset: Long, len: Int): ByteArray {
+    override suspend fun read(
+        setId: String,
+        offset: Long,
+        len: Int,
+    ): ByteArray {
         reads++
         if (offset >= totalSize) throw CoreException.NotFound("offset $offset is at or past the end")
         val clampedLen = minOf(len.toLong(), totalSize - offset).toInt()
         return bytesOf(offset, clampedLen)
     }
 
-    override suspend fun fetchMissing(tmdbKey: String, language: String): FetchReport =
-        FetchReport(0u, 0u, 0u, 0u, 0u, 0u)
+    override suspend fun fetchMissing(
+        tmdbKey: String,
+        language: String,
+    ): FetchReport = FetchReport(0u, 0u, 0u, 0u, 0u, 0u)
 
     override fun close() = Unit
 }

@@ -1,20 +1,16 @@
 //! Keeping the Continue shelf the same on every device.
 //!
-//! A port of `web/src/state/sync.ts`. The local database stays the source
-//! of truth for the device it is on — this is an addition to it, never a
-//! replacement, and everything here can fail: a player whose sync fails is
-//! a player that works exactly as it did before any of this existed.
-//!
-//! The channel sits behind [`StateChannel`] rather than being reached for
-//! directly. The decisions worth getting right — when to send, whether
-//! anything changed, what to do with what comes back — are here and are
-//! tested against a fake in `sync_tests`. Only the grammers calls are left
-//! to `api::state_sync`'s adapter, which cannot be exercised without a live
-//! account.
+//! Matches `web/src/state/sync.ts`: local state remains authoritative, and
+//! sync failures never prevent playback. [`StateChannel`] separates the
+//! merge and retry decisions from the Telegram adapter so tests can exercise
+//! complete rounds without a live account.
 
 use std::collections::HashMap;
 
-use rusqlite::{Connection, OptionalExtension, params};
+mod device;
+mod error;
+pub use device::device_id;
+use error::SyncError;
 
 use super::StateDb;
 use super::exchange;
@@ -77,51 +73,35 @@ pub struct Memo {
     last_sent: Option<String>,
 }
 
-const DEVICE_KEY: &str = "device_id";
-
-/// This install's own id in the sync channel — a random string, made once
-/// and kept in `state.db` for its life. Never the hostname: two installs on
-/// identically named machines must not collide, and this id sits in plain
-/// sight in every caption this device writes.
-pub fn device_id(conn: &Connection) -> rusqlite::Result<String> {
-    if let Some(id) = read_device_id(conn)? {
-        return Ok(id);
-    }
-    let made = mint_device_id();
-    conn.execute(
-        "INSERT INTO state_meta(key, value) VALUES (?1, ?2) ON CONFLICT(key) DO NOTHING",
-        params![DEVICE_KEY, made],
-    )?;
-    // Read back rather than trusting `made`: this proves the row exists
-    // rather than assuming the insert landed ahead of whatever else may
-    // have raced it to `ON CONFLICT DO NOTHING`.
-    Ok(read_device_id(conn)?.unwrap_or(made))
-}
-
-fn read_device_id(conn: &Connection) -> rusqlite::Result<Option<String>> {
-    conn.query_row("SELECT value FROM state_meta WHERE key = ?1", [DEVICE_KEY], |row| row.get(0)).optional()
-}
-
-/// 128 bits from the OS — the same shape `api::channel::library`'s handle
-/// uses: opaque, unguessable, and unrelated to any hostname or serial
-/// number that could otherwise leak into a caption on a shared channel.
-fn mint_device_id() -> String {
-    let mut bytes = [0u8; 16];
-    getrandom::fill(&mut bytes).expect("the OS random source is available");
-    hex::encode(bytes)
+/// Runs a complete round under the same lock used by the production adapter.
+/// A timer and a channel event must not both send this device's first document.
+pub async fn serialized<C: StateChannel>(
+    memo: &tokio::sync::Mutex<SyncMemo>,
+    handle: &str,
+    state_db: &StateDb,
+    channel: &C,
+    device: &str,
+) -> SyncOutcome {
+    let mut memo = memo.lock().await;
+    once(state_db, channel, device, memo.entry(handle)).await
 }
 
 /// One round: read everyone's, merge, take in what is newer, write back.
 ///
 /// Pull before push so what this device sends already reflects what it
-/// just learnt. Never throws: a channel that cannot be reached, or a send
-/// that is refused, costs a `failed` line and leaves `state.db` exactly as
-/// it was.
-pub async fn once<C: StateChannel>(state_db: &StateDb, channel: &C, device: &str, memo: &mut Memo) -> SyncOutcome {
-    match round(state_db, channel, device, memo).await {
-        Ok(outcome) => outcome,
-        Err(failed) => SyncOutcome { pulled: 0, pushed: false, failed: Some(failed) },
+/// just learnt. A failed import rolls back; a failed send keeps the imported
+/// rows and reports their count so callers can refresh the local library.
+pub async fn once<C: StateChannel>(
+    state_db: &StateDb,
+    channel: &C,
+    device: &str,
+    memo: &mut Memo,
+) -> SyncOutcome {
+    let mut outcome = SyncOutcome::default();
+    if let Err(failed) = round(state_db, channel, device, memo, &mut outcome).await {
+        outcome.failed = Some(failed.to_string());
     }
+    outcome
 }
 
 async fn round<C: StateChannel>(
@@ -129,11 +109,13 @@ async fn round<C: StateChannel>(
     channel: &C,
     device: &str,
     memo: &mut Memo,
-) -> Result<SyncOutcome, String> {
-    let documents = channel.list().await.map_err(|err| err.to_string())?;
-    let pulled = take(state_db, &documents, device, memo);
-    let pushed = give(state_db, channel, device, memo).await?;
-    Ok(SyncOutcome { pulled, pushed, failed: None })
+    outcome: &mut SyncOutcome,
+) -> Result<(), SyncError<C::Error>> {
+    let documents = channel.list().await.map_err(SyncError::Channel)?;
+    outcome.pulled =
+        merge_and_import_documents(state_db, &documents, device, memo).ok_or(SyncError::Import)?;
+    outcome.pushed = publish_state_if_changed(state_db, channel, device, memo).await?;
+    Ok(())
 }
 
 /// Merges what the channel holds into this device.
@@ -145,48 +127,54 @@ async fn round<C: StateChannel>(
 /// is corrective rather than wholesale precisely so that this cannot erase
 /// anything — but including it is what makes the answer complete rather
 /// than merely safe.
-fn take(state_db: &StateDb, documents: &[ChannelDocument], device: &str, memo: &mut Memo) -> u64 {
-    state_db
-        .with(|conn| {
-            let mut records: Vec<SyncRecord> = vec![exchange::export_record(conn, device)?];
-            for document in documents {
-                // A device's own message is recognised here rather than
-                // filtered out beforehand, so its id is learnt even on a
-                // round where nothing needs sending.
-                if document.device == device {
-                    memo.mine = Some(document.message_id);
-                } else if let Some(record) = parse_record(&document.text) {
-                    records.push(record);
-                }
+fn merge_and_import_documents(
+    state_db: &StateDb,
+    documents: &[ChannelDocument],
+    device: &str,
+    memo: &mut Memo,
+) -> Option<u64> {
+    state_db.with(|conn| {
+        let mut records: Vec<SyncRecord> = vec![exchange::export_record(conn, device)?];
+        for document in documents {
+            // A device's own message is recognised here rather than
+            // filtered out beforehand, so its id is learnt even on a
+            // round where nothing needs sending.
+            if document.device == device {
+                memo.mine = Some(document.message_id);
+            } else if let Some(record) = parse_record(&document.text) {
+                records.push(record);
             }
-            exchange::import_merged(conn, &merge_states(&records))
-        })
-        .unwrap_or(0)
+        }
+        exchange::import_merged(conn, &merge_states(&records))
+    })
 }
 
 /// Writes this device's document, unless it would be the same one again.
-async fn give<C: StateChannel>(
+async fn publish_state_if_changed<C: StateChannel>(
     state_db: &StateDb,
     channel: &C,
     device: &str,
     memo: &mut Memo,
-) -> Result<bool, String> {
+) -> Result<bool, SyncError<C::Error>> {
     let record = state_db
         .with(|conn| exchange::export_record(conn, device))
-        .ok_or_else(|| "the local state could not be read".to_string())?;
-    let body = serde_json::to_string(&record).map_err(|err| err.to_string())?;
+        .ok_or(SyncError::Read)?;
+    let body = serde_json::to_string(&record)?;
     // `writtenAt` changes on every export and nothing reads it during a
     // merge, so it is left out of the comparison: including it would make
     // every document different from the last and send one on every tick
     // for ever.
     let mut comparable_record = record.clone();
     comparable_record.written_at = 0.0;
-    let comparable = serde_json::to_string(&comparable_record).map_err(|err| err.to_string())?;
+    let comparable = serde_json::to_string(&comparable_record)?;
     if memo.last_sent.as_deref() == Some(comparable.as_str()) {
         return Ok(false);
     }
 
-    let sent = channel.put(body, memo.mine).await.map_err(|err| err.to_string())?;
+    let sent = channel
+        .put(body, memo.mine)
+        .await
+        .map_err(SyncError::Channel)?;
     memo.mine = Some(sent);
     memo.last_sent = Some(comparable);
     Ok(true)

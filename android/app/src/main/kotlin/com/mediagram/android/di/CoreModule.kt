@@ -25,26 +25,27 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object CoreModule {
-
     @Provides
     @Singleton
     fun provideCoreProvider(
         @ApplicationContext context: Context,
         settings: TelegramSettings,
         dispatcher: CoroutineDispatcher,
-    ): CoreProvider = StoredCoreProvider(settings, dispatcher) { credentials ->
-        DefaultCoreClient(
-            Core(
-                dataDir = context.filesDir.absolutePath,
-                apiId = credentials.apiId,
-                apiHash = credentials.apiHash,
-                // What this device is called in the account's session list, so
-                // a lost phone can be told from the others and signed out.
-                deviceName = listOf(Build.MANUFACTURER, Build.MODEL)
-                    .filter { it.isNotBlank() }
-                    .distinct()
-                    .joinToString(" "),
-            ),
-        )
-    }
+    ): CoreProvider =
+        StoredCoreProvider(settings, dispatcher) { credentials ->
+            DefaultCoreClient(
+                Core(
+                    dataDir = context.filesDir.absolutePath,
+                    apiId = credentials.apiId,
+                    apiHash = credentials.apiHash,
+                    // What this device is called in the account's session list, so
+                    // a lost phone can be told from the others and signed out.
+                    deviceName =
+                        listOf(Build.MANUFACTURER, Build.MODEL)
+                            .filter { it.isNotBlank() }
+                            .distinct()
+                            .joinToString(" "),
+                ),
+            )
+        }
 }

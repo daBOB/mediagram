@@ -24,6 +24,16 @@ data class SettingsUiState(
     val busy: Boolean = false,
     /** What the last action came to, when there is something to say. */
     val notice: String? = null,
+    /** A replacement retired the previous core; its watch-state owner still needs a successful read. */
+    val profileReloadNeeded: Boolean = false,
+    /** Monotonic success marker: a form opened before this action can close. */
+    val completedActionId: Long = 0,
+)
+
+/** Retained until the library screen has acted on it, including across collector gaps. */
+data class SettingsCompletion(
+    val id: Long,
+    val event: SettingsEvent,
 )
 
 /** What happened that a screen outside this one must act on. */

@@ -55,7 +55,7 @@ pub fn db_with(rows: &[(&str, Kind, Option<u64>)]) -> (tempfile::TempDir, rusqli
     let dir = tempfile::tempdir().unwrap();
     let conn = db::open(dir.path()).unwrap();
     for (set, kind, tmdb) in rows {
-        let row = SetRow::from_caption(&caption(set, *kind, *tmdb), 1_700_000_000).unwrap();
+        let row = SetRow::from_caption(&caption(set, *kind, *tmdb), 1_700_000_000);
         sets::insert_set(&conn, &row).unwrap();
     }
     (dir, conn)

@@ -11,7 +11,7 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { sourceBitrate, watchPlayback } from "../public/lib/adapt-playback.js";
+import { sourceBitrate, watchPlayback } from "../public/lib/playback/streaming/adapt-playback.js";
 
 /** A video element as far as this module is concerned. */
 function fakeVideo() {

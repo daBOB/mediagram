@@ -53,8 +53,14 @@ fn a_library_with_no_descriptions_falls_back_to_the_caller() {
 /// counting being done at all.
 #[test]
 fn a_mixed_library_keeps_the_language_most_of_it_uses() {
-    assert_eq!(language_of(&index_describing(&[("de-DE", 9), ("en-US", 2)]), "en-US"), "de-DE");
-    assert_eq!(language_of(&index_describing(&[("de-DE", 2), ("en-US", 9)]), "de-DE"), "en-US");
+    assert_eq!(
+        language_of(&index_describing(&[("de-DE", 9), ("en-US", 2)]), "en-US"),
+        "de-DE"
+    );
+    assert_eq!(
+        language_of(&index_describing(&[("de-DE", 2), ("en-US", 9)]), "de-DE"),
+        "en-US"
+    );
 }
 
 /// `lang` is `''` for a row that names no language — the column's own

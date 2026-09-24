@@ -15,40 +15,42 @@ import kotlin.test.assertEquals
  */
 @RunWith(RobolectricTestRunner::class)
 class CacheBudgetSettingsTest {
-
-    private fun newSettings(): PlainCacheBudgetSettings =
-        PlainCacheBudgetSettings(ApplicationProvider.getApplicationContext<Context>())
+    private fun newSettings(): PlainCacheBudgetSettings = PlainCacheBudgetSettings(ApplicationProvider.getApplicationContext<Context>())
 
     @Test
-    fun readReturnsTheDefaultWhenNothingHasBeenWritten() = runTest {
-        assertEquals(CACHE_MAX_BYTES, newSettings().read())
-    }
+    fun readReturnsTheDefaultWhenNothingHasBeenWritten() =
+        runTest {
+            assertEquals(CACHE_MAX_BYTES, newSettings().read())
+        }
 
     @Test
-    fun writeBelowTheFloorIsClampedUpToIt() = runTest {
-        val settings = newSettings()
+    fun writeBelowTheFloorIsClampedUpToIt() =
+        runTest {
+            val settings = newSettings()
 
-        settings.write(MIN_CACHE_BYTES - 1)
+            settings.write(MIN_CACHE_BYTES - 1)
 
-        assertEquals(MIN_CACHE_BYTES, settings.read())
-    }
-
-    @Test
-    fun writeAtOrAboveTheFloorIsPersistedAsIs() = runTest {
-        val settings = newSettings()
-        val chosenBytes = MIN_CACHE_BYTES * 2
-
-        settings.write(chosenBytes)
-
-        assertEquals(chosenBytes, settings.read())
-    }
+            assertEquals(MIN_CACHE_BYTES, settings.read())
+        }
 
     @Test
-    fun inMemoryImplementationClampsTheSameWayTheRealOneDoes() = runTest {
-        val settings = InMemoryCacheBudgetSettings()
+    fun writeAtOrAboveTheFloorIsPersistedAsIs() =
+        runTest {
+            val settings = newSettings()
+            val chosenBytes = MIN_CACHE_BYTES * 2
 
-        settings.write(0)
+            settings.write(chosenBytes)
 
-        assertEquals(MIN_CACHE_BYTES, settings.read())
-    }
+            assertEquals(chosenBytes, settings.read())
+        }
+
+    @Test
+    fun inMemoryImplementationClampsTheSameWayTheRealOneDoes() =
+        runTest {
+            val settings = InMemoryCacheBudgetSettings()
+
+            settings.write(0)
+
+            assertEquals(MIN_CACHE_BYTES, settings.read())
+        }
 }

@@ -15,7 +15,7 @@
  */
 
 import { FUTURE_TOLERANCE_SECONDS } from "../package/catalog-versions";
-import { INDEX_MARKER } from "../telegram/updates";
+import { INDEX_MARKER } from "../telegram/channel-captions";
 
 /** One message that might be a snapshot: its caption and its id. */
 export interface Candidate {

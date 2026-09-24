@@ -10,8 +10,12 @@ package data
  */
 sealed interface RefreshOutcome {
     data object Updated : RefreshOutcome
+
     data object AlreadyCurrent : RefreshOutcome
-    data class Refused(val reason: String) : RefreshOutcome
+
+    data class Refused(
+        val reason: String,
+    ) : RefreshOutcome
 }
 
 /**
@@ -29,7 +33,6 @@ sealed interface RefreshOutcome {
  * this the reader is not guaranteed to see it.
  */
 class RefreshLog {
-
     @Volatile
     private var latest: RefreshOutcome? = null
 

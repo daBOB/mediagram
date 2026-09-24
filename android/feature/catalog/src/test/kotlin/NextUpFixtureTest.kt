@@ -13,8 +13,8 @@ import kotlinx.serialization.json.long
 import model.Kind
 import model.MediaSet
 import model.Progress
-import model.Watched
 import model.WatchSnapshot
+import model.Watched
 import org.junit.Assume.assumeTrue
 import java.io.File
 import kotlin.test.Test
@@ -30,7 +30,6 @@ import kotlin.test.assertTrue
  * not belong here — the web is authoritative.
  */
 class NextUpFixtureTest {
-
     @Test
     fun matchesTheWebsFixtures() {
         val file = locateFixture("next-up.json")
@@ -49,16 +48,30 @@ class NextUpFixtureTest {
             val collection = shelvesOf(sets).single { it.title == "Series" }.entries.single() as Entry.Collection
 
             val progress = obj.getValue("progress").jsonArray.map { it.jsonObject.toProgress() }
-            val watched = obj.getValue("watched").jsonObject.entries
-                .map { (setId, finishedAt) -> Watched(setId, finishedAt.jsonPrimitive.long) }
+            val watched =
+                obj
+                    .getValue("watched")
+                    .jsonObject.entries
+                    .map { (setId, finishedAt) -> Watched(setId, finishedAt.jsonPrimitive.long) }
             val watch = WatchSnapshot(progress, watched, emptyList(), emptyList(), emptyList())
 
             val underway = underwayOf(listOf(collection), byId, watch, HOME_ROW_LIMIT)
 
             val expect = obj.getValue("expect").jsonObject
             val expectedNextUp = expect["nextUp"]?.takeUnless { it is JsonNull }?.jsonObject
-            assertEquals(expectedNextUp?.get("setId")?.jsonPrimitive?.content, underway.nextUp.firstOrNull()?.set?.setId, "case: $name (nextUp id)")
-            assertEquals(expectedNextUp?.get("resume")?.jsonPrimitive?.boolean, underway.nextUp.firstOrNull()?.resume, "case: $name (nextUp resume)")
+            assertEquals(
+                expectedNextUp?.get("setId")?.jsonPrimitive?.content,
+                underway.nextUp
+                    .firstOrNull()
+                    ?.set
+                    ?.setId,
+                "case: $name (nextUp id)",
+            )
+            assertEquals(
+                expectedNextUp?.get("resume")?.jsonPrimitive?.boolean,
+                underway.nextUp.firstOrNull()?.resume,
+                "case: $name (nextUp resume)",
+            )
             assertEquals(
                 expect.getValue("continues").jsonArray.map { it.jsonPrimitive.content },
                 underway.continues.map(MediaSet::setId),
@@ -72,29 +85,34 @@ class NextUpFixtureTest {
 }
 
 /** One episode of a single synthetic show, numbered by its place in the fixture's `order` — mirrors the web test's `episodeOf`. */
-private fun episodeOf(setId: String, number: Int): MediaSet = MediaSet(
-    setId = setId,
-    kind = Kind.EPISODE,
-    title = "Show $number",
-    show = "Show",
-    chapter = null,
-    path = null,
-    season = 1,
-    episodeFirst = number,
-    episodeLast = number,
-    year = null,
-    durationSecs = 3_600,
-    posterPath = null,
-    totalBytes = 1_000,
-    addedAt = 1_000,
-)
+private fun episodeOf(
+    setId: String,
+    number: Int,
+): MediaSet =
+    MediaSet(
+        setId = setId,
+        kind = Kind.EPISODE,
+        title = "Show $number",
+        show = "Show",
+        chapter = null,
+        path = null,
+        season = 1,
+        episodeFirst = number,
+        episodeLast = number,
+        year = null,
+        durationSecs = 3_600,
+        posterPath = null,
+        totalBytes = 1_000,
+        addedAt = 1_000,
+    )
 
-private fun JsonObject.toProgress(): Progress = Progress(
-    setId = getValue("setId").jsonPrimitive.content,
-    at = getValue("at").jsonPrimitive.double,
-    duration = get("duration")?.jsonPrimitive?.double,
-    updatedAt = getValue("updatedAt").jsonPrimitive.long,
-)
+private fun JsonObject.toProgress(): Progress =
+    Progress(
+        setId = getValue("setId").jsonPrimitive.content,
+        at = getValue("at").jsonPrimitive.double,
+        duration = get("duration")?.jsonPrimitive?.double,
+        updatedAt = getValue("updatedAt").jsonPrimitive.long,
+    )
 
 /** Walks up from the working directory until it finds the web's fixture directory, or gives up at the filesystem root. */
 private fun locateFixture(name: String): File? {

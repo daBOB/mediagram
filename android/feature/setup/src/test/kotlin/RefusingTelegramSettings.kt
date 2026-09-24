@@ -12,6 +12,11 @@ import settings.TelegramSettings
  */
 class RefusingTelegramSettings : TelegramSettings {
     override suspend fun read(): TelegramCredentials? = throw SecurityException("keystore unavailable")
-    override suspend fun write(apiId: Int, apiHash: String): Unit = throw SecurityException("keystore unavailable")
+
+    override suspend fun write(
+        apiId: Int,
+        apiHash: String,
+    ): Unit = throw SecurityException("keystore unavailable")
+
     override suspend fun clear(): Unit = throw SecurityException("keystore unavailable")
 }

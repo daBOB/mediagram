@@ -32,23 +32,27 @@ import com.mediagram.android.core.designsystem.R
  * their default instance. That is a legible fallback on two releases this
  * app still supports, not a reason to ship a static cut of each.
  */
-private fun display(weight: Int) = Font(
-    resId = R.font.fraunces,
-    weight = FontWeight(weight),
-    variationSettings = FontVariation.Settings(
-        FontVariation.weight(weight),
-        FontVariation.Setting("opsz", DISPLAY_OPTICAL),
-    ),
-)
+private fun display(weight: Int) =
+    Font(
+        resId = R.font.fraunces,
+        weight = FontWeight(weight),
+        variationSettings =
+            FontVariation.Settings(
+                FontVariation.weight(weight),
+                FontVariation.Setting("opsz", DISPLAY_OPTICAL),
+            ),
+    )
 
-private fun read(weight: Int) = Font(
-    resId = R.font.newsreader,
-    weight = FontWeight(weight),
-    variationSettings = FontVariation.Settings(
-        FontVariation.weight(weight),
-        FontVariation.Setting("opsz", READ_OPTICAL),
-    ),
-)
+private fun read(weight: Int) =
+    Font(
+        resId = R.font.newsreader,
+        weight = FontWeight(weight),
+        variationSettings =
+            FontVariation.Settings(
+                FontVariation.weight(weight),
+                FontVariation.Setting("opsz", READ_OPTICAL),
+            ),
+    )
 
 /** Drawn for a name held at arm's length: the wordmark, headings, titles. */
 private const val DISPLAY_OPTICAL = 28f
@@ -68,43 +72,50 @@ internal val Read = FontFamily(read(400), read(500), read(600))
  */
 private const val TABULAR = "tnum"
 
-internal val CatalogueTypography = Typography().run {
-    copy(
-        headlineSmall = headlineSmall.copy(
-            fontFamily = Display,
-            fontWeight = FontWeight.Medium,
-            fontSize = 26.sp,
-            letterSpacing = (-0.1).sp,
-        ),
-        titleLarge = titleLarge.copy(
-            fontFamily = Display,
-            fontWeight = FontWeight.Medium,
-            fontSize = 23.sp,
-            letterSpacing = (-0.1).sp,
-        ),
-        titleMedium = titleMedium.copy(
-            fontFamily = Display,
-            fontWeight = FontWeight.Medium,
-            fontSize = 18.sp,
-        ),
-        titleSmall = titleSmall.copy(
-            fontFamily = Display,
-            fontWeight = FontWeight.Medium,
-            fontSize = 16.sp,
-        ),
-        bodyLarge = bodyLarge.copy(fontFamily = Read, fontSize = 17.sp),
-        bodyMedium = bodyMedium.copy(fontFamily = Read, fontSize = 15.sp),
-        bodySmall = bodySmall.copy(fontFamily = Read, fontSize = 13.sp),
-        labelLarge = labelLarge.copy(fontFamily = Read, fontWeight = FontWeight.Medium),
-        labelMedium = labelMedium.copy(
-            fontFamily = Read,
-            fontSize = 13.sp,
-            fontFeatureSettings = TABULAR,
-        ),
-        labelSmall = labelSmall.copy(
-            fontFamily = Read,
-            fontSize = 11.sp,
-            fontFeatureSettings = TABULAR,
-        ),
-    )
-}
+internal val CatalogueTypography =
+    Typography().run {
+        copy(
+            headlineSmall =
+                headlineSmall.copy(
+                    fontFamily = Display,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 26.sp,
+                    letterSpacing = (-0.1).sp,
+                ),
+            titleLarge =
+                titleLarge.copy(
+                    fontFamily = Display,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 23.sp,
+                    letterSpacing = (-0.1).sp,
+                ),
+            titleMedium =
+                titleMedium.copy(
+                    fontFamily = Display,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 18.sp,
+                ),
+            titleSmall =
+                titleSmall.copy(
+                    fontFamily = Display,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 16.sp,
+                ),
+            bodyLarge = bodyLarge.copy(fontFamily = Read, fontSize = 17.sp),
+            bodyMedium = bodyMedium.copy(fontFamily = Read, fontSize = 15.sp),
+            bodySmall = bodySmall.copy(fontFamily = Read, fontSize = 13.sp),
+            labelLarge = labelLarge.copy(fontFamily = Read, fontWeight = FontWeight.Medium),
+            labelMedium =
+                labelMedium.copy(
+                    fontFamily = Read,
+                    fontSize = 13.sp,
+                    fontFeatureSettings = TABULAR,
+                ),
+            labelSmall =
+                labelSmall.copy(
+                    fontFamily = Read,
+                    fontSize = 11.sp,
+                    fontFeatureSettings = TABULAR,
+                ),
+        )
+    }

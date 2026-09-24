@@ -27,7 +27,13 @@ impl<'a> Staging<'a> {
     pub async fn begin(turn: &'a Mutex<()>, root: &Path) -> Result<Staging<'a>, CoreError> {
         let held = turn.lock().await;
         let dir = root.join(INCOMING);
-        let _ = std::fs::remove_dir_all(&dir);
+        if let Err(error) = std::fs::remove_dir_all(&dir) {
+            if error.kind() != std::io::ErrorKind::NotFound {
+                return Err(CoreError::io(
+                    "clearing the refreshed catalog staging directory",
+                )(error));
+            }
+        }
         std::fs::create_dir_all(&dir).map_err(CoreError::io("staging the refreshed catalog"))?;
         Ok(Staging {
             root: root.to_path_buf(),
@@ -55,7 +61,11 @@ impl<'a> Staging<'a> {
 /// it: the atomicity below is the reason a reader that dies mid-refresh sees
 /// one whole catalog or the other. Callers hold a [`Staging`]; a test may
 /// stage by hand.
-pub fn install_staged(root: &Path, incoming: &Path, version_name: &str) -> Result<String, CoreError> {
+pub fn install_staged(
+    root: &Path,
+    incoming: &Path,
+    version_name: &str,
+) -> Result<String, CoreError> {
     let installed = free_version_name(root, version_name);
     std::fs::rename(incoming, root.join(&installed))
         .map_err(CoreError::io("staging the refreshed catalog"))?;
@@ -114,30 +124,64 @@ fn remove_other_versions(root: &Path, keep: &str) {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-    use std::time::Duration;
+    use std::future::Future;
+    use std::os::unix::fs::PermissionsExt;
+    use std::task::{Context, Waker};
 
     use super::*;
+
+    #[tokio::test]
+    async fn a_staging_directory_that_cannot_be_cleared_is_refused() {
+        let root = tempfile::tempdir().unwrap();
+        let incoming = root.path().join(INCOMING);
+        std::fs::create_dir(&incoming).unwrap();
+        std::fs::write(incoming.join("stale-catalog"), b"old").unwrap();
+        std::fs::set_permissions(&incoming, std::fs::Permissions::from_mode(0o500)).unwrap();
+        // Privileged users can bypass mode bits, so this fixture cannot provoke
+        // a cleanup error there. Restore permissions before dropping the fixture.
+        if std::fs::write(incoming.join("permission-probe"), b"").is_ok() {
+            std::fs::set_permissions(&incoming, std::fs::Permissions::from_mode(0o700)).unwrap();
+            eprintln!("permission-based cleanup failure requires an unprivileged user");
+            return;
+        }
+        let turn = Mutex::new(());
+
+        let result = Staging::begin(&turn, root.path()).await;
+
+        // Restore permissions before asserting so the fixture always cleans up.
+        std::fs::set_permissions(&incoming, std::fs::Permissions::from_mode(0o700)).unwrap();
+        assert!(
+            result.is_err(),
+            "an uncleared staging directory must not be reused"
+        );
+        assert_eq!(
+            std::fs::read(incoming.join("stale-catalog")).unwrap(),
+            b"old"
+        );
+    }
 
     /// Two refreshes overlapping must take turns: the second may not clear
     /// the staging directory while the first is still assembling in it.
     #[tokio::test]
     async fn a_second_install_waits_for_the_first_to_finish() {
         let root = tempfile::tempdir().unwrap();
-        let turn = Arc::new(Mutex::new(()));
+        let turn = Mutex::new(());
         let first = Staging::begin(&turn, root.path()).await.unwrap();
         std::fs::write(first.dir().join("half-written"), b"x").unwrap();
 
-        let (waiting_turn, waiting_root) = (Arc::clone(&turn), root.path().to_path_buf());
-        let second = tokio::spawn(async move {
-            Staging::begin(&waiting_turn, &waiting_root).await.map(|_| ())
-        });
-        tokio::time::sleep(Duration::from_millis(50)).await;
-        assert!(!second.is_finished(), "the second install began while the first held the turn");
+        let mut second = std::pin::pin!(Staging::begin(&turn, root.path()));
+        assert!(
+            second
+                .as_mut()
+                .poll(&mut Context::from_waker(Waker::noop()))
+                .is_pending(),
+            "the second install began while the first held the turn"
+        );
         assert!(first.dir().join("half-written").exists());
 
         first.install("v-1").unwrap();
-        second.await.unwrap().unwrap();
+        let second = second.await.unwrap();
+        assert!(second.dir().read_dir().unwrap().next().is_none());
         assert!(root.path().join("v-1").join("half-written").exists());
     }
 }

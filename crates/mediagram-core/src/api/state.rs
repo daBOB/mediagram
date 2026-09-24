@@ -15,6 +15,8 @@ use crate::state::{lists, profiles, rows};
 
 use super::Core;
 
+mod collections;
+
 /// One profile's everything, in one read. The page asks once and holds it.
 #[derive(Debug, Clone, Default, PartialEq, uniffi::Record)]
 pub struct StateSnapshot {
@@ -27,24 +29,49 @@ pub struct StateSnapshot {
 
 #[uniffi::export(async_runtime = "tokio")]
 impl Core {
-    /// Who watches this library. Empty until someone says.
-    pub async fn profiles(self: Arc<Self>) -> Vec<profiles::Profile> {
-        self.blocking(|core| core.state_db.with(profiles::list).unwrap_or_default()).await
+    /// Permanently stops this core's local watch-state access and closes its
+    /// database after any current action. Call before clearing files or
+    /// releasing the native handle: queued calls must not reopen old state.
+    /// Stored data is preserved for a replacement core. This call may block
+    /// briefly on an existing database action; it does not wait for network IO.
+    pub fn retire_local_state(&self) {
+        self.state_db.retire();
     }
 
-    pub async fn create_profile(self: Arc<Self>, name: String) -> Option<profiles::Profile> {
-        self.blocking(move |core| core.state_db.with(|conn| profiles::create(conn, &name)).flatten()).await
+    /// Who watches this library. Empty until someone says.
+    pub async fn profiles(self: Arc<Self>) -> Vec<profiles::Profile> {
+        self.blocking(|core| core.state_db.with(profiles::list).unwrap_or_default())
+            .await
+    }
+
+    pub async fn create_profile(
+        self: Arc<Self>,
+        name: String,
+        kids: bool,
+    ) -> Option<profiles::Profile> {
+        self.blocking(move |core| {
+            core.state_db
+                .with(|conn| profiles::create(conn, &name, kids))
+                .flatten()
+        })
+        .await
     }
 
     /// This install's remembered "who's watching".
     pub async fn chosen_profile(self: Arc<Self>) -> Option<String> {
-        self.blocking(|core| core.state_db.with(profiles::chosen).flatten()).await
+        self.blocking(|core| core.state_db.with(profiles::chosen).flatten())
+            .await
     }
 
     /// Records the choice. `false` when `id` names no profile, or nothing
     /// could be written.
     pub async fn choose_profile(self: Arc<Self>, id: String) -> bool {
-        self.blocking(move |core| core.state_db.with(|conn| profiles::choose(conn, &id)).unwrap_or(false)).await
+        self.blocking(move |core| {
+            core.state_db
+                .with(|conn| profiles::choose(conn, &id))
+                .unwrap_or(false)
+        })
+        .await
     }
 
     /// This profile's positions, watched marks, watchlist, Kids and
@@ -66,29 +93,46 @@ impl Core {
         .await
     }
 
-    pub async fn set_progress(self: Arc<Self>, profile_id: String, set_id: String, at: f64, duration: Option<f64>) {
+    pub async fn set_progress(
+        self: Arc<Self>,
+        profile_id: String,
+        set_id: String,
+        at: f64,
+        duration: Option<f64>,
+    ) {
         self.blocking(move |core| {
-            core.state_db.with(|conn| rows::set_progress(conn, &profile_id, &set_id, at, duration))
+            core.state_db
+                .with(|conn| rows::set_progress(conn, &profile_id, &set_id, at, duration))
         })
         .await;
     }
 
     /// Forgets a position: started again, or watched to the end.
     pub async fn clear_progress(self: Arc<Self>, profile_id: String, set_id: String) {
-        self.blocking(move |core| core.state_db.with(|conn| rows::clear_progress(conn, &profile_id, &set_id)))
-            .await;
-    }
-
-    pub async fn set_watched(self: Arc<Self>, profile_id: String, set_id: String, finished: bool) {
         self.blocking(move |core| {
-            core.state_db.with(|conn| rows::set_watched(conn, &profile_id, &set_id, finished))
+            core.state_db
+                .with(|conn| rows::clear_progress(conn, &profile_id, &set_id))
         })
         .await;
     }
 
-    pub async fn set_watchlisted(self: Arc<Self>, profile_id: String, set_id: String, listed: bool) {
+    pub async fn set_watched(self: Arc<Self>, profile_id: String, set_id: String, finished: bool) {
         self.blocking(move |core| {
-            core.state_db.with(|conn| rows::set_watchlisted(conn, &profile_id, &set_id, listed))
+            core.state_db
+                .with(|conn| rows::set_watched(conn, &profile_id, &set_id, finished))
+        })
+        .await;
+    }
+
+    pub async fn set_watchlisted(
+        self: Arc<Self>,
+        profile_id: String,
+        set_id: String,
+        listed: bool,
+    ) {
+        self.blocking(move |core| {
+            core.state_db
+                .with(|conn| rows::set_watchlisted(conn, &profile_id, &set_id, listed))
         })
         .await;
     }
@@ -96,42 +140,10 @@ impl Core {
     /// Marks (or unmarks) a title as a child's. Not scoped to a profile —
     /// see `state::schema` on why.
     pub async fn set_kids(self: Arc<Self>, set_id: String, marked: bool) {
-        self.blocking(move |core| core.state_db.with(|conn| rows::set_kids(conn, &set_id, marked))).await;
-    }
-
-    pub async fn create_collection(self: Arc<Self>, profile_id: String, name: String) -> Option<lists::ListRow> {
-        self.blocking(move |core| core.state_db.with(|conn| lists::create(conn, &profile_id, &name)).flatten())
-            .await
-    }
-
-    /// Whether the list was there to rename.
-    pub async fn rename_collection(self: Arc<Self>, profile_id: String, id: String, name: String) -> bool {
-        self.blocking(move |core| {
-            core.state_db.with(|conn| lists::rename(conn, &profile_id, &id, &name)).unwrap_or(false)
-        })
-        .await
-    }
-
-    /// Items go with it: `collection_items` cascades.
-    pub async fn delete_collection(self: Arc<Self>, profile_id: String, id: String) -> bool {
-        self.blocking(move |core| core.state_db.with(|conn| lists::delete(conn, &profile_id, &id)).unwrap_or(false))
-            .await
-    }
-
-    /// Adds or removes `set_id` from a collection. `false` when the list is
-    /// not this profile's.
-    pub async fn set_in_collection(
-        self: Arc<Self>,
-        profile_id: String,
-        id: String,
-        set_id: String,
-        included: bool,
-    ) -> bool {
         self.blocking(move |core| {
             core.state_db
-                .with(|conn| lists::set_in_collection(conn, &profile_id, &id, &set_id, included))
-                .unwrap_or(false)
+                .with(|conn| rows::set_kids(conn, &set_id, marked))
         })
-        .await
+        .await;
     }
 }

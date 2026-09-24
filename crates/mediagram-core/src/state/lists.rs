@@ -1,12 +1,9 @@
 //! Hand-built collections: named lists a profile keeps, in the order they
 //! were built. A port of the collection half of `web/src/state/store.ts`.
 
-use rusqlite::{Connection, params};
+use rusqlite::{Connection, OptionalExtension, params};
 
-use super::profiles::now_ms;
-
-/// How long a name may be — the same cap `profiles::create` holds names to.
-const MAX_NAME: usize = 120;
+use super::profiles::{clean_name, now_ms};
 
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
 pub struct ListRow {
@@ -19,33 +16,49 @@ pub fn collections_for(conn: &Connection, profile_id: &str) -> rusqlite::Result<
     let mut stmt = conn.prepare(
         "SELECT id, name FROM collections WHERE profile_id = ?1 AND removed_at IS NULL ORDER BY created_at",
     )?;
-    let heads: Vec<(String, String)> =
-        stmt.query_map([profile_id], |row| Ok((row.get(0)?, row.get(1)?)))?.collect::<rusqlite::Result<_>>()?;
+    let heads: Vec<(String, String)> = stmt
+        .query_map([profile_id], |row| Ok((row.get(0)?, row.get(1)?)))?
+        .collect::<rusqlite::Result<_>>()?;
 
-    let mut items_stmt =
-        conn.prepare("SELECT set_id FROM collection_items WHERE collection_id = ?1 ORDER BY position")?;
+    let mut items_stmt = conn.prepare(
+        "SELECT set_id FROM collection_items WHERE collection_id = ?1 ORDER BY position",
+    )?;
     let mut lists = Vec::with_capacity(heads.len());
     for (id, name) in heads {
-        let items: Vec<String> = items_stmt.query_map([&id], |row| row.get(0))?.collect::<rusqlite::Result<_>>()?;
+        let items: Vec<String> = items_stmt
+            .query_map([&id], |row| row.get(0))?
+            .collect::<rusqlite::Result<_>>()?;
         lists.push(ListRow { id, name, items });
     }
     Ok(lists)
 }
 
 /// A new, empty list. `None` for a name with nothing left after trimming.
-pub fn create(conn: &Connection, profile_id: &str, name: &str) -> rusqlite::Result<Option<ListRow>> {
-    let Some(clean) = clean_name(name) else { return Ok(None) };
+pub fn create(
+    conn: &Connection,
+    profile_id: &str,
+    name: &str,
+) -> rusqlite::Result<Option<ListRow>> {
+    let Some(clean) = clean_name(name) else {
+        return Ok(None);
+    };
     let id = ulid::Ulid::new().to_string();
     conn.execute(
         "INSERT INTO collections(id, profile_id, name, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?4)",
         params![id, profile_id, clean, now_ms()],
     )?;
-    Ok(Some(ListRow { id, name: clean, items: Vec::new() }))
+    Ok(Some(ListRow {
+        id,
+        name: clean,
+        items: Vec::new(),
+    }))
 }
 
-/// Whether the list was there to rename, so a caller can answer "not found".
+/// `false` for a blank name, or a list absent, deleted, or owned by another profile.
 pub fn rename(conn: &Connection, profile_id: &str, id: &str, name: &str) -> rusqlite::Result<bool> {
-    let Some(clean) = clean_name(name) else { return Ok(false) };
+    let Some(clean) = clean_name(name) else {
+        return Ok(false);
+    };
     let changed = conn.execute(
         "UPDATE collections SET name = ?3, updated_at = ?4 WHERE id = ?2 AND profile_id = ?1 AND removed_at IS NULL",
         params![profile_id, id, clean, now_ms()],
@@ -83,7 +96,8 @@ pub fn set_in_collection(
             params![profile_id, id],
             |_| Ok(()),
         )
-        .is_ok();
+        .optional()?
+        .is_some();
     if !exists {
         return Ok(false);
     }
@@ -110,18 +124,12 @@ pub fn set_in_collection(
         )?
     };
     if touched > 0 {
-        conn.execute("UPDATE collections SET updated_at = ?2 WHERE id = ?1", params![id, now_ms()])?;
+        conn.execute(
+            "UPDATE collections SET updated_at = ?2 WHERE id = ?1",
+            params![id, now_ms()],
+        )?;
     }
     Ok(true)
-}
-
-/// A name with its edges trimmed and internal whitespace collapsed, or
-/// `None` when there is nothing left — the same rule `profiles::clean_name`
-/// applies to a viewer's name.
-fn clean_name(name: &str) -> Option<String> {
-    let collapsed = name.split_whitespace().collect::<Vec<_>>().join(" ");
-    let clean: String = collapsed.chars().take(MAX_NAME).collect();
-    (!clean.is_empty()).then_some(clean)
 }
 
 #[cfg(test)]

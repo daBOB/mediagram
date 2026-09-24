@@ -7,8 +7,15 @@ import settings.LibrarySettings
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.TitleInfo
 
+/**
+ * Reads await the current core and propagate provider, storage, and core
+ * failures. Nullable metadata represents ordinary absence, not a failed read.
+ * Cancellation propagates from every operation, including [refresh].
+ */
 interface CatalogRepository {
+    /** Refreshes the installed index, returning its set count or an operational failure; cancellation is thrown. */
     suspend fun refresh(): Result<Int>
+
     suspend fun sets(): List<MediaSet>
 
     /**
@@ -30,8 +37,8 @@ interface CatalogRepository {
 
 /**
  * Reads the catalog through [CoreClient], mapping its raw `kind` strings
- * onto [Kind]. An unrecognised kind is dropped rather than crashing the
- * catalog — a newer uploader may write a kind this client predates.
+ * onto [Kind]. An unrecognised kind remains visible with the films because
+ * a newer uploader may write a kind this client predates.
  *
  * The core is awaited per call rather than held: this repository outlives
  * a "start over", which discards the core and builds the next one from
@@ -42,7 +49,6 @@ class DefaultCatalogRepository(
     private val settings: LibrarySettings,
     private val refreshes: RefreshLog,
 ) : CatalogRepository {
-
     /**
      * Re-reads the newest index the chosen library's channel holds. The handle
      * is read per call rather than held, for the same reason the core is:
@@ -64,18 +70,19 @@ class DefaultCatalogRepository(
      * words at them. Rethrowing also leaves the cancelled caller cancelled,
      * which is what everything above here expects.
      */
-    override suspend fun refresh(): Result<Int> = runCatching {
-        val handle = settings.read() ?: error("No library has been chosen on this device")
-        val core = coreProvider.awaitCore()
-        val before = core.catalogFacts().publishedAt
-        val sets = core.refreshLibrary(handle).toInt()
-        val after = core.catalogFacts().publishedAt
-        refreshes.record(if (after == before) RefreshOutcome.AlreadyCurrent else RefreshOutcome.Updated)
-        sets
-    }.onFailure {
-        if (it is CancellationException) throw it
-        refreshes.record(RefreshOutcome.Refused(it.refreshSentence()))
-    }
+    override suspend fun refresh(): Result<Int> =
+        runCatching {
+            val handle = settings.read() ?: error("No library has been chosen on this device")
+            val core = coreProvider.awaitCore()
+            val before = core.catalogFacts().publishedAt
+            val sets = core.refreshLibrary(handle).toInt()
+            val after = core.catalogFacts().publishedAt
+            refreshes.record(if (after == before) RefreshOutcome.AlreadyCurrent else RefreshOutcome.Updated)
+            sets
+        }.onFailure {
+            if (it is CancellationException) throw it
+            refreshes.record(RefreshOutcome.Refused(it.refreshSentence()))
+        }
 
     override suspend fun sets(): List<MediaSet> {
         val core = coreProvider.awaitCore()
@@ -83,8 +90,7 @@ class DefaultCatalogRepository(
     }
 
     /** The core is awaited here rather than captured, as everywhere else. */
-    override suspend fun titleInfo(posterKey: String): TitleInfo? =
-        coreProvider.awaitCore().titleInfo(posterKey)
+    override suspend fun titleInfo(posterKey: String): TitleInfo? = coreProvider.awaitCore().titleInfo(posterKey)
 
     override suspend fun posterPath(posterKey: String): String? {
         val core = coreProvider.awaitCore()
@@ -100,13 +106,17 @@ class DefaultCatalogRepository(
      * library holds four kinds today against a parser that may learn a
      * fifth before this app is rebuilt.
      */
-    private fun toMediaSet(core: CoreClient, summary: SetSummary): MediaSet {
-        val kind = when (summary.kind) {
-            "ep" -> Kind.EPISODE
-            "tut" -> Kind.TUTORIAL
-            "doc" -> Kind.DOCUMENT
-            else -> Kind.MOVIE
-        }
+    private fun toMediaSet(
+        core: CoreClient,
+        summary: SetSummary,
+    ): MediaSet {
+        val kind =
+            when (summary.kind) {
+                "ep" -> Kind.EPISODE
+                "tut" -> Kind.TUTORIAL
+                "doc" -> Kind.DOCUMENT
+                else -> Kind.MOVIE
+            }
         return MediaSet(
             setId = summary.setId,
             kind = kind,

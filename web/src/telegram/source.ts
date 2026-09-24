@@ -19,7 +19,7 @@ import type { CachedReader } from "../cache/reader";
 import type { PartLocation } from "../catalog";
 import { requestSizeFor, type Step } from "../range";
 import { DownloadGate } from "./download-gate";
-import type { ByteSource } from "../routes";
+import type { ByteSource } from "../http/stream";
 import type { Telegram } from "./client";
 
 export class TelegramSource implements ByteSource {
@@ -43,13 +43,23 @@ export class TelegramSource implements ByteSource {
     private readonly reader?: CachedReader,
   ) {}
 
-  /** What has gone wrong upstream since startup. */
+  /** Byte streams that failed since startup, including unavailable cached bytes. */
   stats(): { failedReads: number } {
     return { failedReads: this.failedReads };
   }
 
   stream(locations: PartLocation[], steps: Step[], setId: string): ReadableStream<Uint8Array> {
-    const bytes = this.bytesOf(setId, locations, steps);
+    return this.streamBytes(this.bytesOf(setId, locations, steps, false));
+  }
+
+  /** Disk-only delivery: neither a cache miss nor sequential reads contact Telegram. */
+  streamCached(locations: PartLocation[], steps: Step[], setId: string): ReadableStream<Uint8Array> {
+    return this.streamBytes(this.bytesOf(setId, locations, steps, true));
+  }
+
+  private streamBytes(bytes: AsyncGenerator<Uint8Array, void, unknown>): ReadableStream<Uint8Array> {
+    let cancelled = false;
+    let pulling: Promise<IteratorResult<Uint8Array, void>> | undefined;
     // Captured rather than `this`: the stream's callbacks are plain functions
     // and are not called with this instance as their receiver.
     const failed = () => {
@@ -59,19 +69,29 @@ export class TelegramSource implements ByteSource {
     // memory with a set that may be several gigabytes.
     return new ReadableStream<Uint8Array>({
       async pull(controller) {
+        const next = bytes.next();
+        pulling = next;
         try {
-          const { done, value } = await bytes.next();
+          const { done, value } = await next;
+          if (cancelled) return;
           if (done) controller.close();
           else controller.enqueue(value);
         } catch (error) {
+          if (cancelled) return; // Cancellation owns this result and its cleanup.
           failed();
           controller.error(error);
+        } finally {
+          pulling = undefined;
         }
       },
-      cancel() {
-        // The viewer seeked or closed the tab: stop paying for bytes nobody
-        // will read.
-        void bytes.return(undefined);
+      async cancel() {
+        cancelled = true;
+        // return() queues behind next(). That pull may already be unwinding
+        // upstream cleanup, so await both and retain either failure.
+        const outcomes = await Promise.allSettled([pulling, bytes.return(undefined)]);
+        for (const outcome of outcomes) {
+          if (outcome.status === "rejected") throw outcome.reason;
+        }
       },
     });
   }
@@ -80,7 +100,9 @@ export class TelegramSource implements ByteSource {
     setId: string,
     locations: PartLocation[],
     steps: Step[],
+    cacheOnly: boolean,
   ): AsyncGenerator<Uint8Array, void, unknown> {
+    if (cacheOnly && !this.reader) throw new Error("cached streaming is unavailable");
     for (const step of steps) {
       const location = locations.find((l) => l.span.idx === step.partIdx);
       if (!location) throw new Error(`part ${step.partIdx} has no message`);
@@ -91,14 +113,14 @@ export class TelegramSource implements ByteSource {
         // Streamed, not collected: the response has already promised a
         // length and must start sending immediately, and a whole-file request
         // would otherwise be held in memory.
-        yield* this.reader.readStream(
+        yield* this.reader.readStream({
           setId,
-          step.partIdx,
-          step.offset + step.headDrop,
-          step.take,
-          location.span.len,
-          partFetcher(this.telegram, location.messageId),
-        );
+          partIdx: step.partIdx,
+          start: step.offset + step.headDrop,
+          length: step.take,
+          partLength: location.span.len,
+          fetch: cacheOnly ? undefined : partFetcher(this.telegram, location.messageId),
+        });
         continue;
       }
 

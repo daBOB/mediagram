@@ -26,7 +26,7 @@ pub fn data_dir() -> Result<PathBuf> {
 /// config holding `api_hash`, the index with the private channel id and a
 /// staged export of it — is one account's, so every directory holding one
 /// is closed to other users, not just the files in it.
-pub fn private_dir(dir: &Path) -> Result<()> {
+pub fn ensure_private_dir(dir: &Path) -> Result<()> {
     std::fs::create_dir_all(dir).with_context(|| format!("creating {}", dir.display()))?;
     std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700))
         .with_context(|| format!("restricting {}", dir.display()))
@@ -45,7 +45,8 @@ pub fn write_private(path: &Path, bytes: &[u8]) -> Result<()> {
     // `mode` applies only when the file is created; one left by an earlier
     // run keeps whatever it had.
     restrict_file(path)?;
-    file.write_all(bytes).with_context(|| format!("writing {}", path.display()))
+    file.write_all(bytes)
+        .with_context(|| format!("writing {}", path.display()))
 }
 
 /// Makes a file someone else created — SQLite, libsql — owner-only.

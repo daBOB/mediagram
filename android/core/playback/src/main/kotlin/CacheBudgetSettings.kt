@@ -28,8 +28,9 @@ interface CacheBudgetSettings {
 }
 
 /** In-memory implementation for tests; nothing here ever touches disk. */
-class InMemoryCacheBudgetSettings(initialBytes: Long = CACHE_MAX_BYTES) : CacheBudgetSettings {
-
+class InMemoryCacheBudgetSettings(
+    initialBytes: Long = CACHE_MAX_BYTES,
+) : CacheBudgetSettings {
     @Volatile
     private var stored: Long = initialBytes
 
@@ -46,13 +47,13 @@ class InMemoryCacheBudgetSettings(initialBytes: Long = CACHE_MAX_BYTES) : CacheB
  * trip, which matters here because [CacheProvider.setBudget] is on the
  * path a viewer's slider drag runs on, not a one-off setup screen.
  */
-class PlainCacheBudgetSettings(private val context: Context) : CacheBudgetSettings {
-
+class PlainCacheBudgetSettings(
+    private val context: Context,
+) : CacheBudgetSettings {
     private val preferences: SharedPreferences
         get() = context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
 
-    override suspend fun read(): Long =
-        preferences.getLong(KEY_BUDGET_BYTES, CACHE_MAX_BYTES)
+    override suspend fun read(): Long = preferences.getLong(KEY_BUDGET_BYTES, CACHE_MAX_BYTES)
 
     override suspend fun write(bytes: Long) {
         preferences.edit().putLong(KEY_BUDGET_BYTES, maxOf(bytes, MIN_CACHE_BYTES)).apply()

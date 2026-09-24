@@ -31,7 +31,7 @@ pub fn require_index(data_dir: &Path, purpose: &str) -> Result<PathBuf> {
 /// Opens (creating if needed) `<data_dir>/library.db`, enables WAL mode and
 /// foreign keys, runs every migration, and records the schema version.
 pub fn open(data_dir: &Path) -> Result<Connection> {
-    crate::paths::private_dir(data_dir)?;
+    crate::paths::ensure_private_dir(data_dir)?;
     let path = index_path(data_dir);
     let conn = super::sqlite_init::open(&path)
         .with_context(|| format!("opening database {}", path.display()))?;
@@ -41,7 +41,7 @@ pub fn open(data_dir: &Path) -> Result<Connection> {
     conn.pragma_update(None, "foreign_keys", true)
         .context("enabling foreign key enforcement")?;
 
-    migrate(&conn)?;
+    super::migrations::apply(&conn)?;
 
     Ok(conn)
 }
@@ -57,7 +57,10 @@ pub fn open(data_dir: &Path) -> Result<Connection> {
 /// rather than upgraded behind the uploader's back. `purpose` finishes the
 /// sentence "nothing to ..." when there is no index at all.
 pub fn open_read_only(data_dir: &Path, purpose: &str) -> Result<Connection> {
-    open_at_least(&require_index(data_dir, purpose)?, mlib_spec::schema::SCHEMA_VERSION)
+    open_at_least(
+        &require_index(data_dir, purpose)?,
+        mlib_spec::schema::SCHEMA_VERSION,
+    )
 }
 
 /// A snapshot someone else wrote — the channel's index a player installed —
@@ -76,14 +79,7 @@ fn open_at_least(path: &Path, oldest: i64) -> Result<Connection> {
         rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
     )
     .with_context(|| format!("opening {} read-only", path.display()))?;
-    let version: i64 = conn
-        .query_row(
-            "SELECT value FROM meta WHERE key = 'schema_version'",
-            [],
-            |row| row.get::<_, String>(0),
-        )
-        .map(|v| v.parse().unwrap_or(0))
-        .unwrap_or(0);
+    let version = super::migrations::version(&conn)?;
     if version < oldest {
         anyhow::bail!(
             "{} is at schema v{version}, this build expects v{oldest}; run any writing command once to migrate it",
@@ -91,58 +87,6 @@ fn open_at_least(path: &Path, oldest: i64) -> Result<Connection> {
         );
     }
     Ok(conn)
-}
-
-/// Applies every migration group above the database's recorded version, in
-/// one transaction, then records the version reached.
-///
-/// Gating by version rather than replaying every statement is what allows a
-/// migration to add a column: SQLite has no `ADD COLUMN IF NOT EXISTS`, so a
-/// replayed list fails the second time it runs. The version is only advanced
-/// after the statements commit, so an interrupted upgrade is retried rather
-/// than skipped.
-fn migrate(conn: &Connection) -> Result<()> {
-    // The meta table lives in the first group, so a database that predates it
-    // reports version 0 and gets everything.
-    let current: i64 = conn
-        .query_row(
-            "SELECT value FROM meta WHERE key = 'schema_version'",
-            [],
-            |row| row.get::<_, String>(0),
-        )
-        .ok()
-        .and_then(|v| v.parse().ok())
-        .unwrap_or(0);
-
-    if current >= mlib_spec::schema::SCHEMA_VERSION {
-        return Ok(());
-    }
-
-    conn.execute_batch("BEGIN")
-        .context("starting the migration transaction")?;
-    for (index, group) in mlib_spec::schema::GROUPS.iter().enumerate() {
-        let version = index as i64 + 1;
-        if version <= current {
-            continue;
-        }
-        for statement in group.iter() {
-            if let Err(err) = conn.execute(statement, []) {
-                let _ = conn.execute_batch("ROLLBACK");
-                return Err(err).with_context(|| format!("migrating to v{version}: {statement}"));
-            }
-        }
-    }
-    if let Err(err) = set_meta(
-        conn,
-        "schema_version",
-        &mlib_spec::schema::SCHEMA_VERSION.to_string(),
-    ) {
-        let _ = conn.execute_batch("ROLLBACK");
-        return Err(err).context("recording schema version");
-    }
-    conn.execute_batch("COMMIT")
-        .context("committing the migration")?;
-    Ok(())
 }
 
 /// `meta` key holding the file a pending set is uploaded from, for `resume`.

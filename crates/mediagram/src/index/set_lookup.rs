@@ -3,7 +3,7 @@
 //! add be re-run after an interruption and skip what already finished,
 //! without caring where a file sits.
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use mlib_spec::Kind;
 use rusqlite::{Connection, OptionalExtension, params};
 
@@ -29,7 +29,13 @@ pub fn complete_lesson_exists(
             "SELECT 1 FROM sets
              WHERE group_key = ?1 AND season = ?2 AND episode = ?3
                AND kind = ?4 AND status = ?5",
-            params![cid, chapter, episode, Kind::Tut.as_str(), SetStatus::Complete],
+            params![
+                cid,
+                chapter,
+                episode,
+                Kind::Tut.as_str(),
+                SetStatus::Complete
+            ],
             |row| row.get(0),
         )
         .optional()?;
@@ -46,12 +52,13 @@ pub fn episode_status(
     season: u32,
     episode: u32,
 ) -> Result<Option<SetStatus>> {
+    let tmdb = i64::try_from(tmdb).context("looking up episode by TMDB id")?;
     let episode = serde_json::to_string(&mlib_spec::caption::Episode::Single(episode))?;
     let status: Option<SetStatus> = conn
         .query_row(
             "SELECT status FROM sets
              WHERE tmdb = ?1 AND season = ?2 AND episode = ?3 AND kind = 'ep'",
-            params![tmdb as i64, season, episode],
+            params![tmdb, season, episode],
             |row| row.get(0),
         )
         .optional()?;

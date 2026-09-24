@@ -5,7 +5,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 class FakePlayerHandle : PlayerHandle {
-
     override val player: StateFlow<Player?> = MutableStateFlow(null)
 
     private var listener: PlayerHandle.Listener? = null
@@ -23,7 +22,10 @@ class FakePlayerHandle : PlayerHandle {
     var fakePositionMs: Long? = null
     var fakeDurationMs: Long? = null
 
-    override fun open(setId: String, startAtMs: Long) {
+    override fun open(
+        setId: String,
+        startAtMs: Long,
+    ) {
         openedSetId = setId
         openedStartAtMs = startAtMs
     }

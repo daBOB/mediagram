@@ -50,7 +50,10 @@ pub async fn run_publish(argv: &[String], file: &Path) -> Result<()> {
     };
 
     let mut command = Command::new(program);
-    command.args(rest).env_clear().envs(child_env(std::env::vars_os()));
+    command
+        .args(rest)
+        .env_clear()
+        .envs(child_env(std::env::vars_os()));
 
     let status = command
         .status()

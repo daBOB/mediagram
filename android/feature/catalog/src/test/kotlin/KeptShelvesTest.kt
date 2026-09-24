@@ -17,15 +17,15 @@ import kotlin.test.assertTrue
  * holds.
  */
 class KeptShelvesTest {
-
     @Test
     fun continueIsNewestTouchedFirst() {
         val old = film("Old")
         val new = film("New")
-        val watch = watchOf(
-            progress(old, at = 1_800.0, duration = 3_600.0, updatedAt = 10),
-            progress(new, at = 1_800.0, duration = 3_600.0, updatedAt = 20),
-        )
+        val watch =
+            watchOf(
+                progress(old, at = 1_800.0, duration = 3_600.0, updatedAt = 10),
+                progress(new, at = 1_800.0, duration = 3_600.0, updatedAt = 20),
+            )
 
         val wall = continueWall(shelvesOf(listOf(old, new)), watch)
         assertEquals(listOf("New", "Old"), wall.map(MediaSet::title))
@@ -35,12 +35,13 @@ class KeptShelvesTest {
     fun continueDropsAGlanceAndAFinish() {
         val glanced = film("Glanced")
         val finished = film("Finished")
-        val watch = watchOf(
-            // Under the thirty-second floor: opened, not watched.
-            progress(glanced, at = 5.0, duration = 3_600.0, updatedAt = 10),
-            // Inside the credits tail: as good as finished.
-            progress(finished, at = 3_595.0, duration = 3_600.0, updatedAt = 20),
-        )
+        val watch =
+            watchOf(
+                // Under the thirty-second floor: opened, not watched.
+                progress(glanced, at = 5.0, duration = 3_600.0, updatedAt = 10),
+                // Inside the credits tail: as good as finished.
+                progress(finished, at = 3_595.0, duration = 3_600.0, updatedAt = 20),
+            )
 
         assertTrue(continueWall(shelvesOf(listOf(glanced, finished)), watch).isEmpty())
     }
@@ -120,7 +121,10 @@ class KeptShelvesTest {
     }
 }
 
-private fun film(title: String, fsk: String? = null) = MediaSet(
+private fun film(
+    title: String,
+    fsk: String? = null,
+) = MediaSet(
     setId = "movie-$title",
     kind = Kind.MOVIE,
     title = title,
@@ -137,7 +141,11 @@ private fun film(title: String, fsk: String? = null) = MediaSet(
     fsk = fsk,
 )
 
-private fun episode(show: String, number: Int, fsk: String?) = MediaSet(
+private fun episode(
+    show: String,
+    number: Int,
+    fsk: String?,
+) = MediaSet(
     setId = "ep-$show-$number",
     kind = Kind.EPISODE,
     title = "$show $number",
@@ -154,15 +162,19 @@ private fun episode(show: String, number: Int, fsk: String?) = MediaSet(
     fsk = fsk,
 )
 
-private fun watchOf(vararg rows: Progress) = WatchSnapshot(
-    progress = rows.toList(),
-    watched = emptyList(),
-    watchlist = emptyList(),
-    kids = emptyList(),
-    collections = emptyList(),
-)
+private fun watchOf(vararg rows: Progress) =
+    WatchSnapshot(
+        progress = rows.toList(),
+        watched = emptyList(),
+        watchlist = emptyList(),
+        kids = emptyList(),
+        collections = emptyList(),
+    )
 
-private fun snapshotOf(watchlist: List<String> = emptyList(), kids: List<String> = emptyList()) = WatchSnapshot(
+private fun snapshotOf(
+    watchlist: List<String> = emptyList(),
+    kids: List<String> = emptyList(),
+) = WatchSnapshot(
     progress = emptyList(),
     watched = emptyList(),
     watchlist = watchlist,
@@ -170,5 +182,9 @@ private fun snapshotOf(watchlist: List<String> = emptyList(), kids: List<String>
     collections = emptyList(),
 )
 
-private fun progress(set: MediaSet, at: Double, duration: Double, updatedAt: Long) =
-    Progress(set.setId, at, duration, updatedAt)
+private fun progress(
+    set: MediaSet,
+    at: Double,
+    duration: Double,
+    updatedAt: Long,
+) = Progress(set.setId, at, duration, updatedAt)

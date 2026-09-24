@@ -40,8 +40,11 @@ impl TmdbApi for CountingApi {
         _query: &[(&str, String)],
     ) -> anyhow::Result<serde_json::Value> {
         self.asked.fetch_add(1, Ordering::SeqCst);
-        let id: u64 =
-            path.rsplit('/').next().and_then(|tail| tail.parse().ok()).unwrap_or_default();
+        let id: u64 = path
+            .rsplit('/')
+            .next()
+            .and_then(|tail| tail.parse().ok())
+            .unwrap_or_default();
         Ok(serde_json::json!({ "id": id, "poster_path": "/a.jpg" }))
     }
 }
@@ -61,7 +64,14 @@ async fn a_title_is_asked_about_once_however_many_answers_are_taken_from_it() {
     let plan = plan_fetch(&core, "en-US").unwrap();
     let asked = Arc::new(AtomicUsize::new(0));
 
-    verify_then_fetch(&core, CountingApi { asked: Arc::clone(&asked) }, &offline_client(), &plan)
+    verify_then_fetch(
+        &core,
+        CountingApi {
+            asked: Arc::clone(&asked),
+        },
+        &offline_client(),
+        &plan,
+    )
     .await
     .expect("a stub that answers accepts the key");
 
@@ -69,7 +79,11 @@ async fn a_title_is_asked_about_once_however_many_answers_are_taken_from_it() {
     // real request — and one apiece for `/movie/550` and `/tv/1399`, shared
     // between the walk that reads a poster path out of the payload and the
     // walk that reads a description out of the same one.
-    assert_eq!(asked.load(Ordering::SeqCst), 3, "a title was asked about more than once");
+    assert_eq!(
+        asked.load(Ordering::SeqCst),
+        3,
+        "a title was asked about more than once"
+    );
 }
 
 /// Every episode of a series is one title, so a season is one request and
@@ -84,9 +98,20 @@ async fn a_series_costs_one_request_however_many_episodes_it_has() {
     let plan = plan_fetch(&core, "en-US").unwrap();
     let asked = Arc::new(AtomicUsize::new(0));
 
-    verify_then_fetch(&core, CountingApi { asked: Arc::clone(&asked) }, &offline_client(), &plan)
+    verify_then_fetch(
+        &core,
+        CountingApi {
+            asked: Arc::clone(&asked),
+        },
+        &offline_client(),
+        &plan,
+    )
     .await
     .expect("a stub that answers accepts the key");
 
-    assert_eq!(asked.load(Ordering::SeqCst), 2, "one key check and one /tv/1399");
+    assert_eq!(
+        asked.load(Ordering::SeqCst),
+        2,
+        "one key check and one /tv/1399"
+    );
 }

@@ -11,7 +11,7 @@
  * different database and the two must never be confused.
  */
 
-export const STATE_SCHEMA = 6;
+export const STATE_SCHEMA = 7;
 
 /**
  * Statements grouped by the version they produce, the same shape the index's
@@ -199,6 +199,11 @@ export const GROUPS: readonly (readonly string[])[] = [
     `ALTER TABLE collections ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0`,
     `UPDATE collections SET updated_at = created_at WHERE updated_at = 0`,
   ],
+
+  // v6 -> v7: a kids profile sees only titles rated for children. A column rather
+  // than a table: it is one fact about the profile, set when it is made, and
+  // every existing profile is ordinary — hence the default.
+  [`ALTER TABLE profiles ADD COLUMN kids INTEGER NOT NULL DEFAULT 0`],
 ];
 
 /** Every statement needed to reach `version` from nothing. */

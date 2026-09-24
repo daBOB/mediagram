@@ -5,13 +5,11 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use grammers_client::media::Document;
-use grammers_client::message::Message;
-use mediagram_core::transport::document::message_document;
 use rusqlite::Connection;
 
-use super::download_hash::{fetch_messages, hash_document};
+use super::download_hash::hash_chunks;
 use super::report::{self, ExpectedPart, ObservedMessage, PartVerdict, SetReport};
+use super::source::{RemoteMessage, TelegramSource, VerificationSource, observe};
 use super::{forget_stale_success, mark_verified, other_chat, verified_since};
 use crate::index::parts::PartRow;
 use crate::index::set_row::SetRow;
@@ -36,7 +34,9 @@ impl SetPlan {
 /// The parts' lengths added up, `None` if they overflow — which a real
 /// library cannot, so it means a corrupt index.
 fn summed<'a>(parts: impl Iterator<Item = &'a PartRow>) -> Option<u64> {
-    parts.map(|p| p.byte_length).try_fold(0u64, u64::checked_add)
+    parts
+        .map(|p| p.byte_length)
+        .try_fold(0u64, u64::checked_add)
 }
 
 /// Verifies one set. Returns an error only when the set cannot be checked at
@@ -50,6 +50,25 @@ pub async fn verify_set(
     full: bool,
     since: Option<i64>,
     max_attempts: u32,
+) -> Result<SetReport> {
+    verify_with(
+        conn,
+        &TelegramSource { tg, max_attempts },
+        chat_id,
+        plan,
+        full,
+        since,
+    )
+    .await
+}
+
+async fn verify_with<S: VerificationSource>(
+    conn: &Connection,
+    source: &S,
+    chat_id: i64,
+    plan: &SetPlan,
+    full: bool,
+    since: Option<i64>,
 ) -> Result<SetReport> {
     let local_issue = match summed(plan.parts.iter()) {
         Some(sum_len) => report::check_local_invariant(
@@ -68,11 +87,11 @@ pub async fn verify_set(
         .filter_map(|p| p.message_id)
         .filter_map(|id| i32::try_from(id).ok())
         .collect();
-    let messages = fetch_messages(&tg.client, tg.channel, &ids, max_attempts).await?;
+    let messages = source.messages(&ids).await?;
 
     let check = PartCheck {
         conn,
-        tg,
+        source,
         set_id: &plan.set_id,
         chat_id,
         messages: &messages,
@@ -91,19 +110,27 @@ pub async fn verify_set(
 }
 
 /// What stays the same for every part of one set's verification.
-struct PartCheck<'a> {
+struct PartCheck<'a, S: VerificationSource> {
     conn: &'a Connection,
-    tg: &'a Tg,
+    source: &'a S,
     set_id: &'a str,
     chat_id: i64,
-    messages: &'a HashMap<i32, Message>,
+    messages: &'a HashMap<i32, RemoteMessage<S::Document>>,
     full: bool,
     since: Option<i64>,
 }
 
-impl PartCheck<'_> {
+impl<S: VerificationSource> PartCheck<'_, S> {
     async fn verify_part(&self, part: &PartRow) -> Result<PartVerdict> {
-        let Self { conn, tg, set_id, chat_id, messages, full, since } = *self;
+        let Self {
+            conn,
+            source,
+            set_id,
+            chat_id,
+            messages,
+            full,
+            since,
+        } = *self;
         let expected = ExpectedPart {
             idx: part.idx,
             byte_length: part.byte_length,
@@ -120,7 +147,7 @@ impl PartCheck<'_> {
             && let Some(document) = document
         {
             let now = crate::clock::now_unix();
-            match hash_document(&tg.client, &document, part.byte_length).await {
+            match hash_chunks(source.download(document), part.byte_length).await {
                 Ok(computed) => {
                     verdict = report::apply_hash(verdict, &computed, part.sha256.as_deref(), now);
                     if verdict.hash_ok == Some(true) {
@@ -139,38 +166,6 @@ impl PartCheck<'_> {
     }
 }
 
-/// What Telegram shows for this part, plus the document itself when there is
-/// one to hash, so `--full` never has to look the message up a second time.
-fn observe(
-    part: &PartRow,
-    chat_id: i64,
-    messages: &HashMap<i32, Message>,
-) -> (ObservedMessage, Option<Document>) {
-    if part.status != PartStatus::Done {
-        return (ObservedMessage::NotUploaded, None);
-    }
-    if let Some(recorded) = other_chat(part, chat_id) {
-        let observed = ObservedMessage::OtherChat {
-            recorded,
-            current: chat_id,
-        };
-        return (observed, None);
-    }
-    let Some(id) = part.message_id.and_then(|id| i32::try_from(id).ok()) else {
-        return (ObservedMessage::NotUploaded, None);
-    };
-    let Some(message) = messages.get(&id) else {
-        return (ObservedMessage::MessageMissing, None);
-    };
-    match message_document(message) {
-        Some((doc, doc_id)) => {
-            let observed = ObservedMessage::Document {
-                doc_id,
-                size: doc.size().map(|s| s as u64),
-            };
-            (observed, Some(doc))
-        }
-        None => (ObservedMessage::NoDocument, None),
-    }
-}
-
+#[cfg(test)]
+#[path = "session_tests.rs"]
+mod tests;

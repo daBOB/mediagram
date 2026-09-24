@@ -32,6 +32,17 @@ export const MAX_RUN_BYTES = 8 * CACHE_CHUNK;
 /** Fetches `length` bytes at `offset` within a part, from upstream. */
 export type FetchRange = (offset: number, length: number) => Promise<Uint8Array>;
 
+/** The requested range and the enclosing part's cache/upstream identity. */
+export interface CachedReadRequest {
+  setId: string;
+  partIdx: number;
+  start: number;
+  length: number;
+  partLength: number;
+  /** Omit for disk-only reads: a missing/invalid chunk fails, without readahead. */
+  fetch?: FetchRange;
+}
+
 /** A stretch of consecutive chunk indexes that all need fetching. */
 interface Run {
   first: number;
@@ -42,6 +53,7 @@ export class CachedReader {
   private readonly tracker: ReadaheadTracker;
   /** Readahead fetches in flight, so tests and shutdown can wait for them. */
   private readonly warming = new Set<Promise<void>>();
+  private stopping: Promise<void> | null = null;
   /**
    * Bytes that actually crossed the wire, as opposed to coming off disk.
    *
@@ -69,6 +81,11 @@ export class CachedReader {
     await Promise.all([...this.warming]);
   }
 
+  /** Prevent new speculative reads and await those already admitted. Foreground reads remain usable. */
+  stop(): Promise<void> {
+    return this.stopping ??= this.settle();
+  }
+
   /**
    * `length` bytes at `start`, yielded as they become available.
    *
@@ -80,12 +97,7 @@ export class CachedReader {
    * fetched in a single request and then yielded chunk by chunk.
    */
   async *readStream(
-    setId: string,
-    partIdx: number,
-    start: number,
-    length: number,
-    partLength: number,
-    fetch: FetchRange,
+    { setId, partIdx, start, length, partLength, fetch }: CachedReadRequest,
   ): AsyncGenerator<Uint8Array, void, unknown> {
     const slices = chunksCovering(start, length);
     let at = 0;
@@ -102,6 +114,9 @@ export class CachedReader {
         yield held.subarray(slice.skip, slice.skip + slice.take);
         at += 1;
         continue;
+      }
+      if (fetch === undefined) {
+        throw new Error(`cached chunk ${slice.index} of part ${partIdx} is unavailable`);
       }
 
       // How far the miss runs, so it can be fetched in one request — up to
@@ -136,59 +151,7 @@ export class CachedReader {
       at = end + 1;
     }
 
-    this.warm(setId, partIdx, start, length, partLength, fetch);
-  }
-
-  /**
-   * `length` bytes at `start` within one part.
-   *
-   * `partLength` is needed because the last chunk of a part is short, and a
-   * short chunk is data rather than a truncated write.
-   *
-   * `fetch` is passed per read rather than held: every part lives in its own
-   * message, so there is no one upstream to bind to. It also keeps this file
-   * free of any knowledge of where bytes come from.
-   */
-  async read(
-    setId: string,
-    partIdx: number,
-    start: number,
-    length: number,
-    partLength: number,
-    fetch: FetchRange,
-  ): Promise<Uint8Array> {
-    const slices = chunksCovering(start, length);
-    const chunks = new Map<number, Uint8Array>();
-
-    // Ask the cache for everything first, so the misses are known before any
-    // of them is fetched and consecutive ones can be grouped.
-    const missing: number[] = [];
-    for (const slice of slices) {
-      const held = await this.cache.get(
-        setId,
-        partIdx,
-        slice.index,
-        expectedSize(slice.index, partLength),
-      );
-      if (held === null) missing.push(slice.index);
-      else chunks.set(slice.index, held);
-    }
-
-    for (const run of runsOf(missing)) {
-      await this.fillRun(setId, partIdx, run, partLength, fetch, chunks);
-    }
-
-    const out = new Uint8Array(length);
-    let written = 0;
-    for (const slice of slices) {
-      const chunk = chunks.get(slice.index);
-      if (!chunk) throw new Error(`chunk ${slice.index} of part ${partIdx} did not arrive`);
-      out.set(chunk.subarray(slice.skip, slice.skip + slice.take), written);
-      written += slice.take;
-    }
-
-    this.warm(setId, partIdx, start, length, partLength, fetch);
-    return out;
+    if (fetch !== undefined) this.warm(setId, partIdx, start, length, partLength, fetch);
   }
 
   /**
@@ -266,6 +229,7 @@ export class CachedReader {
     partLength: number,
     fetch: FetchRange,
   ): void {
+    if (this.stopping) return;
     const ahead = this.tracker.aheadFor(setId, partIdx, start, length);
     if (ahead === 0) return;
 

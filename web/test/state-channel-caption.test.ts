@@ -1,7 +1,7 @@
 /** Covers the caption: whose document a state message is. */
 
 import { describe, expect, test } from "bun:test";
-import { deviceFromCaption, stateCaption, STATE_MARKER } from "../src/telegram/state-channel";
+import { deviceFromCaption, stateCaption, STATE_MARKER } from "../src/telegram/channel-captions";
 
 describe("a caption this player wrote", () => {
   test("names the device, and reads back as it", () => {

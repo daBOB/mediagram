@@ -15,7 +15,6 @@ package data
  * callers pass the two numbers a judgement needs, nothing more.
  */
 object ResumePoint {
-
     /** Before this, a title was opened rather than watched. */
     private const val TOO_EARLY_SECONDS = 30.0
 
@@ -38,7 +37,10 @@ object ResumePoint {
      * may or may not be finished is better offered than silently dropped
      * from the shelf that exists to remind you of it.
      */
-    fun isFinished(at: Double, runtime: Double): Boolean {
+    fun isFinished(
+        at: Double,
+        runtime: Double,
+    ): Boolean {
         if (!runtime.isFinite() || runtime <= 0) return false
         if (!at.isFinite() || at < 0) return false
         return runtime - at <= creditsOf(runtime)
@@ -61,11 +63,12 @@ object ResumePoint {
         // at a film and most of a two-minute lesson. With no runtime the
         // flat half minute is all there is to go on.
         val runtime = progress.duration
-        val glance = if (runtime != null && runtime.isFinite() && runtime > 0) {
-            minOf(TOO_EARLY_SECONDS, runtime * TOO_EARLY_FRACTION)
-        } else {
-            TOO_EARLY_SECONDS
-        }
+        val glance =
+            if (runtime != null && runtime.isFinite() && runtime > 0) {
+                minOf(TOO_EARLY_SECONDS, runtime * TOO_EARLY_FRACTION)
+            } else {
+                TOO_EARLY_SECONDS
+            }
         if (at < glance) return null
 
         if (isFinished(at, runtime ?: 0.0)) return null
@@ -99,7 +102,11 @@ object ResumePoint {
      * `0` means "nobody knows" and leaves a position to keep its place
      * rather than being wrongly judged done.
      */
-    fun trustedRuntime(catalogued: Double?, observed: Double?, direct: Boolean): Double {
+    fun trustedRuntime(
+        catalogued: Double?,
+        observed: Double?,
+        direct: Boolean,
+    ): Double {
         if (catalogued != null && catalogued.isFinite() && catalogued > 0) return catalogued
         return if (direct && observed != null && observed.isFinite() && observed > 0) observed else 0.0
     }
@@ -110,4 +117,7 @@ object ResumePoint {
  * same two numbers `model.Progress` carries, kept separate so this file has
  * no dependency of its own to stay pinned to the web's fixtures.
  */
-data class ProgressPoint(val at: Double, val duration: Double?)
+data class ProgressPoint(
+    val at: Double,
+    val duration: Double?,
+)

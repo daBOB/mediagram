@@ -11,9 +11,9 @@ use std::rc::Rc;
 use anyhow::Result;
 use serde_json::{Value, json};
 
-use support::tmdb::metadata::resolve::{ResolveInput, ResolvedItem, resolve};
 use mediagram_tmdb::disk_cache::DiskCachedApi;
 use mediagram_tmdb::tmdb_client::TmdbApi;
+use support::tmdb::metadata::resolve::{ResolveInput, ResolvedItem, resolve};
 use support::tmdb::{FixtureApi, ScriptedPrompter, StubApi};
 
 use mlib_spec::{Episode, Kind, ProviderIds};

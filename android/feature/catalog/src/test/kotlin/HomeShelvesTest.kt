@@ -3,8 +3,8 @@ package catalog
 import model.Kind
 import model.MediaSet
 import model.Progress
-import model.Watched
 import model.WatchSnapshot
+import model.Watched
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -17,7 +17,6 @@ import kotlin.test.assertTrue
  * handful of shelves with fewer things on them.
  */
 class HomeShelvesTest {
-
     @Test
     fun filmsAreNewestFirst() {
         val rows = homeRowsOf(shelvesOf(listOf(film("Old", at = 100), film("New", at = 900))), WatchSnapshot.Empty)
@@ -32,16 +31,17 @@ class HomeShelvesTest {
      */
     @Test
     fun aShowIsDatedByItsNewestEpisode() {
-        val rows = homeRowsOf(
-            shelvesOf(
-                listOf(
-                    episode("Started long ago", episode = 1, at = 100),
-                    episode("Started long ago", episode = 2, at = 5_000),
-                    episode("Arrived whole", episode = 1, at = 900),
+        val rows =
+            homeRowsOf(
+                shelvesOf(
+                    listOf(
+                        episode("Started long ago", episode = 1, at = 100),
+                        episode("Started long ago", episode = 2, at = 5_000),
+                        episode("Arrived whole", episode = 1, at = 900),
+                    ),
                 ),
-            ),
-            WatchSnapshot.Empty,
-        )
+                WatchSnapshot.Empty,
+            )
 
         val shows = rows.single { it.title == "Latest series" }.entries()
         assertEquals(
@@ -94,13 +94,14 @@ class HomeShelvesTest {
     @Test
     fun aStartedFilmLeadsContinue() {
         val alien = film("Alien", at = 1)
-        val watch = WatchSnapshot(
-            progress = listOf(Progress(alien.setId, at = 1_800.0, duration = 3_600.0, updatedAt = 10)),
-            watched = emptyList(),
-            watchlist = emptyList(),
-            kids = emptyList(),
-            collections = emptyList(),
-        )
+        val watch =
+            WatchSnapshot(
+                progress = listOf(Progress(alien.setId, at = 1_800.0, duration = 3_600.0, updatedAt = 10)),
+                watched = emptyList(),
+                watchlist = emptyList(),
+                kids = emptyList(),
+                collections = emptyList(),
+            )
 
         val rows = homeRowsOf(shelvesOf(listOf(alien)), watch)
         val continueRow = rows.single { it.title == "Continue" }
@@ -115,13 +116,14 @@ class HomeShelvesTest {
     fun aFinishedEpisodeOffersNextUp() {
         val e1 = episode("Show", episode = 1, at = 1)
         val e2 = episode("Show", episode = 2, at = 1)
-        val watch = WatchSnapshot(
-            progress = emptyList(),
-            watched = listOf(Watched(e1.setId, finishedAt = 100)),
-            watchlist = emptyList(),
-            kids = emptyList(),
-            collections = emptyList(),
-        )
+        val watch =
+            WatchSnapshot(
+                progress = emptyList(),
+                watched = listOf(Watched(e1.setId, finishedAt = 100)),
+                watchlist = emptyList(),
+                kids = emptyList(),
+                collections = emptyList(),
+            )
 
         val rows = homeRowsOf(shelvesOf(listOf(e1, e2)), watch)
         val nextUpRow = rows.single { it.title == "Next up" }
@@ -133,13 +135,21 @@ class HomeShelvesTest {
 
 private fun HomeRow.entries(): List<Entry> = (content as RowContent.Entries).entries
 
-private fun film(title: String, at: Long) = set(Kind.MOVIE, title, addedAt = at)
+private fun film(
+    title: String,
+    at: Long,
+) = set(Kind.MOVIE, title, addedAt = at)
 
-private fun episode(show: String, episode: Int, at: Long) =
-    set(Kind.EPISODE, "Episode $episode of $show", show = show, season = 1, episodeFirst = episode, addedAt = at)
+private fun episode(
+    show: String,
+    episode: Int,
+    at: Long,
+) = set(Kind.EPISODE, "Episode $episode of $show", show = show, season = 1, episodeFirst = episode, addedAt = at)
 
-private fun lesson(course: String, at: Long) =
-    set(Kind.TUTORIAL, "Lektion 1", show = course, path = "Grundlagen", addedAt = at)
+private fun lesson(
+    course: String,
+    at: Long,
+) = set(Kind.TUTORIAL, "Lektion 1", show = course, path = "Grundlagen", addedAt = at)
 
 private fun set(
     kind: Kind,

@@ -854,5 +854,17 @@
         }
       ]
     }
+  },
+  {
+    "name": "a viewer is a kids profile when any device says so",
+    "records": [
+      { "format": 1, "device": "laptop", "writtenAt": 0,
+        "profiles": [{ "name": "Mia", "kids": true, "progress": [], "watched": [] }] },
+      { "format": 1, "device": "desktop", "writtenAt": 0,
+        "profiles": [{ "name": "mia", "progress": [], "watched": [] }] }
+    ],
+    "expect": {
+      "profiles": [{ "name": "mia", "displayName": "Mia", "kids": true, "progress": [], "watched": [] }]
+    }
   }
 ]

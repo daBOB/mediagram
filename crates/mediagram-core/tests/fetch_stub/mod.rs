@@ -30,7 +30,10 @@ pub struct StubApi {
 
 impl StubApi {
     pub fn with_poster(path: &str) -> Self {
-        StubApi { poster_path: Some(path.into()), only: None }
+        StubApi {
+            poster_path: Some(path.into()),
+            only: None,
+        }
     }
 
     /// Answers for one title and refuses every other, the way the provider
@@ -41,7 +44,10 @@ impl StubApi {
     /// would fail its download too and a test about descriptions would be
     /// counting artwork.
     pub fn answering_only(id: u64) -> Self {
-        StubApi { poster_path: None, only: Some(id) }
+        StubApi {
+            poster_path: None,
+            only: Some(id),
+        }
     }
 }
 
@@ -87,7 +93,10 @@ impl TmdbApi for RejectingApi {
 /// `refresh_catalog`, which needs the network — with one row per
 /// `(kind, tmdb id)` pair, following the fixture style in `api_surface.rs`.
 pub fn catalog_with_kinds(dir: &Path, kinds: &[(&str, Option<i64>)]) {
-    let rows: Vec<_> = kinds.iter().map(|(kind, tmdb)| (*kind, *tmdb, None)).collect();
+    let rows: Vec<_> = kinds
+        .iter()
+        .map(|(kind, tmdb)| (*kind, *tmdb, None))
+        .collect();
     catalog_with_sets(dir, &rows);
 }
 
@@ -119,7 +128,12 @@ fn catalog_with_sets(dir: &Path, rows: &[(&str, Option<i64>, Option<&str>)]) {
 }
 
 pub fn core_at(dir: &Path) -> std::sync::Arc<Core> {
-    Core::new(dir.display().to_string(), 1, "test-hash".into(), "test-device".into())
+    Core::new(
+        dir.display().to_string(),
+        1,
+        "test-hash".into(),
+        "test-device".into(),
+    )
 }
 
 /// Drops a poster already on disk where a fetch would write one, so a test
@@ -141,8 +155,7 @@ pub async fn fetch_with(dir: &Path, api: StubApi) -> FetchReport {
     install_crypto_provider();
     let core = core_at(dir);
     let plan = plan_fetch(&core, "en-US").expect("the seeded catalog is readable");
-    fetch_into(&core, &api, &offline_client(), &plan)
-    .await
+    fetch_into(&core, &api, &offline_client(), &plan).await
 }
 
 /// The same run, against a provider that will not take the key — through
@@ -152,8 +165,7 @@ pub async fn fetch_rejecting(dir: &Path) -> Result<FetchReport, CoreError> {
     install_crypto_provider();
     let core = core_at(dir);
     let plan = plan_fetch(&core, "en-US").expect("the seeded catalog is readable");
-    verify_then_fetch(&core, RejectingApi, &offline_client(), &plan)
-    .await
+    verify_then_fetch(&core, RejectingApi, &offline_client(), &plan).await
 }
 
 /// `reqwest::Client::new()` panics with no crypto provider installed: this

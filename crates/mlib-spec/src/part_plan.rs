@@ -18,6 +18,7 @@ pub struct PartRange {
 }
 
 impl PartRange {
+    #[must_use]
     pub fn end(&self) -> u64 {
         self.off + self.len
     }
@@ -31,8 +32,14 @@ pub enum PlanError {
     Unaligned(u64),
     #[error("part size {0} exceeds {MAX_PART_SIZE}")]
     TooLarge(u64),
+    #[error("plan requires {0} parts, exceeding the 32-bit caption part count")]
+    TooManyParts(u64),
 }
 
+/// Checks the alignment and upload-size limits shared by every plan.
+///
+/// # Errors
+/// Rejects zero or unaligned sizes and sizes above [`MAX_PART_SIZE`].
 pub fn validate_part_size(part_size: u64) -> Result<(), PlanError> {
     if part_size == 0 || !part_size.is_multiple_of(MIB) {
         return Err(PlanError::Unaligned(part_size));
@@ -43,17 +50,23 @@ pub fn validate_part_size(part_size: u64) -> Result<(), PlanError> {
     Ok(())
 }
 
+/// Contiguous ranges covering a nonempty file exactly once.
+///
+/// # Errors
+/// Rejects invalid part sizes, empty files, and counts exceeding the caption's
+/// `u32` part count before allocating the plan.
 pub fn plan_parts(total: u64, part_size: u64) -> Result<Vec<PartRange>, PlanError> {
     validate_part_size(part_size)?;
     if total == 0 {
         return Err(PlanError::EmptyFile);
     }
-    let n = total.div_ceil(part_size);
+    let count = total.div_ceil(part_size);
+    let n = u32::try_from(count).map_err(|_| PlanError::TooManyParts(count))?;
     let parts = (0..n)
         .map(|i| {
-            let off = i * part_size;
+            let off = u64::from(i) * part_size;
             PartRange {
-                idx: i as u32,
+                idx: i,
                 off,
                 len: (total - off).min(part_size),
             }
@@ -63,6 +76,7 @@ pub fn plan_parts(total: u64, part_size: u64) -> Result<Vec<PartRange>, PlanErro
 }
 
 /// Index of the part containing global byte `pos`, for a plan sorted by offset.
+#[must_use]
 pub fn part_for_offset(parts: &[PartRange], pos: u64) -> Option<usize> {
     let i = parts.partition_point(|p| p.off <= pos);
     (i > 0 && pos < parts[i - 1].end()).then(|| i - 1)

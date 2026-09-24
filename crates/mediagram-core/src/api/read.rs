@@ -2,6 +2,7 @@
 //! and download loop `mediagram serve` uses, collected into a buffer rather
 //! than streamed into an HTTP response body.
 
+use grammers_mtsender::SenderPoolFatHandle;
 use std::collections::HashMap;
 
 use grammers_session::types::{PeerId, PeerRef};
@@ -12,9 +13,9 @@ use crate::range::{self, ByteRange, PartSpan};
 use crate::transport::fetch::Parts;
 use crate::transport::source::BUFFERED_CHUNKS;
 
+use super::account::revoked;
 use super::account::session;
 use super::channel::library;
-use super::account::revoked;
 use super::{Core, CoreError, store};
 
 /// Where a set's parts live, if it may be played. Blocking: a catalog query.
@@ -24,9 +25,12 @@ use super::{Core, CoreError, store};
 /// not be readable here while being refused everywhere else.
 pub(super) fn locations(core: &Core, set_id: &str) -> Result<Vec<PartLocation>, CoreError> {
     let conn = store::open(core)?;
-    let playable = queries::playable_set(&conn, set_id).map_err(CoreError::io("reading the catalog"))?;
+    let playable =
+        queries::playable_set(&conn, set_id).map_err(CoreError::io("reading the catalog"))?;
     let locations = match playable {
-        Some(_) => queries::part_locations(&conn, set_id).map_err(CoreError::io("reading the catalog"))?,
+        Some(_) => {
+            queries::part_locations(&conn, set_id).map_err(CoreError::io("reading the catalog"))?
+        }
         None => Vec::new(),
     };
     if locations.is_empty() {
@@ -46,7 +50,9 @@ pub(super) async fn read(
     let spans: Vec<PartSpan> = locations.iter().map(|location| location.span).collect();
     let total = range::total_size(&spans);
     if total == 0 || offset >= total {
-        return Err(CoreError::NotFound("read is past the end of the set".into()));
+        return Err(CoreError::NotFound(
+            "read is past the end of the set".into(),
+        ));
     }
     // A zero-length request is trivially satisfied, and must return before
     // `end` is computed: `end = offset - 1` below is only ever valid because
@@ -62,7 +68,15 @@ pub(super) async fn read(
         .min(total - 1);
     let steps = range::plan_reads(&spans, &ByteRange { start: offset, end });
 
-    let client = session::client(core).await;
+    let (client, owner, documents) = {
+        let mut state = core.state.lock().await;
+        let live = state.client.get_or_insert_with(|| session::connect(core));
+        (
+            live.client.clone(),
+            live.handle.clone(),
+            state.documents.clone(),
+        )
+    };
     // Every channel is looked up before any byte is fetched, so a part this
     // device cannot address fails the read as that, not as a broken download.
     let handles = library::read(&library::path(core))?;
@@ -70,7 +84,6 @@ pub(super) async fn read(
     for location in &locations {
         channels.insert(location.chat_id, channel_ref(&handles, location.chat_id)?);
     }
-    let documents = core.state.lock().await.documents.clone();
     let parts = Parts {
         client: &client,
         documents: &documents,
@@ -95,7 +108,7 @@ pub(super) async fn read(
     };
     let (fetched, drained) = tokio::join!(fetch, drain);
     if let Err(err) = fetched.and(drained) {
-        return Err(failed(core, INTERRUPTED, err).await);
+        return Err(failed(core, &owner, INTERRUPTED, err).await);
     }
     Ok(out)
 }
@@ -104,9 +117,14 @@ const INTERRUPTED: &str = "the download ended before it finished";
 
 /// What Kotlin is told when a Telegram call fails: `what`, with the cause
 /// logged in Rust — or `NotAuthorized` when the login itself was refused.
-async fn failed(core: &Core, what: &str, err: anyhow::Error) -> CoreError {
+async fn failed(
+    core: &Core,
+    owner: &SenderPoolFatHandle,
+    what: &str,
+    err: anyhow::Error,
+) -> CoreError {
     let fallback = CoreError::network(what)(&err);
-    revoked::unless_revoked(core, err.as_ref(), fallback).await
+    revoked::unless_revoked_for(core, owner, err.as_ref(), fallback).await
 }
 
 /// How to address the channel a part lives in.

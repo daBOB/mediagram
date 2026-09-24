@@ -15,50 +15,56 @@ import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.withType
 
 class DetektConventionPlugin : Plugin<Project> {
-    override fun apply(target: Project) = with(target) {
-        val detektPluginId = libs.findPlugin("detekt").get().get().pluginId
+    override fun apply(target: Project) =
+        with(target) {
+            val detektPluginId =
+                libs
+                    .findPlugin("detekt")
+                    .get()
+                    .get()
+                    .pluginId
 
-        pluginManager.apply(detektPluginId)
+            pluginManager.apply(detektPluginId)
 
-        dependencies {
-            add("detektPlugins", libs.findLibrary("compose.rules.detekt").get())
-        }
-
-        extensions.configure<DetektExtension> {
-            buildUponDefaultConfig.set(true)
-            basePath.set(rootProject.layout.projectDirectory)
-            parallel.set(true)
-
-            config.setFrom(rootProject.file("config/detekt.yml"))
-
-            val moduleConfig = project.file("detekt.yml")
-            if (moduleConfig.exists()) {
-                config.from(moduleConfig)
+            dependencies {
+                add("detektPlugins", libs.findLibrary("compose.rules.detekt").get())
             }
 
-            baseline.set(project.file("detekt-baseline.xml"))
-        }
+            extensions.configure<DetektExtension> {
+                buildUponDefaultConfig.set(true)
+                basePath.set(rootProject.layout.projectDirectory)
+                parallel.set(true)
 
-        tasks.withType<Detekt>().configureEach {
-            jvmTarget.set("17")
+                config.setFrom(rootProject.file("config/detekt.yml"))
 
-            reports {
-                checkstyle.required.set(true)
-                html.required.set(true)
-                sarif.required.set(true)
-                markdown.required.set(false)
+                val moduleConfig = project.file("detekt.yml")
+                if (moduleConfig.exists()) {
+                    config.from(moduleConfig)
+                }
+
+                baseline.set(project.file("detekt-baseline.xml"))
             }
 
-            if (project.pluginManager.hasPlugin("org.jetbrains.kotlin.jvm")) {
-                val javaExtension = extensions.findByType(JavaPluginExtension::class.java)
-                javaExtension?.let {
-                    classpath.from(it.sourceSets.getByName("main").compileClasspath)
+            tasks.withType<Detekt>().configureEach {
+                jvmTarget.set("17")
+
+                reports {
+                    checkstyle.required.set(true)
+                    html.required.set(true)
+                    sarif.required.set(true)
+                    markdown.required.set(false)
+                }
+
+                if (project.pluginManager.hasPlugin("org.jetbrains.kotlin.jvm")) {
+                    val javaExtension = extensions.findByType(JavaPluginExtension::class.java)
+                    javaExtension?.let {
+                        classpath.from(it.sourceSets.getByName("main").compileClasspath)
+                    }
                 }
             }
-        }
 
-        tasks.withType<DetektCreateBaselineTask>().configureEach {
-            jvmTarget.set("17")
+            tasks.withType<DetektCreateBaselineTask>().configureEach {
+                jvmTarget.set("17")
+            }
         }
-    }
 }

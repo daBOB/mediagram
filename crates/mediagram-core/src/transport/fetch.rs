@@ -4,12 +4,14 @@
 
 use anyhow::{Result, anyhow};
 use grammers_client::Client;
+use grammers_client::client::DownloadIter;
+use grammers_client::media::Document;
 use grammers_session::types::PeerRef;
 use tokio::sync::mpsc;
 
 use super::document::is_stale_reference;
 use super::documents::PartDocuments;
-use super::stream::{StepCursor, pump_step};
+use super::stream::{ChunkSource, StepCursor, pump_chunks};
 use crate::catalog::PartLocation;
 use crate::range::Step;
 
@@ -53,18 +55,88 @@ impl Parts<'_> {
         step: Step,
         out: &mpsc::Sender<Result<Vec<u8>>>,
     ) -> Result<()> {
-        let channel = (self.channel_of)(location);
-        let mut cursor = StepCursor::new(&step);
-        let document = self.documents.resolve(self.client, channel, location).await?;
-        match pump_step(self.client, &document, &step, &mut cursor, out).await {
-            Err(err) if is_stale_reference(&err) => {
-                self.documents.evict(location);
-                let rest = step.after(step.take - cursor.remaining());
-                let mut cursor = StepCursor::new(&rest);
-                let fresh = self.documents.resolve(self.client, channel, location).await?;
-                pump_step(self.client, &fresh, &rest, &mut cursor, out).await
-            }
-            result => result,
-        }
+        let io = TelegramPart {
+            client: self.client,
+            documents: self.documents,
+            channel: (self.channel_of)(location),
+        };
+        fetch_step(&io, location, step, out).await
     }
 }
+
+/// Document/cache IO and raw downloads. Retry policy stays in `fetch_step`.
+trait PartIo: Sync {
+    type Document: Send + Sync;
+    type Chunks: ChunkSource + Send;
+
+    fn resolve(
+        &self,
+        location: &PartLocation,
+    ) -> impl Future<Output = Result<Self::Document>> + Send;
+    fn evict(&self, location: &PartLocation);
+    fn download(&self, document: &Self::Document, skip_chunks: u32) -> Self::Chunks;
+}
+
+struct TelegramPart<'a> {
+    client: &'a Client,
+    documents: &'a PartDocuments,
+    channel: PeerRef,
+}
+
+impl PartIo for TelegramPart<'_> {
+    type Document = Document;
+    type Chunks = DownloadIter;
+
+    async fn resolve(&self, location: &PartLocation) -> Result<Document> {
+        self.documents
+            .resolve(self.client, self.channel, location)
+            .await
+    }
+
+    fn evict(&self, location: &PartLocation) {
+        self.documents.evict(location);
+    }
+
+    fn download(&self, document: &Document, skip_chunks: u32) -> DownloadIter {
+        self.client
+            .iter_download(document)
+            .skip_chunks(i32::try_from(skip_chunks).unwrap_or(i32::MAX))
+    }
+}
+
+async fn fetch_step(
+    io: &impl PartIo,
+    location: &PartLocation,
+    step: Step,
+    out: &mpsc::Sender<Result<Vec<u8>>>,
+) -> Result<()> {
+    let mut cursor = StepCursor::new(&step);
+    let document = io.resolve(location).await?;
+    match pump_chunks(
+        io.download(&document, step.skip_chunks),
+        &step,
+        &mut cursor,
+        out,
+    )
+    .await
+    {
+        Err(err) if is_stale_reference(&err) => {
+            io.evict(location);
+            let rest = step.after(step.take - cursor.remaining());
+            let mut cursor = StepCursor::new(&rest);
+            let fresh = io.resolve(location).await?;
+            pump_chunks(
+                io.download(&fresh, rest.skip_chunks),
+                &rest,
+                &mut cursor,
+                out,
+            )
+            .await
+        }
+        result => result,
+    }
+}
+
+#[cfg(test)]
+#[path = "fetch_tests.rs"]
+mod tests;

@@ -1,7 +1,7 @@
 /** Covers `volume-store`: a remembered volume, and a store that refuses. */
 
 import { afterEach, describe, expect, test } from "bun:test";
-import { readVolume, writeVolume } from "../public/lib/volume-store.js";
+import { readVolume, writeVolume } from "../public/lib/playback/volume-store.js";
 
 /** Stands in for `localStorage`, which `bun:test` has no window to hold. */
 function store(initial: Record<string, string> = {}, throws = false) {

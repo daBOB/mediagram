@@ -8,7 +8,11 @@ import model.Progress
 import model.WatchSnapshot
 
 /** What one show or course offers the viewer, and when it was last touched. */
-data class NextUpEntry(val set: MediaSet, val resume: Boolean, val touchedAt: Long)
+data class NextUpEntry(
+    val set: MediaSet,
+    val resume: Boolean,
+    val touchedAt: Long,
+)
 
 /**
  * Continue and Next up, before [homeRowsOf] turns them into rows with
@@ -37,19 +41,21 @@ fun underwayOf(
     val positions = watch.progress.associateBy { it.setId }
     val watchedAt = watch.watched.associate { it.setId to it.finishedAt }
 
-    val underway = collections
-        .mapNotNull { nextInCollection(playOrder(it.divisions), positions) { id -> watchedAt[id] } }
-        .sortedByDescending(NextUpEntry::touchedAt)
+    val underway =
+        collections
+            .mapNotNull { nextInCollection(playOrder(it.divisions), positions) { id -> watchedAt[id] } }
+            .sortedByDescending(NextUpEntry::touchedAt)
     val nextUp = underway.take(limit)
     // One title is one card on this page: a show being watched would
     // otherwise appear twice — as the episode in progress, and again under
     // Next up.
     val shown = nextUp.mapTo(HashSet()) { it.set.setId }
 
-    val started = watch.progress
-        .sortedByDescending(Progress::updatedAt)
-        .filter { ResumePoint.resumeAt(it.toProgressPoint()) != null }
-        .mapNotNull { byId[it.setId] }
+    val started =
+        watch.progress
+            .sortedByDescending(Progress::updatedAt)
+            .filter { ResumePoint.resumeAt(it.toProgressPoint()) != null }
+            .mapNotNull { byId[it.setId] }
 
     return Underway(
         continues = started.filterNot { it.setId in shown }.take(limit),
@@ -73,10 +79,10 @@ fun nextInCollection(
 ): NextUpEntry? {
     var resumeSet: MediaSet? = null
     var resumeTouch: Long? = null
-    var finishedSet: MediaSet? = null
+    var finishedIndex = -1
     var finishedTouch: Long? = null
 
-    for (set in order) {
+    for ((index, set) in order.withIndex()) {
         val row = positions[set.setId]
         if (row != null &&
             ResumePoint.resumeAt(row.toProgressPoint()) != null &&
@@ -88,7 +94,7 @@ fun nextInCollection(
         val finished = watchedAt(set.setId)
         if (finished != null && (finishedTouch == null || finished > finishedTouch)) {
             finishedTouch = finished
-            finishedSet = set
+            finishedIndex = index
         }
     }
 
@@ -98,21 +104,30 @@ fun nextInCollection(
     // Walked forward from the one finished most recently rather than
     // searched from the start, so an episode seen out of order does not
     // pull the show backwards.
-    var candidate = nextAfter(order, requireNotNull(finishedSet).setId)
-    while (candidate != null && watchedAt(candidate.setId) != null) {
-        candidate = nextAfter(order, candidate.setId)
+    for (index in (finishedIndex + 1)..order.lastIndex) {
+        val candidate = order[index]
+        if (watchedAt(candidate.setId) == null) {
+            return NextUpEntry(candidate, resume = false, touchedAt = touchedAt)
+        }
     }
-    return candidate?.let { NextUpEntry(it, resume = false, touchedAt = touchedAt) }
+    return null
 }
 
-private fun laterOf(a: Long?, b: Long?): Long? = when {
-    a == null -> b
-    b == null -> a
-    else -> maxOf(a, b)
-}
+private fun laterOf(
+    a: Long?,
+    b: Long?,
+): Long? =
+    when {
+        a == null -> b
+        b == null -> a
+        else -> maxOf(a, b)
+    }
 
 /** What follows [setId] in [order], or `null` at the end. Ported from `nextInQueue`/`nextAfter` in library.js. */
-fun nextAfter(order: List<MediaSet>, setId: String): MediaSet? {
+fun nextAfter(
+    order: List<MediaSet>,
+    setId: String,
+): MediaSet? {
     val at = order.indexOfFirst { it.setId == setId }
     return if (at == -1 || at == order.lastIndex) null else order[at + 1]
 }
@@ -120,27 +135,35 @@ fun nextAfter(order: List<MediaSet>, setId: String): MediaSet? {
 /**
  * Every playable set in a collection, in the order Android's own screens
  * render it: a level's lessons and folders interleaved by their leading
- * number, the way `library.js:182-196` already orders the web's pages (Q6).
+ * number, matching `levelEntries` in the web's `library.js`.
  * A document is skipped rather than descended into — it has nothing below
  * it, and "next" means the next thing that plays.
  */
-fun playOrder(divisions: List<Division>): List<MediaSet> {
-    val out = mutableListOf<MediaSet>()
-    fun descend(items: List<MediaSet>, children: List<Division>) {
+fun playOrder(divisions: List<Division>): List<MediaSet> = playableInOrder(divisions).toList()
+
+/** A first-item lookup can stop without flattening the rest of the collection. */
+internal fun playableInOrder(divisions: List<Division>): Sequence<MediaSet> = playableInLevel(emptyList(), divisions)
+
+private fun playableInLevel(
+    items: List<MediaSet>,
+    children: List<Division>,
+): Sequence<MediaSet> =
+    sequence {
         for (entry in levelEntries(items, children)) {
             val lesson = entry.lesson
             val folder = entry.folder
             when {
-                lesson != null -> if (lesson.kind != Kind.DOCUMENT) out.add(lesson)
-                folder != null -> descend(folder.items, folder.children)
+                lesson != null -> if (lesson.kind != Kind.DOCUMENT) yield(lesson)
+                folder != null -> yieldAll(playableInLevel(folder.items, folder.children))
             }
         }
     }
-    descend(emptyList(), divisions)
-    return out
-}
 
-private data class LevelEntry(val order: Int?, val lesson: MediaSet?, val folder: Division?)
+private data class LevelEntry(
+    val order: Int?,
+    val lesson: MediaSet?,
+    val folder: Division?,
+)
 
 /**
  * One level's lessons and folders, in the order the course puts them —
@@ -150,7 +173,10 @@ private data class LevelEntry(val order: Int?, val lesson: MediaSet?, val folder
  * lessons before folders — [sortedBy] is stable, so each keeps the order it
  * already arrived in.
  */
-private fun levelEntries(items: List<MediaSet>, children: List<Division>): List<LevelEntry> {
+private fun levelEntries(
+    items: List<MediaSet>,
+    children: List<Division>,
+): List<LevelEntry> {
     val lessons = items.map { LevelEntry(it.episodeFirst, it, null) }
     val folders = children.map { LevelEntry(leadingNumber(it.title), null, it) }
     return (lessons + folders).sortedBy { it.order ?: Int.MAX_VALUE }
@@ -160,6 +186,12 @@ private val LEADING_NUMBER = Regex("""^\s*(\d+)""")
 
 /** The number a folder's name leads with, or `null` for neither — ported from `leadingNumber` in library.js. */
 private fun leadingNumber(text: String?): Int? =
-    text?.let { LEADING_NUMBER.find(it)?.groupValues?.get(1)?.toIntOrNull() }
+    text?.let {
+        LEADING_NUMBER
+            .find(it)
+            ?.groupValues
+            ?.get(1)
+            ?.toIntOrNull()
+    }
 
 private fun Progress.toProgressPoint(): ProgressPoint = ProgressPoint(at, duration)

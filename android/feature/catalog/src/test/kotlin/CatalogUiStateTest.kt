@@ -14,7 +14,6 @@ import kotlin.test.assertNull
  * collection, and the same id has to find either.
  */
 class CatalogUiStateTest {
-
     @Test
     fun aFilmIsFoundOnItsShelf() {
         val alien = film("Alien")
@@ -25,10 +24,11 @@ class CatalogUiStateTest {
     @Test
     fun anEpisodeIsFoundInsideTheShowThatHoldsIt() {
         val second = episode("30 Rock", season = 7, episode = 2, title = "Frauen sind witzig!")
-        val state = readyWith(
-            episode("30 Rock", season = 7, episode = 1, title = "Ein Gouverneur zum Totlachen"),
-            second,
-        )
+        val state =
+            readyWith(
+                episode("30 Rock", season = 7, episode = 1, title = "Ein Gouverneur zum Totlachen"),
+                second,
+            )
 
         assertEquals("Frauen sind witzig!", state.mediaSet(second.setId)?.title)
     }
@@ -66,12 +66,13 @@ class CatalogUiStateTest {
      */
     @Test
     fun aShowTakesItsPosterKeyFromWhicheverEpisodeCarriesOne() {
-        val shelves = shelvesOf(
-            listOf(
-                episode("30 Rock", season = 7, episode = 1, title = "One"),
-                episode("30 Rock", season = 7, episode = 2, title = "Two", posterKey = "tmdb-tv-4608"),
-            ),
-        )
+        val shelves =
+            shelvesOf(
+                listOf(
+                    episode("30 Rock", season = 7, episode = 1, title = "One"),
+                    episode("30 Rock", season = 7, episode = 2, title = "Two", posterKey = "tmdb-tv-4608"),
+                ),
+            )
 
         val show = shelves.single { it.title == "Series" }.entries.single() as Entry.Collection
         assertEquals("tmdb-tv-4608", show.posterKey)
@@ -98,8 +99,11 @@ private fun episode(
     posterKey: String? = null,
 ) = set(Kind.EPISODE, title, show = show, season = season, episodeFirst = episode, posterKey = posterKey)
 
-private fun lesson(course: String, path: String, title: String) =
-    set(Kind.TUTORIAL, title, show = course, path = path)
+private fun lesson(
+    course: String,
+    path: String,
+    title: String,
+) = set(Kind.TUTORIAL, title, show = course, path = path)
 
 private fun set(
     kind: Kind,

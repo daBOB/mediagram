@@ -9,9 +9,9 @@ use std::path::Path;
 
 use anyhow::{Context, Result};
 
-use super::push_index;
 use crate::config::Config;
 use crate::telegram::client::Tg;
+use crate::telegram::index_publish;
 use crate::upload::finish_set::finish_with;
 
 /// Uploads what is left of `set_id`, then deletes `delete` if the set
@@ -22,9 +22,12 @@ pub async fn run(cfg: &Config, set_id: &str, delete: Option<&Path>, no_push: boo
     tg.shutdown().await;
     let complete = result?;
     if complete && !no_push {
-        push_index::run(cfg).await.with_context(|| {
-            format!("set {set_id} is complete but the index push failed; run `mediagram push-index`")
+        let message_id = index_publish::publish(cfg).await.with_context(|| {
+            format!(
+                "set {set_id} is complete but the index push failed; run `mediagram push-index`"
+            )
         })?;
+        println!("pushed index as message {message_id}");
     }
     Ok(())
 }

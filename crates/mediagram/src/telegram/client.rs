@@ -11,8 +11,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::{Context, Result, bail};
-use grammers_client::peer::Peer;
 use grammers_client::Client;
+use grammers_client::peer::Peer;
 use grammers_mtsender::{SenderPool, SenderPoolFatHandle};
 use grammers_session::storages::SqliteSession;
 use grammers_session::types::{PeerId, PeerRef};
@@ -77,7 +77,8 @@ pub async fn open_client(cfg: &Config) -> Result<(Client, SenderPoolFatHandle, J
         "uploader",
         &mediagram_core::connection_params::host_name(),
     );
-    let SenderPool { runner, handle, .. } = SenderPool::with_configuration(Arc::clone(&session), cfg.api_id, params);
+    let SenderPool { runner, handle, .. } =
+        SenderPool::with_configuration(Arc::clone(&session), cfg.api_id, params);
     let client = Client::new(handle.clone());
     let pool_task = tokio::spawn(runner.run());
     Ok((client, handle, pool_task))
@@ -127,7 +128,7 @@ fn peer_id_matches(id: PeerId, n: i64) -> bool {
 fn session_path(cfg: &Config) -> Result<PathBuf> {
     let dir = cfg.data_dir()?;
     // libsql keeps the auth key in WAL/SHM sidecars too, so the directory itself is private.
-    crate::paths::private_dir(&dir)?;
+    crate::paths::ensure_private_dir(&dir)?;
     Ok(dir.join("session.sqlite"))
 }
 

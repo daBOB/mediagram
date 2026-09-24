@@ -42,7 +42,6 @@ class FakeCore(
     /** What [account] answers, or throws: whether Telegram accepts this core's identity. */
     private val account: Result<AccountSummary> = Result.success(AccountSummary("A Viewer", "viewer")),
 ) : CoreClient {
-
     override suspend fun account(): AccountSummary = account.getOrThrow()
 
     var signedOut: Boolean = false
@@ -58,7 +57,10 @@ class FakeCore(
     var eventHandle: String? = null
         private set
 
-    override suspend fun nextLibraryEvent(handle: String, ownDevice: String): LibraryEvent {
+    override suspend fun nextLibraryEvent(
+        handle: String,
+        ownDevice: String,
+    ): LibraryEvent {
         eventHandle = handle
         val next = events.getOrNull(eventCalls++) ?: awaitCancellation()
         return next.getOrThrow()
@@ -71,9 +73,16 @@ class FakeCore(
     private var readings = 0
 
     override fun isAuthorized(): Boolean = true
+
     override suspend fun requestCode(phone: String): String = "token"
-    override suspend fun signIn(token: String, code: String): AuthOutcome = AuthOutcome.DONE
+
+    override suspend fun signIn(
+        token: String,
+        code: String,
+    ): AuthOutcome = AuthOutcome.DONE
+
     override suspend fun checkPassword(password: String) = Unit
+
     override suspend fun listLibraries(): List<LibraryChoice> = libraries
 
     override suspend fun refreshLibrary(handle: String): Long {
@@ -83,16 +92,32 @@ class FakeCore(
         return refreshResult
     }
 
-    override suspend fun refreshCatalog(url: String, keyB64: String): Long = refreshResult
+    override suspend fun refreshCatalog(
+        url: String,
+        keyB64: String,
+    ): Long = refreshResult
+
     override suspend fun listSets(): List<SetSummary> = sets
+
     override fun posterPath(posterKey: String): String? = posters[posterKey]
+
     override suspend fun titleInfo(posterKey: String): TitleInfo? = null
+
     override suspend fun totalSize(setId: String): Long = 0
+
     override suspend fun catalogFacts(): CatalogFacts =
         CatalogFacts("channel", 0uL, 0uL, 0u, publishedAt[minOf(readings++, publishedAt.lastIndex)])
-    override suspend fun read(setId: String, offset: Long, len: Int): ByteArray = ByteArray(0)
-    override suspend fun fetchMissing(tmdbKey: String, language: String): FetchReport =
-        FetchReport(0u, 0u, 0u, 0u, 0u, 0u)
+
+    override suspend fun read(
+        setId: String,
+        offset: Long,
+        len: Int,
+    ): ByteArray = ByteArray(0)
+
+    override suspend fun fetchMissing(
+        tmdbKey: String,
+        language: String,
+    ): FetchReport = FetchReport(0u, 0u, 0u, 0u, 0u, 0u)
 
     var closed: Boolean = false
         private set
@@ -107,12 +132,27 @@ class FakeCore(
  * repository does with a core, not about waiting for one; [CoreProviderTest]
  * covers the waiting.
  */
-class ResolvedCoreProvider(private val client: CoreClient) : CoreProvider {
-    override suspend fun replace(apiId: Int, apiHash: String) = Unit
+class ResolvedCoreProvider(
+    private val client: CoreClient,
+) : CoreProvider {
+    override suspend fun replace(
+        apiId: Int,
+        apiHash: String,
+    ) = Unit
+
     override val core: StateFlow<CoreClient?> = MutableStateFlow(client)
+
     override suspend fun awaitCore(): CoreClient = client
+
     override suspend fun coreOrNull(): CoreClient = client
-    override suspend fun supply(apiId: Int, apiHash: String) = Unit
+
+    override suspend fun supply(
+        apiId: Int,
+        apiHash: String,
+    ) = Unit
+
+    override suspend fun resetAccount(storage: data.CoreStorage) = error("this fixture does not reset accounts")
+
     override suspend fun forget() = Unit
 }
 
@@ -139,29 +179,30 @@ fun summary(
     partCount: Int = 1,
     addedAt: Long = 0,
     fsk: String? = null,
-): SetSummary = SetSummary(
-    setId = setId,
-    kind = kind,
-    title = title,
-    show = show,
-    chap = chap,
-    path = path,
-    season = season?.toUInt(),
-    episodeFirst = episodeFirst?.toUInt(),
-    episodeLast = episodeLast?.toUInt(),
-    year = year?.toUInt(),
-    container = container,
-    vcodec = vcodec,
-    acodec = acodec,
-    quality = quality,
-    hdr = hdr,
-    duration = duration?.toUInt(),
-    posterKey = posterKey,
-    total = total.toULong(),
-    partCount = partCount.toUInt(),
-    addedAt = addedAt,
-    fsk = fsk,
-)
+): SetSummary =
+    SetSummary(
+        setId = setId,
+        kind = kind,
+        title = title,
+        show = show,
+        chap = chap,
+        path = path,
+        season = season?.toUInt(),
+        episodeFirst = episodeFirst?.toUInt(),
+        episodeLast = episodeLast?.toUInt(),
+        year = year?.toUInt(),
+        container = container,
+        vcodec = vcodec,
+        acodec = acodec,
+        quality = quality,
+        hdr = hdr,
+        duration = duration?.toUInt(),
+        posterKey = posterKey,
+        total = total.toULong(),
+        partCount = partCount.toUInt(),
+        addedAt = addedAt,
+        fsk = fsk,
+    )
 
 fun settingsWithAChosenLibrary(handle: String = "a1b2c3"): LibrarySettings =
     InMemoryLibrarySettings().apply { runBlocking { write(handle) } }

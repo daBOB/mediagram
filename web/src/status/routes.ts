@@ -18,7 +18,7 @@
  * asking. `isOwnNetwork` is the one that belongs here.
  */
 
-import type { PlayerRequest, PlayerResponse } from "../routes";
+import type { PlayerRequest, PlayerResponse } from "../http/contracts";
 import { isOwnNetwork } from "../client-reach";
 import { bodiless, withBody } from "../response";
 import { buildSnapshot, type LiveFacts } from "./snapshot";

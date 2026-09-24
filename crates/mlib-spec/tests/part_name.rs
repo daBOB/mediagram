@@ -54,7 +54,12 @@ fn absolute_only_numbering_is_zero_padded_to_three_digits() {
 
 #[test]
 fn season_and_single_episode_use_the_lowercase_sxxeyy_code() {
-    let name = base_name(&episode("The Office", Some(1), Some(Episode::Single(1)), None));
+    let name = base_name(&episode(
+        "The Office",
+        Some(1),
+        Some(Episode::Single(1)),
+        None,
+    ));
     assert_eq!(name, "The Office (1995) - s01e01");
 }
 

@@ -3,9 +3,42 @@ use rusqlite::Connection;
 
 use super::*;
 
+#[tokio::test]
+async fn playback_refusals_only_revoke_the_originating_login() {
+    use session::fixture::{Fixture, rpc};
+    for code in [401, 500] {
+        let fixture = Fixture::new().await;
+        let error = failed(
+            &fixture.core,
+            &fixture.owner,
+            INTERRUPTED,
+            anyhow::Error::new(rpc(code)).context("part 1"),
+        )
+        .await;
+        if code == 401 {
+            assert!(matches!(error, CoreError::NotAuthorized(_)));
+            fixture.assert_revoked().await;
+        } else {
+            assert!(matches!(error, CoreError::Network(_)));
+            fixture.assert_kept(&fixture.owner, 7).await;
+        }
+    }
+    let fixture = Fixture::new().await;
+    let replacement = fixture.replace().await;
+    let error = failed(
+        &fixture.core,
+        &fixture.owner,
+        INTERRUPTED,
+        anyhow::Error::new(rpc(401)).context("part 1"),
+    )
+    .await;
+    assert!(matches!(error, CoreError::Network(_)));
+    fixture.assert_kept(&replacement, 9).await;
+}
+
 fn handles_naming(chat: i64, auth: i64) -> library::Handles {
     let mut handles = library::Handles::new();
-    library::handle_for(
+    library::register_or_refresh_library(
         &mut handles,
         library::LibraryEntry {
             chat,
@@ -28,7 +61,11 @@ fn a_part_is_addressed_with_the_hash_recorded_for_its_channel() {
     let peer = channel_ref(&handles, -1_001_234_567_890).expect("a recorded channel");
 
     assert_eq!(peer.auth.hash(), 7_654_321);
-    assert_ne!(peer.auth, PeerAuth::default(), "a channel refuses ambient authority");
+    assert_ne!(
+        peer.auth,
+        PeerAuth::default(),
+        "a channel refuses ambient authority"
+    );
 }
 
 /// Said plainly, and with the thing to do about it. Asking anyway would
@@ -90,7 +127,9 @@ async fn a_zero_length_read_at_a_nonzero_offset_returns_empty() {
     let dir = tempfile::tempdir().unwrap();
     let core = core_with_one_part(dir.path(), "01SET0000000000000000001", 1000, "complete");
 
-    let bytes = core.clone().read("01SET0000000000000000001".into(), 500, 0)
+    let bytes = core
+        .clone()
+        .read("01SET0000000000000000001".into(), 500, 0)
         .await
         .unwrap();
 
@@ -104,7 +143,9 @@ async fn a_set_that_is_not_playable_cannot_be_read() {
     let dir = tempfile::tempdir().unwrap();
     let core = core_with_one_part(dir.path(), "01SET0000000000000000002", 1000, "pending");
 
-    let refused = core.clone().read("01SET0000000000000000002".into(), 0, 10)
+    let refused = core
+        .clone()
+        .read("01SET0000000000000000002".into(), 0, 10)
         .await
         .unwrap_err();
 

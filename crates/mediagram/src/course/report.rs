@@ -116,11 +116,14 @@ pub fn dry_run_table(course: &str, cid: &str, walked: &Course) -> Vec<String> {
     let mut by_folder: std::collections::BTreeMap<&str, Vec<Row>> =
         std::collections::BTreeMap::new();
     for lesson in &walked.lessons {
-        by_folder.entry(lesson.rel_path.as_str()).or_default().push(Row {
-            mark: 'L',
-            number: lesson.lesson,
-            title: lesson.title.clone().unwrap_or_else(|| "-".into()),
-        });
+        by_folder
+            .entry(lesson.rel_path.as_str())
+            .or_default()
+            .push(Row {
+                mark: 'L',
+                number: lesson.lesson,
+                title: lesson.title.clone().unwrap_or_else(|| "-".into()),
+            });
     }
     for document in &walked.documents {
         by_folder

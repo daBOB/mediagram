@@ -7,6 +7,19 @@ use mlib_spec::part_plan::{
 };
 
 #[test]
+fn an_unrepresentable_part_count_is_rejected_before_allocating_the_plan() {
+    let parts = u64::from(u32::MAX) + 1;
+    assert_eq!(
+        plan_parts(parts * MIB, MIB),
+        Err(PlanError::TooManyParts(parts))
+    );
+    assert!(matches!(
+        plan_parts(u64::MAX, MIB),
+        Err(PlanError::TooManyParts(_))
+    ));
+}
+
+#[test]
 fn a_total_exactly_one_part_size_yields_a_single_full_part() {
     let part_size = 5 * MIB;
     let parts = plan_parts(part_size, part_size).unwrap();
@@ -21,11 +34,14 @@ fn one_byte_over_a_part_size_adds_a_second_one_byte_part() {
     let parts = plan_parts(part_size + 1, part_size).unwrap();
     assert_eq!(parts.len(), 2);
     assert_eq!(parts[0].len, part_size);
-    assert_eq!(parts[1], mlib_spec::part_plan::PartRange {
-        idx: 1,
-        off: part_size,
-        len: 1,
-    });
+    assert_eq!(
+        parts[1],
+        mlib_spec::part_plan::PartRange {
+            idx: 1,
+            off: part_size,
+            len: 1,
+        }
+    );
 }
 
 #[test]
@@ -40,14 +56,20 @@ fn a_plan_at_the_max_part_size_still_splits_the_remainder_correctly() {
 #[test]
 fn part_sizes_that_are_not_a_whole_number_of_mib_are_rejected() {
     for size in [0, 1, MIB - 1] {
-        assert!(matches!(validate_part_size(size), Err(PlanError::Unaligned(_))));
+        assert!(matches!(
+            validate_part_size(size),
+            Err(PlanError::Unaligned(_))
+        ));
     }
 }
 
 #[test]
 fn part_sizes_up_to_four_mib_in_one_mib_steps_are_accepted() {
     for mult in 1..=4 {
-        assert!(validate_part_size(MIB * mult).is_ok(), "{mult} MiB should be accepted");
+        assert!(
+            validate_part_size(MIB * mult).is_ok(),
+            "{mult} MiB should be accepted"
+        );
     }
 }
 

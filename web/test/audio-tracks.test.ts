@@ -7,7 +7,8 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { AudioTrackReader, parseAudioTracks } from "../src/audio-tracks";
+import { AudioTrackReader, parseAudioTracks } from "../src/catalog/audio-tracks";
+import { deferred } from "./application-fixture";
 
 /** ffprobe's shape, trimmed to the fields that are read. */
 const probeJson = (streams: unknown[]) => JSON.stringify({ streams });
@@ -78,9 +79,34 @@ describe("refusing to guess", () => {
 });
 
 describe("the reader", () => {
+  test.each(["tracks", "empty", "rejected"])("overlapping %s probes share one task per set and cache its answer", async (outcome) => {
+    const finish = deferred<void>();
+    const calls: string[] = [];
+    const reader = new AudioTrackReader({ baseUrl: "http://127.0.0.1:8770" }, async (url) => {
+      calls.push(url);
+      await finish.promise;
+      if (outcome === "rejected") throw new Error("probe failed");
+      return outcome === "empty" ? null : probeJson([stream()]);
+    });
+    const reads = [reader.read("first"), reader.read("first"), reader.read("second"), reader.read("first")];
+    try {
+      expect(calls).toEqual([
+        "http://127.0.0.1:8770/api/sets/first/stream",
+        "http://127.0.0.1:8770/api/sets/second/stream",
+      ]);
+    } finally { finish.resolve(); await Promise.all(reads); }
+    const answers = await Promise.all(reads);
+    expect(answers[0]).toHaveLength(outcome === "tracks" ? 1 : 0);
+    expect(answers[1]).toBe(answers[0]);
+    expect(answers[3]).toBe(answers[0]);
+    expect(await reader.read("first")).toBe(answers[0]!);
+    expect(calls).toHaveLength(2);
+    await reader.stop();
+  });
+
   test("probes once per set and answers from the cache after", async () => {
     let calls = 0;
-    const reader = new AudioTrackReader("http://127.0.0.1:8770", async () => {
+    const reader = new AudioTrackReader({ baseUrl: "http://127.0.0.1:8770" }, async () => {
       calls += 1;
       return probeJson([stream()]);
     });
@@ -92,7 +118,7 @@ describe("the reader", () => {
 
   test("asks for the set's own stream route", async () => {
     let asked = "";
-    const reader = new AudioTrackReader("http://127.0.0.1:8770", async (url) => {
+    const reader = new AudioTrackReader({ baseUrl: "http://127.0.0.1:8770" }, async (url) => {
       asked = url;
       return probeJson([]);
     });
@@ -102,7 +128,7 @@ describe("the reader", () => {
   });
 
   test("a probe that throws leaves a title with no chooser, not an error", async () => {
-    const reader = new AudioTrackReader("http://127.0.0.1:8770", async () => {
+    const reader = new AudioTrackReader({ baseUrl: "http://127.0.0.1:8770" }, async () => {
       throw new Error("ffprobe is not installed");
     });
 
@@ -111,7 +137,7 @@ describe("the reader", () => {
 
   test("a failure is cached too, so a slow open happens once", async () => {
     let calls = 0;
-    const reader = new AudioTrackReader("http://127.0.0.1:8770", async () => {
+    const reader = new AudioTrackReader({ baseUrl: "http://127.0.0.1:8770" }, async () => {
       calls += 1;
       return null;
     });

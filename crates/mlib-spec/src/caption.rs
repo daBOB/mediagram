@@ -38,11 +38,13 @@ pub enum Episode {
 }
 
 impl Episode {
+    #[must_use]
     pub fn first(self) -> u32 {
         match self {
             Episode::Single(e) | Episode::Range([e, _]) => e,
         }
     }
+    #[must_use]
     pub fn last(self) -> u32 {
         match self {
             Episode::Single(e) | Episode::Range([_, e]) => e,
@@ -119,6 +121,7 @@ pub struct Caption {
 
 impl Caption {
     /// Same record with a different part block.
+    #[must_use]
     pub fn with_part(&self, part: Part) -> Caption {
         Caption {
             part,
@@ -127,6 +130,7 @@ impl Caption {
     }
 
     /// Human-readable label, e.g. `Dune: Part Two (2024)` or `Severance S02E01`.
+    #[must_use]
     pub fn display_name(&self) -> String {
         match self.t {
             Kind::Movie => match (self.title.as_deref(), self.year) {
@@ -162,6 +166,7 @@ impl Caption {
 
 /// `C02L02`. Chapter and lesson rather than season and episode, so a course
 /// never reads as a television series.
+#[must_use]
 pub fn lesson_code(chapter: u32, lesson: Episode) -> String {
     format!("C{chapter:02}L{:02}", lesson.first())
 }
@@ -169,11 +174,13 @@ pub fn lesson_code(chapter: u32, lesson: Episode) -> String {
 /// `C02D03`. A document is numbered inside its chapter the way a lesson is,
 /// so `D` rather than `L` is the only thing that says which of the two a row
 /// is before anything reads the container.
+#[must_use]
 pub fn document_code(chapter: u32, document: Episode) -> String {
     format!("C{chapter:02}D{:02}", document.first())
 }
 
 /// `S02E01` or `S02E01-E02`.
+#[must_use]
 pub fn episode_code(season: u32, e: Episode) -> String {
     match e {
         Episode::Single(n) => format!("S{season:02}E{n:02}"),

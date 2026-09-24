@@ -7,14 +7,16 @@
  * letting the server's older copy undo a position this tab just wrote.
  */
 
-import { beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import * as state from "../public/lib/watch-state.js";
 
 const SET = "01SET0000000000000000001";
 let served: unknown;
+let priorFetch: typeof globalThis.fetch;
 
 beforeEach(async () => {
+  priorFetch = globalThis.fetch;
   const store = new Map<string, string>();
   (globalThis as any).window = {
     localStorage: {
@@ -31,6 +33,8 @@ beforeEach(async () => {
   served = { progress: [{ setId: SET, at: 600, duration: 3000, updatedAt: 1_000 }] };
   await state.useProfile("p1");
 });
+
+afterEach(() => { globalThis.fetch = priorFetch; });
 
 describe("refreshState", () => {
   test("takes a newer position the server learned from another device", async () => {

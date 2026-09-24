@@ -9,6 +9,7 @@ impl Kind {
 
     /// The spelling used on the wire and in the index's `kind` column — the
     /// same one serde writes, so a caption and a row can never disagree.
+    #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
             Kind::Movie => "movie",

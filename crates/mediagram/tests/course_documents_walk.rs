@@ -128,7 +128,9 @@ fn a_folder_holding_only_documents_is_still_a_chapter() {
         .collect();
     assert_eq!(resources.len(), 2);
     assert!(
-        resources.iter().all(|d| d.chapter > course.lessons[0].chapter),
+        resources
+            .iter()
+            .all(|d| d.chapter > course.lessons[0].chapter),
         "a document-only folder is numbered after the video chapters"
     );
     assert_eq!(
@@ -149,7 +151,10 @@ fn document_numbers_are_unique_within_a_chapter() {
         "Kapitel/2. Varianten.pdf",
     ]);
 
-    let numbers: Vec<u32> = documents_of(dir.path()).iter().map(|(_, n, _)| *n).collect();
+    let numbers: Vec<u32> = documents_of(dir.path())
+        .iter()
+        .map(|(_, n, _)| *n)
+        .collect();
     let unique: std::collections::BTreeSet<u32> = numbers.iter().copied().collect();
     assert_eq!(numbers.len(), unique.len(), "{numbers:?}");
 }

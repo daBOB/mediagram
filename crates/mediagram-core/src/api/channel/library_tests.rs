@@ -17,10 +17,13 @@ fn a_handle_is_not_derivable_from_the_channel_it_names() {
     let mut one = Handles::new();
     let mut other = Handles::new();
 
-    let first = handle_for(&mut one, entry(-1_001_234_567_890));
-    let second = handle_for(&mut other, entry(-1_001_234_567_890));
+    let first = register_or_refresh_library(&mut one, entry(-1_001_234_567_890));
+    let second = register_or_refresh_library(&mut other, entry(-1_001_234_567_890));
 
-    assert_ne!(first, second, "a handle computed from a chat_id is a chat_id");
+    assert_ne!(
+        first, second,
+        "a handle computed from a chat_id is a chat_id"
+    );
 }
 
 /// The weaker half of the same rule, checked separately because it is the
@@ -31,7 +34,7 @@ fn a_handle_carries_no_rendering_of_the_channel_id() {
     let chat: i64 = -1_001_234_567_890;
     let mut handles = Handles::new();
 
-    let handle = handle_for(&mut handles, entry(chat));
+    let handle = register_or_refresh_library(&mut handles, entry(chat));
 
     for rendering in [
         chat.to_string(),
@@ -49,9 +52,9 @@ fn a_handle_carries_no_rendering_of_the_channel_id() {
 #[test]
 fn listing_a_channel_again_keeps_the_handle_already_given_out() {
     let mut handles = Handles::new();
-    let first = handle_for(&mut handles, entry(-1_001_234_567_890));
+    let first = register_or_refresh_library(&mut handles, entry(-1_001_234_567_890));
 
-    let again = handle_for(&mut handles, entry(-1_001_234_567_890));
+    let again = register_or_refresh_library(&mut handles, entry(-1_001_234_567_890));
 
     assert_eq!(first, again);
     assert_eq!(handles.len(), 1);
@@ -60,21 +63,21 @@ fn listing_a_channel_again_keeps_the_handle_already_given_out() {
 #[test]
 fn a_renamed_channel_keeps_its_handle_and_gains_the_new_title() {
     let mut handles = Handles::new();
-    let handle = handle_for(&mut handles, entry(-1_001_234_567_890));
+    let handle = register_or_refresh_library(&mut handles, entry(-1_001_234_567_890));
 
     let renamed = LibraryEntry {
         title: "Family films".into(),
         ..entry(-1_001_234_567_890)
     };
-    assert_eq!(handle, handle_for(&mut handles, renamed));
+    assert_eq!(handle, register_or_refresh_library(&mut handles, renamed));
     assert_eq!(handles[&handle].title, "Family films");
 }
 
 #[test]
 fn two_channels_get_two_handles() {
     let mut handles = Handles::new();
-    let first = handle_for(&mut handles, entry(-1_001_234_567_890));
-    let second = handle_for(&mut handles, entry(-1_001_999_999_999));
+    let first = register_or_refresh_library(&mut handles, entry(-1_001_234_567_890));
+    let second = register_or_refresh_library(&mut handles, entry(-1_001_999_999_999));
     assert_ne!(first, second);
     assert_eq!(handles.len(), 2);
 }
@@ -84,7 +87,7 @@ fn a_written_map_reads_back_equal() {
     let dir = tempfile::tempdir().unwrap();
     let file = dir.path().join(LIBRARIES_FILE);
     let mut handles = Handles::new();
-    handle_for(&mut handles, entry(-1_001_234_567_890));
+    register_or_refresh_library(&mut handles, entry(-1_001_234_567_890));
 
     write(&file, &handles).unwrap();
 
@@ -131,7 +134,7 @@ fn the_stored_map_is_never_group_or_world_readable() {
 #[test]
 fn a_recorded_channel_is_addressable_with_the_hash_it_was_recorded_with() {
     let mut handles = Handles::new();
-    handle_for(&mut handles, entry(-1_001_234_567_890));
+    register_or_refresh_library(&mut handles, entry(-1_001_234_567_890));
 
     let peer = peer_for_chat(&handles, -1_001_234_567_890).expect("a recorded channel");
 
@@ -147,7 +150,7 @@ fn a_recorded_channel_is_addressable_with_the_hash_it_was_recorded_with() {
 #[test]
 fn a_channel_this_device_never_listed_cannot_be_addressed_from_here() {
     let mut handles = Handles::new();
-    handle_for(&mut handles, entry(-1_001_234_567_890));
+    register_or_refresh_library(&mut handles, entry(-1_001_234_567_890));
 
     assert!(peer_for_chat(&handles, -1_001_999_999_999).is_none());
 }

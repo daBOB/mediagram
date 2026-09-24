@@ -8,6 +8,7 @@
 /// dash, trimmed. Non-ASCII characters are dropped rather than transliterated,
 /// so a title of only non-ASCII yields an empty slug and the caller must ask
 /// for an explicit id instead of inventing one.
+#[must_use]
 pub fn slug(title: &str) -> String {
     let mut out = String::with_capacity(title.len());
     let mut pending_dash = false;

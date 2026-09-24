@@ -9,7 +9,6 @@ import kotlin.test.assertEquals
  * turns an ordered curriculum into a shuffled one.
  */
 class NaturalOrderTest {
-
     @Test
     fun numberedFoldersRunInNumberOrder() {
         val folders = listOf("10. Anhang", "2. Grundlagen", "1. Start")
@@ -29,6 +28,9 @@ class NaturalOrderTest {
 
     @Test
     fun aNumberInsideAWordIsStillANumber() {
-        assertEquals(listOf("Tag1 Teil2", "Tag1 Teil10", "Tag2 Teil1"), listOf("Tag2 Teil1", "Tag1 Teil10", "Tag1 Teil2").sortedWith(NATURAL))
+        assertEquals(
+            listOf("Tag1 Teil2", "Tag1 Teil10", "Tag2 Teil1"),
+            listOf("Tag2 Teil1", "Tag1 Teil10", "Tag1 Teil2").sortedWith(NATURAL),
+        )
     }
 }

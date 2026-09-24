@@ -14,7 +14,6 @@ import kotlin.test.assertNull
  * the same poster, which is what a flat list of sets gives.
  */
 class ShelvesTest {
-
     @Test
     fun aFilmIsItsOwnCard() {
         val shelves = shelvesOf(listOf(film("Alien")))
@@ -29,13 +28,14 @@ class ShelvesTest {
      */
     @Test
     fun aShowsEpisodesBecomeOneCardForTheShow() {
-        val shelves = shelvesOf(
-            listOf(
-                episode("30 Rock", season = 7, episode = 1, title = "Ein Gouverneur zum Totlachen"),
-                episode("30 Rock", season = 7, episode = 2, title = "Frauen sind witzig!"),
-                episode("Psych", season = 1, episode = 1, title = "Pilot"),
-            ),
-        )
+        val shelves =
+            shelvesOf(
+                listOf(
+                    episode("30 Rock", season = 7, episode = 1, title = "Ein Gouverneur zum Totlachen"),
+                    episode("30 Rock", season = 7, episode = 2, title = "Frauen sind witzig!"),
+                    episode("Psych", season = 1, episode = 1, title = "Pilot"),
+                ),
+            )
 
         val series = shelves.single { it.title == "Series" }.entries
         assertEquals(listOf("30 Rock", "Psych"), series.map { (it as Entry.Collection).name })
@@ -44,12 +44,13 @@ class ShelvesTest {
 
     @Test
     fun aShowsSeasonsAreItsDivisions() {
-        val shelves = shelvesOf(
-            listOf(
-                episode("30 Rock", season = 7, episode = 1, title = "One"),
-                episode("30 Rock", season = 1, episode = 1, title = "Pilot"),
-            ),
-        )
+        val shelves =
+            shelvesOf(
+                listOf(
+                    episode("30 Rock", season = 7, episode = 1, title = "One"),
+                    episode("30 Rock", season = 1, episode = 1, title = "Pilot"),
+                ),
+            )
 
         val show = shelves.single { it.title == "Series" }.entries.single() as Entry.Collection
         assertEquals(listOf("Season 1", "Season 7"), show.divisions.map { it.title })
@@ -70,15 +71,22 @@ class ShelvesTest {
 
     @Test
     fun episodesRunInTheOrderTheyWereMeantToBeWatched() {
-        val shelves = shelvesOf(
-            listOf(
-                episode("Show", season = 1, episode = 10, title = "Ten"),
-                episode("Show", season = 1, episode = 2, title = "Two"),
-            ),
-        )
+        val shelves =
+            shelvesOf(
+                listOf(
+                    episode("Show", season = 1, episode = 10, title = "Ten"),
+                    episode("Show", season = 1, episode = 2, title = "Two"),
+                ),
+            )
 
         val show = shelves.single { it.title == "Series" }.entries.single() as Entry.Collection
-        assertEquals(listOf("Two", "Ten"), show.divisions.single().items.map { it.title })
+        assertEquals(
+            listOf("Two", "Ten"),
+            show.divisions
+                .single()
+                .items
+                .map { it.title },
+        )
     }
 
     /**
@@ -88,19 +96,29 @@ class ShelvesTest {
      */
     @Test
     fun aCoursesFoldersAreKeptAsTheyWereOnDisk() {
-        val shelves = shelvesOf(
-            listOf(
-                lesson("DEI", path = "Ausbildung Trading/1. Grundlagen/1. Trading", title = "Einführung"),
-                lesson("DEI", path = "Ausbildung Trading/1. Grundlagen/1. Trading", title = "Definition"),
-                lesson("DEI", path = "Basislektionen/1. Start", title = "Begrüßung"),
-            ),
-        )
+        val shelves =
+            shelvesOf(
+                listOf(
+                    lesson("DEI", path = "Ausbildung Trading/1. Grundlagen/1. Trading", title = "Einführung"),
+                    lesson("DEI", path = "Ausbildung Trading/1. Grundlagen/1. Trading", title = "Definition"),
+                    lesson("DEI", path = "Basislektionen/1. Start", title = "Begrüßung"),
+                ),
+            )
 
         val course = shelves.single { it.title == "Tutorials" }.entries.single() as Entry.Collection
         assertEquals(listOf("Ausbildung Trading", "Basislektionen"), course.divisions.map { it.title })
-        val trading = course.divisions.first().children.single()
+        val trading =
+            course.divisions
+                .first()
+                .children
+                .single()
         assertEquals("1. Grundlagen", trading.title)
-        assertEquals(2, trading.children.single().items.size)
+        assertEquals(
+            2,
+            trading.children
+                .single()
+                .items.size,
+        )
     }
 
     /**
@@ -109,9 +127,10 @@ class ShelvesTest {
      */
     @Test
     fun onlyFoldersThatHoldLessonsCountAsChapters() {
-        val shelves = shelvesOf(
-            listOf(lesson("DEI", path = "Ausbildung/Grundlagen/Trading", title = "Einführung")),
-        )
+        val shelves =
+            shelvesOf(
+                listOf(lesson("DEI", path = "Ausbildung/Grundlagen/Trading", title = "Einführung")),
+            )
 
         val course = shelves.single { it.title == "Tutorials" }.entries.single() as Entry.Collection
         assertEquals(1, course.chapters, "three folders deep, one of them holds the lesson")
@@ -121,9 +140,10 @@ class ShelvesTest {
     /** Every episode of a show carries the same artwork; the card needs one. */
     @Test
     fun aCollectionTakesThePosterOfWhatIsInside() {
-        val shelves = shelvesOf(
-            listOf(episode("30 Rock", season = 1, episode = 1, title = "Pilot", poster = "/art/30rock.jpg")),
-        )
+        val shelves =
+            shelvesOf(
+                listOf(episode("30 Rock", season = 1, episode = 1, title = "Pilot", poster = "/art/30rock.jpg")),
+            )
 
         val show = shelves.single { it.title == "Series" }.entries.single() as Entry.Collection
         assertEquals("/art/30rock.jpg", show.posterPath)
@@ -160,12 +180,13 @@ class ShelvesTest {
      */
     @Test
     fun aDocumentSitsInTheCourseThatHoldsIt() {
-        val shelves = shelvesOf(
-            listOf(
-                lesson("Steuerkurs", path = "Grundlagen", title = "Lektion 1"),
-                document("Steuerkurs", path = "Grundlagen", title = "Arbeitsbuch"),
-            ),
-        )
+        val shelves =
+            shelvesOf(
+                listOf(
+                    lesson("Steuerkurs", path = "Grundlagen", title = "Lektion 1"),
+                    document("Steuerkurs", path = "Grundlagen", title = "Arbeitsbuch"),
+                ),
+            )
 
         assertNull(shelves.find { it.title == "Movies" }, "a handout is not a film")
         val course = assertIs<Entry.Collection>(shelves.single { it.title == "Tutorials" }.entries.single())
@@ -178,12 +199,13 @@ class ShelvesTest {
      */
     @Test
     fun aFolderOfDocumentsAloneSurvives() {
-        val shelves = shelvesOf(
-            listOf(
-                lesson("Steuerkurs", path = "Grundlagen", title = "Lektion 1"),
-                document("Steuerkurs", path = "Anhang", title = "Formulare"),
-            ),
-        )
+        val shelves =
+            shelvesOf(
+                listOf(
+                    lesson("Steuerkurs", path = "Grundlagen", title = "Lektion 1"),
+                    document("Steuerkurs", path = "Anhang", title = "Formulare"),
+                ),
+            )
 
         val course = assertIs<Entry.Collection>(shelves.single { it.title == "Tutorials" }.entries.single())
         assertEquals(
@@ -192,7 +214,6 @@ class ShelvesTest {
             "the folder that holds only a document is still a folder",
         )
     }
-
 }
 
 private fun film(title: String) = set(Kind.MOVIE, title)
@@ -205,11 +226,17 @@ private fun episode(
     poster: String? = null,
 ) = set(Kind.EPISODE, title, show = show, season = season, episodeFirst = episode, poster = poster)
 
-private fun lesson(course: String, path: String, title: String) =
-    set(Kind.TUTORIAL, title, show = course, path = path)
+private fun lesson(
+    course: String,
+    path: String,
+    title: String,
+) = set(Kind.TUTORIAL, title, show = course, path = path)
 
-private fun document(course: String, path: String, title: String) =
-    set(Kind.DOCUMENT, title, show = course, path = path)
+private fun document(
+    course: String,
+    path: String,
+    title: String,
+) = set(Kind.DOCUMENT, title, show = course, path = path)
 
 private fun set(
     kind: Kind,

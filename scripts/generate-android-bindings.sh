@@ -15,4 +15,11 @@ cargo run -p mediagram-core --features cli --bin uniffi-bindgen -- \
   generate \
   --library "$JNI_LIBS_DIR/arm64-v8a/libmediagram_core.so" \
   --language kotlin \
+  --no-format \
   --out-dir "$BINDINGS_OUT_DIR"
+
+# Keep generated output deterministic regardless of whether ktlint is installed.
+# UniFFI emits whitespace-only lines that otherwise fail `git diff --check`.
+bindings_file="$BINDINGS_OUT_DIR/uniffi/mediagram_core/mediagram_core.kt"
+sed 's/[[:blank:]]*$//' "$bindings_file" > "$bindings_file.tmp"
+mv "$bindings_file.tmp" "$bindings_file"

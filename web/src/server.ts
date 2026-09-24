@@ -13,27 +13,16 @@
  * trade costs nothing that matters.
  */
 
-import type { CatalogEvents } from "./catalog-events";
 import type { Database } from "bun:sqlite";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { clientAddress } from "./client-reach";
-import type { PosterStore } from "./package/posters";
-import {
-  createRouter,
-  type ByteSource,
-  type CatalogOrigin,
-  type HlsServer,
-  type PlayerRequest,
-  type PlayerResponse,
-} from "./routes";
-import type { AudioTrackReader } from "./audio-tracks";
-import type { WatchState } from "./state/store";
-import type { HeldSets } from "./cache/held";
-import type { SheetStore } from "./thumbs/sheets";
-import type { SeriesPreload } from "./cache/series-preload";
+import { createRouter, type CatalogOrigin, type RouterOptions } from "./routes";
+import type { PlayerRequest } from "./http/contracts";
 
 export interface RunningServer {
   port: number;
+  /** This listener's reachable local endpoint, including its actual bound port. */
+  baseUrl: string;
   close(): Promise<void>;
   /**
    * Serves another catalog from the next request on.
@@ -137,13 +126,7 @@ export function write(response: ServerResponse, chunk: Uint8Array): Promise<void
   });
 }
 
-export function startServer(options: {
-  db: Database;
-  source: ByteSource;
-  hls?: HlsServer;
-  posters?: PosterStore;
-  audio?: AudioTrackReader;
-  state?: WatchState;
+export function startServer(options: RouterOptions & {
   port?: number;
   hostname?: string;
   /**
@@ -154,41 +137,21 @@ export function startServer(options: {
    * anyone claim to be on the local network.
    */
   trustProxy?: boolean;
-  maxBitrate?: number;
-  /** Where the catalog came from, for the colophon. */
-  catalog?: CatalogOrigin;
-  /** Answers `/api/status`, for a viewer on this network. */
-  status?: (request: PlayerRequest) => Promise<PlayerResponse | null>;
-  /** Which sets are held in full, for the offline badge. */
-  held?: HeldSets;
-  /** Makes and serves scrub-bar preview sheets, where this player makes them. */
-  thumbs?: SheetStore;
-  /** Where open pages hear that the catalog changed. */
-  events?: CatalogEvents;
-  /** Takes the next episodes into the cache while one plays. */
-  preload?: SeriesPreload;
 }): Promise<RunningServer> {
   const routerFor = (db: Database, catalog: CatalogOrigin | undefined) =>
-    createRouter({
-      db,
-      source: options.source,
-      hls: options.hls,
-      posters: options.posters,
-      audio: options.audio,
-      state: options.state,
-      maxBitrate: options.maxBitrate,
-      catalog,
-      status: options.status,
-      held: options.held,
-      thumbs: options.thumbs,
-      events: options.events,
-      preload: options.preload,
-    });
+    createRouter({ ...options, db, catalog });
   let route = routerFor(options.db, options.catalog);
   const trustProxy = options.trustProxy ?? false;
+  const requests = new Map<ServerResponse, Promise<void>>();
+  let stopping: Promise<void> | undefined;
+  let accepting = true;
 
   const server = createServer((request, response) => {
-    void (async () => {
+    if (!accepting) {
+      response.destroy();
+      return;
+    }
+    const running = (async () => {
     const described = describe(request, trustProxy);
     // Read only for the methods that carry one, so a GET is never held up
     // waiting on a stream that will not produce anything.
@@ -207,27 +170,44 @@ export function startServer(options: {
       return;
     }
 
-    void pump(planned.body, response);
+    await pump(planned.body, response);
     })().catch((error) => {
       // Logged, not swallowed: a request that fails silently is a bug that
       // presents as an empty response with no explanation anywhere.
       console.error(`request failed: ${request.method} ${request.url}`, error);
       if (!response.headersSent) response.writeHead(500, { "content-length": "0" });
       response.end();
-    });
+    }).finally(() => { requests.delete(response); });
+    requests.set(response, running);
   });
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    server.once("error", reject);
     server.listen(options.port ?? 0, options.hostname ?? "127.0.0.1", () => {
+      server.off("error", reject);
       const address = server.address();
-      const port = typeof address === "object" && address !== null ? address.port : 0;
+      if (address === null || typeof address === "string") {
+        server.close();
+        reject(new Error("HTTP listener did not bind a TCP address"));
+        return;
+      }
+      const port = address.port;
+      const hostname = address.address === "0.0.0.0" ? "127.0.0.1"
+        : address.address === "::" ? "::1" : address.address;
+      const host = hostname.includes(":") ? `[${hostname}]` : hostname;
       resolve({
         port,
-        close: () =>
-          new Promise<void>((done) => {
-            server.closeAllConnections?.();
-            server.close(() => done());
-          }),
+        baseUrl: `http://${host}:${port}`,
+        close: () => stopping ??= (async () => {
+          accepting = false;
+          // Stop admission before destroying sockets; their pumps still own
+          // upstream cancellation until the tracked request tasks settle.
+          const closed = new Promise<void>((done) => { server.close(() => done()); });
+          for (const response of requests.keys()) response.destroy();
+          server.closeAllConnections?.();
+          await closed;
+          await Promise.all(requests.values());
+        })(),
         replaceCatalog: (next) => {
           route = routerFor(next.db, next.catalog);
         },
@@ -240,13 +220,23 @@ async function pump(body: ReadableStream<Uint8Array>, response: ServerResponse):
   const reader = body.getReader();
   // A viewer who seeks or closes the tab abandons the response. Cancelling
   // the reader stops the download rather than paying for bytes nobody reads.
-  const abandon = () => void reader.cancel().catch(() => {});
+  let cancellation: Promise<void> | undefined;
+  let reportedFailure = false;
+  let failure: unknown;
+  const abandon = () => {
+    cancellation ??= reader.cancel().catch((error) => {
+      if (!reportedFailure || !Object.is(error, failure)) console.error("stream cancellation failed", error);
+    });
+  };
   response.on("close", abandon);
+  // Routing can finish after shutdown already closed this response.
+  if (response.destroyed) abandon();
 
+  let finished = false;
   try {
     for (;;) {
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) { finished = true; break; }
       if (response.writableEnded || response.destroyed) break;
       await write(response, value);
     }
@@ -262,9 +252,14 @@ async function pump(body: ReadableStream<Uint8Array>, response: ServerResponse):
     // found by guessing if nothing says so.
     if (!response.destroyed && !response.writableEnded) {
       console.error("stream aborted mid-body", error);
+      reportedFailure = true;
+      failure = error;
     }
     response.destroy();
   } finally {
     response.off("close", abandon);
+    if (!finished) abandon();
+    await cancellation;
+    reader.releaseLock();
   }
 }

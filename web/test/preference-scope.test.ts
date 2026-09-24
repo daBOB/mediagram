@@ -1,7 +1,7 @@
 /** Covers `preference-scope`: what a remembered choice is filed under. */
 
 import { describe, expect, test } from "bun:test";
-import { scopeOf } from "../public/lib/preference-scope.js";
+import { scopeOf } from "../public/lib/playback/preference-scope.js";
 
 describe("an identified series", () => {
   test("files every episode under the show", () => {

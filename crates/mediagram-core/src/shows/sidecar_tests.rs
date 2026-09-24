@@ -11,8 +11,16 @@ fn row(overview: &str) -> TitleDetailsRow {
         id: 550,
         lang: "en-US".into(),
         overview: Some(overview.into()),
-        tagline: None, genres: None, rating: None, network: None, status: None,
-        first_air: None, last_air: None, total_seasons: None, total_episodes: None, certification: None,
+        tagline: None,
+        genres: None,
+        rating: None,
+        network: None,
+        status: None,
+        first_air: None,
+        last_air: None,
+        total_seasons: None,
+        total_episodes: None,
+        certification: None,
     }
 }
 
@@ -52,7 +60,10 @@ fn the_sidecar_is_built_from_the_shared_migrations() {
     }
 
     let held = schema_of(&sidecar);
-    assert!(held.iter().any(|(name, _)| name == "shows"), "no shows table at all");
+    assert!(
+        held.iter().any(|(name, _)| name == "shows"),
+        "no shows table at all"
+    );
     assert_eq!(held, schema_of(&reference));
 }
 
@@ -103,7 +114,8 @@ fn a_migration_that_fails_partway_leaves_the_file_as_it_was() {
     for statement in schema::migrations_up_to(5) {
         conn.execute(statement, []).unwrap();
     }
-    conn.execute("ALTER TABLE shows ADD COLUMN total_episodes INTEGER", []).unwrap();
+    conn.execute("ALTER TABLE shows ADD COLUMN total_episodes INTEGER", [])
+        .unwrap();
     conn.pragma_update(None, "user_version", 5).unwrap();
     drop(conn);
 
@@ -116,7 +128,9 @@ fn a_migration_that_fails_partway_leaves_the_file_as_it_was() {
         "a failed migration advanced the recorded version",
     );
     assert!(
-        !schema_of(&conn).iter().any(|(_, sql)| sql.contains("total_seasons")),
+        !schema_of(&conn)
+            .iter()
+            .any(|(_, sql)| sql.contains("total_seasons")),
         "a failed migration left one of its columns behind",
     );
 }
@@ -132,9 +146,13 @@ fn an_older_sidecar_moves_its_version_into_meta() {
     for statement in schema::migrations_up_to(schema::SCHEMA_VERSION) {
         conn.execute(statement, []).unwrap();
     }
-    conn.pragma_update(None, "user_version", schema::SCHEMA_VERSION).unwrap();
+    conn.pragma_update(None, "user_version", schema::SCHEMA_VERSION)
+        .unwrap();
     drop(conn);
 
     let conn = open_or_create(&path).unwrap();
-    assert_eq!(recorded_version(&conn).unwrap(), Recorded::Meta(schema::SCHEMA_VERSION));
+    assert_eq!(
+        recorded_version(&conn).unwrap(),
+        Recorded::Meta(schema::SCHEMA_VERSION)
+    );
 }

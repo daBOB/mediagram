@@ -11,9 +11,10 @@ import model.MediaSet
  * rather than of every episode anyone ever uploaded.
  */
 sealed interface Entry {
-
     /** A film. There is nothing inside it, so its card plays. */
-    data class Film(val set: MediaSet) : Entry
+    data class Film(
+        val set: MediaSet,
+    ) : Entry
 
     /**
      * A show or a course: one card for the whole of it.
@@ -66,14 +67,14 @@ data class Division(
 )
 
 /** Every division under these, each before the ones beneath it. */
-fun Division.walk(): Sequence<Division> = sequence {
-    yield(this@walk)
-    for (child in children) yieldAll(child.walk())
-}
+fun Division.walk(): Sequence<Division> =
+    sequence {
+        yield(this@walk)
+        for (child in children) yieldAll(child.walk())
+    }
 
-/** The first set anywhere under [divisions], in the order they display. */
-fun firstItemOf(divisions: List<Division>): MediaSet? =
-    divisions.asSequence().flatMap { it.walk() }.firstNotNullOfOrNull { it.items.firstOrNull() }
+/** The first playable set under [divisions], in display order, skipping documents. */
+fun firstItemOf(divisions: List<Division>): MediaSet? = playableInOrder(divisions).firstOrNull()
 
 /**
  * The division [names] leads to, or `null` when it names a folder that is
@@ -83,7 +84,10 @@ fun firstItemOf(divisions: List<Division>): MediaSet? =
  * to be stood in for, so that every level of a course is one shape the
  * screen can render.
  */
-fun divisionAt(divisions: List<Division>, names: List<String>): Division? {
+fun divisionAt(
+    divisions: List<Division>,
+    names: List<String>,
+): Division? {
     var here = Division(title = "", season = null, items = emptyList(), children = divisions)
     for (name in names) {
         here = here.children.find { it.title == name } ?: return null

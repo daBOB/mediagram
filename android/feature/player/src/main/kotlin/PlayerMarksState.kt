@@ -26,6 +26,8 @@ data class PlayerMarksState(
     val kidsVerdict: KidsVerdict = KidsVerdict.UNRATED,
     /** `"FSK 12"`, or null for an unrated title. */
     val ageLabel: String? = null,
+    /** False on a kids profile: a child does not approve titles for themselves. */
+    val canMarkKids: Boolean = true,
 ) {
     /** Whether a child may watch this: rated for it, or unrated and marked. */
     val forKids: Boolean get() = kidsVerdict == KidsVerdict.SAFE || (kidsVerdict == KidsVerdict.UNRATED && kids)

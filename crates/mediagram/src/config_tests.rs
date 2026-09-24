@@ -61,10 +61,9 @@ fn package_key_is_redacted_and_empty_loads_as_absent() {
 
 #[test]
 fn debug_output_redacts_secrets() {
-    let cfg: Config = toml::from_str(
-        "api_id = 1\napi_hash = \"sekrit\"\nchannel = \"c\"\ntmdb_key = \"k3y\"\n",
-    )
-    .unwrap();
+    let cfg: Config =
+        toml::from_str("api_id = 1\napi_hash = \"sekrit\"\nchannel = \"c\"\ntmdb_key = \"k3y\"\n")
+            .unwrap();
     let dbg = format!("{cfg:?}");
     assert!(!dbg.contains("sekrit") && !dbg.contains("k3y"));
     assert!(dbg.contains("<redacted>"));

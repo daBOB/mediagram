@@ -31,7 +31,12 @@ async fn the_configured_credential_resolves_a_real_show() {
     // asks for the configured language, so building the client bare would
     // test a path nothing runs.
     let cache = tempfile::tempdir().expect("a cache dir");
-    let client = TmdbClient::with_cache(mediagram_core::http::client().unwrap(), &key, cache.path(), &cfg.tmdb_language);
+    let client = TmdbClient::with_cache(
+        mediagram_core::http::client().unwrap(),
+        &key,
+        cache.path(),
+        &cfg.tmdb_language,
+    );
     eprintln!("language: {}", cfg.tmdb_language);
     let found = client
         .get_json(

@@ -196,7 +196,10 @@ fn progress_states_parts_bytes_and_age() {
 
     let line = progress_of(&half, 1000 + 1380);
 
-    assert_eq!(line, "1 of 2 parts sent · 3.50 of 6.28 GB · added 23 min ago");
+    assert_eq!(
+        line,
+        "1 of 2 parts sent · 3.50 of 6.28 GB · added 23 min ago"
+    );
 }
 
 #[test]

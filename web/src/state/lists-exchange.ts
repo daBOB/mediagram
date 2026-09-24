@@ -7,9 +7,9 @@
  * off the wire back into that column — is one job, not a dozen methods on
  * `WatchState` that only ever look at the live half of these tables.
  *
- * Every function here takes the raw `Database | null` `WatchState` holds,
- * the same tolerance the rest of `store.ts` has: a player that cannot write
- * answers "nothing changed" rather than throwing into a request handler.
+ * Every function takes the raw `Database | null` that `WatchState` holds.
+ * A null database yields empty reads or zero changes. SQLite failures
+ * propagate so `importMerged` can roll back its complete transaction.
  */
 
 import type { Database } from "bun:sqlite";
@@ -62,17 +62,19 @@ export function exportCollections(db: Database | null, profileId: string): Colle
 }
 
 /** Takes in the kept titles. Corrective, like everything `importMerged`
- * calls: a row this device already holds newer news about is left alone. */
+ * calls: newer local news is left alone, while equal-time differences apply
+ * the winner already selected by the merge's device-id tie-break. */
 export function importKids(db: Database | null, rows: ListRow[]): number {
   if (!db) return 0;
   let changed = 0;
   for (const row of rows) {
     const standing = db
       .query(
-        "SELECT CASE WHEN removed_at IS NOT NULL THEN removed_at ELSE marked_at END AS updatedAt FROM kids WHERE set_id = ?1",
+        "SELECT removed_at AS removedAt, CASE WHEN removed_at IS NOT NULL THEN removed_at ELSE marked_at END AS updatedAt FROM kids WHERE set_id = ?1",
       )
-      .get(row.setId) as { updatedAt: number } | null;
-    if (standing !== null && standing.updatedAt >= row.updatedAt) continue;
+      .get(row.setId) as { updatedAt: number; removedAt: number | null } | null;
+    if (standing !== null && (standing.updatedAt > row.updatedAt ||
+      (standing.updatedAt === row.updatedAt && (standing.removedAt !== null) === !!row.removed))) continue;
 
     if (row.removed) {
       db.query(
@@ -96,11 +98,12 @@ export function importWatchlist(db: Database | null, profileId: string, rows: Li
   for (const row of rows) {
     const standing = db
       .query(
-        "SELECT CASE WHEN removed_at IS NOT NULL THEN removed_at ELSE added_at END AS updatedAt " +
+        "SELECT removed_at AS removedAt, CASE WHEN removed_at IS NOT NULL THEN removed_at ELSE added_at END AS updatedAt " +
           "FROM watchlist WHERE profile_id = ?1 AND set_id = ?2",
       )
-      .get(profileId, row.setId) as { updatedAt: number } | null;
-    if (standing !== null && standing.updatedAt >= row.updatedAt) continue;
+      .get(profileId, row.setId) as { updatedAt: number; removedAt: number | null } | null;
+    if (standing !== null && (standing.updatedAt > row.updatedAt ||
+      (standing.updatedAt === row.updatedAt && (standing.removedAt !== null) === !!row.removed))) continue;
 
     if (row.removed) {
       db.query(
@@ -129,9 +132,16 @@ export function importCollections(db: Database | null, profileId: string, rows: 
   let changed = 0;
   for (const row of rows) {
     const standing = db
-      .query("SELECT updated_at AS updatedAt FROM collections WHERE id = ?1 AND profile_id = ?2")
-      .get(row.id, profileId) as { updatedAt: number } | null;
-    if (standing !== null && standing.updatedAt >= row.updatedAt) continue;
+      .query("SELECT name, removed_at AS removedAt, updated_at AS updatedAt FROM collections WHERE id = ?1 AND profile_id = ?2")
+      .get(row.id, profileId) as { name: string; updatedAt: number; removedAt: number | null } | null;
+    if (standing !== null && standing.updatedAt > row.updatedAt) continue;
+    const items = [...new Set(row.items)];
+    if (standing !== null && standing.updatedAt === row.updatedAt && standing.name === row.name &&
+      (standing.removedAt !== null) === !!row.removed) {
+      const heldItems = db.query("SELECT set_id AS setId FROM collection_items WHERE collection_id = ?1 ORDER BY position")
+        .all(row.id) as { setId: string }[];
+      if (heldItems.length === items.length && heldItems.every((held, index) => held.setId === items[index])) continue;
+    }
 
     const removedAt = row.removed ? row.updatedAt : null;
     if (standing === null) {
@@ -146,7 +156,7 @@ export function importCollections(db: Database | null, profileId: string, rows: 
     }
 
     db.query("DELETE FROM collection_items WHERE collection_id = ?1").run(row.id);
-    row.items.forEach((setId, index) => {
+    items.forEach((setId, index) => {
       db.query(
         "INSERT INTO collection_items(collection_id, set_id, position) VALUES (?1, ?2, ?3) " +
           "ON CONFLICT(collection_id, set_id) DO NOTHING",

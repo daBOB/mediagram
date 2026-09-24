@@ -141,7 +141,11 @@ fn absolute_numbering_strips_leading_zeros() {
         ("Anime Show - 0100.mkv", 100),
     ] {
         let g = parse_filename(name).unwrap();
-        assert_eq!((g.title.as_str(), g.abs), ("Anime Show", Some(abs)), "{name}");
+        assert_eq!(
+            (g.title.as_str(), g.abs),
+            ("Anime Show", Some(abs)),
+            "{name}"
+        );
     }
 }
 

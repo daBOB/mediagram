@@ -71,7 +71,9 @@ fn an_unparseable_episode_degrades_instead_of_failing() {
 #[test]
 fn a_poster_key_is_derived_from_kind_and_tmdb() {
     assert_eq!(
-        summary_from(&movie_with_tmdb(Some(603))).poster_key.as_deref(),
+        summary_from(&movie_with_tmdb(Some(603)))
+            .poster_key
+            .as_deref(),
         Some("tmdb-movie-603")
     );
     assert_eq!(summary_from(&movie_with_tmdb(None)).poster_key, None);
@@ -83,7 +85,10 @@ fn a_show_s_poster_key_is_filed_under_tv_not_the_episode() {
         tmdb: Some(95396),
         ..playable_with(Some("1"))
     };
-    assert_eq!(summary_from(&s).poster_key.as_deref(), Some("tmdb-tv-95396"));
+    assert_eq!(
+        summary_from(&s).poster_key.as_deref(),
+        Some("tmdb-tv-95396")
+    );
 }
 
 /// A minimal `PlayableSet` with every field at its empty value and
@@ -142,7 +147,10 @@ fn a_summary_carries_what_the_file_is() {
 /// survives the trip — deciding is `hdrLabel`'s job, on the other side.
 #[test]
 fn an_sdr_title_still_reports_its_dynamic_range() {
-    let set = PlayableSet { hdr: Some("SDR".into()), ..playable_set_fixture() };
+    let set = PlayableSet {
+        hdr: Some("SDR".into()),
+        ..playable_set_fixture()
+    };
 
     assert_eq!(summary_from(&set).hdr.as_deref(), Some("SDR"));
 }

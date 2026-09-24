@@ -20,15 +20,25 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
 
             extensions.configure<LibraryExtension> {
                 configureKotlinAndroid(this)
-                
+
                 defaultConfig {
                     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-                    
+
                     // Version catalog entries for targetSdk
-                    testOptions.targetSdk = libs.findVersion("targetSdk").get().toString().toInt()
-                    lint.targetSdk = libs.findVersion("targetSdk").get().toString().toInt()
+                    testOptions.targetSdk =
+                        libs
+                            .findVersion("targetSdk")
+                            .get()
+                            .toString()
+                            .toInt()
+                    lint.targetSdk =
+                        libs
+                            .findVersion("targetSdk")
+                            .get()
+                            .toString()
+                            .toInt()
                 }
-                
+
                 testOptions {
                     animationsDisabled = true
                     // A local unit test runs on the plain JVM, with no real
@@ -41,23 +51,24 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                     // Robolectric just to survive that one call.
                     unitTests.isReturnDefaultValues = true
                 }
-                
+
                 configureGradleManagedDevices(this)
-                
+
                 // Resource prefix based on module path
                 // :core:data → core_data_
-                resourcePrefix = path.split("""\W""".toRegex())
+                resourcePrefix = path
+                    .split("""\W""".toRegex())
                     .drop(1)
                     .distinct()
                     .joinToString(separator = "_")
                     .lowercase() + "_"
             }
-            
+
             extensions.configure<LibraryAndroidComponentsExtension> {
                 configurePrintApksTask(this)
                 disableUnnecessaryAndroidTests(target)
             }
-            
+
             dependencies {
                 // Flows, dispatchers and Mutex are load-bearing in every library
                 // module here — the settings stores, the core holder, the disk

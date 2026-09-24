@@ -39,7 +39,12 @@ impl PartDocuments {
     }
 
     /// The part's document, from memory when it has been resolved before.
-    pub async fn resolve(&self, client: &Client, channel: PeerRef, location: &PartLocation) -> Result<Document> {
+    pub async fn resolve(
+        &self,
+        client: &Client,
+        channel: PeerRef,
+        location: &PartLocation,
+    ) -> Result<Document> {
         if let Some(held) = self.get(location) {
             return Ok(held);
         }
@@ -93,7 +98,11 @@ mod tests {
 
     fn at(chat_id: i64, message_id: i64) -> PartLocation {
         PartLocation {
-            span: crate::range::PartSpan { idx: 0, off: 0, len: 1 },
+            span: crate::range::PartSpan {
+                idx: 0,
+                off: 0,
+                len: 1,
+            },
             chat_id,
             message_id,
         }
@@ -107,7 +116,10 @@ mod tests {
         cache.put(&at(-1, 100), document());
 
         assert!(cache.get(&at(-1, 100)).is_some());
-        assert!(cache.get(&at(-1, 999)).is_none(), "a part never resolved is not guessed at");
+        assert!(
+            cache.get(&at(-1, 999)).is_none(),
+            "a part never resolved is not guessed at"
+        );
     }
 
     /// The same message id in another channel is another message, and

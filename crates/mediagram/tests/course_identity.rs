@@ -43,12 +43,13 @@ fn lesson_caption(set: &str, cid: &str, chapter: u32, lesson: u32) -> Caption {
     }
 }
 
-fn index_with(rows: &[(&str, &str, u32, u32, SetStatus)]) -> (tempfile::TempDir, rusqlite::Connection) {
+fn index_with(
+    rows: &[(&str, &str, u32, u32, SetStatus)],
+) -> (tempfile::TempDir, rusqlite::Connection) {
     let dir = tempfile::tempdir().unwrap();
     let conn = db::open(dir.path()).unwrap();
     for (set, cid, chapter, lesson, status) in rows {
-        let row = SetRow::from_caption(&lesson_caption(set, cid, *chapter, *lesson), 1_700_000_000)
-            .unwrap();
+        let row = SetRow::from_caption(&lesson_caption(set, cid, *chapter, *lesson), 1_700_000_000);
         sets::insert_set(&conn, &row).unwrap();
         sets::set_status(&conn, set, *status).unwrap();
     }
@@ -57,13 +58,25 @@ fn index_with(rows: &[(&str, &str, u32, u32, SetStatus)]) -> (tempfile::TempDir,
 
 #[test]
 fn a_finished_lesson_is_recognised_by_its_identity() {
-    let (_d, conn) = index_with(&[("01SET0000000000000000001", "rust-course", 2, 2, SetStatus::Complete)]);
+    let (_d, conn) = index_with(&[(
+        "01SET0000000000000000001",
+        "rust-course",
+        2,
+        2,
+        SetStatus::Complete,
+    )]);
     assert!(set_lookup::complete_lesson_exists(&conn, "rust-course", 2, 2).unwrap());
 }
 
 #[test]
 fn a_different_chapter_or_lesson_is_a_different_thing() {
-    let (_d, conn) = index_with(&[("01SET0000000000000000001", "rust-course", 2, 2, SetStatus::Complete)]);
+    let (_d, conn) = index_with(&[(
+        "01SET0000000000000000001",
+        "rust-course",
+        2,
+        2,
+        SetStatus::Complete,
+    )]);
     assert!(!set_lookup::complete_lesson_exists(&conn, "rust-course", 2, 3).unwrap());
     assert!(!set_lookup::complete_lesson_exists(&conn, "rust-course", 1, 2).unwrap());
 }
@@ -73,8 +86,20 @@ fn a_different_chapter_or_lesson_is_a_different_thing() {
 #[test]
 fn two_courses_do_not_collide() {
     let (_d, conn) = index_with(&[
-        ("01SET0000000000000000001", "rust-course", 1, 1, SetStatus::Complete),
-        ("01SET0000000000000000002", "go-course", 1, 1, SetStatus::Complete),
+        (
+            "01SET0000000000000000001",
+            "rust-course",
+            1,
+            1,
+            SetStatus::Complete,
+        ),
+        (
+            "01SET0000000000000000002",
+            "go-course",
+            1,
+            1,
+            SetStatus::Complete,
+        ),
     ]);
     assert!(set_lookup::complete_lesson_exists(&conn, "rust-course", 1, 1).unwrap());
     assert!(set_lookup::complete_lesson_exists(&conn, "go-course", 1, 1).unwrap());
@@ -85,7 +110,13 @@ fn two_courses_do_not_collide() {
 /// neither upload it again nor silently ignore it.
 #[test]
 fn an_unfinished_lesson_is_reported_rather_than_re_uploaded() {
-    let (_d, conn) = index_with(&[("01SET0000000000000000001", "rust-course", 1, 1, SetStatus::Pending)]);
+    let (_d, conn) = index_with(&[(
+        "01SET0000000000000000001",
+        "rust-course",
+        1,
+        1,
+        SetStatus::Pending,
+    )]);
 
     assert!(!set_lookup::complete_lesson_exists(&conn, "rust-course", 1, 1).unwrap());
     assert_eq!(
@@ -140,7 +171,10 @@ fn the_summary_counts_documents_separately() {
 
     let lines = summary.lines().join("\n");
     assert!(lines.contains("1 lesson(s) uploaded"), "{lines}");
-    assert!(lines.contains("1 document(s) uploaded, 0 already done, 1 failed"), "{lines}");
+    assert!(
+        lines.contains("1 document(s) uploaded, 0 already done, 1 failed"),
+        "{lines}"
+    );
     assert_eq!(summary.failed_count(), 1);
     assert!(summary.uploaded_anything());
 }
@@ -173,9 +207,9 @@ fn the_dry_run_table_shows_the_id_that_identity_is_built_from() {
 #[test]
 fn a_lesson_row_rebuilds_the_caption_it_came_from() {
     let original = lesson_caption("01SET0000000000000000001", "rust-course", 2, 2);
-    let row = SetRow::from_caption(&original, 1_700_000_000).unwrap();
+    let row = SetRow::from_caption(&original, 1_700_000_000);
 
-    let rebuilt = row.caption_template().unwrap();
+    let rebuilt = row.caption_template();
 
     assert_eq!(rebuilt.t, Kind::Tut, "the kind must round-trip");
     assert_eq!(
@@ -199,9 +233,9 @@ fn a_movie_row_still_rebuilds_without_course_fields() {
     movie.t = Kind::Movie;
     movie.cid = None;
     movie.chap = None;
-    let row = SetRow::from_caption(&movie, 1_700_000_000).unwrap();
+    let row = SetRow::from_caption(&movie, 1_700_000_000);
 
-    let rebuilt = row.caption_template().unwrap();
+    let rebuilt = row.caption_template();
 
     assert_eq!(rebuilt.t, Kind::Movie);
     assert_eq!(rebuilt.cid, None);

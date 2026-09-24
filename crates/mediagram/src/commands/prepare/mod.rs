@@ -16,6 +16,9 @@
 mod report;
 mod rewrite;
 
+#[cfg(test)]
+mod rewrite_tests;
+
 use std::path::PathBuf;
 
 use anyhow::{Result, bail};
@@ -26,8 +29,8 @@ use crate::media::direct_play;
 use crate::media::prepare::plan::{PreparePlan, Verdict, plan_prepare};
 use crate::media::streams;
 use crate::media::video_files::collect_videos;
-use crate::term;
 use crate::paths::file_name;
+use crate::term;
 use report::{print_table, truncate, warn_about_video_codecs};
 use rewrite::rewrite_all;
 

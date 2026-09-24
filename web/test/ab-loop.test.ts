@@ -1,7 +1,7 @@
 /** Covers `ab-loop`: marking out a stretch, and staying inside it. */
 
 import { describe, expect, test } from "bun:test";
-import { isLooping, loopBack, loopLabel, markLoop, NO_LOOP } from "../public/lib/ab-loop.js";
+import { isLooping, loopBack, loopLabel, markLoop, NO_LOOP } from "../public/lib/playback/ab-loop.js";
 
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 

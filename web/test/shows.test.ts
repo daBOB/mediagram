@@ -10,8 +10,10 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 
-import { createRouter, type ByteSource, type PlayerRequest } from "../src/routes";
-import { showMeta } from "../src/shows";
+import { createRouter } from "../src/routes";
+import type { ByteSource } from "../src/http/stream";
+import type { PlayerRequest } from "../src/http/contracts";
+import { showMeta } from "../src/catalog/shows";
 import { emptyIndex } from "./index-fixture";
 
 const SHOWS = `CREATE TABLE shows(
@@ -102,7 +104,7 @@ describe("the endpoint", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toBe("application/json");
-    expect(JSON.parse(new TextDecoder().decode(res.body!)).network).toBe("Apple TV");
+    expect(JSON.parse(await new Response(res.body).text()).network).toBe("Apple TV");
   });
 
   test("a show with no description is a 404, which the page treats as none", async () => {

@@ -29,10 +29,11 @@ pub const GROUPS: &[&[&str]] = &[V1, V2, V3, V4, V5, V6, V7];
 
 /// Every statement needed to reach `version` from an empty database. Used by
 /// tests and by anyone reconstructing an older layout.
+#[must_use]
 pub fn migrations_up_to(version: i64) -> Vec<&'static str> {
     GROUPS
         .iter()
-        .take(version.max(0) as usize)
+        .take(usize::try_from(version.max(0)).unwrap_or(usize::MAX))
         .flat_map(|group| group.iter().copied())
         .collect()
 }

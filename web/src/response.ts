@@ -8,7 +8,7 @@
  */
 
 import { parseRange, rangeLength, type ByteRange } from "./range";
-import type { PlayerResponse } from "./routes";
+import type { PlayerResponse } from "./http/contracts";
 
 /** The answer to a stream request, decided before a single byte is fetched. */
 export interface ResponsePlan {
@@ -100,11 +100,11 @@ export function contentType(container: string): string {
  * answer is: the same framing, none of the bytes.
  */
 export function withBody(
-  body: string,
+  body: string | Uint8Array,
   contentType: string,
   options: { status?: number; headOnly?: boolean; headers?: Record<string, string> } = {},
 ): PlayerResponse {
-  const bytes = new TextEncoder().encode(body);
+  const bytes = typeof body === "string" ? new TextEncoder().encode(body) : body;
   return {
     status: options.status ?? 200,
     headers: {

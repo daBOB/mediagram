@@ -6,6 +6,7 @@
  * scrub bar that is free and one that is billed to your uplink.
  */
 
+import { collectRead } from "./support/cache-reader";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -46,9 +47,9 @@ describe("reading through the cache", () => {
     const part = upstream(CACHE_CHUNK * 2);
     const reader = new CachedReader(new ChunkCache(root, 10_000_000));
 
-    const first = await reader.read(SET, 0, 1000, 500, part.bytes.length, part.fetch);
+    const first = await collectRead(reader, { setId: SET, partIdx: 0, start: 1000, length: 500, partLength: part.bytes.length, fetch: part.fetch });
     const before = part.asked.length;
-    const second = await reader.read(SET, 0, 1000, 500, part.bytes.length, part.fetch);
+    const second = await collectRead(reader, { setId: SET, partIdx: 0, start: 1000, length: 500, partLength: part.bytes.length, fetch: part.fetch });
 
     expect(first).toEqual(part.bytes.subarray(1000, 1500));
     expect(second).toEqual(first);
@@ -61,7 +62,7 @@ describe("reading through the cache", () => {
     const reader = new CachedReader(new ChunkCache(root, 10_000_000));
 
     const start = CACHE_CHUNK - 50;
-    const got = await reader.read(SET, 0, start, 100, part.bytes.length, part.fetch);
+    const got = await collectRead(reader, { setId: SET, partIdx: 0, start, length: 100, partLength: part.bytes.length, fetch: part.fetch });
 
     expect(got).toEqual(part.bytes.subarray(start, start + 100));
   });
@@ -70,10 +71,10 @@ describe("reading through the cache", () => {
     const part = upstream(CACHE_CHUNK * 3);
     const reader = new CachedReader(new ChunkCache(root, 10_000_000));
 
-    await reader.read(SET, 0, 0, 10, part.bytes.length, part.fetch);
+    await collectRead(reader, { setId: SET, partIdx: 0, start: 0, length: 10, partLength: part.bytes.length, fetch: part.fetch });
     const afterFirst = part.asked.length;
     // Spans chunk 0 (cached) and chunk 1 (not).
-    await reader.read(SET, 0, 0, CACHE_CHUNK + 10, part.bytes.length, part.fetch);
+    await collectRead(reader, { setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK + 10, partLength: part.bytes.length, fetch: part.fetch });
 
     expect(part.asked.length).toBe(afterFirst + 1);
   });
@@ -83,7 +84,7 @@ describe("reading through the cache", () => {
     const part = upstream(length);
     const reader = new CachedReader(new ChunkCache(root, 10_000_000));
 
-    const got = await reader.read(SET, 0, length - 23, 23, length, part.fetch);
+    const got = await collectRead(reader, { setId: SET, partIdx: 0, start: length - 23, length: 23, partLength: length, fetch: part.fetch });
 
     expect(got).toEqual(part.bytes.subarray(length - 23));
   });
@@ -93,7 +94,7 @@ describe("reading through the cache", () => {
     const part = upstream(CACHE_CHUNK * 2);
     const reader = new CachedReader(new ChunkCache(root, 0));
 
-    const got = await reader.read(SET, 0, 100, 2000, part.bytes.length, part.fetch);
+    const got = await collectRead(reader, { setId: SET, partIdx: 0, start: 100, length: 2000, partLength: part.bytes.length, fetch: part.fetch });
 
     expect(got).toEqual(part.bytes.subarray(100, 2100));
   });
@@ -102,7 +103,7 @@ describe("reading through the cache", () => {
     const part = upstream(CACHE_CHUNK * 3);
     const reader = new CachedReader(new ChunkCache(root, 10_000_000));
 
-    await reader.read(SET, 0, 1234, 5678, part.bytes.length, part.fetch);
+    await collectRead(reader, { setId: SET, partIdx: 0, start: 1234, length: 5678, partLength: part.bytes.length, fetch: part.fetch });
 
     for (const ask of part.asked) {
       expect(ask.offset % CACHE_CHUNK).toBe(0);
@@ -117,13 +118,13 @@ describe("reading ahead", () => {
     const part = upstream(CACHE_CHUNK * 10);
     const reader = new CachedReader(new ChunkCache(root, 10_000_000), 3);
 
-    await reader.read(SET, 0, 0, CACHE_CHUNK, part.bytes.length, part.fetch);
-    await reader.read(SET, 0, CACHE_CHUNK, CACHE_CHUNK, part.bytes.length, part.fetch);
+    await collectRead(reader, { setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK, partLength: part.bytes.length, fetch: part.fetch });
+    await collectRead(reader, { setId: SET, partIdx: 0, start: CACHE_CHUNK, length: CACHE_CHUNK, partLength: part.bytes.length, fetch: part.fetch });
     await reader.settle();
 
     const asked = part.asked.length;
     // Chunk 2 was read ahead, so serving it costs nothing upstream.
-    await reader.read(SET, 0, CACHE_CHUNK * 2, CACHE_CHUNK, part.bytes.length, part.fetch);
+    await collectRead(reader, { setId: SET, partIdx: 0, start: CACHE_CHUNK * 2, length: CACHE_CHUNK, partLength: part.bytes.length, fetch: part.fetch });
 
     expect(part.asked.length).toBe(asked);
   });
@@ -132,8 +133,8 @@ describe("reading ahead", () => {
     const part = upstream(CACHE_CHUNK * 100);
     const reader = new CachedReader(new ChunkCache(root, 10_000_000), 3);
 
-    await reader.read(SET, 0, 0, 1000, part.bytes.length, part.fetch);
-    await reader.read(SET, 0, CACHE_CHUNK * 50, 1000, part.bytes.length, part.fetch);
+    await collectRead(reader, { setId: SET, partIdx: 0, start: 0, length: 1000, partLength: part.bytes.length, fetch: part.fetch });
+    await collectRead(reader, { setId: SET, partIdx: 0, start: CACHE_CHUNK * 50, length: 1000, partLength: part.bytes.length, fetch: part.fetch });
     await reader.settle();
 
     // Exactly the two chunks asked for, nothing speculative.
@@ -144,8 +145,8 @@ describe("reading ahead", () => {
     const part = upstream(CACHE_CHUNK * 6);
     const reader = new CachedReader(new ChunkCache(root, 10_000_000), 3);
 
-    const a = await reader.read(SET, 0, 0, CACHE_CHUNK, part.bytes.length, part.fetch);
-    const b = await reader.read(SET, 0, CACHE_CHUNK, 777, part.bytes.length, part.fetch);
+    const a = await collectRead(reader, { setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK, partLength: part.bytes.length, fetch: part.fetch });
+    const b = await collectRead(reader, { setId: SET, partIdx: 0, start: CACHE_CHUNK, length: 777, partLength: part.bytes.length, fetch: part.fetch });
     await reader.settle();
 
     expect(a).toEqual(part.bytes.subarray(0, CACHE_CHUNK));
@@ -157,8 +158,8 @@ describe("reading ahead", () => {
     const part = upstream(length);
     const reader = new CachedReader(new ChunkCache(root, 10_000_000), 5);
 
-    await reader.read(SET, 0, 0, CACHE_CHUNK, length, part.fetch);
-    await reader.read(SET, 0, CACHE_CHUNK, CACHE_CHUNK, length, part.fetch);
+    await collectRead(reader, { setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK, partLength: length, fetch: part.fetch });
+    await collectRead(reader, { setId: SET, partIdx: 0, start: CACHE_CHUNK, length: CACHE_CHUNK, partLength: length, fetch: part.fetch });
     await reader.settle();
 
     for (const ask of part.asked) {
@@ -178,7 +179,7 @@ describe("filling misses efficiently", () => {
     const part = upstream(CACHE_CHUNK * 20);
     const reader = new CachedReader(new ChunkCache(root, 10_000_000));
 
-    await reader.read(SET, 0, 0, CACHE_CHUNK * 8, part.bytes.length, part.fetch);
+    await collectRead(reader, { setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK * 8, partLength: part.bytes.length, fetch: part.fetch });
 
     expect(part.asked).toHaveLength(1);
     expect(part.asked[0]!.length).toBe(CACHE_CHUNK * 8);
@@ -188,7 +189,7 @@ describe("filling misses efficiently", () => {
     const part = upstream(CACHE_CHUNK * 6);
     const reader = new CachedReader(new ChunkCache(root, 10_000_000));
 
-    const got = await reader.read(SET, 0, 1234, CACHE_CHUNK * 4, part.bytes.length, part.fetch);
+    const got = await collectRead(reader, { setId: SET, partIdx: 0, start: 1234, length: CACHE_CHUNK * 4, partLength: part.bytes.length, fetch: part.fetch });
 
     expect(got).toEqual(part.bytes.subarray(1234, 1234 + CACHE_CHUNK * 4));
   });
@@ -197,10 +198,10 @@ describe("filling misses efficiently", () => {
     const part = upstream(CACHE_CHUNK * 10);
     const reader = new CachedReader(new ChunkCache(root, 10_000_000));
 
-    await reader.read(SET, 0, 0, CACHE_CHUNK * 5, part.bytes.length, part.fetch);
+    await collectRead(reader, { setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK * 5, partLength: part.bytes.length, fetch: part.fetch });
     const after = part.asked.length;
     // A read wholly inside what was just fetched must cost nothing.
-    await reader.read(SET, 0, CACHE_CHUNK * 2, CACHE_CHUNK, part.bytes.length, part.fetch);
+    await collectRead(reader, { setId: SET, partIdx: 0, start: CACHE_CHUNK * 2, length: CACHE_CHUNK, partLength: part.bytes.length, fetch: part.fetch });
 
     expect(part.asked.length).toBe(after);
   });
@@ -211,11 +212,11 @@ describe("filling misses efficiently", () => {
     const reader = new CachedReader(new ChunkCache(root, 10_000_000));
 
     // Warm chunk 2 alone.
-    await reader.read(SET, 0, CACHE_CHUNK * 2, CACHE_CHUNK, part.bytes.length, part.fetch);
+    await collectRead(reader, { setId: SET, partIdx: 0, start: CACHE_CHUNK * 2, length: CACHE_CHUNK, partLength: part.bytes.length, fetch: part.fetch });
     const after = part.asked.length;
 
     // Chunks 0-4: 0,1 missing, 2 cached, 3,4 missing => two requests.
-    await reader.read(SET, 0, 0, CACHE_CHUNK * 5, part.bytes.length, part.fetch);
+    await collectRead(reader, { setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK * 5, partLength: part.bytes.length, fetch: part.fetch });
 
     expect(part.asked.length).toBe(after + 2);
   });
@@ -225,7 +226,7 @@ describe("filling misses efficiently", () => {
     const part = upstream(length);
     const reader = new CachedReader(new ChunkCache(root, 10_000_000));
 
-    await reader.read(SET, 0, 0, length, length, part.fetch);
+    await collectRead(reader, { setId: SET, partIdx: 0, start: 0, length, partLength: length, fetch: part.fetch });
 
     for (const ask of part.asked) {
       expect(ask.offset + ask.length).toBeLessThanOrEqual(length);
@@ -245,9 +246,7 @@ describe("streaming rather than buffering", () => {
     const reader = new CachedReader(new ChunkCache(root, 10_000_000));
 
     const pieces: number[] = [];
-    for await (const piece of reader.readStream(
-      SET, 0, 0, CACHE_CHUNK * 4, part.bytes.length, part.fetch,
-    )) {
+    for await (const piece of reader.readStream({ setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK * 4, partLength: part.bytes.length, fetch: part.fetch })) {
       pieces.push(piece.length);
     }
 
@@ -260,9 +259,7 @@ describe("streaming rather than buffering", () => {
     const reader = new CachedReader(new ChunkCache(root, 10_000_000));
 
     const out: number[] = [];
-    for await (const piece of reader.readStream(
-      SET, 0, 777, 3333, part.bytes.length, part.fetch,
-    )) {
+    for await (const piece of reader.readStream({ setId: SET, partIdx: 0, start: 777, length: 3333, partLength: part.bytes.length, fetch: part.fetch })) {
       out.push(...piece);
     }
 
@@ -279,9 +276,7 @@ describe("streaming rather than buffering", () => {
     const part = upstream(CACHE_CHUNK * 64);
     const reader = new CachedReader(new ChunkCache(root, 100_000_000));
 
-    for await (const _ of reader.readStream(
-      SET, 0, 0, CACHE_CHUNK * 64, part.bytes.length, part.fetch,
-    )) { /* drain */ }
+    for await (const _ of reader.readStream({ setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK * 64, partLength: part.bytes.length, fetch: part.fetch })) { /* drain */ }
 
     expect(part.asked.length).toBeGreaterThan(1);
     for (const ask of part.asked) expect(ask.length).toBeLessThanOrEqual(MAX_RUN_BYTES);
@@ -291,9 +286,7 @@ describe("streaming rather than buffering", () => {
     const part = upstream(CACHE_CHUNK * 64);
     const reader = new CachedReader(new ChunkCache(root, 100_000_000));
 
-    for await (const _ of reader.readStream(
-      SET, 0, 0, CACHE_CHUNK * 64, part.bytes.length, part.fetch,
-    )) {
+    for await (const _ of reader.readStream({ setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK * 64, partLength: part.bytes.length, fetch: part.fetch })) {
       break;
     }
 
@@ -305,9 +298,7 @@ describe("streaming rather than buffering", () => {
     const reader = new CachedReader(new ChunkCache(root, 100_000_000));
 
     const out: number[] = [];
-    for await (const piece of reader.readStream(
-      SET, 0, 100, CACHE_CHUNK * 39, part.bytes.length, part.fetch,
-    )) {
+    for await (const piece of reader.readStream({ setId: SET, partIdx: 0, start: 100, length: CACHE_CHUNK * 39, partLength: part.bytes.length, fetch: part.fetch })) {
       out.push(...piece);
     }
 
@@ -318,9 +309,7 @@ describe("streaming rather than buffering", () => {
     const part = upstream(CACHE_CHUNK * 10);
     const reader = new CachedReader(new ChunkCache(root, 10_000_000));
 
-    for await (const _ of reader.readStream(
-      SET, 0, 0, CACHE_CHUNK * 6, part.bytes.length, part.fetch,
-    )) { /* drain */ }
+    for await (const _ of reader.readStream({ setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK * 6, partLength: part.bytes.length, fetch: part.fetch })) { /* drain */ }
 
     expect(part.asked).toHaveLength(1);
   });
@@ -354,9 +343,7 @@ describe("upstream giving back less than it was asked for", () => {
     const reader = new CachedReader(new ChunkCache(root, 100_000_000));
 
     const attempt = async () => {
-      for await (const _ of reader.readStream(
-        SET, 0, 0, CACHE_CHUNK * 20, part.bytes.length, part.fetch,
-      )) { /* drain */ }
+      for await (const _ of reader.readStream({ setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK * 20, partLength: part.bytes.length, fetch: part.fetch })) { /* drain */ }
     };
 
     await expect(attempt()).rejects.toThrow(/short|owed|incomplete/i);
@@ -367,7 +354,7 @@ describe("upstream giving back less than it was asked for", () => {
     const reader = new CachedReader(new ChunkCache(root, 100_000_000));
 
     await expect(
-      reader.read(SET, 0, 0, CACHE_CHUNK * 4, part.bytes.length, part.fetch),
+      collectRead(reader, { setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK * 4, partLength: part.bytes.length, fetch: part.fetch }),
     ).rejects.toThrow(/short|owed|incomplete/i);
   });
 
@@ -376,8 +363,7 @@ describe("upstream giving back less than it was asked for", () => {
     const cache = new ChunkCache(root, 100_000_000);
     const reader = new CachedReader(cache);
 
-    await reader
-      .read(SET, 0, 0, CACHE_CHUNK * 20, part.bytes.length, part.fetch)
+    await collectRead(reader, { setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK * 20, partLength: part.bytes.length, fetch: part.fetch })
       .catch(() => {});
 
     // Whatever survived must be a full chunk of the right bytes, never a

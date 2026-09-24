@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { PATIENCE_MS, READY_SECONDS, autoplayReady } from "../public/lib/autoplay.js";
+import { PATIENCE_MS, READY_SECONDS, autoplayReady } from "../public/lib/playback/autoplay.js";
 
 const at = (over: Record<string, unknown> = {}) => ({
   ahead: 0,

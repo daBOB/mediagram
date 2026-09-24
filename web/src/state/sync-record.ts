@@ -69,6 +69,11 @@ export interface ProfileState {
   name: string;
   /** The writing device's own id for this profile — provenance, not identity. */
   localId?: string;
+  /**
+   * Present only on a kids profile. Written only when true, so an ordinary
+   * profile's entry reads exactly as it did before the flag existed.
+   */
+  kids?: true;
   progress: ProgressRow[];
   watched: WatchedRow[];
   /** Absent on a document from before this existed — not the same as empty. */
@@ -116,10 +121,9 @@ export function parseRecord(text: string): SyncRecord | null {
   } catch {
     return null;
   }
-  if (raw === null || typeof raw !== "object") return null;
-
-  const held = raw as Record<string, unknown>;
-  const format = Number(held.format);
+  const held = objectRow(raw);
+  if (held === null) return null;
+  const format = numberFromScalar(held.format);
   // A document from the future is ignored rather than guessed at. Reading it
   // half-right would merge a half-right answer into a database that is the
   // source of truth for this machine.
@@ -130,18 +134,22 @@ export function parseRecord(text: string): SyncRecord | null {
 
   const profiles: ProfileState[] = [];
   for (const one of asArray(held.profiles)) {
-    const row = one as Record<string, unknown>;
+    const row = objectRow(one);
+    if (row === null) continue;
     const name = text_(row.name);
     if (name === null) continue;
     profiles.push({
       name,
       localId: text_(row.localId) ?? undefined,
+      // Only a literal `true`: a flag that restricts what a child sees must
+      // not be switched on by a string that merely looks truthy.
+      ...(row.kids === true ? { kids: true as const } : {}),
       progress: asArray(row.progress).flatMap((entry) => {
-        const at = progressRow(entry as Record<string, unknown>);
+        const at = progressRow(entry);
         return at === null ? [] : [at];
       }),
       watched: asArray(row.watched).flatMap((entry) => {
-        const at = watchedRow(entry as Record<string, unknown>);
+        const at = watchedRow(entry);
         return at === null ? [] : [at];
       }),
       watchlist: row.watchlist === undefined ? undefined : parseListRows(row.watchlist),
@@ -152,21 +160,23 @@ export function parseRecord(text: string): SyncRecord | null {
   return {
     format,
     device,
-    writtenAt: Number(held.writtenAt) || 0,
+    writtenAt: numberFromScalar(held.writtenAt) || 0,
     profiles,
     kids: held.kids === undefined ? undefined : parseListRows(held.kids),
   };
 }
 
-function progressRow(raw: Record<string, unknown>): ProgressRow | null {
+function progressRow(value: unknown): ProgressRow | null {
+  const raw = objectRow(value);
+  if (raw === null) return null;
   const setId = text_(raw.setId);
-  const at = Number(raw.at);
-  const updatedAt = Number(raw.updatedAt);
+  const at = numberFromScalar(raw.at);
+  const updatedAt = numberFromScalar(raw.updatedAt);
   // `at` may legitimately be 0 — the start of a film — so it is checked for
   // finiteness rather than truthiness.
   if (setId === null || !Number.isFinite(at) || at < 0) return null;
   if (!Number.isFinite(updatedAt) || updatedAt <= 0) return null;
-  const runtime = Number(raw.duration);
+  const runtime = numberFromScalar(raw.duration);
   return {
     setId,
     at,
@@ -175,30 +185,34 @@ function progressRow(raw: Record<string, unknown>): ProgressRow | null {
   };
 }
 
-function watchedRow(raw: Record<string, unknown>): WatchedRow | null {
+function watchedRow(value: unknown): WatchedRow | null {
+  const raw = objectRow(value);
+  if (raw === null) return null;
   const setId = text_(raw.setId);
-  const updatedAt = Number(raw.updatedAt);
+  const updatedAt = numberFromScalar(raw.updatedAt);
   if (setId === null || !Number.isFinite(updatedAt) || updatedAt <= 0) return null;
   return { setId, updatedAt };
 }
 
 function parseListRows(value: unknown): ListRow[] {
   return asArray(value).flatMap((entry) => {
-    const row = listRow(entry as Record<string, unknown>);
+    const row = listRow(entry);
     return row === null ? [] : [row];
   });
 }
 
-function listRow(raw: Record<string, unknown>): ListRow | null {
+function listRow(value: unknown): ListRow | null {
+  const raw = objectRow(value);
+  if (raw === null) return null;
   const setId = text_(raw.setId);
-  const updatedAt = Number(raw.updatedAt);
+  const updatedAt = numberFromScalar(raw.updatedAt);
   if (setId === null || !Number.isFinite(updatedAt) || updatedAt <= 0) return null;
   return raw.removed === true ? { setId, updatedAt, removed: true } : { setId, updatedAt };
 }
 
 function parseCollectionRows(value: unknown): CollectionRow[] {
   return asArray(value).flatMap((entry) => {
-    const row = collectionRow(entry as Record<string, unknown>);
+    const row = collectionRow(entry);
     return row === null ? [] : [row];
   });
 }
@@ -208,9 +222,11 @@ function parseCollectionRows(value: unknown): CollectionRow[] {
  * this caps what a stranger's document is allowed to claim. */
 const MAX_LIST_NAME = 200;
 
-function collectionRow(raw: Record<string, unknown>): CollectionRow | null {
+function collectionRow(value: unknown): CollectionRow | null {
+  const raw = objectRow(value);
+  if (raw === null) return null;
   const id = text_(raw.id);
-  const updatedAt = Number(raw.updatedAt);
+  const updatedAt = numberFromScalar(raw.updatedAt);
   if (id === null || !Number.isFinite(updatedAt) || updatedAt <= 0) return null;
   const name = text_(raw.name)?.slice(0, MAX_LIST_NAME);
   if (name === undefined || name === "") return null;
@@ -223,6 +239,18 @@ function collectionRow(raw: Record<string, unknown>): CollectionRow | null {
 
 function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
+}
+
+function objectRow(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+/** Older documents allow numeric strings and other primitives. Objects and
+ * arrays are not numbers; coercing a JSON object's own `toString` can throw. */
+function numberFromScalar(value: unknown): number {
+  return value !== null && typeof value === "object" ? Number.NaN : Number(value);
 }
 
 /** A non-empty string, trimmed — the only kind of text worth keeping here. */

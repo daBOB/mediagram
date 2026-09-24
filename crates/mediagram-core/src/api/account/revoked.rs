@@ -9,8 +9,9 @@
 //! login rather than retrying one that can never succeed.
 
 use std::error::Error;
+use std::sync::Arc;
 
-use grammers_mtsender::InvocationError;
+use grammers_mtsender::{InvocationError, SenderPoolFatHandle};
 
 use crate::api::{Core, CoreError, State};
 
@@ -28,15 +29,21 @@ pub(crate) fn is_revoked(err: &(dyn Error + 'static)) -> bool {
         {
             return true;
         }
-        cause = err.source();
+        // io::Error::source skips the wrapped error itself; uploads wrap the
+        // InvocationError with io::Error::other, so inspect get_ref first.
+        cause = err
+            .downcast_ref::<std::io::Error>()
+            .and_then(|io| io.get_ref().map(|inner| inner as &(dyn Error + 'static)))
+            .or_else(|| err.source());
     }
     false
 }
 
-/// `otherwise`, unless `cause` says the login is gone — then the stored key
-/// and the live connection are dropped, and the answer is `NotAuthorized`.
-pub(in crate::api) async fn unless_revoked(
+/// A refusal belongs to the connection that made the request. A newer
+/// login retains both its live state and its persisted key.
+pub(in crate::api) async fn unless_revoked_for(
     core: &Core,
+    expected: &SenderPoolFatHandle,
     cause: &(dyn Error + Send + Sync + 'static),
     otherwise: CoreError,
 ) -> CoreError {
@@ -45,25 +52,53 @@ pub(in crate::api) async fn unless_revoked(
     }
     // Everything the state holds belongs to the login that ended: the
     // connection, any half-finished sign-in, the documents it resolved.
-    *core.state.lock().await = State::default();
-    if let Err(err) = session::forget_auth_key(&core.data_dir) {
-        tracing::warn!(%err, "removing the revoked session");
+    let failed = {
+        let mut state = core.state.lock().await;
+        if !state
+            .client
+            .as_ref()
+            .is_some_and(|live| Arc::ptr_eq(&live.handle.session, &expected.session))
+        {
+            return otherwise;
+        }
+        let failed = state.client.as_ref().map(|live| live.handle.clone());
+        *state = State::default();
+        // Keep connection creation locked until it can no longer reload the
+        // revoked key from disk.
+        if let Err(err) = session::forget_auth_key(&core.data_dir) {
+            tracing::warn!(%err, "removing the revoked session");
+        }
+        failed
+    };
+    if let Some(failed) = failed {
+        clear_idle_listener(core, &failed);
     }
     CoreError::NotAuthorized(SIGNED_OUT.into())
 }
 
-/// A Telegram call's result, a refusal mapped by `otherwise` unless it is
-/// the login itself that was refused.
-pub(in crate::api) async fn checked<T>(
+/// A waiter clears its own slot when the stopped pool wakes it. If a new
+/// listener opened after state reset, leave that replacement alone.
+pub(in crate::api) fn clear_idle_listener(core: &Core, failed: &SenderPoolFatHandle) {
+    if let Ok(mut listener) = core.events.try_lock()
+        && listener
+            .as_ref()
+            .is_some_and(|live| Arc::ptr_eq(&live.handle.session, &failed.session))
+    {
+        *listener = None;
+    }
+}
+
+pub(in crate::api) async fn checked_for<T, E: Error + Send + Sync + 'static>(
     core: &Core,
-    result: Result<T, InvocationError>,
-    otherwise: impl FnOnce(&InvocationError) -> CoreError,
+    expected: &SenderPoolFatHandle,
+    result: Result<T, E>,
+    otherwise: impl FnOnce(&E) -> CoreError,
 ) -> Result<T, CoreError> {
     match result {
         Ok(value) => Ok(value),
         Err(err) => {
             let fallback = otherwise(&err);
-            Err(unless_revoked(core, &err, fallback).await)
+            Err(unless_revoked_for(core, expected, &err, fallback).await)
         }
     }
 }
@@ -84,8 +119,17 @@ mod tests {
     #[test]
     fn a_401_is_a_revoked_login_even_wrapped() {
         assert!(is_revoked(&rpc(401, "SESSION_REVOKED")));
-        let wrapped = anyhow::Error::new(rpc(401, "AUTH_KEY_UNREGISTERED")).context("downloading a chunk");
+        let wrapped =
+            anyhow::Error::new(rpc(401, "AUTH_KEY_UNREGISTERED")).context("downloading a chunk");
         assert!(is_revoked(wrapped.as_ref()));
+    }
+
+    #[test]
+    fn an_upload_io_wrapper_keeps_its_revocation_meaning() {
+        assert!(is_revoked(&std::io::Error::other(rpc(
+            401,
+            "SESSION_REVOKED"
+        ))));
     }
 
     #[test]

@@ -9,6 +9,7 @@
  */
 
 import type { FoundIndex } from "./find-newest-channel-index";
+import { failureMessage } from "../failure-message";
 import { currentDir, installChannelIndex, installedPushedAt } from "./install-channel-index";
 import type { NoIndex } from "./pick-newest-index";
 
@@ -38,7 +39,7 @@ export async function refreshFromChannel(
   try {
     found = await find();
   } catch (error) {
-    return fallback(root, `the channel could not be read: ${(error as Error).message}`);
+    return fallback(root, `the channel could not be read: ${failureMessage(error)}`);
   }
   if (typeof found === "string") return fallback(root, NO_INDEX[found]);
 

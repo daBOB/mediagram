@@ -5,7 +5,7 @@
  * burst of updates into one callback per window.
  */
 
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import { Api } from "teleproto";
 
 import { listenForLibraryEvents, toChannelUpdate, type Clock, type UpdateSource } from "../src/telegram/channel-events";
@@ -165,5 +165,30 @@ describe("listenForLibraryEvents", () => {
     expect(h.pendingTimers()).toBe(0);
     h.advance(10_000);
     expect(h.events).toEqual([]);
+  });
+
+  test.each([Symbol("failed"), Object.create(null)])("an unprintable callback failure preserves due and future delivery (%s)", (failure) => {
+    let handler!: (update: unknown) => void;
+    let queued!: () => void;
+    const events: LibraryEvent[] = [];
+    const source: UpdateSource = { addEventHandler: (run) => { handler = run; }, removeEventHandler: () => {} };
+    const clock: Clock = { now: () => 0, setTimeout: (run) => { queued = run; return 1; }, clearTimeout: () => {} };
+    const warning = spyOn(console, "warn").mockImplementation(() => {});
+    const stop = listenForLibraryEvents(source, { channel: CHANNEL, ownDevice: ME }, (event) => {
+      events.push(event);
+      if (events.length === 1) throw failure;
+    }, clock, 0);
+    try {
+      handler(edited(stateBy("dev-tv")));
+      handler(pinned(true));
+      expect(() => queued()).not.toThrow();
+      expect(events).toEqual(["state", "index"]);
+      handler(edited(stateBy("dev-tv")));
+      queued();
+      expect(events).toEqual(["state", "index", "state"]);
+      expect(warning.mock.calls).toEqual([[
+        `updates: acting on state failed: ${typeof failure === "symbol" ? "Symbol(failed)" : "unprintable rejection"}`,
+      ]]);
+    } finally { stop(); warning.mockRestore(); }
   });
 });

@@ -13,7 +13,11 @@ fn pushed(at: i64) -> String {
 /// Captions with ascending ids, which is the order a channel hands them
 /// back in; the ids only ever break a tie.
 fn found<'a>(texts: &[&'a str]) -> Vec<(&'a str, i64)> {
-    texts.iter().enumerate().map(|(i, text)| (*text, i as i64)).collect()
+    texts
+        .iter()
+        .enumerate()
+        .map(|(i, text)| (*text, i as i64))
+        .collect()
 }
 
 fn message(text: &str) -> CoreError {
@@ -26,19 +30,28 @@ fn reason(err: &CoreError) -> String {
 
 #[test]
 fn the_one_index_among_other_messages_is_the_one_chosen() {
-    assert_eq!(pick_index(&found(&["a note", INDEX, "another note"]), NOW).unwrap(), 1);
+    assert_eq!(
+        pick_index(&found(&["a note", INDEX, "another note"]), NOW).unwrap(),
+        1
+    );
 }
 
 /// The prefix, not the exact marker: a snapshot written by a later
 /// uploader is still the index this channel holds.
 #[test]
 fn a_later_snapshot_version_is_still_recognised_as_the_index() {
-    assert_eq!(pick_index(&found(&["#mlib-index v=3\n{}"]), NOW).unwrap(), 0);
+    assert_eq!(
+        pick_index(&found(&["#mlib-index v=3\n{}"]), NOW).unwrap(),
+        0
+    );
 }
 
 #[test]
 fn a_channel_holding_no_snapshot_says_so() {
-    assert_eq!(reason(&pick_index(&[], NOW).unwrap_err()), format!("library error: {NOTHING_PINNED}"));
+    assert_eq!(
+        reason(&pick_index(&[], NOW).unwrap_err()),
+        format!("library error: {NOTHING_PINNED}")
+    );
 }
 
 #[test]
@@ -62,8 +75,14 @@ fn the_later_snapshot_wins_however_the_pins_fell() {
 #[test]
 fn a_dated_snapshot_outranks_an_undated_one() {
     let dated = pushed(1_781_568_000);
-    assert_eq!(pick_index(&found(&["#mlib-index v=9", &dated]), NOW).unwrap(), 1);
-    assert_eq!(pick_index(&found(&[&dated, "#mlib-index v=9"]), NOW).unwrap(), 0);
+    assert_eq!(
+        pick_index(&found(&["#mlib-index v=9", &dated]), NOW).unwrap(),
+        1
+    );
+    assert_eq!(
+        pick_index(&found(&[&dated, "#mlib-index v=9"]), NOW).unwrap(),
+        0
+    );
 }
 
 /// Two snapshots pushed in the same second still resolve the same way on
@@ -188,11 +207,19 @@ fn the_shared_pick_index_fixtures_hold() {
     };
     let fixture: Fixture = serde_json::from_str(&text).unwrap();
     for case in fixture.cases {
-        let candidates: Vec<(&str, i64)> = case.candidates.iter().map(|c| (c.text.as_str(), c.id)).collect();
+        let candidates: Vec<(&str, i64)> = case
+            .candidates
+            .iter()
+            .map(|c| (c.text.as_str(), c.id))
+            .collect();
         let got = match pick_index(&candidates, fixture.now) {
             Ok(index) => serde_json::json!(index),
-            Err(err) if err.to_string().ends_with(NOTHING_PINNED) => serde_json::json!("nothing-pinned"),
-            Err(err) if err.to_string().ends_with(NOT_AN_INDEX) => serde_json::json!("not-an-index"),
+            Err(err) if err.to_string().ends_with(NOTHING_PINNED) => {
+                serde_json::json!("nothing-pinned")
+            }
+            Err(err) if err.to_string().ends_with(NOT_AN_INDEX) => {
+                serde_json::json!("not-an-index")
+            }
             Err(err) => panic!("{}: unexpected {err}", case.name),
         };
         assert_eq!(got, case.expect, "{}", case.name);

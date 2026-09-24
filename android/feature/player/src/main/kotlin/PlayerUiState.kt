@@ -11,7 +11,12 @@ package player
  */
 sealed interface PlayerUiState {
     data object Preparing : PlayerUiState
+
     data object Playing : PlayerUiState
+
     data object Paused : PlayerUiState
-    data class Failed(val message: String) : PlayerUiState
+
+    data class Failed(
+        val message: String,
+    ) : PlayerUiState
 }

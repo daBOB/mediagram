@@ -87,29 +87,35 @@ export class TranscodeRegistry {
   private readonly sessions = new Map<string, Tracked>();
   /** Starts in flight, so two viewers arriving together share one ffmpeg. */
   private readonly starting = new Map<string, Promise<Session>>();
+  private readonly stopping = new Set<Promise<void>>();
   private readonly idleMs: number;
   private readonly maxSessions: number;
+  private readonly now: () => number;
+  private closed = false;
+  private shutdown: Promise<void> | null = null;
 
   constructor(
     private readonly workDir: string,
     private readonly runner: Runner,
-    options: { idleMs?: number; maxSessions?: number } = {},
+    options: { idleMs?: number; maxSessions?: number; now?: () => number } = {},
   ) {
     this.idleMs = options.idleMs ?? DEFAULT_IDLE_MS;
     this.maxSessions = options.maxSessions ?? DEFAULT_MAX_SESSIONS;
+    this.now = options.now ?? Date.now;
   }
 
   /**
-   * The session for this title at this offset, started if it is not running.
+   * Acquires one viewer's share of a session, starting it if necessary.
    *
    * Identified by what it transcodes rather than by a random id, so two
    * viewers of the same thing share one encode instead of racing.
    */
-  async sessionFor(spec: SessionSpec): Promise<Session> {
+  async acquireSession(spec: SessionSpec): Promise<Session> {
+    if (this.closed) throw new Error("the conversion registry is shutting down");
     const id = sessionId(spec);
     const existing = this.sessions.get(id);
     if (existing) {
-      existing.lastUsed = Date.now();
+      existing.lastUsed = this.now();
       existing.watchers += 1;
       return existing;
     }
@@ -124,7 +130,7 @@ export class TranscodeRegistry {
       const session = await pending;
       const tracked = this.sessions.get(session.id);
       if (tracked) {
-        tracked.lastUsed = Date.now();
+        tracked.lastUsed = this.now();
         tracked.watchers += 1;
       }
       return session;
@@ -156,7 +162,7 @@ export class TranscodeRegistry {
       directory,
       process,
       exited: process.exited,
-      lastUsed: Date.now(),
+      lastUsed: this.now(),
       watchers: 1,
     };
     this.sessions.set(id, tracked);
@@ -168,6 +174,7 @@ export class TranscodeRegistry {
    *
    * Absent, or held by someone else, is not an error: a browser saying
    * goodbye to a session already reaped is the normal case.
+   * Each acquisition must be released once; repeated releases consume shares.
    */
   async release(id: string): Promise<void> {
     const session = this.sessions.get(id);
@@ -180,7 +187,7 @@ export class TranscodeRegistry {
   /** Marks a session as still wanted, so `reapIdle` leaves it alone. */
   touch(id: string): void {
     const session = this.sessions.get(id);
-    if (session) session.lastUsed = Date.now();
+    if (session) session.lastUsed = this.now();
   }
 
   has(id: string): boolean {
@@ -206,6 +213,8 @@ export class TranscodeRegistry {
       seekSeconds: tracked.seekSeconds,
       maxrateBits: tracked.maxrateBits,
       audioTrack: tracked.audioTrack,
+      copyVideo: tracked.copyVideo,
+      hevcCopy: tracked.hevcCopy,
       watchers: tracked.watchers,
     }));
   }
@@ -220,36 +229,73 @@ export class TranscodeRegistry {
   }
 
   /** Stops a session and removes its segments. Absent is not an error. */
-  async stop(id: string): Promise<void> {
+  stop(id: string): Promise<void> {
     const session = this.sessions.get(id);
-    if (!session) return;
+    if (!session) return Promise.resolve();
     this.sessions.delete(id);
+    const stopped = this.stopSession(session).finally(() => this.stopping.delete(stopped));
+    this.stopping.add(stopped);
+    return stopped;
+  }
 
+  private async stopSession(session: Tracked): Promise<void> {
     // Moved aside before ffmpeg is waited on, because ids are deterministic:
     // a session restarted during the three seconds ffmpeg gets to exit would
     // otherwise have its fresh directory deleted out from under it, and the
     // viewer would wait out the whole ready timeout for a 503.
     const discarded = `${session.directory}.stopping.${process.pid}.${discardCount++}`;
-    const moved = await rename(session.directory, discarded).then(
-      () => true,
-      () => false,
-    );
+    const failures: unknown[] = [];
+    let moved = false;
+    try {
+      await rename(session.directory, discarded);
+      moved = true;
+    } catch (error) {
+      if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) failures.push(error);
+    }
 
-    await session.process.stop();
-    await rm(moved ? discarded : session.directory, { recursive: true, force: true });
+    try { await session.process.stop(); }
+    catch (error) { failures.push(error); }
+    // The original path can already belong to a replacement session. Only
+    // successful isolation establishes ownership of a directory to remove.
+    if (moved) {
+      try { await rm(discarded, { recursive: true, force: true }); }
+      catch (error) { failures.push(error); }
+    }
+    if (failures.length === 1) throw failures[0];
+    if (failures.length > 1) throw new AggregateError(failures, "could not clean up the conversion");
   }
 
   /** Stops every session that has not been read within the idle limit. */
   async reapIdle(): Promise<number> {
-    const deadline = Date.now() - this.idleMs;
+    const deadline = this.now() - this.idleMs;
     const stale = [...this.sessions.values()].filter((s) => s.lastUsed <= deadline);
-    for (const session of stale) await this.stop(session.id);
-    return stale.length;
+    let reaped = 0;
+    for (const session of stale) {
+      // Earlier cleanup awaited process exit. A queued candidate may have
+      // been read, acquired again, or replaced under the same deterministic id.
+      if (this.sessions.get(session.id) !== session || session.lastUsed > deadline) continue;
+      await this.stop(session.id);
+      reaped += 1;
+    }
+    return reaped;
   }
 
   /** Used on shutdown: an orphaned ffmpeg outlives the server otherwise. */
-  async stopAll(): Promise<void> {
-    for (const id of [...this.sessions.keys()]) await this.stop(id);
+  stopAll(): Promise<void> {
+    if (this.shutdown) return this.shutdown;
+    this.closed = true;
+    this.shutdown = this.finishShutdown();
+    return this.shutdown;
+  }
+
+  private async finishShutdown(): Promise<void> {
+    // Admitted starts may still be making directories. Drain them before
+    // collecting processes, including releases already waiting for exit.
+    await Promise.allSettled(this.starting.values());
+    const stops = [...this.stopping, ...[...this.sessions.keys()].map((id) => this.stop(id))];
+    const results = await Promise.allSettled(stops);
+    const failures = results.filter((result) => result.status === "rejected");
+    if (failures.length) throw new AggregateError(failures.map((result) => result.reason), "could not stop every conversion");
   }
 }
 

@@ -48,8 +48,8 @@ pub struct SetRow {
 impl SetRow {
     /// Builds the `sets` row for a freshly planned upload. `caption` carries
     /// every field this row mirrors; `part.n` becomes `part_count`.
-    pub fn from_caption(caption: &Caption, created_at: i64) -> Result<SetRow> {
-        Ok(SetRow {
+    pub fn from_caption(caption: &Caption, created_at: i64) -> SetRow {
+        SetRow {
             set_id: caption.set.clone(),
             kind: caption.t,
             tmdb: caption.ids.tmdb,
@@ -81,7 +81,7 @@ impl SetRow {
             status: SetStatus::Pending,
             created_at,
             spec_version: mlib_spec::SPEC_VERSION,
-        })
+        }
     }
 
     pub(crate) fn from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<SetRow> {
@@ -124,13 +124,16 @@ impl SetRow {
 impl SetRow {
     /// The `episode` column's value: the caption's JSON, `1` or `[1,2]`.
     pub(crate) fn episode_json(&self) -> Result<Option<String>> {
-        Ok(self.episode.map(|e| serde_json::to_string(&e)).transpose()?)
+        Ok(self
+            .episode
+            .map(|e| serde_json::to_string(&e))
+            .transpose()?)
     }
 
     /// The set's `Caption` with a placeholder part block (idx 0, empty hash),
     /// used to derive names and human text that don't depend on which part.
-    pub fn caption_template(&self) -> Result<Caption> {
-        Ok(Caption {
+    pub fn caption_template(&self) -> Caption {
+        Caption {
             // The pipeline builds every part's caption from this template, so
             // dropping these would publish a course with no collection id and
             // no chapter, and `rescan` would have nothing to rebuild from.
@@ -167,6 +170,6 @@ impl SetRow {
                 sha256: String::new(),
             },
             total: self.total,
-        })
+        }
     }
 }

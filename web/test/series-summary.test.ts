@@ -8,6 +8,8 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import type { CatalogSet } from "../public/lib/library.js";
+import { catalogSet } from "./support/catalog-set";
 
 import {
   detailRows,
@@ -16,10 +18,10 @@ import {
   scaleLine,
   summarize,
   yearLine,
-} from "../public/lib/series-summary.js";
+} from "../public/lib/catalog/series-summary.js";
 
 /** A collection shaped the way `groupLibrary` builds one: seasons of items. */
-function show(...seasons: Array<Array<Record<string, unknown>>>) {
+function show(...seasons: CatalogSet[][]) {
   return {
     name: "A Show",
     divisions: seasons.map((items, i) => ({
@@ -31,8 +33,8 @@ function show(...seasons: Array<Array<Record<string, unknown>>>) {
   };
 }
 
-function episode(over: Record<string, unknown> = {}) {
-  return {
+function episode(over: Partial<CatalogSet> = {}) {
+  return catalogSet({
     setId: `s${Math.random()}`,
     year: 2026,
     quality: "1080p",
@@ -44,7 +46,7 @@ function episode(over: Record<string, unknown> = {}) {
     duration: 2700,
     total: 3_000_000_000,
     ...over,
-  };
+  });
 }
 
 describe("a show's totals", () => {

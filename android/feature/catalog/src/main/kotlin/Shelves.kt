@@ -40,7 +40,11 @@ fun shelvesOf(sets: List<MediaSet>): List<Shelf> {
 }
 
 /** Groups one kind's sets by the show or course holding them, then by folder. */
-private fun collections(sets: List<MediaSet>, kind: CollectionKind, fallback: String): List<Entry> {
+private fun collections(
+    sets: List<MediaSet>,
+    kind: CollectionKind,
+    fallback: String,
+): List<Entry> {
     val byName = LinkedHashMap<String, MutableNode>()
 
     for (set in sets) {
@@ -58,8 +62,15 @@ private fun collections(sets: List<MediaSet>, kind: CollectionKind, fallback: St
         .map { root -> collectionOf(root, kind) }
 }
 
-private fun collectionOf(root: Division, kind: CollectionKind): Entry.Collection {
-    val divisions = root.children.asSequence().flatMap { it.walk() }.toList()
+private fun collectionOf(
+    root: Division,
+    kind: CollectionKind,
+): Entry.Collection {
+    val divisions =
+        root.children
+            .asSequence()
+            .flatMap { it.walk() }
+            .toList()
     return Entry.Collection(
         key = "$kind/${root.title}",
         kind = kind,
@@ -68,12 +79,14 @@ private fun collectionOf(root: Division, kind: CollectionKind): Entry.Collection
         // one stands for the whole of it. The key is taken the same way and
         // for the same reason: the shows table holds one row per series, so
         // whichever episode carries the key carries the whole show's.
-        posterPath = divisions.firstNotNullOfOrNull { level ->
-            level.items.firstNotNullOfOrNull(MediaSet::posterPath)
-        },
-        posterKey = divisions.firstNotNullOfOrNull { level ->
-            level.items.firstNotNullOfOrNull(MediaSet::posterKey)
-        },
+        posterPath =
+            divisions.firstNotNullOfOrNull { level ->
+                level.items.firstNotNullOfOrNull(MediaSet::posterPath)
+            },
+        posterKey =
+            divisions.firstNotNullOfOrNull { level ->
+                level.items.firstNotNullOfOrNull(MediaSet::posterKey)
+            },
         count = divisions.sumOf { it.items.size },
         chapters = divisions.count { it.items.isNotEmpty() },
         divisions = root.children,
@@ -94,7 +107,10 @@ private fun trailOf(set: MediaSet): Trail {
     return Trail(listOf("Chapter $chapter"), chapter)
 }
 
-private class Trail(val names: List<String>, val season: Int?)
+private class Trail(
+    val names: List<String>,
+    val season: Int?,
+)
 
 /**
  * A division while it is still being filled. The finished [Division] is
@@ -102,12 +118,17 @@ private class Trail(val names: List<String>, val season: Int?)
  * needs a shape that can be added to as sets arrive in whatever order the
  * index hands them over.
  */
-private class MutableNode(val title: String, val season: Int?) {
+private class MutableNode(
+    val title: String,
+    val season: Int?,
+) {
     val items = mutableListOf<MediaSet>()
     val children = mutableListOf<MutableNode>()
 
-    fun descend(name: String, season: Int?): MutableNode =
-        children.find { it.title == name } ?: MutableNode(name, season).also(children::add)
+    fun descend(
+        name: String,
+        season: Int?,
+    ): MutableNode = children.find { it.title == name } ?: MutableNode(name, season).also(children::add)
 
     /**
      * Sorted on the way out, once, rather than kept sorted on every insert.
@@ -116,20 +137,23 @@ private class MutableNode(val title: String, val season: Int?) {
      * episode number sorts last rather than first, because an unnumbered
      * extra is not episode zero.
      */
-    fun freeze(): Division = Division(
-        title = title,
-        season = season,
-        items = items.sortedWith(
-            compareBy<MediaSet> { it.episodeFirst ?: Int.MAX_VALUE }.thenBy(NATURAL) { it.title },
-        ),
-        // Seasons by number, folders by name. A collection's divisions are
-        // in practice all one or all the other; a mixture puts the numbered
-        // ones first rather than interleaving them by name, which is an
-        // order rather than the absence of one.
-        children = children
-            .map { it.freeze() }
-            .sortedWith(
-                compareBy<Division, Int?>(nullsLast<Int>()) { it.season }.thenBy(NATURAL) { it.title },
-            ),
-    )
+    fun freeze(): Division =
+        Division(
+            title = title,
+            season = season,
+            items =
+                items.sortedWith(
+                    compareBy<MediaSet> { it.episodeFirst ?: Int.MAX_VALUE }.thenBy(NATURAL) { it.title },
+                ),
+            // Seasons by number, folders by name. A collection's divisions are
+            // in practice all one or all the other; a mixture puts the numbered
+            // ones first rather than interleaving them by name, which is an
+            // order rather than the absence of one.
+            children =
+                children
+                    .map { it.freeze() }
+                    .sortedWith(
+                        compareBy<Division, Int?>(nullsLast<Int>()) { it.season }.thenBy(NATURAL) { it.title },
+                    ),
+        )
 }

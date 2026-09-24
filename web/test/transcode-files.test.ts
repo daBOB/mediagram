@@ -9,6 +9,7 @@
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -36,6 +37,36 @@ afterEach(async () => {
 
 const EMPTY_PLAYLIST = "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:2\n";
 const ONE_SEGMENT = `${EMPTY_PLAYLIST}#EXTINF:2.000000,\nindex0.ts\n`;
+
+test("an unreadable playlist reports the filesystem error and releases its session", async () => {
+  let stopped = 0;
+  const registry = new TranscodeRegistry(work, {
+    start(_id, directory) {
+      mkdirSync(join(directory, "index.m3u8"));
+      return { stop: async () => { stopped += 1; } };
+    },
+  });
+  const files = new TranscodeFiles(registry, { readyTimeoutMs: 25, pollMs: 1 });
+  try {
+    await expect(files.begin(spec("broken", 0, 8_000_000))).rejects.toMatchObject({ code: "EISDIR" });
+    expect(stopped).toBe(1);
+  } finally {
+    await registry.stopAll();
+  }
+});
+
+test("an unreadable segment is a filesystem failure rather than pending output", async () => {
+  const registry = new TranscodeRegistry(work, { start: () => ({ stop: async () => {} }) });
+  const session = await registry.acquireSession(spec("broken", 0, 8_000_000));
+  const files = new TranscodeFiles(registry);
+  try {
+    await mkdir(join(session.directory, "index0.ts"));
+    await expect(files.file(session.id, "index0.ts")).rejects.toMatchObject({ code: "EISDIR" });
+    expect(await files.file(session.id, "index1.ts")).toBe("not-ready");
+  } finally {
+    await registry.stopAll();
+  }
+});
 
 /** Writes what a real ffmpeg would write, after `afterMs`. */
 function runnerWriting(text: string | null, afterMs: number) {

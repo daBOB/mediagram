@@ -11,9 +11,7 @@ import org.gradle.kotlin.dsl.invoke
 /**
  * Configure project for Gradle managed devices
  */
-internal fun configureGradleManagedDevices(
-    commonExtension: CommonExtension,
-) {
+internal fun configureGradleManagedDevices(commonExtension: CommonExtension) {
     val pixel6Api31 = DeviceConfig("Pixel 6", 31, "aosp")
     val pixel8Api34 = DeviceConfig("Pixel 8", 34, "google")
     val pixel9Api36 = DeviceConfig("Pixel 9", 36, "google")
@@ -48,10 +46,11 @@ private data class DeviceConfig(
     val apiLevel: Int,
     val systemImageSource: String,
 ) {
-    val taskName = buildString {
-        append(device.lowercase().replace(" ", ""))
-        append("api")
-        append(apiLevel.toString())
-        append(systemImageSource.replace("-", ""))
-    }
+    val taskName =
+        buildString {
+            append(device.lowercase().replace(" ", ""))
+            append("api")
+            append(apiLevel.toString())
+            append(systemImageSource.replace("-", ""))
+        }
 }

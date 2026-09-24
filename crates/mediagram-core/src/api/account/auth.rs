@@ -17,6 +17,10 @@ use grammers_client::SignInError;
 use grammers_client::client::{LoginToken, PasswordToken};
 use grammers_mtsender::InvocationError;
 
+#[path = "auth_attempt.rs"]
+mod attempt;
+use attempt::Attempt;
+
 use super::session;
 use crate::api::{AuthOutcome, Core, CoreError};
 
@@ -40,16 +44,16 @@ pub(in crate::api) async fn request_code(core: &Core, phone: String) -> Result<S
     if state.client.is_none() {
         state.client = Some(session::connect(core));
     }
+    let attempt = Attempt::begin(&mut state)?;
     let client = state.client.as_ref().expect("just set").client.clone();
     drop(state);
 
-    let token = client
-        .request_login_code(&phone, &core.api_hash)
-        .await
-        .map_err(|err| refused(&err))?;
+    let (mut state, result) = attempt
+        .complete(core, client.request_login_code(&phone, &core.api_hash))
+        .await?;
+    let token = result.map_err(|err| refused(&err))?;
 
     let id = opaque_id();
-    let mut state = core.state.lock().await;
     state.pending_login = Some(PendingLogin {
         id: id.clone(),
         token,
@@ -71,6 +75,7 @@ pub(in crate::api) async fn sign_in(
             "no matching login is in progress".into(),
         ));
     }
+    let attempt = Attempt::resume(&state)?;
     let pending = state.pending_login.take().expect("checked above");
     let handle = state
         .client
@@ -79,21 +84,22 @@ pub(in crate::api) async fn sign_in(
     let client = handle.client.clone();
     drop(state);
 
-    match client.sign_in(&pending.token, &code).await {
+    let (mut state, result) = attempt
+        .complete(core, client.sign_in(&pending.token, &code))
+        .await?;
+    match result {
         Ok(_user) => {
-            let state = core.state.lock().await;
-            let handle = state.client.as_ref().expect("connected above");
-            session::persist(&handle.handle, &core.data_dir)?;
+            attempt.persist(core)?;
             Ok(AuthOutcome::Done)
         }
         Err(SignInError::PasswordRequired(password_token)) => {
-            core.state.lock().await.pending_password = Some(PendingPassword(password_token));
+            state.pending_password = Some(PendingPassword(password_token));
             Ok(AuthOutcome::PasswordNeeded)
         }
         Err(SignInError::InvalidCode) => {
             // The token's `phone`/`phone_code_hash` are still good for
             // another attempt; only the code itself was wrong.
-            core.state.lock().await.pending_login = Some(pending);
+            state.pending_login = Some(pending);
             Err(CoreError::NotAuthorized("the code was not accepted".into()))
         }
         Err(SignInError::SignUpRequired) => Err(CoreError::NotAuthorized(NO_ACCOUNT.into())),
@@ -104,6 +110,7 @@ pub(in crate::api) async fn sign_in(
 
 pub(in crate::api) async fn check_password(core: &Core, password: String) -> Result<(), CoreError> {
     let mut state = core.state.lock().await;
+    let attempt = Attempt::resume(&state)?;
     let pending = state
         .pending_password
         .take()
@@ -115,16 +122,26 @@ pub(in crate::api) async fn check_password(core: &Core, password: String) -> Res
     let client = handle.client.clone();
     drop(state);
 
-    match client.check_password(pending.0, password.into_bytes()).await {
-        Ok(_user) => {
-            let state = core.state.lock().await;
-            let handle = state.client.as_ref().expect("connected above");
-            session::persist(&handle.handle, &core.data_dir)
-        }
+    finish_password(
+        core,
+        attempt,
+        client.check_password(pending.0, password.into_bytes()),
+    )
+    .await
+}
+
+async fn finish_password<T>(
+    core: &Core,
+    attempt: Attempt,
+    response: impl std::future::Future<Output = Result<T, SignInError>>,
+) -> Result<(), CoreError> {
+    let (mut state, result) = attempt.complete(core, response).await?;
+    match result {
+        Ok(_user) => attempt.persist(core),
         Err(SignInError::InvalidPassword(retry_token)) => {
             // Telegram hands the same password step back specifically so a
             // wrong entry can be retried without a fresh login.
-            core.state.lock().await.pending_password = Some(PendingPassword(retry_token));
+            state.pending_password = Some(PendingPassword(retry_token));
             Err(CoreError::NotAuthorized(
                 "the password was not accepted".into(),
             ))
@@ -134,7 +151,8 @@ pub(in crate::api) async fn check_password(core: &Core, password: String) -> Res
     }
 }
 
-const NO_ACCOUNT: &str = "this number has no Telegram account yet; create one in the Telegram app first";
+const NO_ACCOUNT: &str =
+    "this number has no Telegram account yet; create one in the Telegram app first";
 
 /// What a failed login step becomes. Telegram refusing what was typed — a
 /// malformed or banned number, an expired code — is `NotAuthorized`, named by

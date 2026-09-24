@@ -55,7 +55,8 @@ pub struct PartLocation {
     pub message_id: i64,
 }
 
-const COLUMNS: &str = "set_id, kind, title, show, chap, path, season, episode, tmdb, year, container,
+const COLUMNS: &str =
+    "set_id, kind, title, show, chap, path, season, episode, tmdb, year, container,
      vcodec, acodec, quality, hdr, duration, total, part_count, created_at";
 
 fn read_set(row: &rusqlite::Row<'_>) -> rusqlite::Result<PlayableSet> {

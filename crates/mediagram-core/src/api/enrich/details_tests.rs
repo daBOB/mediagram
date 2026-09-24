@@ -13,8 +13,16 @@ fn described(kind: Kind, id: u64, overview: &str) -> TitleDetailsRow {
         id,
         lang: "en-US".into(),
         overview: Some(overview.into()),
-        tagline: None, genres: None, rating: None, network: None, status: None,
-        first_air: None, last_air: None, total_seasons: None, total_episodes: None, certification: None,
+        tagline: None,
+        genres: None,
+        rating: None,
+        network: None,
+        status: None,
+        first_air: None,
+        last_air: None,
+        total_seasons: None,
+        total_episodes: None,
+        certification: None,
     }
 }
 
@@ -28,7 +36,11 @@ fn the_sidecar_survives_the_refreshes_that_follow_it() {
     std::fs::create_dir_all(store::dir(&core).join("v-1")).unwrap();
 
     let conn = open_or_create(&core).unwrap();
-    upsert(&conn, &described(Kind::Movie, 550, "Ein Kellner in Seifenblasen")).unwrap();
+    upsert(
+        &conn,
+        &described(Kind::Movie, 550, "Ein Kellner in Seifenblasen"),
+    )
+    .unwrap();
     drop(conn);
 
     // A real refresh rather than a stand-in for one. `install_staged` is

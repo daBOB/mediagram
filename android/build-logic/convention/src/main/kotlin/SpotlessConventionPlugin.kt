@@ -22,8 +22,8 @@ class SpotlessConventionPlugin : Plugin<Project> {
                         .editorConfigOverride(
                             mapOf(
                                 "android" to "true",
-                                "max_line_length" to "120"
-                            )
+                                "max_line_length" to "120",
+                            ),
                         )
                     trimTrailingWhitespace()
                     endWithNewline()

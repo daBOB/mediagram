@@ -3,9 +3,9 @@
 //! covered in `tests/index_snapshot.rs`; its missing-parent-directory error
 //! path is pinned here instead, reusing this file's `apply_seen` fixtures.
 
+use mediagram::index::rescan::Seen;
 use mediagram::index::status::SetStatus;
 use mediagram::index::{db, rescan, sets, snapshot};
-use mediagram::index::rescan::Seen;
 use mlib_spec::caption::Part;
 
 mod support;
@@ -445,8 +445,14 @@ mod dating {
             part_seen(&earlier, 0, 0, 100, "aa", 120, 9101),
         ];
         rescan::apply_seen(&conn, CHAT_ID, &seen).unwrap();
-        let earlier_at = sets::get_set(&conn, "01JQ8F2K9M4XZ00000000D02").unwrap().unwrap().created_at;
-        let later_at = sets::get_set(&conn, "01JQ8F2K9M4XZ00000000D03").unwrap().unwrap().created_at;
+        let earlier_at = sets::get_set(&conn, "01JQ8F2K9M4XZ00000000D02")
+            .unwrap()
+            .unwrap()
+            .created_at;
+        let later_at = sets::get_set(&conn, "01JQ8F2K9M4XZ00000000D03")
+            .unwrap()
+            .unwrap()
+            .created_at;
         assert_eq!((earlier_at, later_at), (SENT_BASE + 120, SENT_BASE + 250));
     }
 
@@ -457,7 +463,12 @@ mod dating {
         let (_dir, conn) = open_db();
         let set_id = "01JQ8F2K9M4XZ00000000D04";
         let t = template(set_id, 2, 200);
-        rescan::apply_seen(&conn, CHAT_ID, &[part_seen(&t, 1, 100, 100, "bb", 300, 9202)]).unwrap();
+        rescan::apply_seen(
+            &conn,
+            CHAT_ID,
+            &[part_seen(&t, 1, 100, 100, "bb", 300, 9202)],
+        )
+        .unwrap();
 
         rescan::apply_seen(&conn, CHAT_ID, &[part_seen(&t, 0, 0, 100, "aa", 100, 9201)]).unwrap();
 

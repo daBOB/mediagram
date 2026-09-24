@@ -28,7 +28,6 @@ import javax.inject.Inject
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
     // Field-injected rather than read from a ViewModel: the watch-state
     // cadence is a property of the process, not of this screen, and
     // onStart/onStop are Activity lifecycle callbacks a Composable has no

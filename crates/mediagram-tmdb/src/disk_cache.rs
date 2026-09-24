@@ -1,5 +1,5 @@
-//! A disk cache in front of any [`TmdbApi`], so resolving the same file twice
-//! never asks TMDB twice.
+//! A disk cache in front of any [`TmdbApi`]. Populated responses are reused;
+//! empty search pages are fetched again so a later search can find new titles.
 
 use std::path::PathBuf;
 
@@ -10,7 +10,7 @@ use sha2::{Digest, Sha256};
 use crate::tmdb_client::TmdbApi;
 
 /// Wraps any `TmdbApi` with a disk cache keyed by sha256(path + sorted
-/// query), so repeated resolves of the same file never re-hit the network.
+/// query). Empty search pages are deliberately not cached and are retried.
 pub struct DiskCachedApi<A> {
     inner: A,
     cache_dir: PathBuf,

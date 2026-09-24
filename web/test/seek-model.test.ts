@@ -1,7 +1,7 @@
 /** Covers `seek-model`: the scrub bar's arithmetic, and where a skip lands. */
 
 import { describe, expect, test } from "bun:test";
-import { seekModel, skipTo } from "../public/lib/seek-model.js";
+import { seekModel, skipTo } from "../public/lib/playback/seek-model.js";
 
 describe("a bar there is something to draw", () => {
   test("scales to the film's runtime, not to the encode's", () => {

@@ -7,24 +7,41 @@ package model
  * to. Mirrors the core's `ProgressRow` so nothing above [data.WatchStateRepository]
  * depends on the generated bindings directly.
  */
-data class Progress(val setId: String, val at: Double, val duration: Double?, val updatedAt: Long)
+data class Progress(
+    val setId: String,
+    val at: Double,
+    val duration: Double?,
+    val updatedAt: Long,
+)
 
 /** One title a profile watched to the end, and when. */
-data class Watched(val setId: String, val finishedAt: Long)
+data class Watched(
+    val setId: String,
+    val finishedAt: Long,
+)
 
 /**
  * A named group of sets a profile collected — a collection's contents.
  * `id` is the core's own row id; renaming or deleting one by it is
  * deferred to the phase that first shows collections in the UI.
  */
-data class ListOfSets(val id: String, val name: String, val items: List<String>)
+data class ListOfSets(
+    val id: String,
+    val name: String,
+    val items: List<String>,
+)
 
 /**
  * Who is watching. A name is the cross-device identity a sync round
  * matches on; `id` is this device's local shorthand for it and means
  * nothing on another device.
  */
-data class Profile(val id: String, val name: String)
+data class Profile(
+    val id: String,
+    val name: String,
+    /** Sees only titles rated FSK 12 or under, or marked for Kids by hand. */
+    val kids: Boolean = false,
+)
 
 /**
  * One profile's everything, in one read — progress, what has been finished,

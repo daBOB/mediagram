@@ -77,7 +77,14 @@ pub(crate) fn parse(json: &[u8]) -> Result<Report> {
 /// Probes a file on disk.
 pub(crate) async fn run(path: &Path) -> Result<Report> {
     let output = tokio::process::Command::new("ffprobe")
-        .args(["-v", "error", "-print_format", "json", "-show_format", "-show_streams"])
+        .args([
+            "-v",
+            "error",
+            "-print_format",
+            "json",
+            "-show_format",
+            "-show_streams",
+        ])
         .arg(path)
         .output()
         .await

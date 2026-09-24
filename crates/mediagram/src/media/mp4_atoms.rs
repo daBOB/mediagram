@@ -16,6 +16,7 @@ const LARGESIZE_LEN: u64 = 8;
 /// appears before its `moov` box, meaning it needs a faststart remux before
 /// it can be split. Non-MP4 containers (mkv, webm, ...) always return
 /// `Ok(false)` without reading any box data.
+/// An inspected box whose declared size extends past EOF is an error.
 pub fn needs_faststart(path: &Path) -> Result<bool> {
     if !is_mp4_family(path) {
         return Ok(false);
@@ -31,7 +32,7 @@ pub fn needs_faststart(path: &Path) -> Result<bool> {
     let mut mdat_offset: Option<u64> = None;
     let mut pos: u64 = 0;
 
-    while pos + BOX_HEADER_LEN <= file_len {
+    while file_len - pos >= BOX_HEADER_LEN {
         file.seek(SeekFrom::Start(pos))
             .with_context(|| format!("seeking {} at {pos}", path.display()))?;
         let mut header = [0u8; 8];
@@ -42,7 +43,7 @@ pub fn needs_faststart(path: &Path) -> Result<bool> {
 
         let (box_size, header_len) = if declared_size == 1 {
             // 64-bit largesize follows the type field.
-            if pos + BOX_HEADER_LEN + LARGESIZE_LEN > file_len {
+            if file_len - pos < BOX_HEADER_LEN + LARGESIZE_LEN {
                 bail!(
                     "{}: truncated largesize box at offset {pos}",
                     path.display()
@@ -65,6 +66,12 @@ pub fn needs_faststart(path: &Path) -> Result<bool> {
                 path.display()
             );
         }
+        if box_size > file_len - pos {
+            bail!(
+                "{}: box at offset {pos} with size {box_size} extends past end of file",
+                path.display()
+            );
+        }
 
         if box_type == b"moov" && moov_offset.is_none() {
             moov_offset = Some(pos);
@@ -78,9 +85,7 @@ pub fn needs_faststart(path: &Path) -> Result<bool> {
             break;
         }
 
-        pos = pos.checked_add(box_size).ok_or_else(|| {
-            anyhow::anyhow!("{}: box size overflows at offset {pos}", path.display())
-        })?;
+        pos += box_size;
     }
 
     match (mdat_offset, moov_offset) {

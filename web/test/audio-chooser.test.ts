@@ -7,7 +7,12 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { channelLabel, defaultTrack, trackForLanguage, trackLabel } from "../public/lib/audio-chooser.js";
+import {
+  channelLabel,
+  defaultTrack,
+  trackIndexForLanguage,
+  trackLabel,
+} from "../public/lib/playback/audio-chooser.js";
 
 const track = (over: Record<string, unknown> = {}) => ({
   index: 0,
@@ -69,6 +74,10 @@ describe("rows", () => {
 });
 
 describe("where to start", () => {
+  test("returns the stream ordinal even when the list is sparse", () => {
+    expect(defaultTrack([track({ index: 2 }), track({ index: 5, isDefault: true })])).toBe(5);
+    expect(defaultTrack([track({ index: 2 })])).toBe(2);
+  });
   test("the stream the file marks as its default", () => {
     expect(defaultTrack([track(), track({ index: 1, isDefault: true })])).toBe(1);
   });
@@ -81,34 +90,33 @@ describe("where to start", () => {
 
 describe("matching a remembered language", () => {
   const tracks = [
-    { index: 0, lang: "de", channels: 6, codec: "ac3", isDefault: true },
-    { index: 1, lang: "en", channels: 2, codec: "aac", isDefault: false },
+    { index: 0, lang: "de", channels: 6, codec: "ac3", title: null, isDefault: true },
+    { index: 1, lang: "en", channels: 2, codec: "aac", title: null, isDefault: false },
   ];
 
   test("finds the track carrying it", () => {
-    expect(trackForLanguage(tracks, "en")).toBe(1);
-    expect(trackForLanguage(tracks, "de")).toBe(0);
+    expect(trackIndexForLanguage(tracks, "en")).toBe(1);
+    expect(trackIndexForLanguage(tracks, "de")).toBe(0);
   });
 
   test("ignoring case and stray whitespace", () => {
-    expect(trackForLanguage(tracks, " EN ")).toBe(1);
+    expect(trackIndexForLanguage(tracks, " EN ")).toBe(1);
   });
 
   test("a language this file does not carry is nothing, not the first track", () => {
     // The caller then falls back to the file's own default, which is the right
     // answer for a re-upload that dropped a language somebody once chose.
-    expect(trackForLanguage(tracks, "fr")).toBeNull();
+    expect(trackIndexForLanguage(tracks, "fr")).toBeNull();
   });
 
   test("and nothing remembered is nothing", () => {
     for (const lang of [null, undefined, "", "  ", 5]) {
-      expect(trackForLanguage(tracks, lang as never)).toBeNull();
+      expect(trackIndexForLanguage(tracks, lang as never)).toBeNull();
     }
   });
 
   test("an ordinal is never what is matched", () => {
     // A stored `1` would be German in one release and a commentary in the next.
-    expect(trackForLanguage(tracks, "1")).toBeNull();
+    expect(trackIndexForLanguage(tracks, "1")).toBeNull();
   });
 });
-
