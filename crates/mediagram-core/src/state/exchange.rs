@@ -12,10 +12,10 @@ use super::rows;
 
 /// What this device has to say about where things were left off.
 ///
-/// Every profile, because a document belongs to a device rather than to
-/// whoever happens to be watching on it; and with timestamps, which
-/// `snapshot` drops — it is built for a page that only needs to know *what*,
-/// and a merge has to know *when*.
+/// Includes every profile, because a document belongs to a device rather
+/// than to whoever happens to be watching on it. A snapshot retains progress
+/// and watched timestamps; this record also carries the list timestamps and
+/// removal tombstones needed to reconcile changes between devices.
 pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRecord> {
     let mut profiles = Vec::new();
     for profile in super::profiles::list(conn)? {
