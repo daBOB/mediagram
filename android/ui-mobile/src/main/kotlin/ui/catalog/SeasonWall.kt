@@ -24,6 +24,7 @@ import catalog.Division
 import catalog.Entry
 import catalog.SeasonPlate
 import catalog.firstItemOf
+import catalog.rowsOf
 import designsystem.Spacing
 import kotlinx.coroutines.CancellationException
 import model.WatchSnapshot

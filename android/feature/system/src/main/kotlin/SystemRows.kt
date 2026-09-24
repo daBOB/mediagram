@@ -1,4 +1,4 @@
-package ui.system
+package system
 
 import data.RefreshOutcome
 
@@ -8,8 +8,8 @@ import data.RefreshOutcome
  * known is left out entirely rather than shown blank, because a blank row
  * reads as a broken value rather than an absent one.
  *
- * All pure, all `internal`, none composable — [SystemScreen] is where
- * these sentences meet the layout.
+ * All pure, none composable — the system screen is where these sentences
+ * meet the layout.
  */
 
 /**
@@ -28,7 +28,7 @@ import data.RefreshOutcome
  * again here under a second name: one number, on one screen, twice, is how a
  * person diagnosing something arrives at two different conclusions.
  */
-internal fun cacheReadsLine(
+fun cacheReadsLine(
     fromCache: Long,
     fromUpstream: Long,
     fetches: Int,
@@ -41,7 +41,7 @@ internal fun cacheReadsLine(
 }
 
 /** Whether this device's Telegram session is up, or `null` when the question does not apply. */
-internal fun telegramLine(connected: Boolean?): String? =
+fun telegramLine(connected: Boolean?): String? =
     when (connected) {
         null -> null
         true -> "connected"
@@ -102,7 +102,7 @@ private fun catalogueAge(
  * [now] is a parameter with no default for the reason the web's is: a
  * function that reads the clock itself cannot be tested against one.
  */
-internal fun refreshLine(
+fun refreshLine(
     publishedAt: Long?,
     outcome: RefreshOutcome?,
     now: Long,
@@ -122,7 +122,7 @@ internal fun refreshLine(
 }
 
 /** How long this process has been up, coarsely: `2h 14m`, or just `14m` under an hour. */
-internal fun uptimeLine(seconds: Long?): String? {
+fun uptimeLine(seconds: Long?): String? {
     if (seconds == null || seconds < 0) return null
     val days = seconds / 86_400
     val hours = (seconds % 86_400) / 3600
@@ -133,3 +133,25 @@ internal fun uptimeLine(seconds: Long?): String? {
         else -> "${minutes}m"
     }
 }
+
+/**
+ * What the Cache block says, as label-and-value pairs.
+ *
+ * Pure so a test pins the counters this screen hands over and not only the
+ * sentence they are handed to. For as long as the sentence alone was
+ * tested, these rows called round trips to Telegram "hits" and reads that
+ * raised "misses", and printed the second of those twice on one screen
+ * under two names, with nothing able to see it.
+ */
+fun cacheRows(state: SystemUiState): List<Pair<String, String?>> =
+    listOf(
+        "Held" to heldOfBudget(state.heldBytes, state.budgetBytes),
+        "Reads" to cacheReadsLine(state.fromCacheBytes, state.fromUpstreamBytes, state.fetches),
+    )
+
+/** What the Upstream block says. Pure for the reason [cacheRows] is, and pinned by the same test. */
+fun upstreamRows(state: SystemUiState): List<Pair<String, String?>> =
+    listOf(
+        "Since starting" to humanSize(state.fromUpstreamBytes),
+        "Failed reads" to if (state.failedReads > 0) "${state.failedReads}" else "none",
+    )

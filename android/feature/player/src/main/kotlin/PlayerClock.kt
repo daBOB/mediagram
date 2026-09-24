@@ -1,4 +1,4 @@
-package ui.player
+package player
 
 import java.util.Locale
 
@@ -16,7 +16,7 @@ import java.util.Locale
  * Truncates rather than rounds, and treats anything negative as zero: media3
  * reports a length it does not know yet as `C.TIME_UNSET`.
  */
-internal fun clockTime(ms: Long): String {
+fun clockTime(ms: Long): String {
     val total = if (ms > 0L) ms / 1_000L else 0L
     val hours = total / 3_600L
     val minutes = (total % 3_600L) / 60L

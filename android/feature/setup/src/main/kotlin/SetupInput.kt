@@ -22,6 +22,6 @@ internal const val API_ID_ERROR = "The api_id is the number shown next to your a
 
 internal const val API_HASH_ERROR = "The api_hash is 32 hexadecimal characters, copied from my.telegram.org."
 
-internal fun apiIdOrNull(typed: String): Int? = typed.trim().toIntOrNull()?.takeIf { it > 0 }
+fun apiIdOrNull(typed: String): Int? = typed.trim().toIntOrNull()?.takeIf { it > 0 }
 
-internal fun apiHashOrNull(typed: String): String? = typed.trim().lowercase().takeIf(API_HASH_SHAPE::matches)
+fun apiHashOrNull(typed: String): String? = typed.trim().lowercase().takeIf(API_HASH_SHAPE::matches)

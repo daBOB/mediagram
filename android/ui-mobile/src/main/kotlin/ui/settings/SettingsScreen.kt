@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Spacing
 import setup.SettingsUiState
 import setup.SettingsViewModel
+import setup.telegramRows
 import ui.components.Block
 import ui.setup.LibraryScreen
 import ui.setup.TelegramApplicationScreen
@@ -157,15 +158,6 @@ private fun ProfileReload(
         TextButton(onClick = onRetry, enabled = !state.busy) { Text("Try again") }
     }
 }
-
-/** The Telegram block's rows, pure so a test can pin them. "…" is a row still being asked. */
-internal fun telegramRows(state: SettingsUiState): List<Pair<String, String?>> =
-    listOf(
-        "Account" to (state.account ?: "…"),
-        "Library" to (state.library ?: "…"),
-        "Datacenter" to (state.datacenter ?: "…"),
-        "Session" to (state.connection ?: "…"),
-    )
 
 /**
  * Asked before signing out, and worded against start over's: this ends the

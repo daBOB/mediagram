@@ -26,11 +26,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import catalog.initialsOf
 import coil3.compose.AsyncImage
-import data.ProgressPoint
-import data.ResumePoint
 import designsystem.Spacing
-import model.Progress
 import java.io.File
 
 /**
@@ -206,10 +204,6 @@ internal fun PosterArt(
 
 private val TICK_SIZE = 20.dp
 
-/** [PosterCard.progress] from a raw position — shared by every screen that draws a mark from [model.WatchSnapshot]. */
-internal fun watchedFractionOf(progress: Progress?): Float? =
-    ResumePoint.watchedFraction(progress?.let { ProgressPoint(it.at, it.duration) })?.toFloat()
-
 /**
  * How much of a plate's width one line of initials takes. Two letters at
  * this share sit inside the plate with air around them; one letter reads as
@@ -221,15 +215,3 @@ private const val INITIAL_SHARE = 0.26f
 private val INITIAL_TRACKING = 2.sp
 
 private val HAIRLINE = 0.5.dp
-
-/** Two letters to stand in for artwork that is not there. */
-internal fun initialsOf(title: String): String =
-    title
-        .split(WHITESPACE)
-        .take(2)
-        .mapNotNull { word -> word.firstOrNull(Char::isLetterOrDigit) }
-        .joinToString("")
-        .uppercase()
-        .ifEmpty { "?" }
-
-private val WHITESPACE = Regex("\\s+")

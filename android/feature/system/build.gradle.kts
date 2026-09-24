@@ -15,4 +15,12 @@ dependencies {
     implementation(project(":core:data"))
     // Only for PlaybackCounters — nothing here touches ExoPlayer directly.
     implementation(project(":core:playback"))
+
+    testImplementation(libs.findLibrary("mockk").get())
+    // SystemViewModelTest builds a real android.content.Context via
+    // ApplicationProvider; the plain unit-test android.jar stub has no such
+    // context to hand back, so this one runs under Robolectric rather than
+    // the bare JVM. androidx-junit brings ApplicationProvider itself.
+    testImplementation(libs.findLibrary("robolectric").get())
+    testImplementation(libs.findLibrary("androidx.junit").get())
 }

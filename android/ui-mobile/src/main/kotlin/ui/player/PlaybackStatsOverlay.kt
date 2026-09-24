@@ -23,6 +23,13 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
 import designsystem.Spacing
 import playback.PlaybackTotals
+import player.TICK_MS
+import player.audioStatLine
+import player.bufferStatLine
+import player.cacheStatLine
+import player.droppedStatLine
+import player.readsStatLine
+import player.videoStatLine
 
 /**
  * Wide enough for `dropped`, the longest label, so every value starts at the

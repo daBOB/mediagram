@@ -1,6 +1,5 @@
-package ui.player
+package player
 
-import player.PlayerUiState
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

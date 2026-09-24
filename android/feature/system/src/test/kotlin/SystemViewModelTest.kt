@@ -1,4 +1,4 @@
-package ui.system
+package system
 
 import android.content.Context
 import androidx.lifecycle.viewModelScope
@@ -31,7 +31,6 @@ import org.robolectric.annotation.Config
 import playback.CacheOccupancy
 import playback.CacheProvider
 import playback.PlaybackCounters
-import system.SystemViewModel
 import uniffi.mediagram_core.CatalogFacts
 import java.io.IOException
 import kotlin.test.assertEquals

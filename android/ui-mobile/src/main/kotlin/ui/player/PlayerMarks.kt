@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import designsystem.Spacing
 import model.KidsVerdict
 import player.PlayerMarksState
+import player.kidsLabel
 
 /**
  * The three controls the web keeps in the player — "this is where a viewer
@@ -69,14 +70,6 @@ internal data class PlayerMarksActions(
     val onSetInList: (id: String, included: Boolean) -> Unit,
     val onCreateList: (name: String) -> Unit,
 )
-
-/** What the Kids button says — the three wordings `refreshKids` in `player.js` chooses between. */
-internal fun kidsLabel(marks: PlayerMarksState): String =
-    when (marks.kidsVerdict) {
-        KidsVerdict.SAFE -> "For kids · ${marks.ageLabel}"
-        KidsVerdict.UNSAFE -> "${marks.ageLabel} · not for kids"
-        KidsVerdict.UNRATED -> if (marks.kids) "For kids" else "Kids"
-    }
 
 @Composable
 private fun MarkButton(

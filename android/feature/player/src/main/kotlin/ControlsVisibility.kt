@@ -1,6 +1,4 @@
-package ui.player
-
-import player.PlayerUiState
+package player
 
 /*
  * When the control bar may be on screen, and when it goes away on its own.
@@ -12,7 +10,17 @@ import player.PlayerUiState
  */
 
 /** How long the bar stays after a tap, while the film is running. */
-internal const val CONTROLS_LINGER_MS = 4_000L
+const val CONTROLS_LINGER_MS = 4_000L
+
+/**
+ * How often the readout catches up with the playhead. Twice a second: a clock
+ * printing whole seconds needs no more, and a tick is a recomposition.
+ *
+ * Shared between the transport bar and the statistics overlay rather than
+ * copied, so the two read the player on one interval instead of drifting
+ * apart on two.
+ */
+const val TICK_MS = 500L
 
 /**
  * Whether there is anything to control.
@@ -21,7 +29,7 @@ internal const val CONTROLS_LINGER_MS = 4_000L
  * bar drawn over an error invites a press that cannot do anything — worse than
  * no bar, because it looks like the error might be dismissible.
  */
-internal fun controlsMayShow(state: PlayerUiState): Boolean = state == PlayerUiState.Playing || state == PlayerUiState.Paused
+fun controlsMayShow(state: PlayerUiState): Boolean = state == PlayerUiState.Playing || state == PlayerUiState.Paused
 
 /**
  * Whether the bar should take itself away.
@@ -31,7 +39,7 @@ internal fun controlsMayShow(state: PlayerUiState): Boolean = state == PlayerUiS
  * would bring them back is invisible. A drag in progress keeps them too — the
  * slider cannot be pulled out from under the thumb holding it.
  */
-internal fun controlsShouldFade(
+fun controlsShouldFade(
     isPlaying: Boolean,
     isScrubbing: Boolean,
 ): Boolean = isPlaying && !isScrubbing

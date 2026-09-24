@@ -1,7 +1,6 @@
-package ui.player
+package player
 
 import model.KidsVerdict
-import player.PlayerMarksState
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

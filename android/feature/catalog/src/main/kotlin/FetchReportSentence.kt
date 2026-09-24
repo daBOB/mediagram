@@ -1,8 +1,8 @@
-package ui.catalog
+package catalog
 
 /**
- * The sentence a fetch is reported with. Pure and `internal` — no composable
- * belongs here, only the wording.
+ * The sentence a fetch is reported with. Pure — no composable belongs here,
+ * only the wording.
  *
  * Six counts, and a viewer reading the line wants two things from it: did
  * this run find anything, and is anything still missing. So it leads with
@@ -15,7 +15,7 @@ package ui.catalog
  * because the core already decided that is what it counts.
  */
 @Suppress("LongParameterList")
-internal fun fetchSentence(
+fun fetchSentence(
     detailsRecorded: Int,
     postersFetched: Int,
     detailsAlreadyKnown: Int,

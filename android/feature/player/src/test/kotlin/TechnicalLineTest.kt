@@ -1,4 +1,4 @@
-package ui.catalog
+package player
 
 import model.Kind
 import model.MediaSet

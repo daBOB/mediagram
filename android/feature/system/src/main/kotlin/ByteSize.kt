@@ -1,4 +1,4 @@
-package ui.formatting
+package system
 
 private val UNITS = listOf("B", "KB", "MB", "GB", "TB")
 
@@ -9,7 +9,7 @@ private fun oneDecimal(value: Double): String {
 }
 
 /** A byte count, at one decimal place only where that changes the meaning. Mirrors `format.js`'s `humanSize`. */
-internal fun humanSize(bytes: Long): String {
+fun humanSize(bytes: Long): String {
     var value = bytes.toDouble()
     var unit = 0
     while (value >= 1024 && unit < UNITS.size - 1) {
@@ -31,7 +31,7 @@ internal fun humanSize(bytes: Long): String {
  * change of precision. That reading cannot happen: the budget is a fixed
  * 2 GiB, so the two spellings only ever differed above the ceiling.
  */
-internal fun heldOfBudget(
+fun heldOfBudget(
     held: Long,
     budget: Long,
 ): String {

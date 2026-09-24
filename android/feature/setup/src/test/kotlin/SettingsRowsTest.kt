@@ -1,6 +1,5 @@
-package ui.settings
+package setup
 
-import setup.SettingsUiState
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

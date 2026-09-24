@@ -1,4 +1,4 @@
-package ui.catalog
+package catalog
 
 import java.util.Locale
 
@@ -6,12 +6,12 @@ import java.util.Locale
  * The short facts that sit beside a poster: when a title is from, how long
  * it runs, and what a provider scored it.
  *
- * All pure, all `internal`, none composable — [TitleDetailScreen] is where
- * these meet a layout, the same division [SystemRows] and [technicalLine]
- * already follow. Each answers `null` rather than an empty string when it
- * has nothing to say, so a caller leaves the line out instead of printing a
- * separator with nothing beside it: a blank field reads as a value that
- * failed to load rather than one nobody recorded.
+ * All pure, none composable — the title detail screen is where these meet a
+ * layout, the same division the system screen's rows and the player's
+ * technical line already follow. Each answers `null` rather than an empty
+ * string when it has nothing to say, so a caller leaves the line out
+ * instead of printing a separator with nothing beside it: a blank field
+ * reads as a value that failed to load rather than one nobody recorded.
  */
 
 /**
@@ -21,7 +21,7 @@ import java.util.Locale
  * to whole minutes and to never printing `0m` — anything short enough to
  * round away is still a minute to a viewer deciding whether to start it.
  */
-internal fun humanDuration(seconds: Int?): String? {
+fun humanDuration(seconds: Int?): String? {
     if (seconds == null || seconds <= 0) return null
     val hours = seconds / 3600
     val minutes = Math.round((seconds % 3600) / 60.0).toInt()
@@ -37,7 +37,7 @@ internal fun humanDuration(seconds: Int?): String? {
  * A year of zero is what an index writes when it has no year rather than a
  * title from the year zero, so it is not printed.
  */
-internal fun factsLine(
+fun factsLine(
     year: Int?,
     durationSecs: Int?,
     ageLabel: String? = null,
@@ -56,4 +56,4 @@ internal fun factsLine(
  * module is: a default locale that writes decimal commas would show a
  * rating in a shape the other surface never uses.
  */
-internal fun ratingLabel(rating: Double?): String? = rating?.let { String.format(Locale.ROOT, "★ %.1f", it) }
+fun ratingLabel(rating: Double?): String? = rating?.let { String.format(Locale.ROOT, "★ %.1f", it) }

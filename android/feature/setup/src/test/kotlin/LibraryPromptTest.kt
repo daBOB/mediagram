@@ -1,6 +1,5 @@
-package ui.setup
+package setup
 
-import setup.LibraryOption
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -11,10 +10,9 @@ private const val NOTHING_PINNED = "That channel has nothing pinned. Run `mediag
  * What the picker puts on screen decides whether a person can get past the
  * last setup step at all: a failure with no control offered is a dead end,
  * and a list thrown away on a failure is a step that has to be started
- * again. Only the mapping is testable here — this module's tests are plain
- * JVM ones with no Compose test rule.
+ * again.
  */
-class LibraryScreenTest {
+class LibraryPromptTest {
     @Test
     fun aListNotBackYetIsSomethingToWaitFor() {
         assertEquals(LibraryPrompt.Waiting, libraryPromptFor(choices = null, error = null))

@@ -1,4 +1,4 @@
-package ui.player
+package player
 
 import playback.PlaybackTotals
 import kotlin.test.Test

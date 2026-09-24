@@ -1,7 +1,5 @@
-package ui.setup
+package setup.login
 
-import setup.login.LoginStep
-import setup.login.LoginUiState
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -9,10 +7,9 @@ import kotlin.test.assertNull
 /**
  * The field the screen puts up decides which call the Continue button
  * makes, so a rejection landing on the wrong field silently throws away a
- * login attempt that was still usable. Only the mapping is testable here —
- * this module's tests are plain JVM ones with no Compose test rule.
+ * login attempt that was still usable.
  */
-class LoginScreenTest {
+class LoginPromptTest {
     @Test
     fun aRejectedCodeAsksForTheCodeAgain() {
         assertEquals(

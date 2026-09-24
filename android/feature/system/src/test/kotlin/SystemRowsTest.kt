@@ -1,7 +1,5 @@
-package ui.system
+package system
 
-import system.SystemUiState
-import ui.formatting.heldOfBudget
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

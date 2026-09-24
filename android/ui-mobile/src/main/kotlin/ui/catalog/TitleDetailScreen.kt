@@ -22,10 +22,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
+import catalog.factsLine
+import catalog.ratingLabel
 import designsystem.Spacing
 import kotlinx.coroutines.CancellationException
 import model.MediaSet
 import model.ageLabel
+import player.technicalLine
 import uniffi.mediagram_core.TitleInfo
 
 /** Wide enough to recognise a poster by, narrow enough to leave the facts a column. */

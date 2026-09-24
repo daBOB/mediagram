@@ -1,7 +1,6 @@
-package ui.player
+package player
 
 import playback.PlaybackTotals
-import ui.formatting.humanSize
 import java.util.Locale
 
 /*
@@ -9,8 +8,8 @@ import java.util.Locale
  * decoder rather than the catalog, so a title whose index is wrong about its
  * codec shows the truth here.
  *
- * All pure, all `internal`, none composable — the overlay is where these
- * sentences meet the layout.
+ * All pure, none composable — the overlay is where these sentences meet
+ * the layout.
  */
 
 /**
@@ -55,7 +54,7 @@ private fun languageLabel(tag: String): String = Locale.forLanguageTag(tag).getD
  * media3's way of saying unset, not a rate, so it is left out rather than
  * printed as a number nobody measured.
  */
-internal fun videoStatLine(
+fun videoStatLine(
     width: Int?,
     height: Int?,
     codec: String?,
@@ -67,7 +66,7 @@ internal fun videoStatLine(
 }
 
 /** What the audio decoder is doing: `EAC3 5.1 German`. */
-internal fun audioStatLine(
+fun audioStatLine(
     codec: String,
     channels: Int,
     language: String,
@@ -81,10 +80,10 @@ internal fun audioStatLine(
  * came to, and the byte volumes it can answer for — what has been read, and
  * how much of it came off the disk — are the reads and cache rows' business.
  */
-internal fun bufferStatLine(aheadMs: Long): String = "${clockTime(aheadMs)} ahead"
+fun bufferStatLine(aheadMs: Long): String = "${clockTime(aheadMs)} ahead"
 
 /** The share of what has been read that came from disk rather than Telegram. */
-internal fun cacheStatLine(totals: PlaybackTotals): String {
+fun cacheStatLine(totals: PlaybackTotals): String {
     val total = totals.fromCacheBytes + totals.fromUpstreamBytes
     if (total == 0L) return "nothing read yet"
     val percent = Math.round(totals.fromCacheBytes * 100.0 / total)
@@ -98,7 +97,7 @@ internal fun cacheStatLine(totals: PlaybackTotals): String {
  * fetched" and "what did this film cost" are different questions and only the
  * first is asked here.
  */
-internal fun readsStatLine(totals: PlaybackTotals): String {
+fun readsStatLine(totals: PlaybackTotals): String {
     val base = "${totals.fetches} fetches · ${humanSize(totals.fromUpstreamBytes)}"
     return if (totals.failedReads > 0) "$base · ${totals.failedReads} failed" else base
 }
@@ -109,4 +108,4 @@ internal fun readsStatLine(totals: PlaybackTotals): String {
  * learns to ignore — which is exactly when it stops being read the one time
  * it matters.
  */
-internal fun droppedStatLine(dropped: Int): String? = if (dropped > 0) "$dropped frames" else null
+fun droppedStatLine(dropped: Int): String? = if (dropped > 0) "$dropped frames" else null

@@ -1,4 +1,4 @@
-package ui.catalog
+package catalog
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

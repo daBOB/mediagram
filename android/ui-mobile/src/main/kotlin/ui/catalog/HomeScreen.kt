@@ -26,6 +26,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import catalog.HomeRow
 import catalog.RowContent
+import catalog.keyOf
 import designsystem.Spacing
 import model.WatchSnapshot
 

@@ -1,4 +1,4 @@
-package ui.system
+package system
 
 import data.RefreshOutcome
 import kotlin.test.Test

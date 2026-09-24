@@ -19,9 +19,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Spacing
 import system.CacheBudgetViewModel
 import system.cacheBudgetChoices
+import system.heldOfBudget
+import system.humanSize
 import ui.components.Block
-import ui.formatting.heldOfBudget
-import ui.formatting.humanSize
 
 /**
  * The cache block of Settings: what is held against the allowance, then the

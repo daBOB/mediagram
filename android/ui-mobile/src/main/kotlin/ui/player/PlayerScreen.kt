@@ -43,8 +43,11 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Spacing
 import kotlinx.coroutines.delay
+import player.CONTROLS_LINGER_MS
 import player.PlayerUiState
 import player.PlayerViewModel
+import player.controlsMayShow
+import player.controlsShouldFade
 
 /**
  * Keeps playback through Activity recreation and stops when navigation removes

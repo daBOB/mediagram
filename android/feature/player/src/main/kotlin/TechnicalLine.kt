@@ -1,7 +1,6 @@
-package ui.catalog
+package player
 
 import model.MediaSet
-import ui.formatting.humanSize
 import java.util.Locale
 
 /**
@@ -14,7 +13,7 @@ import java.util.Locale
  * surface wants the shout-case form, it upper-cases at render time, the way
  * `course-view.js` does — this line stays as stored.
  */
-internal fun technicalLine(set: MediaSet): String =
+fun technicalLine(set: MediaSet): String =
     listOfNotNull(
         set.quality,
         hdrLabel(set.hdr),
@@ -34,7 +33,7 @@ internal fun technicalLine(set: MediaSet): String =
  * `SDR` is left out on purpose: it is the absence of a fact rather than a
  * fact, and a shelf where every card says `SDR` says nothing at all.
  */
-internal fun hdrLabel(hdr: String?): String? = hdr?.takeIf { it.isNotEmpty() && it != "SDR" }
+fun hdrLabel(hdr: String?): String? = hdr?.takeIf { it.isNotEmpty() && it != "SDR" }
 
 /**
  * The average bitrate of a set, as `9.4 Mbps`.
@@ -44,7 +43,7 @@ internal fun hdrLabel(hdr: String?): String? = hdr?.takeIf { it.isNotEmpty() && 
  * unless both numbers are known and positive: either missing would
  * otherwise read as a fabricated rate.
  */
-internal fun bitrateLabel(
+fun bitrateLabel(
     totalBytes: Long,
     durationSeconds: Int?,
 ): String? {

@@ -33,15 +33,8 @@ import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
 import androidx.media3.ui.compose.state.rememberSeekBackButtonState
 import androidx.media3.ui.compose.state.rememberSeekForwardButtonState
 import designsystem.Spacing
-
-/**
- * How often the readout catches up with the playhead. Twice a second: a clock
- * printing whole seconds needs no more, and a tick is a recomposition.
- *
- * Shared with the statistics overlay rather than copied, so the two read the
- * player on one interval instead of drifting apart on two.
- */
-internal const val TICK_MS = 500L
+import player.TICK_MS
+import player.clockTime
 
 /**
  * Enough to keep white legible over a bright frame without hiding it. The

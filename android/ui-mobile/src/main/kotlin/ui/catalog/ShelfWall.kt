@@ -16,9 +16,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.window.core.layout.WindowWidthSizeClass
-import catalog.CollectionKind
 import catalog.Entry
 import catalog.Shelf
+import catalog.extentOf
+import catalog.factsLine
+import catalog.keyOf
+import catalog.watchedFractionOf
 import designsystem.Spacing
 import model.Progress
 import model.WatchSnapshot
@@ -107,28 +110,6 @@ internal fun EntryCard(
         }
     }
 }
-
-internal fun keyOf(entry: Entry): String =
-    when (entry) {
-        is Entry.Film -> entry.set.setId
-        is Entry.Collection -> entry.key
-    }
-
-/**
- * What the plate counts in. A catalogue says "12 episodes", not "12 items",
- * and a course is measured in the chapters a viewer will work through
- * rather than in its total number of videos.
- */
-internal fun extentOf(collection: Entry.Collection): String =
-    when (collection.kind) {
-        CollectionKind.SHOW -> "${collection.count} ${plural(collection.count, "episode")}"
-        CollectionKind.COURSE -> "${collection.chapters} ${plural(collection.chapters, "chapter")}"
-    }
-
-private fun plural(
-    count: Int,
-    word: String,
-): String = if (count == 1) word else "${word}s"
 
 /** A tablet fits more plates across the page than a phone does. */
 internal fun posterColumnsFor(widthSizeClass: WindowWidthSizeClass): Int =

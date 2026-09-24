@@ -1,4 +1,4 @@
-package ui.player
+package player
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
