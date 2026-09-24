@@ -1,8 +1,14 @@
 package ui.tv
 
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
+import androidx.tv.material3.LocalContentColor
+import designsystem.Palette
 import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
@@ -14,6 +20,7 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
+import kotlin.test.assertEquals
 
 /**
  * `TvApp`'s start rule, mirrored from ui-mobile's `MobileAppTest`: `Ready`
@@ -50,6 +57,33 @@ class TvAppTest {
     fun outstandingSetupStateShowsTheSetupStepStub() {
         show(ready = false)
         compose.onNodeWithText("NeedsSignIn").assertExists()
+    }
+
+    /**
+     * The bug this closes: a stub `Text` sat directly in a `Box` painted
+     * with `background(colorScheme.background)`, which sets no content
+     * colour at all, so tv-material's `LocalContentColor` fell back to its
+     * own default (black) on the catalogue's near-black ground — text that
+     * exists in the tree but reads as invisible on screen, which
+     * `assertExists()` alone cannot catch. [TvShell] is what fixes it —
+     * this reads the colour every later TV screen would actually inherit
+     * from it, not just whether something composed.
+     */
+    @Test
+    fun tvShellPublishesTheCatalogueTextColourAsContentColour() {
+        var contentColor: Color? = null
+        showShell { contentColor = LocalContentColor.current }
+        assertEquals(Palette.Text, contentColor)
+    }
+
+    private fun showShell(probe: @Composable () -> Unit) {
+        lateinit var shellController: ActivityController<ComponentActivity>
+        compose.runOnUiThread {
+            shellController = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
+            shellController.get().setContent { TvTheme { TvShell { probe() } } }
+        }
+        compose.waitForIdle()
+        compose.runOnUiThread { shellController.close() }
     }
 
     private fun show(ready: Boolean) {

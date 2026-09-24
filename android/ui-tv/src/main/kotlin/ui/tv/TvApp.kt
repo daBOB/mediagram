@@ -1,6 +1,5 @@
 package ui.tv
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -13,6 +12,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Surface
+import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
 import designsystem.Overscan
 import setup.SetupUiState
@@ -42,15 +43,39 @@ fun TvApp() {
 
         LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { setupViewModel.recheck() }
 
+        TvShell {
+            Text(text = stubLabel(setupState))
+        }
+    }
+}
+
+/**
+ * The root every TV screen composes inside, not just this one: a plain
+ * `Box` painted with a background colour never sets tv-material's
+ * `LocalContentColor`, so text dropped straight into one falls back to
+ * tv-material's own default (black) regardless of how dark the ground
+ * under it is drawn — unreadable on [designsystem.Palette.Ground] rather
+ * than merely mistthemed. `Surface` is what tv-material uses to publish a
+ * content colour alongside its container colour, mirroring `MobileApp`'s
+ * root M3 `Surface`, so `content` and everything it composes inherit
+ * [designsystem.Palette.Text] the same way a phone screen inherits it from
+ * `MediagramTheme`'s `Surface` without asking for a colour itself.
+ */
+@Composable
+internal fun TvShell(content: @Composable () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        colors =
+            SurfaceDefaults.colors(
+                containerColor = MaterialTheme.colorScheme.background,
+                contentColor = MaterialTheme.colorScheme.onBackground,
+            ),
+    ) {
         Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
+            modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
             contentAlignment = Alignment.Center,
         ) {
-            Text(text = stubLabel(setupState))
+            content()
         }
     }
 }
