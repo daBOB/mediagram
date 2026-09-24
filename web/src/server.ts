@@ -142,9 +142,16 @@ export function startServer(options: RouterOptions & {
     createRouter({ ...options, db, catalog });
   let route = routerFor(options.db, options.catalog);
   const trustProxy = options.trustProxy ?? false;
+  const requests = new Map<ServerResponse, Promise<void>>();
+  let stopping: Promise<void> | undefined;
+  let accepting = true;
 
   const server = createServer((request, response) => {
-    void (async () => {
+    if (!accepting) {
+      response.destroy();
+      return;
+    }
+    const running = (async () => {
     const described = describe(request, trustProxy);
     // Read only for the methods that carry one, so a GET is never held up
     // waiting on a stream that will not produce anything.
@@ -163,14 +170,15 @@ export function startServer(options: RouterOptions & {
       return;
     }
 
-    void pump(planned.body, response);
+    await pump(planned.body, response);
     })().catch((error) => {
       // Logged, not swallowed: a request that fails silently is a bug that
       // presents as an empty response with no explanation anywhere.
       console.error(`request failed: ${request.method} ${request.url}`, error);
       if (!response.headersSent) response.writeHead(500, { "content-length": "0" });
       response.end();
-    });
+    }).finally(() => { requests.delete(response); });
+    requests.set(response, running);
   });
 
   return new Promise((resolve, reject) => {
@@ -190,11 +198,16 @@ export function startServer(options: RouterOptions & {
       resolve({
         port,
         baseUrl: `http://${host}:${port}`,
-        close: () =>
-          new Promise<void>((done) => {
-            server.closeAllConnections?.();
-            server.close(() => done());
-          }),
+        close: () => stopping ??= (async () => {
+          accepting = false;
+          // Stop admission before destroying sockets; their pumps still own
+          // upstream cancellation until the tracked request tasks settle.
+          const closed = new Promise<void>((done) => { server.close(() => done()); });
+          for (const response of requests.keys()) response.destroy();
+          server.closeAllConnections?.();
+          await closed;
+          await Promise.all(requests.values());
+        })(),
         replaceCatalog: (next) => {
           route = routerFor(next.db, next.catalog);
         },
@@ -207,13 +220,23 @@ async function pump(body: ReadableStream<Uint8Array>, response: ServerResponse):
   const reader = body.getReader();
   // A viewer who seeks or closes the tab abandons the response. Cancelling
   // the reader stops the download rather than paying for bytes nobody reads.
-  const abandon = () => void reader.cancel().catch(() => {});
+  let cancellation: Promise<void> | undefined;
+  let reportedFailure = false;
+  let failure: unknown;
+  const abandon = () => {
+    cancellation ??= reader.cancel().catch((error) => {
+      if (!reportedFailure || !Object.is(error, failure)) console.error("stream cancellation failed", error);
+    });
+  };
   response.on("close", abandon);
+  // Routing can finish after shutdown already closed this response.
+  if (response.destroyed) abandon();
 
+  let finished = false;
   try {
     for (;;) {
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) { finished = true; break; }
       if (response.writableEnded || response.destroyed) break;
       await write(response, value);
     }
@@ -229,9 +252,14 @@ async function pump(body: ReadableStream<Uint8Array>, response: ServerResponse):
     // found by guessing if nothing says so.
     if (!response.destroyed && !response.writableEnded) {
       console.error("stream aborted mid-body", error);
+      reportedFailure = true;
+      failure = error;
     }
     response.destroy();
   } finally {
     response.off("close", abandon);
+    if (!finished) abandon();
+    await cancellation;
+    reader.releaseLock();
   }
 }
