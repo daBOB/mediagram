@@ -16,7 +16,7 @@ use std::process::Stdio;
 use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result, bail};
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, BufReader};
 use tokio::process::Command;
 
 use crate::term;
@@ -39,40 +39,54 @@ pub struct Job {
 /// The caller is responsible for putting `-progress pipe:1 -nostats` on the
 /// command line; without them this simply draws nothing.
 pub async fn run(mut command: Command, job: &Job) -> Result<()> {
-    command.stdout(Stdio::piped()).stderr(Stdio::piped());
+    command
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .kill_on_drop(true);
     let mut child = command.spawn().context("starting ffmpeg")?;
     let stdout = child.stdout.take().expect("stdout was piped");
-    let stderr = child.stderr.take().expect("stderr was piped");
+    let mut stderr = child.stderr.take().expect("stderr was piped");
 
-    // Drained on its own task: a full pipe blocks the process writing into
-    // it, so a run that complains a lot would hang waiting to be read.
-    let complaints = tokio::spawn(async move {
-        let mut text = String::new();
-        let mut lines = BufReader::new(stderr).lines();
-        while let Ok(Some(line)) = lines.next_line().await {
-            text.push_str(&line);
-            text.push('\n');
+    // Both pipes belong to this future: cancellation drops their readers
+    // and kills the child, which Tokio reaps. No detached reader survives.
+    let progress = async {
+        let started = Instant::now();
+        let mut at = Position::default();
+        let mut lines = BufReader::new(stdout).lines();
+        while let Some(line) = lines
+            .next_line()
+            .await
+            .context("reading ffmpeg's progress")?
+        {
+            if at.feed(&line) {
+                term::redraw(&render(job, &at, started.elapsed()));
+            }
         }
-        text
-    });
-
-    let started = Instant::now();
-    let mut at = Position::default();
-    let mut lines = BufReader::new(stdout).lines();
-    while let Some(line) = lines
-        .next_line()
-        .await
-        .context("reading ffmpeg's progress")?
-    {
-        if at.feed(&line) {
-            term::redraw(&render(job, &at, started.elapsed()));
-        }
-    }
-
-    let status = child.wait().await.context("waiting for ffmpeg")?;
+        Ok::<_, anyhow::Error>(())
+    };
+    let complaints = async {
+        let mut bytes = Vec::new();
+        stderr
+            .read_to_end(&mut bytes)
+            .await
+            .context("reading ffmpeg's stderr")?;
+        Ok::<_, anyhow::Error>(bytes)
+    };
+    let output = tokio::try_join!(progress, complaints);
     term::redraw("");
+    if let Err(error) = output {
+        if let Err(cleanup) = child.kill().await {
+            let _ = child.try_wait();
+            return Err(error.context(format!(
+                "stopping ffmpeg after a pipe read failed: {cleanup}"
+            )));
+        }
+        return Err(error);
+    }
+    let (_, complaints) = output?;
+    let status = child.wait().await.context("waiting for ffmpeg")?;
     if !status.success() {
-        let complaints = complaints.await.unwrap_or_default();
+        let complaints = String::from_utf8_lossy(&complaints);
         match complaints.trim().lines().next_back() {
             Some(why) => bail!("ffmpeg exited with {status}: {why}"),
             None => bail!("ffmpeg exited with {status}"),
