@@ -131,9 +131,17 @@ visual first.
 - [x] `editorial-picks.js` `arrivedWithin` / `homeEditorial`: exclude the set ids shown
   on the Recently added row (`shelves.latestMovies`); update the unit test; hide the
   column when nothing is left.
-- [ ] Commit with the versions at 0.55.0. Exclude `web/.github/`, the `doctor` script
+- [x] Commit with the versions at 0.55.0 (`9edda2f`, not pushed to a remote). Exclude `web/.github/`, the `doctor` script
   line in `web/package.json`, `web/.claude/`, `skills-lock.json`, and
   `plans/260921-1751-android-external-cache/plan.md` (another session's edit).
-- [ ] `cargo install --path crates/mediagram`, then `mediagram push-index`. Confirm
+- [x] `cargo install --path crates/mediagram`: 0.37.0 replaced by 0.55.0.
+- [ ] **BLOCKED, the user's call:** `mediagram push-index` is **not** run. It publishes the
+  local index wholesale (no merge, `telegram/index_publish.rs`). On 2026-09-25 the channel
+  snapshot held 1161 sets; this machine's index held 925. Pushing would drop **257 sets**
+  (the other machine's uploads) from web and Android. This machine has 21 sets the channel
+  lacks. Options: (a) on the other machine, install 0.55.0, then run `mediagram metadata`
+  and `mediagram posters`, then `mediagram push-index` (it lacks the 21 local sets, as
+  before); (b) build a channel merge into this index first, then push from here.
+  Previously: Confirm
   that the player's channel snapshot is v8 and that Trending shows "Trending on TMDB".
   Mind the other machine: until it runs a v8 build, its pushes carry no popularity.
