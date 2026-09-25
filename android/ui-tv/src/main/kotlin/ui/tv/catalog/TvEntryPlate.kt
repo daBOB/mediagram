@@ -19,7 +19,9 @@ import model.Progress
  * A film carries the phone's two marks, worked out the way `EntryCard`
  * works them out: the rule from its position, the tick from whether it was
  * finished. A show or a course carries neither, same as the web's
- * `collectionGrid` — it is not one title to finish.
+ * `collectionGrid` — it is not one title to finish. [heldIds] adds the
+ * offline badge to a film, on the walls the phone's `EntryCard` carries it
+ * on; Home's Latest rows pass none, as the phone's do.
  */
 @Composable
 internal fun TvEntryPlate(
@@ -28,6 +30,7 @@ internal fun TvEntryPlate(
     watchedIds: Set<String>,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
+    heldIds: Set<String> = emptySet(),
 ) {
     when (entry) {
         is Entry.Film -> {
@@ -41,6 +44,7 @@ internal fun TvEntryPlate(
                 caption = factsLine(entry.set.year, entry.set.durationSecs),
                 progress = watchedFractionOf(positions[entry.set.setId]),
                 watched = entry.set.setId in watchedIds,
+                held = entry.set.setId in heldIds,
             )
         }
 
@@ -96,5 +100,6 @@ internal fun TvSetPlate(
         caption = card.caption.ifEmpty { null },
         progress = card.progress,
         watched = card.watched,
+        held = card.held,
     )
 }

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +25,9 @@ internal const val TvPlateProgressTag = "tv-plate-progress"
 
 /** The watched tick's own tag, for the same reason [TvPlateProgressTag] carries one. */
 internal const val TvPlateWatchedTickTag = "tv-plate-watched-tick"
+
+/** The offline badge's own tag, so a test can find it without leaning on its wording alone. */
+internal const val TvOfflineBadgeTag = "tv-offline-badge"
 
 /**
  * The progress rule along the foot of a plate. Not tv-material's own — it
@@ -74,3 +78,26 @@ internal fun TvWatchedTick(modifier: Modifier = Modifier) {
 
 private val TickSize = 28.dp
 private val ProgressHeight = 4.dp
+
+/**
+ * "offline" — the phone's `OfflineBadge` and the web's `offlineBadge` in
+ * `set-badge.js`, in their word: a title this device holds in full, which
+ * plays with Telegram out of reach. The television plays through the same
+ * cache the phone does, so a film watched through here is held here too.
+ * Callers place it only when their own `held` is true, as the phone's do.
+ */
+@Composable
+internal fun TvOfflineBadge(modifier: Modifier = Modifier) {
+    Text(
+        text = "offline",
+        style = TvTypeScale.body,
+        color = MaterialTheme.colorScheme.onSecondaryContainer,
+        modifier =
+            modifier
+                .testTag(TvOfflineBadgeTag)
+                .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(BadgeRadius))
+                .padding(horizontal = Spacing.small, vertical = Spacing.extraSmall),
+    )
+}
+
+private val BadgeRadius = 4.dp

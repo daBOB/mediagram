@@ -35,6 +35,7 @@ private const val NOTE =
         "anyone who can reach this app can pick any of them."
 private const val TRY_AGAIN = "Try again"
 private const val STAY = "Stay as I am"
+private const val REMOVE = "Remove a profile…"
 
 // The web reference (`style.css` `.who-card { max-width: 40rem; text-align:
 // center }`) keeps the whole picker — heading, tiles and note alike — from
@@ -52,7 +53,8 @@ internal const val TvProfilePickerAddTileTag = "tv-profile-picker-add-tile"
  * The television counterpart to `ui.profile.ProfilePickerScreen`: the same
  * [ProfileUiState] switch, the same "Who's watching?" wording and the same
  * add-a-profile fields — drawn as tiles in a single row a D-pad moves
- * across instead of a phone grid a finger taps. Renders nothing for
+ * across instead of a phone grid a finger taps. Remove, as on the phone,
+ * lists every profile and asks before it takes one. Renders nothing for
  * [ProfileUiState.Chosen], exactly as the phone's own picker does — the
  * caller only shows this while there is something left to decide.
  */
@@ -63,10 +65,11 @@ fun TvProfilePicker(
     onAdd: (String, Boolean) -> Unit,
     onStay: () -> Unit,
     onRetry: () -> Unit,
+    onRemove: (String) -> Unit = {},
 ) {
     when (state) {
         ProfileUiState.Loading -> TvLoadingIndicator()
-        is ProfileUiState.Picking -> TvPickerBody(state, onChoose, onAdd, onStay, onRetry)
+        is ProfileUiState.Picking -> TvPickerBody(state, onChoose, onAdd, onStay, onRetry, onRemove)
         is ProfileUiState.Chosen -> Unit
     }
 }
@@ -78,8 +81,10 @@ private fun TvPickerBody(
     onAdd: (String, Boolean) -> Unit,
     onStay: () -> Unit,
     onRetry: () -> Unit,
+    onRemove: (String) -> Unit,
 ) {
     var adding by remember { mutableStateOf(false) }
+    var removing by remember { mutableStateOf(false) }
 
     // Composing the add flow in place of the tile row, not over it: the two
     // never need to be visible together, and a `naming` overlay would still
@@ -98,7 +103,9 @@ private fun TvPickerBody(
     }
 
     val firstFocusRequester = remember { FocusRequester() }
-    LaunchedEffect(Unit) { firstFocusRequester.requestFocus() }
+    // Again when the last profile is removed: "Remove a profile…" goes
+    // with it, and the remote that was on it would rest on nothing.
+    LaunchedEffect(state.profiles.isEmpty()) { firstFocusRequester.requestFocus() }
 
     val error = state.error
     // With nothing loaded and a reason why, "Try again" is the only useful
@@ -165,6 +172,15 @@ private fun TvPickerBody(
             textAlign = TextAlign.Center,
             modifier = Modifier.widthIn(max = NoteMaxWidth).padding(horizontal = Overscan.horizontal).padding(top = Spacing.large),
         )
+        // Below the note and above "Stay as I am", where the phone lists
+        // it, and only while there is someone to remove.
+        if (state.profiles.isNotEmpty()) {
+            TvTextRow(
+                text = REMOVE,
+                onClick = { removing = true },
+                modifier = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Spacing.small),
+            )
+        }
         if (state.canStay) {
             TvTextRow(
                 text = STAY,
@@ -172,5 +188,9 @@ private fun TvPickerBody(
                 modifier = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Spacing.small),
             )
         }
+    }
+
+    if (removing) {
+        TvRemoveProfileDialog(state.profiles, onRemove = onRemove, onDismiss = { removing = false })
     }
 }

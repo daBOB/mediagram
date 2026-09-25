@@ -131,6 +131,7 @@ internal fun TvListBranch(
             },
             onRemove = { setId -> catalogViewModel.setInList(list.id, setId, false) },
             restoreKey = restore.of(here),
+            heldIds = (catalogState as? CatalogUiState.Ready)?.heldIds.orEmpty(),
         )
     }
 }

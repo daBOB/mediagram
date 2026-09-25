@@ -118,8 +118,8 @@ private fun Said(text: String) {
  * is set apart by italics rather than the phone's accent colour: on a
  * television that red means only where the remote is.
  *
- * The phone's "offline" badge has no twin: the television keeps nothing on
- * the device for later.
+ * A title this device holds carries the phone's "offline" badge, from the
+ * same [SearchRow.held] the phone reads.
  */
 @Composable
 private fun TvSearchRow(
@@ -158,5 +158,6 @@ private fun TvSearchRow(
         searchWhy(row.matched)?.let { Text(text = it, style = TvTypeScale.body, fontStyle = FontStyle.Italic, color = quiet) }
         searchMetaLineOf(set).takeIf(String::isNotEmpty)?.let { TvQuietLine(it) }
         progress?.let { TvProgressRule(fraction = it, modifier = Modifier.padding(top = Spacing.small)) }
+        if (row.held) TvOfflineBadge(modifier = Modifier.padding(top = Spacing.small))
     }
 }

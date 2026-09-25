@@ -23,7 +23,9 @@ internal fun TvPlateWithAction(
     onAction: () -> Unit,
     plate: @Composable () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
+    // Far enough below that the plate, grown by [ui.tv.TvFocus.Scale] under
+    // the remote, does not cover the words it sits over.
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
         plate()
         TvTextRow(text = label, onClick = onAction, modifier = Modifier.padding(horizontal = Spacing.small))
     }

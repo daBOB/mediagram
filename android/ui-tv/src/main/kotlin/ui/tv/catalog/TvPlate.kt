@@ -58,6 +58,8 @@ import ui.tv.TvFocus
  * — a finished title has its position cleared rather than parked at a
  * whole, so without the tick a plate watched to the end would look
  * untouched. A caller computes both exactly as the phone's callers do.
+ * [held] puts [TvOfflineBadge] under the lines, where the phone's plate
+ * puts its own.
  *
  * A `Card`, not a plain `Surface`: tv-material's own focus scale and border
  * are built to sit on a `Card`'s container, and [TvFocus] hands the same
@@ -75,6 +77,7 @@ fun TvPlate(
     caption: String? = null,
     progress: Float? = null,
     watched: Boolean = false,
+    held: Boolean = false,
 ) {
     Card(
         onClick = onOpen,
@@ -96,6 +99,7 @@ fun TvPlate(
             )
             meta?.let { PlateLine(it) }
             caption?.let { PlateLine(it) }
+            if (held) TvOfflineBadge(modifier = Modifier.padding(start = Spacing.small, top = Spacing.extraSmall, bottom = Spacing.small))
         }
     }
 }

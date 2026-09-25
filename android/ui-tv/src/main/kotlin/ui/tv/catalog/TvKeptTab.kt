@@ -13,7 +13,9 @@ import model.WatchSnapshot
  * Which of the masthead's three kept entries is selected, dispatched to what
  * draws it — the phone's `KeptTabContent`, over the same three functions.
  * [tabFocus] is the masthead tab that chose this, where an empty wall
- * sends the remote, having no plate of its own to hold it.
+ * sends the remote, having no plate of its own to hold it. [onFinish] is
+ * Continue's "Mark finished", and Continue's alone, as on the phone and
+ * the web.
  */
 @Composable
 internal fun TvKeptTab(
@@ -25,12 +27,18 @@ internal fun TvKeptTab(
     onCreateList: (name: String) -> Unit,
     tabFocus: FocusRequester,
     restoreKey: String?,
+    heldIds: Set<String> = emptySet(),
+    onFinish: (setId: String) -> Unit = {},
 ) {
     when (kind) {
-        KeptKind.CONTINUE ->
-            TvKeptWall(kind, remember(shelves, watch) { continueWall(shelves, watch) }, watch, onOpenTitle, tabFocus, restoreKey)
-        KeptKind.WATCHLIST ->
-            TvKeptWall(kind, remember(shelves, watch) { watchlistWall(shelves, watch) }, watch, onOpenTitle, tabFocus, restoreKey)
+        KeptKind.CONTINUE -> {
+            val sets = remember(shelves, watch) { continueWall(shelves, watch) }
+            TvKeptWall(kind, sets, watch, onOpenTitle, tabFocus, restoreKey, heldIds, onFinish)
+        }
+        KeptKind.WATCHLIST -> {
+            val sets = remember(shelves, watch) { watchlistWall(shelves, watch) }
+            TvKeptWall(kind, sets, watch, onOpenTitle, tabFocus, restoreKey, heldIds)
+        }
         KeptKind.COLLECTIONS -> TvLists(lists = watch.collections, onOpen = onOpenList, onCreate = onCreateList, restoreKey = restoreKey)
     }
 }

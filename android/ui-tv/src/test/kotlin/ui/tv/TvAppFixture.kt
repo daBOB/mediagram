@@ -21,6 +21,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import model.MediaSet
 import model.Profile
+import model.WatchSnapshot
+import playback.HeldSetsQuery
 import player.PlayerViewModel
 import settings.InMemoryLibrarySettings
 import settings.InMemoryTelegramSettings
@@ -59,13 +61,17 @@ internal enum class TvSetupStage { APPLICATION, SIGN_IN, LIBRARY, READY }
  * [CatalogRepository] holding [sets] stands behind the catalogue the gate
  * opens onto, the way ui-mobile's `LibraryFlowFixture` builds its own. A
  * real [SearchViewModel] asks the same repository, whose search stands in
- * for the core's ranking with a plain match on each set's title.
+ * for the core's ranking with a plain match on each set's title. [watch]
+ * is where the viewer already stands, and [heldIds] the titles this device
+ * is taken to hold in full.
  */
 internal class TvAppFixture(
     stage: TvSetupStage,
     profiles: List<Profile> = emptyList(),
     chosenProfileId: String? = null,
     sets: List<MediaSet> = emptyList(),
+    watch: WatchSnapshot = WatchSnapshot.Empty,
+    heldIds: Set<String> = emptySet(),
 ) : ViewModelStoreOwner, AutoCloseable {
     override val viewModelStore = ViewModelStore()
     val setup: SetupViewModel
@@ -107,7 +113,7 @@ internal class TvAppFixture(
         // ViewModelProvider's default factory, which cannot construct one
         // with no Hilt entry point to supply its arguments.
         login = LoginViewModel(provider, dispatcher)
-        val viewer = FakeWatchStateRepository(profiles, chosenProfileId)
+        val viewer = FakeWatchStateRepository(profiles, chosenProfileId, watch)
         profile = ProfileViewModel(viewer, NoopWatchSync)
         val repository = mockk<CatalogRepository>()
         coEvery { repository.refresh() } returns Result.success(sets.size)
@@ -119,7 +125,13 @@ internal class TvAppFixture(
             sets.filter { it.title.contains(query, ignoreCase = true) }.map { SearchHit(setId = it.setId, matched = "title", excerpt = null) }
         }
         val enrichment = CatalogEnrichmentFetcher(provider, InMemoryTmdbSettings())
-        catalog = CatalogViewModel(repository, viewer, LibraryUpdateCoordinator(repository, enrichment))
+        catalog =
+            CatalogViewModel(
+                repository,
+                viewer,
+                LibraryUpdateCoordinator(repository, enrichment),
+                heldSets = HeldIds(heldIds),
+            )
         fetch = FetchViewModel(enrichment)
         search = SearchViewModel(repository)
         // The player a title's Play opens, over an ExoPlayer that decodes
@@ -150,4 +162,16 @@ internal class TvAppFixture(
         viewModelStore.clear()
         playback.close()
     }
+}
+
+/** Exactly [held] is held, whatever its size — the cache itself is not what these tests are about. */
+private class HeldIds(
+    private val held: Set<String>,
+) : HeldSetsQuery {
+    override suspend fun isHeld(
+        setId: String,
+        totalBytes: Long,
+    ) = setId in held
+
+    override suspend fun heldIds(sets: List<Pair<String, Long>>): Set<String> = sets.map { it.first }.filterTo(HashSet()) { it in held }
 }

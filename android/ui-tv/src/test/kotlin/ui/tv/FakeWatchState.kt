@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import model.ListOfSets
 import model.Profile
 import model.WatchSnapshot
+import model.Watched
 
 /**
  * The minimum [WatchStateRepository] a test's own `ProfileViewModel` needs:
@@ -22,6 +23,7 @@ import model.WatchSnapshot
 internal class FakeWatchStateRepository(
     profiles: List<Profile> = emptyList(),
     chosenProfileId: String? = null,
+    watch: WatchSnapshot = WatchSnapshot.Empty,
 ) : WatchStateRepository {
     private val mutableProfiles = MutableStateFlow(profiles)
     override val profiles: StateFlow<List<Profile>> = mutableProfiles.asStateFlow()
@@ -29,7 +31,12 @@ internal class FakeWatchStateRepository(
     private val mutableChosenProfileId = MutableStateFlow(chosenProfileId)
     override val chosenProfileId: StateFlow<String?> = mutableChosenProfileId.asStateFlow()
 
-    override val snapshot: StateFlow<WatchSnapshot> = MutableStateFlow(WatchSnapshot.Empty).asStateFlow()
+    // Held for "Mark finished" alone: clearing a position and stamping a
+    // finish are what it writes, so those two land here and every other
+    // write stays a no-op — a title played in a walk must not start
+    // appearing on Continue under a test that never asked for it.
+    private val mutableSnapshot = MutableStateFlow(watch)
+    override val snapshot: StateFlow<WatchSnapshot> = mutableSnapshot.asStateFlow()
 
     override suspend fun chooseProfile(id: String): Boolean {
         if (mutableProfiles.value.none { it.id == id }) return false
@@ -52,12 +59,24 @@ internal class FakeWatchStateRepository(
         duration: Double?,
     ) = Unit
 
-    override suspend fun clearProgress(setId: String) = Unit
+    override suspend fun clearProgress(setId: String) {
+        mutableSnapshot.value = mutableSnapshot.value.let { it.copy(progress = it.progress.filterNot { p -> p.setId == setId }) }
+    }
 
     override suspend fun setWatched(
         setId: String,
         finished: Boolean,
-    ) = Unit
+    ) {
+        val rest = mutableSnapshot.value.watched.filterNot { it.setId == setId }
+        mutableSnapshot.value = mutableSnapshot.value.copy(watched = if (finished) rest + Watched(setId, finishedAt = 1) else rest)
+    }
+
+    override suspend fun deleteProfile(id: String): Boolean {
+        if (mutableProfiles.value.none { it.id == id }) return false
+        mutableProfiles.value = mutableProfiles.value.filterNot { it.id == id }
+        if (mutableChosenProfileId.value == id) mutableChosenProfileId.value = null
+        return true
+    }
 
     override suspend fun setWatchlisted(
         setId: String,

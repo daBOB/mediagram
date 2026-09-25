@@ -47,6 +47,7 @@ fun TvCollection(
     onOpenSeason: (Division) -> Unit,
     onOpenGenre: (String) -> Unit = {},
     restoreKey: String? = null,
+    heldIds: Set<String> = emptySet(),
 ) {
     val watchedIds = rememberWatchMarks(watch).watchedIds
     val seasons = remember(collection, watchedIds) { seasonPlatesOf(collection, watchedIds) }
@@ -65,7 +66,7 @@ fun TvCollection(
             )
         } else {
             val rows = remember(collection) { rowsOf(collection.divisions) }
-            TvCollectionRows(rows, watch, onOpenTitle, restoreKey, header)
+            TvCollectionRows(rows, watch, onOpenTitle, restoreKey, header, heldIds)
         }
     }
 }
@@ -87,10 +88,11 @@ fun TvSeason(
     watch: WatchSnapshot,
     onOpenTitle: (setId: String) -> Unit,
     restoreKey: String? = null,
+    heldIds: Set<String> = emptySet(),
 ) {
     val rows = remember(division) { rowsOf(listOf(division)).drop(1) }
     TvPage {
-        TvCollectionRows(rows, watch, onOpenTitle, restoreKey, header = { Text(text = division.title, style = TvTypeScale.title) })
+        TvCollectionRows(rows, watch, onOpenTitle, restoreKey, header = { Text(text = division.title, style = TvTypeScale.title) }, heldIds)
     }
 }
 

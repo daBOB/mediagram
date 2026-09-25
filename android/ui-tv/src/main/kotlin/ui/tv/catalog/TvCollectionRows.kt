@@ -54,6 +54,7 @@ internal fun TvCollectionRows(
     onOpenTitle: (setId: String) -> Unit,
     restoreKey: String?,
     header: (@Composable () -> Unit)?,
+    heldIds: Set<String> = emptySet(),
 ) {
     val (positions, watchedIds) = rememberWatchMarks(watch)
     val listState = rememberLazyListState()
@@ -104,6 +105,7 @@ internal fun TvCollectionRows(
                         row = row,
                         progress = watchedFractionOf(positions[row.set.setId]),
                         watched = row.set.setId in watchedIds,
+                        held = row.set.setId in heldIds,
                         onOpenTitle = onOpenTitle,
                         focus = focus.takeIf { index == focusIndex },
                     )
@@ -115,7 +117,8 @@ internal fun TvCollectionRows(
 /**
  * One lesson or episode to open, or one document, as the phone's own row:
  * the tick before the title so a column of them reads at a glance, and a
- * progress rule along its foot.
+ * progress rule along its foot, and the offline badge under that for an
+ * episode or lesson this device holds.
  *
  * A document is shown and not opened — nothing here can display a handout,
  * so the row says what it is rather than offering a press that could only
@@ -128,6 +131,7 @@ private fun ItemRow(
     row: CollectionRow.Item,
     progress: Float?,
     watched: Boolean,
+    held: Boolean,
     onOpenTitle: (setId: String) -> Unit,
     focus: FocusRequester?,
 ) {
@@ -138,6 +142,7 @@ private fun ItemRow(
         } else {
             TvTextRow(text = text, onClick = { onOpenTitle(row.set.setId) }, modifier = Modifier.fillMaxWidth(), focusRequester = focus)
             progress?.let { TvProgressRule(fraction = it, modifier = Modifier.padding(top = Spacing.small)) }
+            if (held) TvOfflineBadge(modifier = Modifier.padding(top = Spacing.small))
         }
     }
 }

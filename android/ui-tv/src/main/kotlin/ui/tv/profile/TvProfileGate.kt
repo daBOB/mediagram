@@ -43,6 +43,7 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
             onAdd = viewModel::add,
             onStay = viewModel::stay,
             onRetry = viewModel::retry,
+            onRemove = viewModel::remove,
         )
         return
     }

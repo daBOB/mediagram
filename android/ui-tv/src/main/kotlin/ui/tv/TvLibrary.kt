@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.fetchResultMessage
 import system.FetchViewModel
@@ -51,6 +52,7 @@ internal fun TvLibrary(profile: TvChosenProfile) {
 
     val resolved = at.resolve(catalogState)
     val watch = resolved.watch
+    val heldIds = (catalogState as? CatalogUiState.Ready)?.heldIds.orEmpty()
     val top = at.top
     val here = at.depth
     val leave = {
@@ -104,6 +106,7 @@ internal fun TvLibrary(profile: TvChosenProfile) {
                         at.openTitle(setId)
                     },
                     restoreKey = restore.of(here),
+                    heldIds = heldIds,
                 )
             }
 
@@ -127,6 +130,7 @@ internal fun TvLibrary(profile: TvChosenProfile) {
                         at.openGenre(name)
                     },
                     restoreKey = restore.of(here),
+                    heldIds = heldIds,
                 )
             }
 
@@ -159,6 +163,7 @@ internal fun TvLibrary(profile: TvChosenProfile) {
                         at.openSearch()
                     },
                     onSearchRestored = { restore.forget(here) },
+                    onFinish = catalogViewModel::markFinished,
                 )
             }
         }

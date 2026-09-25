@@ -52,6 +52,7 @@ fun TvList(
     onRemove: (setId: String) -> Unit,
     restoreKey: String? = null,
     onPlayAll: () -> Unit = {},
+    heldIds: Set<String> = emptySet(),
 ) {
     var renaming by rememberSaveable { mutableStateOf(false) }
     var deleting by rememberSaveable { mutableStateOf(false) }
@@ -105,7 +106,7 @@ fun TvList(
                 header = header,
                 plate = { set, modifier, onOpen ->
                     TvPlateWithAction(label = "Remove", onAction = { remove(set.setId) }) {
-                        TvSetPlate(card = SetCard(set, caption = "", progress = null, watched = false), onOpen = onOpen, modifier = modifier)
+                        TvSetPlate(card = SetCard(set, caption = "", progress = null, watched = false, held = set.setId in heldIds), onOpen = onOpen, modifier = modifier)
                     }
                 },
             )

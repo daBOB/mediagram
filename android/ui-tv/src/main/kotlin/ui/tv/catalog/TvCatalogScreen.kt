@@ -63,6 +63,8 @@ import ui.tv.profile.TvChosenProfile
  * Search goes into the wall below by the wall's own first stop, not to
  * whichever plate happens to sit under the far end of the masthead.
  *
+ * [onFinish] is Continue's "Mark finished".
+ *
  * [fetching] is the artwork-and-descriptions run the phone reports on the
  * same line as a channel refresh: both change what is on these shelves, so
  * a viewer watching one happen reads the same place for either.
@@ -82,6 +84,7 @@ fun TvCatalogScreen(
     onTabChanged: () -> Unit = {},
     onOpenSearch: () -> Unit = {},
     onSearchRestored: () -> Unit = {},
+    onFinish: (setId: String) -> Unit = {},
 ) {
     val ready = (state as? CatalogUiState.Ready)?.takeIf { it.shelves.isNotEmpty() }
     val shelves = ready?.shelves.orEmpty()
@@ -162,7 +165,7 @@ fun TvCatalogScreen(
                         ready == null -> TvCenteredMessage("The library is empty.")
                         selected == 0 -> {
                             TvHome(
-                                rows = remember(shelves, ready.watch) { homeRowsOf(shelves, ready.watch) },
+                                rows = remember(shelves, ready.watch, ready.heldIds) { homeRowsOf(shelves, ready.watch, ready.heldIds) },
                                 watch = ready.watch,
                                 onOpenTitle = onOpenTitle,
                                 onOpenCollection = onOpenCollection,
@@ -171,7 +174,7 @@ fun TvCatalogScreen(
                             )
                         }
                         selected < tabs.firstKept -> {
-                            TvShelfWall(shelves[selected - 1], ready.watch, onOpenTitle, onOpenCollection, wallKey)
+                            TvShelfWall(shelves[selected - 1], ready.watch, onOpenTitle, onOpenCollection, wallKey, ready.heldIds)
                         }
                         else -> {
                             TvKeptTab(
@@ -183,6 +186,8 @@ fun TvCatalogScreen(
                                 onCreateList = onCreateList,
                                 tabFocus = selectedTab,
                                 restoreKey = wallKey,
+                                heldIds = ready.heldIds,
+                                onFinish = onFinish,
                             )
                         }
                     }

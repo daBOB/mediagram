@@ -4,6 +4,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
@@ -112,6 +113,21 @@ class TvCollectionStateTest : TvScreenStateTest() {
     }
 
     /** Named at a page's size, as the phone's bar names it — and once, not again as the rows' own heading under it. */
+    @Test
+    fun anEpisodeThisDeviceHoldsSaysOffline() {
+        show {
+            TvSeason(
+                division("Season 2", 2, episode("e3", "Late"), episode("e4", "Later")),
+                WatchSnapshot.Empty,
+                onOpenTitle = {},
+                heldIds = setOf("e4"),
+            )
+        }
+
+        compose.onAllNodesWithTag(TvOfflineBadgeTag).assertCountEquals(1)
+        compose.onNodeWithText("offline").assertExists()
+    }
+
     @Test
     fun aSeasonIsHeadedWithItsTitleOnce() {
         show { TvSeason(division("Season 2", 2, episode("e3", "Late")), WatchSnapshot.Empty, onOpenTitle = {}) }
