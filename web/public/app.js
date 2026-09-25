@@ -38,6 +38,7 @@ import { homeEditorial } from "./lib/catalog/editorial-picks.js";
 import { editorsChoice, loadEditorsChoice, onEditorsChoice } from "./lib/editors-choice.js";
 import { describeFilm, filmPage } from "./lib/catalog/film-page.js";
 import { titleBand } from "./lib/catalog/title-band.js";
+import { drawAt } from "./lib/redraw.js";
 import { genreShelf } from "./lib/catalog/genres.js";
 import { forKidsProfile } from "./lib/age-rating.js";
 
@@ -571,7 +572,8 @@ function viewSystem() {
 // A route visit survives redraws, but not leaving and returning to its hash.
 let navigationGeneration = 0;
 let routeGeneration = 0;
-function route() {
+function route() { drawAt(main, location.hash, drawRoute); } // redraws keep images: redraw.js
+function drawRoute() {
   const navigation = navigationGeneration;
   const visitedHash = location.hash;
   const generation = ++routeGeneration;
@@ -815,10 +817,8 @@ try {
   // here: what was left unfinished, and — for a viewer who finished
   // everything — what has arrived since.
   //
-  // Replaced, not assigned: assigning fires `hashchange`, and the page would
-  // be drawn a second time a moment after the first, inside a view
-  // transition — every image rebuilt and cross-faded, which reads as a
-  // flicker. Nor is "the page before home" worth a history entry.
+  // Replaced, not assigned: assigning fires `hashchange`, which would draw the
+  // page twice, the second inside a view transition that reads as a flicker.
   if (!location.hash) {
     history.replaceState(history.state, "", "#/home");
     shownHash = location.hash;

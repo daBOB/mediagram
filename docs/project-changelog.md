@@ -40,6 +40,12 @@ to `main`. Full phase-by-phase detail lives in
 
 **Fixed**
 
+- Redrawing the page already showing no longer flickers. That happens when
+  another device's watch state arrives, a pin changes, or the catalog
+  refreshes. `lib/redraw.js` hands each loaded image to the new node showing
+  the same picture, and marks the page `settled` so entrance animations don't
+  replay; a turn of the cover still fades. Measured on the preview: 21 of 21
+  images kept, no new poster requests.
 - The phone's description store no longer records a lower schema when an
   older app opens a file a newer one wrote. After a downgrade and upgrade, the
   newer app used to replay a migration and fail on every open.

@@ -180,3 +180,8 @@
 @media (max-width: 900px) {
   .title-band { height: 42vh; margin: calc(-1 * var(--main-top)) -16px -110px; }
 }
+
+/* A redraw of the page already showing (see `lib/redraw.js`) replays no
+   entrance: the cover and bands are already where the viewer saw them. A
+   turn of the cover still fades. */
+.settled .cover-slide:not(.turned), .settled .cover-slide:not(.turned) .cover-image, .settled .title-band img { animation: none; }

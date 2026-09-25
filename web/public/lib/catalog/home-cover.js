@@ -50,10 +50,13 @@ export function coverStory(films, { play }) {
     schedule();
   }) : null;
 
-  function show(next) {
+  function show(next, turned = true) {
     index = next;
     last.index = next;
-    stage.replaceChildren(slide(films[index], index, films.length, play));
+    const shown = slide(films[index], index, films.length, play);
+    // A turn of the cover fades even on a settled page; see `redraw.js`.
+    if (turned) shown.classList.add("turned");
+    stage.replaceChildren(shown);
     dots?.mark(index);
     schedule();
   }
@@ -73,7 +76,7 @@ export function coverStory(films, { play }) {
   section.addEventListener("focusin", () => { focusIn = true; schedule(); });
   section.addEventListener("focusout", () => { focusIn = false; schedule(); });
 
-  show(index);
+  show(index, false);
   if (dots) {
     if (toggle) dots.node.prepend(toggle.node);
     section.append(dots.node);
