@@ -11,6 +11,10 @@ set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
 
+# A check is a full run, not an edit loop, so incremental caches only pile up:
+# left on, they grew the workspace's Cargo output to hundreds of gigabytes.
+export CARGO_INCREMENTAL=0
+
 step() { printf '\n\033[1m==> %s\033[0m\n' "$1"; }
 
 step "clippy (warnings are errors)"
