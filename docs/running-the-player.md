@@ -782,14 +782,18 @@ Settings' "Home cache server" block is where a phone or tablet is paired:
 the token read above is pasted into its own field there, and a server
 address typed into the one next to it is the same manual override this
 section's `avahi-browse` fallback describes — the app discovers on its own
-first and only needs it when that fails. Turning the block on for the
-first time is what asks for the `ACCESS_LOCAL_NETWORK` runtime permission
-Android 17 requires for any LAN traffic; declining it leaves the status row
-reading "Needs local network permission" and playback keeps reading
-Telegram exactly as it would with no server paired at all. Once connected,
-the row reads "Connected to `<host>`, holding `<size>`", and the System
-screen's own "Source" row says which of Telegram or the LAN server actually
-served the chunk being watched right now.
+first and only needs it when that fails, and it is normalised on save (a
+bare `host:port`, exactly what `avahi-browse` prints, gets `http://`
+added). Saving the token, and a "Grant" action on the status row, are what
+ask for the `ACCESS_LOCAL_NETWORK` runtime permission Android 17+ (API 37)
+requires for any LAN traffic — a device below that, including this
+project's own target tablet on API 36, is never asked at all, since the
+permission does not exist there to ask for. Where it is required and
+declined, the status row reads "Needs local network permission" and
+playback keeps reading Telegram exactly as it would with no server paired
+at all. Once connected, the row reads "Connected to `<host>`, holding
+`<size>`", and the System screen's own "Source" row says which of Telegram
+or the LAN server actually served the chunk being watched right now.
 
 ### What a paired device can do, and what it cannot
 

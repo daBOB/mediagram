@@ -21,4 +21,8 @@ data class LanCacheUiState(
     val heldBytes: Long?,
     /** The last write this device attempted was rejected — the token typed in does not match the server's. */
     val tokenRejected: Boolean,
+    /** A sentence to show under the address field when the last save was refused, or `null` between attempts. */
+    val addressError: String? = null,
+    /** A sentence to show under the token field when the last save was refused, or `null` between attempts. */
+    val tokenError: String? = null,
 )

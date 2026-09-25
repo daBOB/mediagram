@@ -2,6 +2,7 @@ package system
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,7 +12,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -23,17 +23,22 @@ import playback.LanServerSource
 import settings.LanCacheTokenSettings
 import javax.inject.Inject
 
-/** Matches the manifest's own `<uses-permission>` — see AndroidManifest.xml for why it is widened at all. */
+/**
+ * Matches the manifest's own `<uses-permission>`. `ACCESS_LOCAL_NETWORK`
+ * does not exist below API 37 (Android 17) — see [hasLocalNetworkPermission].
+ */
 private const val ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"
 
 /**
  * The LAN cache block of Settings: on/off, the manual address override, the
  * token, and the connection status those three plus discovery add up to.
- * Enabling the block from off is what should trigger the permission prompt
- * — [ui.settings.LanCacheBlock] reads [state] to decide whether to show it,
- * and calls [permissionResolved] once the launcher returns either way so
- * the status row re-reads immediately rather than waiting on the next
- * unrelated recomposition.
+ *
+ * The permission prompt is not tied to the on/off switch — [enabled]
+ * defaults to `true`, so an off→on toggle would rarely if ever fire.
+ * [ui.settings.LanCacheBlock] instead requests it when a token is saved
+ * (pairing is the moment the feature becomes worth having it) and from an
+ * explicit "Grant" action on the status row, and calls [permissionResolved]
+ * once the launcher returns either way so that row re-reads immediately.
  */
 @HiltViewModel
 class LanCacheViewModel
@@ -47,12 +52,19 @@ class LanCacheViewModel
         private val client: LanChunkProtocol,
     ) : ViewModel() {
         private val requests = MutableStateFlow(0)
+        private val _addressError = MutableStateFlow<String?>(null)
+        private val _tokenError = MutableStateFlow<String?>(null)
 
         val state: StateFlow<LanCacheUiState?> =
-            combine(requests, locator.server, locator.searching, tokenStatus.rejected) { _, server, searching, rejected ->
-                Triple(server, searching, rejected)
-            }.map { (server, searching, rejected) -> snapshot(server, searching, rejected) }
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+            combine(
+                requests,
+                locator.server,
+                locator.searching,
+                tokenStatus.rejected,
+                combine(_addressError, _tokenError) { a, t -> a to t },
+            ) { _, server, searching, rejected, (addressError, tokenError) ->
+                snapshot(server, searching, rejected, addressError, tokenError)
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
         /** Settings opening: a fresh discovery pass, since the manual address or the network may have changed since the last one. */
         fun open() {
@@ -62,17 +74,31 @@ class LanCacheViewModel
 
         fun setEnabled(value: Boolean) = act { settings.setEnabled(value) }
 
-        fun setManualAddress(address: String) =
-            act {
-                settings.setManualAddress(address.ifBlank { null })
-                locator.discover()
-            }
+        fun setManualAddress(address: String) {
+            normalizeManualAddress(address).fold(
+                onSuccess = { normalized ->
+                    _addressError.value = null
+                    act {
+                        settings.setManualAddress(normalized)
+                        locator.discover()
+                    }
+                },
+                onFailure = { e -> _addressError.value = e.message },
+            )
+        }
 
-        fun saveToken(token: String) =
-            act {
-                tokenSettings.write(token)
-                tokenStatus.clear()
-            }
+        fun saveToken(token: String) {
+            normalizePairingToken(token).fold(
+                onSuccess = { normalized ->
+                    _tokenError.value = null
+                    act {
+                        tokenSettings.write(normalized)
+                        tokenStatus.clear()
+                    }
+                },
+                onFailure = { e -> _tokenError.value = e.message },
+            )
+        }
 
         /** The permission launcher returned, granted or not — worth an immediate re-read rather than the next 5-second window. */
         fun permissionResolved() = requests.update { it + 1 }
@@ -88,6 +114,8 @@ class LanCacheViewModel
             server: LanServer?,
             searching: Boolean,
             tokenRejected: Boolean,
+            addressError: String?,
+            tokenError: String?,
         ): LanCacheUiState {
             val connection =
                 when {
@@ -104,9 +132,14 @@ class LanCacheViewModel
                 connectedHost = server?.host,
                 heldBytes = server?.let { client.status(it.baseUrl)?.heldBytes },
                 tokenRejected = tokenRejected,
+                addressError = addressError,
+                tokenError = tokenError,
             )
         }
 
         private fun hasLocalNetworkPermission(): Boolean =
-            ContextCompat.checkSelfPermission(context, ACCESS_LOCAL_NETWORK) == PackageManager.PERMISSION_GRANTED
+            localNetworkPermissionGranted(
+                sdkInt = Build.VERSION.SDK_INT,
+                granted = ContextCompat.checkSelfPermission(context, ACCESS_LOCAL_NETWORK) == PackageManager.PERMISSION_GRANTED,
+            )
     }

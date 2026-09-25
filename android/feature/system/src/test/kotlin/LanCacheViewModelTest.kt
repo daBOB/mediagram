@@ -28,10 +28,10 @@ import playback.LanServerSource
 import playback.LanServerStatus
 import settings.InMemoryLanCacheTokenSettings
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 
-private class FakeLocator : LanServerSource {
+/** Shared with [LanCacheViewModelValidationTest]. */
+internal class FakeLocator : LanServerSource {
     private val _server = MutableStateFlow<LanServer?>(null)
     override val server: StateFlow<LanServer?> = _server
     private val _searching = MutableStateFlow(false)
@@ -51,7 +51,7 @@ private class FakeLocator : LanServerSource {
     }
 }
 
-private class FakeClient(private val heldBytes: Long = 1_000_000) : LanChunkProtocol {
+internal class FakeClient(private val heldBytes: Long = 1_000_000) : LanChunkProtocol {
     override suspend fun get(
         baseUrl: String,
         setId: String,
@@ -73,6 +73,21 @@ private class FakeClient(private val heldBytes: Long = 1_000_000) : LanChunkProt
     override suspend fun status(baseUrl: String): LanServerStatus? = LanServerStatus(heldBytes, 10_000_000, 1)
 }
 
+internal fun testLanCacheViewModel(
+    locator: FakeLocator = FakeLocator(),
+    client: LanChunkProtocol = FakeClient(),
+    settings: InMemoryLanCacheSettings = InMemoryLanCacheSettings(),
+    tokenSettings: InMemoryLanCacheTokenSettings = InMemoryLanCacheTokenSettings(),
+    tokenStatus: LanCacheTokenStatus = LanCacheTokenStatus(),
+) = LanCacheViewModel(
+    ApplicationProvider.getApplicationContext(),
+    settings,
+    tokenSettings,
+    tokenStatus,
+    locator,
+    client,
+)
+
 @RunWith(RobolectricTestRunner::class)
 class LanCacheViewModelTest {
     @Before
@@ -81,25 +96,28 @@ class LanCacheViewModelTest {
     @After
     fun restore() = Dispatchers.resetMain()
 
-    private fun context() = ApplicationProvider.getApplicationContext<Context>()
-
     private fun viewModel(
         locator: FakeLocator = FakeLocator(),
         client: LanChunkProtocol = FakeClient(),
-        settings: InMemoryLanCacheSettings = InMemoryLanCacheSettings(),
-        tokenSettings: InMemoryLanCacheTokenSettings = InMemoryLanCacheTokenSettings(),
         tokenStatus: LanCacheTokenStatus = LanCacheTokenStatus(),
-    ) = LanCacheViewModel(context(), settings, tokenSettings, tokenStatus, locator, client)
+    ) = testLanCacheViewModel(locator = locator, client = client, tokenStatus = tokenStatus)
 
+    /**
+     * Robolectric has no shadow for API 37 (this project's version), so
+     * this runs at whatever lower SDK the test target defaults to — which
+     * stands in for the real device this fix targets, a tablet on API 36.
+     * `localNetworkPermissionGranted`'s own unit test in
+     * `LanCacheInputTest` is what actually proves the >=37 branch.
+     */
     @Test
-    fun withNoPermissionTheConnectionNeedsPermission() =
+    fun belowSdkThirtySevenNoPermissionIsEverNeeded() =
         runTest {
             val vm = viewModel()
             try {
                 backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
                 runCurrent()
 
-                assertEquals(LanCacheConnection.NEEDS_PERMISSION, assertNotNull(vm.state.value).connection)
+                assertEquals(LanCacheConnection.NOT_FOUND, assertNotNull(vm.state.value).connection)
             } finally {
                 vm.viewModelScope.cancel()
             }
@@ -166,26 +184,6 @@ class LanCacheViewModelTest {
                 runCurrent()
 
                 assertEquals(1, locator.discoverCalls)
-            } finally {
-                vm.viewModelScope.cancel()
-            }
-        }
-
-    @Test
-    fun savingATokenClearsAPriorRejection() =
-        runTest {
-            grantLocalNetworkPermission()
-            val tokenStatus = LanCacheTokenStatus().apply { markRejected() }
-            val vm = viewModel(tokenStatus = tokenStatus)
-            try {
-                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
-                runCurrent()
-                assertEquals(true, assertNotNull(vm.state.value).tokenRejected)
-
-                vm.saveToken("a".repeat(64))
-                runCurrent()
-
-                assertFalse(assertNotNull(vm.state.value).tokenRejected)
             } finally {
                 vm.viewModelScope.cancel()
             }

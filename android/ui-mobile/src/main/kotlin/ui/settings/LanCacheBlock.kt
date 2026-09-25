@@ -1,5 +1,6 @@
 package ui.settings
 
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -11,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,9 +34,14 @@ private const val ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWOR
 
 /**
  * Settings' home-cache-server block: bound to [LanCacheViewModel], and the
- * one place the runtime permission prompt is requested. Enabling the
- * feature from off is what triggers it — a viewer never sees the prompt
- * before asking for the one thing that needs it.
+ * one place the runtime permission prompt is requested. `ACCESS_LOCAL_NETWORK`
+ * does not exist below API 37, so the prompt is skipped there entirely —
+ * launching it would be a no-op on this project's own target device, a
+ * tablet on API 36, but it costs nothing to be explicit about why.
+ * Enabling is not the trigger: [LanCacheUiState.enabled] defaults to
+ * `true`, so an off→on toggle would rarely fire. Saving a token — pairing
+ * is the moment the feature becomes worth having it — and the status
+ * row's own "Grant" action both are.
  */
 @Composable
 internal fun LanCacheBlock() {
@@ -44,31 +51,37 @@ internal fun LanCacheBlock() {
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
             viewModel.permissionResolved()
         }
+    val requestPermission: () -> Unit = { if (Build.VERSION.SDK_INT >= 37) launcher.launch(ACCESS_LOCAL_NETWORK) }
     LaunchedEffect(Unit) { viewModel.open() }
     LanCacheBlockContent(
         state = state,
-        onSetEnabled = { enabled ->
-            if (enabled) launcher.launch(ACCESS_LOCAL_NETWORK)
-            viewModel.setEnabled(enabled)
-        },
+        onSetEnabled = viewModel::setEnabled,
         onSaveManualAddress = viewModel::setManualAddress,
-        onSaveToken = viewModel::saveToken,
+        onSaveToken = { token ->
+            viewModel.saveToken(token)
+            requestPermission()
+        },
+        onGrantPermission = requestPermission,
     )
 }
 
-/** Stateless so a test drives every branch — connection wording, the rejection notice, the switch — without a real ViewModel or permission launcher. */
+/** Stateless so a test drives every branch — connection wording, the rejection notice, the switch, the Grant action — without a real ViewModel or permission launcher. */
 @Composable
 internal fun LanCacheBlockContent(
     state: LanCacheUiState?,
     onSetEnabled: (Boolean) -> Unit,
     onSaveManualAddress: (String) -> Unit,
     onSaveToken: (String) -> Unit,
+    onGrantPermission: () -> Unit,
 ) {
     if (state == null) return
     var address by remember(state.manualAddress) { mutableStateOf(state.manualAddress) }
     var token by remember { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         Block(heading = "Home cache server", rows = listOf("Status" to lanCacheStatusLine(state)))
+        if (state.connection == LanCacheConnection.NEEDS_PERMISSION) {
+            TextButton(onClick = onGrantPermission) { Text("Grant local network access") }
+        }
         if (state.tokenRejected) {
             Text("Pairing token rejected.", color = MaterialTheme.colorScheme.error)
         }
@@ -84,6 +97,7 @@ internal fun LanCacheBlockContent(
             onValueChange = { address = it },
             label = { Text("Server address (optional — leave blank to rely on discovery)") },
         )
+        state.addressError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Button(onClick = { onSaveManualAddress(address) }) { Text("Save address") }
         Text(if (state.hasToken) "A pairing token is stored." else "No pairing token is stored.")
         OutlinedTextField(
@@ -92,6 +106,7 @@ internal fun LanCacheBlockContent(
             label = { Text("Pairing token") },
             visualTransformation = PasswordVisualTransformation(),
         )
+        state.tokenError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Button(onClick = { onSaveToken(token); token = "" }) { Text("Save token") }
     }
 }

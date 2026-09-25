@@ -28,7 +28,19 @@ private fun state(
     connectedHost: String? = null,
     heldBytes: Long? = null,
     tokenRejected: Boolean = false,
-) = LanCacheUiState(enabled, hasToken, manualAddress, connection, connectedHost, heldBytes, tokenRejected)
+    addressError: String? = null,
+    tokenError: String? = null,
+) = LanCacheUiState(
+    enabled,
+    hasToken,
+    manualAddress,
+    connection,
+    connectedHost,
+    heldBytes,
+    tokenRejected,
+    addressError,
+    tokenError,
+)
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -47,11 +59,14 @@ class LanCacheBlockTest {
         onSetEnabled: (Boolean) -> Unit = {},
         onSaveManualAddress: (String) -> Unit = {},
         onSaveToken: (String) -> Unit = {},
+        onGrantPermission: () -> Unit = {},
     ) {
         compose.runOnUiThread {
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
             controller.get().setContent {
-                MaterialTheme { LanCacheBlockContent(state, onSetEnabled, onSaveManualAddress, onSaveToken) }
+                MaterialTheme {
+                    LanCacheBlockContent(state, onSetEnabled, onSaveManualAddress, onSaveToken, onGrantPermission)
+                }
             }
         }
         compose.waitForIdle()
@@ -122,5 +137,31 @@ class LanCacheBlockTest {
         compose.onNodeWithText("Pairing token").performTextInput("a".repeat(64))
         compose.onNodeWithText("Save token").performClick()
         assertEquals("a".repeat(64), saved)
+    }
+
+    @Test
+    fun theGrantActionShowsOnlyWhenPermissionIsNeeded() {
+        show(state(LanCacheConnection.NOT_FOUND))
+        compose.onNodeWithText("Grant local network access").assertDoesNotExist()
+    }
+
+    @Test
+    fun theGrantActionCallsBackWhenShown() {
+        var granted = false
+        show(state(LanCacheConnection.NEEDS_PERMISSION), onGrantPermission = { granted = true })
+        compose.onNodeWithText("Grant local network access").performClick()
+        assertEquals(true, granted)
+    }
+
+    @Test
+    fun anAddressErrorIsShownUnderTheField() {
+        show(state(addressError = "Could not understand that address."))
+        compose.onNodeWithText("Could not understand that address.").assertIsDisplayed()
+    }
+
+    @Test
+    fun aTokenErrorIsShownUnderTheField() {
+        show(state(tokenError = "That does not look like a pairing token."))
+        compose.onNodeWithText("That does not look like a pairing token.").assertIsDisplayed()
     }
 }
