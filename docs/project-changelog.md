@@ -5,7 +5,7 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Unreleased — 0.54.0
+## Unreleased — 0.55.0
 
 **Added**
 
@@ -38,6 +38,14 @@ to `main`. Full phase-by-phase detail lives in
   would otherwise sit on the shelf until played to the end. The player's own
   end-of-title path now calls the same function. The phone's Continue wall
   has it too, under each title (see the Android web-parity entries below).
+
+**Removed**
+
+- The Kids shelf on the phone. A kids profile already shows only what a child
+  may watch, so the shelf only repeated it; the masthead is now Home, the
+  three catalog shelves, Continue, Watchlist and Collections. The player's
+  "Kids" mark stays on grown-up profiles, for letting an unrated title
+  through. The web player's own removal of its Kids shelf is still to land.
 
 **Fixed**
 

@@ -121,7 +121,7 @@ internal fun ShelfWall(
 /** This device's shelf view and the way to change it, handed down as one. */
 internal data class ShelfViewChoice(val chosen: ShelfView, val onChoose: (ShelfView) -> Unit)
 
-/** One shelf card: a film's poster, or a show's or a course's. Shared with the Kids wall. */
+/** One shelf card: a film's poster, or a show's or a course's. Shared with Home. */
 @Composable
 internal fun EntryCard(
     entry: Entry,

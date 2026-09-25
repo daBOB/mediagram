@@ -24,7 +24,6 @@ import catalog.KeptKind
 import catalog.Shelf
 import catalog.continueWall
 import catalog.homeRowsOf
-import catalog.kidsShelf
 import catalog.watchlistWall
 import designsystem.Spacing
 import model.WatchSnapshot
@@ -46,7 +45,7 @@ fun CatalogScreen(
     onOpenCollection: (key: String) -> Unit,
     onOpenList: (id: String) -> Unit,
     onCreateList: (name: String) -> Unit,
-    /** Starts a title with an explicit run — the Kids wall's "Marked by hand" own "Play all". */
+    /** Starts a title with an explicit run, or none — the Featured reel's Play. */
     onPlayRun: (setId: String, run: List<String>) -> Unit,
     /** Continue's "Mark finished". */
     onFinish: (setId: String) -> Unit,
@@ -65,8 +64,8 @@ fun CatalogScreen(
 /**
  * One shelf on screen, chosen from the masthead above it.
  *
- * The masthead carries eight entries, the web's own order: Home, the three
- * catalog shelves, then the four kept from watch state — see [ShelfTabs].
+ * The masthead carries seven entries, the web's own order: Home, the three
+ * catalog shelves, then the three kept from watch state — see [ShelfTabs].
  * The shelf a viewer was last on is kept across a rotation and a process
  * death, because coming back to the top of the film shelf after glancing
  * at something else is the kind of small forgetting that makes an app feel
@@ -166,10 +165,10 @@ private fun Shelves(
 /** The first thing in the masthead, and not a shelf. */
 private const val HOME = "Home"
 
-/** The four kept labels, in the web's own order — `index.html`'s Continue, Watchlist, Collections, Kids. */
+/** The three kept labels, in the web's own order — `index.html`'s Continue, Watchlist, Collections. */
 private val KEPT_TITLES: List<String> = KeptKind.entries.map(KeptKind::label)
 
-/** Which of the masthead's four kept tabs is selected, dispatched to what draws it. */
+/** Which of the masthead's three kept tabs is selected, dispatched to what draws it. */
 @Composable
 private fun KeptTabContent(
     kind: KeptKind,
@@ -188,7 +187,6 @@ private fun KeptTabContent(
     when (kind) {
         KeptKind.CONTINUE -> KeptWall(kind, continueWall(shelves, watch), watch, columns, onOpenTitle, heldIds, onFinish)
         KeptKind.WATCHLIST -> KeptWall(kind, watchlistWall(shelves, watch), watch, columns, onOpenTitle, heldIds)
-        KeptKind.KIDS -> KidsWall(kidsShelf(shelves, watch), watch, columns, onOpenTitle, onOpenCollection, onPlayRun, heldIds)
         KeptKind.COLLECTIONS -> ListsScreen(lists = watch.collections, onOpen = onOpenList, onCreate = onCreateList)
     }
 }
