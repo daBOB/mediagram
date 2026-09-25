@@ -47,7 +47,7 @@ internal fun CacheBudgetBlock() {
         }
         if (current == null) return@Column
         Block(heading = "Cache", rows = listOf("Held" to heldOfBudget(current.heldBytes, current.budgetBytes)))
-        for (bytes in cacheBudgetChoices()) {
+        for (bytes in cacheBudgetChoices(current.capBytes)) {
             Row(
                 modifier =
                     Modifier

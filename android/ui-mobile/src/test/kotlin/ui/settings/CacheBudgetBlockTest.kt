@@ -149,7 +149,11 @@ class CacheBudgetBlockTest {
         assertEquals(occupancy(256, 2L shl 30), model.state.value)
     }
 
-    /** Held and budget are what these tests vary; the volume facts are whatever a working, unfellen-back internal cache reports. */
+    /**
+     * Held and budget are what these tests vary; the cap is fixed at 8 GiB
+     * so the ladder always offers the same choices these tests click on
+     * ("2.0 GB", "4.0 GB") regardless of the current budget.
+     */
     private fun occupancy(held: Long, budget: Long) =
-        CacheOccupancy(heldBytes = held, budgetBytes = budget, volumeLabel = "Internal storage", fellBack = false, capBytes = budget)
+        CacheOccupancy(heldBytes = held, budgetBytes = budget, volumeLabel = "Internal storage", fellBack = false, capBytes = 8L shl 30)
 }
