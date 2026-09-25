@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -80,8 +81,12 @@ internal fun CoverStory(
         }
     }
 
-    Box(modifier = modifier.fillMaxWidth()) {
-        HorizontalPager(state = pagerState, modifier = Modifier.fillMaxWidth()) { page ->
+    // The aspect ratio sits here, on the pager's own container, rather than
+    // only on each slide: a `HorizontalPager` with no declared size measures
+    // its content with an unbounded height inside a scrolling grid item and
+    // collapses to nothing, so the whole cover would silently not draw.
+    Box(modifier = modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
+        HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
             val set = films[page]
             CoverSlide(set = set, onPlay = { onPlay(set) }, onDetails = { onOpenTitle(set.setId) })
         }
@@ -121,7 +126,7 @@ private fun CoverSlide(
     onPlay: () -> Unit,
     onDetails: () -> Unit,
 ) {
-    Box(modifier = Modifier.fillMaxWidth().aspectRatio(4f / 5f)) {
+    Box(modifier = Modifier.fillMaxSize()) {
         val backdropPath = set.backdropPath
         if (backdropPath != null) {
             AsyncImage(
