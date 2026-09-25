@@ -9,6 +9,22 @@ to `main`. Full phase-by-phase detail lives in
 
 **Added**
 
+- A home cache server and a cache that can live on another volume, for
+  Android. `mediagram_cache` is a new workspace binary: a LAN chunk store
+  with no Telegram session, found over mDNS. Chunk writes are signed with a
+  pairing token that never crosses the wire. On unmetered Wi-Fi the phone
+  asks it for each 1 MiB chunk before Telegram, and shares what it fetched,
+  so a title one device has played is not downloaded again by the next.
+  Settings pairs the device and shows the server. System counts the chunks
+  the server served. Settings can also move the cache to an SD or USB
+  volume ("Where"). The size list grows to that volume's capacity, and a
+  cache that fails mid-play (full disk, pulled card) now falls through to
+  the network instead of stopping playback. Reads are now whole aligned
+  1 MiB chunks. The phone asks for two new permissions:
+  `ACCESS_LOCAL_NETWORK` (runtime, API 37+) and
+  `CHANGE_WIFI_MULTICAST_STATE`. Plan:
+  `plans/260925-2046-external-cache-volume-and-lan-chunk-server/`.
+
 - The Android web-parity work, merged: search and genre pages, audio and
   subtitle choice, the player's settings sheet, up next and queues,
   fullscreen gestures, picture-in-picture and a media session, series
