@@ -14,10 +14,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
-import androidx.tv.material3.Text
+import catalog.CatalogViewModel
 import designsystem.Overscan
 import setup.SetupUiState
 import setup.SetupViewModel
+import ui.tv.catalog.TvCatalogScreen
+import ui.tv.profile.TvChosenProfile
 import ui.tv.profile.TvProfileGate
 import ui.tv.setup.TvSetupStep
 
@@ -35,10 +37,10 @@ import ui.tv.setup.TvSetupStep
  * content composes in the catalogue theme's own [TvTheme] instead of
  * `MediagramTheme`. Every outstanding step draws through [TvSetupStep] now,
  * the way `MobileApp`'s own steps draw through its private `SetupStep`;
- * `Ready` gates on [TvProfileGate] before its stub, the way `ui.LibraryFlow`
- * gates the phone's own library behind `ui.profile.ProfileGate` — a viewer,
- * not this device's setup answers, decides whose shelves come next, and the
- * library surface itself is still the stub below rather than a real screen.
+ * `Ready` gates on [TvProfileGate] before the catalogue, the way
+ * `ui.LibraryFlow` gates the phone's own library behind
+ * `ui.profile.ProfileGate` — a viewer, not this device's setup answers,
+ * decides whose shelves come next.
  */
 @Composable
 fun TvApp() {
@@ -50,17 +52,33 @@ fun TvApp() {
 
         TvShell {
             if (setupState is SetupUiState.Ready) {
-                TvProfileGate {
-                    // The library surface has no real screen yet; this stub
-                    // stands in for it exactly as it did before the setup
-                    // steps beside it had real screens of their own.
-                    TvSafeArea { Text(text = "library") }
-                }
+                TvProfileGate { profile -> TvCatalog(profile) }
             } else {
                 TvSetupStep(state = setupState, viewModel = setupViewModel)
             }
         }
     }
+}
+
+/**
+ * The catalogue over the same [CatalogViewModel] the phone's library reads.
+ *
+ * Nothing opens yet: the title, collection and list pages a plate leads to
+ * are not drawn on this surface, nor is what keeps the position between
+ * them, so each open is deliberately a no-op until those arrive together —
+ * the catalogue can be walked and checked on its own in the meantime.
+ */
+@Composable
+private fun TvCatalog(profile: TvChosenProfile) {
+    val catalogViewModel: CatalogViewModel = hiltViewModel()
+    val catalogState by catalogViewModel.state.collectAsStateWithLifecycle()
+    TvCatalogScreen(
+        state = catalogState,
+        profile = profile,
+        onOpenTitle = {},
+        onOpenCollection = {},
+        onOpenList = {},
+    )
 }
 
 /**
@@ -101,8 +119,8 @@ internal fun TvShell(content: @Composable () -> Unit) {
 
 /**
  * The safe area a screen reaches for when it has nothing of its own to
- * lay out: padded by [Overscan] and centred, the way the stubs in [TvApp]
- * need to be drawn. A real lazy wall or a full-bleed player does not use
+ * lay out: padded by [Overscan] and centred, the way a message standing in
+ * for a wall needs to be drawn. A real lazy wall or a full-bleed player does not use
  * this — see [TvShell] for why each of those owns a different safe area.
  */
 @Composable

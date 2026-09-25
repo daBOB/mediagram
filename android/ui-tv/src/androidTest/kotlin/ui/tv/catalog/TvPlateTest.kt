@@ -23,7 +23,7 @@ import ui.tv.TvTheme
  * The focus and centre-key behaviour [TvPlate] exists for, which only run
  * true on a real window manager — Robolectric's tv-material nodes are known
  * to misbehave for exactly this (`TvFocusTest`'s history). What a given
- * [TvPlate.watchedFraction] draws and that a click reaches `onOpen` are
+ * `progress` and `watched` draw and that a click reaches `onOpen` are
  * proven without one in `TvPlateStateTest` instead.
  */
 @RunWith(AndroidJUnit4::class)
@@ -71,7 +71,6 @@ class TvPlateTest {
                 TvPlate(
                     title = "A Quiet Film",
                     posterPath = null,
-                    watchedFraction = null,
                     onOpen = onOpen,
                     modifier = Modifier.testTag(plateTag),
                 )

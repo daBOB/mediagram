@@ -4,16 +4,21 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
+import catalog.CatalogViewModel
 import catalog.profile.ProfileViewModel
+import data.CatalogEnrichmentFetcher
+import data.CatalogRepository
 import data.CoreClient
 import data.DefaultWatchStateRepository
 import data.InMemoryCoreStorage
+import data.LibraryUpdateCoordinator
 import data.StoredCoreProvider
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import model.MediaSet
 import model.Profile
 import settings.InMemoryLibrarySettings
 import settings.InMemoryTelegramSettings
@@ -45,17 +50,21 @@ internal enum class TvSetupStage { APPLICATION, SIGN_IN, LIBRARY, READY }
  * reached, so any test that reaches `READY` needs one ready to resolve too,
  * over [FakeWatchStateRepository] rather than the `CoreClient` mock the
  * setup plumbing above uses: that mock is stubbed only for the calls
- * `SetupViewModel` itself makes.
+ * `SetupViewModel` itself makes. A real [CatalogViewModel] over a mocked
+ * [CatalogRepository] holding [sets] stands behind the catalogue the gate
+ * opens onto, the way ui-mobile's `LibraryFlowFixture` builds its own.
  */
 internal class TvAppFixture(
     stage: TvSetupStage,
     profiles: List<Profile> = emptyList(),
     chosenProfileId: String? = null,
+    sets: List<MediaSet> = emptyList(),
 ) : ViewModelStoreOwner, AutoCloseable {
     override val viewModelStore = ViewModelStore()
     val setup: SetupViewModel
     private val login: LoginViewModel
     private val profile: ProfileViewModel
+    private val catalog: CatalogViewModel
 
     init {
         val core = mockk<CoreClient>()
@@ -80,19 +89,26 @@ internal class TvAppFixture(
                 dispatcher = dispatcher,
                 watchState = watchState,
             )
-        // TvSignInScreen and TvProfileGate each resolve their own ViewModel
-        // through hiltViewModel(), the same way TvApp resolves SetupViewModel
-        // — this ViewModelStoreOwner has to be able to hand back all three,
+        // TvSignInScreen, TvProfileGate and the catalogue each resolve their
+        // own ViewModel through hiltViewModel(), the same way TvApp resolves
+        // SetupViewModel — this ViewModelStoreOwner has to hand back all four,
         // or reaching that step through TvApp falls back to
         // ViewModelProvider's default factory, which cannot construct one
         // with no Hilt entry point to supply its arguments.
         login = LoginViewModel(provider, dispatcher)
-        profile = ProfileViewModel(FakeWatchStateRepository(profiles, chosenProfileId), NoopWatchSync)
+        val viewer = FakeWatchStateRepository(profiles, chosenProfileId)
+        profile = ProfileViewModel(viewer, NoopWatchSync)
+        val repository = mockk<CatalogRepository>()
+        coEvery { repository.refresh() } returns Result.success(sets.size)
+        coEvery { repository.sets() } returns sets
+        val enrichment = CatalogEnrichmentFetcher(provider, InMemoryTmdbSettings())
+        catalog = CatalogViewModel(repository, viewer, LibraryUpdateCoordinator(repository, enrichment))
         val models =
             mapOf<Class<out ViewModel>, ViewModel>(
                 SetupViewModel::class.java to setup,
                 LoginViewModel::class.java to login,
                 ProfileViewModel::class.java to profile,
+                CatalogViewModel::class.java to catalog,
             )
         val held =
             ViewModelProvider(

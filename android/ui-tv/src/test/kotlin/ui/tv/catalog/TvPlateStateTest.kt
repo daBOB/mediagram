@@ -21,7 +21,7 @@ import kotlin.test.assertEquals
 
 /**
  * What Robolectric can check about [TvPlate] without a real window manager:
- * which mark a given [watchedFraction][TvPlate] draws, the initials
+ * which marks a given `progress` and `watched` draw, the initials
  * fallback, and that its `onClick` reaches [TvPlate.onOpen]. Initial focus
  * and the centre key are real window-manager behaviour and live in
  * `ui-tv/src/androidTest/kotlin/ui/tv/catalog/TvPlateTest.kt` instead, the
@@ -58,27 +58,37 @@ class TvPlateStateTest {
     // node — useUnmergedTree is what still lets a test tell the two marks
     // apart from each other underneath it.
     @Test
-    fun withNoFractionNeitherMarkIsDrawn() {
-        show(watchedFraction = null)
+    fun withNoProgressAndNotWatchedNeitherMarkIsDrawn() {
+        show()
 
         compose.onNodeWithTag(TvPlateProgressTag, useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithTag(TvPlateWatchedTickTag, useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test
-    fun aFractionShortOfAWholeDrawsTheProgressRuleNotTheTick() {
-        show(watchedFraction = 0.4f)
+    fun progressAloneDrawsTheRuleNotTheTick() {
+        show(progress = 0.4f)
 
         compose.onNodeWithTag(TvPlateProgressTag, useUnmergedTree = true).assertExists()
         compose.onNodeWithTag(TvPlateWatchedTickTag, useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test
-    fun aWholeFractionDrawsTheTickNotTheProgressRule() {
-        show(watchedFraction = 1f)
+    fun watchedAloneDrawsTheTickNotTheRule() {
+        show(watched = true)
 
         compose.onNodeWithTag(TvPlateWatchedTickTag, useUnmergedTree = true).assertExists()
         compose.onNodeWithTag(TvPlateProgressTag, useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    // The two marks are independent, as on the phone plate: a title watched
+    // once and started again carries both its tick and its new position.
+    @Test
+    fun watchedAndProgressTogetherDrawBothMarks() {
+        show(progress = 0.2f, watched = true)
+
+        compose.onNodeWithTag(TvPlateWatchedTickTag, useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag(TvPlateProgressTag, useUnmergedTree = true).assertExists()
     }
 
     @Test
@@ -94,11 +104,12 @@ class TvPlateStateTest {
     private fun show(
         title: String = "A Quiet Film",
         posterPath: java.io.File? = null,
-        watchedFraction: Float? = null,
+        progress: Float? = null,
+        watched: Boolean = false,
         onOpen: () -> Unit = {},
     ) {
         showContent {
-            TvPlate(title = title, posterPath = posterPath, watchedFraction = watchedFraction, onOpen = onOpen)
+            TvPlate(title = title, posterPath = posterPath, onOpen = onOpen, progress = progress, watched = watched)
         }
     }
 

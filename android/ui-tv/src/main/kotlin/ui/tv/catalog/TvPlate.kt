@@ -35,7 +35,7 @@ import designsystem.TvTypeScale
 import java.io.File
 import ui.tv.TvFocus
 
-/** The progress rule's own tag, so a test can tell it apart from the tick it never shows alongside. */
+/** The progress rule's own tag, so a test can tell it apart from the tick. */
 internal const val TvPlateProgressTag = "tv-plate-progress"
 
 /** The watched tick's own tag, for the same reason [TvPlateProgressTag] carries one. */
@@ -56,12 +56,14 @@ internal const val TvPlateWatchedTickTag = "tv-plate-watched-tick"
  * [posterPath] is a resolved [File], not a lookup key — a wall opens many
  * plates at once and resolving each one's artwork is a caller concern
  * (`rememberPosterPath`), not something a single plate should each do on
- * its own. [watchedFraction] carries both marks the web plate draws from one
- * number: a fraction short of a whole finishes as a progress rule along the
- * foot of the art, and a fraction that has reached a whole finishes as a
- * tick instead — a title that is actually finished has its position cleared
- * rather than parked at `1.0`, so `watchedFraction` reaching a whole is the
- * one place in this value a caller can still say "done" rather than "here".
+ * its own. [progress] and [watched] are the phone plate's own two marks,
+ * independent of each other the way `PosterCard`'s are: [progress] draws a
+ * rule along the foot of the art, only when there is a runtime to measure
+ * a position against (`catalog.watchedFractionOf` is where `null` already
+ * means "cannot be measured" rather than "zero"), and [watched] draws a tick
+ * — a finished title has its position cleared rather than parked at a
+ * whole, so without the tick a plate watched to the end would look
+ * untouched. A caller computes both exactly as the phone's callers do.
  *
  * A `Card`, not a plain `Surface`: tv-material's own focus scale and border
  * are built to sit on a `Card`'s container, and [TvFocus] hands the same
@@ -73,9 +75,10 @@ internal const val TvPlateWatchedTickTag = "tv-plate-watched-tick"
 fun TvPlate(
     title: String,
     posterPath: File?,
-    watchedFraction: Float?,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
+    progress: Float? = null,
+    watched: Boolean = false,
 ) {
     Card(
         onClick = onOpen,
@@ -87,7 +90,7 @@ fun TvPlate(
         colors = CardDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column {
-            TvPlateArt(posterPath = posterPath, title = title, watchedFraction = watchedFraction)
+            TvPlateArt(posterPath = posterPath, title = title, progress = progress, watched = watched)
             Text(
                 text = title,
                 style = TvTypeScale.body,
@@ -108,7 +111,8 @@ fun TvPlate(
 private fun TvPlateArt(
     posterPath: File?,
     title: String,
-    watchedFraction: Float?,
+    progress: Float?,
+    watched: Boolean,
 ) {
     BoxWithConstraints(
         modifier =
@@ -146,12 +150,11 @@ private fun TvPlateArt(
                     .fillMaxSize()
                     .border(Hairline, MaterialTheme.colorScheme.borderVariant),
         )
-        if (watchedFraction != null) {
-            if (watchedFraction >= 1f) {
-                TvWatchedTick(modifier = Modifier.align(Alignment.TopEnd))
-            } else {
-                TvProgressRule(fraction = watchedFraction, modifier = Modifier.align(Alignment.BottomCenter))
-            }
+        if (progress != null) {
+            TvProgressRule(fraction = progress, modifier = Modifier.align(Alignment.BottomCenter))
+        }
+        if (watched) {
+            TvWatchedTick(modifier = Modifier.align(Alignment.TopEnd))
         }
     }
 }
@@ -183,8 +186,8 @@ private fun TvProgressRule(
 }
 
 /**
- * The tick a finished title draws instead of a progress rule — see
- * [TvPlate]'s own note on why the two share one [Float]. Ported from the
+ * The tick a finished title draws — see [TvPlate]'s own note on why it is
+ * a mark of its own rather than a full progress rule. Ported from the
  * phone plate's own mark, in the same corner. [modifier] carries `align` for
  * the same reason [TvProgressRule]'s does.
  */

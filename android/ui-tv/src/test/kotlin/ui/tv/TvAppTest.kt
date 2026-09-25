@@ -5,6 +5,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
 import androidx.tv.material3.LocalContentColor
@@ -12,6 +13,7 @@ import designsystem.Palette
 import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
+import model.MediaSet
 import model.Profile
 import org.junit.After
 import org.junit.Rule
@@ -21,12 +23,13 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
+import ui.tv.catalog.films
 import kotlin.test.assertEquals
 
 /**
  * `TvApp`'s start rule, mirrored from ui-mobile's `MobileAppTest`: `Ready`
- * opens `TvProfileGate` before the library stub, anything else stays on a
- * setup stub. This is the one behaviour a television and a phone must not
+ * opens `TvProfileGate` before the catalogue, anything else stays on a
+ * setup step. This is the one behaviour a television and a phone must not
  * disagree about, since both read the same [setup.SetupViewModel] the same
  * way — and, once `Ready`, the same [catalog.profile.ProfileViewModel].
  *
@@ -50,16 +53,23 @@ class TvAppTest {
     }
 
     @Test
-    fun readySetupStateWithNoProfileYetShowsThePickerNotTheLibraryStub() {
+    fun readySetupStateWithNoProfileYetShowsThePickerNotTheCatalogue() {
         show(TvSetupStage.READY)
         compose.onNodeWithText("Who's watching?").assertExists()
-        compose.onNodeWithText("library").assertDoesNotExist()
+        compose.onNodeWithText("Home").assertDoesNotExist()
     }
 
     @Test
-    fun readySetupStateWithAProfileAlreadyChosenShowsTheLibraryStub() {
-        show(TvSetupStage.READY, profiles = listOf(Profile(id = "ada", name = "Ada")), chosenProfileId = "ada")
-        compose.onNodeWithText("library").assertExists()
+    fun readySetupStateWithAProfileAlreadyChosenShowsTheCatalogueUnderThatViewer() {
+        show(
+            TvSetupStage.READY,
+            profiles = listOf(Profile(id = "ada", name = "Ada")),
+            chosenProfileId = "ada",
+            sets = films(1),
+        )
+        compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodesWithText("Home").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Ada").assertExists()
+        compose.onNodeWithText("Film 0").assertExists()
     }
 
     /**
@@ -107,11 +117,12 @@ class TvAppTest {
         stage: TvSetupStage,
         profiles: List<Profile> = emptyList(),
         chosenProfileId: String? = null,
+        sets: List<MediaSet> = emptyList(),
     ) {
         mockkStatic(::HiltViewModelFactory)
         every { HiltViewModelFactory(any(), any()) } answers { secondArg() }
         compose.runOnUiThread {
-            TvAppTestActivity.fixture = TvAppFixture(stage, profiles, chosenProfileId)
+            TvAppTestActivity.fixture = TvAppFixture(stage, profiles, chosenProfileId, sets)
             controller = Robolectric.buildActivity(TvAppTestActivity::class.java).setup().visible()
         }
         compose.waitForIdle()
