@@ -64,6 +64,30 @@ class CacheProviderTest {
     }
 
     @Test
+    fun noChoiceRecordedOpensCacheDirMlibAndSurvivesAReopen() =
+        runTest {
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            val dispatcher = probeExecutor.asCoroutineDispatcher()
+            val expectedDir = File(context.cacheDir, "mlib")
+            val initial = CacheProvider.get(context, dispatcher).also { heldCache = it }
+            val file = commitSpan(initial, "kept")
+
+            assertTrue(file.absolutePath.startsWith(expectedDir.absolutePath + File.separator), "$file is not under $expectedDir")
+            initial.release()
+            heldCache = null
+            CacheProvider.resetForTest()
+
+            val reopened = CacheProvider.get(context, dispatcher).also { heldCache = it }
+
+            assertTrue(reopened.isCached("kept", 0, MIN_CACHE_BYTES))
+            val reopenedFile = assertNotNull(reopened.getCachedSpans("kept").single().file)
+            assertTrue(
+                reopenedFile.absolutePath.startsWith(expectedDir.absolutePath + File.separator),
+                "$reopenedFile is not under $expectedDir",
+            )
+        }
+
+    @Test
     fun constructionRunsOnTheGivenDispatcherNotTheCallingThread() =
         runTest {
             val context = ApplicationProvider.getApplicationContext<Context>()
