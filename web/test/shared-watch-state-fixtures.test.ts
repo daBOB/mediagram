@@ -95,6 +95,7 @@ describe("lists-merge fixtures", () => {
   function canonicalLists(state: MergedState) {
     return {
       kids: [...(state.kids ?? [])].sort((a, b) => a.setId.localeCompare(b.setId)),
+      editorsChoice: [...(state.editorsChoice ?? [])].sort((a, b) => a.setId.localeCompare(b.setId)),
       profiles: (state.profiles ?? [])
         .map((profile) => ({
           name: profile.name,

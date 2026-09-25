@@ -77,6 +77,7 @@ struct MergeCase {
 /// rather than keep a second, near-identical function for `lists-merge.json`.
 fn canonical(mut state: MergedState) -> MergedState {
     state.kids.sort_by(|a, b| a.set_id.cmp(&b.set_id));
+    state.editors_choice.sort_by(|a, b| a.set_id.cmp(&b.set_id));
     for profile in &mut state.profiles {
         profile.progress.sort_by(|a, b| a.set_id.cmp(&b.set_id));
         profile.watched.sort_by(|a, b| a.set_id.cmp(&b.set_id));

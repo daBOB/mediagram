@@ -21,6 +21,7 @@ fn merged(name: &str, kids: bool) -> MergedState {
             collections: vec![],
         }],
         kids: vec![],
+        editors_choice: vec![],
     }
 }
 

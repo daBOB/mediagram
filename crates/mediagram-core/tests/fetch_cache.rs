@@ -71,6 +71,7 @@ async fn a_title_is_asked_about_once_however_many_answers_are_taken_from_it() {
         },
         &offline_client(),
         &plan,
+        780,
     )
     .await
     .expect("a stub that answers accepts the key");
@@ -105,6 +106,7 @@ async fn a_series_costs_one_request_however_many_episodes_it_has() {
         },
         &offline_client(),
         &plan,
+        780,
     )
     .await
     .expect("a stub that answers accepts the key");

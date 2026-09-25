@@ -23,6 +23,7 @@ use mediagram_tmdb::tmdb_client::TmdbApi;
 #[derive(Default)]
 pub struct StubApi {
     poster_path: Option<String>,
+    backdrop_path: Option<String>,
     /// The one provider id this stub will answer for. `None` answers for
     /// anything, which is what most of these tests want.
     only: Option<u64>,
@@ -32,6 +33,17 @@ impl StubApi {
     pub fn with_poster(path: &str) -> Self {
         StubApi {
             poster_path: Some(path.into()),
+            backdrop_path: None,
+            only: None,
+        }
+    }
+
+    /// The same, with a backdrop too — for a test about the third walk
+    /// `resolve_backdrops` makes.
+    pub fn with_poster_and_backdrop(poster: &str, backdrop: &str) -> Self {
+        StubApi {
+            poster_path: Some(poster.into()),
+            backdrop_path: Some(backdrop.into()),
             only: None,
         }
     }
@@ -46,6 +58,7 @@ impl StubApi {
     pub fn answering_only(id: u64) -> Self {
         StubApi {
             poster_path: None,
+            backdrop_path: None,
             only: Some(id),
         }
     }
@@ -66,7 +79,11 @@ impl TmdbApi for StubApi {
         // The id is echoed rather than fixed: a recorded row is keyed by the
         // id in the payload, and a stub that answered `1` for everything
         // would file every title under one key.
-        Ok(serde_json::json!({ "id": asked.unwrap_or_default(), "poster_path": self.poster_path }))
+        Ok(serde_json::json!({
+            "id": asked.unwrap_or_default(),
+            "poster_path": self.poster_path,
+            "backdrop_path": self.backdrop_path,
+        }))
     }
 }
 
@@ -155,7 +172,7 @@ pub async fn fetch_with(dir: &Path, api: StubApi) -> FetchReport {
     install_crypto_provider();
     let core = core_at(dir);
     let plan = plan_fetch(&core, "en-US").expect("the seeded catalog is readable");
-    fetch_into(&core, &api, &offline_client(), &plan).await
+    fetch_into(&core, &api, &offline_client(), &plan, 780).await
 }
 
 /// The same run, against a provider that will not take the key — through
@@ -165,7 +182,7 @@ pub async fn fetch_rejecting(dir: &Path) -> Result<FetchReport, CoreError> {
     install_crypto_provider();
     let core = core_at(dir);
     let plan = plan_fetch(&core, "en-US").expect("the seeded catalog is readable");
-    verify_then_fetch(&core, RejectingApi, &offline_client(), &plan).await
+    verify_then_fetch(&core, RejectingApi, &offline_client(), &plan, 780).await
 }
 
 /// `reqwest::Client::new()` panics with no crypto provider installed: this

@@ -7,9 +7,11 @@
 //! independently and one row belongs to a whole series rather than to each
 //! episode of it.
 
+mod facts;
 mod genres;
 pub mod sidecar;
 
+pub use facts::{ShowFacts, facts};
 pub use genres::genres;
 
 use mediagram_tmdb::details::TitleDetailsRow;
@@ -136,7 +138,7 @@ pub fn certifications(conn: &Connection) -> rusqlite::Result<HashMap<String, Str
 ///
 /// `column` is always one of this file's literals, never outside input: the
 /// name is spliced into SQL.
-fn optional_column(conn: &Connection, column: &'static str) -> rusqlite::Result<&'static str> {
+pub(super) fn optional_column(conn: &Connection, column: &'static str) -> rusqlite::Result<&'static str> {
     let present: bool = conn.query_row(
         "SELECT EXISTS(SELECT 1 FROM pragma_table_info('shows') WHERE name = ?1)",
         [column],

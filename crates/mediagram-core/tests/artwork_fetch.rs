@@ -34,12 +34,12 @@ async fn a_rejected_key_is_still_rejected_after_a_successful_run() {
     // A first run with a key the provider accepts, which is what leaves a
     // warm cache behind.
     let good = StubApi::with_poster("/a.jpg");
-    verify_then_fetch(&core, good, &http, &plan)
+    verify_then_fetch(&core, good, &http, &plan, 780)
         .await
         .expect("a key the provider accepts fetches");
 
     // The same device afterwards, with a key the provider will not take.
-    let err = verify_then_fetch(&core, RejectingApi, &http, &plan)
+    let err = verify_then_fetch(&core, RejectingApi, &http, &plan, 780)
         .await
         .expect_err("a rejected key must not be verified out of the cache");
 
@@ -222,4 +222,49 @@ async fn a_title_the_provider_has_no_art_for_is_not_a_failure() {
     assert_eq!(report.failed, 0);
     assert_eq!(report.posters_fetched, 0);
     assert_eq!(report.details_recorded, 1);
+}
+
+/// The third walk `fetch_into` makes: a resolved backdrop is asked for
+/// alongside the poster, from the same payload the poster half already
+/// paid for — `fetch_cache.rs` counts the request and proves it costs
+/// nothing extra. The CDN is unreachable in this harness, so neither image
+/// downloads; a poster and its title's backdrop are different keys, so a
+/// title that loses both counts twice, the same as one that lost its poster
+/// and its description.
+#[tokio::test]
+async fn a_resolved_backdrop_is_counted_like_a_poster() {
+    let dir = tempfile::tempdir().unwrap();
+    catalog_with_kinds(dir.path(), &[("movie", Some(550))]);
+
+    let report = fetch_with(dir.path(), StubApi::with_poster_and_backdrop("/p.jpg", "/b.jpg")).await;
+
+    assert_eq!(report.posters_fetched + report.backdrops_fetched, 0);
+    assert_eq!(report.failed, 2, "the poster key and the backdrop key both went undownloaded");
+}
+
+/// A title with no backdrop recorded costs nothing on that half of the
+/// report — the same way a title with no poster costs nothing on its half.
+#[tokio::test]
+async fn a_title_with_no_backdrop_counts_nothing_there() {
+    let dir = tempfile::tempdir().unwrap();
+    catalog_with_kinds(dir.path(), &[("movie", Some(550))]);
+
+    let report = fetch_with(dir.path(), StubApi::with_poster("/p.jpg")).await;
+
+    assert_eq!(report.backdrops_fetched, 0);
+    assert_eq!(report.backdrops_already_held, 0);
+}
+
+/// A backdrop already on disk is left alone, exactly like a poster already
+/// held.
+#[tokio::test]
+async fn a_backdrop_already_on_disk_is_kept_and_not_requested_again() {
+    let dir = tempfile::tempdir().unwrap();
+    catalog_with_kinds(dir.path(), &[("movie", Some(550))]);
+    write_existing_poster(dir.path(), "tmdb-movie-550-bg");
+
+    let report = fetch_with(dir.path(), StubApi::with_poster_and_backdrop("/p.jpg", "/b.jpg")).await;
+
+    assert_eq!(report.backdrops_already_held, 1);
+    assert_eq!(report.backdrops_fetched, 0);
 }

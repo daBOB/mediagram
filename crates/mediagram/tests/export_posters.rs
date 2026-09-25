@@ -48,14 +48,23 @@ fn a_poster_url_uses_the_tmdb_image_cdn_at_a_television_sized_width() {
 }
 
 /// A backdrop fills a desktop-wide hero, so it is fetched far wider than a
-/// poster; the width follows from the key, which is the only thing that says
-/// which one a ref is.
+/// poster; a poster carries no width of its own and always resolves at
+/// `IMAGE_BASE`'s.
 #[test]
-fn a_backdrop_is_fetched_at_hero_width_and_a_poster_at_shelf_width() {
-    let poster = PosterRef { key: "tmdb-movie-1".into(), path: "/p.jpg".into() };
-    let backdrop = PosterRef { key: "tmdb-movie-1-bg".into(), path: "/b.jpg".into() };
+fn a_backdrop_is_fetched_at_its_requested_width_and_a_poster_at_shelf_width() {
+    let poster = PosterRef { key: "tmdb-movie-1".into(), path: "/p.jpg".into(), backdrop_width: None };
+    let backdrop = PosterRef { key: "tmdb-movie-1-bg".into(), path: "/b.jpg".into(), backdrop_width: Some(1280) };
     assert_eq!(poster.url(), "https://image.tmdb.org/t/p/w342/p.jpg");
     assert_eq!(backdrop.url(), "https://image.tmdb.org/t/p/w1280/b.jpg");
+}
+
+/// The phone asks narrower than the desktop web player — `resolve_backdrops`
+/// takes the width as a parameter rather than fixing one, so each caller
+/// gets what its screen class needs.
+#[test]
+fn a_narrower_width_reaches_the_url_too() {
+    let backdrop = PosterRef { key: "tmdb-movie-1-bg".into(), path: "/b.jpg".into(), backdrop_width: Some(780) };
+    assert_eq!(backdrop.url(), "https://image.tmdb.org/t/p/w780/b.jpg");
 }
 
 #[tokio::test]
@@ -70,14 +79,15 @@ async fn backdrops_are_keyed_beside_the_poster_and_unsafe_or_missing_ones_skippe
     let found = resolve_backdrops(
         &api,
         &[(Kind::Movie, 1), (Kind::Movie, 2), (Kind::Movie, 3), (Kind::Ep, 4), (Kind::Ep, 4)],
+        1280,
     )
     .await;
 
     assert_eq!(
         found,
         vec![
-            PosterRef { key: "tmdb-movie-1-bg".into(), path: "/b1.jpg".into() },
-            PosterRef { key: "tmdb-tv-4-bg".into(), path: "/b4.jpg".into() },
+            PosterRef { key: "tmdb-movie-1-bg".into(), path: "/b1.jpg".into(), backdrop_width: Some(1280) },
+            PosterRef { key: "tmdb-tv-4-bg".into(), path: "/b4.jpg".into(), backdrop_width: Some(1280) },
         ]
     );
 }
@@ -111,11 +121,13 @@ async fn posters_are_keyed_by_kind_so_movie_and_show_ids_cannot_collide() {
         vec![
             PosterRef {
                 key: "tmdb-movie-550".into(),
-                path: "/movie550.jpg".into()
+                path: "/movie550.jpg".into(),
+                backdrop_width: None,
             },
             PosterRef {
                 key: "tmdb-tv-550".into(),
-                path: "/tv550.jpg".into()
+                path: "/tv550.jpg".into(),
+                backdrop_width: None,
             },
         ]
     );
@@ -253,6 +265,7 @@ async fn a_malformed_key_is_refused_without_a_request() {
     let refs = vec![PosterRef {
         key: "../../etc/passwd".into(),
         path: "/whatever.jpg".into(),
+        backdrop_width: None,
     }];
 
     let written = download_into(&mediagram_core::http::client().unwrap(), &refs, &dir)
@@ -279,6 +292,7 @@ async fn a_poster_already_on_disk_is_kept_and_not_requested_again() {
     let refs = vec![PosterRef {
         key: "tmdb-movie-550".into(),
         path: "/five-fifty.jpg".into(),
+        backdrop_width: None,
     }];
     assert_eq!(already_held(&refs, &dir), 1);
 
@@ -301,6 +315,7 @@ fn nothing_is_held_in_a_directory_that_does_not_exist_yet() {
     let refs = vec![PosterRef {
         key: "tmdb-tv-1396".into(),
         path: "/breaking.jpg".into(),
+        backdrop_width: None,
     }];
 
     assert_eq!(already_held(&refs, &tmp.path().join("posters")), 0);
