@@ -3,6 +3,7 @@
 package playback
 
 import android.content.Context
+import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -91,8 +92,15 @@ class CacheProviderVolumeTest {
             val dispatcher = probeExecutor.asCoroutineDispatcher()
             val staleMlib = tempVolume("stale")
             val staleRoot = requireNotNull(staleMlib.dir.parentFile)
-            staleMlib.dir.mkdirs()
-            File(staleMlib.dir, "leftover.span").writeText("leftover")
+            val databaseProvider = StandaloneDatabaseProvider(context)
+            // A real, previously-working cache, with a real span and the
+            // uid `SimpleCache.delete` needs to also drop the index's
+            // database rows for — not a leftover file with no uid, which
+            // `delete` would only plain-`File.delete()` and never exercise
+            // that path at all.
+            val seed = SimpleCache(staleMlib.dir, AdjustableLruEvictor(Long.MAX_VALUE), databaseProvider)
+            commitSpan(seed, "was-cached")
+            seed.release()
             val sibling = File(staleRoot, "sibling.txt").apply { writeText("keep me") }
             CacheProvider.volumesFor = { listOf(internalVolume(context), staleMlib) }
             // nothing chosen: opens internal, "stale" is present but unused
@@ -104,6 +112,15 @@ class CacheProviderVolumeTest {
             assertTrue(sibling.exists(), "a file next to mlib, not inside it, must survive")
             val openedFile = commitSpan(cache, "kept")
             assertUnder(openedFile, File(context.cacheDir, "mlib"))
+            // Reopening from scratch must not resurrect the old content —
+            // proof the index was actually dropped, not just the directory.
+            val reopenedStale = SimpleCache(staleMlib.dir, AdjustableLruEvictor(Long.MAX_VALUE), databaseProvider)
+            try {
+                assertEquals(0L, reopenedStale.cacheSpace, "a swept volume's index must not survive under a fresh open")
+                assertFalse(reopenedStale.isCached("was-cached", 0, MIN_CACHE_BYTES))
+            } finally {
+                reopenedStale.release()
+            }
         }
 
     @Test
