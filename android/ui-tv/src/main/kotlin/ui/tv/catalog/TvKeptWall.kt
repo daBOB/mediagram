@@ -3,6 +3,7 @@ package ui.tv.catalog
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -156,7 +157,7 @@ private fun EmptyKeptWall(kind: KeptKind) {
         TvCountedHeading(kind.label, 0)
         // Centred in what is left, not through TvCenteredMessage: this
         // column already stands inside the overscan inset.
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             TvQuietLine(kind.empty, textAlign = TextAlign.Center)
         }
     }
