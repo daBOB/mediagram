@@ -53,6 +53,25 @@ class TvCatalogScreenTest {
         waitUntilFocused("Home")
     }
 
+    /** A shelf wall's top row sits under the masthead as Home's does, and Up from it goes the same way. */
+    @Test
+    fun upFromAShelfWallsTopRowReturnsToTheMasthead() {
+        show()
+        waitUntilFocused("Film 9")
+        compose.onNodeWithText("Film 9").performKeyInput { pressKey(Key.DirectionUp) }
+        waitUntilFocused("Home")
+        compose.onNodeWithText("Home").performKeyInput { pressKey(Key.DirectionRight) }
+        waitUntilFocused("Movies")
+        compose.onNodeWithText("Movies").performKeyInput { pressKey(Key.DirectionCenter) }
+        compose.waitUntil(timeoutMillis = 5_000) {
+            compose.onAllNodes(isFocused() and hasText("Film", substring = true)).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionUp) }
+
+        waitUntilFocused("Movies")
+    }
+
     @Test
     fun downFromTheMastheadLandsOnTheFirstPlateOfTheFirstRow() {
         show()
