@@ -1,8 +1,34 @@
 # Android magazine parity (tech-debt #13)
 
-Status: decisions made 2026-09-25; queued after the channel merge. Owed under CLAUDE.md § Surface
-Parity: the web home (`plans/260925-2014-web-player-magazine-redesign`) is the reference.
+Status: implemented 2026-09-26 on branch `worktree-agent-a6b17fc3ba5be3a38`, verified on the real
+signed-in tablet. Owed under CLAUDE.md § Surface Parity: the web home
+(`plans/260925-2014-web-player-magazine-redesign`) is the reference.
 Research brief of 2026-09-25 (this session).
+
+## Phase status
+
+1. **Core data and backdrops.** Done. `SetSummary.backdrop_key`/`tagline`/`rating`/`popularity`;
+   `resolve_backdrops` takes a width; on-device fetch resolves and downloads backdrops, counted in
+   `FetchReport.backdrops_fetched`/`backdrops_already_held`.
+2. **Editor's choice in sync.** Done. `editors_choice` table, `editorsChoice` in `SyncRecord`,
+   merge and lists exchange; uniffi `editors_choice`/`set_editors_choice`; shared fixtures in
+   `web/test/fixtures/watch-state/{record-parse,lists-merge}.json`.
+3. **Picks logic.** Done. `EditorialPicks.kt` in `feature:catalog`, pinned against
+   `web/test/fixtures/editorial-picks/home-editorial.json` by both `bun test` and
+   `EditorialPicksFixtureTest`.
+4. **Home screen.** Done. `CoverStory`/`FeatureStrip`/`ResumeStrip`/`PullQuote` in `ui-mobile`,
+   assembled by `HomeScreen.kt`; `magazineHomeOf` wires shelves and watch state to it.
+5. **Title page.** Done. Backdrop band and "Make editor's choice" (hidden on kids profiles) in
+   `TitleDetailScreen.kt`.
+6. **Device validation.** Done on the real tablet (`caad49da`): app installed and launched clean,
+   no crashes; ran the on-device backdrop fetch (855 backdrops); cover pager, feature strip,
+   merged resume strip and pull-quote all render with real data; title page backdrop band and pin
+   action render correctly. Screenshots in `visuals/`. Did **not** pin/unpin on the live device —
+   the pin is household-wide and syncs to the real account, and something was already pinned
+   (Crime 101); toggling it would have been a real, visible change to the user's account made
+   without clear authorization. The write path itself is covered by `editors_choice.rs`'s and
+   `MagazineHomeTest`'s own tests instead.
+7. **TV.** Deferred, as planned — no TV hardware in this session; `ui-tv` untouched.
 
 ## Where the phone is today (verified)
 
