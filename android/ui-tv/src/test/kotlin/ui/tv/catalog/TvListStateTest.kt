@@ -118,6 +118,21 @@ class TvListStateTest : TvScreenStateTest() {
         compose.onNodeWithText("▶ Play all").assertIsFocused()
     }
 
+    /**
+     * Back from Play all puts the remote on Play all, not on a plate; a
+     * Remove after that still has to move it to the neighbouring title,
+     * or the plate it was on goes and takes the focus with it.
+     */
+    @Test
+    fun aRemoveAfterComingBackFromPlayAllMovesTheRemoteToTheNextTitle() {
+        showRemovable(films(3), restoreKey = TvPlayAllKey)
+        compose.onNodeWithText("▶ Play all").assertIsFocused()
+
+        compose.onAllNodesWithText("Remove")[0].performSemanticsAction(SemanticsActions.OnClick)
+
+        compose.onNodeWithText("Film 1").assertIsFocused()
+    }
+
     @Test
     fun anEmptyListOffersNoPlayAll() {
         showList(emptyList())
@@ -136,9 +151,14 @@ class TvListStateTest : TvScreenStateTest() {
     }
 
     /** A list whose Remove really takes the title off, as the ViewModel's next snapshot would. */
-    private fun showRemovable(sets: List<MediaSet>) {
+    private fun showRemovable(
+        sets: List<MediaSet>,
+        restoreKey: String? = null,
+    ) {
         val held = mutableStateListOf(*sets.toTypedArray())
-        show { TvList(list, held.toList(), onPlay = {}, onRename = {}, onDelete = {}, onRemove = { id -> held.removeAll { it.setId == id } }) }
+        show {
+            TvList(list, held.toList(), onPlay = {}, onRename = {}, onDelete = {}, onRemove = { id -> held.removeAll { it.setId == id } }, restoreKey = restoreKey)
+        }
     }
 
     private fun showList(
