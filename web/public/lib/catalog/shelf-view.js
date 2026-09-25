@@ -176,25 +176,25 @@ export function setGrid(sets, onPlay, options = {}) {
   const grid = container(mode);
   for (const set of sets) {
     const shown = card({
-        name: set.title ?? set.setId,
-        // Under a plate, what identifies an episode is its show and its
-        // number; the year and the runtime are what a list has room for.
-        meta: (mode === GRID
-          ? [set.show, episodeLabel(set)]
-          : [set.show, episodeLabel(set), set.year, humanDuration(set.duration)]
-        )
-          .filter(Boolean)
-          .join(" · "),
-        initials: initialsOf(set.title ?? set.show),
-        poster: set.poster ?? null,
-        badges: [offlineBadge(set), transcodeBadge(set)],
-        progress: watchedFraction(progressOf(set.setId)),
-        // Empty for a title never started, so a watchlist of things not yet
-        // begun gains no line it cannot fill.
-        resume: caption(set),
-        watched: isWatched(set.setId),
-        onClick: () => onPlay(set),
-      });
+      name: set.title ?? set.setId,
+      // Under a plate, what identifies an episode is its show and its
+      // number; the year and the runtime are what a list has room for.
+      meta: (mode === GRID
+        ? [set.show, episodeLabel(set)]
+        : [set.show, episodeLabel(set), set.year, humanDuration(set.duration)]
+      )
+        .filter(Boolean)
+        .join(" · "),
+      initials: initialsOf(set.title ?? set.show),
+      poster: set.poster ?? null,
+      badges: [offlineBadge(set), transcodeBadge(set)],
+      progress: watchedFraction(progressOf(set.setId)),
+      // Empty for a title never started, so a watchlist of things not yet
+      // begun gains no line it cannot fill.
+      resume: caption(set),
+      watched: isWatched(set.setId),
+      onClick: () => onPlay(set),
+    });
     const finish = options.finish;
     grid.append(finish ? withAction(shown, "Mark finished", () => finish(set)) : shown);
   }

@@ -1951,6 +1951,14 @@ dialog.with-notes .hud { right: var(--notes-width); }
      figures sit alone in the rest. */
   .card .body { grid-template-columns: minmax(0, 1fr); }
   .card .meta { text-align: left; margin-top: 0.25rem; }
+  /* The stacked body leaves no free corner, so the word takes a line of its
+     own under the text column instead of landing on a badge. */
+  .grid:not(.plates) > .with-action:not(:first-child) > .card { padding-top: 1.05rem; }
+  .grid:not(.plates) > .with-action > .card-action {
+    position: static;
+    display: block;
+    margin: -0.35rem 0 0.9rem calc(4.1rem + 1.1rem);
+  }
   .row { gap: 0.8rem; flex-wrap: wrap; }
   .row .meta { text-align: left; }
   /* A folder's call-number column is empty, and at this width the indent it
