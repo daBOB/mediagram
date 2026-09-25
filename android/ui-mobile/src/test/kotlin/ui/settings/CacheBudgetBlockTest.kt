@@ -94,16 +94,16 @@ class CacheBudgetBlockTest {
         compose.onNodeWithText("private-cache-path").assertDoesNotExist()
         compose.onNodeWithText("Try again").performClick()
         compose.onNodeWithText("Could not read the cache. Try again.").assertIsDisplayed()
-        coEvery { CacheProvider.occupancy(any(), any()) } returns CacheOccupancy(128, 1L shl 30)
+        coEvery { CacheProvider.occupancy(any(), any()) } returns occupancy(128, 1L shl 30)
         compose.onNodeWithText("Try again").performClick()
         compose.onNodeWithText("Held").assertIsDisplayed()
         compose.onNodeWithText("Could not read the cache. Try again.").assertDoesNotExist()
-        assertEquals(CacheOccupancy(128, 1L shl 30), model.state.value)
+        assertEquals(occupancy(128, 1L shl 30), model.state.value)
         coVerify(exactly = 3) { CacheProvider.occupancy(any(), any()) }
     }
 
     @Test fun failedResizeKeepsTheLastReadAndRetryReadsAnAlreadyPersistedChange() {
-        val prior = CacheOccupancy(128, 1L shl 30)
+        val prior = occupancy(128, 1L shl 30)
         coEvery { CacheProvider.occupancy(any(), any()) } returns prior
         coEvery { CacheProvider.setBudget(any(), any()) } throws IOException("private-keystore-path")
         open()
@@ -113,15 +113,15 @@ class CacheBudgetBlockTest {
         assertEquals(prior, model.state.value)
         // Persistence can succeed before a later cache operation fails. A retry reads
         // that committed value, rather than pretending that the old budget still holds.
-        coEvery { CacheProvider.occupancy(any(), any()) } returns CacheOccupancy(256, 2L shl 30)
+        coEvery { CacheProvider.occupancy(any(), any()) } returns occupancy(256, 2L shl 30)
         compose.onNodeWithText("Try again").performClick()
         compose.onNodeWithText("Could not confirm the cache allowance. Try again.").assertDoesNotExist()
-        assertEquals(CacheOccupancy(256, 2L shl 30), model.state.value)
+        assertEquals(occupancy(256, 2L shl 30), model.state.value)
         coVerify(exactly = 1) { CacheProvider.setBudget(any(), 2L shl 30) }
     }
 
     @Test fun aFailedConfirmationReadDoesNotInventABudgetAndLaterChoiceRecovers() {
-        val prior = CacheOccupancy(128, 1L shl 30)
+        val prior = occupancy(128, 1L shl 30)
         coEvery { CacheProvider.occupancy(any(), any()) } returns prior
         coEvery { CacheProvider.setBudget(any(), any()) } returns Unit
         open()
@@ -129,14 +129,14 @@ class CacheBudgetBlockTest {
         compose.onNodeWithText("2.0 GB").performClick()
         compose.onNodeWithText("Could not confirm the cache allowance. Try again.").assertIsDisplayed()
         assertEquals(prior, model.state.value)
-        coEvery { CacheProvider.occupancy(any(), any()) } returns CacheOccupancy(256, 4L shl 30)
+        coEvery { CacheProvider.occupancy(any(), any()) } returns occupancy(256, 4L shl 30)
         compose.onNodeWithText("4.0 GB").performClick()
         compose.onNodeWithText("Could not confirm the cache allowance. Try again.").assertDoesNotExist()
-        assertEquals(CacheOccupancy(256, 4L shl 30), model.state.value)
+        assertEquals(occupancy(256, 4L shl 30), model.state.value)
     }
 
     @Test fun cancelledChoiceKeepsTheLastReadWithoutAnErrorAndAllowsTheNextChoice() {
-        val prior = CacheOccupancy(128, 1L shl 30)
+        val prior = occupancy(128, 1L shl 30)
         coEvery { CacheProvider.occupancy(any(), any()) } returns prior
         coEvery { CacheProvider.setBudget(any(), any()) } throws CancellationException("leaving")
         open()
@@ -144,8 +144,12 @@ class CacheBudgetBlockTest {
         compose.onNodeWithText("Could not confirm the cache allowance. Try again.").assertDoesNotExist()
         assertEquals(prior, model.state.value)
         coEvery { CacheProvider.setBudget(any(), any()) } returns Unit
-        coEvery { CacheProvider.occupancy(any(), any()) } returns CacheOccupancy(256, 2L shl 30)
+        coEvery { CacheProvider.occupancy(any(), any()) } returns occupancy(256, 2L shl 30)
         compose.onNodeWithText("2.0 GB").performClick()
-        assertEquals(CacheOccupancy(256, 2L shl 30), model.state.value)
+        assertEquals(occupancy(256, 2L shl 30), model.state.value)
     }
+
+    /** Held and budget are what these tests vary; the volume facts are whatever a working, unfellen-back internal cache reports. */
+    private fun occupancy(held: Long, budget: Long) =
+        CacheOccupancy(heldBytes = held, budgetBytes = budget, volumeLabel = "Internal storage", fellBack = false, capBytes = budget)
 }

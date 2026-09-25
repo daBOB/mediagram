@@ -24,22 +24,26 @@ import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.cache.SimpleCache
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.withContext
-import java.io.File
 
-/** What the disk cache is actually holding, against what it may hold — the System screen's Held row. */
+/** What the disk cache is actually holding and where — the System screen's Held and Where rows. */
 data class CacheOccupancy(
     val heldBytes: Long,
     val budgetBytes: Long,
+    val volumeLabel: String,
+    val fellBack: Boolean,
+    val capBytes: Long,
 )
 
 /**
- * The one [SimpleCache] for the whole process, over `context.cacheDir/mlib`
- * under an [AdjustableLruEvictor] seeded from [CacheBudgetSettings] — a 2
- * GiB LRU ceiling ([CACHE_MAX_BYTES]) until a viewer picks another one in
- * Settings via [setBudget]. `SimpleCache` throws at construction if a
- * second instance opens the same directory concurrently, so [get] is the
- * single choke point that guarantees only one is ever built.
+ * The one [SimpleCache] for the whole process, over the chosen volume's
+ * `mlib` directory ([cacheVolumes]) under an [AdjustableLruEvictor] seeded
+ * from [CacheBudgetSettings] and clamped to what that volume can hold
+ * ([budgetCap]) — the opening itself is [openCache]'s. `SimpleCache` throws
+ * at construction if a second instance opens the same directory
+ * concurrently, so [get] is the single choke point that guarantees only
+ * one is ever built.
  *
  * `SimpleCache`'s constructor blocks the calling thread while it opens its
  * index, so [get] is `suspend` and does that work on [dispatcher] (real
@@ -72,19 +76,52 @@ object CacheProvider {
     @Volatile
     private var evictor: AdjustableLruEvictor? = null
 
+    /** Which volume [instance] actually landed on, and the cap it was opened against. Fixed for the process, like [instance] itself: moving the cache needs a restart. */
+    @Volatile
+    private var opened: OpenedCache? = null
+
+    @Volatile
+    private var cleanupJob: Job? = null
+
+    /**
+     * Test seam: which volumes are on offer. Real callers read them off the
+     * platform through [cacheVolumes]; Robolectric has no removable storage
+     * to fake through Android's own APIs, so a test swaps this instead,
+     * the same way [CacheDataSourceWriter]'s internal constructor swaps
+     * `openCache`.
+     */
+    @Volatile
+    internal var volumesFor: (Context) -> List<CacheVolume> = ::cacheVolumes
+
     suspend fun get(
         context: Context,
         dispatcher: CoroutineDispatcher = Dispatchers.IO,
     ): SimpleCache {
         instance?.let { return it }
         return withContext(dispatcher) {
-            // Read outside the lock: a race just repeats a cheap prefs
-            // read, where reading it while holding the lock would call a
-            // suspend function from the plain lambda `synchronized` takes.
+            // Read outside the lock: a race just repeats cheap work, where
+            // doing it while holding the lock would call suspend functions
+            // from the plain lambda `synchronized` takes.
+            val volumes = volumesFor(context)
+            val chosenId = volumeSettings(context).read()
             val budgetBytes = budgetSettings(context).read()
-            synchronized(this@CacheProvider) {
-                instance ?: buildCache(context, budgetBytes).also { instance = it }
-            }
+            val databaseProvider = StandaloneDatabaseProvider(context)
+            val built =
+                synchronized(this@CacheProvider) {
+                    if (instance != null) {
+                        null
+                    } else {
+                        openCache(volumes, chosenId, budgetBytes, databaseProvider).also {
+                            instance = it.cache
+                            evictor = it.evictor
+                            opened = it
+                        }
+                    }
+                }
+            // Off the open path and after it: a card full of another
+            // title's leftovers never delays this cache's first frame.
+            built?.let { cleanupJob = scheduleStaleVolumeCleanup(dispatcher, databaseProvider, volumes, it.volume) }
+            instance!!
         }
     }
 
@@ -101,7 +138,14 @@ object CacheProvider {
     ): CacheOccupancy {
         val cache = get(context, dispatcher)
         val budgetBytes = evictor?.budgetBytes ?: CACHE_MAX_BYTES
-        return CacheOccupancy(heldBytes = cache.cacheSpace, budgetBytes = budgetBytes)
+        val location = opened
+        return CacheOccupancy(
+            heldBytes = cache.cacheSpace,
+            budgetBytes = budgetBytes,
+            volumeLabel = location?.volume?.label ?: "Internal storage",
+            fellBack = location?.fellBack ?: false,
+            capBytes = location?.capBytes ?: budgetBytes,
+        )
     }
 
     /**
@@ -128,20 +172,17 @@ object CacheProvider {
     internal fun resetForTest() {
         instance = null
         evictor = null
+        opened = null
+        cleanupJob = null
+        volumesFor = ::cacheVolumes
+    }
+
+    /** Test-only: waits for the stale-volume sweep [get] kicked off, so a test can assert on its result. */
+    internal suspend fun awaitCleanupForTest() {
+        cleanupJob?.join()
     }
 
     private fun budgetSettings(context: Context): CacheBudgetSettings = PlainCacheBudgetSettings(context)
 
-    private fun buildCache(
-        context: Context,
-        budgetBytes: Long,
-    ): SimpleCache {
-        val newEvictor = AdjustableLruEvictor(budgetBytes)
-        evictor = newEvictor
-        return SimpleCache(
-            File(context.cacheDir, CACHE_DIR_NAME),
-            newEvictor,
-            StandaloneDatabaseProvider(context),
-        )
-    }
+    private fun volumeSettings(context: Context): CacheVolumeSettings = PlainCacheVolumeSettings(context)
 }
