@@ -50,7 +50,7 @@ internal class UpNextSwitcher(private val scope: CoroutineScope, private val han
      * The switch landed and [setId] is now truly open — starts the gate poll
      * if this was the title one was pending on, calling [onReady] once it
      * resolves. For any other open it only ends a wait left over from an
- * earlier switch.
+     * earlier switch.
      */
     fun startedTitle(setId: String, onReady: () -> Unit) {
         val gate = pendingGate?.takeIf { it.setId == setId }
