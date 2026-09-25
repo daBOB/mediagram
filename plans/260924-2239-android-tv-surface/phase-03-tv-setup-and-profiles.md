@@ -5,7 +5,7 @@
 ## Overview
 
 - **Priority:** High — nothing else is reachable on a fresh TV without it.
-- **Status:** pending
+- **Status:** done — tasks 1–3 in 6e4bc84..60454d6; emulator walk 2026-09-25 (application step by D-pad, phone number and code entered by the user in the emulator window, landed on the library stub with profiles synced from the channel)
 - **Deliverable:** from a fresh install, with only a remote: enter the Telegram application id/hash, sign in (phone, code, 2FA), choose the library, pick or add a profile.
 
 ## Key insights
@@ -36,33 +36,33 @@
 ## Implementation steps
 
 ### Task 1: Shared pieces
-- [ ] **1.1** `TvTextQuestion(prompt, value, onValue, onSubmit, secret)`: one heading, one field focused on entry, IME action submits. Test: on show, field is focused; `performKeyInput { pressKey(Key.Enter) }` on a filled field calls `onSubmit`.
-- [ ] **1.2** `TvConfirmDialog(title, body, confirm, cancel)`: cancel focused initially; Back == cancel. Test both.
+- [x] **1.1** `TvTextQuestion(prompt, value, onValue, onSubmit, secret)`: one heading, one field focused on entry, IME action submits. Test: on show, field is focused; `performKeyInput { pressKey(Key.Enter) }` on a filled field calls `onSubmit`.
+- [x] **1.2** `TvConfirmDialog(title, body, confirm, cancel)`: cancel focused initially; Back == cancel. Test both.
 
 ### Task 2: Setup steps
-- [ ] **2.1** `TvSetupStep` switches on `SetupUiState` exactly like phone `SetupStep` (Checking → centred progress; NeedsApplication; NeedsSignIn; NeedsLibrary; Failed → message + Retry focused).
-- [ ] **2.2** `TvSignInScreen` renders `LoginUiState` steps via `promptFor`; completion wiring from `:ui-common` (same as phone).
-- [ ] **2.3** `TvLibraryChoiceScreen`: list of libraries as focusable rows, first focused.
-- [ ] **2.4** Start over on every step after the first → `TvConfirmDialog`.
-- [ ] **2.5** Robolectric tests with fixture ViewModels (pattern from `ui-mobile` `MobileAppTest`): each state renders its screen and something is focused.
-- [ ] **2.6** Commit — `feat(android): set up and sign in from a television`.
+- [x] **2.1** `TvSetupStep` switches on `SetupUiState` exactly like phone `SetupStep` (Checking → centred progress; NeedsApplication; NeedsSignIn; NeedsLibrary; Failed → message + Retry focused).
+- [x] **2.2** `TvSignInScreen` renders `LoginUiState` steps via `promptFor`; completion wiring from `:ui-common` (same as phone).
+- [x] **2.3** `TvLibraryChoiceScreen`: list of libraries as focusable rows, first focused.
+- [x] **2.4** Start over on every step after the first → `TvConfirmDialog`.
+- [x] **2.5** Robolectric tests with fixture ViewModels (pattern from `ui-mobile` `MobileAppTest`): each state renders its screen and something is focused.
+- [x] **2.6** Commit — `feat(android): set up and sign in from a television`.
 
 ### Task 3: Profiles
-- [ ] **3.1** `TvProfileGate` over `ProfileViewModel`: Picking → `TvProfilePicker`; Chosen → content.
-- [ ] **3.2** `TvProfilePicker`: "Who's watching?", initial-letter tiles (use moved `initialsOf`), kids profiles labelled as on phone/web, "Add" tile last → `TvTextQuestion` for the name + kids choice as on phone. Stay/Retry states as phone.
-- [ ] **3.3** Tests: first tile focused; D-pad right moves to next tile; centre chooses.
-- [ ] **3.4** Commit — `feat(android): choose who's watching with a remote`.
+- [x] **3.1** `TvProfileGate` over `ProfileViewModel`: Picking → `TvProfilePicker`; Chosen → content.
+- [x] **3.2** `TvProfilePicker`: "Who's watching?", initial-letter tiles (use moved `initialsOf`), kids profiles labelled as on phone/web, "Add" tile last → `TvTextQuestion` for the name + kids choice as on phone. Stay/Retry states as phone.
+- [x] **3.3** Tests: first tile focused; D-pad right moves to next tile; centre chooses.
+- [x] **3.4** Commit — `feat(android): choose who's watching with a remote`.
 
 ### Task 4: Emulator walk (mouse-free)
-- [ ] **4.1** Fresh data: `adb -s emulator-5554 shell pm clear com.mediagram.android`. **Emulator only — never `pm clear` on the phone.**
-- [ ] **4.2** Drive with `adb shell input keyevent DPAD_*/DPAD_CENTER/BACK` and the on-screen keyboard; screenshot each step. Sign in with the user's account (the emulator gets its own session; this does not disturb other devices).
-- [ ] **4.3** Create a profile named **`TV test`** for all later emulator checks.
+- [x] **4.1** Fresh data: `adb -s emulator-5554 shell pm clear com.mediagram.android`. **Emulator only — never `pm clear` on the phone.**
+- [x] **4.2** Drive with `adb shell input keyevent DPAD_*/DPAD_CENTER/BACK` and the on-screen keyboard; screenshot each step. Sign in with the user's account (the emulator gets its own session; this does not disturb other devices).
+- [ ] **4.3** Create a profile named **`TV test`** for all later emulator checks. _Deferred to phase 4: the channel synced `andre` and `test` and the gate chose `andre`; the TV has no way back to the picker until phase 4's masthead profile action, so `TV test` is created from there, before anything is played._
 
 ## Todo list
-- [ ] Text question + confirm dialog, focus-tested
-- [ ] All setup states on TV
-- [ ] Profile gate + picker
-- [ ] Mouse-free emulator walk, `TV test` profile exists
+- [x] Text question + confirm dialog, focus-tested
+- [x] All setup states on TV
+- [x] Profile gate + picker
+- [x] Mouse-free emulator walk (`TV test` moves to phase 4)
 
 ## Success criteria
 Fresh emulator install reaches a chosen profile using only key events; every screen had focus on arrival.

@@ -43,7 +43,7 @@
 |---|---|---|---|
 | 1 | [phase-01-move-shared-rules-out-of-ui-mobile.md](phase-01-move-shared-rules-out-of-ui-mobile.md) | Pure rules + lifecycle glue reachable by both surfaces | done (4a91c94..ed7e6b2) |
 | 2 | [phase-02-tv-foundation-theme-and-shell.md](phase-02-tv-foundation-theme-and-shell.md) | tv-material, 10-foot theme, overscan, `TvApp` shell replaces placeholder | done (ba114e6..f594b5f) |
-| 3 | [phase-03-tv-setup-and-profiles.md](phase-03-tv-setup-and-profiles.md) | First-run setup, sign-in, library choice, "Who's watching?" by D-pad | pending |
+| 3 | [phase-03-tv-setup-and-profiles.md](phase-03-tv-setup-and-profiles.md) | First-run setup, sign-in, library choice, "Who's watching?" by D-pad | done (6e4bc84..60454d6) |
 | 4 | [phase-04-tv-catalog-and-title-pages.md](phase-04-tv-catalog-and-title-pages.md) | Masthead, Home rows, walls, kept shelves, collections, series/season/title pages | pending |
 | 5 | [phase-05-tv-player-and-remote-keys.md](phase-05-tv-player-and-remote-keys.md) | Full-screen player driven by remote keys, marks, stats | pending |
 | 6 | [phase-06-menus-docs-version-emulator-validation.md](phase-06-menus-docs-version-emulator-validation.md) | System/settings reachable, docs, version, mouse-free emulator pass | pending |
