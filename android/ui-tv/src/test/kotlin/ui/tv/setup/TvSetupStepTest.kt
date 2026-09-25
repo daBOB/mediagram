@@ -58,9 +58,12 @@ class TvSetupStepTest {
     @Test
     fun needsApplicationShowsTheSameHeadingAndExplanationAsThePhone() {
         show(SetupUiState.NeedsApplication())
-        compose.onNodeWithText("Connect this device to Telegram", substring = true).assertExists()
+        // Exact matches, not substrings: the heading and the field label
+        // are their own nodes now, not folded into the explanation's text —
+        // the collapse a joined "prompt" string once produced.
+        compose.onNodeWithText("Connect this device to Telegram").assertExists()
         compose.onNodeWithText("my.telegram.org", substring = true).assertExists()
-        compose.onNodeWithText("api_id", substring = true).assertExists()
+        compose.onNodeWithText("api_id").assertExists()
     }
 
     @Test

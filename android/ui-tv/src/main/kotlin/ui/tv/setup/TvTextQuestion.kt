@@ -1,7 +1,6 @@
 package ui.tv.setup
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -47,11 +46,40 @@ import ui.tv.TvFocus
 internal const val TvTextQuestionFieldTag = "tv-text-question-field"
 
 /**
- * Every TV setup step is one of these: a heading naming what's being
- * asked, and a field the remote is already sitting in when the screen
- * appears. There is no separate Submit to hunt for with a D-pad — the
- * on-screen keyboard's own action key is the only way this question is
- * ever answered, so [onSubmit] is wired to nothing else.
+ * What the field's own `KeyboardType` resolves to. Not observable through
+ * the semantics tree Robolectric can query — `KeyboardType` never reaches
+ * semantics, only the real IME the instrumented set can watch — so this is
+ * pulled out as its own pure function precisely so the override rule
+ * ("secret always wins, regardless of what was asked for") is something a
+ * plain JVM test can pin down directly, in `TvTextQuestionKeyboardTypeTest`.
+ */
+internal fun resolvedKeyboardType(
+    secret: Boolean,
+    keyboardType: KeyboardType,
+): KeyboardType = if (secret) KeyboardType.Password else keyboardType
+
+/**
+ * Every TV setup step is one of these: the same heading/explanation/field
+ * prose the phone shows, at the phone's own text sizes, and a field the
+ * remote is already sitting in when the screen appears. There is no
+ * separate Submit to hunt for with a D-pad — the on-screen keyboard's own
+ * action key is the only way this question is ever answered, so [onSubmit]
+ * is wired to nothing else.
+ *
+ * [heading] and [explanation] are kept as separate slots, not one joined
+ * string, because they read at different sizes on the phone
+ * ([TvTypeScale.title] versus [TvTypeScale.body]) — collapsing them into a
+ * single title-sized block was the bug this shape replaces: the heading
+ * stopped reading as a heading, and a tall enough block pushed itself
+ * off-screen entirely under a centred layout. [heading] is skipped when
+ * blank, for a step like sign-in whose field label is the only text the
+ * phone shows — there is no separate page heading to duplicate.
+ *
+ * [keyboardType] mirrors whichever `KeyboardType` the phone's own field
+ * asks for — `Number` for `api_id`, plain `Text` everywhere else the phone
+ * does not specialise it. [secret] overrides it to `Password` regardless of
+ * what is passed, the same way the phone's own secret fields do, and masks
+ * the typed value.
  *
  * The field exists until sign-in can be handed over from another device
  * instead — a phone or a browser typing an `api_hash` is a far kinder
@@ -62,15 +90,21 @@ internal const val TvTextQuestionFieldTag = "tv-text-question-field"
  * This is a whole screen, not a fragment dropped into one: nothing above
  * it pads for overscan on this step's behalf, so the [Overscan] margin is
  * applied here directly, the same way [ui.tv.TvSafeArea] does it for the
- * stubs it stands in for.
+ * stubs it stands in for. Content is top-aligned rather than centred, so a
+ * heading and an explanation long enough to wrap several lines grow
+ * downward from the top instead of pushing the field — or the heading
+ * itself — out of the frame.
  */
 @Composable
 fun TvTextQuestion(
-    prompt: String,
+    heading: String,
+    explanation: String?,
+    label: String,
     value: String,
     onValue: (String) -> Unit,
     onSubmit: () -> Unit,
     secret: Boolean = false,
+    keyboardType: KeyboardType = KeyboardType.Text,
 ) {
     val focusRequester = remember { FocusRequester() }
     var focused by remember { mutableStateOf(false) }
@@ -86,11 +120,24 @@ fun TvTextQuestion(
             Modifier
                 .fillMaxSize()
                 .padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
-        verticalArrangement = Arrangement.Center,
     ) {
-        Text(text = prompt, style = TvTypeScale.title)
+        if (heading.isNotBlank()) {
+            Text(text = heading, style = TvTypeScale.title)
+        }
+        if (explanation != null) {
+            Text(
+                text = explanation,
+                style = TvTypeScale.body,
+                modifier = Modifier.padding(top = Spacing.small),
+            )
+        }
+        Text(
+            text = label,
+            style = TvTypeScale.body,
+            modifier = Modifier.padding(top = Spacing.large),
+        )
         Surface(
-            modifier = Modifier.padding(top = Spacing.large).fillMaxWidth(),
+            modifier = Modifier.padding(top = Spacing.small).fillMaxWidth(),
             shape = RectangleShape,
             colors =
                 SurfaceDefaults.colors(
@@ -130,7 +177,7 @@ fun TvTextQuestion(
                 keyboardOptions =
                     KeyboardOptions(
                         imeAction = ImeAction.Done,
-                        keyboardType = if (secret) KeyboardType.Password else KeyboardType.Text,
+                        keyboardType = resolvedKeyboardType(secret, keyboardType),
                     ),
                 // The only way this question is ever answered: the on-screen
                 // keyboard's action key, not a button a D-pad would have to

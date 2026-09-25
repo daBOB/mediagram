@@ -43,16 +43,17 @@ fun TvSignInScreen(onAuthorized: () -> Unit) {
             LoginStep.PASSWORD -> "Two-factor password" to viewModel::submitPassword
         }
 
+    // No separate page heading here, unlike the application step: the
+    // phone's own LoginScreen shows nothing above the field but a
+    // rejection's message, and this mirrors exactly that — the field's own
+    // label is the only other text either surface shows.
     TvTextQuestion(
-        prompt = signInPrompt(state, label),
+        heading = "",
+        explanation = (state as? LoginUiState.Failed)?.message,
+        label = label,
         value = input,
         onValue = { input = it },
         onSubmit = { onSubmit(input) },
         secret = step == LoginStep.PASSWORD,
     )
 }
-
-private fun signInPrompt(
-    state: LoginUiState,
-    label: String,
-): String = if (state is LoginUiState.Failed) "${state.message}\n\n$label" else label

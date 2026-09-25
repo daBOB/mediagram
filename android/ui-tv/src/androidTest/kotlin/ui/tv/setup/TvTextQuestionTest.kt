@@ -38,7 +38,14 @@ class TvTextQuestionTest {
     fun theFieldIsFocusedAsSoonAsTheScreenAppears() {
         compose.setContent {
             TvTheme {
-                TvTextQuestion(prompt = "What's the answer?", value = "", onValue = {}, onSubmit = {})
+                TvTextQuestion(
+                    heading = "What's the answer?",
+                    explanation = null,
+                    label = "Answer",
+                    value = "",
+                    onValue = {},
+                    onSubmit = {},
+                )
             }
         }
 
@@ -53,7 +60,9 @@ class TvTextQuestionTest {
             TvTheme {
                 var value by remember { mutableStateOf("") }
                 TvTextQuestion(
-                    prompt = "What's the answer?",
+                    heading = "What's the answer?",
+                    explanation = null,
+                    label = "Answer",
                     value = value,
                     onValue = { value = it },
                     onSubmit = { submitted = true },

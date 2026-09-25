@@ -6,9 +6,13 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.pressKey
+import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.tv.material3.Text
@@ -65,6 +69,34 @@ class TvSetupStepTest {
         }
 
         waitUntilFocused(TvTextQuestionFieldTag)
+    }
+
+    /**
+     * The phone has both `api_id` and `api_hash` on one screen, so Back has
+     * nowhere to return to on either field; TV's own two-screen split
+     * invents exactly one place Back needs to reach that the phone never
+     * had to. `Espresso.pressBack()` injects the key at the window manager,
+     * the same way a physical remote's Back button would, matching
+     * `TvConfirmDialogTest`'s own reasoning for using it over a
+     * node-scoped key event.
+     */
+    @Test
+    fun backFromApiHashReturnsToApiId() {
+        compose.setContent {
+            TvTheme { TvApplicationScreen(error = null, onSubmit = { _, _ -> }) }
+        }
+        compose.onNodeWithTag(TvTextQuestionFieldTag).performTextInput("1234567")
+        compose.onNodeWithTag(TvTextQuestionFieldTag).performImeAction()
+        compose.onNodeWithText("api_hash").assertExists()
+
+        // The on-screen keyboard is still open from typing into api_id — a
+        // remote's own Back dismisses that first, exactly as it would for
+        // any other open keyboard, before a second press reaches this
+        // screen's own BackHandler.
+        Espresso.pressBack()
+        Espresso.pressBack()
+
+        compose.onNodeWithText("api_id").assertExists()
     }
 
     @Test
