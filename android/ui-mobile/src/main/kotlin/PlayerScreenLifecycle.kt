@@ -10,6 +10,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import player.PlayerViewModel
+import player.open
 
 /**
  * The side effects [PlayerScreen] runs for its own lifecycle rather than for
@@ -25,7 +26,8 @@ internal fun PlayerLifecycleEffects(viewModel: PlayerViewModel, isPlaying: Boole
     val activity = LocalContext.current.findActivity()
     DisposableEffect(Unit) {
         onDispose {
-            if (shouldStopOnDispose(activity?.isChangingConfigurations == true)) {
+            val stillInPip = activity?.isInPictureInPictureMode == true
+            if (shouldStopOnDispose(activity?.isChangingConfigurations == true, stillInPip)) {
                 viewModel.stop()
             }
         }
@@ -45,13 +47,18 @@ internal fun PlayerLifecycleEffects(viewModel: PlayerViewModel, isPlaying: Boole
 }
 
 /**
- * A rotation disposes and recreates `PlayerScreen`'s whole composition
- * exactly the way leaving it for the catalog does; the two are told apart
- * by whether the Activity itself is mid configuration change. Stopping on
- * a rotation would restart the same set from zero every time the device
- * turns, which is worse than the drop-to-catalog bug this replaced.
+ * A rotation or a picture-in-picture resize disposes and recreates
+ * `PlayerScreen`'s whole composition exactly the way leaving it for the
+ * catalog does only on an OEM that ignores the manifest's own
+ * `android:configChanges` for one of the two; genuinely leaving the
+ * screen is told apart from either by whether the Activity is mid
+ * configuration change or still in picture-in-picture at the moment this
+ * runs. Stopping for either would restart the same set from zero the next
+ * time the device turns or the window is entered, which is worse than the
+ * drop-to-catalog bug this replaced.
  */
-internal fun shouldStopOnDispose(isChangingConfigurations: Boolean): Boolean = !isChangingConfigurations
+internal fun shouldStopOnDispose(isChangingConfigurations: Boolean, isInPictureInPicture: Boolean): Boolean =
+    !isChangingConfigurations && !isInPictureInPicture
 
 /**
  * Opens [setId], keeps its run current, and carries out an up-next switch

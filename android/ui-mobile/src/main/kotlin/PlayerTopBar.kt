@@ -1,13 +1,17 @@
 package ui
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import designsystem.Spacing
 
 /**
@@ -22,12 +26,36 @@ import designsystem.Spacing
  * above its transport, next to the same clock digits `PlayerControls`
  * already draws — that is where this port puts it too, rather than
  * beside a title on the opposite side of the screen.
+ *
+ * [onEnterPip], when non-null, draws a second button beside the back
+ * arrow — the phone's touch equivalent of the web's `p` key, which this
+ * app has no keyboard for (CLAUDE.md § Surface Parity). Null hides it:
+ * below API 26, or already inside picture-in-picture, where this whole
+ * bar is hidden anyway.
  */
 @Composable
-internal fun PlayerTopBar(title: String, showTitle: Boolean, onBack: () -> Unit, modifier: Modifier = Modifier) {
+internal fun PlayerTopBar(
+    title: String,
+    showTitle: Boolean,
+    onBack: () -> Unit,
+    onEnterPip: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+) {
     Column(modifier = modifier) {
-        IconButton(onClick = onBack, modifier = Modifier.padding(Spacing.medium)) {
-            Text(text = "←", color = Color.White, style = MaterialTheme.typography.headlineSmall)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack, modifier = Modifier.padding(Spacing.medium)) {
+                Text(text = "←", color = Color.White, style = MaterialTheme.typography.headlineSmall)
+            }
+            if (onEnterPip != null) {
+                IconButton(
+                    onClick = onEnterPip,
+                    modifier = Modifier
+                        .padding(Spacing.medium)
+                        .semantics { contentDescription = "Picture in picture" },
+                ) {
+                    Text(text = "⧉", color = Color.White, style = MaterialTheme.typography.headlineSmall)
+                }
+            }
         }
         if (showTitle && title.isNotEmpty()) {
             Text(

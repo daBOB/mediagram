@@ -17,7 +17,9 @@ import playback.DefaultSubtitleTrackSource
 import playback.PlaybackCounters
 import playback.SubtitleTrackSource
 import playback.buildPlayer
+import player.AndroidPlaybackServiceController
 import player.DefaultPlayerHandle
+import player.PlaybackServiceController
 import player.PlayerHandle
 import javax.inject.Singleton
 
@@ -78,4 +80,12 @@ object PlaybackModule {
     @Singleton
     fun provideSubtitleTrackSource(coreProvider: CoreProvider): SubtitleTrackSource =
         DefaultSubtitleTrackSource(coreProvider)
+
+    // Upcasts a constructor-injected concrete type to the interface
+    // PlayerViewModel actually depends on — this module is a plain
+    // `object`, so `@Binds` (which needs an abstract class) is not an
+    // option here.
+    @Provides
+    @Singleton
+    fun providePlaybackServiceController(controller: AndroidPlaybackServiceController): PlaybackServiceController = controller
 }

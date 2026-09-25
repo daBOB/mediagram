@@ -21,6 +21,7 @@ fun fakeMediaSet(
     episodeFirst: Int? = null,
     episodeLast: Int? = null,
     posterKey: String? = null,
+    posterPath: String? = null,
     durationSecs: Int? = null,
     fsk: String? = null,
 ): MediaSet = MediaSet(
@@ -36,7 +37,7 @@ fun fakeMediaSet(
     episodeLast = episodeLast,
     year = null,
     durationSecs = durationSecs,
-    posterPath = null,
+    posterPath = posterPath,
     totalBytes = 0,
     posterKey = posterKey,
     fsk = fsk,

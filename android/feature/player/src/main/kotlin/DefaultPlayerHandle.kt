@@ -1,5 +1,6 @@
 package player
 
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import kotlinx.coroutines.CancellationException
@@ -53,6 +54,7 @@ class DefaultPlayerHandle @Inject constructor(
 
     /** A speed requested through [setPlaybackSpeed] before the player finished building. */
     private var pendingSpeed: Float? = null
+    private val pendingMetadata = PendingMetadata()
 
     private val playerListener = PlayerHandleListener(
         isCurrentlyPlaying = { _player.value?.isPlaying ?: false },
@@ -155,6 +157,10 @@ class DefaultPlayerHandle @Inject constructor(
         _player.value?.play()
     }
 
+    override fun pause() {
+        _player.value?.pause()
+    }
+
     override fun isLoading(): Boolean = _player.value?.isLoading ?: false
 
     private fun republishPlaybackState(player: Player) = player.republishTo(::notifyPlaying)
@@ -176,9 +182,15 @@ class DefaultPlayerHandle @Inject constructor(
         _player.value?.setPlaybackSpeed(rate) ?: run { pendingSpeed = rate }
     }
 
+    override fun setMetadata(metadata: MediaMetadata) {
+        pendingMetadata.remember(metadata)
+        _player.value?.setMetadataReal(metadata)
+    }
+
     private fun openOn(player: Player, setId: String, startAtMs: Long, playWhenReady: Boolean) {
         currentSetId = setId
         player.openReal(setId, startAtMs, playWhenReady)
+        pendingMetadata.reapply(player)
     }
 
     private fun notifyPlaying(isPlaying: Boolean) {

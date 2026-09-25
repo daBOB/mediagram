@@ -26,4 +26,11 @@ dependencies {
     // app convention plugin only adds this to :app, and this module reaches
     // the Activity window directly rather than through it.
     implementation(libs.findLibrary("androidx.core").get())
+    // PipRationalBoundsTest constructs a real android.util.Rational; the
+    // plain unit-test android.jar stub leaves it zeroed rather than
+    // throwing for it (isReturnDefaultValues), which is worse — a wrong
+    // answer a test could pass by accident — so this runs under
+    // Robolectric instead, same reasoning as DefaultPlayerHandleTest's
+    // own android.net.Uri.
+    testImplementation(libs.findLibrary("robolectric").get())
 }

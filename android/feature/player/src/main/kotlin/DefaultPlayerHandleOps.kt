@@ -1,6 +1,7 @@
 package player
 
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import playback.setUri
 
@@ -35,4 +36,18 @@ internal fun Player.openReal(setId: String, startAtMs: Long, playWhenReady: Bool
 internal fun Player.republishTo(notifyPlaying: (Boolean) -> Unit) {
     if (playbackState == Player.STATE_BUFFERING) return
     notifyPlaying(isPlaying)
+}
+
+/**
+ * `replaceMediaItem` rather than a second `setMediaItem` — the latter
+ * always resets to position zero, the same reason [openReal] never calls
+ * it twice for a set that's already loaded. The URI is unchanged, so this
+ * only ever swaps the item's metadata, never its own source. A no-op with
+ * nothing open: a title not yet open has nothing on a lock screen to
+ * update either way, and [openReal] carries whatever metadata is current
+ * the moment it does.
+ */
+internal fun Player.setMetadataReal(metadata: MediaMetadata) {
+    val current = currentMediaItem ?: return
+    replaceMediaItem(currentMediaItemIndex, current.buildUpon().setMediaMetadata(metadata).build())
 }

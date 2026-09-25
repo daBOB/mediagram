@@ -45,7 +45,7 @@ Supersedes the unbuilt phases 1-3, 6, 7, 10 of
 | 06 | [Subtitles](phase-06-subtitles.md) | 04 | 6h | done |
 | 07 | [Up next and queues](phase-07-up-next-and-queues.md) | 04 | 6h | done (list Play all and Kids tiles not device-checked) |
 | 08 | [Fullscreen, double-tap, framing](phase-08-fullscreen-gestures-framing.md) | 04 | 5h | done (pinch not device-checked: adb has no multi-touch) |
-| 09 | [Picture-in-picture and MediaSession](phase-09-pip-and-media-session.md) | 08 | 5h | pending |
+| 09 | [Picture-in-picture and MediaSession](phase-09-pip-and-media-session.md) | 08 | 5h | done (device re-check of fixes pending) |
 | 10 | [Series preload and offline badges](phase-10-series-preload-and-offline.md) | 07 | 5h | pending |
 | 11 | [Notes panel](phase-11-notes-panel.md) | 04 | 5h | pending |
 | 12 | [Profile removal, shelf view, docs close-out](phase-12-profiles-shelf-view-docs.md) | 01 | 4h | pending |

@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.systemBarsIgnoringVisibility
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -30,7 +29,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Spacing
 import kotlinx.coroutines.delay
 import player.UpNextPhase
-import player.titleLine
 import player.PlayerUiState
 import player.PlayerViewModel
 import player.chooseFraming
@@ -43,15 +41,19 @@ import player.toggleWatchlist
 /**
  * Hosts the shared [PlayerViewModel] behind a `PlayerSurface`, keeping the
  * screen awake while a set is actually playing and stopping playback when
- * this leaves composition for real — not on a rotation, which destroys
- * and recreates this same composition too (there is no
- * `android:configChanges`) while the singleton player/ViewModel underneath
- * survive regardless; see [shouldStopOnDispose].
+ * this leaves composition for real — never for a rotation or a
+ * picture-in-picture resize, both declared in the manifest's own
+ * `android:configChanges` so the activity is never recreated for either;
+ * this composition simply reflows at the new size instead, and the
+ * singleton player/ViewModel underneath were never touched either way.
+ * See [shouldStopOnDispose].
  *
  * A tap toggles the transport bar, which takes itself away while a film runs
  * and stays while it is paused, being scrubbed, or the settings sheet is
  * open; see [controlsShouldFade]. Double-tap seeking, play/pause and pinch
- * framing live in [PlayerGestureLayer], which wraps everything below.
+ * framing live in [PlayerGestureLayer], which wraps everything below. All of
+ * it — transport bar, marks, sheet, up-next card, top bar — is hidden while
+ * [LocalIsInPictureInPicture] is true; see [PipController].
  */
 // The toggles are inset by the system bars even while the player hides them,
 // which Compose still marks experimental.
@@ -66,6 +68,9 @@ fun PlayerScreen(setId: String, run: List<String>, fsk: String?, onBack: () -> U
     val choices by viewModel.choices.collectAsStateWithLifecycle()
     val subtitleCues by viewModel.subtitleCues.collectAsStateWithLifecycle()
     val upNext by viewModel.upNext.collectAsStateWithLifecycle()
+
+    val isInPip = LocalIsInPictureInPicture.current
+    val pip = PipController(player = player, isPlaying = state is PlayerUiState.Playing, onDismissed = viewModel::pauseForPipDismissal)
 
     PlayerNavigationEffects(viewModel, setId, run, fsk, onSwitch)
     PlayerLifecycleEffects(
@@ -95,8 +100,9 @@ fun PlayerScreen(setId: String, run: List<String>, fsk: String?, onBack: () -> U
     // One predicate, read twice, because the bar and the statistics sit in
     // different corners and cannot be nested under a single `if`. Both are
     // the bar being on screen, so both ask the same question rather than two
-    // that could drift apart.
-    val barShown = controlsShown && controlsMayShow(state)
+    // that could drift apart. `!isInPip` folds in here too: there is no
+    // touch surface of this app's own inside that window to show a bar on.
+    val barShown = controlsShown && controlsMayShow(state) && !isInPip
 
     // The up-next card appearing is itself a reason to bring the bar back —
     // a viewer who let it fade is exactly who most wants to see the panel.
@@ -116,7 +122,7 @@ fun PlayerScreen(setId: String, run: List<String>, fsk: String?, onBack: () -> U
             .onGloballyPositioned { screenBottom = it.boundsInRoot().bottom },
     ) {
         player?.let { current ->
-            VideoWithSubtitles(current, subtitleCues, choices, barTop = barTop.takeIf { barShown }, onPictureBottomChanged = { pictureBottom = it })
+            VideoWithSubtitles(current, subtitleCues, choices, barTop = barTop.takeIf { barShown }, isInPip = isInPip, onPictureBottomChanged = { pictureBottom = it })
             if (barShown) {
                 PlayerControls(
                     player = current,
@@ -151,14 +157,16 @@ fun PlayerScreen(setId: String, run: List<String>, fsk: String?, onBack: () -> U
                         .padding(Spacing.medium),
                 )
             }
-            if (settingsShown) {
+            if (settingsShown && !isInPip) {
                 PlayerSettingsSheetForViewModel(
                     choices = choices,
                     viewModel = viewModel,
                     onDismiss = { settingsShown = false },
                 )
             }
-            UpNextCard(
+            // The countdown that may run it keeps ticking either way — it
+            // lives in the up-next controller, not in this composable.
+            if (!isInPip) UpNextCard(
                 state = upNext,
                 onPlayNow = viewModel::playNext,
                 onCancel = viewModel::cancelUpNext,
@@ -175,25 +183,16 @@ fun PlayerScreen(setId: String, run: List<String>, fsk: String?, onBack: () -> U
             PlayerUiState.Playing, PlayerUiState.Paused -> Unit
         }
 
-        // Placed explicitly: the box centres its children, and the top bar
-        // would otherwise be centred with the picture rather than pinned to
-        // its corner. The statistics sit under it in the same column, so
-        // nothing here has to know how tall the bar is to clear it.
-        Column(modifier = Modifier.align(Alignment.TopStart)) {
-            PlayerTopBar(title = titleLine(openSet), showTitle = barShown, onBack = onBack)
-            // Gated on the bar being shown as well as on the toggle, so the
-            // statistics have no visibility rule of their own: a viewer who
-            // leaves the numbers on gets the picture back when the bar takes
-            // itself away, and keeps them while the film is paused.
-            if (statsShown && barShown) {
-                player?.let { current ->
-                    PlaybackStatsOverlay(
-                        player = current,
-                        totals = viewModel.totals,
-                        modifier = Modifier.padding(start = Spacing.medium),
-                    )
-                }
-            }
-        }
+        PlayerTopChrome(
+            openSet = openSet,
+            barShown = barShown,
+            statsShown = statsShown,
+            isInPip = isInPip,
+            player = player,
+            totals = viewModel.totals,
+            onBack = onBack,
+            onEnterPip = pip.enterPip.takeIf { pip.supported && player != null },
+            modifier = Modifier.align(Alignment.TopStart),
+        )
     }
 }

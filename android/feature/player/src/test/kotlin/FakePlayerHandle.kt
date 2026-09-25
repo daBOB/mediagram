@@ -1,5 +1,6 @@
 package player
 
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -90,7 +91,31 @@ class FakePlayerHandle : PlayerHandle {
         playCalled = true
     }
 
+    var pauseCalled: Boolean = false
+        private set
+
+    /**
+     * The real player fires a synchronous `onIsPlayingChanged(false)` the
+     * moment `pause()` actually changes anything — modelled here the same
+     * way [open] models `setMediaItem`'s own synchronous emission, so a
+     * test pausing an actively-playing fake sees the ten-second ticker
+     * stop exactly as it would for real, rather than spinning forever
+     * once nothing in the test ever tells it to.
+     */
+    override fun pause() {
+        pauseCalled = true
+        if (isPlayingNow) emitPlaying(false)
+    }
+
     override fun isLoading(): Boolean = fakeIsLoading
+
+    /** What the last [setMetadata] was asked for — `null` until one lands, or while [installPlayer] has never been called, matching `DefaultPlayerHandle`'s own early return with no current item. */
+    var lastMetadata: MediaMetadata? = null
+        private set
+
+    override fun setMetadata(metadata: MediaMetadata) {
+        if (_player.value != null) lastMetadata = metadata
+    }
 
     fun emitError(message: String) {
         listener?.onError(message)

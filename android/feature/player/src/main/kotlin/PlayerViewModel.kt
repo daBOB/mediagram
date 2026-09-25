@@ -6,8 +6,6 @@ import androidx.media3.common.Player
 import dagger.hilt.android.lifecycle.HiltViewModel
 import data.CatalogRepository
 import data.PlayerPreferences
-import data.ProgressPoint
-import data.ResumePoint
 import data.WatchStateRepository
 import data.WatchSync
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,15 +24,16 @@ import javax.inject.Inject
 class PlayerViewModel @Inject constructor(
     internal val handle: PlayerHandle,
     counters: PlaybackCounters,
-    private val repository: WatchStateRepository,
+    internal val repository: WatchStateRepository,
     private val recorder: ProgressRecorder,
     private val watchSync: WatchSync,
     catalogRepository: CatalogRepository,
     preferences: PlayerPreferences,
     subtitleTrackSource: SubtitleTrackSource,
+    internal val playbackServiceController: PlaybackServiceController = PlaybackServiceController.Noop,
 ) : ViewModel(), PlayerHandle.Listener {
 
-    private val _state = MutableStateFlow<PlayerUiState>(PlayerUiState.Preparing)
+    internal val _state = MutableStateFlow<PlayerUiState>(PlayerUiState.Preparing)
     val state: StateFlow<PlayerUiState> = _state.asStateFlow()
 
     /**
@@ -57,7 +56,7 @@ class PlayerViewModel @Inject constructor(
     /** The ten-second save ticker and which set it saves against. */
     internal val session = PlayerSession(viewModelScope, handle, recorder)
 
-    private val _openSetId = MutableStateFlow<String?>(null)
+    internal val _openSetId = MutableStateFlow<String?>(null)
 
     /** The open title's age rating, as the catalog listed it; see [open]. */
     internal val openFsk = MutableStateFlow<String?>(null)
@@ -78,7 +77,7 @@ class PlayerViewModel @Inject constructor(
     val marks: StateFlow<PlayerMarksState?> = marksController.marks
 
     /** What follows the open title, and the countdown that may start it unattended — ported from `refreshUpNext`/`startWhenReady` in `player.js`. */
-    private val upNextController = UpNextController(viewModelScope, handle, session, catalogRepository, choicesController.openSet)
+    internal val upNextController = UpNextController(viewModelScope, handle, session, catalogRepository, choicesController.openSet)
     val upNext: StateFlow<UpNextUiState> = upNextController.state
 
     /** A title to navigate to, once — the UI layer owns `LibraryPositions`, so it (not this VM) moves there and calls [switchAcknowledged]. */
@@ -90,52 +89,7 @@ class PlayerViewModel @Inject constructor(
 
     init {
         handle.setListener(this)
-    }
-
-    /**
-     * [fsk] is the title's age rating as the catalog listed it, handed in
-     * rather than looked up: the screen that opened this already has the
-     * set in hand from whichever shelf it came from, and a lookup here
-     * could still be racing the catalog on a cold start. The set itself is
-     * resolved anyway, in [PlayerChoicesController.resolve], for the title
-     * line and the preference scope — both can wait the moment it takes.
-     *
-     * A rotation destroys and recreates the whole screen, which re-runs the
-     * `LaunchedEffect` that calls this with the *same* [setId] —
-     * [sameTitle] is what tells that apart from a genuinely new title.
-     * Retracing any of this for it is exactly what turned a rotation
-     * mid-film into a flicker of the title, a reset of the chosen speed,
-     * and (a leftover `setPlaybackSpeed(1f)` used to run here regardless)
-     * an audible drop to 1x — none of which the handle needs help with:
-     * asking it to open a set that is already loaded and playing
-     * republishes rather than reloading (`DefaultPlayerHandle.open`), and
-     * only a real reload floors the rate to 1x (`DefaultPlayerHandle.openOn`).
-     */
-    fun open(setId: String, run: List<String> = emptyList(), fsk: String? = null) {
-        val sameTitle = session.openSetId == setId
-        session.open(setId)
-        openFsk.value = fsk
-        _openSetId.value = setId
-        // Reset unconditionally, same as always: for a rotation reopening
-        // an already-playing title this is corrected straight back by the
-        // handle's own synchronous republish (below), within this same
-        // call — never actually shown — and for one still buffering it is
-        // exactly what has to stay put until the player's own ready event
-        // ends the wait (`PlayerReopenTest`). Only the choice, title and
-        // scope skip resetting for [sameTitle], since those really would
-        // otherwise flicker and reset for no reload at all.
-        _state.value = PlayerUiState.Preparing
-        if (!sameTitle) choicesController.reset()
-        val progress = repository.snapshot.value.progress.find { it.setId == setId }
-        val resumeSeconds = ResumePoint.resumeAt(progress?.let { ProgressPoint(it.at, it.duration) })
-        val startAtMs = ((resumeSeconds ?: 0.0) * 1000).toLong()
-        // False only for the one title a gated up-next switch is headed to
-        // — asked before `startTitle`, which consumes the same pending gate.
-        handle.open(setId, startAtMs, upNextController.playWhenReadyFor(setId))
-        if (!sameTitle) {
-            viewModelScope.launch { choicesController.resolve(setId) }
-            upNextController.startTitle(setId, run)
-        }
+        syncMetadataToHandle()
     }
 
     /** Starts whatever follows the open title, the same as its own "Play next" button. */
@@ -152,6 +106,7 @@ class PlayerViewModel @Inject constructor(
         val atMs = handle.positionMs()
         val durationMs = handle.durationMs()
         handle.stop()
+        playbackServiceController.stop()
         session.clear()
         openFsk.value = null
         _openSetId.value = null
@@ -175,6 +130,22 @@ class PlayerViewModel @Inject constructor(
      * player, and by the screen's own `ON_STOP` observer.
      */
     fun save() = session.save()
+
+    /**
+     * The viewer dismissed the picture-in-picture window (the ✕, or
+     * swiping it away) rather than expanding it back — a pause, not
+     * [stop]: the title stays open (state, choices, up-next all
+     * untouched), so reopening the app finds it exactly where it was,
+     * paused, rather than back at the catalog. The service stops
+     * regardless — nothing plays with the window gone, so there is
+     * nothing left to keep a notification or a foreground state for
+     * until the viewer returns.
+     */
+    fun pauseForPipDismissal() {
+        handle.pause()
+        session.save()
+        playbackServiceController.stop()
+    }
 
     override fun onPlayingChanged(isPlaying: Boolean) {
         _state.value = if (isPlaying) PlayerUiState.Playing else PlayerUiState.Paused

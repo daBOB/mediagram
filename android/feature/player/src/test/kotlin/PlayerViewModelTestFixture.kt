@@ -24,6 +24,7 @@ internal fun buildViewModel(
     catalogRepository: FakeCatalogRepository = FakeCatalogRepository(),
     preferences: FakePlayerPreferences = FakePlayerPreferences(),
     subtitleTrackSource: FakeSubtitleTrackSource = FakeSubtitleTrackSource(),
+    playbackServiceController: FakePlaybackServiceController = FakePlaybackServiceController(),
 ) = PlayerViewModel(
     handle,
     PlaybackCounters(),
@@ -33,4 +34,5 @@ internal fun buildViewModel(
     catalogRepository,
     preferences,
     subtitleTrackSource,
+    playbackServiceController,
 )

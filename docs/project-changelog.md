@@ -83,6 +83,55 @@ to `main`. Full phase-by-phase detail lives in
   transport bar, now clamps to the visible picture itself while the bar is
   hidden — otherwise, under a letterboxing framing, its scrim and buttons
   hung in the black band below the picture.
+- Picture-in-picture and lock-screen controls. A button beside the back
+  arrow and, on API 31+, `setAutoEnterEnabled` shrink the player into a
+  floating window on the home gesture, while actually playing or
+  buffering with the intent to (`playWhenReady`) — below 31, the same
+  gesture is caught by hand in `MainActivity.onUserLeaveHint` through a
+  small `PipEntryPoint` slot, since `ui-mobile` cannot import
+  `MainActivity` the other way around. Neither runs on a device lacking
+  `FEATURE_PICTURE_IN_PICTURE` (Android Go, some OEM builds), which
+  `packageManager.hasSystemFeature` now gates before any of it. The
+  window opens at the video's own aspect, clamped to what
+  `PictureInPictureParams` accepts (1:2.39..2.39:1, built as exact
+  fractions rather than a decimal that rounded past the true minimum),
+  always `Fit` regardless of the show's own remembered framing (a
+  remembered 4:3/16:9 crop otherwise letterboxed a second time inside a
+  window already shaped to the video), and carries three `RemoteAction`s
+  — skip back, play/pause, skip forward — answered by a
+  `BroadcastReceiver` acting on the same `Player` the transport bar's own
+  buttons use; leaving the player screen disarms auto-enter on the
+  activity again, so the catalog itself never shrinks into a leftover
+  window. Every other overlay (transport bar, marks, settings sheet,
+  up-next card) is hidden while in the window; the up-next countdown keeps
+  running regardless, since it lives in the ViewModel, not in the hidden
+  composable. **Closing the window pauses and saves, keeping the title
+  open** (a user decision) — reopening the app finds it exactly where it
+  was, not back at the catalog — told apart from expanding back to full
+  screen by whether the activity's own lifecycle has already dropped to
+  `CREATED` by the time the system reports leaving picture-in-picture.
+  `MainActivity` now declares `android:configChanges` for screen size and
+  orientation, so neither a rotation nor a picture-in-picture resize
+  recreates the activity any more — the existing stop-on-dispose path is
+  now also guarded by `isInPictureInPictureMode`, in case an OEM still
+  tears the activity down mid-window. A new `:feature:player`
+  `MediaSessionService` (`PlaybackService`) wraps the app's singleton
+  player in a `MediaSession`, added to the service (not merely built —
+  the session notification, foreground state and lock-screen controls all
+  depend on that) with a session activity so tapping the notification
+  reopens the app; started and stopped alongside `PlayerViewModel.open`/
+  `stop`. No notification-permission prompt: media-session notifications
+  are exempt from `POST_NOTIFICATIONS` on API 33+ by Android's own
+  documented behavior, so there was nothing to ask for. Playback still
+  pauses only on actually leaving the player screen, never on the screen
+  locking or on entering picture-in-picture, per the user decision the
+  plan records. `MediaMetadata` (title line, poster) rides on the current
+  `MediaItem`, updated through `Player.replaceMediaItem` and remembered
+  so a cold start or a `retry()` reload reapplies it rather than losing it
+  silently, so the lock screen and notification never show a stale or
+  blank title. The button, its auto-enter and the lack of a web-side
+  equivalent (the web has only the `p` key) are recorded as deliberate,
+  phone-only touch equivalents, not owed to the web.
 
 ## 2026-09-24
 

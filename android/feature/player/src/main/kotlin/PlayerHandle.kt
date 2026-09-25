@@ -1,5 +1,6 @@
 package player
 
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import kotlinx.coroutines.flow.StateFlow
 
@@ -52,6 +53,9 @@ interface PlayerHandle {
     /** Starts (or resumes) playback on whatever is currently open — the autoplay gate's "now", once it is satisfied. */
     fun play()
 
+    /** Pauses whatever is currently open, without releasing it — the picture-in-picture window's own dismissal, not a full [stop]; see `PlayerViewModel.pauseForPipDismissal`. */
+    fun pause()
+
     /**
      * Whether the loader is still fetching — `false` once it has stopped,
      * whether because there is nothing left to fetch or because the load
@@ -69,6 +73,13 @@ interface PlayerHandle {
      * one exists, the same as a queued [open].
      */
     fun setPlaybackSpeed(rate: Float)
+
+    /**
+     * Updates the open title's metadata — what `PlaybackService`'s
+     * `MediaSession` publishes to the lock screen, the notification and a
+     * headset's own display. A no-op with nothing open.
+     */
+    fun setMetadata(metadata: MediaMetadata)
 
     /** Playback facts; [PlayerViewModel] maps these onto [PlayerUiState]. */
     interface Listener {

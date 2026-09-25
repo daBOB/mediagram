@@ -1,5 +1,7 @@
 package player
 
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 import playback.AudioOption
 import playback.Framing
 
@@ -7,6 +9,16 @@ import playback.Framing
  * Thin pass-throughs onto [PlayerViewModel]'s controllers, plus [retry] —
  * split out to keep that file under the project's line guideline.
  */
+
+/**
+ * Keeps `PlaybackService`'s `MediaSession` in step with whatever
+ * [PlayerViewModel.openSet] resolves to, including the null it settles
+ * back to once nothing is open — called once, from `PlayerViewModel`'s own
+ * `init`, so nothing else has to remember to wire this up.
+ */
+internal fun PlayerViewModel.syncMetadataToHandle() {
+    viewModelScope.launch { choicesController.openSet.collect { handle.setMetadata(mediaMetadataFor(it)) } }
+}
 
 /**
  * Re-opens the title that just failed, at wherever it was last saved to —

@@ -9,7 +9,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
@@ -26,8 +28,12 @@ import androidx.compose.ui.platform.LocalView
 import androidx.media3.common.Player
 import androidx.media3.ui.compose.PlayerSurface
 import androidx.media3.ui.compose.state.rememberPresentationState
+import designsystem.Spacing
+import model.MediaSet
 import playback.Framing
 import playback.frame
+import playback.PlaybackTotals
+import player.titleLine
 
 /**
  * The pieces `PlayerScreen` draws, apart from the screen that arranges
@@ -146,5 +152,43 @@ internal fun KeepScreenOnWhile(isPlaying: Boolean) {
 internal fun CenteredSpinner() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator(color = Color.White)
+    }
+}
+
+/**
+ * The back arrow, the picture-in-picture button beside it, the title and
+ * the statistics — split out of `PlayerScreen` to keep that file under the
+ * project's line guideline. Absent entirely in picture-in-picture: there
+ * is no touch surface of this app's own inside that window, and no room
+ * for the statistics either.
+ *
+ * Placed by its caller with `Modifier.align(Alignment.TopStart)` rather
+ * than centred here: the picture is what a `Box` centres its children
+ * against, and the top bar has to be pinned to its own corner instead.
+ */
+@Composable
+internal fun PlayerTopChrome(
+    openSet: MediaSet?,
+    barShown: Boolean,
+    statsShown: Boolean,
+    isInPip: Boolean,
+    player: Player?,
+    totals: () -> PlaybackTotals,
+    onBack: () -> Unit,
+    onEnterPip: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    if (isInPip) return
+    Column(modifier = modifier) {
+        PlayerTopBar(title = titleLine(openSet), showTitle = barShown, onBack = onBack, onEnterPip = onEnterPip)
+        // Gated on the bar being shown as well as on the toggle, so the
+        // statistics have no visibility rule of their own: a viewer who
+        // leaves the numbers on gets the picture back when the bar takes
+        // itself away, and keeps them while the film is paused.
+        if (statsShown && barShown) {
+            player?.let { current ->
+                PlaybackStatsOverlay(player = current, totals = totals, modifier = Modifier.padding(start = Spacing.medium))
+            }
+        }
     }
 }

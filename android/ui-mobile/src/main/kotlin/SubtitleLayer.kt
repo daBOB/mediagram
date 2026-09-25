@@ -28,6 +28,7 @@ import androidx.media3.common.Player
 import designsystem.Spacing
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import playback.Framing
 import playback.TimedCue
 import playback.activeCues
 import playback.cueAppearance
@@ -45,6 +46,13 @@ private const val BASE_CUE_SIZE_SP = 18
  * while it is hidden. [onPictureBottomChanged] reports the visible
  * picture's own bottom edge, root-coordinate too, for `PlayerScreen` to
  * clamp the up-next card to while the bar is hidden.
+ *
+ * [isInPip] forces [Framing.FIT] regardless of what the show remembers —
+ * a device check found a remembered 4:3/16:9 crop letterboxing a second
+ * time inside a picture-in-picture window already shaped to the video's
+ * own aspect (see `PipActions.buildPipParams`). [choices] itself is never
+ * written for this, so the remembered framing is exactly back the moment
+ * the window closes, nothing to restore by hand.
  */
 @Composable
 internal fun VideoWithSubtitles(
@@ -52,9 +60,11 @@ internal fun VideoWithSubtitles(
     cues: List<TimedCue>,
     choices: PlayerChoices,
     barTop: Float?,
+    isInPip: Boolean,
     onPictureBottomChanged: (Float) -> Unit,
 ) {
-    Video(player, framing = choices.framing, onWindowBottomChanged = onPictureBottomChanged) {
+    val framing = if (isInPip) Framing.FIT else choices.framing
+    Video(player, framing = framing, onWindowBottomChanged = onPictureBottomChanged) {
         SubtitleLayer(
             player = player, cues = cues, barTop = barTop,
             sizePercent = choices.subtitleSizePercent,
