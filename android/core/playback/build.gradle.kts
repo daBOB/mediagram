@@ -28,4 +28,8 @@ dependencies {
     // against.
     testImplementation(libs.findLibrary("robolectric").get())
     testImplementation(libs.findLibrary("androidx.junit").get())
+    // LanChunkClient's tests run a real local HTTP server rather than
+    // faking java.net — the wire format (headers, status codes, timeouts)
+    // is the thing under test.
+    testImplementation(libs.findLibrary("mockwebserver").get())
 }

@@ -59,4 +59,39 @@ class PlaybackCountersTest {
         assertEquals(0, totals.fetches)
         assertEquals(0, totals.fromUpstreamBytes)
     }
+
+    @Test
+    fun beforeAnyReadThereIsNoLastSource() {
+        assertEquals(null, PlaybackCounters().lastRead())
+    }
+
+    @Test
+    fun aLanHitIsCountedAndBecomesTheLastSource() {
+        val counters = PlaybackCounters()
+
+        counters.lanHit("192.168.1.5:7788")
+
+        assertEquals(1, counters.totals().lanHits)
+        assertEquals(LastRead(ReadSource.LAN, "192.168.1.5:7788"), counters.lastRead())
+    }
+
+    @Test
+    fun aLanMissIsCountedButDoesNotChangeTheLastSourceOnItsOwn() {
+        val counters = PlaybackCounters()
+
+        counters.lanMiss()
+
+        assertEquals(1, counters.totals().lanMisses)
+        assertEquals(null, counters.lastRead())
+    }
+
+    @Test
+    fun theMostRecentReadWinsRegardlessOfWhichSourceItCameFrom() {
+        val counters = PlaybackCounters()
+
+        counters.lanHit("192.168.1.5:7788")
+        counters.fetched(1_000)
+
+        assertEquals(LastRead(ReadSource.TELEGRAM, null), counters.lastRead())
+    }
 }
