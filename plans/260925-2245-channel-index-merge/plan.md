@@ -1,6 +1,6 @@
 # Channel index merge (tech-debt #12)
 
-Status: planned, awaiting the user's decisions below. Source:
+Status: decisions made 2026-09-25; implementing. Source:
 `plans/reports/tech-debt-260925-2230-mediagram-web-and-pipeline-report.md` #12, research
 brief of 2026-09-25 (this session).
 
@@ -82,3 +82,13 @@ Commands:
 - A wrong merge corrupts the index every player reads. Mitigations: the backup file before
   every merge, `--dry-run`, one transaction, and the idempotence test.
 - Resurrecting removed titles; see decision 2.
+
+## Decisions (user, 2026-09-25)
+
+- **Edit conflicts: re-read captions.** For a set on both sides whose metadata differs,
+  fetch its parts' captions from the channel and rebuild the row from them. The captions
+  are the truth; neither index wins by default.
+- **Removals: check Telegram.** A channel-only set is added only if its part messages
+  still exist in the channel.
+- **`push-index` keeps refusing** by default; `--merge` does pull + push. (Recommendation
+  taken; not contested.)

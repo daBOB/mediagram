@@ -1,6 +1,6 @@
 # Android magazine parity (tech-debt #13)
 
-Status: planned, awaiting the user's decisions below. Owed under CLAUDE.md § Surface
+Status: decisions made 2026-09-25; queued after the channel merge. Owed under CLAUDE.md § Surface
 Parity: the web home (`plans/260925-2014-web-player-magazine-redesign`) is the reference.
 Research brief of 2026-09-25 (this session).
 
@@ -84,3 +84,10 @@ last.
 - **Storage on the device:** see decision 1.
 - **Kids profiles:** a pinned title may be filtered out there; the lead card then falls
   back to the staff rule, as on the web.
+
+## Decisions (user, 2026-09-25)
+
+- **Backdrops:** w780 on phones, w1280 on tablets (by smallest-width).
+- **Match the web:** pin on the title page only, a films-only cover, and Next up merged
+  into the Continue Watching strip.
+- Wi-Fi-only fetching was not decided; the default follows the existing poster fetch.
