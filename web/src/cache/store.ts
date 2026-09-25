@@ -175,20 +175,25 @@ export class ChunkCache {
         if (isMissing(error)) return;
         throw error;
       }
-      for (const item of listing) {
-        const path = join(directory, item.name);
-        if (item.isDirectory()) {
-          await walk(path);
-        } else if (!item.name.endsWith(".tmp")) {
-          try {
-            const info = await stat(path);
-            found.push({ path, size: info.size, usedAt: info.atimeMs });
-          } catch (error) {
-            // Evicted by someone else between the listing and the stat.
-            if (!isMissing(error)) throw error;
+      // Every write scans the whole cache, and a viewer waits on that write,
+      // so a directory's entries are looked at together rather than one by
+      // one. Order is free: eviction sorts by last use and the total only sums.
+      await Promise.all(
+        listing.map(async (item) => {
+          const path = join(directory, item.name);
+          if (item.isDirectory()) {
+            await walk(path);
+          } else if (!item.name.endsWith(".tmp")) {
+            try {
+              const info = await stat(path);
+              found.push({ path, size: info.size, usedAt: info.atimeMs });
+            } catch (error) {
+              // Evicted by someone else between the listing and the stat.
+              if (!isMissing(error)) throw error;
+            }
           }
-        }
-      }
+        }),
+      );
     };
     await walk(this.root);
     return found;
