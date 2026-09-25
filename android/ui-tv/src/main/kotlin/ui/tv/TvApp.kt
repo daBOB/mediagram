@@ -18,6 +18,7 @@ import androidx.tv.material3.Text
 import designsystem.Overscan
 import setup.SetupUiState
 import setup.SetupViewModel
+import ui.tv.profile.TvProfileGate
 import ui.tv.setup.TvSetupStep
 
 /**
@@ -34,8 +35,10 @@ import ui.tv.setup.TvSetupStep
  * content composes in the catalogue theme's own [TvTheme] instead of
  * `MediagramTheme`. Every outstanding step draws through [TvSetupStep] now,
  * the way `MobileApp`'s own steps draw through its private `SetupStep`;
- * `Ready` still draws a stub, since the library surface itself belongs to a
- * later phase.
+ * `Ready` gates on [TvProfileGate] before its stub, the way `ui.LibraryFlow`
+ * gates the phone's own library behind `ui.profile.ProfileGate` — a viewer,
+ * not this device's setup answers, decides whose shelves come next, and the
+ * library surface itself still belongs to a later phase.
  */
 @Composable
 fun TvApp() {
@@ -47,10 +50,12 @@ fun TvApp() {
 
         TvShell {
             if (setupState is SetupUiState.Ready) {
-                // The library surface is a later phase's screen; this stub
-                // stands in for it exactly as it did before the setup steps
-                // beside it had real screens of their own.
-                TvSafeArea { Text(text = "library") }
+                TvProfileGate {
+                    // The library surface is a later phase's screen; this
+                    // stub stands in for it exactly as it did before the
+                    // setup steps beside it had real screens of their own.
+                    TvSafeArea { Text(text = "library") }
+                }
             } else {
                 TvSetupStep(state = setupState, viewModel = setupViewModel)
             }

@@ -12,6 +12,7 @@ import designsystem.Palette
 import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
+import model.Profile
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
@@ -24,9 +25,10 @@ import kotlin.test.assertEquals
 
 /**
  * `TvApp`'s start rule, mirrored from ui-mobile's `MobileAppTest`: `Ready`
- * opens the library stub, anything else stays on a setup stub. This is the
- * one behaviour a television and a phone must not disagree about, since
- * both read the same [setup.SetupViewModel] the same way.
+ * opens `TvProfileGate` before the library stub, anything else stays on a
+ * setup stub. This is the one behaviour a television and a phone must not
+ * disagree about, since both read the same [setup.SetupViewModel] the same
+ * way — and, once `Ready`, the same [catalog.profile.ProfileViewModel].
  *
  * `assertIsDisplayed()`/`performClick()` misbehave against tv-material
  * under Robolectric — no real focus or measurement pass happens there — so
@@ -48,8 +50,15 @@ class TvAppTest {
     }
 
     @Test
-    fun readySetupStateShowsTheLibraryStub() {
+    fun readySetupStateWithNoProfileYetShowsThePickerNotTheLibraryStub() {
         show(TvSetupStage.READY)
+        compose.onNodeWithText("Who's watching?").assertExists()
+        compose.onNodeWithText("library").assertDoesNotExist()
+    }
+
+    @Test
+    fun readySetupStateWithAProfileAlreadyChosenShowsTheLibraryStub() {
+        show(TvSetupStage.READY, profiles = listOf(Profile(id = "ada", name = "Ada")), chosenProfileId = "ada")
         compose.onNodeWithText("library").assertExists()
     }
 
@@ -94,11 +103,15 @@ class TvAppTest {
         compose.runOnUiThread { shellController.close() }
     }
 
-    private fun show(stage: TvSetupStage) {
+    private fun show(
+        stage: TvSetupStage,
+        profiles: List<Profile> = emptyList(),
+        chosenProfileId: String? = null,
+    ) {
         mockkStatic(::HiltViewModelFactory)
         every { HiltViewModelFactory(any(), any()) } answers { secondArg() }
         compose.runOnUiThread {
-            TvAppTestActivity.fixture = TvAppFixture(stage)
+            TvAppTestActivity.fixture = TvAppFixture(stage, profiles, chosenProfileId)
             controller = Robolectric.buildActivity(TvAppTestActivity::class.java).setup().visible()
         }
         compose.waitForIdle()

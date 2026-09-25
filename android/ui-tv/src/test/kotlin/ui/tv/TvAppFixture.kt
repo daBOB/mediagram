@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
+import catalog.profile.ProfileViewModel
 import data.CoreClient
 import data.DefaultWatchStateRepository
 import data.InMemoryCoreStorage
@@ -13,6 +14,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import model.Profile
 import settings.InMemoryLibrarySettings
 import settings.InMemoryTelegramSettings
 import settings.InMemoryTmdbSettings
@@ -37,11 +39,23 @@ internal enum class TvSetupStage { APPLICATION, SIGN_IN, LIBRARY, READY }
  * exists to check), the core reports authorized from [TvSetupStage.LIBRARY]
  * on, and only [TvSetupStage.READY] also picks a library — the three
  * remaining questions [SetupViewModel] asks before it reports `Ready`.
+ *
+ * [profiles] and [chosenProfileId] back a real [ProfileViewModel] the same
+ * way — `TvApp` resolves one through `TvProfileGate` the moment `Ready` is
+ * reached, so any test that reaches `READY` needs one ready to resolve too,
+ * over [FakeWatchStateRepository] rather than the `CoreClient` mock the
+ * setup plumbing above uses: that mock is stubbed only for the calls
+ * `SetupViewModel` itself makes.
  */
-internal class TvAppFixture(stage: TvSetupStage) : ViewModelStoreOwner, AutoCloseable {
+internal class TvAppFixture(
+    stage: TvSetupStage,
+    profiles: List<Profile> = emptyList(),
+    chosenProfileId: String? = null,
+) : ViewModelStoreOwner, AutoCloseable {
     override val viewModelStore = ViewModelStore()
     val setup: SetupViewModel
     private val login: LoginViewModel
+    private val profile: ProfileViewModel
 
     init {
         val core = mockk<CoreClient>()
@@ -66,17 +80,19 @@ internal class TvAppFixture(stage: TvSetupStage) : ViewModelStoreOwner, AutoClos
                 dispatcher = dispatcher,
                 watchState = watchState,
             )
-        // TvSignInScreen resolves its own LoginViewModel through
-        // hiltViewModel(), the same way TvApp resolves SetupViewModel —
-        // this ViewModelStoreOwner has to be able to hand back both, or
-        // reaching the sign-in step through TvApp falls back to
-        // ViewModelProvider's default factory, which cannot construct a
-        // LoginViewModel with no Hilt entry point to supply its arguments.
+        // TvSignInScreen and TvProfileGate each resolve their own ViewModel
+        // through hiltViewModel(), the same way TvApp resolves SetupViewModel
+        // — this ViewModelStoreOwner has to be able to hand back all three,
+        // or reaching that step through TvApp falls back to
+        // ViewModelProvider's default factory, which cannot construct one
+        // with no Hilt entry point to supply its arguments.
         login = LoginViewModel(provider, dispatcher)
+        profile = ProfileViewModel(FakeWatchStateRepository(profiles, chosenProfileId), NoopWatchSync)
         val models =
             mapOf<Class<out ViewModel>, ViewModel>(
                 SetupViewModel::class.java to setup,
                 LoginViewModel::class.java to login,
+                ProfileViewModel::class.java to profile,
             )
         val held =
             ViewModelProvider(
