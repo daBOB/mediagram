@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/mlib-spec", "crates/mediagram", "crates/mediagram-tmdb", "crates/mediagram-core"]
+members = ["crates/mlib-spec", "crates/mediagram", "crates/mediagram-tmdb", "crates/mediagram-core", "crates/mediagram-cache"]
 
 [workspace.package]
 version = "0.54.0"
@@ -24,6 +24,14 @@ anyhow = "1.0.104"
 base64 = "0.23.1"
 flate2 = "1.1.10"
 futures = "0.3.34"
+# Shared so `mediagram serve` and `mediagram-cache` link one copy.
+axum = { version = "0.8.9", default-features = false, features = ["http1", "json", "tokio"] }
+# The LAN chunk server's mDNS advertisement (`mediagram-cache/src/mdns.rs`).
+mdns-sd = "0.21"
+# The LAN chunk server's write signature (`mediagram-cache/src/token.rs`).
+# 0.13, not 0.12: only 0.13 depends on digest 0.11, which sha2 0.11 (above)
+# implements; 0.12 pulls digest 0.10 and the two `Sha256` types do not unify.
+hmac = "0.13"
 # Pinned, not used directly: grammers-crypto 0.10 calls glass_pumpkin's rc0
 # `safe_prime::check` (returns bool, takes num-bigint 0.4). rc1 returns a
 # Result and moved to num-bigint 0.5, so a plain `cargo update` picks it up
