@@ -204,6 +204,14 @@ class TvCatalogScreenStateTest {
         }
     }
 
+    /** Start over is behind Menu, and a library that cannot be read is exactly when it is needed. */
+    @Test
+    fun menuIsOfferedWithNoShelvesAndComingBackFromItLandsThere() {
+        show(CatalogUiState.Failed("Could not reach the channel."), restoreKey = TvMenuEntryKey)
+
+        compose.onNodeWithText("Menu").assertIsFocused()
+    }
+
     private fun show(
         state: CatalogUiState,
         onChoose: () -> Unit = {},

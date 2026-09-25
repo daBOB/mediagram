@@ -151,7 +151,8 @@ class TvLibraryRemoteTest {
                         onCreateList = {},
                         onTabChanged = {},
                         onOpenSearch = {},
-                        onSearchRestored = {},
+                        onOpenMenu = {},
+                        onEntryRestored = {},
                         onFinish = {},
                     )
                 }

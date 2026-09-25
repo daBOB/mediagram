@@ -17,10 +17,9 @@ import designsystem.Spacing
 import system.SystemUiState
 import system.SystemViewModel
 import system.cacheRows
-import system.refreshLine
-import system.telegramLine
+import system.catalogueRows
+import system.thisAppRows
 import system.upstreamRows
-import system.uptimeLine
 import ui.components.Block
 
 /**
@@ -80,34 +79,7 @@ internal fun SystemContent(
 }
 
 @Composable
-private fun CatalogueBlock(state: SystemUiState) =
-    Block(
-        heading = "Catalogue",
-        rows =
-            listOf(
-                // Not "this machine" for the other case, which is what the web
-                // player says: nothing here is ever assembled on the device it is
-                // read on. Every catalogue this app holds was pushed to a channel
-                // and pulled back down — which is what the Refresh row two lines
-                // below is reporting the age of.
-                "Source" to
-                    when (state.origin) {
-                        "package" -> "published package"
-                        "channel" -> "the library's channel"
-                        else -> "nothing installed yet"
-                    },
-                "Holds" to "${state.sets} playable sets, ${state.posters} posters",
-                // Read against the wall clock at the moment this block is composed
-                // rather than when the facts were taken: the state is re-read on
-                // every visit to this screen, so the two are the same moment, and a
-                // clock carried inside the state would be a second thing to keep
-                // current.
-                "Refresh" to refreshLine(state.publishedAt, state.lastRefresh, System.currentTimeMillis()),
-                // schema is this build's own compiled constant, not a value read
-                // back out of the installed catalog — see CatalogFacts' own doc.
-                "Schema" to "v${state.schema}, expected by this build",
-            ),
-    )
+private fun CatalogueBlock(state: SystemUiState) = Block(heading = "Catalogue", rows = catalogueRows(state, System.currentTimeMillis()))
 
 @Composable
 private fun CacheBlock(state: SystemUiState) = Block(heading = "Cache", rows = cacheRows(state))
@@ -116,13 +88,4 @@ private fun CacheBlock(state: SystemUiState) = Block(heading = "Cache", rows = c
 private fun UpstreamBlock(state: SystemUiState) = Block(heading = "Upstream", rows = upstreamRows(state))
 
 @Composable
-private fun ThisAppBlock(state: SystemUiState) =
-    Block(
-        heading = "This app",
-        rows =
-            listOf(
-                "Version" to state.versionName,
-                "Telegram" to telegramLine(state.connected),
-                "Uptime" to uptimeLine(state.uptimeSeconds),
-            ),
-    )
+private fun ThisAppBlock(state: SystemUiState) = Block(heading = "This app", rows = thisAppRows(state))
