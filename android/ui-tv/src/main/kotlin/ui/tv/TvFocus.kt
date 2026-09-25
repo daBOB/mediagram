@@ -131,6 +131,22 @@ object TvFocus {
     fun surfaceGlow(): ClickableSurfaceGlow = ClickableSurfaceDefaults.glow()
 
     /**
+     * The one border a plain field or an always-on accent draws by hand,
+     * since neither is a `ClickableSurface` — a text field takes no
+     * `onClick`, and a loading spinner is not a focus state at all —
+     * so neither can take [surfaceBorder]'s stateful pair. Cut from the
+     * same [BorderWidth] and [Shape] as every other border here, so a field
+     * or a spinner reads as this catalogue's accent rather than a value
+     * invented locally.
+     */
+    @Composable
+    fun fieldBorder(focused: Boolean): Border =
+        Border(
+            border = BorderStroke(BorderWidth, if (focused) Palette.Imprint else MaterialTheme.colorScheme.border),
+            shape = Shape,
+        )
+
+    /**
      * A text-only row's focus state: the catalogue's accent colour, plus an
      * underline standing in for the border a card would have worn instead.
      */

@@ -1,8 +1,5 @@
 package ui.tv.setup
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,11 +8,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -25,7 +20,7 @@ import designsystem.TvTypeScale
 import setup.LibraryOption
 import setup.LibraryPrompt
 import setup.libraryPromptFor
-import ui.tv.TvFocus
+import ui.tv.TvTextRow
 
 private const val HEADING = "Which library should this device read?"
 
@@ -82,11 +77,11 @@ private fun LookAgainScreen(
     ) {
         Heading()
         Explanation(explanation, isError = true)
-        TvRow(
+        TvTextRow(
             text = "Look again",
             onClick = onLookAgain,
             focusRequester = focusRequester,
-            modifier = Modifier.padding(top = Spacing.medium),
+            modifier = Modifier.fillMaxWidth().padding(top = Spacing.medium),
         )
     }
 }
@@ -150,34 +145,16 @@ private fun LibraryRows(
         modifier = Modifier.fillMaxSize().padding(top = Spacing.medium),
     ) {
         itemsIndexed(items = choices, key = { _, choice -> choice.handle }) { index, choice ->
-            TvRow(
+            TvTextRow(
                 text = choice.title,
                 onClick = { onChoose(choice.handle) },
                 focusRequester = if (index == 0) firstFocusRequester else null,
-                modifier = Modifier.testTag(if (index == 0) TvLibraryFirstRowTag else "tv-library-row-${choice.handle}"),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .testTag(if (index == 0) TvLibraryFirstRowTag else "tv-library-row-${choice.handle}")
+                        .padding(vertical = Spacing.small),
             )
         }
     }
-}
-
-@Composable
-private fun TvRow(
-    text: String,
-    onClick: () -> Unit,
-    focusRequester: FocusRequester?,
-    modifier: Modifier = Modifier,
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val focused by interactionSource.collectIsFocusedAsState()
-
-    Text(
-        text = text,
-        style = TvFocus.textStyle(TvTypeScale.body, focused),
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .let { if (focusRequester != null) it.focusRequester(focusRequester) else it }
-                .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
-                .padding(vertical = Spacing.small),
-    )
 }

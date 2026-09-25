@@ -38,7 +38,7 @@ import ui.tv.setup.TvSetupStep
  * `Ready` gates on [TvProfileGate] before its stub, the way `ui.LibraryFlow`
  * gates the phone's own library behind `ui.profile.ProfileGate` — a viewer,
  * not this device's setup answers, decides whose shelves come next, and the
- * library surface itself still belongs to a later phase.
+ * library surface itself is still the stub below rather than a real screen.
  */
 @Composable
 fun TvApp() {
@@ -51,9 +51,9 @@ fun TvApp() {
         TvShell {
             if (setupState is SetupUiState.Ready) {
                 TvProfileGate {
-                    // The library surface is a later phase's screen; this
-                    // stub stands in for it exactly as it did before the
-                    // setup steps beside it had real screens of their own.
+                    // The library surface has no real screen yet; this stub
+                    // stands in for it exactly as it did before the setup
+                    // steps beside it had real screens of their own.
                     TvSafeArea { Text(text = "library") }
                 }
             } else {

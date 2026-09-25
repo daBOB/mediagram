@@ -28,8 +28,8 @@ import org.junit.runner.RunWith
  * its own `CardShape` (or fell back to tv-material's own rounded default)
  * got a square focus border wrapped around a rounded card. [TvFocus.cardShape]
  * and [TvFocus.cardBorder] now share one private `Shape` constant, so a
- * call site cannot let the container and its focus border drift apart the
- * way that finding described.
+ * call site cannot let the container and its focus border drift apart from
+ * each other.
  *
  * The Robolectric version this replaces only proved a `Card` built from the
  * four [TvFocus] pieces composes and stays clickable — it never proved

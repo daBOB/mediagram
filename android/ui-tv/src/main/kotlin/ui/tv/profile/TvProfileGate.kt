@@ -15,9 +15,8 @@ import catalog.profile.ProfileViewModel
  *
  * Unlike the phone's gate, [content] takes no bar state here: television has
  * no bar yet to hand a reopen action to (the stub `TvApp` composes in its
- * place carries nothing to attach one to either). A later phase that draws
- * a real TV bar is what decides what it needs from here, not this one
- * guessing ahead of it.
+ * place carries nothing to attach one to either). Whatever draws a real TV
+ * bar decides what it needs from here, not this one guessing ahead of it.
  */
 @Composable
 internal fun TvProfileGate(content: @Composable () -> Unit) {
