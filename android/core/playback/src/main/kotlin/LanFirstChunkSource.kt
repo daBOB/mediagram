@@ -1,6 +1,6 @@
 package playback
 
-import java.io.IOException
+import kotlinx.coroutines.CancellationException
 
 /** One reachable LAN cache server: [baseUrl] to read and write through, [host] for what the System screen shows. */
 data class LanServer(val baseUrl: String, val host: String)
@@ -23,7 +23,18 @@ data class LanServer(val baseUrl: String, val host: String)
  * A successful GET that comes back short — [LanChunkClient.get] already
  * folds a wrong length into the same `null` a 404 gives — is a miss, not a
  * failure: it does not mark the server down, and Telegram serves it exactly
- * as a 404 would.
+ * as a 404 would. [writes] is only ever asked to mirror a chunk back after
+ * exactly that: a real miss on a server that was actually tried. A skip or
+ * a failure is not — enqueuing after those too would mirror mobile-data
+ * reads back over mobile data, or queue writes for a server that just told
+ * this device it is not there.
+ *
+ * `catch (e: Exception)` on the LAN attempt, not only `IOException` —
+ * [CancellationException] is rethrown immediately, never treated as a
+ * reason to fall back, so a reader that cancels (a player closing, a seek)
+ * is cancelled, not silently served a slower Telegram read instead.
+ * Anything else the LAN path throws costs [telegram] the fallback, never a
+ * crash.
  */
 class LanFirstChunkSource(
     private val lan: LanChunkProtocol,
@@ -44,6 +55,7 @@ class LanFirstChunkSource(
         totalSize: Long,
     ): ByteArray {
         val srv = server()
+        var realMiss = false
         if (srv != null && network.isUnmetered() && !isDown()) {
             try {
                 val hit = lan.get(srv.baseUrl, setId, index, expectedChunkLength(index, totalSize))
@@ -52,12 +64,15 @@ class LanFirstChunkSource(
                     return hit
                 }
                 counters.lanMiss()
-            } catch (e: IOException) {
+                realMiss = true
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
                 downSince = clock()
             }
         }
         val bytes = telegram.chunk(setId, index, totalSize)
-        writes.enqueue(setId, index, totalSize, bytes)
+        if (realMiss) writes.enqueue(setId, index, totalSize, bytes)
         return bytes
     }
 

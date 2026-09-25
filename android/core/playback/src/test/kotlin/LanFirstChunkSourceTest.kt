@@ -5,10 +5,10 @@ import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-private val SERVER = LanServer("http://192.168.1.5:7788", "192.168.1.5:7788")
+internal val LAN_SERVER = LanServer("http://192.168.1.5:7788", "192.168.1.5:7788")
 
-/** Records every enqueue; never actually writes anywhere. */
-private class RecordingWriter : LanChunkWriter {
+/** Records every enqueue; never actually writes anywhere. Shared with [LanFirstChunkSourceFallbackTest]. */
+internal class RecordingWriter : LanChunkWriter {
     val calls = mutableListOf<Triple<String, Long, ByteArray>>()
 
     override fun enqueue(
@@ -21,7 +21,7 @@ private class RecordingWriter : LanChunkWriter {
     }
 }
 
-private class FakeLan(
+internal class FakeLan(
     private val onGet: suspend (String, String, Long, Int) -> ByteArray? = { _, _, _, _ -> null },
 ) : LanChunkProtocol {
     var getCalls = 0
@@ -50,31 +50,32 @@ private class FakeLan(
     override suspend fun status(baseUrl: String): LanServerStatus? = null
 }
 
-private fun telegramFake(bytes: ByteArray): SetChunkSource = SetChunkSource { _, _, _ -> bytes }
+internal fun telegramFake(bytes: ByteArray): SetChunkSource = SetChunkSource { _, _, _ -> bytes }
 
+internal val TELEGRAM_BYTES = ByteArray(CHUNK_BYTES) { 7 }
+
+/** The hit/miss/down-window state machine. Failure and write-gating branches live in [LanFirstChunkSourceFallbackTest]. */
 class LanFirstChunkSourceTest {
-    private val telegramBytes = ByteArray(CHUNK_BYTES) { 7 }
-
     @Test
     fun aLanHitServesTheBytesAndNeverTouchesTelegram() =
         runTest {
             var telegramCalls = 0
-            val telegram = SetChunkSource { _, _, _ -> telegramCalls++; telegramBytes }
-            val lan = FakeLan(onGet = { _, _, _, _ -> telegramBytes })
+            val telegram = SetChunkSource { _, _, _ -> telegramCalls++; TELEGRAM_BYTES }
+            val lan = FakeLan(onGet = { _, _, _, _ -> TELEGRAM_BYTES })
             val counters = PlaybackCounters()
             val source =
                 LanFirstChunkSource(
                     lan = lan,
                     telegram = telegram,
                     network = UnmeteredNetworkCheck { true },
-                    server = { SERVER },
+                    server = { LAN_SERVER },
                     writes = RecordingWriter(),
                     counters = counters,
                 )
 
             val result = source.chunk("s1", 0, CHUNK_BYTES.toLong())
 
-            assertEquals(telegramBytes, result)
+            assertEquals(TELEGRAM_BYTES, result)
             assertEquals(0, telegramCalls, "a hit must never fall through to Telegram")
             assertEquals(1, counters.totals().lanHits)
             assertEquals(0, counters.totals().fetches, "a hit must not be counted as a Telegram fetch")
@@ -83,46 +84,23 @@ class LanFirstChunkSourceTest {
     @Test
     fun aMissGoesToTelegramAndEnqueuesAWrite() =
         runTest {
-            val telegram = telegramFake(telegramBytes)
+            val telegram = telegramFake(TELEGRAM_BYTES)
             val writer = RecordingWriter()
             val source =
                 LanFirstChunkSource(
                     lan = FakeLan(onGet = { _, _, _, _ -> null }),
                     telegram = telegram,
                     network = UnmeteredNetworkCheck { true },
-                    server = { SERVER },
+                    server = { LAN_SERVER },
                     writes = writer,
                     counters = PlaybackCounters(),
                 )
 
             val result = source.chunk("s1", 0, CHUNK_BYTES.toLong())
 
-            assertEquals(telegramBytes, result)
+            assertEquals(TELEGRAM_BYTES, result)
             assertEquals(1, writer.calls.size)
             assertEquals("s1", writer.calls.single().first)
-        }
-
-    @Test
-    fun anIoExceptionMarksTheServerDownAndFallsThroughToTelegram() =
-        runTest {
-            val telegram = telegramFake(telegramBytes)
-            var now = 0L
-            val lan =
-                FakeLan(onGet = { _, _, _, _ -> throw IOException("connect timed out") })
-            val source =
-                LanFirstChunkSource(
-                    lan = lan,
-                    telegram = telegram,
-                    network = UnmeteredNetworkCheck { true },
-                    server = { SERVER },
-                    writes = RecordingWriter(),
-                    counters = PlaybackCounters(),
-                    clock = { now },
-                )
-
-            val result = source.chunk("s1", 0, CHUNK_BYTES.toLong())
-
-            assertEquals(telegramBytes, result)
         }
 
     @Test
@@ -140,9 +118,9 @@ class LanFirstChunkSourceTest {
             val source =
                 LanFirstChunkSource(
                     lan = lan,
-                    telegram = telegramFake(telegramBytes),
+                    telegram = telegramFake(TELEGRAM_BYTES),
                     network = UnmeteredNetworkCheck { true },
-                    server = { SERVER },
+                    server = { LAN_SERVER },
                     writes = RecordingWriter(),
                     counters = PlaybackCounters(),
                     downWindowMs = 60_000L,
@@ -162,44 +140,6 @@ class LanFirstChunkSourceTest {
         }
 
     @Test
-    fun aMeteredNetworkNeverTouchesTheServer() =
-        runTest {
-            val lan = FakeLan()
-            val source =
-                LanFirstChunkSource(
-                    lan = lan,
-                    telegram = telegramFake(telegramBytes),
-                    network = UnmeteredNetworkCheck { false },
-                    server = { SERVER },
-                    writes = RecordingWriter(),
-                    counters = PlaybackCounters(),
-                )
-
-            source.chunk("s1", 0, CHUNK_BYTES.toLong())
-
-            assertEquals(0, lan.getCalls)
-        }
-
-    @Test
-    fun noKnownServerNeverTouchesTheLanClient() =
-        runTest {
-            val lan = FakeLan()
-            val source =
-                LanFirstChunkSource(
-                    lan = lan,
-                    telegram = telegramFake(telegramBytes),
-                    network = UnmeteredNetworkCheck { true },
-                    server = { null },
-                    writes = RecordingWriter(),
-                    counters = PlaybackCounters(),
-                )
-
-            source.chunk("s1", 0, CHUNK_BYTES.toLong())
-
-            assertEquals(0, lan.getCalls)
-        }
-
-    @Test
     fun aMissIsCountedAndDoesNotMarkTheServerDown() =
         runTest {
             var now = 0L
@@ -209,9 +149,9 @@ class LanFirstChunkSourceTest {
             val source =
                 LanFirstChunkSource(
                     lan = lan,
-                    telegram = telegramFake(telegramBytes),
+                    telegram = telegramFake(TELEGRAM_BYTES),
                     network = UnmeteredNetworkCheck { true },
-                    server = { SERVER },
+                    server = { LAN_SERVER },
                     writes = RecordingWriter(),
                     counters = counters,
                     clock = { now },
