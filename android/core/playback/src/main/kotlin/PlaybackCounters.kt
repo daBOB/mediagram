@@ -2,6 +2,13 @@ package playback
 
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
+
+/** Where the most recent chunk actually came from — the System screen's "Source" row. */
+enum class ReadSource { TELEGRAM, LAN }
+
+/** [ReadSource.LAN] carries the server's [host] it was read from; [ReadSource.TELEGRAM] carries none. */
+data class LastRead(val source: ReadSource, val host: String?)
 
 /** What the byte path has done, for the surfaces that report it. */
 data class PlaybackTotals(
@@ -9,6 +16,8 @@ data class PlaybackTotals(
     val fromUpstreamBytes: Long,
     val fetches: Int,
     val failedReads: Int,
+    val lanHits: Int = 0,
+    val lanMisses: Int = 0,
 )
 
 /**
@@ -27,6 +36,9 @@ class PlaybackCounters {
     private val fromUpstream = AtomicLong()
     private val fetchCount = AtomicInteger()
     private val failures = AtomicInteger()
+    private val lanHitCount = AtomicInteger()
+    private val lanMissCount = AtomicInteger()
+    private val lastRead = AtomicReference<LastRead?>()
 
     fun totals(): PlaybackTotals =
         PlaybackTotals(
@@ -34,12 +46,15 @@ class PlaybackCounters {
             fromUpstreamBytes = fromUpstream.get(),
             fetches = fetchCount.get(),
             failedReads = failures.get(),
+            lanHits = lanHitCount.get(),
+            lanMisses = lanMissCount.get(),
         )
 
     /** One round trip to Telegram that returned bytes. */
     fun fetched(bytes: Int) {
         fetchCount.incrementAndGet()
         fromUpstream.addAndGet(bytes.toLong())
+        lastRead.set(LastRead(ReadSource.TELEGRAM, host = null))
     }
 
     /** Bytes media3 served from its own disk cache, which never reached the core. */
@@ -51,4 +66,18 @@ class PlaybackCounters {
     fun readFailed() {
         failures.incrementAndGet()
     }
+
+    /** A chunk served from the LAN server at [host], without ever reaching Telegram. */
+    fun lanHit(host: String) {
+        lanHitCount.incrementAndGet()
+        lastRead.set(LastRead(ReadSource.LAN, host))
+    }
+
+    /** The LAN server was asked and did not have the chunk; Telegram serves it instead. */
+    fun lanMiss() {
+        lanMissCount.incrementAndGet()
+    }
+
+    /** Where the most recent chunk came from, or `null` before this process has read one. */
+    fun lastRead(): LastRead? = lastRead.get()
 }

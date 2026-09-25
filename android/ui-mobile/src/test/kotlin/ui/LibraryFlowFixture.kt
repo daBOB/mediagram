@@ -81,10 +81,11 @@ internal class LibraryFlowFixture(
         every { system.failure } returns MutableStateFlow(null)
         every { system.state } returns
             MutableStateFlow(
-                SystemUiState("channel", sets.size.toLong(), 0, 4, null, null, 0, 1_000_000, 0, 0, 0, 0, true, "test", 0),
+                SystemUiState("channel", sets.size.toLong(), 0, 4, null, null, 0, 1_000_000, "Internal storage", false, 0, 0, 0, 0, true, "test", 0),
             )
         val cache = mockk<CacheBudgetViewModel>(relaxed = true)
-        every { cache.state } returns MutableStateFlow(CacheOccupancy(0, 1_000_000))
+        every { cache.state } returns
+            MutableStateFlow(CacheOccupancy(heldBytes = 0, budgetBytes = 1_000_000, volumeLabel = "Internal storage", fellBack = false, capBytes = 1_000_000))
         every { cache.failure } returns MutableStateFlow(null)
         val models =
             mapOf<Class<out ViewModel>, ViewModel>(

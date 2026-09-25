@@ -632,3 +632,178 @@ The HTTP API never returns a channel id, a message id or a document id. A
 viewer who authenticates sees the library and can stream it; they cannot learn
 where the bytes live in Telegram or reach them directly. That is a property of
 the routes, not of the proxy, and it holds however the player is exposed.
+
+## Home cache server
+
+`mediagram_cache` (`crates/mediagram-cache`) is a separate, optional process
+on the same home box: a dumb LAN chunk store Android devices read and write
+so a chunk fetched from Telegram once is not fetched again by the next
+device. It has no Telegram session, no index of its own, and nothing to do
+with the player above — the two run independently and neither depends on
+the other being up.
+
+### Installing it
+
+```ini
+# /etc/systemd/system/mediagram-cache.service
+[Unit]
+Description=mediagram-cache: a LAN chunk store for the Android app
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+DynamicUser=yes
+CacheDirectory=mediagram-cache
+StateDirectory=mediagram-cache
+ExecStart=/usr/local/bin/mediagram_cache
+Restart=on-failure
+
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+`DynamicUser=yes` needs no user to be created ahead of time; systemd makes
+`CacheDirectory=` and `StateDirectory=` for it and passes their paths in
+`$CACHE_DIRECTORY` and `$STATE_DIRECTORY`, which `mediagram_cache` reads by
+default (see `crates/mediagram-cache/src/config.rs`). Build and install the
+binary, then:
+
+```sh
+cargo build --release -p mediagram-cache
+sudo cp target/release/mediagram_cache /usr/local/bin/
+sudo systemctl enable --now mediagram-cache
+```
+
+It listens on `0.0.0.0:7788` by default — every interface, on purpose, the
+same choice `bun run dev` makes above — and is safe to leave running
+alongside the player; starting or restarting either one never touches the
+other.
+
+Pointing `MEDIAGRAM_CACHE_ROOT` at a volume outside `CacheDirectory` — an
+external SD or USB drive mounted elsewhere — needs one more line in
+`[Service]`: `ReadWritePaths=/mnt/wherever`. `ProtectSystem=strict` makes
+the whole filesystem read-only except the paths `CacheDirectory=`,
+`StateDirectory=` and `ReadWritePaths=` name; without it, a custom root
+outside the default would fail every write with a permission error that has
+nothing to do with actual file permissions.
+
+### Pairing a device
+
+The pairing token is created once, at startup — not lazily on the first
+request a device happens to make — so `journalctl -u mediagram-cache` shows
+whether it exists before any device ever tries to reach it.
+
+```sh
+sudo cat /var/lib/mediagram-cache/token
+```
+
+reads the 64-character hex pairing token. `DynamicUser=yes` puts
+`StateDirectory=mediagram-cache` at `/var/lib/mediagram-cache`, owned by a
+transient per-run system user with no login of its own — there is no user
+to `sudo -u` into — but root can always read it regardless. A device's
+owner enters this token once; it is never sent over the network — every PUT
+instead carries an HMAC-SHA256 signature keyed on it, checked in constant
+time, so a passive listener on the LAN learns nothing that lets it write.
+
+The exact contract, and a worked example, so the Android client's HMAC and
+this server's cannot drift apart silently:
+
+- The **key** is the token's 64 ASCII bytes exactly as printed above — the
+  hex *string*, never hex-decoded to the 32 bytes it represents. Decoding
+  it first produces a different, silently wrong, signature.
+- **`path`** is `/v1/sets/{id}/chunks/{n}` with `{n}` the chunk number's
+  plain decimal spelling (`0`, not `00` or `+0`).
+- **`total`** is the `X-Set-Total` value's plain decimal spelling too —
+  what a client's own `Long.toString()` produces, no leading zeros, no `+`.
+- The signed string has **no trailing newline** after the body's hex SHA-256.
+- A PUT is checked in this order: id/`n` shape → `X-Set-Total` present →
+  the length rule → the signature. A malformed request gets the 400 or 404
+  its shape earns, never a 401 for a request that was never going to be
+  accepted regardless of who sent it.
+
+```
+scheme:    Authorization: MGC1 <hex>
+signed:    HMAC-SHA256(token, "{method}\n{path}\n{total}\n" + hex(sha256(body)))
+
+token:     00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff
+method:    PUT
+path:      /v1/sets/abc123/chunks/0
+total:     5
+body:      "hello"                 (5 ASCII bytes)
+
+signature: c1ac37f41c76c7c8434460c94458f58a817bf0859f9be493209d23a8ab9a4d85
+```
+
+`crates/mediagram-cache/src/token_tests.rs` asserts these same numbers in
+Rust (`the_shared_test_vector_signs_to_the_published_signature` and
+`the_shared_test_vector_verifies`); an Android-side test asserting them too
+is how the two implementations are checked against each other rather than
+against themselves.
+
+### Finding it: mDNS, with an avahi fallback
+
+`mediagram_cache` advertises itself as `_mediagram-cache._tcp.local.` (TXT
+`v=1`) via `mdns-sd`, which is documented to coexist with `avahi-daemon` on
+the same box — both bind the same multicast group without conflict. Confirm
+it independently of the app with:
+
+```sh
+avahi-browse -rt _mediagram-cache._tcp
+```
+
+Set `MEDIAGRAM_CACHE_MDNS=false` (or `mdns = false` in its config) to turn
+this off, and either publish a static Avahi service file instead —
+
+```xml
+<!-- /etc/avahi/services/mediagram-cache.service -->
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+<service-group>
+  <name>mediagram-cache</name>
+  <service>
+    <type>_mediagram-cache._tcp</type>
+    <port>7788</port>
+    <txt-record>v=1</txt-record>
+  </service>
+</service-group>
+```
+
+— or configure a device with the server's address by hand; either is a
+complete substitute, since the API itself carries no address of its own.
+
+### Pairing an Android device
+
+Settings' "Home cache server" block is where a phone or tablet is paired:
+the token read above is pasted into its own field there, and a server
+address typed into the one next to it is the same manual override this
+section's `avahi-browse` fallback describes — the app discovers on its own
+first and only needs it when that fails, and it is normalised on save (a
+bare `host:port`, exactly what `avahi-browse` prints, gets `http://`
+added). Saving the token, and a "Grant" action on the status row, are what
+ask for the `ACCESS_LOCAL_NETWORK` runtime permission Android 17+ (API 37)
+requires for any LAN traffic — a device below that, including this
+project's own target tablet on API 36, is never asked at all, since the
+permission does not exist there to ask for. Where it is required and
+declined, the status row reads "Needs local network permission" and
+playback keeps reading Telegram exactly as it would with no server paired
+at all. Once connected, the row reads "Connected to `<host>`, holding
+`<size>`", and the System screen's own "Source" row says which of Telegram
+or the LAN server actually served the chunk being watched right now.
+
+### What a paired device can do, and what it cannot
+
+A write requires the token; a read does not. That asymmetry is deliberate:
+what a GET returns is exactly a chunk of a file already reachable from the
+Telegram channel a viewer is on, so serving it to anyone on the LAN costs
+nothing a paired viewer could not already have. A write is different — an
+unpaired flood of PUTs would evict everything a paired device worked to
+cache — which is what the signature guards. What it does not guard against
+is a *paired* device writing a wrong-but-right-length chunk; there is no
+per-chunk checksum to catch that (see `docs/system-architecture.md`
+[§12](system-architecture.md#12-the-lan-chunk-server-mediagram-cache)), and
+the remedy is deleting the affected set's directory under the cache root.

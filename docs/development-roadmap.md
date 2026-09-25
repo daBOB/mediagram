@@ -149,7 +149,7 @@ no second MTProto implementation.
 | Transport controls | play/pause, a scrubber, skip, a clock | Complete |
 | System menu | the System screen, playback stats, library refresh | Complete |
 | Details | the phone fetches its own synopses and artwork from TMDB | Complete |
-| External cache | the cache on a chosen volume, with a budget | Planned, [`plans/260921-1751-android-external-cache/`](../plans/260921-1751-android-external-cache/plan.md) |
+| External cache | the cache on a chosen volume, and a LAN chunk server every Android device shares | Done, [`plans/260925-2046-external-cache-volume-and-lan-chunk-server/`](../plans/260925-2046-external-cache-volume-and-lan-chunk-server/plan.md) (superseding [`260921-1751`](../plans/260921-1751-android-external-cache/plan.md)); the budget shipped in `b91e9e8` |
 | Parity | audio, subtitles, watch state, and the screens that read it | Done, [`plans/260924-0139-android-web-parity/`](../plans/260924-0139-android-web-parity/plan.md) (superseding [`260922-0124`](../plans/260922-0124-android-web-parity/plan.md)) |
 
 ### What the phone still cannot do

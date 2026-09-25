@@ -8,6 +8,7 @@ package playback
 import android.content.Context
 import androidx.media3.common.C
 import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.cache.Cache
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -27,12 +28,41 @@ import data.CoreClient
 suspend fun cacheDataSourceFactory(
     context: Context,
     counters: PlaybackCounters,
+    lan: LanCacheRuntime? = null,
+    currentCore: () -> CoreClient?,
+): CacheDataSource.Factory = cacheDataSourceFactory(CacheProvider.get(context), counters, lan, currentCore)
+
+/**
+ * What the player reads through: [cacheDataSourceFactory] that treats a
+ * failing cache as absent. A full disk or a pulled card then costs the
+ * rest of that title its cache, not the viewer their playback: media3
+ * remembers the error on the data source, and the player keeps one per
+ * title, so the next title opens the cache again.
+ *
+ * Only the player. Preload keeps the strict factory: a preload into a
+ * cache that cannot hold anything would download whole episodes and keep
+ * none of them, again on every trigger, so there a failure has to stop it.
+ */
+internal fun playbackDataSourceFactory(
+    cache: Cache,
+    counters: PlaybackCounters,
+    lan: LanCacheRuntime? = null,
+    currentCore: () -> CoreClient?,
+): CacheDataSource.Factory =
+    cacheDataSourceFactory(cache, counters, lan, currentCore)
+        // setFlags replaces rather than adds; the base factory sets none.
+        .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+
+internal fun cacheDataSourceFactory(
+    cache: Cache,
+    counters: PlaybackCounters,
+    lan: LanCacheRuntime? = null,
     currentCore: () -> CoreClient?,
 ): CacheDataSource.Factory =
     CacheDataSource
         .Factory()
-        .setCache(CacheProvider.get(context))
-        .setUpstreamDataSourceFactory(MlibDataSourceFactory(counters, currentCore))
+        .setCache(cache)
+        .setUpstreamDataSourceFactory(MlibDataSourceFactory(counters, lan, currentCore))
         // media3 offers this and nothing has ever attached one. Without it there
         // is no way to tell a cache that is carrying playback from one that is
         // being bypassed, which is the first thing worth knowing about a read.
@@ -59,7 +89,7 @@ suspend fun cacheDataSourceFactory(
  * configuration, and nothing here transcodes anything.
  *
  * `suspend`, not because building an `ExoPlayer` itself is slow, but
- * because [cacheDataSourceFactory] is: a caller that awaits this from a
+ * because opening the cache is: a caller that awaits this from a
  * main-dispatched coroutine resumes the cheap `ExoPlayer.Builder().build()`
  * call back on its own (main) thread once the cache's I/O — the only real
  * work here — has finished on whatever dispatcher [CacheProvider.get] used.
@@ -74,13 +104,14 @@ suspend fun cacheDataSourceFactory(
 suspend fun buildPlayer(
     context: Context,
     counters: PlaybackCounters,
+    lan: LanCacheRuntime? = null,
     currentCore: () -> CoreClient?,
 ): ExoPlayer =
     ExoPlayer
         .Builder(context)
         .setMediaSourceFactory(
             DefaultMediaSourceFactory(context)
-                .setDataSourceFactory(cacheDataSourceFactory(context, counters, currentCore)),
+                .setDataSourceFactory(playbackDataSourceFactory(CacheProvider.get(context), counters, lan, currentCore)),
         )
         // Set in both directions because media3's defaults are not
         // symmetrical — five seconds back, fifteen forward. A control that

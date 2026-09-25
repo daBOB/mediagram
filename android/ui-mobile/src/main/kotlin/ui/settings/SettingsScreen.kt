@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -166,35 +165,3 @@ internal fun telegramRows(state: SettingsUiState): List<Pair<String, String?>> =
         "Datacenter" to (state.datacenter ?: "…"),
         "Session" to (state.connection ?: "…"),
     )
-
-/**
- * Asked before signing out, and worded against start over's: this ends the
- * login and takes the account's catalog with it, but keeps what is the
- * device's own, so signing back in is all that is left to do.
- */
-@Composable
-private fun SignOutConfirmation(
-    asking: Boolean,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-) {
-    if (!asking) return
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Sign out?") },
-        text = {
-            Text(
-                "This signs this device out of Telegram and removes the library it " +
-                    "was reading. The api_id, api_hash and TMDB key stay; signing in " +
-                    "again is all it takes to come back.",
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                onDismiss()
-                onConfirm()
-            }) { Text("Sign out") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-    )
-}

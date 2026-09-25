@@ -20,6 +20,7 @@ import playback.DefaultSubtitleTrackSource
 import playback.DefaultSummarySource
 import playback.HeldSets
 import playback.HeldSetsQuery
+import playback.LanCacheRuntime
 import playback.PlaybackCounters
 import playback.PreloadWriter
 import playback.SeriesPreloader
@@ -73,6 +74,7 @@ object PlaybackModule {
         @ApplicationContext context: Context,
         coreProvider: CoreProvider,
         counters: PlaybackCounters,
+        lan: LanCacheRuntime,
         scope: CoroutineScope,
     ): @JvmSuppressWildcards Deferred<ExoPlayer> =
         scope.async {
@@ -80,7 +82,7 @@ object PlaybackModule {
             // been set up, then read per data source rather than captured: the
             // player outlives a start-over, the core it reads through does not.
             coreProvider.awaitCore()
-            buildPlayer(context, counters) { coreProvider.core.value }
+            buildPlayer(context, counters, lan) { coreProvider.core.value }
         }
 
     @Provides
@@ -124,6 +126,7 @@ object PlaybackModule {
         @ApplicationContext context: Context,
         coreProvider: CoreProvider,
         heldSets: HeldSetsQuery,
+        lan: LanCacheRuntime,
         scope: CoroutineScope,
     ): SeriesPreloading {
         // Its own dedicated thread, apart from Dispatchers.IO's shared
@@ -133,8 +136,10 @@ object PlaybackModule {
         val dispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
         // Its own counters, not the playing title's: the System screen's
         // numbers should not move just because a series is quietly
-        // preloading in the background.
-        val writer: PreloadWriter = CacheDataSourceWriter(context, PlaybackCounters()) { coreProvider.core.value }
+        // preloading in the background. Sharing [lan] with the player is
+        // what fills the LAN server for free — see CacheDataSourceWriter.
+        val writer: PreloadWriter =
+            CacheDataSourceWriter(context, PlaybackCounters(), lan) { coreProvider.core.value }
         val network = SystemUnmeteredNetworkCheck(context)
         return SeriesPreloader(
             scope = scope,

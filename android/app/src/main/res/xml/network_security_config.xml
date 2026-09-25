@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Cleartext for the home LAN cache server (docs/running-the-player.md,
+    "Home cache server"). network_security_config cannot express a CIDR
+    range, only exact domains or IP literals, and the server's address is
+    whatever a viewer's router hands out — so this is global rather than a
+    fixed list that would go stale the moment a lease renews.
+
+    This app makes no other http:// calls: everything else is MTProto (the
+    Telegram session) or TMDB/package downloads over https, so the
+    widening reaches nothing that was cleartext-refused before.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

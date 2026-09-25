@@ -19,8 +19,10 @@ crates/
 │                     app calls, the catalog store, the range-planned byte
 │                     path over Telegram, and the one HTTP client both
 │                     programs build (ring + webpki roots)
-└── mediagram/        the CLI: media inspection, upload pipeline, local
-                      index, verify, and `serve`
+├── mediagram/        the CLI: media inspection, upload pipeline, local
+│                     index, verify, and `serve`
+└── mediagram-cache/  the LAN chunk store (§12); depends on none of the
+                      above, shares nothing with the uploader's index
 ```
 
 Dependencies run one way: `mediagram` → `mediagram-core` → `mediagram-tmdb`
@@ -526,3 +528,84 @@ else.
   state, and they arrive within milliseconds at every session of the account.
   Catching up after a disconnect replays no channel messages, so a listener
   is only ever a hint beside the reader it wakes.
+
+## 12. The LAN chunk server (`mediagram-cache`)
+
+A separate binary, `mediagram_cache`, run as its own systemd service on the
+always-on home box. It has no Telegram session, no index and no UI; a set id
+is an opaque string to it. The user chose a separate process over folding
+this into the web player for isolation: its lifecycle — restarts, crashes —
+is independent of the player's. Android devices on the home network read and
+write it so a chunk fetched from Telegram once is not fetched again by the
+next device; installing it is optional, and a device with no LAN server
+configured just talks to Telegram directly, as it always did.
+
+### API (v1)
+
+| Method | Path | Auth | Result |
+|---|---|---|---|
+| GET | `/v1/sets/{id}/chunks/{n}` | none | 200 bytes / 404 |
+| HEAD | same | none | 200 + `Content-Length` / 404 |
+| PUT | same, header `X-Set-Total: <bytes>` | signed, see below | 201 stored / 200 already held / 400 bad length / 401 / 409 total mismatch / 413 over one chunk |
+| GET | `/v1/status` | none | `{"version","held_bytes","budget_bytes","chunks"}` |
+
+`id` matches `^[A-Za-z0-9]{1,64}$` — the same shape the web player's
+`STREAM_PATH` requires — and `n` is a plain decimal `u32`; either failing
+its check is a 404 before any filesystem call, so no path traversal is
+possible. A chunk is `rules::CHUNK` bytes (1 MiB — two Telegram 512 KiB
+requests, and the fixed size Android's own playback path reads in), except a
+set's final chunk, which is whatever remains of its `total`.
+
+### Write authentication
+
+Reads are open and unauthenticated — nothing this server returns identifies
+where the bytes live in Telegram, so serving them to anyone on the LAN costs
+nothing a viewer could not already get by asking the channel directly once
+paired. A write is different: an unpaired device flooding the store with
+garbage would evict everything a paired one worked to cache, so every PUT
+carries `Authorization: MGC1 <hex>`, where the hex is
+`HMAC-SHA256(token, "PUT\n{path}\n{X-Set-Total}\n" + hex(sha256(body)))` —
+keyed on the token's 64 ASCII hex characters themselves, never hex-decoded,
+`path` and the total each their plain decimal spelling, and no trailing
+newline after the body's hash. Checked in that order too: id/`n` shape,
+then the length rule, only then the signature, so a malformed PUT is never
+charged a 401 it could just as well have gotten a 400 or 404 for. The
+pairing token itself never crosses the wire — only this signature does — so
+a look-alike server on another network, or a passive listener on this one,
+learns nothing usable. The signature binds the body, so a PUT altered in
+transit is rejected; it does not bind a nonce or timestamp, because a
+replayed PUT can only rewrite the identical chunk, which first-write-wins
+already ignores.
+
+The token lives under the systemd `StateDirectory`, separate from the
+`CacheDirectory` chunks live under, so clearing the cache to reclaim disk
+space does not unpair every device. `mediagram_cache token` prints it for
+pairing. The exact byte layout of the signed string, and one worked
+example, are pinned in
+[`docs/running-the-player.md`](running-the-player.md#home-cache-server) and
+asserted in a Rust test (`token::tests::the_shared_test_vector_signs_to_the_published_signature`),
+so the Android client's implementation and this server's cannot drift apart
+silently.
+
+### Storage: files on disk, an LRU index in memory
+
+There is no SQLite. A chunk lives at `root/<id>/<n>`; a set's total byte
+count — recorded by whichever PUT arrives first, `create_new` so a second
+racing PUT sees "already there" rather than overwriting it — lives at
+`root/<id>/total`. At startup the store scans `root` and rebuilds an
+in-memory index ordered by each chunk file's mtime, oldest first; a GET
+touches a chunk's mtime, so that order (and therefore what gets evicted
+first) survives a restart without a database. Integrity cannot be checked
+per chunk the way a part's `sha256` covers a multi-GB upload — a chunk is
+a slice of one — so the guards are the pairing token on writes and the
+length rule (`len == CHUNK`, or exactly what is left of `total` for the
+final chunk) rather than a checksum. A wrong-but-right-length chunk from a
+buggy paired client is not detected here; removing the set's directory by
+hand is the remedy.
+
+Two devices can race to write the same chunk — a phone preloading an
+episode while a TV is already playing it. Each PUT stages its body under a
+name unique to that call, then publishes it with a no-overwrite link
+(`hard_link` then unlink the temp file): the loser sees "already exists"
+and returns 200 without its bytes ever touching the chunk file the winner
+published, so the two are never interleaved.

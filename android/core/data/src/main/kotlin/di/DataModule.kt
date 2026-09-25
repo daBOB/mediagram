@@ -27,9 +27,11 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import settings.EncryptedLanCacheTokenSettings
 import settings.EncryptedLibrarySettings
 import settings.EncryptedTelegramSettings
 import settings.EncryptedTmdbSettings
+import settings.LanCacheTokenSettings
 import settings.LibrarySettings
 import settings.SharedPreferencesShelfViewSettings
 import settings.ShelfViewSettings
@@ -79,6 +81,12 @@ object DataModule {
     fun provideBackdropWidth(
         @ApplicationContext context: Context,
     ): BackdropWidth = DeviceBackdropWidth(context)
+
+    @Provides
+    @Singleton
+    fun provideLanCacheTokenSettings(
+        @ApplicationContext context: Context,
+    ): LanCacheTokenSettings = EncryptedLanCacheTokenSettings(context)
 
     // The same directory the core is constructed with, so clearing it
     // clears the state that core wrote.

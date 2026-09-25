@@ -69,7 +69,7 @@ class SystemScreenTest {
         compose.waitForIdle()
     }
 
-    private fun facts() = SystemUiState("channel", 4, 2, 3, null, null, 12, 100, 0, 0, 0, 0, true, "test", 0)
+    private fun facts() = SystemUiState("channel", 4, 2, 3, null, null, 12, 100, "Internal storage", false, 0, 0, 0, 0, true, "test", 0)
 }
 
 class SystemTestActivity : ComponentActivity() {

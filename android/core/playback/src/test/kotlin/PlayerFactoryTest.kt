@@ -85,13 +85,16 @@ class PlayerFactoryTest {
             assertContentEquals(expected, readRange())
             val initialReads = core.reads
             assertTrue(initialReads > 0)
-            assertEquals(length.toLong(), counters.totals().fromUpstreamBytes)
+            // The 32,768-byte set is one chunk, fetched whole — chunk-aligned
+            // reads always pull the full chunk a bounded request lands in,
+            // not just the DataSpec's own shorter span.
+            assertEquals(32_768L, counters.totals().fromUpstreamBytes)
             assertEquals(0L, counters.totals().fromCacheBytes)
             assertEquals(length.toLong(), CacheProvider.occupancy(context).heldBytes)
 
             assertContentEquals(expected, readRange())
             assertEquals(initialReads, core.reads)
-            assertEquals(length.toLong(), counters.totals().fromUpstreamBytes)
+            assertEquals(32_768L, counters.totals().fromUpstreamBytes)
             assertEquals(length.toLong(), counters.totals().fromCacheBytes)
             assertEquals(0, counters.totals().failedReads)
         }

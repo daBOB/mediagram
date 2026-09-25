@@ -43,6 +43,11 @@ private class RecordingDispatcher(
     }
 }
 
+/**
+ * The locking behaviour a no-choice-recorded viewer must keep: today's
+ * cache dir, the dispatcher contract, and a live budget change surviving a
+ * reopen. Volume resolution and fallback are [CacheProviderVolumeTest]'s.
+ */
 @RunWith(RobolectricTestRunner::class)
 class CacheProviderTest {
     private val probeExecutor = Executors.newSingleThreadExecutor()
@@ -51,6 +56,9 @@ class CacheProviderTest {
     @Before
     fun resetTheSharedCache() {
         CacheProvider.resetForTest()
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        // A deterministic single-internal-volume world by default.
+        CacheProvider.volumesFor = { listOf(internalVolume(context)) }
     }
 
     @After
@@ -62,6 +70,27 @@ class CacheProviderTest {
             probeExecutor.shutdown()
         }
     }
+
+    @Test
+    fun noChoiceRecordedOpensCacheDirMlibAndSurvivesAReopen() =
+        runTest {
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            val dispatcher = probeExecutor.asCoroutineDispatcher()
+            val expectedDir = File(context.cacheDir, "mlib")
+            val initial = CacheProvider.get(context, dispatcher).also { heldCache = it }
+            val file = commitSpan(initial, "kept")
+
+            assertUnder(file, expectedDir)
+            initial.release()
+            heldCache = null
+            CacheProvider.resetForTest()
+
+            val reopened = CacheProvider.get(context, dispatcher).also { heldCache = it }
+
+            assertTrue(reopened.isCached("kept", 0, MIN_CACHE_BYTES))
+            val reopenedFile = assertNotNull(reopened.getCachedSpans("kept").single().file)
+            assertUnder(reopenedFile, expectedDir)
+        }
 
     @Test
     fun constructionRunsOnTheGivenDispatcherNotTheCallingThread() =
@@ -84,25 +113,42 @@ class CacheProviderTest {
         runTest {
             val context = ApplicationProvider.getApplicationContext<Context>()
             val dispatcher = probeExecutor.asCoroutineDispatcher()
+            val volume = internalVolume(context)
+            // The cap is fixed for a session at whatever was already held
+            // when SimpleCache opened, not recomputed as more is cached —
+            // the same "moving the cache needs a restart" reasoning that
+            // fixes the volume itself for the process.
+            val capAtFirstOpen = budgetCap(volume, heldBytes = 0)
             val initial = CacheProvider.get(context, dispatcher).also { heldCache = it }
             val first = commitSpan(initial, "first")
             val second = commitSpan(initial, "second")
-            assertEquals(CacheOccupancy(MIN_CACHE_BYTES * 2, CACHE_MAX_BYTES), CacheProvider.occupancy(context, dispatcher))
+            assertEquals(
+                occupancyOn(volume, MIN_CACHE_BYTES * 2, CACHE_MAX_BYTES, capAtFirstOpen),
+                CacheProvider.occupancy(context, dispatcher),
+            )
 
             CacheProvider.setBudget(context, MIN_CACHE_BYTES, dispatcher)
 
-            assertEquals(CacheOccupancy(MIN_CACHE_BYTES, MIN_CACHE_BYTES), CacheProvider.occupancy(context, dispatcher))
+            assertEquals(
+                occupancyOn(volume, MIN_CACHE_BYTES, MIN_CACHE_BYTES, capAtFirstOpen),
+                CacheProvider.occupancy(context, dispatcher),
+            )
             assertEquals(MIN_CACHE_BYTES, PlainCacheBudgetSettings(context).read())
             assertTrue(first.exists() xor second.exists(), "shrinking must delete one real span file")
             val retainedKey = initial.keys.single()
             initial.release()
             heldCache = null
             CacheProvider.resetForTest()
+            CacheProvider.volumesFor = { listOf(volume) }
+            val capAtReopen = budgetCap(volume, heldBytes = MIN_CACHE_BYTES)
 
             val reopened = CacheProvider.get(context, dispatcher).also { heldCache = it }
 
             assertNotSame(initial, reopened)
-            assertEquals(CacheOccupancy(MIN_CACHE_BYTES, MIN_CACHE_BYTES), CacheProvider.occupancy(context, dispatcher))
+            assertEquals(
+                occupancyOn(volume, MIN_CACHE_BYTES, MIN_CACHE_BYTES, capAtReopen),
+                CacheProvider.occupancy(context, dispatcher),
+            )
             assertTrue(reopened.isCached(retainedKey, 0, MIN_CACHE_BYTES))
             val retainedFile = assertNotNull(reopened.getCachedSpans(retainedKey).single().file)
             RandomAccessFile(retainedFile, "r").use { persisted ->
@@ -116,29 +162,18 @@ class CacheProviderTest {
             assertFalse(reopened.isCached(retainedKey, 0, MIN_CACHE_BYTES))
             assertFalse(retainedFile.exists())
             assertTrue(reopened.isCached("replacement", 0, MIN_CACHE_BYTES))
-            assertEquals(CacheOccupancy(MIN_CACHE_BYTES, MIN_CACHE_BYTES), CacheProvider.occupancy(context, dispatcher))
+            assertEquals(
+                occupancyOn(volume, MIN_CACHE_BYTES, MIN_CACHE_BYTES, capAtReopen),
+                CacheProvider.occupancy(context, dispatcher),
+            )
         }
 
-    private fun commitSpan(
-        cache: SimpleCache,
-        key: String,
-    ): File {
-        val hole = cache.startReadWrite(key, 0, MIN_CACHE_BYTES)
-        try {
-            val file = cache.startFile(key, 0, MIN_CACHE_BYTES)
-            // Sparse files exercise real persisted spans at the production budget
-            // floor without allocating or writing hundreds of MiB of fixture data.
-            RandomAccessFile(file, "rw").use { payload ->
-                payload.setLength(MIN_CACHE_BYTES)
-                payload.writeByte(0x42)
-                payload.seek(MIN_CACHE_BYTES - 1)
-                payload.writeByte(0x7f)
-            }
-            cache.commitFile(file, MIN_CACHE_BYTES)
-            assertTrue(cache.isCached(key, 0, MIN_CACHE_BYTES))
-            return file
-        } finally {
-            cache.releaseHoleSpan(hole)
-        }
-    }
+    private fun occupancyOn(volume: CacheVolume, heldBytes: Long, budgetBytes: Long, capBytes: Long) =
+        CacheOccupancy(
+            heldBytes = heldBytes,
+            budgetBytes = budgetBytes,
+            volumeLabel = volume.label,
+            fellBack = false,
+            capBytes = capBytes,
+        )
 }

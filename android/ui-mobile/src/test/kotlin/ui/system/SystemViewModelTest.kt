@@ -53,7 +53,8 @@ class SystemViewModelTest {
         coEvery { core.catalogFacts() } returns CatalogFacts("channel", 4u, 2u, 3u, 10)
         every { core.isAuthorized() } returns true
         mockkObject(CacheProvider)
-        coEvery { CacheProvider.occupancy(any(), any()) } returns CacheOccupancy(12, 100)
+        coEvery { CacheProvider.occupancy(any(), any()) } returns
+            CacheOccupancy(heldBytes = 12, budgetBytes = 100, volumeLabel = "Internal storage", fellBack = false, capBytes = 100)
     }
 
     @After fun restoreIoBoundaries() {
@@ -93,7 +94,8 @@ class SystemViewModelTest {
                 runCurrent()
                 assertNull(vm.state.value)
                 assertEquals(READ_FAILED, vm.failure.value)
-                coEvery { CacheProvider.occupancy(any(), any()) } returns CacheOccupancy(36, 200)
+                coEvery { CacheProvider.occupancy(any(), any()) } returns
+                    CacheOccupancy(heldBytes = 36, budgetBytes = 200, volumeLabel = "Internal storage", fellBack = false, capBytes = 200)
                 vm.retry()
                 runCurrent()
                 val current = assertNotNull(vm.state.value)

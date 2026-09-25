@@ -32,6 +32,20 @@ class SystemRowsTest {
     }
 
     @Test
+    fun theCacheBlockNamesTheVolumeInUse() {
+        val state = facts(volumeLabel = "SD card")
+
+        assertEquals("SD card", cacheRows(state).toMap()["Where"])
+    }
+
+    @Test
+    fun aFellBackCacheSaysSoNextToTheVolumeItLandedOn() {
+        val state = facts(volumeLabel = "Internal storage", fellBack = true)
+
+        assertEquals("Internal storage (the chosen volume could not be used)", cacheRows(state).toMap()["Where"])
+    }
+
+    @Test
     fun anEmptyCacheStillSaysWhatItMayHold() {
         assertEquals("nothing yet of 2.0 GB", heldOfBudget(held = 0, budget = 2_147_483_648))
     }
@@ -102,6 +116,8 @@ class SystemRowsTest {
     private fun facts(
         heldBytes: Long = 0,
         budgetBytes: Long = 2_147_483_648,
+        volumeLabel: String = "Internal storage",
+        fellBack: Boolean = false,
         fromCacheBytes: Long = 0,
         fromUpstreamBytes: Long = 0,
         fetches: Int = 0,
@@ -115,6 +131,8 @@ class SystemRowsTest {
         lastRefresh = null,
         heldBytes = heldBytes,
         budgetBytes = budgetBytes,
+        volumeLabel = volumeLabel,
+        fellBack = fellBack,
         fromCacheBytes = fromCacheBytes,
         fromUpstreamBytes = fromUpstreamBytes,
         fetches = fetches,
@@ -123,4 +141,17 @@ class SystemRowsTest {
         versionName = "0.4.0",
         uptimeSeconds = 0,
     )
+
+    /**
+     * The last read alone hides what the server carried: read-ahead past
+     * what it holds ends every session on a Telegram fetch, so a title
+     * served almost entirely from the LAN still read "Telegram".
+     */
+    @Test
+    fun theSourceRowCountsWhatTheHomeServerServed() {
+        assertEquals("Telegram; 77 chunks from the home server", sourceLine(false, null, lanHits = 77))
+        assertEquals("LAN (nas); 1 chunk from the home server", sourceLine(true, "nas", lanHits = 1))
+        assertEquals("Telegram", sourceLine(false, null, lanHits = 0))
+        assertNull(sourceLine(null, null, lanHits = 0))
+    }
 }

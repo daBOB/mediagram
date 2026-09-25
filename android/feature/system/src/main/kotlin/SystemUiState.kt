@@ -27,6 +27,9 @@ data class SystemUiState(
     val lastRefresh: RefreshOutcome?,
     val heldBytes: Long,
     val budgetBytes: Long,
+    /** Which volume the cache actually opened on, and whether that was a fallback from what was chosen. */
+    val volumeLabel: String,
+    val fellBack: Boolean,
     val fromCacheBytes: Long,
     val fromUpstreamBytes: Long,
     val fetches: Int,
@@ -34,4 +37,10 @@ data class SystemUiState(
     val connected: Boolean?,
     val versionName: String?,
     val uptimeSeconds: Long,
+    /** Where the most recent chunk actually came from, or `null` before this process has read one. */
+    val lastReadWasLan: Boolean? = null,
+    /** The LAN server's host, when [lastReadWasLan] is `true`. */
+    val lanHost: String? = null,
+    /** Chunks a home cache server has served since this process started. */
+    val lanHits: Int = 0,
 )
