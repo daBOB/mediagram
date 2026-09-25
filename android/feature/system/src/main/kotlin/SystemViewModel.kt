@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import playback.CacheProvider
 import playback.PlaybackCounters
+import playback.ReadSource
 import javax.inject.Inject
 
 /**
@@ -90,6 +91,7 @@ class SystemViewModel
             val facts = core.catalogFacts()
             val totals = counters.totals()
             val occupancy = CacheProvider.occupancy(context)
+            val lastRead = counters.lastRead()
             return SystemUiState(
                 origin = facts.origin,
                 sets = facts.sets.toLong(),
@@ -116,6 +118,8 @@ class SystemViewModel
                 // reopens this screen after playing for an hour should read
                 // an hour, not however long the screen itself has existed.
                 uptimeSeconds = (SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()) / 1000,
+                lastReadWasLan = lastRead?.let { it.source == ReadSource.LAN },
+                lanHost = lastRead?.host,
             )
         }
     }

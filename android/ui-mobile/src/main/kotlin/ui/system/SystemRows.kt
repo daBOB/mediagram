@@ -50,6 +50,22 @@ internal fun cacheWhereLine(
     fellBack: Boolean,
 ): String = if (fellBack) "$volumeLabel (the chosen volume could not be used)" else volumeLabel
 
+/**
+ * Where the most recent chunk actually came from: `null` before this
+ * process has read one, "Telegram" when it fetched from Telegram, or
+ * "LAN (host)" when a home cache server served it instead — the same
+ * source [cacheReadsLine]'s own "fetches" already counts either way.
+ */
+internal fun sourceLine(
+    lastReadWasLan: Boolean?,
+    host: String?,
+): String? =
+    when (lastReadWasLan) {
+        null -> null
+        false -> "Telegram"
+        true -> "LAN" + (host?.let { " ($it)" } ?: "")
+    }
+
 /** Whether this device's Telegram session is up, or `null` when the question does not apply. */
 internal fun telegramLine(connected: Boolean?): String? =
     when (connected) {

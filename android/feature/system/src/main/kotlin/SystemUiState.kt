@@ -37,4 +37,8 @@ data class SystemUiState(
     val connected: Boolean?,
     val versionName: String?,
     val uptimeSeconds: Long,
+    /** Where the most recent chunk actually came from, or `null` before this process has read one. */
+    val lastReadWasLan: Boolean? = null,
+    /** The LAN server's host, when [lastReadWasLan] is `true`. */
+    val lanHost: String? = null,
 )

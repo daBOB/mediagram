@@ -15,4 +15,10 @@ dependencies {
     implementation(project(":core:data"))
     // Only for PlaybackCounters — nothing here touches ExoPlayer directly.
     implementation(project(":core:playback"))
+
+    // LanCacheViewModel reads a real Context (permission checks); the rest
+    // of this module's ViewModels never have, which is why this was not
+    // already here.
+    testImplementation(libs.findLibrary("robolectric").get())
+    testImplementation(libs.findLibrary("androidx.junit").get())
 }

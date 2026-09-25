@@ -22,6 +22,8 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -33,10 +35,49 @@ import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import playback.CacheOccupancy
 import playback.CacheProvider
+import playback.InMemoryLanCacheSettings
+import playback.LanCacheTokenStatus
+import playback.LanChunkProtocol
+import playback.LanPutResult
+import playback.LanServer
+import playback.LanServerSource
+import playback.LanServerStatus
+import settings.InMemoryLanCacheTokenSettings
 import system.CacheBudgetViewModel
+import system.LanCacheViewModel
 
 private val WORKING_OCCUPANCY =
     CacheOccupancy(heldBytes = 0, budgetBytes = 1L shl 30, volumeLabel = "Internal storage", fellBack = false, capBytes = 8L shl 30)
+
+/** No discovery, no server, nothing pinged — [CacheSection]'s own test cares only that the block mounts. */
+private class NoopLocator : LanServerSource {
+    override val server: StateFlow<LanServer?> = MutableStateFlow(null)
+    override val searching: StateFlow<Boolean> = MutableStateFlow(false)
+
+    override fun discover() = Unit
+}
+
+private class NoopLanChunkProtocol : LanChunkProtocol {
+    override suspend fun get(
+        baseUrl: String,
+        setId: String,
+        index: Long,
+        expectedLength: Int,
+    ): ByteArray? = null
+
+    override suspend fun put(
+        baseUrl: String,
+        token: String,
+        setId: String,
+        index: Long,
+        total: Long,
+        body: ByteArray,
+    ) = LanPutResult.Stored
+
+    override suspend fun verify(baseUrl: String): Boolean = false
+
+    override suspend fun status(baseUrl: String): LanServerStatus? = null
+}
 
 /**
  * [CacheSection] hosts both cache blocks over one [CacheBudgetViewModel]
@@ -75,13 +116,28 @@ class CacheSectionTest {
 
     @Test fun mountingReadsTheCacheExactlyOnceForBothBlocks() {
         compose.runOnUiThread {
-            val model = CacheBudgetViewModel(ApplicationProvider.getApplicationContext(), Dispatchers.Main.immediate)
-            ViewModelProvider(
-                owner.viewModelStore,
+            val cacheBudgetModel = CacheBudgetViewModel(ApplicationProvider.getApplicationContext(), Dispatchers.Main.immediate)
+            val lanCacheModel =
+                LanCacheViewModel(
+                    ApplicationProvider.getApplicationContext(),
+                    InMemoryLanCacheSettings(),
+                    InMemoryLanCacheTokenSettings(),
+                    LanCacheTokenStatus(),
+                    NoopLocator(),
+                    NoopLanChunkProtocol(),
+                )
+            val factory =
                 object : ViewModelProvider.Factory {
-                    override fun <T : ViewModel> create(modelClass: Class<T>): T = modelClass.cast(model)!!
-                },
-            )[CacheBudgetViewModel::class.java]
+                    @Suppress("UNCHECKED_CAST")
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                        when (modelClass) {
+                            CacheBudgetViewModel::class.java -> cacheBudgetModel as T
+                            LanCacheViewModel::class.java -> lanCacheModel as T
+                            else -> error("unexpected view model class in this test: $modelClass")
+                        }
+                }
+            ViewModelProvider(owner.viewModelStore, factory)[CacheBudgetViewModel::class.java]
+            ViewModelProvider(owner.viewModelStore, factory)[LanCacheViewModel::class.java]
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
             controller.get().setContent {
                 CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {

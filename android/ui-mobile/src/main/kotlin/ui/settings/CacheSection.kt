@@ -27,5 +27,6 @@ internal fun CacheSection() {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.large)) {
         CacheBudgetBlock()
         CacheVolumeBlock()
+        LanCacheBlock()
     }
 }
