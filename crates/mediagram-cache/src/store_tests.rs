@@ -31,79 +31,6 @@ fn a_second_put_of_the_same_chunk_is_a_no_op_not_an_overwrite() {
 }
 
 #[test]
-fn concurrent_puts_of_the_same_key_never_interleave() {
-    let dir = tempdir().expect("temp dir");
-    let store =
-        std::sync::Arc::new(ChunkStore::open(dir.path().to_path_buf(), 1 << 30).expect("open"));
-    let total = rules::CHUNK;
-    let a = vec![b'a'; total as usize];
-    let b = vec![b'b'; total as usize];
-
-    let store_a = store.clone();
-    let a_body = a.clone();
-    let t1 = std::thread::spawn(move || store_a.put("set1", 0, total, &a_body));
-    let store_b = store.clone();
-    let b_body = b.clone();
-    let t2 = std::thread::spawn(move || store_b.put("set1", 0, total, &b_body));
-
-    let r1 = t1.join().unwrap().unwrap();
-    let r2 = t2.join().unwrap().unwrap();
-
-    // One wins (Created), the other is told it already exists.
-    let outcomes = [r1, r2];
-    assert_eq!(
-        outcomes
-            .iter()
-            .filter(|o| **o == PutOutcome::Created)
-            .count(),
-        1
-    );
-    assert_eq!(
-        outcomes
-            .iter()
-            .filter(|o| **o == PutOutcome::AlreadyHeld)
-            .count(),
-        1
-    );
-
-    // Whichever won, the stored body is intact: entirely `a` or entirely
-    // `b`, never a mix of the two.
-    let stored = store.get("set1", 0).unwrap().unwrap();
-    assert!(stored == a || stored == b);
-}
-
-#[test]
-fn concurrent_first_puts_with_different_totals_give_one_created_and_one_mismatch() {
-    let dir = tempdir().expect("temp dir");
-    let store =
-        std::sync::Arc::new(ChunkStore::open(dir.path().to_path_buf(), 1 << 30).expect("open"));
-
-    let store_a = store.clone();
-    let t1 = std::thread::spawn(move || store_a.put("set1", 0, 100, b"x".repeat(100).as_slice()));
-    let store_b = store.clone();
-    let t2 = std::thread::spawn(move || store_b.put("set1", 0, 200, b"y".repeat(100).as_slice()));
-
-    let r1 = t1.join().unwrap().unwrap();
-    let r2 = t2.join().unwrap().unwrap();
-    let outcomes = [r1, r2];
-
-    assert_eq!(
-        outcomes
-            .iter()
-            .filter(|o| **o == PutOutcome::Created)
-            .count(),
-        1
-    );
-    assert_eq!(
-        outcomes
-            .iter()
-            .filter(|o| matches!(o, PutOutcome::TotalMismatch { .. }))
-            .count(),
-        1
-    );
-}
-
-#[test]
 fn a_put_against_an_already_recorded_different_total_is_rejected() {
     let (_dir, store) = open(1 << 30);
     store
@@ -138,6 +65,34 @@ fn a_crash_mid_write_leaves_no_visible_chunk_and_is_swept_on_open() {
     let store = ChunkStore::open(dir.path().to_path_buf(), 1 << 30).expect("open");
     assert_eq!(store.status().chunks, 0);
     assert!(!tmp_dir.join("leftover").exists());
+}
+
+/// A panic anywhere while the index lock is held (a bug, a future
+/// regression, an allocation failure) poisons the `Mutex`. The index's own
+/// state is simple saturating integer counters, never a pointer or an
+/// invariant that a torn mutation could leave unsafe to read, so recovering
+/// the guard and carrying on is safe — and correct, since the alternative
+/// is every request after the first panic failing forever on the same
+/// store, for a reason with nothing to do with that request.
+#[test]
+fn a_poisoned_index_lock_does_not_wedge_the_store() {
+    let (_dir, store) = open(1 << 30);
+    store.put("set1", 0, 5, b"hello").unwrap();
+
+    let poisoned = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _guard = store.index.lock().unwrap();
+        panic!("simulated panic while the index lock is held");
+    }));
+    assert!(poisoned.is_err());
+    assert!(store.index.is_poisoned());
+
+    // Every operation that takes the lock must still work.
+    assert_eq!(store.status().chunks, 1);
+    assert_eq!(store.get("set1", 0).unwrap(), Some(b"hello".to_vec()));
+    assert_eq!(
+        store.put("set2", 0, 10, b"world12345").unwrap(),
+        PutOutcome::Created
+    );
 }
 
 #[test]

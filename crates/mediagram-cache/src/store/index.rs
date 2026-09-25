@@ -58,19 +58,34 @@ impl Index {
         (mtime, seq)
     }
 
-    /// A chunk this process just wrote for the first time.
+    /// A chunk this process just wrote. Usually brand new, but a chunk
+    /// deleted by hand (outside the store) and then re-PUT is still a key
+    /// this index already has a stale entry for — replace it rather than
+    /// add to it, so neither `held_bytes` double-counts the old size nor
+    /// the old entry's order key is left orphaned in `order` with nothing
+    /// in `meta` to match it.
     pub(super) fn insert(&mut self, key: ChunkKey, size: u64, mtime: SystemTime) {
+        if let Some(old) = self.meta.get(&key) {
+            self.order.remove(&old.order_key);
+            self.held_bytes = self.held_bytes.saturating_sub(old.size);
+        }
         let order_key = self.next_order_key(mtime);
         self.order.insert(order_key, key.clone());
         self.held_bytes += size;
         self.meta.insert(key, Meta { size, order_key });
     }
 
-    /// A GET: the chunk was already known, so only its order moves.
+    /// A GET: the chunk was already known, so only its order moves. A
+    /// no-op if the key is not present — a GET that read the file
+    /// successfully can still race an eviction that drops the entry before
+    /// this runs under the lock, and manufacturing one here would count it
+    /// in `chunk_count` with nothing added to `held_bytes`, setting up a
+    /// later `forget` of it to subtract a size that was never added.
     pub(super) fn refresh(&mut self, key: &ChunkKey, size: u64, mtime: SystemTime) {
-        if let Some(meta) = self.meta.get(key) {
-            self.order.remove(&meta.order_key);
-        }
+        let Some(meta) = self.meta.get(key) else {
+            return;
+        };
+        self.order.remove(&meta.order_key);
         let order_key = self.next_order_key(mtime);
         self.order.insert(order_key, key.clone());
         self.meta.insert(key.clone(), Meta { size, order_key });
@@ -80,7 +95,7 @@ impl Index {
     pub(super) fn forget(&mut self, key: &ChunkKey) {
         if let Some(meta) = self.meta.remove(key) {
             self.order.remove(&meta.order_key);
-            self.held_bytes -= meta.size;
+            self.held_bytes = self.held_bytes.saturating_sub(meta.size);
         }
     }
 
@@ -95,7 +110,7 @@ impl Index {
             let key = key.clone();
             self.order.remove(&order_key);
             if let Some(meta) = self.meta.remove(&key) {
-                self.held_bytes -= meta.size;
+                self.held_bytes = self.held_bytes.saturating_sub(meta.size);
             }
             evicted.push(key);
         }
@@ -110,3 +125,7 @@ impl Index {
         self.meta.len() as u64
     }
 }
+
+#[cfg(test)]
+#[path = "index_tests.rs"]
+mod tests;
