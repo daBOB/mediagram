@@ -166,7 +166,9 @@ class LanChunkClient(
                     if (connection.responseCode != HttpURLConnection.HTTP_OK) {
                         null
                     } else {
-                        statusFromJson(connection.inputStream.use { it.readBytes() }.toString(Charsets.UTF_8))
+                        // A real status is well under a hundred bytes; anything past
+                        // this is not one, and is not read into memory.
+                        readAtMost(connection, STATUS_LIMIT_BYTES)?.let { statusFromJson(it.toString(Charsets.UTF_8)) }
                     }
                 }
             } catch (e: IOException) {
@@ -189,3 +191,5 @@ class LanChunkClient(
         index: Long,
     ): String = "/v1/sets/$setId/chunks/$index"
 }
+
+private const val STATUS_LIMIT_BYTES = 4 * 1024

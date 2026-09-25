@@ -71,3 +71,25 @@ internal fun readExactly(
         if (read != expectedLength || stream.read() != -1) null else buffer
     }
 }
+
+/**
+ * Reads at most [limit] bytes of [connection]'s body, or `null` if there is
+ * more — the same refusal [readExactly] makes for chunks, for a body whose
+ * exact length is not known in advance but whose honest size is small.
+ */
+internal fun readAtMost(
+    connection: HttpURLConnection,
+    limit: Int,
+): ByteArray? {
+    if (connection.contentLengthLong > limit) return null
+    return connection.inputStream.use { stream ->
+        val buffer = ByteArray(limit + 1)
+        var read = 0
+        while (read <= limit) {
+            val n = stream.read(buffer, read, limit + 1 - read)
+            if (n == -1) break
+            read += n
+        }
+        if (read > limit) null else buffer.copyOf(read)
+    }
+}

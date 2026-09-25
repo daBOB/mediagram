@@ -147,4 +147,14 @@ class LanChunkClientTest {
 
             assertFailsWith<IOException> { slowClient.get(baseUrl(), "s1", index = 0, expectedLength = 5) }
         }
+
+    @Test
+    fun anOversizedStatusBodyIsRefusedRatherThanReadWhole() =
+        runTest {
+            val padding = " ".repeat(64 * 1024)
+            server.enqueue(MockResponse().setResponseCode(200).setBody("{\"held_bytes\":1,\"budget_bytes\":2,\"chunks\":1$padding}"))
+            server.start()
+
+            assertNull(client.status(baseUrl()))
+        }
 }
