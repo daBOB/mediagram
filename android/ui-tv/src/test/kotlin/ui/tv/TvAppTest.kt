@@ -49,14 +49,22 @@ class TvAppTest {
 
     @Test
     fun readySetupStateShowsTheLibraryStub() {
-        show(ready = true)
+        show(TvSetupStage.READY)
         compose.onNodeWithText("library").assertExists()
     }
 
+    /**
+     * The one branch of `TvSetupStep` that needs this class's Hilt-mocked
+     * plumbing rather than a direct call: sign-in composes its own
+     * `LoginViewModel` through `hiltViewModel()`, the same way `TvApp`
+     * itself reaches [setup.SetupViewModel]. Every other state is proven
+     * directly against `TvSetupStep` in `TvSetupStepTest`, which needs none
+     * of this.
+     */
     @Test
-    fun outstandingSetupStateShowsTheSetupStepStub() {
-        show(ready = false)
-        compose.onNodeWithText("NeedsSignIn").assertExists()
+    fun outstandingSetupStateRoutesThroughToTheRealSignInScreen() {
+        show(TvSetupStage.SIGN_IN)
+        compose.onNodeWithText("Phone number", substring = true).assertExists()
     }
 
     /**
@@ -86,11 +94,11 @@ class TvAppTest {
         compose.runOnUiThread { shellController.close() }
     }
 
-    private fun show(ready: Boolean) {
+    private fun show(stage: TvSetupStage) {
         mockkStatic(::HiltViewModelFactory)
         every { HiltViewModelFactory(any(), any()) } answers { secondArg() }
         compose.runOnUiThread {
-            TvAppTestActivity.fixture = TvAppFixture(ready)
+            TvAppTestActivity.fixture = TvAppFixture(stage)
             controller = Robolectric.buildActivity(TvAppTestActivity::class.java).setup().visible()
         }
         compose.waitForIdle()

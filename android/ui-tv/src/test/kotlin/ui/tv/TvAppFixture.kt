@@ -8,6 +8,7 @@ import data.CoreClient
 import data.DefaultWatchStateRepository
 import data.InMemoryCoreStorage
 import data.StoredCoreProvider
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -17,26 +18,35 @@ import settings.InMemoryTelegramSettings
 import settings.InMemoryTmdbSettings
 import setup.Libraries
 import setup.SetupViewModel
+import setup.login.LoginViewModel
+import uniffi.mediagram_core.LibraryChoice
+
+/** Which of [SetupViewModel]'s outstanding steps a [TvAppFixture] should land on. */
+internal enum class TvSetupStage { APPLICATION, SIGN_IN, LIBRARY, READY }
 
 /**
  * A real [SetupViewModel] over a mocked [CoreClient] — the minimum TvApp's
- * start rule needs, not ui-mobile's full login/library fixture. TvApp only
- * ever asks whether the outstanding step is `Ready`; it never drives sign-in
- * or library selection itself, so nothing here has to either.
+ * setup screens need, not ui-mobile's full login/library fixture. TvApp and
+ * `TvSetupStep` only ever drive [SetupViewModel] itself; sign-in and library
+ * selection each have their own ViewModel, which nothing under test here
+ * reaches into.
  *
- * [ready] alone decides the outcome: an application identity is always on
- * record (otherwise the step would always be `NeedsApplication`, telling
- * this test nothing about the branch it exists to check), and only a
- * "ready" fixture also authorises the core and picks a library, the two
+ * [stage] alone decides the outcome: an application identity is on record
+ * for every stage but [TvSetupStage.APPLICATION] (otherwise the step would
+ * always be `NeedsApplication`, telling a test nothing about the branch it
+ * exists to check), the core reports authorized from [TvSetupStage.LIBRARY]
+ * on, and only [TvSetupStage.READY] also picks a library — the three
  * remaining questions [SetupViewModel] asks before it reports `Ready`.
  */
-internal class TvAppFixture(ready: Boolean) : ViewModelStoreOwner, AutoCloseable {
+internal class TvAppFixture(stage: TvSetupStage) : ViewModelStoreOwner, AutoCloseable {
     override val viewModelStore = ViewModelStore()
     val setup: SetupViewModel
+    private val login: LoginViewModel
 
     init {
         val core = mockk<CoreClient>()
-        every { core.isAuthorized() } returns ready
+        every { core.isAuthorized() } returns (stage == TvSetupStage.LIBRARY || stage == TvSetupStage.READY)
+        coEvery { core.listLibraries() } returns listOf(LibraryChoice("films", "Family films"))
         val telegram = InMemoryTelegramSettings()
         val library = InMemoryLibrarySettings()
         val dispatcher = Dispatchers.Main.immediate
@@ -44,8 +54,8 @@ internal class TvAppFixture(ready: Boolean) : ViewModelStoreOwner, AutoCloseable
         val libraries = Libraries(provider, library, dispatcher)
         val watchState = DefaultWatchStateRepository(provider, dispatcher)
         runBlocking {
-            telegram.write(1234, "0123456789abcdef0123456789abcdef")
-            if (ready) library.write("films")
+            if (stage != TvSetupStage.APPLICATION) telegram.write(1234, "0123456789abcdef0123456789abcdef")
+            if (stage == TvSetupStage.READY) library.write("films")
         }
         setup =
             SetupViewModel(
@@ -56,7 +66,18 @@ internal class TvAppFixture(ready: Boolean) : ViewModelStoreOwner, AutoCloseable
                 dispatcher = dispatcher,
                 watchState = watchState,
             )
-        val models = mapOf<Class<out ViewModel>, ViewModel>(SetupViewModel::class.java to setup)
+        // TvSignInScreen resolves its own LoginViewModel through
+        // hiltViewModel(), the same way TvApp resolves SetupViewModel —
+        // this ViewModelStoreOwner has to be able to hand back both, or
+        // reaching the sign-in step through TvApp falls back to
+        // ViewModelProvider's default factory, which cannot construct a
+        // LoginViewModel with no Hilt entry point to supply its arguments.
+        login = LoginViewModel(provider, dispatcher)
+        val models =
+            mapOf<Class<out ViewModel>, ViewModel>(
+                SetupViewModel::class.java to setup,
+                LoginViewModel::class.java to login,
+            )
         val held =
             ViewModelProvider(
                 viewModelStore,

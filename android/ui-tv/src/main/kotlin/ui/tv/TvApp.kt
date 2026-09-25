@@ -18,6 +18,7 @@ import androidx.tv.material3.Text
 import designsystem.Overscan
 import setup.SetupUiState
 import setup.SetupViewModel
+import ui.tv.setup.TvSetupStep
 
 /**
  * The television counterpart to `ui.MobileApp`: the same [SetupViewModel]
@@ -31,9 +32,10 @@ import setup.SetupViewModel
  * What differs from the phone is only how the answer is drawn: a
  * television is read across a room rather than held in the hand, so the
  * content composes in the catalogue theme's own [TvTheme] instead of
- * `MediagramTheme`. The two branches below are stubs until the real
- * screens exist, so the placeholder text draws inside [TvSafeArea] rather
- * than whatever safe area a library wall or setup flow will end up owning.
+ * `MediagramTheme`. Every outstanding step draws through [TvSetupStep] now,
+ * the way `MobileApp`'s own steps draw through its private `SetupStep`;
+ * `Ready` still draws a stub, since the library surface itself belongs to a
+ * later phase.
  */
 @Composable
 fun TvApp() {
@@ -44,8 +46,13 @@ fun TvApp() {
         LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { setupViewModel.recheck() }
 
         TvShell {
-            TvSafeArea {
-                Text(text = stubLabel(setupState))
+            if (setupState is SetupUiState.Ready) {
+                // The library surface is a later phase's screen; this stub
+                // stands in for it exactly as it did before the setup steps
+                // beside it had real screens of their own.
+                TvSafeArea { Text(text = "library") }
+            } else {
+                TvSetupStep(state = setupState, viewModel = setupViewModel)
             }
         }
     }
@@ -102,13 +109,3 @@ internal fun TvSafeArea(content: @Composable () -> Unit) {
         content()
     }
 }
-
-/**
- * Names the state on screen until the real screens exist. `Ready` reads as
- * "library" rather than its own type name because that is the screen it
- * stands in for; every other state is still exactly the setup step
- * [SetupUiState] says is outstanding, which is what a stub for that step
- * should say.
- */
-private fun stubLabel(state: SetupUiState): String =
-    if (state is SetupUiState.Ready) "library" else state::class.simpleName ?: "setup"
