@@ -90,7 +90,8 @@ private fun EmptyKeptWall(
     kind: KeptKind,
     tabFocus: FocusRequester,
 ) {
-    LaunchedEffect(Unit) { tabFocus.requestFocus() }
+    val takesFocus = LocalTakesArrivalFocus.current
+    LaunchedEffect(Unit) { if (takesFocus) tabFocus.requestFocus() }
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical)) {
         TvCountedHeading(kind.label, 0)
         // Centred in what is left, not through TvCenteredMessage: this

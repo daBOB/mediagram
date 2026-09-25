@@ -65,7 +65,9 @@ internal fun TvLists(
     // Keyed on the restore key as well as the index it resolves to, as
     // TvWall's is: coming back from a different list means "go there" even
     // when that list sits at the index the remote was already on.
+    val takesFocus = LocalTakesArrivalFocus.current
     LaunchedEffect(focusIndex, focusNew, restoreKey) {
+        if (!takesFocus) return@LaunchedEffect
         listState.scrollToItem(focusIndex)
         focus.requestFocus()
     }

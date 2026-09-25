@@ -1,40 +1,36 @@
 package ui.tv
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.fetchResultMessage
 import catalog.mediaSet
 import system.FetchViewModel
 import ui.FrameKind
-import ui.FrameResolution
 import ui.LibraryPositions
 import ui.catalog.rememberTitleInfo
 import ui.rememberLibraryPositions
 import ui.resolve
-import ui.resolveFrame
 import ui.tv.catalog.TvCollection
 import ui.tv.catalog.TvFetchResultDialog
 import ui.tv.catalog.TvList
+import ui.tv.catalog.TvSearchEntryKey
 import ui.tv.catalog.TvSeason
 import ui.tv.catalog.TvTitlePage
 import ui.tv.profile.TvChosenProfile
-import ui.tv.setup.TvLoadingIndicator
 
 /**
  * The library on a television — the twin of the phone's `LibraryFlow`: the
  * catalogue, whichever show or course it opened, whichever season of that,
- * whichever title that described, whichever set that played, and whichever
- * hand-built list the Collections tab opened. Where the viewer is, and what
- * Back uncovers, is the shared [LibraryPositions] stack, asked the same way
- * the phone asks it, so the two surfaces cannot disagree about where Back
- * goes.
+ * whichever title that described, whichever set that played, whichever
+ * hand-built list the Collections tab opened, search, and whichever genre
+ * a title's link opened. Where the viewer is, and what Back uncovers, is
+ * the shared [LibraryPositions] stack, asked the same way the phone asks
+ * it, so the two surfaces cannot disagree about where Back goes.
  *
  * What only a television needs is [TvRestoreKeys]: each screen remembers
  * what it opened, so Back puts the remote on that plate or row again.
@@ -67,13 +63,18 @@ internal fun TvLibrary(profile: TvChosenProfile) {
     when (top) {
         FrameKind.PLAYER -> TvPlayerBranch(at, catalogState, leave)
 
-        // Nothing on a television opens a menu screen, search or a genre
-        // page yet, so a saved one can only be left over — and drawing
-        // nothing for it would strand the viewer on a blank page Back could
-        // not see past. Leaving it uncovers whatever it was laid over.
-        FrameKind.MENU, FrameKind.SEARCH, FrameKind.GENRE -> {
+        // Nothing on a television opens a menu screen — its settings are
+        // the player's own panel — so a saved one can only be left over,
+        // and drawing nothing for it would strand the viewer on a blank
+        // page Back could not see past. Leaving it uncovers whatever it was
+        // laid over.
+        FrameKind.MENU -> {
             LaunchedEffect(top) { leave() }
         }
+
+        FrameKind.SEARCH -> TvSearchBranch(at, catalogState, watch, restore, leave)
+
+        FrameKind.GENRE -> TvGenreBranch(at, catalogState, watch, restore, leave)
 
         FrameKind.TITLE ->
             TvResolvedBranch(resolved.title, catalogState, leave) { title ->
@@ -81,7 +82,17 @@ internal fun TvLibrary(profile: TvChosenProfile) {
                     set = title,
                     info = rememberTitleInfo(title.posterKey, catalogViewModel::titleInfo),
                     progress = watch.progress.find { it.setId == title.setId },
-                    onPlay = { at.openPlayer(title.setId) },
+                    // Coming back from the player lands on Play, not on a
+                    // genre whose page was visited before it.
+                    onPlay = {
+                        restore.forget(here)
+                        at.openPlayer(title.setId)
+                    },
+                    onOpenGenre = { name ->
+                        restore.opened(here, name)
+                        at.openGenre(name)
+                    },
+                    restoreKey = restore.of(here),
                 )
             }
 
@@ -112,6 +123,10 @@ internal fun TvLibrary(profile: TvChosenProfile) {
                     onOpenSeason = { division ->
                         restore.opened(here, division.title)
                         at.openSeason(division.title)
+                    },
+                    onOpenGenre = { name ->
+                        restore.opened(here, name)
+                        at.openGenre(name)
                     },
                     restoreKey = restore.of(here),
                 )
@@ -165,6 +180,10 @@ internal fun TvLibrary(profile: TvChosenProfile) {
                     },
                     onCreateList = catalogViewModel::createList,
                     onTabChanged = { restore.forget(here) },
+                    onOpenSearch = {
+                        restore.opened(here, TvSearchEntryKey)
+                        at.openSearch()
+                    },
                 )
             }
         }
@@ -178,33 +197,6 @@ internal fun TvLibrary(profile: TvChosenProfile) {
             message = fetchResultMessage(fetchState.report, fetchState.error),
             onDismiss = fetchViewModel::dismissResult,
         )
-    }
-}
-
-/**
- * A screen whose key is looked up against the catalogue, by the phone's own
- * rule ([resolveFrame]): drawn once it resolves, a loading indicator while
- * the catalogue has not answered yet — a restore landing here before the
- * library has loaded — and left at once when the catalogue has answered and
- * the key still names nothing, a list deleted on another device.
- */
-@Composable
-private fun <T> TvResolvedBranch(
-    resolved: T?,
-    catalogState: CatalogUiState,
-    leave: () -> Unit,
-    content: @Composable (T) -> Unit,
-) {
-    when (val outcome = resolveFrame(resolved, catalogState is CatalogUiState.Ready)) {
-        is FrameResolution.Resolved -> {
-            BackHandler(onBack = leave)
-            content(outcome.value)
-        }
-        FrameResolution.Loading -> {
-            BackHandler(onBack = leave)
-            TvLoadingIndicator()
-        }
-        FrameResolution.Stale -> LaunchedEffect(Unit) { leave() }
     }
 }
 

@@ -39,6 +39,10 @@ import uniffi.mediagram_core.TitleInfo
  * the Continue wall captions its plates with. The phone's title page always
  * says Play; this follows the web's page, which says Resume.
  *
+ * Its genres open their own pages through [onOpenGenre]; coming back from
+ * one, [restoreKey] names it and that link takes the remote instead of
+ * Play, so Back lands where the viewer was.
+ *
  * [info] being null is ordinary rather than a failure, for the phone's
  * reason: a course has no provider entry, and a library assembled without
  * a TMDB key has none at all, so each block it would fill is left out.
@@ -49,6 +53,8 @@ internal fun TvTitlePage(
     info: TitleInfo?,
     progress: Progress?,
     onPlay: () -> Unit,
+    onOpenGenre: (String) -> Unit = {},
+    restoreKey: String? = null,
 ) {
     val play = remember { FocusRequester() }
     val resume =
@@ -64,6 +70,8 @@ internal fun TvTitlePage(
             facts = factsLine(set.year, set.durationSecs, set.ageLabel()),
             info = info,
             genres = set.genres,
+            onOpenGenre = onOpenGenre,
+            genreFocus = restoreKey,
             modifier =
                 Modifier
                     .fillMaxSize()
@@ -83,5 +91,5 @@ internal fun TvTitlePage(
             )
         }
     }
-    LaunchedEffect(set.setId) { play.requestFocus() }
+    LaunchedEffect(set.setId) { if (restoreKey !in set.genres) play.requestFocus() }
 }

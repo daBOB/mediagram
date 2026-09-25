@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import catalog.CatalogViewModel
+import catalog.SearchViewModel
 import catalog.profile.ProfileViewModel
 import data.CatalogEnrichmentFetcher
 import data.CatalogRepository
@@ -30,6 +31,7 @@ import setup.login.LoginViewModel
 import system.FetchViewModel
 import ui.tv.player.TvPlayerFixture
 import uniffi.mediagram_core.LibraryChoice
+import uniffi.mediagram_core.SearchHit
 
 /** Which of [SetupViewModel]'s outstanding steps a [TvAppFixture] should land on. */
 internal enum class TvSetupStage { APPLICATION, SIGN_IN, LIBRARY, READY }
@@ -55,7 +57,9 @@ internal enum class TvSetupStage { APPLICATION, SIGN_IN, LIBRARY, READY }
  * setup plumbing above uses: that mock is stubbed only for the calls
  * `SetupViewModel` itself makes. A real [CatalogViewModel] over a mocked
  * [CatalogRepository] holding [sets] stands behind the catalogue the gate
- * opens onto, the way ui-mobile's `LibraryFlowFixture` builds its own.
+ * opens onto, the way ui-mobile's `LibraryFlowFixture` builds its own. A
+ * real [SearchViewModel] asks the same repository, whose search stands in
+ * for the core's ranking with a plain match on each set's title.
  */
 internal class TvAppFixture(
     stage: TvSetupStage,
@@ -68,6 +72,7 @@ internal class TvAppFixture(
     private val login: LoginViewModel
     private val profile: ProfileViewModel
     val catalog: CatalogViewModel
+    private val search: SearchViewModel
     private val fetch: FetchViewModel
     private val playback: TvPlayerFixture
     private val player: PlayerViewModel
@@ -109,9 +114,14 @@ internal class TvAppFixture(
         coEvery { repository.sets() } returns sets
         coEvery { repository.titleInfo(any()) } returns null
         coEvery { repository.posterPath(any()) } returns null
+        coEvery { repository.search(any()) } answers {
+            val query = firstArg<String>()
+            sets.filter { it.title.contains(query, ignoreCase = true) }.map { SearchHit(setId = it.setId, matched = "title", excerpt = null) }
+        }
         val enrichment = CatalogEnrichmentFetcher(provider, InMemoryTmdbSettings())
         catalog = CatalogViewModel(repository, viewer, LibraryUpdateCoordinator(repository, enrichment))
         fetch = FetchViewModel(enrichment)
+        search = SearchViewModel(repository)
         // The player a title's Play opens, over an ExoPlayer that decodes
         // nothing — the library's walk only needs it to open and to stop.
         playback = TvPlayerFixture(viewer)
@@ -123,6 +133,7 @@ internal class TvAppFixture(
                 ProfileViewModel::class.java to profile,
                 CatalogViewModel::class.java to catalog,
                 FetchViewModel::class.java to fetch,
+                SearchViewModel::class.java to search,
                 PlayerViewModel::class.java to player,
             )
         val held =

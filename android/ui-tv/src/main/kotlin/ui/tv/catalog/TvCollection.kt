@@ -33,7 +33,9 @@ import uniffi.mediagram_core.TitleInfo
  * found nothing, when nobody recorded anything.
  *
  * [restoreKey] names what was opened from here — a season's title on the
- * wall, a set's id in the list — so coming back lands on it.
+ * wall, a set's id in the list, or a genre from the header's links
+ * ([onOpenGenre]) — so coming back lands on it. A genre sits above the wall
+ * or the rows, so they leave the remote to it rather than taking it first.
  */
 @Composable
 fun TvCollection(
@@ -43,12 +45,15 @@ fun TvCollection(
     posterPath: suspend (key: String) -> String?,
     onOpenTitle: (setId: String) -> Unit,
     onOpenSeason: (Division) -> Unit,
+    onOpenGenre: (String) -> Unit = {},
     restoreKey: String? = null,
 ) {
     val watchedIds = rememberWatchMarks(watch).watchedIds
     val seasons = remember(collection, watchedIds) { seasonPlatesOf(collection, watchedIds) }
-    val header: @Composable () -> Unit = { CollectionHeader(collection, info) }
-    TvPage {
+    val genres = remember(collection) { firstItemOf(collection.divisions)?.genres.orEmpty() }
+    val genreFocus = restoreKey?.takeIf { it in genres }
+    val header: @Composable () -> Unit = { CollectionHeader(collection, info, onOpenGenre, genreFocus) }
+    TvPage(takesArrivalFocus = genreFocus == null) {
         if (seasons != null) {
             TvWall(
                 items = seasons,
@@ -106,6 +111,8 @@ fun TvSeason(
 private fun CollectionHeader(
     collection: Entry.Collection,
     info: TitleInfo?,
+    onOpenGenre: (String) -> Unit,
+    genreFocus: String?,
 ) {
     // A show is rated and tagged as a show, so its first episode speaks for
     // all of it, as the phone's header asks.
@@ -119,6 +126,8 @@ private fun CollectionHeader(
             facts = age,
             info = info,
             genres = genres,
+            onOpenGenre = onOpenGenre,
+            genreFocus = genreFocus,
             readableOverview = true,
             readableTitle = true,
         )

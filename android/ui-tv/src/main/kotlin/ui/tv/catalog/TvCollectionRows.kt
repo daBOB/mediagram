@@ -69,9 +69,10 @@ internal fun TvCollectionRows(
         }
     val firstFocus = remember(rows) { rows.indexOfFirst(opens).takeIf { it >= 0 } ?: rows.indexOfFirst { it is CollectionRow.Item } }
     val offset = if (header != null) 1 else 0
+    val takesFocus = LocalTakesArrivalFocus.current
 
     LaunchedEffect(focusIndex, restoreKey) {
-        if (focusIndex != null) {
+        if (focusIndex != null && takesFocus) {
             val item = focusIndex + offset
             if (focusIndex == firstFocus) {
                 // The first row scrolls the page to its very top, so the

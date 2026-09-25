@@ -54,7 +54,9 @@ private const val Columns = 6
  * so this wall is never left with nothing focused at all.
  *
  * [header] is whatever stands above the plates and scrolls with them — a
- * kept wall's "Title · n", a show's name and facts.
+ * kept wall's "Title · n", a show's name and facts. [headings] start a new
+ * line of plates under a label of its own before the item at each index — a
+ * genre page's Movies, then its Series.
  */
 @Composable
 fun <T> TvWall(
@@ -63,11 +65,13 @@ fun <T> TvWall(
     restoreKey: String?,
     onOpen: (T) -> Unit,
     header: (@Composable () -> Unit)? = null,
+    headings: Map<Int, String> = emptyMap(),
     plate: @Composable (item: T, modifier: Modifier, onOpen: () -> Unit) -> Unit,
 ) {
     val gridState = rememberLazyGridState()
+    val takesFocus = LocalTakesArrivalFocus.current
     val focusRequester = remember { FocusRequester() }
-    val cells = remember(items, header != null) { cellsOf(items, header != null) }
+    val cells = remember(items, header != null, headings) { cellsOf(items, header != null, headings) }
     val focusIndex =
         remember(items, restoreKey) {
             if (items.isEmpty()) {
@@ -81,8 +85,8 @@ fun <T> TvWall(
     // restored plate beyond the first screenful has no focusable node yet —
     // LazyVerticalGrid only composes what is within (or near) the viewport —
     // and a FocusRequester has nothing to attach to until its item has been
-    // laid out at least once. The first plate scrolls to the very top
-    // instead, so whatever heads the wall is on screen above it — unless
+    // laid out at least once. A plate on the first line scrolls to the very
+    // top instead, so whatever heads the wall is on screen above it — unless
     // that header is taller than the screen, a show's art and a long
     // overview, which leaves the first plate below the fold and never laid
     // out, so the wall scrolls on down to it after all.
@@ -90,9 +94,9 @@ fun <T> TvWall(
     // naming a new plate means "go there" even when it happens to sit at the
     // index the old one did — the next title after one taken off a list.
     LaunchedEffect(focusIndex, restoreKey) {
-        if (focusIndex != null) {
+        if (focusIndex != null && takesFocus) {
             val cell = cells.indexOf(WallCell.Plate(focusIndex))
-            if (focusIndex == 0) {
+            if (focusIndex < Columns) {
                 gridState.scrollToItem(0)
                 val shown = snapshotFlow { gridState.layoutInfo.visibleItemsInfo }.first { it.isNotEmpty() }
                 if (shown.none { it.index == cell }) gridState.scrollToItem(cell)
@@ -116,6 +120,7 @@ fun <T> TvWall(
             key = { cell ->
                 when (cell) {
                     WallCell.Header -> "header"
+                    is WallCell.Heading -> "heading-${cell.label}"
                     is WallCell.Plate -> key(items[cell.index])
                 }
             },
@@ -123,6 +128,7 @@ fun <T> TvWall(
         ) { cell ->
             when (cell) {
                 WallCell.Header -> header?.invoke()
+                is WallCell.Heading -> TvSectionHeading(cell.label)
                 is WallCell.Plate -> {
                     val item = items[cell.index]
                     val itemModifier = if (cell.index == focusIndex) Modifier.focusRequester(focusRequester) else Modifier
@@ -135,11 +141,14 @@ fun <T> TvWall(
 
 /**
  * One line of a wall as the grid lays it out: the optional header across
- * the top, or one plate — so a plate's place in the grid is looked up here
- * rather than worked out again wherever the grid has to be scrolled to one.
+ * the top, a section's label, or one plate — so a plate's place in the grid
+ * is looked up here rather than worked out again wherever the grid has to be
+ * scrolled to one.
  */
 private sealed interface WallCell {
     data object Header : WallCell
+
+    data class Heading(val label: String) : WallCell
 
     data class Plate(val index: Int) : WallCell
 }
@@ -147,8 +156,12 @@ private sealed interface WallCell {
 private fun cellsOf(
     items: List<*>,
     hasHeader: Boolean,
+    headings: Map<Int, String>,
 ): List<WallCell> =
     buildList {
         if (hasHeader) add(WallCell.Header)
-        items.indices.forEach { add(WallCell.Plate(it)) }
+        items.indices.forEach { index ->
+            headings[index]?.let { add(WallCell.Heading(it)) }
+            add(WallCell.Plate(index))
+        }
     }

@@ -48,6 +48,13 @@ import ui.tv.profile.TvChosenProfile
  * appears — so walking from Home to Watchlist would be pulled down into Movies
  * on the first step. Pressing is also what the web and the phone ask for.
  *
+ * Search sits between the two, after the tabs and before the name, in the
+ * web's order — its toolbar puts the search box just before `#who` — and
+ * the phone's, whose Search button stands beside its profile button. Like
+ * the name it is an action, not a place, so it is never selected; it is
+ * only offered once there is a library to search. [searchFocus] is how
+ * the catalogue puts the remote back on it when search is left.
+ *
  * [focusRequester] is how a caller sends the remote back up here. It lands
  * on the tab last focused, or the selected one the first time, rather than
  * on whichever tab happens to be leftmost. [selectedFocus] lands on the
@@ -63,6 +70,8 @@ internal fun TvMasthead(
     focusRequester: FocusRequester,
     modifier: Modifier = Modifier,
     selectedFocus: FocusRequester = remember { FocusRequester() },
+    onSearch: () -> Unit = {},
+    searchFocus: FocusRequester = remember { FocusRequester() },
 ) {
     Row(
         modifier =
@@ -101,6 +110,14 @@ internal fun TvMasthead(
         } else {
             Spacer(Modifier.weight(1f))
         }
+        if (titles.isNotEmpty()) {
+            TvTextRow(
+                text = "Search",
+                onClick = onSearch,
+                focusRequester = searchFocus,
+                modifier = Modifier.padding(start = Spacing.medium).apartOnMasthead(),
+            )
+        }
         // Outside the TabRow, not its last tab: a TabRow scrolls its tabs
         // inside its own width, and a full masthead pushed the name past
         // that edge, leaving only its leading rule on screen. Here it keeps
@@ -110,11 +127,7 @@ internal fun TvMasthead(
             text = profile.name,
             onClick = profile.onChoose,
             focusRequester = if (titles.isEmpty()) selectedFocus else null,
-            modifier =
-                Modifier
-                    .padding(start = Spacing.medium)
-                    .leadingRule(MaterialTheme.colorScheme.borderVariant)
-                    .padding(start = Spacing.medium, top = Spacing.small, bottom = Spacing.small),
+            modifier = Modifier.padding(start = Spacing.medium).apartOnMasthead(),
         )
     }
 }
@@ -162,6 +175,15 @@ private fun androidx.tv.material3.TabRowScope.MastheadTab(
         )
     }
 }
+
+/** The hairline, then the space after it, that sets an action on the masthead apart from what stands before it. */
+@Composable
+private fun Modifier.apartOnMasthead(): Modifier =
+    leadingRule(MaterialTheme.colorScheme.borderVariant)
+        .padding(start = Spacing.medium, top = Spacing.small, bottom = Spacing.small)
+
+/** The catalogue's restore key for "search was opened from the masthead" — no plate, row or list is ever keyed by it. */
+internal const val TvSearchEntryKey = "masthead:search"
 
 /** A hairline down the tab's leading edge — see [MastheadTab]'s own note on why it is drawn here. */
 private fun Modifier.leadingRule(color: Color): Modifier =

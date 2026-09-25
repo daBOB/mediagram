@@ -36,10 +36,11 @@ import uniffi.mediagram_core.TitleInfo
  * out when there is nothing for it, so a title with no provider entry is
  * its art and its facts rather than a row of empty labels.
  *
- * [genres] are the catalogue's own, the same field the phone's and the
- * web's genre links are matched against, rather than the provider's genre
- * sentence the header printed before those links existed. They are a line
- * to read here, not links: a television has no genre page to open yet.
+ * [genres] are the catalogue's own, the same field a genre page is matched
+ * against, rather than the provider's genre sentence — so each is a link
+ * ([TvGenreLinks]) to [onOpenGenre], the page of everything tagged with it,
+ * as on the phone and the web. [genreFocus] names the one whose page was
+ * just left, to take the remote back.
  *
  * [beside] goes at the foot of the facts, still beside the art — where a
  * title page puts its Play, as the web's film page does, so the one thing
@@ -64,6 +65,8 @@ internal fun TvTitleHeader(
     info: TitleInfo?,
     modifier: Modifier = Modifier,
     genres: List<String> = emptyList(),
+    onOpenGenre: (String) -> Unit = {},
+    genreFocus: String? = null,
     readableOverview: Boolean = false,
     readableTitle: Boolean = false,
     beside: @Composable ColumnScope.() -> Unit = {},
@@ -86,13 +89,7 @@ internal fun TvTitleHeader(
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
                     facts?.let { Text(text = it, style = TvTypeScale.body) }
                     ratingLabel(info?.rating)?.let { Text(text = it, style = TvTypeScale.body) }
-                    if (genres.isNotEmpty()) {
-                        Text(
-                            text = genres.joinToString(" · "),
-                            style = TvTypeScale.body,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    TvGenreLinks(genres, onOpenGenre, genreFocus)
                     beside()
                 }
             }

@@ -63,8 +63,9 @@ internal fun TvHome(
     // never merely because the rows moved: a fetch finishing or Continue
     // appearing reorders them while the viewer is browsing, and the remote
     // must stay where the viewer put it.
+    val takesFocus = LocalTakesArrivalFocus.current
     LaunchedEffect(restoreKey, rows.isNotEmpty()) {
-        if (rows.isNotEmpty()) first.requestFocus()
+        if (rows.isNotEmpty() && takesFocus) first.requestFocus()
     }
 
     Column(

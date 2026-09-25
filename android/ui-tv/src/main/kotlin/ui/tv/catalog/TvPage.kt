@@ -29,14 +29,24 @@ import designsystem.Overscan
  * the overscan-safe band moves nothing here; one outside it, or only partly
  * inside, still gets the television's rule — which, near the top of a page,
  * brings the page back to its top.
+ *
+ * [takesArrivalFocus] is off for a page coming back to a stop its wall or
+ * rows cannot see — see [LocalTakesArrivalFocus].
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-internal fun TvPage(content: @Composable () -> Unit) {
+internal fun TvPage(
+    takesArrivalFocus: Boolean = true,
+    content: @Composable () -> Unit,
+) {
     val platform = LocalBringIntoViewSpec.current
     val inset = with(LocalDensity.current) { Overscan.vertical.toPx() }
     val spec = remember(platform, inset) { StaysPutWhenOnScreen(platform, inset) }
-    CompositionLocalProvider(LocalBringIntoViewSpec provides spec, content = content)
+    CompositionLocalProvider(
+        LocalBringIntoViewSpec provides spec,
+        LocalTakesArrivalFocus provides takesArrivalFocus,
+        content = content,
+    )
 }
 
 /** [TvPage]'s rule: nothing to scroll while the target sits inside the [inset] band; otherwise whatever [fallback] says. */
