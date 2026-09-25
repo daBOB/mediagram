@@ -3,17 +3,24 @@ package ui.tv.catalog
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performSemanticsAction
 import catalog.Entry
 import catalog.HomeRow
 import catalog.RowContent
+import designsystem.Overscan
+import designsystem.Spacing
 import model.Kind
 import model.WatchSnapshot
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * [TvHome]'s focus: it lands on arrival, and then it stays wherever the
@@ -37,6 +44,24 @@ class TvHomeStateTest : TvScreenStateTest() {
         compose.waitForIdle()
 
         compose.onNodeWithText("Film 1").assertIsFocused()
+    }
+
+    /**
+     * "See all" stands in the heading, not in a seventh slot beside the
+     * plates, so a Home plate is as wide as a shelf wall's six-across plate
+     * — room for a caption's year and runtime together.
+     */
+    @Test
+    fun seeAllTakesNoWidthFromTheSixPlates() {
+        val full = row("Latest films", films(6).reversed()).copy(seeAll = "Movies", total = 10)
+        show { TvHome(rows = listOf(full), watch = WatchSnapshot.Empty, onOpenTitle = {}, onOpenCollection = {}, onSeeAll = {}) }
+
+        val plate = compose.onNode(hasText("Film 5") and hasClickAction()).fetchSemanticsNode()
+        val seeAll = compose.onNodeWithText("See all").fetchSemanticsNode()
+        val root = compose.onRoot().fetchSemanticsNode().size.width
+        val wallPlate = with(compose.density) { (root - 2 * Overscan.horizontal.toPx() - 5 * Spacing.medium.toPx()) / 6 }
+        assertEquals(wallPlate, plate.size.width.toFloat(), 1f)
+        assertTrue(seeAll.boundsInRoot.bottom <= plate.boundsInRoot.top, "See all sits on the heading line, above the plates")
     }
 
     private fun row(

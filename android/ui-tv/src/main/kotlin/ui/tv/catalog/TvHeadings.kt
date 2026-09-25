@@ -1,12 +1,15 @@
 package ui.tv.catalog
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -23,22 +26,31 @@ import designsystem.TvTypeScale
  * The same "Title · n" the web's and the phone's row and kept-wall headings
  * carry, over a hairline — one heading for Home's rows and the kept walls
  * alike, so a viewer reading Continue's row on Home and its own tab sees
- * one convention, not two.
+ * one convention, not two. [trailing] goes at the line's far end, where a
+ * Home row puts its "See all".
  */
 @Composable
 internal fun TvCountedHeading(
     title: String,
     total: Int,
+    trailing: @Composable () -> Unit = {},
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text =
-                buildAnnotatedString {
-                    append(title)
-                    withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)) { append(" · $total") }
-                },
-            style = TvTypeScale.title,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            Text(
+                text =
+                    buildAnnotatedString {
+                        append(title)
+                        withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)) { append(" · $total") }
+                    },
+                style = TvTypeScale.title,
+            )
+            trailing()
+        }
         Box(
             modifier =
                 Modifier
