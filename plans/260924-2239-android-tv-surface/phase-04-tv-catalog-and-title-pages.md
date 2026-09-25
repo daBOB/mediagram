@@ -5,7 +5,7 @@
 ## Overview
 
 - **Priority:** High — this is what the TV is for.
-- **Status:** pending
+- **Status:** done — 3af2756..e409d04 (6 tasks, final review + fix wave)
 - **Deliverable:** browse the real library by D-pad: masthead of sections, Home rows, shelf walls, Continue/Watchlist/Collections/Kids, series → seasons → episodes, courses, title page with Play.
 
 ## Key insights (decisions carried from the web)
@@ -75,12 +75,12 @@ Emulator only (`ANDROID_SERIAL=emulator-5554`). Never the phone.
 - [ ] **6.4** Screenshots of Home, a wall, a title page into `plans/260924-2239-android-tv-surface/reports/`.
 
 ## Todo list
-- [ ] Positions held as one saveable value
-- [ ] Plate + wall with focus restore
-- [ ] Masthead (incl. profile switch) + Home (≤ 6, no sideways scroll) + shelf walls
-- [ ] Kept, lists, collections, seasons
-- [ ] Title page, library wiring, flow test incl. focus after Back
-- [ ] Emulator walk incl. `TV test` and kids switch
+- [x] Positions held as one saveable value
+- [x] Plate + wall with focus restore
+- [x] Masthead (incl. profile switch) + Home (≤ 6, no sideways scroll) + shelf walls
+- [x] Kept, lists, collections, seasons
+- [x] Title page, library wiring, flow test incl. focus after Back
+- [x] Emulator walk incl. `TV test` and kids switch
 
 ## Success criteria
 Every phone destination exists on TV; Back from any page lands focus where the viewer left; Home matches the web's rows and limits.
