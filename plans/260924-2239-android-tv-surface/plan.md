@@ -45,7 +45,7 @@
 | 2 | [phase-02-tv-foundation-theme-and-shell.md](phase-02-tv-foundation-theme-and-shell.md) | tv-material, 10-foot theme, overscan, `TvApp` shell replaces placeholder | done (ba114e6..f594b5f) |
 | 3 | [phase-03-tv-setup-and-profiles.md](phase-03-tv-setup-and-profiles.md) | First-run setup, sign-in, library choice, "Who's watching?" by D-pad | done (6e4bc84..60454d6) |
 | 4 | [phase-04-tv-catalog-and-title-pages.md](phase-04-tv-catalog-and-title-pages.md) | Masthead, Home rows, walls, kept shelves, collections, series/season/title pages | done (3af2756..e409d04) |
-| 5 | [phase-05-tv-player-and-remote-keys.md](phase-05-tv-player-and-remote-keys.md) | Full-screen player driven by remote keys, marks, stats | pending |
+| 5 | [phase-05-tv-player-and-remote-keys.md](phase-05-tv-player-and-remote-keys.md) | Full-screen player driven by remote keys, marks, stats | done (f994577..7f15d11) |
 | 7 | [phase-07-tv-catches-up-with-main.md](phase-07-tv-catches-up-with-main.md) | Subtitles, player settings, up next, retry/notes, search/genres, offline/mark finished/profile removal — what main gained | pending (runs before 6) |
 | 6 | [phase-06-menus-docs-version-emulator-validation.md](phase-06-menus-docs-version-emulator-validation.md) | System/settings reachable, docs, version, mouse-free emulator pass | pending |
 

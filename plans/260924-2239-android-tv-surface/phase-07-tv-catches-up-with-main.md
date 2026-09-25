@@ -17,6 +17,7 @@
 Phone references live in `android/ui-mobile/src/main/kotlin/ui/`; shared logic in `android/feature/*` and `android/ui-common`. Move shared rules out of `ui-mobile` when the TV needs them (one copy), never copy. No ViewModel changes unless a phone ViewModel already exposes what TV needs.
 
 ### Task 1: Subtitles on the television
+- [ ] **1.0** Carried from the merge review: fix `feature/catalog/…/CatalogTabs.kt` comments still counting four kept entries incl. Kids; move the end-time line (`trustedRuntime` + `endsAtLabel`) duplicated in TV `TvPlayerControls.endsLine` and phone `PlayerControls.kt` into one pure function in `feature/player`.
 - [ ] **1.1** Draw subtitles on the TV player exactly as the phone's `ui/player/SubtitleLayer.kt` (move the shared parts to `ui-common` if composable-neutral), including the chosen style (size, backing) and sync offset from the shared settings.
 - [ ] **1.2** Controls never cover subtitles when hidden; when shown, subtitles lift above the controls as on the phone.
 - [ ] **1.3** Tests + commit — `feat(android): subtitles on the television player`.
@@ -29,7 +30,7 @@ Phone references live in `android/ui-mobile/src/main/kotlin/ui/`; shared logic i
 ### Task 3: Up next, autoplay and the next-episode preload
 - [ ] **3.1** Pass the run to the TV player as the phone does (`LibraryPositions.run`), restoring autoplay and the next-two-episodes preload.
 - [ ] **3.2** An up-next card on TV matching `UpNextCard.kt` (countdown, Play now focused, Cancel), reachable by remote; Play all where the phone has `PlayAllButton.kt`.
-- [ ] **3.3** Media Next/Previous keys move through the run (replace the key table's Ignore rows; update its tests).
+- [ ] **3.3** Media Next/Previous keys move through the run (replace the key table's Ignore rows; update its tests). Today MediaPrevious restarts the title (the media session added on main handles it before the screen) — the TV must own both keys.
 - [ ] **3.4** Tests + commit — `feat(android): up next and autoplay on the television`.
 
 ### Task 4: Retry and the notes panel

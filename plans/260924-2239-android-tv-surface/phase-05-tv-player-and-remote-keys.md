@@ -5,7 +5,7 @@
 ## Overview
 
 - **Priority:** High
-- **Status:** pending
+- **Status:** done — f994577..7f15d11 (4 tasks + merge of main at 2d7dfd8)
 - **Deliverable:** play from a title page and control playback entirely with the remote — including hardware media keys — with the phone's marks and stats available.
 
 ## Key insights
