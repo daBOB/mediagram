@@ -15,7 +15,15 @@ use crate::export::titles::distinct_titles;
 use crate::index::{db, shows};
 use crate::metadata::title_details;
 
-pub async fn run(cfg: &Config) -> Result<()> {
+/// Arguments for `mediagram metadata`.
+#[derive(clap::Args, Debug, Clone)]
+pub struct MetadataArgs {
+    /// Ask TMDB again for answers cached more than DAYS ago (needs a TMDB key)
+    #[arg(long, value_name = "DAYS")]
+    pub refresh_older_than: Option<u64>,
+}
+
+pub async fn run(cfg: &Config, args: MetadataArgs) -> Result<()> {
     let data_dir = cfg.data_dir()?;
     db::require_index(&data_dir, "describe")?;
 
@@ -31,7 +39,12 @@ pub async fn run(cfg: &Config) -> Result<()> {
 
     // Works with no key at all when the cache is warm, which is the normal
     // case: `add` cached these payloads when it resolved each title.
-    let api = cfg.tmdb_client(mediagram_core::http::client()?)?;
+    // A refresh asks again for what was cached longer ago than asked; TMDB's
+    // popularity and ratings move, and the cache otherwise keeps them forever.
+    let mut api = cfg.tmdb_client(mediagram_core::http::client()?)?;
+    if let Some(days) = args.refresh_older_than {
+        api = api.refreshing(std::time::Duration::from_secs(days * 86_400));
+    }
 
     let (mut recorded, mut skipped) = (0usize, 0usize);
     for (kind, id) in &titles {

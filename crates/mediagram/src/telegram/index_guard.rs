@@ -24,15 +24,21 @@ const NAMED: usize = 5;
 /// The set ids `remote` holds that `local` does not, sorted.
 pub fn missing_from(local: &Connection, remote: &Connection) -> Result<Vec<String>> {
     let here = set_ids(local)?;
-    let mut missing: Vec<String> = set_ids(remote)?.into_iter().filter(|id| !here.contains(id)).collect();
+    let mut missing: Vec<String> = set_ids(remote)?
+        .into_iter()
+        .filter(|id| !here.contains(id))
+        .collect();
     missing.sort();
     Ok(missing)
 }
 
 fn set_ids(conn: &Connection) -> Result<HashSet<String>> {
-    let mut stmt = conn.prepare("SELECT set_id FROM sets").context("reading set ids")?;
+    let mut stmt = conn
+        .prepare("SELECT set_id FROM sets")
+        .context("reading set ids")?;
     let ids = stmt.query_map([], |row| row.get::<_, String>(0))?;
-    ids.collect::<rusqlite::Result<_>>().context("reading set ids")
+    ids.collect::<rusqlite::Result<_>>()
+        .context("reading set ids")
 }
 
 /// Fails when the channel's newest index holds sets `local` lacks. A channel
@@ -70,7 +76,11 @@ async fn compare(
 ) -> Result<Vec<String>> {
     let mut bytes = Vec::new();
     let mut chunks = tg.client.iter_download(document);
-    while let Some(chunk) = chunks.next().await.context("downloading the channel's index")? {
+    while let Some(chunk) = chunks
+        .next()
+        .await
+        .context("downloading the channel's index")?
+    {
         bytes.extend_from_slice(&chunk);
     }
     std::fs::write(path, &bytes).with_context(|| format!("writing {}", path.display()))?;
@@ -107,9 +117,11 @@ mod tests {
 
     fn index(ids: &[&str]) -> Connection {
         let conn = crate::index::sqlite_init::open(":memory:").unwrap();
-        conn.execute("CREATE TABLE sets(set_id TEXT PRIMARY KEY)", []).unwrap();
+        conn.execute("CREATE TABLE sets(set_id TEXT PRIMARY KEY)", [])
+            .unwrap();
         for id in ids {
-            conn.execute("INSERT INTO sets(set_id) VALUES (?1)", [id]).unwrap();
+            conn.execute("INSERT INTO sets(set_id) VALUES (?1)", [id])
+                .unwrap();
         }
         conn
     }

@@ -2,6 +2,7 @@
 //! empty search pages are fetched again so a later search can find new titles.
 
 use std::path::PathBuf;
+use std::time::Duration;
 
 use anyhow::{Context, Result};
 use serde_json::Value;
@@ -14,6 +15,10 @@ use crate::tmdb_client::TmdbApi;
 pub struct DiskCachedApi<A> {
     inner: A,
     cache_dir: PathBuf,
+    /// Entries older than this are asked for again. `None`, the default,
+    /// keeps every entry for good: what `add` looked up stays answerable
+    /// with no key and no network.
+    max_age: Option<Duration>,
 }
 
 impl<A: TmdbApi> DiskCachedApi<A> {
@@ -21,7 +26,28 @@ impl<A: TmdbApi> DiskCachedApi<A> {
         Self {
             inner,
             cache_dir: cache_dir.into().join("tmdb-cache"),
+            max_age: None,
         }
+    }
+
+    /// Asks again for any entry older than `age`. A refresh that fails keeps
+    /// serving the old entry: stale provider data beats none.
+    #[must_use]
+    pub fn with_max_age(mut self, age: Duration) -> Self {
+        self.max_age = Some(age);
+        self
+    }
+
+    /// Whether the entry at `file` is young enough to answer without asking.
+    fn fresh(&self, file: &std::path::Path) -> bool {
+        let Some(max_age) = self.max_age else {
+            return true;
+        };
+        std::fs::metadata(file)
+            .and_then(|meta| meta.modified())
+            .ok()
+            .and_then(|modified| modified.elapsed().ok())
+            .is_some_and(|age| age < max_age)
     }
 
     fn cache_key(path: &str, query: &[(&str, String)]) -> String {
@@ -45,13 +71,23 @@ impl<A: TmdbApi> TmdbApi for DiskCachedApi<A> {
         let file = self
             .cache_dir
             .join(format!("{}.json", Self::cache_key(path, query)));
-        if let Ok(bytes) = std::fs::read(&file) {
-            if let Ok(value) = serde_json::from_slice(&bytes) {
-                return Ok(value);
-            }
+        let cached: Option<Value> = std::fs::read(&file)
+            .ok()
+            .and_then(|bytes| serde_json::from_slice(&bytes).ok());
+        if let Some(value) = &cached
+            && self.fresh(&file)
+        {
+            return Ok(value.clone());
         }
 
-        let value = self.inner.get_json(path, query).await?;
+        let value = match (self.inner.get_json(path, query).await, cached) {
+            (Ok(value), _) => value,
+            (Err(err), Some(stale)) => {
+                tracing::warn!(path, error = %err, "keeping a stale TMDB entry; the refresh failed");
+                return Ok(stale);
+            }
+            (Err(err), None) => return Err(err),
+        };
         let empty_page = value
             .get("results")
             .and_then(|r| r.as_array())

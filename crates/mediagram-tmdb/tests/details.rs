@@ -108,7 +108,10 @@ fn genres_keep_the_order_the_provider_listed_them() {
 /// nobody has looked at, which ranks it no better than not knowing.
 #[test]
 fn a_payload_records_its_popularity_and_nought_is_none() {
-    assert_eq!(from_details(Kind::Ep, "de-DE", &details()).popularity, Some(31.25));
+    assert_eq!(
+        from_details(Kind::Ep, "de-DE", &details()).popularity,
+        Some(31.25)
+    );
     let mut payload = details();
     payload.popularity = Some(0.0);
     assert_eq!(from_details(Kind::Ep, "de-DE", &payload).popularity, None);

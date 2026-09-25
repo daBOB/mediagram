@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use mediagram::commands::args::{AddArgs, AddCourseArgs, AddShowArgs, EditArgs, PrepareArgs};
+use mediagram::commands::{metadata::MetadataArgs, push_index::PushIndexArgs};
 use mediagram::{commands, config};
 
 #[derive(Parser)]
@@ -43,14 +44,7 @@ enum Cmd {
         no_push: bool,
     },
     /// Upload library.db to the channel and pin it
-    PushIndex {
-        /// Replace the channel's index even if it holds sets this one lacks
-        #[arg(long, conflicts_with = "check")]
-        force: bool,
-        /// Only check whether a push would remove sets from the channel; send nothing
-        #[arg(long)]
-        check: bool,
-    },
+    PushIndex(PushIndexArgs),
     /// Check a set (or all sets); `--full` re-downloads and hashes every part
     Verify {
         set_id: Option<String>,
@@ -67,7 +61,7 @@ enum Cmd {
     Status,
     /// Record what the provider says about each film and series: synopsis,
     /// genres, rating. Reads payloads `add` already cached
-    Metadata,
+    Metadata(MetadataArgs),
     /// Fetch cover art for the films and series in the index, for a player
     /// reading this machine's index rather than a published package
     Posters {
@@ -161,7 +155,7 @@ async fn main() -> Result<()> {
         Cmd::AddShow(args) => commands::add_show::run(&cfg, args).await,
         Cmd::Edit(args) => commands::edit::run(&cfg, args).await,
         Cmd::Resume { no_push } => commands::resume::run(&cfg, no_push).await,
-        Cmd::PushIndex { force, check } => commands::push_index::run(&cfg, force, check).await,
+        Cmd::PushIndex(args) => commands::push_index::run(&cfg, args).await,
         Cmd::Verify {
             set_id,
             all,
@@ -169,7 +163,7 @@ async fn main() -> Result<()> {
             since,
         } => commands::verify::run(&cfg, set_id, all, full, since).await,
         Cmd::Status => commands::status::run(&cfg),
-        Cmd::Metadata => commands::metadata::run(&cfg).await,
+        Cmd::Metadata(args) => commands::metadata::run(&cfg, args).await,
         Cmd::Posters { index } => commands::posters::run(&cfg, index.as_deref()).await,
         Cmd::ExportPackage {
             out,

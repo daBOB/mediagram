@@ -45,3 +45,13 @@ impl<A: TmdbApi> TmdbApi for Localized<A> {
         self.inner.get_json(path, &with_language).await
     }
 }
+
+impl<A: TmdbApi> Localized<crate::disk_cache::DiskCachedApi<A>> {
+    /// Asks again for cached answers older than `age`; see
+    /// [`DiskCachedApi::with_max_age`](crate::disk_cache::DiskCachedApi::with_max_age).
+    #[must_use]
+    pub fn refreshing(mut self, age: std::time::Duration) -> Self {
+        self.inner = self.inner.with_max_age(age);
+        self
+    }
+}

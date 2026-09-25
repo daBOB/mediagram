@@ -15,6 +15,11 @@ to `main`. Full phase-by-phase detail lives in
   every player and phone. `push-index --force` replaces it anyway;
   `push-index --check` runs only the check and sends nothing. On 2026-09-25 the
   check reported 265 sets this machine lacks.
+- `mediagram metadata --refresh-older-than <DAYS>` asks TMDB again for cached
+  answers older than that, so popularity (Trending), ratings and taglines stop
+  being frozen at first lookup. A refresh that cannot reach TMDB keeps the old
+  answer. It needs a TMDB key; without the flag the cache keeps everything, as
+  before.
 - `bun run typecheck` (`tsc --noEmit`) in `web/`; TypeScript is a dev
   dependency. The one standing error (a JSON fixture typed as plain strings) is
   fixed.
