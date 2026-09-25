@@ -776,6 +776,21 @@ this off, and either publish a static Avahi service file instead —
 — or configure a device with the server's address by hand; either is a
 complete substitute, since the API itself carries no address of its own.
 
+### Pairing an Android device
+
+Settings' "Home cache server" block is where a phone or tablet is paired:
+the token read above is pasted into its own field there, and a server
+address typed into the one next to it is the same manual override this
+section's `avahi-browse` fallback describes — the app discovers on its own
+first and only needs it when that fails. Turning the block on for the
+first time is what asks for the `ACCESS_LOCAL_NETWORK` runtime permission
+Android 17 requires for any LAN traffic; declining it leaves the status row
+reading "Needs local network permission" and playback keeps reading
+Telegram exactly as it would with no server paired at all. Once connected,
+the row reads "Connected to `<host>`, holding `<size>`", and the System
+screen's own "Source" row says which of Telegram or the LAN server actually
+served the chunk being watched right now.
+
 ### What a paired device can do, and what it cannot
 
 A write requires the token; a read does not. That asymmetry is deliberate:
