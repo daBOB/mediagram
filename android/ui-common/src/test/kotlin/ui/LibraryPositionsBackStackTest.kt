@@ -138,4 +138,19 @@ class LibraryPositionsBackStackTest {
         after.pop()
         assertEquals(FrameKind.GENRE, after.top)
     }
+
+    /** A title opened from a genre page opened from another title sits one deeper than the first, not at the same place. */
+    @Test
+    fun depthCountsEveryOpenScreenIncludingARecurringKind() {
+        val at = positions()
+        assertEquals(0, at.depth)
+
+        at.openTitle("a")
+        at.openGenre("Drama")
+        at.openTitle("b")
+        assertEquals(3, at.depth)
+
+        at.pop()
+        assertEquals(2, at.depth)
+    }
 }

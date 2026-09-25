@@ -80,6 +80,15 @@ class LibraryPositions(frames: MutableState<String>) {
     /** Which screen is on top, or `null` for the catalog itself. */
     val top: FrameKind? get() = stack.lastOrNull()?.kind
 
+    /**
+     * How many screens are open over the catalog — `0` for the catalog
+     * itself. Names a screen by where it sits rather than by its kind, for
+     * a caller that remembers something per screen while the same kind can
+     * sit at more than one depth: a title opened from a genre page opened
+     * from another title.
+     */
+    val depth: Int get() = stack.size
+
     private fun payloadOf(kind: FrameKind): String? = stack.lastOrNull { it.kind == kind }?.payload
 
     val setId: String? get() = payloadOf(FrameKind.PLAYER)?.substringBefore(RUN_SEP)

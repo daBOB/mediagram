@@ -58,8 +58,9 @@ internal fun TvLibrary(profile: TvChosenProfile) {
     val resolved = at.resolve(catalogState)
     val watch = resolved.watch
     val top = at.top
+    val here = at.depth
     val leave = {
-        placeOf(top)?.let { restore.forget(it) }
+        restore.forget(here)
         at.pop()
     }
 
@@ -90,10 +91,10 @@ internal fun TvLibrary(profile: TvChosenProfile) {
                     division = season,
                     watch = watch,
                     onOpenTitle = { setId ->
-                        restore.opened(TvPlace.Season, setId)
+                        restore.opened(here, setId)
                         at.openTitle(setId)
                     },
-                    restoreKey = restore.of(TvPlace.Season),
+                    restoreKey = restore.of(here),
                 )
             }
 
@@ -105,14 +106,14 @@ internal fun TvLibrary(profile: TvChosenProfile) {
                     watch = watch,
                     posterPath = catalogViewModel::posterPath,
                     onOpenTitle = { setId ->
-                        restore.opened(TvPlace.Collection, setId)
+                        restore.opened(here, setId)
                         at.openTitle(setId)
                     },
                     onOpenSeason = { division ->
-                        restore.opened(TvPlace.Collection, division.title)
+                        restore.opened(here, division.title)
                         at.openSeason(division.title)
                     },
-                    restoreKey = restore.of(TvPlace.Collection),
+                    restoreKey = restore.of(here),
                 )
             }
 
@@ -128,7 +129,7 @@ internal fun TvLibrary(profile: TvChosenProfile) {
                     list = list,
                     sets = sets,
                     onPlay = { setId ->
-                        restore.opened(TvPlace.List, setId)
+                        restore.opened(here, setId)
                         at.openPlayer(setId, ids)
                     },
                     onPlayAll = { ids.firstOrNull()?.let { first -> at.openPlayer(first, ids) } },
@@ -138,37 +139,32 @@ internal fun TvLibrary(profile: TvChosenProfile) {
                         leave()
                     },
                     onRemove = { setId -> catalogViewModel.setInList(list.id, setId, false) },
-                    restoreKey = restore.of(TvPlace.List),
+                    restoreKey = restore.of(here),
                 )
             }
 
         // Nothing open: the shelves.
         null -> {
-            saved.SaveableStateProvider(TvPlace.Catalog.name) {
+            saved.SaveableStateProvider(CatalogStateKey) {
                 TvCatalogRoot(
                     state = catalogState,
                     profile = profile,
                     fetching = fetchState.running,
-                    restoreKey = restore.of(TvPlace.Catalog),
+                    restoreKey = restore.of(here),
                     onOpenTitle = { setId ->
-                        restore.opened(TvPlace.Catalog, setId)
+                        restore.opened(here, setId)
                         at.openTitle(setId)
                     },
-                    // A season or a remembered plate left from another show
-                    // would otherwise land on this one: "Season 1" is not a
-                    // fact about one show.
                     onOpenCollection = { key ->
-                        restore.opened(TvPlace.Catalog, key)
-                        restore.forget(TvPlace.Collection, TvPlace.Season)
+                        restore.opened(here, key)
                         at.openCollection(key)
                     },
                     onOpenList = { id ->
-                        restore.opened(TvPlace.Catalog, id)
-                        restore.forget(TvPlace.List)
+                        restore.opened(here, id)
                         at.openList(id)
                     },
                     onCreateList = catalogViewModel::createList,
-                    onTabChanged = { restore.forget(TvPlace.Catalog) },
+                    onTabChanged = { restore.forget(here) },
                 )
             }
         }
@@ -211,3 +207,6 @@ private fun <T> TvResolvedBranch(
         FrameResolution.Stale -> LaunchedEffect(Unit) { leave() }
     }
 }
+
+/** Where the catalogue's own saved state — its tab, its wall's scroll — is held while something covers it. */
+private const val CatalogStateKey = "catalog"

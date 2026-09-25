@@ -5,70 +5,53 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
-import ui.FrameKind
 
 /**
- * The screens of the library that open something else — the catalogue, a
- * show or course, one season of a show, a hand-built list. A title page is
- * not one: coming back to it always lands on Play.
+ * What each open screen of the library last opened, by the key its own
+ * wall, rows or links use — so Back lands the remote on the plate, row or
+ * link that was pressed rather than at the top. A phone has no need for
+ * this: a touch screen has no focus to put back. Held here rather than
+ * beside the shared positions because it is only a fact about how a
+ * television draws those positions, not about where the viewer is.
  *
- * One of each at most is ever on the way back: the catalogue opens a
- * collection or a list, a collection opens a season, and a season is never
- * opened from anything but its own show. So the screen's kind is enough to
- * name it, without the key of which show or which list it was.
- */
-internal enum class TvPlace { Catalog, Collection, Season, List }
-
-/** Which [TvPlace] the screen on top is (`null` for the catalogue itself), or null for one that opens nothing a viewer comes back to. */
-internal fun placeOf(top: FrameKind?): TvPlace? =
-    when (top) {
-        null -> TvPlace.Catalog
-        FrameKind.COLLECTION -> TvPlace.Collection
-        FrameKind.SEASON -> TvPlace.Season
-        FrameKind.LIST -> TvPlace.List
-        FrameKind.TITLE, FrameKind.PLAYER, FrameKind.MENU, FrameKind.SEARCH, FrameKind.GENRE -> null
-    }
-
-/**
- * What each [TvPlace] last opened, by the key its own wall or rows use —
- * so Back lands the remote on the plate or row that was pressed rather than
- * at the top. A phone has no need for this: a touch screen has no focus to
- * put back. Held here rather than beside the shared positions
- * because it is only a fact about how a television draws those positions,
- * not about where the viewer is.
+ * A screen is named by its depth on the positions' stack — `0` for the
+ * catalogue — not by its kind: a genre page opens titles whose own genre
+ * links open genre pages, so the same kind can sit at several depths at
+ * once, each with its own place to come back to.
  *
  * Saved across a process death with the positions themselves: a restored
  * season with the remote back on its first episode would lose exactly what
  * this exists to keep.
- *
- * A place's key is forgotten when the place itself is left, so opening the
- * same show again later is a fresh arrival on its first season, the way it
- * was the first time.
  */
 internal class TvRestoreKeys(
-    private val state: MutableState<Map<TvPlace, String>>,
+    private val state: MutableState<Map<Int, String>>,
 ) {
-    fun of(place: TvPlace): String? = state.value[place]
+    fun of(depth: Int): String? = state.value[depth]
 
-    /** [place] opened whatever [key] names. */
+    /**
+     * The screen at [depth] opened whatever [key] names. Anything deeper is
+     * forgotten with it, so what opens next is a fresh arrival — the same
+     * show opened again later lands on its first season, as it did the
+     * first time.
+     */
     fun opened(
-        place: TvPlace,
+        depth: Int,
         key: String,
     ) {
-        state.value = state.value + (place to key)
+        state.value = state.value.filterKeys { it < depth } + (depth to key)
     }
 
-    /** Forgets what these places opened: they are being left, or about to be arrived at anew. */
-    fun forget(vararg places: TvPlace) {
-        state.value = state.value - places.toSet()
+    /** Forgets what the screen at [depth], and anything deeper, opened: it is being left, or shown anew. */
+    fun forget(depth: Int) {
+        state.value = state.value.filterKeys { it < depth }
     }
 }
 
-/** Each key saved as its place's name and the key itself, side by side — a plain list a Bundle can hold. */
-private val restoreKeysSaver: Saver<Map<TvPlace, String>, List<String>> =
+/** Each key saved as its depth and the key itself, side by side — a plain list a Bundle can hold. */
+private val restoreKeysSaver: Saver<Map<Int, String>, List<String>> =
     Saver(
-        save = { keys -> keys.flatMap { (place, key) -> listOf(place.name, key) } },
-        restore = { saved -> saved.chunked(2).associate { (place, key) -> TvPlace.valueOf(place) to key } },
+        save = { keys -> keys.flatMap { (depth, key) -> listOf(depth.toString(), key) } },
+        restore = { saved -> saved.chunked(2).mapNotNull { (depth, key) -> depth.toIntOrNull()?.let { it to key } }.toMap() },
     )
 
 @Composable
