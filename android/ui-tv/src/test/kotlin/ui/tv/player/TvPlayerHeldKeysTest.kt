@@ -95,7 +95,8 @@ class TvPlayerHeldKeysTest : TvPlayerScreenHarness() {
         assertEquals(PlayerUiState.Failed("Could not play this title."), controller.get().playerViewModel.state.value)
         compose.onNodeWithTag(TvSeekBarTag).assertDoesNotExist()
 
-        for (key in listOf(Key.DirectionCenter, Key.DirectionRight, Key.DirectionLeft, Key.DirectionUp, Key.MediaPlayPause, Key.MediaPause)) {
+        // Not Centre: that presses Retry, which the failure puts the remote on.
+        for (key in listOf(Key.DirectionRight, Key.DirectionLeft, Key.DirectionUp, Key.MediaPlayPause, Key.MediaPause)) {
             press(key)
         }
 

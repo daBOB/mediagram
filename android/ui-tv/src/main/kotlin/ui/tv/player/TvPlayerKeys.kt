@@ -41,6 +41,9 @@ sealed interface TvKeyAction {
     /** Closes the settings panel, and only that: the controls stay up behind it. */
     data object ClosePanel : TvKeyAction
 
+    /** Closes the notes column beside the picture, and only that. */
+    data object CloseNotes : TvKeyAction
+
     /** Puts the controls away without leaving the title. */
     data object HideControls : TvKeyAction
 
@@ -54,7 +57,7 @@ sealed interface TvKeyAction {
     data object Ignore : TvKeyAction
 }
 
-/** The keys the settings panel takes for itself while it is open: moving between its rows, and choosing one. */
+/** The keys the settings panel, or a failure's Retry, takes for itself: moving focus, and choosing. */
 private val PANEL_KEYS =
     setOf(Key.DirectionUp, Key.DirectionDown, Key.DirectionLeft, Key.DirectionRight, Key.DirectionCenter, Key.Enter)
 
@@ -76,9 +79,10 @@ private const val SKIP_SECONDS = 10
  *
  * [canControl] is whether there is a film to control at all — false while
  * it is still preparing or has failed, when the phone shows no controls and
- * so offers nothing to press. Then every key but Back is ignored: a skip or
- * a pause aimed at a player with nothing loaded would be a command nobody
- * could see land.
+ * so offers nothing to press but a failure's Retry. Then the D-pad and
+ * Centre are left to whatever is focused — Retry, or the notes beside it —
+ * and every other key but Back is ignored: a skip or a pause aimed at a
+ * player with nothing loaded would be a command nobody could see land.
  *
  * [panelOpen] is the settings panel, which answers before anything else:
  * Back closes it, and the D-pad and Centre are ordinary focus movement and
@@ -91,6 +95,14 @@ private const val SKIP_SECONDS = 10
  * anything else outside the panel — the card is the thing on screen most
  * recently put in front of the viewer, and a Back that left the title
  * instead would throw away the very choice the card was offering.
+ *
+ * [notesOpen] is the notes column beside the picture, which Back closes
+ * next — before the controls go and before the title is left, since it is
+ * the one thing on screen the viewer opened on purpose (or a lesson opened
+ * for them) that is not the film. With the controls away the notes hold
+ * the remote, and Up and Down page through them rather than raising the
+ * seek bar: a lesson's notes are read while it plays, and Left, Right and
+ * Centre still skip and pause as they always do.
  *
  * Next and Previous move through the run whatever else is on screen,
  * the way the dedicated media keys keep their meaning everywhere, and
@@ -107,6 +119,7 @@ fun tvKeyAction(
     canControl: Boolean = true,
     panelOpen: Boolean = false,
     upNextShown: Boolean = false,
+    notesOpen: Boolean = false,
 ): TvKeyAction {
     if (key == Key.MediaNext) return TvKeyAction.Next
     if (key == Key.MediaPrevious) return TvKeyAction.Previous
@@ -118,16 +131,23 @@ fun tvKeyAction(
         }
     }
     if (upNextShown && key == Key.Back) return TvKeyAction.CancelUpNext
-    if (!canControl) return if (key == Key.Back) TvKeyAction.Leave else TvKeyAction.Ignore
+    if (notesOpen && key == Key.Back) return TvKeyAction.CloseNotes
+    if (!canControl) {
+        return when (key) {
+            Key.Back -> TvKeyAction.Leave
+            in PANEL_KEYS -> TvKeyAction.PassThrough
+            else -> TvKeyAction.Ignore
+        }
+    }
     if (!controlsShowing) {
         return when (key) {
+            Key.DirectionUp, Key.DirectionDown -> if (notesOpen) TvKeyAction.PassThrough else TvKeyAction.ShowControlsAndFocusSeekBar
             Key.DirectionCenter, Key.Enter -> TvKeyAction.TogglePlayAndShowControls
             Key.MediaPlayPause -> TvKeyAction.TogglePlay
             Key.MediaPlay -> TvKeyAction.Play
             Key.MediaPause -> TvKeyAction.Pause
             Key.DirectionLeft, Key.MediaRewind -> TvKeyAction.SeekByAndShowControls(-SKIP_SECONDS)
             Key.DirectionRight, Key.MediaFastForward -> TvKeyAction.SeekByAndShowControls(SKIP_SECONDS)
-            Key.DirectionUp, Key.DirectionDown -> TvKeyAction.ShowControlsAndFocusSeekBar
             Key.Back -> TvKeyAction.Leave
             else -> TvKeyAction.Ignore
         }

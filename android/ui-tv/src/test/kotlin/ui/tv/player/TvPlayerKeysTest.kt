@@ -186,10 +186,16 @@ class TvPlayerKeysTest {
     // Nothing to control yet, or any more: preparing, or failed.
 
     @Test
-    fun everyKeyButBackIsIgnoredWithNothingToControl() {
-        val keys = listOf(Key.DirectionCenter, Key.Enter, Key.MediaPlayPause, Key.MediaPlay, Key.MediaPause, Key.DirectionLeft, Key.DirectionRight, Key.DirectionUp, Key.DirectionDown, Key.MediaRewind, Key.MediaFastForward)
-        for (key in keys) {
+    fun withNothingToControlOnlyBackAndTheFocusedRetryAct() {
+        val transport = listOf(Key.MediaPlayPause, Key.MediaPlay, Key.MediaPause, Key.MediaRewind, Key.MediaFastForward)
+        for (key in transport) {
             assertEquals(TvKeyAction.Ignore, tvKeyAction(key, controlsShowing = false, focusInControls = false, canControl = false), "$key")
+        }
+        // Left to whatever is focused — a failure's Retry, or the notes
+        // beside it — rather than skipping or pausing a film not there.
+        val focusKeys = listOf(Key.DirectionCenter, Key.Enter, Key.DirectionLeft, Key.DirectionRight, Key.DirectionUp, Key.DirectionDown)
+        for (key in focusKeys) {
+            assertEquals(TvKeyAction.PassThrough, tvKeyAction(key, controlsShowing = false, focusInControls = false, canControl = false), "$key")
         }
         assertEquals(TvKeyAction.Leave, tvKeyAction(Key.Back, controlsShowing = false, focusInControls = false, canControl = false))
     }

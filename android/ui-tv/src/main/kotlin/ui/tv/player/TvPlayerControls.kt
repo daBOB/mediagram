@@ -43,6 +43,9 @@ internal class TvPlayerFocus {
     val settings = FocusRequester()
     val marks = FocusRequester()
     val upNext = FocusRequester()
+    val notes = FocusRequester()
+    val retry = FocusRequester()
+    val notesRegion = FocusRequester()
 }
 
 /** What the controls show beyond the transport, and what pressing it does: the marks rail, the statistics and the settings. */
@@ -61,6 +64,8 @@ internal class TvPlayerExtras(
     val hasNext: Boolean = false,
     val nextTitleLine: String = "",
     val onPlayNext: () -> Unit = {},
+    /** Opens and closes the notes column; null while the title has none, which leaves the Notes button out. */
+    val onToggleNotes: (() -> Unit)? = null,
 )
 
 /**

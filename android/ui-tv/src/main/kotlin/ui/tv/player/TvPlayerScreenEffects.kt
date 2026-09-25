@@ -58,6 +58,11 @@ internal fun TvControlsAutoHide(
  * With the panel closed while the card is up, Play now is where the
  * remote goes rather than the gear: the card is what is waiting on an
  * answer.
+ *
+ * A failed title puts the remote on its Retry ([retry]), the one thing
+ * left to press. With the controls away and the notes open, the remote
+ * goes to the notes ([notesRegion]) rather than the screen, so Up and
+ * Down page through them.
  */
 @Composable
 internal fun TvRemoteFollowsControls(
@@ -67,12 +72,15 @@ internal fun TvRemoteFollowsControls(
     landing: TvControlsLanding,
     root: FocusRequester,
     focus: TvPlayerFocus,
+    failed: Boolean = false,
+    notesOpen: () -> Boolean = { false },
     busy: () -> Boolean = { false },
 ) {
-    LaunchedEffect(barShown, settingsOpen, upNextShown) {
+    LaunchedEffect(barShown, settingsOpen, upNextShown, failed) {
         when {
             settingsOpen -> Unit
-            !barShown -> root.requestFocus()
+            failed -> focus.retry.requestFocus()
+            !barShown -> if (notesOpen()) focus.notesRegion.requestFocus() else root.requestFocus()
             upNextShown -> if (!busy()) focus.upNext.requestFocus()
             landing == TvControlsLanding.SeekBar -> focus.seekBar.requestFocus()
             landing == TvControlsLanding.Settings -> focus.settings.requestFocus()
@@ -85,7 +93,7 @@ internal fun TvRemoteFollowsControls(
  * The table's Back row, answered from the dispatcher rather than as a key
  * so a Back that is not one — a gesture, the dispatcher itself — does the
  * same: the panel closes first, then the up-next card goes, then the
- * controls, and only then is the player left.
+ * notes, then the controls, and only then is the player left.
  */
 @Composable
 internal fun TvPlayerBack(
@@ -93,16 +101,19 @@ internal fun TvPlayerBack(
     onSeekBar: Boolean,
     settingsOpen: Boolean,
     upNextShown: Boolean,
+    notesOpen: Boolean,
     onClosePanel: () -> Unit,
     onCancelUpNext: () -> Unit,
+    onCloseNotes: () -> Unit,
     onHideControls: () -> Unit,
     onLeave: () -> Unit,
 ) {
     BackHandler {
-        val action = tvKeyAction(Key.Back, barShown, onSeekBar, panelOpen = settingsOpen, upNextShown = upNextShown)
+        val action = tvKeyAction(Key.Back, barShown, onSeekBar, panelOpen = settingsOpen, upNextShown = upNextShown, notesOpen = notesOpen)
         when (action) {
             TvKeyAction.ClosePanel -> onClosePanel()
             TvKeyAction.CancelUpNext -> onCancelUpNext()
+            TvKeyAction.CloseNotes -> onCloseNotes()
             TvKeyAction.HideControls -> onHideControls()
             else -> onLeave()
         }

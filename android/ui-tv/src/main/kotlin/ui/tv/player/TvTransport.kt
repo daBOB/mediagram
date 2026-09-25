@@ -33,7 +33,8 @@ import ui.player.TransportIcons
  * them the ones that do not move it: the settings gear, with the speed
  * beside it while it is not the default — where the phone and the web both
  * put that number, so a viewer looks for it in one place on every surface —
- * and, last, the statistics toggle, which only reports.
+ * and, last, the statistics toggle, which only reports. Notes come before
+ * the gear while the title has any.
  *
  * Up from any of them goes to the seek bar, the one row above; Down goes to
  * the marks rail ([down]), the one below.
@@ -92,6 +93,18 @@ internal fun TvTransport(
                 enabled = true,
                 onClick = extras.onPlayNext,
                 modifier = toSeekBar,
+            )
+        }
+        // The phone's top-bar "Notes", here in the one row the remote
+        // reaches: first of what does not move the film, as it is the one
+        // of those a lesson is watched for.
+        extras.onToggleNotes?.let { toggle ->
+            TvOverlayButton(
+                text = "Notes",
+                style = TvTypeScale.body,
+                enabled = true,
+                onClick = toggle,
+                modifier = toSeekBar.focusRequester(focus.notes),
             )
         }
         if (extras.speed != 1f) {

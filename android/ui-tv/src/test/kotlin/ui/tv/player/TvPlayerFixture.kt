@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.media3.common.FlagSet
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
@@ -31,6 +32,7 @@ import playback.HeldSetsQuery
 import playback.PlaybackCounters
 import playback.SeriesPreloading
 import playback.SubtitleTrackSource
+import playback.SummarySource
 import player.DefaultPlayerHandle
 import player.PlaybackServiceController
 import player.PlayerViewModel
@@ -48,7 +50,8 @@ import player.ProgressRecorder
  * [repository] is given: whose lists the player files into, and who is
  * watching — a kids profile hides the Kids mark. [catalog] and
  * [subtitles] are what the player resolves the open title and its cues
- * through; left out, the title has no subtitles at all. [playerReady]
+ * through; left out, the title has no subtitles at all, and [summary]
+ * the same for its notes. [playerReady]
  * false holds the player back unbuilt, as a restore that comes back before
  * it is ready sees it.
  */
@@ -59,6 +62,7 @@ internal class TvPlayerFixture(
     private val catalog: CatalogRepository = mockk(relaxed = true),
     private val subtitles: SubtitleTrackSource = mockk(relaxed = true),
     playerReady: Boolean = true,
+    private val summary: SummarySource = SummarySource.None,
 ) : AutoCloseable {
     val media = mockk<ExoPlayer>(relaxed = true)
     val repository: WatchStateRepository = repository ?: mockk(relaxed = true)
@@ -112,6 +116,17 @@ internal class TvPlayerFixture(
 
     val isPlaying: Boolean get() = media.isPlaying
 
+    /** Fails the title the way media3 reports a failure: the player drops to idle, and says so. */
+    fun fail() {
+        playbackState = Player.STATE_IDLE
+        playWhenReady = false
+        val error = PlaybackException("no route to the file", null, PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED)
+        listeners.toList().forEach {
+            it.onIsPlayingChanged(false)
+            it.onPlayerError(error)
+        }
+    }
+
     private fun setPlaying(playing: Boolean) {
         playWhenReady = playing
         listeners.toList().forEach {
@@ -138,6 +153,7 @@ internal class TvPlayerFixture(
                     PlaybackServiceController.Noop,
                     SeriesPreloading.Noop,
                     HeldSetsQuery.Noop,
+                    summary,
                 ) as T
             }
         }

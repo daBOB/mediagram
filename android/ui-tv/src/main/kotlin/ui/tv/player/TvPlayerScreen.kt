@@ -31,11 +31,10 @@ import player.PlayerUiState
 import player.PlayerViewModel
 import player.UpNextPhase
 import player.controlsMayShow
+import player.retry
 import ui.player.KeepScreenOnWhile
 import ui.player.PlayerLifecycle
 import ui.player.PlayerNavigationEffects
-import ui.tv.catalog.TvCenteredMessage
-import ui.tv.setup.TvLoadingIndicator
 
 /** Finds the screen itself in a test: the node that holds the remote while the controls are away. */
 internal const val TvPlayerScreenTag = "tv-player-screen"
@@ -59,6 +58,9 @@ internal const val TvPlayerScreenTag = "tv-player-screen"
  * The transport's gear opens the phone's playback settings as a panel to
  * one side ([TvPlayerSettingsPanel]); Back closes that before it does
  * anything else — before the controls go, before the player is left.
+ * A title's notes open in a column beside the picture ([TvNotesBeside])
+ * from a Notes button among the controls, and close to Back next. A
+ * failed title offers Retry, as on the phone ([TvPlayerStatus]).
  *
  * [set] is the catalogue's entry for [setId], for what the top bar says
  * and the runtime the end time is read from; its age rating is what the
@@ -86,7 +88,10 @@ fun TvPlayerScreen(
     val choices by viewModel.choices.collectAsStateWithLifecycle()
     val subtitleCues by viewModel.subtitleCues.collectAsStateWithLifecycle()
     val upNext by viewModel.upNext.collectAsStateWithLifecycle()
+    val notes by viewModel.notes.collectAsStateWithLifecycle()
     val upNextShown = upNext.phase != UpNextPhase.HIDDEN
+    val notesOpen = notes?.open == true
+    val failed = state is PlayerUiState.Failed
 
     PlayerLifecycle(viewModel)
     PlayerNavigationEffects(viewModel, setId, run, set?.fsk, onSwitch)
@@ -120,6 +125,7 @@ fun TvPlayerScreen(
     var barTop by remember { mutableStateOf<Float?>(null) }
     val root = remember { FocusRequester() }
     val focus = remember { TvPlayerFocus() }
+    val notesFocus = remember { TvNotesFocus() }
     val remote =
         remember {
             TvPlayerRemote(
@@ -131,17 +137,20 @@ fun TvPlayerScreen(
                 onPrevious = { steps.previous() },
             )
         }
-    TvRemoteFollowsControls(barShown, settingsOpen, upNextShown, landing, root, focus, busy = { choosingList || onSeekBar })
+    TvRemoteFollowsControls(barShown, settingsOpen, upNextShown, landing, root, focus, failed, notesOpen = { notesOpen }, busy = { choosingList || onSeekBar })
+    TvNotesFollow(notesOpen, barShown, notesFocus, root, focus, busy = { settingsOpen || failed })
     TvPlayerBack(
         barShown = barShown,
         onSeekBar = onSeekBar,
         settingsOpen = settingsOpen,
         upNextShown = upNextShown,
+        notesOpen = notesOpen,
         onClosePanel = {
             landing = TvControlsLanding.Settings
             settingsOpen = false
         },
         onCancelUpNext = viewModel::cancelUpNext,
+        onCloseNotes = { notesFocus.closeFromBack(viewModel::toggleNotes) },
         onHideControls = { controlsShown = false },
         onLeave = onBack,
     )
@@ -161,17 +170,16 @@ fun TvPlayerScreen(
                         canControl = controlsMayShow(state),
                         panelOpen = settingsOpen,
                         upNextShown = upNextShown,
+                        notesOpen = notesOpen,
                     )
                 }.focusRequester(root)
                 .focusProperties { canFocus = !barShown }
                 .focusable()
                 .testTag(TvPlayerScreenTag),
-        contentAlignment = Alignment.Center,
     ) {
-        player?.let { current ->
-            TvVideoWithSubtitles(current, subtitleCues, choices, barTop = barTop.takeIf { barShown })
-            if (barShown) {
-                TvPlayerControlsForViewModel(
+        TvNotesBeside(notes, focus.notesRegion, notesFocus, button = focus.notes.takeIf { barShown }) {
+            player?.let { current ->
+                TvPlayerStage(
                     player = current,
                     set = set,
                     focus = focus,
@@ -183,35 +191,30 @@ fun TvPlayerScreen(
                             onAddToList = { choosingList = true },
                             onOpenSettings = { settingsOpen = true },
                             onPlayNext = steps.next,
+                            onToggleNotes = notes?.let { { notesFocus.toggleFromButton(notesOpen, viewModel::toggleNotes) } },
                             onSeekBarFocused = { onSeekBar = it },
                             onBarTopChanged = { barTop = it },
                         ),
+                    picture = TvStagePicture(subtitleCues, choices, barTop, barShown, settingsOpen),
                 )
             }
-            if (settingsOpen) {
-                TvPlayerSettingsPanel(choices = choices, viewModel = viewModel, modifier = Modifier.align(Alignment.CenterEnd))
+            if (choosingList) {
+                TvAddToListOverPlayer(
+                    marks = marks,
+                    notice = actionNotice,
+                    viewModel = viewModel,
+                    onDismiss = { choosingList = false },
+                    // Its window's own keys: the remote's media keys still reach
+                    // the film through it, as through the settings panel.
+                    keys = { event -> remote.onKey(event, player, controlsShowing = true, onSeekBar = false, canControl = controlsMayShow(state), panelOpen = true) },
+                )
             }
-        }
-        if (choosingList) {
-            TvAddToListOverPlayer(
-                marks = marks,
+            TvActionNotice(
                 notice = actionNotice,
-                viewModel = viewModel,
-                onDismiss = { choosingList = false },
-                // Its window's own keys: the remote's media keys still reach
-                // the film through it, as through the settings panel.
-                keys = { event -> remote.onKey(event, player, controlsShowing = true, onSeekBar = false, canControl = controlsMayShow(state), panelOpen = true) },
+                onGone = viewModel::dismissActionNotice,
+                modifier = Modifier.align(Alignment.TopEnd).padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
             )
-        }
-        TvActionNotice(
-            notice = actionNotice,
-            onGone = viewModel::dismissActionNotice,
-            modifier = Modifier.align(Alignment.TopEnd).padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
-        )
-        when (val now = state) {
-            PlayerUiState.Preparing -> TvLoadingIndicator()
-            is PlayerUiState.Failed -> TvCenteredMessage(now.message)
-            PlayerUiState.Playing, PlayerUiState.Paused -> Unit
+            TvPlayerStatus(state, focus.retry, onRetry = viewModel::retry)
         }
     }
 }
