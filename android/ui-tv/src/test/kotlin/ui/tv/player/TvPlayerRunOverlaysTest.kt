@@ -51,6 +51,7 @@ class TvPlayerRunOverlaysTest : TvPlayerScreenHarness() {
         assertEquals(listOf("set-zero"), TvPlayerTestActivity.switches)
         verify(exactly = 0) { fixture.media.seekToPrevious() }
         verify(exactly = 0) { fixture.media.seekTo(0L) }
+        compose.onNodeWithText("＋ New list").assertDoesNotExist()
     }
 
     @Test
@@ -60,6 +61,30 @@ class TvPlayerRunOverlaysTest : TvPlayerScreenHarness() {
         pressInDialog(Key.MediaNext)
 
         assertEquals(listOf("set-two"), TvPlayerTestActivity.switches)
+        // Closed with the title it was filing: never the next one under the same choice.
+        compose.onNodeWithText("＋ New list").assertDoesNotExist()
+    }
+
+    @Test
+    fun anUnattendedSwitchClosesTheListDialogToo() {
+        openAddToList()
+        nearTheEnd()
+        compose.runOnUiThread { controller.get().playerViewModel.onEnded() }
+        idleFor(Duration.ofSeconds(11))
+
+        assertEquals(listOf("set-two"), TvPlayerTestActivity.switches)
+        compose.onNodeWithText("＋ New list").assertDoesNotExist()
+    }
+
+    /** Only a new title closes it: the same one coming back after a configuration change keeps it open. */
+    @Test
+    fun theListDialogOutlivesARecreationOfTheSameTitle() {
+        openAddToList()
+
+        compose.runOnUiThread { controller.recreate() }
+        compose.waitForIdle()
+
+        compose.onNodeWithText("＋ New list").assertExists()
     }
 
     /** The other media keys keep their meaning in the dialog, as they do over the settings panel. */

@@ -49,12 +49,18 @@ internal class UpNextSwitcher(private val scope: CoroutineScope, private val han
     /**
      * The switch landed and [setId] is now truly open — starts the gate poll
      * if this was the title one was pending on, calling [onReady] once it
-     * resolves. A no-op for any other open, gated or not.
+     * resolves. For any other open it only ends a wait left over from an
+ * earlier switch.
      */
     fun startedTitle(setId: String, onReady: () -> Unit) {
         val gate = pendingGate?.takeIf { it.setId == setId }
         pendingGate = null
         if (gate == null) {
+            // Any other title opening ends a wait still running for the one
+            // a switch was headed to — left running, it would call `play()`
+            // on this title whenever its buffer came in, straight over a
+            // pause the viewer made in the meantime.
+            gateJob?.cancel(); gateJob = null
             awaitingStart = false
             return
         }

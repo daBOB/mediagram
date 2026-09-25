@@ -3,6 +3,10 @@ package ui.tv.player
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.input.key.Key
 import kotlinx.coroutines.delay
@@ -108,18 +112,30 @@ internal fun TvPlayerBack(
 /**
  * Closes what would otherwise outlive what it belongs to. Marks go with the
  * title they belong to; a list choice still open when they go would come
- * back over whatever opens next. The settings panel is drawn over a
- * player; without one (a restore that comes back before the player is
- * built) it would be open but nowhere, and still taking the D-pad and Back
- * for itself.
+ * back over whatever opens next — and so does a change of title ([setId])
+ * by Next, Previous or up next, which leaves the marks in place for the
+ * title that follows: a dialog left open would file that title under a
+ * choice the viewer made for the one before. Only a real change: the same
+ * title recomposed after a configuration change keeps its dialog. The
+ * settings panel is drawn over a player; without one (a restore that comes
+ * back before the player is built) it would be open but nowhere, and still
+ * taking the D-pad and Back for itself.
  */
 @Composable
 internal fun TvPlayerOverlaysReset(
+    setId: String,
     marksGone: Boolean,
     playerGone: Boolean,
     closeList: () -> Unit,
     closePanel: () -> Unit,
 ) {
+    var listFor by rememberSaveable { mutableStateOf(setId) }
+    LaunchedEffect(setId) {
+        if (setId != listFor) {
+            listFor = setId
+            closeList()
+        }
+    }
     LaunchedEffect(marksGone) { if (marksGone) closeList() }
     LaunchedEffect(playerGone) { if (playerGone) closePanel() }
 }

@@ -108,7 +108,7 @@ fun TvPlayerScreen(
     var statsShown by rememberSaveable { mutableStateOf(false) }
     var choosingList by rememberSaveable { mutableStateOf(false) }
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
-    TvPlayerOverlaysReset(marks == null, player == null, closeList = { choosingList = false }, closePanel = { settingsOpen = false })
+    TvPlayerOverlaysReset(setId, marks == null, player == null, closeList = { choosingList = false }, closePanel = { settingsOpen = false })
     TvControlsAutoHide(controlsShown, state, presses, held = choosingList || settingsOpen || upNextShown, onHide = { controlsShown = false })
     // Up with the card and left up after it, as the phone brings its bar
     // back for it; the card counts as shown within the same frame, so the
