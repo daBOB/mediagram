@@ -112,6 +112,13 @@ class TvListStateTest : TvScreenStateTest() {
     }
 
     @Test
+    fun backFromARunPlayAllStartedLandsOnPlayAll() {
+        show { TvList(list, films(2), onPlay = {}, onRename = {}, onDelete = {}, onRemove = {}, restoreKey = TvPlayAllKey) }
+
+        compose.onNodeWithText("▶ Play all").assertIsFocused()
+    }
+
+    @Test
     fun anEmptyListOffersNoPlayAll() {
         showList(emptyList())
 

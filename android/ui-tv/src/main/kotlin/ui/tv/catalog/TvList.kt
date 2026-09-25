@@ -37,7 +37,9 @@ import ui.tv.setup.TvConfirmDialog
  *
  * "Play all" starts the list at its first title and plays on through it —
  * the phone's own `PlayAllButton`, first in the row above, and only while
- * the list has a title to start on.
+ * the list has a title to start on. Coming back from the run it started,
+ * [restoreKey] is [TvPlayAllKey] and the remote lands on it again rather
+ * than on the first plate, which the viewer never pressed.
  *
  * Rename asks with [TvListNameQuestion]; Delete asks first with the phone's
  * own words, since the list is gone after it — the titles never are.
@@ -72,6 +74,8 @@ fun TvList(
     // An empty list has no plate to land on, and a list emptied by its last
     // Remove has just lost the one the remote was on.
     val renameFocus = remember { FocusRequester() }
+    val playAllFocus = remember { FocusRequester() }
+    val backFromPlayAll = restoreKey == TvPlayAllKey && sets.isNotEmpty()
     LaunchedEffect(sets.isEmpty()) { if (sets.isEmpty()) renameFocus.requestFocus() }
     // Taking a title off takes away the plate the remote is on; the title
     // beside it — after it, or before it at the end — is where it goes next.
@@ -85,13 +89,19 @@ fun TvList(
         Column {
             TvCountedHeading(list.name, sets.size)
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.large)) {
-                if (sets.isNotEmpty()) TvTextRow(text = "▶ Play all", onClick = onPlayAll)
+                if (sets.isNotEmpty()) {
+                    TvTextRow(text = "▶ Play all", onClick = onPlayAll, focusRequester = playAllFocus)
+                    // Asked for from inside the header, which the wall only
+                    // composes once it lays it out: a request made before
+                    // that would have nothing to land on.
+                    if (backFromPlayAll) LaunchedEffect(Unit) { playAllFocus.requestFocus() }
+                }
                 TvTextRow(text = "Rename", onClick = { renaming = true }, focusRequester = renameFocus)
                 TvTextRow(text = "Delete list", onClick = { deleting = true })
             }
         }
     }
-    TvPage {
+    TvPage(takesArrivalFocus = !backFromPlayAll) {
         if (sets.isEmpty()) {
             Column(modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical)) {
                 header()
@@ -126,3 +136,6 @@ fun TvList(
         )
     }
 }
+
+/** What a list remembers it opened when "Play all" started it: no title's id, so never mistaken for a plate. */
+internal const val TvPlayAllKey = "list:play-all"

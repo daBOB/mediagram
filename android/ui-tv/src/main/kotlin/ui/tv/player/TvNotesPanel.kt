@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -110,7 +111,11 @@ internal fun TvNotesPanel(
                                 else -> return@onKeyEvent false
                             }
                         if (event.type == KeyEventType.KeyDown) {
-                            scope.launch { scroll.animateScrollBy(direction * scroll.viewportSize * PAGE_SHARE) }
+                            val by = direction * scroll.viewportSize * PAGE_SHARE
+                            // A held key's repeats jump rather than glide:
+                            // each would otherwise cancel the glide before
+                            // it, and the column would crawl while held.
+                            scope.launch { if (event.nativeKeyEvent.repeatCount > 0) scroll.scrollBy(by) else scroll.animateScrollBy(by) }
                         }
                         true
                     }.focusable()

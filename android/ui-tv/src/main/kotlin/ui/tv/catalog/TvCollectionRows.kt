@@ -141,8 +141,7 @@ private fun ItemRow(
             DocumentRow(text, focus)
         } else {
             TvTextRow(text = text, onClick = { onOpenTitle(row.set.setId) }, modifier = Modifier.fillMaxWidth(), focusRequester = focus)
-            progress?.let { TvProgressRule(fraction = it, modifier = Modifier.padding(top = Spacing.small)) }
-            if (held) TvOfflineBadge(modifier = Modifier.padding(top = Spacing.small))
+            TvItemMarks(progress, held)
         }
     }
 }

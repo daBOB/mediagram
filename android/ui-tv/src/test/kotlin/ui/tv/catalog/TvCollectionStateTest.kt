@@ -112,7 +112,6 @@ class TvCollectionStateTest : TvScreenStateTest() {
         assertEquals("e4", opened)
     }
 
-    /** Named at a page's size, as the phone's bar names it — and once, not again as the rows' own heading under it. */
     @Test
     fun anEpisodeThisDeviceHoldsSaysOffline() {
         show {
@@ -128,6 +127,7 @@ class TvCollectionStateTest : TvScreenStateTest() {
         compose.onNodeWithText("offline").assertExists()
     }
 
+    /** Named at a page's size, as the phone's bar names it — and once, not again as the rows' own heading under it. */
     @Test
     fun aSeasonIsHeadedWithItsTitleOnce() {
         show { TvSeason(division("Season 2", 2, episode("e3", "Late")), WatchSnapshot.Empty, onOpenTitle = {}) }

@@ -157,7 +157,6 @@ private fun TvSearchRow(
         row.excerpt?.let { TvQuietLine(it) }
         searchWhy(row.matched)?.let { Text(text = it, style = TvTypeScale.body, fontStyle = FontStyle.Italic, color = quiet) }
         searchMetaLineOf(set).takeIf(String::isNotEmpty)?.let { TvQuietLine(it) }
-        progress?.let { TvProgressRule(fraction = it, modifier = Modifier.padding(top = Spacing.small)) }
-        if (row.held) TvOfflineBadge(modifier = Modifier.padding(top = Spacing.small))
+        TvItemMarks(progress, row.held)
     }
 }

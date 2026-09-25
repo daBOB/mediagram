@@ -101,3 +101,18 @@ internal fun TvOfflineBadge(modifier: Modifier = Modifier) {
 }
 
 private val BadgeRadius = 4.dp
+
+/**
+ * The foot of a row that stands for one title — a search hit, a lesson or
+ * an episode in a course's list: the progress rule, then the offline
+ * badge under it, the phone's order. One place, so the two lists cannot
+ * come to draw them differently.
+ */
+@Composable
+internal fun TvItemMarks(
+    progress: Float?,
+    held: Boolean,
+) {
+    progress?.let { TvProgressRule(fraction = it, modifier = Modifier.padding(top = Spacing.small)) }
+    if (held) TvOfflineBadge(modifier = Modifier.padding(top = Spacing.small))
+}

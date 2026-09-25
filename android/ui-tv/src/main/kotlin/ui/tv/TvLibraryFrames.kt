@@ -13,6 +13,7 @@ import ui.LibraryPositions
 import ui.resolveFrame
 import ui.tv.catalog.TvGenre
 import ui.tv.catalog.TvList
+import ui.tv.catalog.TvPlayAllKey
 import ui.tv.catalog.TvSearch
 import ui.tv.setup.TvLoadingIndicator
 
@@ -123,7 +124,12 @@ internal fun TvListBranch(
                 restore.opened(here, setId)
                 at.openPlayer(setId, ids)
             },
-            onPlayAll = { ids.firstOrNull()?.let { first -> at.openPlayer(first, ids) } },
+            onPlayAll = {
+                ids.firstOrNull()?.let { first ->
+                    restore.opened(here, TvPlayAllKey)
+                    at.openPlayer(first, ids)
+                }
+            },
             onRename = { name -> catalogViewModel.renameList(list.id, name) },
             onDelete = {
                 catalogViewModel.deleteList(list.id)
