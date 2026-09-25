@@ -28,6 +28,16 @@ to `main`. Full phase-by-phase detail lives in
   (`editorsChoice` in the core's sync record, same one-pick rule as the web).
   Shared watch-state fixtures cover it.
 
+- The Featured reel and a paged Movies shelf on the phone, as on the web
+  (merged from `feat/android-featured-and-paging`). Featured sits above the
+  Movies shelf beside List · Grid and opens a dark, full-screen run of up to
+  twelve unwatched films with posters. The Movies shelf shows 48 films a page
+  with the web's page links. Picks and page links are ports of
+  `featured-picks.js` and `pager.js` with the web's test cases.
+- The phone's shelves keep their place under a title: coming back from a film,
+  a show or the player finds the same tab, page and scroll position, as the
+  web's back button does.
+
 **Known difference:** a pinned episode's feature card opens its title page on
 Android, where the web opens the show. This is written down in the code.
 
@@ -294,12 +304,12 @@ Android, where the web opens the show. This is written down in the code.
   the next after seven seconds, and carries its title, year, genres, score and
   tagline. Play and Details act on the film shown; arrows, the dots, Space
   (pause), Esc and the back button steer it. Reduced motion gets still posters.
-  Android has no equivalent: its catalog carries no posters.
+  Android gained its own reel once the phone fetched posters.
 
 - The web player's Movies shelf is paged, 48 films at a time, with a row of
   page links under the grid. The page is in the address (`#/movies/page/3`),
   so back, reload and shared links return to it; `#/movies` is still page one.
-  The Android catalog does not page yet.
+  The Android Movies shelf pages the same way.
 
 **Fixed**
 

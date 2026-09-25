@@ -17,11 +17,11 @@ import designsystem.Spacing
 
 /**
  * The masthead the web player has: the three catalog shelves, then the
- * four that come from what has been watched rather than from the catalog —
+ * three that come from what has been watched rather than from the catalog —
  * `index.html`'s own order, Home, Movies, Series, Tutorials, Continue,
- * Watchlist, Collections, Kids.
+ * Watchlist, Collections.
  *
- * Scrollable rather than fixed-width: eight labels do not fit a phone's
+ * Scrollable rather than fixed-width: seven labels do not fit a phone's
  * width the way three did, and a `PrimaryScrollableTabRow` is the platform's
  * own answer to a masthead too wide for its screen — a tablet's own width
  * shows every tab at once regardless. [firstKeptIndex] draws a thin rule

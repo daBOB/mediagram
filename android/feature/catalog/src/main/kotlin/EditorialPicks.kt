@@ -19,8 +19,6 @@ import kotlin.math.floor
 /** How many films the cover story rotates through. */
 const val COVER_COUNT = 5
 
-/** How many films one opening of the cover's own shuffle draws from. */
-const val FEATURED_COUNT = 12
 
 /** The staff pick rotates among this many of the best-rated. */
 const val STAFF_POOL = 10
@@ -143,29 +141,3 @@ fun arrivedWithin(
         .sortedByDescending(MediaSet::addedAt)
         .take(limit)
 
-/**
- * Which films the cover reel shows, and in what order — a port of
- * `featured-picks.js`'s `pickFeatured`.
- *
- * The reel is there to help choose something to watch, so it holds films
- * this profile has not seen, shuffled so each opening suggests something
- * new. A film without a poster is left out even when its backdrop already
- * passed the caller's own filter: the reel's own pool is built from
- * posters, and a blank slide would tease nothing.
- */
-fun pickFeatured(
-    movies: List<MediaSet>,
-    isWatched: (String) -> Boolean,
-    random: () -> Double,
-    count: Int = FEATURED_COUNT,
-): List<MediaSet> {
-    val pool = movies.filter { it.posterPath != null && !isWatched(it.setId) }.toMutableList()
-    // Fisher-Yates over a copy: the shelf itself keeps its title order.
-    for (index in pool.size - 1 downTo 1) {
-        val other = floor(random() * (index + 1)).toInt()
-        val swapped = pool[index]
-        pool[index] = pool[other]
-        pool[other] = swapped
-    }
-    return pool.take(count)
-}

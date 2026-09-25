@@ -29,14 +29,13 @@ import model.MediaSet
 import model.WatchSnapshot
 
 /**
- * One of the three kept walls that hold titles directly — Continue,
- * Watchlist, Kids — drawn with [SetPlate], the same plate Continue and Next
+ * One of the two kept walls that hold titles directly — Continue and
+ * Watchlist — drawn with [SetPlate], the same plate Continue and Next
  * up already use on the start page. Collections is not one of these: its
  * shelf is a list of lists, not of titles, and lives in [ListsScreen].
  *
- * The caption is [catalog.resumeLine] on every one of the three, matching
- * `setGrid`'s own default in `shelf-view.js` — most Watchlist and Kids
- * plates have no position to report and simply say nothing under the name.
+ * The caption is [catalog.resumeLine] on both, matching `setGrid`'s own
+ * default in `shelf-view.js` — most Watchlist plates have no position to report and simply say nothing under the name.
  */
 @Composable
 internal fun KeptWall(

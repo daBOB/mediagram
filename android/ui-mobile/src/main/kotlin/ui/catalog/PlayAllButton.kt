@@ -7,8 +7,7 @@ import androidx.compose.ui.Modifier
 
 /**
  * Starts a run at its first title — `listControls`' own "Play all" in
- * `collections-view.js`, and the Kids wall's equivalent for "Marked by
- * hand". Shown only where the caller already knows a run is non-empty:
+ * `collections-view.js`. Shown only where the caller already knows a run is non-empty:
  * there is nothing to play all of otherwise.
  */
 @Composable

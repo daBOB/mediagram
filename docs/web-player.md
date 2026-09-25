@@ -126,8 +126,10 @@ stylesheet's global rule. Opening pushes a history entry: back closes the
 reel, and Play or Details wait for that entry to be popped before acting, so
 the film's page is not undone by it. Taglines and scores come from
 `/api/shows/:key`, asked once per film and for the next film while one holds.
-The Android catalog has no posters, since the pinned index carries none, so it
-has no reel; that is a deliberate difference, not a gap.
+The phone has the same reel (`FeaturedReel`, `FeaturedSlide` in
+`ui.catalog`), over the posters it fetches itself: `pickFeatured` is a port of
+`featured-picks.js`, a tap on the poster stands in for Space, and back closes
+it as the dialog's own dismissal.
 
 ## Where the player opens
 

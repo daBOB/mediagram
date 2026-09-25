@@ -18,6 +18,7 @@ import androidx.compose.ui.semantics.Role
 import catalog.Entry
 import designsystem.Spacing
 import model.Progress
+import androidx.compose.foundation.lazy.rememberLazyListState
 
 /**
  * A shelf as rows — the web's list mode, and the only way a shelf of
@@ -33,8 +34,12 @@ internal fun ShelfList(
     heldIds: Set<String>,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
+    footer: (@Composable () -> Unit)? = null,
+    page: Int = 1,
 ) {
-    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = Spacing.medium)) {
+    val list = rememberLazyListState()
+    ScrollToTopOnNewPage(page) { list.scrollToItem(0) }
+    LazyColumn(state = list, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = Spacing.medium)) {
         items(items = entries, key = ::keyOf) { entry ->
             when (entry) {
                 is Entry.Film -> ShelfRow(
@@ -53,6 +58,7 @@ internal fun ShelfList(
             }
             HorizontalDivider()
         }
+        footer?.let { item(key = "footer") { it() } }
     }
 }
 

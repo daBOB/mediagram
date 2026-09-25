@@ -28,6 +28,7 @@ import catalog.magazineHomeOf
 import catalog.watchlistWall
 import designsystem.Spacing
 import model.WatchSnapshot
+import uniffi.mediagram_core.TitleInfo
 
 /**
  * The shelves, and one line above them while the library is being worked
@@ -45,25 +46,27 @@ fun CatalogScreen(
     onOpenCollection: (key: String) -> Unit,
     onOpenList: (id: String) -> Unit,
     onCreateList: (name: String) -> Unit,
-    /** Starts a title with an explicit run — the Kids wall's "Marked by hand" own "Play all". */
+    /** Starts a title with an explicit run, or none — the Featured reel's Play. */
     onPlayRun: (setId: String, run: List<String>) -> Unit,
     /** Continue's "Mark finished". */
     onFinish: (setId: String) -> Unit,
+    /** What the index says about a title — the Featured reel's score and tagline. */
+    titleInfo: suspend (String) -> TitleInfo? = { null },
 ) {
     when (state) {
         CatalogUiState.Loading -> CenteredMessage("Loading your library…")
         CatalogUiState.Empty -> CenteredMessage("The library is empty.")
         CatalogUiState.KidsEmpty -> CenteredMessage("Nothing rated FSK 12 or under yet.")
         is CatalogUiState.Failed -> CenteredMessage(state.message)
-        is CatalogUiState.Ready -> Shelves(state, fetching, onOpenTitle, onOpenCollection, onOpenList, onCreateList, onPlayRun, onFinish)
+        is CatalogUiState.Ready -> Shelves(state, fetching, onOpenTitle, onOpenCollection, onOpenList, onCreateList, onPlayRun, onFinish, titleInfo)
     }
 }
 
 /**
  * One shelf on screen, chosen from the masthead above it.
  *
- * The masthead carries eight entries, the web's own order: Home, the three
- * catalog shelves, then the four kept from watch state — see [ShelfTabs].
+ * The masthead carries seven entries, the web's own order: Home, the three
+ * catalog shelves, then the three kept from watch state — see [ShelfTabs].
  * The shelf a viewer was last on is kept across a rotation and a process
  * death, because coming back to the top of the film shelf after glancing
  * at something else is the kind of small forgetting that makes an app feel
@@ -80,6 +83,7 @@ private fun Shelves(
     onPlayRun: (setId: String, run: List<String>) -> Unit,
     /** Continue's "Mark finished". */
     onFinish: (setId: String) -> Unit,
+    titleInfo: suspend (String) -> TitleInfo?,
 ) {
     val shelfViewModel: ShelfViewModel = hiltViewModel()
     val chosenView by shelfViewModel.view.collectAsStateWithLifecycle()
@@ -149,7 +153,16 @@ private fun Shelves(
                 onSeeAll = { shelf -> chosen = titles.indexOf(shelf).coerceAtLeast(0) },
             )
 
-            selected < firstKept -> ShelfWall(shelves[selected - 1], state.watch, state.heldIds, columns, shelfView, onOpenTitle, onOpenCollection)
+            selected < firstKept -> ShelfWall(
+                shelves[selected - 1],
+                state.watch,
+                state.heldIds,
+                columns,
+                shelfView,
+                onOpenTitle,
+                onOpenCollection,
+                films = FilmShelfActions(onPlay = { onPlayRun(it.setId, emptyList()) }, titleInfo = titleInfo),
+            )
 
             else -> KeptTabContent(
                 kind = KeptKind.entries[selected - firstKept],
@@ -171,10 +184,10 @@ private fun Shelves(
 /** The first thing in the masthead, and not a shelf. */
 private const val HOME = "Home"
 
-/** The four kept labels, in the web's own order — `index.html`'s Continue, Watchlist, Collections, Kids. */
+/** The three kept labels, in the web's own order — `index.html`'s Continue, Watchlist, Collections. */
 private val KEPT_TITLES: List<String> = KeptKind.entries.map(KeptKind::label)
 
-/** Which of the masthead's four kept tabs is selected, dispatched to what draws it. */
+/** Which of the masthead's three kept tabs is selected, dispatched to what draws it. */
 @Composable
 private fun KeptTabContent(
     kind: KeptKind,

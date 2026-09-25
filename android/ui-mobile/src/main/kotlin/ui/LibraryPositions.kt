@@ -94,9 +94,8 @@ internal class LibraryPositions(frames: MutableState<String>) {
     val setId: String? get() = payloadOf(FrameKind.PLAYER)?.substringBefore(RUN_SEP)
 
     /**
-     * The explicit run the open title was started on — a hand-built list or
-     * the Kids wall's "Marked by hand", the only two callers of [openPlayer]
-     * that pass one. `null` everywhere else, where the player works out its
+     * The explicit run the open title was started on — a hand-built list,
+     * the only caller of [openPlayer] that passes one. `null` everywhere else, where the player works out its
      * own run from the catalog instead (`catalog.runFor`).
      */
     val run: List<String>?

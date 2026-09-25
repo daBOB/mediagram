@@ -7,11 +7,13 @@ import model.Progress
 import model.WatchSnapshot
 
 /**
- * The masthead's four kept entries — Continue, Watchlist, Collections, Kids
- * — over the catalog's own shelves and this viewer's watch state. A port of
- * `app.js`'s `KEPT` map and its four `view*` functions: the label, the empty
+ * The masthead's three kept entries — Continue, Watchlist, Collections —
+ * over the catalog's own shelves and this viewer's watch state. A port of
+ * `app.js`'s `KEPT` map and its `view*` functions: the label, the empty
  * text and the ordering are read from there, since a viewer moving between
- * the two surfaces should find the same four shelves saying the same things.
+ * the two surfaces should find the same shelves saying the same things.
+ * There is no Kids shelf: a kids profile already shows only what a child
+ * may watch, so the shelf only repeated it.
  *
  * Collections carries no function of its own here — it is a shelf of lists,
  * not of titles, and [model.WatchSnapshot.collections] is already everything

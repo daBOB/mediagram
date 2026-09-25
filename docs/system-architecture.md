@@ -426,7 +426,10 @@ which superseded the unbuilt half of
 search and genre pages, audio and subtitle choice, speed and framing, up next
 and queues, fullscreen gestures, picture-in-picture and a media session,
 series preload with offline badges, notes, profile removal and the List/Grid
-shelf toggle. What differs on purpose, and why, is recorded in
+shelf toggle. The Featured reel and the 48-a-page Movies shelf followed in
+0.54.0 (`FilmPages.kt` ports `pager.js`); where the web keeps the page in the
+address, the phone keeps it in the shelves' saved state, which a title opened
+over them no longer clears. What differs on purpose, and why, is recorded in
 `docs/superpowers/specs/2026-09-20-android-system-menu-and-playback-stats-design.md` §9.
 
 **`ui-tv` is empty.** The television surface is a registered Gradle module with
