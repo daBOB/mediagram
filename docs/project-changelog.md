@@ -51,6 +51,17 @@ to `main`. Full phase-by-phase detail lives in
 
 **Added**
 
+- Android profile removal, List/Grid shelves and "Mark finished", closing
+  the web-parity plan. "Who's watching?" gains "Remove a profile…": tap a
+  name, then the web's own confirmation; the profile and everything it
+  watched go, and one another device still names comes back with the next
+  sync, as on the web. Films and Series gain the web's List/Grid toggle,
+  remembered per device (posters stay the phone's default); a shelf of
+  courses is always a list, as on the web. The film shelf now carries the
+  "offline" badge too. Continue gains "Mark finished" under each title,
+  through the same `markFinished` the player's end-of-title path now calls.
+  The deliberate differences left after parity are listed in the Android
+  system-menu spec, §9.
 - Android notes panel, matching the web player's: a title with a summary
   gets a "Notes" button in the player's top bar, and a lesson's notes open by
   themselves as the web's do. The markdown is parsed by a Kotlin port of

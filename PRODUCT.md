@@ -52,20 +52,18 @@ natively, and never transcodes.
 - The web player reads a published encrypted package; the phone reads the
   newest index snapshot the channel holds. The channel index carries no
   artwork, so the phone fetches its own posters and synopses from TMDB.
-- **The phone keeps no watch state.** Not "does not share one" -- `mediagram-core`
-  exposes fourteen methods and none touch progress. No resume, no watched
-  marks, no watchlist, no lists.
-- The phone has no audio-track or subtitle selection (reaching 312 and 206 sets
-  respectively), no search, no notes, and no start page.
+- The phone keeps watch state by profile and syncs it with the web player
+  through the library channel: resume, watched marks, watchlist, Kids and lists.
+- The phone reaches the web player's features — search, audio and subtitle
+  choice, notes, up next, a start page — with the differences it keeps on
+  purpose written down in the Android system-menu spec, §9.
 - `:ui-tv` is a registered Gradle module with no source. Television devices
   install the app and get a placeholder.
 - Playback on the phone is latency-bound, not throughput-bound: the link
   outruns the bitrate and what costs is the round trip per read.
 - minSdk 24, targetSdk 37, Compose with Material 3, media3 for playback.
   Secrets live in `EncryptedSharedPreferences`.
-- **Undecided:** how a viewer is identified on the phone. The web player keys
-  watch state by profile and has a picker; the phone has neither. Named as an
-  open question in two separate plans and not yet answered.
+- A viewer is a profile, chosen in "Who's watching?", on the phone as on the web.
 
 ## Brand Commitments
 

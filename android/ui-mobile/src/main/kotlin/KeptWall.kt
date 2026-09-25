@@ -13,7 +13,9 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -46,6 +48,7 @@ internal fun KeptWall(
     columns: Int,
     onOpenTitle: (setId: String) -> Unit,
     heldIds: Set<String> = emptySet(),
+    onFinish: ((setId: String) -> Unit)? = null,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         WallHeading(kind.label, sets.size)
@@ -63,16 +66,27 @@ internal fun KeptWall(
             verticalArrangement = Arrangement.spacedBy(Spacing.medium),
         ) {
             items(items = sets, key = MediaSet::setId) { set ->
-                SetPlate(
-                    card = SetCard(
-                        set = set,
-                        caption = resumeLine(positions[set.setId]),
-                        progress = watchedFractionOf(positions[set.setId]),
-                        watched = set.setId in watchedIds,
-                        held = set.setId in heldIds,
-                    ),
-                    onClick = { onOpenTitle(set.setId) },
-                )
+                Column {
+                    SetPlate(
+                        card = SetCard(
+                            set = set,
+                            caption = resumeLine(positions[set.setId]),
+                            progress = watchedFractionOf(positions[set.setId]),
+                            watched = set.setId in watchedIds,
+                            held = set.setId in heldIds,
+                        ),
+                        onClick = { onOpenTitle(set.setId) },
+                    )
+                    // Under the plate rather than on it — `withAction` in the
+                    // web's `shelf-view.js` keeps it beside the card for the
+                    // same reason: a control of its own, not one tap away
+                    // from starting the film by mistake.
+                    if (onFinish != null) {
+                        TextButton(onClick = { onFinish(set.setId) }, modifier = Modifier.align(Alignment.End)) {
+                            Text("Mark finished")
+                        }
+                    }
+                }
             }
         }
     }

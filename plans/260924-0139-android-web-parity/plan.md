@@ -1,7 +1,7 @@
 ---
 title: "Android reaches web-player parity"
 description: "Search, genres, player essentials, touch/PiP/MediaSession, preload, notes, profiles on Android, matching the web player's decisions."
-status: pending
+status: done
 priority: P1
 effort: 60h
 branch: feat/android-web-parity
@@ -48,7 +48,7 @@ Supersedes the unbuilt phases 1-3, 6, 7, 10 of
 | 09 | [Picture-in-picture and MediaSession](phase-09-pip-and-media-session.md) | 08 | 5h | done (device re-check of fixes pending) |
 | 10 | [Series preload and offline badges](phase-10-series-preload-and-offline.md) | 07 | 5h | done |
 | 11 | [Notes panel](phase-11-notes-panel.md) | 04 | 5h | done (bold weight open) |
-| 12 | [Profile removal, shelf view, docs close-out](phase-12-profiles-shelf-view-docs.md) | 01 | 4h | pending |
+| 12 | [Profile removal, shelf view, docs close-out](phase-12-profiles-shelf-view-docs.md) | 01 | 4h | done |
 
 Sequential because 04-11 share player files and every phase edits the three
 version manifests and the changelog.

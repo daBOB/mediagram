@@ -349,6 +349,48 @@ in `FetchViewModel`, because a rotation during a run of minutes must not
 change what that run asked for. Confirmed on the device: a phone set to
 `en-GB` fetched German descriptions for a `de-DE` library.
 
+### Kept on purpose after the parity plan
+
+The web-parity plan (`plans/260924-0139-android-web-parity/`) closed the gaps
+it could; these it left open deliberately.
+
+**No scrub thumbnails.** The web draws them from sprites its server cuts with
+ffmpeg. The phone has no server and no ffmpeg; the scrubber shows the time.
+
+**No adaptive bitrate, and no "needs converting" badge.** The web transcodes
+what a browser cannot play; the phone decodes the original directly, so there
+is one rendition and nothing that could need converting.
+
+**No keyboard-only controls.** A-B loop, frame step, `0`–`9` jumps, `[`/`]`,
+`m` and `c` are keys on the web; the phone has no keyboard to press them with.
+
+**No remembered volume.** The phone's hardware buttons own volume.
+
+**Switching audio restarts nothing it does not have to**, where the web
+reloads the stream; ExoPlayer switches track in place.
+
+**Genres come from the device's own fetch.** The channel index carries none,
+so the phone's genre pages are filled from the TMDB details it fetches itself,
+like its posters.
+
+**Preload is bounded.** Two episodes ahead, on an unmetered network only, and
+never past 75% of the cache budget — a phone's data plan and storage are the
+viewer's, where the web player's host is not.
+
+**Notes are a sheet over the picture on a phone held sideways.** Everywhere
+else they sit beside or below it, the web's rule; a window that short has no
+room beside the picture for anything worth reading.
+
+**Subtitles come from the index only**, as on the web: tracks embedded in the
+file stay off, since the index's are the ones a viewer chose to upload.
+
+**Films and Series open as posters.** The web opens on its list; a thumb finds
+a poster faster than a line of text. Courses are a list on both.
+
+**Retry, double-tap seek and a picture-in-picture button are the phone's own**
+— touch equivalents of the web's seek-to-retry, arrow keys and `p` key, not
+features the web owes back.
+
 ## 10. Deliberately out of scope
 
 **Watch state** — resume, watchlist, kids, collections. Still unowned on

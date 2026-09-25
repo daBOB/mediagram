@@ -39,9 +39,8 @@ sealed interface ProfileUiState {
 /**
  * Drives "Who's watching?" — [WatchStateRepository] is the source of truth
  * for who exists and who is chosen; this only decides which of that to show
- * and when. Ports the web's picker (`profile-picker.js`) minus rename and
- * delete, which sync cannot express yet — written up in phase 09's parity
- * note.
+ * and when. Ports the web's picker (`profile-picker.js`): choose, add and
+ * remove. The web has no rename either, so neither does this.
  */
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
@@ -96,6 +95,19 @@ class ProfileViewModel @Inject constructor(
 
     fun add(name: String) {
         viewModelScope.launch { repository.create(name) }
+    }
+
+    /**
+     * Removes a profile and everything of theirs. Removing the one this
+     * device was watching as leaves nobody to "Stay as", so the picker stops
+     * offering it.
+     */
+    fun remove(id: String) {
+        viewModelScope.launch {
+            if (!repository.deleteProfile(id)) return@launch
+            val current = mode.value
+            if (current is Mode.Picking && repository.chosenProfileId.value == null) mode.value = Mode.Picking(canStay = false)
+        }
     }
 
     /** The bar action: shows the picker again, with a way to change nothing. */

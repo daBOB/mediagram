@@ -6,6 +6,7 @@ import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.createList
 import catalog.deleteList
+import catalog.markFinished
 import catalog.mediaSet
 import catalog.renameList
 import catalog.runFor
@@ -151,6 +152,7 @@ internal fun LibraryBranches(
                 onOpenList = at::openList,
                 onCreateList = catalogViewModel::createList,
                 onPlayRun = at::openPlayer,
+                onFinish = { catalogViewModel.markFinished(it) },
             )
         }
     }

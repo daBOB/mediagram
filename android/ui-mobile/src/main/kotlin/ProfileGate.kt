@@ -28,6 +28,7 @@ internal fun ProfileGate(content: @Composable (ProfileBarState) -> Unit) {
             onChoose = viewModel::choose,
             onAdd = viewModel::add,
             onStay = viewModel::stay,
+            onRemove = viewModel::remove,
         )
         return
     }

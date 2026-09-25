@@ -4,7 +4,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 
 /**
- * The four writes the Collections tab and its list screen make — split out
+ * The writes the Collections tab, its list screen and Continue make — split out
  * of [CatalogViewModel] to keep that file under the project's line
  * guideline. Each is a fire-and-forget wrapper over [data.WatchStateRepository],
  * the same shape `ProfileViewModel.add` already uses: the write goes to the
@@ -26,4 +26,9 @@ fun CatalogViewModel.deleteList(id: String) {
 
 fun CatalogViewModel.setInList(id: String, setId: String, included: Boolean) {
     viewModelScope.launch { watchState.setInList(id, setId, included) }
+}
+
+/** Continue's "Mark finished": the wall redraws from the snapshot, so the title simply leaves it. */
+fun CatalogViewModel.markFinished(setId: String) {
+    viewModelScope.launch { watchState.markFinished(setId) }
 }

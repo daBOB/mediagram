@@ -580,19 +580,25 @@ the push listener; rounds never overlap. The device id is a random UUID in
 `state.db`, never the host name.
 
 "Who's watching?" chooses among the account's profiles, which arrive from the
-other devices' documents. Deliberate differences from the web, not gaps:
-profiles cannot be renamed or deleted on the phone, since the record cannot
-express either; sync is on by default, where the web player needs
-`MEDIAGRAM_SYNC_STATE`; "Add to list" is a checklist rather than the web's
-numbered prompt.
+other devices' documents, and removes one as the web does: locally, taking its
+rows with it. Neither surface renames. A removed profile that another device's
+document still names comes back with the next round that pulls it, on both
+surfaces alike — the record has no tombstone for a profile. Deliberate
+differences from the web, not gaps: sync is on by default, where the web player
+needs `MEDIAGRAM_SYNC_STATE`; "Add to list" is a checklist rather than the
+web's numbered prompt; the Films and Series shelves open as posters, where the
+web opens on its list.
 
-### What it does not have yet
+### Parity with the web player
 
-Parity with the web player is partial and tracked, not assumed. The phone has
-no audio-track or subtitle selection, no search and no notes; and Play all
-and a Kids run wait for a player queue. The plan that closes these is
-[`plans/260922-0124-android-web-parity/`](../plans/260922-0124-android-web-parity/plan.md),
-and the deliberate differences that will *not* be closed are recorded in
+Reached by
+[`plans/260924-0139-android-web-parity/`](../plans/260924-0139-android-web-parity/plan.md),
+which superseded the unbuilt half of
+[`plans/260922-0124-android-web-parity/`](../plans/260922-0124-android-web-parity/plan.md):
+search and genre pages, audio and subtitle choice, speed and framing, up next
+and queues, fullscreen gestures, picture-in-picture and a media session,
+series preload with offline badges, notes, profile removal and the List/Grid
+shelf toggle. What differs on purpose, and why, is recorded in
 `docs/superpowers/specs/2026-09-20-android-system-menu-and-playback-stats-design.md` §9.
 
 **`ui-tv` is empty.** The television surface is a registered Gradle module with

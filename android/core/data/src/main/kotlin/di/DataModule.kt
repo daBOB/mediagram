@@ -29,6 +29,8 @@ import settings.EncryptedLibrarySettings
 import settings.EncryptedTelegramSettings
 import settings.EncryptedTmdbSettings
 import settings.LibrarySettings
+import settings.SharedPreferencesShelfViewSettings
+import settings.ShelfViewSettings
 import settings.TelegramSettings
 import settings.TmdbSettings
 import javax.inject.Singleton
@@ -50,6 +52,11 @@ object DataModule {
     @Singleton
     fun provideLibrarySettings(@ApplicationContext context: Context): LibrarySettings =
         EncryptedLibrarySettings(context)
+
+    @Provides
+    @Singleton
+    fun provideShelfViewSettings(@ApplicationContext context: Context): ShelfViewSettings =
+        SharedPreferencesShelfViewSettings(context)
 
     @Provides
     @Singleton

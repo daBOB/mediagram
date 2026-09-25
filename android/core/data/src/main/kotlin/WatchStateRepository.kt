@@ -62,6 +62,29 @@ interface WatchStateRepository {
      * rows — nothing here refreshes itself.
      */
     suspend fun reload()
+
+    /**
+     * Removes a profile and everything it has watched, then re-reads who
+     * exists and who is chosen — the core forgets the choice itself when it
+     * named the one removed. False when nothing was removed.
+     *
+     * Local, as on the web: a profile another device's sync document still
+     * names is created again by the next round that pulls it.
+     */
+    suspend fun deleteProfile(id: String): Boolean = false
+
+    /**
+     * Treats a title as watched to the end — `markFinished` in the web's
+     * `watch-state.js`: what the player does when the credits roll, and what
+     * a viewer does by hand from Continue for something finished elsewhere
+     * or given up on. The position goes, because a finished title has nowhere
+     * to resume to; the fact that it finished stays, and a title already
+     * finished keeps the date it was first finished.
+     */
+    suspend fun markFinished(setId: String) {
+        clearProgress(setId)
+        if (snapshot.value.watched.none { it.setId == setId }) setWatched(setId, true)
+    }
 }
 
 class DefaultWatchStateRepository(
@@ -97,6 +120,13 @@ class DefaultWatchStateRepository(
             refreshSnapshot(core, id)
         }
         return chose
+    }
+
+    override suspend fun deleteProfile(id: String): Boolean {
+        val core = coreProvider.awaitCore()
+        val removed = withContext(dispatcher) { core.deleteProfile(id) }
+        if (removed) reload()
+        return removed
     }
 
     override suspend fun create(name: String): Profile? {

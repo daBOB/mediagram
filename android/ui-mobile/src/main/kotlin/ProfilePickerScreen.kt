@@ -39,8 +39,8 @@ private const val NEW_PROFILE = "New profile"
 private const val NAME_PROMPT = "Name for this profile"
 
 /**
- * Ports the web's picker (`profile-picker.js`) minus rename and delete,
- * which sync cannot express yet. Renders nothing for [ProfileUiState.Chosen] —
+ * Ports the web's picker (`profile-picker.js`): choose, add, and remove —
+ * the web has no rename either. Renders nothing for [ProfileUiState.Chosen] —
  * the caller only shows this while there is something left to decide.
  */
 @Composable
@@ -49,13 +49,14 @@ fun ProfilePickerScreen(
     onChoose: (String) -> Unit,
     onAdd: (String) -> Unit,
     onStay: () -> Unit,
+    onRemove: (String) -> Unit,
 ) {
     when (state) {
         ProfileUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
 
-        is ProfileUiState.Picking -> PickerBody(state.profiles, state.canStay, onChoose, onAdd, onStay)
+        is ProfileUiState.Picking -> PickerBody(state.profiles, state.canStay, onChoose, onAdd, onStay, onRemove)
 
         is ProfileUiState.Chosen -> Unit
     }
@@ -68,8 +69,10 @@ private fun PickerBody(
     onChoose: (String) -> Unit,
     onAdd: (String) -> Unit,
     onStay: () -> Unit,
+    onRemove: (String) -> Unit,
 ) {
     var naming by remember { mutableStateOf(false) }
+    var removing by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize().padding(Spacing.large)) {
         Text(HEADING, style = MaterialTheme.typography.headlineSmall)
@@ -89,6 +92,11 @@ private fun PickerBody(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        if (profiles.isNotEmpty()) {
+            TextButton(onClick = { removing = true }, modifier = Modifier.padding(top = Spacing.small)) {
+                Text("Remove a profile…")
+            }
+        }
         if (canStay) {
             TextButton(onClick = onStay, modifier = Modifier.padding(top = Spacing.small)) {
                 Text("Stay as I am")
@@ -96,6 +104,9 @@ private fun PickerBody(
         }
     }
 
+    if (removing) {
+        RemoveProfileDialog(profiles, onRemove = onRemove, onDismiss = { removing = false })
+    }
     if (naming) {
         NameDialog(
             onConfirm = { name -> naming = false; onAdd(name) },

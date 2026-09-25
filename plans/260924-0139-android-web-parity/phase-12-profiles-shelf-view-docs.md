@@ -10,7 +10,7 @@
 - Docs: `docs/system-architecture.md` §8 ("profiles cannot be renamed or deleted on the phone"; "What it does not have yet"), `docs/superpowers/specs/2026-09-20-android-system-menu-and-playback-stats-design.md` §9, `PRODUCT.md:52-66` (stale: "keeps no watch state", "no search")
 
 ## Overview
-Priority P3 · Status pending · Final phase; closes the docs.
+Priority P3 · Status done · Final phase; closes the docs.
 
 ## Key insights
 - Web removal is local and cascades; the profile **comes back** at the next sync
@@ -61,10 +61,10 @@ Modify:
    profile (sync would resurrect, but avoid touching the user's data). Toggle Movies to list and back.
 
 ## Todo
-- [ ] profile removal + tests
-- [ ] shelf view setting + toggle + courses list
-- [ ] docs + PRODUCT.md + old plan
-- [ ] check.sh, bump, changelog, device run
+- [x] profile removal + tests
+- [x] shelf view setting + toggle + courses list
+- [x] docs + PRODUCT.md + old plan
+- [x] check.sh, bump, changelog, device run
 
 ## Success criteria
 - Removing "Probe" deletes its rows (core cascade test from phase 01) and it does not reappear (no other device knows it).
@@ -80,3 +80,28 @@ Removal requires explicit confirm; no data leaves the device.
 
 ## Next steps
 Parity review: diff the web feature list against this plan's phase table; file anything left as a new plan.
+
+## Implementation notes
+- Removal: `WatchStateRepository.deleteProfile` (core delete, then `reload`,
+  which also drops the choice the core forgot). `ProfileViewModel.remove`
+  takes "Stay as I am" away when the chosen profile was the one removed.
+  `RemoveProfileDialog` lists names to tap instead of the web's typed name.
+- Shelf view: `ShelfViewSettings` (plain SharedPreferences, `shelf_view`,
+  grid stored as absence, anything unrecognised is grid), `ShelfViewModel`,
+  `offersViewChoice`/`shelfViewFor` (courses always a list), `ShelfModeToggle`,
+  `ShelfList`. The film shelf's cards now pass `held`, which the web's shelf
+  already showed.
+- Also here, for parity with the web's Continue shelf: "Mark finished" —
+  `WatchStateRepository.markFinished`, shared with `ProgressRecorder`, keeps
+  this branch's rule that a title already finished keeps its first date. On
+  `main` another session is changing that rule to re-stamp every time; merging
+  will need that change applied to this one function.
+
+## Device run (2026-09-25, tablet)
+- Created "Probe", removed it through the dialog; gone from the picker and
+  from `state.db`, and still gone after a relaunch's sync round.
+- On `test`: "Mark finished" on Justice League took it off Continue (5 → 4);
+  `state.db` has it watched with no position.
+- Movies → List: rows with year and runtime; survived a force-stop; Tutorials
+  shows a list with no toggle; back to Grid (the preference file is empty
+  again). Device left on the `andre` profile.

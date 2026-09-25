@@ -31,12 +31,7 @@ class ProgressRecorder @Inject constructor(private val repository: WatchStateRep
         runCatching {
             val runtime = ResumePoint.trustedRuntime(catalogued = null, observed = observedDurationSeconds, direct = true)
             if (ResumePoint.isFinished(atSeconds, runtime)) {
-                // The position goes, because a finished title has nowhere
-                // to resume to. The fact that it finished stays, because
-                // otherwise nothing would remember it was ever watched.
-                repository.clearProgress(setId)
-                val alreadyWatched = repository.snapshot.value.watched.any { it.setId == setId }
-                if (!alreadyWatched) repository.setWatched(setId, true)
+                repository.markFinished(setId)
             } else {
                 repository.setProgress(setId, atSeconds, runtime.takeIf { it > 0 })
             }

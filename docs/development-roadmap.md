@@ -150,7 +150,7 @@ no second MTProto implementation.
 | System menu | the System screen, playback stats, library refresh | Complete |
 | Details | the phone fetches its own synopses and artwork from TMDB | Complete |
 | External cache | the cache on a chosen volume, with a budget | Planned, [`plans/260921-1751-android-external-cache/`](../plans/260921-1751-android-external-cache/plan.md) |
-| Parity | audio, subtitles, watch state, and the screens that read it | Planned, [`plans/260922-0124-android-web-parity/`](../plans/260922-0124-android-web-parity/plan.md) |
+| Parity | audio, subtitles, watch state, and the screens that read it | Done, [`plans/260924-0139-android-web-parity/`](../plans/260924-0139-android-web-parity/plan.md) (superseding [`260922-0124`](../plans/260922-0124-android-web-parity/plan.md)) |
 
 ### What the phone still cannot do
 
