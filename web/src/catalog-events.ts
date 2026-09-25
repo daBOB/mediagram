@@ -9,7 +9,9 @@
  * since it may have missed an event while it was gone.
  *
  * The page never talks to Telegram. This is the whole of what it learns from
- * the server about the library changing.
+ * the server about the library changing — and about watch state another
+ * device sent, which the server pulls but a visible page would otherwise
+ * never ask for again.
  */
 
 /**
@@ -46,6 +48,11 @@ export class CatalogEvents {
   /** Tells every open page that the catalog it holds is out of date. */
   catalogChanged(publishedAt: number | null): void {
     this.send(`event: catalog\ndata: ${JSON.stringify({ publishedAt })}\n\n`);
+  }
+
+  /** Tells every open page that another device's positions or marks arrived. */
+  stateChanged(): void {
+    this.send("event: state\ndata: {}\n\n");
   }
 
   /** Open pages, for the status route and the tests. */

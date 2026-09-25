@@ -40,7 +40,7 @@ import { fetchPostersForIndex } from "./channel-index/fetch-posters-for-index";
 
 import { openCatalog } from "./application/open-catalog";
 import { CatalogFollower } from "./application/catalog-follow";
-import { LibraryUpdates, installShutdownSignals, shutdownFor, syncOnce, type ApplicationResources } from "./application/lifecycle";
+import { LibraryUpdates, announcingPulls, installShutdownSignals, shutdownFor, syncOnce, type ApplicationResources } from "./application/lifecycle";
 
 /** Only external network, process, and subscription IO is replaceable. */
 interface StartupIo {
@@ -170,10 +170,18 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
      * Nothing here can stop the player: `StateSync.once` reports failures, and
      * the local database remains the source of truth for this machine.
      */
-    const sync =
+    // Where open pages hear that the library or another device's watch state
+    // changed. Made before the sync so every round, whatever started it, can
+    // say it took something.
+    const events = new CatalogEvents();
+    resources.events = events;
+
+    const sync = announcingPulls(
       config.syncState && state.remembers
         ? new StateSync(state, new TelegramStateChannel(telegram), state.deviceId())
-        : null;
+        : null,
+      events,
+    );
 
     resources.sync = sync;
     const updates = new LibraryUpdates(
@@ -258,10 +266,6 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
         : undefined;
     resources.preload = preload;
     console.log(`preload: next 2 episodes ${preload ? "on" : "off"}`);
-
-    // Where open pages hear that the library changed.
-    const events = new CatalogEvents();
-    resources.events = events;
 
     const server = await startServer({
       db,

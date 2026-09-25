@@ -765,6 +765,9 @@ function listenForLibrary() {
   if (libraryEvents !== null) return;
   libraryEvents = new EventSource("/api/events");
   libraryEvents.addEventListener("catalog", () => void refreshCatalog());
+  // Another device's positions or marks, pulled by the server. Without this a
+  // tab left open showed its old Continue shelf until it was hidden and shown.
+  libraryEvents.addEventListener("state", () => void state.refreshState());
   libraryEvents.addEventListener("open", () => void refreshCatalog());
 }
 function stopListeningForLibrary() {
