@@ -135,7 +135,7 @@ visual first.
   line in `web/package.json`, `web/.claude/`, `skills-lock.json`, and
   `plans/260921-1751-android-external-cache/plan.md` (another session's edit).
 - [x] `cargo install --path crates/mediagram`: 0.37.0 replaced by 0.55.0.
-- [ ] **BLOCKED, the user's call:** `mediagram push-index` is **not** run. It publishes the
+- [x] **Resolved 2026-09-25 21:4x:** the uploader machine was upgraded to 0.55.0 and ran `metadata` + `push-index` (message 5327). The player serves v8 (1164 sets, popularity on 838/838 films); home reads Editor's choice / Trending on TMDB / Staff pick. Background, kept for the record: `mediagram push-index` from *this* machine was **not** run. It publishes the
   local index wholesale (no merge, `telegram/index_publish.rs`). On 2026-09-25 the channel
   snapshot held 1161 sets; this machine's index held 925. Pushing would drop **257 sets**
   (the other machine's uploads) from web and Android. This machine has 21 sets the channel
