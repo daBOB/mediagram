@@ -12,6 +12,7 @@
     "test": "bun test",
     "lint": "eslint public --max-warnings 0",
     "typecheck": "tsc --noEmit -p .",
+    "preview": "bun run scripts/preview.ts",
     "login": "bun run src/login.ts"
   },
   "dependencies": {
