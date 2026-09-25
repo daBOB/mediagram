@@ -14,12 +14,16 @@
 //! retype what they typed.
 
 use grammers_client::SignInError;
-use grammers_client::client::{LoginToken, PasswordToken};
+use grammers_client::client::LoginToken;
 use grammers_mtsender::InvocationError;
 
 #[path = "auth_attempt.rs"]
 mod attempt;
 use attempt::Attempt;
+
+#[path = "auth_password.rs"]
+mod password;
+pub(in crate::api) use password::{PendingPassword, check_password};
 
 use super::session;
 use crate::api::{AuthOutcome, Core, CoreError};
@@ -28,8 +32,6 @@ pub(in crate::api) struct PendingLogin {
     id: String,
     token: LoginToken,
 }
-
-pub(in crate::api) struct PendingPassword(PasswordToken);
 
 /// An opaque id, not a secret: it only lets `sign_in` recognise which
 /// in-flight attempt a caller means, the way a form's hidden field would.
@@ -93,7 +95,7 @@ pub(in crate::api) async fn sign_in(
             Ok(AuthOutcome::Done)
         }
         Err(SignInError::PasswordRequired(password_token)) => {
-            state.pending_password = Some(PendingPassword(password_token));
+            state.pending_password = Some(PendingPassword::Ready(Box::new(password_token)));
             Ok(AuthOutcome::PasswordNeeded)
         }
         Err(SignInError::InvalidCode) => {
@@ -105,49 +107,6 @@ pub(in crate::api) async fn sign_in(
         Err(SignInError::SignUpRequired) => Err(CoreError::NotAuthorized(NO_ACCOUNT.into())),
         Err(SignInError::Other(err)) => Err(refused(&err)),
         Err(unexpected @ SignInError::InvalidPassword(_)) => Err(out_of_step(unexpected)),
-    }
-}
-
-pub(in crate::api) async fn check_password(core: &Core, password: String) -> Result<(), CoreError> {
-    let mut state = core.state.lock().await;
-    let attempt = Attempt::resume(&state)?;
-    let pending = state
-        .pending_password
-        .take()
-        .ok_or_else(|| CoreError::NotAuthorized("no password step is in progress".into()))?;
-    let handle = state
-        .client
-        .as_ref()
-        .ok_or_else(|| CoreError::NotAuthorized("no login is in progress".into()))?;
-    let client = handle.client.clone();
-    drop(state);
-
-    finish_password(
-        core,
-        attempt,
-        client.check_password(pending.0, password.into_bytes()),
-    )
-    .await
-}
-
-async fn finish_password<T>(
-    core: &Core,
-    attempt: Attempt,
-    response: impl std::future::Future<Output = Result<T, SignInError>>,
-) -> Result<(), CoreError> {
-    let (mut state, result) = attempt.complete(core, response).await?;
-    match result {
-        Ok(_user) => attempt.persist(core),
-        Err(SignInError::InvalidPassword(retry_token)) => {
-            // Telegram hands the same password step back specifically so a
-            // wrong entry can be retried without a fresh login.
-            state.pending_password = Some(PendingPassword(retry_token));
-            Err(CoreError::NotAuthorized(
-                "the password was not accepted".into(),
-            ))
-        }
-        Err(SignInError::Other(err)) => Err(refused(&err)),
-        Err(unexpected) => Err(out_of_step(unexpected)),
     }
 }
 
