@@ -1,24 +1,17 @@
 package ui.tv.catalog
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.Text
 import catalog.CollectionKind
 import catalog.Entry
 import catalog.HOME_ROW_LIMIT
@@ -26,7 +19,6 @@ import catalog.HomeRow
 import catalog.RowContent
 import catalog.extentOf
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import model.Progress
 import ui.tv.TvTextRow
 
@@ -57,7 +49,7 @@ internal fun TvHomeRow(
 ) {
     val seeAll: (() -> Unit)? = row.seeAll?.let { shelf -> { onSeeAll(shelf) } }
     Column(modifier = Modifier.fillMaxWidth().padding(top = Spacing.large)) {
-        RowHeading(row)
+        TvCountedHeading(row.title, row.total)
         when (val content = row.content) {
             is RowContent.Entries -> {
                 val entries = content.entries
@@ -90,27 +82,6 @@ internal fun TvHomeRow(
             }
         }
     }
-}
-
-/** The same "Title · n" the web's and the phone's row headings carry, over a hairline. */
-@Composable
-private fun RowHeading(row: HomeRow) {
-    Text(
-        text =
-            buildAnnotatedString {
-                append(row.title)
-                withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)) { append(" · ${row.total}") }
-            },
-        style = TvTypeScale.title,
-    )
-    Box(
-        modifier =
-            Modifier
-                .padding(top = Spacing.small, bottom = Spacing.medium)
-                .fillMaxWidth()
-                .height(0.5.dp)
-                .background(MaterialTheme.colorScheme.borderVariant),
-    )
 }
 
 @Composable

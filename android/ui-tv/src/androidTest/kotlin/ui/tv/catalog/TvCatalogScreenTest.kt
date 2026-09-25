@@ -124,6 +124,7 @@ class TvCatalogScreenTest {
                     onOpenTitle = {},
                     onOpenCollection = {},
                     onOpenList = {},
+                    onCreateList = {},
                 )
             }
         }

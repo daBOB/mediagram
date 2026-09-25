@@ -115,19 +115,20 @@ private fun PlateLine(text: String) {
 
 /**
  * The artwork alone, at a poster's proportions — split out the way the
- * phone's `PosterArt` is, since a title page will want the same art without
- * a caption beneath it once one exists on this surface.
+ * phone's `PosterArt` is, for a page header that wants the same art
+ * without a caption beneath it.
  */
 @Composable
-private fun TvPlateArt(
+internal fun TvPlateArt(
     posterPath: File?,
     title: String,
     progress: Float?,
     watched: Boolean,
+    modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .aspectRatio(PosterAspectRatio)
                 .background(MaterialTheme.colorScheme.surfaceVariant),

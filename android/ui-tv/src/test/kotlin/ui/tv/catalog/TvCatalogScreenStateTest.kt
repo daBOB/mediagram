@@ -141,15 +141,6 @@ class TvCatalogScreenStateTest {
     }
 
     @Test
-    fun aKeptEntryHoldsAPlaceholderForNow() {
-        show(ready(films(1)))
-
-        compose.onNodeWithText("Watchlist").performSemanticsAction(SemanticsActions.OnClick)
-
-        compose.onNodeWithText("Watchlist is not on television yet.").assertExists()
-    }
-
-    @Test
     fun eachStateWithNoShelvesSaysThePhonesWordsUnderTheViewersName() {
         val messages =
             mapOf(
@@ -184,6 +175,7 @@ class TvCatalogScreenStateTest {
                         onOpenTitle = onOpenTitle,
                         onOpenCollection = onOpenCollection,
                         onOpenList = {},
+                        onCreateList = {},
                     )
                 }
             }

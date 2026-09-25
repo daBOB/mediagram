@@ -64,9 +64,11 @@ fun TvApp() {
  * The catalogue over the same [CatalogViewModel] the phone's library reads.
  *
  * Nothing opens yet: the title, collection and list pages a plate leads to
- * are not drawn on this surface, nor is what keeps the position between
- * them, so each open is deliberately a no-op until those arrive together —
- * the catalogue can be walked and checked on its own in the meantime.
+ * are not reached from here, nor is what keeps the position between them,
+ * so each open is deliberately a no-op until those arrive together — the
+ * catalogue can be walked and checked on its own in the meantime. Making a
+ * list is not a move anywhere, so the Collections tab's "New list" already
+ * does what it says.
  */
 @Composable
 private fun TvCatalog(profile: TvChosenProfile) {
@@ -78,6 +80,7 @@ private fun TvCatalog(profile: TvChosenProfile) {
         onOpenTitle = {},
         onOpenCollection = {},
         onOpenList = {},
+        onCreateList = catalogViewModel::createList,
     )
 }
 

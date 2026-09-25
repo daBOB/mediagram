@@ -24,6 +24,11 @@ dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":core:model"))
     implementation(project(":core:playback"))
+    // A show's header takes the index's TitleInfo, core:rust's type, the
+    // same one ui-common's rememberTitleInfo returns. Only the bindings'
+    // types: nothing here calls into the core, which stays behind the
+    // ViewModels.
+    implementation(project(":core:rust"))
     implementation(libs.findLibrary("androidx.tv.material").get())
     implementation(libs.findLibrary("coil.compose").get())
     implementation(libs.findLibrary("androidx.lifecycle.runtime.compose").get())

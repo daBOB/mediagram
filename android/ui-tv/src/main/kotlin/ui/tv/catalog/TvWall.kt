@@ -4,8 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,6 +45,11 @@ private const val Columns = 6
  * back at the top. [restoreKey] names that plate; when it isn't found (there
  * is none yet, or it no longer exists) focus falls back to the first plate,
  * so this wall is never left with nothing focused at all.
+ *
+ * [header] is whatever stands above the plates and scrolls with them — a
+ * kept wall's "Title · n", a show's name and facts — and [section] splits
+ * one wall into headed runs, as the Kids wall does, without a second grid
+ * whose focus would have to be handed across.
  */
 @Composable
 fun <T> TvWall(
@@ -51,10 +57,13 @@ fun <T> TvWall(
     key: (T) -> String,
     restoreKey: String?,
     onOpen: (T) -> Unit,
+    header: (@Composable () -> Unit)? = null,
+    section: ((T) -> String)? = null,
     plate: @Composable (item: T, modifier: Modifier, onOpen: () -> Unit) -> Unit,
 ) {
     val gridState = rememberLazyGridState()
     val focusRequester = remember { FocusRequester() }
+    val cells = remember(items, header != null, section) { cellsOf(items, header != null, section) }
     val focusIndex =
         remember(items, restoreKey) {
             if (items.isEmpty()) {
@@ -68,10 +77,14 @@ fun <T> TvWall(
     // restored plate beyond the first screenful has no focusable node yet —
     // LazyVerticalGrid only composes what is within (or near) the viewport —
     // and a FocusRequester has nothing to attach to until its item has been
-    // laid out at least once.
-    LaunchedEffect(focusIndex) {
+    // laid out at least once. The first plate scrolls to the very top
+    // instead, so whatever heads the wall is on screen above it.
+    // Keyed on the restore key as well as the index it resolves to: a caller
+    // naming a new plate means "go there" even when it happens to sit at the
+    // index the old one did — the next title after one taken off a list.
+    LaunchedEffect(focusIndex, restoreKey) {
         if (focusIndex != null) {
-            gridState.scrollToItem(focusIndex)
+            gridState.scrollToItem(if (focusIndex == 0) 0 else cells.indexOf(WallCell.Plate(focusIndex)))
             focusRequester.requestFocus()
         }
     }
@@ -84,9 +97,58 @@ fun <T> TvWall(
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
-        itemsIndexed(items = items, key = { _, item -> key(item) }) { index, item ->
-            val itemModifier = if (index == focusIndex) Modifier.focusRequester(focusRequester) else Modifier
-            plate(item, itemModifier) { onOpen(item) }
+        items(
+            items = cells,
+            key = { cell ->
+                when (cell) {
+                    WallCell.Header -> "header"
+                    is WallCell.Heading -> "heading-${cell.title}"
+                    is WallCell.Plate -> key(items[cell.index])
+                }
+            },
+            span = { cell -> if (cell is WallCell.Plate) GridItemSpan(1) else GridItemSpan(maxLineSpan) },
+        ) { cell ->
+            when (cell) {
+                WallCell.Header -> header?.invoke()
+                is WallCell.Heading -> TvSectionHeading(cell.title)
+                is WallCell.Plate -> {
+                    val item = items[cell.index]
+                    val itemModifier = if (cell.index == focusIndex) Modifier.focusRequester(focusRequester) else Modifier
+                    plate(item, itemModifier) { onOpen(item) }
+                }
+            }
         }
     }
 }
+
+/**
+ * One line of a wall as the grid lays it out: the optional header across
+ * the top, a section's heading across a whole line, or one plate — so a
+ * plate's place in the grid is looked up here rather than worked out again
+ * wherever the grid has to be scrolled to one.
+ */
+private sealed interface WallCell {
+    data object Header : WallCell
+
+    data class Heading(val title: String) : WallCell
+
+    data class Plate(val index: Int) : WallCell
+}
+
+/** A heading goes in wherever [section] changes from the plate before, so a caller only says which section each item is in. */
+private fun <T> cellsOf(
+    items: List<T>,
+    hasHeader: Boolean,
+    section: ((T) -> String)?,
+): List<WallCell> =
+    buildList {
+        if (hasHeader) add(WallCell.Header)
+        var current: String? = null
+        items.forEachIndexed { index, item ->
+            section?.invoke(item)?.let { title ->
+                if (title != current) add(WallCell.Heading(title))
+                current = title
+            }
+            add(WallCell.Plate(index))
+        }
+    }

@@ -18,11 +18,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.CatalogUiState
+import catalog.KeptKind
+import catalog.Shelf
 import catalog.catalogTabsOf
+import catalog.continueWall
 import catalog.homeRowsOf
+import catalog.kidsShelf
+import catalog.watchlistWall
 import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvTypeScale
+import model.WatchSnapshot
 import ui.tv.TvSafeArea
 import ui.tv.profile.TvChosenProfile
 
@@ -48,9 +54,8 @@ fun TvCatalogScreen(
     profile: TvChosenProfile,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
-    // Consumed by the Collections tab, which draws the viewer's own lists;
-    // declared now so this screen's callbacks already match the phone's.
-    @Suppress("UNUSED_PARAMETER") onOpenList: (id: String) -> Unit,
+    onOpenList: (id: String) -> Unit,
+    onCreateList: (name: String) -> Unit,
     mastheadFocus: FocusRequester = remember { FocusRequester() },
 ) {
     val ready = (state as? CatalogUiState.Ready)?.takeIf { it.shelves.isNotEmpty() }
@@ -107,12 +112,41 @@ fun TvCatalogScreen(
                 selected < tabs.firstKept -> {
                     TvShelfWall(shelves[selected - 1], ready.watch, onOpenTitle, onOpenCollection)
                 }
-                // The four kept walls are drawn by their own screens, which
-                // this surface does not have yet; the tab still says where
-                // it is rather than leaving a blank page under it.
-                else -> TvCenteredMessage("${tabs.titles[selected]} is not on television yet.")
+                else -> {
+                    TvKeptTab(
+                        kind = KeptKind.entries[selected - tabs.firstKept],
+                        shelves = shelves,
+                        watch = ready.watch,
+                        onOpenTitle = onOpenTitle,
+                        onOpenCollection = onOpenCollection,
+                        onOpenList = onOpenList,
+                        onCreateList = onCreateList,
+                    )
+                }
             }
         }
+    }
+}
+
+/**
+ * Which of the masthead's four kept entries is selected, dispatched to what
+ * draws it — the phone's `KeptTabContent`, over the same four functions.
+ */
+@Composable
+private fun TvKeptTab(
+    kind: KeptKind,
+    shelves: List<Shelf>,
+    watch: WatchSnapshot,
+    onOpenTitle: (setId: String) -> Unit,
+    onOpenCollection: (key: String) -> Unit,
+    onOpenList: (id: String) -> Unit,
+    onCreateList: (name: String) -> Unit,
+) {
+    when (kind) {
+        KeptKind.CONTINUE -> TvKeptWall(kind, remember(shelves, watch) { continueWall(shelves, watch) }, watch, onOpenTitle)
+        KeptKind.WATCHLIST -> TvKeptWall(kind, remember(shelves, watch) { watchlistWall(shelves, watch) }, watch, onOpenTitle)
+        KeptKind.KIDS -> TvKidsWall(remember(shelves, watch) { kidsShelf(shelves, watch) }, watch, onOpenTitle, onOpenCollection)
+        KeptKind.COLLECTIONS -> TvLists(lists = watch.collections, onOpen = onOpenList, onCreate = onCreateList)
     }
 }
 
