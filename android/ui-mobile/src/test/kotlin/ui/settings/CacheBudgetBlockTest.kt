@@ -102,6 +102,13 @@ class CacheBudgetBlockTest {
         coVerify(exactly = 3) { CacheProvider.occupancy(any(), any()) }
     }
 
+    @Test fun aFellBackCacheSaysSoNextToTheHeldRow() {
+        coEvery { CacheProvider.occupancy(any(), any()) } returns occupancy(128, 1L shl 30, fellBack = true)
+        open()
+        compose.onNodeWithText("Held").assertIsDisplayed()
+        compose.onNodeWithText("Could not use the chosen location; using Internal storage instead.").assertIsDisplayed()
+    }
+
     @Test fun failedResizeKeepsTheLastReadAndRetryReadsAnAlreadyPersistedChange() {
         val prior = occupancy(128, 1L shl 30)
         coEvery { CacheProvider.occupancy(any(), any()) } returns prior
@@ -154,6 +161,6 @@ class CacheBudgetBlockTest {
      * so the ladder always offers the same choices these tests click on
      * ("2.0 GB", "4.0 GB") regardless of the current budget.
      */
-    private fun occupancy(held: Long, budget: Long) =
-        CacheOccupancy(heldBytes = held, budgetBytes = budget, volumeLabel = "Internal storage", fellBack = false, capBytes = 8L shl 30)
+    private fun occupancy(held: Long, budget: Long, fellBack: Boolean = false) =
+        CacheOccupancy(heldBytes = held, budgetBytes = budget, volumeLabel = "Internal storage", fellBack = fellBack, capBytes = 8L shl 30)
 }

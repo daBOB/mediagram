@@ -40,6 +40,16 @@ internal fun cacheReadsLine(
     return "$percent% from disk ($trips upstream)"
 }
 
+/**
+ * The Cache block's "Where" row: the volume actually in use, with a note
+ * when the chosen one could not be reached and this is a fallback rather
+ * than what a viewer picked.
+ */
+internal fun cacheWhereLine(
+    volumeLabel: String,
+    fellBack: Boolean,
+): String = if (fellBack) "$volumeLabel (the chosen volume could not be used)" else volumeLabel
+
 /** Whether this device's Telegram session is up, or `null` when the question does not apply. */
 internal fun telegramLine(connected: Boolean?): String? =
     when (connected) {

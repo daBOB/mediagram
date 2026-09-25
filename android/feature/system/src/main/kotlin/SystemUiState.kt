@@ -27,6 +27,9 @@ data class SystemUiState(
     val lastRefresh: RefreshOutcome?,
     val heldBytes: Long,
     val budgetBytes: Long,
+    /** Which volume the cache actually opened on, and whether that was a fallback from what was chosen. */
+    val volumeLabel: String,
+    val fellBack: Boolean,
     val fromCacheBytes: Long,
     val fromUpstreamBytes: Long,
     val fetches: Int,

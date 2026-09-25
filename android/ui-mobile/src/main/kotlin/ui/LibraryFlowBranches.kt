@@ -12,7 +12,7 @@ import ui.player.PlayerScreen
 import ui.system.SystemScreen
 import ui.settings.TmdbKeyScreen
 import ui.settings.SettingsScreen
-import ui.settings.CacheBudgetBlock
+import ui.settings.CacheSection
 import ui.catalog.SearchBranch
 import ui.catalog.GenreBranch
 import ui.catalog.TitleDetailScreen
@@ -63,7 +63,7 @@ internal fun LibraryBranches(
                     MenuScreen.System -> SystemScreen()
                     MenuScreen.TmdbKey -> TmdbKeyScreen(hasKey = fetchState.hasKey, onSave = fetchViewModel::saveKey)
                     // Stands in until the real screen lands.
-                    MenuScreen.Settings -> SettingsScreen(cache = { CacheBudgetBlock() })
+                    MenuScreen.Settings -> SettingsScreen(cache = { CacheSection() })
                 }
             }
         }

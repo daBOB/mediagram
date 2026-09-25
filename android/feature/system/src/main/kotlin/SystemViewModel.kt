@@ -101,6 +101,8 @@ class SystemViewModel
                 lastRefresh = refreshes.last(),
                 heldBytes = occupancy.heldBytes,
                 budgetBytes = occupancy.budgetBytes,
+                volumeLabel = occupancy.volumeLabel,
+                fellBack = occupancy.fellBack,
                 fromCacheBytes = totals.fromCacheBytes,
                 fromUpstreamBytes = totals.fromUpstreamBytes,
                 fetches = totals.fetches,

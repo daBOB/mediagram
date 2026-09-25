@@ -47,6 +47,12 @@ internal fun CacheBudgetBlock() {
         }
         if (current == null) return@Column
         Block(heading = "Cache", rows = listOf("Held" to heldOfBudget(current.heldBytes, current.budgetBytes)))
+        if (current.fellBack) {
+            Text(
+                "Could not use the chosen location; using ${current.volumeLabel} instead.",
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
         for (bytes in cacheBudgetChoices(current.capBytes)) {
             Row(
                 modifier =

@@ -121,6 +121,7 @@ private fun CacheBlock(state: SystemUiState) = Block(heading = "Cache", rows = c
 internal fun cacheRows(state: SystemUiState): List<Pair<String, String?>> =
     listOf(
         "Held" to heldOfBudget(state.heldBytes, state.budgetBytes),
+        "Where" to cacheWhereLine(state.volumeLabel, state.fellBack),
         "Reads" to cacheReadsLine(state.fromCacheBytes, state.fromUpstreamBytes, state.fetches),
     )
 
