@@ -1,0 +1,501 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-25T16:39:56Z",
+  "title": "Design System: Mediagram (web player)",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Uncoated Paper",
+        "canonical": "oklch(95.6% 0.013 86.8)",
+        "tonalRamp": [
+          "oklch(15% 0.013 86.8)",
+          "oklch(25% 0.013 86.8)",
+          "oklch(35% 0.013 86.8)",
+          "oklch(45% 0.013 86.8)",
+          "oklch(55% 0.013 86.8)",
+          "oklch(70% 0.013 86.8)",
+          "oklch(85% 0.013 86.8)",
+          "oklch(95% 0.013 86.8)"
+        ]
+      },
+      "paper-sunk": {
+        "role": "neutral",
+        "displayName": "Sunk Paper",
+        "canonical": "oklch(91.4% 0.021 85.9)",
+        "tonalRamp": [
+          "oklch(15% 0.021 85.9)",
+          "oklch(25% 0.021 85.9)",
+          "oklch(35% 0.021 85.9)",
+          "oklch(45% 0.021 85.9)",
+          "oklch(55% 0.021 85.9)",
+          "oklch(70% 0.021 85.9)",
+          "oklch(85% 0.021 85.9)",
+          "oklch(95% 0.021 85.9)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(22.4% 0.010 80.6)",
+        "tonalRamp": [
+          "oklch(15% 0.010 80.6)",
+          "oklch(25% 0.010 80.6)",
+          "oklch(35% 0.010 80.6)",
+          "oklch(45% 0.010 80.6)",
+          "oklch(55% 0.010 80.6)",
+          "oklch(70% 0.010 80.6)",
+          "oklch(85% 0.010 80.6)",
+          "oklch(95% 0.010 80.6)"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Second Ink",
+        "canonical": "oklch(46.3% 0.021 81.2)",
+        "tonalRamp": [
+          "oklch(15% 0.021 81.2)",
+          "oklch(25% 0.021 81.2)",
+          "oklch(35% 0.021 81.2)",
+          "oklch(45% 0.021 81.2)",
+          "oklch(55% 0.021 81.2)",
+          "oklch(70% 0.021 81.2)",
+          "oklch(85% 0.021 81.2)",
+          "oklch(95% 0.021 81.2)"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Third Ink",
+        "canonical": "oklch(61.3% 0.023 81.7)",
+        "tonalRamp": [
+          "oklch(15% 0.023 81.7)",
+          "oklch(25% 0.023 81.7)",
+          "oklch(35% 0.023 81.7)",
+          "oklch(45% 0.023 81.7)",
+          "oklch(55% 0.023 81.7)",
+          "oklch(70% 0.023 81.7)",
+          "oklch(85% 0.023 81.7)",
+          "oklch(95% 0.023 81.7)"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "canonical": "oklch(84.7% 0.029 86.7)",
+        "tonalRamp": [
+          "oklch(15% 0.029 86.7)",
+          "oklch(25% 0.029 86.7)",
+          "oklch(35% 0.029 86.7)",
+          "oklch(45% 0.029 86.7)",
+          "oklch(55% 0.029 86.7)",
+          "oklch(70% 0.029 86.7)",
+          "oklch(85% 0.029 86.7)",
+          "oklch(95% 0.029 86.7)"
+        ]
+      },
+      "rule-soft": {
+        "role": "neutral",
+        "displayName": "Soft Rule",
+        "canonical": "oklch(89.3% 0.026 86.9)",
+        "tonalRamp": [
+          "oklch(15% 0.026 86.9)",
+          "oklch(25% 0.026 86.9)",
+          "oklch(35% 0.026 86.9)",
+          "oklch(45% 0.026 86.9)",
+          "oklch(55% 0.026 86.9)",
+          "oklch(70% 0.026 86.9)",
+          "oklch(85% 0.026 86.9)",
+          "oklch(95% 0.026 86.9)"
+        ]
+      },
+      "imprint": {
+        "role": "primary",
+        "displayName": "Imprint Red",
+        "canonical": "oklch(45.9% 0.113 31.1)",
+        "tonalRamp": [
+          "oklch(15% 0.113 31.1)",
+          "oklch(25% 0.113 31.1)",
+          "oklch(35% 0.113 31.1)",
+          "oklch(45% 0.113 31.1)",
+          "oklch(55% 0.113 31.1)",
+          "oklch(70% 0.113 31.1)",
+          "oklch(85% 0.113 31.1)",
+          "oklch(95% 0.113 31.1)"
+        ]
+      },
+      "ochre": {
+        "role": "secondary",
+        "displayName": "Ochre",
+        "canonical": "oklch(51.7% 0.092 76.3)",
+        "tonalRamp": [
+          "oklch(15% 0.092 76.3)",
+          "oklch(25% 0.092 76.3)",
+          "oklch(35% 0.092 76.3)",
+          "oklch(45% 0.092 76.3)",
+          "oklch(55% 0.092 76.3)",
+          "oklch(70% 0.092 76.3)",
+          "oklch(85% 0.092 76.3)",
+          "oklch(95% 0.092 76.3)"
+        ]
+      },
+      "sage": {
+        "role": "tertiary",
+        "displayName": "Sage",
+        "canonical": "oklch(48.0% 0.068 138.5)",
+        "tonalRamp": [
+          "oklch(15% 0.068 138.5)",
+          "oklch(25% 0.068 138.5)",
+          "oklch(35% 0.068 138.5)",
+          "oklch(45% 0.068 138.5)",
+          "oklch(55% 0.068 138.5)",
+          "oklch(70% 0.068 138.5)",
+          "oklch(85% 0.068 138.5)",
+          "oklch(95% 0.068 138.5)"
+        ]
+      },
+      "stage": {
+        "role": "neutral",
+        "displayName": "Stage",
+        "canonical": "oklch(15.5% 0.003 67.6)",
+        "tonalRamp": [
+          "oklch(15% 0.003 67.6)",
+          "oklch(25% 0.003 67.6)",
+          "oklch(35% 0.003 67.6)",
+          "oklch(45% 0.003 67.6)",
+          "oklch(55% 0.003 67.6)",
+          "oklch(70% 0.003 67.6)",
+          "oklch(85% 0.003 67.6)",
+          "oklch(95% 0.003 67.6)"
+        ]
+      },
+      "stage-raised": {
+        "role": "neutral",
+        "displayName": "Raised Stage",
+        "canonical": "oklch(19.6% 0.012 91.8)",
+        "tonalRamp": [
+          "oklch(15% 0.012 91.8)",
+          "oklch(25% 0.012 91.8)",
+          "oklch(35% 0.012 91.8)",
+          "oklch(45% 0.012 91.8)",
+          "oklch(55% 0.012 91.8)",
+          "oklch(70% 0.012 91.8)",
+          "oklch(85% 0.012 91.8)",
+          "oklch(95% 0.012 91.8)"
+        ]
+      },
+      "stage-ink": {
+        "role": "neutral",
+        "displayName": "Stage Ink",
+        "canonical": "oklch(92.9% 0.017 88.0)",
+        "tonalRamp": [
+          "oklch(15% 0.017 88.0)",
+          "oklch(25% 0.017 88.0)",
+          "oklch(35% 0.017 88.0)",
+          "oklch(45% 0.017 88.0)",
+          "oklch(55% 0.017 88.0)",
+          "oklch(70% 0.017 88.0)",
+          "oklch(85% 0.017 88.0)",
+          "oklch(95% 0.017 88.0)"
+        ]
+      },
+      "stage-ink-2": {
+        "role": "neutral",
+        "displayName": "Second Stage Ink",
+        "canonical": "oklch(64.9% 0.026 85.8)",
+        "tonalRamp": [
+          "oklch(15% 0.026 85.8)",
+          "oklch(25% 0.026 85.8)",
+          "oklch(35% 0.026 85.8)",
+          "oklch(45% 0.026 85.8)",
+          "oklch(55% 0.026 85.8)",
+          "oklch(70% 0.026 85.8)",
+          "oklch(85% 0.026 85.8)",
+          "oklch(95% 0.026 85.8)"
+        ]
+      },
+      "stage-rule": {
+        "role": "neutral",
+        "displayName": "Stage Rule",
+        "canonical": "oklch(27.6% 0.013 72.3)",
+        "tonalRamp": [
+          "oklch(15% 0.013 72.3)",
+          "oklch(25% 0.013 72.3)",
+          "oklch(35% 0.013 72.3)",
+          "oklch(45% 0.013 72.3)",
+          "oklch(55% 0.013 72.3)",
+          "oklch(70% 0.013 72.3)",
+          "oklch(85% 0.013 72.3)",
+          "oklch(95% 0.013 72.3)"
+        ]
+      },
+      "stage-amber": {
+        "role": "primary",
+        "displayName": "Stage Amber",
+        "canonical": "oklch(73.6% 0.104 61.2)",
+        "tonalRamp": [
+          "oklch(15% 0.104 61.2)",
+          "oklch(25% 0.104 61.2)",
+          "oklch(35% 0.104 61.2)",
+          "oklch(45% 0.104 61.2)",
+          "oklch(55% 0.104 61.2)",
+          "oklch(70% 0.104 61.2)",
+          "oklch(85% 0.104 61.2)",
+          "oklch(95% 0.104 61.2)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "'mediagram' in the masthead only."
+      },
+      "display": {
+        "displayName": "Display",
+        "purpose": "A shelf's or title page's own name; one per page."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "A row's name on the start page."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "A title in an index row."
+      },
+      "title-small": {
+        "displayName": "Title Small",
+        "purpose": "A title under a plate on a wall."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running text; 68ch for excerpts."
+      },
+      "figures": {
+        "displayName": "Figures",
+        "purpose": "Year, runtime, counts, codecs; tabular."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Spaced capitals for crumbs, pager, tags and word controls."
+      }
+    },
+    "shadows": [
+      {
+        "name": "plate-rest",
+        "value": "0 0 0 1px rgba(30,27,22,.13), 0 2px 3px -1px rgba(60,45,25,.16), 0 10px 18px -12px rgba(60,45,25,.5)",
+        "purpose": "A plate tipped onto the page."
+      },
+      {
+        "name": "plate-lift",
+        "value": "0 0 0 1px rgba(140,59,46,.3), 0 3px 5px -1px rgba(60,45,25,.2), 0 16px 26px -14px rgba(60,45,25,.6)",
+        "purpose": "A plate under the pointer, with translateY(-2px)."
+      },
+      {
+        "name": "stage-legibility",
+        "value": "0 1px 3px rgba(0,0,0,.8)",
+        "purpose": "text-shadow keeping words readable over a moving picture."
+      },
+      {
+        "name": "reel-poster",
+        "value": "0 30px 80px rgba(0,0,0,.6)",
+        "purpose": "The reel's poster over its blurred copy."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-color",
+        "value": "120ms ease",
+        "purpose": "Colour and underline changes on hover."
+      },
+      {
+        "name": "plate-lift",
+        "value": "160ms ease",
+        "purpose": "A plate or tile rising under the pointer."
+      },
+      {
+        "name": "page-out",
+        "value": "140ms ease-in",
+        "purpose": "The old page lifting away (translateY -6px, fade)."
+      },
+      {
+        "name": "page-in",
+        "value": "280ms cubic-bezier(0.2, 0.7, 0.2, 1) 60ms",
+        "purpose": "The new page settling in (from translateY 10px)."
+      },
+      {
+        "name": "rails-fade",
+        "value": "260ms ease",
+        "purpose": "Player rails fading when the pointer rests."
+      },
+      {
+        "name": "reel-crossfade",
+        "value": "1200ms ease",
+        "purpose": "One reel slide fading over the last."
+      },
+      {
+        "name": "reel-drift",
+        "value": "8.5s ease-out",
+        "purpose": "Poster drifting and growing while a slide holds."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "narrow",
+        "value": "720px"
+      },
+      {
+        "name": "phone",
+        "value": "560px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Masthead",
+      "kind": "nav",
+      "refersTo": "masthead-link",
+      "description": "Wordmark, shelves as Newsreader links, active shelf in imprint red with a footnote count, closed by a 3px double rule.",
+      "html": "<header class=\"ds-masthead\"><a class=\"ds-brand\" href=\"#\">mediagram</a><nav><a href=\"#\" class=\"ds-on\">Films<span class=\"ds-n\">581</span></a><a href=\"#\">Series<span class=\"ds-n\">41</span></a><a href=\"#\">Courses<span class=\"ds-n\">12</span></a><a href=\"#\" class=\"ds-kept\">Continue<span class=\"ds-n\">4</span></a></nav></header>",
+      "css": ".ds-masthead{display:flex;flex-wrap:wrap;align-items:baseline;gap:0.75rem 2.25rem;padding:1.75rem 2rem 1.05rem;border-bottom:3px double var(--rule, #d5ccb8);background:var(--paper, #f4f0e7)} .ds-brand{font-family:'Fraunces', 'Iowan Old Style', Georgia, serif;font-size:1.85rem;font-weight:600;letter-spacing:-0.015em;line-height:1;margin-right:auto;color:var(--ink, #1e1b16);text-decoration:none} .ds-masthead nav{display:flex;gap:1.65rem;align-items:baseline} .ds-masthead nav a{font-family:'Newsreader', 'Iowan Old Style', Georgia, serif;color:var(--ink-2, #5f584c);text-decoration:none;font-size:0.95rem;letter-spacing:0.02em;padding-bottom:0.15rem;border-bottom:1px solid transparent;transition:color 120ms ease,border-color 120ms ease} .ds-masthead nav a:hover{color:var(--ink, #1e1b16)} .ds-masthead nav a.ds-on{color:var(--accent, #8c3b2e);border-bottom-color:var(--accent, #8c3b2e)} .ds-masthead nav a:focus-visible{outline:2px solid var(--accent, #8c3b2e);outline-offset:3px} .ds-n{font-size:0.68em;vertical-align:super;margin-left:0.28em;color:var(--ink-3, #8b8375);font-variant-numeric:tabular-nums} .ds-on .ds-n{color:var(--accent, #8c3b2e)} .ds-kept{margin-left:0.5rem;padding-left:1.5rem;border-left:1px solid var(--rule, #d5ccb8)}"
+    },
+    {
+      "name": "Search field",
+      "kind": "input",
+      "refersTo": "search-field",
+      "description": "A ruled line to write on; the rule turns imprint red on focus. Never below 1rem.",
+      "html": "<input class=\"ds-search\" type=\"search\" placeholder=\"Search the catalogue\">",
+      "css": ".ds-search{width:17rem;padding:0.42rem 0 0.42rem 0.1rem;background:none;border:none;border-bottom:1px solid var(--rule, #d5ccb8);color:var(--ink, #1e1b16);font-family:'Newsreader', 'Iowan Old Style', Georgia, serif;font-size:1rem;transition:border-color 120ms ease} .ds-search::placeholder{color:var(--ink-3, #8b8375)} .ds-search:focus,.ds-search:focus-visible{outline:none;border-bottom-color:var(--accent, #8c3b2e)}"
+    },
+    {
+      "name": "Plate",
+      "kind": "custom",
+      "refersTo": "plate",
+      "description": "Artwork at 2:3, tipped onto the page; lifts 2px with a red-tinged hairline under the pointer. Initials in Fraunces when the poster is absent.",
+      "html": "<button class=\"ds-plate-card\"><span class=\"ds-plate\">AM</span><span class=\"ds-plate-name\">Amélie</span><span class=\"ds-plate-meta\">2001 · 2 h 2 min</span></button>",
+      "css": ".ds-plate-card{display:grid;gap:0.5rem;width:11rem;background:none;border:none;padding:0;text-align:left;cursor:pointer;color:var(--ink, #1e1b16)} .ds-plate{display:grid;place-items:center;aspect-ratio:2/3;background:var(--paper-sunk, #e9e2d3);color:var(--ink-3, #8b8375);font-family:'Fraunces', 'Iowan Old Style', Georgia, serif;font-size:1.1rem;font-weight:500;letter-spacing:0.06em;box-shadow:0 0 0 1px rgba(30,27,22,.13),0 2px 3px -1px rgba(60,45,25,.16),0 10px 18px -12px rgba(60,45,25,.5);transition:transform 160ms ease,box-shadow 160ms ease} .ds-plate-card:hover .ds-plate,.ds-plate-card:focus-visible .ds-plate{transform:translateY(-2px);box-shadow:0 0 0 1px rgba(140,59,46,.3),0 3px 5px -1px rgba(60,45,25,.2),0 16px 26px -14px rgba(60,45,25,.6)} .ds-plate-card:focus-visible{outline:2px solid var(--accent, #8c3b2e);outline-offset:3px} .ds-plate-name{font-family:'Fraunces', 'Iowan Old Style', Georgia, serif;font-size:1.02rem;font-weight:500;line-height:1.25;transition:color 120ms ease} .ds-plate-card:hover .ds-plate-name{color:var(--accent, #8c3b2e)} .ds-plate-meta{font-family:'Newsreader', 'Iowan Old Style', Georgia, serif;color:var(--ink-2, #5f584c);font-size:0.875rem;font-variant-numeric:tabular-nums}"
+    },
+    {
+      "name": "Index row",
+      "kind": "card",
+      "refersTo": "index-row",
+      "description": "A title as a line of the catalogue: small plate, name and figures at two ends, resume line in imprint red, soft rule underneath.",
+      "html": "<button class=\"ds-row\"><span class=\"ds-row-plate\"></span><span class=\"ds-row-body\"><span class=\"ds-row-name\">The Third Man</span><span class=\"ds-row-meta\">1949 · 1 h 44 min</span><span class=\"ds-row-resume\">Resume at 38 min</span></span></button>",
+      "css": ".ds-row{display:grid;grid-template-columns:4.75rem minmax(0,1fr);gap:0 1.6rem;align-items:center;width:100%;padding:1.35rem 0.25rem;background:none;border:none;border-bottom:1px solid var(--rule-soft, #e3dbc9);border-radius:0;color:var(--ink, #1e1b16);text-align:left;cursor:pointer} .ds-row:focus-visible{outline:2px solid var(--accent, #8c3b2e);outline-offset:3px} .ds-row-plate{aspect-ratio:2/3;background:var(--paper-sunk, #e9e2d3);box-shadow:0 0 0 1px rgba(30,27,22,.13),0 10px 18px -12px rgba(60,45,25,.5)} .ds-row-body{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;column-gap:1.5rem} .ds-row-name{font-family:'Fraunces', 'Iowan Old Style', Georgia, serif;font-size:1.22rem;font-weight:500;line-height:1.25;transition:color 120ms ease} .ds-row:hover .ds-row-name{color:var(--accent, #8c3b2e)} .ds-row-meta{font-family:'Newsreader', 'Iowan Old Style', Georgia, serif;color:var(--ink-2, #5f584c);font-size:0.875rem;font-variant-numeric:tabular-nums;text-align:right} .ds-row-resume{grid-column:1;font-family:'Newsreader', 'Iowan Old Style', Georgia, serif;color:var(--accent, #8c3b2e);font-size:0.8rem;letter-spacing:0.03em;font-variant-numeric:tabular-nums;margin-top:0.15rem}"
+    },
+    {
+      "name": "Tags",
+      "kind": "chip",
+      "refersTo": "tag",
+      "description": "One shape, three statements: a search match (third ink), needs converting (ochre), already on this disk (sage).",
+      "html": "<span class=\"ds-tag\">in summary</span> <span class=\"ds-tag ds-warn\">converts</span> <span class=\"ds-tag ds-held\">on disk</span>",
+      "css": ".ds-tag{display:inline-block;font-family:'Newsreader', 'Iowan Old Style', Georgia, serif;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-3, #8b8375);border:1px solid var(--rule, #d5ccb8);border-radius:2px;padding:0.15rem 0.5rem;white-space:nowrap} .ds-warn{color:var(--warn, #866021);border-color:rgba(134,96,33,.45)} .ds-held{color:var(--held, #4a6741);border-color:rgba(74,103,65,.45)}"
+    },
+    {
+      "name": "Quiet control",
+      "kind": "button",
+      "refersTo": "quiet-control",
+      "description": "A control that is a word: spaced third-ink capitals, underlined in imprint red on hover. The one that plays is red at rest.",
+      "html": "<button class=\"ds-quiet ds-play\">Play all</button><button class=\"ds-quiet\">Rename</button><button class=\"ds-quiet\">Delete</button>",
+      "css": ".ds-quiet{background:none;border:none;border-bottom:1px solid transparent;padding:0.2rem 0;margin-right:1.8rem;color:var(--ink-3, #8b8375);font-family:'Newsreader', 'Iowan Old Style', Georgia, serif;font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:color 120ms ease,border-color 120ms ease} .ds-quiet:hover{color:var(--accent, #8c3b2e);border-bottom-color:var(--accent, #8c3b2e)} .ds-quiet:focus-visible{outline:2px solid var(--accent, #8c3b2e);outline-offset:3px} .ds-play{color:var(--accent, #8c3b2e)}"
+    },
+    {
+      "name": "Outlined action",
+      "kind": "button",
+      "refersTo": "quiet-control",
+      "description": "The play button on a title page: imprint red outline, 2px corner, filled on hover.",
+      "html": "<button class=\"ds-outlined\">Play</button>",
+      "css": ".ds-outlined{padding:0.45rem 1.1rem;font-family:'Newsreader', 'Iowan Old Style', Georgia, serif;font-size:0.875rem;color:var(--accent, #8c3b2e);background:none;border:1px solid var(--accent, #8c3b2e);border-radius:2px;cursor:pointer;transition:color 120ms ease,background-color 120ms ease} .ds-outlined:hover{color:var(--paper, #f4f0e7);background:var(--accent, #8c3b2e)} .ds-outlined:focus-visible{outline:2px solid var(--accent, #8c3b2e);outline-offset:3px}"
+    },
+    {
+      "name": "Stage actions",
+      "kind": "button",
+      "refersTo": "stage-play",
+      "description": "The screening room's buttons: a stage-ink fill that turns amber, beside an outlined companion. Black room, own palette.",
+      "html": "<div class=\"ds-stage\"><button class=\"ds-stage-play\">Play</button><button class=\"ds-stage-details\">Details</button></div>",
+      "css": ".ds-stage{display:flex;gap:0.8rem;padding:2rem;background:var(--stage, #0d0c0b);color-scheme:dark} .ds-stage button{font-family:'Newsreader', 'Iowan Old Style', Georgia, serif;font-size:0.8rem;letter-spacing:0.12em;text-transform:uppercase;padding:0.6rem 1.3rem;border-radius:2px;cursor:pointer;transition:background 120ms ease,color 120ms ease,border-color 120ms ease} .ds-stage-play{color:var(--stage, #0d0c0b);background:var(--stage-ink, #ece7db);border:1px solid var(--stage-ink, #ece7db)} .ds-stage-play:hover{background:var(--stage-accent, #d99a63);border-color:var(--stage-accent, #d99a63)} .ds-stage-details{color:var(--stage-ink, #ece7db);background:none;border:1px solid var(--stage-ink-2, #968e7d)} .ds-stage-details:hover{border-color:var(--stage-ink, #ece7db)} .ds-stage button:focus-visible{outline:2px solid var(--stage-accent, #d99a63);outline-offset:3px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Catalogue Printed on Paper",
+    "overview": "The web player is the reference surface, and this is its record. It sets the household's library the way a small press sets its backlist catalogue: warm uncoated stock, two serifs, a wide margin the page makes no attempt to fill, hairline rules where another product would draw cards, and artwork set as plates with the caption beside them. Nothing here is sold, ranked or recommended, so nothing borrows from a streaming storefront. The Android app prints the same catalogue in ink (`../DESIGN.md`); this file is the paper it was inverted from.\n\nThe page is typographic before it is visual. Hierarchy comes from face, size and case, not from boxes or colour: a shelf is a display-face title over a rule, a row is a name and its figures set at two ends of one line, and every fact about a title that is not its name is set small, spaced, in capitals or in tabular figures, the way a catalogue sets extents and call numbers. Density is calm rather than packed; the measure stops at 62rem even on a wide screen, because a catalogue is not trying to fill the window.\n\nOne room breaks the paper, on purpose. The player, and the Featured reel that is its lobby, are black and carry their own palette. A poster reads best against a page; a picture reads best against nothing. The two rooms share the faces and the restraint, not the stock.",
+    "keyCharacteristics": [
+      "Warm uncoated paper, never white; ink, never black, on the page.",
+      "Hairline rules instead of cards; a double rule under the masthead.",
+      "Plates at the 2:3 a poster is drawn at, tipped onto the page.",
+      "One imprint red for \"where you are\" and \"what you are pointing at\".",
+      "Two variable serifs driven by optical size: Fraunces to name, Newsreader to tell.",
+      "A separate black screening room with its own amber accent."
+    ],
+    "rules": [
+      {
+        "name": "The One Accent Rule",
+        "body": "Imprint red marks position and intention — where you are, what you point at, what will play. Never a heading, a background, a decoration or a second meaning.",
+        "section": "colors"
+      },
+      {
+        "name": "The Pair of Facts Rule",
+        "body": "Ochre and sage are a pair and the page's only colours for a fact about a title: ochre for what will cost something, sage for what will not. A third status colour breaks the pair.",
+        "section": "colors"
+      },
+      {
+        "name": "The No White Rule",
+        "body": "Nothing on paper is `#fff` and nothing is `#000`. The page's white is `paper`, its black is `ink`. True black belongs to the picture alone.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Faces Rule",
+        "body": "Fraunces names a thing; Newsreader tells you about it. A label, a figure or a control is never set in Fraunces, and a title is never set in Newsreader.",
+        "section": "typography"
+      },
+      {
+        "name": "The Footnote Rule",
+        "body": "Counts ride high and small beside what they count — superscript in the masthead, a quieter figure after a row's name, flush right on a shelf head where a catalogue prints an extent. Never a pill, never a bubble.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sixteen Pixel Floor",
+        "body": "A field's text is never below 1rem; smaller, and a phone zooms the page on focus.",
+        "section": "typography"
+      },
+      {
+        "name": "The Wall, Not a Rail Rule",
+        "body": "A shelf shows everything it holds in one direction of travel. No horizontally scrolling poster row: a rail hides how much is on a shelf and promotes whatever happens to be first.",
+        "section": "layout"
+      },
+      {
+        "name": "The Unfilled Margin Rule",
+        "body": "The measure is 62rem on every screen. Width beyond it goes to margin, never to more columns of text.",
+        "section": "layout"
+      },
+      {
+        "name": "The Tipped Plate Rule",
+        "body": "Surfaces are flat at rest. The only thing that casts a shadow on paper is a plate (or a profile tile), and it rises only in response to the pointer. No shadow on rows, headings, panels or controls.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Legibility Shadow Rule",
+        "body": "On black, a shadow exists to keep text readable over a moving picture. It is never decorative, and it never appears on the paper.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do set every surface on `paper` and every word in one of the three inks; reach for `paper-sunk` only where something is absent or inset.",
+      "Do separate with a 1px `rule` or `rule-soft`, and close the masthead with the 3px double rule.",
+      "Do keep artwork at 2:3 and let it lift only under the pointer.",
+      "Do set facts as figures (tabular) and controls as spaced capitals; keep Fraunces for names.",
+      "Do mark where the viewer is, and what will play, in imprint red — and only those.",
+      "Do say why something is unavailable, in words, under its own label.",
+      "Do carry the screening room's own palette into anything that sits on the picture, including `color-scheme: dark`.",
+      "Do honour `prefers-reduced-motion`: transitions and animations collapse to 1ms and the plate stops lifting."
+    ],
+    "donts": [
+      "Don't draw cards, panels with backgrounds, or rounded boxes on paper.",
+      "Don't add a horizontally scrolling rail of posters.",
+      "Don't use `#fff` or `#000` on the paper, or a UI blue, green or red.",
+      "Don't introduce a fourth coloured voice: no second accent, no status colours beyond ochre and sage.",
+      "Don't fill the width: never widen the measure past 62rem for text.",
+      "Don't add a dark mode to the browsing pages by default. The paper is the chosen direction; a dark mode was offered, not built, and remains a user decision.",
+      "Don't put a shadow on anything on paper but a plate or a profile tile."
+    ]
+  }
+}

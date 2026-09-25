@@ -352,7 +352,7 @@ body {
   cursor: pointer;
   transition: color 120ms ease, background 120ms ease;
 }
-.who-create:hover { color: #fff; background: var(--accent); }
+.who-create:hover { color: var(--paper); background: var(--accent); }
 .who-note {
   margin: 1.6rem auto 0;
   max-width: 44ch;
@@ -2011,7 +2011,7 @@ dialog.with-notes .hud { right: var(--notes-width); }
   aspect-ratio: 2 / 3;
   overflow: hidden;
   border-radius: 2px;
-  background: linear-gradient(145deg, #232a35, #161a20);
+  background: var(--paper-sunk);
 }
 .series-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .series-facts { min-width: 0; }
@@ -2058,7 +2058,7 @@ dialog.with-notes .hud { right: var(--notes-width); }
   border-radius: 2px;
   cursor: pointer;
 }
-.film-play:hover { color: #fff; background: var(--accent); }
+.film-play:hover { color: var(--paper); background: var(--accent); }
 .shelf-sub { font-size: 15px; font-weight: 600; margin: 22px 0 10px; color: var(--ink-2); }
 
 /* ---- the Featured reel ----

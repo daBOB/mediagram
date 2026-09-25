@@ -24,6 +24,14 @@ to `main`. Full phase-by-phase detail lives in
   end-of-title path now calls the same function. The phone's Continue wall
   has it too, under each title (see the Android web-parity entries below).
 
+**Fixed**
+
+- A film or show page with no poster no longer shows a navy gradient block on
+  the paper; it takes the flat sunk paper every other missing poster uses. The
+  title page's Play button and the profile picker's Create button now turn
+  paper-coloured on hover instead of pure white. All three were colours from
+  outside the player's palette.
+
 ## 0.43.0
 
 **Added**
