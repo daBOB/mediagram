@@ -108,7 +108,7 @@
   --rail-width: 14rem;
   --masthead-height: 76px;
   /* The cover story and, beside it on the home page, the rail. */
-  --cover-height: clamp(528px, 54vh, 600px);
+  --cover-height: clamp(620px, 63.5vh, 705px);
   --main-top: 40px;
   --measure: 96rem;
   /* Heavy and settling, never linear: a spring that has lost its bounce. */
