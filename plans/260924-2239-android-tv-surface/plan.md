@@ -46,7 +46,7 @@
 | 3 | [phase-03-tv-setup-and-profiles.md](phase-03-tv-setup-and-profiles.md) | First-run setup, sign-in, library choice, "Who's watching?" by D-pad | done (6e4bc84..60454d6) |
 | 4 | [phase-04-tv-catalog-and-title-pages.md](phase-04-tv-catalog-and-title-pages.md) | Masthead, Home rows, walls, kept shelves, collections, series/season/title pages | done (3af2756..e409d04) |
 | 5 | [phase-05-tv-player-and-remote-keys.md](phase-05-tv-player-and-remote-keys.md) | Full-screen player driven by remote keys, marks, stats | done (f994577..7f15d11) |
-| 7 | [phase-07-tv-catches-up-with-main.md](phase-07-tv-catches-up-with-main.md) | Subtitles, player settings, up next, retry/notes, search/genres, offline/mark finished/profile removal — what main gained | pending (runs before 6) |
+| 7 | [phase-07-tv-catches-up-with-main.md](phase-07-tv-catches-up-with-main.md) | Subtitles, player settings, up next, retry/notes, search/genres, offline/mark finished/profile removal — what main gained | done (1d9697b..f3d0993) |
 | 6 | [phase-06-menus-docs-version-emulator-validation.md](phase-06-menus-docs-version-emulator-validation.md) | System/settings reachable, docs, version, mouse-free emulator pass | pending |
 
 Order: 1 → 2 → 3 → 4 → 5 → 7 → 6. Phase 7 was added after `main` (merged at 2d7dfd8) gained features the TV did not have. Phase 3 and 4 could swap, but setup must work before a real catalog appears on the emulator.

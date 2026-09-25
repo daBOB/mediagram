@@ -4,7 +4,7 @@
 
 ## Overview
 - **Priority:** High — a television player without subtitles or an audio-track choice is not usable for half the library.
-- **Status:** pending
+- **Status:** done — 1d9697b..f3d0993 (7 tasks, final review + fix wave)
 - **Order:** runs after phase 5's emulator pass and before phase 6 (docs, version, final walk), so phase 6 documents the finished surface.
 
 ## Deliberate differences (not built, recorded here)
