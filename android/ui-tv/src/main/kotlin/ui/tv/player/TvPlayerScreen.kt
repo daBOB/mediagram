@@ -108,6 +108,10 @@ fun TvPlayerScreen(
     // Marks go with the title they belong to; a list choice still open when
     // they go would otherwise come back over whatever opens next.
     LaunchedEffect(marks == null) { if (marks == null) choosingList = false }
+    // The panel is drawn over a player; without one (a restore that comes
+    // back before the player is built) it would be open but nowhere, and
+    // still taking the D-pad and Back for itself.
+    LaunchedEffect(player == null) { if (player == null) settingsOpen = false }
     TvControlsAutoHide(controlsShown, state, presses, held = choosingList || settingsOpen, onHide = { controlsShown = false })
 
     val barShown = controlsShown && controlsMayShow(state) && player != null

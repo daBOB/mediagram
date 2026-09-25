@@ -48,7 +48,9 @@ import player.ProgressRecorder
  * [repository] is given: whose lists the player files into, and who is
  * watching — a kids profile hides the Kids mark. [catalog] and
  * [subtitles] are what the player resolves the open title and its cues
- * through; left out, the title has no subtitles at all.
+ * through; left out, the title has no subtitles at all. [playerReady]
+ * false holds the player back unbuilt, as a restore that comes back before
+ * it is ready sees it.
  */
 internal class TvPlayerFixture(
     repository: WatchStateRepository? = null,
@@ -56,6 +58,7 @@ internal class TvPlayerFixture(
     profile: Profile? = null,
     private val catalog: CatalogRepository = mockk(relaxed = true),
     private val subtitles: SubtitleTrackSource = mockk(relaxed = true),
+    playerReady: Boolean = true,
 ) : AutoCloseable {
     val media = mockk<ExoPlayer>(relaxed = true)
     val repository: WatchStateRepository = repository ?: mockk(relaxed = true)
@@ -115,7 +118,7 @@ internal class TvPlayerFixture(
         }
     }
 
-    private val handle = DefaultPlayerHandle(CompletableDeferred(media), scope)
+    private val handle = DefaultPlayerHandle(CompletableDeferred<ExoPlayer>().also { if (playerReady) it.complete(media) }, scope)
     val factory =
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {

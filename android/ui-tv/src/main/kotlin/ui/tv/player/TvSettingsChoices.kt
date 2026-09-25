@@ -9,6 +9,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.tv.material3.Text
@@ -109,14 +112,19 @@ internal fun TvChoiceRow(
             Modifier
                 .fillMaxWidth()
                 .let { if (focusRequester != null) it.focusRequester(focusRequester) else it }
-                .semantics { this.selected = selected },
+                .semantics {
+                    this.selected = selected
+                    role = Role.RadioButton
+                },
     ) {
         Row(
             modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.extraSmall),
             horizontalArrangement = Arrangement.spacedBy(Spacing.small),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(text = if (selected) CHOSEN else NOT_CHOSEN, style = TvTypeScale.body)
+            // The mark is the selected state drawn, which the row already
+            // says as a radio button; read aloud it would be noise.
+            Text(text = if (selected) CHOSEN else NOT_CHOSEN, style = TvTypeScale.body, modifier = Modifier.clearAndSetSemantics {})
             Text(text = label, style = TvTypeScale.body)
         }
     }

@@ -1,7 +1,13 @@
 package ui.tv.player
 
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
@@ -40,6 +46,14 @@ class TvPlayerSettingsTest : TvPlayerScreenHarness() {
         compose.onNodeWithTag(TvSettingsPanelTag).assertExists()
         inPanel("0.75×").assertIsFocused()
         inPanel("1×").assertIsSelected()
+    }
+
+    @Test
+    fun eachChoiceIsARadioButtonWhoseMarkIsNotReadAloud() {
+        openSettings()
+        inPanel("1×").assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
+        compose.onAllNodesWithText("●").assertCountEquals(0)
+        compose.onAllNodesWithText("○").assertCountEquals(0)
     }
 
     @Test
