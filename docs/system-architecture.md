@@ -546,6 +546,15 @@ is a Compose UI over the core API. The watch-state device-ID accessor
 suspends while Rust runs its SQLite work on the blocking pool, following
 the catalog-read accessors; the Kotlin caller does not read it on the UI thread.
 
+The core ships as `libmediagram_core.so` for four ABIs, built by
+`scripts/build-android-core.sh`: `arm64-v8a` and `armeabi-v7a` for devices,
+`x86_64` and `x86` for emulators. The 32-bit pair is not legacy padding: many
+Google TV boxes pair a 64-bit CPU with a 32-bit userspace and load only 32-bit
+libraries, so an APK without them installs and then fails with
+`UnsatisfiedLinkError`. `core:rust`'s `verifyNativeCore` refuses to package an
+APK missing any of the four. On 32-bit, `usize` is 32 bits, so byte positions
+in the core stay `u64` throughout; only in-memory buffer lengths narrow.
+
 ### Module map (`android/`)
 
 | Module | Holds |

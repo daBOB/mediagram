@@ -41,7 +41,11 @@ dependencies {
 // It hangs off the native-library merge, the only step that needs the
 // file. Unit tests and lint pull no such task, so a Kotlin-only build
 // still needs no Rust toolchain.
-val packagedAbis = listOf("arm64-v8a", "x86_64")
+//
+// Every ABI is required, 32-bit included: a television box running a
+// 32-bit userspace installs the APK happily and then finds no library it
+// can load, which is the same UnsatisfiedLinkError this guard exists for.
+val packagedAbis = listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
 val jniLibsDir = layout.projectDirectory.dir("src/main/jniLibs")
 
 val verifyNativeCore by tasks.registering {
