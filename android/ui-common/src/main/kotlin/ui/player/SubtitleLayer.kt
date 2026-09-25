@@ -20,6 +20,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.media3.common.Player
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlin.math.roundToInt
 import playback.TimedCue
 import playback.activeCues
 import playback.cueAppearance
@@ -67,6 +69,13 @@ class SubtitleMetrics(
  * height differs by device and font scale, and on a letterboxed portrait
  * screen they may not reach the picture at all.
  *
+ * [ceiling], in the same root coordinates, is a line the text never rises
+ * above however far [barTop] would lift it — whatever sits along the top
+ * of the picture while the controls are up. Where lifting clear of both is
+ * impossible, the lift gives way: a cue drawn over the edge of the
+ * controls' scrim is still read, one printed over the title is not. `null`
+ * lifts by the whole of [barTop], as before there was a ceiling.
+ *
  * [sizePercent], [backing] and [offsetMs] are the viewer's shared subtitle
  * settings, raw as `player.PlayerChoices` keeps them; the appearance is
  * computed from them here, at the one place that draws it.
@@ -80,12 +89,16 @@ fun BoxScope.SubtitleLayer(
     offsetMs: Long,
     barTop: Float?,
     metrics: SubtitleMetrics,
+    ceiling: Float? = null,
 ) {
     if (cues.isEmpty()) return
 
     var pictureBottom by remember { mutableFloatStateOf(0f) }
     Box(Modifier.matchParentSize().onGloballyPositioned { pictureBottom = it.boundsInRoot().bottom })
-    val covered = with(LocalDensity.current) { (pictureBottom - (barTop ?: pictureBottom)).coerceAtLeast(0f).toDp() }
+    val density = LocalDensity.current
+    val coveredPx = (pictureBottom - (barTop ?: pictureBottom)).coerceAtLeast(0f)
+    val covered = with(density) { coveredPx.toDp() }
+    val bottomMarginPx = with(density) { metrics.bottomMargin.toPx() }
 
     var positionMs by remember { mutableLongStateOf(player.currentPosition) }
     LaunchedEffect(player, cues) {
@@ -113,7 +126,15 @@ fun BoxScope.SubtitleLayer(
                 start = metrics.sideMargin,
                 end = metrics.sideMargin,
                 bottom = covered + metrics.bottomMargin,
-            ),
+            )
+            // Measured against the text itself, which only this layout
+            // knows the height of: the full lift, then taken back down by
+            // however far the text's top would cross the ceiling.
+            .layout { measurable, constraints ->
+                val placeable = measurable.measure(constraints)
+                val drop = ceiling?.let { coveredPx - liftUnder(it, coveredPx, pictureBottom - bottomMarginPx, placeable.height) } ?: 0f
+                layout(placeable.width, placeable.height) { placeable.place(0, drop.roundToInt()) }
+            },
         contentAlignment = Alignment.Center,
     ) {
         BasicText(
@@ -134,3 +155,16 @@ fun BoxScope.SubtitleLayer(
         )
     }
 }
+
+/**
+ * How far a cue [height] tall may be lifted, at most [covered], so that its
+ * top stays at or below [ceiling] — when unlifted its bottom is at [restingBottom].
+ * Never below nothing: a cue too tall to clear the ceiling even at rest
+ * stays at rest.
+ */
+internal fun liftUnder(
+    ceiling: Float,
+    covered: Float,
+    restingBottom: Float,
+    height: Int,
+): Float = (restingBottom - height - ceiling).coerceIn(0f, covered.coerceAtLeast(0f))

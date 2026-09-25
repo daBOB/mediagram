@@ -2,6 +2,9 @@ package ui.tv.player
 
 import android.view.KeyEvent
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.performKeyInput
@@ -24,6 +27,11 @@ import kotlin.test.assertEquals
  * the same screen for a different viewer.
  */
 abstract class TvPlayerScreenHarness {
+    private companion object {
+        /** More presses than the row has stops. */
+        const val MAX_ROW = 10
+    }
+
     @get:Rule val compose = createEmptyComposeRule()
     internal lateinit var fixture: TvPlayerFixture
     internal lateinit var controller: ActivityController<TvPlayerTestActivity>
@@ -80,10 +88,23 @@ abstract class TvPlayerScreenHarness {
         compose.waitForIdle()
     }
 
-    /** From the controls as they open, on play/pause: across to the gear, and pressed. */
+    /**
+     * From the controls as they open, on play/pause: Down to the row of
+     * marks and tools, then Right along it until [target] holds the remote
+     * — failing if it never does, which is a tool out of the remote's reach.
+     */
+    internal fun toTool(target: SemanticsMatcher) {
+        press(Key.DirectionDown)
+        repeat(MAX_ROW) {
+            if (compose.onAllNodes(target and isFocused()).fetchSemanticsNodes().isNotEmpty()) return
+            press(Key.DirectionRight)
+        }
+        compose.onNode(target).assertIsFocused()
+    }
+
+    /** From the controls as they open: to the gear, and pressed. */
     internal fun openSettings() {
-        press(Key.DirectionRight)
-        press(Key.DirectionRight)
+        toTool(hasContentDescription("Playback settings"))
         press(Key.DirectionCenter)
     }
 

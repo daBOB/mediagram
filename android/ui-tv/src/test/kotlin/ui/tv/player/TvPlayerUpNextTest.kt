@@ -94,11 +94,7 @@ class TvPlayerUpNextTest : TvPlayerScreenHarness() {
 
     @Test
     fun theCardDoesNotTakeTheRemoteFromTheSettingsPanel() {
-        // Play/pause, skip forward, Play next, and then the gear.
-        press(Key.DirectionRight)
-        press(Key.DirectionRight)
-        press(Key.DirectionRight)
-        press(Key.DirectionCenter)
+        openSettings()
         compose.onNodeWithTag(TvSettingsPanelTag).assertExists()
 
         nearTheEnd()

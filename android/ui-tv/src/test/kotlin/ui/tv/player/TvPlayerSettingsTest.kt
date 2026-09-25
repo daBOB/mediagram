@@ -7,6 +7,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
@@ -24,6 +25,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import playback.Framing
 import player.CONTROLS_LINGER_MS
+import player.setSpeed
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
@@ -37,15 +39,25 @@ import kotlin.test.assertFalse
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
 class TvPlayerSettingsTest : TvPlayerScreenHarness() {
     @Test
-    fun theGearSitsBeforeTheStatisticsToggleAndOpensThePanelOnItsFirstRow() {
+    fun theGearSitsBeforeTheStatisticsToggleAndOpensThePanelOnTheCurrentSpeed() {
+        toTool(hasContentDescription("Playback settings"))
         press(Key.DirectionRight)
-        press(Key.DirectionRight)
-        compose.onNodeWithContentDescription("Playback settings").assertIsFocused()
+        compose.onNodeWithContentDescription("Show playback statistics").assertIsFocused()
+        press(Key.DirectionLeft)
 
         press(Key.DirectionCenter)
         compose.onNodeWithTag(TvSettingsPanelTag).assertExists()
-        inPanel("0.75×").assertIsFocused()
+        inPanel("1×").assertIsFocused()
         inPanel("1×").assertIsSelected()
+    }
+
+    @Test
+    fun aSpeedAlreadyChosenIsWhereThePanelOpens() {
+        compose.runOnUiThread { controller.get().playerViewModel.setSpeed(1.5f) }
+        compose.waitForIdle()
+        openSettings()
+        inPanel("1.5×").assertIsFocused()
+        compose.runOnUiThread { controller.get().playerViewModel.setSpeed(1f) }
     }
 
     @Test
@@ -74,13 +86,12 @@ class TvPlayerSettingsTest : TvPlayerScreenHarness() {
         press(Key.DirectionRight)
 
         assertEquals(42_000L, fixture.positionMs)
-        inPanel("0.75×").assertIsFocused()
+        inPanel("1×").assertIsFocused()
     }
 
     @Test
     fun aSpeedChosenPlaysAtItAndIsReadOutBesideTheGear() {
         openSettings()
-        press(Key.DirectionDown)
         press(Key.DirectionDown)
         press(Key.DirectionCenter)
 

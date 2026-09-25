@@ -50,12 +50,10 @@ class TvPlayerNotesTest : TvPlayerScreenHarness() {
     /** The Notes button, as against the column's own "Notes" head. */
     private fun notesButton() = compose.onNode(hasText("Notes") and hasClickAction())
 
-    /** From play/pause, past the forward skip, to Notes, and pressed. */
+    /** From play/pause, down to the tools, to Notes, and pressed. */
     private fun openNotes() {
         compose.onNodeWithTag(TvNotesTag).assertDoesNotExist()
-        press(Key.DirectionRight)
-        press(Key.DirectionRight)
-        notesButton().assertIsFocused()
+        toTool(hasText("Notes") and hasClickAction())
         press(Key.DirectionCenter)
     }
 

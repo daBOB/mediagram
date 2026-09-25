@@ -9,7 +9,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,6 +20,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.testTag
 import androidx.media3.common.Player
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
 import androidx.tv.material3.Text
@@ -66,23 +66,27 @@ internal class TvPlayerExtras(
     val onPlayNext: () -> Unit = {},
     /** Opens and closes the notes column; null while the title has none, which leaves the Notes button out. */
     val onToggleNotes: (() -> Unit)? = null,
+    /** Whether the up-next card is floating above the controls, which Up from the seek bar then reaches. */
+    val upNextShown: Boolean = false,
 )
+
+/** Finds the controls' two bands in a test: what is playing along the top, and the controls along the bottom. */
+internal const val TvTopBandTag = "tv-player-top-band"
+internal const val TvBottomBandTag = "tv-player-bottom-band"
 
 /**
  * The controls over the picture: what is playing along the top, with the
  * playback statistics under it when they are on, and along the bottom the
- * clock, the seek bar, the transport and the marks rail — top to bottom in
- * the order the remote moves through them, so Down always goes further
- * from the film's own facts and further into what can be done to it.
+ * clock, the seek bar, the transport, and the marks with the tools after
+ * them — top to bottom in the order the remote moves through them, so Down
+ * always goes further from the film's own facts and further into what can
+ * be done to it.
  *
- * [upNext] is drawn above the clock at the right-hand end, the up-next
- * card when there is one: inside the same block, so the subtitles lift
- * clear of it as of the rest, and directly above the seek bar, so Up from
- * there reaches it.
- *
- * [onBarTopChanged] reports where the bottom block begins, in root
- * coordinates, so the subtitles can lift clear of it rather than be read
- * through the scrim.
+ * Each band reports where it ends to [bands] — the bottom one its top, the
+ * top one its bottom — so what floats between them, the subtitles and the
+ * up-next card, can keep clear of both rather than be read through a scrim
+ * or printed over the title. Up from the seek bar reaches the card while
+ * it floats there.
  *
  * Inside the overscan margin, unlike the picture: a television crops its
  * edges by an amount that varies by set, and a clock or a button cut off
@@ -95,8 +99,7 @@ internal fun TvPlayerControls(
     focus: TvPlayerFocus,
     extras: TvPlayerExtras,
     onSeekBarFocused: (Boolean) -> Unit,
-    onBarTopChanged: (Float) -> Unit = {},
-    upNext: @Composable ColumnScope.() -> Unit = {},
+    bands: TvStageBands,
 ) {
     val progress = rememberProgressStateWithTickInterval(player, READOUT_TICK_MS)
     val positionMs = progress.currentPositionMs.coerceAtLeast(0L)
@@ -104,7 +107,14 @@ internal fun TvPlayerControls(
     val scrim = Color.Black.copy(alpha = SCRIM_ALPHA)
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.align(Alignment.TopStart).fillMaxWidth()) {
+        Column(
+            modifier =
+                Modifier
+                    .align(Alignment.TopStart)
+                    .fillMaxWidth()
+                    .onGloballyPositioned { bands.topBottom = it.boundsInRoot().bottom }
+                    .testTag(TvTopBandTag),
+        ) {
             set?.let {
                 TvPlayerTopBar(
                     set = it,
@@ -131,13 +141,13 @@ internal fun TvPlayerControls(
                 Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .onGloballyPositioned { onBarTopChanged(it.boundsInRoot().top) }
+                    .onGloballyPositioned { bands.barTop = it.boundsInRoot().top }
+                    .testTag(TvBottomBandTag)
                     .background(scrim)
                     .padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.small),
         ) {
-            upNext()
             TvPlayerClock(
                 positionMs = positionMs,
                 durationMs = durationMs,
@@ -148,16 +158,21 @@ internal fun TvPlayerControls(
                 durationMs = durationMs,
                 focusRequester = focus.seekBar,
                 down = focus.playPause,
+                up = focus.upNext.takeIf { extras.upNextShown },
                 onFocusChanged = onSeekBarFocused,
             )
-            TvTransport(
-                player = player,
-                focus = focus,
-                // Nowhere further down while nothing is open to mark.
-                down = if (extras.marks != null) focus.marks else FocusRequester.Default,
-                extras = extras,
-            )
-            TvMarksRail(marks = extras.marks, actions = extras.markActions, first = focus.marks, up = focus.playPause)
+            // Down from the transport lands on the first of the row below:
+            // Watchlist while there are marks, otherwise the first tool.
+            val below =
+                when {
+                    extras.marks != null -> focus.marks
+                    extras.onToggleNotes != null -> focus.notes
+                    else -> focus.settings
+                }
+            TvTransport(player = player, focus = focus, down = below, extras = extras)
+            TvMarksRail(marks = extras.marks, actions = extras.markActions, first = focus.marks, up = focus.playPause) {
+                TvToolGroup(focus = focus, extras = extras)
+            }
         }
     }
 }

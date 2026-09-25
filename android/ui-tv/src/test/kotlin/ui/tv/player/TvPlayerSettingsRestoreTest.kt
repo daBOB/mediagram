@@ -48,7 +48,8 @@ class TvPlayerSettingsRestoreTest {
         }
         val first = compose.runOnUiThread { Robolectric.buildActivity(TvPlayerTestActivity::class.java).setup().visible() }
         compose.waitForIdle()
-        for (key in listOf(Key.DirectionRight, Key.DirectionRight, Key.DirectionCenter)) {
+        // Down to the marks, across them to the gear, and pressed.
+        for (key in listOf(Key.DirectionDown, Key.DirectionRight, Key.DirectionRight, Key.DirectionRight, Key.DirectionCenter)) {
             compose.onNode(isFocused()).performKeyInput { pressKey(key) }
             compose.waitForIdle()
         }

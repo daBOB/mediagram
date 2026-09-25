@@ -47,11 +47,10 @@ import ui.player.PlayerNavigationEffects
  * controls are away [TvPlayerKeyHolder] holds the remote, so no key is
  * ever lost to a focus that went with them.
  *
- * The transport's gear opens the phone's playback settings as a panel to
- * one side ([TvPlayerSettingsPanel]); Back closes that before it does
- * anything else — before the controls go, before the player is left.
- * A title's notes open in a column beside the picture ([TvNotesBeside])
- * from a Notes button among the controls, and close to Back next. A
+ * The gear among the tools opens the phone's playback settings as a panel
+ * to one side ([TvPlayerSettingsPanel]); a title's notes open in a column
+ * beside the picture ([TvNotesBeside]). Back closes the panel, then the
+ * up-next card, then the notes, then the controls ([TvPlayerBack]). A
  * failed title offers Retry, as on the phone ([TvPlayerStatus]).
  *
  * [set] is the catalogue's entry for [setId], for what the top bar says
@@ -113,8 +112,8 @@ fun TvPlayerScreen(
     LaunchedEffect(upNextShown) { if (upNextShown) controlsShown = true }
 
     val barShown = (controlsShown || upNextShown) && controlsMayShow(state) && player != null
-    // Where the bottom controls begin, for the subtitles to clear them.
-    var barTop by remember { mutableStateOf<Float?>(null) }
+    // Where the stage's bands are, for what floats between them to keep clear.
+    val bands = remember { TvStageBands() }
     val root = remember { FocusRequester() }
     val focus = remember { TvPlayerFocus() }
     val notesFocus = remember { TvNotesFocus() }
@@ -185,9 +184,9 @@ fun TvPlayerScreen(
                             onPlayNext = steps.next,
                             onToggleNotes = notes?.let { { notesFocus.toggleFromButton(notesOpen, viewModel::toggleNotes) } },
                             onSeekBarFocused = { onSeekBar = it },
-                            onBarTopChanged = { barTop = it },
                         ),
-                    picture = TvStagePicture(subtitleCues, choices, barTop, barShown, settingsOpen),
+                    picture = TvStagePicture(subtitleCues, choices, barShown, settingsOpen),
+                    bands = bands,
                 )
             }
             if (choosingList) {

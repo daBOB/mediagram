@@ -2,6 +2,7 @@ package ui.tv.player
 
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isFocused
@@ -56,13 +57,9 @@ class TvPlayerMarksTest : TvPlayerScreenHarness() {
     }
 
     @Test
-    fun theStatisticsToggleFromTheEndOfTheTransport() {
+    fun theStatisticsToggleEndsTheRowOfTools() {
         compose.onNodeWithTag(TvStatsOverlayTag).assertDoesNotExist()
-        // Past forward and the settings gear: the toggle ends the row.
-        press(Key.DirectionRight)
-        press(Key.DirectionRight)
-        press(Key.DirectionRight)
-        compose.onNodeWithContentDescription("Show playback statistics").assertIsFocused()
+        toTool(hasContentDescription("Show playback statistics"))
 
         press(Key.DirectionCenter)
         compose.onNodeWithTag(TvStatsOverlayTag).assertExists()

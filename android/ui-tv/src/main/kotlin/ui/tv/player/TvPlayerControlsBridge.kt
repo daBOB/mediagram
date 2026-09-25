@@ -1,17 +1,13 @@
 package ui.tv.player
 
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.media3.common.Player
 import model.MediaSet
-import playback.TimedCue
-import player.PlayerChoices
 import player.PlayerMarksState
 import player.PlayerViewModel
+import player.UpNextPhase
 import player.UpNextUiState
 import player.createListAndAdd
 import player.setInList
@@ -36,14 +32,14 @@ internal class TvControlsActions(
     val onPlayNext: () -> Unit,
     val onToggleNotes: (() -> Unit)?,
     val onSeekBarFocused: (Boolean) -> Unit,
-    val onBarTopChanged: (Float) -> Unit,
 )
 
 /**
  * [TvPlayerControls] over the shared ViewModel: the marks and statistics,
- * the settings gear, the standing "Play next", and the up-next card above
- * the clock — its Play now is the same step forward as "Play next", its
- * Cancel the ViewModel's own, which leaves that standing button in place.
+ * the settings gear and the standing "Play next". The up-next card is not
+ * among them but floats over the stage ([TvPlayerStage]); its Play now is
+ * the same step forward as "Play next", its Cancel the ViewModel's own,
+ * which leaves that standing button in place.
  */
 @Composable
 internal fun TvPlayerControlsForViewModel(
@@ -53,6 +49,7 @@ internal fun TvPlayerControlsForViewModel(
     viewModel: PlayerViewModel,
     view: TvControlsView,
     actions: TvControlsActions,
+    bands: TvStageBands,
 ) {
     TvPlayerControls(
         player = player,
@@ -77,49 +74,11 @@ internal fun TvPlayerControlsForViewModel(
                 nextTitleLine = view.upNext.titleLine,
                 onPlayNext = actions.onPlayNext,
                 onToggleNotes = actions.onToggleNotes,
+                upNextShown = view.upNext.phase != UpNextPhase.HIDDEN,
             ),
         onSeekBarFocused = actions.onSeekBarFocused,
-        onBarTopChanged = actions.onBarTopChanged,
-    ) {
-        TvUpNextCard(
-            state = view.upNext,
-            playNow = focus.upNext,
-            onPlayNow = actions.onPlayNext,
-            onCancel = viewModel::cancelUpNext,
-            modifier = Modifier.align(Alignment.End),
-        )
-    }
-}
-
-/** What the stage draws beside the controls: the film and its subtitles, and whether the controls and the settings panel are up. */
-internal class TvStagePicture(
-    val cues: List<TimedCue>,
-    val choices: PlayerChoices,
-    val barTop: Float?,
-    val barShown: Boolean,
-    val settingsOpen: Boolean,
-)
-
-/**
- * The film with its subtitles — lifted clear of the controls while they
- * are up — the controls themselves ([TvPlayerControlsForViewModel]), and
- * the settings panel down the right while it is open.
- */
-@Composable
-internal fun BoxScope.TvPlayerStage(
-    player: Player,
-    set: MediaSet?,
-    focus: TvPlayerFocus,
-    viewModel: PlayerViewModel,
-    view: TvControlsView,
-    actions: TvControlsActions,
-    picture: TvStagePicture,
-) {
-    TvVideoWithSubtitles(player, picture.cues, picture.choices, barTop = picture.barTop.takeIf { picture.barShown })
-    if (picture.barShown) TvPlayerControlsForViewModel(player, set, focus, viewModel, view, actions)
-    if (picture.settingsOpen) {
-        TvPlayerSettingsPanel(choices = picture.choices, viewModel = viewModel, modifier = Modifier.align(Alignment.CenterEnd))
-    }
+        bands = bands,
+    )
 }
 
 /**

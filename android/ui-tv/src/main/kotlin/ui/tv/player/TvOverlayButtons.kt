@@ -9,6 +9,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.Dp
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.LocalContentColor
 import androidx.tv.material3.Surface
@@ -32,6 +33,7 @@ internal fun TvGlyphButton(
     enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    padding: Dp = Spacing.large,
 ) {
     TvOverlayButton(
         text = glyph,
@@ -39,6 +41,7 @@ internal fun TvGlyphButton(
         enabled = enabled,
         onClick = onClick,
         modifier = modifier.semantics { contentDescription = description },
+        padding = padding,
     )
 }
 
@@ -65,7 +68,7 @@ internal fun TvIconButton(
             icon = icon,
             tint = LocalContentColor.current,
             size = TvTypeScale.title.fontSize,
-            modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.small),
+            modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small),
         )
     }
 }
@@ -80,7 +83,9 @@ internal fun TvIconButton(
  * focused thing on this surface does. Transparent until focused: over a
  * film, a row of filled chips would be more things to look at. Disabled
  * it dims but stays focusable, so a mark that cannot be pressed can still
- * be read.
+ * be read. [padding] is the room either side of the label: the controls'
+ * rows take less than a lone button does, so they still fit a stage the
+ * notes column has narrowed.
  */
 @Composable
 internal fun TvOverlayButton(
@@ -89,12 +94,13 @@ internal fun TvOverlayButton(
     enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    padding: Dp = Spacing.large,
 ) {
     TvOverlaySurface(onClick = onClick, enabled = enabled, modifier = modifier) {
         Text(
             text = text,
             style = style,
-            modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.small),
+            modifier = Modifier.padding(horizontal = padding, vertical = Spacing.small),
         )
     }
 }

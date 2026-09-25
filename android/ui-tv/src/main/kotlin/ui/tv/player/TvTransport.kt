@@ -17,11 +17,7 @@ import androidx.media3.common.Player
 import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
 import androidx.media3.ui.compose.state.rememberSeekBackButtonState
 import androidx.media3.ui.compose.state.rememberSeekForwardButtonState
-import androidx.tv.material3.Text
-import designsystem.Palette
 import designsystem.Spacing
-import designsystem.TvTypeScale
-import player.speedLabel
 import ui.player.TransportIcons
 
 /**
@@ -29,15 +25,17 @@ import ui.player.TransportIcons
  * — and "Play next" after them while the run has a next title: the phone's
  * transport row, read through the same media3 state holders
  * the phone reads, so a label cannot come to say one thing and do another
- * and nothing about the player is carried through the ViewModel. After
- * them the ones that do not move it: the settings gear, with the speed
- * beside it while it is not the default — where the phone and the web both
- * put that number, so a viewer looks for it in one place on every surface —
- * and, last, the statistics toggle, which only reports. Notes come before
- * the gear while the title has any.
+ * and nothing about the player is carried through the ViewModel.
+ *
+ * Only what moves the film. The tools that do not — Notes, the settings
+ * gear and the statistics — stand at the end of the row below
+ * ([TvToolGroup]), which has width to spare: this row, with them in it, ran
+ * past the edge of a stage the notes column had narrowed, and the gear
+ * could not be reached while the notes were open. Drawn close for the same
+ * reason.
  *
  * Up from any of them goes to the seek bar, the one row above; Down goes to
- * the marks rail ([down]), the one below.
+ * the row below ([down]).
  */
 @Composable
 internal fun TvTransport(
@@ -58,7 +56,7 @@ internal fun TvTransport(
 
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.large),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TvIconButton(
@@ -85,7 +83,7 @@ internal fun TvTransport(
         // Standing, not just in the card, as on the phone: cancelling the
         // card's offer never withdraws this one. Beside the skips rather
         // than after the statistics toggle, where the phone has it, since
-        // this row already gathers everything that moves the film first.
+        // this row gathers everything that moves the film.
         if (extras.hasNext) {
             TvIconButton(
                 icon = TransportIcons.Next,
@@ -95,38 +93,5 @@ internal fun TvTransport(
                 modifier = toSeekBar,
             )
         }
-        // The phone's top-bar "Notes", here in the one row the remote
-        // reaches: first of what does not move the film, as it is the one
-        // of those a lesson is watched for.
-        extras.onToggleNotes?.let { toggle ->
-            TvOverlayButton(
-                text = "Notes",
-                style = TvTypeScale.body,
-                enabled = true,
-                onClick = toggle,
-                modifier = toSeekBar.focusRequester(focus.notes),
-            )
-        }
-        if (extras.speed != 1f) {
-            Text(text = speedLabel(extras.speed), style = TvTypeScale.body, color = Palette.Text)
-        }
-        TvGlyphButton(
-            glyph = "⚙",
-            description = "Playback settings",
-            enabled = true,
-            onClick = extras.onOpenSettings,
-            modifier = toSeekBar.focusRequester(focus.settings),
-        )
-        // Last, because it neither moves the film nor changes how it
-        // plays. Named for which way the press goes, as play/pause is: a
-        // glyph that stays put while what it does reverses tells a screen
-        // reader nothing about which it is about to do.
-        TvGlyphButton(
-            glyph = "ⓘ",
-            description = if (extras.statsShown) "Hide playback statistics" else "Show playback statistics",
-            enabled = true,
-            onClick = extras.onToggleStats,
-            modifier = toSeekBar,
-        )
     }
 }

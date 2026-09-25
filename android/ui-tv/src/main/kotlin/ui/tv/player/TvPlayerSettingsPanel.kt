@@ -44,7 +44,8 @@ internal const val TvSettingsPanelTag = "tv-player-settings"
  * subtitle size or a sync nudge can be judged against the film it applies
  * to while the panel is still open.
  *
- * The remote lands on its first row the moment it opens, and cannot wander
+ * The remote lands on the current speed the moment it opens — the choice
+ * already made, as a radio group opens on its selection — and cannot wander
  * out of it: the transport behind it is still drawn, and a Left meant for
  * the next choice would otherwise land on a button that skips the film.
  * Back closes it (the player screen answers that, from the key table).
@@ -55,14 +56,14 @@ internal fun TvPlayerSettingsPanel(
     viewModel: PlayerViewModel,
     modifier: Modifier = Modifier,
 ) {
-    val first = remember { FocusRequester() }
-    LaunchedEffect(Unit) { first.requestFocus() }
+    val current = remember { FocusRequester() }
+    LaunchedEffect(Unit) { current.requestFocus() }
 
     Column(
         modifier =
             modifier
                 .fillMaxHeight()
-                .width(PanelWidth)
+                .width(TvSettingsPanelWidth)
                 .background(Palette.Page)
                 .testTag(TvSettingsPanelTag)
                 .focusProperties { onExit = { cancelFocusChange() } }
@@ -72,7 +73,7 @@ internal fun TvPlayerSettingsPanel(
                 // facing the picture needs only breathing room.
                 .padding(start = Spacing.large, end = Overscan.horizontal, top = Overscan.vertical, bottom = Overscan.vertical),
     ) {
-        TvSpeedSection(speed = choices.speed, onChosen = viewModel::setSpeed, first = first)
+        TvSpeedSection(speed = choices.speed, onChosen = viewModel::setSpeed, current = current)
         if (choices.audioOptions.isNotEmpty()) {
             TvAudioSection(options = choices.audioOptions, onChosen = viewModel::chooseAudioTrack)
         }
@@ -93,4 +94,4 @@ internal fun TvPlayerSettingsPanel(
 }
 
 /** A third of a 960dp television: room for the longest audio label, most of the picture still in view. */
-private val PanelWidth = 340.dp
+internal val TvSettingsPanelWidth = 340.dp

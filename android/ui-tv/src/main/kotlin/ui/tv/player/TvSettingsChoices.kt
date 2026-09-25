@@ -35,15 +35,17 @@ import player.speedLabel
 internal fun TvSpeedSection(
     speed: Float,
     onChosen: (Float) -> Unit,
-    first: FocusRequester,
+    current: FocusRequester,
 ) {
     TvSettingsHeading("Speed")
+    // A speed off the list (none today) still gives the remote a row.
+    val landing = PLAYBACK_SPEEDS.firstOrNull { it == speed } ?: PLAYBACK_SPEEDS.first()
     for (option in PLAYBACK_SPEEDS) {
         TvChoiceRow(
             label = speedLabel(option),
             selected = option == speed,
             onClick = { onChosen(option) },
-            focusRequester = first.takeIf { option == PLAYBACK_SPEEDS.first() },
+            focusRequester = current.takeIf { option == landing },
         )
     }
 }

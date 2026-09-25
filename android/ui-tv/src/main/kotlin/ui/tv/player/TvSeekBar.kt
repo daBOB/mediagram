@@ -43,6 +43,8 @@ internal const val TvSeekBarTag = "tv-seek-bar"
  *
  * [down] is where Down goes from here: the play/pause button, rather than
  * whichever of the transport's buttons happens to sit nearest the middle.
+ * [up], while there is one, is where Up goes: the up-next card's Play now,
+ * which floats above the controls rather than in line with them.
  */
 @Composable
 internal fun TvSeekBar(
@@ -51,6 +53,7 @@ internal fun TvSeekBar(
     focusRequester: FocusRequester,
     down: FocusRequester,
     onFocusChanged: (Boolean) -> Unit,
+    up: FocusRequester? = null,
     modifier: Modifier = Modifier,
 ) {
     var focused by remember { mutableStateOf(false) }
@@ -64,7 +67,10 @@ internal fun TvSeekBar(
                 .fillMaxWidth()
                 .height(Reach)
                 .focusRequester(focusRequester)
-                .focusProperties { this.down = down }
+                .focusProperties {
+                    this.down = down
+                    if (up != null) this.up = up
+                }
                 .onFocusChanged {
                     focused = it.isFocused
                     onFocusChanged(it.isFocused)
