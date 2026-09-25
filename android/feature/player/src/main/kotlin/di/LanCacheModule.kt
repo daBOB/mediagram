@@ -93,7 +93,7 @@ object LanCacheModule {
                 client = client,
                 server = { locator.server.value },
                 token = { tokenSettings.read() },
-                onUnauthorized = tokenStatus::markRejected,
+                tokenStatus = tokenStatus,
             )
         return LanCacheRuntime(client, locator, settings, tokenStatus, SystemUnmeteredNetworkCheck(context), writes)
     }

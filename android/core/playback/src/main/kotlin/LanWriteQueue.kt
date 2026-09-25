@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.io.IOException
 
@@ -31,9 +32,12 @@ private data class QueuedChunk(val setId: String, val index: Long, val total: Lo
  * out of order for no reason; [enqueue] itself never suspends, so it costs
  * [LanFirstChunkSource]'s caller nothing to call.
  *
- * A 401 halts every write after it — [onUnauthorized] fires once, for
- * Settings to say the token was rejected — but never the chunk source: a
- * write failure of any kind stays entirely on this side of [enqueue].
+ * A 401 halts every write after it — [tokenStatus] is marked rejected, for
+ * Settings to say so — but never the chunk source: a write failure of any
+ * kind stays entirely on this side of [enqueue]. The halt is not
+ * permanent: a second worker watches [LanCacheTokenStatus.rejected] and
+ * resumes the moment a fresh token clears it, so a viewer who re-pairs
+ * does not have to restart the app for sharing to pick back up.
  */
 class LanWriteQueue(
     scope: CoroutineScope,
@@ -41,7 +45,7 @@ class LanWriteQueue(
     private val client: LanChunkProtocol,
     private val server: suspend () -> LanServer?,
     private val token: suspend () -> String?,
-    private val onUnauthorized: () -> Unit,
+    private val tokenStatus: LanCacheTokenStatus,
     capacity: Int = CAPACITY,
 ) : LanChunkWriter {
     private val queue = Channel<QueuedChunk>(capacity, onBufferOverflow = BufferOverflow.DROP_OLDEST)
@@ -55,6 +59,9 @@ class LanWriteQueue(
                 if (halted) continue
                 write(item)
             }
+        }
+        scope.launch(dispatcher) {
+            tokenStatus.rejected.collect { rejected -> if (!rejected) halted = false }
         }
     }
 
@@ -75,7 +82,7 @@ class LanWriteQueue(
             when (client.put(srv.baseUrl, tok, item.setId, item.index, item.total, item.bytes)) {
                 LanPutResult.Unauthorized -> {
                     halted = true
-                    onUnauthorized()
+                    tokenStatus.markRejected()
                 }
                 LanPutResult.Stored, LanPutResult.Rejected -> Unit
             }

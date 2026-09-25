@@ -55,7 +55,7 @@ class LanWriteQueueTest {
                     client = puts,
                     server = { SERVER },
                     token = { "token" },
-                    onUnauthorized = {},
+                    tokenStatus = LanCacheTokenStatus(),
                 )
 
             queue.enqueue("s1", 0, 100, chunk(0))
@@ -76,7 +76,7 @@ class LanWriteQueueTest {
                     client = puts,
                     server = { SERVER },
                     token = { "token" },
-                    onUnauthorized = {},
+                    tokenStatus = LanCacheTokenStatus(),
                 )
 
             // The worker coroutine is launched but never runs until the test
@@ -89,11 +89,11 @@ class LanWriteQueueTest {
         }
 
     @Test
-    fun aFourOhOneHaltsFurtherWritesAndReportsOnce() =
+    fun aFourOhOneHaltsFurtherWritesAndMarksTheTokenRejected() =
         runTest {
             val dispatcher = StandardTestDispatcher(testScheduler)
             val puts = RecordingPuts().apply { nextResult = LanPutResult.Unauthorized }
-            var reported = 0
+            val tokenStatus = LanCacheTokenStatus()
             val queue =
                 LanWriteQueue(
                     scope = TestScope(dispatcher),
@@ -101,7 +101,7 @@ class LanWriteQueueTest {
                     client = puts,
                     server = { SERVER },
                     token = { "token" },
-                    onUnauthorized = { reported++ },
+                    tokenStatus = tokenStatus,
                 )
 
             queue.enqueue("s1", 0, 100, chunk(0))
@@ -109,8 +109,37 @@ class LanWriteQueueTest {
             queue.enqueue("s1", 1, 100, chunk(1))
             testScheduler.advanceUntilIdle()
 
-            assertEquals(1, reported)
+            assertTrue(tokenStatus.rejected.value)
             assertEquals(listOf(0L), puts.puts, "a write queued after the halt must never reach the client")
+        }
+
+    /** A viewer re-pairing after a bad token must not need to restart the app for sharing to resume. */
+    @Test
+    fun clearingTheTokenStatusAfterAHaltResumesWrites() =
+        runTest {
+            val dispatcher = StandardTestDispatcher(testScheduler)
+            val puts = RecordingPuts().apply { nextResult = LanPutResult.Unauthorized }
+            val tokenStatus = LanCacheTokenStatus()
+            val queue =
+                LanWriteQueue(
+                    scope = TestScope(dispatcher),
+                    dispatcher = dispatcher,
+                    client = puts,
+                    server = { SERVER },
+                    token = { "token" },
+                    tokenStatus = tokenStatus,
+                )
+            queue.enqueue("s1", 0, 100, chunk(0))
+            testScheduler.advanceUntilIdle()
+            assertTrue(tokenStatus.rejected.value)
+
+            puts.nextResult = LanPutResult.Stored
+            tokenStatus.clear()
+            testScheduler.advanceUntilIdle()
+            queue.enqueue("s1", 1, 100, chunk(1))
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(listOf(0L, 1L), puts.puts, "a fresh token clears the halt and writes resume")
         }
 
     @Test
@@ -125,7 +154,7 @@ class LanWriteQueueTest {
                     client = puts,
                     server = { SERVER },
                     token = { "token" },
-                    onUnauthorized = {},
+                    tokenStatus = LanCacheTokenStatus(),
                 )
 
             queue.enqueue("s1", 0, 100, chunk(0))
@@ -150,7 +179,7 @@ class LanWriteQueueTest {
                     client = puts,
                     server = { SERVER },
                     token = { null },
-                    onUnauthorized = {},
+                    tokenStatus = LanCacheTokenStatus(),
                 )
 
             queue.enqueue("s1", 0, 100, chunk(0))
