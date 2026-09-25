@@ -2,25 +2,25 @@ package ui.tv.setup
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.pressKey
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import androidx.tv.material3.Text
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import setup.LibraryOption
+import ui.tv.LeavesTouchModeRule
 import ui.tv.TvTheme
 
 /**
@@ -42,25 +42,9 @@ import ui.tv.TvTheme
  */
 @RunWith(AndroidJUnit4::class)
 class TvSetupStepTest {
-    @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
+    @get:Rule val touchMode = LeavesTouchModeRule()
 
-    /**
-     * A freshly launched test `Activity` starts in Android's touch mode,
-     * where `requestFocus()` is quietly ignored by anything that is not
-     * itself focusable-in-touch-mode — a text field is, by Android
-     * convention, which is why `TvTextQuestionTest` and the application
-     * step below need none of this. A real remote's first press leaves
-     * touch mode for the rest of the session the same way; the TV
-     * screenshot check separately confirms the real app's own
-     * `LEANBACK_LAUNCHER` activity never starts in it to begin with. One
-     * harmless key press injected at the OS level, before any content is
-     * set, is the standard fix for this instrumented-test-only gap — not a
-     * workaround for a defect in the screens themselves.
-     */
-    @Before
-    fun leaveTouchMode() {
-        InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("input keyevent KEYCODE_DPAD_CENTER").close()
-    }
+    @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
     @Test
     fun theApiIdFieldIsFocusedAsSoonAsApplicationStepAppears() {
@@ -126,7 +110,8 @@ class TvSetupStepTest {
             }
         }
 
-        compose.onNodeWithTag(TvStartOverRowTag).performClick()
+        compose.onNodeWithTag(TvStartOverRowTag).performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.onNodeWithTag(TvStartOverRowTag).performKeyInput { pressKey(Key.Enter) }
 
         waitUntilFocused(TvConfirmDialogCancelTag)
     }

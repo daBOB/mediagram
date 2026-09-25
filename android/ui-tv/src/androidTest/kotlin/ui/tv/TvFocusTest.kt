@@ -41,6 +41,8 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class TvFocusTest {
+    @get:Rule val touchMode = LeavesTouchModeRule()
+
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
     @Test

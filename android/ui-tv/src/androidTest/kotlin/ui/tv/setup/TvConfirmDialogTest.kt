@@ -14,6 +14,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import ui.tv.LeavesTouchModeRule
 import ui.tv.TvTheme
 
 /**
@@ -25,6 +26,8 @@ import ui.tv.TvTheme
  */
 @RunWith(AndroidJUnit4::class)
 class TvConfirmDialogTest {
+    @get:Rule val touchMode = LeavesTouchModeRule()
+
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
     @Test

@@ -36,7 +36,10 @@ step "gradle test and lint"
 # a broken change. Neither task needs the cross-compiled native core, so this
 # stays a Kotlin-only build with no Rust toolchain in it.
 if [ -n "${ANDROID_HOME:-}" ]; then
-  (cd android && ./gradlew testDebugUnitTest lint)
+  # compileDebugAndroidTestKotlin catches an instrumented test that does not
+  # compile without needing a device connected — testDebugUnitTest and lint
+  # alone never touch the androidTest source set at all.
+  (cd android && ./gradlew testDebugUnitTest lint :ui-tv:compileDebugAndroidTestKotlin)
 else
   echo "skipping: no Android SDK (set ANDROID_HOME to run the Android checks)"
 fi

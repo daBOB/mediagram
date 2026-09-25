@@ -21,6 +21,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import ui.tv.LeavesTouchModeRule
 import ui.tv.TvTheme
 import ui.tv.setup.TvTextQuestionFieldTag
 
@@ -38,6 +39,8 @@ import ui.tv.setup.TvTextQuestionFieldTag
  */
 @RunWith(AndroidJUnit4::class)
 class TvProfilePickerTest {
+    @get:Rule val touchMode = LeavesTouchModeRule()
+
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
     private val ada = Profile(id = "ada", name = "Ada")
