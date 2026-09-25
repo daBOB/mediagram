@@ -31,9 +31,11 @@ fun setUri(setId: String): Uri =
         .build()
 
 /**
- * Reads one set's bytes through [CoreClient] for ExoPlayer. Offset-to-part
- * mapping happens in the Rust core; this class only accounts for position
- * and remaining length across however many `read` calls that takes.
+ * Reads one set's bytes through [chunks] for ExoPlayer, one [CHUNK_BYTES]
+ * chunk at a time. [core] answers only a set's total size — the one thing
+ * a chunk fetch needs before it can ask for anything — every actual byte
+ * comes back through [chunks], which may serve one from a memo rather than
+ * Telegram.
  *
  * [core] is nullable because there is a window — between signing a device
  * out and setting it up again — in which no core exists. A read session
@@ -43,14 +45,17 @@ fun setUri(setId: String): Uri =
  */
 class MlibDataSource(
     private val core: CoreClient?,
-    private val counters: PlaybackCounters,
+    private val chunks: SetChunkSource,
 ) : BaseDataSource(true) {
     private var setId: String? = null
     private var position = 0L
     private var remaining = 0L
+    private var total = 0L
     private var uri: Uri? = null
 
-    // What one fetch brought back, and how much of it has been handed out.
+    // What one chunk fetch brought back, and how much of it has been
+    // handed out. A fresh open() may land mid-chunk, so handedOut starts
+    // wherever this session's position falls inside it, not always zero.
     private var held = EMPTY
     private var handedOut = 0
 
@@ -60,19 +65,20 @@ class MlibDataSource(
         val id = dataSpec.uri.lastPathSegment ?: throw IOException("no set in the given URI")
         // Blocking, like fetch() below: ExoPlayer calls open() on its loader
         // thread and expects it to block until the size is known.
-        val total =
+        val setTotal =
             try {
                 runBlocking { client.totalSize(id) }
             } catch (e: CoreException) {
                 throw IOException("could not read the set's size", e)
             }
-        if (dataSpec.position > total) {
+        if (dataSpec.position > setTotal) {
             throw DataSourceException(DataSourceException.POSITION_OUT_OF_RANGE)
         }
         uri = dataSpec.uri
         setId = id
+        total = setTotal
         position = dataSpec.position
-        remaining = if (dataSpec.length == C.LENGTH_UNSET.toLong()) total - position else dataSpec.length
+        remaining = if (dataSpec.length == C.LENGTH_UNSET.toLong()) setTotal - position else dataSpec.length
         // Whatever was held belonged to the previous position; a seek lands
         // here and must not be served stale bytes.
         held = EMPTY
@@ -82,18 +88,15 @@ class MlibDataSource(
     }
 
     /**
-     * Serves from what is already held, fetching more only when it runs out.
+     * Serves from what is already held, fetching a whole chunk only when it
+     * runs out.
      *
-     * ExoPlayer asks in buffer segments — 64 KiB at most — and every fetch
-     * below costs a round trip to resolve the part plus a whole 512 KiB
-     * chunk from Telegram, of which a 64 KiB answer keeps an eighth and
-     * throws the rest away. Asking per segment therefore spends sixteen
-     * round trips and eight megabytes for every megabyte played, which is
-     * slower than a film runs and is why one would never start.
-     *
-     * So a fetch asks for [READ_AHEAD] and hands it out a segment at a
-     * time. It is a whole number of Telegram's chunks, so nothing is
-     * downloaded that is not kept.
+     * ExoPlayer asks in buffer segments — 64 KiB at most — and a fetch that
+     * reached Telegram costs a round trip to resolve the part plus a whole
+     * 512 KiB chunk, of which a 64 KiB answer keeps an eighth and throws
+     * the rest away. Holding a whole chunk and handing it out a segment at
+     * a time is what keeps a parser reading a few bytes at a time to one
+     * round trip instead of hundreds.
      */
     override fun read(
         buffer: ByteArray,
@@ -103,11 +106,21 @@ class MlibDataSource(
         if (length == 0) return 0
         if (remaining == 0L) return C.RESULT_END_OF_INPUT
         if (handedOut == held.size) {
-            held = fetch(minOf(READ_AHEAD.toLong(), remaining).toInt())
-            handedOut = 0
-            if (held.isEmpty()) return C.RESULT_END_OF_INPUT
+            if (position >= total) {
+                // remaining is still > 0, so the DataSpec's own declared
+                // length ran past the set's real end. A chunk fetch never
+                // asks the core for an offset that is out of range, so
+                // that is checked here instead of relying on whatever
+                // bounds error the core would otherwise throw.
+                throw IOException("the requested range runs past the end of the set")
+            }
+            val index = position / CHUNK_BYTES
+            held = fetch(index)
+            handedOut = (position - index * CHUNK_BYTES).toInt()
         }
-        val served = minOf(length, held.size - handedOut)
+        // A whole chunk may hold more than this DataSpec asked for — the
+        // fetch above does not stop at `remaining`, only `held` does.
+        val served = minOf(length.toLong(), (held.size - handedOut).toLong(), remaining).toInt()
         held.copyInto(buffer, offset, handedOut, handedOut + served)
         handedOut += served
         position += served
@@ -116,23 +129,12 @@ class MlibDataSource(
         return served
     }
 
-    private fun fetch(want: Int): ByteArray =
-        // Blocking is correct here: ExoPlayer calls read() on its loader
-        // thread and expects it to block until bytes arrive or the input
-        // ends. This and open() are the only places in :core:playback
-        // runBlocking is allowed — everywhere else it would risk landing on
-        // main.
-        try {
-            runBlocking { core!!.read(setId!!, position, want) }.also { counters.fetched(it.size) }
-        } catch (e: CoreException) {
-            // Wrapped so ExoPlayer's Loader can retry an IOException (a
-            // dropped Telegram connection, most likely) through its
-            // LoadErrorHandlingPolicy instead of treating a plain
-            // exception as an UnexpectedLoaderException and killing
-            // playback outright.
-            counters.readFailed()
-            throw IOException("could not read from the set", e)
-        }
+    // Blocking is correct here: ExoPlayer calls read() on its loader
+    // thread and expects it to block until bytes arrive or the input
+    // ends. This and open() are the only places in :core:playback
+    // runBlocking is allowed — everywhere else it would risk landing on
+    // main.
+    private fun fetch(index: Long): ByteArray = runBlocking { chunks.chunk(setId!!, index, total) }
 
     override fun getUri(): Uri? = uri
 
@@ -148,38 +150,47 @@ class MlibDataSource(
     }
 
     private companion object {
-        /**
-         * How much one fetch asks for: two of the 512 KiB chunks Telegram
-         * serves, so a fetch keeps every byte it pays for.
-         *
-         * Bigger is tempting and was tried. Four megabytes took a 5.8 GB
-         * film from a first frame in three seconds to one in seven, because
-         * the first fetch of a set blocks for the whole of it and nothing
-         * can be decoded until it lands. It bought no throughput in return:
-         * a player buffers ahead and then reads at the speed the film
-         * plays, so the transfer was never what was short.
-         */
-        const val READ_AHEAD = 1024 * 1024
-
         val EMPTY = ByteArray(0)
     }
 }
 
 /**
  * Hands ExoPlayer a fresh [MlibDataSource] per read session, bound to
- * whichever core is current *then*.
+ * whichever core is current *then*, over a [ChunkMemo] shared by every
+ * session this factory ever opens — see [ChunkMemo] for why that sharing
+ * is what keeps a `CacheDataSource` gap-fill from re-downloading a chunk
+ * one of this factory's other data sources already has.
  *
- * Asked each time rather than captured once: the player is built once per
- * process and outlives a start-over, and the core it would otherwise have
- * kept holds the previous account's open, still-authorised connection.
- * Deleting the auth key file does not close that connection, and the
- * catalog it reads resolves by path — so a captured core would look up the
- * new library's sets and fetch them as the old account, which is the
- * opposite of what signing out is supposed to mean.
+ * The core a session opens with is asked for each time rather than
+ * captured once: the player is built once per process and outlives a
+ * start-over, and the core it would otherwise have kept holds the previous
+ * account's open, still-authorised connection. Deleting the auth key file
+ * does not close that connection, and the catalog it reads resolves by
+ * path — so a captured core would look up the new library's sets and fetch
+ * them as the old account, which is the opposite of what signing out is
+ * supposed to mean.
+ *
+ * [chunks]' own upstream follows the same reasoning, re-resolving the
+ * current core on every chunk it actually fetches rather than freezing
+ * whichever core this factory saw first. That the memo can go on to serve
+ * an old entry under a different core than fetched it is not a new risk
+ * this introduces: a `setId` names one Telegram message in one channel, so
+ * the bytes behind it cannot change from one core to the next, and the
+ * on-disk `CacheDataSource` cache beneath this already persists the same
+ * keys across a sign-out with no guard at all.
  */
 class MlibDataSourceFactory(
     private val counters: PlaybackCounters,
     private val currentCore: () -> CoreClient?,
 ) : DataSource.Factory {
-    override fun createDataSource(): DataSource = MlibDataSource(currentCore(), counters)
+    private val chunks: SetChunkSource =
+        ChunkMemo(
+            upstream =
+                SetChunkSource { setId, index, totalSize ->
+                    val core = currentCore() ?: throw IOException("this device is not set up to read the library")
+                    TelegramChunkSource(core, counters).chunk(setId, index, totalSize)
+                },
+        )
+
+    override fun createDataSource(): DataSource = MlibDataSource(currentCore(), chunks)
 }

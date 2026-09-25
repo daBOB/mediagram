@@ -25,6 +25,9 @@ class FakeCore(
     var reads = 0
         private set
 
+    /** Every offset [read] was actually asked for, in order — what a chunk-alignment test checks against. */
+    val requestedOffsets = mutableListOf<Long>()
+
     override fun isAuthorized(): Boolean = true
 
     override suspend fun requestCode(phone: String): String = "token"
@@ -61,6 +64,7 @@ class FakeCore(
         len: Int,
     ): ByteArray {
         reads++
+        requestedOffsets += offset
         if (offset >= totalSize) throw CoreException.NotFound("offset $offset is at or past the end")
         val clampedLen = minOf(len.toLong(), totalSize - offset).toInt()
         return bytesOf(offset, clampedLen)
