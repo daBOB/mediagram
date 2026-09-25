@@ -877,7 +877,12 @@ nothing a viewer could not already get by asking the channel directly once
 paired. A write is different: an unpaired device flooding the store with
 garbage would evict everything a paired one worked to cache, so every PUT
 carries `Authorization: MGC1 <hex>`, where the hex is
-`HMAC-SHA256(token, "PUT\n{path}\n{X-Set-Total}\n" + hex(sha256(body)))`. The
+`HMAC-SHA256(token, "PUT\n{path}\n{X-Set-Total}\n" + hex(sha256(body)))` —
+keyed on the token's 64 ASCII hex characters themselves, never hex-decoded,
+`path` and the total each their plain decimal spelling, and no trailing
+newline after the body's hash. Checked in that order too: id/`n` shape,
+then the length rule, only then the signature, so a malformed PUT is never
+charged a 401 it could just as well have gotten a 400 or 404 for. The
 pairing token itself never crosses the wire — only this signature does — so
 a look-alike server on another network, or a passive listener on this one,
 learns nothing usable. The signature binds the body, so a PUT altered in

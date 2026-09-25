@@ -1,10 +1,11 @@
 # Install to /etc/systemd/system/mediagram-cache.service, then:
 #   sudo systemctl enable --now mediagram-cache
 # See docs/running-the-player.md, "Home cache server", for the full setup
-# and how to read the pairing token this creates on first run.
+# and how to read the pairing token this creates at startup.
 [Unit]
 Description=mediagram-cache: a LAN chunk store for the Android app
 After=network-online.target
+Wants=network-online.target
 
 [Service]
 # No user to create ahead of time: systemd allocates one for the lifetime
@@ -15,6 +16,11 @@ CacheDirectory=mediagram-cache
 # /var/lib/mediagram-cache — the pairing token, separate from the chunks so
 # clearing the cache does not unpair every device; $STATE_DIRECTORY.
 StateDirectory=mediagram-cache
+# Pointing MEDIAGRAM_CACHE_ROOT at a volume outside CacheDirectory (an
+# external SD or USB drive) needs a line here too:
+#   ReadWritePaths=/mnt/wherever
+# ProtectSystem=strict below makes everything else read-only, and that
+# includes a custom root unless it is named explicitly.
 ExecStart=/usr/local/bin/mediagram_cache
 Restart=on-failure
 

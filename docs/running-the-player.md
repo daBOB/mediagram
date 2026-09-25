@@ -649,6 +649,7 @@ the other being up.
 [Unit]
 Description=mediagram-cache: a LAN chunk store for the Android app
 After=network-online.target
+Wants=network-online.target
 
 [Service]
 DynamicUser=yes
@@ -683,36 +684,59 @@ same choice `bun run dev` makes above — and is safe to leave running
 alongside the player; starting or restarting either one never touches the
 other.
 
+Pointing `MEDIAGRAM_CACHE_ROOT` at a volume outside `CacheDirectory` — an
+external SD or USB drive mounted elsewhere — needs one more line in
+`[Service]`: `ReadWritePaths=/mnt/wherever`. `ProtectSystem=strict` makes
+the whole filesystem read-only except the paths `CacheDirectory=`,
+`StateDirectory=` and `ReadWritePaths=` name; without it, a custom root
+outside the default would fail every write with a permission error that has
+nothing to do with actual file permissions.
+
 ### Pairing a device
+
+The pairing token is created once, at startup — not lazily on the first
+request a device happens to make — so `journalctl -u mediagram-cache` shows
+whether it exists before any device ever tries to reach it.
 
 ```sh
 sudo cat /var/lib/mediagram-cache/token
 ```
 
-is the 64-character hex pairing token — `DynamicUser=yes` puts
+reads the 64-character hex pairing token. `DynamicUser=yes` puts
 `StateDirectory=mediagram-cache` at `/var/lib/mediagram-cache`, owned by a
-transient system user, but root can still read it. The file is created,
-mode 0600, on the very first request the server ever handles (or run
-`mediagram_cache token` directly, as the same user, to print it without
-starting the server). A device's owner enters this token once; it is never
-sent over the network — every PUT instead carries an HMAC-SHA256 signature
-keyed on it, checked in constant time, so a passive listener on the LAN
-learns nothing that lets it write.
+transient per-run system user with no login of its own — there is no user
+to `sudo -u` into — but root can always read it regardless. A device's
+owner enters this token once; it is never sent over the network — every PUT
+instead carries an HMAC-SHA256 signature keyed on it, checked in constant
+time, so a passive listener on the LAN learns nothing that lets it write.
 
-The exact bytes signed, and a worked example, so the Android client's HMAC
-and this server's cannot drift apart silently:
+The exact contract, and a worked example, so the Android client's HMAC and
+this server's cannot drift apart silently:
+
+- The **key** is the token's 64 ASCII bytes exactly as printed above — the
+  hex *string*, never hex-decoded to the 32 bytes it represents. Decoding
+  it first produces a different, silently wrong, signature.
+- **`path`** is `/v1/sets/{id}/chunks/{n}` with `{n}` the chunk number's
+  plain decimal spelling (`0`, not `00` or `+0`).
+- **`total`** is the `X-Set-Total` value's plain decimal spelling too —
+  what a client's own `Long.toString()` produces, no leading zeros, no `+`.
+- The signed string has **no trailing newline** after the body's hex SHA-256.
+- A PUT is checked in this order: id/`n` shape → `X-Set-Total` present →
+  the length rule → the signature. A malformed request gets the 400 or 404
+  its shape earns, never a 401 for a request that was never going to be
+  accepted regardless of who sent it.
 
 ```
 scheme:    Authorization: MGC1 <hex>
 signed:    HMAC-SHA256(token, "{method}\n{path}\n{total}\n" + hex(sha256(body)))
 
-token:     00112233445566778899aabbccddeeff00112233445566778899aabbccddee
+token:     00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff
 method:    PUT
 path:      /v1/sets/abc123/chunks/0
 total:     5
 body:      "hello"                 (5 ASCII bytes)
 
-signature: 5b6d16159fbd287ed1da02570ef266f83790c52de8ec1eb0d2a1500ed34aef18
+signature: c1ac37f41c76c7c8434460c94458f58a817bf0859f9be493209d23a8ab9a4d85
 ```
 
 `crates/mediagram-cache/src/token_tests.rs` asserts these same numbers in

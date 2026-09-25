@@ -10,7 +10,7 @@ use mediagram_cache::http::router;
 use mediagram_cache::store::ChunkStore;
 use mediagram_cache::token;
 
-pub const TOKEN: &str = "00112233445566778899aabbccddeeff00112233445566778899aabbccddee";
+pub const TOKEN: &str = "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
 
 pub fn app(budget: u64) -> (tempfile::TempDir, axum::Router) {
     let dir = tempfile::tempdir().expect("temp dir");

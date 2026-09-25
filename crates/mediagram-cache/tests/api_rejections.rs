@@ -95,6 +95,23 @@ async fn a_put_with_a_mismatched_total_is_409() {
     assert_eq!(res.status(), StatusCode::CONFLICT);
 }
 
+/// The length rule is checked before the signature: a request with both a
+/// bad length and no `Authorization` header at all gets the 400, not the
+/// 401 — cheaper to reject, and a caller fixing errors one at a time sees
+/// the shape problem first rather than a misleading auth failure.
+#[tokio::test]
+async fn a_bad_length_is_400_even_with_no_authorization_header() {
+    let (_dir, app) = app(1 << 30);
+    let req = Request::builder()
+        .method("PUT")
+        .uri("/v1/sets/abc123/chunks/0")
+        .header("X-Set-Total", "5")
+        .body(Body::from(b"too short".to_vec()))
+        .unwrap();
+    let res = app.oneshot(req).await.unwrap();
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+}
+
 #[tokio::test]
 async fn a_put_with_no_authorization_header_is_401() {
     let (_dir, app) = app(1 << 30);

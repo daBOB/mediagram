@@ -98,6 +98,11 @@ async fn head_chunk(
     }
 }
 
+/// Checked in this order — id/n shape, `X-Set-Total` present, the length
+/// rule, only then the signature — so a malformed request never earns a
+/// 401 it could just as well have gotten a 400 for, and a request that
+/// never had a chance of being accepted is never charged the cost of an
+/// HMAC verification over its (potentially 1 MiB) body.
 async fn put_chunk(
     State(state): State<AppState>,
     Path((raw_id, raw_n)): Path<(String, String)>,
