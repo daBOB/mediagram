@@ -26,6 +26,19 @@ import designsystem.Spacing
 import model.Progress
 import model.WatchSnapshot
 import settings.ShelfView
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import catalog.Page
+import catalog.pageOf
+import catalog.pickFeatured
+import model.MediaSet
+import kotlin.random.Random
 
 /**
  * Everything one catalog shelf holds, on one wall, in one direction of
@@ -52,31 +65,58 @@ internal fun ShelfWall(
     view: ShelfViewChoice,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
+    films: FilmShelfActions? = null,
 ) {
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
+    // Films are paged, as the web's Movies shelf is; shows and courses are not.
+    val filmShelf = shelf.entries.isNotEmpty() && shelf.entries.all { it is Entry.Film }
+    var requested by rememberSaveable(shelf.title) { mutableIntStateOf(1) }
+    val shown = if (filmShelf) pageOf(shelf.entries, requested) else Page(shelf.entries, 1, 1)
+    val pager: @Composable () -> Unit = { ShelfPager(shown.page, shown.pages, onPage = { requested = it }) }
+    var reel by remember { mutableStateOf<List<MediaSet>?>(null) }
+    val filmSets = remember(shelf) { shelf.entries.filterIsInstance<Entry.Film>().map { it.set } }
+    val featurable = films != null && filmShelf && pickFeatured(filmSets, watchedIds, Random, 1).isNotEmpty()
 
     Column(modifier = Modifier.fillMaxSize()) {
         if (offersViewChoice(shelf)) {
-            ShelfModeToggle(view.chosen, view.onChoose, modifier = Modifier.align(Alignment.End).padding(horizontal = Spacing.small))
+            ShelfBar(
+                pageLine = "page ${shown.page} of ${shown.pages}".takeIf { shown.pages > 1 },
+                view = view,
+                onFeatured = { reel = pickFeatured(filmSets, watchedIds, Random) }.takeIf { featurable },
+            )
         }
         if (shelfViewFor(shelf, view.chosen) == ShelfView.LIST) {
-            ShelfList(shelf.entries, positions, watchedIds, heldIds, onOpenTitle, onOpenCollection)
+            ShelfList(shown.items, positions, watchedIds, heldIds, onOpenTitle, onOpenCollection, footer = pager, page = shown.page)
             return@Column
         }
+        val grid = rememberLazyGridState()
+        ScrollToTopOnNewPage(shown.page) { grid.scrollToItem(0) }
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
+            state = grid,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(Spacing.medium),
             horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
             verticalArrangement = Arrangement.spacedBy(Spacing.medium),
         ) {
-            items(items = shelf.entries, key = ::keyOf) { entry ->
+            items(items = shown.items, key = ::keyOf) { entry ->
                 EntryCard(entry, positions, watchedIds, onOpenTitle, onOpenCollection, heldIds)
             }
+            item(key = "pager", span = { GridItemSpan(maxLineSpan) }) { pager() }
         }
     }
+    reel?.let { picks ->
+        FeaturedReel(
+            films = picks,
+            titleInfo = films?.titleInfo ?: { null },
+            onPlay = { films?.onPlay?.invoke(it) },
+            onDetails = { onOpenTitle(it.setId) },
+            onClose = { reel = null },
+        )
+    }
 }
+
 
 /** This device's shelf view and the way to change it, handed down as one. */
 internal data class ShelfViewChoice(val chosen: ShelfView, val onChoose: (ShelfView) -> Unit)
@@ -146,27 +186,4 @@ internal fun posterColumnsFor(widthSizeClass: WindowWidthSizeClass): Int = when 
     WindowWidthSizeClass.EXPANDED -> 6
     WindowWidthSizeClass.MEDIUM -> 4
     else -> 3
-}
-
-/**
- * What a screen says when it has nothing to show.
- *
- * Set in the catalogue's own reading face rather than left at the default,
- * because a first run, an empty library and a failed load are the three
- * moments a viewer reads a whole sentence here, and they are exactly the
- * moments the app would otherwise stop sounding like itself.
- */
-@Composable
-internal fun CenteredMessage(message: String) {
-    Box(
-        modifier = Modifier.fillMaxSize().padding(Spacing.extraLarge),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-    }
 }

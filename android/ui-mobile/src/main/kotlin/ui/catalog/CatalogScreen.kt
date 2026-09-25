@@ -28,6 +28,7 @@ import catalog.kidsShelf
 import catalog.watchlistWall
 import designsystem.Spacing
 import model.WatchSnapshot
+import uniffi.mediagram_core.TitleInfo
 
 /**
  * The shelves, and one line above them while the library is being worked
@@ -49,13 +50,15 @@ fun CatalogScreen(
     onPlayRun: (setId: String, run: List<String>) -> Unit,
     /** Continue's "Mark finished". */
     onFinish: (setId: String) -> Unit,
+    /** What the index says about a title — the Featured reel's score and tagline. */
+    titleInfo: suspend (String) -> TitleInfo? = { null },
 ) {
     when (state) {
         CatalogUiState.Loading -> CenteredMessage("Loading your library…")
         CatalogUiState.Empty -> CenteredMessage("The library is empty.")
         CatalogUiState.KidsEmpty -> CenteredMessage("Nothing rated FSK 12 or under yet.")
         is CatalogUiState.Failed -> CenteredMessage(state.message)
-        is CatalogUiState.Ready -> Shelves(state, fetching, onOpenTitle, onOpenCollection, onOpenList, onCreateList, onPlayRun, onFinish)
+        is CatalogUiState.Ready -> Shelves(state, fetching, onOpenTitle, onOpenCollection, onOpenList, onCreateList, onPlayRun, onFinish, titleInfo)
     }
 }
 
@@ -80,6 +83,7 @@ private fun Shelves(
     onPlayRun: (setId: String, run: List<String>) -> Unit,
     /** Continue's "Mark finished". */
     onFinish: (setId: String) -> Unit,
+    titleInfo: suspend (String) -> TitleInfo?,
 ) {
     val shelfViewModel: ShelfViewModel = hiltViewModel()
     val chosenView by shelfViewModel.view.collectAsStateWithLifecycle()
@@ -131,7 +135,16 @@ private fun Shelves(
                 onSeeAll = { shelf -> chosen = titles.indexOf(shelf).coerceAtLeast(0) },
             )
 
-            selected < firstKept -> ShelfWall(shelves[selected - 1], state.watch, state.heldIds, columns, shelfView, onOpenTitle, onOpenCollection)
+            selected < firstKept -> ShelfWall(
+                shelves[selected - 1],
+                state.watch,
+                state.heldIds,
+                columns,
+                shelfView,
+                onOpenTitle,
+                onOpenCollection,
+                films = FilmShelfActions(onPlay = { onPlayRun(it.setId, emptyList()) }, titleInfo = titleInfo),
+            )
 
             else -> KeptTabContent(
                 kind = KeptKind.entries[selected - firstKept],

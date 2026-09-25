@@ -5,9 +5,24 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Unreleased — 0.53.0
+## Unreleased — 0.54.0
 
 **Added**
+
+- The Featured reel and a paged Movies shelf on the phone, as on the web.
+  Featured sits above the Movies shelf beside List · Grid and opens a dark,
+  full-screen run of up to twelve unwatched films with posters, shuffled: the
+  poster drifts over a blurred copy of itself, holds seven seconds and fades
+  into the next, with title, year, genres, score and tagline; Play and Details
+  act on the film shown, ‹ › and the dots step through, a tap on the poster
+  pauses, back closes it, and it stands still while the app is in the
+  background. Reduced animations get still posters. The Movies shelf shows 48
+  films a page, with "page 2 of 18" above it and ‹ Prev, page numbers and
+  Next › below, the web's own page links; picks and page links are ports of
+  `featured-picks.js` and `pager.js` with the web's test cases.
+- The shelves keep their place under a title: coming back from a film,
+  a show or the player finds the same tab, page and scroll position, as the
+  web's back button does. Before, it always came back to Home.
 
 - The Android web-parity work, merged: search and genre pages, audio and
   subtitle choice, the player's settings sheet, up next and queues,
@@ -51,12 +66,12 @@ to `main`. Full phase-by-phase detail lives in
   the next after seven seconds, and carries its title, year, genres, score and
   tagline. Play and Details act on the film shown; arrows, the dots, Space
   (pause), Esc and the back button steer it. Reduced motion gets still posters.
-  Android has no equivalent: its catalog carries no posters.
+  Android gained its own in 0.54.0, once the phone fetched posters.
 
 - The web player's Movies shelf is paged, 48 films at a time, with a row of
   page links under the grid. The page is in the address (`#/movies/page/3`),
   so back, reload and shared links return to it; `#/movies` is still page one.
-  The Android catalog does not page yet.
+  The Android Movies shelf pages the same way since 0.54.0.
 
 **Fixed**
 

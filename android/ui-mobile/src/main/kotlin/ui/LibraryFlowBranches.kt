@@ -21,6 +21,7 @@ import ui.catalog.SeasonScreen
 import ui.catalog.CollectionScreen
 import ui.catalog.ListScreen
 import ui.catalog.CatalogScreen
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 
 /**
  * The library's own screens, one for each [FrameKind] — dispatched on
@@ -41,6 +42,10 @@ internal fun LibraryBranches(
     profileBar: ProfileBarState,
 ) {
     val resolved = at.resolve(catalogState)
+    // The shelves' own remembered state — which tab, which page of films, how
+    // far down — outlives a title, collection or the player opened over them,
+    // so coming back finds the shelf as it was left, as the web's back button does.
+    val shelvesState = rememberSaveableStateHolder()
 
     when (at.top) {
         // The player gets the whole window; a film is the one thing here
@@ -152,7 +157,7 @@ internal fun LibraryBranches(
             profile = profileBar,
             onSearch = at::openSearch,
         ) {
-            CatalogScreen(
+            shelvesState.SaveableStateProvider(SHELVES_KEY) { CatalogScreen(
                 state = catalogState,
                 fetching = fetchState.running,
                 onOpenTitle = at::openTitle,
@@ -161,10 +166,13 @@ internal fun LibraryBranches(
                 onCreateList = catalogViewModel::createList,
                 onPlayRun = at::openPlayer,
                 onFinish = { catalogViewModel.markFinished(it) },
-            )
+                titleInfo = catalogViewModel::titleInfo,
+            ) }
         }
     }
 }
+
+private const val SHELVES_KEY = "shelves"
 
 /**
  * One screen of the library under the app's chrome, and what leaving it
