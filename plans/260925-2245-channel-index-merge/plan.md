@@ -92,3 +92,18 @@ Commands:
   still exist in the channel.
 - **`push-index` keeps refusing** by default; `--merge` does pull + push. (Recommendation
   taken; not contested.)
+
+## First use (user, 2026-09-25)
+
+The 21 sets only this machine holds are **its own unfinished uploads** (all `pending`):
+19 *30 Rock* episodes from seasons 4–7 (0 parts sent; sources present on
+`/media/DBI/HiDrive`), *Ben Hur* (2/9 parts) and *Ghost in the Shell* (4/6). The user
+resumes them **from this machine** once the merge exists. Uploads run from one machine at a
+time, never in parallel.
+
+Order, on this machine:
+1. `mediagram pull-index --dry-run`, then `mediagram pull-index`: take in the uploader's
+   265 sets, with a backup first.
+2. `mediagram resume`: finishes the 21; its automatic publish now passes the guard,
+   because the local index holds everything the channel does.
+3. Verify the web player serves the union.
