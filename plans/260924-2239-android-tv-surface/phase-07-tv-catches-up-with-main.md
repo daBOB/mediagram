@@ -12,6 +12,21 @@
 - **Double-tap seek, pinch framing, immersive bars, picture-in-picture** — touch/window affordances with no remote equivalent.
 - **Search** — built (task 5), but typed through the system keyboard; voice search is out of scope.
 
+Built, but differently from the phone or the web, on purpose:
+- **Notes: links not followable, no ✕, no selection** — a remote cannot point at one word of a paragraph or select text; a link keeps its words. Back and the Notes button close the column instead of a ✕.
+- **Notes entry among the controls, not in the top bar** — the top bar is not focusable (nothing there to press), so Notes sits with the tools (Notes, ⚙, ⓘ) at the end of the marks row, where the remote reaches it.
+- **Tools at the end of the marks row, not in the transport** — the transport holds only what moves the film; with the tools in it the row overflowed a stage narrowed by the notes column and the gear could not be reached. The row wraps to a second line on a narrow stage.
+- **Search: why-it-matched in italic grey** — the phone's accent colour means "the remote is here" on the television.
+- **Previous = previous in the run** — the remote's Previous key steps back through the run, never "restart this title" (the playback session's answer); a held key is one step.
+- **Mark finished as a row under a Continue plate** — the phone's long-press menu has no remote equivalent; the action sits one press down from the plate it acts on.
+- **Up-next card does not take focus from the settings panel, the list dialog or the seek bar** — a viewer busy in one of those keeps the remote; the card stays one press Up from the seek bar.
+- **Up-next card floats bottom-right above the controls, opaque** — as the web floats `.up-next`; inside the controls it pushed them into the title. Opaque because a countdown read through a bright scene is not read. Beside the settings panel while that is open.
+- **Back order: settings panel → up-next card → notes → controls → leave** — each Back undoes the most recent thing put in front of the viewer.
+- **Dialogs route media keys to the player** — the list dialog's window takes every key; play/pause and Next/Previous still reach the film rather than the playback session.
+- **Action notice at the top-end of the stage** — out of the way of the bottom controls and the subtitles, where the phone's snackbar would sit over them.
+- **Subtitles never rise above the top band** — lifted clear of the controls (and of the up-next card while it shows) as on the phone lifts them clear of its bar, but capped under the title/statistics; a cue over the title is unreadable, one over a scrim's edge is not. On a stage narrowed by the notes a long cue can still meet the card — the card is drawn over it for the last half-minute (the phone overlaps the same way).
+- **Cues beside the settings panel** — while the panel is open the cue is centred in what the panel leaves of the picture, so a size or sync change can be judged.
+
 ## Implementation steps
 
 Phone references live in `android/ui-mobile/src/main/kotlin/ui/`; shared logic in `android/feature/*` and `android/ui-common`. Move shared rules out of `ui-mobile` when the TV needs them (one copy), never copy. No ViewModel changes unless a phone ViewModel already exposes what TV needs.
