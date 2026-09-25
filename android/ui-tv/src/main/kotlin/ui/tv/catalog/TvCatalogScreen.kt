@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.text.style.TextAlign
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.CatalogUiState
@@ -29,7 +28,6 @@ import catalog.updateDisabledReason
 import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvTypeScale
-import ui.tv.TvSafeArea
 import ui.tv.profile.TvChosenProfile
 
 /**
@@ -191,21 +189,5 @@ fun TvCatalogScreen(
                 }
             }
         }
-    }
-}
-
-/**
- * What a screen says when it has nothing to show, in the phone's exact
- * words — a viewer who uses both surfaces reads the same sentence on each.
- */
-@Composable
-internal fun TvCenteredMessage(message: String) {
-    TvSafeArea {
-        Text(
-            text = message,
-            style = TvTypeScale.body,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
     }
 }

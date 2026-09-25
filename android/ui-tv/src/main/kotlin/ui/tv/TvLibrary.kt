@@ -8,7 +8,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogViewModel
 import catalog.fetchResultMessage
-import catalog.mediaSet
 import system.FetchViewModel
 import ui.FrameKind
 import ui.LibraryPositions
@@ -17,7 +16,6 @@ import ui.rememberLibraryPositions
 import ui.resolve
 import ui.tv.catalog.TvCollection
 import ui.tv.catalog.TvFetchResultDialog
-import ui.tv.catalog.TvList
 import ui.tv.catalog.TvSearchEntryKey
 import ui.tv.catalog.TvSeason
 import ui.tv.catalog.TvTitlePage
@@ -132,31 +130,7 @@ internal fun TvLibrary(profile: TvChosenProfile) {
                 )
             }
 
-        // A list plays straight from its plate, as the phone's does: it is
-        // a viewer's own pick, already chosen, not a shelf to browse. Every
-        // plate plays into the whole list, the same run from wherever a
-        // viewer started; `nextInQueue` walks on from there.
-        FrameKind.LIST ->
-            TvResolvedBranch(resolved.list, catalogState, leave) { list ->
-                val sets = list.items.mapNotNull(catalogState::mediaSet)
-                val ids = sets.map { it.setId }
-                TvList(
-                    list = list,
-                    sets = sets,
-                    onPlay = { setId ->
-                        restore.opened(here, setId)
-                        at.openPlayer(setId, ids)
-                    },
-                    onPlayAll = { ids.firstOrNull()?.let { first -> at.openPlayer(first, ids) } },
-                    onRename = { name -> catalogViewModel.renameList(list.id, name) },
-                    onDelete = {
-                        catalogViewModel.deleteList(list.id)
-                        leave()
-                    },
-                    onRemove = { setId -> catalogViewModel.setInList(list.id, setId, false) },
-                    restoreKey = restore.of(here),
-                )
-            }
+        FrameKind.LIST -> TvListBranch(at, resolved.list, catalogState, catalogViewModel, restore, leave)
 
         // Nothing open: the shelves.
         null -> {

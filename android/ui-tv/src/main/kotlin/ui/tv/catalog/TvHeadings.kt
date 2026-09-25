@@ -21,6 +21,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import designsystem.Spacing
 import designsystem.TvTypeScale
+import ui.tv.TvSafeArea
 
 /**
  * The same "Title · n" the web's and the phone's row and kept-wall headings
@@ -98,4 +99,20 @@ internal fun TvQuietLine(
         textAlign = textAlign,
         modifier = modifier,
     )
+}
+
+/**
+ * What a screen says when it has nothing to show, in the phone's exact
+ * words — a viewer who uses both surfaces reads the same sentence on each.
+ */
+@Composable
+internal fun TvCenteredMessage(message: String) {
+    TvSafeArea {
+        Text(
+            text = message,
+            style = TvTypeScale.body,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+    }
 }

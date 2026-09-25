@@ -4,11 +4,15 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import catalog.CatalogUiState
+import catalog.CatalogViewModel
+import catalog.mediaSet
+import model.ListOfSets
 import model.WatchSnapshot
 import ui.FrameResolution
 import ui.LibraryPositions
 import ui.resolveFrame
 import ui.tv.catalog.TvGenre
+import ui.tv.catalog.TvList
 import ui.tv.catalog.TvSearch
 import ui.tv.setup.TvLoadingIndicator
 
@@ -90,5 +94,43 @@ internal fun <T> TvResolvedBranch(
             TvLoadingIndicator()
         }
         FrameResolution.Stale -> LaunchedEffect(Unit) { leave() }
+    }
+}
+
+/**
+ * A hand-built list, which plays straight from its plate, as the phone's
+ * does: it is a viewer's own pick, already chosen, not a shelf to browse.
+ * Every plate plays into the whole list, the same run from wherever a
+ * viewer started; `nextInQueue` walks on from there.
+ */
+@Composable
+internal fun TvListBranch(
+    at: LibraryPositions,
+    resolved: ListOfSets?,
+    catalogState: CatalogUiState,
+    catalogViewModel: CatalogViewModel,
+    restore: TvRestoreKeys,
+    leave: () -> Unit,
+) {
+    val here = at.depth
+    TvResolvedBranch(resolved, catalogState, leave) { list ->
+        val sets = list.items.mapNotNull(catalogState::mediaSet)
+        val ids = sets.map { it.setId }
+        TvList(
+            list = list,
+            sets = sets,
+            onPlay = { setId ->
+                restore.opened(here, setId)
+                at.openPlayer(setId, ids)
+            },
+            onPlayAll = { ids.firstOrNull()?.let { first -> at.openPlayer(first, ids) } },
+            onRename = { name -> catalogViewModel.renameList(list.id, name) },
+            onDelete = {
+                catalogViewModel.deleteList(list.id)
+                leave()
+            },
+            onRemove = { setId -> catalogViewModel.setInList(list.id, setId, false) },
+            restoreKey = restore.of(here),
+        )
     }
 }

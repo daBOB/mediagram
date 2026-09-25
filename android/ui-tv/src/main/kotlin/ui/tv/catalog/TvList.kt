@@ -76,8 +76,7 @@ fun TvList(
     // beside it — after it, or before it at the end — is where it goes next.
     var afterRemoval by remember { mutableStateOf<String?>(null) }
     val remove = { setId: String ->
-        val at = sets.indexOfFirst { it.setId == setId }
-        afterRemoval = (sets.getOrNull(at + 1) ?: sets.getOrNull(at - 1))?.setId
+        afterRemoval = neighbourOf(sets, MediaSet::setId, setId)
         onRemove(setId)
     }
 
@@ -105,9 +104,8 @@ fun TvList(
                 onOpen = { set -> onPlay(set.setId) },
                 header = header,
                 plate = { set, modifier, onOpen ->
-                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
+                    TvPlateWithAction(label = "Remove", onAction = { remove(set.setId) }) {
                         TvSetPlate(card = SetCard(set, caption = "", progress = null, watched = false), onOpen = onOpen, modifier = modifier)
-                        TvTextRow(text = "Remove", onClick = { remove(set.setId) }, modifier = Modifier.padding(horizontal = Spacing.small))
                     }
                 },
             )
