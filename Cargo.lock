@@ -1712,7 +1712,7 @@ dependencies = [
 
 [[package]]
 name = "mediagram-cache"
-version = "0.54.0"
+version = "0.57.0"
 dependencies = [
  "anyhow",
  "axum",
