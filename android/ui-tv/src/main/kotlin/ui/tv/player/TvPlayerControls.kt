@@ -18,6 +18,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.media3.common.Player
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
 import androidx.tv.material3.Text
@@ -58,6 +60,10 @@ internal class TvPlayerExtras(
  * the order the remote moves through them, so Down always goes further
  * from the film's own facts and further into what can be done to it.
  *
+ * [onBarTopChanged] reports where the bottom block begins, in root
+ * coordinates, so the subtitles can lift clear of it rather than be read
+ * through the scrim.
+ *
  * Inside the overscan margin, unlike the picture: a television crops its
  * edges by an amount that varies by set, and a clock or a button cut off
  * at the edge is worse than a scrim that stops short of it.
@@ -69,6 +75,7 @@ internal fun TvPlayerControls(
     focus: TvPlayerFocus,
     extras: TvPlayerExtras,
     onSeekBarFocused: (Boolean) -> Unit,
+    onBarTopChanged: (Float) -> Unit = {},
 ) {
     val progress = rememberProgressStateWithTickInterval(player, READOUT_TICK_MS)
     val positionMs = progress.currentPositionMs.coerceAtLeast(0L)
@@ -103,6 +110,7 @@ internal fun TvPlayerControls(
                 Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
+                    .onGloballyPositioned { onBarTopChanged(it.boundsInRoot().top) }
                     .background(scrim)
                     .padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
             horizontalAlignment = Alignment.CenterHorizontally,

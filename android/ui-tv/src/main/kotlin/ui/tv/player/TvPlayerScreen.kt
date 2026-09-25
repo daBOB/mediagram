@@ -42,7 +42,6 @@ import player.toggleWatchlist
 import ui.player.KeepScreenOnWhile
 import ui.player.PlayerLifecycle
 import ui.player.PlayerNavigationEffects
-import ui.player.Video
 import ui.tv.catalog.TvCenteredMessage
 import ui.tv.setup.TvLoadingIndicator
 
@@ -53,9 +52,11 @@ internal const val TvPlayerScreenTag = "tv-player-screen"
  * A title playing on a television, driven by the remote — the phone's
  * `PlayerScreen` with keys where the phone has taps. The same lifecycle
  * ([PlayerLifecycle]: Home saves, leaving stops, a configuration change
- * does neither), the same screen-on rule, the same picture, and controls
- * that fade by the same shared rule on the same clock: shown when the
- * screen opens, gone after a while of playing, never while paused.
+ * does neither), the same screen-on rule, the same picture and subtitles
+ * (drawn from the same shared settings, lifted clear of the controls while
+ * they are up), and controls that fade by the same shared rule on the
+ * same clock: shown when the screen opens, gone after a while of playing,
+ * never while paused.
  *
  * Every key is read once, here, before anything focused sees it, and
  * answered by [tvKeyAction]'s table through [TvPlayerRemote]. While the
@@ -80,6 +81,8 @@ fun TvPlayerScreen(
     val marks by viewModel.marks.collectAsStateWithLifecycle()
     val actionNotice by viewModel.actionNotice.collectAsStateWithLifecycle()
     val held by viewModel.held.collectAsStateWithLifecycle()
+    val choices by viewModel.choices.collectAsStateWithLifecycle()
+    val subtitleCues by viewModel.subtitleCues.collectAsStateWithLifecycle()
 
     PlayerLifecycle(viewModel)
     // No run: a television has no up-next card yet, and a run is what lets
@@ -114,6 +117,8 @@ fun TvPlayerScreen(
     }
 
     val barShown = controlsShown && controlsMayShow(state) && player != null
+    // Where the bottom controls begin, for the subtitles to clear them.
+    var barTop by remember { mutableStateOf<Float?>(null) }
     val root = remember { FocusRequester() }
     val focus = remember { TvPlayerFocus() }
     val remote =
@@ -164,7 +169,7 @@ fun TvPlayerScreen(
         contentAlignment = Alignment.Center,
     ) {
         player?.let { current ->
-            Video(current)
+            TvVideoWithSubtitles(current, subtitleCues, choices, barTop = barTop.takeIf { barShown })
             if (barShown) {
                 TvPlayerControls(
                     player = current,
@@ -185,6 +190,7 @@ fun TvPlayerScreen(
                             held = held,
                         ),
                     onSeekBarFocused = { onSeekBar = it },
+                    onBarTopChanged = { barTop = it },
                 )
             }
         }

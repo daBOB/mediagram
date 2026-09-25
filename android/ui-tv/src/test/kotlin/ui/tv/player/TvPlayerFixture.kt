@@ -46,12 +46,16 @@ import player.ProgressRecorder
  *
  * [snapshot] and [profile] are what the stubbed repository holds when no
  * [repository] is given: whose lists the player files into, and who is
- * watching — a kids profile hides the Kids mark.
+ * watching — a kids profile hides the Kids mark. [catalog] and
+ * [subtitles] are what the player resolves the open title and its cues
+ * through; left out, the title has no subtitles at all.
  */
 internal class TvPlayerFixture(
     repository: WatchStateRepository? = null,
     snapshot: WatchSnapshot = WatchSnapshot.Empty,
     profile: Profile? = null,
+    private val catalog: CatalogRepository = mockk(relaxed = true),
+    private val subtitles: SubtitleTrackSource = mockk(relaxed = true),
 ) : AutoCloseable {
     val media = mockk<ExoPlayer>(relaxed = true)
     val repository: WatchStateRepository = repository ?: mockk(relaxed = true)
@@ -122,9 +126,9 @@ internal class TvPlayerFixture(
                     this@TvPlayerFixture.repository,
                     ProgressRecorder(this@TvPlayerFixture.repository),
                     mockk<WatchSync>(relaxed = true),
-                    mockk<CatalogRepository>(relaxed = true),
+                    catalog,
                     mockk<PlayerPreferences>(relaxed = true),
-                    mockk<SubtitleTrackSource>(relaxed = true),
+                    subtitles,
                     PlaybackServiceController.Noop,
                     SeriesPreloading.Noop,
                     HeldSetsQuery.Noop,
