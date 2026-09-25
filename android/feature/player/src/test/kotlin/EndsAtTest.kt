@@ -5,7 +5,7 @@ import java.time.ZonedDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** Covers [endsAtClock] and [endsAtLabel] — ported from `web/test/format.test.ts`'s "when it ends". */
+/** Covers [endsAtClock], [endsAtLabel] and [endsLine] — ported from `web/test/format.test.ts`'s "when it ends". */
 class EndsAtTest {
 
     // Pinned to UTC rather than the JVM's default, so the test is
@@ -61,5 +61,28 @@ class EndsAtTest {
             endsAtLabel(3600.0, 0.0, 1f, at(20, 0), ZoneOffset.UTC),
             endsAtLabel(3600.0, 0.0, 0f, at(20, 0), ZoneOffset.UTC),
         )
+    }
+
+    @Test
+    fun theLineReadsTheCataloguesRuntimeOverThePlayersLength() {
+        // Ten minutes in, fifty to go, whatever length the player reports.
+        assertEquals("ends 20:50", endsLine(3_600, 600_000, 9_999_000, 1f, at(20, 0), ZoneOffset.UTC))
+    }
+
+    @Test
+    fun theLineFallsBackToThePlayersLengthAndHonoursTheSpeed() {
+        assertEquals("ends 20:30", endsLine(null, 0, 3_600_000, 2f, at(20, 0), ZoneOffset.UTC))
+    }
+
+    @Test
+    fun theLineIsBlankWhenNothingKnowsTheLength() {
+        assertEquals("", endsLine(null, 0, 0, 1f, at(20, 0), ZoneOffset.UTC))
+        assertEquals("", endsLine(null, 0, -1, 1f, at(20, 0), ZoneOffset.UTC))
+    }
+
+    @Test
+    fun aPlayheadNotYetKnownCountsFromTheStart() {
+        // media3 reports C.TIME_UNSET-like negatives before it has a position.
+        assertEquals("ends 21:00", endsLine(3_600, -9_223L, 0, 1f, at(20, 0), ZoneOffset.UTC))
     }
 }

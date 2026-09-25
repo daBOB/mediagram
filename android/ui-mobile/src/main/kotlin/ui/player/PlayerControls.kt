@@ -30,10 +30,9 @@ import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
 import androidx.media3.ui.compose.state.rememberSeekBackButtonState
 import androidx.media3.ui.compose.state.rememberSeekForwardButtonState
-import data.ResumePoint
 import designsystem.Spacing
 import player.READOUT_TICK_MS
-import player.endsAtLabel
+import player.endsLine
 import player.speedLabel
 
 /**
@@ -56,7 +55,7 @@ fun PlayerControls(
     onToggleStats: () -> Unit,
     speed: Float,
     onOpenSettings: () -> Unit,
-    /** The catalogue's own runtime, in whole seconds — trusted over media3's until it has one; see [ResumePoint.trustedRuntime]. */
+    /** The catalogue's own runtime, in whole seconds — trusted over media3's until it has one; see [endsLine]. */
     catalogedDurationSecs: Int?,
     /** Whether a next title exists at all — the standing button stays even once the up-next card is cancelled. */
     hasNext: Boolean,
@@ -78,19 +77,12 @@ fun PlayerControls(
     val durationMs = progress.durationMs.coerceAtLeast(0L)
     val positionMs = scrubbingTo?.toLong() ?: progress.currentPositionMs.coerceAtLeast(0L)
 
-    // The catalogue's runtime first (known before media3 has buffered
-    // enough to report its own), falling back to media3's once there is
-    // one — never a transcode's still-growing length here, unlike the
-    // web's own case. Counted from the playhead, not the scrub thumb,
-    // which only previews where a seek would land.
-    val runtimeSeconds = ResumePoint.trustedRuntime(
-        catalogued = catalogedDurationSecs?.toDouble(),
-        observed = progress.durationMs.takeIf { it > 0 }?.let { it / 1_000.0 },
-        direct = true,
-    ).takeIf { it > 0 }
-    val endsLabel = endsAtLabel(
-        runtimeSeconds = runtimeSeconds,
-        positionSeconds = progress.currentPositionMs.coerceAtLeast(0L) / 1_000.0,
+    // Counted from the playhead, not the scrub thumb, which only previews
+    // where a seek would land.
+    val endsLabel = endsLine(
+        cataloguedSecs = catalogedDurationSecs,
+        positionMs = progress.currentPositionMs,
+        durationMs = progress.durationMs,
         speed = speed,
         nowMs = System.currentTimeMillis(),
     )

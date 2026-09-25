@@ -21,7 +21,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.media3.common.Player
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
 import androidx.tv.material3.Text
-import data.ResumePoint
 import designsystem.Overscan
 import designsystem.Palette
 import designsystem.Spacing
@@ -31,9 +30,8 @@ import playback.PlaybackTotals
 import player.PlayerMarksState
 import player.READOUT_TICK_MS
 import player.clockTime
-import player.endsAtLabel
+import player.endsLine
 import ui.player.SCRIM_ALPHA
-import java.time.Instant
 
 /** The focus stops the player screen moves the remote between: one for each row it lands on. */
 internal class TvPlayerFocus {
@@ -113,7 +111,7 @@ internal fun TvPlayerControls(
             TvPlayerClock(
                 positionMs = positionMs,
                 durationMs = durationMs,
-                ends = endsLine(set, positionMs, durationMs, player.playbackParameters.speed),
+                ends = endsLine(set?.durationSecs, positionMs, durationMs, player.playbackParameters.speed, System.currentTimeMillis()),
             )
             TvSeekBar(
                 positionMs = positionMs,
@@ -148,34 +146,4 @@ private fun TvPlayerClock(
         Text(text = ends, style = TvTypeScale.body, color = Palette.Figures)
         Text(text = clockTime(durationMs), style = TvTypeScale.body, color = Palette.Text)
     }
-}
-
-/**
- * `ends 21:40`, or nothing — the phone's own line ([endsAtLabel]) over the
- * phone's own choice of length ([ResumePoint.trustedRuntime]): the
- * catalogue's runtime first, the player's own only when the catalogue has
- * none, divided by the playback speed so a viewer at 1.5× is told the
- * truth, and blank when nothing knows the length, because an end time
- * projected from an unknown one is a guess dressed as a fact.
- */
-internal fun endsLine(
-    set: MediaSet?,
-    positionMs: Long,
-    durationMs: Long,
-    speed: Float,
-    now: Instant = Instant.now(),
-): String {
-    val runtimeSeconds =
-        ResumePoint
-            .trustedRuntime(
-                catalogued = set?.durationSecs?.toDouble(),
-                observed = durationMs.takeIf { it > 0 }?.let { it / 1_000.0 },
-                direct = true,
-            ).takeIf { it > 0 }
-    return endsAtLabel(
-        runtimeSeconds = runtimeSeconds,
-        positionSeconds = positionMs.coerceAtLeast(0L) / 1_000.0,
-        speed = speed,
-        nowMs = now.toEpochMilli(),
-    )
 }
