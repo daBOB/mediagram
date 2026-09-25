@@ -29,6 +29,14 @@ sealed interface Destination {
         val name: String,
     ) : Destination
 
+    /** Every result for one query, ranked flat rather than shelved. */
+    data object Search : Destination
+
+    /** Everything tagged with one genre: films, then series. */
+    data class Genre(
+        val name: String,
+    ) : Destination
+
     data object System : Destination
 
     data object TmdbKey : Destination
@@ -48,6 +56,8 @@ fun barTitleFor(destination: Destination): String =
         is Destination.Season -> destination.name
         is Destination.Title -> destination.name
         is Destination.List -> destination.name
+        Destination.Search -> "Search"
+        is Destination.Genre -> destination.name
         Destination.System -> "System"
         Destination.TmdbKey -> "TMDB key"
         Destination.Settings -> "Settings"
@@ -65,7 +75,12 @@ fun backLabelFor(destination: Destination): String? =
         is Destination.Season -> "Back"
         is Destination.Title -> "Back"
         is Destination.List -> "Back"
+        Destination.Search -> "Back"
+        is Destination.Genre -> "Back"
         Destination.System -> "Back"
         Destination.TmdbKey -> "Back"
         Destination.Settings -> "Back"
     }
+
+/** Whether the search action belongs in the bar — everywhere except the search screen itself. */
+fun showsSearchAction(destination: Destination): Boolean = destination != Destination.Search

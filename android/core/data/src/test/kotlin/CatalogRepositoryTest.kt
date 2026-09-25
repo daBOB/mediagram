@@ -1,8 +1,10 @@
 package data
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import model.Kind
 import settings.InMemoryLibrarySettings
+import uniffi.mediagram_core.SearchHit
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -77,6 +79,17 @@ class CatalogRepositoryTest {
             assertEquals(Kind.MOVIE, set.kind)
         }
 
+    /** A thin pass-through: the ranking and the joining both happen above this line. */
+    @Test
+    fun searchDelegatesToTheCoreUnjoined() = runTest {
+        val hit = SearchHit(setId = "set-1", matched = "title", excerpt = null)
+        val core = FakeCore(searchHits = listOf(hit))
+        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+
+        assertEquals(listOf(hit), repo.search("steuer"))
+        assertEquals("steuer", core.searchedFor)
+    }
+
     /** A season poster has no set of its own to carry it, so it is asked for by key directly. */
     @Test
     fun posterPathDelegatesToTheCore() =
@@ -87,4 +100,34 @@ class CatalogRepositoryTest {
             assertEquals("/cache/1396-s2.jpg", repo.posterPath("tmdb-tv-1396-s2"))
             assertEquals(null, repo.posterPath("tmdb-tv-1396-s9"))
         }
+
+    /**
+     * The player asks for one title at a time; walking the whole catalog's
+     * worth of poster lookups to answer it would be the same main-thread
+     * cost [sets] pays once per rebuild, paid again on every open.
+     */
+    @Test
+    fun mediaSetLooksUpOnlyTheMatchedSetsPoster() = runTest {
+        val core = FakeCore(
+            sets = listOf(
+                summary(setId = "s1", posterKey = "key-1"),
+                summary(setId = "s2", posterKey = "key-2"),
+                summary(setId = "s3", posterKey = "key-3"),
+            ),
+        )
+        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog(), dispatcher = Dispatchers.Unconfined)
+
+        val found = repo.mediaSet("s2")
+
+        assertEquals("s2", found?.setId)
+        assertEquals(listOf("key-2"), core.posterPathCalls)
+    }
+
+    @Test
+    fun mediaSetAnswersNothingForAnUnknownId() = runTest {
+        val core = FakeCore(sets = listOf(summary(setId = "s1")))
+        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog(), dispatcher = Dispatchers.Unconfined)
+
+        assertEquals(null, repo.mediaSet("nobody"))
+    }
 }

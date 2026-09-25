@@ -39,6 +39,7 @@ private const val LABEL_ALPHA = 0.7f
 fun PlaybackStatsOverlay(
     player: Player,
     totals: () -> PlaybackTotals,
+    held: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -48,7 +49,7 @@ fun PlaybackStatsOverlay(
                 .padding(Spacing.medium),
         verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
     ) {
-        playbackStats(player, totals).forEach { StatRow(label = it.label, value = it.value) }
+        playbackStats(player, totals, held).forEach { StatRow(label = it.label, value = it.value) }
     }
 }
 

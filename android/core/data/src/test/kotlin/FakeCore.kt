@@ -13,6 +13,7 @@ import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.LibraryEvent
+import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.TitleInfo
 
@@ -41,7 +42,18 @@ class FakeCore(
     private val events: List<Result<LibraryEvent>> = emptyList(),
     /** What [account] answers, or throws: whether Telegram accepts this core's identity. */
     private val account: Result<AccountSummary> = Result.success(AccountSummary("A Viewer", "viewer")),
+    /** What [search] answers, regardless of the query asked. */
+    private val searchHits: List<SearchHit> = emptyList(),
 ) : CoreClient {
+
+    var searchedFor: String? = null
+        private set
+
+    override suspend fun search(query: String): List<SearchHit> {
+        searchedFor = query
+        return searchHits
+    }
+
     override suspend fun account(): AccountSummary = account.getOrThrow()
 
     var signedOut: Boolean = false
@@ -99,8 +111,13 @@ class FakeCore(
 
     override suspend fun listSets(): List<SetSummary> = sets
 
-    override fun posterPath(posterKey: String): String? = posters[posterKey]
+    /** Every key [posterPath] was asked for, in order — a test's way of seeing how many sets a lookup actually mapped. */
+    val posterPathCalls: MutableList<String> = mutableListOf()
 
+    override fun posterPath(posterKey: String): String? {
+        posterPathCalls += posterKey
+        return posters[posterKey]
+    }
     override suspend fun titleInfo(posterKey: String): TitleInfo? = null
 
     override suspend fun totalSize(setId: String): Long = 0
@@ -179,30 +196,35 @@ fun summary(
     partCount: Int = 1,
     addedAt: Long = 0,
     fsk: String? = null,
-): SetSummary =
-    SetSummary(
-        setId = setId,
-        kind = kind,
-        title = title,
-        show = show,
-        chap = chap,
-        path = path,
-        season = season?.toUInt(),
-        episodeFirst = episodeFirst?.toUInt(),
-        episodeLast = episodeLast?.toUInt(),
-        year = year?.toUInt(),
-        container = container,
-        vcodec = vcodec,
-        acodec = acodec,
-        quality = quality,
-        hdr = hdr,
-        duration = duration?.toUInt(),
-        posterKey = posterKey,
-        total = total.toULong(),
-        partCount = partCount.toUInt(),
-        addedAt = addedAt,
-        fsk = fsk,
-    )
+    genres: List<String> = emptyList(),
+    subtitles: List<String> = emptyList(),
+    hasSummary: Boolean = false,
+): SetSummary = SetSummary(
+    setId = setId,
+    kind = kind,
+    title = title,
+    show = show,
+    chap = chap,
+    path = path,
+    season = season?.toUInt(),
+    episodeFirst = episodeFirst?.toUInt(),
+    episodeLast = episodeLast?.toUInt(),
+    year = year?.toUInt(),
+    container = container,
+    vcodec = vcodec,
+    acodec = acodec,
+    quality = quality,
+    hdr = hdr,
+    duration = duration?.toUInt(),
+    posterKey = posterKey,
+    total = total.toULong(),
+    partCount = partCount.toUInt(),
+    addedAt = addedAt,
+    fsk = fsk,
+    genres = genres,
+    subtitles = subtitles,
+    hasSummary = hasSummary,
+)
 
 fun settingsWithAChosenLibrary(handle: String = "a1b2c3"): LibrarySettings =
     InMemoryLibrarySettings().apply { runBlocking { write(handle) } }

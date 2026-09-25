@@ -21,6 +21,9 @@ dependencies {
     // compile classpath — ui-mobile carries the same direct dependency for
     // the same reason.
     implementation(project(":core:data"))
+    // The library's position stack resolves its keys to catalogue values —
+    // a title, a list, a watch snapshot — which are core:model's types.
+    implementation(project(":core:model"))
     // The picture both players draw: media3's PlayerSurface and its
     // presentation state, which core:playback exposes as `api`. Media3's
     // Compose surface is not either surface's component library, so it

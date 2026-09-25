@@ -1,5 +1,8 @@
 package ui.catalog
 
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import catalog.ShelfViewModel
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,13 +18,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.window.core.layout.WindowWidthSizeClass
 import catalog.CatalogUiState
 import catalog.KeptKind
 import catalog.Shelf
 import catalog.catalogTabsOf
 import catalog.continueWall
 import catalog.homeRowsOf
-import catalog.kidsShelf
 import catalog.watchlistWall
 import designsystem.Spacing
 import model.WatchSnapshot
@@ -42,13 +45,17 @@ fun CatalogScreen(
     onOpenCollection: (key: String) -> Unit,
     onOpenList: (id: String) -> Unit,
     onCreateList: (name: String) -> Unit,
+    /** Starts a title with an explicit run — the Kids wall's "Marked by hand" own "Play all". */
+    onPlayRun: (setId: String, run: List<String>) -> Unit,
+    /** Continue's "Mark finished". */
+    onFinish: (setId: String) -> Unit,
 ) {
     when (state) {
         CatalogUiState.Loading -> CenteredMessage("Loading your library…")
         CatalogUiState.Empty -> CenteredMessage("The library is empty.")
         CatalogUiState.KidsEmpty -> CenteredMessage("Nothing rated FSK 12 or under yet.")
         is CatalogUiState.Failed -> CenteredMessage(state.message)
-        is CatalogUiState.Ready -> Shelves(state, fetching, onOpenTitle, onOpenCollection, onOpenList, onCreateList)
+        is CatalogUiState.Ready -> Shelves(state, fetching, onOpenTitle, onOpenCollection, onOpenList, onCreateList, onPlayRun, onFinish)
     }
 }
 
@@ -70,7 +77,13 @@ private fun Shelves(
     onOpenCollection: (key: String) -> Unit,
     onOpenList: (id: String) -> Unit,
     onCreateList: (name: String) -> Unit,
+    onPlayRun: (setId: String, run: List<String>) -> Unit,
+    /** Continue's "Mark finished". */
+    onFinish: (setId: String) -> Unit,
 ) {
+    val shelfViewModel: ShelfViewModel = hiltViewModel()
+    val chosenView by shelfViewModel.view.collectAsStateWithLifecycle()
+    val shelfView = ShelfViewChoice(chosenView, shelfViewModel::choose)
     val shelves = state.shelves
     if (shelves.isEmpty()) {
         CenteredMessage("The library is empty.")
@@ -108,33 +121,30 @@ private fun Shelves(
             )
         }
         when {
-            selected == 0 -> {
-                HomeScreen(
-                    rows = remember(shelves, state.watch) { homeRowsOf(shelves, state.watch) },
-                    watch = state.watch,
-                    columns = columns,
-                    onOpenTitle = onOpenTitle,
-                    onOpenCollection = onOpenCollection,
-                    onSeeAll = { shelf -> chosen = titles.indexOf(shelf).coerceAtLeast(0) },
-                )
-            }
+            selected == 0 -> HomeScreen(
+                rows = remember(shelves, state.watch, state.heldIds) { homeRowsOf(shelves, state.watch, state.heldIds) },
+                watch = state.watch,
+                columns = columns,
+                onOpenTitle = onOpenTitle,
+                onOpenCollection = onOpenCollection,
+                onSeeAll = { shelf -> chosen = titles.indexOf(shelf).coerceAtLeast(0) },
+            )
 
-            selected < firstKept -> {
-                ShelfWall(shelves[selected - 1], state.watch, columns, onOpenTitle, onOpenCollection)
-            }
+            selected < firstKept -> ShelfWall(shelves[selected - 1], state.watch, state.heldIds, columns, shelfView, onOpenTitle, onOpenCollection)
 
-            else -> {
-                KeptTabContent(
-                    kind = KeptKind.entries[selected - firstKept],
-                    shelves = shelves,
-                    watch = state.watch,
-                    columns = columns,
-                    onOpenTitle = onOpenTitle,
-                    onOpenCollection = onOpenCollection,
-                    onOpenList = onOpenList,
-                    onCreateList = onCreateList,
-                )
-            }
+            else -> KeptTabContent(
+                kind = KeptKind.entries[selected - firstKept],
+                shelves = shelves,
+                watch = state.watch,
+                heldIds = state.heldIds,
+                columns = columns,
+                onOpenTitle = onOpenTitle,
+                onOpenCollection = onOpenCollection,
+                onOpenList = onOpenList,
+                onCreateList = onCreateList,
+                onPlayRun = onPlayRun,
+                onFinish = onFinish,
+            )
         }
     }
 }
@@ -145,16 +155,19 @@ private fun KeptTabContent(
     kind: KeptKind,
     shelves: List<Shelf>,
     watch: WatchSnapshot,
+    heldIds: Set<String>,
     columns: Int,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
     onOpenList: (id: String) -> Unit,
     onCreateList: (name: String) -> Unit,
+    onPlayRun: (setId: String, run: List<String>) -> Unit,
+    /** Continue's "Mark finished". */
+    onFinish: (setId: String) -> Unit,
 ) {
     when (kind) {
-        KeptKind.CONTINUE -> KeptWall(kind, continueWall(shelves, watch), watch, columns, onOpenTitle)
-        KeptKind.WATCHLIST -> KeptWall(kind, watchlistWall(shelves, watch), watch, columns, onOpenTitle)
-        KeptKind.KIDS -> KidsWall(kidsShelf(shelves, watch), watch, columns, onOpenTitle, onOpenCollection)
+        KeptKind.CONTINUE -> KeptWall(kind, continueWall(shelves, watch), watch, columns, onOpenTitle, heldIds, onFinish)
+        KeptKind.WATCHLIST -> KeptWall(kind, watchlistWall(shelves, watch), watch, columns, onOpenTitle, heldIds)
         KeptKind.COLLECTIONS -> ListsScreen(lists = watch.collections, onOpen = onOpenList, onCreate = onCreateList)
     }
 }

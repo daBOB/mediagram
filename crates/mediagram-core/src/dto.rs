@@ -40,6 +40,14 @@ pub struct SetSummary {
     /// title has none. A series is rated as a show, so every episode carries
     /// its show's. Named as the web player names it.
     pub fsk: Option<String>,
+    /// The provider's genres for this title. A series carries its show's,
+    /// the way `fsk` does — see `store::list_sets`, which attaches all four
+    /// of these by poster key rather than storing them on the row.
+    pub genres: Vec<String>,
+    /// Languages this set has a subtitle track for, sorted.
+    pub subtitles: Vec<String>,
+    /// Whether the index holds a plot summary for this set.
+    pub has_summary: bool,
 }
 
 /// Flattens one catalog row. Never fails: a set whose episode field this
@@ -74,9 +82,12 @@ pub fn summary_from(set: &PlayableSet) -> SetSummary {
         total: set.total,
         part_count: set.part_count,
         added_at: set.created_at,
-        // Not on the row: the index keeps it per title, and the listing
-        // attaches it by poster key — see `store::list_sets`.
+        // Not on the row: the index keeps these per title or per asset, and
+        // the listing attaches them — see `store::list_sets`.
         fsk: None,
+        genres: Vec::new(),
+        subtitles: Vec::new(),
+        has_summary: false,
     }
 }
 

@@ -1,17 +1,16 @@
 package catalog
 
-import model.Kind
-import model.MediaSet
 import model.Progress
 import model.clockTime
 import kotlin.math.roundToLong
 
 /*
- * The two lines a set card says about a viewer's own place in it, ported
- * from `web/public/lib/format.js`'s `resumeLine` and `episodeLabel` — the
- * web is authoritative, and these exist to agree with it rather than
- * redefine it. `clockTime` itself lives in `core:model`, the one clock
- * format the player reads too.
+ * The line a set card says about a viewer's own place in it, ported from
+ * `web/public/lib/format.js`'s `resumeLine` — the web is authoritative, and
+ * this exists to agree with it rather than redefine it. `clockTime` and
+ * `episodeLabel` are the same kind of port but live in `core:model`: the
+ * player reads both too, and a feature module borrowing from another
+ * feature module would be backwards.
  */
 
 /**
@@ -32,15 +31,4 @@ fun resumeLine(progress: Progress?): String {
     val measured = runtime != null && runtime.isFinite() && runtime > 0
     val share = if (measured) "${(minOf(1.0, at / runtime) * 100).roundToLong()}%" else null
     return listOfNotNull(share, clockTime(at)).joinToString(" · ")
-}
-
-/**
- * `S1E4` for an episode, `4` for a lesson, a `4-5` range for a set spanning
- * more than one, empty when unnumbered.
- */
-fun episodeLabel(set: MediaSet): String {
-    val first = set.episodeFirst ?: return ""
-    val last = set.episodeLast
-    val number = if (last != null && last != first) "$first-$last" else "$first"
-    return if (set.kind == Kind.EPISODE && set.season != null) "S${set.season}E$number" else number
 }

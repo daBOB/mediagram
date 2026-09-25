@@ -68,3 +68,32 @@ export function framingLabel(name) {
 export function framings() {
   return FRAMINGS.map((one) => ({ name: one.name, label: one.label }));
 }
+
+/**
+ * The box a named ratio crops the picture into, centred in a
+ * `containerWidth` x `containerHeight` stage — `null` for `fit`/`fill`,
+ * which already fill the stage exactly (`framingStyle`'s `objectFit` alone
+ * is enough for those two).
+ *
+ * `object-fit: cover` never changes the *shape* of the content — it only
+ * scales and crops within whatever box it is given. Setting `aspectRatio`
+ * on an element whose `width`/`height` are also both definite (this app's
+ * own stylesheet sets `video { width: 100%; height: 100% }`) has no effect
+ * at all, so a named ratio rendered as no more than `objectFit: "cover"`
+ * plus that inert `aspectRatio` — which is what this looked like before
+ * this function existed — is indistinguishable from `fill`. Cropping to
+ * the *shape* this exists for needs the box itself to be that shape: a
+ * window of the named ratio, fit within the stage the same way `fit`
+ * itself fits the video's own shape within it, so a viewer sees letterbox
+ * bars where the window does not reach the stage's own edges and a crop
+ * everywhere inside it — never a distorted picture.
+ */
+export function framingBox(name, containerWidth, containerHeight) {
+  const found = FRAMINGS.find((one) => one.name === name) ?? FRAMINGS[0];
+  if (found.ratio === null || containerWidth <= 0 || containerHeight <= 0) return null;
+  const containerRatio = containerWidth / containerHeight;
+  const box = containerRatio > found.ratio
+    ? { width: containerHeight * found.ratio, height: containerHeight }
+    : { width: containerWidth, height: containerWidth / found.ratio };
+  return { ...box, left: (containerWidth - box.width) / 2, top: (containerHeight - box.height) / 2 };
+}

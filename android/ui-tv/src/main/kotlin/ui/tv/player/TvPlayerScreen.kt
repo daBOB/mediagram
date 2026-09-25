@@ -35,8 +35,13 @@ import player.PlayerUiState
 import player.PlayerViewModel
 import player.controlsMayShow
 import player.controlsShouldFade
+import player.createListAndAdd
+import player.setInList
+import player.toggleKids
+import player.toggleWatchlist
 import ui.player.KeepScreenOnWhile
 import ui.player.PlayerLifecycle
+import ui.player.PlayerNavigationEffects
 import ui.player.Video
 import ui.tv.catalog.TvCenteredMessage
 import ui.tv.setup.TvLoadingIndicator
@@ -74,8 +79,14 @@ fun TvPlayerScreen(
     val player by viewModel.player.collectAsStateWithLifecycle()
     val marks by viewModel.marks.collectAsStateWithLifecycle()
     val actionNotice by viewModel.actionNotice.collectAsStateWithLifecycle()
+    val held by viewModel.held.collectAsStateWithLifecycle()
 
-    PlayerLifecycle(viewModel = viewModel, setId = setId, fsk = set?.fsk)
+    PlayerLifecycle(viewModel)
+    // No run: a television has no up-next card yet, and a run is what lets
+    // the player count down into the next title — handing it one here would
+    // switch episodes under a viewer with nothing on screen to say so or to
+    // cancel it. Without one the title simply ends, as it always has here.
+    PlayerNavigationEffects(viewModel, setId, run = emptyList(), fsk = set?.fsk, onSwitch = { _, _ -> })
     KeepScreenOnWhile(isPlaying = state is PlayerUiState.Playing)
 
     var controlsShown by remember { mutableStateOf(true) }
@@ -89,6 +100,9 @@ fun TvPlayerScreen(
     // for the numbers to go, nor for the list they were filing into to close.
     var statsShown by rememberSaveable { mutableStateOf(false) }
     var choosingList by rememberSaveable { mutableStateOf(false) }
+    // Marks go with the title they belong to; a list choice still open when
+    // they go would otherwise come back over whatever opens next.
+    LaunchedEffect(marks == null) { if (marks == null) choosingList = false }
     // The list dialog holds the controls the way a drag holds the phone's:
     // its keys go to its own window, so no press here restarts the fade, and
     // the controls it returns to must still be there when it closes.
@@ -168,6 +182,7 @@ fun TvPlayerScreen(
                             statsShown = statsShown,
                             onToggleStats = { statsShown = !statsShown },
                             totals = viewModel.totals,
+                            held = held,
                         ),
                     onSeekBarFocused = { onSeekBar = it },
                 )

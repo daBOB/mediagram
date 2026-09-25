@@ -9,22 +9,11 @@ import java.util.TimeZone
 import kotlin.test.assertEquals
 
 /**
- * The player's own words and steps, apart from the screen: what the top bar
- * calls a title, the end time beside the clock, and how far a held arrow
- * moves the film.
+ * The player's own words and steps, apart from the screen: the end time
+ * beside the clock, and how far a held arrow moves the film. What the top
+ * bar calls a title is the shared `player.titleLine`, tested where it lives.
  */
 class TvPlayerLinesTest {
-    @Test
-    fun anEpisodeIsNamedByShowEpisodeAndTitle() {
-        val pilot = set("p", Kind.EPISODE, "Pilot", show = "A Show", addedAt = 0, episode = 4).copy(season = 1)
-        assertEquals("A Show · S1E4 · Pilot", playerTitleLine(pilot))
-    }
-
-    @Test
-    fun aFilmIsNamedByItsTitleAlone() {
-        assertEquals("Heat", playerTitleLine(set("h", Kind.MOVIE, "Heat", addedAt = 0)))
-    }
-
     @Test
     fun theEndTimeReadsTheCataloguesRuntimeOverThePlayersLength() {
         withZone("UTC") {

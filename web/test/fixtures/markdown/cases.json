@@ -1,0 +1,987 @@
+[
+  {
+    "name": "heading keeps level",
+    "input": "### 1. Die Psychologie des Geldes",
+    "blocks": [
+      {
+        "kind": "heading",
+        "level": 3,
+        "spans": [
+          {
+            "kind": "text",
+            "text": "1. Die Psychologie des Geldes"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "every heading level",
+    "input": "# a\n## b\n###### f\n####### seven is text",
+    "blocks": [
+      {
+        "kind": "heading",
+        "level": 1,
+        "spans": [
+          {
+            "kind": "text",
+            "text": "a"
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "spans": [
+          {
+            "kind": "text",
+            "text": "b"
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 6,
+        "spans": [
+          {
+            "kind": "text",
+            "text": "f"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "spans": [
+          {
+            "kind": "text",
+            "text": "####### seven is text"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "paragraphs join lines, blanks split",
+    "input": "one\ntwo\n\nthree",
+    "blocks": [
+      {
+        "kind": "paragraph",
+        "spans": [
+          {
+            "kind": "text",
+            "text": "one two"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "spans": [
+          {
+            "kind": "text",
+            "text": "three"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "bullet list with bold run-ins",
+    "input": "*   **Bargeld vs. Karte:** Studien zeigen\n*   **Disziplin:** Große Scheine",
+    "blocks": [
+      {
+        "kind": "list",
+        "ordered": false,
+        "items": [
+          {
+            "spans": [
+              {
+                "kind": "strong",
+                "spans": [
+                  {
+                    "kind": "text",
+                    "text": "Bargeld vs. Karte:"
+                  }
+                ]
+              },
+              {
+                "kind": "text",
+                "text": " Studien zeigen"
+              }
+            ],
+            "blocks": []
+          },
+          {
+            "spans": [
+              {
+                "kind": "strong",
+                "spans": [
+                  {
+                    "kind": "text",
+                    "text": "Disziplin:"
+                  }
+                ]
+              },
+              {
+                "kind": "text",
+                "text": " Große Scheine"
+              }
+            ],
+            "blocks": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ordered list, both markers",
+    "input": "1.  Eröffnungskurs\n2)  Schlusskurs",
+    "blocks": [
+      {
+        "kind": "list",
+        "ordered": true,
+        "items": [
+          {
+            "spans": [
+              {
+                "kind": "text",
+                "text": "Eröffnungskurs"
+              }
+            ],
+            "blocks": []
+          },
+          {
+            "spans": [
+              {
+                "kind": "text",
+                "text": "Schlusskurs"
+              }
+            ],
+            "blocks": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ordered nested under bullet",
+    "input": "*   **Candlestick-Charts:** vier Informationen\n    1.  **Eröffnungskurs** (Open)\n    2.  **Schlusskurs** (Close)\n*   **Indikatoren:** Mathematische Hilfsmittel",
+    "blocks": [
+      {
+        "kind": "list",
+        "ordered": false,
+        "items": [
+          {
+            "spans": [
+              {
+                "kind": "strong",
+                "spans": [
+                  {
+                    "kind": "text",
+                    "text": "Candlestick-Charts:"
+                  }
+                ]
+              },
+              {
+                "kind": "text",
+                "text": " vier Informationen"
+              }
+            ],
+            "blocks": [
+              {
+                "kind": "list",
+                "ordered": true,
+                "items": [
+                  {
+                    "spans": [
+                      {
+                        "kind": "strong",
+                        "spans": [
+                          {
+                            "kind": "text",
+                            "text": "Eröffnungskurs"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "text",
+                        "text": " (Open)"
+                      }
+                    ],
+                    "blocks": []
+                  },
+                  {
+                    "spans": [
+                      {
+                        "kind": "strong",
+                        "spans": [
+                          {
+                            "kind": "text",
+                            "text": "Schlusskurs"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "text",
+                        "text": " (Close)"
+                      }
+                    ],
+                    "blocks": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "spans": [
+              {
+                "kind": "strong",
+                "spans": [
+                  {
+                    "kind": "text",
+                    "text": "Indikatoren:"
+                  }
+                ]
+              },
+              {
+                "kind": "text",
+                "text": " Mathematische Hilfsmittel"
+              }
+            ],
+            "blocks": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "bullet nested under ordered and back out",
+    "input": "1.  Erstens\n    *   Tiefer\n    *   Auch tiefer\n2.  Zweitens",
+    "blocks": [
+      {
+        "kind": "list",
+        "ordered": true,
+        "items": [
+          {
+            "spans": [
+              {
+                "kind": "text",
+                "text": "Erstens"
+              }
+            ],
+            "blocks": [
+              {
+                "kind": "list",
+                "ordered": false,
+                "items": [
+                  {
+                    "spans": [
+                      {
+                        "kind": "text",
+                        "text": "Tiefer"
+                      }
+                    ],
+                    "blocks": []
+                  },
+                  {
+                    "spans": [
+                      {
+                        "kind": "text",
+                        "text": "Auch tiefer"
+                      }
+                    ],
+                    "blocks": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "spans": [
+              {
+                "kind": "text",
+                "text": "Zweitens"
+              }
+            ],
+            "blocks": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "marker switch starts a new list",
+    "input": "*   bullet\n1.  numbered",
+    "blocks": [
+      {
+        "kind": "list",
+        "ordered": false,
+        "items": [
+          {
+            "spans": [
+              {
+                "kind": "text",
+                "text": "bullet"
+              }
+            ],
+            "blocks": []
+          }
+        ]
+      },
+      {
+        "kind": "list",
+        "ordered": true,
+        "items": [
+          {
+            "spans": [
+              {
+                "kind": "text",
+                "text": "numbered"
+              }
+            ],
+            "blocks": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "list carries on past a blank line",
+    "input": "- one\n\n- two\n\nafter",
+    "blocks": [
+      {
+        "kind": "list",
+        "ordered": false,
+        "items": [
+          {
+            "spans": [
+              {
+                "kind": "text",
+                "text": "one"
+              }
+            ],
+            "blocks": []
+          },
+          {
+            "spans": [
+              {
+                "kind": "text",
+                "text": "two"
+              }
+            ],
+            "blocks": []
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "spans": [
+          {
+            "kind": "text",
+            "text": "after"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "continuation line belongs to its item",
+    "input": "- item\n  more of it\n- next",
+    "blocks": [
+      {
+        "kind": "list",
+        "ordered": false,
+        "items": [
+          {
+            "spans": [
+              {
+                "kind": "text",
+                "text": "item"
+              }
+            ],
+            "blocks": [
+              {
+                "kind": "paragraph",
+                "spans": [
+                  {
+                    "kind": "text",
+                    "text": "more of it"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "spans": [
+              {
+                "kind": "text",
+                "text": "next"
+              }
+            ],
+            "blocks": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "heading after a paragraph",
+    "input": "Ein Satz\n### Überschrift",
+    "blocks": [
+      {
+        "kind": "paragraph",
+        "spans": [
+          {
+            "kind": "text",
+            "text": "Ein Satz"
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 3,
+        "spans": [
+          {
+            "kind": "text",
+            "text": "Überschrift"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "paragraph stops at a list or quote",
+    "input": "Satz\n- item\n\nSatz\n> zitat",
+    "blocks": [
+      {
+        "kind": "paragraph",
+        "spans": [
+          {
+            "kind": "text",
+            "text": "Satz"
+          }
+        ]
+      },
+      {
+        "kind": "list",
+        "ordered": false,
+        "items": [
+          {
+            "spans": [
+              {
+                "kind": "text",
+                "text": "item"
+              }
+            ],
+            "blocks": []
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "spans": [
+          {
+            "kind": "text",
+            "text": "Satz"
+          }
+        ]
+      },
+      {
+        "kind": "quote",
+        "blocks": [
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "kind": "text",
+                "text": "zitat"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "fenced code is literal",
+    "input": "```\n*not* a list\n```",
+    "blocks": [
+      {
+        "kind": "code",
+        "text": "*not* a list"
+      }
+    ]
+  },
+  {
+    "name": "unclosed fence runs to the end",
+    "input": "```js\nlet a = 1\n# not a heading",
+    "blocks": [
+      {
+        "kind": "code",
+        "text": "let a = 1\n# not a heading"
+      }
+    ]
+  },
+  {
+    "name": "quote holds blocks",
+    "input": "> zitiert\n> - mit Liste\n>\n> ### und Titel",
+    "blocks": [
+      {
+        "kind": "quote",
+        "blocks": [
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "kind": "text",
+                "text": "zitiert"
+              }
+            ]
+          },
+          {
+            "kind": "list",
+            "ordered": false,
+            "items": [
+              {
+                "spans": [
+                  {
+                    "kind": "text",
+                    "text": "mit Liste"
+                  }
+                ],
+                "blocks": []
+              }
+            ]
+          },
+          {
+            "kind": "heading",
+            "level": 3,
+            "spans": [
+              {
+                "kind": "text",
+                "text": "und Titel"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "rules of three kinds",
+    "input": "---\n***\n___",
+    "blocks": [
+      {
+        "kind": "rule"
+      },
+      {
+        "kind": "rule"
+      },
+      {
+        "kind": "rule"
+      }
+    ]
+  },
+  {
+    "name": "crlf line endings",
+    "input": "a\r\nb\r\n\r\nc",
+    "blocks": [
+      {
+        "kind": "paragraph",
+        "spans": [
+          {
+            "kind": "text",
+            "text": "a b"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "spans": [
+          {
+            "kind": "text",
+            "text": "c"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "empty",
+    "input": "",
+    "blocks": []
+  },
+  {
+    "name": "whitespace only",
+    "input": "   \n  \n",
+    "blocks": []
+  },
+  {
+    "name": "bold, italic, code",
+    "input": "**fett** und *kursiv* und _auch_ und `code`",
+    "blocks": [
+      {
+        "kind": "paragraph",
+        "spans": [
+          {
+            "kind": "strong",
+            "spans": [
+              {
+                "kind": "text",
+                "text": "fett"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " und "
+          },
+          {
+            "kind": "em",
+            "spans": [
+              {
+                "kind": "text",
+                "text": "kursiv"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " und "
+          },
+          {
+            "kind": "em",
+            "spans": [
+              {
+                "kind": "text",
+                "text": "auch"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " und "
+          },
+          {
+            "kind": "code",
+            "text": "code"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "unpaired markers stay text",
+    "input": "2 * 3 = 6 and **unclosed and a lone ` tick",
+    "blocks": [
+      {
+        "kind": "paragraph",
+        "spans": [
+          {
+            "kind": "text",
+            "text": "2 "
+          },
+          {
+            "kind": "em",
+            "spans": [
+              {
+                "kind": "text",
+                "text": " 3 = 6 and "
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": "*unclosed and a lone ` tick"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "empty markers stay text",
+    "input": "**** and ** ** and `` here",
+    "blocks": [
+      {
+        "kind": "paragraph",
+        "spans": [
+          {
+            "kind": "text",
+            "text": "*"
+          },
+          {
+            "kind": "strong",
+            "spans": [
+              {
+                "kind": "text",
+                "text": "* and "
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " ** and `` here"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "link keeps its href",
+    "input": "[docs](https://example.com/a)",
+    "blocks": [
+      {
+        "kind": "paragraph",
+        "spans": [
+          {
+            "kind": "link",
+            "href": "https://example.com/a",
+            "spans": [
+              {
+                "kind": "text",
+                "text": "docs"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "link inside strong",
+    "input": "**Quelle: [BIS](https://www.bis.org/x)**",
+    "blocks": [
+      {
+        "kind": "paragraph",
+        "spans": [
+          {
+            "kind": "strong",
+            "spans": [
+              {
+                "kind": "text",
+                "text": "Quelle: "
+              },
+              {
+                "kind": "link",
+                "href": "https://www.bis.org/x",
+                "spans": [
+                  {
+                    "kind": "text",
+                    "text": "BIS"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "unsafe schemes lose the link",
+    "input": "[a](javascript:alert(1)) [b](data:text/html,x) [c](vbscript:x) [d](intent://x#Intent;end) [e](file:///etc/passwd)",
+    "blocks": [
+      {
+        "kind": "paragraph",
+        "spans": [
+          {
+            "kind": "link",
+            "href": null,
+            "spans": [
+              {
+                "kind": "text",
+                "text": "a"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": ") "
+          },
+          {
+            "kind": "link",
+            "href": null,
+            "spans": [
+              {
+                "kind": "text",
+                "text": "b"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " "
+          },
+          {
+            "kind": "link",
+            "href": null,
+            "spans": [
+              {
+                "kind": "text",
+                "text": "c"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " "
+          },
+          {
+            "kind": "link",
+            "href": null,
+            "spans": [
+              {
+                "kind": "text",
+                "text": "d"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " "
+          },
+          {
+            "kind": "link",
+            "href": null,
+            "spans": [
+              {
+                "kind": "text",
+                "text": "e"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "relative, anchor, mailto, http allowed",
+    "input": "[a](/local) [b](#top) [c](mailto:x@y.z) [d](HTTP://EXAMPLE.COM)",
+    "blocks": [
+      {
+        "kind": "paragraph",
+        "spans": [
+          {
+            "kind": "link",
+            "href": "/local",
+            "spans": [
+              {
+                "kind": "text",
+                "text": "a"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " "
+          },
+          {
+            "kind": "link",
+            "href": "#top",
+            "spans": [
+              {
+                "kind": "text",
+                "text": "b"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " "
+          },
+          {
+            "kind": "link",
+            "href": "mailto:x@y.z",
+            "spans": [
+              {
+                "kind": "text",
+                "text": "c"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " "
+          },
+          {
+            "kind": "link",
+            "href": "HTTP://EXAMPLE.COM",
+            "spans": [
+              {
+                "kind": "text",
+                "text": "d"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "code span is literal",
+    "input": "`**nicht fett**`",
+    "blocks": [
+      {
+        "kind": "paragraph",
+        "spans": [
+          {
+            "kind": "code",
+            "text": "**nicht fett**"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "link with a space in the target is text",
+    "input": "[a](https://x.y/a b)",
+    "blocks": [
+      {
+        "kind": "paragraph",
+        "spans": [
+          {
+            "kind": "text",
+            "text": "[a](https://x.y/a b)"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "emphasis inside emphasis does not nest: the first closing star ends it",
+    "input": "*kursiv mit **fett** drin*",
+    "blocks": [
+      {
+        "kind": "paragraph",
+        "spans": [
+          {
+            "kind": "em",
+            "spans": [
+              {
+                "kind": "text",
+                "text": "kursiv mit "
+              }
+            ]
+          },
+          {
+            "kind": "em",
+            "spans": [
+              {
+                "kind": "text",
+                "text": "fett"
+              }
+            ]
+          },
+          {
+            "kind": "em",
+            "spans": [
+              {
+                "kind": "text",
+                "text": " drin"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

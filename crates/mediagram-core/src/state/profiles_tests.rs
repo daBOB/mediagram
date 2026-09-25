@@ -58,3 +58,33 @@ fn profile_named_creates_an_unseen_viewer_and_reuses_them_after() {
         "the same viewer, spelled differently, is one profile"
     );
 }
+
+#[test]
+fn deleting_an_unknown_id_reports_false() {
+    let (_dir, db) = db();
+    assert!(!db.with(|conn| delete(conn, "nope")).unwrap());
+}
+
+#[test]
+fn deleting_a_real_profile_removes_it_from_the_list() {
+    let (_dir, db) = db();
+    let id = db.with(|conn| create(conn, "André", false)).unwrap().unwrap().id;
+
+    assert!(db.with(|conn| delete(conn, &id)).unwrap());
+
+    assert_eq!(db.with(list).unwrap(), Vec::new());
+}
+
+/// `chosen` checks the profile still exists on every read rather than
+/// trusting what was last written, so deleting the chosen profile clears it
+/// without `delete` having to know it was the one chosen.
+#[test]
+fn deleting_the_chosen_profile_clears_it() {
+    let (_dir, db) = db();
+    let id = db.with(|conn| create(conn, "André", false)).unwrap().unwrap().id;
+    db.with(|conn| choose(conn, &id)).unwrap();
+
+    db.with(|conn| delete(conn, &id)).unwrap();
+
+    assert_eq!(db.with(chosen).unwrap(), None);
+}

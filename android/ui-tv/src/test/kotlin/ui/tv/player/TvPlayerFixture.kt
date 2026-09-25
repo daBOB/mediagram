@@ -13,6 +13,8 @@ import androidx.media3.common.Timeline
 import androidx.media3.common.Tracks
 import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
+import data.CatalogRepository
+import data.PlayerPreferences
 import data.WatchStateRepository
 import data.WatchSync
 import io.mockk.every
@@ -25,8 +27,12 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import model.Profile
 import model.WatchSnapshot
+import playback.HeldSetsQuery
 import playback.PlaybackCounters
+import playback.SeriesPreloading
+import playback.SubtitleTrackSource
 import player.DefaultPlayerHandle
+import player.PlaybackServiceController
 import player.PlayerViewModel
 import player.ProgressRecorder
 
@@ -116,6 +122,12 @@ internal class TvPlayerFixture(
                     this@TvPlayerFixture.repository,
                     ProgressRecorder(this@TvPlayerFixture.repository),
                     mockk<WatchSync>(relaxed = true),
+                    mockk<CatalogRepository>(relaxed = true),
+                    mockk<PlayerPreferences>(relaxed = true),
+                    mockk<SubtitleTrackSource>(relaxed = true),
+                    PlaybackServiceController.Noop,
+                    SeriesPreloading.Noop,
+                    HeldSetsQuery.Noop,
                 ) as T
             }
         }

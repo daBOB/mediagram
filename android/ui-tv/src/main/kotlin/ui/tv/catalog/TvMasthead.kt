@@ -37,7 +37,7 @@ import ui.tv.profile.TvChosenProfile
 /**
  * The masthead the web player and the phone both have, across the top of
  * the screen rather than down a side drawer: [titles] in `catalogTabsOf`'s
- * order — Home, the catalog shelves, then the four kept from watch state —
+ * order — Home, the catalog shelves, then the three kept from watch state —
  * and at the far end, set apart as the web's `#who` is, the name of whoever
  * is watching. Choosing that name reopens the picker, the way the phone's bar
  * button does.
@@ -45,7 +45,7 @@ import ui.tv.profile.TvChosenProfile
  * A tab is selected by pressing it, not by landing on it. tv-material's
  * habit of selecting on focus would swap the wall below on every step the
  * remote takes along the masthead, and a wall takes focus the moment it
- * appears — so walking from Home to Kids would be pulled down into Movies
+ * appears — so walking from Home to Watchlist would be pulled down into Movies
  * on the first step. Pressing is also what the web and the phone ask for.
  *
  * [focusRequester] is how a caller sends the remote back up here. It lands
@@ -155,7 +155,7 @@ private fun androidx.tv.material3.TabRowScope.MastheadTab(
             style = TvFocus.textStyle(TvTypeScale.body, focused),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            // Tight enough that Home, three shelves and the four kept entries
+            // Tight enough that Home, three shelves and the three kept entries
             // fit a 960dp television beside the viewer's name without the
             // row having to scroll.
             modifier = Modifier.padding(horizontal = Spacing.small, vertical = Spacing.small),

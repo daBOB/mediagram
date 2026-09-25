@@ -11,10 +11,12 @@ import data.CoreLibraryEvents
 import data.CoreProvider
 import data.CoreStorage
 import data.DefaultCatalogRepository
+import data.DefaultPlayerPreferences
 import data.DefaultWatchStateRepository
 import data.DefaultWatchSync
 import data.FileCoreStorage
 import data.LibraryEvents
+import data.PlayerPreferences
 import data.RefreshLog
 import data.SharedLibraryEvents
 import data.WatchStateRepository
@@ -27,6 +29,8 @@ import settings.EncryptedLibrarySettings
 import settings.EncryptedTelegramSettings
 import settings.EncryptedTmdbSettings
 import settings.LibrarySettings
+import settings.SharedPreferencesShelfViewSettings
+import settings.ShelfViewSettings
 import settings.TelegramSettings
 import settings.TmdbSettings
 import javax.inject.Singleton
@@ -49,6 +53,12 @@ object DataModule {
         @ApplicationContext context: Context,
         dispatcher: CoroutineDispatcher,
     ): LibrarySettings = EncryptedLibrarySettings(context, dispatcher)
+
+    @Provides
+    @Singleton
+    fun provideShelfViewSettings(
+        @ApplicationContext context: Context,
+    ): ShelfViewSettings = SharedPreferencesShelfViewSettings(context)
 
     @Provides
     @Singleton
@@ -85,7 +95,8 @@ object DataModule {
         coreProvider: CoreProvider,
         settings: LibrarySettings,
         refreshes: RefreshLog,
-    ): CatalogRepository = DefaultCatalogRepository(coreProvider, settings, refreshes)
+        dispatcher: CoroutineDispatcher,
+    ): CatalogRepository = DefaultCatalogRepository(coreProvider, settings, refreshes, dispatcher)
 
     // Process-lifetime work that is not the player: see AppScope's own doc
     // for why it is a second scope rather than the one PlaybackModule binds.
@@ -112,6 +123,11 @@ object DataModule {
         coreProvider: CoreProvider,
         dispatcher: CoroutineDispatcher,
     ): WatchStateRepository = DefaultWatchStateRepository(coreProvider, dispatcher)
+
+    @Provides
+    @Singleton
+    fun providePlayerPreferences(coreProvider: CoreProvider): PlayerPreferences =
+        DefaultPlayerPreferences(coreProvider)
 
     @Provides
     @Singleton

@@ -63,10 +63,10 @@ internal fun TvCountedHeading(
 }
 
 /**
- * A heading one step down from [TvCountedHeading] — a run of the Kids wall,
- * a course's folder — where the phone sets a smaller title. The television
- * scale has only a title and a body size, so this is the body face made
- * heavier rather than a third size invented here.
+ * A heading one step down from [TvCountedHeading] — a course's folder —
+ * where the phone sets a smaller title. The television scale has only a
+ * title and a body size, so this is the body face made heavier rather than
+ * a third size invented here.
  */
 @Composable
 internal fun TvSectionHeading(

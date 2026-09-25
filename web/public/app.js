@@ -36,11 +36,14 @@ import { homeShelves } from "./lib/catalog/home-shelves.js";
 import { renderHome } from "./lib/catalog/home-view.js";
 import { describeFilm, filmPage } from "./lib/catalog/film-page.js";
 import { genreShelf } from "./lib/catalog/genres.js";
-import { forKidsProfile, kidsShelf } from "./lib/age-rating.js";
+import { forKidsProfile } from "./lib/age-rating.js";
 
 const main = document.getElementById("main");
 const player = document.getElementById("player");
 const searchBox = document.getElementById("search");
+// A fragment link would be consumed as an application route. Move focus
+// directly so keyboard users can skip navigation without leaving their shelf.
+document.getElementById("skip-library")?.addEventListener("click", () => main.focus());
 initializePlayer();
 
 /** @type {import("./lib/library.js").Library} */
@@ -63,10 +66,6 @@ const KEPT = {
   continue: { label: "Continue", empty: "Nothing started yet." },
   watchlist: { label: "Watchlist", empty: "Nothing on the list." },
   collections: { label: "Collections", empty: "No lists yet." },
-  kids: {
-    label: "Kids",
-    empty: "Nothing rated FSK 12 or younger, and nothing marked. An unrated title can be marked with Kids in the player.",
-  },
 };
 
 /** Ids to sets, quietly dropping any the catalog no longer holds. */
@@ -377,8 +376,6 @@ function refreshShelfCounts() {
   document.getElementById("n-continue").textContent = String(started.length);
   document.getElementById("n-watchlist").textContent = String(setsFor(state.watchlist()).length);
   document.getElementById("n-collections").textContent = String(state.collections().length);
-  const kids = kidsShelf(library, setsFor(state.kids()));
-  document.getElementById("n-kids").textContent = String(kids.films.length + kids.series.length + kids.byHand.length);
 }
 
 /** Whose shelves these are, and the way to become somebody else. */
@@ -411,7 +408,8 @@ function viewContinue() {
 
   heading(main, KEPT.continue.label, countOf(started.length, "title"));
   if (started.length === 0) return main.append(el("p", "empty", KEPT.continue.empty));
-  main.append(setGrid(started, play));
+  // The shelf redraws itself from the change, so the title simply leaves it.
+  main.append(setGrid(started, play, { finish: (set) => state.markFinished(set.setId) }));
 }
 
 /** Titles marked to come back to. */
@@ -420,40 +418,6 @@ function viewWatchlist() {
   heading(main, KEPT.watchlist.label, countOf(listed.length, "title"));
   if (listed.length === 0) return main.append(el("p", "empty", KEPT.watchlist.empty));
   main.append(setGrid(listed, play));
-}
-
-/**
- * What has been marked as a child's.
- *
- * Played as a run, the way a list is: a child handed a tablet should not have
- * to come back to the shelf between one film and the next.
- */
-/**
- * What a child may watch: everything rated FSK 12 or younger, and anything
- * unrated someone marked by hand. The rules are `age-rating.js`'s.
- */
-function viewKids() {
-  const { films, series, byHand } = kidsShelf(library, setsFor(state.kids()));
-  heading(main, KEPT.kids.label, countOf(films.length + series.length + byHand.length, "title"));
-  if (films.length + series.length + byHand.length === 0) {
-    return main.append(el("p", "empty", KEPT.kids.empty));
-  }
-  const parts = [
-    [films, SECTIONS.movies.label, () => movieGrid(films, openFilm, { mode: GRID })],
-    [
-      series,
-      SECTIONS.series.label,
-      () =>
-        collectionGrid("series", series, (title) => {
-          location.hash = `#/series/${encodeURIComponent(title)}`;
-        }, { mode: GRID }),
-    ],
-    [byHand, "Marked by hand", () => setGrid(byHand, (set) => play(set, byHand))],
-  ].filter(([items]) => items.length > 0);
-  for (const [, label, grid] of parts) {
-    if (parts.length > 1) main.append(el("h2", "shelf-sub", label));
-    main.append(grid());
-  }
 }
 
 /** Asks the server, because summaries live there and are not in the catalog. */
@@ -607,7 +571,10 @@ function route() {
   const known = SECTIONS[section] || KEPT[section] || PAGES.has(section) ? section : "movies";
 
   for (const link of document.querySelectorAll("nav a")) {
-    link.classList.toggle("active", link.dataset.section === known);
+    const active = link.dataset.section === known;
+    link.classList.toggle("active", active);
+    if (active) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
   }
 
   main.textContent = "";
@@ -627,7 +594,6 @@ function route() {
   if (known === "system") return viewSystem();
   if (known === "continue") return viewContinue();
   if (known === "watchlist") return viewWatchlist();
-  if (known === "kids") return viewKids();
   if (known === "collections") {
     const list = state.collections().find((entry) => entry.id === decodeURIComponent(name ?? ""));
     return name
@@ -764,6 +730,9 @@ function listenForLibrary() {
   if (libraryEvents !== null) return;
   libraryEvents = new EventSource("/api/events");
   libraryEvents.addEventListener("catalog", () => void refreshCatalog());
+  // Another device's positions or marks, pulled by the server. Without this a
+  // tab left open showed its old Continue shelf until it was hidden and shown.
+  libraryEvents.addEventListener("state", () => void state.refreshState());
   libraryEvents.addEventListener("open", () => void refreshCatalog());
 }
 function stopListeningForLibrary() {

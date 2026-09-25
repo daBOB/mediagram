@@ -39,17 +39,26 @@ internal fun ListScreen(
     list: ListOfSets,
     sets: List<MediaSet>,
     onPlay: (setId: String) -> Unit,
+    /** Starts the list at its first title — `null` with nothing to play. */
+    onPlayAll: (() -> Unit)?,
     onRename: (String) -> Unit,
     onDelete: () -> Unit,
     onRemove: (setId: String) -> Unit,
+    heldIds: Set<String> = emptySet(),
 ) {
     var renaming by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Row(modifier = Modifier.fillMaxWidth().padding(Spacing.medium), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = { renaming = true }) { Text("Rename") }
-            TextButton(onClick = { deleting = true }) { Text("Delete list") }
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(Spacing.medium),
+            horizontalArrangement = if (onPlayAll != null) Arrangement.SpaceBetween else Arrangement.End,
+        ) {
+            onPlayAll?.let { PlayAllButton(onClick = it) }
+            Row {
+                TextButton(onClick = { renaming = true }) { Text("Rename") }
+                TextButton(onClick = { deleting = true }) { Text("Delete list") }
+            }
         }
         if (sets.isEmpty()) {
             CenteredMessage("Nothing on this list yet. Add titles from the player.")
@@ -59,7 +68,7 @@ internal fun ListScreen(
                 contentPadding = PaddingValues(horizontal = Spacing.medium),
             ) {
                 items(items = sets, key = MediaSet::setId) { set ->
-                    ListedRow(set = set, onPlay = { onPlay(set.setId) }, onRemove = { onRemove(set.setId) })
+                    ListedRow(set = set, held = set.setId in heldIds, onPlay = { onPlay(set.setId) }, onRemove = { onRemove(set.setId) })
                     HorizontalDivider()
                 }
             }
@@ -71,52 +80,40 @@ internal fun ListScreen(
             title = "Name for the list",
             confirmLabel = "Rename",
             initial = list.name,
-            onConfirm = { name ->
-                renaming = false
-                onRename(name)
-            },
+            onConfirm = { name -> renaming = false; onRename(name) },
             onDismiss = { renaming = false },
         )
     }
     if (deleting) {
         DeleteListConfirmation(
             name = list.name,
-            onConfirm = {
-                deleting = false
-                onDelete()
-            },
+            onConfirm = { deleting = false; onDelete() },
             onDismiss = { deleting = false },
         )
     }
 }
 
 @Composable
-private fun ListedRow(
-    set: MediaSet,
-    onPlay: () -> Unit,
-    onRemove: () -> Unit,
-) {
+private fun ListedRow(set: MediaSet, held: Boolean, onPlay: () -> Unit, onRemove: () -> Unit) {
     Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(role = Role.Button, onClick = onPlay)
-                .padding(vertical = Spacing.medium),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(role = Role.Button, onClick = onPlay)
+            .padding(vertical = Spacing.medium),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(set.title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(set.title, style = MaterialTheme.typography.bodyLarge)
+            if (held) OfflineBadge(modifier = Modifier.padding(top = Spacing.extraSmall))
+        }
         TextButton(onClick = onRemove) { Text("Remove") }
     }
 }
 
 /** Asked, the same as the web's own `window.confirm` before `deleteCollection` — the titles themselves are never at risk, only the list naming them. */
 @Composable
-private fun DeleteListConfirmation(
-    name: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
+private fun DeleteListConfirmation(name: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Delete \"$name\"?") },

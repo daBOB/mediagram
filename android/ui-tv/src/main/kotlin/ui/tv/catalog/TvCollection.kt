@@ -107,13 +107,18 @@ private fun CollectionHeader(
     collection: Entry.Collection,
     info: TitleInfo?,
 ) {
-    val age = remember(collection) { firstItemOf(collection.divisions)?.ageLabel() }
-    if (info != null || collection.posterPath != null || age != null) {
+    // A show is rated and tagged as a show, so its first episode speaks for
+    // all of it, as the phone's header asks.
+    val firstEpisode = remember(collection) { firstItemOf(collection.divisions) }
+    val age = firstEpisode?.ageLabel()
+    val genres = firstEpisode?.genres.orEmpty()
+    if (info != null || collection.posterPath != null || age != null || genres.isNotEmpty()) {
         TvTitleHeader(
             posterPath = collection.posterPath,
             title = collection.name,
             facts = age,
             info = info,
+            genres = genres,
             readableOverview = true,
             readableTitle = true,
         )

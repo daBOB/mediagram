@@ -1,10 +1,13 @@
-//! Who's watching: list, create, and which one is chosen — a port of the
-//! profile half of `web/src/state/store.ts`.
+//! Who's watching: list, create, choose, and delete — a port of the profile
+//! half of `web/src/state/store.ts`.
 //!
-//! Rename and delete are deferred (see the plan's decision 4): a sync can
-//! only ever add a profile from another device's document, never carry a
-//! rename or a deletion, so offering them here would let this device drift
-//! from what the others still believe.
+//! Rename stays deferred: a sync can only ever add a profile from another
+//! device's document, never carry a rename, and offering one here would let
+//! this device drift from what the others still believe. Delete is safe in
+//! a way rename is not — a profile removed here simply returns the moment
+//! another device that still holds it syncs, the same as the web's own
+//! `DELETE FROM profiles`, so nothing here can make two devices disagree for
+//! longer than one round.
 
 use rusqlite::{Connection, OptionalExtension, params};
 
@@ -60,6 +63,15 @@ pub fn exists(conn: &Connection, id: &str) -> rusqlite::Result<bool> {
     conn.query_row("SELECT 1 FROM profiles WHERE id = ?1", [id], |_| Ok(()))
         .optional()
         .map(|r| r.is_some())
+}
+
+/// Takes everything that was theirs with it: every table that scopes a row
+/// to a profile cascades on `profile_id`. `false` when `id` names nobody —
+/// nothing to cascade from. `chosen` clears itself implicitly the moment
+/// this was the profile it named; see `chosen` on why that needs no code
+/// here.
+pub fn delete(conn: &Connection, id: &str) -> rusqlite::Result<bool> {
+    Ok(conn.execute("DELETE FROM profiles WHERE id = ?1", params![id])? > 0)
 }
 
 /// This install's remembered "who's watching" — cleared implicitly if the

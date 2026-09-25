@@ -80,8 +80,15 @@ fun audioStatLine(
  * ExoPlayer says how far ahead it has loaded but never how many bytes that
  * came to, and the byte volumes it can answer for — what has been read, and
  * how much of it came off the disk — are the reads and cache rows' business.
+ *
+ * [held] says "cached" instead, the same swap the web's own
+ * `preloadReadout` makes: a title on disk in full has the same short
+ * buffer either way, and printing it read as the cache not working.
  */
-fun bufferStatLine(aheadMs: Long): String = "${clockTime(aheadMs)} ahead"
+fun bufferStatLine(
+    aheadMs: Long,
+    held: Boolean = false,
+): String = if (held) "cached" else "${clockTime(aheadMs)} ahead"
 
 /** The share of what has been read that came from disk rather than Telegram. */
 fun cacheStatLine(totals: PlaybackTotals): String {

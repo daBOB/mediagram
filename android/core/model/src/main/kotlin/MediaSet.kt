@@ -53,6 +53,21 @@ data class MediaSet(
      * player names it; what it decides is in `AgeRating.kt`.
      */
     val fsk: String? = null,
+    /** The provider's genres for this title. An episode carries its show's. */
+    val genres: List<String> = emptyList(),
+    /** Languages this set has a subtitle track for. */
+    val subtitleLanguages: List<String> = emptyList(),
+    /** Whether the index holds a plot summary for this set. */
+    val hasSummary: Boolean = false,
+    /**
+     * What the index actually named this set, before [title]'s own fallback
+     * to [show] or [setId] filled in for a title that was never given one.
+     * [title] is right for anything that needs *some* string to show; this
+     * is for the one thing that needs to tell "titled" apart from "not" —
+     * the player's title line, which drops a segment rather than repeat
+     * the show's name or print a raw set id back at the viewer.
+     */
+    val rawTitle: String? = null,
 )
 
 enum class Kind {

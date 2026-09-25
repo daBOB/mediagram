@@ -17,7 +17,7 @@ import player.PlayerViewModel
 
 /**
  * [PlayerLifecycle] against a mocked ViewModel: the effects under test are
- * exactly the three calls it makes — open, stop, save — never anything
+ * exactly the two calls it makes — stop, save — never anything
  * about what the player is actually doing, so nothing here needs a real
  * one.
  */
@@ -37,7 +37,6 @@ class PlayerLifecycleTest {
             controller = Robolectric.buildActivity(PlayerLifecycleTestActivity::class.java).setup().visible()
         }
         compose.waitForIdle()
-        verify(exactly = 1) { viewModel.open("set-one", "12") }
     }
 
     @After

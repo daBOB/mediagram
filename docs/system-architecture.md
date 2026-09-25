@@ -308,6 +308,13 @@ rendering; `status/` owns the system
 panel. Shared catalog, state, formatting, and playback-policy helpers remain
 at the library root. The installed HLS client is still served at `/lib/hls.mjs`.
 
+`public/style.css` imports the presentation modules in `public/styles/`:
+`theme.css` owns local fonts and light/dark tokens, `shell.css` owns navigation
+and the search toolbar, `catalog.css` owns shelves and title details,
+`library-controls.css` owns profiles, collections and status, and `playback.css`
+owns the dark player and Featured dialogs. Appearance follows the system;
+the wordmark keeps Fraunces while interface text uses self-hosted Geist.
+
 Application shutdown closes admission to speculative cache reads and waits for
 existing warming to finish before disconnecting Telegram. The HTTP listener
 also drains routing, streaming and cancellation cleanup; the shared source
@@ -647,6 +654,11 @@ it once, where it takes in its catalog (`applyCatalog` in `app.js`,
 `CatalogViewModel` on the phone), so every shelf, search, reel and title page
 inherits it.
 
+There is no Kids shelf. It listed the same titles a kids profile now shows,
+so it was removed from both surfaces: a kids profile's library is that list.
+The "Kids" mark in the player stays, on grown-up profiles only — it is how an
+unrated title, such as a course, is let through.
+
 It is a filter, not a lock: anyone can choose another profile, the server
 does not know which profile is asking, and a direct stream URL still plays.
 The chunk cache is device-wide and shared by every profile.
@@ -716,19 +728,25 @@ using the retained credentials and preserves the refusal. A failed reload offers
 a separate profile-read retry without submitting replacement credentials again.
 
 "Who's watching?" chooses among the account's profiles, which arrive from the
-other devices' documents. Deliberate differences from the web, not gaps:
-profiles cannot be renamed or deleted on the phone, since the record cannot
-express either; sync is on by default, where the web player needs
-`MEDIAGRAM_SYNC_STATE`; "Add to list" is a checklist rather than the web's
-numbered prompt.
+other devices' documents, and removes one as the web does: locally, taking its
+rows with it. Neither surface renames. A removed profile that another device's
+document still names comes back with the next round that pulls it, on both
+surfaces alike — the record has no tombstone for a profile. Deliberate
+differences from the web, not gaps: sync is on by default, where the web player
+needs `MEDIAGRAM_SYNC_STATE`; "Add to list" is a checklist rather than the
+web's numbered prompt; the Films and Series shelves open as posters, where the
+web opens on its list.
 
-### What it does not have yet
+### Parity with the web player
 
-Parity with the web player is partial and tracked, not assumed. The phone has
-no audio-track or subtitle selection, no search and no notes; and Play all
-and a Kids run wait for a player queue. The plan that closes these is
-[`plans/260922-0124-android-web-parity/`](../plans/260922-0124-android-web-parity/plan.md),
-and the deliberate differences that will *not* be closed are recorded in
+Reached by
+[`plans/260924-0139-android-web-parity/`](../plans/260924-0139-android-web-parity/plan.md),
+which superseded the unbuilt half of
+[`plans/260922-0124-android-web-parity/`](../plans/260922-0124-android-web-parity/plan.md):
+search and genre pages, audio and subtitle choice, speed and framing, up next
+and queues, fullscreen gestures, picture-in-picture and a media session,
+series preload with offline badges, notes, profile removal and the List/Grid
+shelf toggle. What differs on purpose, and why, is recorded in
 `docs/superpowers/specs/2026-09-20-android-system-menu-and-playback-stats-design.md` §9.
 
 **`ui-tv` is empty.** The television surface is a registered Gradle module with

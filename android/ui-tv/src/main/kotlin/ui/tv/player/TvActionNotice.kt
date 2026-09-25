@@ -27,8 +27,11 @@ internal const val ACTION_NOTICE_MS = 6_000L
  * itself ([onGone]). The phone's snackbar carries a Dismiss button; on a
  * television that is a button the remote would have to leave the controls
  * to reach, only to make a sentence go away, so this has none and asks for
- * no focus — a banner to read, not a thing to answer. A new notice starts
- * its own time over.
+ * no focus — a banner to read, not a thing to answer. A notice with
+ * different words starts its own time over; the same words said again while
+ * the first is still up do not, because the notice arrives as a state whose
+ * value has not changed, so the banner simply goes when the first one's
+ * time is up.
  */
 @Composable
 internal fun TvActionNotice(

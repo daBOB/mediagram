@@ -4,6 +4,7 @@ import data.CatalogRepository
 import kotlinx.coroutines.CompletableDeferred
 import model.Kind
 import model.MediaSet
+import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.TitleInfo
 
 class FakeCatalogRepository(
@@ -13,9 +14,16 @@ class FakeCatalogRepository(
     private val refreshFails: Boolean = false,
     /** A catalog already on this device, which a failed refresh must not take away. */
     private val onDisk: Boolean = true,
+    /** What [search] answers, regardless of the query asked. */
+    private val searchHits: List<SearchHit> = emptyList(),
+    /** What [search] raises instead, or `null` to answer [searchHits] as normal. */
+    private val searchThrows: Throwable? = null,
     /** Sets given whole, for tests that need a rating or a particular id. */
     private val given: List<MediaSet> = emptyList(),
 ) : CatalogRepository {
+
+    /** Every query [search] was asked, in order — a test's way of seeing the debounce work. */
+    val searches: MutableList<String> = mutableListOf()
     private val allSets: List<MediaSet> =
         given +
             (0 until movies).map { fakeSet(Kind.MOVIE, "movie-$it") } +
@@ -51,6 +59,12 @@ class FakeCatalogRepository(
             postersArrived -> allSets.map { it.copy(posterPath = "/artwork/${it.setId}.jpg") }
             else -> allSets
         }
+    }
+
+    override suspend fun search(query: String): List<SearchHit> {
+        searches.add(query)
+        searchThrows?.let { throw it }
+        return searchHits
     }
 
     /** Nothing is what a library assembled without a TMDB key answers, which is the ordinary case here. */

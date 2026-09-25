@@ -54,9 +54,7 @@ private const val Columns = 6
  * so this wall is never left with nothing focused at all.
  *
  * [header] is whatever stands above the plates and scrolls with them — a
- * kept wall's "Title · n", a show's name and facts — and [section] splits
- * one wall into headed runs, as the Kids wall does, without a second grid
- * whose focus would have to be handed across.
+ * kept wall's "Title · n", a show's name and facts.
  */
 @Composable
 fun <T> TvWall(
@@ -65,12 +63,11 @@ fun <T> TvWall(
     restoreKey: String?,
     onOpen: (T) -> Unit,
     header: (@Composable () -> Unit)? = null,
-    section: ((T) -> String)? = null,
     plate: @Composable (item: T, modifier: Modifier, onOpen: () -> Unit) -> Unit,
 ) {
     val gridState = rememberLazyGridState()
     val focusRequester = remember { FocusRequester() }
-    val cells = remember(items, header != null, section) { cellsOf(items, header != null, section) }
+    val cells = remember(items, header != null) { cellsOf(items, header != null) }
     val focusIndex =
         remember(items, restoreKey) {
             if (items.isEmpty()) {
@@ -119,7 +116,6 @@ fun <T> TvWall(
             key = { cell ->
                 when (cell) {
                     WallCell.Header -> "header"
-                    is WallCell.Heading -> "heading-${cell.title}"
                     is WallCell.Plate -> key(items[cell.index])
                 }
             },
@@ -127,7 +123,6 @@ fun <T> TvWall(
         ) { cell ->
             when (cell) {
                 WallCell.Header -> header?.invoke()
-                is WallCell.Heading -> TvSectionHeading(cell.title)
                 is WallCell.Plate -> {
                     val item = items[cell.index]
                     val itemModifier = if (cell.index == focusIndex) Modifier.focusRequester(focusRequester) else Modifier
@@ -140,32 +135,20 @@ fun <T> TvWall(
 
 /**
  * One line of a wall as the grid lays it out: the optional header across
- * the top, a section's heading across a whole line, or one plate — so a
- * plate's place in the grid is looked up here rather than worked out again
- * wherever the grid has to be scrolled to one.
+ * the top, or one plate — so a plate's place in the grid is looked up here
+ * rather than worked out again wherever the grid has to be scrolled to one.
  */
 private sealed interface WallCell {
     data object Header : WallCell
 
-    data class Heading(val title: String) : WallCell
-
     data class Plate(val index: Int) : WallCell
 }
 
-/** A heading goes in wherever [section] changes from the plate before, so a caller only says which section each item is in. */
-private fun <T> cellsOf(
-    items: List<T>,
+private fun cellsOf(
+    items: List<*>,
     hasHeader: Boolean,
-    section: ((T) -> String)?,
 ): List<WallCell> =
     buildList {
         if (hasHeader) add(WallCell.Header)
-        var current: String? = null
-        items.forEachIndexed { index, item ->
-            section?.invoke(item)?.let { title ->
-                if (title != current) add(WallCell.Heading(title))
-                current = title
-            }
-            add(WallCell.Plate(index))
-        }
+        items.indices.forEach { add(WallCell.Plate(it)) }
     }

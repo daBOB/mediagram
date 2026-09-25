@@ -32,9 +32,14 @@ import uniffi.mediagram_core.TitleInfo
  * The page's name, the art beside the facts, then the tagline and the
  * overview — the television twin of the phone's `TitleHeader`, with the
  * same blocks in the same order: [facts] (a show's age rating, a film's
- * year and runtime), the genres, the provider's rating. Each block is left
+ * year and runtime), the provider's rating, the genres. Each block is left
  * out when there is nothing for it, so a title with no provider entry is
  * its art and its facts rather than a row of empty labels.
+ *
+ * [genres] are the catalogue's own, the same field the phone's and the
+ * web's genre links are matched against, rather than the provider's genre
+ * sentence the header printed before those links existed. They are a line
+ * to read here, not links: a television has no genre page to open yet.
  *
  * [beside] goes at the foot of the facts, still beside the art — where a
  * title page puts its Play, as the web's film page does, so the one thing
@@ -58,6 +63,7 @@ internal fun TvTitleHeader(
     facts: String?,
     info: TitleInfo?,
     modifier: Modifier = Modifier,
+    genres: List<String> = emptyList(),
     readableOverview: Boolean = false,
     readableTitle: Boolean = false,
     beside: @Composable ColumnScope.() -> Unit = {},
@@ -79,10 +85,14 @@ internal fun TvTitleHeader(
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
                     facts?.let { Text(text = it, style = TvTypeScale.body) }
-                    info?.genres?.takeIf(String::isNotBlank)?.let { genres ->
-                        Text(text = genres, style = TvTypeScale.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
                     ratingLabel(info?.rating)?.let { Text(text = it, style = TvTypeScale.body) }
+                    if (genres.isNotEmpty()) {
+                        Text(
+                            text = genres.joinToString(" · "),
+                            style = TvTypeScale.body,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     beside()
                 }
             }

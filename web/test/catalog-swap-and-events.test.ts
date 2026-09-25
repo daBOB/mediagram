@@ -76,6 +76,16 @@ describe("telling open pages", () => {
     await reader.cancel();
   });
 
+  test("a page hears that watch state arrived from another device", async () => {
+    const events = new CatalogEvents();
+    const reader = events.subscribe().getReader();
+    const decoder = new TextDecoder();
+    expect(decoder.decode((await reader.read()).value)).toBe(": connected\n\n");
+    events.stateChanged();
+    expect(decoder.decode((await reader.read()).value)).toBe("event: state\ndata: {}\n\n");
+    await reader.cancel();
+  });
+
   test("a page that goes away stops being written to", async () => {
     const events = new CatalogEvents();
     const stream = events.subscribe();

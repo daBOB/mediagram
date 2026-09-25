@@ -26,6 +26,12 @@ import playback.PlaybackCounters
 import player.DefaultPlayerHandle
 import player.PlayerViewModel
 import player.ProgressRecorder
+import data.CatalogRepository
+import data.PlayerPreferences
+import playback.SubtitleTrackSource
+import playback.SeriesPreloading
+import playback.HeldSetsQuery
+import player.PlaybackServiceController
 
 /** Real handle, ViewModel and recorder; only media decoding and persistent storage are replaced. */
 internal class PlayerLifecycleFixture : AutoCloseable {
@@ -73,6 +79,12 @@ internal class PlayerLifecycleFixture : AutoCloseable {
                     repository,
                     ProgressRecorder(repository),
                     mockk<WatchSync>(relaxed = true),
+                    mockk<CatalogRepository>(relaxed = true),
+                    mockk<PlayerPreferences>(relaxed = true),
+                    mockk<SubtitleTrackSource>(relaxed = true),
+                    PlaybackServiceController.Noop,
+                    SeriesPreloading.Noop,
+                    HeldSetsQuery.Noop,
                 ) as T
             }
         }

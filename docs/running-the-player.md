@@ -295,9 +295,21 @@ connection is too slow for this title rather than restarting the same encode
 forever. A viewer who wants a specific quality can still pick a position with
 the slider, which keeps whatever rate was last found to work.
 
+### Browsing
+
+The web library follows the device's light or dark appearance. On desktop,
+navigation stays in a sidebar; on phones it sits above the library. Search
+and the profile switcher share a separate toolbar. Keyboard users can choose
+**Skip to library** to move past navigation without changing the current route.
+
+Home keeps **Continue** and **Next up** compact, followed by the latest film,
+series, and course shelves. Movies and Series retain the device's saved
+List/Grid choice. A film's **Play** or **Resume** action appears before its
+synopsis. The player itself stays dark in either appearance.
+
 ### Searching
 
-`GET /api/search?q=…`, and the box in the sidebar. It matches titles, show and
+`GET /api/search?q=…`, and the Search field above the library. It matches titles, show and
 course names, chapter and folder paths, and the body of any summary — so a
 lesson called "Interpretation" is findable by the chapter it sits in or by a
 word in its notes, which is the only way a course of a hundred and seventy

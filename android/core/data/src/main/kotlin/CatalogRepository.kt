@@ -1,9 +1,14 @@
 package data
 
+import android.util.Log
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import model.Kind
 import model.MediaSet
 import settings.LibrarySettings
+import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.TitleInfo
 
@@ -17,6 +22,14 @@ interface CatalogRepository {
     suspend fun refresh(): Result<Int>
 
     suspend fun sets(): List<MediaSet>
+
+    /**
+     * The catalog's sets matching every word of [query], best first — the
+     * same ranking [CoreClient.search] runs. A thin pass-through rather than
+     * a join onto [sets]: the caller already holds that list and joining it
+     * here would be a second copy of the same lookup.
+     */
+    suspend fun search(query: String): List<SearchHit>
 
     /**
      * What the index records about the title a poster key names, or nothing.
@@ -33,6 +46,16 @@ interface CatalogRepository {
      * TMDB key has none at all.
      */
     suspend fun posterPath(posterKey: String): String?
+
+    /**
+     * One set by id, wherever it sits in the catalog — the player's own way
+     * to resolve what a saved id names. Not `feature:catalog`'s
+     * `CatalogUiState.mediaSet`, which walks a shelf tree built for
+     * rendering: a feature module reaching into another feature module for
+     * a lookup would be backwards, so this asks the catalog directly.
+     * `null` with nothing found, including a catalog not yet loaded.
+     */
+    suspend fun mediaSet(setId: String): MediaSet? = sets().find { it.setId == setId }
 }
 
 /**
@@ -48,6 +71,7 @@ class DefaultCatalogRepository(
     private val coreProvider: CoreProvider,
     private val settings: LibrarySettings,
     private val refreshes: RefreshLog,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : CatalogRepository {
     /**
      * Re-reads the newest index the chosen library's channel holds. The handle
@@ -84,10 +108,19 @@ class DefaultCatalogRepository(
             refreshes.record(RefreshOutcome.Refused(it.refreshSentence()))
         }
 
+    // `posterPath` is a plain synchronous call — a disk check per set with
+    // a poster key — and `CoreClient` makes no promise of its own about
+    // which thread a suspend function resumes on. Off [dispatcher] rather
+    // than left to run wherever the caller's scope happens to be (usually
+    // main, for a ViewModel): a few hundred of those in a row is exactly
+    // the kind of main-thread stall that drops the touch event landing on
+    // it, not just a slow frame.
     override suspend fun sets(): List<MediaSet> {
         val core = coreProvider.awaitCore()
-        return core.listSets().map { toMediaSet(core, it) }
+        return withContext(dispatcher) { core.listSets().map { toMediaSet(core, it) } }
     }
+
+    override suspend fun search(query: String): List<SearchHit> = coreProvider.awaitCore().search(query)
 
     /** The core is awaited here rather than captured, as everywhere else. */
     override suspend fun titleInfo(posterKey: String): TitleInfo? = coreProvider.awaitCore().titleInfo(posterKey)
@@ -95,6 +128,22 @@ class DefaultCatalogRepository(
     override suspend fun posterPath(posterKey: String): String? {
         val core = coreProvider.awaitCore()
         return core.posterPath(posterKey)
+    }
+
+    /**
+     * Finds the one row before mapping any of them, rather than calling
+     * [sets] and searching the result — [toMediaSet] pays for a poster
+     * lookup per set, and the player asking for one title at a time has no
+     * use for the other few hundred. Off [dispatcher] for the same reason
+     * [sets] is; timed at debug level so a slow lookup shows up in logcat
+     * without a release build ever printing it.
+     */
+    override suspend fun mediaSet(setId: String): MediaSet? = withContext(dispatcher) {
+        val startedAt = System.nanoTime()
+        val core = coreProvider.awaitCore()
+        val found = core.listSets().find { it.setId == setId }?.let { toMediaSet(core, it) }
+        Log.d(TAG, "mediaSet($setId): ${(System.nanoTime() - startedAt) / 1_000_000}ms")
+        found
     }
 
     /**
@@ -121,6 +170,7 @@ class DefaultCatalogRepository(
             setId = summary.setId,
             kind = kind,
             title = summary.title ?: summary.show ?: summary.setId,
+            rawTitle = summary.title,
             show = summary.show,
             chapter = summary.chap,
             path = summary.path,
@@ -140,6 +190,13 @@ class DefaultCatalogRepository(
             posterKey = summary.posterKey,
             addedAt = summary.addedAt,
             fsk = summary.fsk,
+            genres = summary.genres,
+            subtitleLanguages = summary.subtitles,
+            hasSummary = summary.hasSummary,
         )
+    }
+
+    private companion object {
+        const val TAG = "catalog"
     }
 }

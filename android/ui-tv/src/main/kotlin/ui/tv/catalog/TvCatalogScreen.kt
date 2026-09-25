@@ -33,7 +33,7 @@ import ui.tv.profile.TvChosenProfile
 /**
  * The catalogue on a television: [TvMasthead] across the top and, below
  * it, whichever entry is selected — Home, a shelf's wall, or one of the
- * four kept entries. The television twin of the phone's `CatalogScreen`,
+ * three kept entries. The television twin of the phone's `CatalogScreen`,
  * with the same callbacks out, so whatever owns the positions around it
  * drives both surfaces the same way.
  *
@@ -153,7 +153,6 @@ fun TvCatalogScreen(
                             shelves = shelves,
                             watch = ready.watch,
                             onOpenTitle = onOpenTitle,
-                            onOpenCollection = onOpenCollection,
                             onOpenList = onOpenList,
                             onCreateList = onCreateList,
                             tabFocus = selectedTab,

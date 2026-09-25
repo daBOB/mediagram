@@ -63,6 +63,7 @@ internal fun TvTitlePage(
             title = set.title,
             facts = factsLine(set.year, set.durationSecs, set.ageLabel()),
             info = info,
+            genres = set.genres,
             modifier =
                 Modifier
                     .fillMaxSize()

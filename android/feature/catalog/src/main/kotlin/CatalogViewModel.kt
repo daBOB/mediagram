@@ -25,6 +25,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import model.MediaSet
 import model.forKidsProfile
+import playback.HeldSetsQuery
+import playback.SeriesPreloading
 import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.TitleInfo
 import javax.inject.Inject
@@ -38,6 +40,8 @@ class CatalogViewModel
         private val watchState: WatchStateRepository,
         private val updates: LibraryUpdateCoordinator,
         libraryEvents: LibraryEvents = LibraryEvents.None,
+        private val heldSets: HeldSetsQuery = HeldSetsQuery.Noop,
+        seriesPreloader: SeriesPreloading = SeriesPreloading.Noop,
     ) : ViewModel() {
         private val catalog = MutableStateFlow<CatalogUiState>(CatalogUiState.Loading)
         private var lastReady: CatalogUiState.Ready? = null
@@ -77,6 +81,9 @@ class CatalogViewModel
                         if (event == LibraryEvent.INDEX) refresh(LibraryUpdateKind.Published)
                     }
                 }
+                // A preload that finishes a title is folded into the shelves
+                // already up, so its "offline" badge shows without a rescan.
+                launch { seriesPreloader.heldEvents.collect(::heldEventApplied) }
                 combine(catalog, updates.refreshing, watchState.snapshot) { shown, refreshing, watch ->
                     when {
                         shown is CatalogUiState.Ready -> shown.copy(refreshing = refreshing, watch = watch)
@@ -156,7 +163,7 @@ class CatalogViewModel
                     lastSets = sets
                     val shelves = shelvesOf(sets)
                     when {
-                        shelves.isNotEmpty() -> CatalogUiState.Ready(shelves, notice = failure?.refreshSentence())
+                        shelves.isNotEmpty() -> CatalogUiState.Ready(shelves, heldIds = heldIdsOf(shelves), notice = failure?.refreshSentence())
                         failure != null -> CatalogUiState.Failed(failure.refreshSentence())
                         else -> CatalogUiState.Empty
                     }
@@ -179,7 +186,7 @@ class CatalogViewModel
                 val kept = lastReady ?: return
                 if (shelves.isNotEmpty()) {
                     lastSets = sets
-                    show(kept.copy(shelves = shelves))
+                    show(kept.copy(shelves = shelves, heldIds = heldIdsOf(shelves)))
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -190,6 +197,15 @@ class CatalogViewModel
                 val notice = e.coreSentence() ?: "Could not read the library. Try again."
                 show(lastReady?.copy(notice = notice) ?: CatalogUiState.Failed(notice))
             }
+        }
+
+        /** Which of these sets this device holds in full, asked of the cache alone. */
+        private suspend fun heldIdsOf(shelves: List<Shelf>): Set<String> =
+            heldSets.heldIds(indexById(shelves).values.map { it.setId to it.totalBytes })
+
+        private fun heldEventApplied(setId: String) {
+            val kept = lastReady ?: return
+            if (setId !in kept.heldIds) show(kept.copy(heldIds = kept.heldIds + setId))
         }
 
         private fun show(answer: CatalogUiState) {
@@ -239,9 +255,22 @@ class CatalogViewModel
             writeCollection("update") { watchState.setInList(id, setId, included) }
         }
 
-        /** Repository snapshots acknowledge successful writes; failures leave those snapshots intact. */
+        /** Continue's "Mark finished": the wall redraws from the snapshot, so the title simply leaves it. */
+        fun markFinished(setId: String) {
+            writeState("Could not mark that title finished. Please try again.") {
+                watchState.markFinished(setId)
+                true
+            }
+        }
+
         private fun writeCollection(
             verb: String,
+            write: suspend () -> Boolean,
+        ) = writeState("Could not $verb the collection. Please try again.", write)
+
+        /** Repository snapshots acknowledge successful writes; failures leave those snapshots intact. */
+        private fun writeState(
+            failure: String,
             write: suspend () -> Boolean,
         ) {
             viewModelScope.launch {
@@ -255,7 +284,6 @@ class CatalogViewModel
                     ) {
                         false
                     }
-                val failure = "Could not $verb the collection. Please try again."
                 val kept = lastReady
                 if (!saved) {
                     show(kept?.copy(notice = failure) ?: CatalogUiState.Failed(failure))

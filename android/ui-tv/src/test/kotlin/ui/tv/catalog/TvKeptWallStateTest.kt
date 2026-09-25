@@ -2,16 +2,13 @@ package ui.tv.catalog
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import catalog.CatalogUiState
 import catalog.KeptKind
 import catalog.resumeLine
 import catalog.shelvesOf
-import model.Kind
 import model.ListOfSets
 import model.MediaSet
 import model.Progress
@@ -24,7 +21,7 @@ import ui.tv.profile.TvChosenProfile
 import kotlin.test.assertEquals
 
 /**
- * The four kept tabs as [TvCatalogScreen] draws them: what each wall holds,
+ * The three kept tabs as [TvCatalogScreen] draws them: what each wall holds,
  * where the remote lands, and the phone's own words when there is nothing
  * to hold. The empty texts are spelled out here, not read back from
  * [KeptKind], so a change to the shared wording shows up as a change to
@@ -40,8 +37,6 @@ class TvKeptWallStateTest : TvScreenStateTest() {
                 "Continue" to "Nothing started yet.",
                 "Watchlist" to "Nothing on the list.",
                 "Collections" to "No lists yet.",
-                "Kids" to
-                    "Nothing rated FSK 12 or younger, and nothing marked. An unrated title can be marked with Kids in the player.",
             )
         for ((tab, text) in empty) {
             showCatalog(ready(films(1)))
@@ -78,21 +73,6 @@ class TvKeptWallStateTest : TvScreenStateTest() {
     }
 
     @Test
-    fun kidsHeadsEachRunOnceThereIsMoreThanOneKind() {
-        val rated = set("film-rated", Kind.MOVIE, "Rated Film", addedAt = 0).copy(fsk = "6")
-        val unrated = set("film-unrated", Kind.MOVIE, "Unrated Film", addedAt = 1)
-        showCatalog(withWatch(listOf(rated, unrated), WatchSnapshot.Empty.copy(kids = listOf("film-unrated"))))
-
-        compose.onNodeWithText("Kids").performSemanticsAction(SemanticsActions.OnClick)
-
-        compose.onNodeWithText("Kids · 2").assertExists()
-        // Once as the masthead's shelf, once as the wall's own run of films.
-        compose.onAllNodesWithText("Movies").assertCountEquals(2)
-        compose.onNodeWithText("Marked by hand").assertExists()
-        compose.onNodeWithText("Rated Film").assertIsFocused()
-    }
-
-    @Test
     fun collectionsListsTheViewersListsAndFocusesTheFirst() {
         var opened: String? = null
         val lists = listOf(ListOfSets("a", "Sunday", listOf("film-0")), ListOfSets("b", "Later", emptyList()))
@@ -103,23 +83,6 @@ class TvKeptWallStateTest : TvScreenStateTest() {
         compose.onNodeWithText("Sunday · 1 title").assertIsFocused()
         compose.onNodeWithText("Later · 0 titles").performSemanticsAction(SemanticsActions.OnClick)
         assertEquals("b", opened)
-    }
-
-    /**
-     * The library records the set id a hand-marked title was opened by,
-     * while its plate here is keyed apart from a rated one; Back from it
-     * still lands on it rather than on the wall's first plate.
-     */
-    @Test
-    fun backToAHandMarkedTitleLandsOnItsPlate() {
-        val rated = set("film-rated", Kind.MOVIE, "Rated Film", addedAt = 0).copy(fsk = "6")
-        val marked = (1..3).map { set("film-marked-$it", Kind.MOVIE, "Marked $it", addedAt = it.toLong()) }
-        val watch = WatchSnapshot.Empty.copy(kids = marked.map { it.setId })
-        showCatalog(withWatch(listOf(rated) + marked, watch), restoreKey = "film-marked-2")
-
-        compose.onNodeWithText("Kids").performSemanticsAction(SemanticsActions.OnClick)
-
-        compose.onNodeWithText("Marked 2").assertIsFocused()
     }
 
     /** The last title taken off the Watchlist from its own page leaves no plate; the remote goes up to the masthead. */

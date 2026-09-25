@@ -39,30 +39,18 @@ sealed interface RowContent {
 }
 
 /** One set on Continue or Next up: what to play, what to say under it, and its own mark. */
-data class SetCard(
-    val set: MediaSet,
-    val caption: String,
-    val progress: Float?,
-    val watched: Boolean,
-)
+data class SetCard(val set: MediaSet, val caption: String, val progress: Float?, val watched: Boolean, val held: Boolean = false)
 
 /**
  * The rows the start page shows, from the library and this viewer's own
  * watch state — Continue and Next up first, then the three Latest shelves,
  * in that order because Continue and Next up are unlikely to correspond to
- * what a viewer opened this page to reload.
+ * what a viewer opened this page to reload. [heldIds] carries the offline
+ * badge onto Continue and Next up's own cards; the three Latest rows carry
+ * none — a film or a show's plate there is [Entry], not [SetCard].
  */
-fun homeRowsOf(
-    shelves: List<Shelf>,
-    watch: WatchSnapshot,
-    limit: Int = HOME_ROW_LIMIT,
-): List<HomeRow> {
-    val collections =
-        shelves
-            .asSequence()
-            .flatMap { it.entries }
-            .filterIsInstance<Entry.Collection>()
-            .toList()
+fun homeRowsOf(shelves: List<Shelf>, watch: WatchSnapshot, heldIds: Set<String> = emptySet(), limit: Int = HOME_ROW_LIMIT): List<HomeRow> {
+    val collections = shelves.asSequence().flatMap { it.entries }.filterIsInstance<Entry.Collection>().toList()
     val underway = underwayOf(collections, indexById(shelves), watch, limit)
     val positions = watch.progress.associateBy { it.setId }
     val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
@@ -70,37 +58,33 @@ fun homeRowsOf(
     val rows = mutableListOf<HomeRow>()
 
     if (underway.continues.isNotEmpty()) {
-        rows +=
-            HomeRow(
-                title = "Continue",
-                // Its own masthead tab, the same wall this row is a window onto
-                // — see catalog.continueWall.
-                seeAll = "Continue",
-                total = underway.continuesTotal,
-                content =
-                    RowContent.Sets(
-                        underway.continues.map { set -> setCard(set, resumeLine(positions[set.setId]), positions, watchedIds) },
-                    ),
-            )
+        rows += HomeRow(
+            title = "Continue",
+            // Its own masthead tab, the same wall this row is a window onto
+            // — see catalog.continueWall.
+            seeAll = "Continue",
+            total = underway.continuesTotal,
+            content = RowContent.Sets(
+                underway.continues.map { set -> setCard(set, resumeLine(positions[set.setId]), positions, watchedIds, heldIds) },
+            ),
+        )
     }
 
     if (underway.nextUp.isNotEmpty()) {
-        rows +=
-            HomeRow(
-                title = "Next up",
-                seeAll = "Series",
-                total = underway.nextUpTotal,
-                content =
-                    RowContent.Sets(
-                        underway.nextUp.map { entry ->
-                            // The captions differ within the row on purpose: one card
-                            // is where the viewer stopped, the next is what follows
-                            // an episode they finished.
-                            val caption = if (entry.resume) resumeLine(positions[entry.set.setId]) else "Next up"
-                            setCard(entry.set, caption, positions, watchedIds)
-                        },
-                    ),
-            )
+        rows += HomeRow(
+            title = "Next up",
+            seeAll = "Series",
+            total = underway.nextUpTotal,
+            content = RowContent.Sets(
+                underway.nextUp.map { entry ->
+                    // The captions differ within the row on purpose: one card
+                    // is where the viewer stopped, the next is what follows
+                    // an episode they finished.
+                    val caption = if (entry.resume) resumeLine(positions[entry.set.setId]) else "Next up"
+                    setCard(entry.set, caption, positions, watchedIds, heldIds)
+                },
+            ),
+        )
     }
 
     for (shelf in shelves) {
@@ -121,9 +105,10 @@ private fun setCard(
     caption: String,
     positions: Map<String, Progress>,
     watchedIds: Set<String>,
+    heldIds: Set<String>,
 ): SetCard {
     val progress = ResumePoint.watchedFraction(positions[set.setId]?.let { ProgressPoint(it.at, it.duration) })
-    return SetCard(set, caption, progress?.toFloat(), set.setId in watchedIds)
+    return SetCard(set, caption, progress?.toFloat(), set.setId in watchedIds, set.setId in heldIds)
 }
 
 /**

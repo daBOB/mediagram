@@ -32,6 +32,9 @@ import system.FetchViewModel
 import system.SystemUiState
 import system.SystemViewModel
 import ui.player.PlayerLifecycleFixture
+import catalog.ShelfViewModel
+import catalog.SearchViewModel
+import settings.InMemoryShelfViewSettings
 
 /** Real routing and catalog/profile/player ViewModels; only external IO and unrelated menu facts are controlled. */
 internal class LibraryFlowFixture(
@@ -92,6 +95,8 @@ internal class LibraryFlowFixture(
                 SettingsViewModel::class.java to settings,
                 SystemViewModel::class.java to system,
                 CacheBudgetViewModel::class.java to cache,
+                ShelfViewModel::class.java to ShelfViewModel(InMemoryShelfViewSettings()),
+                SearchViewModel::class.java to SearchViewModel(repository),
             )
         val provider =
             ViewModelProvider(

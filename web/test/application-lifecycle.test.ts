@@ -3,7 +3,7 @@ import { EventEmitter } from "node:events";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { LibraryUpdates, installShutdownSignals, shutdownFor, type ApplicationResources } from "../src/application/lifecycle";
+import { LibraryUpdates, announcingPulls, installShutdownSignals, shutdownFor, type ApplicationResources } from "../src/application/lifecycle";
 import { StateSync } from "../src/state/sync";
 import { WatchState } from "../src/state/store";
 import { TranscodeRegistry } from "../src/transcode/registry";
@@ -143,4 +143,17 @@ test("repeated process signals share one shutdown and remove both handlers befor
     expect(await exited.promise).toBe(0);
     expect(emitter.listenerCount("SIGINT") + emitter.listenerCount("SIGTERM")).toBe(0);
   } finally { done.resolve(); dispose(); }
+});
+
+test("only a sync round that took something tells open pages", async () => {
+  const outcomes = [{ pulled: 0, pushed: true }, { pulled: 2, pushed: false }, { pulled: 0, pushed: false, failed: "offline" }];
+  let told = 0;
+  const sync = announcingPulls({ once: async () => outcomes.shift()! }, { stateChanged: () => { told++; } })!;
+  expect(await sync.once()).toEqual({ pulled: 0, pushed: true });
+  expect(told).toBe(0);
+  expect(await sync.once()).toEqual({ pulled: 2, pushed: false });
+  expect(told).toBe(1);
+  await sync.once();
+  expect(told).toBe(1);
+  expect(announcingPulls(null, { stateChanged: () => { told++; } })).toBeNull();
 });

@@ -29,7 +29,14 @@ class PlayerTestActivity : ComponentActivity() {
                 MaterialTheme {
                     var showingPlayer by rememberSaveable { mutableStateOf(true) }
                     if (showingPlayer) {
-                        PlayerScreen("set-one", null, onBack = { showingPlayer = false }, viewModel = playerViewModel)
+                        PlayerScreen(
+                            "set-one",
+                            emptyList(),
+                            null,
+                            onBack = { showingPlayer = false },
+                            onSwitch = { _, _ -> },
+                            viewModel = playerViewModel,
+                        )
                     } else {
                         Text("Library")
                     }

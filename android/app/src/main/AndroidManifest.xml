@@ -7,8 +7,21 @@
     <uses-feature
         android:name="android.hardware.touchscreen"
         android:required="false" />
+    <uses-feature
+        android:name="android.software.picture-in-picture"
+        android:required="false" />
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- android.permission.ACCESS_NETWORK_STATE merges in from
+         :core:playback's own manifest (SystemUnmeteredNetworkCheck). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- No android.permission.POST_NOTIFICATIONS: PlaybackService's own
+         notification is a MediaSession one (see the "Media sessions" row
+         of https://developer.android.com/develop/ui/views/notifications/notification-permission#exemptions),
+         exempt on API 33+ from the runtime permission entirely — there is
+         nothing here to request, and nothing else in the app posts a
+         notification that would need it. -->
 
     <application
         android:name=".MediagramApp"
@@ -21,7 +34,9 @@
 
         <activity
             android:name=".MainActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
             android:exported="true"
+            android:supportsPictureInPicture="true"
             android:theme="@style/Theme.Mediagram">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -46,9 +46,8 @@ sealed interface ProfileUiState {
 /**
  * Drives "Who's watching?" — [WatchStateRepository] is the source of truth
  * for who exists and who is chosen; this only decides which of that to show
- * and when. Ports the web's picker (`profile-picker.js`) minus rename and
- * delete, which sync cannot express yet — written up in phase 09's parity
- * note.
+ * and when. Ports the web's picker (`profile-picker.js`): choose, add and
+ * remove. The web has no rename either, so neither does this.
  */
 @HiltViewModel
 class ProfileViewModel
@@ -183,6 +182,36 @@ class ProfileViewModel
                 } else {
                     failed("Could not create the profile. Please try again.", previousId)
                 }
+            }
+        }
+
+        /**
+         * Removes a profile and everything of theirs. Removing the one this
+         * device was watching as leaves nobody to "Stay as", so the picker
+         * stops offering it.
+         */
+        fun remove(id: String) {
+            val started = ++operation
+            viewModelScope.launch {
+                val previousId = repository.chosenProfileId.value
+                val removed =
+                    try {
+                        repository.deleteProfile(id)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (
+                        @Suppress("TooGenericExceptionCaught") e: Exception,
+                    ) {
+                        false
+                    }
+                if (operation != started) return@launch
+                if (!removed) {
+                    failed("Could not remove the profile. Please try again.", previousId)
+                    return@launch
+                }
+                val picking = mode.value as? Mode.Picking ?: return@launch
+                val stillChosen = repository.chosenProfileId.value != null
+                mode.value = picking.copy(canStay = picking.canStay && stillChosen, error = null)
             }
         }
 

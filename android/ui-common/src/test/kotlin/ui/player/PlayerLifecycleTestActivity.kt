@@ -14,7 +14,7 @@ import player.PlayerViewModel
 
 /**
  * Hosts [PlayerLifecycle] alone, without the material-styled screen it
- * normally sits under, so its own effects — open, stop, save — can be
+ * normally sits under, so its own effects — stop, save — can be
  * proven without a real player or catalog behind them.
  */
 class PlayerLifecycleTestActivity : ComponentActivity() {
@@ -26,7 +26,7 @@ class PlayerLifecycleTestActivity : ComponentActivity() {
                 var shown by rememberSaveable { mutableStateOf(true) }
                 hide = { shown = false }
                 if (shown) {
-                    PlayerLifecycle(viewModel = viewModel, setId = "set-one", fsk = "12")
+                    PlayerLifecycle(viewModel = viewModel)
                 }
             }
         }

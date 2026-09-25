@@ -68,56 +68,10 @@ class KeptShelvesTest {
     }
 
     @Test
-    fun kidsDropsATitleTheCatalogNoLongerHolds() {
-        val kept = film("Kept")
-        val watch = snapshotOf(kids = listOf("gone-set-id", kept.setId))
-
-        assertEquals(listOf(kept.setId), kidsShelf(shelvesOf(listOf(kept)), watch).byHand.map(MediaSet::setId))
-    }
-
-    @Test
-    fun aFilmRatedTwelveOrYoungerIsOnKidsWithoutAMark() {
-        val six = film("Six", fsk = "6")
-        val twelve = film("Twelve", fsk = "12")
-        val sixteen = film("Sixteen", fsk = "16")
-
-        val shelf = kidsShelf(shelvesOf(listOf(six, twelve, sixteen)), snapshotOf())
-        assertEquals(listOf("Six", "Twelve"), shelf.films.map { it.set.title })
-        assertTrue(shelf.byHand.isEmpty())
-    }
-
-    @Test
-    fun aMarkCountsOnlyOnAnUnratedTitle() {
-        val unrated = film("Unrated")
-        val sixteen = film("Sixteen", fsk = "16")
-        val twelve = film("Twelve", fsk = "12")
-        // Marked before ratings were recorded: the rating now decides.
-        val watch = snapshotOf(kids = listOf(sixteen.setId, unrated.setId, twelve.setId))
-
-        val shelf = kidsShelf(shelvesOf(listOf(unrated, sixteen, twelve)), watch)
-        assertEquals(listOf("Unrated"), shelf.byHand.map(MediaSet::title))
-        assertEquals(listOf("Twelve"), shelf.films.map { it.set.title })
-        assertEquals(2, shelf.total)
-    }
-
-    @Test
-    fun aShowIsRatedAsAShow() {
-        val kidsShow = listOf(episode("Bluey", 1, fsk = "0"), episode("Bluey", 2, fsk = "0"))
-        val grownShow = listOf(episode("Dexter", 1, fsk = "16"))
-
-        val shelf = kidsShelf(shelvesOf(kidsShow + grownShow), snapshotOf())
-        assertEquals(listOf("Bluey"), shelf.series.map(Entry.Collection::name))
-    }
-
-    @Test
     fun labelsAndEmptyTextMatchTheWebsKept() {
         assertEquals("Continue" to "Nothing started yet.", KeptKind.CONTINUE.label to KeptKind.CONTINUE.empty)
         assertEquals("Watchlist" to "Nothing on the list.", KeptKind.WATCHLIST.label to KeptKind.WATCHLIST.empty)
         assertEquals("Collections" to "No lists yet.", KeptKind.COLLECTIONS.label to KeptKind.COLLECTIONS.empty)
-        assertEquals(
-            "Kids" to "Nothing rated FSK 12 or younger, and nothing marked. An unrated title can be marked with Kids in the player.",
-            KeptKind.KIDS.label to KeptKind.KIDS.empty,
-        )
     }
 }
 

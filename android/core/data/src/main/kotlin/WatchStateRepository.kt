@@ -109,6 +109,31 @@ interface WatchStateRepository {
      */
     suspend fun reload()
 
+    /**
+     * Removes a profile and everything it has watched, then re-reads who
+     * exists and who is chosen — the core forgets the choice itself when it
+     * named the one removed. False when nothing was removed.
+     *
+     * Local, as on the web: a profile another device's sync document still
+     * names is created again by the next round that pulls it.
+     */
+    suspend fun deleteProfile(id: String): Boolean = false
+
+    /**
+     * Treats a title as watched to the end — `markFinished` in the web's
+     * `watch-state.js`: what the player does when the credits roll, and what
+     * a viewer does by hand from Continue for something finished elsewhere
+     * or given up on. The position goes, because a finished title has nowhere
+     * to resume to; the fact that it finished stays.
+     *
+     * Stamped now even when the title was finished before: the completion is
+     * the deleted position's only tombstone, and one older than another
+     * device's copy of that position loses the merge.
+     */
+    suspend fun markFinished(setId: String) {
+        clearProgress(setId)
+        setWatched(setId, true)
+    }
     /** Clears retained account state after a successful reset; already-running reads cannot restore it. */
     fun invalidate()
 }
@@ -208,6 +233,19 @@ class DefaultWatchStateRepository(
                 }
             } ?: return false
         refreshSnapshot(selected)
+        return true
+    }
+
+    override suspend fun deleteProfile(id: String): Boolean {
+        val started = synchronized(publicationLock) { resetRevision }
+        val core = coreProvider.awaitCore()
+        if (!withContext(dispatcher) { core.deleteProfile(id) }) return false
+        synchronized(publicationLock) {
+            if (resetRevision != started || coreProvider.core.value !== core) return false
+        }
+        // The core forgets the choice itself when it named the one removed;
+        // a reload is what publishes that, along with the shorter list.
+        reload()
         return true
     }
 

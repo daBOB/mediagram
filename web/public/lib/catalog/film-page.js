@@ -63,7 +63,8 @@ export function describeFilm(header, meta) {
     [meta.tagline ?? null, "series-tagline"],
     [meta.overview ?? null, "series-overview"],
   ]) {
-    if (text) play?.before(el("p", className, text));
+    // A long synopsis must not push the primary action off the phone screen.
+    if (text) body.append(el("p", className, text));
   }
 }
 

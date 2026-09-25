@@ -457,13 +457,7 @@ function mountPlayer() {
     const runtime = runtimeSeconds();
     const at = filmTime();
     if (isFinished(at, runtime)) {
-      // The position goes, because a finished title has nowhere to resume to.
-      // The fact that it finished stays, because otherwise nothing anywhere
-      // would remember it was ever watched.
-      state.clearProgress(playing.setId);
-      if (!state.isWatched(playing.setId)) {
-        state.setWatched(playing.setId, true);
-      }
+      state.markFinished(playing.setId);
       return;
     }
     if (final) state.flushProgress(playing.setId, at, runtime || null);

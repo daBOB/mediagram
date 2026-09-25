@@ -44,17 +44,12 @@ private val POSTER_WIDTH = 120.dp
  * bottom with no way to reach it.
  */
 @Composable
-fun TitleDetailScreen(
-    set: MediaSet,
-    info: TitleInfo?,
-    onPlay: () -> Unit,
-) {
+fun TitleDetailScreen(set: MediaSet, info: TitleInfo?, onPlay: () -> Unit, onOpenGenre: (String) -> Unit) {
     Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(Spacing.large),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(Spacing.large),
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         TitleHeader(
@@ -62,6 +57,8 @@ fun TitleDetailScreen(
             title = set.title,
             facts = factsLine(set.year, set.durationSecs, set.ageLabel()),
             info = info,
+            genres = set.genres,
+            onOpenGenre = onOpenGenre,
         )
 
         // As stored, not shouted: the web player prints the container and
@@ -97,22 +94,22 @@ internal fun TitleHeader(
     facts: String?,
     info: TitleInfo?,
     modifier: Modifier = Modifier,
+    genres: List<String> = emptyList(),
+    onOpenGenre: (String) -> Unit = {},
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
             PosterArt(posterPath = posterPath, title = title, modifier = Modifier.width(POSTER_WIDTH))
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
                 facts?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium) }
-                info?.genres?.takeIf(String::isNotBlank)?.let { genres ->
-                    Text(
-                        text = genres,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
                 ratingLabel(info?.rating)?.let { rating ->
                     Text(text = rating, style = MaterialTheme.typography.bodyMedium)
                 }
+                // Links to their shelves, not the plain sentence a provider's
+                // genre string used to print — the catalog's own genres, the
+                // same field a genre page is matched against, so tapping one
+                // always lands where it says it will.
+                GenreLinks(genres, onOpenGenre)
             }
         }
 

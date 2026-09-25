@@ -69,18 +69,25 @@ fn read_logged(conn: &Connection, poster_key: &str, store: &str) -> Option<Title
 /// The row a fetch on this device left, if there has been one. Opened
 /// read-only and only once the file exists, so a lookup never creates it.
 fn fetched(core: &Core, poster_key: &str) -> Option<TitleDetailsRow> {
+    read_logged(&open_fetched_ro(core)?, poster_key, "the description store")
+}
+
+/// This device's fetched-description sidecar, opened read-only — or `None`
+/// when there is none. Shared with `store::list_sets`, which merges this
+/// store's genres into the index's own the same way a single lookup here
+/// prefers the index and falls back to this file.
+pub(in crate::api) fn open_fetched_ro(core: &Core) -> Option<Connection> {
     let path = details_db(core);
     if !path.exists() {
         return None;
     }
-    let conn = match Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY) {
-        Ok(conn) => conn,
+    match Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY) {
+        Ok(conn) => Some(conn),
         Err(err) => {
             tracing::warn!(error = %err, "the description store could not be opened");
-            return None;
+            None
         }
-    };
-    read_logged(&conn, poster_key, "the description store")
+    }
 }
 
 #[cfg(test)]

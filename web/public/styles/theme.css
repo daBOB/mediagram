@@ -1,0 +1,116 @@
+/* Self-hosted faces keep the library usable without access to a font CDN.
+   Fraunces is retained only for the existing Mediagram wordmark. */
+@font-face {
+  font-family: "Geist";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(/font/geist-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Geist";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(/font/geist-latin-ext.woff2) format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(/font/fraunces-latin.woff2) format("woff2");
+}
+
+:root {
+  color-scheme: light dark;
+  --paper: #f7f8f6;
+  --paper-sunk: #e9ece7;
+  --surface: #fdfefb;
+  --sidebar: #eef0eb;
+  --ink: #222721;
+  --ink-2: #4c554b;
+  --ink-3: #626b60;
+  --dim: var(--ink-3);
+  --rule: #c8cec3;
+  --rule-soft: #dde1d8;
+  --accent: #8c3b2e;
+  --accent-tint: #f1e3dc;
+  --on-accent: #fff8f5;
+  --warn: #795313;
+  --held: #3c633d;
+  --stage: #101310;
+  --stage-raised: #1a201b;
+  --stage-ink: #f0f2eb;
+  --stage-ink-2: #b2b9ad;
+  --stage-rule: #42493e;
+  --stage-accent: #e9a28d;
+  --display: "Geist", "Segoe UI", sans-serif;
+  --text: "Geist", "Segoe UI", sans-serif;
+  --brand: "Fraunces", Georgia, serif;
+  --radius: 8px;
+  --gutter: clamp(1.25rem, 3vw, 3rem);
+  --sidebar-width: 13rem;
+  --measure: 88rem;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Page chrome < skip link < profile chooser. Native dialogs use the top layer.
+     Playback's local layers: HUD 1, notes/previews 2, next-title offer 3. */
+  --layer-chrome: 1;
+  --layer-skip: 2;
+  --layer-profile: 3;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #171b17;
+    --paper-sunk: #2a3029;
+    --surface: #20261f;
+    --sidebar: #121610;
+    --ink: #eef1e9;
+    --ink-2: #c2c9bb;
+    --ink-3: #a3ad9a;
+    --rule: #4b5444;
+    --rule-soft: #333b2e;
+    --accent: #e9a28d;
+    --accent-tint: #3b2922;
+    --on-accent: #251b16;
+    --warn: #dec38b;
+    --held: #a7c99d;
+  }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 1rem/1.5 var(--text);
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+}
+button, input, select { font: inherit; }
+button, a, input, select { -webkit-tap-highlight-color: transparent; }
+button { cursor: pointer; }
+button:disabled { cursor: default; opacity: 0.55; }
+button:not(:disabled):active { transform: scale(0.98); }
+button, a { touch-action: manipulation; }
+::selection { background: var(--accent-tint); color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+h1, h2, h3 { text-wrap: balance; }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}

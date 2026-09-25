@@ -6,16 +6,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.tv.material3.Text
-import catalog.episodeLabel
 import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import model.MediaSet
 import player.technicalLine
+import player.titleLine
 
 /**
  * What is playing, and what the file is: the web player's top rail — the
- * title line over [technicalLine], set quieter than the title because it
+ * shared [titleLine] over [technicalLine], set quieter than the title because it
  * answers a question a viewer only sometimes has. The web keeps both in
  * the player because this is where a viewer is when they want to know
  * what a film actually is.
@@ -30,7 +30,7 @@ internal fun TvPlayerTopBar(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
-        Text(text = playerTitleLine(set), style = TvTypeScale.title, color = Palette.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(text = titleLine(set), style = TvTypeScale.title, color = Palette.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
         // As stored, not shouted: the web prints the container and codecs in
         // the case the index recorded them.
         technicalLine(set).takeIf(String::isNotEmpty)?.let {
@@ -38,13 +38,3 @@ internal fun TvPlayerTopBar(
         }
     }
 }
-
-/**
- * How a title is named while it plays — `A Show · S1E4 · Pilot`, or a
- * film's own title alone. The web player's `titleLine`: the show, the
- * episode, the title, each left out when there is none.
- */
-internal fun playerTitleLine(set: MediaSet): String =
-    listOf(set.show.orEmpty(), episodeLabel(set), set.title)
-        .filter(String::isNotEmpty)
-        .joinToString(" · ")

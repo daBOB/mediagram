@@ -59,6 +59,7 @@ class OptionalMetadataTest {
                 film,
                 rememberTitleInfo("tmdb-movie-1") { throw IllegalStateException("unreadable title row") },
                 { played = true },
+                onOpenGenre = {},
             )
         }
         compose.onNodeWithText("▶ Play").performClick()
@@ -78,6 +79,7 @@ class OptionalMetadataTest {
                 film,
                 rememberTitleInfo("tmdb-movie-1") { throw CancellationException("left title") },
                 {},
+                onOpenGenre = {},
             )
         }
         compose.onNodeWithText("▶ Play").assertIsDisplayed()
@@ -98,6 +100,7 @@ class OptionalMetadataTest {
             listOf(SeasonPlate("Season One", "1 episode", "tmdb-tv-1-s1", division, false)),
             lookup,
             open,
+            onOpenGenre = {},
         )
     }
 

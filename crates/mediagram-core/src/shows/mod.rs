@@ -7,7 +7,10 @@
 //! independently and one row belongs to a whole series rather than to each
 //! episode of it.
 
+mod genres;
 pub mod sidecar;
+
+pub use genres::genres;
 
 use mediagram_tmdb::details::TitleDetailsRow;
 use mediagram_tmdb::posters::kind_key;

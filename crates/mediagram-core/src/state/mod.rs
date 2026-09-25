@@ -19,8 +19,10 @@ pub mod exchange;
 pub mod lists;
 mod lists_exchange;
 pub mod merge;
+pub mod preferences;
 pub mod profiles;
 pub mod record;
+mod repair;
 pub mod rows;
 mod schema;
 pub(crate) mod sync;
@@ -105,6 +107,7 @@ fn open(data_dir: &Path) -> anyhow::Result<Connection> {
     let conn = Connection::open(data_dir.join(STATE_FILE))?;
     conn.pragma_update(None, "journal_mode", "WAL")?;
     migrate(&conn)?;
+    repair::add_missing_kids_column(&conn)?;
     conn.pragma_update(None, "foreign_keys", true)?;
     Ok(conn)
 }
@@ -183,3 +186,7 @@ mod tests {
 #[cfg(test)]
 #[path = "retirement_tests.rs"]
 mod retirement_tests;
+
+#[cfg(test)]
+#[path = "upgrade_tests.rs"]
+mod upgrade_tests;

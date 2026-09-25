@@ -110,7 +110,7 @@ class TvCatalogScreenTest {
         // its whole laid-out width, ending inside the overscan-safe edge.
         val safeRight = compose.onRoot().fetchSemanticsNode().boundsInWindow.right -
             with(compose.density) { Overscan.horizontal.toPx() }
-        for (text in listOf("andre", "Kids")) {
+        for (text in listOf("andre", "Collections")) {
             val node = compose.onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode()
             val shown = node.boundsInWindow
             assertTrue("$text shows ${shown.width} of ${node.size.width}px", shown.width >= node.size.width - 1f)

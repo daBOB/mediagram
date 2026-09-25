@@ -2,6 +2,7 @@ package catalog
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -30,6 +31,27 @@ class DestinationTest {
     @Test
     fun aTitleIsNamedAfterItself() {
         assertEquals("Blade: Trinity", barTitleFor(Destination.Title("Blade: Trinity")))
+    }
+
+    @Test
+    fun searchIsNamedForWhatItIsRatherThanTheQuery() {
+        assertEquals("Search", barTitleFor(Destination.Search))
+        assertEquals("Back", backLabelFor(Destination.Search))
+    }
+
+    @Test
+    fun aGenrePageIsNamedAfterTheGenre() {
+        assertEquals("Krimi", barTitleFor(Destination.Genre("Krimi")))
+        assertEquals("Back", backLabelFor(Destination.Genre("Krimi")))
+    }
+
+    /** An icon that reopens the screen already on screen has nothing left to do. */
+    @Test
+    fun theSearchActionIsHiddenOnTheSearchScreenAlone() {
+        assertFalse(showsSearchAction(Destination.Search))
+        assertTrue(showsSearchAction(Destination.Catalog))
+        assertTrue(showsSearchAction(Destination.System))
+        assertTrue(showsSearchAction(Destination.Genre("Krimi")))
     }
 
     @Test

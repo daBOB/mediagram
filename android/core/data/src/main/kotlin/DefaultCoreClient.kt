@@ -8,7 +8,9 @@ import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.ListRow
+import uniffi.mediagram_core.PreferenceRow
 import uniffi.mediagram_core.Profile
+import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.StateSnapshot
 import uniffi.mediagram_core.SyncOutcome
@@ -53,6 +55,8 @@ class DefaultCoreClient(
 
     override fun posterPath(posterKey: String): String? = core.posterPath(posterKey)
 
+    override suspend fun search(query: String): List<SearchHit> = core.search(query)
+
     override suspend fun titleInfo(posterKey: String): TitleInfo? = core.titleInfo(posterKey)
 
     override suspend fun totalSize(setId: String): Long = core.totalSize(setId).toLong()
@@ -80,6 +84,8 @@ class DefaultCoreClient(
     override suspend fun chosenProfile(): String? = core.chosenProfile()
 
     override suspend fun chooseProfile(id: String): Boolean = core.chooseProfile(id)
+
+    override suspend fun deleteProfile(id: String): Boolean = core.deleteProfile(id)
 
     override suspend fun snapshot(profileId: String): StateSnapshot = core.snapshot(profileId)
 
@@ -134,6 +140,14 @@ class DefaultCoreClient(
         setId: String,
         included: Boolean,
     ): Boolean = core.setInCollection(profileId, id, setId, included)
+
+    override suspend fun preferences(profileId: String): List<PreferenceRow> = core.preferences(profileId)
+
+    override suspend fun setPreference(profileId: String, scope: String, name: String, value: String?): Boolean =
+        core.setPreference(profileId, scope, name, value)
+
+    override suspend fun setText(setId: String, kind: String, lang: String): String? =
+        core.setText(setId, kind, lang)
 
     override suspend fun stateDeviceId(): String = core.stateDeviceId()
 

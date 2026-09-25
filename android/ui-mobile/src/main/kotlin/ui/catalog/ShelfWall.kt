@@ -2,6 +2,7 @@ package ui.catalog
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -21,10 +22,13 @@ import catalog.Shelf
 import catalog.extentOf
 import catalog.factsLine
 import catalog.keyOf
+import catalog.offersViewChoice
+import catalog.shelfViewFor
 import catalog.watchedFractionOf
 import designsystem.Spacing
 import model.Progress
 import model.WatchSnapshot
+import settings.ShelfView
 
 /**
  * Everything one catalog shelf holds, on one wall, in one direction of
@@ -46,27 +50,41 @@ import model.WatchSnapshot
 internal fun ShelfWall(
     shelf: Shelf,
     watch: WatchSnapshot,
+    heldIds: Set<String>,
     columns: Int,
+    view: ShelfViewChoice,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
 ) {
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
 
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(Spacing.medium),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
-        verticalArrangement = Arrangement.spacedBy(Spacing.medium),
-    ) {
-        items(items = shelf.entries, key = ::keyOf) { entry ->
-            EntryCard(entry, positions, watchedIds, onOpenTitle, onOpenCollection)
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (offersViewChoice(shelf)) {
+            ShelfModeToggle(view.chosen, view.onChoose, modifier = Modifier.align(Alignment.End).padding(horizontal = Spacing.small))
+        }
+        if (shelfViewFor(shelf, view.chosen) == ShelfView.LIST) {
+            ShelfList(shelf.entries, positions, watchedIds, heldIds, onOpenTitle, onOpenCollection)
+            return@Column
+        }
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(columns),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(Spacing.medium),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+        ) {
+            items(items = shelf.entries, key = ::keyOf) { entry ->
+                EntryCard(entry, positions, watchedIds, onOpenTitle, onOpenCollection, heldIds)
+            }
         }
     }
 }
 
-/** One shelf card: a film's poster, or a show's or a course's. Shared with Home and Kids. */
+/** This device's shelf view and the way to change it, handed down as one. */
+internal data class ShelfViewChoice(val chosen: ShelfView, val onChoose: (ShelfView) -> Unit)
+
+/** One shelf card: a film's poster, or a show's or a course's. Shared with the Kids wall. */
 @Composable
 internal fun EntryCard(
     entry: Entry,
@@ -74,50 +92,47 @@ internal fun EntryCard(
     watchedIds: Set<String>,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
+    heldIds: Set<String> = emptySet(),
 ) {
     when (entry) {
         // A film opens the screen that describes it; a show or a
         // course opens what is inside it, because the plate stands
         // for everything there and there is no one thing it could
         // sensibly start.
-        is Entry.Film -> {
-            PosterCard(
-                posterPath = entry.set.posterPath,
-                title = entry.set.title,
-                // The year and the runtime, in the figures the detail
-                // screen already sets them in. A shelf of three hundred
-                // films with nothing but names under them is a wall of
-                // artwork; the line under the name is what tells two
-                // versions of the same title apart.
-                caption = factsLine(entry.set.year, entry.set.durationSecs),
-                progress = watchedFractionOf(positions[entry.set.setId]),
-                watched = entry.set.setId in watchedIds,
-                modifier = Modifier,
-                onClick = { onOpenTitle(entry.set.setId) },
-            )
-        }
+        is Entry.Film -> PosterCard(
+            posterPath = entry.set.posterPath,
+            title = entry.set.title,
+            // The year and the runtime, in the figures the detail
+            // screen already sets them in. A shelf of three hundred
+            // films with nothing but names under them is a wall of
+            // artwork; the line under the name is what tells two
+            // versions of the same title apart.
+            caption = factsLine(entry.set.year, entry.set.durationSecs),
+            progress = watchedFractionOf(positions[entry.set.setId]),
+            watched = entry.set.setId in watchedIds,
+            held = entry.set.setId in heldIds,
+            modifier = Modifier,
+            onClick = { onOpenTitle(entry.set.setId) },
+        )
 
         // No mark of its own, same as the web's `collectionGrid`: a
         // show or a course is not one title to finish.
-        is Entry.Collection -> {
-            PosterCard(
-                posterPath = entry.posterPath,
-                title = entry.name,
-                caption = extentOf(entry),
-                modifier = Modifier,
-                onClick = { onOpenCollection(entry.key) },
-            )
-        }
+        is Entry.Collection -> PosterCard(
+            posterPath = entry.posterPath,
+            title = entry.name,
+            caption = extentOf(entry),
+            modifier = Modifier,
+            onClick = { onOpenCollection(entry.key) },
+        )
     }
 }
 
 /** A tablet fits more plates across the page than a phone does. */
-internal fun posterColumnsFor(widthSizeClass: WindowWidthSizeClass): Int =
-    when (widthSizeClass) {
-        WindowWidthSizeClass.EXPANDED -> 6
-        WindowWidthSizeClass.MEDIUM -> 4
-        else -> 3
-    }
+internal fun posterColumnsFor(widthSizeClass: WindowWidthSizeClass): Int = when (widthSizeClass) {
+    WindowWidthSizeClass.EXPANDED -> 6
+    WindowWidthSizeClass.MEDIUM -> 4
+    else -> 3
+}
 
 /**
  * What a screen says when it has nothing to show.

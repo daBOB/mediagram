@@ -39,11 +39,15 @@ data class PlaybackStat(
  * It reports what is being decoded, which is not always what the catalog
  * recorded; where the title's own technical line disagrees with these rows,
  * this is the one that watched it happen.
+ *
+ * [held] is whether this device holds the title in full, which turns the
+ * buffer row into "cached" — see [bufferStatLine].
  */
 @Composable
 fun playbackStats(
     player: Player,
     totals: () -> PlaybackTotals,
+    held: Boolean = false,
 ): List<PlaybackStat> {
     // The transport bar's own tick, shared rather than started again. These
     // two positions are the only snapshot state read here, and so the only
@@ -88,7 +92,7 @@ fun playbackStats(
         audio?.sampleMimeType?.let { codec ->
             PlaybackStat(label = "audio", value = audioStatLine(codec, audio.channelCount, audio.language.orEmpty()))
         },
-        PlaybackStat(label = "buffer", value = bufferStatLine(aheadMs)),
+        PlaybackStat(label = "buffer", value = bufferStatLine(aheadMs, held)),
         PlaybackStat(label = "cache", value = cacheStatLine(counted)),
         PlaybackStat(label = "reads", value = readsStatLine(counted)),
         droppedStatLine(dropped)?.let { PlaybackStat(label = "dropped", value = it) },

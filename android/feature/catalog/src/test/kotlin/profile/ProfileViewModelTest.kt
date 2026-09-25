@@ -60,6 +60,14 @@ private class FakeWatchStateRepository(
         return true
     }
 
+    /** As the core does: the row goes, and so does the choice when it named it. */
+    override suspend fun deleteProfile(id: String): Boolean {
+        if (profiles.value.none { it.id == id }) return false
+        profiles.value = profiles.value.filterNot { it.id == id }
+        if (chosenProfileId.value == id) chosenProfileId.value = null
+        return true
+    }
+
     override suspend fun createProfile(
         name: String,
         kids: Boolean,
@@ -419,6 +427,59 @@ class ProfileViewModelTest {
 
                 vm.stay()
                 assertEquals(ProfileUiState.Chosen(Profile("p1", "Alice")), awaitItem())
+            }
+        }
+
+    @Test
+    fun removingAnotherProfileKeepsTheWayToStay() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val repository =
+                FakeWatchStateRepository(
+                    initialProfiles = listOf(Profile("p1", "Alice"), Profile("p2", "Probe")),
+                    chosenId = "p1",
+                )
+            val vm = ProfileViewModel(repository, FakeWatchSync())
+
+            vm.state.test {
+                awaitItem()
+                awaitItem() as ProfileUiState.Chosen
+                vm.reopen()
+                awaitItem() as ProfileUiState.Picking
+
+                vm.remove("p2")
+                runCurrent()
+
+                val picking = expectMostRecentItem() as ProfileUiState.Picking
+                assertEquals(listOf(Profile("p1", "Alice")), picking.profiles)
+                assertEquals(true, picking.canStay)
+            }
+        }
+
+    /** Nobody is left to stay as, so the picker has to be answered. */
+    @Test
+    fun removingTheChosenProfileTakesAwayStayAsIAm() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val repository =
+                FakeWatchStateRepository(
+                    initialProfiles = listOf(Profile("p1", "Alice"), Profile("p2", "Bea")),
+                    chosenId = "p1",
+                )
+            val vm = ProfileViewModel(repository, FakeWatchSync())
+
+            vm.state.test {
+                awaitItem()
+                awaitItem() as ProfileUiState.Chosen
+                vm.reopen()
+                awaitItem() as ProfileUiState.Picking
+
+                vm.remove("p1")
+                runCurrent()
+
+                val picking = expectMostRecentItem() as ProfileUiState.Picking
+                assertEquals(listOf(Profile("p2", "Bea")), picking.profiles)
+                assertEquals(false, picking.canStay)
             }
         }
 }

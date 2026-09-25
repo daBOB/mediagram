@@ -48,7 +48,7 @@ class ProgressRecorderTest {
         }
 
     @Test
-    fun aTitleAlreadyWatchedIsNotReStampedOnAnotherFinish() =
+    fun aTitleAlreadyWatchedIsReStampedSoNoOlderPositionComesBack() =
         runTest {
             val repository =
                 FakeWatchStateRepository(
@@ -58,6 +58,6 @@ class ProgressRecorderTest {
 
             recorder.save("s1", atSeconds = 14350.0, observedDurationSeconds = 14400.0)
 
-            assertEquals(listOf("clearProgress s1"), repository.calls)
+            assertEquals(listOf("clearProgress s1", "setWatched s1 true"), repository.calls)
         }
 }

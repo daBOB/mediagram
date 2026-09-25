@@ -21,6 +21,22 @@ export async function syncOnce(sync: Sync, why: string): Promise<void> {
   }
 }
 
+/**
+ * The sync every round goes through, telling open pages when one took
+ * something. Android reloads its snapshot after such a round; without this a
+ * visible web tab kept its old Continue shelf until it was hidden and shown.
+ */
+export function announcingPulls(sync: Sync, events: Pick<CatalogEvents, "stateChanged">): Sync {
+  if (!sync) return null;
+  return {
+    once: async () => {
+      const outcome = await sync.once();
+      if (outcome.pulled > 0) events.stateChanged();
+      return outcome;
+    },
+  };
+}
+
 export class LibraryUpdates {
   private stopped = false;
   private unsubscribe: (() => void) | null = null;

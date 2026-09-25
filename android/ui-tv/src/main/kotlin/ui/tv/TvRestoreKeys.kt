@@ -5,7 +5,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
-import catalog.ResolvedPosition
+import ui.FrameKind
 
 /**
  * The screens of the library that open something else — the catalogue, a
@@ -19,21 +19,21 @@ import catalog.ResolvedPosition
  */
 internal enum class TvPlace { Catalog, Collection, Season, List }
 
-/** Which [TvPlace] a resolved position is, or null for one that opens nothing a viewer comes back to. */
-internal fun placeOf(resolved: ResolvedPosition): TvPlace? =
-    when (resolved) {
-        ResolvedPosition.Catalog -> TvPlace.Catalog
-        is ResolvedPosition.CollectionOpen -> TvPlace.Collection
-        is ResolvedPosition.SeasonOpen -> TvPlace.Season
-        is ResolvedPosition.ListOpen -> TvPlace.List
-        is ResolvedPosition.TitleOpen, is ResolvedPosition.Player, is ResolvedPosition.Menu -> null
+/** Which [TvPlace] the screen on top is (`null` for the catalogue itself), or null for one that opens nothing a viewer comes back to. */
+internal fun placeOf(top: FrameKind?): TvPlace? =
+    when (top) {
+        null -> TvPlace.Catalog
+        FrameKind.COLLECTION -> TvPlace.Collection
+        FrameKind.SEASON -> TvPlace.Season
+        FrameKind.LIST -> TvPlace.List
+        FrameKind.TITLE, FrameKind.PLAYER, FrameKind.MENU, FrameKind.SEARCH, FrameKind.GENRE -> null
     }
 
 /**
  * What each [TvPlace] last opened, by the key its own wall or rows use —
  * so Back lands the remote on the plate or row that was pressed rather than
  * at the top. A phone has no need for this: a touch screen has no focus to
- * put back. Held here rather than beside the positions in `feature:catalog`
+ * put back. Held here rather than beside the shared positions
  * because it is only a fact about how a television draws those positions,
  * not about where the viewer is.
  *

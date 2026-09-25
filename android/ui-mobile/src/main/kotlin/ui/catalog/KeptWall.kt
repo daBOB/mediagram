@@ -7,20 +7,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import catalog.Entry
 import catalog.KeptKind
-import catalog.KidsShelf
 import catalog.SetCard
 import catalog.keyOf
 import catalog.resumeLine
@@ -46,6 +47,8 @@ internal fun KeptWall(
     watch: WatchSnapshot,
     columns: Int,
     onOpenTitle: (setId: String) -> Unit,
+    heldIds: Set<String> = emptySet(),
+    onFinish: ((setId: String) -> Unit)? = null,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         WallHeading(kind.label, sets.size)
@@ -63,16 +66,27 @@ internal fun KeptWall(
             verticalArrangement = Arrangement.spacedBy(Spacing.medium),
         ) {
             items(items = sets, key = MediaSet::setId) { set ->
-                SetPlate(
-                    card =
-                        SetCard(
+                Column {
+                    SetPlate(
+                        card = SetCard(
                             set = set,
                             caption = resumeLine(positions[set.setId]),
                             progress = watchedFractionOf(positions[set.setId]),
                             watched = set.setId in watchedIds,
+                            held = set.setId in heldIds,
                         ),
-                    onClick = { onOpenTitle(set.setId) },
-                )
+                        onClick = { onOpenTitle(set.setId) },
+                    )
+                    // Under the plate rather than on it — `withAction` in the
+                    // web's `shelf-view.js` keeps it beside the card for the
+                    // same reason: a control of its own, not one tap away
+                    // from starting the film by mistake.
+                    if (onFinish != null) {
+                        TextButton(onClick = { onFinish(set.setId) }, modifier = Modifier.align(Alignment.End)) {
+                            Text("Mark finished")
+                        }
+                    }
+                }
             }
         }
     }
@@ -86,19 +100,15 @@ internal fun KeptWall(
  * two.
  */
 @Composable
-private fun WallHeading(
-    title: String,
-    total: Int,
-) {
+private fun WallHeading(title: String, total: Int) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.medium, vertical = Spacing.small)) {
         Text(
-            text =
-                buildAnnotatedString {
-                    append(title)
-                    withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)) {
-                        append(" · $total")
-                    }
-                },
+            text = buildAnnotatedString {
+                append(title)
+                withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)) {
+                    append(" · $total")
+                }
+            },
             style = MaterialTheme.typography.titleLarge,
         )
         HorizontalDivider(
@@ -109,66 +119,3 @@ private fun WallHeading(
     }
 }
 
-/**
- * The Kids tab — `viewKids` in app.js: what the ratings put there, then what
- * was marked by hand, each under its own heading once there is more than one
- * kind to tell apart. A show's card opens the show, as it does on its own
- * shelf; a hand-marked title is a plate, as on the other kept walls.
- */
-@Composable
-internal fun KidsWall(
-    shelf: KidsShelf,
-    watch: WatchSnapshot,
-    columns: Int,
-    onOpenTitle: (setId: String) -> Unit,
-    onOpenCollection: (key: String) -> Unit,
-) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        WallHeading(KeptKind.KIDS.label, shelf.total)
-        if (shelf.total == 0) {
-            CenteredMessage(KeptKind.KIDS.empty)
-            return
-        }
-        val positions = watch.progress.associateBy { it.setId }
-        val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
-        val showHeadings = listOf(shelf.films.isNotEmpty(), shelf.series.isNotEmpty(), shelf.byHand.isNotEmpty()).count { it } > 1
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(columns),
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(Spacing.medium),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(Spacing.medium),
-        ) {
-            for ((label, entries) in listOf("Movies" to shelf.films, "Series" to shelf.series)) {
-                if (entries.isEmpty()) continue
-                if (showHeadings) {
-                    item(key = "heading-$label", span = { GridItemSpan(maxLineSpan) }) {
-                        Text(text = label, style = MaterialTheme.typography.titleMedium)
-                    }
-                }
-                items(items = entries, key = { keyOf(it) }) { entry ->
-                    EntryCard(entry, positions, watchedIds, onOpenTitle, onOpenCollection)
-                }
-            }
-            if (shelf.byHand.isNotEmpty()) {
-                if (showHeadings) {
-                    item(key = "heading-Marked by hand", span = { GridItemSpan(maxLineSpan) }) {
-                        Text(text = "Marked by hand", style = MaterialTheme.typography.titleMedium)
-                    }
-                }
-                items(items = shelf.byHand, key = { "hand-${it.setId}" }) { set ->
-                    SetPlate(
-                        card =
-                            SetCard(
-                                set = set,
-                                caption = resumeLine(positions[set.setId]),
-                                progress = watchedFractionOf(positions[set.setId]),
-                                watched = set.setId in watchedIds,
-                            ),
-                        onClick = { onOpenTitle(set.setId) },
-                    )
-                }
-            }
-        }
-    }
-}

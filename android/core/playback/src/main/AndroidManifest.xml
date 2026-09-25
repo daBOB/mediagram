@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- SystemUnmeteredNetworkCheck reads ConnectivityManager.isActiveNetworkMetered,
+         which needs this — declared here rather than left to the consuming
+         app, since it is this module's own call that needs it. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+</manifest>

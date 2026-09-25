@@ -359,6 +359,27 @@ export function setWatched(setId, finished) {
 }
 
 /**
+ * Treats a title as watched to the end: what the player does when the credits
+ * roll, and what a viewer does by hand for something finished elsewhere or
+ * given up on.
+ *
+ * The position goes, because a finished title has nowhere to resume to. The
+ * fact that it finished stays, because otherwise nothing anywhere would
+ * remember it was ever watched.
+ *
+ * Stamped now even when the title was finished before. The completion is the
+ * only tombstone the deleted position has: another device still holding the
+ * position saved while re-watching keeps it on the next merge unless this
+ * completion is newer. Next up is unaffected — it walks on to the first
+ * unfinished episode — and the show rising on the start page is true.
+ * @returns {void} Local update only; persistence is best-effort.
+ */
+export function markFinished(setId) {
+  clearProgress(setId);
+  setWatched(setId, true);
+}
+
+/**
  * The titles marked as a child's.
  *
  * Read once at startup and not per profile, because the mark belongs to the

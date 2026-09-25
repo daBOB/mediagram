@@ -56,10 +56,10 @@ class TvCatalogScreenStateTest {
     }
 
     @Test
-    fun theMastheadCarriesHomeTheShelvesTheFourKeptEntriesAndTheViewer() {
+    fun theMastheadCarriesHomeTheShelvesTheThreeKeptEntriesAndTheViewer() {
         show(ready(films(2) + courses(1)))
 
-        for (entry in listOf("Home", "Movies", "Tutorials", "Continue", "Watchlist", "Collections", "Kids", "Ada")) {
+        for (entry in listOf("Home", "Movies", "Tutorials", "Continue", "Watchlist", "Collections", "Ada")) {
             compose.onAllNodesWithText(entry).fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "missing $entry" } }
         }
     }
@@ -266,4 +266,7 @@ internal fun set(
     posterPath = null,
     totalBytes = 0,
     addedAt = addedAt,
+    // The index's own title, as a real set carries it: the player's title
+    // line reads this rather than the filled-in [MediaSet.title].
+    rawTitle = title,
 )

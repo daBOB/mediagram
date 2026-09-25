@@ -21,16 +21,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.media3.common.Player
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
 import androidx.tv.material3.Text
+import data.ResumePoint
 import designsystem.Overscan
 import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import model.MediaSet
-import model.endsAt
 import playback.PlaybackTotals
 import player.PlayerMarksState
 import player.READOUT_TICK_MS
 import player.clockTime
+import player.endsAtLabel
 import ui.player.SCRIM_ALPHA
 import java.time.Instant
 
@@ -48,6 +49,8 @@ internal class TvPlayerExtras(
     val statsShown: Boolean,
     val onToggleStats: () -> Unit,
     val totals: () -> PlaybackTotals,
+    /** Whether this device holds the title in full, which the statistics' buffer row reports as "cached". */
+    val held: Boolean = false,
 )
 
 /**
@@ -92,6 +95,7 @@ internal fun TvPlayerControls(
                 TvStatsOverlay(
                     player = player,
                     totals = extras.totals,
+                    held = extras.held,
                     modifier = Modifier.padding(start = Overscan.horizontal, top = Spacing.medium),
                 )
             }
@@ -147,11 +151,12 @@ private fun TvPlayerClock(
 }
 
 /**
- * `ends 21:40`, or nothing. The web's rule: the catalogue's runtime first,
- * the player's own length only when the catalogue has none, divided by the
- * playback speed so a viewer at 1.5× is told the truth — and blank when
- * nothing knows the length, because an end time projected from an unknown
- * one is a guess dressed as a fact.
+ * `ends 21:40`, or nothing — the phone's own line ([endsAtLabel]) over the
+ * phone's own choice of length ([ResumePoint.trustedRuntime]): the
+ * catalogue's runtime first, the player's own only when the catalogue has
+ * none, divided by the playback speed so a viewer at 1.5× is told the
+ * truth, and blank when nothing knows the length, because an end time
+ * projected from an unknown one is a guess dressed as a fact.
  */
 internal fun endsLine(
     set: MediaSet?,
@@ -160,9 +165,17 @@ internal fun endsLine(
     speed: Float,
     now: Instant = Instant.now(),
 ): String {
-    val runtimeSeconds = set?.durationSecs?.takeIf { it > 0 }?.toDouble() ?: (durationMs / 1_000.0)
-    if (runtimeSeconds <= 0) return ""
-    val rate = if (speed > 0) speed else 1f
-    val at = endsAt(maxOf(0.0, runtimeSeconds - positionMs / 1_000.0) / rate, now)
-    return if (at.isEmpty()) "" else "ends $at"
+    val runtimeSeconds =
+        ResumePoint
+            .trustedRuntime(
+                catalogued = set?.durationSecs?.toDouble(),
+                observed = durationMs.takeIf { it > 0 }?.let { it / 1_000.0 },
+                direct = true,
+            ).takeIf { it > 0 }
+    return endsAtLabel(
+        runtimeSeconds = runtimeSeconds,
+        positionSeconds = positionMs.coerceAtLeast(0L) / 1_000.0,
+        speed = speed,
+        nowMs = now.toEpochMilli(),
+    )
 }

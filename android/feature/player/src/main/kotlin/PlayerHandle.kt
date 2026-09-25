@@ -1,5 +1,6 @@
 package player
 
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import kotlinx.coroutines.flow.StateFlow
 
@@ -19,12 +20,13 @@ interface PlayerHandle {
      */
     val player: StateFlow<Player?>
 
-    /** @param startAtMs where to seek once the set is loaded; 0 for the top. */
-    fun open(
-        setId: String,
-        startAtMs: Long,
-    )
-
+    /**
+     * @param startAtMs where to seek once the set is loaded; 0 for the top.
+     * @param playWhenReady whether to start on its own once ready — false
+     * for an up-next switch waiting on the autoplay gate; true (the
+     * default) everywhere else, so every existing caller is unchanged.
+     */
+    fun open(setId: String, startAtMs: Long, playWhenReady: Boolean = true)
     fun setListener(listener: Listener?)
 
     /** Stops playback and releases the decoder/audio focus the player is holding. */
@@ -45,10 +47,49 @@ interface PlayerHandle {
     /** As [positionMs], for the set's length; `null` on the same terms, or while media3 hasn't measured it yet. */
     fun durationMs(): Long?
 
+    /** As [positionMs], for how far playback is buffered ahead — the autoplay gate's own reading of the same trust rule. */
+    fun bufferedPositionMs(): Long?
+
+    /** Starts (or resumes) playback on whatever is currently open — the autoplay gate's "now", once it is satisfied. */
+    fun play()
+
+    /** Pauses whatever is currently open, without releasing it — the picture-in-picture window's own dismissal, not a full [stop]; see `PlayerViewModel.pauseForPipDismissal`. */
+    fun pause()
+
+    /**
+     * Whether the loader is still fetching — `false` once it has stopped,
+     * whether because there is nothing left to fetch or because the load
+     * control has decided it is holding enough. The autoplay gate reads
+     * this beside [bufferedPositionMs]: media3's default load control caps
+     * how far it will ever buffer ahead well under the web's own 60s
+     * threshold, so a loader that has stopped with anything at all held is
+     * as ready as it is ever going to get.
+     */
+    fun isLoading(): Boolean
+
+    /**
+     * Sets the transport's playback rate. Queued rather than dropped when
+     * there is no player yet — [DefaultPlayerHandle] applies it the moment
+     * one exists, the same as a queued [open].
+     */
+    fun setPlaybackSpeed(rate: Float)
+
+    /**
+     * Updates the open title's metadata — what `PlaybackService`'s
+     * `MediaSession` publishes to the lock screen, the notification and a
+     * headset's own display. A no-op with nothing open.
+     */
+    fun setMetadata(metadata: MediaMetadata)
+
     /** Playback facts; [PlayerViewModel] maps these onto [PlayerUiState]. */
     interface Listener {
         fun onPlayingChanged(isPlaying: Boolean)
-
         fun onError(message: String)
+
+        /** The open title ran out, or was seeked past its last frame — a no-op default, since only the up-next controller acts on it. */
+        fun onEnded() {}
+
+        /** A seek landed — a no-op default; only the up-next controller acts on it, to update the card while paused (`timeupdate` fires on a seek too). */
+        fun onSeeked() {}
     }
 }

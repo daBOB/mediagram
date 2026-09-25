@@ -23,6 +23,7 @@ import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import player.PlayerUiState
 import kotlin.test.assertEquals
+import player.setInList
 
 /**
  * The material-rendered notice PlayerScreen shows over the playing screen

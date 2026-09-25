@@ -54,6 +54,9 @@ reqwest = { workspace = true, features = ["rustls-no-provider", "json"] }
 # (`rustls-rustcrypto`) exists but is 0.0.2-alpha and not something to trust
 # with TLS.
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
+# Unicode-aware character classes (`\p{L}`, `\p{N}`) for the search excerpt's
+# word matcher, and the small fixed markdown patterns it strips.
+regex = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
@@ -77,6 +80,8 @@ url = "2"
 uniffi = { version = "0.32.0", features = ["tokio"] }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "io-util", "net", "sync", "time"] }
 webpki-roots = "1"
+icu_collator = { version = "2.2.1", features = ["compiled_data"] }
+icu_locale_core = "2.2.0"
 
 # Exactly one sqlite3 may end up in the binary, and which crate supplies it
 # differs by platform. Both shapes are spelled per-target so that a host build

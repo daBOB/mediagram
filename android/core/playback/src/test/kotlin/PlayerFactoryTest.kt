@@ -115,4 +115,24 @@ class PlayerFactoryTest {
                 player.release()
             }
         }
+
+    /**
+     * This app's subtitles are the index's own VTT text, drawn by
+     * `SubtitleLayer` — never a container's embedded track. Disabling the
+     * type outright is what keeps a forced or default track from a
+     * container ever flashing up uninvited, matching the web, which never
+     * extracts one to begin with.
+     */
+    @Test
+    fun theTextRendererIsDisabled() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        val player = buildPlayer(context, PlaybackCounters()) { FakeCore() }
+
+        try {
+            assertTrue(player.trackSelectionParameters.disabledTrackTypes.contains(C.TRACK_TYPE_TEXT))
+        } finally {
+            player.release()
+        }
+    }
 }

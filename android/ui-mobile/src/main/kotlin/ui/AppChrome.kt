@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,6 +26,7 @@ import androidx.compose.ui.semantics.semantics
 import catalog.Destination
 import catalog.backLabelFor
 import catalog.barTitleFor
+import catalog.showsSearchAction
 import ui.setup.StartOverConfirmation
 
 /**
@@ -32,10 +34,7 @@ import ui.setup.StartOverConfirmation
  * counterpart to the web's `#who` button. Shown as the chosen name; tapping
  * it reopens [ui.ProfilePickerScreen] over whatever is on screen.
  */
-data class ProfileBarState(
-    val name: String,
-    val onChoose: () -> Unit,
-)
+data class ProfileBarState(val name: String, val onChoose: () -> Unit)
 
 /**
  * The app's one piece of chrome: a bar with a title, a way back where the
@@ -55,6 +54,12 @@ data class ProfileBarState(
  * [StartOverConfirmation] is the shared dialog behind both. The menu itself
  * — the icon, the dropdown, and what each item does — is [OverflowMenu];
  * this only owns the confirmation the destructive item leads to.
+ *
+ * [onSearch] sits beside the profile button on every screen this renders
+ * except the search screen itself — the touch equivalent of the web's own
+ * search box, which sits in its header on every page rather than only on
+ * the catalog's own, but an icon that reopens the screen already on
+ * screen is a control with nothing left for it to do.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,6 +68,7 @@ fun LibraryScaffold(
     onBack: () -> Unit,
     menu: MenuActions,
     profile: ProfileBarState,
+    onSearch: () -> Unit,
     content: @Composable () -> Unit,
 ) {
     var askingStartOver by remember { mutableStateOf(false) }
@@ -76,13 +82,12 @@ fun LibraryScaffold(
                 // plates are tipped onto, below it. A bar lighter than the
                 // sheet it sits over inverts the one relation the palette
                 // names.
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background,
-                        titleContentColor = MaterialTheme.colorScheme.onSurface,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
                 navigationIcon = {
                     if (backLabel != null) {
                         IconButton(
@@ -97,6 +102,12 @@ fun LibraryScaffold(
                     }
                 },
                 actions = {
+                    if (showsSearchAction(destination)) {
+                        IconButton(
+                            onClick = onSearch,
+                            modifier = Modifier.semantics { contentDescription = "Search" },
+                        ) { Icon(imageVector = Icons.Default.Search, contentDescription = null) }
+                    }
                     ProfileButton(profile)
                     OverflowMenu(menu = menu, onAskStartOver = { askingStartOver = true })
                 },

@@ -1,0 +1,1143 @@
+{
+  "cases": [
+    {
+      "name": "an umlaut spelled either way finds the title",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Überblick"
+        }
+      ],
+      "query": "ueberblick",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "title",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "part of a word matches, not just the start of one",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Kontoeröffnung"
+        }
+      ],
+      "query": "eroffnung",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "title",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "terms may match different fields of the same set",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Interpretation",
+          "path": "Ausbildung Trading/3. Signal"
+        }
+      ],
+      "query": "signal interpretation",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "title",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "every term has to match somewhere, not just one of them",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Kontoeröffnung",
+          "path": "Basislektionen/5. Broker"
+        },
+        {
+          "setId": "s2",
+          "title": "Broker Vergleich",
+          "path": "Basislektionen/1. Start"
+        }
+      ],
+      "query": "broker kontoeroffnung",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "title",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "a title match comes before a folder match",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Kontoeröffnung",
+          "path": "Basislektionen/5. Broker"
+        },
+        {
+          "setId": "s2",
+          "title": "Broker Vergleich",
+          "path": "Basislektionen/1. Start"
+        }
+      ],
+      "query": "broker",
+      "expect": [
+        {
+          "setId": "s2",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s1",
+          "matched": "path",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "a folder match comes before a summary match",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Interpretation",
+          "summary": "Der Broker spielt hier keine Rolle."
+        },
+        {
+          "setId": "s2",
+          "title": "Kontoeröffnung",
+          "path": "Basislektionen/5. Broker"
+        }
+      ],
+      "query": "broker",
+      "expect": [
+        {
+          "setId": "s2",
+          "matched": "path",
+          "excerpt": null
+        },
+        {
+          "setId": "s1",
+          "matched": "summary",
+          "excerpt": "Der Broker spielt hier keine Rolle."
+        }
+      ]
+    },
+    {
+      "name": "each hit says which field earned it",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Broker Vergleich"
+        },
+        {
+          "setId": "s2",
+          "title": "Kontoeröffnung",
+          "path": "Basislektionen/5. Broker"
+        },
+        {
+          "setId": "s3",
+          "title": "Interpretation",
+          "summary": "Beim Broker einloggen."
+        }
+      ],
+      "query": "broker",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s2",
+          "matched": "path",
+          "excerpt": null
+        },
+        {
+          "setId": "s3",
+          "matched": "summary",
+          "excerpt": "Beim Broker einloggen."
+        }
+      ]
+    },
+    {
+      "name": "a title hit needs no excerpt, the title is already shown",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Broker Vergleich"
+        }
+      ],
+      "query": "broker",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "title",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "markdown in a summary reads as prose in the excerpt",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Optionswissen",
+          "summary": "Ein Satz. **Optionen:** geben dem *Käufer* das ## Recht dazu."
+        }
+      ],
+      "query": "optionen",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "summary",
+          "excerpt": "Ein Satz. Optionen: geben dem Käufer das Recht dazu."
+        }
+      ]
+    },
+    {
+      "name": "the window lands on the match however far into the summary it sits",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Marktlage",
+          "summary": "**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\n**Für größere Märkte** prüfen wir zunächst die Händler.\n\n## Weiter\n\nDie Volatilität entscheidet. Schluss. Schluss. Schluss. Schluss. Schluss. Schluss. Schluss. Schluss. Schluss. Schluss. Schluss. Schluss. Schluss. Schluss. Schluss. Schluss. Schluss. Schluss. Schluss. Schluss. "
+        }
+      ],
+      "query": "volatilitaet",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "summary",
+          "excerpt": "…dler. Weiter Für größere Märkte prüfen wir zunächst die Händler. Weiter Die Volatilität entscheidet. Schluss. Schluss. Schluss. Schluss. Schluss. Schluss. Schluss. Sc…"
+        }
+      ]
+    },
+    {
+      "name": "it stops well short of returning the library",
+      "sets": [
+        {
+          "setId": "s0",
+          "title": "Einführung 0"
+        },
+        {
+          "setId": "s1",
+          "title": "Einführung 1"
+        },
+        {
+          "setId": "s2",
+          "title": "Einführung 2"
+        },
+        {
+          "setId": "s3",
+          "title": "Einführung 3"
+        },
+        {
+          "setId": "s4",
+          "title": "Einführung 4"
+        },
+        {
+          "setId": "s5",
+          "title": "Einführung 5"
+        },
+        {
+          "setId": "s6",
+          "title": "Einführung 6"
+        },
+        {
+          "setId": "s7",
+          "title": "Einführung 7"
+        },
+        {
+          "setId": "s8",
+          "title": "Einführung 8"
+        },
+        {
+          "setId": "s9",
+          "title": "Einführung 9"
+        },
+        {
+          "setId": "s10",
+          "title": "Einführung 10"
+        },
+        {
+          "setId": "s11",
+          "title": "Einführung 11"
+        },
+        {
+          "setId": "s12",
+          "title": "Einführung 12"
+        },
+        {
+          "setId": "s13",
+          "title": "Einführung 13"
+        },
+        {
+          "setId": "s14",
+          "title": "Einführung 14"
+        },
+        {
+          "setId": "s15",
+          "title": "Einführung 15"
+        },
+        {
+          "setId": "s16",
+          "title": "Einführung 16"
+        },
+        {
+          "setId": "s17",
+          "title": "Einführung 17"
+        },
+        {
+          "setId": "s18",
+          "title": "Einführung 18"
+        },
+        {
+          "setId": "s19",
+          "title": "Einführung 19"
+        },
+        {
+          "setId": "s20",
+          "title": "Einführung 20"
+        },
+        {
+          "setId": "s21",
+          "title": "Einführung 21"
+        },
+        {
+          "setId": "s22",
+          "title": "Einführung 22"
+        },
+        {
+          "setId": "s23",
+          "title": "Einführung 23"
+        },
+        {
+          "setId": "s24",
+          "title": "Einführung 24"
+        },
+        {
+          "setId": "s25",
+          "title": "Einführung 25"
+        },
+        {
+          "setId": "s26",
+          "title": "Einführung 26"
+        },
+        {
+          "setId": "s27",
+          "title": "Einführung 27"
+        },
+        {
+          "setId": "s28",
+          "title": "Einführung 28"
+        },
+        {
+          "setId": "s29",
+          "title": "Einführung 29"
+        },
+        {
+          "setId": "s30",
+          "title": "Einführung 30"
+        },
+        {
+          "setId": "s31",
+          "title": "Einführung 31"
+        },
+        {
+          "setId": "s32",
+          "title": "Einführung 32"
+        },
+        {
+          "setId": "s33",
+          "title": "Einführung 33"
+        },
+        {
+          "setId": "s34",
+          "title": "Einführung 34"
+        },
+        {
+          "setId": "s35",
+          "title": "Einführung 35"
+        },
+        {
+          "setId": "s36",
+          "title": "Einführung 36"
+        },
+        {
+          "setId": "s37",
+          "title": "Einführung 37"
+        },
+        {
+          "setId": "s38",
+          "title": "Einführung 38"
+        },
+        {
+          "setId": "s39",
+          "title": "Einführung 39"
+        },
+        {
+          "setId": "s40",
+          "title": "Einführung 40"
+        },
+        {
+          "setId": "s41",
+          "title": "Einführung 41"
+        },
+        {
+          "setId": "s42",
+          "title": "Einführung 42"
+        },
+        {
+          "setId": "s43",
+          "title": "Einführung 43"
+        },
+        {
+          "setId": "s44",
+          "title": "Einführung 44"
+        },
+        {
+          "setId": "s45",
+          "title": "Einführung 45"
+        },
+        {
+          "setId": "s46",
+          "title": "Einführung 46"
+        },
+        {
+          "setId": "s47",
+          "title": "Einführung 47"
+        },
+        {
+          "setId": "s48",
+          "title": "Einführung 48"
+        },
+        {
+          "setId": "s49",
+          "title": "Einführung 49"
+        },
+        {
+          "setId": "s50",
+          "title": "Einführung 50"
+        },
+        {
+          "setId": "s51",
+          "title": "Einführung 51"
+        },
+        {
+          "setId": "s52",
+          "title": "Einführung 52"
+        },
+        {
+          "setId": "s53",
+          "title": "Einführung 53"
+        },
+        {
+          "setId": "s54",
+          "title": "Einführung 54"
+        },
+        {
+          "setId": "s55",
+          "title": "Einführung 55"
+        },
+        {
+          "setId": "s56",
+          "title": "Einführung 56"
+        },
+        {
+          "setId": "s57",
+          "title": "Einführung 57"
+        },
+        {
+          "setId": "s58",
+          "title": "Einführung 58"
+        },
+        {
+          "setId": "s59",
+          "title": "Einführung 59"
+        }
+      ],
+      "query": "einfuhrung",
+      "expect": [
+        {
+          "setId": "s0",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s1",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s10",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s11",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s12",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s13",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s14",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s15",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s16",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s17",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s18",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s19",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s2",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s20",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s21",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s22",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s23",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s24",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s25",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s26",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s27",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s28",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s29",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s3",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s30",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s31",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s32",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s33",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s34",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s35",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s36",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s37",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s38",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s39",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s4",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s40",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s41",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s42",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s43",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s44",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s45",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s46",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s47",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s48",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s49",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s5",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s50",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s51",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s52",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s53",
+          "matched": "title",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "tie-break: a plain number outranks a percent sign at the same value",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "10 Prozent Positionsgröße"
+        },
+        {
+          "setId": "s2",
+          "title": "10% Positionsgröße – Teil 1"
+        }
+      ],
+      "query": "Positionsgröße",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s2",
+          "matched": "title",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "tie-break: a spelled-out dash title outranks a trailing number",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Descendants - Die Nachkommen"
+        },
+        {
+          "setId": "s2",
+          "title": "Descendants 2"
+        }
+      ],
+      "query": "Descendants",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s2",
+          "matched": "title",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "tie-break: a dash-subtitled film outranks its own sequel number",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Alien - Das unheimliche Wesen…"
+        },
+        {
+          "setId": "s2",
+          "title": "Alien 3"
+        }
+      ],
+      "query": "Alien",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s2",
+          "matched": "title",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "tie-break: a colon in the title does not change dash-vs-roman-numeral order",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Mission: Impossible - Phantom Protokoll"
+        },
+        {
+          "setId": "s2",
+          "title": "Mission: Impossible III"
+        }
+      ],
+      "query": "Mission Impossible",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s2",
+          "matched": "title",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "tie-break: leading punctuation sorts before a plain word",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "(Bonus) a"
+        },
+        {
+          "setId": "s2",
+          "title": "Abend a"
+        }
+      ],
+      "query": "a",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s2",
+          "matched": "title",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "tie-break: lower case sorts before the same word capitalised",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "anna"
+        },
+        {
+          "setId": "s2",
+          "title": "Anna"
+        }
+      ],
+      "query": "anna",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s2",
+          "matched": "title",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "titles starting with punctuation collate alongside plain ones",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "(500) Days of Summer"
+        },
+        {
+          "setId": "s2",
+          "title": "#Zeitgeist"
+        },
+        {
+          "setId": "s3",
+          "title": "Zeitgeist Analyse"
+        }
+      ],
+      "query": "e",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s2",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s3",
+          "matched": "title",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "duplicate titles do not reorder each other",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Wiederholung"
+        },
+        {
+          "setId": "s2",
+          "title": "Wiederholung"
+        }
+      ],
+      "query": "wiederholung",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s2",
+          "matched": "title",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "a null title compares as empty rather than panicking",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": null,
+          "show": "Fallstudie"
+        },
+        {
+          "setId": "s2",
+          "title": "Analyse Alpha",
+          "show": "Fallstudie"
+        }
+      ],
+      "query": "Fallstudie",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "show",
+          "excerpt": null
+        },
+        {
+          "setId": "s2",
+          "matched": "show",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "a hit matches on the show field",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Lektion 1",
+          "show": "Marktzyklen"
+        }
+      ],
+      "query": "marktzyklen",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "show",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "a hit matches on the chap field",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Lektion 1",
+          "chap": "Fortgeschrittene Strategien"
+        }
+      ],
+      "query": "fortgeschrittene",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "chap",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "the sharp s and its ASCII spelling find the same title",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Straße"
+        }
+      ],
+      "query": "strasse",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "title",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "the capital sharp s folds the same as the lower case one",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "GROẞE VERÄNDERUNG"
+        }
+      ],
+      "query": "grosse",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "title",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "an empty query in the shared fixture finds nothing",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Irgendwas"
+        }
+      ],
+      "query": "",
+      "expect": []
+    },
+    {
+      "name": "a whitespace-only query finds nothing",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Irgendwas"
+        }
+      ],
+      "query": "   ",
+      "expect": []
+    },
+    {
+      "name": "a punctuation-only query finds nothing",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Irgendwas"
+        }
+      ],
+      "query": "!!!",
+      "expect": []
+    },
+    {
+      "name": "excerpt: a match at the very start of the summary carries no leading ellipsis",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Marktbericht",
+          "summary": "Volatilität steigt heute deutlich stärker als erwartet. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. Ende. "
+        }
+      ],
+      "query": "volatilitaet",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "summary",
+          "excerpt": "Volatilität steigt heute deutlich stärker als erwartet. Ende. Ende. Ende. Ende. Ende. Ende…"
+        }
+      ]
+    },
+    {
+      "name": "excerpt: a match at the very end of the summary carries no trailing ellipsis",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Marktbericht",
+          "summary": "Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Der Broker prüft heute die Volatilität am Ende."
+        }
+      ],
+      "query": "volatilitaet",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "summary",
+          "excerpt": "…nfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Anfang. Der Broker prüft heute die Volatilität am Ende."
+        }
+      ]
+    },
+    {
+      "name": "excerpt: the window's cut sits beside multi-byte characters without corrupting them",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Marktbericht",
+          "summary": "Über Märkte über Grenzen über Zeiten Über Märkte über Grenzen über Zeiten Über Märkte über Grenzen über Zeiten Über Märkte über Grenzen über Zeiten Über Märkte über Grenzen über Zeiten Über Märkte über Grenzen über Zeiten Über Märkte über Grenzen über Zeiten Über Märkte über Grenzen über Zeiten Über Märkte über Grenzen über Zeiten Über Märkte über Grenzen über Zeiten Volatilität über hinweg über Meere über Länder über hinweg über Meere über Länder über hinweg über Meere über Länder über hinweg über Meere über Länder über hinweg über Meere über Länder über hinweg über Meere über Länder über hinweg über Meere über Länder über hinweg über Meere über Länder über hinweg über Meere über Länder über hinweg über Meere über Länder "
+        }
+      ],
+      "query": "volatilitaet",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "summary",
+          "excerpt": "…zen über Zeiten Über Märkte über Grenzen über Zeiten Über Märkte über Grenzen über Zeiten Volatilität über hinweg über Meere über Länder über hinweg über Meere über Länder über hin…"
+        }
+      ]
+    },
+    {
+      "name": "a decomposed word in the summary does not crash folding, and a title match still wins",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Übersicht",
+          "summary": "Übersicht: historische Kurse im Rückblick."
+        }
+      ],
+      "query": "ubersicht",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "title",
+          "excerpt": null
+        }
+      ]
+    }
+  ]
+}

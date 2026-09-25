@@ -158,4 +158,10 @@ internal fun actionViewModel(
 
         override suspend fun awaitFirstRound() = Unit
     },
+    FakeCatalogRepository(),
+    FakePlayerPreferences(),
+    FakeSubtitleTrackSource(),
+    FakePlaybackServiceController(),
+    FakeSeriesPreloader(),
+    FakeHeldSets(),
 )

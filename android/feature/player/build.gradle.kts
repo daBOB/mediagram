@@ -24,6 +24,11 @@ dependencies {
     // Only for the ExoPlayer instance behind PlayerHandle and the DI module
     // that provides it — no composable here ever touches media3 directly.
     implementation(project(":core:playback"))
+    // PlaybackService's MediaSession/MediaSessionService — core:playback's
+    // own media3 dependency stops at exoplayer/datasource/ui-compose,
+    // deliberately (see that module's build script); the session artifact
+    // belongs to whichever module actually builds a session.
+    implementation(libs.findLibrary("androidx.media3.session").get())
 
     testImplementation(libs.findLibrary("mockk").get())
     // DefaultPlayerHandle.open() builds a real android.net.Uri (via

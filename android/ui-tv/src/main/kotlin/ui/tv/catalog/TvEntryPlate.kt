@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import catalog.Entry
 import catalog.SetCard
-import catalog.episodeLabel
+import model.episodeLabel
 import catalog.extentOf
 import catalog.factsLine
 import catalog.watchedFractionOf

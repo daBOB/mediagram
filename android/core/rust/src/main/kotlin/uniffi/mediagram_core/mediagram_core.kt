@@ -716,6 +716,14 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_next_library_event(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_preferences(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_set_preference(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_search(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_set_text(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_choose_profile(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_chosen_profile(
@@ -723,6 +731,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_mediagram_core_checksum_method_core_clear_progress(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_create_profile(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_delete_profile(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_profiles(
     ): Int
@@ -812,6 +822,14 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_next_library_event(`ptr`: Long,`handle`: RustBuffer.ByValue,`ownDevice`: RustBuffer.ByValue,
     ): Long
+    external fun uniffi_mediagram_core_fn_method_core_preferences(`ptr`: Long,`profileId`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_set_preference(`ptr`: Long,`profileId`: RustBuffer.ByValue,`scope`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_search(`ptr`: Long,`query`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_set_text(`ptr`: Long,`setId`: RustBuffer.ByValue,`kind`: RustBuffer.ByValue,`lang`: RustBuffer.ByValue,
+    ): Long
     external fun uniffi_mediagram_core_fn_method_core_choose_profile(`ptr`: Long,`id`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_chosen_profile(`ptr`: Long,
@@ -819,6 +837,8 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_clear_progress(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_create_profile(`ptr`: Long,`name`: RustBuffer.ByValue,`kids`: Byte,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_delete_profile(`ptr`: Long,`id`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_profiles(`ptr`: Long,
     ): Long
@@ -1019,6 +1039,18 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_next_library_event() and 0xFFFF) != 13174) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_preferences() and 0xFFFF) != 41509) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_preference() and 0xFFFF) != 56860) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_search() and 0xFFFF) != 53359) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_text() and 0xFFFF) != 64077) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if ((lib.uniffi_mediagram_core_checksum_method_core_choose_profile() and 0xFFFF) != 50286) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1029,6 +1061,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_create_profile() and 0xFFFF) != 6077) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_delete_profile() and 0xFFFF) != 46619) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_profiles() and 0xFFFF) != 5418) {
@@ -1701,6 +1736,34 @@ public interface CoreInterface {
     suspend fun `nextLibraryEvent`(`handle`: kotlin.String, `ownDevice`: kotlin.String): LibraryEvent
 
     /**
+     * Every choice this profile has made, in one round trip: there are a
+     * handful of these per show, and a page needs one the instant a title
+     * opens — exactly when it has no time to ask for it.
+     */
+    suspend fun `preferences`(`profileId`: kotlin.String): List<PreferenceRow>
+
+    /**
+     * Remembers a choice, or forgets it (`value: None`). `false` when
+     * `scope` or `name` has nothing left after trimming, or nothing could
+     * be written.
+     */
+    suspend fun `setPreference`(`profileId`: kotlin.String, `scope`: kotlin.String, `name`: kotlin.String, `value`: kotlin.String?): kotlin.Boolean
+
+    /**
+     * The catalog's sets matching every word of `query`, best first.
+     * Empty for an empty query or a catalog that has not loaded yet —
+     * neither is an error, both are "nothing to show".
+     */
+    suspend fun `search`(`query`: kotlin.String): List<SearchHit>
+
+    /**
+     * `kind` is `"summary"` or `"subtitle"`; anything else answers `None`
+     * without touching the database — the same refusal `catalog_assets::text`
+     * applies to a kind it does not know.
+     */
+    suspend fun `setText`(`setId`: kotlin.String, `kind`: kotlin.String, `lang`: kotlin.String): kotlin.String?
+
+    /**
      * Records the choice. `false` when `id` names no profile, or nothing
      * could be written.
      */
@@ -1717,6 +1780,14 @@ public interface CoreInterface {
     suspend fun `clearProgress`(`profileId`: kotlin.String, `setId`: kotlin.String)
 
     suspend fun `createProfile`(`name`: kotlin.String, `kids`: kotlin.Boolean): Profile?
+
+    /**
+     * Takes everything that was theirs with it — every table cascades.
+     * `chosen_profile` clears itself the moment this was the profile it
+     * named: see `profiles::chosen`, which checks a profile still exists on
+     * every read rather than trusting what was last written.
+     */
+    suspend fun `deleteProfile`(`id`: kotlin.String): kotlin.Boolean
 
     /**
      * Who watches this library. Empty until someone says.
@@ -2361,6 +2432,115 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
+     * Every choice this profile has made, in one round trip: there are a
+     * handful of these per show, and a page needs one the instant a title
+     * opens — exactly when it has no time to ask for it.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `preferences`(`profileId`: kotlin.String) : List<PreferenceRow> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_preferences(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypePreferenceRow.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Remembers a choice, or forgets it (`value: None`). `false` when
+     * `scope` or `name` has nothing left after trimming, or nothing could
+     * be written.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setPreference`(`profileId`: kotlin.String, `scope`: kotlin.String, `name`: kotlin.String, `value`: kotlin.String?) : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_set_preference(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`scope`),
+        FfiConverterString.lower(`name`),
+        FfiConverterOptionalString.lower(`value`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * The catalog's sets matching every word of `query`, best first.
+     * Empty for an empty query or a catalog that has not loaded yet —
+     * neither is an error, both are "nothing to show".
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `search`(`query`: kotlin.String) : List<SearchHit> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_search(
+                uniffiHandle,
+
+        FfiConverterString.lower(`query`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypeSearchHit.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * `kind` is `"summary"` or `"subtitle"`; anything else answers `None`
+     * without touching the database — the same refusal `catalog_assets::text`
+     * applies to a kind it does not know.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setText`(`setId`: kotlin.String, `kind`: kotlin.String, `lang`: kotlin.String) : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_set_text(
+                uniffiHandle,
+
+        FfiConverterString.lower(`setId`),
+        FfiConverterString.lower(`kind`),
+        FfiConverterString.lower(`lang`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
      * Records the choice. `false` when `id` names no profile, or nothing
      * could be written.
      */
@@ -2450,6 +2630,33 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterOptionalTypeProfile.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Takes everything that was theirs with it — every table cascades.
+     * `chosen_profile` clears itself the moment this was the profile it
+     * named: see `profiles::chosen`, which checks a profile still exists on
+     * every read rather than trusting what was last written.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `deleteProfile`(`id`: kotlin.String) : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_delete_profile(
+                uniffiHandle,
+
+        FfiConverterString.lower(`id`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
@@ -3102,6 +3309,52 @@ public object FfiConverterTypeListRow: FfiConverterRustBuffer<ListRow> {
 
 
 
+/**
+ * One remembered choice.
+ */
+data class PreferenceRow (
+    var `scope`: kotlin.String
+    ,
+    var `name`: kotlin.String
+    ,
+    var `value`: kotlin.String
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePreferenceRow: FfiConverterRustBuffer<PreferenceRow> {
+    override fun read(buf: ByteBuffer): PreferenceRow {
+        return PreferenceRow(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: PreferenceRow) = (
+            FfiConverterString.allocationSize(value.`scope`) +
+            FfiConverterString.allocationSize(value.`name`) +
+            FfiConverterString.allocationSize(value.`value`)
+    )
+
+    override fun write(value: PreferenceRow, buf: ByteBuffer) {
+            FfiConverterString.write(value.`scope`, buf)
+            FfiConverterString.write(value.`name`, buf)
+            FfiConverterString.write(value.`value`, buf)
+    }
+}
+
+
+
 data class Profile (
     var `id`: kotlin.String
     ,
@@ -3205,6 +3458,60 @@ public object FfiConverterTypeProgressRow: FfiConverterRustBuffer<ProgressRow> {
 
 
 /**
+ * One hit: which set, which field earned it, and the words around a
+ * summary match. Never title, path or any other field a caller already
+ * holds — Kotlin already has the full `SetSummary` list from `list_sets`
+ * and joins this back onto it by `set_id`.
+ */
+data class SearchHit (
+    var `setId`: kotlin.String
+    ,
+    /**
+     * Which field this hit was found on: `"title"`, `"show"`, `"chap"`,
+     * `"path"` or `"summary"` — the same words the web's `/api/search`
+     * answers.
+     */
+    var `matched`: kotlin.String
+    ,
+    var `excerpt`: kotlin.String?
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSearchHit: FfiConverterRustBuffer<SearchHit> {
+    override fun read(buf: ByteBuffer): SearchHit {
+        return SearchHit(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: SearchHit) = (
+            FfiConverterString.allocationSize(value.`setId`) +
+            FfiConverterString.allocationSize(value.`matched`) +
+            FfiConverterOptionalString.allocationSize(value.`excerpt`)
+    )
+
+    override fun write(value: SearchHit, buf: ByteBuffer) {
+            FfiConverterString.write(value.`setId`, buf)
+            FfiConverterString.write(value.`matched`, buf)
+            FfiConverterOptionalString.write(value.`excerpt`, buf)
+    }
+}
+
+
+
+/**
  * One title, flattened for a player that never sees `Episode`, `set_id`
  * internals, or where the bytes live.
  */
@@ -3265,6 +3572,23 @@ data class SetSummary (
      * its show's. Named as the web player names it.
      */
     var `fsk`: kotlin.String?
+    ,
+    /**
+     * The provider's genres for this title. A series carries its show's,
+     * the way `fsk` does — see `store::list_sets`, which attaches all four
+     * of these by poster key rather than storing them on the row.
+     */
+    var `genres`: List<kotlin.String>
+    ,
+    /**
+     * Languages this set has a subtitle track for, sorted.
+     */
+    var `subtitles`: List<kotlin.String>
+    ,
+    /**
+     * Whether the index holds a plot summary for this set.
+     */
+    var `hasSummary`: kotlin.Boolean
 
 ){
 
@@ -3302,6 +3626,9 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterUInt.read(buf),
             FfiConverterLong.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterSequenceString.read(buf),
+            FfiConverterSequenceString.read(buf),
+            FfiConverterBoolean.read(buf),
         )
     }
 
@@ -3326,7 +3653,10 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterULong.allocationSize(value.`total`) +
             FfiConverterUInt.allocationSize(value.`partCount`) +
             FfiConverterLong.allocationSize(value.`addedAt`) +
-            FfiConverterOptionalString.allocationSize(value.`fsk`)
+            FfiConverterOptionalString.allocationSize(value.`fsk`) +
+            FfiConverterSequenceString.allocationSize(value.`genres`) +
+            FfiConverterSequenceString.allocationSize(value.`subtitles`) +
+            FfiConverterBoolean.allocationSize(value.`hasSummary`)
     )
 
     override fun write(value: SetSummary, buf: ByteBuffer) {
@@ -3351,6 +3681,9 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterUInt.write(value.`partCount`, buf)
             FfiConverterLong.write(value.`addedAt`, buf)
             FfiConverterOptionalString.write(value.`fsk`, buf)
+            FfiConverterSequenceString.write(value.`genres`, buf)
+            FfiConverterSequenceString.write(value.`subtitles`, buf)
+            FfiConverterBoolean.write(value.`hasSummary`, buf)
     }
 }
 
@@ -4157,6 +4490,34 @@ public object FfiConverterSequenceTypeListRow: FfiConverterRustBuffer<List<ListR
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypePreferenceRow: FfiConverterRustBuffer<List<PreferenceRow>> {
+    override fun read(buf: ByteBuffer): List<PreferenceRow> {
+        val len = buf.getInt()
+        return List<PreferenceRow>(len) {
+            FfiConverterTypePreferenceRow.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<PreferenceRow>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypePreferenceRow.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<PreferenceRow>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypePreferenceRow.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeProfile: FfiConverterRustBuffer<List<Profile>> {
     override fun read(buf: ByteBuffer): List<Profile> {
         val len = buf.getInt()
@@ -4203,6 +4564,34 @@ public object FfiConverterSequenceTypeProgressRow: FfiConverterRustBuffer<List<P
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeProgressRow.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeSearchHit: FfiConverterRustBuffer<List<SearchHit>> {
+    override fun read(buf: ByteBuffer): List<SearchHit> {
+        val len = buf.getInt()
+        return List<SearchHit>(len) {
+            FfiConverterTypeSearchHit.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<SearchHit>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeSearchHit.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<SearchHit>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeSearchHit.write(it, buf)
         }
     }
 }

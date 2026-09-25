@@ -40,6 +40,7 @@ internal fun SeasonWall(
     plates: List<SeasonPlate>,
     posterPath: suspend (key: String) -> String?,
     onOpenSeason: (Division) -> Unit,
+    onOpenGenre: (String) -> Unit,
 ) {
     val columns = posterColumnsFor(currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass)
     LazyVerticalGrid(
@@ -58,14 +59,18 @@ internal fun SeasonWall(
         }
         // A show is rated as a show, so any episode speaks for it — the
         // first, as `series-header.js` asks. A course has no rating.
-        val age = firstItemOf(collection.divisions)?.ageLabel()
-        if (info != null || collection.posterPath != null || age != null) {
+        val firstEpisode = firstItemOf(collection.divisions)
+        val age = firstEpisode?.ageLabel()
+        val genres = firstEpisode?.genres ?: emptyList()
+        if (info != null || collection.posterPath != null || age != null || genres.isNotEmpty()) {
             item(key = "header", span = { GridItemSpan(maxLineSpan) }) {
                 TitleHeader(
                     posterPath = collection.posterPath,
                     title = collection.name,
                     facts = age,
                     info = info,
+                    genres = genres,
+                    onOpenGenre = onOpenGenre,
                     modifier = Modifier.padding(bottom = Spacing.medium),
                 )
             }
@@ -90,11 +95,7 @@ internal fun SeasonWall(
  * plate stood for, so it is shown the same way.
  */
 @Composable
-internal fun SeasonScreen(
-    division: Division,
-    watch: WatchSnapshot,
-    onOpenTitle: (setId: String) -> Unit,
-) {
+internal fun SeasonScreen(division: Division, watch: WatchSnapshot, heldIds: Set<String>, onOpenTitle: (setId: String) -> Unit) {
     val rows = remember(division) { rowsOf(listOf(division)) }
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
@@ -103,6 +104,6 @@ internal fun SeasonScreen(
         contentPadding = PaddingValues(Spacing.large),
         verticalArrangement = Arrangement.spacedBy(Spacing.small),
     ) {
-        items(rows, positions, watchedIds, onOpenTitle)
+        items(rows, positions, watchedIds, heldIds, onOpenTitle)
     }
 }

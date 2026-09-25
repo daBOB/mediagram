@@ -11,6 +11,10 @@ set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
 
+# A check is a full run, not an edit loop, so incremental caches only pile up:
+# left on, they grew the workspace's Cargo output to hundreds of gigabytes.
+export CARGO_INCREMENTAL=0
+
 step() { printf '\n\033[1m==> %s\033[0m\n' "$1"; }
 
 step "clippy (warnings are errors)"
@@ -36,10 +40,11 @@ step "gradle test and lint"
 # a broken change. Neither task needs the cross-compiled native core, so this
 # stays a Kotlin-only build with no Rust toolchain in it.
 if [ -n "${ANDROID_HOME:-}" ]; then
-  # compileDebugAndroidTestKotlin catches an instrumented test that does not
-  # compile without needing a device connected — testDebugUnitTest and lint
-  # alone never touch the androidTest source set at all.
-  (cd android && ./gradlew testDebugUnitTest lint :ui-tv:compileDebugAndroidTestKotlin)
+  # `:core:model` is a plain JVM module: it has `test`, not `testDebugUnitTest`,
+  # so it is named here or its tests never run. compileDebugAndroidTestKotlin
+  # catches an instrumented test that does not compile without needing a device
+  # connected — testDebugUnitTest and lint never touch the androidTest source set.
+  (cd android && ./gradlew testDebugUnitTest :core:model:test lint :ui-tv:compileDebugAndroidTestKotlin)
 else
   echo "skipping: no Android SDK (set ANDROID_HOME to run the Android checks)"
 fi
