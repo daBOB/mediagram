@@ -1,6 +1,14 @@
 package playback
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import androidx.media3.common.Metadata
+import androidx.media3.common.text.CueGroup
+import androidx.media3.decoder.ffmpeg.FfmpegAudioRenderer
+import androidx.media3.exoplayer.audio.AudioRendererEventListener
+import androidx.media3.exoplayer.audio.MediaCodecAudioRenderer
+import androidx.media3.exoplayer.video.VideoRendererEventListener
 import androidx.media3.common.C
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.cache.CacheDataSource
@@ -137,5 +145,31 @@ class PlayerFactoryTest {
         } finally {
             player.release()
         }
+    }
+
+    /**
+     * DTS and TrueHD have no decoder on many devices, and a track no renderer
+     * takes plays silently. FFmpeg has to be in the list, and behind the
+     * platform's own audio renderer so hardware and passthrough still win
+     * wherever they exist.
+     */
+    @Test
+    fun ffmpegAudioFollowsThePlatformAudioRenderer() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        val renderers =
+            renderersFactory(context).createRenderers(
+                Handler(Looper.getMainLooper()),
+                object : VideoRendererEventListener {},
+                object : AudioRendererEventListener {},
+                { _: CueGroup -> },
+                { _: Metadata -> },
+            )
+
+        val platform = renderers.indexOfFirst { it is MediaCodecAudioRenderer }
+        val ffmpeg = renderers.indexOfFirst { it is FfmpegAudioRenderer }
+        assertTrue(platform >= 0, "the platform audio renderer is missing")
+        assertTrue(ffmpeg > platform, "FFmpeg must come after the platform audio renderer, not before or never")
+        renderers.forEach { it.release() }
     }
 }

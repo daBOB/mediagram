@@ -10,6 +10,7 @@ import androidx.media3.common.C
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.cache.Cache
 import androidx.media3.datasource.cache.CacheDataSource
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import data.CoreClient
@@ -108,7 +109,7 @@ suspend fun buildPlayer(
     currentCore: () -> CoreClient?,
 ): ExoPlayer =
     ExoPlayer
-        .Builder(context)
+        .Builder(context, renderersFactory(context))
         .setMediaSourceFactory(
             DefaultMediaSourceFactory(context)
                 .setDataSourceFactory(playbackDataSourceFactory(CacheProvider.get(context), counters, lan, currentCore)),
@@ -125,6 +126,23 @@ suspend fun buildPlayer(
                 .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
                 .build()
         }
+
+/**
+ * The device's own decoders first, FFmpeg (core:ffmpeg) behind them.
+ *
+ * Many devices — Google TV boxes above all — have no DTS or TrueHD decoder,
+ * and a track no renderer can take is simply left unselected: the film plays
+ * with no sound and no message. `ON` appends `FfmpegAudioRenderer` after
+ * `MediaCodecAudioRenderer`, and the track selector takes the first renderer
+ * that handles a format, so hardware (and passthrough) still wins wherever it
+ * exists and FFmpeg only picks up what nothing else can. `PREFER` would put
+ * FFmpeg first and software-decode AAC, AC-3 and E-AC-3 too, for no gain.
+ *
+ * `internal` so a test can see which renderers it builds.
+ */
+internal fun renderersFactory(context: Context): DefaultRenderersFactory =
+    DefaultRenderersFactory(context)
+        .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
 
 /**
  * How far one skip moves. Ten seconds is long enough to clear a line of

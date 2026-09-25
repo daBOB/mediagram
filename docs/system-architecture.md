@@ -259,6 +259,7 @@ in the core stay `u64` throughout; only in-memory buffer lengths narrow.
 | `core:rust` | the generated UniFFI binding over `mediagram-core` |
 | `core:data` | `CoreClient`, `CatalogRepository`, and settings in `EncryptedSharedPreferences` |
 | `core:playback` | `MlibDataSource`, `CacheProvider`, `PlayerFactory` |
+| `core:ffmpeg` | Media3's FFmpeg audio decoder, vendored, for DTS and TrueHD |
 | `core:model` | `MediaSet` and `Kind`, shared by every surface |
 | `core:designsystem` | theme and spacing |
 | `feature:{catalog,player,setup,system}` | view models and UI state |
@@ -293,7 +294,27 @@ Telegram's 512 KiB chunking, and media3's `CacheDataSource` wraps it over a
 **Nothing is transcoded.** The phone decodes natively, so the whole conversion
 apparatus of §7 — ffmpeg, HLS, the bitrate ladder, the encoder registry — has
 no counterpart here, and the System screen has no Conversion block rather than
-an empty one. Playback is latency-bound rather than throughput-bound: the link
+an empty one.
+
+**Audio the device cannot decode goes through FFmpeg.** Many devices, Google
+TV boxes above all, have no DTS or TrueHD decoder, and ExoPlayer leaves a
+track that no renderer takes unselected, so the film played with no sound and
+no message. `core:ffmpeg` is Media3's `decoder_ffmpeg` extension, which Media3
+does not publish to Maven. Its Java sources are vendored unchanged from the
+`1.10.1` tag. Its native library is built by `scripts/build-android-ffmpeg.sh`
+for all four ABIs, 16 KB aligned, and is not committed; a `verifyFfmpeg` guard
+refuses to package an APK without it. `PlayerFactory` builds the player with
+`DefaultRenderersFactory` in `EXTENSION_RENDERER_MODE_ON`. The platform's own
+renderer comes first, so hardware decoding and passthrough still win wherever
+they exist. `FfmpegAudioRenderer` comes after it and takes only the formats
+nothing else will. This is decoding to PCM on the device, not the conversion
+of §7. Nothing is re-encoded and no server is involved.
+
+FFmpeg is **6.0.1**, under the **LGPL 2.1 or later**. It is built with no GPL,
+version-3 or nonfree components and only the `dca` (DTS, DTS-HD core),
+`truehd` and `mlp` decoders. The licence text and source pointer ship in
+`android/core/ffmpeg/licenses/`. AC-3 and E-AC-3 are left out: the devices
+tested so far decode or pass them through themselves. Playback is latency-bound rather than throughput-bound: the link
 outruns the bitrate, and what costs is the round trip per read.
 
 ### Updates Telegram pushes

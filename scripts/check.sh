@@ -44,7 +44,7 @@ if [ -n "${ANDROID_HOME:-}" ]; then
   # so it is named here or its tests never run. compileDebugAndroidTestKotlin
   # catches an instrumented test that does not compile without needing a device
   # connected — testDebugUnitTest and lint never touch the androidTest source set.
-  (cd android && ./gradlew testDebugUnitTest :core:model:test lint :ui-tv:compileDebugAndroidTestKotlin)
+  (cd android && ./gradlew testDebugUnitTest :core:model:test lint :ui-tv:compileDebugAndroidTestKotlin :core:ffmpeg:compileDebugAndroidTestKotlin)
 else
   echo "skipping: no Android SDK (set ANDROID_HOME to run the Android checks)"
 fi

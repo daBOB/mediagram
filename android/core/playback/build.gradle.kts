@@ -14,6 +14,8 @@ android {
 
 dependencies {
     implementation(project(":core:data"))
+    // FFmpeg audio decoding for DTS and TrueHD; see renderersFactory in PlayerFactory.
+    implementation(project(":core:ffmpeg"))
 
     api(libs.findLibrary("androidx.media3.exoplayer").get())
     api(libs.findLibrary("androidx.media3.datasource").get())
