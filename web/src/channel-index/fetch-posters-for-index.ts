@@ -29,7 +29,7 @@ export async function fetchPostersForIndex(command: string, indexPath: string): 
     new Response(proc.stdout as ReadableStream).text(),
     new Response(proc.stderr as ReadableStream).text(),
   ]);
-  // Its last line is the summary: "565 poster(s) in …: 20 fetched, 545 already held".
+  // Its last line is the summary: "1130 image(s) in …: 20 fetched, 1110 already held".
   const last = (text: string) => text.trim().split("\n").at(-1) ?? "";
   if (code === 0) return { ok: true, summary: last(out) };
   return { ok: false, reason: `\`${command} posters\` exited ${code}: ${last(err) || last(out)}` };

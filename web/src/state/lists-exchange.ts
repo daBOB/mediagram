@@ -1,5 +1,5 @@
 /**
- * Watchlist, Kids and collections on the sync record.
+ * Watchlist, Kids, the editor's choice and collections on the sync record.
  *
  * Kept out of `store.ts`, which already carries every other read and write:
  * these three are the ones with a tombstone (`removed_at`) rather than a
@@ -21,12 +21,22 @@ function toListRow(setId: string, addedOrMarkedAt: number, removedAt: number | n
   return removedAt !== null ? { setId, updatedAt: removedAt, removed: true } : { setId, updatedAt: addedOrMarkedAt };
 }
 
-/** The titles marked as a child's, tombstones included — everything the
- * wire needs to say. `kids()` on `WatchState` is the live-only half of this. */
-export function exportKids(db: Database | null): ListRow[] {
+/**
+ * The household-wide marks on a title: `kids` and `editors_choice`. Neither
+ * belongs to a profile, both keep a tombstone, and both travel the wire as
+ * `ListRow`s — one pair of functions serves both tables.
+ *
+ * `table` is always one of these two literals, never outside input: it is
+ * spliced into the SQL.
+ */
+export type TitleMarkTable = "kids" | "editors_choice";
+
+/** A table's marks, tombstones included — everything the wire needs to say.
+ * `kids()` on `WatchState` is the live-only half of this. */
+export function exportTitleMarks(db: Database | null, table: TitleMarkTable): ListRow[] {
   if (!db) return [];
   const rows = db
-    .query("SELECT set_id AS setId, marked_at AS markedAt, removed_at AS removedAt FROM kids")
+    .query(`SELECT set_id AS setId, marked_at AS markedAt, removed_at AS removedAt FROM ${table}`)
     .all() as { setId: string; markedAt: number; removedAt: number | null }[];
   return rows.map((row) => toListRow(row.setId, row.markedAt, row.removedAt));
 }
@@ -61,16 +71,16 @@ export function exportCollections(db: Database | null, profileId: string): Colle
   }));
 }
 
-/** Takes in the kept titles. Corrective, like everything `importMerged`
+/** Takes in a table's marks. Corrective, like everything `importMerged`
  * calls: newer local news is left alone, while equal-time differences apply
  * the winner already selected by the merge's device-id tie-break. */
-export function importKids(db: Database | null, rows: ListRow[]): number {
+export function importTitleMarks(db: Database | null, table: TitleMarkTable, rows: ListRow[]): number {
   if (!db) return 0;
   let changed = 0;
   for (const row of rows) {
     const standing = db
       .query(
-        "SELECT removed_at AS removedAt, CASE WHEN removed_at IS NOT NULL THEN removed_at ELSE marked_at END AS updatedAt FROM kids WHERE set_id = ?1",
+        `SELECT removed_at AS removedAt, CASE WHEN removed_at IS NOT NULL THEN removed_at ELSE marked_at END AS updatedAt FROM ${table} WHERE set_id = ?1`,
       )
       .get(row.setId) as { updatedAt: number; removedAt: number | null } | null;
     if (standing !== null && (standing.updatedAt > row.updatedAt ||
@@ -78,12 +88,12 @@ export function importKids(db: Database | null, rows: ListRow[]): number {
 
     if (row.removed) {
       db.query(
-        `INSERT INTO kids(set_id, marked_at, removed_at) VALUES (?1, ?2, ?2)
+        `INSERT INTO ${table}(set_id, marked_at, removed_at) VALUES (?1, ?2, ?2)
            ON CONFLICT(set_id) DO UPDATE SET removed_at = excluded.removed_at`,
       ).run(row.setId, row.updatedAt);
     } else {
       db.query(
-        `INSERT INTO kids(set_id, marked_at, removed_at) VALUES (?1, ?2, NULL)
+        `INSERT INTO ${table}(set_id, marked_at, removed_at) VALUES (?1, ?2, NULL)
            ON CONFLICT(set_id) DO UPDATE SET marked_at = excluded.marked_at, removed_at = NULL`,
       ).run(row.setId, row.updatedAt);
     }

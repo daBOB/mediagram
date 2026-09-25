@@ -45,6 +45,7 @@ fn a_fully_populated_row() -> TitleDetailsRow {
         total_seasons: Some(2),
         total_episodes: Some(18),
         certification: Some("16".into()),
+        popularity: Some(42.5),
     }
 }
 

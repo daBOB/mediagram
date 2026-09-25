@@ -53,3 +53,11 @@ failure mode for a shared key is permanent until restart.
 never a `pgrep` whose output is only read afterwards. And `bun --watch` means the
 player is live and reloads on every edit under `web/src/`, so editing the player
 while it runs already changes what the viewer is using.
+
+## 2026-09-25 — Keep a reference design's labels meaning what they say
+Mapped the reference's "Editor's Choice / Trending / Staff Pick" strip onto three genre
+shelves because genres were the easiest real data to hand. The user rejected it: those
+labels are *kinds of curation*, each spotlighting one title. Rule: when translating a
+reference, keep each label's meaning and find a real signal that honestly backs it
+(a user pin, TMDB popularity, rating). Don't swap in a different concept because the
+data is convenient. If no honest signal exists, ask.

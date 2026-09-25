@@ -295,6 +295,24 @@ describe("profiles", () => {
   });
 });
 
+describe("the editor's choice", () => {
+  const read = async () =>
+    JSON.parse(new TextDecoder().decode((await rawRequest(server.port, "/api/editors-choice")).body));
+
+  test("is pinned and unpinned per title, and read back as one pick", async () => {
+    expect((await send(`/api/editors-choice/${SET}`, "PUT", {})).status).toBe(204);
+    expect((await read()).setId).toBe(SET);
+    expect((await send(`/api/editors-choice/${SET}`, "DELETE")).status).toBe(204);
+    expect((await read()).setId).toBeNull();
+  });
+
+  test("refuses a title the catalog cannot play, and a write from elsewhere", async () => {
+    expect((await send("/api/editors-choice/01SETNOTINTHELIBRARY001", "PUT", {})).status).toBe(404);
+    const foreign = await send(`/api/editors-choice/${SET}`, "PUT", {}, { origin: "https://elsewhere.example" });
+    expect(foreign.status).toBe(403);
+  });
+});
+
 describe("marking a title as a child's", () => {
   const read = async () =>
     JSON.parse(new TextDecoder().decode((await rawRequest(server.port, "/api/kids")).body));

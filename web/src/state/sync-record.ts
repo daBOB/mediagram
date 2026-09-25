@@ -89,6 +89,8 @@ export interface SyncRecord {
   profiles: ProfileState[];
   /** Not scoped to a profile — see `schema.ts` on why `kids` alone has none. */
   kids?: ListRow[];
+  /** The household's editor's choice marks; a new optional key like `kids`. */
+  editorsChoice?: ListRow[];
 }
 
 /**
@@ -163,6 +165,7 @@ export function parseRecord(text: string): SyncRecord | null {
     writtenAt: numberFromScalar(held.writtenAt) || 0,
     profiles,
     kids: held.kids === undefined ? undefined : parseListRows(held.kids),
+    editorsChoice: held.editorsChoice === undefined ? undefined : parseListRows(held.editorsChoice),
   };
 }
 

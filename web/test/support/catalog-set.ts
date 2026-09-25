@@ -9,7 +9,8 @@ export function catalogSet(over: Partial<CatalogSet> = {}): CatalogSet {
     container: "mp4", vcodec: "h264", acodec: "aac",
     quality: null, hdr: null, alang: null, slang: null,
     duration: 60, total: 1000, partCount: 1, addedAt: 0,
-    poster: null, seasonPoster: null, showKey: null, genres: [], fsk: null,
+    poster: null, backdrop: null, seasonPoster: null, showKey: null, genres: [], fsk: null,
+    tagline: null, rating: null, popularity: null,
     offline: false, hasSummary: false, subtitles: [],
     ...over,
   };

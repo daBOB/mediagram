@@ -67,7 +67,8 @@ commands/          one module per subcommand, each exposing `run(...)`; thin
   status/            what the library holds and what is still going in
   prepare/           drop unwanted tracks / convert a file before adding it
   metadata.rs        record TMDB descriptions for every title in the index
-  posters.rs         fetch cover art beside library.db for a local player
+  posters.rs         fetch cover art and backdrops (`<key>-bg`) beside
+                     library.db for a local player
   export_package.rs  build, encrypt and optionally publish the metadata
                      package (see export/)
   serve.rs           the local playback API (see serve/)
@@ -309,11 +310,15 @@ panel. Shared catalog, state, formatting, and playback-policy helpers remain
 at the library root. The installed HLS client is still served at `/lib/hls.mjs`.
 
 `public/style.css` imports the presentation modules in `public/styles/`:
-`theme.css` owns local fonts and light/dark tokens, `shell.css` owns navigation
-and the search toolbar, `catalog.css` owns shelves and title details,
-`library-controls.css` owns profiles, collections and status, and `playback.css`
-owns the dark player and Featured dialogs. Appearance follows the system;
-the wordmark keeps Fraunces while interface text uses self-hosted Geist.
+`theme.css` owns local fonts, tokens and the reveal primitives; `shell.css`
+owns the library rail (`.library-rail`, the reader's own shelves; `.rail` is
+the player's control row) and the sticky department bar; `catalog.css` owns
+shelves, title pages and the backdrop band; `home.css` owns the magazine home;
+`library-controls.css` owns profiles, collections and status; `playback.css`
+owns the dark player and Featured dialogs. Dark is the default, with a light
+"paper" variant under `prefers-color-scheme: light`; artwork-backed blocks use
+fixed on-image colours. Fraunces sets display type, Newsreader (upright and
+italic) decks and quotes, Geist the interface; all are self-hosted.
 
 Application shutdown closes admission to speculative cache reads and waits for
 existing warming to finish before disconnecting Telegram. The HTTP listener
@@ -349,6 +354,19 @@ has no reel; that is a deliberate difference, not a gap.
 `#/home`, and the rows on it are decided in `public/lib/catalog/home-shelves.js` and
 drawn in `public/lib/catalog/home-view.js` — the same split every view here has, and
 the reason the rules are testable without a DOM.
+
+The page is laid out as a magazine front section: a rotating cover story on a
+TMDB backdrop, three single-title features, Continue beside a pull-quote, then
+Recently added beside a numbered "This month". What each part holds is the pure
+`editorial-picks.js`: the **Editor's choice** is a household pin
+(`/api/editors-choice`, watch-state v8 `editors_choice`, synced like the Kids
+mark, newest live pin wins), **Trending on TMDB** ranks by `shows.popularity`
+(index v8; without it the card says "New in the library"), and the **Staff
+pick** rotates daily among the ten best-rated unwatched films. The cover and
+quote are seeded by the day, so a redraw never reshuffles them. Every label and
+line comes from the catalog; none is invented. Android has none of this yet:
+owed under Surface Parity, recorded in
+`plans/260925-2014-web-player-magazine-redesign/plan.md`.
 
 Two of those rows answer "what now?" from the two facts the library actually
 has. **Next up** carries one card per show or course underway: the episode in

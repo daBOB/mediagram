@@ -75,6 +75,7 @@ fn fetched_describes(core: &Core, kind: Kind, id: u64, overview: &str) {
         total_seasons: None,
         total_episodes: None,
         certification: None,
+        popularity: None,
     };
     let conn = details::open_or_create(core).unwrap();
     details::upsert(&conn, &row).unwrap();

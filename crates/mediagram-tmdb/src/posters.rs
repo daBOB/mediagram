@@ -16,11 +16,28 @@ use crate::tmdb_client::TmdbApi;
 /// television shelf, and keeps a 300-title package near eight megabytes.
 const IMAGE_BASE: &str = "https://image.tmdb.org/t/p/w342";
 
-/// One poster to fetch: the key it will be stored under, and TMDB's path.
+/// Backdrops fill a desktop-wide hero, where `w780` is visibly soft; `w1280`
+/// is the widest TMDB serves short of the original, around 200 KB a title.
+const BACKDROP_BASE: &str = "https://image.tmdb.org/t/p/w1280";
+
+/// One image to fetch: the key it will be stored under, and TMDB's path.
+/// A backdrop is a `PosterRef` too, told apart by its key.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PosterRef {
     pub key: String,
     pub path: String,
+}
+
+impl PosterRef {
+    /// The CDN URL, at the width the key's kind of image is shown at.
+    #[must_use]
+    pub fn url(&self) -> String {
+        if mlib_spec::package::is_backdrop_key(&self.key) {
+            format!("{BACKDROP_BASE}{}", self.path)
+        } else {
+            poster_url(&self.path)
+        }
+    }
 }
 
 /// A poster that will not arrive promptly is not worth stalling a run for,
@@ -47,6 +64,34 @@ pub async fn resolve_posters(api: &impl TmdbApi, titles: &[(Kind, u64)]) -> Vec<
             continue;
         }
         found.extend(posters_for(api, *kind, *id, &key).await);
+    }
+    found
+}
+
+/// Looks up each title's backdrop, keyed `<title key>-bg`, from the same
+/// cached payload as its poster.
+///
+/// Separate from [`resolve_posters`] on purpose: the export package and the
+/// phone's on-device fetch both build on that one, and neither wants
+/// backdrops — the package has a size cap, the phone no hero to show one in.
+/// Only the command that fills a local player's artwork asks for these.
+pub async fn resolve_backdrops(api: &impl TmdbApi, titles: &[(Kind, u64)]) -> Vec<PosterRef> {
+    let mut found: Vec<PosterRef> = Vec::new();
+    for (kind, id) in titles {
+        let key = mlib_spec::package::backdrop_key(&poster_key(*kind, *id));
+        if found.iter().any(|p| p.key == key) {
+            continue;
+        }
+        let details = match crate::details::details(api, *kind, *id).await {
+            Ok(details) => details,
+            Err(err) => {
+                tracing::warn!(id, error = %err, "no backdrop for this title");
+                continue;
+            }
+        };
+        if let Some(path) = details.backdrop_path.filter(|p| is_image_path(p)) {
+            found.push(PosterRef { key, path });
+        }
     }
     found
 }

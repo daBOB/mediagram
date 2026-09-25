@@ -34,7 +34,10 @@ import { renderLists, renderList } from "./lib/catalog/collections-view.js";
 import { chooseProfile } from "./lib/profile-picker.js";
 import { homeShelves } from "./lib/catalog/home-shelves.js";
 import { renderHome } from "./lib/catalog/home-view.js";
+import { homeEditorial } from "./lib/catalog/editorial-picks.js";
+import { editorsChoice, loadEditorsChoice, onEditorsChoice } from "./lib/editors-choice.js";
 import { describeFilm, filmPage } from "./lib/catalog/film-page.js";
+import { titleBand } from "./lib/catalog/title-band.js";
 import { genreShelf } from "./lib/catalog/genres.js";
 import { forKidsProfile } from "./lib/age-rating.js";
 
@@ -127,13 +130,23 @@ function viewHome() {
     watchedAt: state.watchedAt,
   });
 
-  const empty = Object.values(shelves).every((row) => row.length === 0);
+  // The rows only: `totals` is an object of counts, not a row, and reading
+  // its `length` would call a library with nothing in it non-empty.
+  const empty = Object.values(shelves).every((row) => !Array.isArray(row) || row.length === 0);
   if (empty) {
     heading(main, SECTIONS.movies.label, countOf(0, SECTIONS.movies.extent));
     return main.append(emptyState("movies", { kids: kidsProfile() }));
   }
 
-  renderHome(main, shelves, {
+  const editorial = homeEditorial({
+    movies: library.movies,
+    byId,
+    isWatched: state.isWatched,
+    editorsChoice: editorsChoice(),
+    now: Date.now(),
+    onRow: new Set(shelves.latestMovies.map((set) => set.setId)),
+  });
+  renderHome(main, shelves, editorial, {
     play: (set) => play(set),
     openFilm,
     open: (section, name) => {
@@ -202,6 +215,8 @@ function viewFilm(setId) {
     main.append(el("p", "error", "That film is not in the library any more."));
     return;
   }
+  const band = titleBand(set);
+  if (band) main.append(band);
   heading(main, set.title ?? set.setId);
   const page = filmPage(set, {
     resume: resumeAt(state.progressOf(set.setId)),
@@ -359,6 +374,11 @@ function invalidateShelf() {
 state.subscribeChanges(() => {
   if (pageReady) invalidateShelf();
 });
+// The pin lives outside watch state (it belongs to no profile), but a change
+// to it is redrawn the same way, deferred while a title plays.
+onEditorsChoice(() => {
+  if (pageReady) invalidateShelf();
+});
 
 player.addEventListener("close", () => {
   pendingOpen++;
@@ -477,6 +497,9 @@ function applyCatalog(sets = catalogSets) {
   document.getElementById("n-movies").textContent = String(library.movies.length);
   document.getElementById("n-series").textContent = String(library.series.length);
   document.getElementById("n-tutorials").textContent = String(library.tutorials.length);
+  document.getElementById("rail-masthead").textContent = ["movies", "series", "tutorials"]
+    .map((section) => countOf(library[section].length, SECTIONS[section].extent))
+    .join("\n");
   renderColophon(visible);
 }
 
@@ -570,6 +593,11 @@ function route() {
   const [section = "movies", name, ...folders] = parts;
   const known = SECTIONS[section] || KEPT[section] || PAGES.has(section) ? section : "movies";
 
+  // Which page is showing, for the stylesheet: the home page's masthead sits
+  // dark over the cover before it settles into the page's own colour.
+  document.body.dataset.page = known;
+  // Set again by the home view only when it draws a cover.
+  delete document.body.dataset.cover;
   for (const link of document.querySelectorAll("nav a")) {
     const active = link.dataset.section === known;
     link.classList.toggle("active", active);
@@ -732,7 +760,10 @@ function listenForLibrary() {
   libraryEvents.addEventListener("catalog", () => void refreshCatalog());
   // Another device's positions or marks, pulled by the server. Without this a
   // tab left open showed its old Continue shelf until it was hidden and shown.
-  libraryEvents.addEventListener("state", () => void state.refreshState());
+  libraryEvents.addEventListener("state", () => {
+    void state.refreshState();
+    void loadEditorsChoice();
+  });
   libraryEvents.addEventListener("open", () => void refreshCatalog());
 }
 function stopListeningForLibrary() {
@@ -756,6 +787,9 @@ try {
   // Shared by everyone on this player, so it is read once rather than per
   // profile — see `loadKids`.
   await state.loadKids();
+  // The home page's features lead with it; asked for alongside the Kids
+  // marks, which are the other thing that belongs to the library, not a profile.
+  await loadEditorsChoice();
   // Who, before anything else: every shelf below is one profile's, and the
   // first render already draws progress rules.
   const [, profilesLoaded] = await Promise.all([loadCatalog(), state.loadProfiles()]);

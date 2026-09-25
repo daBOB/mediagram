@@ -15,13 +15,11 @@ use thiserror::Error;
 
 use super::cipher::{self, EncryptError};
 
-/// Schema versions this build's catalog code can read: its own, and the
-/// older one a publisher not yet upgraded still writes. v7 only added
-/// `shows.certification`, which every read here treats as optional.
-pub const SUPPORTED_SCHEMA: &[i64] = &[
-    mlib_spec::schema::OLDEST_READABLE_SCHEMA,
-    mlib_spec::schema::SCHEMA_VERSION,
-];
+/// Schema versions this build's catalog code can read: its own, and every
+/// older one a publisher not yet upgraded may still write. The columns added
+/// since the oldest (`certification` in v7, `popularity` in v8) are read as
+/// optional everywhere.
+pub const SUPPORTED_SCHEMA: &[i64] = mlib_spec::schema::READABLE_SCHEMAS;
 
 #[derive(Debug, Error)]
 pub enum PackageError {

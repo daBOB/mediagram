@@ -605,6 +605,14 @@ describe("kids profiles", () => {
     expect(page()).toContain("Nothing rated FSK 12 or under yet.");
   });
 
+  test("a kids profile is offered no way to change the household's editor's choice", async () => {
+    await start();
+    await env.navigate("#/film/Family");
+    const pins = descendants(env.node("main")).filter((node) => node.className.startsWith("pin-control"));
+    expect(pins).toEqual([]);
+    expect(descendants(env.node("main")).some((node) => node.className === "film-play")).toBe(true);
+  });
+
   test("the player offers no Kids mark on a kids profile", async () => {
     await start();
     await env.navigate("#/film/Family");
@@ -661,4 +669,34 @@ test("Featured suggests unwatched films and opens the one chosen after leaving i
   expect(reel.open).toBe(false);
   expect(env.history.state).toBeNull();
   expect(env.location.hash).toBe("#/film/Unseen");
+});
+
+describe("the magazine home page", () => {
+  const featured = (setId: string, over: Record<string, unknown> = {}) => ({
+    ...film(setId), poster: `tmdb-movie-${setId}`, backdrop: `tmdb-movie-${setId}-bg`, rating: 7, popularity: 5, ...over,
+  });
+
+  test("leads its features with the household's pinned editor's choice", async () => {
+    catalog = JSON.stringify([featured("Pinned", { rating: 5 }), featured("Acclaimed", { rating: 9 }), featured("Popular", { popularity: 80 })]);
+    intercept = (url) => (url === "/api/editors-choice" ? Response.json({ setId: "Pinned" }) as never : null);
+    env.location.hash = "#/home";
+    await start();
+    const features = descendants(env.node("main")).filter((node) => node.className.startsWith("feature feature-"));
+    expect(features.map((node) => node.className)).toEqual(["feature feature-editor", "feature feature-trending", "feature feature-staff"]);
+    expect(textOf(features[0]!)).toContain("Pinned");
+    expect((features[0] as unknown as { href: string }).href).toBe("#/film/Pinned");
+    // A grown-up profile is offered the pin on a title's page.
+    await env.navigate("#/film/Acclaimed");
+    expect(descendants(env.node("main")).some((node) => node.className.startsWith("pin-control"))).toBe(true);
+  });
+
+  test("draws without a pin, or when the pin cannot be asked for", async () => {
+    catalog = JSON.stringify([featured("One"), featured("Two"), featured("Three")]);
+    env.location.hash = "#/home";
+    await start();
+    const kinds = descendants(env.node("main")).filter((node) => node.className.startsWith("feature feature-"))
+      .map((node) => node.className);
+    expect(kinds).not.toContain("feature feature-editor");
+    expect(kinds.length).toBeGreaterThan(0);
+  });
 });

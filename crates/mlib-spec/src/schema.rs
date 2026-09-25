@@ -1,17 +1,23 @@
 //! SQLite DDL for `library.db`. The uploader keeps this file locally as the
 //! canonical index and pushes a snapshot to the channel as a pinned document.
 
-pub const SCHEMA_VERSION: i64 = 7;
+pub const SCHEMA_VERSION: i64 = 8;
 
 /// The oldest index a *reader* of someone else's snapshot still accepts.
 ///
 /// A channel snapshot is written by whichever machine uploads, and that
 /// machine is upgraded on its own schedule; refusing its snapshot until then
-/// would stop every reader. v7 only added `shows.certification`, which every
-/// reader treats as optional. The web player's `OLDEST_READABLE_SCHEMA`
+/// would stop every reader. v7 only added `shows.certification` and v8 only
+/// `shows.popularity`, both of which every reader treats as optional. The web player's `OLDEST_READABLE_SCHEMA`
 /// (`web/src/catalog.ts`) is the same number. The uploader's own index is
 /// still held to [`SCHEMA_VERSION`]: that one it can migrate.
 pub const OLDEST_READABLE_SCHEMA: i64 = 6;
+
+/// Every layout a reader accepts: [`OLDEST_READABLE_SCHEMA`] through
+/// [`SCHEMA_VERSION`], each one. Spelled out because a package pointer is
+/// checked by membership — listing only the two ends once refused every
+/// version between them. A test holds this to the range.
+pub const READABLE_SCHEMAS: &[i64] = &[6, 7, 8];
 
 /// The index's file name, wherever a copy of it sits: the uploader's data
 /// directory, the snapshot pinned in the channel, and a metadata package all
@@ -25,7 +31,7 @@ pub const INDEX_FILE: &str = "library.db";
 /// what lets a migration do something other than `CREATE ... IF NOT EXISTS`.
 /// SQLite has no `ADD COLUMN IF NOT EXISTS`, so an idempotent-by-wording list
 /// could never gain a column.
-pub const GROUPS: &[&[&str]] = &[V1, V2, V3, V4, V5, V6, V7];
+pub const GROUPS: &[&[&str]] = &[V1, V2, V3, V4, V5, V6, V7, V8];
 
 /// Every statement needed to reach `version` from an empty database. Used by
 /// tests and by anyone reconstructing an older layout.
@@ -137,6 +143,12 @@ const V6: &[&str] = &[
 /// the form), because some countries rate with letters.
 const V7: &[&str] = &["ALTER TABLE shows ADD COLUMN certification TEXT"];
 
+/// v7 → v8: how much attention a title draws at the provider.
+///
+/// What ranks a "trending" pick. TMDB's figure as of the cached payload, so
+/// it ages; readers treat it as optional, like `certification`.
+const V8: &[&str] = &["ALTER TABLE shows ADD COLUMN popularity REAL"];
+
 /// How `sets.status` and `parts.status` spell each state. Written once here,
 /// beside the one SQL fragment that has to spell them inline; every other
 /// query binds them as parameters. The player reads the same spellings.
@@ -151,43 +163,5 @@ pub const PLAYABLE_SQL: &str = "s.status = 'complete'
     AND s.total = (SELECT COALESCE(SUM(byte_length), 0) FROM parts p WHERE p.set_id = s.set_id)";
 
 #[cfg(test)]
-mod tests {
-    /// `PLAYABLE_SQL` is a `const`, so it cannot be built from the spellings
-    /// above; this holds the two together instead.
-    #[test]
-    fn the_playable_gate_spells_states_as_the_constants_do() {
-        let gate = super::PLAYABLE_SQL;
-        assert!(gate.contains(&format!("s.status = '{}'", super::SET_COMPLETE)));
-        assert!(gate.contains(&format!("p.status = '{}'", super::PART_DONE)));
-    }
-
-    #[test]
-    fn the_first_group_creates_the_tables_idempotently() {
-        let v1 = super::GROUPS[0];
-        assert!(v1.len() >= 4);
-        assert!(v1.iter().all(|m| m.contains("IF NOT EXISTS")));
-    }
-
-    /// Later groups run once, gated by the recorded version, so they are free
-    /// to use statements SQLite cannot express idempotently.
-    #[test]
-    fn there_is_one_group_per_version() {
-        assert_eq!(super::GROUPS.len() as i64, super::SCHEMA_VERSION);
-    }
-
-    #[test]
-    fn migrations_up_to_accumulates_groups() {
-        assert!(super::migrations_up_to(0).is_empty());
-        assert_eq!(super::migrations_up_to(1).len(), super::GROUPS[0].len());
-        assert_eq!(
-            super::migrations_up_to(2).len(),
-            super::GROUPS[0].len() + super::GROUPS[1].len()
-        );
-        // Every group, whatever the current version, so this keeps holding
-        // as versions are added.
-        assert_eq!(
-            super::migrations_up_to(super::SCHEMA_VERSION).len(),
-            super::GROUPS.iter().map(|g| g.len()).sum::<usize>()
-        );
-    }
-}
+#[path = "schema_tests.rs"]
+mod tests;

@@ -86,6 +86,9 @@ pub struct DetailsResponse {
     /// already exist on disk usable with no network access.
     #[serde(default)]
     pub poster_path: Option<String>,
+    /// The title's landscape artwork, from the same cached payload.
+    #[serde(default)]
+    pub backdrop_path: Option<String>,
 
     // What a provider says about the title rather than about the file. Every
     // one of these is already in the cached payload `add` fetched to resolve
@@ -98,6 +101,10 @@ pub struct DetailsResponse {
     pub genres: Vec<NamedRef>,
     #[serde(default)]
     pub vote_average: Option<f64>,
+    /// TMDB's own "being looked at now" score, as of when the payload was
+    /// cached — a snapshot, not a live figure.
+    #[serde(default)]
+    pub popularity: Option<f64>,
     #[serde(default)]
     pub networks: Vec<NamedRef>,
     #[serde(default)]

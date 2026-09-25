@@ -5,7 +5,7 @@ import type { AudioTrackReader } from "./audio-tracks";
 import type { HeldSets } from "../cache/held";
 import { listPlayable, listSearchable, playableSet, type PlayableSet } from "../catalog";
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
-import { PosterStore, posterKeyFor, seasonPosterKeyFor } from "../package/posters";
+import { PosterStore, backdropKeyFor, posterKeyFor, seasonPosterKeyFor } from "../package/posters";
 import { bodiless, withBody } from "../response";
 import { SearchIndex } from "../search/index";
 import { providerFactsByShow, showMeta } from "./shows";
@@ -38,14 +38,21 @@ export function createCatalogRouter(options: CatalogRouterOptions) {
   function forBrowser({ tmdb, ...set }: PlayableSet) {
     const key = posterKeyFor(set.kind, tmdb);
     const seasonKey = set.kind === "ep" ? seasonPosterKeyFor(key, set.season) : null;
+    const backdropKey = backdropKeyFor(key);
     const facts = key === null ? undefined : provider.get(key);
     return {
       ...set,
       offline: options.held?.has(set.setId) ?? false,
       showKey: key,
       poster: posters.has(key) ? key : null,
+      backdrop: posters.has(backdropKey) ? backdropKey : null,
       genres: facts?.genres ?? [],
       fsk: facts?.fsk ?? null,
+      // What the home page's editorial picks read: one catalog request
+      // carries them all, rather than one description request per title.
+      tagline: facts?.tagline ?? null,
+      rating: facts?.rating ?? null,
+      popularity: facts?.popularity ?? null,
       seasonPoster: posters.has(seasonKey) ? seasonKey : null,
       hasSummary: summary(db, set.setId) !== null,
       subtitles: subtitleLanguages(db, set.setId),

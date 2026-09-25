@@ -52,6 +52,10 @@ const COLLECTION_ITEM = new RegExp(
 const KIDS = /^\/api\/kids$/;
 const KIDS_ITEM = /^\/api\/kids\/([A-Za-z0-9]{1,64})$/;
 
+/** The household's editor's choice: read as one pick, pinned per title. */
+const EDITORS_CHOICE = /^\/api\/editors-choice$/;
+const EDITORS_CHOICE_ITEM = /^\/api\/editors-choice\/([A-Za-z0-9]{1,64})$/;
+
 export interface StateRouterOptions {
   state: WatchState;
   /** Whether the catalog will play this set, so state cannot outlive it. */
@@ -69,7 +73,8 @@ export function createStateRouter(options: StateRouterOptions) {
 
   return function stateRoute(request: PlayerRequest): PlayerResponse | null {
     const { method, path } = request;
-    if (!path.startsWith("/api/profiles") && !path.startsWith("/api/kids")) return null;
+    if (!path.startsWith("/api/profiles") && !path.startsWith("/api/kids") &&
+      !path.startsWith("/api/editors-choice")) return null;
     const reading = method === "GET" || method === "HEAD";
 
     // Answered before the profile routes, and outside them: a mark on a title
@@ -77,6 +82,12 @@ export function createStateRouter(options: StateRouterOptions) {
     if (KIDS.test(path)) {
       if (reading) return json(JSON.stringify({ kids: state.kids() }), method === "HEAD");
       return status(405);
+    }
+    if (EDITORS_CHOICE.test(path)) {
+      if (!reading) return status(405);
+      // A pick the catalog no longer holds is no pick; the next live one is.
+      const pick = state.editorsChoices().find((setId) => isPlayable(setId)) ?? null;
+      return json(JSON.stringify({ setId: pick }), method === "HEAD");
     }
 
 
@@ -160,6 +171,14 @@ export function createStateRouter(options: StateRouterOptions) {
       if (!isPlayable(kid[1]!)) return status(404);
       if (method !== "PUT" && method !== "DELETE") return status(405);
       state.setKids(kid[1]!, method === "PUT");
+      return status(204);
+    }
+
+    const pinned = EDITORS_CHOICE_ITEM.exec(path);
+    if (pinned) {
+      if (!isPlayable(pinned[1]!)) return status(404);
+      if (method !== "PUT" && method !== "DELETE") return status(405);
+      state.setEditorsChoice(pinned[1]!, method === "PUT");
       return status(204);
     }
 

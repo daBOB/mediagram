@@ -19,13 +19,22 @@ for (const [name, read] of Object.entries(reads)) {
   });
 }
 
-test("provider facts tolerate only the legacy table and certification omissions", () => {
+test("provider facts tolerate only the legacy table and the later optional columns", () => {
   const db = new Database(":memory:");
   try {
     expect(providerFactsByShow(db).size).toBe(0);
-    db.run("CREATE TABLE shows(source TEXT, kind TEXT, id INTEGER, genres TEXT)");
-    db.run("INSERT INTO shows VALUES ('tmdb', 'movie', 1, 'Drama, Comedy')");
-    expect(providerFactsByShow(db).get("tmdb-movie-1")).toEqual({ genres: ["Drama", "Comedy"], fsk: null });
+    // A v6 table: no certification (v7), no popularity (v8).
+    db.run("CREATE TABLE shows(source TEXT, kind TEXT, id INTEGER, tagline TEXT, genres TEXT, rating REAL)");
+    db.run("INSERT INTO shows VALUES ('tmdb', 'movie', 1, 'Ein Satz.', 'Drama, Comedy', 7.5)");
+    expect(providerFactsByShow(db).get("tmdb-movie-1")).toEqual({
+      genres: ["Drama", "Comedy"], fsk: null, tagline: "Ein Satz.", rating: 7.5, popularity: null,
+    });
+    db.run("ALTER TABLE shows ADD COLUMN certification TEXT");
+    db.run("ALTER TABLE shows ADD COLUMN popularity REAL");
+    db.run("UPDATE shows SET certification = ' 12 ', popularity = 88.5, tagline = '  '");
+    expect(providerFactsByShow(db).get("tmdb-movie-1")).toEqual({
+      genres: ["Drama", "Comedy"], fsk: "12", tagline: null, rating: 7.5, popularity: 88.5,
+    });
     db.run("ALTER TABLE shows DROP COLUMN genres");
     expect(() => providerFactsByShow(db)).toThrow("no such column: genres");
   } finally { db.close(); }

@@ -55,6 +55,7 @@ fn fetched_row(id: u64, genres: &str) -> TitleDetailsRow {
         total_seasons: None,
         total_episodes: None,
         certification: None,
+        popularity: None,
     }
 }
 

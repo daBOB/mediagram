@@ -252,6 +252,33 @@ describe("one profile cannot see another", () => {
   });
 });
 
+describe("the household's editor's choice", () => {
+  const A = "01SET0000000000000000001";
+  const B = "01SET0000000000000000002";
+
+  test("is one pick: pinning another retires the last", () => {
+    const { state } = stateIn();
+    expect(state.editorsChoice()).toBeNull();
+    state.setEditorsChoice(A, true);
+    expect(state.editorsChoice()).toBe(A);
+    Bun.sleepSync(2);
+    state.setEditorsChoice(B, true);
+    expect(state.editorsChoice()).toBe(B);
+    // Retired, not deleted: the tombstone is what tells another device.
+    const wire = state.exportRecord("here").editorsChoice ?? [];
+    expect(wire.find((row) => row.setId === A)?.removed).toBe(true);
+  });
+
+  test("unpinning leaves no pick, and belongs to no profile", () => {
+    const { state, me } = stateIn();
+    state.setEditorsChoice(A, true);
+    state.deleteProfile(me);
+    expect(state.editorsChoice()).toBe(A);
+    state.setEditorsChoice(A, false);
+    expect(state.editorsChoice()).toBeNull();
+  });
+});
+
 describe("titles marked as a child's", () => {
   test("are remembered, and forgotten again", () => {
     const { state } = stateIn();

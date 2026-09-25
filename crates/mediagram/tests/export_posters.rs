@@ -4,7 +4,7 @@
 //! when it resolved each title.
 
 use mediagram_tmdb::poster_files::{already_held, download_into};
-use mediagram_tmdb::posters::{PosterRef, poster_url, resolve_posters};
+use mediagram_tmdb::posters::{PosterRef, poster_url, resolve_backdrops, resolve_posters};
 use mediagram_tmdb::tmdb_client::TmdbApi;
 use mlib_spec::Kind;
 
@@ -45,6 +45,54 @@ impl TmdbApi for FakeApi {
 fn a_poster_url_uses_the_tmdb_image_cdn_at_a_television_sized_width() {
     let url = poster_url("/abc123.jpg");
     assert_eq!(url, "https://image.tmdb.org/t/p/w342/abc123.jpg");
+}
+
+/// A backdrop fills a desktop-wide hero, so it is fetched far wider than a
+/// poster; the width follows from the key, which is the only thing that says
+/// which one a ref is.
+#[test]
+fn a_backdrop_is_fetched_at_hero_width_and_a_poster_at_shelf_width() {
+    let poster = PosterRef { key: "tmdb-movie-1".into(), path: "/p.jpg".into() };
+    let backdrop = PosterRef { key: "tmdb-movie-1-bg".into(), path: "/b.jpg".into() };
+    assert_eq!(poster.url(), "https://image.tmdb.org/t/p/w342/p.jpg");
+    assert_eq!(backdrop.url(), "https://image.tmdb.org/t/p/w1280/b.jpg");
+}
+
+#[tokio::test]
+async fn backdrops_are_keyed_beside_the_poster_and_unsafe_or_missing_ones_skipped() {
+    let api = FakeApi::default()
+        .with("/movie/1", json!({"id": 1, "poster_path": "/p1.jpg", "backdrop_path": "/b1.jpg"}))
+        .with("/movie/2", json!({"id": 2, "backdrop_path": null}))
+        .with("/movie/3", json!({"id": 3, "backdrop_path": "/../etc/passwd"}))
+        .with("/tv/4", json!({"id": 4, "backdrop_path": "/b4.jpg",
+            "seasons": [{"season_number": 1, "poster_path": "/s1.jpg"}]}));
+
+    let found = resolve_backdrops(
+        &api,
+        &[(Kind::Movie, 1), (Kind::Movie, 2), (Kind::Movie, 3), (Kind::Ep, 4), (Kind::Ep, 4)],
+    )
+    .await;
+
+    assert_eq!(
+        found,
+        vec![
+            PosterRef { key: "tmdb-movie-1-bg".into(), path: "/b1.jpg".into() },
+            PosterRef { key: "tmdb-tv-4-bg".into(), path: "/b4.jpg".into() },
+        ]
+    );
+}
+
+/// The package and the phone both build on `resolve_posters`, and neither
+/// wants backdrops: the package has a size cap, and the phone has no hero to
+/// show one in. Keeping them out of it keeps them out of both.
+#[tokio::test]
+async fn resolving_posters_never_yields_a_backdrop() {
+    let api = FakeApi::default().with(
+        "/movie/1",
+        json!({"id": 1, "poster_path": "/p1.jpg", "backdrop_path": "/b1.jpg"}),
+    );
+    let found = resolve_posters(&api, &[(Kind::Movie, 1)]).await;
+    assert!(found.iter().all(|p| !p.key.ends_with("-bg")));
 }
 
 #[tokio::test]

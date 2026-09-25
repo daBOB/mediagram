@@ -130,6 +130,39 @@ describe("what comes back", () => {
     expect(here.state.snapshot(here.me).progress[0]).toMatchObject({ setId: "01FILM", at: 900 });
   });
 
+  test("another machine's editor's choice arrives, and so does its retirement", async () => {
+    const other = machine();
+    other.state.setEditorsChoice("01OLD", true);
+    const here = machine();
+    await new StateSync(here.state, fakeChannel([
+      { messageId: 7, device: "desktop", text: JSON.stringify(other.state.exportRecord("desktop")) },
+    ]).channel, "laptop").once();
+    expect(here.state.editorsChoice()).toBe("01OLD");
+
+    Bun.sleepSync(2);
+    other.state.setEditorsChoice("01NEW", true);
+    await new StateSync(here.state, fakeChannel([
+      { messageId: 7, device: "desktop", text: JSON.stringify(other.state.exportRecord("desktop")) },
+    ]).channel, "laptop").once();
+    expect(here.state.editorsChoice()).toBe("01NEW");
+  });
+
+  test("unpinning after a merge leaves no pick, not an older one", async () => {
+    const other = machine();
+    const here = machine();
+    here.state.setEditorsChoice("01MINE", true);
+    Bun.sleepSync(2);
+    // Pinned on another device that never heard of this one's pick.
+    other.state.setEditorsChoice("01THEIRS", true);
+    await new StateSync(here.state, fakeChannel([
+      { messageId: 7, device: "desktop", text: JSON.stringify(other.state.exportRecord("desktop")) },
+    ]).channel, "laptop").once();
+    expect(here.state.editorsChoice()).toBe("01THEIRS");
+
+    here.state.setEditorsChoice("01THEIRS", false);
+    expect(here.state.editorsChoice()).toBeNull();
+  });
+
   test("a document that cannot be read is skipped, not fatal", async () => {
     const good = machine();
     good.state.setProgress(good.me, "01FILM", 900, 1204);

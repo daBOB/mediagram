@@ -57,43 +57,59 @@ export interface ProviderFacts {
   genres: string[];
   /** The age rating in the library's country (`12`), or `null` when none. */
   fsk: string | null;
+  tagline: string | null;
+  /** The provider's user score, 0–10. */
+  rating: number | null;
+  /** The provider's popularity when its entry was cached: a snapshot, not live. */
+  popularity: number | null;
 }
 
+type FactsRow = {
+  kind: string; id: number; genres: string | null; tagline: string | null;
+  rating: number | null; fsk: string | null; popularity: number | null;
+};
+
 /**
- * Every show's genres and age rating, by the key `posterKeyFor` gives it
+ * Every show's provider facts, by the key `posterKeyFor` gives it
  * (`tmdb-movie-603`).
  *
  * Read once per catalog rather than per row: the catalog route builds every
- * row in one pass, and a genre or Kids shelf needs all of them. Split here so
- * the page never has to know the provider's separator.
+ * row in one pass, and a genre, Kids or editorial shelf needs all of them.
+ * Split here so the page never has to know the provider's separator.
  *
- * The rating is schema v7. A v6 index — a channel whose uploader is not
- * upgraded yet — has no such column, and its titles read as unrated.
+ * The age rating is schema v7 and popularity v8. An older index — a channel
+ * whose uploader is not upgraded yet — lacks those columns, and its titles
+ * read as unrated and unranked. Every other column is required: a table
+ * missing one is broken, and says so.
  */
 export function providerFactsByShow(db: Database): Map<string, ProviderFacts> {
   const byKey = new Map<string, ProviderFacts>();
-  let rows: { kind: string; id: number; genres: string | null; fsk: string | null }[];
-  try {
-    rows = readRows(db, "certification");
-  } catch (error) {
-    if (!(error instanceof Error)) throw error;
-    if (error.message === "no such table: shows") return byKey;
-    if (error.message !== "no such column: certification") throw error;
-    rows = readRows(db, "NULL");
-  }
+  const columns = new Set(
+    (db.query("SELECT name FROM pragma_table_info('shows')").all() as { name: string }[])
+      .map((column) => column.name),
+  );
+  if (columns.size === 0) return byKey; // No such table: an index written before it.
+  // Only these two literals are ever spliced into the query below.
+  const optional = (name: "certification" | "popularity") => (columns.has(name) ? name : "NULL");
+  const rows = db
+    .query(
+      `SELECT kind, id, genres, tagline, rating,
+              ${optional("certification")} AS fsk, ${optional("popularity")} AS popularity
+         FROM shows WHERE source = 'tmdb'`,
+    )
+    .all() as FactsRow[];
   for (const row of rows) {
     const genres = (row.genres ?? "")
       .split(",")
       .map((name) => name.trim())
       .filter((name) => name !== "");
-    const fsk = row.fsk?.trim() || null;
-    byKey.set(`tmdb-${row.kind}-${row.id}`, { genres, fsk });
+    byKey.set(`tmdb-${row.kind}-${row.id}`, {
+      genres,
+      fsk: row.fsk?.trim() || null,
+      tagline: row.tagline?.trim() || null,
+      rating: row.rating ?? null,
+      popularity: row.popularity ?? null,
+    });
   }
   return byKey;
-}
-
-function readRows(db: Database, certification: "certification" | "NULL") {
-  return db
-    .query(`SELECT kind, id, genres, ${certification} AS fsk FROM shows WHERE source = 'tmdb'`)
-    .all() as { kind: string; id: number; genres: string | null; fsk: string | null }[];
 }

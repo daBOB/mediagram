@@ -51,6 +51,9 @@ pub struct TitleDetailsRow {
     /// `12`, `16`, `18`. Not part of the details payload; see
     /// [`crate::certification`], which fills it.
     pub certification: Option<String>,
+    /// TMDB's popularity when the payload was cached. What a "trending" pick
+    /// ranks by; a snapshot, so it says what was trending then.
+    pub popularity: Option<f64>,
 }
 
 /// Reads a details payload into a row, keeping only what a viewer would read.
@@ -87,5 +90,6 @@ pub fn from_details(kind: Kind, lang: &str, details: &DetailsResponse) -> TitleD
         total_episodes: details.number_of_episodes.filter(|n| *n > 0),
         // A separate request; see `crate::certification`.
         certification: None,
+        popularity: details.popularity.filter(|p| *p > 0.0),
     }
 }

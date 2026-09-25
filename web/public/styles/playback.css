@@ -601,6 +601,7 @@ dialog.with-notes .hud { right: var(--notes-width); }
   filter: blur(48px) brightness(0.32) saturate(1.2);
   transform: scale(1.1);
 }
+.featured-blur.backdrop { inset: 0; filter: blur(3px) brightness(0.36); transform: scale(1.02); }
 .featured-poster {
   position: relative;
   margin: 0;

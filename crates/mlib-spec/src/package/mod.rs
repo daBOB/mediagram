@@ -7,11 +7,15 @@
 //! archive offered under an edited pointer then fails its authentication tag
 //! instead of being accepted as current.
 
+mod artwork_key;
 mod charset;
 pub mod naming;
 
-use charset::{is_digits, is_lower_alpha, is_lower_hex};
+use charset::is_lower_hex;
 
+pub use artwork_key::{
+    BACKDROP_SUFFIX, backdrop_key, is_backdrop_key, poster_key_is_valid, season_poster_key,
+};
 pub use naming::package_file_name;
 
 use serde::{Deserialize, Serialize};
@@ -116,31 +120,6 @@ pub fn associated_data(pointer: &LatestPointer) -> Vec<u8> {
 pub fn key_id(key: &[u8; 32]) -> String {
     let digest = Sha256::digest(key);
     hex::encode(&digest[..4])
-}
-
-/// A poster key reaches a file name, a manifest path and a tar member name,
-/// so it is restricted to `source-kind-digits` before it touches any path.
-///
-/// A season's artwork adds one more part, `s<digits>` — `tmdb-tv-1396-s2` —
-/// so it sits beside its show's poster under the same rules and is never
-/// mistaken for a different show: the show's own key has no fourth part.
-pub fn poster_key_is_valid(key: &str) -> bool {
-    let mut parts = key.split('-');
-    let (Some(source), Some(kind), Some(id)) = (parts.next(), parts.next(), parts.next()) else {
-        return false;
-    };
-    let season_ok = match (parts.next(), parts.next()) {
-        (None, _) => true,
-        (Some(season), None) => season.strip_prefix('s').is_some_and(is_digits),
-        _ => false,
-    };
-    is_lower_alpha(source) && is_lower_alpha(kind) && is_digits(id) && season_ok
-}
-
-/// The key a season's artwork is stored under, beside its show's `show_key`.
-#[must_use]
-pub fn season_poster_key(show_key: &str, season: u32) -> String {
-    format!("{show_key}-s{season}")
 }
 
 #[derive(Error, Debug, PartialEq, Eq)]

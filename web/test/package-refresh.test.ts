@@ -436,3 +436,10 @@ describe("filesystem failures while installing a package", () => {
     expect(await readdir(root)).not.toContain(`.current-${process.pid}`);
   });
 });
+
+test("a package at any schema from the oldest readable to the expected one is accepted", async () => {
+  const { READABLE_SCHEMAS, OLDEST_READABLE_SCHEMA, EXPECTED_SCHEMA } = await import("../src/catalog");
+  expect(READABLE_SCHEMAS[0]).toBe(OLDEST_READABLE_SCHEMA);
+  expect(READABLE_SCHEMAS.at(-1)).toBe(EXPECTED_SCHEMA);
+  expect(READABLE_SCHEMAS.length).toBe(EXPECTED_SCHEMA - OLDEST_READABLE_SCHEMA + 1);
+});

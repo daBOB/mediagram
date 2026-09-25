@@ -7,6 +7,9 @@
 //! package to unpack and therefore nothing else to show. Both look in the
 //! same place relative to the index they opened.
 //!
+//! Backdrops come too, for the web player's cover story. They are fetched
+//! here and nowhere else: the package and the phone leave them out.
+//!
 //! Only films and series have artwork here. A course has no provider id to
 //! key a poster by, so `titles::distinct_titles` never yields one and nothing
 //! in this file has to know about the distinction.
@@ -15,7 +18,7 @@ use std::path::Path;
 
 use anyhow::Result;
 use mediagram_tmdb::poster_files::{already_held, download_into};
-use mediagram_tmdb::posters::resolve_posters;
+use mediagram_tmdb::posters::{resolve_backdrops, resolve_posters};
 
 use crate::config::Config;
 use crate::export::stage::POSTER_DIR;
@@ -40,7 +43,10 @@ pub async fn run(cfg: &Config, index: Option<&Path>) -> Result<()> {
     // `TmdbClient` takes this same client rather than building its own.
     let http = mediagram_core::http::client()?;
     let api = cfg.tmdb_client(http.clone())?;
-    let refs = resolve_posters(&api, &titles).await;
+    // Both read the same cached details payload, so the second pass costs
+    // no request.
+    let mut refs = resolve_posters(&api, &titles).await;
+    refs.extend(resolve_backdrops(&api, &titles).await);
     if refs.is_empty() {
         println!(
             "{} title(s), none with artwork recorded at TMDB",
@@ -56,7 +62,7 @@ pub async fn run(cfg: &Config, index: Option<&Path>) -> Result<()> {
     let fetched = written.len().saturating_sub(held);
     let missing = refs.len() - written.len();
     println!(
-        "{} poster(s) in {}: {fetched} fetched, {held} already held",
+        "{} image(s) in {}: {fetched} fetched, {held} already held",
         written.len(),
         dir.display()
     );

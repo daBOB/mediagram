@@ -1,6 +1,6 @@
 /** Selecting the startup catalog while keeping filesystem fallback decisions together. */
 import type { Config } from "../config";
-import { EXPECTED_SCHEMA, OLDEST_READABLE_SCHEMA } from "../catalog";
+import { READABLE_SCHEMAS } from "../catalog";
 import { parseKey } from "../package/open";
 import { refreshCatalog, type RefreshOptions } from "../package/refresh";
 import { refreshFromChannel, type ChannelRefresh } from "../channel-index/refresh-from-channel";
@@ -41,7 +41,7 @@ export async function openCatalog(cfg: Config, find: () => Promise<FoundIndex | 
     baseUrl: cfg.packageUrl,
     key: parseKey(cfg.packageKey),
     root: cfg.catalogDir,
-    supportedSchema: [OLDEST_READABLE_SCHEMA, EXPECTED_SCHEMA],
+    supportedSchema: [...READABLE_SCHEMAS],
     fetch,
   });
   if (result.status === "kept") {

@@ -24,10 +24,10 @@ import { normalName, SYNC_FORMAT, type SyncRecord } from "./sync-record";
 import type { MergedState } from "./merge";
 import {
   exportCollections,
-  exportKids,
+  exportTitleMarks,
   exportWatchlist,
   importCollections,
-  importKids,
+  importTitleMarks,
   importWatchlist,
 } from "./lists-exchange";
 
@@ -382,7 +382,10 @@ export class WatchState {
       watchlist: exportWatchlist(this.db, profile.id),
       collections: exportCollections(this.db, profile.id),
     }));
-    return { format: SYNC_FORMAT, device, writtenAt: Date.now(), profiles, kids: exportKids(this.db) };
+    return { format: SYNC_FORMAT, device, writtenAt: Date.now(), profiles,
+      kids: exportTitleMarks(this.db, "kids"),
+      editorsChoice: exportTitleMarks(this.db, "editors_choice"),
+    };
   }
 
   /**
@@ -406,7 +409,8 @@ export class WatchState {
       // `?? []` throughout: a caller that built a `MergedState` by hand — a
       // test, or a future format that predates these three — says nothing
       // about them, which must read as "no change" rather than a crash.
-      let changed = importKids(this.db, merged.kids ?? []);
+      let changed = importTitleMarks(this.db, "kids", merged.kids ?? []);
+      changed += importTitleMarks(this.db, "editors_choice", merged.editorsChoice ?? []);
 
       for (const profile of merged.profiles) {
         // The identity to match on, and the spelling to create with.
@@ -523,6 +527,54 @@ export class WatchState {
       );
     } else {
       this.db?.query("UPDATE kids SET removed_at = ?2 WHERE set_id = ?1 AND removed_at IS NULL").run(setId, Date.now());
+    }
+  }
+
+  /**
+   * The household's editor's choice: the newest live mark, or `null`.
+   *
+   * One pick, but not one row. Marking a title here retires the last pick,
+   * yet a merge can still bring two live marks from two devices; the newest
+   * wins, which is what either viewer last meant.
+   */
+  editorsChoice(): string | null {
+    return this.editorsChoices()[0] ?? null;
+  }
+
+  /** Every live pick, newest first — for a reader that must skip one this
+   * catalog no longer holds, since a merge can bring marks nothing checked. */
+  editorsChoices(): string[] {
+    return this.setIds(
+      "SELECT set_id AS setId FROM editors_choice WHERE removed_at IS NULL ORDER BY marked_at DESC, set_id",
+    );
+  }
+
+  /**
+   * Pins `setId` as the editor's choice, retiring every other pick, or
+   * unpins — which means "no pick", so it retires every live mark, including
+   * any a merge brought in that this device never showed. Retired picks are
+   * tombstones, so another device learns of the change instead of
+   * resurrecting the old pick.
+   */
+  setEditorsChoice(setId: string, marked: boolean): void {
+    const db = this.db;
+    if (!db) return;
+    const now = Date.now();
+    db.exec("BEGIN");
+    try {
+      if (marked) {
+        db.query("UPDATE editors_choice SET removed_at = ?2 WHERE set_id <> ?1 AND removed_at IS NULL").run(setId, now);
+        db.query(
+          `INSERT INTO editors_choice(set_id, marked_at, removed_at) VALUES (?1, ?2, NULL)
+             ON CONFLICT(set_id) DO UPDATE SET marked_at = excluded.marked_at, removed_at = NULL`,
+        ).run(setId, now);
+      } else {
+        db.query("UPDATE editors_choice SET removed_at = ?1 WHERE removed_at IS NULL").run(now);
+      }
+      db.exec("COMMIT");
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
     }
   }
 

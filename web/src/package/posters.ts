@@ -4,7 +4,9 @@
  * A poster key is `tmdb-movie-<id>` or `tmdb-tv-<id>`. TMDB's film and
  * television id spaces are independent, so the kind is part of the key and a
  * film sharing an id with a series never collides with it. A season's own
- * artwork adds `-s<n>` to its show's key: `tmdb-tv-1396-s2`.
+ * artwork adds `-s<n>` to its show's key: `tmdb-tv-1396-s2`. A title's
+ * backdrop, its wide landscape artwork, adds `-bg`: `tmdb-movie-550-bg`.
+ * Seasons have none. `mlib_spec::package::poster_key_is_valid` is the same rule.
  *
  * The key reaches a URL and then a file name, so it is spelled out rather
  * than passed through: a store that accepts any string is one caption away
@@ -14,7 +16,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
-const KEY = /^tmdb-(?:movie|tv)-\d{1,12}(?:-s\d{1,4})?$/;
+const KEY = /^tmdb-(?:movie|tv)-\d{1,12}(?:-s\d{1,4}|-bg)?$/;
 
 /** The key for a set, or `null` when it has no TMDB id to build one from. */
 export function posterKeyFor(kind: string, tmdb: number | null): string | null {
@@ -28,6 +30,11 @@ export function posterKeyFor(kind: string, tmdb: number | null): string | null {
 export function seasonPosterKeyFor(showKey: string | null, season: number | null): string | null {
   if (showKey === null || season === null || !Number.isInteger(season) || season < 0) return null;
   return `${showKey}-s${season}`;
+}
+
+/** The key a title's backdrop is filed under, or `null` without a title key. */
+export function backdropKeyFor(key: string | null): string | null {
+  return key === null ? null : `${key}-bg`;
 }
 
 export function posterKeyIsValid(key: string): boolean {
@@ -63,13 +70,17 @@ export class PosterStore {
     return path !== null && existsSync(path);
   }
 
-  /** How many are held. Asked once, for the line the player logs at startup. */
+  /**
+   * How many posters are held — backdrops, which sit in the same directory,
+   * are not posters and are not counted. Asked once, for the line the player
+   * logs at startup and the System page.
+   */
   count(): number {
     if (this.dir === null) return 0;
     const path = join(this.dir, "posters");
     try {
       return readdirSync(path).filter(
-        (name) => name.endsWith(".jpg") && posterKeyIsValid(name.slice(0, -4)),
+        (name) => name.endsWith(".jpg") && !name.endsWith("-bg.jpg") && posterKeyIsValid(name.slice(0, -4)),
       ).length;
     } catch (error) {
       // A library with no artwork is a normal library.

@@ -22,6 +22,7 @@ import {
 import { genreLinks } from "./film-page.js";
 import { ageLabel } from "../age-rating.js";
 import { firstItemOf } from "../library.js";
+import { pinControl } from "./pin-control.js";
 
 /**
  * @param {Pick<import("../library.js").Collection, "divisions">} collection a grouped show's seasons
@@ -65,6 +66,12 @@ export function seriesHeader(collection, poster, meta = null) {
     }
     body.append(list);
   }
+
+  // A show is pinned by its first episode, the one its shelf card and its
+  // artwork already answer for.
+  const first = firstItemOf(collection.divisions);
+  const pin = first ? pinControl(first.setId) : null;
+  if (pin) body.append(pin);
 
   // What the provider says goes last: the facts above are about this copy of
   // the show, and are true whether or not anyone has described it.

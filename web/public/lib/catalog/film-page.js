@@ -14,6 +14,7 @@ import { el } from "../dom.js";
 import { clockTime, humanDuration, technicalLine } from "../format.js";
 import { genreHash, genresOf, scoreLabel } from "./genres.js";
 import { ageLabel } from "../age-rating.js";
+import { pinControl } from "./pin-control.js";
 
 /**
  * The page for `set`. `resume` is the second to carry on from, or `null`;
@@ -43,7 +44,10 @@ export function filmPage(set, { resume, onPlay }) {
   const play = el("button", "film-play", resume ? `Resume from ${clockTime(resume)}` : "Play");
   play.type = "button";
   play.addEventListener("click", () => onPlay(set));
-  body.append(play);
+  const actions = el("div", "film-actions");
+  const pin = pinControl(set.setId);
+  actions.append(...[play, pin].filter(Boolean));
+  body.append(actions);
 
   header.append(body);
   return header;
@@ -55,7 +59,7 @@ export function describeFilm(header, meta) {
   const body = header.querySelector(".series-facts");
   if (!body || body.querySelector(".series-overview, .film-score")) return;
 
-  const play = body.querySelector(".film-play");
+  const play = body.querySelector(".film-actions");
   // Just above the genres, so the provider's view of the film sits together.
   const score = scoreLabel(meta.rating);
   if (score) (body.querySelector(".genre-links") ?? play)?.before(el("p", "film-score", score));

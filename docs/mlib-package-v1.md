@@ -40,7 +40,7 @@ posters/tmdb-tv-1396.jpg
 ## 2. The pointer (`latest.json`)
 
 ```json
-{"format":1,"created_at":1781568000,"file":"prebuilt_mediagram_db_20260616-3d7e10c4.tar.gz.enc","url":"https://example.com/prebuilt_mediagram_db_20260616-3d7e10c4.tar.gz.enc","bytes":8127744,"sha256":"…64 hex…","cipher":"aes-256-gcm","key_id":"630dcd29","schema":7,"spec":4}
+{"format":1,"created_at":1781568000,"file":"prebuilt_mediagram_db_20260616-3d7e10c4.tar.gz.enc","url":"https://example.com/prebuilt_mediagram_db_20260616-3d7e10c4.tar.gz.enc","bytes":8127744,"sha256":"…64 hex…","cipher":"aes-256-gcm","key_id":"630dcd29","schema":8,"spec":4}
 ```
 
 | Field | Type | Meaning |
@@ -66,7 +66,7 @@ the library: no titles, no counts, no chat or message identifiers.
 Inside the ciphertext, so it may describe the library.
 
 ```json
-{"format":1,"created_at":1781568000,"schema":7,"spec":4,"sets":312,"parts":468,"posters":[{"key":"tmdb-movie-693134","file":"posters/tmdb-movie-693134.jpg"}]}
+{"format":1,"created_at":1781568000,"schema":8,"spec":4,"sets":312,"parts":468,"posters":[{"key":"tmdb-movie-693134","file":"posters/tmdb-movie-693134.jpg"}]}
 ```
 
 `sets` and `parts` are row counts in the enclosed `library.db`. A poster
@@ -88,7 +88,7 @@ The **associated data** is the minified JSON of exactly five pointer fields,
 in this order:
 
 ```json
-{"format":1,"created_at":1781568000,"key_id":"630dcd29","schema":7,"spec":4}
+{"format":1,"created_at":1781568000,"key_id":"630dcd29","schema":8,"spec":4}
 ```
 
 A reader rebuilds these bytes from the pointer it fetched and passes them to

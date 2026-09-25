@@ -1,14 +1,15 @@
 # Faces
 
-Variable faces served locally. `styles/theme.css` uses Geist for the interface
-and Fraunces for the preserved Mediagram wordmark. Newsreader is retained from
-the previous theme but is no longer loaded by the web player.
+Variable faces served locally. `styles/theme.css` uses Geist for the interface,
+Fraunces for display type (headlines, section titles, the wordmark) and
+Newsreader, upright and italic, for decks, taglines and pull-quotes.
 
 | File | Family | Axes | Licence |
 |---|---|---|---|
 | `geist-latin*.woff2` | Geist | `wght` 400-700 | OFL 1.1, `OFL-geist.txt` |
 | `fraunces-latin*.woff2` | Fraunces | `opsz` 9–144, `wght` 400–700 | OFL 1.1 — `OFL-fraunces.txt` |
 | `newsreader-latin*.woff2` | Newsreader | `opsz` 6–72, `wght` 300–600 | OFL 1.1 — `OFL-newsreader.txt` |
+| `newsreader-italic-latin*.woff2` | Newsreader Italic | `opsz` 6–72, `wght` 300–600 | OFL 1.1 — `OFL-newsreader.txt` |
 
 Served from here rather than from a font CDN because the player is routinely
 opened on a link with no way out to the internet.
@@ -23,6 +24,7 @@ a browser user-agent and take the `latin` and `latin-ext` `src` URLs:
 ```
 https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700
 https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..600
+https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@1,6..72,300..600
 https://fonts.googleapis.com/css2?family=Geist:wght@400..700&display=swap
 ```
 

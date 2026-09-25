@@ -58,6 +58,8 @@ export interface MergedState {
   profiles: MergedProfile[];
   /** Not scoped to a profile — see `schema.ts` on why `kids` alone has none. */
   kids?: ListRow[];
+  /** Household-wide too, and kept per title the same way; see `schema.ts` v8. */
+  editorsChoice?: ListRow[];
 }
 
 /**
@@ -86,10 +88,12 @@ export function mergeStates(records: SyncRecord[]): MergedState {
   // child's is a fact about the title, the same reason it has no profile in
   // `schema.ts`.
   const kids = new Map<string, Held<ListRow>>();
+  const editorsChoice = new Map<string, Held<ListRow>>();
 
   for (const record of records) {
     const device = typeof record?.device === "string" ? record.device : "";
     for (const row of record?.kids ?? []) keep(kids, row.setId, row, device);
+    for (const row of record?.editorsChoice ?? []) keep(editorsChoice, row.setId, row, device);
 
     for (const profile of record?.profiles ?? []) {
       const name = normalName(profile.name);
@@ -153,7 +157,11 @@ export function mergeStates(records: SyncRecord[]): MergedState {
       collections: [...held.collections.values()].map((one) => one.row),
     });
   }
-  return { profiles, kids: [...kids.values()].map((one) => one.row) };
+  return {
+    profiles,
+    kids: [...kids.values()].map((one) => one.row),
+    editorsChoice: [...editorsChoice.values()].map((one) => one.row),
+  };
 }
 
 interface Held<T> {

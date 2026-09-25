@@ -5,7 +5,54 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Unreleased — 0.54.0
+## Unreleased — 0.55.0
+
+**Added**
+
+- The web player redesigned as a digital entertainment magazine, dark-first
+  with a light "paper" variant. Home is a front section: a rotating cover
+  story on the film's TMDB backdrop (its title, tagline, year, rating), three
+  single-title features (Editor's choice, Trending on TMDB, Staff pick),
+  Continue watching beside a pull-quote of a real tagline, then Recently added
+  beside a numbered "This month". A library rail holds the reader's own
+  shelves; a sticky department bar holds Home, Movies, Series and Tutorials,
+  dark glass over the cover that settles as it scrolls away. Film and series
+  pages open on a backdrop band with a serif title, italic tagline and a
+  drop-capped overview. Every route, element id and label the page code
+  reads is unchanged. Newsreader Italic is newly self-hosted.
+- "Make editor's choice" on film and series pages: one household pick that
+  leads the home features, synced between devices like the Kids mark
+  (`/api/editors-choice`, watch-state schema v8). Kids profiles are not
+  offered it: the pick is the household's. Unpinning means no pick, even after
+  a merge brought another device's. Android does not have it yet; see the
+  plan's parity note.
+- Backdrops: `mediagram posters` now also fetches each film's and series'
+  wide TMDB artwork at w1280, stored beside its poster as `<key>-bg.jpg`
+  (`tmdb-movie-550-bg`), from the details payload already cached, so it makes
+  no new metadata requests. Catalog rows carry `backdrop`. The export package
+  and the phone's on-device fetch leave backdrops out, by using the
+  posters-only `resolve_posters`: the package has a 64 MB cap, and the phone
+  has no hero to show one in yet. They serve the web player's magazine home
+  (`plans/260925-2014-web-player-magazine-redesign`).
+- Index schema **v8**: `shows.popularity`, TMDB's popularity as of the cached
+  payload, which ranks the "Trending on TMDB" pick. It is optional to
+  every reader, as `certification` is. `mediagram metadata` backfills it from
+  the cache. Web catalog rows also carry `tagline`, `rating` and `popularity`.
+
+**Fixed**
+
+- The home page's empty-library check read `length` off the row totals, an
+  object, so a library with nothing in it never showed its empty state.
+- Package readers accepted only the oldest and the newest index schema, not
+  those between. `SUPPORTED_SCHEMA` (Rust) and the web's `supportedSchema`
+  were `[oldest, current]` checked by membership, so the v8 bump would have
+  refused every v7 package. Both now use the full range,
+  `mlib_spec::schema::READABLE_SCHEMAS` and `READABLE_SCHEMAS` in
+  `web/src/catalog.ts`, and a test holds each to it.
+- The player's startup poster count no longer counts backdrops, which sit in
+  the same directory.
+
+## 0.54.0
 
 **Added**
 

@@ -11,7 +11,7 @@
  * different database and the two must never be confused.
  */
 
-export const STATE_SCHEMA = 7;
+export const STATE_SCHEMA = 8;
 
 /**
  * Statements grouped by the version they produce, the same shape the index's
@@ -204,6 +204,19 @@ export const GROUPS: readonly (readonly string[])[] = [
   // than a table: it is one fact about the profile, set when it is made, and
   // every existing profile is ordinary — hence the default.
   [`ALTER TABLE profiles ADD COLUMN kids INTEGER NOT NULL DEFAULT 0`],
+
+  // v7 -> v8: the household's editor's choice, the title the home page leads
+  // its features with. Shaped exactly like `kids` — a mark on a title, for
+  // everyone, with a tombstone — because it is the same kind of fact and
+  // syncs the same way. Several rows may be live after a merge (two devices
+  // pinned different titles); the newest mark is the pick.
+  [
+    `CREATE TABLE IF NOT EXISTS editors_choice(
+       set_id TEXT PRIMARY KEY,
+       marked_at INTEGER NOT NULL,
+       removed_at INTEGER
+     )`,
+  ],
 ];
 
 /** Every statement needed to reach `version` from nothing. */

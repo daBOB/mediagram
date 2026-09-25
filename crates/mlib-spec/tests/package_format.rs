@@ -4,7 +4,7 @@
 
 use mlib_spec::package::{
     LatestPointer, PACKAGE_FORMAT, PackageManifest, PointerError, PosterEntry, associated_data,
-    key_id, package_file_name, pointer_is_readable, poster_key_is_valid,
+    backdrop_key, key_id, package_file_name, pointer_is_readable, poster_key_is_valid,
 };
 
 fn pointer() -> LatestPointer {
@@ -250,6 +250,18 @@ fn poster_keys_accept_the_documented_shapes() {
     assert!(poster_key_is_valid("a-b-1"));
     // A season's artwork: one more part, `s` and digits, nothing else.
     assert!(poster_key_is_valid("tmdb-tv-550-s2"));
+    // A title's backdrop: the literal `bg`, never on a season.
+    assert!(poster_key_is_valid("tmdb-movie-550-bg"));
+    assert!(poster_key_is_valid("tmdb-tv-550-bg"));
+    for bad in [
+        "tmdb-tv-550-s2-bg",
+        "tmdb-tv-550-bg-s2",
+        "tmdb-movie-550-BG",
+        "tmdb-movie-550-bgx",
+        "tmdb-movie-550-b",
+    ] {
+        assert!(!poster_key_is_valid(bad), "`{bad}` must be rejected");
+    }
     for bad in [
         "tmdb-tv-550-s",
         "tmdb-tv-550-2",
@@ -622,4 +634,10 @@ fn associated_data_contains_no_character_a_json_writer_could_escape_differently(
         !aad.contains('\\') && !aad.contains('<') && !aad.contains('&') && !aad.contains('\''),
         "aad must be free of anything an HTML-safe writer would escape: {aad}"
     );
+}
+
+#[test]
+fn a_backdrop_sits_beside_its_titles_poster() {
+    assert_eq!(backdrop_key("tmdb-movie-550"), "tmdb-movie-550-bg");
+    assert!(poster_key_is_valid(&backdrop_key("tmdb-tv-7")));
 }

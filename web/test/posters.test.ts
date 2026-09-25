@@ -15,7 +15,7 @@ import { join } from "node:path";
 import { createRouter } from "../src/routes";
 import type { ByteSource } from "../src/http/stream";
 import type { PlayerRequest } from "../src/http/contracts";
-import { PosterStore, posterKeyFor } from "../src/package/posters";
+import { PosterStore, backdropKeyFor, posterKeyFor, posterKeyIsValid } from "../src/package/posters";
 import { emptyIndex } from "./index-fixture";
 
 /** A directory holding the given poster files, as either mode would have it. */
@@ -141,6 +141,42 @@ describe("serving artwork from a local index", () => {
     const [set] = JSON.parse(await new Response(catalog.body).text());
     expect(set.poster).toBeNull();
     expect((await route(get("/api/posters/tmdb-movie-999999.jpg"))).status).toBe(404);
+  });
+});
+
+describe("a title's backdrop", () => {
+  test("a film names its backdrop, which is served like a poster", async () => {
+    const dir = withPosters("tmdb-movie-5.jpg", "tmdb-movie-5-bg.jpg");
+    const db = emptyIndex();
+    completeSet(db, "01SET0000000000000000020", "movie", 5);
+    const route = createRouter({ db, source: NO_BYTES, posters: new PosterStore(dir) });
+
+    const [set] = JSON.parse(await new Response((await route(get("/api/sets"))).body).text());
+    expect(set.backdrop).toBe("tmdb-movie-5-bg");
+    expect((await route(get("/api/posters/tmdb-movie-5-bg.jpg"))).status).toBe(200);
+  });
+
+  test("a title with no backdrop fetched names none", async () => {
+    const db = emptyIndex();
+    completeSet(db, "01SET0000000000000000021", "ep", 7);
+    const route = createRouter({ db, source: NO_BYTES, posters: new PosterStore(withPosters("tmdb-tv-7.jpg")) });
+
+    const [set] = JSON.parse(await new Response((await route(get("/api/sets"))).body).text());
+    expect(set.backdrop).toBeNull();
+    expect(set.poster).toBe("tmdb-tv-7");
+  });
+
+  test("backdrops beside the posters are not counted as posters", () => {
+    expect(new PosterStore(withPosters("tmdb-movie-5.jpg", "tmdb-movie-5-bg.jpg")).count()).toBe(1);
+  });
+
+  test("backdrop keys follow the uploader's rule and nothing looser", () => {
+    expect(backdropKeyFor("tmdb-movie-5")).toBe("tmdb-movie-5-bg");
+    expect(backdropKeyFor(null)).toBeNull();
+    expect(posterKeyIsValid("tmdb-tv-7-bg")).toBe(true);
+    for (const bad of ["tmdb-tv-7-s2-bg", "tmdb-tv-7-bg-s2", "tmdb-tv-7-BG", "tmdb-tv-7-bgx"]) {
+      expect(posterKeyIsValid(bad)).toBe(false);
+    }
   });
 });
 

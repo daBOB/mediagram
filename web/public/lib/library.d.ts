@@ -32,10 +32,17 @@ export interface CatalogSet {
   addedAt: number;
   /** Browser presentation fields added by the catalog/search projection. */
   poster: string | null;
+  /** The title's wide landscape artwork (`tmdb-movie-5-bg`), when fetched. */
+  backdrop: string | null;
   seasonPoster: string | null;
   showKey: string | null;
   genres: string[];
   fsk: string | null;
+  /** The provider's facts about the whole title, shared by its episodes. */
+  tagline: string | null;
+  rating: number | null;
+  /** TMDB popularity as of when the entry was cached; ranks "trending". */
+  popularity: number | null;
   offline: boolean;
   hasSummary: boolean;
   subtitles: string[];

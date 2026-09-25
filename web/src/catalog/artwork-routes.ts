@@ -7,7 +7,8 @@ import { bodiless, withBody } from "../response";
 import type { SheetStore } from "../thumbs/sheets";
 import { spritePlan } from "../../public/lib/sprite-plan.js";
 
-const POSTER_PATH = /^\/api\/posters\/(tmdb-(?:movie|tv)-\d{1,12}(?:-s\d{1,4})?)\.jpg$/;
+// Posters, season posters and backdrops; `posterKeyIsValid` re-checks the key.
+const POSTER_PATH = /^\/api\/posters\/(tmdb-(?:movie|tv)-\d{1,12}(?:-s\d{1,4}|-bg)?)\.jpg$/;
 const THUMBS_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/thumbs\.jpg$/;
 
 export async function artworkResponse(

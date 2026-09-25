@@ -7,7 +7,7 @@ use std::path::Path;
 
 use anyhow::{Context, Result, bail};
 
-use crate::posters::{POSTER_MAX_BYTES, POSTER_TIMEOUT, PosterRef, poster_url};
+use crate::posters::{POSTER_MAX_BYTES, POSTER_TIMEOUT, PosterRef};
 
 /// Downloads each poster into `dir` as `<key>.jpg`, returning the keys that
 /// landed, in the order they were asked for.
@@ -44,7 +44,7 @@ pub async fn download_into(
             written.push(poster.key.clone());
             continue;
         }
-        match download(http, &poster_url(&poster.path), &dest).await {
+        match download(http, &poster.url(), &dest).await {
             Ok(()) => written.push(poster.key.clone()),
             Err(err) => {
                 tracing::warn!(key = %poster.key, error = %err, "poster skipped");

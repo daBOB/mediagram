@@ -19,6 +19,7 @@
 import { el } from "../dom.js";
 import { crumbs, heading, seasonGrid, SECTIONS } from "./shelf-view.js";
 import { describeSeries, seriesHeader } from "./series-header.js";
+import { titleBand } from "./title-band.js";
 import { hasSeasonWall, seasonNamed } from "./season-wall.js";
 import { codecLine, countOf, episodeLabel, humanDuration, humanSize } from "../format.js";
 import { countsUnder, divisionAt, firstItemOf, isDocument, levelEntries } from "../library.js";
@@ -221,11 +222,13 @@ export function renderCollection(main, section, collection, name, folders, { pla
     return;
   }
 
-  main.append(crumbs(section, SECTIONS[section].label, collection.name, []));
-  heading(main, collection.name, countOf(collection.count, "episode"));
   // The artwork a show's episodes share is the show's own; `firstItemOf`
   // is what the shelf card already uses to find it.
   const first = firstItemOf(collection.divisions);
+  const band = titleBand(first);
+  if (band) main.append(band);
+  main.append(crumbs(section, SECTIONS[section].label, collection.name, []));
+  heading(main, collection.name, countOf(collection.count, "episode"));
   const header = seriesHeader(collection, first?.poster ?? null);
   main.append(header);
   // Asked for separately, and late: the description is one page's worth of

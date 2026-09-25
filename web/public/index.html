@@ -4,30 +4,27 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>mediagram</title>
-    <meta name="color-scheme" content="light dark" />
-    <!-- Interface text and the existing wordmark are both available offline. -->
+    <meta name="color-scheme" content="dark light" />
+    <!-- Interface text and display serif are both available offline; the text
+         serif is left to load on first use, below the fold. -->
     <link rel="preload" href="/font/geist-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/font/fraunces-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
     <button type="button" class="skip-link" id="skip-library">Skip to library</button>
-    <!-- Navigation stays available alongside desktop shelves and wraps above
-         them on phones. Link destinations and labels are shared by both. -->
-    <header class="masthead">
+    <!-- Two navigations, as a magazine has two: the rail is the reader's own
+         index (what they started, kept and listed), the bar is the library's
+         departments. Every link keeps its hash, label and `data-section`, so
+         routing and the counts `app.js` writes are unchanged. -->
+    <aside class="library-rail">
       <!-- The wordmark goes where a masthead's does: back to the front
-           page. Nothing else in the header is a way home. -->
+           page. Nothing else in the rail is a way home. -->
       <a class="brand" href="#/home">mediagram</a>
-      <nav aria-label="Library">
-        <!-- Not a shelf either: what is underway and what has arrived. It is
-             where the player opens, so it is the first thing in the row. -->
-        <a href="#/home" data-section="home">Home</a>
-        <a href="#/movies" data-section="movies">Movies<span class="n" id="n-movies"></span></a>
-        <a href="#/series" data-section="series">Series<span class="n" id="n-series"></span></a>
-        <a href="#/tutorials" data-section="tutorials">Tutorials<span class="n" id="n-tutorials"></span></a>
+      <nav class="rail-nav" aria-label="Your shelves">
+        <span class="eyebrow rail-label" aria-hidden="true">Your shelves</span>
         <!-- The three that come from what has been watched rather than from
-             the catalog. Set apart, because a shelf you filled and a shelf the
-             library filled are different kinds of thing. -->
+             the catalog: a shelf you filled, not one the library filled. -->
         <a href="#/continue" data-section="continue" class="kept">Continue<span class="n" id="n-continue"></span></a>
         <a href="#/watchlist" data-section="watchlist" class="kept">Watchlist<span class="n" id="n-watchlist"></span></a>
         <a href="#/collections" data-section="collections" class="kept">Collections<span class="n" id="n-collections"></span></a>
@@ -38,17 +35,30 @@
              from. -->
         <a href="#/system" data-section="system" class="apart" id="nav-system" hidden>System</a>
       </nav>
-    </header>
+      <!-- The masthead line a magazine prints under its name, set from what
+           the library actually holds rather than a slogan. -->
+      <p class="rail-masthead" id="rail-masthead" aria-hidden="true"></p>
+    </aside>
 
-    <div class="library-toolbar">
-      <div class="search-field" role="search">
-        <label for="search">Search</label>
-        <input type="search" id="search" class="search" placeholder="Titles and summaries"
-               autocomplete="off" spellcheck="false" />
+    <header class="masthead">
+      <nav class="departments" aria-label="Library">
+        <!-- Not a shelf either: what is underway and what has arrived. It is
+             where the player opens, so it is the first thing in the row. -->
+        <a href="#/home" data-section="home">Home</a>
+        <a href="#/movies" data-section="movies">Movies<span class="n" id="n-movies"></span></a>
+        <a href="#/series" data-section="series">Series<span class="n" id="n-series"></span></a>
+        <a href="#/tutorials" data-section="tutorials">Tutorials<span class="n" id="n-tutorials"></span></a>
+      </nav>
+      <div class="library-toolbar">
+        <div class="search-field" role="search">
+          <label for="search" class="sr-only">Search</label>
+          <input type="search" id="search" class="search" placeholder="Search titles and summaries"
+                 autocomplete="off" spellcheck="false" />
+        </div>
+        <!-- A profile is a convenience, not a login. -->
+        <button id="who" class="who-button" hidden></button>
       </div>
-      <!-- A profile is a convenience, not a login. -->
-      <button id="who" class="who-button" hidden></button>
-    </div>
+    </header>
 
     <main id="main" tabindex="-1">
       <div class="loading-state" role="status">

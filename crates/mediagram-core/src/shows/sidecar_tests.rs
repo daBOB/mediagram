@@ -21,6 +21,7 @@ fn row(overview: &str) -> TitleDetailsRow {
         total_seasons: None,
         total_episodes: None,
         certification: None,
+        popularity: None,
     }
 }
 
