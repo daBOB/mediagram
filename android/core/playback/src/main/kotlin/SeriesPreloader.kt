@@ -14,8 +14,8 @@ data class PreloadItem(val setId: String, val title: String, val totalBytes: Lon
 
 /**
  * Takes one [PreloadItem] into the cache in full. The real implementation
- * runs a media3 `CacheWriter` over the same `cacheDataSourceFactory`
- * playback itself reads through; a test supplies a fake that only records
+ * runs a media3 `CacheWriter` over the strict `cacheDataSourceFactory`
+ * beneath the one playback reads through; a test supplies a fake that only records
  * what it was asked to write.
  */
 fun interface PreloadWriter {
