@@ -99,6 +99,7 @@ internal fun TvDialog(
         LaunchedEffect(Unit) { initialFocus.requestFocus() }
 
         Surface(
+            modifier = Modifier.keysToTheScreenBehind(),
             shape = RectangleShape,
             colors =
                 SurfaceDefaults.colors(

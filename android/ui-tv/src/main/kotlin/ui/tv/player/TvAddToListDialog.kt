@@ -31,6 +31,7 @@ import model.ListOfSets
 import ui.tv.TvTextRow
 import ui.tv.catalog.TvListNameQuestion
 import ui.tv.setup.TvDialog
+import ui.tv.setup.keysToTheScreenBehind
 
 /**
  * Filing the open title into one or more lists, from the player — the
@@ -116,7 +117,7 @@ private fun NewListQuestion(
 ) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().keysToTheScreenBehind(),
             shape = RectangleShape,
             colors =
                 SurfaceDefaults.colors(

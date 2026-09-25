@@ -33,7 +33,7 @@ internal const val TvUpNextCardTag = "tv-up-next-card"
  * [playNow] is how the screen puts the remote on Play now when the card
  * appears; the card itself never takes focus, because only the screen
  * knows whether a viewer is busy in the settings panel or the list dialog
- * at that moment (see [TvUpNextFocus]).
+ * at that moment (see [TvRemoteFollowsControls]).
  */
 @Composable
 internal fun TvUpNextCard(

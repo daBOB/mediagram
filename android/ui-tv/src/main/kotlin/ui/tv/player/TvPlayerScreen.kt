@@ -31,8 +31,6 @@ import player.PlayerUiState
 import player.PlayerViewModel
 import player.UpNextPhase
 import player.controlsMayShow
-import player.createListAndAdd
-import player.setInList
 import ui.player.KeepScreenOnWhile
 import ui.player.PlayerLifecycle
 import ui.player.PlayerNavigationEffects
@@ -194,14 +192,15 @@ fun TvPlayerScreen(
                 TvPlayerSettingsPanel(choices = choices, viewModel = viewModel, modifier = Modifier.align(Alignment.CenterEnd))
             }
         }
-        marks?.takeIf { choosingList }?.let { open ->
-            TvAddToListDialog(
-                lists = open.lists,
-                memberOf = open.memberOf,
-                onToggle = viewModel::setInList,
-                onCreate = viewModel::createListAndAdd,
-                onDismiss = { choosingList = false },
+        if (choosingList) {
+            TvAddToListOverPlayer(
+                marks = marks,
                 notice = actionNotice,
+                viewModel = viewModel,
+                onDismiss = { choosingList = false },
+                // Its window's own keys: the remote's media keys still reach
+                // the film through it, as through the settings panel.
+                keys = { event -> remote.onKey(event, player, controlsShowing = true, onSeekBar = false, canControl = controlsMayShow(state), panelOpen = true) },
             )
         }
         TvActionNotice(

@@ -100,6 +100,9 @@ internal class TvPlayerFixture(
         }
         every { media.play() } answers { setPlaying(true) }
         every { media.pause() } answers { setPlaying(false) }
+        // How the handle opens a title paused — the one an unattended
+        // switch waits on the autoplay gate with.
+        every { media.playWhenReady = any() } answers { setPlaying(firstArg()) }
         every { media.seekTo(any<Long>()) } answers { positionMs = firstArg() }
         every { media.stop() } answers {
             playbackState = Player.STATE_IDLE

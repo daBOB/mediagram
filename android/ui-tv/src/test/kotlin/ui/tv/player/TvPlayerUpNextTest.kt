@@ -7,16 +7,11 @@ import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import data.CatalogRepository
-import io.mockk.coEvery
-import io.mockk.mockk
 import io.mockk.verify
-import model.Kind
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import ui.tv.catalog.set
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -29,15 +24,9 @@ import kotlin.test.assertTrue
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
 class TvPlayerUpNextTest : TvPlayerScreenHarness() {
-    override val run = listOf("set-zero", "set-one", "set-two")
+    override val run = THREE_TITLE_RUN
 
-    override fun makeFixture(): TvPlayerFixture {
-        val catalog = mockk<CatalogRepository>(relaxed = true)
-        coEvery { catalog.mediaSet("set-zero") } returns set("set-zero", Kind.EPISODE, "Before", show = "A Show", addedAt = 1, episode = 3, durationSecs = 600)
-        coEvery { catalog.mediaSet("set-one") } returns set("set-one", Kind.EPISODE, "Pilot", show = "A Show", addedAt = 1, episode = 4, durationSecs = 600)
-        coEvery { catalog.mediaSet("set-two") } returns set("set-two", Kind.EPISODE, "After", show = "A Show", addedAt = 1, episode = 5, durationSecs = 600)
-        return TvPlayerFixture(catalog = catalog)
-    }
+    override fun makeFixture() = runFixture()
 
     @Test
     fun mediaNextMovesToTheNextTitleOfTheRun() {
@@ -121,15 +110,6 @@ class TvPlayerUpNextTest : TvPlayerScreenHarness() {
 
         compose.onNodeWithTag(TvSettingsPanelTag).assertDoesNotExist()
         compose.onNodeWithText("Play now").assertIsFocused()
-    }
-
-    /** Into the last half-minute, as a seek there lands: the card's own cue. */
-    private fun nearTheEnd() {
-        compose.runOnUiThread {
-            fixture.positionMs = 590_000L
-            controller.get().playerViewModel.onSeeked()
-        }
-        compose.waitForIdle()
     }
 
     private fun dispatch(
