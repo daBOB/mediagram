@@ -37,6 +37,15 @@ fun interface SetChunkSource {
 }
 
 /**
+ * How long chunk [index] of a set [totalSize] bytes long must be: every
+ * chunk is [CHUNK_BYTES] except the last, which is whatever is left.
+ */
+fun expectedChunkLength(
+    index: Long,
+    totalSize: Long,
+): Int = minOf(CHUNK_BYTES.toLong(), totalSize - index * CHUNK_BYTES).toInt()
+
+/**
  * Reads one [CHUNK_BYTES] slice through [core], one round trip per chunk.
  * The last chunk of a set is shorter — [CHUNK_BYTES] would run past
  * [totalSize] — so its length is whatever is actually left; every other
@@ -51,10 +60,8 @@ class TelegramChunkSource(
         index: Long,
         totalSize: Long,
     ): ByteArray {
-        val offset = index * CHUNK_BYTES
-        val want = minOf(CHUNK_BYTES.toLong(), totalSize - offset).toInt()
         return try {
-            core.read(setId, offset, want).also { counters.fetched(it.size) }
+            core.read(setId, index * CHUNK_BYTES, expectedChunkLength(index, totalSize)).also { counters.fetched(it.size) }
         } catch (e: CoreException) {
             // Wrapped so ExoPlayer's Loader can retry an IOException (a
             // dropped Telegram connection, most likely) through its

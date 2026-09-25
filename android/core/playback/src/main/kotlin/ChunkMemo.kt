@@ -2,6 +2,7 @@ package playback
 
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.io.IOException
 
 /**
  * The last [capacity] chunks [upstream] has fetched, keyed by `(setId,
@@ -19,8 +20,8 @@ import kotlinx.coroutines.sync.withLock
  * the same key would both reach [upstream] — the exact double fetch this
  * class exists to remove. Holding it across [upstream]'s own suspend call
  * serialises every fetch through one memo, which is the cost of that
- * guarantee; [upstream] is one Telegram connection per factory already, so
- * nothing above this was reading it in parallel to begin with.
+ * guarantee, and a cheap one: ExoPlayer runs one loader per progressive
+ * stream, so the player's reads through this memo were sequential anyway.
  */
 class ChunkMemo(
     private val upstream: SetChunkSource,
@@ -39,7 +40,18 @@ class ChunkMemo(
     ): ByteArray =
         mutex.withLock {
             val key = ChunkKey(setId, index)
-            cache[key] ?: upstream.chunk(setId, index, totalSize).also { cache[key] = it }
+            cache[key] ?: upstream.chunk(setId, index, totalSize).also { bytes ->
+                // Every offset MlibDataSource computes inside a chunk assumes
+                // the chunk is whole. A short one — a truncated network
+                // answer — would be served at the wrong offsets and, kept
+                // here, go on failing every retry; refused, the next read
+                // fetches it again.
+                val expected = expectedChunkLength(index, totalSize)
+                if (bytes.size != expected) {
+                    throw IOException("chunk $index of $setId came back with ${bytes.size} of $expected bytes")
+                }
+                cache[key] = bytes
+            }
         }
 
     private data class ChunkKey(val setId: String, val index: Long)
