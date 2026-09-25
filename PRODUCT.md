@@ -9,7 +9,8 @@ adaptive
 ## Users
 
 A household, several viewers, including children. Phones and tablets today; a
-television box is owned and waiting for a surface. Viewers are not
+television box is owned and is the next surface to be built, once the phone
+reaches parity with the web player. Viewers are not
 administrators: one person uploads and publishes the library, everyone else
 only ever finds something and watches it. The same person often moves between
 a laptop browser and a phone in the same evening.
@@ -35,8 +36,8 @@ consumers read one schema without reparsing anything.
 
 ## Operating Context
 
-566 sets across four kinds: films, series episodes, course lessons, and course
-documents. A private channel holds the media, the pinned index snapshots, and
+925 sets as of 2026-09-25: 581 films, 182 series episodes and 162 course
+lessons. Course documents are the fourth kind; none are in the index today. A private channel holds the media, the pinned index snapshots, and
 the posters.
 
 The web player runs on a machine in the household and is reached over the LAN
@@ -52,20 +53,27 @@ natively, and never transcodes.
 - The web player reads a published encrypted package; the phone reads the
   newest index snapshot the channel holds. The channel index carries no
   artwork, so the phone fetches its own posters and synopses from TMDB.
-- **The phone keeps no watch state.** Not "does not share one" -- `mediagram-core`
-  exposes fourteen methods and none touch progress. No resume, no watched
-  marks, no watchlist, no lists.
+- Both surfaces keep watch state per profile: positions, finished titles,
+  watchlist, collections and kids profiles live in the core's state and sync
+  through the channel, so a title started on one device continues on the
+  other. The phone's start page carries Continue and Next up, with Watchlist
+  and Collections beside them.
+- A kids profile sees only titles rated FSK 12 or under, plus unrated titles
+  marked for Kids by hand. The rule is ported from the web player, and there is
+  no separate Kids shelf on either surface.
+- Deliberate differences, recorded in `docs/system-architecture.md`: profiles
+  cannot be renamed or deleted on the phone, and sync is on by default there
+  where the web player needs `MEDIAGRAM_SYNC_STATE`.
 - The phone has no audio-track or subtitle selection (reaching 312 and 206 sets
-  respectively), no search, no notes, and no start page.
+  respectively), no search, and no notes.
 - `:ui-tv` is a registered Gradle module with no source. Television devices
-  install the app and get a placeholder.
+  install the app and get a placeholder. It is the next surface after phone
+  parity.
 - Playback on the phone is latency-bound, not throughput-bound: the link
   outruns the bitrate and what costs is the round trip per read.
 - minSdk 24, targetSdk 37, Compose with Material 3, media3 for playback.
   Secrets live in `EncryptedSharedPreferences`.
-- **Undecided:** how a viewer is identified on the phone. The web player keys
-  watch state by profile and has a picker; the phone has neither. Named as an
-  open question in two separate plans and not yet answered.
+- A viewer is identified by profile on both surfaces, chosen from a picker.
 
 ## Brand Commitments
 
@@ -86,24 +94,20 @@ four options on 2026-09-18, is not to be reversed silently:
 - **The player is black, on purpose, and carries its own palette.** A poster
   reads best against a page; a picture reads best against nothing.
 - Faces: Fraunces for display, Newsreader for text. Both variable, both with an
-  optical-size axis, currently shipped on the web only.
-
-Two things that are *not* commitments and should not be mistaken for them:
-
-- The Android app's current colour is `darkColorScheme()` called with no
-  arguments, which is Material 3's baseline purple. Nobody chose it.
-- `Theme.kt` does record a real decision, that the app is dark on every device
-  regardless of system theme, because "a media library is looked at in the
-  dark". Whether that survives contact with a paper-stock catalogue is open.
+  optical-size axis, shipped on both surfaces.
+- The Android app is dark on every device regardless of system theme, because
+  "a media library is looked at in the dark": the same catalogue set in ink
+  rather than on paper. Its palette and type are recorded in `DESIGN.md`.
 
 ## Evidence on Hand
 
 - A real library of 566 sets on a real Telegram Premium account's private
   channel, verified byte-for-byte against recorded hashes.
 - A real Android phone on `adb`, signed in, used for device validation.
-- `web/public/font/` holds both families as variable woff2, latin and latin-ext.
-  No Android font resources exist yet.
-- No iOS surface exists and none is planned. No television surface exists.
+- `web/public/font/` holds both families as variable woff2, latin and latin-ext;
+  the Android app ships the same two families.
+- No iOS surface exists and none is planned. No television surface exists yet;
+  it is next after phone parity.
 - No user research, analytics, or usage data of any kind. Future work must not
   invent any.
 
