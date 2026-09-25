@@ -156,8 +156,37 @@ internal class TvAppFixture(
         every { settings.completions } returns MutableStateFlow<List<SettingsCompletion>>(emptyList())
         every { system.failure } returns MutableStateFlow(null)
         every { system.state } returns
-            MutableStateFlow(SystemUiState("channel", sets.size.toLong(), 0, 4, null, null, 0, 1_000_000, 0, 0, 0, 0, true, "test", 0))
-        every { cacheBudget.state } returns MutableStateFlow(CacheOccupancy(0, 1_000_000))
+            MutableStateFlow(
+                SystemUiState(
+                    origin = "channel",
+                    sets = sets.size.toLong(),
+                    posters = 0,
+                    schema = 4,
+                    publishedAt = null,
+                    lastRefresh = null,
+                    heldBytes = 0,
+                    budgetBytes = 1_000_000,
+                    volumeLabel = "Internal storage",
+                    fellBack = false,
+                    fromCacheBytes = 0,
+                    fromUpstreamBytes = 0,
+                    fetches = 0,
+                    failedReads = 0,
+                    connected = true,
+                    versionName = "test",
+                    uptimeSeconds = 0,
+                ),
+            )
+        every { cacheBudget.state } returns
+            MutableStateFlow(
+                CacheOccupancy(
+                    heldBytes = 0,
+                    budgetBytes = 1_000_000,
+                    volumeLabel = "Internal storage",
+                    fellBack = false,
+                    capBytes = 1_000_000,
+                ),
+            )
         every { cacheBudget.failure } returns MutableStateFlow(null)
         val models =
             mapOf<Class<out ViewModel>, ViewModel>(

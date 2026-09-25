@@ -15,6 +15,8 @@ class SystemBlocksTest {
             lastRefresh = null,
             heldBytes = 0,
             budgetBytes = 0,
+            volumeLabel = "Internal storage",
+            fellBack = false,
             fromCacheBytes = 0,
             fromUpstreamBytes = 0,
             fetches = 0,

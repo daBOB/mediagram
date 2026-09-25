@@ -46,7 +46,7 @@ internal fun TvCacheBudgetBlock() {
         }
         if (current == null) return@Column
         TvInfoBlock(heading = "Cache", rows = listOf("Held" to heldOfBudget(current.heldBytes, current.budgetBytes)))
-        for (bytes in cacheBudgetChoices()) {
+        for (bytes in cacheBudgetChoices(current.capBytes)) {
             val chosen = bytes == current.budgetBytes
             TvTextRow(
                 text = "${if (chosen) CHOSEN else NOT_CHOSEN}  ${humanSize(bytes)}",
