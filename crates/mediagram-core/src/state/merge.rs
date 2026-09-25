@@ -55,6 +55,10 @@ pub struct MergedState {
     /// none.
     #[serde(default)]
     pub kids: Vec<ListRow>,
+    /// Household-wide too, and kept per title the same way; see
+    /// `schema.rs`'s v5.
+    #[serde(default, rename = "editorsChoice")]
+    pub editors_choice: Vec<ListRow>,
 }
 
 struct ViewerState {
@@ -74,13 +78,18 @@ struct ViewerState {
 /// over.
 pub fn merge_states(records: &[SyncRecord]) -> MergedState {
     let mut by_viewer: HashMap<String, ViewerState> = HashMap::new();
-    // Kids sits at the top level, not per viewer — see `schema.rs`.
+    // Kids and the editor's choice sit at the top level, not per viewer —
+    // see `schema.rs`.
     let mut kids: HashMap<String, Held<ListRow>> = HashMap::new();
+    let mut editors_choice: HashMap<String, Held<ListRow>> = HashMap::new();
 
     for record in records {
         let device = record.device.as_str();
         for row in &record.kids {
             keep(&mut kids, row.set_id.clone(), row.clone(), device);
+        }
+        for row in &record.editors_choice {
+            keep(&mut editors_choice, row.set_id.clone(), row.clone(), device);
         }
 
         for profile in &record.profiles {
@@ -164,5 +173,6 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
     MergedState {
         profiles,
         kids: kids.into_values().map(|h| h.row).collect(),
+        editors_choice: editors_choice.into_values().map(|h| h.row).collect(),
     }
 }

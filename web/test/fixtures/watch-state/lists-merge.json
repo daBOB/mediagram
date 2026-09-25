@@ -11,7 +11,12 @@
             "name": "André",
             "progress": [],
             "watched": [],
-            "watchlist": [{ "setId": "01A", "updatedAt": 1000 }],
+            "watchlist": [
+              {
+                "setId": "01A",
+                "updatedAt": 1000
+              }
+            ],
             "collections": []
           }
         ],
@@ -20,17 +25,48 @@
     ],
     "expect": {
       "kids": [],
+      "editorsChoice": [],
       "profiles": [
-        { "name": "andré", "displayName": "André", "watchlist": [{ "setId": "01A", "updatedAt": 1000 }], "collections": [] }
+        {
+          "name": "andré",
+          "displayName": "André",
+          "watchlist": [
+            {
+              "setId": "01A",
+              "updatedAt": 1000
+            }
+          ],
+          "collections": []
+        }
       ]
     }
   },
   {
     "name": "a kids mark travels from one device to another, with no profile of its own",
     "records": [
-      { "format": 1, "device": "laptop", "writtenAt": 0, "profiles": [], "kids": [{ "setId": "K1", "updatedAt": 500 }] }
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [],
+        "kids": [
+          {
+            "setId": "K1",
+            "updatedAt": 500
+          }
+        ]
+      }
     ],
-    "expect": { "kids": [{ "setId": "K1", "updatedAt": 500 }], "profiles": [] }
+    "expect": {
+      "kids": [
+        {
+          "setId": "K1",
+          "updatedAt": 500
+        }
+      ],
+      "editorsChoice": [],
+      "profiles": []
+    }
   },
   {
     "name": "a removed watchlist entry beats an older live one",
@@ -39,7 +75,20 @@
         "format": 1,
         "device": "laptop",
         "writtenAt": 0,
-        "profiles": [{ "name": "André", "progress": [], "watched": [], "watchlist": [{ "setId": "01A", "updatedAt": 1000 }], "collections": [] }],
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [],
+            "watchlist": [
+              {
+                "setId": "01A",
+                "updatedAt": 1000
+              }
+            ],
+            "collections": []
+          }
+        ],
         "kids": []
       },
       {
@@ -47,18 +96,37 @@
         "device": "desktop",
         "writtenAt": 0,
         "profiles": [
-          { "name": "André", "progress": [], "watched": [], "watchlist": [{ "setId": "01A", "updatedAt": 2000, "removed": true }], "collections": [] }
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [],
+            "watchlist": [
+              {
+                "setId": "01A",
+                "updatedAt": 2000,
+                "removed": true
+              }
+            ],
+            "collections": []
+          }
         ],
         "kids": []
       }
     ],
     "expect": {
       "kids": [],
+      "editorsChoice": [],
       "profiles": [
         {
           "name": "andré",
           "displayName": "André",
-          "watchlist": [{ "setId": "01A", "updatedAt": 2000, "removed": true }],
+          "watchlist": [
+            {
+              "setId": "01A",
+              "updatedAt": 2000,
+              "removed": true
+            }
+          ],
           "collections": []
         }
       ]
@@ -72,7 +140,19 @@
         "device": "laptop",
         "writtenAt": 0,
         "profiles": [
-          { "name": "André", "progress": [], "watched": [], "watchlist": [{ "setId": "01A", "updatedAt": 1000, "removed": true }], "collections": [] }
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [],
+            "watchlist": [
+              {
+                "setId": "01A",
+                "updatedAt": 1000,
+                "removed": true
+              }
+            ],
+            "collections": []
+          }
         ],
         "kids": []
       },
@@ -80,14 +160,38 @@
         "format": 1,
         "device": "desktop",
         "writtenAt": 0,
-        "profiles": [{ "name": "André", "progress": [], "watched": [], "watchlist": [{ "setId": "01A", "updatedAt": 2000 }], "collections": [] }],
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [],
+            "watchlist": [
+              {
+                "setId": "01A",
+                "updatedAt": 2000
+              }
+            ],
+            "collections": []
+          }
+        ],
         "kids": []
       }
     ],
     "expect": {
       "kids": [],
+      "editorsChoice": [],
       "profiles": [
-        { "name": "andré", "displayName": "André", "watchlist": [{ "setId": "01A", "updatedAt": 2000 }], "collections": [] }
+        {
+          "name": "andré",
+          "displayName": "André",
+          "watchlist": [
+            {
+              "setId": "01A",
+              "updatedAt": 2000
+            }
+          ],
+          "collections": []
+        }
       ]
     }
   },
@@ -98,21 +202,59 @@
         "format": 1,
         "device": "a",
         "writtenAt": 0,
-        "profiles": [{ "name": "André", "progress": [], "watched": [], "watchlist": [{ "setId": "01A", "updatedAt": 5000, "removed": true }], "collections": [] }],
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [],
+            "watchlist": [
+              {
+                "setId": "01A",
+                "updatedAt": 5000,
+                "removed": true
+              }
+            ],
+            "collections": []
+          }
+        ],
         "kids": []
       },
       {
         "format": 1,
         "device": "b",
         "writtenAt": 0,
-        "profiles": [{ "name": "André", "progress": [], "watched": [], "watchlist": [{ "setId": "01A", "updatedAt": 5000 }], "collections": [] }],
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [],
+            "watchlist": [
+              {
+                "setId": "01A",
+                "updatedAt": 5000
+              }
+            ],
+            "collections": []
+          }
+        ],
         "kids": []
       }
     ],
     "expect": {
       "kids": [],
+      "editorsChoice": [],
       "profiles": [
-        { "name": "andré", "displayName": "André", "watchlist": [{ "setId": "01A", "updatedAt": 5000 }], "collections": [] }
+        {
+          "name": "andré",
+          "displayName": "André",
+          "watchlist": [
+            {
+              "setId": "01A",
+              "updatedAt": 5000
+            }
+          ],
+          "collections": []
+        }
       ]
     }
   },
@@ -124,7 +266,22 @@
         "device": "laptop",
         "writtenAt": 0,
         "profiles": [
-          { "name": "André", "progress": [], "watched": [], "watchlist": [], "collections": [{ "id": "c1", "name": "Sunday", "items": ["01A"], "updatedAt": 1000 }] }
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [],
+            "watchlist": [],
+            "collections": [
+              {
+                "id": "c1",
+                "name": "Sunday",
+                "items": [
+                  "01A"
+                ],
+                "updatedAt": 1000
+              }
+            ]
+          }
         ],
         "kids": []
       },
@@ -138,7 +295,17 @@
             "progress": [],
             "watched": [],
             "watchlist": [],
-            "collections": [{ "id": "c1", "name": "Sunday night", "items": ["01A", "01B"], "updatedAt": 2000 }]
+            "collections": [
+              {
+                "id": "c1",
+                "name": "Sunday night",
+                "items": [
+                  "01A",
+                  "01B"
+                ],
+                "updatedAt": 2000
+              }
+            ]
           }
         ],
         "kids": []
@@ -146,12 +313,23 @@
     ],
     "expect": {
       "kids": [],
+      "editorsChoice": [],
       "profiles": [
         {
           "name": "andré",
           "displayName": "André",
           "watchlist": [],
-          "collections": [{ "id": "c1", "name": "Sunday night", "items": ["01A", "01B"], "updatedAt": 2000 }]
+          "collections": [
+            {
+              "id": "c1",
+              "name": "Sunday night",
+              "items": [
+                "01A",
+                "01B"
+              ],
+              "updatedAt": 2000
+            }
+          ]
         }
       ]
     }
@@ -164,7 +342,22 @@
         "device": "laptop",
         "writtenAt": 0,
         "profiles": [
-          { "name": "André", "progress": [], "watched": [], "watchlist": [], "collections": [{ "id": "c1", "name": "Sunday", "items": ["01A"], "updatedAt": 1000 }] }
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [],
+            "watchlist": [],
+            "collections": [
+              {
+                "id": "c1",
+                "name": "Sunday",
+                "items": [
+                  "01A"
+                ],
+                "updatedAt": 1000
+              }
+            ]
+          }
         ],
         "kids": []
       },
@@ -178,7 +371,17 @@
             "progress": [],
             "watched": [],
             "watchlist": [],
-            "collections": [{ "id": "c1", "name": "Sunday", "items": ["01A"], "updatedAt": 2000, "removed": true }]
+            "collections": [
+              {
+                "id": "c1",
+                "name": "Sunday",
+                "items": [
+                  "01A"
+                ],
+                "updatedAt": 2000,
+                "removed": true
+              }
+            ]
           }
         ],
         "kids": []
@@ -186,12 +389,23 @@
     ],
     "expect": {
       "kids": [],
+      "editorsChoice": [],
       "profiles": [
         {
           "name": "andré",
           "displayName": "André",
           "watchlist": [],
-          "collections": [{ "id": "c1", "name": "Sunday", "items": ["01A"], "updatedAt": 2000, "removed": true }]
+          "collections": [
+            {
+              "id": "c1",
+              "name": "Sunday",
+              "items": [
+                "01A"
+              ],
+              "updatedAt": 2000,
+              "removed": true
+            }
+          ]
         }
       ]
     }
@@ -199,10 +413,43 @@
   {
     "name": "a kids removal beats an older mark, the same rule as the watchlist",
     "records": [
-      { "format": 1, "device": "laptop", "writtenAt": 0, "profiles": [], "kids": [{ "setId": "K1", "updatedAt": 1000 }] },
-      { "format": 1, "device": "desktop", "writtenAt": 0, "profiles": [], "kids": [{ "setId": "K1", "updatedAt": 2000, "removed": true }] }
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [],
+        "kids": [
+          {
+            "setId": "K1",
+            "updatedAt": 1000
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "desktop",
+        "writtenAt": 0,
+        "profiles": [],
+        "kids": [
+          {
+            "setId": "K1",
+            "updatedAt": 2000,
+            "removed": true
+          }
+        ]
+      }
     ],
-    "expect": { "kids": [{ "setId": "K1", "updatedAt": 2000, "removed": true }], "profiles": [] }
+    "expect": {
+      "kids": [
+        {
+          "setId": "K1",
+          "updatedAt": 2000,
+          "removed": true
+        }
+      ],
+      "editorsChoice": [],
+      "profiles": []
+    }
   },
   {
     "name": "a document with none of these keys leaves what another device said about them alone",
@@ -216,24 +463,181 @@
             "name": "André",
             "progress": [],
             "watched": [],
-            "watchlist": [{ "setId": "01A", "updatedAt": 1000 }],
-            "collections": [{ "id": "c1", "name": "X", "items": [], "updatedAt": 1000 }]
+            "watchlist": [
+              {
+                "setId": "01A",
+                "updatedAt": 1000
+              }
+            ],
+            "collections": [
+              {
+                "id": "c1",
+                "name": "X",
+                "items": [],
+                "updatedAt": 1000
+              }
+            ]
           }
         ],
-        "kids": [{ "setId": "K1", "updatedAt": 1000 }]
+        "kids": [
+          {
+            "setId": "K1",
+            "updatedAt": 1000
+          }
+        ]
       },
-      { "format": 1, "device": "desktop", "writtenAt": 0, "profiles": [{ "name": "André", "progress": [], "watched": [] }] }
+      {
+        "format": 1,
+        "device": "desktop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
     ],
     "expect": {
-      "kids": [{ "setId": "K1", "updatedAt": 1000 }],
+      "kids": [
+        {
+          "setId": "K1",
+          "updatedAt": 1000
+        }
+      ],
+      "editorsChoice": [],
       "profiles": [
         {
           "name": "andré",
           "displayName": "André",
-          "watchlist": [{ "setId": "01A", "updatedAt": 1000 }],
-          "collections": [{ "id": "c1", "name": "X", "items": [], "updatedAt": 1000 }]
+          "watchlist": [
+            {
+              "setId": "01A",
+              "updatedAt": 1000
+            }
+          ],
+          "collections": [
+            {
+              "id": "c1",
+              "name": "X",
+              "items": [],
+              "updatedAt": 1000
+            }
+          ]
         }
       ]
+    }
+  },
+  {
+    "name": "the editor's choice travels from one device to another, with no profile of its own",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [],
+        "editorsChoice": [
+          {
+            "setId": "E1",
+            "updatedAt": 500
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "kids": [],
+      "editorsChoice": [
+        {
+          "setId": "E1",
+          "updatedAt": 500
+        }
+      ],
+      "profiles": []
+    }
+  },
+  {
+    "name": "an editor's-choice removal beats an older mark, the same rule as kids",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [],
+        "editorsChoice": [
+          {
+            "setId": "E1",
+            "updatedAt": 1000
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "desktop",
+        "writtenAt": 0,
+        "profiles": [],
+        "editorsChoice": [
+          {
+            "setId": "E1",
+            "updatedAt": 2000,
+            "removed": true
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "kids": [],
+      "editorsChoice": [
+        {
+          "setId": "E1",
+          "updatedAt": 2000,
+          "removed": true
+        }
+      ],
+      "profiles": []
+    }
+  },
+  {
+    "name": "two devices pinning different titles both stay live after a merge; the reader picks the newest",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [],
+        "editorsChoice": [
+          {
+            "setId": "E1",
+            "updatedAt": 1000
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "desktop",
+        "writtenAt": 0,
+        "profiles": [],
+        "editorsChoice": [
+          {
+            "setId": "E2",
+            "updatedAt": 2000
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "kids": [],
+      "editorsChoice": [
+        {
+          "setId": "E1",
+          "updatedAt": 1000
+        },
+        {
+          "setId": "E2",
+          "updatedAt": 2000
+        }
+      ],
+      "profiles": []
     }
   }
 ]

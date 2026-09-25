@@ -41,7 +41,7 @@ private class ProfileCore : CoreClient by CatalogCore() {
             finish.await()
             if (failPaused) error("old snapshot failed")
         }
-        return StateSnapshot(emptyList(), emptyList(), listOf(profileId), emptyList(), emptyList())
+        return StateSnapshot(emptyList(), emptyList(), listOf(profileId), emptyList(), emptyList(), null)
     }
 }
 

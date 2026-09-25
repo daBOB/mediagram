@@ -61,10 +61,14 @@ pub fn plan_fetch(core: &Core, fallback: &str) -> Result<FetchPlan, CoreError> {
 
 /// Fills both gaps a library leaves, for every title the provider numbers:
 /// the artwork an index cannot carry, and descriptions nobody fetched.
+///
+/// `backdrop_width` is Kotlin's own choice, by its screen class — see
+/// `fetch::fetch_into`.
 pub(in crate::api) async fn fetch_missing(
     core: &Core,
     tmdb_key: String,
     language: String,
+    backdrop_width: u32,
 ) -> Result<FetchReport, CoreError> {
     let plan = plan_fetch(core, &language)?;
     if plan.titles.is_empty() {
@@ -79,7 +83,7 @@ pub(in crate::api) async fn fetch_missing(
     // One client for both the provider and the downloads.
     let client = http::client()?;
     let api = TmdbClient::new(client.clone(), tmdb_key);
-    verify_then_fetch(core, api, &client, &plan).await
+    verify_then_fetch(core, api, &client, &plan, backdrop_width).await
 }
 
 /// Validates the key against the provider, then spends it.
@@ -93,10 +97,11 @@ pub async fn verify_then_fetch<A: TmdbApi>(
     api: A,
     http: &reqwest::Client,
     plan: &FetchPlan,
+    backdrop_width: u32,
 ) -> Result<FetchReport, CoreError> {
     verify_key(&api).await?;
     let cached = Localized::new(DiskCachedApi::new(api, &plan.artwork_dir), &plan.language);
-    Ok(fetch_into(core, &cached, http, plan).await)
+    Ok(fetch_into(core, &cached, http, plan, backdrop_width).await)
 }
 
 /// Splits the catalog into the titles the provider can be asked about, and

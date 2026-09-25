@@ -734,9 +734,13 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_delete_profile(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_editors_choice(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_profiles(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_retire_local_state(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_set_editors_choice(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_kids(
     ): Int
@@ -790,7 +794,7 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_check_password(`ptr`: Long,`password`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_fetch_missing(`ptr`: Long,`tmdbKey`: RustBuffer.ByValue,`language`: RustBuffer.ByValue,
+    external fun uniffi_mediagram_core_fn_method_core_fetch_missing(`ptr`: Long,`tmdbKey`: RustBuffer.ByValue,`language`: RustBuffer.ByValue,`backdropWidth`: Int,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_is_authorized(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Byte
@@ -840,10 +844,14 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_delete_profile(`ptr`: Long,`id`: RustBuffer.ByValue,
     ): Long
+    external fun uniffi_mediagram_core_fn_method_core_editors_choice(`ptr`: Long,
+    ): Long
     external fun uniffi_mediagram_core_fn_method_core_profiles(`ptr`: Long,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_retire_local_state(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Unit
+    external fun uniffi_mediagram_core_fn_method_core_set_editors_choice(`ptr`: Long,`setId`: RustBuffer.ByValue,`marked`: Byte,
+    ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_kids(`ptr`: Long,`setId`: RustBuffer.ByValue,`marked`: Byte,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_progress(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`at`: Double,`duration`: RustBuffer.ByValue,
@@ -991,7 +999,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_check_password() and 0xFFFF) != 58515) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_fetch_missing() and 0xFFFF) != 32024) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_fetch_missing() and 0xFFFF) != 27946) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_is_authorized() and 0xFFFF) != 30182) {
@@ -1000,7 +1008,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_list_libraries() and 0xFFFF) != 44487) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_list_sets() and 0xFFFF) != 45224) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_list_sets() and 0xFFFF) != 30355) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_poster_path() and 0xFFFF) != 16393) {
@@ -1066,10 +1074,16 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_delete_profile() and 0xFFFF) != 46619) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_editors_choice() and 0xFFFF) != 8907) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if ((lib.uniffi_mediagram_core_checksum_method_core_profiles() and 0xFFFF) != 5418) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_retire_local_state() and 0xFFFF) != 24465) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_editors_choice() and 0xFFFF) != 32210) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_kids() and 0xFFFF) != 54511) {
@@ -1633,13 +1647,16 @@ public interface CoreInterface {
     suspend fun `checkPassword`(`password`: kotlin.String)
 
     /**
-     * Fetches missing TMDB posters and descriptions together, once per title.
+     * Fetches missing TMDB posters, backdrops and descriptions together,
+     * once per title.
      *
      * The library's language takes precedence over the `language` fallback.
+     * `backdrop_width` is Kotlin's own choice, by its screen class — narrow
+     * on a phone, wider on a tablet.
      *
      * Kotlin owns the key; this call uses it without storing it.
      */
-    suspend fun `fetchMissing`(`tmdbKey`: kotlin.String, `language`: kotlin.String): FetchReport
+    suspend fun `fetchMissing`(`tmdbKey`: kotlin.String, `language`: kotlin.String, `backdropWidth`: kotlin.UInt): FetchReport
 
     /**
      * Whether a login has ever completed. Reads the persisted auth key
@@ -1790,6 +1807,11 @@ public interface CoreInterface {
     suspend fun `deleteProfile`(`id`: kotlin.String): kotlin.Boolean
 
     /**
+     * The household's editor's choice, or `None` for no pick.
+     */
+    suspend fun `editorsChoice`(): kotlin.String?
+
+    /**
      * Who watches this library. Empty until someone says.
      */
     suspend fun `profiles`(): List<Profile>
@@ -1802,6 +1824,13 @@ public interface CoreInterface {
      * briefly on an existing database action; it does not wait for network IO.
      */
     fun `retireLocalState`()
+
+    /**
+     * Pins `set_id` as the editor's choice, or unpins it. Pinning retires
+     * every other live pick; unpinning retires all of them — see
+     * `state::editors_choice` for the one-pick rule.
+     */
+    suspend fun `setEditorsChoice`(`setId`: kotlin.String, `marked`: kotlin.Boolean)
 
     /**
      * Marks (or unmarks) a title as a child's. Not scoped to a profile —
@@ -2033,15 +2062,18 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
-     * Fetches missing TMDB posters and descriptions together, once per title.
+     * Fetches missing TMDB posters, backdrops and descriptions together,
+     * once per title.
      *
      * The library's language takes precedence over the `language` fallback.
+     * `backdrop_width` is Kotlin's own choice, by its screen class — narrow
+     * on a phone, wider on a tablet.
      *
      * Kotlin owns the key; this call uses it without storing it.
      */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `fetchMissing`(`tmdbKey`: kotlin.String, `language`: kotlin.String) : FetchReport {
+    override suspend fun `fetchMissing`(`tmdbKey`: kotlin.String, `language`: kotlin.String, `backdropWidth`: kotlin.UInt) : FetchReport {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_fetch_missing(
@@ -2049,6 +2081,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
         FfiConverterString.lower(`tmdbKey`),
         FfiConverterString.lower(`language`),
+        FfiConverterUInt.lower(`backdropWidth`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -2664,6 +2697,29 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
+     * The household's editor's choice, or `None` for no pick.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `editorsChoice`() : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_editors_choice(
+                uniffiHandle,
+
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
      * Who watches this library. Empty until someone says.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -2703,6 +2759,34 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     }
 
 
+
+
+    /**
+     * Pins `set_id` as the editor's choice, or unpins it. Pinning retires
+     * every other live pick; unpinning retires all of them — see
+     * `state::editors_choice` for the one-pick rule.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setEditorsChoice`(`setId`: kotlin.String, `marked`: kotlin.Boolean) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_set_editors_choice(
+                uniffiHandle,
+
+        FfiConverterString.lower(`setId`),
+        FfiConverterBoolean.lower(`marked`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
 
 
     /**
@@ -3153,6 +3237,15 @@ data class FetchReport (
     ,
     var `postersAlreadyHeld`: kotlin.UInt
     ,
+    /**
+     * A title's backdrop, fetched at the width the caller asked for — see
+     * `enrich::fetch::fetch_into`. Zero throughout for a run the caller
+     * asked no width for.
+     */
+    var `backdropsFetched`: kotlin.UInt
+    ,
+    var `backdropsAlreadyHeld`: kotlin.UInt
+    ,
     var `detailsRecorded`: kotlin.UInt
     ,
     /**
@@ -3196,12 +3289,16 @@ public object FfiConverterTypeFetchReport: FfiConverterRustBuffer<FetchReport> {
             FfiConverterUInt.read(buf),
             FfiConverterUInt.read(buf),
             FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
         )
     }
 
     override fun allocationSize(value: FetchReport) = (
             FfiConverterUInt.allocationSize(value.`postersFetched`) +
             FfiConverterUInt.allocationSize(value.`postersAlreadyHeld`) +
+            FfiConverterUInt.allocationSize(value.`backdropsFetched`) +
+            FfiConverterUInt.allocationSize(value.`backdropsAlreadyHeld`) +
             FfiConverterUInt.allocationSize(value.`detailsRecorded`) +
             FfiConverterUInt.allocationSize(value.`detailsAlreadyKnown`) +
             FfiConverterUInt.allocationSize(value.`noProviderId`) +
@@ -3211,6 +3308,8 @@ public object FfiConverterTypeFetchReport: FfiConverterRustBuffer<FetchReport> {
     override fun write(value: FetchReport, buf: ByteBuffer) {
             FfiConverterUInt.write(value.`postersFetched`, buf)
             FfiConverterUInt.write(value.`postersAlreadyHeld`, buf)
+            FfiConverterUInt.write(value.`backdropsFetched`, buf)
+            FfiConverterUInt.write(value.`backdropsAlreadyHeld`, buf)
             FfiConverterUInt.write(value.`detailsRecorded`, buf)
             FfiConverterUInt.write(value.`detailsAlreadyKnown`, buf)
             FfiConverterUInt.write(value.`noProviderId`, buf)
@@ -3589,6 +3688,33 @@ data class SetSummary (
      * Whether the index holds a plot summary for this set.
      */
     var `hasSummary`: kotlin.Boolean
+    ,
+    /**
+     * The key this title's backdrop is stored under, present only when the
+     * file actually exists — `store::list_sets` checks disk, the way the
+     * web player's `routes.ts` checks its poster store before ever naming
+     * one. A series carries its show's, like `genres`.
+     */
+    var `backdropKey`: kotlin.String?
+    ,
+    /**
+     * The provider's tagline, for the home page's typographic break. A
+     * series carries its show's, like `genres`.
+     */
+    var `tagline`: kotlin.String?
+    ,
+    /**
+     * The provider's average rating, for the staff pick. A series carries
+     * its show's, like `genres`.
+     */
+    var `rating`: kotlin.Double?
+    ,
+    /**
+     * The provider's popularity figure, for the trending feature. Absent
+     * from an index written before it was recorded. A series carries its
+     * show's, like `genres`.
+     */
+    var `popularity`: kotlin.Double?
 
 ){
 
@@ -3629,6 +3755,10 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterSequenceString.read(buf),
             FfiConverterSequenceString.read(buf),
             FfiConverterBoolean.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalDouble.read(buf),
+            FfiConverterOptionalDouble.read(buf),
         )
     }
 
@@ -3656,7 +3786,11 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.allocationSize(value.`fsk`) +
             FfiConverterSequenceString.allocationSize(value.`genres`) +
             FfiConverterSequenceString.allocationSize(value.`subtitles`) +
-            FfiConverterBoolean.allocationSize(value.`hasSummary`)
+            FfiConverterBoolean.allocationSize(value.`hasSummary`) +
+            FfiConverterOptionalString.allocationSize(value.`backdropKey`) +
+            FfiConverterOptionalString.allocationSize(value.`tagline`) +
+            FfiConverterOptionalDouble.allocationSize(value.`rating`) +
+            FfiConverterOptionalDouble.allocationSize(value.`popularity`)
     )
 
     override fun write(value: SetSummary, buf: ByteBuffer) {
@@ -3684,6 +3818,10 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterSequenceString.write(value.`genres`, buf)
             FfiConverterSequenceString.write(value.`subtitles`, buf)
             FfiConverterBoolean.write(value.`hasSummary`, buf)
+            FfiConverterOptionalString.write(value.`backdropKey`, buf)
+            FfiConverterOptionalString.write(value.`tagline`, buf)
+            FfiConverterOptionalDouble.write(value.`rating`, buf)
+            FfiConverterOptionalDouble.write(value.`popularity`, buf)
     }
 }
 
@@ -3702,6 +3840,14 @@ data class StateSnapshot (
     var `kids`: List<kotlin.String>
     ,
     var `collections`: List<ListRow>
+    ,
+    /**
+     * The household's editor's choice, or `None` for no pick. Not scoped
+     * to this profile — see `state::schema`'s v5 — carried here anyway so
+     * the home page's picks arrive in the same round trip as everything
+     * else it draws.
+     */
+    var `editorsChoice`: kotlin.String?
 
 ){
 
@@ -3723,6 +3869,7 @@ public object FfiConverterTypeStateSnapshot: FfiConverterRustBuffer<StateSnapsho
             FfiConverterSequenceString.read(buf),
             FfiConverterSequenceString.read(buf),
             FfiConverterSequenceTypeListRow.read(buf),
+            FfiConverterOptionalString.read(buf),
         )
     }
 
@@ -3731,7 +3878,8 @@ public object FfiConverterTypeStateSnapshot: FfiConverterRustBuffer<StateSnapsho
             FfiConverterSequenceTypeWatchedRow.allocationSize(value.`watched`) +
             FfiConverterSequenceString.allocationSize(value.`watchlist`) +
             FfiConverterSequenceString.allocationSize(value.`kids`) +
-            FfiConverterSequenceTypeListRow.allocationSize(value.`collections`)
+            FfiConverterSequenceTypeListRow.allocationSize(value.`collections`) +
+            FfiConverterOptionalString.allocationSize(value.`editorsChoice`)
     )
 
     override fun write(value: StateSnapshot, buf: ByteBuffer) {
@@ -3740,6 +3888,7 @@ public object FfiConverterTypeStateSnapshot: FfiConverterRustBuffer<StateSnapsho
             FfiConverterSequenceString.write(value.`watchlist`, buf)
             FfiConverterSequenceString.write(value.`kids`, buf)
             FfiConverterSequenceTypeListRow.write(value.`collections`, buf)
+            FfiConverterOptionalString.write(value.`editorsChoice`, buf)
     }
 }
 

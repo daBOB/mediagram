@@ -26,6 +26,10 @@ class CatalogEnrichmentFetcher
     constructor(
         private val coreProvider: CoreProvider,
         private val settings: TmdbSettings,
+        // Hilt always supplies the real, device-read width in production
+        // (see `DataModule.provideBackdropWidth`); the default here only
+        // spares every existing test constructor a third argument.
+        private val backdropWidth: BackdropWidth = BackdropWidth { 780 },
     ) {
         private val fallbackLanguage = Locale.getDefault().toLanguageTag()
         private val fetching = Mutex()
@@ -91,7 +95,7 @@ class CatalogEnrichmentFetcher
                     return null
                 }
                 current.update { if (quiet) it.copy(hasKey = true) else it.copy(hasKey = true, report = null, error = null) }
-                val report = coreProvider.awaitCore().fetchMissing(key, fallbackLanguage)
+                val report = coreProvider.awaitCore().fetchMissing(key, fallbackLanguage, backdropWidth.pixels())
                 if (!quiet) current.update { it.copy(report = report) }
                 return report
             } catch (e: CancellationException) {

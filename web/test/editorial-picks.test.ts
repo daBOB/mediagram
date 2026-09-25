@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   COVER_COUNT, DAY_MS, arrivedWithin, dayOf, homeEditorial, seededRandom,
 } from "../public/lib/catalog/editorial-picks.js";
@@ -132,4 +134,68 @@ test("the seeded source repeats for a seed and differs across days", () => {
   const again = seededRandom(dayOf(NOW));
   expect([first(), first()]).toEqual([again(), again()]);
   expect(seededRandom(1)()).not.toBe(seededRandom(2)());
+});
+
+/**
+ * `web/test/fixtures/editorial-picks/home-editorial.json` pins the exact
+ * cover order, feature picks and quote `seededRandom`'s mulberry32
+ * produces for a handful of seeded scenarios — the Android port
+ * (`EditorialPicks.kt`) is pinned against the same file. This is what
+ * proves that file is not drifting from what `homeEditorial` actually
+ * does; a Kotlin-only fixture would prove nothing about the web.
+ */
+describe("the shared editorial-picks fixture", () => {
+  interface FixtureFilm {
+    setId: string;
+    title: string;
+    poster: string | null;
+    backdrop: string | null;
+    rating: number | null;
+    popularity: number | null;
+    addedAt: number;
+    tagline: string | null;
+  }
+  interface Case {
+    name: string;
+    movies: FixtureFilm[];
+    editorsChoice: string | null;
+    now: number;
+    onRow: string[];
+    watchedIds?: string[];
+    expect: {
+      cover: string[];
+      features: { kind: string; setId: string }[];
+      quote: string | null;
+      thisMonth: string[];
+    };
+  }
+
+  const path = join(import.meta.dir, "fixtures", "editorial-picks", "home-editorial.json");
+  const cases = JSON.parse(readFileSync(path, "utf8")) as Case[];
+
+  test("the fixture file holds cases", () => {
+    expect(cases.length).toBeGreaterThan(0);
+  });
+
+  for (const one of cases) {
+    test(one.name, () => {
+      const movies = one.movies.map((film) => catalogSet({
+        setId: film.setId, title: film.title, poster: film.poster, backdrop: film.backdrop,
+        rating: film.rating, popularity: film.popularity, addedAt: film.addedAt, tagline: film.tagline,
+      }));
+      const byId = new Map(movies.map((set) => [set.setId, set]));
+      const watched = new Set(one.watchedIds ?? []);
+      const picks = homeEditorial({
+        movies, byId, isWatched: (id) => watched.has(id),
+        editorsChoice: one.editorsChoice, now: one.now, onRow: new Set(one.onRow),
+      });
+
+      expect({
+        cover: picks.cover.map((set: { setId: string }) => set.setId),
+        features: picks.features.map((f) => ({ kind: f.kind as string, setId: f.set.setId })),
+        quote: picks.quote?.setId ?? null,
+        thisMonth: picks.thisMonth.map((set: { setId: string }) => set.setId),
+      }).toEqual(one.expect);
+    });
+  }
 });

@@ -99,6 +99,15 @@ class FakeWatchStateRepository(
             )
     }
 
+    override suspend fun setEditorsChoice(
+        setId: String,
+        marked: Boolean,
+    ) {
+        if (chosenProfileId.value == null) return
+        calls += "setEditorsChoice $setId $marked"
+        _snapshot.value = _snapshot.value.copy(editorsChoice = if (marked) setId else null)
+    }
+
     override suspend fun createList(name: String): ListOfSets? {
         if (chosenProfileId.value == null) return null
         calls += "createList $name"

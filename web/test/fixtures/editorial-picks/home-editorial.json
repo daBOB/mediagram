@@ -1,0 +1,978 @@
+[
+  {
+    "name": "a dozen films, no pin, day 20000",
+    "movies": [
+      {
+        "setId": "f0",
+        "title": "f0",
+        "poster": "p-f0",
+        "backdrop": "b-f0",
+        "rating": 1,
+        "popularity": 0,
+        "addedAt": 0,
+        "tagline": "Tagline 0."
+      },
+      {
+        "setId": "f1",
+        "title": "f1",
+        "poster": "p-f1",
+        "backdrop": "b-f1",
+        "rating": 2,
+        "popularity": 1,
+        "addedAt": 1,
+        "tagline": null
+      },
+      {
+        "setId": "f2",
+        "title": "f2",
+        "poster": "p-f2",
+        "backdrop": "b-f2",
+        "rating": 3,
+        "popularity": 2,
+        "addedAt": 2,
+        "tagline": null
+      },
+      {
+        "setId": "f3",
+        "title": "f3",
+        "poster": "p-f3",
+        "backdrop": "b-f3",
+        "rating": 4,
+        "popularity": 99,
+        "addedAt": 3,
+        "tagline": null
+      },
+      {
+        "setId": "f4",
+        "title": "f4",
+        "poster": "p-f4",
+        "backdrop": "b-f4",
+        "rating": 5,
+        "popularity": 4,
+        "addedAt": 4,
+        "tagline": "Tagline 4."
+      },
+      {
+        "setId": "f5",
+        "title": "f5",
+        "poster": "p-f5",
+        "backdrop": "b-f5",
+        "rating": 6,
+        "popularity": 5,
+        "addedAt": 5,
+        "tagline": null
+      },
+      {
+        "setId": "f6",
+        "title": "f6",
+        "poster": "p-f6",
+        "backdrop": "b-f6",
+        "rating": 7,
+        "popularity": 6,
+        "addedAt": 6,
+        "tagline": null
+      },
+      {
+        "setId": "f7",
+        "title": "f7",
+        "poster": "p-f7",
+        "backdrop": "b-f7",
+        "rating": 1,
+        "popularity": 7,
+        "addedAt": 7,
+        "tagline": null
+      },
+      {
+        "setId": "f8",
+        "title": "f8",
+        "poster": "p-f8",
+        "backdrop": "b-f8",
+        "rating": 2,
+        "popularity": 8,
+        "addedAt": 8,
+        "tagline": "Tagline 8."
+      },
+      {
+        "setId": "f9",
+        "title": "f9",
+        "poster": "p-f9",
+        "backdrop": "b-f9",
+        "rating": 3,
+        "popularity": 9,
+        "addedAt": 9,
+        "tagline": null
+      },
+      {
+        "setId": "f10",
+        "title": "f10",
+        "poster": "p-f10",
+        "backdrop": "b-f10",
+        "rating": 4,
+        "popularity": 10,
+        "addedAt": 10,
+        "tagline": null
+      },
+      {
+        "setId": "f11",
+        "title": "f11",
+        "poster": "p-f11",
+        "backdrop": "b-f11",
+        "rating": 5,
+        "popularity": 11,
+        "addedAt": 11,
+        "tagline": null
+      },
+      {
+        "setId": "f12",
+        "title": "f12",
+        "poster": "p-f12",
+        "backdrop": "b-f12",
+        "rating": 6,
+        "popularity": 12,
+        "addedAt": 12,
+        "tagline": "Tagline 12."
+      },
+      {
+        "setId": "f13",
+        "title": "f13",
+        "poster": "p-f13",
+        "backdrop": "b-f13",
+        "rating": 7,
+        "popularity": 13,
+        "addedAt": 13,
+        "tagline": null
+      }
+    ],
+    "editorsChoice": null,
+    "now": 1728003600000,
+    "onRow": [],
+    "expect": {
+      "cover": [
+        "f4",
+        "f6",
+        "f5",
+        "f0",
+        "f1"
+      ],
+      "features": [
+        {
+          "kind": "staff",
+          "setId": "f12"
+        },
+        {
+          "kind": "trending",
+          "setId": "f3"
+        },
+        {
+          "kind": "staff",
+          "setId": "f13"
+        }
+      ],
+      "quote": "f8",
+      "thisMonth": []
+    }
+  },
+  {
+    "name": "same day, three hours later, day 20000",
+    "movies": [
+      {
+        "setId": "f0",
+        "title": "f0",
+        "poster": "p-f0",
+        "backdrop": "b-f0",
+        "rating": 1,
+        "popularity": 0,
+        "addedAt": 0,
+        "tagline": "Tagline 0."
+      },
+      {
+        "setId": "f1",
+        "title": "f1",
+        "poster": "p-f1",
+        "backdrop": "b-f1",
+        "rating": 2,
+        "popularity": 1,
+        "addedAt": 1,
+        "tagline": null
+      },
+      {
+        "setId": "f2",
+        "title": "f2",
+        "poster": "p-f2",
+        "backdrop": "b-f2",
+        "rating": 3,
+        "popularity": 2,
+        "addedAt": 2,
+        "tagline": null
+      },
+      {
+        "setId": "f3",
+        "title": "f3",
+        "poster": "p-f3",
+        "backdrop": "b-f3",
+        "rating": 4,
+        "popularity": 99,
+        "addedAt": 3,
+        "tagline": null
+      },
+      {
+        "setId": "f4",
+        "title": "f4",
+        "poster": "p-f4",
+        "backdrop": "b-f4",
+        "rating": 5,
+        "popularity": 4,
+        "addedAt": 4,
+        "tagline": "Tagline 4."
+      },
+      {
+        "setId": "f5",
+        "title": "f5",
+        "poster": "p-f5",
+        "backdrop": "b-f5",
+        "rating": 6,
+        "popularity": 5,
+        "addedAt": 5,
+        "tagline": null
+      },
+      {
+        "setId": "f6",
+        "title": "f6",
+        "poster": "p-f6",
+        "backdrop": "b-f6",
+        "rating": 7,
+        "popularity": 6,
+        "addedAt": 6,
+        "tagline": null
+      },
+      {
+        "setId": "f7",
+        "title": "f7",
+        "poster": "p-f7",
+        "backdrop": "b-f7",
+        "rating": 1,
+        "popularity": 7,
+        "addedAt": 7,
+        "tagline": null
+      },
+      {
+        "setId": "f8",
+        "title": "f8",
+        "poster": "p-f8",
+        "backdrop": "b-f8",
+        "rating": 2,
+        "popularity": 8,
+        "addedAt": 8,
+        "tagline": "Tagline 8."
+      },
+      {
+        "setId": "f9",
+        "title": "f9",
+        "poster": "p-f9",
+        "backdrop": "b-f9",
+        "rating": 3,
+        "popularity": 9,
+        "addedAt": 9,
+        "tagline": null
+      },
+      {
+        "setId": "f10",
+        "title": "f10",
+        "poster": "p-f10",
+        "backdrop": "b-f10",
+        "rating": 4,
+        "popularity": 10,
+        "addedAt": 10,
+        "tagline": null
+      },
+      {
+        "setId": "f11",
+        "title": "f11",
+        "poster": "p-f11",
+        "backdrop": "b-f11",
+        "rating": 5,
+        "popularity": 11,
+        "addedAt": 11,
+        "tagline": null
+      },
+      {
+        "setId": "f12",
+        "title": "f12",
+        "poster": "p-f12",
+        "backdrop": "b-f12",
+        "rating": 6,
+        "popularity": 12,
+        "addedAt": 12,
+        "tagline": "Tagline 12."
+      },
+      {
+        "setId": "f13",
+        "title": "f13",
+        "poster": "p-f13",
+        "backdrop": "b-f13",
+        "rating": 7,
+        "popularity": 13,
+        "addedAt": 13,
+        "tagline": null
+      }
+    ],
+    "editorsChoice": null,
+    "now": 1728014400000,
+    "onRow": [],
+    "expect": {
+      "cover": [
+        "f4",
+        "f6",
+        "f5",
+        "f0",
+        "f1"
+      ],
+      "features": [
+        {
+          "kind": "staff",
+          "setId": "f12"
+        },
+        {
+          "kind": "trending",
+          "setId": "f3"
+        },
+        {
+          "kind": "staff",
+          "setId": "f13"
+        }
+      ],
+      "quote": "f8",
+      "thisMonth": []
+    }
+  },
+  {
+    "name": "the following day, day 20001",
+    "movies": [
+      {
+        "setId": "f0",
+        "title": "f0",
+        "poster": "p-f0",
+        "backdrop": "b-f0",
+        "rating": 1,
+        "popularity": 0,
+        "addedAt": 0,
+        "tagline": "Tagline 0."
+      },
+      {
+        "setId": "f1",
+        "title": "f1",
+        "poster": "p-f1",
+        "backdrop": "b-f1",
+        "rating": 2,
+        "popularity": 1,
+        "addedAt": 1,
+        "tagline": null
+      },
+      {
+        "setId": "f2",
+        "title": "f2",
+        "poster": "p-f2",
+        "backdrop": "b-f2",
+        "rating": 3,
+        "popularity": 2,
+        "addedAt": 2,
+        "tagline": null
+      },
+      {
+        "setId": "f3",
+        "title": "f3",
+        "poster": "p-f3",
+        "backdrop": "b-f3",
+        "rating": 4,
+        "popularity": 99,
+        "addedAt": 3,
+        "tagline": null
+      },
+      {
+        "setId": "f4",
+        "title": "f4",
+        "poster": "p-f4",
+        "backdrop": "b-f4",
+        "rating": 5,
+        "popularity": 4,
+        "addedAt": 4,
+        "tagline": "Tagline 4."
+      },
+      {
+        "setId": "f5",
+        "title": "f5",
+        "poster": "p-f5",
+        "backdrop": "b-f5",
+        "rating": 6,
+        "popularity": 5,
+        "addedAt": 5,
+        "tagline": null
+      },
+      {
+        "setId": "f6",
+        "title": "f6",
+        "poster": "p-f6",
+        "backdrop": "b-f6",
+        "rating": 7,
+        "popularity": 6,
+        "addedAt": 6,
+        "tagline": null
+      },
+      {
+        "setId": "f7",
+        "title": "f7",
+        "poster": "p-f7",
+        "backdrop": "b-f7",
+        "rating": 1,
+        "popularity": 7,
+        "addedAt": 7,
+        "tagline": null
+      },
+      {
+        "setId": "f8",
+        "title": "f8",
+        "poster": "p-f8",
+        "backdrop": "b-f8",
+        "rating": 2,
+        "popularity": 8,
+        "addedAt": 8,
+        "tagline": "Tagline 8."
+      },
+      {
+        "setId": "f9",
+        "title": "f9",
+        "poster": "p-f9",
+        "backdrop": "b-f9",
+        "rating": 3,
+        "popularity": 9,
+        "addedAt": 9,
+        "tagline": null
+      },
+      {
+        "setId": "f10",
+        "title": "f10",
+        "poster": "p-f10",
+        "backdrop": "b-f10",
+        "rating": 4,
+        "popularity": 10,
+        "addedAt": 10,
+        "tagline": null
+      },
+      {
+        "setId": "f11",
+        "title": "f11",
+        "poster": "p-f11",
+        "backdrop": "b-f11",
+        "rating": 5,
+        "popularity": 11,
+        "addedAt": 11,
+        "tagline": null
+      },
+      {
+        "setId": "f12",
+        "title": "f12",
+        "poster": "p-f12",
+        "backdrop": "b-f12",
+        "rating": 6,
+        "popularity": 12,
+        "addedAt": 12,
+        "tagline": "Tagline 12."
+      },
+      {
+        "setId": "f13",
+        "title": "f13",
+        "poster": "p-f13",
+        "backdrop": "b-f13",
+        "rating": 7,
+        "popularity": 13,
+        "addedAt": 13,
+        "tagline": null
+      }
+    ],
+    "editorsChoice": null,
+    "now": 1728090000000,
+    "onRow": [],
+    "expect": {
+      "cover": [
+        "f13",
+        "f1",
+        "f12",
+        "f11",
+        "f2"
+      ],
+      "features": [
+        {
+          "kind": "staff",
+          "setId": "f5"
+        },
+        {
+          "kind": "trending",
+          "setId": "f3"
+        },
+        {
+          "kind": "staff",
+          "setId": "f6"
+        }
+      ],
+      "quote": "f4",
+      "thisMonth": []
+    }
+  },
+  {
+    "name": "a pinned editor's choice leads, day 20000",
+    "movies": [
+      {
+        "setId": "pinned",
+        "title": "pinned",
+        "poster": "p-pinned",
+        "backdrop": "b-pinned",
+        "rating": 5,
+        "popularity": 1,
+        "addedAt": 1,
+        "tagline": null
+      },
+      {
+        "setId": "popular",
+        "title": "popular",
+        "poster": "p-popular",
+        "backdrop": "b-popular",
+        "rating": 5,
+        "popularity": 90,
+        "addedAt": 1,
+        "tagline": null
+      },
+      {
+        "setId": "acclaimed",
+        "title": "acclaimed",
+        "poster": "p-acclaimed",
+        "backdrop": "b-acclaimed",
+        "rating": 9,
+        "popularity": 2,
+        "addedAt": 1,
+        "tagline": null
+      },
+      {
+        "setId": "plain",
+        "title": "plain",
+        "poster": "p-plain",
+        "backdrop": "b-plain",
+        "rating": 4,
+        "popularity": 1,
+        "addedAt": 1,
+        "tagline": null
+      },
+      {
+        "setId": "extra0",
+        "title": "extra0",
+        "poster": "p-extra0",
+        "backdrop": "b-extra0",
+        "rating": 1,
+        "popularity": 0,
+        "addedAt": 0,
+        "tagline": null
+      },
+      {
+        "setId": "extra1",
+        "title": "extra1",
+        "poster": "p-extra1",
+        "backdrop": "b-extra1",
+        "rating": 2,
+        "popularity": 1,
+        "addedAt": 1,
+        "tagline": null
+      },
+      {
+        "setId": "extra2",
+        "title": "extra2",
+        "poster": "p-extra2",
+        "backdrop": "b-extra2",
+        "rating": 3,
+        "popularity": 2,
+        "addedAt": 2,
+        "tagline": null
+      },
+      {
+        "setId": "extra3",
+        "title": "extra3",
+        "poster": "p-extra3",
+        "backdrop": "b-extra3",
+        "rating": 4,
+        "popularity": 3,
+        "addedAt": 3,
+        "tagline": null
+      },
+      {
+        "setId": "extra4",
+        "title": "extra4",
+        "poster": "p-extra4",
+        "backdrop": "b-extra4",
+        "rating": 5,
+        "popularity": 4,
+        "addedAt": 4,
+        "tagline": null
+      },
+      {
+        "setId": "extra5",
+        "title": "extra5",
+        "poster": "p-extra5",
+        "backdrop": "b-extra5",
+        "rating": 6,
+        "popularity": 5,
+        "addedAt": 5,
+        "tagline": null
+      },
+      {
+        "setId": "extra6",
+        "title": "extra6",
+        "poster": "p-extra6",
+        "backdrop": "b-extra6",
+        "rating": 7,
+        "popularity": 6,
+        "addedAt": 6,
+        "tagline": null
+      },
+      {
+        "setId": "extra7",
+        "title": "extra7",
+        "poster": "p-extra7",
+        "backdrop": "b-extra7",
+        "rating": 8,
+        "popularity": 7,
+        "addedAt": 7,
+        "tagline": null
+      }
+    ],
+    "editorsChoice": "pinned",
+    "now": 1728003600000,
+    "onRow": [],
+    "expect": {
+      "cover": [
+        "extra1",
+        "plain",
+        "extra2",
+        "extra7",
+        "extra0"
+      ],
+      "features": [
+        {
+          "kind": "editor",
+          "setId": "pinned"
+        },
+        {
+          "kind": "trending",
+          "setId": "popular"
+        },
+        {
+          "kind": "staff",
+          "setId": "acclaimed"
+        }
+      ],
+      "quote": null,
+      "thisMonth": []
+    }
+  },
+  {
+    "name": "watched and artwork-less titles never appear, day 20000",
+    "movies": [
+      {
+        "setId": "seen",
+        "title": "seen",
+        "poster": "p-seen",
+        "backdrop": "b-seen",
+        "rating": 6,
+        "popularity": 99,
+        "addedAt": 1,
+        "tagline": null
+      },
+      {
+        "setId": "bare",
+        "title": "bare",
+        "poster": null,
+        "backdrop": null,
+        "rating": 6,
+        "popularity": 98,
+        "addedAt": 1,
+        "tagline": null
+      },
+      {
+        "setId": "ok0",
+        "title": "ok0",
+        "poster": "p-ok0",
+        "backdrop": "b-ok0",
+        "rating": 1,
+        "popularity": 0,
+        "addedAt": 0,
+        "tagline": null
+      },
+      {
+        "setId": "ok1",
+        "title": "ok1",
+        "poster": "p-ok1",
+        "backdrop": "b-ok1",
+        "rating": 2,
+        "popularity": 1,
+        "addedAt": 1,
+        "tagline": null
+      },
+      {
+        "setId": "ok2",
+        "title": "ok2",
+        "poster": "p-ok2",
+        "backdrop": "b-ok2",
+        "rating": 3,
+        "popularity": 2,
+        "addedAt": 2,
+        "tagline": null
+      },
+      {
+        "setId": "ok3",
+        "title": "ok3",
+        "poster": "p-ok3",
+        "backdrop": "b-ok3",
+        "rating": 4,
+        "popularity": 3,
+        "addedAt": 3,
+        "tagline": null
+      },
+      {
+        "setId": "ok4",
+        "title": "ok4",
+        "poster": "p-ok4",
+        "backdrop": "b-ok4",
+        "rating": 5,
+        "popularity": 4,
+        "addedAt": 4,
+        "tagline": null
+      },
+      {
+        "setId": "ok5",
+        "title": "ok5",
+        "poster": "p-ok5",
+        "backdrop": "b-ok5",
+        "rating": 6,
+        "popularity": 5,
+        "addedAt": 5,
+        "tagline": null
+      },
+      {
+        "setId": "ok6",
+        "title": "ok6",
+        "poster": "p-ok6",
+        "backdrop": "b-ok6",
+        "rating": 7,
+        "popularity": 6,
+        "addedAt": 6,
+        "tagline": null
+      },
+      {
+        "setId": "ok7",
+        "title": "ok7",
+        "poster": "p-ok7",
+        "backdrop": "b-ok7",
+        "rating": 8,
+        "popularity": 7,
+        "addedAt": 7,
+        "tagline": null
+      },
+      {
+        "setId": "ok8",
+        "title": "ok8",
+        "poster": "p-ok8",
+        "backdrop": "b-ok8",
+        "rating": 9,
+        "popularity": 8,
+        "addedAt": 8,
+        "tagline": null
+      },
+      {
+        "setId": "ok9",
+        "title": "ok9",
+        "poster": "p-ok9",
+        "backdrop": "b-ok9",
+        "rating": 10,
+        "popularity": 9,
+        "addedAt": 9,
+        "tagline": null
+      }
+    ],
+    "editorsChoice": null,
+    "now": 1728003600000,
+    "onRow": [],
+    "watchedIds": [
+      "seen"
+    ],
+    "expect": {
+      "cover": [
+        "ok2",
+        "ok0",
+        "ok1",
+        "ok8",
+        "ok4"
+      ],
+      "features": [
+        {
+          "kind": "staff",
+          "setId": "ok7"
+        },
+        {
+          "kind": "trending",
+          "setId": "ok9"
+        },
+        {
+          "kind": "staff",
+          "setId": "ok6"
+        }
+      ],
+      "quote": null,
+      "thisMonth": []
+    }
+  },
+  {
+    "name": "this month lists what the row does not, day 20000",
+    "movies": [
+      {
+        "setId": "newest",
+        "title": "newest",
+        "poster": "p-newest",
+        "backdrop": "b-newest",
+        "rating": 6,
+        "popularity": 10,
+        "addedAt": 1727917200000,
+        "tagline": null
+      },
+      {
+        "setId": "recent",
+        "title": "recent",
+        "poster": "p-recent",
+        "backdrop": "b-recent",
+        "rating": 6,
+        "popularity": 10,
+        "addedAt": 1727830800000,
+        "tagline": null
+      },
+      {
+        "setId": "earlier",
+        "title": "earlier",
+        "poster": "p-earlier",
+        "backdrop": "b-earlier",
+        "rating": 6,
+        "popularity": 10,
+        "addedAt": 1727744400000,
+        "tagline": null
+      },
+      {
+        "setId": "pad0",
+        "title": "pad0",
+        "poster": "p-pad0",
+        "backdrop": "b-pad0",
+        "rating": 1,
+        "popularity": 0,
+        "addedAt": -100,
+        "tagline": null
+      },
+      {
+        "setId": "pad1",
+        "title": "pad1",
+        "poster": "p-pad1",
+        "backdrop": "b-pad1",
+        "rating": 2,
+        "popularity": 1,
+        "addedAt": -100,
+        "tagline": null
+      },
+      {
+        "setId": "pad2",
+        "title": "pad2",
+        "poster": "p-pad2",
+        "backdrop": "b-pad2",
+        "rating": 3,
+        "popularity": 2,
+        "addedAt": -100,
+        "tagline": null
+      },
+      {
+        "setId": "pad3",
+        "title": "pad3",
+        "poster": "p-pad3",
+        "backdrop": "b-pad3",
+        "rating": 4,
+        "popularity": 3,
+        "addedAt": -100,
+        "tagline": null
+      },
+      {
+        "setId": "pad4",
+        "title": "pad4",
+        "poster": "p-pad4",
+        "backdrop": "b-pad4",
+        "rating": 5,
+        "popularity": 4,
+        "addedAt": -100,
+        "tagline": null
+      },
+      {
+        "setId": "pad5",
+        "title": "pad5",
+        "poster": "p-pad5",
+        "backdrop": "b-pad5",
+        "rating": 6,
+        "popularity": 5,
+        "addedAt": -100,
+        "tagline": null
+      },
+      {
+        "setId": "pad6",
+        "title": "pad6",
+        "poster": "p-pad6",
+        "backdrop": "b-pad6",
+        "rating": 7,
+        "popularity": 6,
+        "addedAt": -100,
+        "tagline": null
+      },
+      {
+        "setId": "pad7",
+        "title": "pad7",
+        "poster": "p-pad7",
+        "backdrop": "b-pad7",
+        "rating": 8,
+        "popularity": 7,
+        "addedAt": -100,
+        "tagline": null
+      }
+    ],
+    "editorsChoice": null,
+    "now": 1728003600000,
+    "onRow": [
+      "newest",
+      "recent"
+    ],
+    "expect": {
+      "cover": [
+        "pad1",
+        "earlier",
+        "pad2",
+        "pad0",
+        "pad6"
+      ],
+      "features": [
+        {
+          "kind": "staff",
+          "setId": "recent"
+        },
+        {
+          "kind": "trending",
+          "setId": "newest"
+        },
+        {
+          "kind": "staff",
+          "setId": "pad7"
+        }
+      ],
+      "quote": null,
+      "thisMonth": [
+        "earlier"
+      ]
+    }
+  }
+]

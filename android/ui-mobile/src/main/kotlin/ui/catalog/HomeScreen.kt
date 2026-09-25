@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.HorizontalDivider
@@ -25,21 +26,26 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import catalog.HomeRow
+import catalog.MagazineHome
 import catalog.RowContent
 import designsystem.Spacing
+import model.Progress
 import model.WatchSnapshot
 
 /**
- * What was already underway, and what arrived recently.
+ * The magazine home page: cover story, features, Continue watching beside a
+ * pull-quote, then the rest of the library — a Compose port of
+ * `home-view.js`'s section order. A part with nothing in it is not drawn at
+ * all, the same rule the web follows.
  *
- * The page a viewer lands on. Continue and Next up lead it when there is
- * anything on them — the viewer's own place in the library, ahead of what
- * merely turned up — and both are absent rather than empty, same as the
- * Latest rows below them: a row that is always empty is worse than a row
- * that is not there at all.
+ * [rows] are the plain shelf rows that follow the magazine header — Latest
+ * series and Latest courses; [magazine] already carries the cover,
+ * features, resume strip and its own "Recently added" row, so [rows] must
+ * not repeat Continue, Next up or the Movies shelf.
  */
 @Composable
 internal fun HomeScreen(
+    magazine: MagazineHome,
     rows: List<HomeRow>,
     watch: WatchSnapshot,
     columns: Int,
@@ -49,32 +55,96 @@ internal fun HomeScreen(
 ) {
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
+    val editorial = magazine.editorial
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(Spacing.medium),
+        contentPadding = PaddingValues(bottom = Spacing.medium),
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
-        for (row in rows) {
-            item(key = row.title, span = { GridItemSpan(maxLineSpan) }) {
-                RowHeading(row = row, onSeeAll = row.seeAll?.let { target -> { onSeeAll(target) } })
+        if (editorial.cover.isNotEmpty()) {
+            item(key = "cover", span = { GridItemSpan(maxLineSpan) }) {
+                CoverStory(films = editorial.cover, onPlay = { onOpenTitle(it.setId) }, onOpenTitle = onOpenTitle)
             }
-            when (val content = row.content) {
-                is RowContent.Entries -> {
-                    items(items = content.entries, key = { "${row.title}/${keyOf(it)}" }) { entry ->
-                        EntryCard(entry, positions, watchedIds, onOpenTitle, onOpenCollection)
-                    }
-                }
-
-                is RowContent.Sets -> {
-                    items(items = content.cards, key = { "${row.title}/${it.set.setId}" }) { card ->
-                        SetPlate(card = card, modifier = Modifier, onClick = { onOpenTitle(card.set.setId) })
-                    }
+        }
+        if (editorial.features.isNotEmpty()) {
+            item(key = "features", span = { GridItemSpan(maxLineSpan) }) {
+                FeatureStrip(
+                    features = editorial.features,
+                    onOpenTitle = onOpenTitle,
+                    modifier = Modifier.padding(horizontal = Spacing.medium),
+                )
+            }
+        }
+        if (magazine.resumeCards.isNotEmpty()) {
+            item(key = "resume", span = { GridItemSpan(maxLineSpan) }) {
+                Column(modifier = Modifier.padding(top = Spacing.medium)) {
+                    SectionHeading(title = "Continue watching", onSeeAll = { onSeeAll("Continue") })
+                    ResumeStrip(cards = magazine.resumeCards, onOpenTitle = onOpenTitle, modifier = Modifier.padding(top = Spacing.small))
                 }
             }
         }
+        val quote = editorial.quote
+        if (quote != null) {
+            item(key = "quote", span = { GridItemSpan(maxLineSpan) }) {
+                PullQuote(set = quote, onOpenTitle = onOpenTitle)
+            }
+        }
+
+        homeRow(magazine.recentlyAddedRow, positions, watchedIds, onOpenTitle, onOpenCollection, onSeeAll)
+        for (row in rows) homeRow(row, positions, watchedIds, onOpenTitle, onOpenCollection, onSeeAll)
+    }
+}
+
+private fun LazyGridScope.homeRow(
+    row: HomeRow,
+    positions: Map<String, Progress>,
+    watchedIds: Set<String>,
+    onOpenTitle: (setId: String) -> Unit,
+    onOpenCollection: (key: String) -> Unit,
+    onSeeAll: (shelf: String) -> Unit,
+) {
+    if (row.total == 0) return
+    item(key = row.title, span = { GridItemSpan(maxLineSpan) }) {
+        RowHeading(row = row, onSeeAll = row.seeAll?.let { target -> { onSeeAll(target) } })
+    }
+    when (val content = row.content) {
+        is RowContent.Entries -> {
+            items(items = content.entries, key = { "${row.title}/${keyOf(it)}" }) { entry ->
+                EntryCard(entry, positions, watchedIds, onOpenTitle, onOpenCollection)
+            }
+        }
+
+        is RowContent.Sets -> {
+            items(items = content.cards, key = { "${row.title}/${it.set.setId}" }) { card ->
+                SetPlate(card = card, modifier = Modifier, onClick = { onOpenTitle(card.set.setId) })
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionHeading(
+    title: String,
+    onSeeAll: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.medium),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        Text(text = title, style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = "See all",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier =
+                Modifier
+                    .clickable(role = Role.Button, onClick = onSeeAll)
+                    .padding(start = Spacing.medium, top = Spacing.small, bottom = Spacing.small),
+        )
     }
 }
 

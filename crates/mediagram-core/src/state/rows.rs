@@ -1,6 +1,8 @@
 //! Progress, watched marks, the watchlist and Kids — the per-title facts a
 //! profile (or, for Kids, the whole player) holds. A port of the matching
-//! methods on `WatchState` in `web/src/state/store.ts`.
+//! methods on `WatchState` in `web/src/state/store.ts`. The editor's choice
+//! is the same shape as Kids but lives in `editors_choice.rs`, split out to
+//! keep this file under the line limit.
 
 use rusqlite::{Connection, params};
 

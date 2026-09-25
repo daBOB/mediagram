@@ -15,6 +15,7 @@
 // by a caller outside it — keeping them `pub(crate)` rather than `pub` is
 // also what keeps `StateChannel`'s `async fn`s off rustc's public-API lint.
 pub(crate) mod channel;
+pub mod editors_choice;
 pub mod exchange;
 pub mod lists;
 mod lists_exchange;

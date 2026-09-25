@@ -48,12 +48,14 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
         });
     }
     let kids = lists_exchange::export_kids(conn)?;
+    let editors_choice = lists_exchange::export_editors_choice(conn)?;
     Ok(SyncRecord {
         format: SYNC_FORMAT,
         device: device.to_string(),
         written_at: profiles::now_ms() as f64,
         profiles,
         kids,
+        editors_choice,
     })
 }
 
@@ -71,6 +73,7 @@ pub fn import_merged(conn: &Connection, merged: &MergedState) -> rusqlite::Resul
     let transaction = conn.unchecked_transaction()?;
     let conn = &transaction;
     let mut changed = lists_exchange::import_kids(conn, &merged.kids)?;
+    changed += lists_exchange::import_editors_choice(conn, &merged.editors_choice)?;
     for profile in &merged.profiles {
         // The identity to match on, and the spelling to create with.
         let Some((profile_id, created, already_kids)) = profiles::profile_named_with_creation(

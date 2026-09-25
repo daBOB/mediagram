@@ -295,7 +295,10 @@ fn merging_the_same_channel_snapshot_twice_adds_nothing_the_second_time() {
 fn show_text_is_only_filled_from_a_row_in_the_same_language() {
     let (_local_dir, local) = open_local();
     local
-        .execute("INSERT INTO shows(source, kind, id, lang) VALUES ('tmdb', 'movie', 3, 'de-DE')", [])
+        .execute(
+            "INSERT INTO shows(source, kind, id, lang) VALUES ('tmdb', 'movie', 3, 'de-DE')",
+            [],
+        )
         .unwrap();
     let (_channel_dir, channel_path, channel) = open_channel();
     channel
@@ -310,9 +313,11 @@ fn show_text_is_only_filled_from_a_row_in_the_same_language() {
     merge_from(&local, &channel_path, keep_all).unwrap();
 
     let (overview, rating): (Option<String>, Option<f64>) = local
-        .query_row("SELECT overview, rating FROM shows WHERE id = 3", [], |row| {
-            Ok((row.get(0)?, row.get(1)?))
-        })
+        .query_row(
+            "SELECT overview, rating FROM shows WHERE id = 3",
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
         .unwrap();
     assert_eq!(overview, None, "English text must not fill a German row");
     assert_eq!(rating, Some(7.1), "a figure reads the same in any language");

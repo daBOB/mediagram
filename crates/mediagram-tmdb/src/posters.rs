@@ -16,26 +16,27 @@ use crate::tmdb_client::TmdbApi;
 /// television shelf, and keeps a 300-title package near eight megabytes.
 const IMAGE_BASE: &str = "https://image.tmdb.org/t/p/w342";
 
-/// Backdrops fill a desktop-wide hero, where `w780` is visibly soft; `w1280`
-/// is the widest TMDB serves short of the original, around 200 KB a title.
-const BACKDROP_BASE: &str = "https://image.tmdb.org/t/p/w1280";
-
-/// One image to fetch: the key it will be stored under, and TMDB's path.
-/// A backdrop is a `PosterRef` too, told apart by its key.
+/// One image to fetch: the key it will be stored under, TMDB's path, and —
+/// for a backdrop only — the width it was resolved at.
+///
+/// A poster is always fetched at [`IMAGE_BASE`]'s width, so it carries no
+/// width of its own; a backdrop's varies by caller (the desktop web player's
+/// hero wants far more pixels than a phone screen), so [`resolve_backdrops`]
+/// stamps the width it was asked for onto every ref it returns.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PosterRef {
     pub key: String,
     pub path: String,
+    pub backdrop_width: Option<u32>,
 }
 
 impl PosterRef {
     /// The CDN URL, at the width the key's kind of image is shown at.
     #[must_use]
     pub fn url(&self) -> String {
-        if mlib_spec::package::is_backdrop_key(&self.key) {
-            format!("{BACKDROP_BASE}{}", self.path)
-        } else {
-            poster_url(&self.path)
+        match self.backdrop_width {
+            Some(width) => format!("https://image.tmdb.org/t/p/w{width}{}", self.path),
+            None => poster_url(&self.path),
         }
     }
 }
@@ -69,13 +70,15 @@ pub async fn resolve_posters(api: &impl TmdbApi, titles: &[(Kind, u64)]) -> Vec<
 }
 
 /// Looks up each title's backdrop, keyed `<title key>-bg`, from the same
-/// cached payload as its poster.
+/// cached payload as its poster, at `width` — the desktop web player asks
+/// for its widest (`w1280`); the phone asks narrower, by its own screen
+/// class (see `crates/mediagram-core/src/api/enrich`).
 ///
 /// Separate from [`resolve_posters`] on purpose: the export package and the
 /// phone's on-device fetch both build on that one, and neither wants
-/// backdrops — the package has a size cap, the phone no hero to show one in.
-/// Only the command that fills a local player's artwork asks for these.
-pub async fn resolve_backdrops(api: &impl TmdbApi, titles: &[(Kind, u64)]) -> Vec<PosterRef> {
+/// backdrops at package-build time — the package has a size cap, and a
+/// phone's width is only known once Kotlin asks.
+pub async fn resolve_backdrops(api: &impl TmdbApi, titles: &[(Kind, u64)], width: u32) -> Vec<PosterRef> {
     let mut found: Vec<PosterRef> = Vec::new();
     for (kind, id) in titles {
         let key = mlib_spec::package::backdrop_key(&poster_key(*kind, *id));
@@ -90,7 +93,7 @@ pub async fn resolve_backdrops(api: &impl TmdbApi, titles: &[(Kind, u64)]) -> Ve
             }
         };
         if let Some(path) = details.backdrop_path.filter(|p| is_image_path(p)) {
-            found.push(PosterRef { key, path });
+            found.push(PosterRef { key, path, backdrop_width: Some(width) });
         }
     }
     found
@@ -112,11 +115,12 @@ async fn posters_for(api: &impl TmdbApi, kind: Kind, id: u64, key: &str) -> Vec<
         .map(|path| PosterRef {
             key: key.to_owned(),
             path,
+            backdrop_width: None,
         });
     let seasons = details.seasons.into_iter().filter_map(|season| {
         let path = season.poster_path.filter(|p| is_image_path(p))?;
         let key = mlib_spec::package::season_poster_key(key, season.season_number);
-        Some(PosterRef { key, path })
+        Some(PosterRef { key, path, backdrop_width: None })
     });
     show.into_iter().chain(seasons).collect()
 }

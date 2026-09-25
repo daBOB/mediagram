@@ -1,5 +1,6 @@
 use super::*;
 use crate::state::StateDb;
+use crate::state::record::CollectionRow;
 use crate::state::{lists, profiles, rows};
 
 fn db() -> (tempfile::TempDir, StateDb) {

@@ -180,16 +180,20 @@ impl Core {
         read::read(&self, locations, offset, len).await
     }
 
-    /// Fetches missing TMDB posters and descriptions together, once per title.
+    /// Fetches missing TMDB posters, backdrops and descriptions together,
+    /// once per title.
     ///
     /// The library's language takes precedence over the `language` fallback.
+    /// `backdrop_width` is Kotlin's own choice, by its screen class — narrow
+    /// on a phone, wider on a tablet.
     ///
     /// Kotlin owns the key; this call uses it without storing it.
     pub async fn fetch_missing(
         &self,
         tmdb_key: String,
         language: String,
+        backdrop_width: u32,
     ) -> Result<crate::dto::FetchReport, CoreError> {
-        enrich::artwork::fetch_missing(self, tmdb_key, language).await
+        enrich::artwork::fetch_missing(self, tmdb_key, language, backdrop_width).await
     }
 }

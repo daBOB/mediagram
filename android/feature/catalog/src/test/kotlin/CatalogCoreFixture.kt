@@ -52,7 +52,8 @@ class CatalogCore : CoreClient {
     override suspend fun fetchMissing(
         tmdbKey: String,
         language: String,
-    ): FetchReport = FetchReport(0u, 0u, 0u, 0u, 0u, 0u)
+        backdropWidth: Int,
+    ): FetchReport = FetchReport(0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u)
 
     override fun close() = Unit
 }

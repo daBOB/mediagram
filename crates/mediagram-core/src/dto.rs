@@ -1,105 +1,11 @@
 //! The records Kotlin receives. A set's episode arrives as the index's JSON
-//! text; [`summary_from`] hands the boundary two plain numbers instead.
+//! text; [`summary::summary_from`] hands the boundary two plain numbers
+//! instead.
 
-use mlib_spec::caption::Episode;
+mod summary;
+pub use summary::{SetSummary, summary_from};
 
-use crate::catalog::PlayableSet;
 use mediagram_tmdb::details::TitleDetailsRow;
-
-/// One title, flattened for a player that never sees `Episode`, `set_id`
-/// internals, or where the bytes live.
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
-pub struct SetSummary {
-    pub set_id: String,
-    pub kind: String,
-    pub title: Option<String>,
-    pub show: Option<String>,
-    pub chap: Option<String>,
-    /// The folder trail inside the collection, `a/b/c` from the top down.
-    /// A surface rebuilds a course's tree by splitting it; a set with none
-    /// is shelved under its chapter or its season instead.
-    pub path: Option<String>,
-    pub season: Option<u32>,
-    pub episode_first: Option<u32>,
-    pub episode_last: Option<u32>,
-    pub year: Option<u32>,
-    pub container: String,
-    pub vcodec: Option<String>,
-    pub acodec: Option<String>,
-    pub quality: Option<String>,
-    pub hdr: Option<String>,
-    pub duration: Option<u32>,
-    pub poster_key: Option<String>,
-    pub total: u64,
-    pub part_count: u32,
-    /// When this set arrived, as a Unix time. Named as the web player names
-    /// it, because two surfaces over one library should not need a
-    /// translation table for the same fact.
-    pub added_at: i64,
-    /// The age rating in the library's country (`"12"`), or `None` when the
-    /// title has none. A series is rated as a show, so every episode carries
-    /// its show's. Named as the web player names it.
-    pub fsk: Option<String>,
-    /// The provider's genres for this title. A series carries its show's,
-    /// the way `fsk` does — see `store::list_sets`, which attaches all four
-    /// of these by poster key rather than storing them on the row.
-    pub genres: Vec<String>,
-    /// Languages this set has a subtitle track for, sorted.
-    pub subtitles: Vec<String>,
-    /// Whether the index holds a plot summary for this set.
-    pub has_summary: bool,
-}
-
-/// Flattens one catalog row. Never fails: a set whose episode field this
-/// build cannot parse — written by a newer uploader, or corrupted — still
-/// lists, just without episode numbers, because a set that cannot be
-/// numbered is still a set worth offering.
-pub fn summary_from(set: &PlayableSet) -> SetSummary {
-    let (episode_first, episode_last) = set
-        .episode
-        .as_deref()
-        .and_then(|json| serde_json::from_str::<Episode>(json).ok())
-        .map_or((None, None), |e| (Some(e.first()), Some(e.last())));
-
-    SetSummary {
-        set_id: set.set_id.clone(),
-        kind: set.kind.clone(),
-        title: set.title.clone(),
-        show: set.show.clone(),
-        chap: set.chap.clone(),
-        path: set.path.clone(),
-        season: set.season,
-        episode_first,
-        episode_last,
-        year: set.year.map(u32::from),
-        container: set.container.clone(),
-        vcodec: set.vcodec.clone(),
-        acodec: set.acodec.clone(),
-        quality: set.quality.clone(),
-        hdr: set.hdr.clone(),
-        duration: set.duration,
-        poster_key: poster_key_for(&set.kind, set.tmdb),
-        total: set.total,
-        part_count: set.part_count,
-        added_at: set.created_at,
-        // Not on the row: the index keeps these per title or per asset, and
-        // the listing attaches them — see `store::list_sets`.
-        fsk: None,
-        genres: Vec::new(),
-        subtitles: Vec::new(),
-        has_summary: false,
-    }
-}
-
-/// Mirrors the web player's `posterKeyFor(kind, tmdb)`: no key at all
-/// without a positive TMDB id. A kind this build does not know keys as a
-/// series, as it does there — only a film is numbered apart.
-fn poster_key_for(kind: &str, tmdb: Option<u64>) -> Option<String> {
-    let kind = kind.parse().unwrap_or(mlib_spec::Kind::Ep);
-    let key = mediagram_tmdb::posters::poster_key(kind, tmdb?);
-    debug_assert!(mlib_spec::package::poster_key_is_valid(&key));
-    Some(key)
-}
 
 /// What a provider said about a title, flattened for the binding surface.
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
@@ -154,6 +60,11 @@ pub struct CatalogFacts {
 pub struct FetchReport {
     pub posters_fetched: u32,
     pub posters_already_held: u32,
+    /// A title's backdrop, fetched at the width the caller asked for — see
+    /// `enrich::fetch::fetch_into`. Zero throughout for a run the caller
+    /// asked no width for.
+    pub backdrops_fetched: u32,
+    pub backdrops_already_held: u32,
     pub details_recorded: u32,
     /// Titles something already describes — the index's own row, or one an
     /// earlier run on this device fetched. Left alone for the same reason a

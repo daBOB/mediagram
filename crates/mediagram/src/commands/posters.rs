@@ -46,7 +46,9 @@ pub async fn run(cfg: &Config, index: Option<&Path>) -> Result<()> {
     // Both read the same cached details payload, so the second pass costs
     // no request.
     let mut refs = resolve_posters(&api, &titles).await;
-    refs.extend(resolve_backdrops(&api, &titles).await);
+    // The widest TMDB serves short of the original: this command fills the
+    // web player's cover story, drawn desktop-wide.
+    refs.extend(resolve_backdrops(&api, &titles, 1280).await);
     if refs.is_empty() {
         println!(
             "{} title(s), none with artwork recorded at TMDB",

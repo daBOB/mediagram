@@ -133,3 +133,47 @@ async fn a_v6_index_still_fills_genres_subtitles_and_has_summary() {
     assert!(set.has_summary);
     assert_eq!(set.fsk, None, "v6 has no certification column at all");
 }
+
+/// The home page's editorial picks: a tagline, a rating and a popularity
+/// figure, read from `shows` by poster key like genres and an age rating.
+#[tokio::test]
+async fn tagline_rating_and_popularity_are_read_from_the_index_by_poster_key() {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = index_at(dir.path(), mlib_spec::schema::SCHEMA_VERSION);
+    add_set(&conn, "01FILM0000000000000000000B", "movie", Some(550));
+    conn.execute(
+        "INSERT INTO shows(source, kind, id, tagline, rating, popularity)
+           VALUES ('tmdb', 'movie', 550, 'A story.', 8.4, 42.0)",
+        [],
+    )
+    .unwrap();
+
+    let sets = core(dir.path()).list_sets().await.unwrap();
+
+    let set = set_of(&sets, "01FILM0000000000000000000B");
+    assert_eq!(set.tagline.as_deref(), Some("A story."));
+    assert_eq!(set.rating, Some(8.4));
+    assert_eq!(set.popularity, Some(42.0));
+}
+
+/// A backdrop is named only when the file is actually on disk — a poster
+/// key that merely resolves is not a picture anyone can show.
+#[tokio::test]
+async fn a_backdrop_key_is_named_only_when_its_file_exists() {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = index_at(dir.path(), mlib_spec::schema::SCHEMA_VERSION);
+    add_set(&conn, "01FILM0000000000000000000C", "movie", Some(603));
+    add_set(&conn, "01FILM0000000000000000000D", "movie", Some(604));
+
+    let posters = dir.path().join("catalog").join("current").join("posters");
+    std::fs::create_dir_all(&posters).unwrap();
+    std::fs::write(posters.join("tmdb-movie-603-bg.jpg"), b"jpg").unwrap();
+
+    let sets = core(dir.path()).list_sets().await.unwrap();
+
+    assert_eq!(
+        set_of(&sets, "01FILM0000000000000000000C").backdrop_key.as_deref(),
+        Some("tmdb-movie-603-bg")
+    );
+    assert_eq!(set_of(&sets, "01FILM0000000000000000000D").backdrop_key, None);
+}

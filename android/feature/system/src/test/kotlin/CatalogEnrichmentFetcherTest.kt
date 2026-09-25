@@ -18,7 +18,7 @@ class CatalogEnrichmentFetcherTest {
     fun anOverlappingFetchSkipsImmediatelyWithoutJoiningOrClearingActiveProgress() =
         runTest {
             val gate = CompletableDeferred<Unit>()
-            val report = FetchReport(1u, 2u, 3u, 4u, 5u, 6u)
+            val report = FetchReport(1u, 2u, 0u, 0u, 3u, 4u, 5u, 6u)
             val core = FakeCore(report = report, gate = gate)
             val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("key") })
             val accepted = async { enrichment.fetch() }
@@ -37,7 +37,7 @@ class CatalogEnrichmentFetcherTest {
     @Test
     fun aQuietFailureReturnsNullWithoutReplacingTheDisplayedResult() =
         runTest {
-            val core = FakeCore(report = FetchReport(1u, 2u, 3u, 4u, 5u, 6u))
+            val core = FakeCore(report = FetchReport(1u, 2u, 0u, 0u, 3u, 4u, 5u, 6u))
             val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("key") })
             val displayed = enrichment.fetch()
             core.failure = IllegalStateException("unavailable")

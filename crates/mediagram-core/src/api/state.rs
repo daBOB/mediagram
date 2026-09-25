@@ -11,7 +11,7 @@
 
 use std::sync::Arc;
 
-use crate::state::{lists, profiles, rows};
+use crate::state::{editors_choice, lists, profiles, rows};
 
 use super::Core;
 
@@ -25,6 +25,11 @@ pub struct StateSnapshot {
     pub watchlist: Vec<String>,
     pub kids: Vec<String>,
     pub collections: Vec<lists::ListRow>,
+    /// The household's editor's choice, or `None` for no pick. Not scoped
+    /// to this profile — see `state::schema`'s v5 — carried here anyway so
+    /// the home page's picks arrive in the same round trip as everything
+    /// else it draws.
+    pub editors_choice: Option<String>,
 }
 
 #[uniffi::export(async_runtime = "tokio")]
@@ -94,6 +99,7 @@ impl Core {
                         watchlist: rows::watchlist_for(conn, &profile_id)?,
                         kids: rows::kids(conn)?,
                         collections: lists::collections_for(conn, &profile_id)?,
+                        editors_choice: editors_choice::editors_choice(conn)?,
                     })
                 })
                 .unwrap_or_default()
@@ -151,6 +157,23 @@ impl Core {
         self.blocking(move |core| {
             core.state_db
                 .with(|conn| rows::set_kids(conn, &set_id, marked))
+        })
+        .await;
+    }
+
+    /// The household's editor's choice, or `None` for no pick.
+    pub async fn editors_choice(self: Arc<Self>) -> Option<String> {
+        self.blocking(|core| core.state_db.with(editors_choice::editors_choice).flatten())
+            .await
+    }
+
+    /// Pins `set_id` as the editor's choice, or unpins it. Pinning retires
+    /// every other live pick; unpinning retires all of them — see
+    /// `state::editors_choice` for the one-pick rule.
+    pub async fn set_editors_choice(self: Arc<Self>, set_id: String, marked: bool) {
+        self.blocking(move |core| {
+            core.state_db
+                .with(|conn| editors_choice::set_editors_choice(conn, &set_id, marked))
         })
         .await;
     }

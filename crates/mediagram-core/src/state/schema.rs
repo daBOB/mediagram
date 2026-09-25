@@ -112,6 +112,17 @@ const GROUPS: &[&[&str]] = &[
        updated_at INTEGER NOT NULL,
        PRIMARY KEY(profile_id, scope, name)
      )"],
+    // v4 -> v5: the household's editor's choice, the title the magazine home
+    // page leads its features with. Shaped exactly like `kids` — a mark on a
+    // title, for everyone, with a tombstone — matching the web's v8
+    // (`web/src/state/schema.ts`): it is the same kind of fact and syncs the
+    // same way. Several rows may be live after a merge (two devices pinned
+    // different titles); the newest mark is the pick.
+    &["CREATE TABLE IF NOT EXISTS editors_choice(
+       set_id TEXT PRIMARY KEY,
+       marked_at INTEGER NOT NULL,
+       removed_at INTEGER
+     )"],
 ];
 
 pub const VERSION: i64 = GROUPS.len() as i64;

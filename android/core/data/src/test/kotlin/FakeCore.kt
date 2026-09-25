@@ -134,7 +134,8 @@ class FakeCore(
     override suspend fun fetchMissing(
         tmdbKey: String,
         language: String,
-    ): FetchReport = FetchReport(0u, 0u, 0u, 0u, 0u, 0u)
+        backdropWidth: Int,
+    ): FetchReport = FetchReport(0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u)
 
     var closed: Boolean = false
         private set
@@ -199,6 +200,10 @@ fun summary(
     genres: List<String> = emptyList(),
     subtitles: List<String> = emptyList(),
     hasSummary: Boolean = false,
+    backdropKey: String? = null,
+    tagline: String? = null,
+    rating: Double? = null,
+    popularity: Double? = null,
 ): SetSummary = SetSummary(
     setId = setId,
     kind = kind,
@@ -224,6 +229,10 @@ fun summary(
     genres = genres,
     subtitles = subtitles,
     hasSummary = hasSummary,
+    backdropKey = backdropKey,
+    tagline = tagline,
+    rating = rating,
+    popularity = popularity,
 )
 
 fun settingsWithAChosenLibrary(handle: String = "a1b2c3"): LibrarySettings =

@@ -401,9 +401,43 @@
       "device": "tablet",
       "writtenAt": 1789000000000,
       "profiles": [
-        { "name": "Mia", "kids": true, "progress": [], "watched": [] },
-        { "name": "Ben", "progress": [], "watched": [] },
-        { "name": "Ada", "progress": [], "watched": [] }
+        {
+          "name": "Mia",
+          "kids": true,
+          "progress": [],
+          "watched": []
+        },
+        {
+          "name": "Ben",
+          "progress": [],
+          "watched": []
+        },
+        {
+          "name": "Ada",
+          "progress": [],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "the household's editor's choice reads back as written, tombstone included",
+    "input": "{\"format\": 1, \"device\": \"laptop\", \"writtenAt\": 1789000000000, \"profiles\": [], \"editorsChoice\": [{\"setId\": \"01A\", \"updatedAt\": 1000}, {\"setId\": \"01B\", \"updatedAt\": 2000, \"removed\": true}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [],
+      "editorsChoice": [
+        {
+          "setId": "01A",
+          "updatedAt": 1000
+        },
+        {
+          "setId": "01B",
+          "updatedAt": 2000,
+          "removed": true
+        }
       ]
     }
   }

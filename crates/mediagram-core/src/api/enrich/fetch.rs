@@ -5,7 +5,7 @@
 
 use mediagram_tmdb::details::{details, from_details};
 use mediagram_tmdb::poster_files::{already_held, download_into};
-use mediagram_tmdb::posters::{kind_key, resolve_posters};
+use mediagram_tmdb::posters::{kind_key, resolve_backdrops, resolve_posters};
 use mediagram_tmdb::tmdb_client::TmdbApi;
 use mlib_spec::Kind;
 use rusqlite::Connection;
@@ -19,6 +19,10 @@ use crate::api::Core;
 /// Fetches the artwork, then the descriptions, for `plan`'s titles, counting
 /// titles throughout; see [`FetchReport`].
 ///
+/// `backdrop_width` is the caller's own choice — the desktop web player asks
+/// widest, a phone asks by its screen class — passed all the way from
+/// Kotlin rather than fixed here, the one place both meet.
+///
 /// The description half costs no second request for a title the provider
 /// answered: the caller wraps `api` in a disk cache, which the poster half
 /// has just filled. A title it refused is asked again — nothing is cached for
@@ -29,6 +33,7 @@ pub async fn fetch_into(
     api: &impl TmdbApi,
     http: &reqwest::Client,
     plan: &FetchPlan,
+    backdrop_width: u32,
 ) -> FetchReport {
     let FetchPlan {
         artwork_dir,
@@ -36,9 +41,16 @@ pub async fn fetch_into(
         without_id,
         language,
     } = plan;
-    let refs = resolve_posters(api, titles).await;
-    let held = already_held(&refs, artwork_dir) as u32;
-    // A hard failure here (the posters directory could not even be created)
+    let posters = resolve_posters(api, titles).await;
+    let backdrops = resolve_backdrops(api, titles, backdrop_width).await;
+    let posters_held = already_held(&posters, artwork_dir) as u32;
+    let backdrops_held = already_held(&backdrops, artwork_dir) as u32;
+
+    // One list to download, so a poster and its title's backdrop share the
+    // same directory walk; split back apart afterwards to report each half.
+    let mut refs = posters;
+    refs.extend(backdrops.iter().cloned());
+    // A hard failure here (the artwork directory could not even be created)
     // leaves every resolved ref undownloaded rather than panicking — the
     // catalog is the product, the artwork a convenience.
     let written = download_into(http, &refs, artwork_dir)
@@ -47,7 +59,12 @@ pub async fn fetch_into(
             tracing::warn!(error = %err, "the artwork directory is unavailable");
             Vec::new()
         });
-    let fetched = (written.len() as u32).saturating_sub(held);
+    let backdrop_keys: std::collections::HashSet<&str> =
+        backdrops.iter().map(|poster| poster.key.as_str()).collect();
+    let backdrops_written = written.iter().filter(|key| backdrop_keys.contains(key.as_str())).count() as u32;
+    let posters_written = written.len() as u32 - backdrops_written;
+    let posters_fetched = posters_written.saturating_sub(posters_held);
+    let backdrops_fetched = backdrops_written.saturating_sub(backdrops_held);
 
     // Collected as keys rather than added up, so a title that lost both its
     // poster and its description is one failure and not two.
@@ -64,8 +81,10 @@ pub async fn fetch_into(
     }
 
     FetchReport {
-        posters_fetched: fetched,
-        posters_already_held: held,
+        posters_fetched,
+        posters_already_held: posters_held,
+        backdrops_fetched,
+        backdrops_already_held: backdrops_held,
         details_recorded: described.recorded,
         details_already_known: described.already_known,
         no_provider_id: *without_id,

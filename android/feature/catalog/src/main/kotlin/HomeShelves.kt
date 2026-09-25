@@ -100,7 +100,8 @@ fun homeRowsOf(shelves: List<Shelf>, watch: WatchSnapshot, heldIds: Set<String> 
     return rows
 }
 
-private fun setCard(
+/** Internal, not private: [magazineHomeOf] builds the same card for the merged resume strip. */
+internal fun setCard(
     set: MediaSet,
     caption: String,
     positions: Map<String, Progress>,

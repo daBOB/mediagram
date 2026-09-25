@@ -74,6 +74,11 @@ pub struct SyncRecord {
     /// none.
     #[serde(default)]
     pub kids: Vec<ListRow>,
+    /// The household's editor's choice marks; not scoped to a profile for
+    /// the same reason `kids` is not. A new key like `kids`, not a format
+    /// bump — an old document simply says nothing about it.
+    #[serde(default)]
+    pub editors_choice: Vec<ListRow>,
 }
 
 /// How a viewer is the same person on two machines.

@@ -24,7 +24,7 @@ class ProfileResetTest {
                 override suspend fun chosenProfile() = "alice"
 
                 override suspend fun snapshot(profileId: String) =
-                    StateSnapshot(emptyList(), emptyList(), listOf("film"), emptyList(), emptyList())
+                    StateSnapshot(emptyList(), emptyList(), listOf("film"), emptyList(), emptyList(), null)
             }
         return SetupFixture(core = raw, storage = storage, build = { core })
     }

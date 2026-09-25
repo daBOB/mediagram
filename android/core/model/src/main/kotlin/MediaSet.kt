@@ -68,6 +68,18 @@ data class MediaSet(
      * the show's name or print a raw set id back at the viewer.
      */
     val rawTitle: String? = null,
+    /**
+     * The resolved path to this title's backdrop, present only when the
+     * file actually exists on disk — see `store::list_sets` on the Rust
+     * side. An episode carries its show's, like [genres].
+     */
+    val backdropPath: String? = null,
+    /** The provider's tagline, for the home page's typographic break. An episode carries its show's. */
+    val tagline: String? = null,
+    /** The provider's average rating, for the staff pick. An episode carries its show's. */
+    val rating: Double? = null,
+    /** The provider's popularity figure, for the trending feature. An episode carries its show's. */
+    val popularity: Double? = null,
 )
 
 enum class Kind {

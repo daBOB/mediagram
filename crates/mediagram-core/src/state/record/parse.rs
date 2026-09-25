@@ -39,6 +39,10 @@ pub fn parse_record(text: &str) -> Option<SyncRecord> {
         .iter()
         .filter_map(list_row)
         .collect();
+    let editors_choice = as_array(held.get("editorsChoice"))
+        .iter()
+        .filter_map(list_row)
+        .collect();
 
     // `Number(held.writtenAt) || 0`: NaN and 0 both fall back to 0, and a
     // negative or positive finite number passes through unchanged.
@@ -51,6 +55,7 @@ pub fn parse_record(text: &str) -> Option<SyncRecord> {
         written_at,
         profiles,
         kids,
+        editors_choice,
     })
 }
 

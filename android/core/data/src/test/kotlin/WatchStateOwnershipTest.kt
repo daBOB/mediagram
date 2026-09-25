@@ -53,7 +53,7 @@ private class DelayedStateCore(
     }
 
     override suspend fun snapshot(profileId: String): StateSnapshot {
-        val answer = StateSnapshot(emptyList(), emptyList(), listOf("$prefix-$profileId"), emptyList(), emptyList())
+        val answer = StateSnapshot(emptyList(), emptyList(), listOf("$prefix-$profileId"), emptyList(), emptyList(), null)
         if (profileId == "a" && delaySnapshot) {
             started.complete(Unit)
             finish.await()
@@ -159,7 +159,7 @@ class WatchStateOwnershipTest {
 
                     override suspend fun snapshot(profileId: String): StateSnapshot {
                         if (profileId == "a") snapshotsDone.await()
-                        return StateSnapshot(emptyList(), emptyList(), listOf(profileId), emptyList(), emptyList())
+                        return StateSnapshot(emptyList(), emptyList(), listOf(profileId), emptyList(), emptyList(), null)
                     }
                 }
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), Dispatchers.Unconfined)

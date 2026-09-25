@@ -5,7 +5,33 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Unreleased — 0.56.0
+## Unreleased — 0.57.0
+
+**Added**
+
+- The Android app gets the web player's magazine home page (Surface Parity):
+  - a cover story on TMDB backdrops, with a pause control;
+  - Editor's choice, Trending on TMDB and Staff pick features;
+  - a Continue Watching strip of landscape cards with progress bars
+    (Continue and Next up merged, as on the web);
+  - a pull-quote tagline and a Recently Added row.
+
+  Title pages open on a backdrop band, with "Make editor's choice" (hidden on
+  kids profiles). The picks are a Kotlin port of `editorial-picks.js`, pinned to
+  the web by shared JSON fixtures with exact seeded outputs
+  (`web/test/fixtures/editorial-picks/`). Verified on a tablet: 855 backdrops
+  fetched on the device.
+- The phone fetches backdrops too: w780 on phones, w1280 on tablets
+  (`resolve_backdrops` now takes a width). `SetSummary` carries `backdrop_key`,
+  `tagline`, `rating` and `popularity`.
+- The editor's choice syncs through the phone's watch state as well
+  (`editorsChoice` in the core's sync record, same one-pick rule as the web).
+  Shared watch-state fixtures cover it.
+
+**Known difference:** a pinned episode's feature card opens its title page on
+Android, where the web opens the show. This is written down in the code.
+
+## 0.56.0
 
 **Added**
 

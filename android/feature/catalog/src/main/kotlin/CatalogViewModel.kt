@@ -67,6 +67,24 @@ class CatalogViewModel
         }
 
         /**
+         * Whether the chosen profile is a kids profile — the title page's own
+         * reason to hide "Make editor's choice" there: a household mark like
+         * the pin is not a kids profile's to make.
+         */
+        val kidsProfile: StateFlow<Boolean> =
+            combine(watchState.profiles, watchState.chosenProfileId) { profiles, chosen ->
+                profiles.firstOrNull { it.id == chosen }?.kids == true
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+        /** Pins or unpins the household's editor's choice — see [data.WatchStateRepository.setEditorsChoice]. */
+        fun setEditorsChoice(
+            setId: String,
+            marked: Boolean,
+        ) {
+            viewModelScope.launch { watchState.setEditorsChoice(setId, marked) }
+        }
+
+        /**
          * The channel read and its reaction to library-update events — kept
          * exactly as it read before kids profiles existed, so a gap in
          * collection still means refresh-on-resubscribe. Not filtered: that

@@ -34,7 +34,7 @@ private class WatchCore : CoreClient by FakeCore(authorized = true) {
 
     override suspend fun chosenProfile() = "viewer"
 
-    override suspend fun snapshot(profileId: String) = StateSnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
+    override suspend fun snapshot(profileId: String) = StateSnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), null)
 
     override suspend fun setProgress(
         profileId: String,

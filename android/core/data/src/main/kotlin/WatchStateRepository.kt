@@ -82,6 +82,15 @@ interface WatchStateRepository {
         marked: Boolean,
     )
 
+    /**
+     * Pins or unpins the household's editor's choice, but still requires a
+     * chosen profile, the same way [setKids] does; otherwise does nothing.
+     */
+    suspend fun setEditorsChoice(
+        setId: String,
+        marked: Boolean,
+    )
+
     /** Creates a list; null means no chosen profile or creation refused by the core. */
     suspend fun createList(name: String): ListOfSets?
 
@@ -292,6 +301,11 @@ class DefaultWatchStateRepository(
         marked: Boolean,
     ) = writing { core, _ -> core.setKids(setId, marked) }
 
+    override suspend fun setEditorsChoice(
+        setId: String,
+        marked: Boolean,
+    ) = writing { core, _ -> core.setEditorsChoice(setId, marked) }
+
     override suspend fun createList(name: String): ListOfSets? {
         val selected = selection() ?: return null
         val created = withContext(dispatcher) { selected.core.createCollection(selected.id, name) } ?: return null
@@ -379,4 +393,5 @@ private fun StateSnapshot.toModel(): WatchSnapshot =
         watchlist = watchlist,
         kids = kids,
         collections = collections.map { it.toModel() },
+        editorsChoice = editorsChoice,
     )

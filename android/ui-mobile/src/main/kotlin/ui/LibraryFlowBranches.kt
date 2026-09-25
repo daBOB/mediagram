@@ -2,6 +2,8 @@ package ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.mediaSet
@@ -95,11 +97,21 @@ internal fun LibraryBranches(
         }
 
         FrameKind.TITLE -> ResolvedBranch(resolved.title, catalogState, Destination.Title(LOADING), menuActions, profileBar, at, { Destination.Title(it.title) }) { title ->
+            val kidsProfile by catalogViewModel.kidsProfile.collectAsStateWithLifecycle()
             TitleDetailScreen(
                 set = title,
                 info = rememberTitleInfo(title.posterKey, catalogViewModel::titleInfo),
                 onPlay = { at.openPlayer(title.setId) },
                 onOpenGenre = at::openGenre,
+                editorsChoice = resolved.watch.editorsChoice,
+                onToggleEditorsChoice =
+                    if (kidsProfile) {
+                        null
+                    } else {
+                        {
+                            catalogViewModel.setEditorsChoice(title.setId, resolved.watch.editorsChoice != title.setId)
+                        }
+                    },
             )
         }
 

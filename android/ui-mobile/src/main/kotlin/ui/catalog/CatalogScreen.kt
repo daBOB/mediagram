@@ -24,6 +24,7 @@ import catalog.KeptKind
 import catalog.Shelf
 import catalog.continueWall
 import catalog.homeRowsOf
+import catalog.magazineHomeOf
 import catalog.watchlistWall
 import designsystem.Spacing
 import model.WatchSnapshot
@@ -122,7 +123,25 @@ private fun Shelves(
         }
         when {
             selected == 0 -> HomeScreen(
-                rows = remember(shelves, state.watch, state.heldIds) { homeRowsOf(shelves, state.watch, state.heldIds) },
+                magazine =
+                    remember(shelves, state.watch, state.heldIds) {
+                        magazineHomeOf(
+                            shelves,
+                            state.watch,
+                            editorsChoice = state.watch.editorsChoice,
+                            now = System.currentTimeMillis(),
+                            heldIds = state.heldIds,
+                        )
+                    },
+                // The magazine header already carries Continue, Next up and
+                // the Movies shelf's own row under different headings —
+                // dropping them here is what keeps the page from showing
+                // each once as itself and once again as a plain row.
+                rows =
+                    remember(shelves, state.watch, state.heldIds) {
+                        homeRowsOf(shelves, state.watch, state.heldIds)
+                            .filterNot { it.title in setOf("Continue", "Next up", "Latest films") }
+                    },
                 watch = state.watch,
                 columns = columns,
                 onOpenTitle = onOpenTitle,
