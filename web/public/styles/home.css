@@ -6,7 +6,7 @@
 .cover {
   position: relative;
   isolation: isolate;
-  min-height: clamp(540px, 86vh, 860px);
+  height: var(--cover-height);
   /* Bleeds to the column's edges and up under the translucent masthead. */
   margin: calc(-1 * (var(--main-top) + var(--masthead-height))) calc(-1 * var(--gutter)) 0;
   overflow: hidden;
@@ -40,23 +40,23 @@
   flex-direction: column;
   justify-content: flex-end;
   height: 100%;
-  max-width: min(46rem, 64%);
-  padding: calc(var(--masthead-height) + 72px) var(--gutter) clamp(88px, 12vh, 140px);
+  max-width: min(46rem, 60%);
+  padding: calc(var(--masthead-height) + 12px) var(--gutter) 40px;
 }
 .cover-eyebrow { color: var(--on-image-2); margin-bottom: 22px; }
 .cover-title {
   margin: 0;
-  font: 600 clamp(3.4rem, 8.4vw, 8.4rem)/0.86 var(--display);
+  font: 600 clamp(3rem, 6.4vw, 7rem)/0.86 var(--display);
   letter-spacing: -0.035em;
   text-transform: uppercase;
   font-variation-settings: "opsz" 144;
   overflow-wrap: anywhere;
 }
-.cover-title.long { font-size: clamp(2.6rem, 5.6vw, 5.6rem); line-height: 0.9; }
+.cover-title.long { font-size: clamp(2.4rem, 4.4vw, 4.6rem); line-height: 0.9; }
 .cover-deck {
   max-width: 34ch;
   margin: 28px 0 0;
-  font: italic 400 clamp(1.15rem, 1.6vw, 1.45rem)/1.4 var(--serif);
+  font: 400 clamp(1.1rem, 1.4vw, 1.3rem)/1.4 var(--serif);
   color: var(--on-image-2);
 }
 .cover-meta {
@@ -104,7 +104,7 @@
 .cover-side {
   position: absolute;
   right: var(--gutter);
-  bottom: clamp(120px, 18vh, 190px);
+  bottom: 72px;
   max-width: 15rem;
   text-align: left;
 }
@@ -123,7 +123,7 @@
   white-space: pre-line;
   color: var(--on-image-2);
 }
-.cover-pager { position: absolute; right: var(--gutter); bottom: 64px; display: flex; gap: 6px; }
+.cover-pager { position: absolute; right: var(--gutter); bottom: 18px; display: flex; gap: 6px; }
 .cover-dot {
   position: relative;
   width: 28px;
@@ -149,16 +149,15 @@
 .features {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2px;
+  gap: 0;
   margin: 0 calc(-1 * var(--gutter));
-  background: var(--paper);
 }
 .feature {
   position: relative;
   isolation: isolate;
   display: flex;
   align-items: flex-end;
-  min-height: clamp(300px, 32vw, 420px);
+  min-height: clamp(220px, 16vw, 270px);
   overflow: hidden;
   color: var(--on-image);
   background: #141416;
@@ -187,14 +186,16 @@
 .feature-copy { display: flex; flex-direction: column; max-width: 26rem; padding: 36px clamp(24px, 2.6vw, 40px); }
 .feature-eyebrow { color: var(--on-image-2); margin-bottom: 18px; }
 .feature-title {
-  font: 600 clamp(1.9rem, 2.9vw, 2.9rem)/0.98 var(--display);
+  font: 600 clamp(1.8rem, 2.8vw, 2.9rem)/0.98 var(--display);
   letter-spacing: -0.025em;
   text-transform: uppercase;
   overflow-wrap: anywhere;
 }
 .feature-rule { width: 32px; height: 1px; margin: 20px 0 16px; background: rgba(246, 242, 234, 0.55); transition: width 900ms var(--ease); }
 .feature:hover .feature-rule { width: 64px; }
-.feature-deck { font: italic 400 1.0625rem/1.45 var(--serif); color: var(--on-image-2); }
+.feature-deck { max-width: 24rem; font: 400 1rem/1.4 var(--serif); color: var(--on-image-2); }
+/* The middle feature is set in upper and lower case, for rhythm across the three. */
+.feature:nth-child(2) .feature-title { text-transform: none; font-size: clamp(2rem, 3vw, 3.1rem); }
 .feature-meta { margin-top: 10px; font-size: 0.75rem; letter-spacing: 0.06em; color: var(--on-image-2); }
 .feature:focus-visible { outline-offset: -4px; }
 
@@ -204,13 +205,13 @@
   grid-template-columns: minmax(0, 2.6fr) minmax(16rem, 1fr);
   align-items: start;
   gap: clamp(32px, 4vw, 72px);
-  margin-top: clamp(56px, 7vw, 104px);
+  margin-top: 28px;
 }
 .home-band > :only-child { grid-column: 1 / -1; }
-.home-section { min-width: 0; margin-top: clamp(56px, 7vw, 96px); }
+.home-section { min-width: 0; margin-top: 36px; }
 .home-band .home-section { margin-top: 0; }
 .row-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 20px; }
-.row-head h2 { margin: 0; font: 600 clamp(1.35rem, 1.9vw, 1.75rem)/1.2 var(--display); letter-spacing: -0.015em; }
+.row-head h2 { margin: 0; font: 600 1.3rem/1.2 var(--text); letter-spacing: -0.01em; }
 .row-head .count { margin-left: 10px; color: var(--ink-3); font: 400 0.8125rem var(--text); font-variant-numeric: tabular-nums; }
 .see-all {
   display: inline-flex;
@@ -231,7 +232,7 @@
 .resume-strip {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(15rem, calc((100% - 3 * 16px) / 3.3));
+  grid-auto-columns: minmax(13rem, calc((100% - 3 * 16px) / 4));
   gap: 16px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
@@ -355,3 +356,49 @@
   transition: border-color 320ms var(--ease);
 }
 .cover-pause:hover { border-color: var(--on-image); }
+
+/* ── Reference fidelity: the cover sits right of the rail, cards carry their
+   caption over the picture, and Recently Added is one row. ───────────── */
+@media (min-width: 901px) {
+  [data-cover] .cover { margin-left: calc(var(--rail-width) - var(--gutter)); }
+}
+.feature-meta { display: none; }
+.resume-card { position: relative; gap: 0; }
+.resume-art { aspect-ratio: 16 / 8.4; border-radius: 3px; }
+.resume-text {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 26px 12px 10px;
+  border-radius: 0 0 3px 3px;
+  background: linear-gradient(0deg, rgba(8, 8, 9, 0.9) 0%, rgba(8, 8, 9, 0.6) 60%, rgba(8, 8, 9, 0) 100%);
+  color: var(--on-image);
+}
+.resume-name { font-size: 0.875rem; font-weight: 500; }
+.resume-sub { color: var(--on-image-2); font-size: 0.75rem; max-width: 42%; }
+/* The progress rule sits on the episode line, as a bar beside it. */
+.resume-art .watched { left: auto; right: 12px; bottom: 16px; width: 52%; height: 3px; border-radius: 2px; background: rgba(246, 242, 234, 0.22); z-index: 1; }
+.resume-art .watched-at { background: #6fb7e8; border-radius: 2px; }
+.resume-at { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.pull-quote blockquote { padding-left: 3.4rem; }
+.pull-quote blockquote::before { position: absolute; left: 0; top: -0.05em; height: auto; margin: 0; font-size: 4rem; color: var(--ink); }
+.pull-quote figcaption { flex-direction: column; align-items: flex-start; gap: 0; margin-left: 3.4rem; }
+.pull-quote figcaption::before { content: ""; width: 32px; height: 1px; margin: 4px 0 18px; background: currentColor; }
+.home-section.latest .grid.plates, .home-section.series-row .grid.plates {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(8.5rem, calc((100% - 7 * 14px) / 8));
+  gap: 14px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.home-section.latest .grid.plates .body { display: none; }
+.home-section.latest .thumb, .home-section.series-row .thumb { border-radius: 3px; }
+.home-section.series-row .grid.plates .name { font-size: 0.9375rem; }
+.this-month { border-top: 0; border-left: 1px solid var(--rule-soft); padding: 0 0 0 28px; }
+.this-month a { padding: 10px 0; grid-template-columns: 2.2rem minmax(0, 1fr); }
+.this-month-num { font-size: 1.3rem; }
+.this-month-name { font-size: 0.9375rem; }
+@media (max-width: 900px) {
+  .this-month { border-left: 0; padding-left: 0; }
+  .cover { height: auto; min-height: 70vh; }
+}

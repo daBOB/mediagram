@@ -105,8 +105,10 @@
   --brand: var(--display);
   --radius: 6px;
   --gutter: clamp(1rem, 3.2vw, 3.5rem);
-  --rail-width: 13.5rem;
+  --rail-width: 14rem;
   --masthead-height: 76px;
+  /* The cover story and, beside it on the home page, the rail. */
+  --cover-height: clamp(440px, 45vh, 500px);
   --main-top: 40px;
   --measure: 96rem;
   /* Heavy and settling, never linear: a spring that has lost its bounce. */
@@ -115,8 +117,10 @@
   /* Page chrome < skip link < profile chooser. Native dialogs use the top layer.
      Playback's local layers: HUD 1, notes/previews 2, next-title offer 3. */
   --layer-chrome: 1;
-  --layer-skip: 2;
-  --layer-profile: 3;
+  /* The rail sits over the masthead's empty left end on the home page. */
+  --layer-rail: 2;
+  --layer-skip: 3;
+  --layer-profile: 4;
 }
 
 @media (prefers-color-scheme: light) {

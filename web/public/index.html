@@ -22,18 +22,20 @@
            page. Nothing else in the rail is a way home. -->
       <a class="brand" href="#/home">mediagram</a>
       <nav class="rail-nav" aria-label="Your shelves">
-        <span class="eyebrow rail-label" aria-hidden="true">Your shelves</span>
+        <!-- Home again, as the reference front page has it: the rail is where
+             a reader finds their way back to the front, not only the bar. -->
+        <a href="#/home" data-section="home"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5 12 3.5l8.5 7V20h-5.5v-5.5h-6V20H3.5z"></path></svg><span class="label">Home</span></a>
         <!-- The three that come from what has been watched rather than from
              the catalog: a shelf you filled, not one the library filled. -->
-        <a href="#/continue" data-section="continue" class="kept">Continue<span class="n" id="n-continue"></span></a>
-        <a href="#/watchlist" data-section="watchlist" class="kept">Watchlist<span class="n" id="n-watchlist"></span></a>
-        <a href="#/collections" data-section="collections" class="kept">Collections<span class="n" id="n-collections"></span></a>
+        <a href="#/continue" data-section="continue" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M10.2 8.6v6.8l5.6-3.4z"></path></svg><span class="label">Continue watching</span><span class="n" id="n-continue"></span></a>
+        <a href="#/watchlist" data-section="watchlist" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h11v17l-5.5-3.8-5.5 3.8z"></path></svg><span class="label">Watchlist</span><span class="n" id="n-watchlist"></span></a>
+        <a href="#/collections" data-section="collections" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1"></rect><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"></rect><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"></rect></svg><span class="label">Collections</span><span class="n" id="n-collections"></span></a>
         <!-- Not a shelf: what the player itself is doing. Hidden until
              `/api/status` answers, which it does for this household's own
              devices — this network, or a peer on the tailnet. A viewer from
              outside is never shown a way in to a page they would get a 404
              from. -->
-        <a href="#/system" data-section="system" class="apart" id="nav-system" hidden>System</a>
+        <a href="#/system" data-section="system" class="apart" id="nav-system" hidden><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"></path><circle cx="15" cy="7" r="2"></circle><circle cx="9" cy="17" r="2"></circle></svg><span class="label">System</span></a>
       </nav>
       <!-- The masthead line a magazine prints under its name, set from what
            the library actually holds rather than a slogan. -->
@@ -52,6 +54,8 @@
       <div class="library-toolbar">
         <div class="search-field" role="search">
           <label for="search" class="sr-only">Search</label>
+          <!-- An icon until it is used: it opens to a field on focus, so the
+               bar stays as quiet as the front page's. -->
           <input type="search" id="search" class="search" placeholder="Search titles and summaries"
                  autocomplete="off" spellcheck="false" />
         </div>

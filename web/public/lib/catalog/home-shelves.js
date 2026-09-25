@@ -14,8 +14,9 @@
 import { flattenCollection } from "../library.js";
 import { resumeAt } from "../resume-point.js";
 
-/** How many cards a row holds before the rest is left to its own shelf. */
-export const SHELF_LIMIT = 6;
+/** How many cards a row holds before the rest is left to its own shelf:
+ *  eight, the single row of posters the home page sets across its width. */
+export const SHELF_LIMIT = 8;
 
 /**
  * The five rows, from the library and what this viewer has watched.

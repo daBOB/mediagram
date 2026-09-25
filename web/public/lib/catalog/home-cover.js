@@ -118,7 +118,8 @@ function slide(set, at, count, play) {
 
   const copy = el("div", "cover-copy");
   const genres = genresOf(set);
-  copy.append(el("p", "eyebrow cover-eyebrow", ["Cover story", genres[0]].filter(Boolean).join(" · ")));
+  copy.append(el("p", "eyebrow cover-eyebrow", // "Today" because it is: the cover's films are chosen by the day.
+    ["Featured today", genres[0]].filter(Boolean).join(" · ")));
   const title = set.title ?? set.setId;
   const headline = el("h2", "cover-title", title);
   if (title.length > LONG_TITLE) headline.classList.add("long");

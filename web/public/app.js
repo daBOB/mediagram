@@ -403,6 +403,8 @@ function showProfile() {
   const button = document.getElementById("who");
   const current = state.profile();
   button.textContent = current ? current.name : "Who\u2019s watching?";
+  // Drawn as an initial in a circle; the name stays the button's text.
+  button.dataset.initial = current ? current.name.trim().slice(0, 1).toUpperCase() : "?";
   button.hidden = false;
 }
 

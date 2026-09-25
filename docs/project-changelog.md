@@ -5,7 +5,21 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Unreleased — 0.55.0
+## Unreleased — 0.55.1
+
+**Changed**
+
+- The web home page follows the magazine reference more closely. The cover is
+  one band (about 45% of the viewport) beside a rail that runs only as deep as
+  the cover; everything below takes the full width. The rail carries line
+  icons and Home. Search is a magnifier that opens into a field, and the
+  profile is an initial in a circle. Continue Watching cards carry their title,
+  episode and progress bar over the picture. Recently Added is one row of eight
+  posters. Section headings are sans; feature and cover standfirsts are upright
+  serif. The cover's eyebrow reads "Featured today", which is true: its films
+  are chosen by the day.
+
+## 0.55.0
 
 **Added**
 

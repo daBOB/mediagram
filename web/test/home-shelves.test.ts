@@ -11,7 +11,7 @@
 import { describe, expect, test } from "bun:test";
 import { catalogSet } from "./support/catalog-set";
 import { groupLibrary, type CatalogSet } from "../public/lib/library.js";
-import { homeShelves } from "../public/lib/catalog/home-shelves.js";
+import { SHELF_LIMIT, homeShelves } from "../public/lib/catalog/home-shelves.js";
 
 const set = (over: Partial<CatalogSet> = {}): CatalogSet => catalogSet({ duration: 3600, addedAt: 1_000, ...over });
 
@@ -88,8 +88,8 @@ describe("what arrived recently", () => {
   test("a row holds no more than the limit", () => {
     const many = Array.from({ length: 12 }, (_, n) => set({ title: `Film ${n}`, addedAt: n }));
 
-    expect(shelvesOf(many).latestMovies).toHaveLength(6);
-    // The heading still counts the whole shelf, not the six on the row.
+    expect(shelvesOf(many).latestMovies).toHaveLength(SHELF_LIMIT);
+    // The heading still counts the whole shelf, not the eight on the row.
     expect(shelvesOf(many).totals.latestMovies).toBe(12);
     expect(shelvesOf(many, {}, 3).latestMovies).toHaveLength(3);
   });

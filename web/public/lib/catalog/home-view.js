@@ -77,7 +77,7 @@ export function renderHome(main, shelves, editorial, { play, open, openFilm }) {
   if (cards.length > 0) {
     const strip = el("div", "resume-strip");
     strip.append(...cards);
-    band.append(section("resume", "continue", "Continue watching", null, "#/continue", strip));
+    band.append(section("resume", "continue", "Continue Watching", null, "#/continue", strip));
   }
   if (editorial.quote) {
     const quote = pullQuote(editorial.quote);
@@ -88,7 +88,7 @@ export function renderHome(main, shelves, editorial, { play, open, openFilm }) {
 
   const library = el("div", "home-band home-library");
   if (shelves.latestMovies.length > 0) {
-    library.append(section("latest", "latestMovies", "Recently added", shelves.totals.latestMovies, "#/movies",
+    library.append(section("latest", "latestMovies", "Recently Added", shelves.totals.latestMovies, "#/movies",
       movieGrid(shelves.latestMovies, openFilm, { mode: GRID })));
   }
   if (editorial.thisMonth.length > 0) {

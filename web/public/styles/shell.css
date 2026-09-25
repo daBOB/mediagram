@@ -30,14 +30,13 @@
 .brand {
   display: block;
   padding: 0 10px;
-  margin-bottom: 44px;
+  margin-bottom: 36px;
   color: var(--ink);
   font: 600 1.7rem/1.1 var(--brand);
   letter-spacing: -0.02em;
   text-decoration: none;
 }
 .rail-nav { display: flex; flex-direction: column; gap: 2px; }
-.rail-label { padding: 0 10px; margin-bottom: 10px; }
 .rail-nav a, .departments a {
   display: flex;
   align-items: center;
@@ -51,15 +50,17 @@
   text-decoration: none;
   transition: color 320ms var(--ease), background-color 320ms var(--ease);
 }
-.rail-nav a { justify-content: space-between; }
+.rail-nav a { gap: 12px; padding: 10px 12px; white-space: nowrap; }
+.rail-nav .n { margin-left: auto; }
 .rail-nav a:hover, .departments a:hover { color: var(--ink); background: var(--rule-soft); }
-.rail-nav a.active, .departments a.active { color: var(--ink); background: var(--rule-soft); box-shadow: inset 0 0 0 1px var(--rule-soft); }
-.rail-nav a.active { box-shadow: inset 2px 0 0 var(--accent); }
-.rail-nav a.apart { margin-top: 20px; }
+.rail-nav a.active, .departments a.active { color: var(--ink); background: color-mix(in srgb, var(--ink) 10%, transparent); }
+.rail-nav a.apart { margin-top: 12px; }
+/* Line icons, drawn in the text colour at a hairline weight. */
+.icon { flex: none; width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linejoin: round; stroke-linecap: round; }
 .n { color: var(--ink-3); font-size: 0.75rem; font-weight: 400; font-variant-numeric: tabular-nums; }
 .rail-masthead {
-  margin: auto 0 0;
-  padding: 24px 10px 0;
+  margin: 28px 10px 0;
+  padding: 24px 6px 0;
   border-top: 1px solid var(--rule-soft);
   color: var(--ink-3);
   font: 500 0.625rem/2 var(--text);
@@ -89,37 +90,67 @@
 .departments a { padding: 10px 16px; gap: 6px; }
 .departments .n { font-size: 0.6875rem; }
 .library-toolbar { display: flex; align-items: center; gap: 16px; margin-left: auto; min-width: 0; }
-.search-field { width: clamp(12rem, 22vw, 20rem); }
-.search {
-  width: 100%;
-  min-height: 44px;
-  padding: 10px 18px;
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface) 80%, transparent);
-  color: var(--ink);
-  font-size: 0.875rem;
-  transition: border-color 320ms var(--ease), background-color 320ms var(--ease);
+/* Search is a magnifier until it is used, then opens into a field — on
+   focus, and for as long as it holds a query. */
+.search-field { position: relative; display: flex; justify-content: flex-end; color: var(--ink); }
+.search-field::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  width: 21px;
+  height: 21px;
+  translate: 0 -50%;
+  pointer-events: none;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='m15.5 15.5 5 5'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='m15.5 15.5 5 5'/%3E%3C/svg%3E") center / contain no-repeat;
 }
-.search:focus { border-color: var(--ink-3); background: var(--surface); }
-.search::placeholder { color: var(--ink-3); }
-.who-button {
-  flex: none;
-  max-width: 12rem;
+.search {
+  width: 44px;
   min-height: 44px;
-  padding: 8px 18px;
-  border: 1px solid var(--rule);
+  padding: 10px 0 10px 44px;
+  border: 1px solid transparent;
   border-radius: 999px;
   background: transparent;
-  color: var(--ink);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  transition: background-color 320ms var(--ease);
+  color: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: width 520ms var(--ease), border-color 320ms var(--ease), background-color 320ms var(--ease);
 }
-.who-button:hover { background: var(--rule-soft); }
+.search::placeholder { color: transparent; }
+.search:hover { background: var(--rule-soft); }
+.search:focus, .search:not(:placeholder-shown) {
+  width: clamp(14rem, 24vw, 22rem);
+  padding-right: 16px;
+  border-color: var(--rule);
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  cursor: text;
+}
+.search:focus::placeholder { color: var(--ink-3); }
+.search::-webkit-search-cancel-button { display: none; }
+/* The viewer as an initial in a circle. The button still holds the whole
+   name, which is what a screen reader announces; the drawn initial comes
+   from `data-initial` (a button ignores `::first-letter`). */
+.who-button {
+  flex: none;
+  display: inline-block;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0;
+  line-height: 44px;
+  text-align: center;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: transform 480ms var(--ease), box-shadow 480ms var(--ease);
+}
+.who-button::before { content: attr(data-initial); font-size: 1.0625rem; font-weight: 600; }
+.who-button:hover { box-shadow: 0 0 0 3px var(--rule); }
 
 main {
   flex: 1;
@@ -151,7 +182,6 @@ main {
 @media (max-width: 1180px) {
   :root { --rail-width: 11.5rem; }
   .departments a { padding-inline: 12px; }
-  .search-field { width: clamp(10rem, 18vw, 14rem); }
 }
 @media (max-width: 900px) {
   :root { --rail-width: 0px; --masthead-height: auto; --main-top: 24px; }
@@ -168,17 +198,20 @@ main {
   }
   .brand { margin: 0; padding: 0; font-size: 1.45rem; }
   .rail-nav { flex-direction: row; gap: 0; min-width: 0; margin-left: auto; overflow-x: auto; scrollbar-width: none; }
-  .rail-label, .rail-masthead { display: none; }
-  .rail-nav a { padding: 8px 10px; font-size: 0.8125rem; }
+  .rail-masthead { display: none; }
+  /* Icons only on a phone; the label stays in the link for its name. */
+  .rail-nav a { padding: 10px; font-size: 0.8125rem; }
+  .rail-nav .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .rail-nav a.apart { margin-top: 0; }
-  .rail-nav a.active { box-shadow: inset 0 -2px 0 var(--accent); }
+  .rail-nav a.active { background: color-mix(in srgb, var(--ink) 10%, transparent); }
   .rail-nav .n { display: none; }
   .masthead { position: static; flex-wrap: wrap; gap: 8px 12px; padding: 10px 16px; }
   .departments { width: 100%; overflow-x: auto; scrollbar-width: none; }
   .departments a { padding: 8px 12px; font-size: 0.875rem; }
   .library-toolbar { width: 100%; margin: 0; gap: 10px; }
-  .search-field { flex: 1; width: auto; }
-  .who-button { max-width: 8rem; padding-inline: 14px; }
+  .search-field { flex: 1; }
+  .search, .search:focus, .search:not(:placeholder-shown) { width: 100%; padding-right: 16px; border-color: var(--rule); cursor: text; }
+  .search::placeholder { color: var(--ink-3); }
   main { width: 100%; padding: var(--main-top) 16px 64px; }
   .colophon { padding: 24px 16px; line-height: 1.8; }
   .loading-posters { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
@@ -206,15 +239,14 @@ main {
       animation-timeline: scroll(root);
       animation-range: 40vh 75vh;
     }
-    [data-cover] .departments a, [data-cover] .who-button { color: var(--bar-ink); }
+    [data-cover] .departments a, [data-cover] .search-field { color: var(--bar-ink); }
     [data-cover] .departments .n { color: color-mix(in srgb, var(--bar-ink) 65%, transparent); }
-    [data-cover] .search {
-      color: var(--bar-ink);
+    [data-cover] .search { color: var(--bar-ink); }
+    [data-cover] .search:focus, [data-cover] .search:not(:placeholder-shown) {
       border-color: color-mix(in srgb, var(--bar-ink) 30%, transparent);
       background: color-mix(in srgb, var(--bar-bg) 60%, transparent);
     }
     [data-cover] .search::placeholder { color: color-mix(in srgb, var(--bar-ink) 70%, transparent); }
-    [data-cover] .who-button { border-color: color-mix(in srgb, var(--bar-ink) 30%, transparent); }
     [data-cover] .departments a.active, [data-cover] .departments a:hover {
       background: color-mix(in srgb, var(--bar-ink) 12%, transparent);
     }
@@ -223,4 +255,20 @@ main {
 @keyframes bar-settle {
   from { --bar-bg: rgba(10, 10, 11, 0.35); --bar-ink: var(--on-image); }
   to { --bar-bg: color-mix(in srgb, var(--paper) 78%, transparent); --bar-ink: var(--ink); }
+}
+
+/* The front page as the reference lays it out: the rail runs down beside the
+   cover story only, and everything under the cover takes the full width. */
+@media (min-width: 901px) {
+  [data-cover] .library-rail {
+    position: absolute;
+    bottom: auto;
+    z-index: var(--layer-rail);
+    height: var(--cover-height);
+    border-right: 0;
+    background: var(--sidebar);
+  }
+  [data-cover] .masthead { margin-left: 0; padding-left: calc(var(--rail-width) + var(--gutter)); }
+  [data-cover] main { width: 100%; margin-left: 0; }
+  [data-cover] .colophon { margin-left: 0; }
 }

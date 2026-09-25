@@ -20,7 +20,8 @@ export function pullQuote(set) {
   const credit = el("figcaption");
   const link = el("a", null, [set.title ?? set.setId, set.year].filter(Boolean).join(", "));
   link.href = `#/film/${encodeURIComponent(set.setId)}`;
-  credit.append("— ", link);
+  // The rule above the credit stands where a dash would.
+  credit.append(link);
   figure.append(credit);
   return figure;
 }
