@@ -9,7 +9,7 @@ import model.Kind
 import model.MediaSet
 
 /** Mirrors `locationOf` in the web's `search-view.js`, one case per kind. */
-class SearchRowTest {
+class SearchLinesTest {
 
     /** The one hit search cannot open — the player would be handed a PDF. */
     @Test

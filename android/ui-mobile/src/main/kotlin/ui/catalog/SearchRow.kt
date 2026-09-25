@@ -13,15 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import catalog.SearchRow
-import catalog.humanDuration
 import catalog.searchWhy
 import catalog.watchedFractionOf
 import designsystem.Spacing
-import model.Kind
-import model.MediaSet
 import model.Progress
-import model.episodeLabel
-import model.humanSize
 
 /**
  * One hit: title, where it sits, why it matched, what it is, and — if this
@@ -60,7 +55,7 @@ internal fun SearchResultRow(row: SearchRow, progress: Progress?, watched: Boole
         searchWhy(row.matched)?.let {
             Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
         }
-        metaLineOf(set).takeIf(String::isNotEmpty)?.let {
+        searchMetaLineOf(set).takeIf(String::isNotEmpty)?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (row.held) OfflineBadge(modifier = Modifier.padding(top = Spacing.extraSmall))
@@ -72,63 +67,4 @@ internal fun SearchResultRow(row: SearchRow, progress: Progress?, watched: Boole
         }
         HorizontalDivider(modifier = Modifier.padding(top = Spacing.small))
     }
-}
-
-/**
- * Where a hit sits, as a person would say it — ported from `locationOf` in
- * `search-view.js`. A film says the year it is from; an episode says its
- * show and its number; a lesson or a document says its course and the
- * folder it sits in, the folder path over the generated chapter label for
- * the same reason the shelves show it.
- */
-internal fun locationOf(set: MediaSet): String? = when (set.kind) {
-    Kind.EPISODE -> listOfNotNull(set.show, episodeLabel(set).takeIf(String::isNotEmpty))
-        .joinToString(" · ")
-        .takeIf(String::isNotEmpty)
-
-    Kind.TUTORIAL, Kind.DOCUMENT -> listOfNotNull(
-        set.show,
-        set.path?.takeIf(String::isNotBlank) ?: set.chapter?.takeIf(String::isNotBlank),
-    ).joinToString(" · ").takeIf(String::isNotEmpty)
-
-    Kind.MOVIE -> set.year?.takeIf { it > 0 }?.toString()
-}
-
-/**
- * `mkv · hevc · eac3 · 1h 53m · 14 GB` — shorter than [technicalLine],
- * which stays as it is for a title's own page; a search hit does not need
- * the quality, HDR, part count or bitrate a browsing card never asked for
- * either. Mirrors `codecLine` in the web's `format.js`.
- */
-private fun metaLineOf(set: MediaSet): String = listOfNotNull(
-    set.container.takeIf(String::isNotEmpty),
-    set.vcodec?.takeIf(String::isNotEmpty),
-    set.acodec?.takeIf(String::isNotEmpty),
-    humanDuration(set.durationSecs),
-    set.totalBytes.takeIf { it > 0 }?.let(::humanSize),
-).joinToString(" · ")
-
-/** `1 result`, `12 titles` — mirrors `countOf` in the web's `format.js`. */
-internal fun countOf(count: Int, noun: String): String = "$count ${if (count == 1) noun else "${noun}s"}"
-
-/**
- * Whether a hit can be opened. A document cannot — the player would be
- * handed a PDF — so [SearchResultRow] shows it and does not tap it, the
- * same rule [ItemRow] already follows for one inside a course.
- */
-internal fun isPlayable(set: MediaSet): Boolean = set.kind != Kind.DOCUMENT
-
-/**
- * What the search screen says under the field — pure, so the rule is
- * tested without a `Composable`. A restore can settle on a real answer
- * before the catalog itself has finished loading; joining against it then
- * would read as "nothing found" rather than "not yet asked", so
- * `catalogReady` is checked first, the same order [GenreBranch] uses.
- */
-internal enum class SearchResultsView { LOADING, EMPTY, ROWS }
-
-internal fun searchResultsView(catalogReady: Boolean, rowsEmpty: Boolean): SearchResultsView = when {
-    !catalogReady -> SearchResultsView.LOADING
-    rowsEmpty -> SearchResultsView.EMPTY
-    else -> SearchResultsView.ROWS
 }

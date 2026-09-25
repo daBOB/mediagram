@@ -2,37 +2,20 @@ package ui.tv.setup
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.Surface
-import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
 import designsystem.Overscan
-import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
-import ui.tv.TvFocus
+import ui.tv.TvTextField
 
 /**
  * The field's own tag, for the androidTest set that proves the focus and
@@ -108,7 +91,6 @@ fun TvTextQuestion(
     error: String? = null,
 ) {
     val focusRequester = remember { FocusRequester() }
-    var focused by remember { mutableStateOf(false) }
 
     // The remote has nowhere else useful to land on a screen that is one
     // question: requesting focus the moment this composes is what makes
@@ -145,46 +127,18 @@ fun TvTextQuestion(
             style = TvTypeScale.body,
             modifier = Modifier.padding(top = Spacing.large),
         )
-        Surface(
-            modifier = Modifier.padding(top = Spacing.small).fillMaxWidth(),
-            shape = RectangleShape,
-            colors =
-                SurfaceDefaults.colors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-            // Plain Surface takes one fixed Border rather than tv-material's
-            // stateful focused/unfocused pair, so the accent this field
-            // borrows from TvFocus comes from the local `focused` flag
-            // instead of through TvFocus.surfaceBorder(), which is built
-            // for the ClickableSurfaceBorder a Surface with an onClick
-            // takes, not this one.
-            border = TvFocus.fieldBorder(focused),
-        ) {
-            BasicTextField(
-                value = value,
-                onValueChange = onValue,
-                modifier =
-                    Modifier
-                        .testTag(TvTextQuestionFieldTag)
-                        .focusRequester(focusRequester)
-                        .onFocusChanged { focused = it.isFocused }
-                        .fillMaxWidth()
-                        .padding(Spacing.medium),
-                textStyle = TvTypeScale.body.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                singleLine = true,
-                cursorBrush = SolidColor(Palette.Imprint),
-                visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
-                keyboardOptions =
-                    KeyboardOptions(
-                        imeAction = ImeAction.Done,
-                        keyboardType = resolvedKeyboardType(secret, keyboardType),
-                    ),
-                // The only way this question is ever answered: the on-screen
-                // keyboard's action key, not a button a D-pad would have to
-                // travel to separately.
-                keyboardActions = KeyboardActions(onDone = { onSubmit() }),
-            )
-        }
+        TvTextField(
+            value = value,
+            onValue = onValue,
+            // The only way this question is ever answered: the on-screen
+            // keyboard's action key, not a button a D-pad would have to
+            // travel to separately.
+            onAction = onSubmit,
+            focusRequester = focusRequester,
+            modifier = Modifier.padding(top = Spacing.small),
+            fieldModifier = Modifier.testTag(TvTextQuestionFieldTag),
+            secret = secret,
+            keyboardType = resolvedKeyboardType(secret, keyboardType),
+        )
     }
 }
