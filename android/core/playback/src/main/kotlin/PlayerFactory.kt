@@ -28,8 +28,9 @@ import data.CoreClient
 suspend fun cacheDataSourceFactory(
     context: Context,
     counters: PlaybackCounters,
+    lan: LanCacheRuntime? = null,
     currentCore: () -> CoreClient?,
-): CacheDataSource.Factory = cacheDataSourceFactory(CacheProvider.get(context), counters, currentCore)
+): CacheDataSource.Factory = cacheDataSourceFactory(CacheProvider.get(context), counters, lan, currentCore)
 
 /**
  * What the player reads through: [cacheDataSourceFactory] that treats a
@@ -45,21 +46,23 @@ suspend fun cacheDataSourceFactory(
 internal fun playbackDataSourceFactory(
     cache: Cache,
     counters: PlaybackCounters,
+    lan: LanCacheRuntime? = null,
     currentCore: () -> CoreClient?,
 ): CacheDataSource.Factory =
-    cacheDataSourceFactory(cache, counters, currentCore)
+    cacheDataSourceFactory(cache, counters, lan, currentCore)
         // setFlags replaces rather than adds; the base factory sets none.
         .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
 
 internal fun cacheDataSourceFactory(
     cache: Cache,
     counters: PlaybackCounters,
+    lan: LanCacheRuntime? = null,
     currentCore: () -> CoreClient?,
 ): CacheDataSource.Factory =
     CacheDataSource
         .Factory()
         .setCache(cache)
-        .setUpstreamDataSourceFactory(MlibDataSourceFactory(counters, currentCore))
+        .setUpstreamDataSourceFactory(MlibDataSourceFactory(counters, lan, currentCore))
         // media3 offers this and nothing has ever attached one. Without it there
         // is no way to tell a cache that is carrying playback from one that is
         // being bypassed, which is the first thing worth knowing about a read.
@@ -101,13 +104,14 @@ internal fun cacheDataSourceFactory(
 suspend fun buildPlayer(
     context: Context,
     counters: PlaybackCounters,
+    lan: LanCacheRuntime? = null,
     currentCore: () -> CoreClient?,
 ): ExoPlayer =
     ExoPlayer
         .Builder(context)
         .setMediaSourceFactory(
             DefaultMediaSourceFactory(context)
-                .setDataSourceFactory(playbackDataSourceFactory(CacheProvider.get(context), counters, currentCore)),
+                .setDataSourceFactory(playbackDataSourceFactory(CacheProvider.get(context), counters, lan, currentCore)),
         )
         // Set in both directions because media3's defaults are not
         // symmetrical — five seconds back, fifteen forward. A control that

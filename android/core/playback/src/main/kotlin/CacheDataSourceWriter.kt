@@ -33,23 +33,28 @@ import data.CoreClient
 class CacheDataSourceWriter internal constructor(
     private val counters: PlaybackCounters,
     private val currentCore: () -> CoreClient?,
+    private val lan: LanCacheRuntime? = null,
     private val openCache: suspend () -> Cache,
 ) : PreloadWriter {
     constructor(
         context: Context,
         counters: PlaybackCounters,
+        lan: LanCacheRuntime? = null,
         currentCore: () -> CoreClient?,
-    ) : this(counters, currentCore, { CacheProvider.get(context) })
+    ) : this(counters, currentCore, lan, { CacheProvider.get(context) })
 
     private var factory: CacheDataSource.Factory? = null
 
     /**
      * The strict [cacheDataSourceFactory], never the player's forgiving one:
      * a cache error here has to fail the preload rather than let it keep
-     * downloading into a cache that stores nothing.
+     * downloading into a cache that stores nothing. Sharing it with
+     * playback ([lan], when given) is what fills the LAN server for free —
+     * a preload is not a separate path that happens to agree with
+     * playback's, it is the same one.
      */
     override suspend fun write(item: PreloadItem) {
-        val built = factory ?: cacheDataSourceFactory(openCache(), counters, currentCore).also { factory = it }
+        val built = factory ?: cacheDataSourceFactory(openCache(), counters, lan, currentCore).also { factory = it }
         CacheWriter(built.createDataSource(), DataSpec(setUri(item.setId)), null, null).cache()
     }
 }

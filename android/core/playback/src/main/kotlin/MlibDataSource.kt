@@ -8,7 +8,6 @@ package playback
 import android.net.Uri
 import androidx.media3.common.C
 import androidx.media3.datasource.BaseDataSource
-import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSourceException
 import androidx.media3.datasource.DataSpec
 import data.CoreClient
@@ -152,45 +151,4 @@ class MlibDataSource(
     private companion object {
         val EMPTY = ByteArray(0)
     }
-}
-
-/**
- * Hands ExoPlayer a fresh [MlibDataSource] per read session, bound to
- * whichever core is current *then*, over a [ChunkMemo] shared by every
- * session this factory ever opens — see [ChunkMemo] for why that sharing
- * is what keeps a `CacheDataSource` gap-fill from re-downloading a chunk
- * one of this factory's other data sources already has.
- *
- * The core a session opens with is asked for each time rather than
- * captured once: the player is built once per process and outlives a
- * start-over, and the core it would otherwise have kept holds the previous
- * account's open, still-authorised connection. Deleting the auth key file
- * does not close that connection, and the catalog it reads resolves by
- * path — so a captured core would look up the new library's sets and fetch
- * them as the old account, which is the opposite of what signing out is
- * supposed to mean.
- *
- * [chunks]' own upstream follows the same reasoning, re-resolving the
- * current core on every chunk it actually fetches rather than freezing
- * whichever core this factory saw first. That the memo can go on to serve
- * an old entry under a different core than fetched it is not a new risk
- * this introduces: a `setId` names one Telegram message in one channel, so
- * the bytes behind it cannot change from one core to the next, and the
- * on-disk `CacheDataSource` cache beneath this already persists the same
- * keys across a sign-out with no guard at all.
- */
-class MlibDataSourceFactory(
-    private val counters: PlaybackCounters,
-    private val currentCore: () -> CoreClient?,
-) : DataSource.Factory {
-    private val chunks: SetChunkSource =
-        ChunkMemo(
-            upstream =
-                SetChunkSource { setId, index, totalSize ->
-                    val core = currentCore() ?: throw IOException("this device is not set up to read the library")
-                    TelegramChunkSource(core, counters).chunk(setId, index, totalSize)
-                },
-        )
-
-    override fun createDataSource(): DataSource = MlibDataSource(currentCore(), chunks)
 }
