@@ -5,18 +5,18 @@ User asked "apply fix for all", 2026-09-25.
 
 | # | Item | Status |
 |---|------|--------|
-| 1 | `push-index` refuses when the channel holds sets the local index lacks (`--force` overrides) | todo |
-| 2 | Committed preview harness (`bun run preview`) | todo |
-| 3 | Typecheck gate plus the standing `tsc` error | todo |
-| 4 | Package readers accept schema ≥ oldest | todo |
-| 5 | Sidecar never records a lower schema | todo |
-| 6 | Targeted redraws instead of rebuilding the page on every state change | todo |
-| 7 | `metadata --refresh-older-than` | todo |
-| 8 | Stray tooling ignored or removed | todo |
-| 9 | Web line-limit check with an allow-list | todo |
-| 10 | Docs split (architecture ≤ 800 lines) | todo |
-| 11 | Pull-quote prefers short taglines | todo |
-| 12 | Channel merge | plan only, then check in (large) |
-| 13 | Android magazine parity | plan only, then check in (large) |
+| 1 | `push-index` refuses when the channel holds sets the local index lacks (`--force` overrides) | done `7a72d99` |
+| 2 | Committed preview harness (`bun run preview`) | done `ee42206` |
+| 3 | Typecheck gate plus the standing `tsc` error | done `7a72d99` |
+| 4 | Package readers accept schema ≥ oldest | done `7a72d99` |
+| 5 | Sidecar never records a lower schema | done `7a72d99` |
+| 6 | Targeted redraws instead of rebuilding the page on every state change | done `23ecdac` |
+| 7 | `metadata --refresh-older-than` | done `36f35f8` |
+| 8 | Stray tooling ignored or removed | done `7a72d99` |
+| 9 | Web line-limit check with an allow-list | done `ee42206` |
+| 10 | Docs split (architecture ≤ 800 lines) | done `ee42206` |
+| 11 | Pull-quote prefers short taglines | done `7a72d99` |
+| 12 | Channel merge | planned: `plans/260925-2245-channel-index-merge/` (awaiting decisions) |
+| 13 | Android magazine parity | planned: `plans/260925-2245-android-magazine-parity/` (awaiting decisions) |
 
 Decision: #1 keeps `--force` as the escape hatch until #12 exists.
