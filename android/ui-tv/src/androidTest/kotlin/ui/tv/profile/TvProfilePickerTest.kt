@@ -5,10 +5,13 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.pressKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import catalog.profile.ProfileUiState
@@ -74,6 +77,34 @@ class TvProfilePickerTest {
         compose.onNodeWithTag(TvProfilePickerAddTileTag).performKeyInput { pressKey(Key.Enter) }
 
         compose.onNodeWithTag(TvTextQuestionFieldTag).assertIsFocused()
+    }
+
+    /**
+     * The kids-choice step reached past the name question: focused on
+     * arrival, centre flips it, D-pad down reaches the Add row beneath it,
+     * and centre there adds with whatever the toggle was last left at.
+     */
+    @Test
+    fun theKidsStepIsFocusedFlipsAndAddsWithTheChosenValue() {
+        var added: Pair<String, Boolean>? = null
+        show(onAdd = { name, kids -> added = name to kids })
+
+        compose.onNodeWithTag(TvProfilePickerAddTileTag).performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.onNodeWithTag(TvProfilePickerAddTileTag).performKeyInput { pressKey(Key.Enter) }
+        compose.onNodeWithTag(TvTextQuestionFieldTag).performTextInput("Cara")
+        compose.onNodeWithTag(TvTextQuestionFieldTag).performImeAction()
+
+        compose.onNodeWithTag(TvProfilePickerKidsToggleTag).assertIsFocused()
+        compose.onNodeWithTag(TvProfilePickerKidsToggleTag).assertTextContains("Off")
+
+        compose.onNodeWithTag(TvProfilePickerKidsToggleTag).performKeyInput { pressKey(Key.Enter) }
+        compose.onNodeWithTag(TvProfilePickerKidsToggleTag).assertTextContains("On")
+
+        compose.onNodeWithTag(TvProfilePickerKidsToggleTag).performKeyInput { pressKey(Key.DirectionDown) }
+        compose.onNodeWithTag(TvProfilePickerAddConfirmTag).assertIsFocused()
+        compose.onNodeWithTag(TvProfilePickerAddConfirmTag).performKeyInput { pressKey(Key.Enter) }
+
+        assertEquals("Cara" to true, added)
     }
 
     private fun show(

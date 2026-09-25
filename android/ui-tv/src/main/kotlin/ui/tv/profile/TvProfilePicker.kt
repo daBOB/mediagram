@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Card
 import androidx.tv.material3.ClickableSurfaceDefaults
@@ -57,7 +60,19 @@ private const val KIDS_ON = "On"
 private const val KIDS_OFF = "Off"
 
 private val TileWidth = 180.dp
+
+// Fixed, not derived from content: a kids tile carries one more line ("KIDS")
+// than a plain one, and a row of `Card`s sized only by their own content
+// grows that one tile taller than its neighbours — a ragged row a fixed
+// height (both tiles centring their content inside it) closes off for good.
+private val TileHeight = 220.dp
 private val AvatarSize = 88.dp
+
+// The web reference (`style.css` `.who-card { max-width: 40rem; text-align:
+// center }`) keeps the whole picker — heading, tiles and note alike — from
+// running edge to edge and centres it; this is that same intent carried into
+// dp for the note specifically, not a unit-exact rem-to-dp conversion.
+private val NoteMaxWidth = 640.dp
 
 /** The first tile's own tag — the one always focused when the picker appears. */
 internal const val TvProfilePickerFirstTileTag = "tv-profile-picker-first-tile"
@@ -159,7 +174,12 @@ private fun TvPickerBody(
                 tag = if (state.profiles.isEmpty()) TvProfilePickerFirstTileTag else TvProfilePickerAddTileTag,
             )
         }
-        Text(NOTE, style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.large))
+        Text(
+            NOTE,
+            style = TvTypeScale.body,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.widthIn(max = NoteMaxWidth).padding(top = Spacing.large),
+        )
         if (state.canStay) {
             TvTextRow(text = STAY, onClick = onStay, modifier = Modifier.padding(top = Spacing.small))
         }
@@ -178,6 +198,7 @@ private fun TvProfileTile(
         modifier =
             Modifier
                 .width(TileWidth)
+                .height(TileHeight)
                 .testTag(tag)
                 .let { if (focusRequester != null) it.focusRequester(focusRequester) else it },
         shape = TvFocus.cardShape(),
@@ -186,7 +207,8 @@ private fun TvProfileTile(
         glow = TvFocus.cardGlow(),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(Spacing.medium),
+            modifier = Modifier.fillMaxSize().padding(Spacing.medium),
+            verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // The shared, two-letter `initialsOf` poster art already falls back
@@ -220,6 +242,7 @@ private fun TvAddTile(
         modifier =
             Modifier
                 .width(TileWidth)
+                .height(TileHeight)
                 .testTag(tag)
                 .let { if (focusRequester != null) it.focusRequester(focusRequester) else it },
         shape = TvFocus.cardShape(),
@@ -228,7 +251,8 @@ private fun TvAddTile(
         glow = TvFocus.cardGlow(),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(Spacing.medium),
+            modifier = Modifier.fillMaxSize().padding(Spacing.medium),
+            verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // A literal glyph, not a title to derive letters from — `initialsOf`
@@ -317,6 +341,7 @@ private fun TvAddProfileFlow(
         AddStep.KIDS -> {
             BackHandler { step = AddStep.NAME }
             TvKidsChoiceScreen(
+                name = name,
                 kids = kids,
                 onToggle = { kids = !kids },
                 onConfirm = { onAdd(name, kids) },
@@ -325,8 +350,15 @@ private fun TvAddProfileFlow(
     }
 }
 
+/**
+ * [name] is echoed as the heading rather than repeating [NAME_PROMPT]: the
+ * phone still shows the typed name in its own field while its kids toggle
+ * is being decided, since both live in the one dialog — this step has no
+ * field left to carry it, so the heading is what echoes it here instead.
+ */
 @Composable
 private fun TvKidsChoiceScreen(
+    name: String,
     kids: Boolean,
     onToggle: () -> Unit,
     onConfirm: () -> Unit,
@@ -340,7 +372,7 @@ private fun TvKidsChoiceScreen(
                 .fillMaxSize()
                 .padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
     ) {
-        Text(NAME_PROMPT, style = TvTypeScale.title)
+        Text(name, style = TvTypeScale.title)
         TvKidsToggleRow(
             kids = kids,
             onToggle = onToggle,
