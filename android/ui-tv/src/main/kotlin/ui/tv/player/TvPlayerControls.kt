@@ -27,20 +27,33 @@ import designsystem.Spacing
 import designsystem.TvTypeScale
 import model.MediaSet
 import model.endsAt
+import playback.PlaybackTotals
+import player.PlayerMarksState
 import player.READOUT_TICK_MS
 import player.clockTime
 import ui.player.SCRIM_ALPHA
 import java.time.Instant
 
-/** The two focus stops the player screen moves the remote between. */
+/** The focus stops the player screen moves the remote between: one for each row it lands on. */
 internal class TvPlayerFocus {
     val playPause = FocusRequester()
     val seekBar = FocusRequester()
+    val marks = FocusRequester()
 }
 
+/** What the controls show beyond the transport, and what pressing it does: the marks rail and the statistics. */
+internal class TvPlayerExtras(
+    val marks: PlayerMarksState?,
+    val markActions: TvMarksActions,
+    val statsShown: Boolean,
+    val onToggleStats: () -> Unit,
+    val totals: () -> PlaybackTotals,
+)
+
 /**
- * The controls over the picture: what is playing along the top, and along
- * the bottom the clock, the seek bar and the transport — top to bottom in
+ * The controls over the picture: what is playing along the top, with the
+ * playback statistics under it when they are on, and along the bottom the
+ * clock, the seek bar, the transport and the marks rail — top to bottom in
  * the order the remote moves through them, so Down always goes further
  * from the film's own facts and further into what can be done to it.
  *
@@ -53,6 +66,7 @@ internal fun TvPlayerControls(
     player: Player,
     set: MediaSet?,
     focus: TvPlayerFocus,
+    extras: TvPlayerExtras,
     onSeekBarFocused: (Boolean) -> Unit,
 ) {
     val progress = rememberProgressStateWithTickInterval(player, READOUT_TICK_MS)
@@ -61,16 +75,26 @@ internal fun TvPlayerControls(
     val scrim = Color.Black.copy(alpha = SCRIM_ALPHA)
 
     Box(modifier = Modifier.fillMaxSize()) {
-        set?.let {
-            TvPlayerTopBar(
-                set = it,
-                modifier =
-                    Modifier
-                        .align(Alignment.TopStart)
-                        .fillMaxWidth()
-                        .background(scrim)
-                        .padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
-            )
+        Column(modifier = Modifier.align(Alignment.TopStart).fillMaxWidth()) {
+            set?.let {
+                TvPlayerTopBar(
+                    set = it,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .background(scrim)
+                            .padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
+                )
+            }
+            // Under what is playing, on the side the phone keeps them, and
+            // inside the overscan margin like every other reading here.
+            if (extras.statsShown) {
+                TvStatsOverlay(
+                    player = player,
+                    totals = extras.totals,
+                    modifier = Modifier.padding(start = Overscan.horizontal, top = Spacing.medium),
+                )
+            }
         }
         Column(
             modifier =
@@ -94,7 +118,16 @@ internal fun TvPlayerControls(
                 down = focus.playPause,
                 onFocusChanged = onSeekBarFocused,
             )
-            TvTransport(player = player, playPauseFocus = focus.playPause, up = focus.seekBar)
+            TvTransport(
+                player = player,
+                playPauseFocus = focus.playPause,
+                up = focus.seekBar,
+                // Nowhere further down while nothing is open to mark.
+                down = if (extras.marks != null) focus.marks else FocusRequester.Default,
+                statsShown = extras.statsShown,
+                onToggleStats = extras.onToggleStats,
+            )
+            TvMarksRail(marks = extras.marks, actions = extras.markActions, first = focus.marks, up = focus.playPause)
         }
     }
 }

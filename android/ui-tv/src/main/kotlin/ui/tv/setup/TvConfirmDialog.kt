@@ -2,6 +2,7 @@ package ui.tv.setup
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
@@ -74,10 +75,12 @@ fun TvConfirmDialog(
 }
 
 /**
- * The window every television dialog draws in: a title, a body, and a row
- * of [buttons], with [initialFocus] — one of those buttons — taking the
- * remote the moment it opens, so a dialog never appears with nothing
- * focused. [onDismissRequest] is what Back does.
+ * The window every television dialog draws in: a title, a body, anything
+ * a dialog asks beyond prose ([content]), and a row of [buttons], with
+ * [initialFocus] — one of those buttons, or something in [content] —
+ * taking the remote the moment it opens, so a dialog never appears with
+ * nothing focused. [onDismissRequest] is what Back does. A blank [body] is
+ * left out, for a dialog whose content says everything.
  */
 @Composable
 internal fun TvDialog(
@@ -85,6 +88,7 @@ internal fun TvDialog(
     body: String,
     onDismissRequest: () -> Unit,
     initialFocus: FocusRequester,
+    content: @Composable ColumnScope.() -> Unit = {},
     buttons: @Composable RowScope.() -> Unit,
 ) {
     Dialog(onDismissRequest = onDismissRequest) {
@@ -104,11 +108,14 @@ internal fun TvDialog(
         ) {
             Column(modifier = Modifier.padding(Spacing.large)) {
                 Text(text = title, style = TvTypeScale.title)
-                Text(
-                    text = body,
-                    style = TvTypeScale.body,
-                    modifier = Modifier.padding(top = Spacing.medium),
-                )
+                if (body.isNotBlank()) {
+                    Text(
+                        text = body,
+                        style = TvTypeScale.body,
+                        modifier = Modifier.padding(top = Spacing.medium),
+                    )
+                }
+                content()
                 Row(
                     modifier = Modifier.padding(top = Spacing.large),
                     horizontalArrangement = Arrangement.spacedBy(Spacing.medium),

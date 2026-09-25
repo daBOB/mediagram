@@ -23,6 +23,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
+import model.Profile
 import model.WatchSnapshot
 import playback.PlaybackCounters
 import player.DefaultPlayerHandle
@@ -36,9 +37,15 @@ import player.ProgressRecorder
  * — so the screen's media3 state holders and the ViewModel's own state
  * both see a press land, and it offers the commands a playing film offers,
  * so the transport is enabled as it would be.
+ *
+ * [snapshot] and [profile] are what the stubbed repository holds when no
+ * [repository] is given: whose lists the player files into, and who is
+ * watching — a kids profile hides the Kids mark.
  */
 internal class TvPlayerFixture(
     repository: WatchStateRepository? = null,
+    snapshot: WatchSnapshot = WatchSnapshot.Empty,
+    profile: Profile? = null,
 ) : AutoCloseable {
     val media = mockk<ExoPlayer>(relaxed = true)
     val repository: WatchStateRepository = repository ?: mockk(relaxed = true)
@@ -51,9 +58,9 @@ internal class TvPlayerFixture(
 
     init {
         if (repository == null) {
-            every { this@TvPlayerFixture.repository.snapshot } returns MutableStateFlow(WatchSnapshot.Empty)
-            every { this@TvPlayerFixture.repository.profiles } returns MutableStateFlow(emptyList())
-            every { this@TvPlayerFixture.repository.chosenProfileId } returns MutableStateFlow(null)
+            every { this@TvPlayerFixture.repository.snapshot } returns MutableStateFlow(snapshot)
+            every { this@TvPlayerFixture.repository.profiles } returns MutableStateFlow(listOfNotNull(profile))
+            every { this@TvPlayerFixture.repository.chosenProfileId } returns MutableStateFlow(profile?.id)
         }
         every { media.applicationLooper } returns Looper.getMainLooper()
         every { media.videoSize } returns VideoSize.UNKNOWN

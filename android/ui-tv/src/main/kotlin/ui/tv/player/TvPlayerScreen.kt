@@ -5,12 +5,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +27,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.testTag
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import designsystem.Overscan
 import kotlinx.coroutines.delay
 import model.MediaSet
 import player.CONTROLS_LINGER_MS
@@ -69,6 +72,8 @@ fun TvPlayerScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val player by viewModel.player.collectAsStateWithLifecycle()
+    val marks by viewModel.marks.collectAsStateWithLifecycle()
+    val actionNotice by viewModel.actionNotice.collectAsStateWithLifecycle()
 
     PlayerLifecycle(viewModel = viewModel, setId = setId, fsk = set?.fsk)
     KeepScreenOnWhile(isPlaying = state is PlayerUiState.Playing)
@@ -80,9 +85,16 @@ fun TvPlayerScreen(
     // controls with the remote is using them, the way a pointer moving
     // over the web's is.
     var presses by remember { mutableIntStateOf(0) }
-    LaunchedEffect(controlsShown, state, presses) {
+    // Saved, as on the phone: a configuration change is not a viewer asking
+    // for the numbers to go, nor for the list they were filing into to close.
+    var statsShown by rememberSaveable { mutableStateOf(false) }
+    var choosingList by rememberSaveable { mutableStateOf(false) }
+    // The list dialog holds the controls the way a drag holds the phone's:
+    // its keys go to its own window, so no press here restarts the fade, and
+    // the controls it returns to must still be there when it closes.
+    LaunchedEffect(controlsShown, state, presses, choosingList) {
         if (!controlsShown) return@LaunchedEffect
-        if (!controlsShouldFade(isPlaying = state is PlayerUiState.Playing, isScrubbing = false)) return@LaunchedEffect
+        if (!controlsShouldFade(isPlaying = state is PlayerUiState.Playing, isScrubbing = choosingList)) return@LaunchedEffect
         delay(CONTROLS_LINGER_MS)
         controlsShown = false
     }
@@ -140,9 +152,42 @@ fun TvPlayerScreen(
         player?.let { current ->
             Video(current)
             if (barShown) {
-                TvPlayerControls(player = current, set = set, focus = focus, onSeekBarFocused = { onSeekBar = it })
+                TvPlayerControls(
+                    player = current,
+                    set = set,
+                    focus = focus,
+                    extras =
+                        TvPlayerExtras(
+                            marks = marks,
+                            markActions =
+                                TvMarksActions(
+                                    onToggleWatchlist = viewModel::toggleWatchlist,
+                                    onToggleKids = viewModel::toggleKids,
+                                    onAddToList = { choosingList = true },
+                                ),
+                            statsShown = statsShown,
+                            onToggleStats = { statsShown = !statsShown },
+                            totals = viewModel.totals,
+                        ),
+                    onSeekBarFocused = { onSeekBar = it },
+                )
             }
         }
+        marks?.takeIf { choosingList }?.let { open ->
+            TvAddToListDialog(
+                lists = open.lists,
+                memberOf = open.memberOf,
+                onToggle = viewModel::setInList,
+                onCreate = viewModel::createListAndAdd,
+                onDismiss = { choosingList = false },
+                notice = actionNotice,
+            )
+        }
+        TvActionNotice(
+            notice = actionNotice,
+            onGone = viewModel::dismissActionNotice,
+            modifier = Modifier.align(Alignment.TopEnd).padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
+        )
         when (val now = state) {
             PlayerUiState.Preparing -> TvLoadingIndicator()
             is PlayerUiState.Failed -> TvCenteredMessage(now.message)
