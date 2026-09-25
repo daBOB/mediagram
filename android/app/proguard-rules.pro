@@ -267,3 +267,19 @@
 #
 # Upload mapping.txt to Firebase Crashlytics / Sentry for production decoding.
 # Both the Firebase and Sentry Gradle plugins handle this automatically.
+
+
+# ==============================================================================
+# 20. JNA / UNIFFI (the native core)
+# ==============================================================================
+# The generated bindings reach libmediagram_core.so through JNA, which binds
+# an interface's methods to native symbols by their names, reads Structure
+# fields reflectively and calls back into Callback implementations from
+# native code. None of that is visible to R8, so the bindings and JNA itself
+# keep their names and members. JNA's desktop-only AWT helpers are absent
+# on Android.
+
+-keep class com.sun.jna.** { *; }
+-keep class * implements com.sun.jna.** { *; }
+-keep class uniffi.mediagram_core.** { *; }
+-dontwarn java.awt.**

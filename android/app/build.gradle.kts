@@ -21,6 +21,23 @@ android {
                 "proguard-rules.pro",
             )
         }
+        // A release build in everything that decides how fast it runs —
+        // not debuggable, so ART compiles it ahead of time instead of
+        // interpreting it, and minified by R8 — but signed with the debug
+        // key, so it installs over a debug install on a device that is
+        // already signed in, keeping that session instead of asking for a
+        // new SMS code. Only for measuring on a real device: a debug build
+        // runs Compose several times slower, which says nothing about what
+        // a viewer gets. Profileable from the shell (its own manifest) so
+        // gfxinfo and Perfetto can still read it.
+        create("benchmark") {
+            initWith(getByName("release"))
+            isMinifyEnabled = true
+            isShrinkResources = true
+            isDebuggable = false
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+        }
     }
 }
 
