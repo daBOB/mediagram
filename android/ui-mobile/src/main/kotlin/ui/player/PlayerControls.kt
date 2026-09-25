@@ -44,8 +44,9 @@ import player.speedLabel
  * holders start and stop observing with the composition, so nothing here runs
  * a timer or removes a listener.
  *
- * Glyphs rather than icons: `PlayerScreen` already draws its back arrow as
- * text, and five more characters do not earn an artifact.
+ * Glyphs where a character draws plainly — the back arrow, the gear, the
+ * ⓘ — and the shared [TransportIcons] for play, pause, the skips and next,
+ * whose characters Android draws as colour emoji.
  */
 @Composable
 fun PlayerControls(
@@ -114,20 +115,20 @@ fun PlayerControls(
         ) {
             // Both labels are read back off the player rather than written
             // here, so a button cannot come to say one thing and do another.
-            GlyphButton(
-                glyph = "⏪",
+            TransportButton(
+                icon = TransportIcons.SkipBack,
                 description = "Skip back ${seekBack.seekBackAmountMs / 1_000} seconds",
                 enabled = seekBack.isEnabled,
                 onClick = seekBack::onClick,
             )
-            GlyphButton(
-                glyph = if (playPause.showPlay) "▶" else "⏸",
+            TransportButton(
+                icon = if (playPause.showPlay) TransportIcons.Play else TransportIcons.Pause,
                 description = if (playPause.showPlay) "Play" else "Pause",
                 enabled = playPause.isEnabled,
                 onClick = playPause::onClick,
             )
-            GlyphButton(
-                glyph = "⏩",
+            TransportButton(
+                icon = TransportIcons.SkipForward,
                 description = "Skip forward ${seekForward.seekForwardAmountMs / 1_000} seconds",
                 enabled = seekForward.isEnabled,
                 onClick = seekForward::onClick,
@@ -143,8 +144,8 @@ fun PlayerControls(
             // Standing, not just in the card: cancelling the card's own offer
             // never withdraws this one.
             if (hasNext) {
-                GlyphButton(
-                    glyph = "⏭",
+                TransportButton(
+                    icon = TransportIcons.Next,
                     description = if (nextTitleLine.isNotEmpty()) "Play next: $nextTitleLine" else "Play next",
                     enabled = true,
                     onClick = onPlayNext,

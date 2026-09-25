@@ -6,31 +6,23 @@
 package ui.tv.player
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
 import androidx.media3.common.Player
 import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
 import androidx.media3.ui.compose.state.rememberSeekBackButtonState
 import androidx.media3.ui.compose.state.rememberSeekForwardButtonState
-import androidx.tv.material3.ClickableSurfaceDefaults
-import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import player.speedLabel
-import ui.tv.TvFocus
+import ui.player.TransportIcons
 
 /**
  * The three buttons that move the film — back ten, play/pause, forward ten
@@ -67,22 +59,22 @@ internal fun TvTransport(
         horizontalArrangement = Arrangement.spacedBy(Spacing.large),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        TvGlyphButton(
-            glyph = "⏪",
+        TvIconButton(
+            icon = TransportIcons.SkipBack,
             description = "Skip back ${seekBack.seekBackAmountMs / 1_000} seconds",
             enabled = seekBack.isEnabled,
             onClick = seekBack::onClick,
             modifier = toSeekBar,
         )
-        TvGlyphButton(
-            glyph = if (playPause.showPlay) "▶" else "⏸",
+        TvIconButton(
+            icon = if (playPause.showPlay) TransportIcons.Play else TransportIcons.Pause,
             description = if (playPause.showPlay) "Play" else "Pause",
             enabled = playPause.isEnabled,
             onClick = playPause::onClick,
             modifier = toSeekBar.focusRequester(focus.playPause),
         )
-        TvGlyphButton(
-            glyph = "⏩",
+        TvIconButton(
+            icon = TransportIcons.SkipForward,
             description = "Skip forward ${seekForward.seekForwardAmountMs / 1_000} seconds",
             enabled = seekForward.isEnabled,
             onClick = seekForward::onClick,
@@ -110,87 +102,4 @@ internal fun TvTransport(
             modifier = toSeekBar,
         )
     }
-}
-
-/**
- * A transport control drawn as a character, named for a screen reader —
- * a glyph has no accessible text of its own. Glyphs rather than icons, as
- * on the phone: this surface has no icon set, and a handful of characters
- * do not earn one.
- */
-@Composable
-internal fun TvGlyphButton(
-    glyph: String,
-    description: String,
-    enabled: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    TvOverlayButton(
-        text = glyph,
-        style = TvTypeScale.title,
-        enabled = enabled,
-        onClick = onClick,
-        modifier = modifier.semantics { contentDescription = description },
-    )
-}
-
-/**
- * Any button drawn over the picture — a transport glyph, a mark's label —
- * in one treatment, so the rows the remote moves between read as one set
- * of controls.
- *
- * The house focus treatment ([TvFocus]) rather than a stock button, so a
- * focused control grows and takes the accent border the way every other
- * focused thing on this surface does. Transparent until focused: over a
- * film, a row of filled chips would be more things to look at. Disabled
- * it dims but stays focusable, so a mark that cannot be pressed can still
- * be read.
- */
-@Composable
-internal fun TvOverlayButton(
-    text: String,
-    style: TextStyle,
-    enabled: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    TvOverlaySurface(onClick = onClick, enabled = enabled, modifier = modifier) {
-        Text(
-            text = text,
-            style = style,
-            modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.small),
-        )
-    }
-}
-
-/** [TvOverlayButton]'s treatment around any content, for a control that is more than one line of text. */
-@Composable
-internal fun TvOverlaySurface(
-    onClick: () -> Unit,
-    enabled: Boolean,
-    modifier: Modifier = Modifier,
-    content: @Composable BoxScope.() -> Unit,
-) {
-    Surface(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = modifier,
-        shape = TvFocus.surfaceShape(),
-        colors =
-            ClickableSurfaceDefaults.colors(
-                containerColor = Color.Transparent,
-                contentColor = Palette.Text,
-                focusedContainerColor = Palette.Sunk,
-                focusedContentColor = Palette.Imprint,
-                pressedContainerColor = Palette.Sunk,
-                pressedContentColor = Palette.Imprint,
-                disabledContainerColor = Color.Transparent,
-                disabledContentColor = Palette.Figures,
-            ),
-        scale = TvFocus.surfaceScale(),
-        border = TvFocus.surfaceBorder(),
-        glow = TvFocus.surfaceGlow(),
-        content = content,
-    )
 }
