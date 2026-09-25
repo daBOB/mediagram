@@ -1,6 +1,7 @@
 package ui.tv.profile
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -140,30 +141,42 @@ private fun TvPickerBody(
         // Overscan.horizontal margin a plain wrapping padding would, but
         // without clipping a focused edge tile's own growth the way that
         // wrapping padding does.
-        LazyRow(
-            modifier = Modifier.fillMaxWidth().padding(top = Spacing.large),
-            contentPadding = PaddingValues(horizontal = Overscan.horizontal),
-            // Centred, the same as the plain Row this replaces: with few
-            // enough profiles that the row does not scroll, the tiles still
-            // read as one centred group rather than pinned to the left edge.
-            // Once there are enough to fill the row, centring has nothing
-            // left to do and the row simply scrolls.
-            horizontalArrangement = Arrangement.spacedBy(Spacing.medium, Alignment.CenterHorizontally),
-        ) {
-            itemsIndexed(items = state.profiles, key = { _, profile -> profile.id }) { index, profile ->
-                TvProfileTile(
-                    profile = profile,
-                    onClick = { onChoose(profile.id) },
-                    focusRequester = if (!focusTryAgainFirst && index == 0) firstFocusRequester else null,
-                    tag = if (index == 0) TvProfilePickerFirstTileTag else "tv-profile-tile-${profile.id}",
-                )
-            }
-            item {
-                TvAddTile(
-                    onClick = { adding = true },
-                    focusRequester = if (!focusTryAgainFirst && state.profiles.isEmpty()) firstFocusRequester else null,
-                    tag = if (state.profiles.isEmpty()) TvProfilePickerFirstTileTag else TvProfilePickerAddTileTag,
-                )
+        //
+        // The tiles are narrowed to fit that safe width first, so the
+        // profiles a household actually has are all in view at once, the
+        // way the phone's picker shows every one of them: at their full
+        // width five tiles ran past the right edge of a 960dp television,
+        // "New profile" cut off mid-word in the overscan. Only past what
+        // fits at the narrowest tile does the row scroll.
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth().padding(top = Spacing.large)) {
+            val tileWidth = profileTileWidth(state.profiles.size + 1, maxWidth - Overscan.horizontal * 2, Spacing.medium)
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = Overscan.horizontal),
+                // Centred, the same as the plain Row this replaces: with few
+                // enough profiles that the row does not scroll, the tiles still
+                // read as one centred group rather than pinned to the left edge.
+                // Once there are enough to fill the row, centring has nothing
+                // left to do and the row simply scrolls.
+                horizontalArrangement = Arrangement.spacedBy(Spacing.medium, Alignment.CenterHorizontally),
+            ) {
+                itemsIndexed(items = state.profiles, key = { _, profile -> profile.id }) { index, profile ->
+                    TvProfileTile(
+                        profile = profile,
+                        onClick = { onChoose(profile.id) },
+                        focusRequester = if (!focusTryAgainFirst && index == 0) firstFocusRequester else null,
+                        tag = if (index == 0) TvProfilePickerFirstTileTag else "tv-profile-tile-${profile.id}",
+                        width = tileWidth,
+                    )
+                }
+                item {
+                    TvAddTile(
+                        onClick = { adding = true },
+                        focusRequester = if (!focusTryAgainFirst && state.profiles.isEmpty()) firstFocusRequester else null,
+                        tag = if (state.profiles.isEmpty()) TvProfilePickerFirstTileTag else TvProfilePickerAddTileTag,
+                        width = tileWidth,
+                    )
+                }
             }
         }
         Text(

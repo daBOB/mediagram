@@ -5,7 +5,14 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
+import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.unit.dp
+import designsystem.Overscan
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import androidx.compose.ui.test.performSemanticsAction
 import catalog.profile.ProfileUiState
 import model.Profile
@@ -102,6 +109,43 @@ class TvProfilePickerStateTest {
         compose.onNodeWithText("Name").assertExists()
     }
 
+    /**
+     * Four profiles and "New profile" on a 960dp television — the box this
+     * was seen on — all fit inside the overscan-safe width, the way the
+     * phone's picker shows every profile at once. At their full width the
+     * fifth tile ran past the right edge, its label cut to "New profil…".
+     */
+    @Test
+    @Config(qualifiers = "w960dp-h540dp")
+    fun fourProfilesAndNewProfileFitInsideTheSafeWidthOfA960dpTelevision() {
+        show(
+            ProfileUiState.Picking(
+                profiles = listOf("andre", "test", "TV test", "TV kids").map { Profile(id = it, name = it, kids = it == "TV kids") },
+                canStay = true,
+            ),
+        )
+        val screen = compose.onRoot().getBoundsInRoot()
+
+        val first = compose.onNodeWithTag(TvProfilePickerFirstTileTag).getBoundsInRoot()
+        val add = compose.onNodeWithTag(TvProfilePickerAddTileTag).getBoundsInRoot()
+        assertTrue(first.left >= screen.left + Overscan.horizontal - Slack, "first tile starts at ${first.left}")
+        assertTrue(add.right <= screen.right - Overscan.horizontal + Slack, "New profile ends at ${add.right}")
+        compose.onNodeWithText("New profile").assertExists()
+    }
+
+    @Test
+    fun tilesNarrowToFitTheRowButNoFurtherThanTheirFloor() {
+        val room = 864.dp
+        val gap = 16.dp
+        // Few enough: full width.
+        assertEquals(180.dp, profileTileWidth(count = 3, room = room, gap = gap))
+        // Five: narrowed so all five and their gaps fit exactly.
+        val five = profileTileWidth(count = 5, room = room, gap = gap)
+        assertTrue(five * 5 + gap * 4 <= room + 0.01.dp, "five tiles of $five")
+        // Many: held at the floor, and the row scrolls instead.
+        assertEquals(140.dp, profileTileWidth(count = 9, room = room, gap = gap))
+    }
+
     private fun show(state: ProfileUiState) {
         compose.runOnUiThread {
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
@@ -114,3 +158,6 @@ class TvProfilePickerStateTest {
         compose.waitForIdle()
     }
 }
+
+/** Rounding between pixels and dp. */
+private val Slack = 1.dp
