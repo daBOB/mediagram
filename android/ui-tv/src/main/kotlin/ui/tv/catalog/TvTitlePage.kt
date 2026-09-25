@@ -72,11 +72,21 @@ internal fun TvTitlePage(
             genres = set.genres,
             onOpenGenre = onOpenGenre,
             genreFocus = restoreKey,
+            // The page scrolls inside the overscan-safe band rather than
+            // across the whole screen, so the band above and below stays
+            // ground: an overview longer than the screen used to run on
+            // into the bottom edge, its last visible line cut mid-glyph by
+            // the panel — on a television that overscans, cut somewhere
+            // nobody can see. Now the text stops at the safe line, and
+            // Down onto the overview scrolls the rest into view. The side
+            // margin stays inside the scroll, where a focused link can
+            // grow into it.
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .padding(vertical = Overscan.vertical)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
+                    .padding(horizontal = Overscan.horizontal),
             readableOverview = true,
         ) {
             // As stored, not shouted, for the phone's reason: the web prints
