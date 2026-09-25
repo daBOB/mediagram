@@ -71,6 +71,7 @@ class TvConfirmDialogTest {
                 TvConfirmDialog(
                     title = "Start over?",
                     body = "This forgets everything entered so far.",
+                    confirmLabel = "Start over",
                     confirm = onConfirm,
                     cancel = onCancel,
                 )

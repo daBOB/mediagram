@@ -37,13 +37,22 @@ internal const val TvConfirmDialogConfirmTag = "tv-confirm-dialog-confirm"
  * on the safe choice. `Dialog`'s own `onDismissRequest`, which the system
  * wires to Back, resolves to [cancel] for the same reason: nothing short
  * of reaching across to the other button confirms.
+ *
+ * [confirmLabel] has no default on purpose: every phone confirm dialog
+ * names the action on its confirm button — "Start over", "Sign out",
+ * "Delete list" — never a bare "Confirm", so there is no reachable default
+ * here that would be right for a real call site. [cancelLabel] stays
+ * generic and defaultable because the phone's own dialogs agree on that
+ * one already — "Cancel" is what backing out is called everywhere.
  */
 @Composable
 fun TvConfirmDialog(
     title: String,
     body: String,
+    confirmLabel: String,
     confirm: () -> Unit,
     cancel: () -> Unit,
+    cancelLabel: String = "Cancel",
 ) {
     val cancelFocusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { cancelFocusRequester.requestFocus() }
@@ -76,10 +85,10 @@ fun TvConfirmDialog(
                         onClick = cancel,
                         modifier = Modifier.testTag(TvConfirmDialogCancelTag).focusRequester(cancelFocusRequester),
                     ) {
-                        Text("Cancel")
+                        Text(cancelLabel)
                     }
                     Button(onClick = confirm, modifier = Modifier.testTag(TvConfirmDialogConfirmTag)) {
-                        Text("Confirm")
+                        Text(confirmLabel)
                     }
                 }
             }

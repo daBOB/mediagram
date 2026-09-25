@@ -40,6 +40,7 @@ class TvConfirmDialogStateTest {
             TvConfirmDialog(
                 title = "Start over?",
                 body = "This forgets everything entered so far.",
+                confirmLabel = "Start over",
                 confirm = {},
                 cancel = {},
             )
@@ -47,6 +48,47 @@ class TvConfirmDialogStateTest {
 
         compose.onNodeWithText("Start over?").assertExists()
         compose.onNodeWithText("This forgets everything entered so far.").assertExists()
+    }
+
+    /**
+     * [TvConfirmDialog.confirmLabel] names the action — "Start over",
+     * "Sign out", "Delete list" on the phone — and has no default for
+     * exactly that reason; this pins that it actually reaches the button
+     * rather than a hardcoded "Confirm" a caller cannot override.
+     * [TvConfirmDialog.cancelLabel] is checked at its own default here,
+     * since the label-override test below already proves it can change.
+     */
+    @Test
+    fun theGivenConfirmLabelReachesTheConfirmButton() {
+        show {
+            TvConfirmDialog(
+                title = "Sign out?",
+                body = "This signs this device out.",
+                confirmLabel = "Sign out",
+                confirm = {},
+                cancel = {},
+            )
+        }
+
+        compose.onNodeWithText("Sign out").assertExists()
+        compose.onNodeWithText("Cancel").assertExists()
+    }
+
+    @Test
+    fun anOverriddenCancelLabelReachesTheCancelButton() {
+        show {
+            TvConfirmDialog(
+                title = "Delete list?",
+                body = "This deletes the list for good.",
+                confirmLabel = "Delete list",
+                confirm = {},
+                cancel = {},
+                cancelLabel = "Keep it",
+            )
+        }
+
+        compose.onNodeWithText("Delete list").assertExists()
+        compose.onNodeWithText("Keep it").assertExists()
     }
 
     private fun show(content: @Composable () -> Unit) {
