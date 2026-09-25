@@ -16,7 +16,7 @@ User asked "apply fix for all", 2026-09-25.
 | 9 | Web line-limit check with an allow-list | done `ee42206` |
 | 10 | Docs split (architecture ≤ 800 lines) | done `ee42206` |
 | 11 | Pull-quote prefers short taglines | done `7a72d99` |
-| 12 | Channel merge | planned: `plans/260925-2245-channel-index-merge/` (awaiting decisions) |
-| 13 | Android magazine parity | planned: `plans/260925-2245-android-magazine-parity/` (awaiting decisions) |
+| 12 | Channel merge | done `5cb0254` (`pull-index`, `push-index --merge`); first real run is the user's |
+| 13 | Android magazine parity | done `95f379c` (merge); TV phase deferred with the foundation plan |
 
 Decision: #1 keeps `--force` as the escape hatch until #12 exists.
