@@ -45,8 +45,7 @@ internal fun TvKeptWall(
         EmptyKeptWall(kind)
         return
     }
-    val positions = remember(watch) { watch.progress.associateBy { it.setId } }
-    val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
+    val (positions, watchedIds) = rememberWatchMarks(watch)
     TvWall(
         items = sets,
         key = MediaSet::setId,
@@ -76,8 +75,7 @@ internal fun TvKidsWall(
         EmptyKeptWall(KeptKind.KIDS)
         return
     }
-    val positions = remember(watch) { watch.progress.associateBy { it.setId } }
-    val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
+    val (positions, watchedIds) = rememberWatchMarks(watch)
     val items =
         remember(shelf) {
             shelf.films.map { KidsItem.Rated(it, "Movies") } +

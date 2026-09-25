@@ -71,8 +71,7 @@ internal fun TvCollectionRows(
     restoreKey: String?,
     header: (@Composable () -> Unit)?,
 ) {
-    val positions = remember(watch) { watch.progress.associateBy { it.setId } }
-    val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
+    val (positions, watchedIds) = rememberWatchMarks(watch)
     val listState = rememberLazyListState()
     val focus = remember { FocusRequester() }
     val opens = { row: CollectionRow -> row is CollectionRow.Item && row.set.kind != Kind.DOCUMENT }

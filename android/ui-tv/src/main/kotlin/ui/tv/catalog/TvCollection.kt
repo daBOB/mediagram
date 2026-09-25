@@ -48,7 +48,7 @@ fun TvCollection(
     onOpenSeason: (Division) -> Unit,
     restoreKey: String? = null,
 ) {
-    val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
+    val watchedIds = rememberWatchMarks(watch).watchedIds
     val seasons = remember(collection, watchedIds) { seasonPlatesOf(collection, watchedIds) }
     val header: @Composable () -> Unit = { CollectionHeader(collection, info) }
     if (seasons != null) {

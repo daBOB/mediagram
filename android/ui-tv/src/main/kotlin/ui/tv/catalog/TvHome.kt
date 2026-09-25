@@ -47,8 +47,7 @@ internal fun TvHome(
     onSeeAll: (shelf: String) -> Unit,
     restoreKey: String? = null,
 ) {
-    val positions = remember(watch) { watch.progress.associateBy { it.setId } }
-    val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
+    val (positions, watchedIds) = rememberWatchMarks(watch)
     val first = remember { FocusRequester() }
     // Which row, and which stop along it, takes the remote.
     val target =

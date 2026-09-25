@@ -1,7 +1,6 @@
 package ui.tv.catalog
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import catalog.Shelf
 import catalog.keyOf
 import model.WatchSnapshot
@@ -24,8 +23,7 @@ internal fun TvShelfWall(
     onOpenCollection: (key: String) -> Unit,
     restoreKey: String? = null,
 ) {
-    val positions = remember(watch) { watch.progress.associateBy { it.setId } }
-    val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
+    val (positions, watchedIds) = rememberWatchMarks(watch)
 
     TvWall(
         items = shelf.entries,
