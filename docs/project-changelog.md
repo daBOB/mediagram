@@ -9,6 +9,12 @@ to `main`. Full phase-by-phase detail lives in
 
 **Added**
 
+- DTS and TrueHD play with sound on Android devices that have no decoder for
+  them. A Google TV box had played 269 DTS films silently. The app now carries
+  Media3's FFmpeg audio decoder, built from FFmpeg 6.0.1 (LGPL 2.1+) with only
+  the `dca`, `truehd` and `mlp` decoders, by `scripts/build-android-ffmpeg.sh`.
+  It is used only where the device's own decoders and passthrough decline a
+  track. Phone and television share it.
 - The Android web-parity work, merged: search and genre pages, audio and
   subtitle choice, the player's settings sheet, up next and queues,
   fullscreen gestures, picture-in-picture and a media session, series
