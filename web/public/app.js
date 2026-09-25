@@ -814,7 +814,15 @@ try {
   // The start page, which answers both halves of what used to be decided
   // here: what was left unfinished, and — for a viewer who finished
   // everything — what has arrived since.
-  if (!location.hash) location.hash = "#/home";
+  //
+  // Replaced, not assigned: assigning fires `hashchange`, and the page would
+  // be drawn a second time a moment after the first, inside a view
+  // transition — every image rebuilt and cross-faded, which reads as a
+  // flicker. Nor is "the page before home" worth a history entry.
+  if (!location.hash) {
+    history.replaceState(history.state, "", "#/home");
+    shownHash = location.hash;
+  }
   pageReady = true;
   route();
 } catch (error) {

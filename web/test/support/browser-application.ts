@@ -65,6 +65,10 @@ export function applicationEnvironment() {
   const history = {
     get state() { return entries.at(-1) ?? null; },
     pushState(state: unknown) { entries.push(state); },
+    replaceState(state: unknown, _title: string, url?: string) {
+      entries[entries.length - 1] = state;
+      if (url?.startsWith("#")) location.hash = url;
+    },
     back() {
       if (entries.length > 1) entries.pop();
       queueMicrotask(() => env.window.dispatchEvent(new Event("popstate")));

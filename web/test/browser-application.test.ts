@@ -671,6 +671,17 @@ test("Featured suggests unwatched films and opens the one chosen after leaving i
   expect(env.location.hash).toBe("#/film/Unseen");
 });
 
+test("a bare address opens home once, in place, rather than navigating there", async () => {
+  env.location.hash = "";
+  let changes = 0;
+  env.window.addEventListener("hashchange", () => { changes++; });
+  await start();
+  expect(env.location.hash).toBe("#/home");
+  // Replaced, so no second route and no history entry for the bare address.
+  expect(changes).toBe(0);
+  expect(env.history.state).toBeNull();
+});
+
 describe("the magazine home page", () => {
   const featured = (setId: string, over: Record<string, unknown> = {}) => ({
     ...film(setId), poster: `tmdb-movie-${setId}`, backdrop: `tmdb-movie-${setId}-bg`, rating: 7, popularity: 5, ...over,

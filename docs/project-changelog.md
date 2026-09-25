@@ -5,7 +5,18 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Unreleased — 0.55.4
+## Unreleased — 0.55.5
+
+**Fixed**
+
+- Images flickered just after opening the player at its bare address. Startup
+  assigned `location.hash = "#/home"`, which fired `hashchange`, so the page was
+  built twice about 100 ms apart. The second build replaced every image inside
+  a view-transition cross-fade. The address is now set with
+  `history.replaceState`, so the page is drawn once and the bare address leaves
+  no history entry.
+
+## 0.55.4
 
 **Changed**
 
