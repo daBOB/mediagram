@@ -9,7 +9,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,11 +34,14 @@ internal fun CacheVolumeBlock() {
     val viewModel: CacheBudgetViewModel = hiltViewModel()
     val volumes by viewModel.volumes.collectAsStateWithLifecycle()
     val chosenId by viewModel.chosenVolumeId.collectAsStateWithLifecycle()
-    // On every visit, not once per process: a card inserted since the last
-    // visit should appear without restarting the app.
-    LaunchedEffect(Unit) { viewModel.refresh() }
+    // CacheSection triggers the read once, for every cache block sharing
+    // this ViewModel; a second LaunchedEffect(Unit) here would read twice.
     if (volumes.isEmpty()) return
-    val selectedId = chosenId ?: INTERNAL_VOLUME_ID
+    // A chosen id absent from the offered rows (the card was ejected, or
+    // this open fell back) selects whatever is actually in use — internal,
+    // the only volume a fallback ever lands on — rather than leaving no
+    // row selected at all.
+    val selectedId = chosenId?.takeIf { id -> volumes.any { it.id == id } } ?: INTERNAL_VOLUME_ID
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         Block(heading = "Where", rows = emptyList())
         for (volume in volumes) {

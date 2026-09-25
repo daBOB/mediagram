@@ -7,12 +7,14 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import playback.CacheOccupancy
 import playback.CacheProvider
 import playback.CacheVolume
@@ -40,6 +42,7 @@ class CacheBudgetViewModel
     @Inject
     constructor(
         @ApplicationContext private val context: Context,
+        private val dispatcher: CoroutineDispatcher,
     ) : ViewModel() {
         private val volumeSettings: CacheVolumeSettings = PlainCacheVolumeSettings(context)
 
@@ -57,13 +60,24 @@ class CacheBudgetViewModel
         // the live budget and the saved one disagreeing.
         private val changing = Mutex()
 
-        /** Reads what is held now, and what is on offer for where it lives. Called whenever Settings opens; this outlives it. */
+        /**
+         * Reads what is held now, and what is on offer for where it lives.
+         * Called whenever Settings opens; this outlives it.
+         *
+         * `cacheVolumes(context)` walks `StorageManager` and stats every
+         * candidate volume, and `volumeSettings.read()` is a prefs read —
+         * neither belongs on `viewModelScope`'s main dispatcher, so both run
+         * on [dispatcher] alongside [CacheProvider.occupancy]'s own I/O.
+         */
         fun refresh() {
             viewModelScope.launch {
                 guarded("Could not read the cache. Try again.") {
-                    _state.value = CacheProvider.occupancy(context)
-                    _volumes.value = cacheVolumes(context)
-                    _chosenVolumeId.value = volumeSettings.read()
+                    val occupancy = CacheProvider.occupancy(context)
+                    val (availableVolumes, chosenId) =
+                        withContext(dispatcher) { cacheVolumes(context) to volumeSettings.read() }
+                    _state.value = occupancy
+                    _volumes.value = availableVolumes
+                    _chosenVolumeId.value = chosenId
                 }
             }
         }

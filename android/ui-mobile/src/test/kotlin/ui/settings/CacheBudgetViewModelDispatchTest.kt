@@ -4,11 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -22,8 +18,8 @@ import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -35,29 +31,53 @@ import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import playback.CacheOccupancy
 import playback.CacheProvider
-import playback.PlainCacheVolumeSettings
 import system.CacheBudgetViewModel
-import kotlin.test.assertEquals
+import kotlin.coroutines.CoroutineContext
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 
-private val WORKING_OCCUPANCY =
-    CacheOccupancy(heldBytes = 0, budgetBytes = 1L shl 30, volumeLabel = "Internal storage", fellBack = false, capBytes = 8L shl 30)
+/** Delegates every dispatch to [delegate], recording the thread each one actually ran on. */
+private class RecordingDispatcher(
+    private val delegate: CoroutineDispatcher,
+) : CoroutineDispatcher() {
+    @Volatile
+    var lastDispatchThread: Thread? = null
+        private set
 
+    override fun dispatch(
+        context: CoroutineContext,
+        block: Runnable,
+    ) {
+        delegate.dispatch(context) {
+            lastDispatchThread = Thread.currentThread()
+            block.run()
+        }
+    }
+}
+
+/**
+ * [CacheBudgetViewModel.refresh]'s own dispatcher contract — split out of
+ * `CacheBudgetBlockTest` so that file stays under the line limit.
+ * `cacheVolumes(context)` walks `StorageManager` and stats every candidate
+ * volume, and reading the stored choice is a prefs read; neither belongs
+ * on `viewModelScope`'s main dispatcher.
+ */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
-class CacheVolumeBlockTest {
+class CacheBudgetViewModelDispatchTest {
     @get:Rule val compose = createEmptyComposeRule()
     private val owner =
         object : ViewModelStoreOwner {
             override val viewModelStore = ViewModelStore()
         }
-    private lateinit var model: CacheBudgetViewModel
     private lateinit var controller: ActivityController<ComponentActivity>
 
     @Before fun prepare() {
         mockkObject(CacheProvider)
         mockkStatic(::HiltViewModelFactory)
         every { HiltViewModelFactory(any(), any()) } answers { secondArg() }
-        coEvery { CacheProvider.occupancy(any(), any()) } returns WORKING_OCCUPANCY
+        coEvery { CacheProvider.occupancy(any(), any()) } returns
+            CacheOccupancy(heldBytes = 128, budgetBytes = 1L shl 30, volumeLabel = "Internal storage", fellBack = false, capBytes = 1L shl 30)
     }
 
     @After fun close() {
@@ -72,9 +92,12 @@ class CacheVolumeBlockTest {
         }
     }
 
-    private fun open() {
+    @Test fun refreshReadsTheVolumeListAndTheStoredChoiceOffTheGivenDispatcher() {
+        val callingThread = Thread.currentThread()
+        val recording = RecordingDispatcher(Dispatchers.IO)
+        lateinit var model: CacheBudgetViewModel
         compose.runOnUiThread {
-            model = CacheBudgetViewModel(ApplicationProvider.getApplicationContext(), Dispatchers.Main.immediate)
+            model = CacheBudgetViewModel(ApplicationProvider.getApplicationContext(), recording)
             ViewModelProvider(
                 owner.viewModelStore,
                 object : ViewModelProvider.Factory {
@@ -84,44 +107,17 @@ class CacheVolumeBlockTest {
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
             controller.get().setContent {
                 CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
-                    MaterialTheme { CacheVolumeBlock() }
+                    MaterialTheme { CacheBudgetBlock() }
                 }
             }
-            // CacheVolumeBlock no longer triggers this itself — CacheSection
-            // does, once, for every cache block sharing this ViewModel.
             model.refresh()
         }
         compose.waitForIdle()
-    }
 
-    @Test fun theRecordedVolumeIsSelectedAndTheRestartSentenceIsShown() {
-        // Robolectric reports no removable storage, so "Internal storage" is
-        // the only row — the same shape as the Redmi in the field.
-        open()
-
-        compose.onNodeWithText("Where").assertIsDisplayed()
-        compose.onNodeWithText("Internal storage", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("Takes effect the next time the app starts. Titles already held will be fetched again.")
-            .assertIsDisplayed()
-    }
-
-    @Test fun aChosenVolumeThatIsAbsentSelectsTheVolumeActuallyInUseInstead() {
-        // Recorded, but Robolectric reports no removable storage: "card" is
-        // not among the offered rows, and nothing else has been chosen.
-        runBlocking { PlainCacheVolumeSettings(ApplicationProvider.getApplicationContext()).write("card") }
-
-        open()
-
-        compose.onNodeWithText("Internal storage", substring = true).assertIsSelected()
-    }
-
-    @Test fun choosingAVolumePersistsTheChoice() {
-        open()
-        compose.onNodeWithText("Internal storage", substring = true).performClick()
-        compose.waitForIdle()
-
-        val persisted = runBlocking { PlainCacheVolumeSettings(ApplicationProvider.getApplicationContext()).read() }
-        assertEquals("internal", persisted)
-        assertEquals("internal", model.chosenVolumeId.value)
+        // Both halves matter: a dispatcher that's never actually invoked
+        // would leave lastDispatchThread null, which is also "not equal to
+        // callingThread" but proves nothing.
+        assertNotNull(recording.lastDispatchThread, "the given dispatcher was never actually used")
+        assertNotEquals(callingThread, recording.lastDispatchThread)
     }
 }

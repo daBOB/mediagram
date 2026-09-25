@@ -23,6 +23,8 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -67,9 +69,9 @@ class CacheBudgetBlockTest {
         }
     }
 
-    private fun open() {
+    private fun open(dispatcher: CoroutineDispatcher = Dispatchers.Main.immediate) {
         compose.runOnUiThread {
-            model = CacheBudgetViewModel(ApplicationProvider.getApplicationContext())
+            model = CacheBudgetViewModel(ApplicationProvider.getApplicationContext(), dispatcher)
             ViewModelProvider(
                 owner.viewModelStore,
                 object : ViewModelProvider.Factory {
@@ -82,6 +84,9 @@ class CacheBudgetBlockTest {
                     MaterialTheme { CacheBudgetBlock() }
                 }
             }
+            // CacheBudgetBlock no longer triggers this itself — CacheSection
+            // does, once, for every cache block sharing this ViewModel.
+            model.refresh()
         }
         compose.waitForIdle()
     }

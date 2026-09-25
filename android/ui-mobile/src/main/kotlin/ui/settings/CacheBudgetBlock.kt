@@ -10,7 +10,6 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,8 +32,8 @@ internal fun CacheBudgetBlock() {
     val viewModel: CacheBudgetViewModel = hiltViewModel()
     val occupancy by viewModel.state.collectAsStateWithLifecycle()
     val failure by viewModel.failure.collectAsStateWithLifecycle()
-    // On every visit, not once per process: Held grows with every film played.
-    LaunchedEffect(Unit) { viewModel.refresh() }
+    // CacheSection triggers the read once, for every cache block sharing
+    // this ViewModel; a second LaunchedEffect(Unit) here would read twice.
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         val current = occupancy
         if (current == null) {
