@@ -41,4 +41,6 @@ data class SystemUiState(
     val lastReadWasLan: Boolean? = null,
     /** The LAN server's host, when [lastReadWasLan] is `true`. */
     val lanHost: String? = null,
+    /** Chunks a home cache server has served since this process started. */
+    val lanHits: Int = 0,
 )

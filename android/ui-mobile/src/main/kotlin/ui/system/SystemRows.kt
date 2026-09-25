@@ -53,18 +53,26 @@ internal fun cacheWhereLine(
 /**
  * Where the most recent chunk actually came from: `null` before this
  * process has read one, "Telegram" when it fetched from Telegram, or
- * "LAN (host)" when a home cache server served it instead — the same
- * source [cacheReadsLine]'s own "fetches" already counts either way.
+ * "LAN (host)" when a home cache server served it instead — plus how many
+ * chunks the server served in all. The count is what says the server is
+ * earning its keep: read-ahead past what it holds ends most sessions on a
+ * Telegram fetch, so the last read alone would read "Telegram" for a
+ * title the LAN carried almost entirely.
  */
 internal fun sourceLine(
     lastReadWasLan: Boolean?,
     host: String?,
-): String? =
-    when (lastReadWasLan) {
-        null -> null
-        false -> "Telegram"
-        true -> "LAN" + (host?.let { " ($it)" } ?: "")
-    }
+    lanHits: Int = 0,
+): String? {
+    val last =
+        when (lastReadWasLan) {
+            null -> return null
+            false -> "Telegram"
+            true -> "LAN" + (host?.let { " ($it)" } ?: "")
+        }
+    if (lanHits == 0) return last
+    return "$last; $lanHits ${if (lanHits == 1) "chunk" else "chunks"} from the home server"
+}
 
 /** Whether this device's Telegram session is up, or `null` when the question does not apply. */
 internal fun telegramLine(connected: Boolean?): String? =

@@ -120,6 +120,7 @@ class SystemViewModel
                 uptimeSeconds = (SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()) / 1000,
                 lastReadWasLan = lastRead?.let { it.source == ReadSource.LAN },
                 lanHost = lastRead?.host,
+                lanHits = totals.lanHits,
             )
         }
     }

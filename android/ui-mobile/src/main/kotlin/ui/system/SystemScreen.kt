@@ -123,7 +123,7 @@ internal fun cacheRows(state: SystemUiState): List<Pair<String, String?>> =
         "Held" to heldOfBudget(state.heldBytes, state.budgetBytes),
         "Where" to cacheWhereLine(state.volumeLabel, state.fellBack),
         "Reads" to cacheReadsLine(state.fromCacheBytes, state.fromUpstreamBytes, state.fetches),
-        "Source" to sourceLine(state.lastReadWasLan, state.lanHost),
+        "Source" to sourceLine(state.lastReadWasLan, state.lanHost, state.lanHits),
     )
 
 @Composable

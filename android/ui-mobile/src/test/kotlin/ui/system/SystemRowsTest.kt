@@ -141,4 +141,17 @@ class SystemRowsTest {
         versionName = "0.4.0",
         uptimeSeconds = 0,
     )
+
+    /**
+     * The last read alone hides what the server carried: read-ahead past
+     * what it holds ends every session on a Telegram fetch, so a title
+     * served almost entirely from the LAN still read "Telegram".
+     */
+    @Test
+    fun theSourceRowCountsWhatTheHomeServerServed() {
+        assertEquals("Telegram; 77 chunks from the home server", sourceLine(false, null, lanHits = 77))
+        assertEquals("LAN (nas); 1 chunk from the home server", sourceLine(true, "nas", lanHits = 1))
+        assertEquals("Telegram", sourceLine(false, null, lanHits = 0))
+        assertNull(sourceLine(null, null, lanHits = 0))
+    }
 }
