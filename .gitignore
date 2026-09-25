@@ -3,6 +3,9 @@
 *.sqlite
 *.db
 /.claude/
+web/.claude/
+# Local agent-skill lockfile, not part of the project.
+skills-lock.json
 /.agents/
 .gstack/
 /graphify-out/

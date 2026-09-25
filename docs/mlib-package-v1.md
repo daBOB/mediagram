@@ -134,8 +134,8 @@ produces identical bytes.
    reported rather than retried.
 7. Gunzip and untar. Refuse any member whose path is absolute, contains
    `..`, or is not a regular file. Read `manifest.json`, confirm its
-   `created_at` matches the pointer, and confirm `schema` is a layout the
-   reader supports.
+   `created_at` matches the pointer, and confirm `schema` is at least the
+   oldest layout the reader supports.
 8. Open `library.db` read-only. `PLAYABLE_SQL` in the spec crate defines
    what is playable. Stream parts from Telegram by `(chat_id, message_id)`.
 
@@ -171,6 +171,10 @@ State this plainly, because it decides how the URL may be treated.
 - `schema` versions `library.db`'s tables; `spec` versions the captions the
   rows came from. All three are independent and all three travel in both the
   pointer and the manifest.
+- `schema` only ever adds: new tables or columns every reader treats as
+  optional. A reader therefore accepts any `schema` at or above the oldest it
+  can query, including newer ones. A change that would break an existing
+  reader is a new `format` instead.
 - A package is never rewritten in place. A new export is a new file with a
   new name, and the pointer moves to it.
 

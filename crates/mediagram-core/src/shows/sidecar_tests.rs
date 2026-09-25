@@ -95,6 +95,27 @@ fn reopening_an_existing_sidecar_replays_no_migration() {
     assert!(open_or_create(&path).is_ok());
 }
 
+/// A file written by a newer build is left at its version. Rewinding it would
+/// make that newer build replay an `ADD COLUMN` it already applied, and fail
+/// on every open afterwards — the phone downgraded, then upgraded again.
+#[test]
+fn a_newer_sidecar_is_not_rewound_by_an_older_build() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("details.db");
+    let newer = (schema::SCHEMA_VERSION + 1).to_string();
+    drop(open_or_create(&path).unwrap());
+    Connection::open(&path)
+        .unwrap()
+        .execute("UPDATE meta SET value = ?1 WHERE key = 'schema_version'", [&newer])
+        .unwrap();
+
+    let conn = open_or_create(&path).unwrap();
+    let recorded: String = conn
+        .query_row("SELECT value FROM meta WHERE key = 'schema_version'", [], |row| row.get(0))
+        .unwrap();
+    assert_eq!(recorded, newer);
+}
+
 /// A migration that fails partway leaves the file exactly as it was.
 ///
 /// A group can be several statements — v6 adds two columns — and without one

@@ -496,13 +496,23 @@ fn a_pointer_of_an_unknown_format_is_refused() {
 }
 
 #[test]
-fn a_pointer_naming_an_unsupported_schema_is_refused() {
+fn a_pointer_naming_a_schema_older_than_the_oldest_readable_is_refused() {
+    let mut older = pointer();
+    older.schema = mlib_spec::schema::OLDEST_READABLE_SCHEMA - 1;
+    assert!(matches!(
+        pointer_is_readable(&older, mlib_spec::schema::READABLE_SCHEMAS),
+        Err(PointerError::UnsupportedSchema(_))
+    ));
+}
+
+/// Schema changes only add columns every reader treats as optional; a
+/// breaking change moves `format`, which stays exact. So an installed reader
+/// keeps following a publisher that upgraded first.
+#[test]
+fn a_pointer_naming_a_newer_schema_is_read() {
     let mut newer = pointer();
     newer.schema = 99;
-    assert!(matches!(
-        pointer_is_readable(&newer, &[mlib_spec::schema::SCHEMA_VERSION]),
-        Err(PointerError::UnsupportedSchema(99))
-    ));
+    assert!(pointer_is_readable(&newer, mlib_spec::schema::READABLE_SCHEMAS).is_ok());
 }
 
 #[test]

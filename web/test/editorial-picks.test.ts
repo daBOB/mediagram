@@ -97,6 +97,13 @@ describe("the typographic break", () => {
     expect(picks(movies).quote?.setId).toBe("quoted");
   });
 
+  test("prefers a short tagline, and takes a long one only when there is nothing else", () => {
+    const long = "Mit seiner Zivilcourage und seinem unbändigen Willen zum Erfolg werden seine Entscheidungen das Schicksal verändern.";
+    const bare = { backdrop: null, poster: null };
+    expect(picks([film("long", { ...bare, tagline: long }), film("short", { ...bare, tagline: "Kurz." })]).quote?.setId).toBe("short");
+    expect(picks([film("long", { ...bare, tagline: long })]).quote?.setId).toBe("long");
+  });
+
   test("has no quote when nothing carries a tagline", () => {
     expect(picks([film("a")]).quote).toBeNull();
   });

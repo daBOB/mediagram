@@ -57,8 +57,15 @@ describe("reading a pointer", () => {
     expect(readable({ cipher: "chacha20-poly1305" })?.reason).toMatch(/cipher/i);
   });
 
-  test("a schema the player cannot query is refused", () => {
-    expect(readable({ schema: 99 })?.reason).toMatch(/schema/i);
+  test("a schema older than the oldest the player can query is refused", () => {
+    expect(readable({ schema: 3 })?.reason).toMatch(/schema/i);
+  });
+
+  // Schema changes are additive (new columns every reader treats as
+  // optional); a breaking change moves `format`, which is still exact. So a
+  // player that is not upgraded yet keeps reading what a newer uploader wrote.
+  test("a newer schema is read, since schema changes only add", () => {
+    expect(readable({ schema: 99 })).toBeNull();
   });
 
   test("key_id and sha256 must be lowercase hex of the right length", () => {

@@ -43,7 +43,14 @@ enum Cmd {
         no_push: bool,
     },
     /// Upload library.db to the channel and pin it
-    PushIndex,
+    PushIndex {
+        /// Replace the channel's index even if it holds sets this one lacks
+        #[arg(long, conflicts_with = "check")]
+        force: bool,
+        /// Only check whether a push would remove sets from the channel; send nothing
+        #[arg(long)]
+        check: bool,
+    },
     /// Check a set (or all sets); `--full` re-downloads and hashes every part
     Verify {
         set_id: Option<String>,
@@ -154,7 +161,7 @@ async fn main() -> Result<()> {
         Cmd::AddShow(args) => commands::add_show::run(&cfg, args).await,
         Cmd::Edit(args) => commands::edit::run(&cfg, args).await,
         Cmd::Resume { no_push } => commands::resume::run(&cfg, no_push).await,
-        Cmd::PushIndex => commands::push_index::run(&cfg).await,
+        Cmd::PushIndex { force, check } => commands::push_index::run(&cfg, force, check).await,
         Cmd::Verify {
             set_id,
             all,

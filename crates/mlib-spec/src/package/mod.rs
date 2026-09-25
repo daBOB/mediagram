@@ -153,7 +153,12 @@ pub fn pointer_is_readable(
     if pointer.cipher != CIPHER {
         return Err(PointerError::UnsupportedCipher(pointer.cipher.clone()));
     }
-    if !supported_schema.contains(&pointer.schema) {
+    // At least the oldest layout this reader queries, and anything newer:
+    // schema changes only add columns every reader treats as optional, and a
+    // breaking change moves `format` instead, which is checked exactly above.
+    // Refusing newer schemas cut every installed reader off at each bump.
+    let oldest = supported_schema.iter().min();
+    if oldest.is_none_or(|oldest| pointer.schema < *oldest) {
         return Err(PointerError::UnsupportedSchema(pointer.schema));
     }
     // Everything below arrives in a plaintext file from a public URL, so it

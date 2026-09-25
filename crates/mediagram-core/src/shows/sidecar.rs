@@ -24,8 +24,13 @@ pub fn open_or_create(path: &Path) -> Result<Connection, CoreError> {
     }
     let conn = Connection::open(path).map_err(CoreError::io("opening the description store"))?;
     let recorded = recorded_version(&conn)?;
-    if recorded != Recorded::Meta(schema::SCHEMA_VERSION) {
-        migrate_from(&conn, recorded.version())?;
+    // Only ever forward. A file a newer build wrote is left as it is: its
+    // extra columns are optional to every reader here, and recording this
+    // build's lower number would make that newer build replay migrations it
+    // already applied the next time it opened the file.
+    let behind = recorded.version() < schema::SCHEMA_VERSION;
+    if behind || matches!(recorded, Recorded::UserVersion(_)) {
+        migrate_from(&conn, recorded.version().min(schema::SCHEMA_VERSION))?;
     }
     Ok(conn)
 }

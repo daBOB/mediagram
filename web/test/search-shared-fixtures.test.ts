@@ -28,7 +28,9 @@ describe("search matches the shared fixture", () => {
     test(c.name, () => {
       const index = new SearchIndex(c.sets.map(full));
       const hits = index.search(c.query).map(({ setId, matched, excerpt }) => ({ setId, matched, excerpt }));
-      expect(hits).toEqual(c.expect);
+      // The fixture is JSON, so its `matched` is any string; it names the same
+      // fields the index reports, which is what the comparison checks.
+      expect(hits).toEqual(c.expect as typeof hits);
     });
   }
 });

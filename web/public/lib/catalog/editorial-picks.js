@@ -122,9 +122,17 @@ function staffPick(pool, day) {
   return ranked.length === 0 ? null : ranked[day % ranked.length];
 }
 
-/** A real tagline for the typographic break, from a film not featured above. */
+/** Past this, a tagline set as a pull-quote runs to eight lines beside four cards. */
+const QUOTE_MAX = 90;
+
+/**
+ * A real tagline for the typographic break, from a film not featured above.
+ * A short one if there is any: the quote is a pause, not a paragraph.
+ */
 function quoteOf(movies, taken, day) {
-  const pool = movies.filter((set) => set.tagline && !taken.has(set.setId));
+  const open = movies.filter((set) => set.tagline && !taken.has(set.setId));
+  const short = open.filter((set) => set.tagline.length <= QUOTE_MAX);
+  const pool = short.length > 0 ? short : open;
   if (pool.length === 0) return null;
   return pool[Math.floor(seededRandom(day + 7)() * pool.length)];
 }

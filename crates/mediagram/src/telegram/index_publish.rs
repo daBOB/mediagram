@@ -9,13 +9,39 @@ use rusqlite::Connection;
 use crate::config::Config;
 use crate::index::{db, pins, sets, snapshot};
 use crate::telegram::client::Tg;
+use crate::telegram::index_guard;
 use crate::telegram::retry::{with_flood_wait_only, with_retry};
 
 const INDEX_MIME_TYPE: &str = "application/vnd.sqlite3";
 
-/// Snapshots and publishes the index, returning its message ID. A failed
-/// unpin is a warning: the new pin supersedes the previous index.
+/// Whether a push first checks that the channel holds nothing this index
+/// lacks (see `index_guard`). Only `push-index --force` skips it.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Guard {
+    Check,
+    Skip,
+}
+
+/// Snapshots and publishes the index, returning its message ID, after
+/// checking the channel holds no set this index lacks. A failed unpin is a
+/// warning: the new pin supersedes the previous index.
 pub async fn publish(cfg: &Config) -> Result<i32> {
+    publish_with(cfg, Guard::Check).await
+}
+
+/// Runs only the check a push would: whether the channel's index holds sets
+/// this one lacks. Sends nothing.
+pub async fn check_only(cfg: &Config) -> Result<()> {
+    let data_dir = cfg.data_dir()?;
+    let conn = db::open(&data_dir)?;
+    let tg = Tg::connect(cfg).await.context("connecting to Telegram")?;
+    let result = index_guard::refuse_if_channel_has_more(&tg, &conn, &data_dir).await;
+    tg.shutdown().await;
+    result
+}
+
+/// [`publish`], choosing whether to check the channel first.
+pub async fn publish_with(cfg: &Config, guard: Guard) -> Result<i32> {
     let data_dir = cfg.data_dir()?;
     let conn = db::open(&data_dir)?;
     snapshot::checkpoint(&conn).context("checkpointing before snapshot")?;
@@ -23,7 +49,7 @@ pub async fn publish(cfg: &Config) -> Result<i32> {
     let temp_path = data_dir.join(format!("library.push.{}.db", std::process::id()));
     snapshot::snapshot_to(&conn, &temp_path).context("snapshotting the index")?;
 
-    let result = push_via_telegram(cfg, &conn, &temp_path).await;
+    let result = push_via_telegram(cfg, &conn, &temp_path, &data_dir, guard).await;
 
     if let Err(err) = tokio::fs::remove_file(&temp_path).await {
         tracing::warn!(path = %temp_path.display(), error = %err, "failed to remove push snapshot temp file");
@@ -32,13 +58,26 @@ pub async fn publish(cfg: &Config) -> Result<i32> {
     result
 }
 
-async fn push_via_telegram(cfg: &Config, conn: &Connection, temp_path: &Path) -> Result<i32> {
+async fn push_via_telegram(
+    cfg: &Config,
+    conn: &Connection,
+    temp_path: &Path,
+    scratch: &Path,
+    guard: Guard,
+) -> Result<i32> {
     let sets_count = i64::try_from(sets::count(conn)?)?;
     let pushed_at = crate::clock::now_unix();
     let caption = mlib_spec::index_caption::render(pushed_at, sets_count);
 
     let tg = Tg::connect(cfg).await.context("connecting to Telegram")?;
-    let result = send_and_pin(&tg, cfg.max_attempts, temp_path, &caption, conn).await;
+    let checked = match guard {
+        Guard::Check => index_guard::refuse_if_channel_has_more(&tg, conn, scratch).await,
+        Guard::Skip => Ok(()),
+    };
+    let result = match checked {
+        Ok(()) => send_and_pin(&tg, cfg.max_attempts, temp_path, &caption, conn).await,
+        Err(err) => Err(err),
+    };
     tg.shutdown().await;
     result
 }

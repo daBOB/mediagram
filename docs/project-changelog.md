@@ -5,7 +5,41 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Unreleased — 0.55.6
+## Unreleased — 0.56.0
+
+**Added**
+
+- `push-index` and every command that publishes (`add`, `add-show`, `add-course`,
+  `resume`, `finish-set`) first read the channel's newest index. They refuse
+  when it holds sets this index lacks, since pushing would remove them from
+  every player and phone. `push-index --force` replaces it anyway;
+  `push-index --check` runs only the check and sends nothing. On 2026-09-25 the
+  check reported 265 sets this machine lacks.
+- `bun run typecheck` (`tsc --noEmit`) in `web/`; TypeScript is a dev
+  dependency. The one standing error (a JSON fixture typed as plain strings) is
+  fixed.
+
+**Changed**
+
+- Package readers accept any index schema at or above the oldest they read,
+  not only those listed. Schema changes only add optional columns; a breaking
+  change moves `format`, which stays exact (`docs/mlib-package-v1.md` §7).
+  Installed players and phones no longer stop updating at each bump.
+- The home pull-quote prefers taglines of 90 characters or fewer.
+
+**Fixed**
+
+- The phone's description store no longer records a lower schema when an
+  older app opens a file a newer one wrote. After a downgrade and upgrade, the
+  newer app used to replay a migration and fail on every open.
+
+**Removed**
+
+- A React Doctor CI workflow and `doctor` script under `web/` (not a React app;
+  `web/.github` is never read by GitHub). `web/.claude/` and `skills-lock.json`
+  are ignored.
+
+## 0.55.6
 
 **Changed**
 

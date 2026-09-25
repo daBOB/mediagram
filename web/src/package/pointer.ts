@@ -141,8 +141,12 @@ export function pointerReadabilityRefusal(pointer: Pointer, supportedSchema: num
   if (pointer.cipher !== CIPHER) {
     return { reason: `package cipher \`${pointer.cipher}\` is not recognised` };
   }
-  if (!supportedSchema.includes(pointer.schema)) {
-    return { reason: `package holds schema ${pointer.schema}, which this player cannot query` };
+  // At least the oldest layout this player queries, and anything newer:
+  // schema changes only add optional columns, and a breaking change moves
+  // `format`, checked exactly above. Refusing newer ones cut every installed
+  // player off at each bump.
+  if (supportedSchema.length === 0 || pointer.schema < Math.min(...supportedSchema)) {
+    return { reason: `package holds schema ${pointer.schema}, older than this player can query` };
   }
   if (!isLowerHex(pointer.key_id, KEY_ID_HEX)) {
     return { reason: "pointer field `key_id` is malformed" };
