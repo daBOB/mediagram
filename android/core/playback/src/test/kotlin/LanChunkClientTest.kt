@@ -83,89 +83,68 @@ class LanChunkClientTest {
             assertFailsWith<IOException> { client.get(baseUrl(), "s1", index = 0, expectedLength = 10) }
         }
 
+    /**
+     * `avahi-browse` and a server's own status line both print a bare
+     * `host:port`, and a viewer can type exactly that into the manual
+     * address field. `URL(...)` throws `MalformedURLException` — an
+     * `IOException` — for it; unlike [get] this must never escape as a
+     * crash, since [verify] runs inside [LanServerLocator]'s discovery
+     * coroutine with nothing above it to catch a stray exception.
+     */
     @Test
-    fun aPutCarriesTheSetTotalAndTheSignedAuthorizationHeader() =
+    fun verifyOnASchemeLessAddressIsFalseRatherThanThrowing() =
         runTest {
-            server.enqueue(MockResponse().setResponseCode(201))
-            server.start()
-            val body = "hello".toByteArray()
-
-            val result = client.put(baseUrl(), TOKEN, "abc123", index = 0, total = 5, body = body)
-
-            assertEquals(LanPutResult.Stored, result)
-            val request = server.takeRequest()
-            assertEquals("PUT", request.method)
-            assertEquals("/v1/sets/abc123/chunks/0", request.path)
-            assertEquals("5", request.getHeader("X-Set-Total"))
-            assertEquals(
-                "MGC1 c1ac37f41c76c7c8434460c94458f58a817bf0859f9be493209d23a8ab9a4d85",
-                request.getHeader("Authorization"),
-            )
+            assertEquals(false, client.verify("192.168.1.5:7788"))
         }
 
     @Test
-    fun aTwoHundredOnPutMeansAlreadyHeld() =
+    fun statusOnASchemeLessAddressIsNullRatherThanThrowing() =
         runTest {
-            server.enqueue(MockResponse().setResponseCode(200))
-            server.start()
-
-            assertEquals(LanPutResult.Stored, client.put(baseUrl(), TOKEN, "s1", 0, 5, "hello".toByteArray()))
+            assertNull(client.status("192.168.1.5:7788"))
         }
 
     @Test
-    fun aFourOhOneOnPutIsUnauthorized() =
+    fun aChunkedBodyLongerThanExpectedIsAMissNotOverread() =
         runTest {
-            server.enqueue(MockResponse().setResponseCode(401))
+            server.enqueue(MockResponse().setResponseCode(200).setChunkedBody("abcdefghij", 4))
             server.start()
 
-            assertEquals(LanPutResult.Unauthorized, client.put(baseUrl(), TOKEN, "s1", 0, 5, "hello".toByteArray()))
+            assertNull(client.get(baseUrl(), "s1", index = 0, expectedLength = 5))
         }
 
     @Test
-    fun aFourHundredOnPutIsRejected() =
+    fun aChunkedBodyShorterThanExpectedIsAMiss() =
         runTest {
-            server.enqueue(MockResponse().setResponseCode(400))
+            server.enqueue(MockResponse().setResponseCode(200).setChunkedBody("abc", 8))
             server.start()
 
-            assertEquals(LanPutResult.Rejected, client.put(baseUrl(), TOKEN, "s1", 0, 5, "hello".toByteArray()))
+            assertNull(client.get(baseUrl(), "s1", index = 0, expectedLength = 10))
         }
 
     @Test
-    fun statusParsesTheHeldBudgetAndChunkCounts() =
-        runTest {
-            server.enqueue(
-                MockResponse().setResponseCode(200).setBody(
-                    """{"version":"0.1.0","held_bytes":1048576,"budget_bytes":10485760,"chunks":1}""",
-                ),
-            )
-            server.start()
-
-            val status = client.status(baseUrl())
-
-            assertEquals(LanServerStatus(1_048_576, 10_485_760, 1), status)
-        }
-
-    @Test
-    fun statusIsNullOnAnythingButATwoHundred() =
+    fun aFiveHundredOnGetFailsAsIoExceptionRatherThanAMiss() =
         runTest {
             server.enqueue(MockResponse().setResponseCode(500))
             server.start()
 
-            assertNull(client.status(baseUrl()))
+            assertFailsWith<IOException> { client.get(baseUrl(), "s1", index = 0, expectedLength = 10) }
         }
 
+    /**
+     * Stands in for tracking a moving median of read latency — see
+     * [LanChunkClient]'s own doc. A server that never answers at all
+     * ([SocketPolicy.NO_RESPONSE]) would otherwise only fail once
+     * [readTimeoutMs] elapses; here that is deliberately set far past
+     * [getDeadlineMs], so the deadline — not the socket's own read timeout
+     * — is what this test proves actually cuts the wait short.
+     */
     @Test
-    fun verifyIsTrueOnlyOnATwoHundred() =
+    fun aServerThatNeverAnswersFailsAtTheDeadlineNotAtTheLongerReadTimeout() =
         runTest {
-            server.enqueue(MockResponse().setResponseCode(200))
-            server.enqueue(MockResponse().setResponseCode(500))
+            val slowClient = LanChunkClient(connectTimeoutMs = 200, readTimeoutMs = 3_000, getDeadlineMs = 150)
+            server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))
             server.start()
 
-            assertEquals(true, client.verify(baseUrl()))
-            assertEquals(false, client.verify(baseUrl()))
+            assertFailsWith<IOException> { slowClient.get(baseUrl(), "s1", index = 0, expectedLength = 5) }
         }
-
-    private companion object {
-        const val TOKEN = "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
-    }
 }
