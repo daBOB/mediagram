@@ -27,8 +27,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
-private const val CACHE_DIR_NAME = "mlib"
-
 /** What the disk cache is actually holding, against what it may hold — the System screen's Held row. */
 data class CacheOccupancy(
     val heldBytes: Long,
