@@ -41,6 +41,9 @@ import { forKidsProfile } from "./lib/age-rating.js";
 const main = document.getElementById("main");
 const player = document.getElementById("player");
 const searchBox = document.getElementById("search");
+// A fragment link would be consumed as an application route. Move focus
+// directly so keyboard users can skip navigation without leaving their shelf.
+document.getElementById("skip-library")?.addEventListener("click", () => main.focus());
 initializePlayer();
 
 /** @type {import("./lib/library.js").Library} */
@@ -568,7 +571,10 @@ function route() {
   const known = SECTIONS[section] || KEPT[section] || PAGES.has(section) ? section : "movies";
 
   for (const link of document.querySelectorAll("nav a")) {
-    link.classList.toggle("active", link.dataset.section === known);
+    const active = link.dataset.section === known;
+    link.classList.toggle("active", active);
+    if (active) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
   }
 
   main.textContent = "";

@@ -5,7 +5,7 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Unreleased — 0.53.0
+## Unreleased — 0.54.0
 
 **Added**
 
@@ -23,6 +23,22 @@ to `main`. Full phase-by-phase detail lives in
   would otherwise sit on the shelf until played to the end. The player's own
   end-of-title path now calls the same function. The phone's Continue wall
   has it too, under each title (see the Android web-parity entries below).
+
+**Changed**
+
+- Redesigned the web library with a desktop sidebar, a separate search/profile
+  toolbar, compact Continue and Next up cards, wider poster shelves, and
+  responsive phone layouts. Interface text uses self-hosted Geist; the
+  Mediagram wordmark is preserved. Light/dark appearance follows the device.
+  Search now has a persistent label and keyboard users can skip to the library.
+  Film actions appear before long descriptions. Routes, library data, saved
+  List/Grid choices, and playback behavior remain the same.
+
+**Removed**
+
+- The Kids shelf, on the web and the phone. A kids profile shows the same
+  titles, so the shelf only repeated it. The player's "Kids" mark stays on
+  grown-up profiles, for letting an unrated title through.
 
 **Fixed**
 

@@ -308,6 +308,13 @@ rendering; `status/` owns the system
 panel. Shared catalog, state, formatting, and playback-policy helpers remain
 at the library root. The installed HLS client is still served at `/lib/hls.mjs`.
 
+`public/style.css` imports the presentation modules in `public/styles/`:
+`theme.css` owns local fonts and light/dark tokens, `shell.css` owns navigation
+and the search toolbar, `catalog.css` owns shelves and title details,
+`library-controls.css` owns profiles, collections and status, and `playback.css`
+owns the dark player and Featured dialogs. Appearance follows the system;
+the wordmark keeps Fraunces while interface text uses self-hosted Geist.
+
 Application shutdown closes admission to speculative cache reads and waits for
 existing warming to finish before disconnecting Telegram. The HTTP listener
 also drains routing, streaming and cancellation cleanup; the shared source

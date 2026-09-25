@@ -21,17 +21,17 @@ import { progressOf } from "../watch-state.js";
  *
  * An `h2` and not the `h1` a shelf page uses. Five page titles down one page
  * is five pages, to a reader and to anything reading the outline aloud; the
- * page's own title is the hidden one below.
+ * page's own title introduces the library above these shelves.
  */
-function rowHead(title, total, hash) {
+function rowHead(title, total, hash, id) {
   const head = el("header", "row-head");
   const h2 = el("h2", null, title);
-  // The same " · n" a course's folder heading carries, and for the same
-  // reason: the name says what, the figure says how much.
-  h2.append(el("span", "count", ` \u00b7 ${total}`));
+  h2.id = id;
+  h2.append(el("span", "count", ` ${total}`));
   head.append(h2);
   const link = el("a", "see-all", "See all");
   link.href = hash;
+  link.setAttribute("aria-label", `See all: ${title}`);
   head.append(link);
   return head;
 }
@@ -46,13 +46,23 @@ function rowHead(title, total, hash) {
  *   openFilm?: (set: import("../library.js").CatalogSet) => void}} on
  */
 export function renderHome(main, shelves, { play, open, openFilm }) {
-  // Every page needs one, and this one has no visible title: the rows name
-  // themselves and a heading saying "Home" above the word "mediagram" would
-  // be saying it twice.
-  main.append(el("h1", "page-title", "Home"));
+  const intro = el("header", "home-intro");
+  intro.append(el("h1", "page-title", "Your library"));
+  intro.append(el("p", null, "Pick up where you left off, or find something new."));
+  main.append(intro);
+
+  // Things already underway stay compact, leaving the poster shelves visible
+  // sooner. The shelf rules and click behavior are the same in either layout.
+  const progress = el("div", "home-progress");
+  if (shelves.continues.length || shelves.nextUp.length) main.append(progress);
 
   const row = (key, title, hash, contents) => {
-    main.append(rowHead(title, shelves.totals[key], hash), contents);
+    const section = el("section", "home-section");
+    const id = `home-${key}`;
+    section.setAttribute("aria-labelledby", id);
+    section.append(rowHead(title, shelves.totals[key], hash, id), contents);
+    const parent = key === "continues" || key === "nextUp" ? progress : main;
+    parent.append(section);
   };
 
   if (shelves.continues.length > 0) {

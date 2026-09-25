@@ -28,16 +28,15 @@ function joined(...parts) {
 
 /** The distinct values of `pick` across `sets`, in first-seen order. */
 function distinct(sets, pick) {
-  const seen = [];
+  // A Set keeps first-insertion order, which is the order promised above.
+  const seen = new Set();
   for (const set of sets) {
     const value = pick(set);
     for (const item of Array.isArray(value) ? value : [value]) {
-      if (item !== null && item !== undefined && item !== "" && !seen.includes(item)) {
-        seen.push(item);
-      }
+      if (item !== null && item !== undefined && item !== "") seen.add(item);
     }
   }
-  return seen;
+  return [...seen];
 }
 
 /**
