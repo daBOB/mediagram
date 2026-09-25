@@ -8,8 +8,8 @@ use fetch_stub::{
     fetch_with, install_crypto_provider, offline_client, write_existing_poster,
 };
 
-use mediagram_core::api::enrich::artwork::{plan_fetch, verify_then_fetch};
 use mediagram_core::api::CoreError;
+use mediagram_core::api::enrich::artwork::{plan_fetch, verify_then_fetch};
 
 /// A key the provider rejects stays rejected however warm the disk cache
 /// is.
@@ -43,7 +43,10 @@ async fn a_rejected_key_is_still_rejected_after_a_successful_run() {
         .await
         .expect_err("a rejected key must not be verified out of the cache");
 
-    assert!(matches!(err, CoreError::NotAuthorized(_)), "reported as {err:?}");
+    assert!(
+        matches!(err, CoreError::NotAuthorized(_)),
+        "reported as {err:?}"
+    );
 }
 
 /// A rejected key is reported as a key problem before anything is spent,
@@ -62,7 +65,10 @@ async fn a_rejected_key_stops_the_run_before_it_starts() {
 
     let err = fetch_rejecting(dir.path()).await.unwrap_err();
 
-    assert!(matches!(err, CoreError::NotAuthorized(_)), "reported as {err:?}");
+    assert!(
+        matches!(err, CoreError::NotAuthorized(_)),
+        "reported as {err:?}"
+    );
 }
 
 /// One pass answers both questions about a title. They come from one cached
@@ -107,7 +113,10 @@ async fn a_title_already_described_is_left_alone() {
 #[tokio::test]
 async fn one_unanswerable_title_does_not_end_the_run() {
     let dir = tempfile::tempdir().unwrap();
-    catalog_with_kinds(dir.path(), &[("movie", Some(550)), ("movie", Some(999_999_999))]);
+    catalog_with_kinds(
+        dir.path(),
+        &[("movie", Some(550)), ("movie", Some(999_999_999))],
+    );
 
     let report = fetch_with(dir.path(), StubApi::answering_only(550)).await;
 
@@ -137,7 +146,12 @@ async fn titles_with_no_provider_entry_are_counted_as_a_shelf_shows_them() {
     let named = tempfile::tempdir().unwrap();
     catalog_with_collection(named.path(), "tut", Some("Rust in Anger"), 12);
 
-    assert_eq!(fetch_with(named.path(), StubApi::default()).await.no_provider_id, 1);
+    assert_eq!(
+        fetch_with(named.path(), StubApi::default())
+            .await
+            .no_provider_id,
+        1
+    );
 
     // The same twelve with no course name. `Shelves.kt` draws those as one
     // card too, under a stand-in title, so a count beside that shelf saying
@@ -145,13 +159,23 @@ async fn titles_with_no_provider_entry_are_counted_as_a_shelf_shows_them() {
     let bare = tempfile::tempdir().unwrap();
     catalog_with_collection(bare.path(), "tut", None, 12);
 
-    assert_eq!(fetch_with(bare.path(), StubApi::default()).await.no_provider_id, 1);
+    assert_eq!(
+        fetch_with(bare.path(), StubApi::default())
+            .await
+            .no_provider_id,
+        1
+    );
 
     // Films are not collected, so nothing collapses them into each other.
     let films = tempfile::tempdir().unwrap();
     catalog_with_kinds(films.path(), &[("movie", None), ("movie", None)]);
 
-    assert_eq!(fetch_with(films.path(), StubApi::default()).await.no_provider_id, 2);
+    assert_eq!(
+        fetch_with(films.path(), StubApi::default())
+            .await
+            .no_provider_id,
+        2
+    );
 }
 
 #[tokio::test]
@@ -171,7 +195,10 @@ async fn artwork_already_on_disk_is_not_fetched_again() {
 #[tokio::test]
 async fn a_series_is_one_title_however_many_episodes_it_has() {
     let dir = tempfile::tempdir().unwrap();
-    catalog_with_kinds(dir.path(), &[("ep", Some(1399)), ("ep", Some(1399)), ("ep", Some(1399))]);
+    catalog_with_kinds(
+        dir.path(),
+        &[("ep", Some(1399)), ("ep", Some(1399)), ("ep", Some(1399))],
+    );
 
     let report = fetch_with(dir.path(), StubApi::with_poster("/a.jpg")).await;
 

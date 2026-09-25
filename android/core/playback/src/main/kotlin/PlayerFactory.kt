@@ -28,21 +28,28 @@ suspend fun cacheDataSourceFactory(
     context: Context,
     counters: PlaybackCounters,
     currentCore: () -> CoreClient?,
-): CacheDataSource.Factory = CacheDataSource.Factory()
-    .setCache(CacheProvider.get(context))
-    .setUpstreamDataSourceFactory(MlibDataSourceFactory(counters, currentCore))
-    // media3 offers this and nothing has ever attached one. Without it there
-    // is no way to tell a cache that is carrying playback from one that is
-    // being bypassed, which is the first thing worth knowing about a read.
-    // Not a SAM conversion: CacheDataSource.EventListener has two abstract
-    // methods, so it needs an explicit implementation rather than a lambda.
-    .setEventListener(object : CacheDataSource.EventListener {
-        override fun onCachedBytesRead(cacheSizeBytes: Long, cachedBytesRead: Long) {
-            counters.servedFromCache(cachedBytesRead)
-        }
+): CacheDataSource.Factory =
+    CacheDataSource
+        .Factory()
+        .setCache(CacheProvider.get(context))
+        .setUpstreamDataSourceFactory(MlibDataSourceFactory(counters, currentCore))
+        // media3 offers this and nothing has ever attached one. Without it there
+        // is no way to tell a cache that is carrying playback from one that is
+        // being bypassed, which is the first thing worth knowing about a read.
+        // Not a SAM conversion: CacheDataSource.EventListener has two abstract
+        // methods, so it needs an explicit implementation rather than a lambda.
+        .setEventListener(
+            object : CacheDataSource.EventListener {
+                override fun onCachedBytesRead(
+                    cacheSizeBytes: Long,
+                    cachedBytesRead: Long,
+                ) {
+                    counters.servedFromCache(cachedBytesRead)
+                }
 
-        override fun onCacheIgnored(reason: Int) = Unit
-    })
+                override fun onCacheIgnored(reason: Int) = Unit
+            },
+        )
 
 /**
  * An [ExoPlayer] that reads every set through the cache. No format hints
@@ -64,8 +71,13 @@ suspend fun cacheDataSourceFactory(
  * selection to offer, and disabling it rules out a forced or default track
  * a container happens to carry ever flashing up uninvited.
  */
-suspend fun buildPlayer(context: Context, counters: PlaybackCounters, currentCore: () -> CoreClient?): ExoPlayer =
-    ExoPlayer.Builder(context)
+suspend fun buildPlayer(
+    context: Context,
+    counters: PlaybackCounters,
+    currentCore: () -> CoreClient?,
+): ExoPlayer =
+    ExoPlayer
+        .Builder(context)
         .setMediaSourceFactory(
             DefaultMediaSourceFactory(context)
                 .setDataSourceFactory(cacheDataSourceFactory(context, counters, currentCore)),

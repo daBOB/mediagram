@@ -9,10 +9,9 @@ the module map these rules apply to.
 - One directory per concern (`commands/`, `media/`, `metadata/`, `index/`,
   `upload/`, `telegram/`, `verify/`); each has a thin `mod.rs` that only
   declares submodules and states, in its doc comment, what the directory is
-  for and which submodule (if any) is the only one allowed to touch an
-  external system (e.g. `verify/mod.rs` states that `download_hash` is the
-  only piece of `verify` that talks to Telegram).
-- Each `commands/*.rs` file exposes a `pub async fn run(...)` as its entry
+  for and which submodules may touch external systems (e.g. `verify` keeps
+  Telegram message retrieval and chunk streaming in `source` and `download_hash`).
+- Each `commands/*.rs` file exposes a `pub fn run(...)` (async when needed) as its entry
   point and is the orchestration layer: it wires config, the index, and
   Telegram together and prints output. Logic a second command needs lives in
   a domain module (`index`, `upload`, `media`, ...), not in a sibling
@@ -117,6 +116,9 @@ regression test that would have caught it.
 
 ## Formatting and lint gates
 
+- `cd web && bun run lint` checks authored browser JavaScript with ESLint's
+  recommended rules and browser globals. `scripts/check.sh` runs it before the
+  web tests; install the declared development dependencies with `bun install`.
 - `cargo fmt --all -- --check` and `cargo clippy --all-targets -- -D
   warnings` must both be clean before a change is considered complete.
   `clippy::too_many_arguments` is allowed with an explicit `#[allow]` on

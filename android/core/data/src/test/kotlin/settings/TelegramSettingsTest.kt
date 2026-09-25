@@ -9,28 +9,30 @@ import kotlin.test.assertNull
 private const val WELL_FORMED_HASH = "0123456789abcdef0123456789abcdef"
 
 class TelegramSettingsTest {
+    @Test
+    fun credentialsRoundTrip() =
+        runTest {
+            val settings = InMemoryTelegramSettings()
+            settings.write(1234, WELL_FORMED_HASH)
+            assertEquals(TelegramCredentials(1234, WELL_FORMED_HASH), settings.read())
+        }
 
     @Test
-    fun credentialsRoundTrip() = runTest {
-        val settings = InMemoryTelegramSettings()
-        settings.write(1234, WELL_FORMED_HASH)
-        assertEquals(TelegramCredentials(1234, WELL_FORMED_HASH), settings.read())
-    }
+    fun nothingStoredMeansNoCredentials() =
+        runTest {
+            assertNull(InMemoryTelegramSettings().read())
+        }
 
     @Test
-    fun nothingStoredMeansNoCredentials() = runTest {
-        assertNull(InMemoryTelegramSettings().read())
-    }
+    fun clearingLeavesNothingStored() =
+        runTest {
+            val settings = InMemoryTelegramSettings()
+            settings.write(1234, WELL_FORMED_HASH)
 
-    @Test
-    fun clearingLeavesNothingStored() = runTest {
-        val settings = InMemoryTelegramSettings()
-        settings.write(1234, WELL_FORMED_HASH)
+            settings.clear()
 
-        settings.clear()
-
-        assertNull(settings.read())
-    }
+            assertNull(settings.read())
+        }
 
     @Test
     fun theApiHashIsRedactedFromToString() {
@@ -50,16 +52,18 @@ class TelegramSettingsTest {
      * against a fake the real store would have rejected.
      */
     @Test
-    fun anApiIdOfZeroIsNoIdentityAtAll() = runTest {
-        val settings = InMemoryTelegramSettings()
-        settings.write(0, WELL_FORMED_HASH)
-        assertNull(settings.read())
-    }
+    fun anApiIdOfZeroIsNoIdentityAtAll() =
+        runTest {
+            val settings = InMemoryTelegramSettings()
+            settings.write(0, WELL_FORMED_HASH)
+            assertNull(settings.read())
+        }
 
     @Test
-    fun aBlankApiHashIsNoIdentityAtAll() = runTest {
-        val settings = InMemoryTelegramSettings()
-        settings.write(1234, "   ")
-        assertNull(settings.read())
-    }
+    fun aBlankApiHashIsNoIdentityAtAll() =
+        runTest {
+            val settings = InMemoryTelegramSettings()
+            settings.write(1234, "   ")
+            assertNull(settings.read())
+        }
 }

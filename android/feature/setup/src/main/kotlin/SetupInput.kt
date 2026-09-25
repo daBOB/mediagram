@@ -1,6 +1,6 @@
 package setup
 
-/**
+/*
  * What the two typed-in values have to look like before anything is
  * stored, and the sentences shown when they do not.
  *
@@ -24,5 +24,4 @@ internal const val API_HASH_ERROR = "The api_hash is 32 hexadecimal characters, 
 
 internal fun apiIdOrNull(typed: String): Int? = typed.trim().toIntOrNull()?.takeIf { it > 0 }
 
-internal fun apiHashOrNull(typed: String): String? =
-    typed.trim().lowercase().takeIf(API_HASH_SHAPE::matches)
+internal fun apiHashOrNull(typed: String): String? = typed.trim().lowercase().takeIf(API_HASH_SHAPE::matches)

@@ -18,7 +18,10 @@ use super::cipher::{self, EncryptError};
 /// Schema versions this build's catalog code can read: its own, and the
 /// older one a publisher not yet upgraded still writes. v7 only added
 /// `shows.certification`, which every read here treats as optional.
-pub const SUPPORTED_SCHEMA: &[i64] = &[mlib_spec::schema::OLDEST_READABLE_SCHEMA, mlib_spec::schema::SCHEMA_VERSION];
+pub const SUPPORTED_SCHEMA: &[i64] = &[
+    mlib_spec::schema::OLDEST_READABLE_SCHEMA,
+    mlib_spec::schema::SCHEMA_VERSION,
+];
 
 #[derive(Debug, Error)]
 pub enum PackageError {
@@ -85,11 +88,7 @@ fn unpack(plaintext: &[u8], dest: &Path) -> Result<(), PackageError> {
     let mut budget = MAX_UNPACKED_BYTES;
     for entry in entries {
         let mut entry = entry.map_err(|e| PackageError::Archive(e.to_string()))?;
-        if !entry
-            .header()
-            .entry_type()
-            .is_file()
-        {
+        if !entry.header().entry_type().is_file() {
             return Err(PackageError::Archive(
                 "archive member is not a regular file".into(),
             ));
@@ -128,6 +127,5 @@ fn unpack(plaintext: &[u8], dest: &Path) -> Result<(), PackageError> {
 /// Every component must be an ordinary name: no absolute path, no `..`, no
 /// root, nothing a tar entry could use to climb out of `dest`.
 fn is_safe(path: &Path) -> bool {
-    path.components()
-        .all(|c| matches!(c, Component::Normal(_)))
+    path.components().all(|c| matches!(c, Component::Normal(_)))
 }

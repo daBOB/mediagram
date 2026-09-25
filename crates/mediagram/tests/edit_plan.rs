@@ -6,11 +6,11 @@
 //! the hashes are what `verify` checks and what a player seeks with. An edit
 //! that touched them would turn a correction into corruption.
 
-use mediagram::index::status::PartStatus;
 use mediagram::edit::captions::captions;
 use mediagram::edit::plan::{Edits, apply};
 use mediagram::index::parts::PartRow;
 use mediagram::index::set_row::SetRow;
+use mediagram::index::status::PartStatus;
 use mlib_spec::caption::{Caption, Episode, Kind, Part};
 use mlib_spec::ids::ProviderIds;
 
@@ -53,7 +53,7 @@ fn episode_caption() -> Caption {
 }
 
 fn row() -> SetRow {
-    SetRow::from_caption(&episode_caption(), 1_700_000_000).unwrap()
+    SetRow::from_caption(&episode_caption(), 1_700_000_000)
 }
 
 fn two_parts() -> Vec<PartRow> {
@@ -245,7 +245,10 @@ mod reshelving {
     #[test]
     fn a_kind_the_spec_does_not_have_is_refused() {
         for bad in ["film", "MOVIE", "", "episode"] {
-            assert!(editable_kind(bad).is_err(), "kind {bad:?} should be refused");
+            assert!(
+                editable_kind(bad).is_err(),
+                "kind {bad:?} should be refused"
+            );
         }
     }
 

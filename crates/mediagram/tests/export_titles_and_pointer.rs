@@ -45,7 +45,10 @@ fn counts_report_sets_and_parts() {
 fn an_empty_index_reports_nothing() {
     let (_d, conn) = db_with(&[]);
     assert!(distinct_titles(&conn).unwrap().is_empty());
-    assert_eq!((sets::count(&conn).unwrap(), parts::count(&conn).unwrap()), (0, 0));
+    assert_eq!(
+        (sets::count(&conn).unwrap(), parts::count(&conn).unwrap()),
+        (0, 0)
+    );
 }
 
 /// A `kind` outside the enum can only exist in a database from before the

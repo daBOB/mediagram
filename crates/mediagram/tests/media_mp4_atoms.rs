@@ -60,10 +60,7 @@ fn webm_extension_short_circuits_without_reading_file() {
 }
 
 #[test]
-fn atom_claiming_size_larger_than_file_resolves_to_false() {
-    // A moov box claiming 1000 bytes in an 8-byte file: the scan runs past
-    // the box, finds no mdat before EOF, and falls back to "no remux
-    // needed" rather than panicking or erroring.
+fn atom_claiming_size_larger_than_file_errors() {
     let temp = NamedTempFile::with_suffix(".mp4").unwrap();
     let truncated = vec![
         0x00, 0x00, 0x03, 0xe8, // size = 1000 in big-endian
@@ -72,8 +69,67 @@ fn atom_claiming_size_larger_than_file_resolves_to_false() {
     std::fs::write(temp.path(), truncated).unwrap();
 
     let result = media::mp4_atoms::needs_faststart(temp.path());
-    assert!(result.is_ok());
-    assert!(!result.unwrap());
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("extends past end of file")
+    );
+}
+
+#[test]
+fn oversized_largesize_box_errors_without_overflowing() {
+    for prefix in [vec![], [8_u32.to_be_bytes().as_slice(), b"free"].concat()] {
+        let temp = NamedTempFile::with_suffix(".mp4").unwrap();
+        let bytes = [
+            prefix.as_slice(),
+            &1_u32.to_be_bytes(),
+            b"free",
+            &u64::MAX.to_be_bytes(),
+        ]
+        .concat();
+        std::fs::write(temp.path(), bytes).unwrap();
+
+        let error = media::mp4_atoms::needs_faststart(temp.path()).unwrap_err();
+        assert!(error.to_string().contains("extends past end of file"));
+    }
+}
+
+#[test]
+fn second_landmark_must_fit_before_order_is_reported() {
+    for (first, second) in [(b"moov", b"mdat"), (b"mdat", b"moov")] {
+        let temp = NamedTempFile::with_suffix(".mp4").unwrap();
+        let bytes = [
+            &8_u32.to_be_bytes()[..],
+            first,
+            &1000_u32.to_be_bytes(),
+            second,
+        ]
+        .concat();
+        std::fs::write(temp.path(), bytes).unwrap();
+
+        let error = media::mp4_atoms::needs_faststart(temp.path()).unwrap_err();
+        assert!(error.to_string().contains("extends past end of file"));
+    }
+}
+
+#[test]
+fn boxes_ending_exactly_at_eof_keep_their_order() {
+    for (first, second, expected) in [(b"moov", b"mdat", false), (b"mdat", b"moov", true)] {
+        for final_box in [
+            [&0_u32.to_be_bytes()[..], second].concat(),
+            [&1_u32.to_be_bytes()[..], second, &16_u64.to_be_bytes()].concat(),
+        ] {
+            let temp = NamedTempFile::with_suffix(".mp4").unwrap();
+            let bytes = [&8_u32.to_be_bytes()[..], first, &final_box].concat();
+            std::fs::write(temp.path(), bytes).unwrap();
+
+            assert_eq!(
+                media::mp4_atoms::needs_faststart(temp.path()).unwrap(),
+                expected
+            );
+        }
+    }
 }
 
 #[test]

@@ -351,7 +351,7 @@ internal inline fun<T, reified E: Throwable> uniffiTraitInterfaceCallWithError(
         }
     }
 }
-// Initial value and increment amount for handles. 
+// Initial value and increment amount for handles.
 // These ensure that Kotlin-generated handles always have the lowest bit set
 private const val UNIFFI_HANDLEMAP_INITIAL = 1.toLong()
 private const val UNIFFI_HANDLEMAP_DELTA = 2.toLong()
@@ -361,7 +361,7 @@ private const val UNIFFI_HANDLEMAP_DELTA = 2.toLong()
 // This is used pass an opaque 64-bit handle representing a foreign object to the Rust code.
 internal class UniffiHandleMap<T: Any> {
     private val map = ConcurrentHashMap<Long, T>()
-    // Start 
+    // Start
     private val counter = java.util.concurrent.atomic.AtomicLong(UNIFFI_HANDLEMAP_INITIAL)
 
     val size: Int
@@ -730,19 +730,13 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_clear_progress(
     ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_create_collection(
-    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_create_profile(
-    ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_delete_collection(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_delete_profile(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_profiles(
     ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_rename_collection(
-    ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_set_in_collection(
+    external fun uniffi_mediagram_core_checksum_method_core_retire_local_state(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_kids(
     ): Int
@@ -754,6 +748,14 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_snapshot(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_create_collection(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_delete_collection(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_rename_collection(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_set_in_collection(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_state_device_id(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_sync_state(
@@ -763,26 +765,26 @@ internal object IntegrityCheckingUniffiLib {
     external fun ffi_mediagram_core_uniffi_contract_version(
     ): Int
 
-        
+
 }
 
 internal object UniffiLib {
-    
+
     // The Cleaner for the whole library
     internal val CLEANER: UniffiCleaner by lazy {
         UniffiCleaner.create()
     }
-    
+
 
     init {
         Native.register(UniffiLib::class.java, findLibraryName(componentName = "mediagram_core"))
-        
+
     }
-    external fun uniffi_mediagram_core_fn_clone_core(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_mediagram_core_fn_clone_core(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Long
-    external fun uniffi_mediagram_core_fn_free_core(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_mediagram_core_fn_free_core(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Unit
-    external fun uniffi_mediagram_core_fn_constructor_core_new(`dataDir`: RustBuffer.ByValue,`apiId`: Int,`apiHash`: RustBuffer.ByValue,`deviceName`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_mediagram_core_fn_constructor_core_new(`dataDir`: RustBuffer.ByValue,`apiId`: Int,`apiHash`: RustBuffer.ByValue,`deviceName`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_catalog_facts(`ptr`: Long,
     ): Long
@@ -790,13 +792,13 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_fetch_missing(`ptr`: Long,`tmdbKey`: RustBuffer.ByValue,`language`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_is_authorized(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_mediagram_core_fn_method_core_is_authorized(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Byte
     external fun uniffi_mediagram_core_fn_method_core_list_libraries(`ptr`: Long,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_list_sets(`ptr`: Long,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_poster_path(`ptr`: Long,`posterKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_mediagram_core_fn_method_core_poster_path(`ptr`: Long,`posterKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     external fun uniffi_mediagram_core_fn_method_core_read(`ptr`: Long,`setId`: RustBuffer.ByValue,`offset`: Long,`len`: Int,
     ): Long
@@ -814,7 +816,7 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_account(`ptr`: Long,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_dc_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_mediagram_core_fn_method_core_dc_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     external fun uniffi_mediagram_core_fn_method_core_sign_out(`ptr`: Long,
     ): Long
@@ -834,20 +836,14 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_clear_progress(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_create_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
-    ): Long
-    external fun uniffi_mediagram_core_fn_method_core_create_profile(`ptr`: Long,`name`: RustBuffer.ByValue,
-    ): Long
-    external fun uniffi_mediagram_core_fn_method_core_delete_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,
+    external fun uniffi_mediagram_core_fn_method_core_create_profile(`ptr`: Long,`name`: RustBuffer.ByValue,`kids`: Byte,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_delete_profile(`ptr`: Long,`id`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_profiles(`ptr`: Long,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_rename_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
-    ): Long
-    external fun uniffi_mediagram_core_fn_method_core_set_in_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`included`: Byte,
-    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_retire_local_state(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+    ): Unit
     external fun uniffi_mediagram_core_fn_method_core_set_kids(`ptr`: Long,`setId`: RustBuffer.ByValue,`marked`: Byte,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_progress(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`at`: Double,`duration`: RustBuffer.ByValue,
@@ -858,17 +854,25 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_snapshot(`ptr`: Long,`profileId`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_state_device_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): RustBuffer.ByValue
+    external fun uniffi_mediagram_core_fn_method_core_create_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_delete_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_rename_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_set_in_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`included`: Byte,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_state_device_id(`ptr`: Long,
+    ): Long
     external fun uniffi_mediagram_core_fn_method_core_sync_state(`ptr`: Long,`handle`: RustBuffer.ByValue,
     ): Long
-    external fun ffi_mediagram_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_mediagram_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
-    external fun ffi_mediagram_core_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_mediagram_core_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
-    external fun ffi_mediagram_core_rustbuffer_free(`buf`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_mediagram_core_rustbuffer_free(`buf`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): Unit
-    external fun ffi_mediagram_core_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_mediagram_core_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     external fun ffi_mediagram_core_rust_future_poll_u8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
@@ -876,7 +880,7 @@ internal object UniffiLib {
     ): Unit
     external fun ffi_mediagram_core_rust_future_free_u8(`handle`: Long,
     ): Unit
-    external fun ffi_mediagram_core_rust_future_complete_u8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_mediagram_core_rust_future_complete_u8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Int
     external fun ffi_mediagram_core_rust_future_poll_i8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
@@ -884,7 +888,7 @@ internal object UniffiLib {
     ): Unit
     external fun ffi_mediagram_core_rust_future_free_i8(`handle`: Long,
     ): Unit
-    external fun ffi_mediagram_core_rust_future_complete_i8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_mediagram_core_rust_future_complete_i8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Byte
     external fun ffi_mediagram_core_rust_future_poll_u16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
@@ -892,7 +896,7 @@ internal object UniffiLib {
     ): Unit
     external fun ffi_mediagram_core_rust_future_free_u16(`handle`: Long,
     ): Unit
-    external fun ffi_mediagram_core_rust_future_complete_u16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_mediagram_core_rust_future_complete_u16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Int
     external fun ffi_mediagram_core_rust_future_poll_i16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
@@ -900,7 +904,7 @@ internal object UniffiLib {
     ): Unit
     external fun ffi_mediagram_core_rust_future_free_i16(`handle`: Long,
     ): Unit
-    external fun ffi_mediagram_core_rust_future_complete_i16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_mediagram_core_rust_future_complete_i16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Short
     external fun ffi_mediagram_core_rust_future_poll_u32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
@@ -908,7 +912,7 @@ internal object UniffiLib {
     ): Unit
     external fun ffi_mediagram_core_rust_future_free_u32(`handle`: Long,
     ): Unit
-    external fun ffi_mediagram_core_rust_future_complete_u32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_mediagram_core_rust_future_complete_u32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Int
     external fun ffi_mediagram_core_rust_future_poll_i32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
@@ -916,7 +920,7 @@ internal object UniffiLib {
     ): Unit
     external fun ffi_mediagram_core_rust_future_free_i32(`handle`: Long,
     ): Unit
-    external fun ffi_mediagram_core_rust_future_complete_i32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_mediagram_core_rust_future_complete_i32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Int
     external fun ffi_mediagram_core_rust_future_poll_u64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
@@ -924,7 +928,7 @@ internal object UniffiLib {
     ): Unit
     external fun ffi_mediagram_core_rust_future_free_u64(`handle`: Long,
     ): Unit
-    external fun ffi_mediagram_core_rust_future_complete_u64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_mediagram_core_rust_future_complete_u64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Long
     external fun ffi_mediagram_core_rust_future_poll_i64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
@@ -932,7 +936,7 @@ internal object UniffiLib {
     ): Unit
     external fun ffi_mediagram_core_rust_future_free_i64(`handle`: Long,
     ): Unit
-    external fun ffi_mediagram_core_rust_future_complete_i64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_mediagram_core_rust_future_complete_i64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Long
     external fun ffi_mediagram_core_rust_future_poll_f32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
@@ -940,7 +944,7 @@ internal object UniffiLib {
     ): Unit
     external fun ffi_mediagram_core_rust_future_free_f32(`handle`: Long,
     ): Unit
-    external fun ffi_mediagram_core_rust_future_complete_f32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_mediagram_core_rust_future_complete_f32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Float
     external fun ffi_mediagram_core_rust_future_poll_f64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
@@ -948,7 +952,7 @@ internal object UniffiLib {
     ): Unit
     external fun ffi_mediagram_core_rust_future_free_f64(`handle`: Long,
     ): Unit
-    external fun ffi_mediagram_core_rust_future_complete_f64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_mediagram_core_rust_future_complete_f64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Double
     external fun ffi_mediagram_core_rust_future_poll_rust_buffer(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
@@ -956,7 +960,7 @@ internal object UniffiLib {
     ): Unit
     external fun ffi_mediagram_core_rust_future_free_rust_buffer(`handle`: Long,
     ): Unit
-    external fun ffi_mediagram_core_rust_future_complete_rust_buffer(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_mediagram_core_rust_future_complete_rust_buffer(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     external fun ffi_mediagram_core_rust_future_poll_void(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
@@ -964,10 +968,10 @@ internal object UniffiLib {
     ): Unit
     external fun ffi_mediagram_core_rust_future_free_void(`handle`: Long,
     ): Unit
-    external fun ffi_mediagram_core_rust_future_complete_void(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_mediagram_core_rust_future_complete_void(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-        
+
 }
 
 private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
@@ -981,13 +985,13 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 }
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
-    if ((lib.uniffi_mediagram_core_checksum_method_core_catalog_facts() and 0xFFFF) != 61540) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_catalog_facts() and 0xFFFF) != 36812) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_check_password() and 0xFFFF) != 58515) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_fetch_missing() and 0xFFFF) != 46161) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_fetch_missing() and 0xFFFF) != 32024) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_is_authorized() and 0xFFFF) != 30182) {
@@ -996,16 +1000,16 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_list_libraries() and 0xFFFF) != 44487) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_list_sets() and 0xFFFF) != 11887) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_list_sets() and 0xFFFF) != 45224) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_poster_path() and 0xFFFF) != 16393) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_read() and 0xFFFF) != 23677) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_read() and 0xFFFF) != 530) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_catalog() and 0xFFFF) != 12465) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_catalog() and 0xFFFF) != 20015) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_library() and 0xFFFF) != 63677) {
@@ -1056,13 +1060,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_clear_progress() and 0xFFFF) != 16322) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_create_collection() and 0xFFFF) != 13558) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_create_profile() and 0xFFFF) != 1194) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_delete_collection() and 0xFFFF) != 22663) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_create_profile() and 0xFFFF) != 6077) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_delete_profile() and 0xFFFF) != 46619) {
@@ -1071,10 +1069,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_profiles() and 0xFFFF) != 5418) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_rename_collection() and 0xFFFF) != 52280) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_set_in_collection() and 0xFFFF) != 24986) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_retire_local_state() and 0xFFFF) != 24465) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_kids() and 0xFFFF) != 54511) {
@@ -1092,10 +1087,22 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_snapshot() and 0xFFFF) != 28194) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_state_device_id() and 0xFFFF) != 42344) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_create_collection() and 0xFFFF) != 745) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_sync_state() and 0xFFFF) != 30436) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_delete_collection() and 0xFFFF) != 47335) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_rename_collection() and 0xFFFF) != 18371) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_in_collection() and 0xFFFF) != 28898) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_state_device_id() and 0xFFFF) != 19133) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_sync_state() and 0xFFFF) != 972) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_constructor_core_new() and 0xFFFF) != 35315) {
@@ -1216,7 +1223,7 @@ inline fun <T : Disposable?, R> T.use(block: (T) -> R) =
         }
     }
 
-/** 
+/**
  * Placeholder object used to signal that we're constructing an interface with a FFI handle.
  *
  * This is the first argument for interface constructors that input a raw handle. It exists is that
@@ -1227,7 +1234,7 @@ inline fun <T : Disposable?, R> T.use(block: (T) -> R) =
  * */
 object UniffiWithHandle
 
-/** 
+/**
  * Used to instantiate an interface without an actual pointer, for fakes in tests, mostly.
  *
  * @suppress
@@ -1612,90 +1619,81 @@ public object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
  * One player's whole Telegram surface, kept alive by Kotlin for the life of
  * the app.
  *
- * `api_id`/`api_hash` identify the *application* to Telegram, not the
- * account — leaking them lets someone impersonate the app, never sign in as
- * a user. An Android process has no settable environment to read them from,
- * so Kotlin passes them in from `BuildConfig`, itself populated at build
- * time from `local.properties`.
+ * `api_id`/`api_hash` identify the Telegram application, not a signed-in
+ * account. Kotlin passes the identity stored by the app's setup flow.
  */
 public interface CoreInterface {
-    
+
     /**
-     * What the installed catalog is, for the screen that says so.
-     *
-     * Total failure is reported as zeroes rather than an error: this is
-     * read to draw a screen, and a screen that cannot draw because a count
-     * failed is worse than one that says a library is empty.
+     * Installed-catalog status; unavailable counts are reported as zeroes
+     * so the display remains usable when its local data cannot be read.
      */
     suspend fun `catalogFacts`(): CatalogFacts
-    
+
     suspend fun `checkPassword`(`password`: kotlin.String)
-    
+
     /**
-     * Fills in what the library it was handed does not carry, for every
-     * title TMDB can answer about: the poster artwork a channel index has
-     * no room for, and the descriptions of whatever nobody ran `mediagram
-     * metadata` over before pushing it. One run answers both, because they
-     * come from one request per title and a viewer who asked for the
-     * missing pieces did not ask for half of them.
+     * Fetches missing TMDB posters and descriptions together, once per title.
      *
-     * `language` is only a fallback: the library itself says what language
-     * it was described in, and that is what the provider is asked in.
+     * The library's language takes precedence over the `language` fallback.
      *
-     * The key is used for this call only and never stored — Kotlin owns
-     * holding it, this crate only ever spends it.
+     * Kotlin owns the key; this call uses it without storing it.
      */
     suspend fun `fetchMissing`(`tmdbKey`: kotlin.String, `language`: kotlin.String): FetchReport
-    
+
     /**
      * Whether a login has ever completed. Reads the persisted auth key
      * only: cheap, and needs no connection.
      */
     fun `isAuthorized`(): kotlin.Boolean
-    
+
     /**
      * The libraries this account could choose from — its broadcast
      * channels, in the order Telegram itself lists them: pinned
      * conversations first, then most recent.
      */
     suspend fun `listLibraries`(): List<LibraryChoice>
-    
+
     /**
-     * Every playable set in the current catalog. An empty list, not
-     * `NotFound`, when no catalog is loaded yet: a shelf with nothing on it
-     * is what a first launch shows, whereas the calls that ask about one
-     * named set have nothing sensible to return and say so.
+     * Every playable set in the current catalog, or an empty list before
+     * the first catalog is loaded. Calls for a named set use `NotFound`.
      */
     suspend fun `listSets`(): List<SetSummary>
-    
+
     /**
      * Where a poster's image is on disk, if it is. Sync, unlike the catalog
      * reads: two `stat`s and no SQLite, which Kotlin already runs off-main.
      */
     fun `posterPath`(`posterKey`: kotlin.String): kotlin.String?
-    
-    suspend fun `read`(`setId`: kotlin.String, `offset`: kotlin.ULong, `len`: kotlin.UInt): kotlin.ByteArray
-    
+
     /**
-     * Refreshes from **a published package**: fetches the pointer at
-     * `pointer_url`, then the encrypted package it names, and installs the
-     * index inside it. Kept whole beside [`Core::refresh_library`]: it is
-     * the only source that carries poster art, though nothing in the
-     * first-run flow reaches it any more.
+     * Reads at most `len` bytes from `offset`, clamping the result at EOF.
+     * `NotFound` covers absent/unplayable sets or offsets at/beyond EOF, even
+     * for `len == 0`. An in-range empty request returns no bytes without
+     * resolving channels. Nonempty reads also return `NotFound` for missing
+     * channel addresses. Storage, transport and authorization errors propagate;
+     * failed downloads never return a partial buffer.
+     */
+    suspend fun `read`(`setId`: kotlin.String, `offset`: kotlin.ULong, `len`: kotlin.UInt): kotlin.ByteArray
+
+    /**
+     * Installs the encrypted package named by `pointer_url`, including its
+     * poster art. Unlike [`Core::refresh_library`], this source is not used
+     * by the first-run flow.
      */
     suspend fun `refreshCatalog`(`pointerUrl`: kotlin.String, `keyB64`: kotlin.String): kotlin.ULong
-    
+
     /**
      * Refreshes from **the channel**: installs the newest index snapshot the
      * chosen library's channel holds, and answers how many sets it holds.
      * The first install and every later refresh are the same call.
      */
     suspend fun `refreshLibrary`(`handle`: kotlin.String): kotlin.ULong
-    
+
     suspend fun `requestCode`(`phone`: kotlin.String): kotlin.String
-    
+
     suspend fun `signIn`(`token`: kotlin.String, `code`: kotlin.String): AuthOutcome
-    
+
     /**
      * What is known about a title, or nothing. The index answers first and
      * what this device fetched fills the gaps — see `enrich::details::title_info`.
@@ -1703,20 +1701,20 @@ public interface CoreInterface {
      * key has no rows at all; both are ordinary, so neither is an error.
      */
     suspend fun `titleInfo`(`posterKey`: kotlin.String): TitleInfo?
-    
+
     suspend fun `totalSize`(`setId`: kotlin.String): kotlin.ULong
-    
+
     /**
      * The signed-in account's name and username.
      */
     suspend fun `account`(): AccountSummary
-    
+
     /**
      * The datacentre this login lives on, read from the stored key — no
      * network. `None` before any login.
      */
     fun `dcId`(): kotlin.Int?
-    
+
     /**
      * Signs this device out: at Telegram first, so the login stops working
      * everywhere rather than only here — deleting the key file alone left it
@@ -1725,7 +1723,7 @@ public interface CoreInterface {
      * reached. Safe to call when already signed out.
      */
     suspend fun `signOut`()
-    
+
     /**
      * Waits until the library `handle` names changes in a way worth a
      * round: another device's watch state (`State`) or a newly published
@@ -1736,60 +1734,53 @@ public interface CoreInterface {
      * the wait; an error means listening stopped — back off and call again.
      */
     suspend fun `nextLibraryEvent`(`handle`: kotlin.String, `ownDevice`: kotlin.String): LibraryEvent
-    
+
     /**
      * Every choice this profile has made, in one round trip: there are a
      * handful of these per show, and a page needs one the instant a title
      * opens — exactly when it has no time to ask for it.
      */
     suspend fun `preferences`(`profileId`: kotlin.String): List<PreferenceRow>
-    
+
     /**
      * Remembers a choice, or forgets it (`value: None`). `false` when
      * `scope` or `name` has nothing left after trimming, or nothing could
      * be written.
      */
     suspend fun `setPreference`(`profileId`: kotlin.String, `scope`: kotlin.String, `name`: kotlin.String, `value`: kotlin.String?): kotlin.Boolean
-    
+
     /**
      * The catalog's sets matching every word of `query`, best first.
      * Empty for an empty query or a catalog that has not loaded yet —
      * neither is an error, both are "nothing to show".
      */
     suspend fun `search`(`query`: kotlin.String): List<SearchHit>
-    
+
     /**
      * `kind` is `"summary"` or `"subtitle"`; anything else answers `None`
      * without touching the database — the same refusal `catalog_assets::text`
      * applies to a kind it does not know.
      */
     suspend fun `setText`(`setId`: kotlin.String, `kind`: kotlin.String, `lang`: kotlin.String): kotlin.String?
-    
+
     /**
      * Records the choice. `false` when `id` names no profile, or nothing
      * could be written.
      */
     suspend fun `chooseProfile`(`id`: kotlin.String): kotlin.Boolean
-    
+
     /**
      * This install's remembered "who's watching".
      */
     suspend fun `chosenProfile`(): kotlin.String?
-    
+
     /**
      * Forgets a position: started again, or watched to the end.
      */
     suspend fun `clearProgress`(`profileId`: kotlin.String, `setId`: kotlin.String)
-    
-    suspend fun `createCollection`(`profileId`: kotlin.String, `name`: kotlin.String): ListRow?
-    
-    suspend fun `createProfile`(`name`: kotlin.String): Profile?
-    
-    /**
-     * Items go with it: `collection_items` cascades.
-     */
-    suspend fun `deleteCollection`(`profileId`: kotlin.String, `id`: kotlin.String): kotlin.Boolean
-    
+
+    suspend fun `createProfile`(`name`: kotlin.String, `kids`: kotlin.Boolean): Profile?
+
     /**
      * Takes everything that was theirs with it — every table cascades.
      * `chosen_profile` clears itself the moment this was the profile it
@@ -1797,62 +1788,79 @@ public interface CoreInterface {
      * every read rather than trusting what was last written.
      */
     suspend fun `deleteProfile`(`id`: kotlin.String): kotlin.Boolean
-    
+
     /**
      * Who watches this library. Empty until someone says.
      */
     suspend fun `profiles`(): List<Profile>
-    
+
     /**
-     * Whether the list was there to rename.
+     * Permanently stops this core's local watch-state access and closes its
+     * database after any current action. Call before clearing files or
+     * releasing the native handle: queued calls must not reopen old state.
+     * Stored data is preserved for a replacement core. This call may block
+     * briefly on an existing database action; it does not wait for network IO.
      */
-    suspend fun `renameCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `name`: kotlin.String): kotlin.Boolean
-    
-    /**
-     * Adds or removes `set_id` from a collection. `false` when the list is
-     * not this profile's.
-     */
-    suspend fun `setInCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `setId`: kotlin.String, `included`: kotlin.Boolean): kotlin.Boolean
-    
+    fun `retireLocalState`()
+
     /**
      * Marks (or unmarks) a title as a child's. Not scoped to a profile —
      * see `state::schema` on why.
      */
     suspend fun `setKids`(`setId`: kotlin.String, `marked`: kotlin.Boolean)
-    
+
     suspend fun `setProgress`(`profileId`: kotlin.String, `setId`: kotlin.String, `at`: kotlin.Double, `duration`: kotlin.Double?)
-    
+
     suspend fun `setWatched`(`profileId`: kotlin.String, `setId`: kotlin.String, `finished`: kotlin.Boolean)
-    
+
     suspend fun `setWatchlisted`(`profileId`: kotlin.String, `setId`: kotlin.String, `listed`: kotlin.Boolean)
-    
+
     /**
      * This profile's positions, watched marks, watchlist, Kids and
      * collections, in one round trip. Empty throughout on any failure.
      */
     suspend fun `snapshot`(`profileId`: kotlin.String): StateSnapshot
-    
+
+    suspend fun `createCollection`(`profileId`: kotlin.String, `name`: kotlin.String): ListRow?
+
+    /**
+     * Tombstones the list, retaining its items for sync reconciliation.
+     */
+    suspend fun `deleteCollection`(`profileId`: kotlin.String, `id`: kotlin.String): kotlin.Boolean
+
+    /**
+     * `false` for a blank name, an unavailable list, or a storage failure.
+     */
+    suspend fun `renameCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `name`: kotlin.String): kotlin.Boolean
+
+    /**
+     * Adds or removes `set_id` from a collection. `false` when the list is
+     * not this profile's.
+     */
+    suspend fun `setInCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `setId`: kotlin.String, `included`: kotlin.Boolean): kotlin.Boolean
+
     /**
      * This install's own id in the sync channel — a random string made
      * once and kept in `state.db`, never the hostname. Kotlin passes it on
      * to `next_library_event` as `own_device`, so this device's own writes
      * never come back to it as a change worth a round.
      */
-    fun `stateDeviceId`(): kotlin.String
-    
+    suspend fun `stateDeviceId`(): kotlin.String
+
     /**
      * One round of watch-state sync against the library `handle` names:
      * lists the pinned state documents there, merges in what is newer,
      * and pushes this device's own document if anything changed.
      *
      * Never throws — a channel that cannot be reached, a login Telegram
-     * has revoked, or a refused send all come back as `failed` and leave
-     * `state.db` exactly as it was. At most one round runs at a time on
+     * has revoked, or a refused send all come back as `failed`. Successful
+     * imports stay committed and are counted even if sending fails, so the
+     * caller can reload the local state. At most one round runs at a time on
      * this `Core`: a second call made while one is in flight waits for it,
      * so a first send is never issued twice.
      */
     suspend fun `syncState`(`handle`: kotlin.String): SyncOutcome
-    
+
     companion object
 }
 
@@ -1860,11 +1868,8 @@ public interface CoreInterface {
  * One player's whole Telegram surface, kept alive by Kotlin for the life of
  * the app.
  *
- * `api_id`/`api_hash` identify the *application* to Telegram, not the
- * account — leaking them lets someone impersonate the app, never sign in as
- * a user. An Android process has no settable environment to read them from,
- * so Kotlin passes them in from `BuildConfig`, itself populated at build
- * time from `local.properties`.
+ * `api_id`/`api_hash` identify the Telegram application, not a signed-in
+ * account. Kotlin passes the identity stored by the app's setup flow.
  */
 open class Core: Disposable, AutoCloseable, CoreInterface
 {
@@ -1891,11 +1896,11 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         this.cleanable = null
     }
     constructor(`dataDir`: kotlin.String, `apiId`: kotlin.Int, `apiHash`: kotlin.String, `deviceName`: kotlin.String) :
-        this(UniffiWithHandle, 
+        this(UniffiWithHandle,
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mediagram_core_fn_constructor_core_new(
-    
-        
+
+
         FfiConverterString.lower(`dataDir`),
         FfiConverterInt.lower(`apiId`),
         FfiConverterString.lower(`apiHash`),
@@ -1979,13 +1984,10 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         }
     }
 
-    
+
     /**
-     * What the installed catalog is, for the screen that says so.
-     *
-     * Total failure is reported as zeroes rather than an error: this is
-     * read to draw a screen, and a screen that cannot draw because a count
-     * failed is worse than one that says a library is empty.
+     * Installed-catalog status; unavailable counts are reported as zeroes
+     * so the display remains usable when its local data cannot be read.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `catalogFacts`() : CatalogFacts {
@@ -1993,7 +1995,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_catalog_facts(
                 uniffiHandle,
-                
+
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -2006,7 +2008,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `checkPassword`(`password`: kotlin.String) {
@@ -2014,7 +2016,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_check_password(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`password`),
             )
         },
@@ -2023,26 +2025,19 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
         // lift function
         { Unit },
-        
+
         // Error FFI converter
         CoreException.ErrorHandler,
     )
     }
 
-    
+
     /**
-     * Fills in what the library it was handed does not carry, for every
-     * title TMDB can answer about: the poster artwork a channel index has
-     * no room for, and the descriptions of whatever nobody ran `mediagram
-     * metadata` over before pushing it. One run answers both, because they
-     * come from one request per title and a viewer who asked for the
-     * missing pieces did not ask for half of them.
+     * Fetches missing TMDB posters and descriptions together, once per title.
      *
-     * `language` is only a fallback: the library itself says what language
-     * it was described in, and that is what the provider is asked in.
+     * The library's language takes precedence over the `language` fallback.
      *
-     * The key is used for this call only and never stored — Kotlin owns
-     * holding it, this crate only ever spends it.
+     * Kotlin owns the key; this call uses it without storing it.
      */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -2051,7 +2046,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_fetch_missing(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`tmdbKey`),
         FfiConverterString.lower(`language`),
             )
@@ -2066,7 +2061,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     /**
      * Whether a login has ever completed. Reads the persisted auth key
      * only: cheap, and needs no connection.
@@ -2081,9 +2076,9 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     }
     )
     }
-    
 
-    
+
+
     /**
      * The libraries this account could choose from — its broadcast
      * channels, in the order Telegram itself lists them: pinned
@@ -2096,7 +2091,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_list_libraries(
                 uniffiHandle,
-                
+
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -2109,12 +2104,10 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     /**
-     * Every playable set in the current catalog. An empty list, not
-     * `NotFound`, when no catalog is loaded yet: a shelf with nothing on it
-     * is what a first launch shows, whereas the calls that ask about one
-     * named set have nothing sensible to return and say so.
+     * Every playable set in the current catalog, or an empty list before
+     * the first catalog is loaded. Calls for a named set use `NotFound`.
      */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -2123,7 +2116,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_list_sets(
                 uniffiHandle,
-                
+
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -2136,7 +2129,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     /**
      * Where a poster's image is on disk, if it is. Sync, unlike the catalog
      * reads: two `stat`s and no SQLite, which Kotlin already runs off-main.
@@ -2146,15 +2139,23 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mediagram_core_fn_method_core_poster_path(
         it,
-        
+
         FfiConverterString.lower(`posterKey`),_status)
 }
     }
     )
     }
-    
 
-    
+
+
+    /**
+     * Reads at most `len` bytes from `offset`, clamping the result at EOF.
+     * `NotFound` covers absent/unplayable sets or offsets at/beyond EOF, even
+     * for `len == 0`. An in-range empty request returns no bytes without
+     * resolving channels. Nonempty reads also return `NotFound` for missing
+     * channel addresses. Storage, transport and authorization errors propagate;
+     * failed downloads never return a partial buffer.
+     */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `read`(`setId`: kotlin.String, `offset`: kotlin.ULong, `len`: kotlin.UInt) : kotlin.ByteArray {
@@ -2162,7 +2163,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_read(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`setId`),
         FfiConverterULong.lower(`offset`),
         FfiConverterUInt.lower(`len`),
@@ -2178,13 +2179,11 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     /**
-     * Refreshes from **a published package**: fetches the pointer at
-     * `pointer_url`, then the encrypted package it names, and installs the
-     * index inside it. Kept whole beside [`Core::refresh_library`]: it is
-     * the only source that carries poster art, though nothing in the
-     * first-run flow reaches it any more.
+     * Installs the encrypted package named by `pointer_url`, including its
+     * poster art. Unlike [`Core::refresh_library`], this source is not used
+     * by the first-run flow.
      */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -2193,7 +2192,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_refresh_catalog(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`pointerUrl`),
         FfiConverterString.lower(`keyB64`),
             )
@@ -2208,7 +2207,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     /**
      * Refreshes from **the channel**: installs the newest index snapshot the
      * chosen library's channel holds, and answers how many sets it holds.
@@ -2221,7 +2220,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_refresh_library(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`handle`),
             )
         },
@@ -2235,7 +2234,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `requestCode`(`phone`: kotlin.String) : kotlin.String {
@@ -2243,7 +2242,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_request_code(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`phone`),
             )
         },
@@ -2257,7 +2256,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `signIn`(`token`: kotlin.String, `code`: kotlin.String) : AuthOutcome {
@@ -2265,7 +2264,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_sign_in(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`token`),
         FfiConverterString.lower(`code`),
             )
@@ -2280,7 +2279,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     /**
      * What is known about a title, or nothing. The index answers first and
      * what this device fetched fills the gaps — see `enrich::details::title_info`.
@@ -2293,7 +2292,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_title_info(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`posterKey`),
             )
         },
@@ -2307,7 +2306,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `totalSize`(`setId`: kotlin.String) : kotlin.ULong {
@@ -2315,7 +2314,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_total_size(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`setId`),
             )
         },
@@ -2329,7 +2328,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     /**
      * The signed-in account's name and username.
      */
@@ -2340,7 +2339,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_account(
                 uniffiHandle,
-                
+
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -2353,7 +2352,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     /**
      * The datacentre this login lives on, read from the stored key — no
      * network. `None` before any login.
@@ -2368,9 +2367,9 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     }
     )
     }
-    
 
-    
+
+
     /**
      * Signs this device out: at Telegram first, so the login stops working
      * everywhere rather than only here — deleting the key file alone left it
@@ -2385,7 +2384,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_sign_out(
                 uniffiHandle,
-                
+
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
@@ -2393,13 +2392,13 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
         // lift function
         { Unit },
-        
+
         // Error FFI converter
         CoreException.ErrorHandler,
     )
     }
 
-    
+
     /**
      * Waits until the library `handle` names changes in a way worth a
      * round: another device's watch state (`State`) or a newly published
@@ -2416,7 +2415,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_next_library_event(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`handle`),
         FfiConverterString.lower(`ownDevice`),
             )
@@ -2431,7 +2430,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     /**
      * Every choice this profile has made, in one round trip: there are a
      * handful of these per show, and a page needs one the instant a title
@@ -2443,7 +2442,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_preferences(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`profileId`),
             )
         },
@@ -2457,7 +2456,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     /**
      * Remembers a choice, or forgets it (`value: None`). `false` when
      * `scope` or `name` has nothing left after trimming, or nothing could
@@ -2469,7 +2468,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_set_preference(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`profileId`),
         FfiConverterString.lower(`scope`),
         FfiConverterString.lower(`name`),
@@ -2486,7 +2485,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     /**
      * The catalog's sets matching every word of `query`, best first.
      * Empty for an empty query or a catalog that has not loaded yet —
@@ -2498,7 +2497,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_search(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`query`),
             )
         },
@@ -2512,7 +2511,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     /**
      * `kind` is `"summary"` or `"subtitle"`; anything else answers `None`
      * without touching the database — the same refusal `catalog_assets::text`
@@ -2524,7 +2523,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_set_text(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`setId`),
         FfiConverterString.lower(`kind`),
         FfiConverterString.lower(`lang`),
@@ -2540,7 +2539,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     /**
      * Records the choice. `false` when `id` names no profile, or nothing
      * could be written.
@@ -2551,7 +2550,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_choose_profile(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`id`),
             )
         },
@@ -2565,7 +2564,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     /**
      * This install's remembered "who's watching".
      */
@@ -2575,7 +2574,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_chosen_profile(
                 uniffiHandle,
-                
+
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -2588,7 +2587,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     /**
      * Forgets a position: started again, or watched to the end.
      */
@@ -2598,7 +2597,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_clear_progress(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`profileId`),
         FfiConverterString.lower(`setId`),
             )
@@ -2608,20 +2607,236 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
         // lift function
         { Unit },
-        
+
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
     }
 
-    
+
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `createProfile`(`name`: kotlin.String, `kids`: kotlin.Boolean) : Profile? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_create_profile(
+                uniffiHandle,
+
+        FfiConverterString.lower(`name`),
+        FfiConverterBoolean.lower(`kids`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalTypeProfile.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Takes everything that was theirs with it — every table cascades.
+     * `chosen_profile` clears itself the moment this was the profile it
+     * named: see `profiles::chosen`, which checks a profile still exists on
+     * every read rather than trusting what was last written.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `deleteProfile`(`id`: kotlin.String) : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_delete_profile(
+                uniffiHandle,
+
+        FfiConverterString.lower(`id`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Who watches this library. Empty until someone says.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `profiles`() : List<Profile> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_profiles(
+                uniffiHandle,
+
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypeProfile.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Permanently stops this core's local watch-state access and closes its
+     * database after any current action. Call before clearing files or
+     * releasing the native handle: queued calls must not reopen old state.
+     * Stored data is preserved for a replacement core. This call may block
+     * briefly on an existing database action; it does not wait for network IO.
+     */override fun `retireLocalState`()
+        =
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_mediagram_core_fn_method_core_retire_local_state(
+        it,
+        _status)
+}
+    }
+
+
+
+
+    /**
+     * Marks (or unmarks) a title as a child's. Not scoped to a profile —
+     * see `state::schema` on why.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setKids`(`setId`: kotlin.String, `marked`: kotlin.Boolean) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_set_kids(
+                uniffiHandle,
+
+        FfiConverterString.lower(`setId`),
+        FfiConverterBoolean.lower(`marked`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setProgress`(`profileId`: kotlin.String, `setId`: kotlin.String, `at`: kotlin.Double, `duration`: kotlin.Double?) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_set_progress(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`setId`),
+        FfiConverterDouble.lower(`at`),
+        FfiConverterOptionalDouble.lower(`duration`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setWatched`(`profileId`: kotlin.String, `setId`: kotlin.String, `finished`: kotlin.Boolean) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_set_watched(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`setId`),
+        FfiConverterBoolean.lower(`finished`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setWatchlisted`(`profileId`: kotlin.String, `setId`: kotlin.String, `listed`: kotlin.Boolean) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_set_watchlisted(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`setId`),
+        FfiConverterBoolean.lower(`listed`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * This profile's positions, watched marks, watchlist, Kids and
+     * collections, in one round trip. Empty throughout on any failure.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `snapshot`(`profileId`: kotlin.String) : StateSnapshot {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_snapshot(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeStateSnapshot.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `createCollection`(`profileId`: kotlin.String, `name`: kotlin.String) : ListRow? {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_create_collection(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`profileId`),
         FfiConverterString.lower(`name`),
             )
@@ -2636,30 +2851,9 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `createProfile`(`name`: kotlin.String) : Profile? {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_create_profile(
-                uniffiHandle,
-                
-        FfiConverterString.lower(`name`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
-        // lift function
-        { FfiConverterOptionalTypeProfile.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
 
-    
     /**
-     * Items go with it: `collection_items` cascades.
+     * Tombstones the list, retaining its items for sync reconciliation.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `deleteCollection`(`profileId`: kotlin.String, `id`: kotlin.String) : kotlin.Boolean {
@@ -2667,7 +2861,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_delete_collection(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`profileId`),
         FfiConverterString.lower(`id`),
             )
@@ -2682,59 +2876,9 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
-    /**
-     * Takes everything that was theirs with it — every table cascades.
-     * `chosen_profile` clears itself the moment this was the profile it
-     * named: see `profiles::chosen`, which checks a profile still exists on
-     * every read rather than trusting what was last written.
-     */
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `deleteProfile`(`id`: kotlin.String) : kotlin.Boolean {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_delete_profile(
-                uniffiHandle,
-                
-        FfiConverterString.lower(`id`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
-        // lift function
-        { FfiConverterBoolean.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
 
-    
     /**
-     * Who watches this library. Empty until someone says.
-     */
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `profiles`() : List<Profile> {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_profiles(
-                uniffiHandle,
-                
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
-        // lift function
-        { FfiConverterSequenceTypeProfile.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
-
-    
-    /**
-     * Whether the list was there to rename.
+     * `false` for a blank name, an unavailable list, or a storage failure.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `renameCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `name`: kotlin.String) : kotlin.Boolean {
@@ -2742,7 +2886,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_rename_collection(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`profileId`),
         FfiConverterString.lower(`id`),
         FfiConverterString.lower(`name`),
@@ -2758,7 +2902,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     /**
      * Adds or removes `set_id` from a collection. `false` when the list is
      * not this profile's.
@@ -2769,7 +2913,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_set_in_collection(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`profileId`),
         FfiConverterString.lower(`id`),
         FfiConverterString.lower(`setId`),
@@ -2786,159 +2930,42 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
+
     /**
-     * Marks (or unmarks) a title as a child's. Not scoped to a profile —
-     * see `state::schema` on why.
+     * This install's own id in the sync channel — a random string made
+     * once and kept in `state.db`, never the hostname. Kotlin passes it on
+     * to `next_library_event` as `own_device`, so this device's own writes
+     * never come back to it as a change worth a round.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `setKids`(`setId`: kotlin.String, `marked`: kotlin.Boolean) {
+    override suspend fun `stateDeviceId`() : kotlin.String {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_set_kids(
+            UniffiLib.uniffi_mediagram_core_fn_method_core_state_device_id(
                 uniffiHandle,
-                
-        FfiConverterString.lower(`setId`),
-        FfiConverterBoolean.lower(`marked`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
-        // lift function
-        { Unit },
-        
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
 
-    
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `setProgress`(`profileId`: kotlin.String, `setId`: kotlin.String, `at`: kotlin.Double, `duration`: kotlin.Double?) {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_set_progress(
-                uniffiHandle,
-                
-        FfiConverterString.lower(`profileId`),
-        FfiConverterString.lower(`setId`),
-        FfiConverterDouble.lower(`at`),
-        FfiConverterOptionalDouble.lower(`duration`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
-        // lift function
-        { Unit },
-        
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
-
-    
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `setWatched`(`profileId`: kotlin.String, `setId`: kotlin.String, `finished`: kotlin.Boolean) {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_set_watched(
-                uniffiHandle,
-                
-        FfiConverterString.lower(`profileId`),
-        FfiConverterString.lower(`setId`),
-        FfiConverterBoolean.lower(`finished`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
-        // lift function
-        { Unit },
-        
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
-
-    
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `setWatchlisted`(`profileId`: kotlin.String, `setId`: kotlin.String, `listed`: kotlin.Boolean) {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_set_watchlisted(
-                uniffiHandle,
-                
-        FfiConverterString.lower(`profileId`),
-        FfiConverterString.lower(`setId`),
-        FfiConverterBoolean.lower(`listed`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
-        // lift function
-        { Unit },
-        
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
-
-    
-    /**
-     * This profile's positions, watched marks, watchlist, Kids and
-     * collections, in one round trip. Empty throughout on any failure.
-     */
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `snapshot`(`profileId`: kotlin.String) : StateSnapshot {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_snapshot(
-                uniffiHandle,
-                
-        FfiConverterString.lower(`profileId`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
         { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
         // lift function
-        { FfiConverterTypeStateSnapshot.lift(it) },
+        { FfiConverterString.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
     }
 
-    
-    /**
-     * This install's own id in the sync channel — a random string made
-     * once and kept in `state.db`, never the hostname. Kotlin passes it on
-     * to `next_library_event` as `own_device`, so this device's own writes
-     * never come back to it as a change worth a round.
-     */override fun `stateDeviceId`(): kotlin.String {
-            return FfiConverterString.lift(
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_mediagram_core_fn_method_core_state_device_id(
-        it,
-        _status)
-}
-    }
-    )
-    }
-    
 
-    
     /**
      * One round of watch-state sync against the library `handle` names:
      * lists the pinned state documents there, merges in what is newer,
      * and pushes this device's own document if anything changed.
      *
      * Never throws — a channel that cannot be reached, a login Telegram
-     * has revoked, or a refused send all come back as `failed` and leave
-     * `state.db` exactly as it was. At most one round runs at a time on
+     * has revoked, or a refused send all come back as `failed`. Successful
+     * imports stay committed and are counted even if sending fails, so the
+     * caller can reload the local state. At most one round runs at a time on
      * this `Core`: a second call made while one is in flight waits for it,
      * so a first send is never issued twice.
      */
@@ -2948,7 +2975,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_sync_state(
                 uniffiHandle,
-                
+
         FfiConverterString.lower(`handle`),
             )
         },
@@ -2962,18 +2989,18 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     )
     }
 
-    
-
-    
 
 
-    
-    
+
+
+
+
+
     /**
      * @suppress
      */
     companion object
-    
+
 }
 
 
@@ -3008,15 +3035,15 @@ public object FfiConverterTypeCore: FfiConverter<Core, Long> {
  */
 data class AccountSummary (
     var `name`: kotlin.String
-    , 
+    ,
     var `username`: kotlin.String?
-    
+
 ){
-    
 
-    
 
-    
+
+
+
     companion object
 }
 
@@ -3057,26 +3084,26 @@ data class CatalogFacts (
      * or empty when none is installed or its record cannot be read.
      */
     var `origin`: kotlin.String
-    , 
+    ,
     var `sets`: kotlin.ULong
-    , 
+    ,
     var `posters`: kotlin.ULong
-    , 
+    ,
     var `schema`: kotlin.UInt
-    , 
+    ,
     /**
      * Seconds since the epoch when the installed catalogue was pushed,
      * read from the installed version's own name. `None` when nothing is
      * installed, or the name cannot be read.
      */
     var `publishedAt`: kotlin.Long?
-    
+
 ){
-    
 
-    
 
-    
+
+
+
     companion object
 }
 
@@ -3123,37 +3150,37 @@ public object FfiConverterTypeCatalogFacts: FfiConverterRustBuffer<CatalogFacts>
  */
 data class FetchReport (
     var `postersFetched`: kotlin.UInt
-    , 
+    ,
     var `postersAlreadyHeld`: kotlin.UInt
-    , 
+    ,
     var `detailsRecorded`: kotlin.UInt
-    , 
+    ,
     /**
      * Titles something already describes — the index's own row, or one an
      * earlier run on this device fetched. Left alone for the same reason a
      * poster already held is not downloaded again.
      */
     var `detailsAlreadyKnown`: kotlin.UInt
-    , 
+    ,
     /**
      * Titles the provider numbers nothing of, so neither half could be
      * asked. A course is one of these, not a failure.
      */
     var `noProviderId`: kotlin.UInt
-    , 
+    ,
     /**
      * Titles this run could not finish: the provider would not describe
      * them, or their artwork would not download. One title that lost both
      * is counted once, because these are titles.
      */
     var `failed`: kotlin.UInt
-    
+
 ){
-    
 
-    
 
-    
+
+
+
     companion object
 }
 
@@ -3203,15 +3230,15 @@ public object FfiConverterTypeFetchReport: FfiConverterRustBuffer<FetchReport> {
  */
 data class LibraryChoice (
     var `handle`: kotlin.String
-    , 
+    ,
     var `title`: kotlin.String
-    
+
 ){
-    
 
-    
 
-    
+
+
+
     companion object
 }
 
@@ -3241,17 +3268,17 @@ public object FfiConverterTypeLibraryChoice: FfiConverterRustBuffer<LibraryChoic
 
 data class ListRow (
     var `id`: kotlin.String
-    , 
+    ,
     var `name`: kotlin.String
-    , 
+    ,
     var `items`: List<kotlin.String>
-    
+
 ){
-    
 
-    
 
-    
+
+
+
     companion object
 }
 
@@ -3287,17 +3314,17 @@ public object FfiConverterTypeListRow: FfiConverterRustBuffer<ListRow> {
  */
 data class PreferenceRow (
     var `scope`: kotlin.String
-    , 
+    ,
     var `name`: kotlin.String
-    , 
+    ,
     var `value`: kotlin.String
-    
+
 ){
-    
 
-    
 
-    
+
+
+
     companion object
 }
 
@@ -3330,15 +3357,22 @@ public object FfiConverterTypePreferenceRow: FfiConverterRustBuffer<PreferenceRo
 
 data class Profile (
     var `id`: kotlin.String
-    , 
+    ,
     var `name`: kotlin.String
-    
+    ,
+    /**
+     * Sees only titles rated FSK 12 or under, or marked for Kids by hand.
+     * Defaulted in the generated Kotlin (uniffi 0.32 supports field
+     * defaults), so existing `Profile(id, name)` call sites keep compiling.
+     */
+    var `kids`: kotlin.Boolean = false
+
 ){
-    
 
-    
 
-    
+
+
+
     companion object
 }
 
@@ -3350,17 +3384,20 @@ public object FfiConverterTypeProfile: FfiConverterRustBuffer<Profile> {
         return Profile(
             FfiConverterString.read(buf),
             FfiConverterString.read(buf),
+            FfiConverterBoolean.read(buf),
         )
     }
 
     override fun allocationSize(value: Profile) = (
             FfiConverterString.allocationSize(value.`id`) +
-            FfiConverterString.allocationSize(value.`name`)
+            FfiConverterString.allocationSize(value.`name`) +
+            FfiConverterBoolean.allocationSize(value.`kids`)
     )
 
     override fun write(value: Profile, buf: ByteBuffer) {
             FfiConverterString.write(value.`id`, buf)
             FfiConverterString.write(value.`name`, buf)
+            FfiConverterBoolean.write(value.`kids`, buf)
     }
 }
 
@@ -3374,19 +3411,19 @@ public object FfiConverterTypeProfile: FfiConverterRustBuffer<Profile> {
  */
 data class ProgressRow (
     var `setId`: kotlin.String
-    , 
+    ,
     var `at`: kotlin.Double
-    , 
+    ,
     var `duration`: kotlin.Double?
-    , 
+    ,
     var `updatedAt`: kotlin.Long
-    
+
 ){
-    
 
-    
 
-    
+
+
+
     companion object
 }
 
@@ -3428,22 +3465,22 @@ public object FfiConverterTypeProgressRow: FfiConverterRustBuffer<ProgressRow> {
  */
 data class SearchHit (
     var `setId`: kotlin.String
-    , 
+    ,
     /**
      * Which field this hit was found on: `"title"`, `"show"`, `"chap"`,
      * `"path"` or `"summary"` — the same words the web's `/api/search`
      * answers.
      */
     var `matched`: kotlin.String
-    , 
+    ,
     var `excerpt`: kotlin.String?
-    
+
 ){
-    
 
-    
 
-    
+
+
+
     companion object
 }
 
@@ -3480,85 +3517,85 @@ public object FfiConverterTypeSearchHit: FfiConverterRustBuffer<SearchHit> {
  */
 data class SetSummary (
     var `setId`: kotlin.String
-    , 
+    ,
     var `kind`: kotlin.String
-    , 
+    ,
     var `title`: kotlin.String?
-    , 
+    ,
     var `show`: kotlin.String?
-    , 
+    ,
     var `chap`: kotlin.String?
-    , 
+    ,
     /**
      * The folder trail inside the collection, `a/b/c` from the top down.
      * A surface rebuilds a course's tree by splitting it; a set with none
      * is shelved under its chapter or its season instead.
      */
     var `path`: kotlin.String?
-    , 
+    ,
     var `season`: kotlin.UInt?
-    , 
+    ,
     var `episodeFirst`: kotlin.UInt?
-    , 
+    ,
     var `episodeLast`: kotlin.UInt?
-    , 
+    ,
     var `year`: kotlin.UInt?
-    , 
+    ,
     var `container`: kotlin.String
-    , 
+    ,
     var `vcodec`: kotlin.String?
-    , 
+    ,
     var `acodec`: kotlin.String?
-    , 
+    ,
     var `quality`: kotlin.String?
-    , 
+    ,
     var `hdr`: kotlin.String?
-    , 
+    ,
     var `duration`: kotlin.UInt?
-    , 
+    ,
     var `posterKey`: kotlin.String?
-    , 
+    ,
     var `total`: kotlin.ULong
-    , 
+    ,
     var `partCount`: kotlin.UInt
-    , 
+    ,
     /**
      * When this set arrived, as a Unix time. Named as the web player names
      * it, because two surfaces over one library should not need a
      * translation table for the same fact.
      */
     var `addedAt`: kotlin.Long
-    , 
+    ,
     /**
      * The age rating in the library's country (`"12"`), or `None` when the
      * title has none. A series is rated as a show, so every episode carries
      * its show's. Named as the web player names it.
      */
     var `fsk`: kotlin.String?
-    , 
+    ,
     /**
      * The provider's genres for this title. A series carries its show's,
      * the way `fsk` does — see `store::list_sets`, which attaches all four
      * of these by poster key rather than storing them on the row.
      */
     var `genres`: List<kotlin.String>
-    , 
+    ,
     /**
      * Languages this set has a subtitle track for, sorted.
      */
     var `subtitles`: List<kotlin.String>
-    , 
+    ,
     /**
      * Whether the index holds a plot summary for this set.
      */
     var `hasSummary`: kotlin.Boolean
-    
+
 ){
-    
 
-    
 
-    
+
+
+
     companion object
 }
 
@@ -3657,21 +3694,21 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
  */
 data class StateSnapshot (
     var `progress`: List<ProgressRow>
-    , 
+    ,
     var `watched`: List<WatchedRow>
-    , 
+    ,
     var `watchlist`: List<kotlin.String>
-    , 
+    ,
     var `kids`: List<kotlin.String>
-    , 
+    ,
     var `collections`: List<ListRow>
-    
+
 ){
-    
 
-    
 
-    
+
+
+
     companion object
 }
 
@@ -3713,23 +3750,23 @@ data class SyncOutcome (
      * Rows this device took in.
      */
     var `pulled`: kotlin.ULong
-    , 
+    ,
     /**
      * Whether a document was actually sent.
      */
     var `pushed`: kotlin.Boolean
-    , 
+    ,
     /**
      * What went wrong, if anything. Never a panic, never a `Result`.
      */
     var `failed`: kotlin.String?
-    
+
 ){
-    
 
-    
 
-    
+
+
+
     companion object
 }
 
@@ -3765,23 +3802,23 @@ public object FfiConverterTypeSyncOutcome: FfiConverterRustBuffer<SyncOutcome> {
  */
 data class TitleInfo (
     var `overview`: kotlin.String?
-    , 
+    ,
     var `tagline`: kotlin.String?
-    , 
+    ,
     var `genres`: kotlin.String?
-    , 
+    ,
     var `rating`: kotlin.Double?
-    , 
+    ,
     var `network`: kotlin.String?
-    , 
+    ,
     var `status`: kotlin.String?
-    
+
 ){
-    
 
-    
 
-    
+
+
+
     companion object
 }
 
@@ -3826,15 +3863,15 @@ public object FfiConverterTypeTitleInfo: FfiConverterRustBuffer<TitleInfo> {
  */
 data class WatchedRow (
     var `setId`: kotlin.String
-    , 
+    ,
     var `finishedAt`: kotlin.Long
-    
+
 ){
-    
 
-    
 
-    
+
+
+
     companion object
 }
 
@@ -3867,11 +3904,11 @@ public object FfiConverterTypeWatchedRow: FfiConverterRustBuffer<WatchedRow> {
  */
 
 enum class AuthOutcome {
-    
+
     DONE,
     PASSWORD_NEEDED;
 
-    
+
 
 
     companion object
@@ -3905,47 +3942,47 @@ public object FfiConverterTypeAuthOutcome: FfiConverterRustBuffer<AuthOutcome> {
  * Every error this surface can hand to Kotlin.
  */
 sealed class CoreException: kotlin.Exception() {
-    
+
     class Network(
-        
+
         val v1: kotlin.String
         ) : CoreException() {
         override val message
             get() = "v1=${ v1 }"
     }
-    
+
     class NotAuthorized(
-        
+
         val v1: kotlin.String
         ) : CoreException() {
         override val message
             get() = "v1=${ v1 }"
     }
-    
+
     class NotFound(
-        
+
         val v1: kotlin.String
         ) : CoreException() {
         override val message
             get() = "v1=${ v1 }"
     }
-    
+
     class Cipher(
-        
+
         val v1: kotlin.String
         ) : CoreException() {
         override val message
             get() = "v1=${ v1 }"
     }
-    
+
     class Io(
-        
+
         val v1: kotlin.String
         ) : CoreException() {
         override val message
             get() = "v1=${ v1 }"
     }
-    
+
     /**
      * The chosen channel does not hold one readable index. Its own variant
      * because it is neither a network fault nor a missing file: the channel
@@ -3953,22 +3990,22 @@ sealed class CoreException: kotlin.Exception() {
      * a person can go and fix.
      */
     class Library(
-        
+
         val v1: kotlin.String
         ) : CoreException() {
         override val message
             get() = "v1=${ v1 }"
     }
-    
 
-    
+
+
 
 
     companion object ErrorHandler : UniffiRustCallStatusErrorHandler<CoreException> {
         override fun lift(error_buf: RustBuffer.ByValue): CoreException = FfiConverterTypeCoreError.lift(error_buf)
     }
 
-    
+
 }
 
 /**
@@ -3976,7 +4013,7 @@ sealed class CoreException: kotlin.Exception() {
  */
 public object FfiConverterTypeCoreError : FfiConverterRustBuffer<CoreException> {
     override fun read(buf: ByteBuffer): CoreException {
-        
+
 
         return when(buf.getInt()) {
             1 -> CoreException.Network(
@@ -4077,11 +4114,11 @@ public object FfiConverterTypeCoreError : FfiConverterRustBuffer<CoreException> 
 
 
 enum class LibraryEvent {
-    
+
     STATE,
     INDEX;
 
-    
+
 
 
     companion object

@@ -62,7 +62,7 @@ function trailOf(set) {
 }
 
 /** Finds or creates the child of `parent` called `name`. */
-function descend(parent, name, season) {
+function getOrCreateChildDivision(parent, name, season) {
   let node = parent.children.find((child) => child.title === name);
   if (!node) {
     node = { title: name, season, items: [], children: [] };
@@ -84,10 +84,8 @@ function sortDivision(division) {
 /**
  * Every division under these, each before the ones beneath it.
  *
- * The one descent through the tree. Counting sets, counting the folders that
- * hold them and finding the first of them are the same walk with different
- * questions asked of it, and answering them separately meant three places to
- * change the day a division earns a reason to be skipped.
+ * Counts do not depend on display order, so they can share this simple walk.
+ * Playback uses playableInOrder to interleave folders and lessons by number.
  */
 function* walk(divisions) {
   for (const division of divisions) {
@@ -103,11 +101,7 @@ function* walk(divisions) {
  * course whose first folder is its workbooks would otherwise open a PDF.
  */
 export function firstItemOf(divisions) {
-  for (const division of walk(divisions)) {
-    const playable = division.items.find((set) => !isDocument(set));
-    if (playable) return playable;
-  }
-  return null;
+  return playableInOrder({ items: [], children: divisions }).next().value ?? null;
 }
 
 /**
@@ -186,7 +180,7 @@ export function levelEntries(level) {
       set,
       order: leadingNumber(set.episode),
     })),
-    ...level.children.map((division) => ({
+    ...(level.children ?? []).map((division) => ({
       kind: "folder",
       division,
       order: leadingNumber(division.title),
@@ -196,7 +190,7 @@ export function levelEntries(level) {
 }
 
 /**
- * Every set in a collection, in the order its pages walk them.
+ * Every playable set in a collection, in display order. Documents are excluded.
  *
  * One rule for a show and for a course, because `levelEntries` already covers
  * both: a season holds episodes and no folders, so its order is the episodes;
@@ -206,17 +200,16 @@ export function levelEntries(level) {
  * and to the list it came from.
  */
 export function flattenCollection(collection) {
-  const out = [];
-  const descend = (level) => {
-    for (const entry of levelEntries(level)) {
-      if (entry.kind === "lesson") out.push(entry.set);
-      // Skipped, not descended into: a document has nothing below it, and
-      // "next" means the next thing that plays.
-      else if (entry.kind === "folder") descend(entry.division);
-    }
-  };
-  descend({ items: [], children: collection.divisions });
-  return out;
+  return [...playableInOrder({ items: [], children: collection.divisions })];
+}
+
+/** Share display order while letting a first-item lookup stop at its first lesson. */
+function* playableInOrder(level) {
+  for (const entry of levelEntries(level)) {
+    if (entry.kind === "lesson") yield entry.set;
+    // Documents have nothing below them, and "next" means something that plays.
+    else if (entry.kind === "folder") yield* playableInOrder(entry.division);
+  }
 }
 
 /**
@@ -252,7 +245,7 @@ function collections(sets, fallbackName) {
 
     const { names, season } = trailOf(set);
     let node = byName.get(name);
-    for (const folder of names) node = descend(node, folder, season);
+    for (const folder of names) node = getOrCreateChildDivision(node, folder, season);
     node.items.push(set);
   }
 

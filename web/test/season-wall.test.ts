@@ -5,7 +5,7 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { hasSeasonWall, seasonNamed, seasonPlate } from "../public/lib/season-wall.js";
+import { hasSeasonWall, seasonNamed, seasonPlate } from "../public/lib/catalog/season-wall.js";
 
 const ep = (fields: Record<string, unknown>) => ({ kind: "ep", poster: null, seasonPoster: null, ...fields });
 const season = (title: string, items: unknown[]) => ({ title, season: null, items, children: [] });

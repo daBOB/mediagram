@@ -35,7 +35,11 @@ pub(super) fn js_number(value: Option<&Value>) -> f64 {
         Value::Number(n) => n.as_f64().unwrap_or(f64::NAN),
         Value::String(s) => {
             let trimmed = s.trim();
-            if trimmed.is_empty() { 0.0 } else { trimmed.parse::<f64>().unwrap_or(f64::NAN) }
+            if trimmed.is_empty() {
+                0.0
+            } else {
+                trimmed.parse::<f64>().unwrap_or(f64::NAN)
+            }
         }
         Value::Array(_) | Value::Object(_) => f64::NAN,
     }

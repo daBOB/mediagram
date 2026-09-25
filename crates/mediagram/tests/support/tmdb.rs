@@ -7,9 +7,9 @@ use std::path::Path;
 use std::rc::Rc;
 
 use anyhow::Result;
+use mediagram_tmdb::tmdb_client::TmdbApi;
 use metadata::prompt::Prompter;
 use metadata::resolve::ResolvedItem;
-use mediagram_tmdb::tmdb_client::TmdbApi;
 use mlib_spec::filename::Guess;
 use serde_json::Value;
 

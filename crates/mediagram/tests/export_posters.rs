@@ -4,9 +4,7 @@
 //! when it resolved each title.
 
 use mediagram_tmdb::poster_files::{already_held, download_into};
-use mediagram_tmdb::posters::{
-    PosterRef, poster_url, resolve_posters,
-};
+use mediagram_tmdb::posters::{PosterRef, poster_url, resolve_posters};
 use mediagram_tmdb::tmdb_client::TmdbApi;
 use mlib_spec::Kind;
 

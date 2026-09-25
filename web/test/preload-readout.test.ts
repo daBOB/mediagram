@@ -1,7 +1,7 @@
 /** Covers `preload-readout`: what the player says while it is filling up. */
 
 import { describe, expect, test } from "bun:test";
-import { bufferedAhead, preloadReadout } from "../public/lib/preload-readout.js";
+import { bufferedAhead, preloadReadout } from "../public/lib/playback/preload-readout.js";
 
 /** A stand-in for `TimeRanges`, which cannot be constructed. */
 const ranges = (...spans: [number, number][]) => ({

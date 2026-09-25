@@ -65,17 +65,12 @@ pub(super) fn list_sets(core: &Core) -> Result<Vec<SetSummary>, CoreError> {
         crate::catalog_assets::subtitle_languages(&conn).map_err(CoreError::io("reading subtitle languages"))?;
     let summarized = crate::catalog_assets::summaries(&conn).map_err(CoreError::io("reading which sets have a summary"))?;
 
-    // The index's own genres first; for a title whose index row has none —
-    // absent altogether, or present with the genres column empty — whatever
-    // this device fetched fills in instead. Coarser-grained than
-    // `enrich::details::title_info`, which picks an index row whole the
-    // moment one exists and never opens the fetched sidecar for it: a genre
-    // shelf can therefore show a fetched genre list for a title whose
-    // overview still comes straight from the index. Deliberate difference
-    // from the web player, which has no device-side sidecar and reads the
-    // index alone: a title this device fetched but the index says nothing
-    // about should file the same as one the index does describe, not
-    // disappear off every genre shelf.
+    // The index's own genres first; where its row has none, whatever this
+    // device fetched fills in. Coarser than `enrich::details::title_info`,
+    // which takes an index row whole, so a genre shelf may show fetched
+    // genres beside an index overview. A deliberate difference from the web
+    // player, which has no device-side sidecar: a title this device fetched
+    // but the index says nothing about still files onto its genre shelves.
     let mut genres = crate::shows::genres(&conn).map_err(CoreError::io("reading genres"))?;
     if let Some(fetched) = super::enrich::details::open_fetched_ro(core) {
         // Tolerant, unlike the index read above: this store is only ever a
@@ -122,7 +117,9 @@ pub(super) fn poster_path(core: &Core, poster_key: String) -> Option<String> {
         return Some(in_version.display().to_string());
     }
     let in_artwork = artwork_dir(core).join(&name);
-    in_artwork.exists().then(|| in_artwork.display().to_string())
+    in_artwork
+        .exists()
+        .then(|| in_artwork.display().to_string())
 }
 
 pub(super) fn total_size(core: &Core, set_id: String) -> Result<u64, CoreError> {
@@ -178,7 +175,11 @@ pub(super) fn facts(core: &Core) -> dto::CatalogFacts {
     // for.
     let published_at = std::fs::read_link(&dir)
         .ok()
-        .and_then(|target| target.file_name().map(|name| name.to_string_lossy().into_owned()))
+        .and_then(|target| {
+            target
+                .file_name()
+                .map(|name| name.to_string_lossy().into_owned())
+        })
         .as_deref()
         .and_then(pushed_at_of);
 

@@ -19,27 +19,27 @@ import kotlin.test.assertTrue
  * it must not leave the device in a state a first run could never produce.
  */
 class SetupRecoveryTest {
-
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun startingOverClearsTheIdentityTheLibraryAndTheSessionTogether() = runTest {
-        val fixture = SetupFixture()
-        fixture.signedIn()
-        fixture.library.write("a1b2c3")
-        val vm = fixture.viewModel()
+    fun startingOverClearsTheIdentityTheLibraryAndTheSessionTogether() =
+        runTest {
+            val fixture = SetupFixture()
+            fixture.signedIn()
+            fixture.library.write("a1b2c3")
+            val vm = fixture.viewModel()
 
-        vm.startOver()
+            vm.startOver()
 
-        assertNull(fixture.telegram.read())
-        assertNull(fixture.library.read())
-        assertTrue(
-            (fixture.storage as InMemoryCoreStorage).cleared,
-            "forgetting the credentials leaves a working session behind on its own",
-        )
-        assertIs<SetupUiState.NeedsApplication>(vm.state.value)
-    }
+            assertNull(fixture.telegram.read())
+            assertNull(fixture.library.read())
+            assertTrue(
+                (fixture.storage as InMemoryCoreStorage).cleared,
+                "forgetting the credentials leaves a working session behind on its own",
+            )
+            assertIs<SetupUiState.NeedsApplication>(vm.state.value)
+        }
 
     /**
      * Storage refusing is not a channel refusing. A keystore that will not
@@ -48,18 +48,20 @@ class SetupRecoveryTest {
      * on the list, where every further pick would fail the same way.
      */
     @Test
-    fun aChoiceThatCannotBeStoredOffersTheWayOutRatherThanThePickerAgain() = runTest {
-        val fixture = SetupFixture(
-            core = FakeCore(libraries = listOf(choice("Films", handle = "h-films"))),
-            library = RefusingLibrarySettings(),
-        )
-        fixture.signedIn()
-        val vm = fixture.viewModel()
+    fun aChoiceThatCannotBeStoredOffersTheWayOutRatherThanThePickerAgain() =
+        runTest {
+            val fixture =
+                SetupFixture(
+                    core = FakeCore(libraries = listOf(choice("Films", handle = "h-films"))),
+                    library = RefusingLibrarySettings(),
+                )
+            fixture.signedIn()
+            val vm = fixture.viewModel()
 
-        vm.chooseLibrary("h-films")
+            vm.chooseLibrary("h-films")
 
-        assertIs<SetupUiState.Failed>(vm.state.value)
-    }
+            assertIs<SetupUiState.Failed>(vm.state.value)
+        }
 
     /**
      * A Telegram auth key binds to the datacentre, not to the api id it was
@@ -69,18 +71,19 @@ class SetupRecoveryTest {
      * that could not finish must leave both halves standing.
      */
     @Test
-    fun aResetThatCannotDeleteTheSessionKeepsTheIdentityAndSaysSo() = runTest {
-        val fixture = SetupFixture(storage = InMemoryCoreStorage(failWith = IllegalStateException("read-only")))
-        fixture.signedIn()
-        fixture.library.write("a1b2c3")
-        val vm = fixture.viewModel()
+    fun aResetThatCannotDeleteTheSessionKeepsTheIdentityAndSaysSo() =
+        runTest {
+            val fixture = SetupFixture(storage = InMemoryCoreStorage(failWith = IllegalStateException("read-only")))
+            fixture.signedIn()
+            fixture.library.write("a1b2c3")
+            val vm = fixture.viewModel()
 
-        vm.startOver()
+            vm.startOver()
 
-        assertNotNull(fixture.telegram.read(), "the identity must not be dropped while its session survives")
-        assertNotNull(fixture.library.read())
-        assertIs<SetupUiState.Failed>(vm.state.value)
-    }
+            assertNotNull(fixture.telegram.read(), "the identity must not be dropped while its session survives")
+            assertNotNull(fixture.library.read())
+            assertIs<SetupUiState.Failed>(vm.state.value)
+        }
 
     /**
      * The keystore refuses after a restore onto another device. Every
@@ -89,11 +92,12 @@ class SetupRecoveryTest {
      * crash on every launch with no screen reached to offer a way out.
      */
     @Test
-    fun storageThatWillNotAnswerLandsOnAFailureRatherThanASpinner() = runTest {
-        val vm = SetupFixture(telegram = RefusingTelegramSettings()).viewModel()
+    fun storageThatWillNotAnswerLandsOnAFailureRatherThanASpinner() =
+        runTest {
+            val vm = SetupFixture(telegram = RefusingTelegramSettings()).viewModel()
 
-        assertIs<SetupUiState.Failed>(vm.state.value)
-    }
+            assertIs<SetupUiState.Failed>(vm.state.value)
+        }
 
     /**
      * An identity written before the core it produces is proven to build
@@ -102,13 +106,14 @@ class SetupRecoveryTest {
      * could clear it.
      */
     @Test
-    fun anIdentityThatCannotBuildACoreIsNotLeftBehindToFailAgain() = runTest {
-        val fixture = SetupFixture(build = { error("the native core would not load") })
-        val vm = fixture.viewModel()
+    fun anIdentityThatCannotBuildACoreIsNotLeftBehindToFailAgain() =
+        runTest {
+            val fixture = SetupFixture(build = { error("the native core would not load") })
+            val vm = fixture.viewModel()
 
-        vm.submitApplication("1234", WELL_FORMED_HASH)
+            vm.submitApplication("1234", WELL_FORMED_HASH)
 
-        assertIs<SetupUiState.Failed>(vm.state.value)
-        assertNull(fixture.telegram.read(), "a stored identity that always fails is a crash loop with no way out")
-    }
+            assertIs<SetupUiState.Failed>(vm.state.value)
+            assertNull(fixture.telegram.read(), "a stored identity that always fails is a crash loop with no way out")
+        }
 }

@@ -25,10 +25,6 @@ pub async fn run(cfg: &Config, addr: Option<String>) -> Result<()> {
     let index = db::open_read_only(&data_dir, "serve")?;
     let playable = catalog::list_playable(&index)?.len();
 
-    let tg = Tg::connect(cfg).await?;
-    println!("channel: {} ({})", tg.channel_title, tg.chat_id());
-    let source = TelegramSource::new(tg.client.clone(), tg.channel);
-
     let addr = addr
         .or_else(|| cfg.serve_addr.clone())
         .unwrap_or_else(|| DEFAULT_ADDR.to_string());
@@ -36,6 +32,10 @@ pub async fn run(cfg: &Config, addr: Option<String>) -> Result<()> {
         .await
         .with_context(|| format!("binding {addr}"))?;
     let bound = listener.local_addr().context("reading the bound address")?;
+    let tg = Tg::connect(cfg).await?;
+    println!("channel: {} ({})", tg.channel_title, tg.chat_id());
+    let source = TelegramSource::new(tg.client.clone(), tg.channel);
+
     if !bound.ip().is_loopback() {
         tracing::warn!(
             "serving on {bound}, which is reachable from the network: this API has no authentication"

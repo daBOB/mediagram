@@ -60,7 +60,7 @@ pub fn is_held(data_dir: &Path) -> bool {
 
 fn open(path: &Path) -> Result<File> {
     if let Some(dir) = path.parent() {
-        crate::paths::private_dir(dir)?;
+        crate::paths::ensure_private_dir(dir)?;
     }
     OpenOptions::new()
         .create(true)
@@ -102,7 +102,9 @@ mod tests {
     #[tokio::test]
     async fn a_second_holder_waits_and_is_told_it_is_waiting() {
         let dir = tempfile::tempdir().unwrap();
-        let held = acquire(dir.path(), || panic!("nothing else holds it")).await.unwrap();
+        let held = acquire(dir.path(), || panic!("nothing else holds it"))
+            .await
+            .unwrap();
         assert!(is_held(dir.path()));
 
         // Nobody can take it while it is held, and letting go frees it.

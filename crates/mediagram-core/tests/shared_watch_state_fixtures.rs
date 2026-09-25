@@ -22,7 +22,9 @@ use serde::de::DeserializeOwned;
 const FIXTURES: &str = "../../web/test/fixtures/watch-state";
 
 fn fixture_path(file: &str) -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join(FIXTURES).join(file)
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join(FIXTURES)
+        .join(file)
 }
 
 /// Loads one fixture file, or `None` if the web checkout is not present —
@@ -46,10 +48,17 @@ struct RecordParseCase {
 
 #[test]
 fn record_parse_fixtures_match_the_web() {
-    let Some(cases) = load::<RecordParseCase>("record-parse.json") else { return };
+    let Some(cases) = load::<RecordParseCase>("record-parse.json") else {
+        return;
+    };
     assert!(!cases.is_empty(), "record-parse.json holds no cases");
     for case in cases {
-        assert_eq!(parse_record(&case.input), case.expect, "case: {}", case.name);
+        assert_eq!(
+            parse_record(&case.input),
+            case.expect,
+            "case: {}",
+            case.name
+        );
     }
 }
 
@@ -79,7 +88,9 @@ fn canonical(mut state: MergedState) -> MergedState {
 }
 
 fn run_merge_fixture(file: &str) {
-    let Some(cases) = load::<MergeCase>(file) else { return };
+    let Some(cases) = load::<MergeCase>(file) else {
+        return;
+    };
     assert!(!cases.is_empty(), "{file} holds no cases");
     for case in cases {
         let expect = canonical(case.expect);

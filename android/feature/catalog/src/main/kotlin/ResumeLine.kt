@@ -1,9 +1,11 @@
 package catalog
 
-import kotlin.math.roundToLong
+import model.Kind
+import model.MediaSet
 import model.Progress
+import kotlin.math.roundToLong
 
-/**
+/*
  * The two lines a set card says about a viewer's own place in it, ported
  * from `web/public/lib/format.js`'s `resumeLine` and `clockTime` — the web
  * is authoritative, and these exist to agree with it rather than redefine

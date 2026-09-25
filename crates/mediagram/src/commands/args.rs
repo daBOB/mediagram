@@ -189,7 +189,7 @@ pub struct AddShowArgs {
     /// Do not push the index when the show is done
     #[arg(long)]
     pub no_push: bool,
-    /// Skip the confirmation when files would be converted on every play
+    /// Skip confirmation for playback warnings or unknown compatibility
     #[arg(long)]
     pub yes: bool,
     /// Delete each episode once every part of it is in the channel, so a

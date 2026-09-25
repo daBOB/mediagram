@@ -15,7 +15,12 @@ const val HOME_ROW_LIMIT = 6
  * the row is a window onto, for the heading: the plates on screen cannot say
  * it on their own.
  */
-data class HomeRow(val title: String, val seeAll: String?, val total: Int, val content: RowContent)
+data class HomeRow(
+    val title: String,
+    val seeAll: String?,
+    val total: Int,
+    val content: RowContent,
+)
 
 /**
  * What a row draws. A show or a course arriving on Latest is a card for the
@@ -24,8 +29,13 @@ data class HomeRow(val title: String, val seeAll: String?, val total: Int, val c
  * rather than bending [Entry.Film] over an episode that is not a film.
  */
 sealed interface RowContent {
-    data class Entries(val entries: List<Entry>) : RowContent
-    data class Sets(val cards: List<SetCard>) : RowContent
+    data class Entries(
+        val entries: List<Entry>,
+    ) : RowContent
+
+    data class Sets(
+        val cards: List<SetCard>,
+    ) : RowContent
 }
 
 /** One set on Continue or Next up: what to play, what to say under it, and its own mark. */
@@ -78,12 +88,13 @@ fun homeRowsOf(shelves: List<Shelf>, watch: WatchSnapshot, heldIds: Set<String> 
     }
 
     for (shelf in shelves) {
-        rows += HomeRow(
-            title = latestTitleFor(shelf.title),
-            seeAll = shelf.title,
-            total = shelf.entries.size,
-            content = RowContent.Entries(newestFirst(shelf.entries, limit)),
-        )
+        rows +=
+            HomeRow(
+                title = latestTitleFor(shelf.title),
+                seeAll = shelf.title,
+                total = shelf.entries.size,
+                content = RowContent.Entries(newestFirst(shelf.entries, limit)),
+            )
     }
 
     return rows
@@ -112,6 +123,7 @@ internal fun indexById(shelves: List<Shelf>): Map<String, MediaSet> {
         for (entry in shelf.entries) {
             when (entry) {
                 is Entry.Film -> byId[entry.set.setId] = entry.set
+
                 is Entry.Collection -> for (division in entry.divisions.asSequence().flatMap { it.walk() }) {
                     for (set in division.items) byId[set.setId] = set
                 }
@@ -129,16 +141,19 @@ internal fun indexById(shelves: List<Shelf>): Map<String, MediaSet> {
  * "Movies" and "Tutorials", and this keeps that literal wording rather than
  * deriving one that only agrees with the masthead by coincidence.
  */
-private fun latestTitleFor(shelf: String): String = when (shelf) {
-    "Movies" -> "Latest films"
-    "Series" -> "Latest series"
-    "Tutorials" -> "Latest courses"
-    else -> "Latest $shelf"
-}
+private fun latestTitleFor(shelf: String): String =
+    when (shelf) {
+        "Movies" -> "Latest films"
+        "Series" -> "Latest series"
+        "Tutorials" -> "Latest courses"
+        else -> "Latest $shelf"
+    }
 
 /** Newest first, on a copy — the shelf keeps the order it was built in. */
-private fun newestFirst(entries: List<Entry>, limit: Int): List<Entry> =
-    entries.sortedByDescending(::arrivedAt).take(limit)
+private fun newestFirst(
+    entries: List<Entry>,
+    limit: Int,
+): List<Entry> = entries.sortedByDescending(::arrivedAt).take(limit)
 
 /**
  * When an entry last gained something.
@@ -147,12 +162,18 @@ private fun newestFirst(entries: List<Entry>, limit: Int): List<Entry> =
  * being uploaded keeps its place on the row, and one finished two years ago
  * does not hold the top of it for having been started recently.
  */
-private fun arrivedAt(entry: Entry): Long = when (entry) {
-    is Entry.Film -> entry.set.addedAt
-    is Entry.Collection -> entry.divisions
-        .asSequence()
-        .flatMap { it.walk() }
-        .flatMap { it.items.asSequence() }
-        .maxOfOrNull(MediaSet::addedAt)
-        ?: 0
-}
+private fun arrivedAt(entry: Entry): Long =
+    when (entry) {
+        is Entry.Film -> {
+            entry.set.addedAt
+        }
+
+        is Entry.Collection -> {
+            entry.divisions
+                .asSequence()
+                .flatMap { it.walk() }
+                .flatMap { it.items.asSequence() }
+                .maxOfOrNull(MediaSet::addedAt)
+                ?: 0
+        }
+    }

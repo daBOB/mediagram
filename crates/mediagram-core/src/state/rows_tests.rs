@@ -3,7 +3,10 @@ use crate::state::StateDb;
 use crate::state::profiles;
 
 fn profile(db: &StateDb) -> String {
-    db.with(|conn| profiles::create(conn, "André")).unwrap().unwrap().id
+    db.with(|conn| profiles::create(conn, "André", false))
+        .unwrap()
+        .unwrap()
+        .id
 }
 
 #[test]
@@ -11,7 +14,8 @@ fn setting_progress_round_trips() {
     let dir = tempfile::tempdir().unwrap();
     let db = StateDb::new(dir.path().to_path_buf());
     let id = profile(&db);
-    db.with(|conn| set_progress(conn, &id, "01A", 742.0, Some(1204.0))).unwrap();
+    db.with(|conn| set_progress(conn, &id, "01A", 742.0, Some(1204.0)))
+        .unwrap();
     let rows = db.with(|conn| progress_for(conn, &id)).unwrap();
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0].set_id, "01A");
@@ -25,7 +29,8 @@ fn finishing_a_title_clears_its_position() {
     let dir = tempfile::tempdir().unwrap();
     let db = StateDb::new(dir.path().to_path_buf());
     let id = profile(&db);
-    db.with(|conn| set_progress(conn, &id, "01A", 742.0, None)).unwrap();
+    db.with(|conn| set_progress(conn, &id, "01A", 742.0, None))
+        .unwrap();
 
     db.with(|conn| set_watched(conn, &id, "01A", true)).unwrap();
 
@@ -38,9 +43,14 @@ fn adding_to_the_watchlist_twice_is_not_two_rows() {
     let dir = tempfile::tempdir().unwrap();
     let db = StateDb::new(dir.path().to_path_buf());
     let id = profile(&db);
-    db.with(|conn| set_watchlisted(conn, &id, "01A", true)).unwrap();
-    db.with(|conn| set_watchlisted(conn, &id, "01A", true)).unwrap();
-    assert_eq!(db.with(|conn| watchlist_for(conn, &id)).unwrap(), vec!["01A".to_string()]);
+    db.with(|conn| set_watchlisted(conn, &id, "01A", true))
+        .unwrap();
+    db.with(|conn| set_watchlisted(conn, &id, "01A", true))
+        .unwrap();
+    assert_eq!(
+        db.with(|conn| watchlist_for(conn, &id)).unwrap(),
+        vec!["01A".to_string()]
+    );
 }
 
 /// Kids has no profile: two viewers on one player must see the same mark.

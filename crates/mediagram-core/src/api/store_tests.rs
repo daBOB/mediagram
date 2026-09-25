@@ -79,8 +79,13 @@ fn a_packages_own_poster_wins_over_a_fetched_one() {
     write_poster(&current_dir(&core).join("posters"), key);
     write_poster(&artwork_dir(&core), key);
 
-    let expected = current_dir(&core).join("posters").join(format!("{key}.jpg"));
-    assert_eq!(poster_path(&core, key.into()), Some(expected.display().to_string()));
+    let expected = current_dir(&core)
+        .join("posters")
+        .join(format!("{key}.jpg"));
+    assert_eq!(
+        poster_path(&core, key.into()),
+        Some(expected.display().to_string())
+    );
 }
 
 /// One title held in both places is one poster, not two. The System

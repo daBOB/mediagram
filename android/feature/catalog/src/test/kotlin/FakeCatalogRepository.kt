@@ -1,6 +1,7 @@
 package catalog
 
 import data.CatalogRepository
+import kotlinx.coroutines.CompletableDeferred
 import model.Kind
 import model.MediaSet
 import uniffi.mediagram_core.SearchHit
@@ -17,18 +18,24 @@ class FakeCatalogRepository(
     private val searchHits: List<SearchHit> = emptyList(),
     /** What [search] raises instead, or `null` to answer [searchHits] as normal. */
     private val searchThrows: Throwable? = null,
+    /** Sets given whole, for tests that need a rating or a particular id. */
+    private val given: List<MediaSet> = emptyList(),
 ) : CatalogRepository {
 
     /** Every query [search] was asked, in order — a test's way of seeing the debounce work. */
     val searches: MutableList<String> = mutableListOf()
-
     private val allSets: List<MediaSet> =
-        (0 until movies).map { fakeSet(Kind.MOVIE, "movie-$it") } +
+        given +
+            (0 until movies).map { fakeSet(Kind.MOVIE, "movie-$it") } +
             (0 until episodes).map { fakeSet(Kind.EPISODE, "episode-$it") } +
             (0 until tutorials).map { fakeSet(Kind.TUTORIAL, "tutorial-$it") }
 
     /** Whether a fetch has laid artwork down: from then on every set has a poster. */
     var postersArrived: Boolean = false
+    var refreshGate: CompletableDeferred<Unit>? = null
+    var readFailure: Exception? = null
+    var reads: Int = 0
+        private set
 
     /** How many times the channel has been asked, which is what a reload has to move. */
     var refreshes: Int = 0
@@ -36,6 +43,7 @@ class FakeCatalogRepository(
 
     override suspend fun refresh(): Result<Int> {
         refreshes += 1
+        refreshGate?.await()
         return if (refreshFails) {
             Result.failure(IllegalStateException("refresh failed"))
         } else {
@@ -43,10 +51,14 @@ class FakeCatalogRepository(
         }
     }
 
-    override suspend fun sets(): List<MediaSet> = when {
-        !onDisk -> emptyList()
-        postersArrived -> allSets.map { it.copy(posterPath = "/artwork/${it.setId}.jpg") }
-        else -> allSets
+    override suspend fun sets(): List<MediaSet> {
+        reads += 1
+        readFailure?.let { throw it }
+        return when {
+            !onDisk -> emptyList()
+            postersArrived -> allSets.map { it.copy(posterPath = "/artwork/${it.setId}.jpg") }
+            else -> allSets
+        }
     }
 
     override suspend fun search(query: String): List<SearchHit> {
@@ -62,7 +74,10 @@ class FakeCatalogRepository(
     override suspend fun posterPath(posterKey: String): String? = null
 }
 
-private fun fakeSet(kind: Kind, id: String) = MediaSet(
+internal fun fakeSet(
+    kind: Kind,
+    id: String,
+) = MediaSet(
     setId = id,
     kind = kind,
     title = id,

@@ -1,6 +1,6 @@
 {
   "name": "mediagram-player",
-  "version": "0.52.0",
+  "version": "0.53.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -10,6 +10,7 @@
     "start": "bun run src/index.ts",
     "dev": "MEDIAGRAM_PLAYER_ADDR=0.0.0.0:8770 bun --watch run src/index.ts",
     "test": "bun test",
+    "lint": "eslint public --max-warnings 0",
     "login": "bun run src/login.ts"
   },
   "dependencies": {
@@ -17,6 +18,9 @@
     "teleproto": "1.229.0"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@eslint/js": "^10.0.1",
+    "@types/bun": "latest",
+    "eslint": "^10.11.0",
+    "globals": "^17.12.0"
   }
 }

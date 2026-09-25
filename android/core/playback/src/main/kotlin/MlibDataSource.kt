@@ -22,7 +22,13 @@ import java.io.IOException
  * [Uri.Builder] rather than string interpolation so a `setId` containing
  * characters that would otherwise break the URI is encoded correctly.
  */
-fun setUri(setId: String): Uri = Uri.Builder().scheme("mlib").authority("set").appendPath(setId).build()
+fun setUri(setId: String): Uri =
+    Uri
+        .Builder()
+        .scheme("mlib")
+        .authority("set")
+        .appendPath(setId)
+        .build()
 
 /**
  * Reads one set's bytes through [CoreClient] for ExoPlayer. Offset-to-part
@@ -35,7 +41,10 @@ fun setUri(setId: String): Uri = Uri.Builder().scheme("mlib").authority("set").a
  * loader understands, rather than reading through whatever core happened to
  * be current when the player was built.
  */
-class MlibDataSource(private val core: CoreClient?, private val counters: PlaybackCounters) : BaseDataSource(true) {
+class MlibDataSource(
+    private val core: CoreClient?,
+    private val counters: PlaybackCounters,
+) : BaseDataSource(true) {
     private var setId: String? = null
     private var position = 0L
     private var remaining = 0L
@@ -51,11 +60,12 @@ class MlibDataSource(private val core: CoreClient?, private val counters: Playba
         val id = dataSpec.uri.lastPathSegment ?: throw IOException("no set in the given URI")
         // Blocking, like fetch() below: ExoPlayer calls open() on its loader
         // thread and expects it to block until the size is known.
-        val total = try {
-            runBlocking { client.totalSize(id) }
-        } catch (e: CoreException) {
-            throw IOException("could not read the set's size", e)
-        }
+        val total =
+            try {
+                runBlocking { client.totalSize(id) }
+            } catch (e: CoreException) {
+                throw IOException("could not read the set's size", e)
+            }
         if (dataSpec.position > total) {
             throw DataSourceException(DataSourceException.POSITION_OUT_OF_RANGE)
         }
@@ -85,7 +95,11 @@ class MlibDataSource(private val core: CoreClient?, private val counters: Playba
      * time. It is a whole number of Telegram's chunks, so nothing is
      * downloaded that is not kept.
      */
-    override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
+    override fun read(
+        buffer: ByteArray,
+        offset: Int,
+        length: Int,
+    ): Int {
         if (length == 0) return 0
         if (remaining == 0L) return C.RESULT_END_OF_INPUT
         if (handedOut == held.size) {

@@ -8,13 +8,13 @@ use tokio::process::Command;
 
 use super::Candidate;
 use super::report::truncate;
-use crate::paths::file_name;
 use crate::commands::args::PrepareArgs;
+use crate::media::ffmpeg_progress;
 use crate::media::prepare::check::{Measured, check_prepared};
 use crate::media::prepare::paths::{mirrored, working_path};
 use crate::media::prepare::plan::PreparePlan;
-use crate::media::streams::{self, StreamKind};
-use crate::media::{direct_play, ffmpeg_progress};
+use crate::media::streams;
+use crate::paths::file_name;
 
 /// Rewrites every selected file in turn, reporting each, and fails the run
 /// if any could not be prepared.
@@ -26,7 +26,16 @@ pub(super) async fn rewrite_all(
     let mut rewritten = 0usize;
     let mut failed = 0usize;
     let mut freed = 0u64;
-    for (index, Candidate { file, size, duration, plan }) in todo.iter().enumerate() {
+    for (
+        index,
+        Candidate {
+            file,
+            size,
+            duration,
+            plan,
+        },
+    ) in todo.iter().enumerate()
+    {
         let dest = match &args.out {
             Some(root) => Some(mirrored(file, &args.path, root, args.mp4)?),
             None => None,
@@ -113,7 +122,14 @@ async fn rewrite(
     // go to stderr and are suppressed here anyway, and a key=value stream on
     // stdout is something [`ffmpeg_progress`] can read without guessing.
     command.args([
-        "-nostdin", "-v", "error", "-nostats", "-progress", "pipe:1", "-y", "-i",
+        "-nostdin",
+        "-v",
+        "error",
+        "-nostats",
+        "-progress",
+        "pipe:1",
+        "-y",
+        "-i",
     ]);
     command.arg(source);
     command.args(plan.map_args());
@@ -124,7 +140,7 @@ async fn rewrite(
         // nothing. `-f mp4` is explicit because the working name ends in
         // `.prepared`, which tells ffmpeg nothing about the format wanted.
         command.args(["-c:v", "copy"]);
-        if audio_needs_encoding(plan) {
+        if plan.audio_needs_encoding() {
             command.args(["-c:a", "aac", "-b:a", "384k"]);
         } else {
             command.args(["-c:a", "copy"]);
@@ -181,19 +197,4 @@ async fn rewrite(
     std::fs::rename(&working, final_path)
         .with_context(|| format!("writing {}", final_path.display()))?;
     Ok(new_size)
-}
-
-/// Whether any audio track being kept is one a browser would refuse.
-///
-/// Asked of the tracks that survive the plan, not of the file: dropping the
-/// E-AC-3 commentary and keeping the AAC is a file that needs no encoding.
-fn audio_needs_encoding(plan: &PreparePlan) -> bool {
-    plan.keep
-        .iter()
-        .filter(|s| s.kind == StreamKind::Audio)
-        .any(|s| {
-            s.codec
-                .as_deref()
-                .is_none_or(|codec| !direct_play::known(&direct_play::AUDIO, codec))
-        })
 }

@@ -20,14 +20,16 @@ import { join } from "node:path";
  * A directory being measured is also being written to and reaped, so a file
  * that vanishes between the listing and the `stat` is ordinary rather than an
  * error: it is skipped, and the total is a reading taken at a moment.
+ * Other IO failures reject the reading so callers can retain a prior total.
  */
 export async function dirBytes(root: string): Promise<number> {
   let total = 0;
   let entries;
   try {
     entries = await readdir(root, { withFileTypes: true });
-  } catch {
-    return 0;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return 0;
+    throw error;
   }
 
   // Together rather than one after another: a two-hour conversion at two
@@ -40,9 +42,10 @@ export async function dirBytes(root: string): Promise<number> {
       if (entry.isDirectory()) return dirBytes(path);
       try {
         return (await stat(path)).size;
-      } catch {
+      } catch (error) {
         // Reaped between the listing and the stat.
-        return 0;
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") return 0;
+        throw error;
       }
     }),
   );

@@ -5,7 +5,12 @@
 use rusqlite::Connection;
 
 fn core_at(dir: &std::path::Path) -> std::sync::Arc<mediagram_core::api::Core> {
-    mediagram_core::api::Core::new(dir.display().to_string(), 1, "h".into(), "test-device".into())
+    mediagram_core::api::Core::new(
+        dir.display().to_string(),
+        1,
+        "h".into(),
+        "test-device".into(),
+    )
 }
 
 fn catalog_with(dir: &std::path::Path, sets: usize, posters: usize) {

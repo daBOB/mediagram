@@ -124,7 +124,10 @@ fn the_child_does_not_inherit_mediagram_secrets() {
 
     let kept = child_env(given);
 
-    assert_eq!(kept, vec![("RCLONE_CONFIG".into(), "/home/me/rclone.conf".into())]);
+    assert_eq!(
+        kept,
+        vec![("RCLONE_CONFIG".into(), "/home/me/rclone.conf".into())]
+    );
 }
 
 /// The filtered environment is the one the child actually runs with, and
@@ -142,5 +145,8 @@ async fn the_child_runs_with_the_rest_of_the_environment() {
 
     let seen = std::fs::read_to_string(&out).unwrap();
     assert!(seen.lines().any(|line| line.starts_with("PATH=")), "{seen}");
-    assert!(!seen.lines().any(|line| line.starts_with("MEDIAGRAM_")), "{seen}");
+    assert!(
+        !seen.lines().any(|line| line.starts_with("MEDIAGRAM_")),
+        "{seen}"
+    );
 }

@@ -24,6 +24,7 @@ step "bun test"
 # the uploader is usable without them, and an absent node_modules is a setup
 # state, not a broken change.
 if [ -d web/node_modules ]; then
+  (cd web && bun run lint)
   (cd web && bun test)
 else
   echo "skipping: web dependencies are not installed (run 'cd web && bun install')"

@@ -20,11 +20,25 @@ export interface CatalogSet {
   container: string;
   vcodec: string | null;
   acodec: string | null;
+  quality: string | null;
+  hdr: string | null;
+  /** File-track languages as JSON array strings, or null when unrecorded. */
+  alang: string | null;
+  slang: string | null;
   duration: number | null;
   total: number;
   partCount: number;
   /** When the uploader added this, in epoch milliseconds. Arrival, not release. */
   addedAt: number;
+  /** Browser presentation fields added by the catalog/search projection. */
+  poster: string | null;
+  seasonPoster: string | null;
+  showKey: string | null;
+  genres: string[];
+  fsk: string | null;
+  offline: boolean;
+  hasSummary: boolean;
+  subtitles: string[];
 }
 
 /**
@@ -66,19 +80,20 @@ export function groupLibrary(sets: CatalogSet[]): Library;
 export function firstItemOf(divisions: Division[]): CatalogSet | null;
 
 /** How many lessons sit under `division`, at whatever depth. */
-export function lessonsUnder(division: Division): number;
+export function lessonsUnder(division: Pick<Division, "items" | "children">): number;
 
 /** How many documents sit under `division`, at whatever depth. */
-export function documentsUnder(division: Division): number;
+export function documentsUnder(division: Pick<Division, "items" | "children">): number;
+
+/** Both content counts under this division, including nested folders. */
+export function countsUnder(division: Pick<Division, "items" | "children">): {
+  lessons: number;
+  documents: number;
+};
 
 /** True for a set that is a document rather than something to play. */
 export function isDocument(set: CatalogSet): boolean;
 
-/**
- * The division `names` leads to, or `null` when it names one that is not
- * there. An empty trail gives a stand-in for the collection itself, whose
- * `title` is `null` and whose `children` are the top-level folders.
- */
 /** One level's lessons and folders, in the order the course puts them. */
 export type LevelEntry =
   | { kind: "lesson"; set: CatalogSet; order: number | null }
@@ -88,12 +103,16 @@ export type LevelEntry =
 export function levelEntries(level: Pick<Division, "items" | "children">): LevelEntry[];
 
 /** Every playable set in a collection, in the order its pages walk them. */
-export function flattenCollection(collection: Collection): CatalogSet[];
+export function flattenCollection(collection: Pick<Collection, "divisions">): CatalogSet[];
 
 /** What follows `setId` in its collection, or `null` at the end of one. */
 export function nextAfter(collection: Collection, setId: string): CatalogSet | null;
 
+/** The set after `setId`, or null when the set is absent or last. */
+export function nextInQueue<T extends { setId: string }>(sets: readonly T[], setId: string): T | null;
+
+/** The named division, or the title-less root for an empty trail. */
 export function divisionAt(
   divisions: Division[],
   names: string[],
-): (Division & { title: string | null }) | null;
+): (Omit<Division, "title"> & { title: string | null }) | null;

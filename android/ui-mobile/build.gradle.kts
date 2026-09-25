@@ -6,6 +6,7 @@ plugins {
 
 android {
     namespace = "com.mediagram.android.ui.mobile"
+    testOptions.unitTests.isIncludeAndroidResources = true
 }
 
 dependencies {
@@ -33,4 +34,6 @@ dependencies {
     // Robolectric instead, same reasoning as DefaultPlayerHandleTest's
     // own android.net.Uri.
     testImplementation(libs.findLibrary("robolectric").get())
+    testImplementation(libs.findLibrary("mockk").get())
+    testImplementation(libs.findLibrary("androidx.compose.ui.test.junit4").get())
 }

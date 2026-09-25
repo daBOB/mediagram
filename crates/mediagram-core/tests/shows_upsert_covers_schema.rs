@@ -21,7 +21,8 @@ use rusqlite::types::Value;
 fn shared_schema() -> Connection {
     let conn = Connection::open_in_memory().expect("an in-memory database");
     for statement in schema::migrations_up_to(schema::SCHEMA_VERSION) {
-        conn.execute(statement, []).expect("a statement from the shared migrations");
+        conn.execute(statement, [])
+            .expect("a statement from the shared migrations");
     }
     conn
 }
@@ -52,9 +53,16 @@ fn a_fully_populated_row() -> TitleDetailsRow {
 /// this test already knew about, which is the blind spot it is here to close.
 fn the_only_row(conn: &Connection) -> Vec<(String, Value)> {
     let mut statement = conn.prepare("SELECT * FROM shows").expect("a select");
-    let columns: Vec<String> = statement.column_names().into_iter().map(str::to_string).collect();
+    let columns: Vec<String> = statement
+        .column_names()
+        .into_iter()
+        .map(str::to_string)
+        .collect();
     let mut rows = statement.query([]).expect("a row set");
-    let row = rows.next().expect("a readable row").expect("exactly one row");
+    let row = rows
+        .next()
+        .expect("a readable row")
+        .expect("exactly one row");
     columns
         .iter()
         .enumerate()
@@ -78,4 +86,32 @@ fn the_writer_records_every_column_the_shared_schema_declares() {
          set. Add the column to the statement and to `TitleDetailsRow`, or say in \
          mlib_spec::schema why the table holds it unwritten."
     );
+}
+
+#[test]
+fn provider_ids_must_fit_sqlite_without_replacing_existing_rows() {
+    let conn = shared_schema();
+    let mut row = a_fully_populated_row();
+    row.id = i64::MAX as u64;
+    mediagram_core::shows::upsert(&conn, &row).unwrap();
+    let held = mediagram_core::shows::get(&conn, row.kind, row.id)
+        .unwrap()
+        .unwrap();
+    assert_eq!(held.id, row.id);
+    assert_eq!(held.overview, row.overview);
+
+    for id in [i64::MAX as u64 + 1, u64::MAX] {
+        row.id = id;
+        row.overview = Some("must not be written".into());
+        assert!(mediagram_core::shows::upsert(&conn, &row).is_err());
+        assert!(mediagram_core::shows::get(&conn, row.kind, id).is_err());
+    }
+    let (count, id, overview): (u64, i64, String) = conn
+        .query_row("SELECT count(*), id, overview FROM shows", [], |row| {
+            Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+        })
+        .unwrap();
+    assert_eq!(count, 1);
+    assert_eq!(id, i64::MAX);
+    assert_eq!(Some(overview), held.overview);
 }

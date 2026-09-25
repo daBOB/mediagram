@@ -16,7 +16,7 @@ class AndroidMobileScreenConventionPlugin : Plugin<Project> {
                 add("implementation", libs.findLibrary("coil.compose").get())
                 add("implementation", libs.findLibrary("androidx.lifecycle.runtime.compose").get())
                 add("implementation", libs.findLibrary("androidx.hilt.lifecycle.viewmodel.compose").get())
-                libs.findBundle("adaptive").ifPresent { add("implementation", it) }
+                add("implementation", libs.findLibrary("androidx.compose.material3.adaptive").get())
             }
         }
     }

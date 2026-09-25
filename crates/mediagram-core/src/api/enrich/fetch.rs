@@ -13,8 +13,8 @@ use rusqlite::Connection;
 use super::artwork::FetchPlan;
 use crate::dto::FetchReport;
 
-use crate::api::Core;
 use super::details as store;
+use crate::api::Core;
 
 /// Fetches the artwork, then the descriptions, for `plan`'s titles, counting
 /// titles throughout; see [`FetchReport`].
@@ -30,22 +30,32 @@ pub async fn fetch_into(
     http: &reqwest::Client,
     plan: &FetchPlan,
 ) -> FetchReport {
-    let FetchPlan { artwork_dir, titles, without_id, language } = plan;
+    let FetchPlan {
+        artwork_dir,
+        titles,
+        without_id,
+        language,
+    } = plan;
     let refs = resolve_posters(api, titles).await;
     let held = already_held(&refs, artwork_dir) as u32;
     // A hard failure here (the posters directory could not even be created)
     // leaves every resolved ref undownloaded rather than panicking — the
     // catalog is the product, the artwork a convenience.
-    let written = download_into(http, &refs, artwork_dir).await.unwrap_or_else(|err| {
-        tracing::warn!(error = %err, "the artwork directory is unavailable");
-        Vec::new()
-    });
+    let written = download_into(http, &refs, artwork_dir)
+        .await
+        .unwrap_or_else(|err| {
+            tracing::warn!(error = %err, "the artwork directory is unavailable");
+            Vec::new()
+        });
     let fetched = (written.len() as u32).saturating_sub(held);
 
     // Collected as keys rather than added up, so a title that lost both its
     // poster and its description is one failure and not two.
-    let mut lost: Vec<String> =
-        refs.iter().map(|poster| poster.key.clone()).filter(|key| !written.contains(key)).collect();
+    let mut lost: Vec<String> = refs
+        .iter()
+        .map(|poster| poster.key.clone())
+        .filter(|key| !written.contains(key))
+        .collect();
     let described = record_descriptions(core, api, language, titles).await;
     for key in described.lost {
         if !lost.contains(&key) {
@@ -108,7 +118,9 @@ async fn record_descriptions(
         };
         if opened.is_none() {
             opened = store::open_or_create(core)
-                .inspect_err(|err| tracing::warn!(error = %err, "the description store is unavailable"))
+                .inspect_err(
+                    |err| tracing::warn!(error = %err, "the description store is unavailable"),
+                )
                 .ok();
         }
         let row = from_details(*kind, language, &payload);

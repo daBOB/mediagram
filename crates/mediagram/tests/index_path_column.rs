@@ -52,14 +52,14 @@ fn a_path_survives_the_round_trip_through_the_index() {
     let conn = db::open(dir.path()).unwrap();
     let deep = "Ausbildung Trading/1. Grundlagen/1. Trading";
 
-    let row = SetRow::from_caption(&lesson("01SET0000000000000000001", Some(deep)), 1).unwrap();
+    let row = SetRow::from_caption(&lesson("01SET0000000000000000001", Some(deep)), 1);
     sets::insert_set(&conn, &row).unwrap();
 
     let read = sets::get_set(&conn, "01SET0000000000000000001")
         .unwrap()
         .unwrap();
     assert_eq!(read.path.as_deref(), Some(deep));
-    assert_eq!(read.caption_template().unwrap().path.as_deref(), Some(deep));
+    assert_eq!(read.caption_template().path.as_deref(), Some(deep));
 }
 
 #[test]
@@ -67,7 +67,7 @@ fn a_set_with_no_path_reads_back_as_none() {
     let dir = tempfile::tempdir().unwrap();
     let conn = db::open(dir.path()).unwrap();
 
-    let row = SetRow::from_caption(&lesson("01SET0000000000000000002", None), 1).unwrap();
+    let row = SetRow::from_caption(&lesson("01SET0000000000000000002", None), 1);
     sets::insert_set(&conn, &row).unwrap();
 
     assert_eq!(

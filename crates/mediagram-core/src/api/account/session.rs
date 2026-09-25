@@ -22,6 +22,10 @@ use tokio::task::JoinHandle;
 
 use crate::api::{Core, CoreError};
 
+#[path = "session_updates.rs"]
+mod updates;
+pub(in crate::api) use updates::{client, connection, invalidate, is_current, updates_receiver};
+
 const SESSION_FILE: &str = "session.key";
 const AUTH_KEY_LEN: usize = 256;
 
@@ -32,7 +36,7 @@ pub(in crate::api) struct ClientHandle {
     pub(in crate::api) handle: SenderPoolFatHandle,
     /// What Telegram pushes down this connection, until the event listener
     /// takes it. One per sender pool, for the pool's life: the pool's own
-    /// reconnects reuse it, and only a new `Core` brings a new one.
+    /// reconnects reuse it; replacing this handle brings a fresh receiver.
     updates: Option<UnboundedReceiver<UpdatesLike>>,
     // Never polled again after `connect`, but dropping it would detach the
     // runner from anything keeping it alive for the compiler's purposes;
@@ -68,8 +72,7 @@ pub(in crate::api) fn load_auth_key(data_dir: &Path) -> Option<(i32, [u8; AUTH_K
 /// removes the old file first rather than truncating it in place, so that
 /// window never opens on a second write either.
 fn store_auth_key(data_dir: &Path, dc_id: i32, key: &[u8; AUTH_KEY_LEN]) -> Result<(), CoreError> {
-    std::fs::create_dir_all(data_dir)
-        .map_err(CoreError::io("creating the data directory"))?;
+    std::fs::create_dir_all(data_dir).map_err(CoreError::io("creating the data directory"))?;
     let path = data_dir.join(SESSION_FILE);
     let mut bytes = Vec::with_capacity(4 + AUTH_KEY_LEN);
     bytes.extend_from_slice(&dc_id.to_be_bytes());
@@ -85,8 +88,7 @@ fn store_auth_key(data_dir: &Path, dc_id: i32, key: &[u8; AUTH_KEY_LEN]) -> Resu
     let mut file = match open() {
         Ok(file) => file,
         Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => {
-            std::fs::remove_file(&path)
-                .map_err(CoreError::io("replacing the session"))?;
+            std::fs::remove_file(&path).map_err(CoreError::io("replacing the session"))?;
             open().map_err(CoreError::io("writing the session"))?
         }
         Err(err) => return Err(CoreError::io("writing the session")(err)),
@@ -113,7 +115,11 @@ fn session_data(data_dir: &Path) -> SessionData {
 pub(in crate::api) fn connect(core: &Core) -> ClientHandle {
     let session = Arc::new(MemorySession::from(session_data(&core.data_dir)));
     let params = crate::connection_params::connection_params("Android", &core.device_name);
-    let SenderPool { runner, handle, updates } = SenderPool::with_configuration(session, core.api_id, params);
+    let SenderPool {
+        runner,
+        handle,
+        updates,
+    } = SenderPool::with_configuration(session, core.api_id, params);
     let client = Client::new(handle.clone());
     let pool_task = tokio::spawn(runner.run());
     ClientHandle {
@@ -124,36 +130,12 @@ pub(in crate::api) fn connect(core: &Core) -> ClientHandle {
     }
 }
 
-/// The one connection this `Core` keeps, opening it on first demand.
-///
-/// Every call that talks to Telegram goes through here rather than
-/// connecting for itself: a second connection would be a second sender pool
-/// over the same auth key, and grammers treats one key served to two clients
-/// as the two breaking each other until a restart.
-pub(in crate::api) async fn client(core: &Core) -> grammers_client::Client {
-    let mut state = core.state.lock().await;
-    if state.client.is_none() {
-        state.client = Some(connect(core));
-    }
-    state.client.as_ref().expect("just set").client.clone()
-}
-
-/// The connection's client together with its update receiver, opening the
-/// connection on first demand like [`client`]. The receiver is handed out
-/// once per connection; `None` means a listener already holds it.
-pub(in crate::api) async fn updates_receiver(
-    core: &Core,
-) -> (grammers_client::Client, Option<UnboundedReceiver<UpdatesLike>>) {
-    let mut state = core.state.lock().await;
-    let live = state
-        .client
-        .get_or_insert_with(|| connect(core));
-    (live.client.clone(), live.updates.take())
-}
-
 /// Persists whatever auth key the session now holds for its home
 /// datacentre. Called right after a sign-in or password check succeeds.
-pub(in crate::api) fn persist(handle: &SenderPoolFatHandle, data_dir: &Path) -> Result<(), CoreError> {
+pub(in crate::api) fn persist(
+    handle: &SenderPoolFatHandle,
+    data_dir: &Path,
+) -> Result<(), CoreError> {
     let dc_id = handle
         .session
         .home_dc_id()
@@ -179,3 +161,7 @@ pub(in crate::api) fn forget_auth_key(data_dir: &Path) -> std::io::Result<()> {
 #[cfg(test)]
 #[path = "session_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "session_fixture.rs"]
+pub(in crate::api) mod fixture;

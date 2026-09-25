@@ -41,11 +41,17 @@ fn a_fetched_poster_outlives_the_refreshes_that_follow_it() {
 
     // The same version installed again, which replaces the copy in place.
     install_version(&core, "v-1");
-    assert!(poster.exists(), "reinstalling a version took the artwork with it");
+    assert!(
+        poster.exists(),
+        "reinstalling a version took the artwork with it"
+    );
 
     // A new version: `remove_other_versions` clears the one just replaced.
     install_version(&core, "v-2");
-    assert!(poster.exists(), "refreshing to a new version took the artwork with it");
+    assert!(
+        poster.exists(),
+        "refreshing to a new version took the artwork with it"
+    );
 }
 
 /// The error `TmdbClient::get_json` returns for a non-success answer, with

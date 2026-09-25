@@ -4,7 +4,10 @@
 //! need from the connection, and the session module is about keeping one.
 
 use super::super::{Core, CoreError};
-use super::session;
+use super::{revoked, session};
+use grammers_client::Client;
+use grammers_mtsender::{InvocationError, SenderPoolFatHandle};
+use grammers_tl_types as tl;
 
 /// Asks Telegram for the account's update state and stores it in the
 /// session, which is also what subscribes this connection to pushed updates.
@@ -16,22 +19,35 @@ use super::session;
 /// stream stays silent. Here a failure is an error the caller can retry, and
 /// the stored state gives the stream a base to recover gaps from after the
 /// connection drops.
-pub(in crate::api) async fn subscribe(core: &Core) -> Result<(), CoreError> {
+pub(in crate::api) async fn subscribe(
+    core: &Core,
+) -> Result<(Client, SenderPoolFatHandle), CoreError> {
+    subscribe_with(core, |client| async move {
+        client.invoke(&tl::functions::updates::GetState {}).await
+    })
+    .await
+}
+
+/// Only the GetState request is replaceable; connection ownership and
+/// subscription state are shared by production and offline lifecycle tests.
+pub(in crate::api) async fn subscribe_with<F>(
+    core: &Core,
+    request: impl FnOnce(Client) -> F,
+) -> Result<(Client, SenderPoolFatHandle), CoreError>
+where
+    F: std::future::Future<Output = Result<tl::enums::updates::State, InvocationError>>,
+{
     use grammers_session::types::{UpdateState, UpdatesState};
-    use grammers_tl_types as tl;
 
     let unavailable = || CoreError::Network("could not start listening for library changes".into());
-    let client = session::client(core).await;
-    let tl::enums::updates::State::State(state) = client
-        .invoke(&tl::functions::updates::GetState {})
-        .await
-        .map_err(|_| unavailable())?;
-    let session = {
-        let state = core.state.lock().await;
-        state.client.as_ref().map(|live| live.handle.session.clone())
-    }
-    .ok_or_else(unavailable)?;
-    session
+    let (client, handle) = session::connection(core).await;
+    let tl::enums::updates::State::State(state) =
+        revoked::checked_for(core, &handle, request(client.clone()).await, |err| {
+            unavailable().logged()(err)
+        })
+        .await?;
+    handle
+        .session
         .set_update_state(UpdateState::All(UpdatesState {
             pts: state.pts,
             qts: state.qts,
@@ -40,5 +56,6 @@ pub(in crate::api) async fn subscribe(core: &Core) -> Result<(), CoreError> {
             channels: Vec::new(),
         }))
         .await
-        .map_err(|_| unavailable())
+        .map_err(unavailable().logged())?;
+    Ok((client, handle))
 }

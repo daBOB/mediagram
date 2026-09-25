@@ -70,5 +70,9 @@ fn from_report(report: Report) -> Result<Probed> {
             codec: s.codec_name,
         })
         .collect();
-    Ok(Probed { streams, duration, size })
+    Ok(Probed {
+        streams,
+        duration,
+        size,
+    })
 }

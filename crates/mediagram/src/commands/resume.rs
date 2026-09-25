@@ -2,12 +2,12 @@
 
 use anyhow::{Context, Result};
 
-use super::push_index;
 use crate::config::Config;
 use crate::index::{db, sets};
 use crate::telegram::client::Tg;
-use crate::upload::finish::finish_one;
+use crate::telegram::index_publish;
 use crate::upload::lock;
+use crate::upload::resume;
 use crate::upload::transport::TelegramTransport;
 
 /// Finishes every pending set, then pushes the index once at the end
@@ -31,23 +31,34 @@ pub async fn run(cfg: &Config, no_push: bool) -> Result<()> {
     let tg = Tg::connect(cfg).await.context("connecting to Telegram")?;
     let transport = TelegramTransport::new(&tg, cfg.max_attempts);
 
-    let mut result: Result<bool> = Ok(false);
-    for set in &pending_sets {
-        result = finish_one(&conn, &transport, cfg.throttle_ms, set, &data_dir).await;
-        if let Ok(true) = result {
-            println!("set {} complete", set.set_id);
-        }
-        if result.is_err() {
-            break;
-        }
-    }
+    let summary = resume::pending(
+        &conn,
+        &transport,
+        cfg.throttle_ms,
+        &pending_sets,
+        &data_dir,
+        |id, result| match result {
+            Ok(true) => println!("set {id} complete"),
+            Ok(false) => {}
+            Err(error) => println!("set {id}: {error:#}"),
+        },
+    )
+    .await;
     tg.shutdown().await;
-    result.map(drop)?;
 
-    if !no_push {
-        push_index::run(cfg)
+    if summary.completed > 0 && !no_push {
+        let message_id = index_publish::publish(cfg)
             .await
-            .context("sets are complete but the index push failed; run `mediagram push-index`")?;
+            .context("completed sets could not be published; run `mediagram push-index`")?;
+        println!("pushed index as message {message_id}");
     }
+    if let Some(error) = summary.stopped {
+        return Err(error).context("resuming pending sets stopped");
+    }
+    anyhow::ensure!(
+        summary.blocked == 0,
+        "{} set(s) blocked by unavailable or changed sources",
+        summary.blocked
+    );
     Ok(())
 }

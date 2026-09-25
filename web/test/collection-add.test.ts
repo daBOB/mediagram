@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { pickerRows } from "../public/lib/collection-add.js";
+import { pickerRows } from "../public/lib/catalog/collection-add.js";
 
 const hit = (setId: string, title: string) => ({ setId, title, kind: "movie" });
 

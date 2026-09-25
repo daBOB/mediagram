@@ -5,6 +5,108 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Unreleased — 0.53.0
+
+**Added**
+
+- The Android web-parity work, merged: search and genre pages, audio and
+  subtitle choice, the player's settings sheet, up next and queues,
+  fullscreen gestures, picture-in-picture and a media session, series
+  preload with offline badges, notes, profile removal, List/Grid shelves and
+  "Mark finished" on the phone. Detail is in the dated entries for
+  2026-09-24 and 2026-09-25 below. A state file an earlier pre-release build
+  left at version 3 without the `kids` column gains it on open.
+- "Mark finished" on the web player's Continue shelf. Each title there has a
+  quiet word beside it that does what reaching the credits does: the resume
+  position goes and the title counts as watched, synced like any other watch
+  state. For a film finished on another device, or one given up on, that
+  would otherwise sit on the shelf until played to the end. The player's own
+  end-of-title path now calls the same function. The phone's Continue wall
+  has it too, under each title (see the Android web-parity entries below).
+
+## 0.43.0
+
+**Added**
+
+- Kids profiles. Tick "Kids profile" when creating a profile, on the web or
+  the phone, and that profile sees only titles rated FSK 12 or under plus
+  unrated titles marked for Kids by hand — on every shelf, in search, in
+  Featured and in Play next. The flag syncs between devices and cannot be
+  switched off by a sync. It is a filter, not a lock. The web header's
+  profile name now opens "Who's watching?" to switch profile without a reload.
+  On a kids profile, the player (web and phone) doesn't offer the "Kids"
+  mark, so a child can't approve titles for themselves.
+
+- A Featured reel on the web player's Movies shelf. The Featured button opens
+  a dark, full-window run of up to twelve films this profile has not watched,
+  shuffled: each poster drifts slowly over a blurred copy of itself, fades into
+  the next after seven seconds, and carries its title, year, genres, score and
+  tagline. Play and Details act on the film shown; arrows, the dots, Space
+  (pause), Esc and the back button steer it. Reduced motion gets still posters.
+  Android has no equivalent: its catalog carries no posters.
+
+- The web player's Movies shelf is paged, 48 films at a time, with a row of
+  page links under the grid. The page is in the address (`#/movies/page/3`),
+  so back, reload and shared links return to it; `#/movies` is still page one.
+  The Android catalog does not page yet.
+
+**Fixed**
+
+- Catalog updates validate downloaded libraries before publication and reject
+  stale concurrent completions. Failed state uploads retain successfully imported
+  changes and leave retries possible.
+- Upload resumption continues past unavailable source files, and repeated series
+  imports direct pending episodes to `resume` instead of creating duplicate work.
+- Browser playback and library navigation discard obsolete asynchronous replies,
+  release cancelled playback resources, and follow the displayed episode order.
+- Web storage and filesystem failures retain their causes; HLS session deletion
+  follows the same browser-origin checks as other writes. Login diagnostics no
+  longer redirect unrelated output during authentication.
+- Android sync, refresh, login and playback operations now respect their owning
+  lifetimes and report persistence failures without discarding retry state.
+- Browser profile and list controls report failed saves, and shelf choices remain
+  usable when browser storage is blocked. Switching audio no longer treats a
+  partial conversion's duration as a completed title.
+- Delayed transcode cleanup preserves replacement sessions. Audio probes are
+  cancelled and reaped before the web server finishes shutting down.
+- Upload surveys report files whose compatibility could not be checked; cancelled
+  or failed CLI conversions stop their child processes.
+- Web setup hides password input on Bun terminals while restoring normal echo
+  for subsequent prompts. Failed profile discovery offers a retry, and the
+  subtitle shortcut restores the selected language after toggling it off.
+- Failed browser profile-state reads now offer retry before showing shelves and
+  preserve the previously loaded profile. Disk measurements retain the last
+  successful total when a scan fails, and sync counts newly imported profiles.
+- Android account resets close local state before deleting it, and queued work
+  from the old core cannot recreate the database. Profile choices reject stale
+  completions; System diagnostics keep previous readings and offer retry.
+- Malformed MP4 box sizes produce an error without overflowing the parser.
+  Sign-out holds the session lock through stored-key removal, and private core
+  diagnostics retain their nested causes while public errors stay sanitized.
+- Web shutdown drains speculative cache reads before disconnecting Telegram.
+  Failed metadata reads preserve stored identity and migration state, and a
+  rejected browser Play request offers retry without disturbing newer playback.
+- Android application changes restore watch-state ownership before reporting
+  success, with a separate retry when reconciliation fails. Cache settings show
+  recoverable failures even before the first reading; login, catalog and playback
+  failures use controlled text while retaining their diagnostic causes.
+  Initial provisioning refuses to overwrite an identity that is already installed.
+- Session revocation and update listeners are bound to the connection that
+  created them, so cleanup of a replaced login no longer disturbs its successor.
+  Abandoned downloads stop polling Telegram once their reader closes.
+- The channel index rejects provider identifiers outside SQLite bounds and keeps
+  metadata unchanged on rejected writes; schema read and migration failures are
+  reported instead of hidden. Upload plans with oversized part counts are refused
+  before allocation, and mixed-case IMDb prefixes are normalized.
+- CLI commands settle their work before disconnecting Telegram, and course
+  imports report unreadable metadata sidecars instead of treating them as absent.
+- Web thumbnail requests read only from disk and never fall back to Telegram.
+  Cache inventory errors other than a missing file are surfaced, and idle
+  transcode cleanup rechecks each session before stopping it, so a reused one
+  survives. Concurrent audio probes for one title are coalesced, and cancelled
+  Telegram reads finish before their stream closes.
+- Library update hints keep arriving after a callback throws a value that cannot
+  be printed.
 ## 2026-09-25
 
 **Fixed**

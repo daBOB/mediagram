@@ -32,16 +32,20 @@ data class SeasonPlate(
  * list of its episodes did not already say, so that case is left to fall
  * through to the flat list too.
  */
-fun seasonPlatesOf(collection: Entry.Collection, watchedIds: Set<String> = emptySet()): List<SeasonPlate>? {
+fun seasonPlatesOf(
+    collection: Entry.Collection,
+    watchedIds: Set<String> = emptySet(),
+): List<SeasonPlate>? {
     if (collection.kind != CollectionKind.SHOW || collection.divisions.size <= 1) return null
     return collection.divisions.map { division ->
         val items = division.walk().flatMap { it.items }.toList()
         SeasonPlate(
             title = division.title,
             caption = "${items.size} ${plural(items.size, "episode")}",
-            posterKey = collection.posterKey?.let { showKey ->
-                division.season?.let { season -> seasonPosterKey(showKey, season) }
-            },
+            posterKey =
+                collection.posterKey?.let { showKey ->
+                    division.season?.let { season -> seasonPosterKey(showKey, season) }
+                },
             division = division,
             watched = items.isNotEmpty() && items.all { it.setId in watchedIds },
         )
@@ -53,6 +57,12 @@ fun seasonPlatesOf(collection: Entry.Collection, watchedIds: Set<String> = empty
  * key — mirrors `mlib_spec::package::season_poster_key` on the Rust side,
  * which is what the fetch that downloads this artwork names it with.
  */
-fun seasonPosterKey(showPosterKey: String, season: Int): String = "$showPosterKey-s$season"
+fun seasonPosterKey(
+    showPosterKey: String,
+    season: Int,
+): String = "$showPosterKey-s$season"
 
-private fun plural(count: Int, word: String): String = if (count == 1) word else "${word}s"
+private fun plural(
+    count: Int,
+    word: String,
+): String = if (count == 1) word else "${word}s"

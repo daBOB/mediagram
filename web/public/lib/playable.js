@@ -93,7 +93,7 @@ function bitrateOf(profile) {
  *          total?: number, duration?: number|null}} profile
  * @param {{remote?: boolean, maxBitrate?: number, decodes?: Iterable<string>}} [link]
  *   how it will travel, and what the browser at the far end decodes
- * @returns {{kind: "direct"} | {kind: "transcode", reason: string}}
+ * @returns {import("./playable.js").PlaybackDecision}
  */
 export function decidePlayback(profile, link = {}) {
   const container = normalize(profile.container);

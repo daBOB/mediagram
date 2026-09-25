@@ -2,6 +2,12 @@
 
 export type Playback = { kind: "direct" } | { kind: "transcode"; reason: string };
 
+export type PlaybackDecision = Playback & {
+  blocking: { container: boolean; video: boolean; audio: boolean; bitrate: boolean };
+  /** How the picture passes: everywhere, only because this browser said so, or not at all. */
+  picture: "everywhere" | "negotiated" | false;
+};
+
 export function decidePlayback(
   profile: {
     container: string;
@@ -23,11 +29,10 @@ export function decidePlayback(
     /** Video codecs this browser decodes beyond `VIDEO`; see `codec-support.js`. */
     decodes?: Iterable<string>;
   },
-): Playback & {
-  blocking: { container: boolean; video: boolean; audio: boolean; bitrate: boolean };
-  /** How the picture passes: everywhere, only because this browser said so, or not at all. */
-  picture: "everywhere" | "negotiated" | false;
-};
+): PlaybackDecision;
+
+/** The viewer-facing conversion explanation, or null when nothing needs converting. */
+export function conversionNote(reason?: string | null, copied?: boolean): string | null;
 
 /** The containers, video codecs and audio codecs that direct-play. */
 export const CONTAINERS: ReadonlySet<string>;

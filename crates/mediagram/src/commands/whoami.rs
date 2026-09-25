@@ -8,13 +8,17 @@ use crate::telegram::client::Tg;
 pub async fn run(cfg: &Config) -> Result<()> {
     let tg = Tg::connect(cfg).await?;
 
-    let me = tg.client.get_me().await.context("fetching account info")?;
-    println!("Account: {}", me.full_name());
-    println!("Phone:   {}", mask_phone(me.phone()));
-    println!("Channel: {}", tg.channel_title);
+    let result = async {
+        let me = tg.client.get_me().await.context("fetching account info")?;
+        println!("Account: {}", me.full_name());
+        println!("Phone:   {}", mask_phone(me.phone()));
+        println!("Channel: {}", tg.channel_title);
+        Ok(())
+    }
+    .await;
 
     tg.shutdown().await;
-    Ok(())
+    result
 }
 
 /// Masks all but the last 2 digits of a phone number, so it is safe to print

@@ -9,8 +9,9 @@
  * handlers.
  */
 
-import type { PlayerRequest, PlayerResponse } from "../routes";
+import type { PlayerRequest, PlayerResponse } from "../http/contracts";
 import { bodiless, withBody } from "../response";
+import { refuseUnsafeBrowserWrite } from "../http/browser-write";
 import type { WatchState } from "./store";
 
 /**
@@ -89,15 +90,17 @@ export function createStateRouter(options: StateRouterOptions) {
         );
       }
       if (method !== "POST") return status(405);
-      const refusal = refuseUnsafe(request);
+      const refusal = refuseUnsafeBrowserWrite(request);
       if (refusal) return refusal;
-      const made = state.createProfile((parse(request.body) as { name?: unknown })?.name);
+      const body = parse(request.body) as { name?: unknown; kids?: unknown } | null;
+      // Only a literal true: a restricting flag is not switched on by accident.
+      const made = state.createProfile(body?.name, body?.kids === true);
       return made === null ? status(400) : json(JSON.stringify(made), false, 201);
     }
 
     const named = PROFILE.exec(path);
     if (named) {
-      const refusal = refuseUnsafe(request);
+      const refusal = refuseUnsafeBrowserWrite(request);
       if (refusal) return refusal;
       if (method === "DELETE") return status(state.deleteProfile(named[1]!) ? 204 : 404);
       if (method !== "PATCH") return status(405);
@@ -116,7 +119,7 @@ export function createStateRouter(options: StateRouterOptions) {
 
     // Past here everything writes, so everything is checked.
     if (reading) return status(405);
-    const refusal = refuseUnsafe(request);
+    const refusal = refuseUnsafeBrowserWrite(request);
     if (refusal) return refusal;
 
     const progress = PROGRESS.exec(path);
@@ -228,34 +231,6 @@ export function createStateRouter(options: StateRouterOptions) {
 
     return status(404);
   };
-}
-
-/**
- * Why a write might be refused before it is looked at.
- *
- * Neither check is authentication and neither pretends to be. What they stop
- * is the realistic drive-by against a service on loopback: a page on another
- * origin submitting a form at it. A form can only send a handful of content
- * types, none of them JSON, and a browser attaches `Origin` to every request
- * that is not a same-origin read. A caller that is not a browser is not
- * inconvenienced by either — but a caller that is not a browser could already
- * stream the whole library, which is the problem a proxy in front solves.
- */
-function refuseUnsafe(request: PlayerRequest): PlayerResponse | null {
-  if (request.origin != null && request.host != null) {
-    let sameHost = false;
-    try {
-      sameHost = new URL(request.origin).host === request.host;
-    } catch {
-      sameHost = false;
-    }
-    if (!sameHost) return status(403);
-  }
-  // `DELETE` carries no body, so nothing to declare a type for.
-  if (request.method !== "DELETE" && request.contentType !== "application/json") {
-    return status(415);
-  }
-  return null;
 }
 
 function parse(body: string | null | undefined): unknown {

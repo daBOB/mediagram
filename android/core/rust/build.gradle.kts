@@ -62,5 +62,6 @@ val verifyNativeCore by tasks.registering {
     }
 }
 
-tasks.matching { it.name.startsWith("merge") && (it.name.endsWith("NativeLibs") || it.name.endsWith("JniLibFolders")) }
+tasks
+    .matching { it.name.startsWith("merge") && (it.name.endsWith("NativeLibs") || it.name.endsWith("JniLibFolders")) }
     .configureEach { dependsOn(verifyNativeCore) }

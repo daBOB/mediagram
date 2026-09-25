@@ -1,10 +1,10 @@
-//! The only Telegram-facing half of `verify`: fetching part messages by id
-//! and streaming a document's bytes through a SHA-256 hasher.
+//! Batched Telegram message retrieval and streaming SHA-256 hashing.
 
 use std::collections::HashMap;
 
 use anyhow::{Context, Result, bail};
 use grammers_client::Client;
+use grammers_client::client::DownloadIter;
 use grammers_client::media::Document;
 use grammers_client::message::Message;
 use grammers_session::types::PeerRef;
@@ -58,14 +58,26 @@ pub async fn hash_document(
     document: &Document,
     expected_len: u64,
 ) -> Result<String> {
-    let mut chunks = client.iter_download(document);
+    hash_chunks(client.iter_download(document), expected_len).await
+}
+
+/// One chunk at a time, with failures propagated instead of retried as EOF.
+pub(super) trait ChunkSource {
+    async fn next(&mut self) -> Result<Option<Vec<u8>>>;
+}
+
+impl ChunkSource for DownloadIter {
+    async fn next(&mut self) -> Result<Option<Vec<u8>>> {
+        DownloadIter::next(self)
+            .await
+            .context("downloading part chunk for hashing")
+    }
+}
+
+pub(super) async fn hash_chunks(mut chunks: impl ChunkSource, expected_len: u64) -> Result<String> {
     let mut hasher = Sha256::new();
     let mut hashed = 0u64;
-    while let Some(chunk) = chunks
-        .next()
-        .await
-        .context("downloading part chunk for hashing")?
-    {
+    while let Some(chunk) = chunks.next().await? {
         hashed = hashed.saturating_add(chunk.len() as u64);
         hasher.update(&chunk);
     }

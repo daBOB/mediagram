@@ -69,7 +69,10 @@ class FakeCore(
     var eventHandle: String? = null
         private set
 
-    override suspend fun nextLibraryEvent(handle: String, ownDevice: String): LibraryEvent {
+    override suspend fun nextLibraryEvent(
+        handle: String,
+        ownDevice: String,
+    ): LibraryEvent {
         eventHandle = handle
         val next = events.getOrNull(eventCalls++) ?: awaitCancellation()
         return next.getOrThrow()
@@ -82,9 +85,16 @@ class FakeCore(
     private var readings = 0
 
     override fun isAuthorized(): Boolean = true
+
     override suspend fun requestCode(phone: String): String = "token"
-    override suspend fun signIn(token: String, code: String): AuthOutcome = AuthOutcome.DONE
+
+    override suspend fun signIn(
+        token: String,
+        code: String,
+    ): AuthOutcome = AuthOutcome.DONE
+
     override suspend fun checkPassword(password: String) = Unit
+
     override suspend fun listLibraries(): List<LibraryChoice> = libraries
 
     override suspend fun refreshLibrary(handle: String): Long {
@@ -94,7 +104,11 @@ class FakeCore(
         return refreshResult
     }
 
-    override suspend fun refreshCatalog(url: String, keyB64: String): Long = refreshResult
+    override suspend fun refreshCatalog(
+        url: String,
+        keyB64: String,
+    ): Long = refreshResult
+
     override suspend fun listSets(): List<SetSummary> = sets
 
     /** Every key [posterPath] was asked for, in order — a test's way of seeing how many sets a lookup actually mapped. */
@@ -105,12 +119,22 @@ class FakeCore(
         return posters[posterKey]
     }
     override suspend fun titleInfo(posterKey: String): TitleInfo? = null
+
     override suspend fun totalSize(setId: String): Long = 0
+
     override suspend fun catalogFacts(): CatalogFacts =
         CatalogFacts("channel", 0uL, 0uL, 0u, publishedAt[minOf(readings++, publishedAt.lastIndex)])
-    override suspend fun read(setId: String, offset: Long, len: Int): ByteArray = ByteArray(0)
-    override suspend fun fetchMissing(tmdbKey: String, language: String): FetchReport =
-        FetchReport(0u, 0u, 0u, 0u, 0u, 0u)
+
+    override suspend fun read(
+        setId: String,
+        offset: Long,
+        len: Int,
+    ): ByteArray = ByteArray(0)
+
+    override suspend fun fetchMissing(
+        tmdbKey: String,
+        language: String,
+    ): FetchReport = FetchReport(0u, 0u, 0u, 0u, 0u, 0u)
 
     var closed: Boolean = false
         private set
@@ -125,12 +149,27 @@ class FakeCore(
  * repository does with a core, not about waiting for one; [CoreProviderTest]
  * covers the waiting.
  */
-class ResolvedCoreProvider(private val client: CoreClient) : CoreProvider {
-    override suspend fun replace(apiId: Int, apiHash: String) = Unit
+class ResolvedCoreProvider(
+    private val client: CoreClient,
+) : CoreProvider {
+    override suspend fun replace(
+        apiId: Int,
+        apiHash: String,
+    ) = Unit
+
     override val core: StateFlow<CoreClient?> = MutableStateFlow(client)
+
     override suspend fun awaitCore(): CoreClient = client
+
     override suspend fun coreOrNull(): CoreClient = client
-    override suspend fun supply(apiId: Int, apiHash: String) = Unit
+
+    override suspend fun supply(
+        apiId: Int,
+        apiHash: String,
+    ) = Unit
+
+    override suspend fun resetAccount(storage: data.CoreStorage) = error("this fixture does not reset accounts")
+
     override suspend fun forget() = Unit
 }
 

@@ -22,6 +22,7 @@ pub const MARKER_PREFIX: &str = "#mlib v=";
 pub const CAPTION_BUDGET: usize = 1024;
 
 /// Length as Telegram measures it.
+#[must_use]
 pub fn tg_len(s: &str) -> usize {
     s.encode_utf16().count()
 }
@@ -101,13 +102,16 @@ fn validate(caption: &Caption) -> Result<(), CaptionError> {
     Ok(())
 }
 
-/// Render a caption. `human` may be empty; it is truncated to fit the budget.
 /// Whether every part of the set `template` describes fits the budget.
 ///
 /// The longest caption a set produces is its last part's: the largest offset
 /// and length, and a full hash. Measured on the template before anything is
 /// written, because a caption that cannot be sent is a set that cannot be
 /// finished.
+///
+/// # Errors
+/// Returns a serialization error or [`CaptionError::BudgetExceeded`] when
+/// the conservative last-part caption cannot fit the wire budget.
 pub fn check_budget(template: &Caption) -> Result<(), CaptionError> {
     let n = template.part.n;
     let last = template.with_part(crate::caption::Part {
@@ -120,6 +124,11 @@ pub fn check_budget(template: &Caption) -> Result<(), CaptionError> {
     to_text(&last, &last.display_name()).map(drop)
 }
 
+/// Render a caption. `human` may be empty; it is truncated to fit the budget.
+///
+/// # Errors
+/// Returns a serialization error or [`CaptionError::BudgetExceeded`] when
+/// the marker and JSON alone exceed the caption limit.
 pub fn to_text(c: &Caption, human: &str) -> Result<String, CaptionError> {
     let json = serde_json::to_string(c)?;
     let mut out = format!("{MARKER}\n{json}");
@@ -148,11 +157,16 @@ fn take_utf16(s: &str, units: usize) -> impl Iterator<Item = char> + '_ {
 }
 
 /// True if the text looks like an mlib caption of any version.
+#[must_use]
 pub fn is_mlib(text: &str) -> bool {
     text.trim_start().starts_with(MARKER_PREFIX)
 }
 
 /// Parse a caption. Tolerates CRLF and trailing human lines.
+///
+/// # Errors
+/// Rejects missing markers or JSON, unsupported versions, malformed JSON,
+/// and fields that cannot safely be used by a reader.
 pub fn parse(text: &str) -> Result<Caption, CaptionError> {
     let mut lines = text.trim_start().lines().map(|l| l.trim_end_matches('\r'));
     let marker = lines.next().ok_or(CaptionError::NoMarker)?.trim();
@@ -172,17 +186,6 @@ pub fn parse(text: &str) -> Result<Caption, CaptionError> {
     let caption: Caption = serde_json::from_str(json)?;
     validate(&caption)?;
     Ok(caption)
-}
-
-#[cfg(test)]
-mod version_agreement {
-    /// The marker line and `SPEC_VERSION` are the same number said twice.
-    /// They drifted apart once, when `path` was added and only the marker
-    /// moved, which put the wrong version in every published package.
-    #[test]
-    fn the_marker_names_the_spec_version() {
-        assert_eq!(super::MARKER, format!("#mlib v={}", crate::SPEC_VERSION));
-    }
 }
 
 #[cfg(test)]

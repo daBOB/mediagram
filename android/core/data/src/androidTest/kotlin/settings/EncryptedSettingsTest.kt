@@ -26,7 +26,6 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class EncryptedSettingsTest {
-
     // Match the private PREFS_FILE_NAMEs in the two stores; there is no
     // production accessor for either, so the names are duplicated here.
     private val packagePrefsFile = "package_settings"
@@ -50,59 +49,66 @@ class EncryptedSettingsTest {
      * values may leak a secret this way.
      */
     private fun rawEntriesOf(fileName: String): List<String> =
-        context.getSharedPreferences(fileName, Context.MODE_PRIVATE).all.entries
+        context
+            .getSharedPreferences(fileName, Context.MODE_PRIVATE)
+            .all.entries
             .map { "${it.key}=${it.value}" }
 
     @Test
-    fun packageCredentialsRoundTripThroughRealEncryption() = runTest {
-        val settings = EncryptedPackageSettings(context)
-        val url = "https://example.com/latest.json"
-        val keyB64 = "b".repeat(43) + "="
+    fun packageCredentialsRoundTripThroughRealEncryption() =
+        runTest {
+            val settings = EncryptedPackageSettings(context)
+            val url = "https://example.com/latest.json"
+            val keyB64 = "b".repeat(43) + "="
 
-        settings.write(url, keyB64)
-        val read = settings.read()
+            settings.write(url, keyB64)
+            val read = settings.read()
 
-        assertEquals(url, read?.url)
-        assertEquals(keyB64, read?.keyB64)
-    }
-
-    @Test
-    fun thePackageBackingFileNeverHoldsTheKeyInPlainText() = runTest {
-        val keyB64 = "c".repeat(43) + "="
-        EncryptedPackageSettings(context).write("https://example.com/latest.json", keyB64)
-
-        assertFalse(rawEntriesOf(packagePrefsFile).any { it.contains(keyB64) })
-    }
+            assertEquals(url, read?.url)
+            assertEquals(keyB64, read?.keyB64)
+        }
 
     @Test
-    fun telegramCredentialsRoundTripThroughRealEncryption() = runTest {
-        val settings = EncryptedTelegramSettings(context)
-        val apiHash = "0123456789abcdef0123456789abcdef"
+    fun thePackageBackingFileNeverHoldsTheKeyInPlainText() =
+        runTest {
+            val keyB64 = "c".repeat(43) + "="
+            EncryptedPackageSettings(context).write("https://example.com/latest.json", keyB64)
 
-        settings.write(1234, apiHash)
-        val read = settings.read()
-
-        assertEquals(1234, read?.apiId)
-        assertEquals(apiHash, read?.apiHash)
-    }
+            assertFalse(rawEntriesOf(packagePrefsFile).any { it.contains(keyB64) })
+        }
 
     @Test
-    fun theTelegramBackingFileNeverHoldsTheApiHashInPlainText() = runTest {
-        val apiHash = "fedcba9876543210fedcba9876543210"
-        EncryptedTelegramSettings(context).write(1234, apiHash)
+    fun telegramCredentialsRoundTripThroughRealEncryption() =
+        runTest {
+            val settings = EncryptedTelegramSettings(context)
+            val apiHash = "0123456789abcdef0123456789abcdef"
 
-        assertFalse(rawEntriesOf(telegramPrefsFile).any { it.contains(apiHash) })
-    }
+            settings.write(1234, apiHash)
+            val read = settings.read()
+
+            assertEquals(1234, read?.apiId)
+            assertEquals(apiHash, read?.apiHash)
+        }
 
     @Test
-    fun theChosenLibraryRoundTripsThroughRealEncryption() = runTest {
-        val settings = EncryptedLibrarySettings(context)
-        val handle = "9f86d081884c7d659a2feaa0c55ad015"
+    fun theTelegramBackingFileNeverHoldsTheApiHashInPlainText() =
+        runTest {
+            val apiHash = "fedcba9876543210fedcba9876543210"
+            EncryptedTelegramSettings(context).write(1234, apiHash)
 
-        settings.write(handle)
+            assertFalse(rawEntriesOf(telegramPrefsFile).any { it.contains(apiHash) })
+        }
 
-        assertEquals(handle, settings.read())
-    }
+    @Test
+    fun theChosenLibraryRoundTripsThroughRealEncryption() =
+        runTest {
+            val settings = EncryptedLibrarySettings(context)
+            val handle = "9f86d081884c7d659a2feaa0c55ad015"
+
+            settings.write(handle)
+
+            assertEquals(handle, settings.read())
+        }
 
     /**
      * A handle is not a secret the way a key is — it means nothing outside
@@ -111,28 +117,30 @@ class EncryptedSettingsTest {
      * one "start over" is enough to take all of it back.
      */
     @Test
-    fun theLibraryBackingFileNeverHoldsTheChosenHandleInPlainText() = runTest {
-        val handle = "4d1e5f6a7b8c9d0e1f2a3b4c5d6e7f80"
-        EncryptedLibrarySettings(context).write(handle)
+    fun theLibraryBackingFileNeverHoldsTheChosenHandleInPlainText() =
+        runTest {
+            val handle = "4d1e5f6a7b8c9d0e1f2a3b4c5d6e7f80"
+            EncryptedLibrarySettings(context).write(handle)
 
-        assertFalse(rawEntriesOf(libraryPrefsFile).any { it.contains(handle) })
-    }
+            assertFalse(rawEntriesOf(libraryPrefsFile).any { it.contains(handle) })
+        }
 
     @Test
-    fun startingOverLeavesNoStoreReadable() = runTest {
-        val telegram = EncryptedTelegramSettings(context)
-        val packaged = EncryptedPackageSettings(context)
-        val library = EncryptedLibrarySettings(context)
-        telegram.write(1234, "0123456789abcdef0123456789abcdef")
-        packaged.write("https://example.com/latest.json", "d".repeat(43) + "=")
-        library.write("9f86d081884c7d659a2feaa0c55ad015")
+    fun startingOverLeavesNoStoreReadable() =
+        runTest {
+            val telegram = EncryptedTelegramSettings(context)
+            val packaged = EncryptedPackageSettings(context)
+            val library = EncryptedLibrarySettings(context)
+            telegram.write(1234, "0123456789abcdef0123456789abcdef")
+            packaged.write("https://example.com/latest.json", "d".repeat(43) + "=")
+            library.write("9f86d081884c7d659a2feaa0c55ad015")
 
-        telegram.clear()
-        packaged.clear()
-        library.clear()
+            telegram.clear()
+            packaged.clear()
+            library.clear()
 
-        assertNull(telegram.read())
-        assertNull(packaged.read())
-        assertNull(library.read())
-    }
+            assertNull(telegram.read())
+            assertNull(packaged.read())
+            assertNull(library.read())
+        }
 }

@@ -20,7 +20,12 @@ use crate::upload::transport::TelegramTransport;
 /// Uploads what is left of `set_id` over a connection the caller holds, then
 /// deletes `delete` if the set reached the channel whole. Returns whether it
 /// did. A bulk command holds one connection for every set it walks.
-pub async fn finish_with(cfg: &Config, tg: &Tg, set_id: &str, delete: Option<&Path>) -> Result<bool> {
+pub async fn finish_with(
+    cfg: &Config,
+    tg: &Tg,
+    set_id: &str,
+    delete: Option<&Path>,
+) -> Result<bool> {
     let data_dir = cfg.data_dir()?;
     // One upload at a time: a file added while another is going up waits for
     // it, the way a show's episodes wait for each other, rather than the two
@@ -30,8 +35,8 @@ pub async fn finish_with(cfg: &Config, tg: &Tg, set_id: &str, delete: Option<&Pa
     })
     .await?;
     let conn = db::open(&data_dir)?;
-    let set = sets::get_set(&conn, set_id)?
-        .with_context(|| format!("no set {set_id} in the index"))?;
+    let set =
+        sets::get_set(&conn, set_id)?.with_context(|| format!("no set {set_id} in the index"))?;
 
     let transport = TelegramTransport::new(tg, cfg.max_attempts);
     let complete = finish_one(&conn, &transport, cfg.throttle_ms, &set, &data_dir)
@@ -62,7 +67,11 @@ impl<'a> Uploader<'a> {
     pub async fn finish(&mut self, set_id: &str, delete: Option<&Path>) -> Result<bool> {
         let tg = match &mut self.tg {
             Some(tg) => tg,
-            slot => slot.insert(Tg::connect(self.cfg).await.context("connecting to Telegram")?),
+            slot => slot.insert(
+                Tg::connect(self.cfg)
+                    .await
+                    .context("connecting to Telegram")?,
+            ),
         };
         finish_with(self.cfg, tg, set_id, delete).await
     }

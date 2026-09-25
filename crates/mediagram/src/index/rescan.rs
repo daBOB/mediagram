@@ -132,7 +132,7 @@ fn insert_set_if_new(conn: &Connection, caption: &Caption, created_at: i64) -> R
     if sets::get_set(conn, &caption.set)?.is_some() {
         return Ok(false);
     }
-    let row = SetRow::from_caption(caption, created_at)?;
+    let row = SetRow::from_caption(caption, created_at);
     sets::insert_set(conn, &row)?;
     Ok(true)
 }

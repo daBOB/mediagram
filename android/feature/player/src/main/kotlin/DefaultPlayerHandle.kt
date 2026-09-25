@@ -1,5 +1,6 @@
 package player
 
+import android.util.Log
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -87,7 +88,8 @@ class DefaultPlayerHandle @Inject constructor(
                 // Player.Listener.onPlayerError — there is no player yet
                 // to have raised that. Left uncaught, this reaches the
                 // process's default handler, which on a device is a crash.
-                failConstruction(e.message ?: "Could not prepare the player")
+                Log.w("Player", "could not prepare the player", e)
+                failConstruction("Could not prepare the player")
             }
         }
     }

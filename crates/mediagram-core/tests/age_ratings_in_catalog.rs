@@ -8,7 +8,12 @@ use std::path::Path;
 use rusqlite::{Connection, params};
 
 fn core(dir: &Path) -> std::sync::Arc<mediagram_core::api::Core> {
-    mediagram_core::api::Core::new(dir.display().to_string(), 1, "test-hash".into(), "test-device".into())
+    mediagram_core::api::Core::new(
+        dir.display().to_string(),
+        1,
+        "test-hash".into(),
+        "test-device".into(),
+    )
 }
 
 /// `<dir>/catalog/current/library.db` at schema `version`.
@@ -33,7 +38,11 @@ fn add_set(conn: &Connection, set_id: &str, kind: &str, tmdb: Option<i64>) {
 }
 
 fn fsk_of(sets: &[mediagram_core::dto::SetSummary], set_id: &str) -> Option<String> {
-    sets.iter().find(|s| s.set_id == set_id).expect("listed").fsk.clone()
+    sets.iter()
+        .find(|s| s.set_id == set_id)
+        .expect("listed")
+        .fsk
+        .clone()
 }
 
 #[tokio::test]
@@ -53,8 +62,14 @@ async fn a_listed_set_carries_its_titles_rating_and_an_episode_its_shows() {
 
     let sets = core(dir.path()).list_sets().await.unwrap();
 
-    assert_eq!(fsk_of(&sets, "01FILM0000000000000000000A").as_deref(), Some("12"));
-    assert_eq!(fsk_of(&sets, "01EPISODE00000000000000000").as_deref(), Some("16"));
+    assert_eq!(
+        fsk_of(&sets, "01FILM0000000000000000000A").as_deref(),
+        Some("12")
+    );
+    assert_eq!(
+        fsk_of(&sets, "01EPISODE00000000000000000").as_deref(),
+        Some("16")
+    );
     // A blank rating is none, as the web player reads it.
     assert_eq!(fsk_of(&sets, "01UNRATED00000000000000000"), None);
     assert_eq!(fsk_of(&sets, "01LESSON000000000000000000"), None);
@@ -75,6 +90,9 @@ async fn an_index_from_before_ratings_still_lists_and_describes_its_titles() {
     let sets = core.clone().list_sets().await.unwrap();
     assert_eq!(fsk_of(&sets, "01FILM0000000000000000000A"), None);
 
-    let info = core.title_info("tmdb-movie-11225".into()).await.expect("described");
+    let info = core
+        .title_info("tmdb-movie-11225".into())
+        .await
+        .expect("described");
     assert_eq!(info.overview.as_deref(), Some("Dracula is awakened."));
 }

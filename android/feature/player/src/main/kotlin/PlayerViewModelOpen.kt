@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 fun PlayerViewModel.open(setId: String, run: List<String> = emptyList(), fsk: String? = null) {
     val sameTitle = session.openSetId == setId
     session.open(setId)
+    if (!sameTitle) marksController.reset()
     openFsk.value = fsk
     _openSetId.value = setId
     // Reset unconditionally, same as always: for a rotation reopening

@@ -47,7 +47,7 @@ term.rs            drawing a line that rewrites itself, and the percentages
 
 commands/          one module per subcommand, each exposing `run(...)`; thin
                    entry points over the domain modules below
-  add.rs             turn flags into a NewSet, upload::plan_set it, then hand
+  add.rs             turn flags into a NewSet, prepare and record it, then hand
                      the bytes to finish_set (--watch) or a background process
   add_show/          walk a series folder, survey what will play badly, plan
                      and upload each episode, push the index once at the end
@@ -58,8 +58,8 @@ commands/          one module per subcommand, each exposing `run(...)`; thin
   background.rs      re-runs this binary detached, so an upload outlives the
                      terminal that started it
   resume.rs          finish every set left `pending`
-  push_index.rs      snapshot + upload + pin library.db (which pins are
-                     current is kept by index/pins.rs)
+  push_index.rs      report the result of telegram/index_publish; bulk
+                     uploads share that publisher (pins live in index/pins.rs)
   rescan.rs          rebuild the index from channel captions (disaster recovery)
   verify.rs          metadata check, or (--full) re-download + hash
   edit.rs            correct a set's metadata in place (see edit/)
@@ -77,9 +77,9 @@ commands/          one module per subcommand, each exposing `run(...)`; thin
   login.rs / whoami.rs / smoke_upload.rs
   args.rs            clap argument structs for the larger subcommands
 
-upload/            getting a file into the channel. Planning: new_set (what
-                   to add), plan_set (inspect → resolve → remux → record, for
-                   a video), plan_document (a course PDF, no probe or remux),
+upload/            getting a file into the channel. Preparation: new_set (what
+                   to add), prepare_set (inspect → resolve → remux → record,
+                   for a video), record_document (a course PDF, no probe/remux),
                    plan (the one transaction that records a set). Sending:
                    hashing byte-range reader (part_reader), the Transport
                    trait + its Telegram implementation, the resumable per-set
@@ -173,8 +173,11 @@ re-uploaded — this is what makes `resume` after a `kill -9` mid-upload
 produce no duplicate parts, even though `send_message` itself is not
 retried on anything but `FLOOD_WAIT` (a lost response after a committed
 send is exactly the case adoption exists to catch). `resume` iterates
-every `pending` set oldest-first and pushes the index once at the end
-unless `--no-push`.
+every `pending` set oldest-first. Missing or changed local sources are
+reported and left pending while later sets continue. A transport or database
+failure stops the run. Completed sets are published once before reporting an
+aggregate failure, unless `--no-push`; successful work remains available even
+when other sets need attention.
 
 ## 5. `rescan`: disaster recovery
 
@@ -211,10 +214,12 @@ Two modes, selected on one set (by id) or `--all`:
   printed before any download starts, since this mode re-downloads the
   entire set.
 
-The pure comparison logic (`verify::report`) takes no Telegram types and is
-unit-tested directly; `verify::download_hash` is the only piece that talks
-to Telegram. See [`docs/code-standards.md`](code-standards.md) for why that
-split matters for testing.
+The pure comparison logic (`verify::report`) takes no Telegram types.
+`verify::source` supplies message metadata and chunk streams;
+`verify::download_hash` batches retrieval and hashes streamed bytes. Tests
+exercise the production session against injected streams and temporary SQLite
+rows, including failed downloads and stale-success removal. See
+[`docs/code-standards.md`](code-standards.md) for module boundaries.
 
 ## 7. Playback: the web player
 
@@ -263,38 +268,79 @@ loopback and belongs behind something that authenticates:
 ### Module map (`web/src`)
 
 ```
-index.ts           startup: catalog, Telegram, cache, encoder, server, signals
+index.ts           executable entry point and application service composition
+application/       catalog selection/following, subscription catch-up, ordered
+                   shutdown, listener address reporting, and import-safe startup
 config.ts          MEDIAGRAM_* environment, with secrets redacted in the log
 server.ts          the listener, on node:http rather than Bun.serve
-routes.ts          request description in, response description out — pure
-response.ts        status and headers for a Range request (RFC 9110)
+routes.ts          HTTP dispatch and feature-router composition
+response.ts        byte-range planning and shared buffered-response framing
+http/              request/response contracts, browser-write checks, static
+                   files, and streaming with explicit range headers
+catalog/           catalog/search presentation, metadata readers, asset and
+                   artwork endpoints, and audio-track probing
 range.ts           byte ranges to per-part reads, and the 4 KiB alignment
-listen-address.ts  which addresses a bind actually reaches, and the warning
 login.ts           issues this host's session; writes web/.env, mode 600
 catalog.ts         library.db queries; PLAYABLE_SQL, mirrored from mlib-spec
-assets.ts          summaries and subtitle tracks out of the assets table
 client-reach.ts    a viewer on this network, or one across an uplink
 
 status/            what the player is doing: the startup facts worth keeping,
                    a pure snapshot builder, and a route only a local viewer
                    is answered on
-telegram/          teleproto client, and turning planned reads into bytes
+telegram/          teleproto client, turning planned reads into bytes, and
+                   dependency-free caption conventions shared by channel policy
 cache/             512 KiB chunks on disk: keys, store with quota, reader,
                    the readahead tracker behind MEDIAGRAM_CACHE_READAHEAD, and
                    which sets are held in full, for the offline badge
 package/           the mlib-package-v1 reader: pointer, cipher, tar, refresh,
                    and the artwork a package carries
-transcode/         ffmpeg arguments, encoder probe, session registry, the
-                   runner and its supervision, and serving what it produced
+transcode/         playback HTTP negotiation, ffmpeg arguments, encoder probe,
+                   session registry, process supervision, and HLS delivery
 public/            the page: the start page, shelves, the player dialog,
                    hls.js when needed, and the buffer watch that converts
                    down on a slow link
 ```
 
+Within `public/lib/`, `playback/` owns the player and its controls, with
+`playback/streaming/` owning adaptation and HLS resources and `playback/notes/`
+owning note loading, parsing and rendering. `catalog/` owns shelf and detail
+rendering; `status/` owns the system
+panel. Shared catalog, state, formatting, and playback-policy helpers remain
+at the library root. The installed HLS client is still served at `/lib/hls.mjs`.
+
+Application shutdown closes admission to speculative cache reads and waits for
+existing warming to finish before disconnecting Telegram. The HTTP listener
+also drains routing, streaming and cancellation cleanup; the shared source
+remains available until those owners release it.
+
+### Pages of the Movies shelf
+
+The Movies shelf draws 48 films a page, which fills the last row of plates
+at every column count the grid uses. The page is part of the address
+(`#/movies/page/3`; page one stays the plain `#/movies`), so back, reload and
+a shared link all land on it. The library is already whole in the page:
+`public/lib/catalog/pager.js` only slices it and draws the links, and the
+router matches `page` before any collection name. Series and Tutorials shelves
+are short enough not to page, and the Android catalog does not page yet.
+
+### The Featured reel
+
+The Movies heading's Featured button opens `<dialog id="featured">`, drawn by
+`public/lib/catalog/featured-reel.js`. Which films it shows is the pure rule in
+`featured-picks.js`: films with a poster that the profile has not watched,
+shuffled, at most twelve. Each slide is built when shown and crossfaded over
+the last; the drift, fade and rising text are CSS, so reduced motion is the
+stylesheet's global rule. Opening pushes a history entry: back closes the
+reel, and Play or Details wait for that entry to be popped before acting, so
+the film's page is not undone by it. Taglines and scores come from
+`/api/shows/:key`, asked once per film and for the next film while one holds.
+The Android catalog has no posters, since the pinned index carries none, so it
+has no reel; that is a deliberate difference, not a gap.
+
 ### Where the player opens
 
-`#/home`, and the rows on it are decided in `public/lib/home-shelves.js` and
-drawn in `public/lib/home-view.js` — the same split every view here has, and
+`#/home`, and the rows on it are decided in `public/lib/catalog/home-shelves.js` and
+drawn in `public/lib/catalog/home-view.js` — the same split every view here has, and
 the reason the rules are testable without a DOM.
 
 Two of those rows answer "what now?" from the two facts the library actually
@@ -312,11 +358,23 @@ without the completion's date a show watched to the end of an episode has no
 timestamp anywhere the page can see, and would rank behind one glanced at
 months ago.
 
-The 200-line rule [§2](#2-module-map-cratesmediagramsrc) states holds here
-too, with one exception worth naming rather than hiding: `routes.ts` is over
-twice that, having collected the catalog, stream, asset, poster, transcode and
-static-file routes as each was added. Splitting the asset and static routes out
-of the byte path is the obvious cut and has not been made yet.
+The main dispatcher and the extracted catalog and HTTP handlers each stay under
+200 lines; the state router remains a larger module. A catalog swap rebuilds
+catalog presentation and state routing together; requests already in flight
+retain the router and database they started with. Buffered responses share one
+framing helper, including HEAD responses. State, preload and HLS session deletion
+share the same Origin/Host checks; body-bearing writes also require JSON.
+Media workers obtain their internal HTTP address from the bound listener, so
+OS-assigned ports and specific IPv4 or IPv6 binds work for audio probing,
+transcoding and thumbnail generation.
+
+Thumbnail generation first checks the held-title badge, then reads
+`GET /api/sets/:id/cached-stream`, which also supports HEAD and the same single
+Range framing as `/stream`. This route reads disk chunks only, with no upstream
+fetch or readahead. Missing or truncated chunks fail the response body, so a
+failed generation removes its partial sheet instead of publishing it. The
+ordinary `/stream` route still fills cache misses from Telegram; without a cache,
+the cached-stream route answers 404 and thumbnail generation is disabled.
 
 `routes.ts` deliberately builds a description rather than a `Response`:
 `Bun.serve` replaces a manually set `Content-Length` with chunked encoding for
@@ -352,7 +410,7 @@ catalog: codecs a browser cannot decode, and — for a viewer the server places
 outside the local network — a bitrate above the uplink budget. That decision
 is made from numbers, and numbers about a link are frequently wrong.
 
-So the page also measures, in `public/lib/`:
+So the page also measures, in `public/lib/playback/streaming/`:
 
 ```
 buffer-health.js   seconds buffered ahead, and the rate it is filling at
@@ -420,7 +478,7 @@ every file, and a twenty-gigabyte cache is some forty thousand of them. The
 two scans run together rather than one after the other, so the slow case is
 the longer of them and not their sum.
 
-What a reading *says* is in `public/lib/status-lines.js`, apart from where its
+What a reading *says* is in `public/lib/status/status-lines.js`, apart from where its
 nodes go in `status-view.js`, for the reason `buffer-health.js` is apart from
 `adapt-playback.js`: only the first can be tested without a browser.
 
@@ -484,7 +542,9 @@ The second viewing surface, and the one built the other way round. The web
 player is a Bun server that speaks MTProto and serves a browser; the phone has
 no server at all. `mediagram-core` — Rust, grammers, bound into Kotlin with
 [UniFFI](https://mozilla.github.io/uniffi-rs/) — *is* the client, and the app
-is a Compose UI over fourteen methods.
+is a Compose UI over the core API. The watch-state device-ID accessor
+suspends while Rust runs its SQLite work on the blocking pool, following
+the catalog-read accessors; the Kotlin caller does not read it on the UI thread.
 
 ### Module map (`android/`)
 
@@ -502,6 +562,12 @@ is a Compose UI over fourteen methods.
 
 Direction is `ui → feature → core:data → core:rust`, with
 `core:playback → core:data`. A feature module never imports another.
+The `setup.login` package owns the phone, code, and password sign-in state
+machine; catalog owns profile selection and library browsing.
+Inside `ui-mobile`, screens live in `ui.catalog`, `ui.player`, `ui.profile`,
+`ui.setup`, `ui.settings`, and `ui.system`. App composition and navigation
+remain in `ui`; shared row presentation and byte formatting live in
+`ui.components` and `ui.formatting`.
 
 ### Where the catalog comes from
 
@@ -537,15 +603,20 @@ never pushed anything, and grammers only asks when the session already knows
 its own user, which a key-only in-memory session does not. Measured the hard
 way: without it the stream opened and stayed silent.
 
-The app listens **only while the catalog is on screen**. `CatalogViewModel`
-merges `INDEX` events beside the Update button's reloads, and its state is
-collected only while visible, so a phone in a pocket holds nothing open. The
-web player follows the same index events; it is a server, so it listens
-always, and tells its open pages itself. On an index event the catalog reads the channel again and then
-runs the artwork and description fetch quietly — no result dialog for work
-nobody asked for. There is no read on returning to the app: a read downloads
-the whole index, and the catalog already reads once per start. `STATE` is
-heard and dropped until the app has watch state to sync.
+Android shares one native event subscription between the visible catalog and
+foreground watch-state sync. It follows both the current core and selected
+library, cancelling the previous wait when either changes. The subscription
+ends after the last consumer leaves, with a short grace period; failed settings
+reads and interrupted connections retry without crashing the app.
+
+`LibraryUpdateCoordinator` in `core:data` owns refresh, local catalog reading,
+optional artwork fetch and shelf regrouping as an awaited operation.
+`CatalogViewModel` presents its progress and keeps held shelves visible when a
+read fails. A manual update still fetches missing artwork when a channel refresh
+fails; a pushed update fetches quietly only after a successful refresh. Compose
+renders these states and submits requests; it does not infer completion from
+intermediate UI emissions. The web server listens continuously and always checks
+for a newer catalog after subscribing, covering updates missed during startup.
 
 Measured on the tablet: a new index pushed by an uploader on another machine
 was installed within about three seconds, and the new title's poster was on
@@ -555,6 +626,36 @@ Each card looks its poster up when the shelves are built, and a fetch always
 finishes after the read that built them; so once a fetch lays down artwork
 the shelves are rebuilt from the catalog on the device, without asking the
 channel again.
+
+### Kids profiles
+
+A profile made with "Kids profile" ticked sees only titles rated FSK 12 or
+under, plus unrated titles someone marked for Kids by hand; everything else —
+FSK 16 and 18, unrated titles, and so every course unless marked — is hidden.
+The rule is `forKidsProfile` in `web/public/lib/age-rating.js`, ported to
+`android/core/model/src/main/kotlin/AgeRating.kt`, and each surface applies
+it once, where it takes in its catalog (`applyCatalog` in `app.js`,
+`CatalogViewModel` on the phone), so every shelf, search, reel and title page
+inherits it.
+
+It is a filter, not a lock: anyone can choose another profile, the server
+does not know which profile is asking, and a direct stream URL still plays.
+The chunk cache is device-wide and shared by every profile.
+
+The flag is `profiles.kids` (web state v7, core state v3) and travels as an
+optional `"kids": true` on the profile in the sync record — written only when
+true, `format` still 1. Merging is "any device says yes": no device's
+document can switch it off, so the flag is set at creation and never changed.
+The kids flag is therefore permanent for that profile name across every
+device on the account: a sync record cannot express a deletion, so once
+another device has synced the name, that device's record still says
+`"kids": true` and re-imports it on the next sync — an ordinary profile
+recreated under the same name is upgraded straight back. Removing and
+recreating a mistaken profile only works while no other device has synced
+it (and even then, only from the web; the phone cannot remove profiles).
+The dependable correction is a new profile under a different name.
+A device that has not been updated reads the key as absent and shows that
+profile everything until it is.
 
 ### Watch state
 
@@ -573,11 +674,37 @@ in what is newer and sends its own only when something changed. A first
 document whose pin is refused is taken back and the round fails, since an
 unpinned document is invisible and the next round would send another. Lists
 travel as rows with times, and a removal as a tombstone, so a merge cannot
-bring back what was taken off. `WatchSync` runs a round on start, every five
-minutes while the app is in front, when a film is left, when the app goes to
-the background, and within seconds of another device's write, heard through
-the push listener; rounds never overlap. The device id is a random UUID in
-`state.db`, never the host name.
+bring back what was taken off. A kids profile also carries `kids: true`; see
+Kids profiles. `WatchSync` runs a round on start, every five minutes while
+the app is in front, when a film is left, when the app goes to the
+background, and within seconds of another device's write, heard through
+the shared push listener; rounds never overlap. Picker callers join work for
+the current core and library, while a pushed update during a round retains one
+follow-up read. Changing identity invalidates the old work. The device id is a
+random UUID in `state.db`, never the host name.
+
+Receiving another device's progress remains useful even if this device cannot
+publish its own. Both sync engines keep a successful import when sending fails,
+but roll back an import whose local writes fail. The outcome preserves the
+committed row count so the player can refresh its shelves while reporting the
+network failure; the next round still retries the send. Imported profile creation
+counts as a change on both surfaces, even when the profile has no watched titles.
+
+Android's provider serializes closing and clearing account storage with core
+construction. `DefaultCoreClient.close()` first calls `retireLocalState()`: the
+native database mutex closes any open connection and permanently rejects that
+core's queued or later local-state operations. Releasing a UniFFI handle alone
+cannot guarantee this, because queued blocking work owns a separate native
+reference. Retirement preserves files for ordinary core replacement; account
+reset deletes them only after retirement. This boundary does not drain network
+operations. Profile state is invalidated after a completed reset, and asynchronous
+reads publish only while their originating core and selection are current.
+
+Initial provisioning refuses to overwrite an installed core. Application
+replacement reloads watch-state ownership before reporting success. If the
+replacement is refused after retiring the old core, Settings restores ownership
+using the retained credentials and preserves the refusal. A failed reload offers
+a separate profile-read retry without submitting replacement credentials again.
 
 "Who's watching?" chooses among the account's profiles, which arrive from the
 other devices' documents, and removes one as the web does: locally, taking its
@@ -623,19 +750,21 @@ That boundary is no longer hypothetical: the web player ([§7](#7-playback-the-w
 is the second client, and it reuses the schema and the caption format while
 sharing no code at all.
 
-The property that makes that possible is stated as a negative, because the
-negative is the one that has to hold: `grammers_*` appears **nowhere** in
-`index/`, `media/`, `metadata/` or the `mlib-spec` crate. Those are the parts
-a second client reuses, and nothing in them knows Telegram exists. Which
-Telegram-facing files import grammers changes as commands are added — `edit/`,
-`remove/` and `serve/` all do now — and is not worth enumerating; that no
-reusable module does is worth enforcing, and
+The index queries and schema, media handling, metadata, and `mlib-spec` are
+independent of Telegram transport. The uploader has one SQLite bootstrap
+exception: [`index/sqlite_init.rs`](../crates/mediagram/src/index/sqlite_init.rs)
+initializes the session store's shared SQLite library before any index
+connection opens it. Reversing that order can abort the process. This uses
+an in-memory session and makes no Telegram request; the ordering is covered
+by [`sqlite_init_order.rs`](../crates/mediagram/tests/sqlite_init_order.rs).
+
+Check that other reusable modules do not import grammers with:
 
 ```sh
-grep -rl grammers crates/mediagram/src/{index,media,metadata} crates/mlib-spec/
+rg -l 'grammers_' crates/mediagram/src/{index,media,metadata} crates/mlib-spec/ --glob '!sqlite_init.rs'
 ```
 
-is how to check it.
+The command should produce no matches.
 
 The Android app ([§8](#8-playback-the-android-app)) is the third consumer and
 reads the same index the same way. The `UniFFI` friction this section once

@@ -1,5 +1,6 @@
 package player
 
+import android.util.Log
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 
@@ -30,7 +31,10 @@ internal class PlayerHandleListener(
     }
 
     override fun onPlayerError(error: PlaybackException) {
-        notifyError(error.message ?: "Playback failed")
+        // Logged in full, reported in words: the exception's own message is
+        // media3's, and a viewer is owed a sentence rather than a stack trace.
+        Log.w("Player", "playback failed", error)
+        notifyError("Playback failed")
     }
 
     override fun onPositionDiscontinuity(

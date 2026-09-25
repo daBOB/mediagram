@@ -47,7 +47,10 @@ pub async fn run(
     let snapshot = index::sqlite_init::open(staging.path().join(mlib_spec::schema::INDEX_FILE))
         .context("opening the snapshot")?;
     let titles = crate::export::titles::distinct_titles(&snapshot)?;
-    let (sets, parts) = (index::sets::count(&snapshot)?, index::parts::count(&snapshot)?);
+    let (sets, parts) = (
+        index::sets::count(&snapshot)?,
+        index::parts::count(&snapshot)?,
+    );
 
     // Refuse before downloading: discovering the limit afterwards would throw
     // away every poster fetched to get there.
@@ -158,4 +161,3 @@ fn write_package(dir: &Path, created_at: i64, sealed: &[u8]) -> Result<PathBuf> 
     std::fs::write(&dest, sealed).with_context(|| format!("writing {}", dest.display()))?;
     Ok(dest)
 }
-

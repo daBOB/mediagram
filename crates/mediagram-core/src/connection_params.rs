@@ -44,7 +44,10 @@ mod tests {
 
     #[test]
     fn a_session_is_named_for_its_surface_and_device() {
-        assert_eq!(device_model("uploader", "homelab"), "mediagram uploader · homelab");
+        assert_eq!(
+            device_model("uploader", "homelab"),
+            "mediagram uploader · homelab"
+        );
     }
 
     #[test]

@@ -43,6 +43,8 @@ export interface MergedProfile {
    * right in the only case that matters — there being just one.
    */
   displayName: string;
+  /** A kids profile if any device's document says so; absent otherwise. */
+  kids?: true;
   progress: ProgressRow[];
   watched: WatchedRow[];
   /** `mergeStates` always fills these; optional only so a hand-built
@@ -73,6 +75,7 @@ export function mergeStates(records: SyncRecord[]): MergedState {
       displayName: string;
       /** The device `displayName` was taken from, for the tie-break below. */
       nameFrom: string;
+      kids: boolean;
       progress: Map<string, Held<ProgressRow>>;
       watched: Map<string, Held<WatchedRow>>;
       watchlist: Map<string, Held<ListRow>>;
@@ -97,6 +100,7 @@ export function mergeStates(records: SyncRecord[]): MergedState {
         held = {
           displayName: profile.name.trim(),
           nameFrom: device,
+          kids: false,
           progress: new Map(),
           watched: new Map(),
           watchlist: new Map(),
@@ -110,6 +114,10 @@ export function mergeStates(records: SyncRecord[]): MergedState {
         held.displayName = profile.name.trim();
         held.nameFrom = device;
       }
+
+      // Sticky: once any device calls this viewer a kids profile, no document
+      // that merely lacks the flag — an older device's, say — can undo it.
+      if (profile.kids === true) held.kids = true;
 
       for (const row of profile.progress ?? []) keep(held.progress, row.setId, row, device);
       for (const row of profile.watched ?? []) keep(held.watched, row.setId, row, device);
@@ -138,6 +146,7 @@ export function mergeStates(records: SyncRecord[]): MergedState {
     profiles.push({
       name,
       displayName: held.displayName,
+      ...(held.kids ? { kids: true as const } : {}),
       progress,
       watched,
       watchlist: [...held.watchlist.values()].map((one) => one.row),

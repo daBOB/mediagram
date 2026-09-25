@@ -13,7 +13,8 @@ import { Database } from "bun:sqlite";
 import { readlink, rename, rm, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { assertSchema, listPlayable } from "../catalog";
-import { CURRENT, removeOtherVersions, swapCurrent } from "../package/catalog-versions";
+import { failureMessage } from "../failure-message";
+import { CURRENT, availableVersionName, cleanupCatalogDirectory, removeOtherVersions, swapCurrent } from "../package/catalog-versions";
 
 /**
  * A ceiling on the snapshot. A real index for a few hundred sets is a few
@@ -33,7 +34,7 @@ export type InstallOutcome =
 export async function installedPushedAt(root: string): Promise<number | null> {
   try {
     const target = await readlink(join(root, CURRENT));
-    const seconds = Number(/^v-(\d+)$/.exec(target)?.[1]);
+    const seconds = Number(/^v-(\d+)(?:-\d+)?$/.exec(target)?.[1]);
     return Number.isSafeInteger(seconds) ? seconds : null;
   } catch {
     return null;
@@ -51,6 +52,8 @@ export function currentDir(root: string): string {
  * `chunks` is only started when the snapshot is newer than the installed one,
  * so an index event for the catalog already live costs no download. It is a
  * function rather than an iterable for that reason.
+ * Download, validation, and installation failures return `kept` and preserve
+ * the installed catalog. Cleanup failures are logged after publication.
  */
 export async function installChannelIndex(
   root: string,
@@ -62,24 +65,26 @@ export async function installChannelIndex(
     return { status: "unchanged", dir: currentDir(root), pushedAt: installed };
   }
 
-  await mkdir(root, { recursive: true });
   const incoming = join(root, `incoming-${pushedAt}-${process.pid}`);
-  await rm(incoming, { recursive: true, force: true });
-  await mkdir(incoming);
+  let version: string;
+  let staged = incoming;
 
   let sets: number;
   try {
-    await download(join(incoming, INDEX_FILE), chunks());
-    sets = prove(join(incoming, INDEX_FILE));
-  } catch (error) {
+    await mkdir(root, { recursive: true });
     await rm(incoming, { recursive: true, force: true });
-    return { status: "kept", reason: (error as Error).message };
+    await mkdir(incoming);
+    await download(join(incoming, INDEX_FILE), chunks());
+    sets = validateAndCountPlayableSets(join(incoming, INDEX_FILE));
+    version = await availableVersionName(root, pushedAt);
+    await rename(incoming, join(root, version));
+    staged = join(root, version);
+    await swapCurrent(root, version);
+  } catch (error) {
+    await cleanupCatalogDirectory(staged);
+    return { status: "kept", reason: failureMessage(error) };
   }
 
-  const version = `v-${pushedAt}`;
-  await rm(join(root, version), { recursive: true, force: true });
-  await rename(incoming, join(root, version));
-  await swapCurrent(root, version);
   // An open handle on the version just replaced keeps reading it: unlinking a
   // file SQLite has open leaves the inode alive until the handle closes.
   await removeOtherVersions(root, version);
@@ -106,18 +111,18 @@ async function download(path: string, chunks: AsyncIterable<Uint8Array>): Promis
  * Counts what the staged snapshot can play, which is also the proof: a file
  * that is not a catalog of this schema cannot be counted.
  */
-function prove(path: string): number {
+function validateAndCountPlayableSets(path: string): number {
   let db: Database;
   try {
     db = new Database(path, { readonly: true });
-  } catch {
-    throw new Error("the pinned index could not be opened as a library");
+  } catch (error) {
+    throw new Error(`the pinned index could not be opened as a library: ${failureMessage(error)}`, { cause: error });
   }
   try {
     assertSchema(db);
     return listPlayable(db).length;
   } catch (error) {
-    throw new Error(`the pinned index could not be read as a library: ${(error as Error).message}`);
+    throw new Error(`the pinned index could not be read as a library: ${failureMessage(error)}`, { cause: error });
   } finally {
     db.close();
   }

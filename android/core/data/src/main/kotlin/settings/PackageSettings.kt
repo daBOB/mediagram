@@ -8,25 +8,35 @@ import android.content.Context
  * [toString] is overridden — the generated one would print [keyB64] in
  * full the moment anything interpolates or logs this object.
  */
-data class PackageCredentials(val url: String, val keyB64: String) {
+data class PackageCredentials(
+    val url: String,
+    val keyB64: String,
+) {
     override fun toString(): String = "PackageCredentials(url=$url, keyB64=<redacted>)"
 }
 
 interface PackageSettings {
     suspend fun read(): PackageCredentials?
-    suspend fun write(url: String, keyB64: String)
+
+    suspend fun write(
+        url: String,
+        keyB64: String,
+    )
+
     suspend fun clear()
 }
 
 /** In-memory implementation for tests; nothing here ever touches disk. */
 class InMemoryPackageSettings : PackageSettings {
-
     @Volatile
     private var stored: PackageCredentials? = null
 
     override suspend fun read(): PackageCredentials? = stored
 
-    override suspend fun write(url: String, keyB64: String) {
+    override suspend fun write(
+        url: String,
+        keyB64: String,
+    ) {
         stored = PackageCredentials(url, keyB64)
     }
 
@@ -40,8 +50,9 @@ class InMemoryPackageSettings : PackageSettings {
  * keystore-guarded master key. The URL is stored alongside it for
  * convenience only; it carries no confidentiality requirement of its own.
  */
-class EncryptedPackageSettings(private val context: Context) : PackageSettings {
-
+class EncryptedPackageSettings(
+    private val context: Context,
+) : PackageSettings {
     // Opened on first use, not in the constructor: see EncryptedTelegramSettings
     // for why a keystore failure must not happen where nothing can catch it.
     private val preferences by lazy { encryptedPreferences(context, PREFS_FILE_NAME) }
@@ -52,8 +63,12 @@ class EncryptedPackageSettings(private val context: Context) : PackageSettings {
         return PackageCredentials(url, keyB64)
     }
 
-    override suspend fun write(url: String, keyB64: String) {
-        preferences.edit()
+    override suspend fun write(
+        url: String,
+        keyB64: String,
+    ) {
+        preferences
+            .edit()
             .putString(KEY_URL, url)
             .putString(KEY_KEY_B64, keyB64)
             .apply()

@@ -5,6 +5,7 @@ pub mod assets;
 mod columns;
 pub mod db;
 pub mod label;
+mod migrations;
 pub mod parts;
 pub mod pins;
 pub mod progress;

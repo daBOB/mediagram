@@ -3,6 +3,7 @@
 *.sqlite
 *.db
 /.claude/
+/.agents/
 .gstack/
 /graphify-out/
 

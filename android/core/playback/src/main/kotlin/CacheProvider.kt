@@ -30,7 +30,10 @@ import java.io.File
 private const val CACHE_DIR_NAME = "mlib"
 
 /** What the disk cache is actually holding, against what it may hold — the System screen's Held row. */
-data class CacheOccupancy(val heldBytes: Long, val budgetBytes: Long)
+data class CacheOccupancy(
+    val heldBytes: Long,
+    val budgetBytes: Long,
+)
 
 /**
  * The one [SimpleCache] for the whole process, over `context.cacheDir/mlib`
@@ -59,7 +62,6 @@ data class CacheOccupancy(val heldBytes: Long, val budgetBytes: Long)
  * nothing already cached is lost by the switch.
  */
 object CacheProvider {
-
     @Volatile
     private var instance: SimpleCache? = null
 
@@ -72,7 +74,10 @@ object CacheProvider {
     @Volatile
     private var evictor: AdjustableLruEvictor? = null
 
-    suspend fun get(context: Context, dispatcher: CoroutineDispatcher = Dispatchers.IO): SimpleCache {
+    suspend fun get(
+        context: Context,
+        dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    ): SimpleCache {
         instance?.let { return it }
         return withContext(dispatcher) {
             // Read outside the lock: a race just repeats a cheap prefs
@@ -92,7 +97,10 @@ object CacheProvider {
      * total, not disk I/O, so this needs no dispatch beyond whatever [get]
      * itself needs to open the cache the first time.
      */
-    suspend fun occupancy(context: Context, dispatcher: CoroutineDispatcher = Dispatchers.IO): CacheOccupancy {
+    suspend fun occupancy(
+        context: Context,
+        dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    ): CacheOccupancy {
         val cache = get(context, dispatcher)
         val budgetBytes = evictor?.budgetBytes ?: CACHE_MAX_BYTES
         return CacheOccupancy(heldBytes = cache.cacheSpace, budgetBytes = budgetBytes)
@@ -104,7 +112,11 @@ object CacheProvider {
      * "Held" drops right away and the choice survives a restart. Builds
      * the cache first if nothing has opened it yet, same as [occupancy].
      */
-    suspend fun setBudget(context: Context, bytes: Long, dispatcher: CoroutineDispatcher = Dispatchers.IO) {
+    suspend fun setBudget(
+        context: Context,
+        bytes: Long,
+        dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    ) {
         val cache = get(context, dispatcher)
         withContext(dispatcher) {
             val settings = budgetSettings(context)
@@ -122,7 +134,10 @@ object CacheProvider {
 
     private fun budgetSettings(context: Context): CacheBudgetSettings = PlainCacheBudgetSettings(context)
 
-    private fun buildCache(context: Context, budgetBytes: Long): SimpleCache {
+    private fun buildCache(
+        context: Context,
+        budgetBytes: Long,
+    ): SimpleCache {
         val newEvictor = AdjustableLruEvictor(budgetBytes)
         evictor = newEvictor
         return SimpleCache(

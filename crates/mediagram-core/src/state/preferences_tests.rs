@@ -8,7 +8,7 @@ fn db() -> (tempfile::TempDir, StateDb) {
 }
 
 fn a_profile(db: &StateDb) -> String {
-    db.with(|conn| crate::state::profiles::create(conn, "André")).unwrap().unwrap().id
+    db.with(|conn| crate::state::profiles::create(conn, "André", false)).unwrap().unwrap().id
 }
 
 #[test]

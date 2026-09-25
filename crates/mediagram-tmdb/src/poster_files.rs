@@ -98,7 +98,8 @@ fn write_private(path: &Path, bytes: &[u8]) -> Result<()> {
     // run keeps whatever it had.
     std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))
         .with_context(|| format!("restricting {}", path.display()))?;
-    file.write_all(bytes).with_context(|| format!("writing {}", path.display()))
+    file.write_all(bytes)
+        .with_context(|| format!("writing {}", path.display()))
 }
 
 /// The same, for a directory, which needs the execute bit to be enterable.

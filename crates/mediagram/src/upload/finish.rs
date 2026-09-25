@@ -22,8 +22,14 @@ pub async fn finish_one(
     set: &SetRow,
     data_dir: &Path,
 ) -> Result<bool> {
-    let source_key = db::source_key(&set.set_id);
-    let source_path = db::get_meta(conn, &source_key)?.ok_or_else(|| {
+    let source = db::get_meta(conn, &db::source_key(&set.set_id))?;
+    let source_path = available_source(set, source.as_deref()).await?;
+    finish_from(conn, transport, throttle_ms, set, data_dir, &source_path).await
+}
+
+/// Validates only this set's local source, without touching the transport.
+pub(super) async fn available_source(set: &SetRow, recorded: Option<&str>) -> Result<PathBuf> {
+    let source_path = recorded.ok_or_else(|| {
         anyhow::anyhow!(
             "set {} has no recorded source path; cannot resume",
             set.set_id
@@ -45,13 +51,23 @@ pub async fn finish_one(
             set.total
         );
     }
+    Ok(source_path)
+}
 
+pub(super) async fn finish_from(
+    conn: &Connection,
+    transport: &impl Transport,
+    throttle_ms: u64,
+    set: &SetRow,
+    data_dir: &Path,
+    source_path: &Path,
+) -> Result<bool> {
     run_set(
         conn,
         transport,
         throttle_ms,
         set,
-        &source_path,
+        source_path,
         Some(data_dir),
     )
     .await
@@ -59,7 +75,7 @@ pub async fn finish_one(
 
     let complete = parts::pending_parts(conn, &set.set_id)?.is_empty();
     if complete {
-        db::delete_meta(conn, &source_key)?;
+        db::delete_meta(conn, &db::source_key(&set.set_id))?;
     }
     Ok(complete)
 }

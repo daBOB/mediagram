@@ -5,6 +5,7 @@
 //! real run uses both come from this one function, so they cannot disagree
 //! about what is being dropped.
 
+use crate::media::direct_play;
 use crate::media::streams::{Stream, StreamKind};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -29,6 +30,21 @@ pub struct PreparePlan {
 }
 
 impl PreparePlan {
+    /// Whether any audio track being kept is one a browser would refuse.
+    ///
+    /// Asked of the tracks that survive the plan, not of the file: dropping the
+    /// E-AC-3 commentary and keeping the AAC is a file that needs no encoding.
+    pub fn audio_needs_encoding(&self) -> bool {
+        self.keep
+            .iter()
+            .filter(|s| s.kind == StreamKind::Audio)
+            .any(|s| {
+                s.codec
+                    .as_deref()
+                    .is_none_or(|codec| !direct_play::known(&direct_play::AUDIO, codec))
+            })
+    }
+
     /// `-map` arguments naming exactly the kept streams, in order.
     pub fn map_args(&self) -> Vec<String> {
         self.keep

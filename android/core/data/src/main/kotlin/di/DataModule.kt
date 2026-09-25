@@ -7,10 +7,10 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import data.CatalogRepository
+import data.CoreLibraryEvents
 import data.CoreProvider
 import data.CoreStorage
 import data.DefaultCatalogRepository
-import data.CoreLibraryEvents
 import data.DefaultPlayerPreferences
 import data.DefaultWatchStateRepository
 import data.DefaultWatchSync
@@ -38,7 +38,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object DataModule {
-
     // The one dispatcher this app's blocking work goes to: keystore
     // decryption, the native library's first load, and the file reads
     // behind "is this device signed in". None of it may run on main, and a
@@ -50,23 +49,28 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun provideLibrarySettings(@ApplicationContext context: Context): LibrarySettings =
-        EncryptedLibrarySettings(context)
+    fun provideLibrarySettings(
+        @ApplicationContext context: Context,
+        dispatcher: CoroutineDispatcher,
+    ): LibrarySettings = EncryptedLibrarySettings(context, dispatcher)
 
     @Provides
     @Singleton
-    fun provideShelfViewSettings(@ApplicationContext context: Context): ShelfViewSettings =
-        SharedPreferencesShelfViewSettings(context)
+    fun provideShelfViewSettings(
+        @ApplicationContext context: Context,
+    ): ShelfViewSettings = SharedPreferencesShelfViewSettings(context)
 
     @Provides
     @Singleton
-    fun provideTelegramSettings(@ApplicationContext context: Context): TelegramSettings =
-        EncryptedTelegramSettings(context)
+    fun provideTelegramSettings(
+        @ApplicationContext context: Context,
+    ): TelegramSettings = EncryptedTelegramSettings(context)
 
     @Provides
     @Singleton
-    fun provideTmdbSettings(@ApplicationContext context: Context): TmdbSettings =
-        EncryptedTmdbSettings(context)
+    fun provideTmdbSettings(
+        @ApplicationContext context: Context,
+    ): TmdbSettings = EncryptedTmdbSettings(context)
 
     // The same directory the core is constructed with, so clearing it
     // clears the state that core wrote.

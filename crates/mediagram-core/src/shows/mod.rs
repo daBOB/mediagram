@@ -47,7 +47,7 @@ pub fn upsert(conn: &Connection, row: &TitleDetailsRow) -> rusqlite::Result<()> 
         params![
             SOURCE,
             kind_key(row.kind),
-            row.id as i64,
+            row.id,
             row.lang,
             row.overview,
             row.tagline,
@@ -75,7 +75,7 @@ pub fn get(conn: &Connection, kind: Kind, id: u64) -> rusqlite::Result<Option<Ti
                     total_seasons, total_episodes, {certification}
                FROM shows WHERE source = ?1 AND kind = ?2 AND id = ?3"
         ),
-        params![SOURCE, kind_key(kind), id as i64],
+        params![SOURCE, kind_key(kind), id],
         |row| {
             Ok(TitleDetailsRow {
                 kind,

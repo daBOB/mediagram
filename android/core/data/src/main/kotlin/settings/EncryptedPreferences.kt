@@ -15,7 +15,10 @@ import androidx.security.crypto.MasterKey
  * cannot quietly end up on a weaker footing than the one before it — the
  * schemes are chosen once, in one place, for all of them.
  */
-internal fun encryptedPreferences(context: Context, fileName: String): SharedPreferences =
+internal fun encryptedPreferences(
+    context: Context,
+    fileName: String,
+): SharedPreferences =
     EncryptedSharedPreferences.create(
         context,
         fileName,

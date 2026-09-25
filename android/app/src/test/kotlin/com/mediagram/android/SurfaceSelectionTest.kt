@@ -10,7 +10,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class SurfaceSelectionTest {
-
     @Test
     fun aTelevisionUiModeSelectsTheTvSurface() {
         val context = mockContextWithUiMode(Configuration.UI_MODE_TYPE_TELEVISION)

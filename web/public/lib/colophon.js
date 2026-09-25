@@ -60,8 +60,8 @@ function bytesLabel(sets) {
  * before that answer arrives on a slow start, and a colophon that waits for
  * it would flash empty. Without it the line is simply shorter.
  *
- * @param {Array<{kind?: string, duration?: number, total?: number}>} sets
- * @param {{origin?: string, publishedAt?: number|null, schema?: number}|null} catalog
+ * @param {Array<{kind?: string, duration?: number|null, total?: number}>} sets
+ * @param {{origin?: string, publishedAt?: number|null, schema?: number|null}|null} catalog
  * @param {Date} [now]
  */
 export function colophonLine(sets, catalog, now = new Date()) {

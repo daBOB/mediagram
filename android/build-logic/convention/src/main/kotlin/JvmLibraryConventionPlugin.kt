@@ -16,7 +16,7 @@ class JvmLibraryConventionPlugin : Plugin<Project> {
             apply(plugin = "app.android.lint")
 
             configureKotlinJvm()
-            
+
             dependencies {
                 add("testImplementation", libs.findLibrary("kotlin.test").get())
             }

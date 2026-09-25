@@ -11,7 +11,10 @@ import android.content.Context
  * [toString] is overridden — the generated one would print it in full the
  * moment anything interpolates or logs this object.
  */
-data class TelegramCredentials(val apiId: Int, val apiHash: String) {
+data class TelegramCredentials(
+    val apiId: Int,
+    val apiHash: String,
+) {
     override fun toString(): String = "TelegramCredentials(apiId=$apiId, apiHash=<redacted>)"
 }
 
@@ -23,18 +26,24 @@ data class TelegramCredentials(val apiId: Int, val apiHash: String) {
  * Telegram rather than here. Shared rather than repeated so the in-memory
  * store a test drives cannot accept an identity the real one would reject.
  */
-internal fun credentialsOrNull(apiId: Int, apiHash: String?): TelegramCredentials? =
-    if (apiId > 0 && !apiHash.isNullOrBlank()) TelegramCredentials(apiId, apiHash) else null
+internal fun credentialsOrNull(
+    apiId: Int,
+    apiHash: String?,
+): TelegramCredentials? = if (apiId > 0 && !apiHash.isNullOrBlank()) TelegramCredentials(apiId, apiHash) else null
 
 interface TelegramSettings {
     suspend fun read(): TelegramCredentials?
-    suspend fun write(apiId: Int, apiHash: String)
+
+    suspend fun write(
+        apiId: Int,
+        apiHash: String,
+    )
+
     suspend fun clear()
 }
 
 /** In-memory implementation for tests; nothing here ever touches disk. */
 class InMemoryTelegramSettings : TelegramSettings {
-
     @Volatile
     private var apiId: Int = 0
 
@@ -43,7 +52,10 @@ class InMemoryTelegramSettings : TelegramSettings {
 
     override suspend fun read(): TelegramCredentials? = credentialsOrNull(apiId, apiHash)
 
-    override suspend fun write(apiId: Int, apiHash: String) {
+    override suspend fun write(
+        apiId: Int,
+        apiHash: String,
+    ) {
         this.apiId = apiId
         this.apiHash = apiHash
     }
@@ -66,15 +78,20 @@ class InMemoryTelegramSettings : TelegramSettings {
  * crash on every launch, with no screen reached to say so or to offer
  * starting over.
  */
-class EncryptedTelegramSettings(private val context: Context) : TelegramSettings {
-
+class EncryptedTelegramSettings(
+    private val context: Context,
+) : TelegramSettings {
     private val preferences by lazy { encryptedPreferences(context, PREFS_FILE_NAME) }
 
     override suspend fun read(): TelegramCredentials? =
         credentialsOrNull(preferences.getInt(KEY_API_ID, 0), preferences.getString(KEY_API_HASH, null))
 
-    override suspend fun write(apiId: Int, apiHash: String) {
-        preferences.edit()
+    override suspend fun write(
+        apiId: Int,
+        apiHash: String,
+    ) {
+        preferences
+            .edit()
             .putInt(KEY_API_ID, apiId)
             .putString(KEY_API_HASH, apiHash)
             .apply()

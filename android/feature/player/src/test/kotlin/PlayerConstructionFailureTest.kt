@@ -20,37 +20,38 @@ import kotlin.test.assertEquals
  * process, and the screen waits on a player that is never coming.
  */
 class PlayerConstructionFailureTest {
-
     @After
     fun tearDown() = Dispatchers.resetMain()
 
     @Test
-    fun aFailureThatLandsBeforeAnyoneSubscribesIsStillDelivered() = runTest {
-        installMainDispatcher()
-        val deferred = CompletableDeferred<ExoPlayer>()
-        val handle = DefaultPlayerHandle(deferred, this)
+    fun aFailureThatLandsBeforeAnyoneSubscribesIsStillDelivered() =
+        runTest {
+            installMainDispatcher()
+            val deferred = CompletableDeferred<ExoPlayer>()
+            val handle = DefaultPlayerHandle(deferred, this)
 
-        deferred.completeExceptionally(IOException("no space left for the cache"))
-        advanceUntilIdle()
+            deferred.completeExceptionally(IOException("no space left for the cache"))
+            advanceUntilIdle()
 
-        // Only now does the screen exist to care about it.
-        val viewModel = testViewModel(handle)
+            // Only now does the screen exist to care about it.
+            val viewModel = testViewModel(handle)
 
-        assertEquals(PlayerUiState.Failed("no space left for the cache"), viewModel.state.value)
-    }
+            assertEquals(PlayerUiState.Failed("Could not prepare the player"), viewModel.state.value)
+        }
 
     @Test
-    fun openingASetAfterTheFailureReportsItRatherThanWaitingForAPlayer() = runTest {
-        installMainDispatcher()
-        val deferred = CompletableDeferred<ExoPlayer>()
-        val handle = DefaultPlayerHandle(deferred, this)
-        val viewModel = testViewModel(handle)
-        deferred.completeExceptionally(IOException("no space left for the cache"))
-        advanceUntilIdle()
-        assertEquals(PlayerUiState.Failed("no space left for the cache"), viewModel.state.value)
+    fun openingASetAfterTheFailureReportsItRatherThanWaitingForAPlayer() =
+        runTest {
+            installMainDispatcher()
+            val deferred = CompletableDeferred<ExoPlayer>()
+            val handle = DefaultPlayerHandle(deferred, this)
+            val viewModel = testViewModel(handle)
+            deferred.completeExceptionally(IOException("no space left for the cache"))
+            advanceUntilIdle()
+            assertEquals(PlayerUiState.Failed("Could not prepare the player"), viewModel.state.value)
 
-        viewModel.open("s1")
+            viewModel.open("s1")
 
-        assertEquals(PlayerUiState.Failed("no space left for the cache"), viewModel.state.value)
-    }
+            assertEquals(PlayerUiState.Failed("Could not prepare the player"), viewModel.state.value)
+        }
 }

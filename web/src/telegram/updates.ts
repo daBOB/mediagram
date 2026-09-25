@@ -12,10 +12,7 @@
  * bug in whichever disagrees with the web.
  */
 
-import { STATE_MARKER, deviceFromCaption } from "./state-channel";
-
-/** What the index caption begins with; the same prefix `pick_index` looks for. */
-export const INDEX_MARKER = "#mlib-index";
+import { INDEX_MARKER, STATE_MARKER, deviceFromCaption } from "./channel-captions";
 
 /**
  * One raw update, reduced to what classifying needs. The MTProto adapter

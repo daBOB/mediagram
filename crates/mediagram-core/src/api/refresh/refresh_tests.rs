@@ -11,13 +11,13 @@ use flate2::Compression;
 use flate2::write::GzEncoder;
 use mlib_spec::package::{CIPHER, LatestPointer, PACKAGE_FORMAT, associated_data, key_id};
 use sha2::{Digest, Sha256};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpListener;
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
+use tokio::net::{TcpListener, TcpStream};
 
 use super::*;
+use crate::package::cipher;
 use crate::versions::identity::{self, read_identity};
 use crate::versions::install_staged;
-use crate::package::cipher;
 
 const KEY: [u8; 32] = [3u8; 32];
 
@@ -59,12 +59,17 @@ fn pointer_response(pointer: &LatestPointer) -> Vec<u8> {
 
 /// An empty, real, migrated `library.db` that `count_playable` can open.
 fn empty_library_db_bytes() -> Vec<u8> {
+    library_db_bytes("")
+}
+
+fn library_db_bytes(statements: &str) -> Vec<u8> {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("library.db");
     let conn = rusqlite::Connection::open(&path).unwrap();
     for stmt in mlib_spec::schema::migrations_up_to(mlib_spec::schema::SCHEMA_VERSION) {
         conn.execute(stmt, []).unwrap();
     }
+    conn.execute_batch(statements).unwrap();
     drop(conn);
     std::fs::read(&path).unwrap()
 }
@@ -80,6 +85,10 @@ fn append(builder: &mut tar::Builder<&mut Vec<u8>>, name: &str, data: &[u8]) {
 /// A genuinely valid sealed package: `library.db` plus an agreeing
 /// manifest, gzipped, tarred, and sealed under `KEY`.
 fn fixture_package(created_at: i64) -> (LatestPointer, Vec<u8>) {
+    package_with_database(created_at, &empty_library_db_bytes())
+}
+
+fn package_with_database(created_at: i64, database: &[u8]) -> (LatestPointer, Vec<u8>) {
     let mut tar_bytes = Vec::new();
     {
         let mut builder = tar::Builder::new(&mut tar_bytes);
@@ -88,7 +97,7 @@ fn fixture_package(created_at: i64) -> (LatestPointer, Vec<u8>) {
             mlib_spec::schema::SCHEMA_VERSION
         );
         append(&mut builder, "manifest.json", manifest.as_bytes());
-        append(&mut builder, "library.db", &empty_library_db_bytes());
+        append(&mut builder, "library.db", database);
         builder.finish().unwrap();
     }
     let mut gz = Vec::new();
@@ -215,14 +224,21 @@ fn reinstalling_the_current_version_keeps_current_whole() {
     install_staged(&store::dir(&core), &stage("second"), "v-5").unwrap();
 
     let current = store::current_dir(&core);
-    assert_eq!(std::fs::read_to_string(current.join("marker")).unwrap(), "second");
+    assert_eq!(
+        std::fs::read_to_string(current.join("marker")).unwrap(),
+        "second"
+    );
     let versions: Vec<String> = std::fs::read_dir(&root)
         .unwrap()
         .flatten()
         .filter_map(|entry| entry.file_name().into_string().ok())
         .filter(|name| name.starts_with("v-"))
         .collect();
-    assert_eq!(versions.len(), 1, "the replaced copy is swept: {versions:?}");
+    assert_eq!(
+        versions.len(),
+        1,
+        "the replaced copy is swept: {versions:?}"
+    );
 }
 
 /// The download is checked against the pointer's sha256 once, before the
@@ -244,4 +260,160 @@ async fn a_package_that_does_not_match_its_pointer_is_refused() {
         "cipher error: the package does not match the sha256 in its pointer"
     );
     assert!(!store::current_dir(&core).exists());
+}
+
+const PLAYABLE: &str = "
+    INSERT INTO sets(set_id, kind, title, container, total, part_count, status, created_at, spec_version)
+    VALUES ('s1', 'movie', 'Held title', 'mp4', 4, 1, 'complete', 1, 4);
+    INSERT INTO parts(set_id, idx, byte_offset, byte_length, status, chat_id, message_id)
+    VALUES ('s1', 0, 0, 4, 'done', -1000000000001, 1);";
+
+async fn offer(core: &Core, package: &(LatestPointer, Vec<u8>)) -> Result<u64, CoreError> {
+    let base = serve(vec![
+        pointer_response(&package.0),
+        http_response(&package.1),
+    ])
+    .await;
+    refresh_catalog(core, format!("{base}/latest.json"), STANDARD.encode(KEY)).await
+}
+
+struct DelayedPackage {
+    url: String,
+    requested: tokio::sync::oneshot::Receiver<()>,
+    release: tokio::sync::oneshot::Sender<()>,
+    server: tokio::task::JoinHandle<()>,
+}
+
+async fn read_request(socket: &mut TcpStream) {
+    let mut reader = BufReader::new(socket);
+    loop {
+        let mut line = String::new();
+        assert_ne!(reader.read_line(&mut line).await.unwrap(), 0);
+        if line == "\r\n" {
+            return;
+        }
+    }
+}
+
+/// The package request proves the caller passed its initial replay check.
+/// Its bytes stay withheld until a competing real refresh has completed.
+async fn delayed_package(package: (LatestPointer, Vec<u8>)) -> DelayedPackage {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let url = format!("http://{}/latest.json", listener.local_addr().unwrap());
+    let (requested, request_seen) = tokio::sync::oneshot::channel();
+    let (release, released) = tokio::sync::oneshot::channel();
+    let server = tokio::spawn(async move {
+        let (mut pointer_socket, _) = listener.accept().await.unwrap();
+        read_request(&mut pointer_socket).await;
+        pointer_socket
+            .write_all(&pointer_response(&package.0))
+            .await
+            .unwrap();
+        pointer_socket.shutdown().await.unwrap();
+        let (mut package_socket, _) = listener.accept().await.unwrap();
+        read_request(&mut package_socket).await;
+        requested.send(()).unwrap();
+        released.await.unwrap();
+        package_socket
+            .write_all(&http_response(&package.1))
+            .await
+            .unwrap();
+        package_socket.shutdown().await.unwrap();
+    });
+    DelayedPackage {
+        url,
+        requested: request_seen,
+        release,
+        server,
+    }
+}
+
+async fn overlapping_refreshes(winner_time: i64) {
+    let data = tempfile::tempdir().unwrap();
+    let core = Core::at(data.path());
+    let held_bytes = library_db_bytes(PLAYABLE);
+    offer(&core, &package_with_database(100, &held_bytes))
+        .await
+        .unwrap();
+    let slow = delayed_package(fixture_package(200)).await;
+    let slow_core = std::sync::Arc::clone(&core);
+    let pending =
+        tokio::spawn(
+            async move { refresh_catalog(&slow_core, slow.url, STANDARD.encode(KEY)).await },
+        );
+    slow.requested.await.unwrap();
+
+    let winner = package_with_database(winner_time, &held_bytes);
+    assert_eq!(offer(&core, &winner).await.unwrap(), 1);
+    let current = store::current_dir(&core);
+    let committed = std::fs::read_link(&current).unwrap();
+    slow.release.send(()).unwrap();
+    let result = pending.await.unwrap();
+    slow.server.await.unwrap();
+
+    if winner_time > 200 {
+        assert!(matches!(result, Err(CoreError::Cipher(_))), "{result:?}");
+    } else {
+        assert_eq!(
+            result.unwrap(),
+            1,
+            "the concurrent identical identity reuses the installed catalog"
+        );
+    }
+    assert_eq!(std::fs::read_link(&current).unwrap(), committed);
+    assert_eq!(
+        read_identity(&current).unwrap(),
+        Some(identity_of(&winner.0))
+    );
+    assert_eq!(
+        std::fs::read(current.join("library.db")).unwrap(),
+        held_bytes
+    );
+    assert_eq!(
+        store::list_sets(&core).unwrap()[0].title,
+        Some("Held title".into())
+    );
+}
+
+#[tokio::test]
+async fn a_slower_older_download_cannot_replace_a_newer_completed_refresh() {
+    overlapping_refreshes(300).await;
+}
+
+#[tokio::test]
+async fn concurrent_matching_identities_keep_the_first_installed_catalog() {
+    overlapping_refreshes(200).await;
+}
+
+#[tokio::test]
+async fn authenticated_unreadable_catalogs_leave_the_held_version_intact() {
+    let malformed = [
+        b"not a SQLite database".to_vec(),
+        library_db_bytes("DROP TABLE parts"),
+        library_db_bytes(&format!("{PLAYABLE} UPDATE sets SET title = x'80';")),
+    ];
+    for database in malformed {
+        let data = tempfile::tempdir().unwrap();
+        let core = Core::at(data.path());
+        let held_bytes = library_db_bytes(PLAYABLE);
+        let held = package_with_database(100, &held_bytes);
+        assert_eq!(offer(&core, &held).await.unwrap(), 1);
+        let current = store::current_dir(&core);
+        let committed = std::fs::read_link(&current).unwrap();
+
+        let result = offer(&core, &package_with_database(200, &database)).await;
+
+        assert!(matches!(result, Err(CoreError::Io(_))), "{result:?}");
+        assert_eq!(std::fs::read_link(&current).unwrap(), committed);
+        assert_eq!(read_identity(&current).unwrap(), Some(identity_of(&held.0)));
+        assert_eq!(
+            std::fs::read(current.join("library.db")).unwrap(),
+            held_bytes
+        );
+        assert_eq!(
+            store::list_sets(&core).unwrap()[0].title,
+            Some("Held title".into())
+        );
+        assert!(!store::dir(&core).join("v-200").exists());
+    }
 }

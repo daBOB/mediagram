@@ -173,4 +173,3 @@ pub fn apply(row: &SetRow, edits: &Edits) -> SetRow {
     }
     edited
 }
-

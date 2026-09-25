@@ -54,7 +54,7 @@ fn caption() -> Caption {
 fn seeded() -> (tempfile::TempDir, rusqlite::Connection) {
     let dir = tempfile::tempdir().unwrap();
     let conn = db::open(dir.path()).unwrap();
-    let row = SetRow::from_caption(&caption(), 1_700_000_000).unwrap();
+    let row = SetRow::from_caption(&caption(), 1_700_000_000);
     sets::insert_set(&conn, &row).unwrap();
     parts::insert_parts(
         &conn,
@@ -94,6 +94,26 @@ fn a_corrected_title_is_written() {
         sets::get_set(&conn, SET).unwrap().unwrap().title.as_deref(),
         Some("Verlassen")
     );
+}
+
+#[test]
+fn an_oversized_provider_id_leaves_all_existing_metadata_untouched() {
+    for provider in ["tmdb", "tvdb"] {
+        let (_dir, conn) = seeded();
+        let before = sets::get_set(&conn, SET).unwrap().unwrap();
+        let mut changed = before.clone();
+        changed.title = Some("Replacement".into());
+        if provider == "tmdb" {
+            changed.tmdb = Some(i64::MAX as u64 + 1);
+        } else {
+            changed.tvdb = Some(i64::MAX as u64 + 1);
+        }
+        assert!(
+            sets::update_metadata(&conn, &changed).is_err(),
+            "{provider}"
+        );
+        assert_eq!(sets::get_set(&conn, SET).unwrap().unwrap(), before);
+    }
 }
 
 /// The whole point of the guard: a row carrying wrong byte facts must not be
@@ -191,7 +211,7 @@ fn the_kind_is_written_too() {
 fn a_rows_episode_is_read_from_the_json_column() {
     let dir = tempfile::tempdir().unwrap();
     let conn = db::open(dir.path()).unwrap();
-    let mut row = SetRow::from_caption(&caption(), 1_700_000_000).unwrap();
+    let mut row = SetRow::from_caption(&caption(), 1_700_000_000);
     row.episode = Some(Episode::Range([5, 6]));
     sets::insert_set(&conn, &row).unwrap();
     let read = sets::get_set(&conn, SET).unwrap().unwrap();

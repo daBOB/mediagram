@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { GRID, LIST, modeFrom, setShelfMode, shelfMode } from "../public/lib/shelf-mode.js";
+import { GRID, LIST, modeFrom, setShelfMode, shelfMode } from "../public/lib/catalog/shelf-mode.js";
 
 /** A `localStorage` that can be told to behave like a blocked one. */
 function fakeStorage(options: { throws?: boolean } = {}) {
@@ -79,6 +79,8 @@ describe("remembering the choice", () => {
 
 describe("a browser with storage blocked", () => {
   beforeEach(() => {
+    useStorage(fakeStorage());
+    setShelfMode(LIST);
     useStorage(fakeStorage({ throws: true }));
   });
 
@@ -90,5 +92,15 @@ describe("a browser with storage blocked", () => {
   test("still accepts a choice, which lasts the page load", () => {
     expect(() => setShelfMode(GRID)).not.toThrow();
     expect(setShelfMode(GRID)).toBe(GRID);
+    expect(shelfMode()).toBe(GRID);
+    setShelfMode(LIST);
+    expect(shelfMode()).toBe(LIST);
+  });
+
+  test("retains a choice when writes fail but reads still answer the old value", () => {
+    const storage = fakeStorage();
+    useStorage({ ...storage, setItem() { throw new Error("quota exceeded"); } });
+    setShelfMode(GRID);
+    expect(shelfMode()).toBe(GRID);
   });
 });

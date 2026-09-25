@@ -12,7 +12,6 @@ import kotlin.test.assertEquals
  * between two lesson numbers.
  */
 class PlayOrderTest {
-
     @Test
     fun aShowsSeasonsPlayInSeasonOrder() {
         val season1 = division("Season 1", season = 1, items = listOf(lesson("S1E1", 1), lesson("S1E2", 2)))
@@ -30,12 +29,13 @@ class PlayOrderTest {
     @Test
     fun aFolderNumberedIntoAGapPlaysInThatGap() {
         val detour = division("14. Exkurs TWS", season = null, items = listOf(lesson("Detour", 1)))
-        val signal = division(
-            "3. Signal",
-            season = null,
-            items = (1..13).map { lesson("Lesson $it", it) } + (15..21).map { lesson("Lesson $it", it) },
-            children = listOf(detour),
-        )
+        val signal =
+            division(
+                "3. Signal",
+                season = null,
+                items = (1..13).map { lesson("Lesson $it", it) } + (15..21).map { lesson("Lesson $it", it) },
+                children = listOf(detour),
+            )
 
         val order = playOrder(listOf(signal)).map { it.setId }
         assertEquals((1..13).map { "Lesson $it" } + "Detour" + (15..21).map { "Lesson $it" }, order)
@@ -43,37 +43,64 @@ class PlayOrderTest {
 
     @Test
     fun aDocumentIsSkippedRatherThanPlayed() {
-        val chapter = division(
-            "Chapter",
-            season = 1,
-            items = listOf(lesson("Lesson 1", 1), document("Handout", 2), lesson("Lesson 2", 3)),
-        )
+        val chapter =
+            division(
+                "Chapter",
+                season = 1,
+                items = listOf(lesson("Lesson 1", 1), document("Handout", 2), lesson("Lesson 2", 3)),
+            )
 
+        assertEquals(listOf("Lesson 1", "Lesson 2"), playOrder(listOf(chapter)).map { it.setId })
+    }
+
+    @Test
+    fun firstItemFollowsAnEarlierFolderAndSkipsDocuments() {
+        val earlier =
+            division("1. Earlier", season = null, items = listOf(document("Handout", 0), lesson("Lesson 1", 1)))
+        val chapter =
+            division("Chapter", season = null, items = listOf(lesson("Lesson 2", 2)), children = listOf(earlier))
+
+        assertEquals("Lesson 1", firstItemOf(listOf(chapter))?.setId)
         assertEquals(listOf("Lesson 1", "Lesson 2"), playOrder(listOf(chapter)).map { it.setId })
     }
 
     @Test
     fun anUnnumberedFolderSortsAfterNumberedLessons() {
         val extras = division("Extras", season = null, items = listOf(lesson("Extra", 1)))
-        val chapter = division(
-            "Chapter",
-            season = null,
-            items = listOf(lesson("Lesson 1", 1)),
-            children = listOf(extras),
-        )
+        val chapter =
+            division(
+                "Chapter",
+                season = null,
+                items = listOf(lesson("Lesson 1", 1)),
+                children = listOf(extras),
+            )
 
         assertEquals(listOf("Lesson 1", "Extra"), playOrder(listOf(chapter)).map { it.setId })
     }
 }
 
-private fun division(title: String, season: Int?, items: List<MediaSet>, children: List<Division> = emptyList()) =
-    Division(title = title, season = season, items = items, children = children)
+private fun division(
+    title: String,
+    season: Int?,
+    items: List<MediaSet>,
+    children: List<Division> = emptyList(),
+) = Division(title = title, season = season, items = items, children = children)
 
-private fun lesson(setId: String, episode: Int) = set(setId, Kind.TUTORIAL, episode)
+private fun lesson(
+    setId: String,
+    episode: Int,
+) = set(setId, Kind.TUTORIAL, episode)
 
-private fun document(setId: String, episode: Int) = set(setId, Kind.DOCUMENT, episode)
+private fun document(
+    setId: String,
+    episode: Int,
+) = set(setId, Kind.DOCUMENT, episode)
 
-private fun set(setId: String, kind: Kind, episode: Int) = MediaSet(
+private fun set(
+    setId: String,
+    kind: Kind,
+    episode: Int,
+) = MediaSet(
     setId = setId,
     kind = kind,
     title = setId,

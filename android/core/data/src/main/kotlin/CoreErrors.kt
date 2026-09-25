@@ -18,25 +18,24 @@ import uniffi.mediagram_core.CoreException
  * by choosing differently, and a caller can tell the two apart by whether
  * this answers.
  */
-fun Throwable.coreSentence(): String? = when (this) {
-    is CoreException.Network -> v1
-    is CoreException.NotAuthorized -> v1
-    is CoreException.NotFound -> v1
-    is CoreException.Cipher -> v1
-    is CoreException.Io -> v1
-    is CoreException.Library -> v1
-    else -> null
-}
+fun Throwable.coreSentence(): String? =
+    when (this) {
+        is CoreException.Network -> v1
+        is CoreException.NotAuthorized -> v1
+        is CoreException.NotFound -> v1
+        is CoreException.Cipher -> v1
+        is CoreException.Io -> v1
+        is CoreException.Library -> v1
+        else -> null
+    }
 
 /**
  * What a refresh that did not happen should say, which is always
  * something — unlike [coreSentence], this never answers `null`.
  *
- * [coreSentence] where the core wrote one, the exception's own message
- * where it did not, and a plain statement of what failed where there is
- * neither. Two surfaces report the same refusal — the shelves carry a
+ * [coreSentence] where the core wrote one, and an operation-specific
+ * fallback for unexpected failures. Two surfaces report the same refusal — the shelves carry a
  * notice, the System screen carries a row — and a sentence assembled twice
  * is a sentence that can come out two ways.
  */
-fun Throwable.refreshSentence(): String =
-    coreSentence() ?: message ?: "Could not refresh the library"
+fun Throwable.refreshSentence(): String = coreSentence() ?: "Could not refresh the library"

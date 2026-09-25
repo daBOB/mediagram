@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { COUNTDOWN_SECONDS, WARN_SECONDS, upNextPhase } from "../public/lib/up-next.js";
+import { COUNTDOWN_SECONDS, WARN_SECONDS, upNextPhase } from "../public/lib/playback/up-next.js";
 
 const at = (over: Record<string, unknown> = {}) => ({
   hasNext: true,

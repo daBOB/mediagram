@@ -28,7 +28,10 @@ internal fun testViewModel(handle: PlayerHandle): PlayerViewModel {
 
 private object NoopWatchSync : WatchSync {
     override fun onForeground() = Unit
+
     override fun onBackground() = Unit
+
     override fun soon() = Unit
+
     override suspend fun awaitFirstRound() = Unit
 }

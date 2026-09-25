@@ -29,6 +29,7 @@ struct Body {
 }
 
 /// The caption for a snapshot pushed at `pushed_at` holding `sets` sets.
+#[must_use]
 pub fn render(pushed_at: i64, sets: i64) -> String {
     let body = Body {
         pushed_at,
@@ -40,6 +41,7 @@ pub fn render(pushed_at: i64, sets: i64) -> String {
 }
 
 /// Whether a message's caption marks it as an index snapshot.
+#[must_use]
 pub fn is_index(caption: &str) -> bool {
     caption.starts_with(PREFIX)
 }
@@ -47,6 +49,7 @@ pub fn is_index(caption: &str) -> bool {
 /// When the snapshot was pushed, or `None` when the caption carries no
 /// positive timestamp this build can read. Only `pushed_at` is required, so
 /// a caption from a later version with more fields still reads.
+#[must_use]
 pub fn pushed_at(caption: &str) -> Option<i64> {
     #[derive(Deserialize)]
     struct Stamp {

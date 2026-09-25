@@ -9,8 +9,9 @@
  * the channel is several gigabytes, and reading all of it to make a few
  * hundred kilobytes of pictures would be the most wasteful thing this program
  * does — a whole library pulled down so a bar can be prettier. So generation
- * is offered only for a set `HeldSets` reports as complete, which is the same
- * predicate behind the offline badge and means the read never leaves the disk.
+ * is offered only for a set `HeldSets` reports as complete, then reads through
+ * the disk-only stream route. A chunk evicted or truncated after that initial
+ * check fails the read instead of fetching it again from Telegram.
  *
  * Which gives the honest behaviour, and it is worth stating plainly because a
  * viewer will notice it: **a title you have watched has previews, and one you
@@ -25,17 +26,7 @@
 import { mkdir, rename, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 
-import { sheetArgs } from "./args";
-
-/** The layout `sprite-plan.js` decided. Re-declared for the server's types. */
-export interface SpritePlan {
-  interval: number;
-  tiles: number;
-  columns: number;
-  rows: number;
-  tileWidth: number;
-  tileHeight: number;
-}
+import { sheetArgs, type SpritePlan } from "./args";
 
 export interface SheetOptions {
   /** Where sheets are kept. Beside the posters, not in the chunk cache. */
@@ -46,11 +37,33 @@ export interface SheetOptions {
   isHeld: (setId: string) => boolean;
 }
 
+type RunFfmpeg = (args: string[], signal: AbortSignal) => Promise<number>;
+const runFfmpeg: RunFfmpeg = async (args, signal) => {
+  if (signal.aborted) return -1;
+  const child = Bun.spawn(["ffmpeg", ...args], { stdout: "ignore", stderr: "ignore" });
+  let force: ReturnType<typeof setTimeout> | undefined;
+  const kill = (signal: "SIGTERM" | "SIGKILL") => {
+    try { child.kill(signal); } catch { /* Already exited; still await notification. */ }
+  };
+  const abort = () => {
+    kill("SIGTERM");
+    force = setTimeout(() => kill("SIGKILL"), 3000);
+  };
+  signal.addEventListener("abort", abort, { once: true });
+  try { return await child.exited; }
+  finally {
+    clearTimeout(force);
+    signal.removeEventListener("abort", abort);
+  }
+};
+
 export class SheetStore {
   /** Sets being generated right now, so two hovers do not start two ffmpegs. */
   private readonly making = new Set<string>();
+  private readonly tasks = new Set<Promise<boolean>>();
+  private readonly stopping = new AbortController();
 
-  constructor(private readonly options: SheetOptions) {}
+  constructor(private readonly options: SheetOptions, private readonly run: RunFfmpeg = runFfmpeg) {}
 
   /** Where a set's sheet lives, whether or not it exists. */
   path(setId: string): string {
@@ -64,7 +77,8 @@ export class SheetStore {
   /** The sheet's size, or `null` when there is not one. */
   async sizeOf(setId: string): Promise<number | null> {
     try {
-      return (await stat(this.path(setId))).size;
+      const file = await stat(this.path(setId));
+      return file.isFile() ? file.size : null;
     } catch {
       return null;
     }
@@ -73,22 +87,37 @@ export class SheetStore {
   /**
    * Makes a sheet, if this set may have one and does not already.
    *
-   * Returns whether a sheet exists *now*. A first hover will usually get
-   * `false` and no preview, and a later one will get the sheet — which is the
-   * right shape for something that takes a while and that nothing is waiting
-   * on. Never throws: a player without previews is the player as it was.
+   * The initiating call waits for generation and publication. A concurrent
+   * call while generation runs returns false. The artwork route deliberately
+   * starts this without awaiting it so hover requests stay responsive.
+   * Never throws: a player without previews is the player as it was.
    */
-  async ensure(setId: string, plan: SpritePlan | null): Promise<boolean> {
-    if (plan === null) return false;
-    if ((await this.sizeOf(setId)) !== null) return true;
-    // Only what is already on this disk. See the header: this is the rule the
-    // whole design rests on.
-    if (!this.options.isHeld(setId)) return false;
-    if (this.making.has(setId)) return false;
+  ensure(setId: string, plan: SpritePlan | null): Promise<boolean> {
+    if (this.stopping.signal.aborted || plan === null) return Promise.resolve(false);
+    const task = this.generate(setId, plan).finally(() => { this.tasks.delete(task); });
+    this.tasks.add(task);
+    return task;
+  }
 
-    this.making.add(setId);
+  /** Close admission, terminate children, and await generation and partial-file cleanup. */
+  async stop(): Promise<void> {
+    this.stopping.abort();
+    await Promise.all(this.tasks);
+  }
+
+  private async generate(setId: string, plan: SpritePlan): Promise<boolean> {
+    let started = false;
+    let partial: string | undefined;
     try {
+      if ((await this.sizeOf(setId)) !== null) return true;
+      // Only what is already on this disk. See the header: this is the rule
+      // the whole design rests on.
+      if (this.stopping.signal.aborted || !this.options.isHeld(setId)) return false;
+      if (this.making.has(setId)) return false;
+      this.making.add(setId);
+      started = true;
       await mkdir(this.options.directory, { recursive: true });
+      if (this.stopping.signal.aborted) return false;
       const output = this.path(setId);
       /**
        * Written aside and moved into place, so a reader is never handed a
@@ -100,25 +129,25 @@ export class SheetStore {
        * one it has never heard of — it refuses to write anything at all,
        * which presents as a sheet that silently never appears.
        */
-      const partial = join(this.options.directory, `${setId}.making.jpg`);
+      partial = join(this.options.directory, `${setId}.making.jpg`);
       const args = sheetArgs({
-        input: `${this.options.baseUrl}/api/sets/${encodeURIComponent(setId)}/stream`,
+        input: `${this.options.baseUrl}/api/sets/${encodeURIComponent(setId)}/cached-stream`,
         output: partial,
         plan,
       });
 
-      const process = Bun.spawn(["ffmpeg", ...args], { stdout: "ignore", stderr: "pipe" });
-      const code = await process.exited;
-      if (code !== 0) {
+      const code = await this.run(args, this.stopping.signal);
+      if (code !== 0 || this.stopping.signal.aborted) {
         await rm(partial, { force: true });
         return false;
       }
       await rename(partial, output);
       return true;
     } catch {
+      if (partial) await rm(partial, { force: true }).catch(() => {});
       return false;
     } finally {
-      this.making.delete(setId);
+      if (started) this.making.delete(setId);
     }
   }
 }

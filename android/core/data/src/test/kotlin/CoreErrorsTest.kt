@@ -13,7 +13,6 @@ import kotlin.test.assertNull
  * stands between those sentences and a screen showing internals.
  */
 class CoreErrorsTest {
-
     @Test
     fun aCoreFailureGivesUpTheSentenceItWasWrittenWith() {
         val said = "That channel has nothing pinned."

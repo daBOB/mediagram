@@ -56,8 +56,7 @@ fn caption(set: &str, parts_n: u32, total: u64) -> Caption {
 /// A set with `parts_n` parts, all done, summing to `total`.
 fn complete_set(conn: &rusqlite::Connection, set: &str, spans: &[(u64, u64)]) {
     let total: u64 = spans.iter().map(|(_, len)| len).sum();
-    let row =
-        SetRow::from_caption(&caption(set, spans.len() as u32, total), 1_700_000_000).unwrap();
+    let row = SetRow::from_caption(&caption(set, spans.len() as u32, total), 1_700_000_000);
     sets::insert_set(conn, &row).unwrap();
     let ranges: Vec<PartRange> = spans
         .iter()
@@ -113,8 +112,7 @@ fn a_complete_set_is_offered_with_what_a_player_needs_to_decide() {
 #[test]
 fn a_pending_set_is_not_offered() {
     let (_d, conn) = open();
-    let row =
-        SetRow::from_caption(&caption("01SET0000000000000000002", 1, 1000), 1_700_000_000).unwrap();
+    let row = SetRow::from_caption(&caption("01SET0000000000000000002", 1, 1000), 1_700_000_000);
     sets::insert_set(&conn, &row).unwrap();
     parts::insert_parts(
         &conn,
@@ -134,8 +132,7 @@ fn a_pending_set_is_not_offered() {
 fn a_set_whose_parts_do_not_sum_to_its_total_is_not_offered() {
     let (_d, conn) = open();
     // Marked complete, but a part is missing: exactly what PLAYABLE_SQL catches.
-    let row =
-        SetRow::from_caption(&caption("01SET0000000000000000003", 2, 2000), 1_700_000_000).unwrap();
+    let row = SetRow::from_caption(&caption("01SET0000000000000000003", 2, 2000), 1_700_000_000);
     sets::insert_set(&conn, &row).unwrap();
     parts::insert_parts(
         &conn,
@@ -220,8 +217,7 @@ fn a_single_set_can_be_looked_up_by_id() {
 #[test]
 fn looking_up_a_set_that_is_not_playable_finds_nothing() {
     let (_d, conn) = open();
-    let row =
-        SetRow::from_caption(&caption("01SET0000000000000000006", 1, 1000), 1_700_000_000).unwrap();
+    let row = SetRow::from_caption(&caption("01SET0000000000000000006", 1, 1000), 1_700_000_000);
     sets::insert_set(&conn, &row).unwrap();
 
     assert!(

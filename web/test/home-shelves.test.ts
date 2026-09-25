@@ -9,28 +9,11 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { catalogSet } from "./support/catalog-set";
 import { groupLibrary, type CatalogSet } from "../public/lib/library.js";
-import { homeShelves } from "../public/lib/home-shelves.js";
+import { homeShelves } from "../public/lib/catalog/home-shelves.js";
 
-const set = (over: Record<string, unknown> = {}): CatalogSet => ({
-  setId: `01SET${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
-  kind: "movie",
-  title: "A Title",
-  show: null,
-  path: null,
-  chap: null,
-  season: null,
-  episode: null,
-  year: null,
-  container: "mp4",
-  vcodec: "h264",
-  acodec: "aac",
-  duration: 3600,
-  total: 1000,
-  partCount: 1,
-  addedAt: 1_000,
-  ...over,
-});
+const set = (over: Partial<CatalogSet> = {}): CatalogSet => catalogSet({ duration: 3600, addedAt: 1_000, ...over });
 
 /** An episode of `show`, numbered, with a stable id to record state against. */
 const episode = (show: string, season: number, number: number, over: Record<string, unknown> = {}) =>

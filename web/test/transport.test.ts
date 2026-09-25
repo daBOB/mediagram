@@ -1,7 +1,7 @@
 /** Covers `transport`: what the bar's controls say, before any of them move. */
 
 import { describe, expect, test } from "bun:test";
-import { isSilent, playLabel, speedLabel, subtitleOptions } from "../public/lib/transport.js";
+import { isSilent, playLabel, speedLabel, subtitleOptions } from "../public/lib/playback/transport.js";
 
 describe("the speed on the menu", () => {
   test("drops the noise after the point", () => {

@@ -433,13 +433,21 @@ describe("what this player tells other devices", () => {
 });
 
 describe("what this player takes back", () => {
+  test("an imported empty profile counts as a change only when it is created", () => {
+    const { state } = stateIn();
+    const merged = { profiles: [{ name: "new viewer", displayName: "New viewer", progress: [], watched: [] }] };
+    expect(state.importMerged(merged)).toBe(1);
+    expect(state.profiles().some((profile) => profile.name === "New viewer")).toBe(true);
+    expect(state.importMerged(merged)).toBe(0);
+    expect(state.importMerged({ profiles: [{ ...merged.profiles[0]!, name: " NEW VIEWER " }] })).toBe(0);
+  });
   test("a position it has never seen arrives", () => {
     const { state, me } = stateIn();
     const name = state.profiles().find((p) => p.id === me)!.name;
 
     state.importMerged({
       profiles: [
-        { name, progress: [{ setId: "01NEW", at: 500, duration: 1204, updatedAt: 9000 }], watched: [] },
+        { name, displayName: name, progress: [{ setId: "01NEW", at: 500, duration: 1204, updatedAt: 9000 }], watched: [] },
       ],
     });
 
@@ -453,7 +461,7 @@ describe("what this player takes back", () => {
 
     state.importMerged({
       profiles: [
-        { name, progress: [{ setId: "01SET", at: 10, duration: 1204, updatedAt: 1 }], watched: [] },
+        { name, displayName: name, progress: [{ setId: "01SET", at: 10, duration: 1204, updatedAt: 1 }], watched: [] },
       ],
     });
 
@@ -467,7 +475,7 @@ describe("what this player takes back", () => {
     state.setProgress(me, "01SET", 900, 1204);
 
     state.importMerged({
-      profiles: [{ name, progress: [], watched: [{ setId: "01SET", updatedAt: Date.now() + 5000 }] }],
+      profiles: [{ name, displayName: name, progress: [], watched: [{ setId: "01SET", updatedAt: Date.now() + 5000 }] }],
     });
 
     expect(state.snapshot(me).progress).toEqual([]);
@@ -481,7 +489,7 @@ describe("what this player takes back", () => {
     const name = state.profiles().find((p) => p.id === me)!.name;
     state.setProgress(me, "01MINE", 300, 1204);
 
-    state.importMerged({ profiles: [{ name, progress: [], watched: [] }] });
+    state.importMerged({ profiles: [{ name, displayName: name, progress: [], watched: [] }] });
 
     expect(state.snapshot(me).progress[0]!.setId).toBe("01MINE");
   });
@@ -494,7 +502,7 @@ describe("what this player takes back", () => {
 
     state.importMerged({
       profiles: [
-        { name: "Sam", progress: [{ setId: "01A", at: 1, duration: null, updatedAt: 9000 }], watched: [] },
+        { name: "Sam", displayName: "Sam", progress: [{ setId: "01A", at: 1, duration: null, updatedAt: 9000 }], watched: [] },
       ],
     });
 
@@ -512,6 +520,7 @@ describe("what this player takes back", () => {
       profiles: [
         {
           name: ` ${name.toUpperCase()} `,
+          displayName: name,
           progress: [{ setId: "01A", at: 1, duration: null, updatedAt: 9000 }],
           watched: [],
         },
@@ -529,5 +538,47 @@ describe("what this player takes back", () => {
 
     expect(state.importMerged(mergeStates([state.exportRecord("self")]))).toBe(0);
     expect(state.snapshot(me)).toEqual(before);
+  });
+});
+
+describe("kids profiles", () => {
+  test("a profile is created as a kids profile only when asked", () => {
+    const { state } = stateIn();
+    const mia = state.createProfile("Mia", true)!;
+    expect(mia.kids).toBe(true);
+    expect(state.profiles().map((p) => [p.name, p.kids])).toEqual([["André", false], ["Mia", true]]);
+  });
+
+  test("the record carries kids only on the kids profile", () => {
+    const { state } = stateIn();
+    state.createProfile("Mia", true);
+    const record = state.exportRecord("laptop");
+    const byName = new Map(record.profiles.map((p) => [p.name, p]));
+    expect(byName.get("Mia")!.kids).toBe(true);
+    expect("kids" in byName.get("André")!).toBe(false);
+  });
+
+  test("an import makes an existing ordinary profile of that name a kids profile", () => {
+    const { state } = stateIn();
+    state.createProfile("Mia");
+    const changed = state.importMerged({
+      profiles: [{ name: "mia", displayName: "Mia", kids: true, progress: [], watched: [] }],
+    });
+    expect(changed).toBe(1);
+    expect(state.profiles().find((p) => p.name === "Mia")!.kids).toBe(true);
+  });
+
+  test("an import creates a profile it has never met with the flag", () => {
+    const { state } = stateIn();
+    state.importMerged({ profiles: [{ name: "ben", displayName: "Ben", kids: true, progress: [], watched: [] }] });
+    expect(state.profiles().find((p) => p.name === "Ben")!.kids).toBe(true);
+  });
+
+  test("an import never turns a kids profile back into an ordinary one", () => {
+    const { state } = stateIn();
+    state.createProfile("Mia", true);
+    const changed = state.importMerged({ profiles: [{ name: "mia", displayName: "Mia", progress: [], watched: [] }] });
+    expect(changed).toBe(0);
+    expect(state.profiles().find((p) => p.name === "Mia")!.kids).toBe(true);
   });
 });

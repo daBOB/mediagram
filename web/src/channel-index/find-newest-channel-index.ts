@@ -16,7 +16,7 @@
 
 import { Api } from "teleproto";
 import type { Telegram } from "../telegram/client";
-import { INDEX_MARKER } from "../telegram/updates";
+import { INDEX_MARKER } from "../telegram/channel-captions";
 import { pickNewestIndex, versionStamp, type NoIndex } from "./pick-newest-index";
 
 /** Core's numbers: a hundred pins, fifty marker matches. */

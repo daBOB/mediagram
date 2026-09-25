@@ -13,14 +13,16 @@
  * a TMDB key, serves initials where posters would be, as it always did.
  */
 
-export type PosterFetch = { ok: true; said: string } | { ok: false; reason: string };
+import { failureMessage } from "../failure-message";
+
+export type PosterFetch = { ok: true; summary: string } | { ok: false; reason: string };
 
 export async function fetchPostersForIndex(command: string, indexPath: string): Promise<PosterFetch> {
   let proc: ReturnType<typeof Bun.spawn>;
   try {
     proc = Bun.spawn([command, "posters", "--index", indexPath], { stdout: "pipe", stderr: "pipe" });
   } catch (error) {
-    return { ok: false, reason: `\`${command}\` could not be started: ${(error as Error).message}` };
+    return { ok: false, reason: `\`${command}\` could not be started: ${failureMessage(error)}` };
   }
   const [code, out, err] = await Promise.all([
     proc.exited,
@@ -29,6 +31,6 @@ export async function fetchPostersForIndex(command: string, indexPath: string): 
   ]);
   // Its last line is the summary: "565 poster(s) in …: 20 fetched, 545 already held".
   const last = (text: string) => text.trim().split("\n").at(-1) ?? "";
-  if (code === 0) return { ok: true, said: last(out) };
+  if (code === 0) return { ok: true, summary: last(out) };
   return { ok: false, reason: `\`${command} posters\` exited ${code}: ${last(err) || last(out)}` };
 }

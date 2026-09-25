@@ -24,7 +24,7 @@ class HiltConventionPlugin : Plugin<Project> {
                 // rather than in the plain library convention plugin.
                 add("implementation", libs.findLibrary("androidx.lifecycle.viewmodel.ktx").get())
                 add("ksp", hiltCompiler)
-                
+
                 // For testing
                 add("kspTest", hiltCompiler)
                 add("testImplementation", hiltTesting)

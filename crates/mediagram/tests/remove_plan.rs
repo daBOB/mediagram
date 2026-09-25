@@ -5,9 +5,9 @@
 //! touch is separated from the touching, and is stated in full before
 //! anything happens.
 
-use mediagram::index::status::PartStatus;
 use mediagram::index::parts::PartRow;
 use mediagram::index::set_row::SetRow;
+use mediagram::index::status::PartStatus;
 use mediagram::remove::plan::{Removal, plan_removal};
 use mlib_spec::caption::{Caption, Episode, Kind, Part};
 use mlib_spec::ids::ProviderIds;
@@ -48,7 +48,7 @@ fn row(set_id: &str, title: &str) -> SetRow {
         },
         total: 30,
     };
-    SetRow::from_caption(&caption, 1).unwrap()
+    SetRow::from_caption(&caption, 1)
 }
 
 fn part(idx: u32, message: Option<i64>, len: u64) -> PartRow {
@@ -156,7 +156,18 @@ mod deleting_rows {
     fn a_set_goes_with_its_parts_assets_and_meta_and_nothing_else() {
         let dir = tempfile::tempdir().unwrap();
         let conn = db::open(dir.path()).unwrap();
-        let ranges = [PartRange { idx: 0, off: 0, len: 10 }, PartRange { idx: 1, off: 10, len: 20 }];
+        let ranges = [
+            PartRange {
+                idx: 0,
+                off: 0,
+                len: 10,
+            },
+            PartRange {
+                idx: 1,
+                off: 10,
+                len: 20,
+            },
+        ];
         for id in ["01SET0000000000000000001", "01SET0000000000000000002"] {
             sets::insert_set(&conn, &row(id, "An Episode")).unwrap();
             parts::insert_parts(&conn, id, &ranges).unwrap();
@@ -172,18 +183,53 @@ mod deleting_rows {
 
         delete_rows(&conn, "01SET0000000000000000001").unwrap();
 
-        assert!(sets::get_set(&conn, "01SET0000000000000000001").unwrap().is_none());
-        assert_eq!(count(&conn, "SELECT COUNT(*) FROM parts WHERE set_id = '01SET0000000000000000001'"), 0);
-        assert_eq!(count(&conn, "SELECT COUNT(*) FROM assets WHERE set_id = '01SET0000000000000000001'"), 0);
+        assert!(
+            sets::get_set(&conn, "01SET0000000000000000001")
+                .unwrap()
+                .is_none()
+        );
+        assert_eq!(
+            count(
+                &conn,
+                "SELECT COUNT(*) FROM parts WHERE set_id = '01SET0000000000000000001'"
+            ),
+            0
+        );
+        assert_eq!(
+            count(
+                &conn,
+                "SELECT COUNT(*) FROM assets WHERE set_id = '01SET0000000000000000001'"
+            ),
+            0
+        );
         for key in db::set_keys("01SET0000000000000000001") {
             assert_eq!(db::get_meta(&conn, &key).unwrap(), None, "{key} survived");
         }
 
-        assert!(sets::get_set(&conn, "01SET0000000000000000002").unwrap().is_some());
-        assert_eq!(count(&conn, "SELECT COUNT(*) FROM parts WHERE set_id = '01SET0000000000000000002'"), 2);
-        assert_eq!(count(&conn, "SELECT COUNT(*) FROM assets WHERE set_id = '01SET0000000000000000002'"), 1);
+        assert!(
+            sets::get_set(&conn, "01SET0000000000000000002")
+                .unwrap()
+                .is_some()
+        );
+        assert_eq!(
+            count(
+                &conn,
+                "SELECT COUNT(*) FROM parts WHERE set_id = '01SET0000000000000000002'"
+            ),
+            2
+        );
+        assert_eq!(
+            count(
+                &conn,
+                "SELECT COUNT(*) FROM assets WHERE set_id = '01SET0000000000000000002'"
+            ),
+            1
+        );
         for key in db::set_keys("01SET0000000000000000002") {
-            assert!(db::get_meta(&conn, &key).unwrap().is_some(), "{key} was taken too");
+            assert!(
+                db::get_meta(&conn, &key).unwrap().is_some(),
+                "{key} was taken too"
+            );
         }
     }
 }

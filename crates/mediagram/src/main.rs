@@ -161,7 +161,7 @@ async fn main() -> Result<()> {
             full,
             since,
         } => commands::verify::run(&cfg, set_id, all, full, since).await,
-        Cmd::Status => commands::status::run(&cfg).await,
+        Cmd::Status => commands::status::run(&cfg),
         Cmd::Metadata => commands::metadata::run(&cfg).await,
         Cmd::Posters { index } => commands::posters::run(&cfg, index.as_deref()).await,
         Cmd::ExportPackage {
@@ -187,3 +187,7 @@ async fn main() -> Result<()> {
         } => commands::finish_set::run(&cfg, &set_id, delete.as_deref(), no_push).await,
     }
 }
+
+#[cfg(test)]
+#[path = "cli_tests.rs"]
+mod tests;

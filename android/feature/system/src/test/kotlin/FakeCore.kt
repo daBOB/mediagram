@@ -24,7 +24,6 @@ class FakeCore(
     var failure: Exception? = null,
     private val gate: CompletableDeferred<Unit>? = null,
 ) : CoreClient {
-
     /** The key the last call to [fetchMissing] was actually given. */
     var lastKey: String? = null
         private set
@@ -38,20 +37,45 @@ class FakeCore(
         private set
 
     override fun isAuthorized(): Boolean = true
-    override suspend fun requestCode(phone: String): String = "token"
-    override suspend fun signIn(token: String, code: String): AuthOutcome = AuthOutcome.DONE
-    override suspend fun checkPassword(password: String) = Unit
-    override suspend fun listLibraries(): List<LibraryChoice> = emptyList()
-    override suspend fun refreshLibrary(handle: String): Long = 0
-    override suspend fun refreshCatalog(url: String, keyB64: String): Long = 0
-    override suspend fun listSets(): List<SetSummary> = emptyList()
-    override fun posterPath(posterKey: String): String? = null
-    override suspend fun titleInfo(posterKey: String): TitleInfo? = null
-    override suspend fun totalSize(setId: String): Long = 0
-    override suspend fun catalogFacts(): CatalogFacts = CatalogFacts("channel", 0uL, 0uL, 0u, null)
-    override suspend fun read(setId: String, offset: Long, len: Int): ByteArray = ByteArray(0)
 
-    override suspend fun fetchMissing(tmdbKey: String, language: String): FetchReport {
+    override suspend fun requestCode(phone: String): String = "token"
+
+    override suspend fun signIn(
+        token: String,
+        code: String,
+    ): AuthOutcome = AuthOutcome.DONE
+
+    override suspend fun checkPassword(password: String) = Unit
+
+    override suspend fun listLibraries(): List<LibraryChoice> = emptyList()
+
+    override suspend fun refreshLibrary(handle: String): Long = 0
+
+    override suspend fun refreshCatalog(
+        url: String,
+        keyB64: String,
+    ): Long = 0
+
+    override suspend fun listSets(): List<SetSummary> = emptyList()
+
+    override fun posterPath(posterKey: String): String? = null
+
+    override suspend fun titleInfo(posterKey: String): TitleInfo? = null
+
+    override suspend fun totalSize(setId: String): Long = 0
+
+    override suspend fun catalogFacts(): CatalogFacts = CatalogFacts("channel", 0uL, 0uL, 0u, null)
+
+    override suspend fun read(
+        setId: String,
+        offset: Long,
+        len: Int,
+    ): ByteArray = ByteArray(0)
+
+    override suspend fun fetchMissing(
+        tmdbKey: String,
+        language: String,
+    ): FetchReport {
         fetchCalls++
         lastKey = tmdbKey
         lastLanguage = language
@@ -64,13 +88,27 @@ class FakeCore(
 }
 
 /** A [data.CoreProvider] that already has a core built — a fetch never waits on one. */
-class FakeCoreProvider(private val built: CoreClient) : data.CoreProvider {
-    override suspend fun replace(apiId: Int, apiHash: String) = Unit
+class FakeCoreProvider(
+    private val built: CoreClient,
+) : data.CoreProvider {
+    override suspend fun replace(
+        apiId: Int,
+        apiHash: String,
+    ) = Unit
+
     override val core: kotlinx.coroutines.flow.StateFlow<CoreClient?> =
         kotlinx.coroutines.flow.MutableStateFlow(built)
 
     override suspend fun awaitCore(): CoreClient = built
+
     override suspend fun coreOrNull(): CoreClient = built
-    override suspend fun supply(apiId: Int, apiHash: String) = Unit
+
+    override suspend fun supply(
+        apiId: Int,
+        apiHash: String,
+    ) = Unit
+
+    override suspend fun resetAccount(storage: data.CoreStorage) = error("this fixture does not reset accounts")
+
     override suspend fun forget() = Unit
 }

@@ -38,7 +38,10 @@ pub fn walk(dir: &Path) -> Result<Vec<Episode>> {
             // A file with no episode number is not an episode: a trailer or
             // an extra, and filing it under a guessed number would be worse
             // than leaving it out.
-            _ => println!("skipping {} — no season/episode in the name", file_name(&path)),
+            _ => println!(
+                "skipping {} — no season/episode in the name",
+                file_name(&path)
+            ),
         }
     }
     Ok(episodes)

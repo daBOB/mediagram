@@ -19,8 +19,12 @@ fn the_player_holds_the_uploader_s_definition_of_playable() {
     // The player lives in this repository, so a missing file means it moved:
     // skipping would stop checking at exactly the moment the copy is easiest
     // to lose track of.
-    let source = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("reading {}: {e}; if the player moved, point this test at it", path.display()));
+    let source = std::fs::read_to_string(&path).unwrap_or_else(|e| {
+        panic!(
+            "reading {}: {e}; if the player moved, point this test at it",
+            path.display()
+        )
+    });
 
     assert!(
         source.contains(mlib_spec::schema::PLAYABLE_SQL),
@@ -42,7 +46,10 @@ fn the_player_holds_the_uploader_s_definition_of_playable() {
 
     // And the oldest it still reads, which is the floor a snapshot from an
     // uploader not yet upgraded is held to on both sides.
-    let oldest = format!("OLDEST_READABLE_SCHEMA = {}", mlib_spec::schema::OLDEST_READABLE_SCHEMA);
+    let oldest = format!(
+        "OLDEST_READABLE_SCHEMA = {}",
+        mlib_spec::schema::OLDEST_READABLE_SCHEMA
+    );
     assert!(
         source.contains(&oldest),
         "{} should declare `{}`, the floor `mediagram posters --index` also uses.",

@@ -44,7 +44,13 @@ pub fn insert_parts(conn: &Connection, set_id: &str, parts: &[PartRange]) -> Res
          VALUES (?1, ?2, ?3, ?4, ?5)",
     )?;
     for part in parts {
-        stmt.execute(params![set_id, part.idx, part.off as i64, part.len as i64, PartStatus::Pending])?;
+        stmt.execute(params![
+            set_id,
+            part.idx,
+            part.off as i64,
+            part.len as i64,
+            PartStatus::Pending
+        ])?;
     }
     Ok(())
 }
@@ -122,10 +128,12 @@ pub fn done_bytes(conn: &Connection, set_id: &str) -> Result<u64> {
 
 /// Sha256 hex of every `done` part, in idx order; the input to `set_hash`.
 pub fn done_hashes(conn: &Connection, set_id: &str) -> Result<Vec<String>> {
-    let mut stmt = conn
-        .prepare("SELECT sha256 FROM parts WHERE set_id = ?1 AND status = ?2 ORDER BY idx")?;
+    let mut stmt =
+        conn.prepare("SELECT sha256 FROM parts WHERE set_id = ?1 AND status = ?2 ORDER BY idx")?;
     let rows = stmt
-        .query_map(params![set_id, PartStatus::Done], |row| row.get::<_, Option<String>>(0))?
+        .query_map(params![set_id, PartStatus::Done], |row| {
+            row.get::<_, Option<String>>(0)
+        })?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     // A `done` row always has a hash; anything else is a mark_done bug, not
     // recoverable data, so it's fine to drop nulls rather than error here.

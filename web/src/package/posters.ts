@@ -66,12 +66,14 @@ export class PosterStore {
   /** How many are held. Asked once, for the line the player logs at startup. */
   count(): number {
     if (this.dir === null) return 0;
+    const path = join(this.dir, "posters");
     try {
-      return readdirSync(join(this.dir, "posters")).filter(
+      return readdirSync(path).filter(
         (name) => name.endsWith(".jpg") && posterKeyIsValid(name.slice(0, -4)),
       ).length;
-    } catch {
+    } catch (error) {
       // A library with no artwork is a normal library.
+      if (!isAbsent(error)) console.warn("Could not count posters", path, error);
       return 0;
     }
   }
@@ -82,9 +84,14 @@ export class PosterStore {
     if (path === null) return null;
     try {
       return new Uint8Array(readFileSync(path));
-    } catch {
+    } catch (error) {
       // Absent, or removed between the check and the read.
+      if (!isAbsent(error)) console.warn("Could not read poster", path, error);
       return null;
     }
   }
+}
+
+function isAbsent(error: unknown): boolean {
+  return error instanceof Error && "code" in error && error.code === "ENOENT";
 }

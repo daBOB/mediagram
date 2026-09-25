@@ -22,11 +22,21 @@ import uniffi.mediagram_core.TitleInfo
  * above this line depends on it directly — every ViewModel and repository
  * depends on this interface instead. [DefaultCoreClient] wraps the real
  * thing; a fake stands in for it under test.
+ *
+ * Operational fallbacks described below do not suppress coroutine
+ * cancellation or failures from an invalid or closed native handle. A
+ * caller must still respect the owning core's lifecycle.
  */
 interface CoreClient {
     fun isAuthorized(): Boolean
+
     suspend fun requestCode(phone: String): String
-    suspend fun signIn(token: String, code: String): AuthOutcome
+
+    suspend fun signIn(
+        token: String,
+        code: String,
+    ): AuthOutcome
+
     suspend fun checkPassword(password: String)
 
     /**
@@ -40,12 +50,17 @@ interface CoreClient {
     suspend fun refreshLibrary(handle: String): Long
 
     /**
-     * The published-package reader, which is the only path that carries
-     * poster art. Nothing in the first-run flow reaches it any more; it is
-     * kept whole for the round that brings posters back.
+     * Installs an encrypted published package, including its bundled posters.
+     * First-run setup selects a channel library instead; [fetchMissing] can
+     * supply artwork and descriptions for those channel snapshots.
      */
-    suspend fun refreshCatalog(url: String, keyB64: String): Long
+    suspend fun refreshCatalog(
+        url: String,
+        keyB64: String,
+    ): Long
+
     suspend fun listSets(): List<SetSummary>
+
     fun posterPath(posterKey: String): String?
 
     /**
@@ -64,17 +79,22 @@ interface CoreClient {
      * at all; both are ordinary, so neither is an error.
      */
     suspend fun titleInfo(posterKey: String): TitleInfo?
+
     suspend fun totalSize(setId: String): Long
 
     /**
      * What the installed catalog is, for the System screen's "Catalogue"
      * block: where it came from, how much it holds, and which schema it
-     * was written with. Never fails — a count that could not be taken
-     * reads back as zero, because a screen that cannot draw is worse than
-     * one that says a library is empty.
+     * was written with. Ordinary count-read failures fall back to zero.
+     * Cancellation and invalid or closed native-handle failures may propagate.
      */
     suspend fun catalogFacts(): CatalogFacts
-    suspend fun read(setId: String, offset: Long, len: Int): ByteArray
+
+    suspend fun read(
+        setId: String,
+        offset: Long,
+        len: Int,
+    ): ByteArray
 
     /**
      * Fills in both of the things a library can arrive without: the poster
@@ -91,7 +111,10 @@ interface CoreClient {
      * owns holding it, so the start-over dialog's promise to clear it stays
      * true from exactly one place.
      */
-    suspend fun fetchMissing(tmdbKey: String, language: String): FetchReport
+    suspend fun fetchMissing(
+        tmdbKey: String,
+        language: String,
+    ): FetchReport
 
     /**
      * Waits until library [handle] changes in a way worth a round: another
@@ -104,7 +127,10 @@ interface CoreClient {
      * Waits for ever by default, so a test fake that has no events to give
      * need not say so; [DefaultCoreClient] is the only real implementation.
      */
-    suspend fun nextLibraryEvent(handle: String, ownDevice: String): LibraryEvent = awaitCancellation()
+    suspend fun nextLibraryEvent(
+        handle: String,
+        ownDevice: String,
+    ): LibraryEvent = awaitCancellation()
 
     /**
      * Everyone this account's devices have created. A local read — nothing
@@ -114,7 +140,10 @@ interface CoreClient {
     suspend fun profiles(): List<Profile> = emptyList()
 
     /** Adds a new viewer under [name], or `null` when the write failed. */
-    suspend fun createProfile(name: String): Profile? = null
+    suspend fun createProfile(
+        name: String,
+        kids: Boolean = false,
+    ): Profile? = null
 
     /**
      * Who this device is set to watch as, or `null` before the picker has
@@ -135,25 +164,64 @@ interface CoreClient {
     suspend fun deleteProfile(id: String): Boolean = false
 
     /** One profile's everything, in one read: progress, watched, lists. */
-    suspend fun snapshot(profileId: String): StateSnapshot =
-        StateSnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
+    suspend fun snapshot(profileId: String): StateSnapshot = StateSnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
 
-    suspend fun setProgress(profileId: String, setId: String, at: Double, duration: Double?) = Unit
-    suspend fun clearProgress(profileId: String, setId: String) = Unit
-    suspend fun setWatched(profileId: String, setId: String, finished: Boolean) = Unit
-    suspend fun setWatchlisted(profileId: String, setId: String, listed: Boolean) = Unit
+    suspend fun setProgress(
+        profileId: String,
+        setId: String,
+        at: Double,
+        duration: Double?,
+    ) = Unit
+
+    suspend fun clearProgress(
+        profileId: String,
+        setId: String,
+    ) = Unit
+
+    suspend fun setWatched(
+        profileId: String,
+        setId: String,
+        finished: Boolean,
+    ) = Unit
+
+    suspend fun setWatchlisted(
+        profileId: String,
+        setId: String,
+        listed: Boolean,
+    ) = Unit
 
     /**
      * Marks a set for kids, or not. Global rather than per-profile — every
      * profile on this account sees the same marks, the way the player loads
      * it once for the whole session rather than per viewer.
      */
-    suspend fun setKids(setId: String, marked: Boolean) = Unit
+    suspend fun setKids(
+        setId: String,
+        marked: Boolean,
+    ) = Unit
 
-    suspend fun createCollection(profileId: String, name: String): ListRow? = null
-    suspend fun renameCollection(profileId: String, id: String, name: String): Boolean = false
-    suspend fun deleteCollection(profileId: String, id: String): Boolean = false
-    suspend fun setInCollection(profileId: String, id: String, setId: String, included: Boolean): Boolean = false
+    suspend fun createCollection(
+        profileId: String,
+        name: String,
+    ): ListRow? = null
+
+    suspend fun renameCollection(
+        profileId: String,
+        id: String,
+        name: String,
+    ): Boolean = false
+
+    suspend fun deleteCollection(
+        profileId: String,
+        id: String,
+    ): Boolean = false
+
+    suspend fun setInCollection(
+        profileId: String,
+        id: String,
+        setId: String,
+        included: Boolean,
+    ): Boolean = false
 
     /**
      * Every choice this profile has made, in one round trip: there are a
@@ -173,14 +241,14 @@ interface CoreClient {
     suspend fun setText(setId: String, kind: String, lang: String): String? = null
 
     /** This device's watch-state identity, minted once and kept beside `state.db`. */
-    fun stateDeviceId(): String = ""
+    suspend fun stateDeviceId(): String = ""
 
     /**
      * One round with the library's state channel: what it took in, whether
-     * it sent anything, what went wrong. Never throws — a round that could
-     * not run at all answers with [uniffi.mediagram_core.SyncOutcome.failed]
-     * set rather than raising, so a caller with no network never has to
-     * wrap this in its own try/catch to stay usable offline.
+     * it sent anything, what went wrong. Ordinary operational failures set
+     * [uniffi.mediagram_core.SyncOutcome.failed], including an unavailable
+     * network. Cancellation and invalid or closed native-handle failures
+     * may still propagate.
      */
     suspend fun syncState(handle: String): SyncOutcome = SyncOutcome(0uL, false, null)
 
@@ -198,11 +266,13 @@ interface CoreClient {
     suspend fun signOut() = Unit
 
     /**
-     * Drops the native core and, with it, the authenticated connection it
-     * holds open. Deleting the auth key file does not close a connection
-     * that is already up — it stays authorised as the account it signed in
-     * as, for as long as anything can still reach it. Signing a device out
-     * has to mean this as well.
+     * Permanently retires local watch-state access, then releases the native
+     * handle. Retirement waits for active local database work and prevents
+     * queued state calls from reopening it. Files remain for a replacement
+     * core; account reset removes them after this returns.
+     *
+     * Other in-flight native operations may finish separately. Successful
+     * close is idempotent; failures propagate so the owner can retry cleanup.
      */
     fun close()
 }

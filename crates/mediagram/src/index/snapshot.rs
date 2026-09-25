@@ -98,8 +98,7 @@ mod tests {
     fn snapshot_contains_committed_data_and_records_push_time() {
         let dir = tempfile::tempdir().unwrap();
         let conn = db::open(dir.path()).unwrap();
-        let row =
-            crate::index::set_row::SetRow::from_caption(&sample_caption(), 1_700_000_000).unwrap();
+        let row = crate::index::set_row::SetRow::from_caption(&sample_caption(), 1_700_000_000);
         crate::index::sets::insert_set(&conn, &row).unwrap();
 
         checkpoint(&conn).unwrap();

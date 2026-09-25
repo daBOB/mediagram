@@ -151,10 +151,7 @@ struct Fetched {
 
 /// Asks TMDB again, in the configured language, for what this set already
 /// knows it is. Only the words are taken; the ids and the numbers stay.
-async fn refresh_from_tmdb(
-    cfg: &Config,
-    row: &SetRow,
-) -> Result<Fetched> {
+async fn refresh_from_tmdb(cfg: &Config, row: &SetRow) -> Result<Fetched> {
     if cfg.tmdb_key.is_none() {
         bail!("--refresh needs tmdb_key in the config");
     }

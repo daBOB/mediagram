@@ -10,7 +10,7 @@
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, readlink, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -31,7 +31,7 @@ afterEach(async () => {
 });
 
 /** A package as the exporter would write it, and the pointer naming it. */
-function build(options: { createdAt: number; dbBody?: string; manifestCreatedAt?: number }) {
+function build(options: { createdAt: number; dbBody?: string; manifestCreatedAt?: number; manifestPath?: string }) {
   const createdAt = options.createdAt;
   const manifest = JSON.stringify({
     format: 1,
@@ -43,7 +43,7 @@ function build(options: { createdAt: number; dbBody?: string; manifestCreatedAt?
     posters: [{ key: "tmdb-movie-36648", file: "posters/tmdb-movie-36648.jpg" }],
   });
   const packed = archive(
-    member("manifest.json", text(manifest)),
+    member(options.manifestPath ?? "manifest.json", text(manifest)),
     member("library.db", text(options.dbBody ?? "SQLite format 3")),
     member("posters/tmdb-movie-36648.jpg", text("jpeg")),
   );
@@ -117,6 +117,18 @@ const refresh = (built: ReturnType<typeof build>, over: Record<string, unknown> 
 };
 
 describe("a first refresh", () => {
+  test.each([
+    ["elsewhere.json", /the package has no manifest/],
+    ["manifest.json/child", /EISDIR|directory/i],
+  ])("a manifest at %s reports the actual refusal while retaining the catalog", async (manifestPath, reason) => {
+    const previous = await refresh(build({ createdAt: NOW - 200, dbBody: "previous catalog" })).run();
+    const result = await refresh(build({ createdAt: NOW - 100, manifestPath })).run();
+    expect(result.status).toBe("kept");
+    expect(result.reason).toMatch(reason);
+    expect(result.dir).toBe(previous.dir);
+    expect(await readFile(join(result.dir!, "library.db"), "utf8")).toBe("previous catalog");
+    expect(await readdir(root)).not.toContain(`incoming-${NOW - 100}-${process.pid}`);
+  });
   test("downloads, opens, unpacks and reports where the catalog is", async () => {
     const { run } = refresh(build({ createdAt: NOW - 100 }));
 
@@ -244,6 +256,29 @@ describe("where the package is fetched from", () => {
 });
 
 describe("a refresh that fails", () => {
+  for (const stage of ["pointer", "package"]) {
+    test.each([
+      { label: "null", value: null, reason: "null" },
+      { label: "string", value: "host unavailable", reason: "host unavailable" },
+      { label: "unprintable object", value: Object.create(null), reason: "unprintable rejection" },
+    ])(`${stage} rejection with $label keeps the installed catalog`, async ({ value, reason }) => {
+      const held = await refresh(build({ createdAt: NOW - 100, dbBody: "held db" })).run();
+      const built = build({ createdAt: NOW - 50 });
+      const served = host(built);
+      const result = await refresh(built, { fetch: async (url: string) => {
+        if ((stage === "pointer") === url.endsWith("latest.json")) throw value;
+        return served.fetcher(url);
+      } }).run();
+
+      expect(result.status).toBe("kept");
+      expect(result.reason).toContain(reason);
+      expect(result.reason).toContain(stage);
+      expect(result.dir).toBe(held.dir);
+      expect(result.identity).toEqual(held.identity);
+      expect(await readFile(join(result.dir!, "library.db"), "utf8")).toBe("held db");
+    });
+  }
+
   const causes: [string, (built: ReturnType<typeof build>) => void, RegExp][] = [
     ["a tampered ciphertext byte", (b) => void (b.sealed[NONCE_LEN + 5]! ^= 1), /sha256|digest/i],
     ["a pointer for another key", (b) => void (b.pointer.key_id = "00112233"), /key/i],
@@ -316,5 +351,88 @@ describe("a refresh that fails", () => {
 
     expect(result.status).toBe("kept");
     expect(result.reason).toMatch(/bytes|larger|size/i);
+  });
+});
+
+describe("filesystem failures while installing a package", () => {
+  test.each([
+    null,
+    [],
+    { created_at: 1 },
+    { format: "1", created_at: 1, key_id: KEY_ID, schema: 4, spec: 4 },
+    { format: 1, created_at: 1, key_id: 12345678, schema: 4, spec: 4 },
+    { format: 1, created_at: 1, key_id: KEY_ID, schema: null, spec: 4 },
+    { format: 1, created_at: 1, key_id: KEY_ID, schema: 4, spec: 1.5 },
+  ].map(identity => ({ identity })))("a refused refresh never presents malformed persisted identity %j as validated", async ({ identity }) => {
+    const held = build({ createdAt: NOW - 100, dbBody: "held db" });
+    await refresh(held).run();
+    await writeFile(join(root, "current", "identity.json"), JSON.stringify(identity));
+    const result = await refresh({ ...held, pointer: { ...held.pointer, format: 99 } }).run();
+    expect(result.status).toBe("kept");
+    expect(result.identity).toBeNull();
+    expect(await readFile(join(result.dir!, "library.db"), "utf8")).toBe("held db");
+  });
+
+  test("damaged identity metadata can be replaced without reusing the held version directory", async () => {
+    const heldAt = NOW - 100;
+    await refresh(build({ createdAt: heldAt, dbBody: "held db" })).run();
+    await writeFile(join(root, "current", "identity.json"), "not JSON");
+
+    const result = await refresh(build({ createdAt: heldAt, dbBody: "new db" })).run();
+
+    expect(result.status).toBe("updated");
+    expect(await readlink(join(root, "current"))).toBe(`v-${heldAt}-1`);
+    expect(await readFile(join(result.dir!, "library.db"), "utf8")).toBe("new db");
+    expect((await readdir(root)).sort()).toEqual(["current", `v-${heldAt}-1`]);
+  });
+
+  test("a version collision cannot remove the held catalog when identity metadata is damaged", async () => {
+    const heldAt = NOW - 100;
+    await refresh(build({ createdAt: heldAt, dbBody: "held db" })).run();
+    await writeFile(join(root, "current", "identity.json"), "not JSON");
+    await mkdir(join(root, `.current-${process.pid}`));
+
+    const result = await refresh(build({ createdAt: heldAt, dbBody: "new db" })).run();
+
+    expect(result.status).toBe("kept");
+    expect(await readFile(join(root, "current", "library.db"), "utf8")).toBe("held db");
+  });
+
+  test("a file in the catalog path is a refusal with no held catalog", async () => {
+    const blocked = join(root, "not-a-directory");
+    await writeFile(blocked, "file");
+
+    const result = await refresh(build({ createdAt: NOW - 50 }), { root: join(blocked, "catalog") }).run();
+
+    expect(result).toMatchObject({ status: "kept", dir: null, identity: null });
+    expect(result.reason).toMatch(/ENOTDIR/);
+  });
+
+  test("a refused pointer staging operation keeps the old identity and bytes", async () => {
+    const heldAt = NOW - 100;
+    await refresh(build({ createdAt: heldAt, dbBody: "held db" })).run();
+    await mkdir(join(root, `.current-${process.pid}`));
+
+    const result = await refresh(build({ createdAt: NOW - 50, dbBody: "new db" })).run();
+
+    expect(result.status).toBe("kept");
+    expect(result.reason).toMatch(/EISDIR/);
+    expect(result.identity?.created_at).toBe(heldAt);
+    expect(await readFile(join(result.dir!, "library.db"), "utf8")).toBe("held db");
+    expect(await readdir(root)).not.toContain(`v-${NOW - 50}`);
+  });
+
+  test("a refused pointer rename keeps a readable current directory and removes its staged link", async () => {
+    const heldAt = NOW - 100;
+    await refresh(build({ createdAt: heldAt, dbBody: "held db" })).run();
+    await rm(join(root, "current"));
+    await rename(join(root, `v-${heldAt}`), join(root, "current"));
+
+    const result = await refresh(build({ createdAt: NOW - 50, dbBody: "new db" })).run();
+
+    expect(result.status).toBe("kept");
+    expect(result.identity?.created_at).toBe(heldAt);
+    expect(await readFile(join(result.dir!, "library.db"), "utf8")).toBe("held db");
+    expect(await readdir(root)).not.toContain(`.current-${process.pid}`);
   });
 });

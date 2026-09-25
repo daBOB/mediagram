@@ -6,6 +6,7 @@ import model.WatchSnapshot
 /** What the catalog screen renders; the television surface renders the same states. */
 sealed interface CatalogUiState {
     data object Loading : CatalogUiState
+
     /**
      * [notice] is what went wrong while the library on screen stayed
      * usable — a refresh that could not reach the channel, over a catalog
@@ -27,8 +28,15 @@ sealed interface CatalogUiState {
         /** Sets on this device's disk in full — the "offline" badge's own source. */
         val heldIds: Set<String> = emptySet(),
     ) : CatalogUiState
+
     data object Empty : CatalogUiState
-    data class Failed(val message: String) : CatalogUiState
+
+    /** A kids profile over a library with nothing rated for kids yet. */
+    data object KidsEmpty : CatalogUiState
+
+    data class Failed(
+        val message: String,
+    ) : CatalogUiState
 }
 
 /**
@@ -37,7 +45,10 @@ sealed interface CatalogUiState {
  * A shelf holds [Entry] rather than sets, because two of the three shelves
  * are not lists of sets at all — a show and a course are cards that open.
  */
-data class Shelf(val title: String, val entries: List<Entry>)
+data class Shelf(
+    val title: String,
+    val entries: List<Entry>,
+)
 
 /**
  * The collection a key names, or `null` when the shelves are not here yet
@@ -49,12 +60,13 @@ data class Shelf(val title: String, val entries: List<Entry>)
  * same key resolves a moment later, which is what makes a process killed
  * inside a course come back to that course.
  */
-fun CatalogUiState.collection(key: String): Entry.Collection? = (this as? CatalogUiState.Ready)
-    ?.shelves
-    ?.asSequence()
-    ?.flatMap { it.entries }
-    ?.filterIsInstance<Entry.Collection>()
-    ?.find { it.key == key }
+fun CatalogUiState.collection(key: String): Entry.Collection? =
+    (this as? CatalogUiState.Ready)
+        ?.shelves
+        ?.asSequence()
+        ?.flatMap { it.entries }
+        ?.filterIsInstance<Entry.Collection>()
+        ?.find { it.key == key }
 
 /**
  * The set an id names, wherever it sits — a film on a shelf, or an episode
@@ -66,17 +78,22 @@ fun CatalogUiState.collection(key: String): Entry.Collection? = (this as? Catalo
  * are still loading is the useful half — the same id resolves a moment
  * later, which is what brings a killed process back to the title it was on.
  */
-fun CatalogUiState.mediaSet(setId: String): MediaSet? = (this as? CatalogUiState.Ready)
-    ?.shelves
-    ?.asSequence()
-    ?.flatMap { it.entries }
-    ?.flatMap { entry ->
-        when (entry) {
-            is Entry.Film -> sequenceOf(entry.set)
-            is Entry.Collection -> entry.divisions
-                .asSequence()
-                .flatMap(Division::walk)
-                .flatMap { it.items.asSequence() }
-        }
-    }
-    ?.find { it.setId == setId }
+fun CatalogUiState.mediaSet(setId: String): MediaSet? =
+    (this as? CatalogUiState.Ready)
+        ?.shelves
+        ?.asSequence()
+        ?.flatMap { it.entries }
+        ?.flatMap { entry ->
+            when (entry) {
+                is Entry.Film -> {
+                    sequenceOf(entry.set)
+                }
+
+                is Entry.Collection -> {
+                    entry.divisions
+                        .asSequence()
+                        .flatMap(Division::walk)
+                        .flatMap { it.items.asSequence() }
+                }
+            }
+        }?.find { it.setId == setId }

@@ -392,5 +392,19 @@
         }
       ]
     }
+  },
+  {
+    "name": "a kids profile says so, and only a literal true counts",
+    "input": "{\"format\":1,\"device\":\"tablet\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Mia\",\"kids\":true,\"progress\":[],\"watched\":[]},{\"name\":\"Ben\",\"kids\":\"yes\",\"progress\":[],\"watched\":[]},{\"name\":\"Ada\",\"kids\":false,\"progress\":[],\"watched\":[]}]}",
+    "expect": {
+      "format": 1,
+      "device": "tablet",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        { "name": "Mia", "kids": true, "progress": [], "watched": [] },
+        { "name": "Ben", "progress": [], "watched": [] },
+        { "name": "Ada", "progress": [], "watched": [] }
+      ]
+    }
   }
 ]

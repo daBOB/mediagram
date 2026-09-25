@@ -66,10 +66,7 @@ fn a_summary_is_taken_from_its_own_suffix() {
 fn a_transcript_is_not_mistaken_for_a_summary() {
     let dir = folder(&[("L.mp4", "video"), ("L.txt", "the whole transcript")]);
 
-    assert_eq!(
-        find_sidecars(&dir.path().join("L.mp4")).summary,
-        None
-    );
+    assert_eq!(find_sidecars(&dir.path().join("L.mp4")).summary, None);
 }
 
 #[test]
@@ -121,8 +118,5 @@ fn a_file_that_is_not_text_is_not_carried() {
     fs::write(dir.path().join("L.mp4"), "video").unwrap();
     fs::write(dir.path().join("L.vtt"), [0xff, 0xfe, 0x00, 0x01]).unwrap();
 
-    assert_eq!(
-        find_sidecars(&dir.path().join("L.mp4")).subtitle,
-        None
-    );
+    assert_eq!(find_sidecars(&dir.path().join("L.mp4")).subtitle, None);
 }

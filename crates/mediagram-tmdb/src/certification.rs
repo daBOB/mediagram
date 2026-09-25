@@ -18,13 +18,21 @@ use crate::tmdb_client::TmdbApi;
 /// The rating `region` gives the title, or `None` when it gives none.
 ///
 /// `region` is an ISO 3166-1 code such as `DE`; see [`region_of`].
-pub async fn certification(api: &impl TmdbApi, kind: Kind, id: u64, region: &str) -> Result<Option<String>> {
+pub async fn certification(
+    api: &impl TmdbApi,
+    kind: Kind,
+    id: u64,
+    region: &str,
+) -> Result<Option<String>> {
     let path = match kind {
         Kind::Movie => format!("/movie/{id}/release_dates"),
         Kind::Ep => format!("/tv/{id}/content_ratings"),
         Kind::Tut | Kind::Doc => bail!("a course has no provider entry"),
     };
-    let value = api.get_json(&path, &[]).await.with_context(|| format!("asking for {path}"))?;
+    let value = api
+        .get_json(&path, &[])
+        .await
+        .with_context(|| format!("asking for {path}"))?;
     Ok(match kind {
         Kind::Movie => film_rating(&value, region),
         _ => series_rating(&value, region),
@@ -37,7 +45,11 @@ pub async fn certification(api: &impl TmdbApi, kind: Kind, id: u64, region: &str
 /// languages a library is likely to be kept in and harmless for the rest: a
 /// country TMDB has no ratings for answers `None`, as an unrated title does.
 pub fn region_of(language: &str) -> String {
-    language.rsplit(['-', '_']).next().unwrap_or(language).to_ascii_uppercase()
+    language
+        .rsplit(['-', '_'])
+        .next()
+        .unwrap_or(language)
+        .to_ascii_uppercase()
 }
 
 /// The first rating any of the film's releases in `region` carries. Releases
@@ -87,7 +99,8 @@ mod tests {
 
     #[test]
     fn a_country_with_no_rated_release_gives_none() {
-        let value = json!({"results": [{"iso_3166_1": "DE", "release_dates": [{"certification": " "}]}]});
+        let value =
+            json!({"results": [{"iso_3166_1": "DE", "release_dates": [{"certification": " "}]}]});
         assert_eq!(film_rating(&value, "DE"), None);
         assert_eq!(film_rating(&value, "FR"), None);
     }

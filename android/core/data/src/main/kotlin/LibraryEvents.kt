@@ -7,9 +7,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.shareIn
 import settings.LibrarySettings
 import uniffi.mediagram_core.LibraryEvent
@@ -44,8 +44,8 @@ fun interface LibraryEvents {
  * parked on a closed core would hold both for as long as its channel stayed
  * quiet.
  *
- * Reads the chosen handle before every wait. With no library chosen there is
- * nothing to listen to, and it goes quiet until the core changes.
+ * Follows library selection too: setup can choose one after listening has
+ * begun, and switching it cancels the old wait before starting the new one.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class CoreLibraryEvents(
@@ -53,26 +53,43 @@ class CoreLibraryEvents(
     private val settings: LibrarySettings,
     private val retryAfter: Duration = 30.seconds,
 ) : LibraryEvents {
-
     override fun events(): Flow<LibraryEvent> =
-        coreProvider.core.filterNotNull().flatMapLatest { core -> listenOn(core) }
-
-    private fun listenOn(core: CoreClient): Flow<LibraryEvent> = flow {
-        while (true) {
-            val handle = settings.read() ?: return@flow
-            val event = try {
-                core.nextLibraryEvent(handle, core.stateDeviceId())
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                // Listening stopped — offline, or the connection went. A pause
-                // rather than a tight loop against a network that is not there.
-                delay(retryAfter)
-                continue
+        coreProvider.core.flatMapLatest { core ->
+            if (core == null) {
+                emptyFlow()
+            } else {
+                settings
+                    .selections()
+                    .retryWhen { failure, _ ->
+                        if (failure is CancellationException || failure !is Exception) throw failure
+                        delay(retryAfter)
+                        true
+                    }.flatMapLatest { handle ->
+                        if (handle == null) emptyFlow() else listenOn(core, handle)
+                    }
             }
-            emit(event)
         }
-    }
+
+    private fun listenOn(
+        core: CoreClient,
+        handle: String,
+    ): Flow<LibraryEvent> =
+        flow {
+            while (true) {
+                val event =
+                    try {
+                        core.nextLibraryEvent(handle, core.stateDeviceId())
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        // Listening stopped — offline, or the connection went. A pause
+                        // rather than a tight loop against a network that is not there.
+                        delay(retryAfter)
+                        continue
+                    }
+                emit(event)
+            }
+        }
 }
 
 /**
@@ -95,7 +112,6 @@ class SharedLibraryEvents(
     delegate: LibraryEvents,
     scope: CoroutineScope,
 ) : LibraryEvents {
-
     private val shared = delegate.events().shareIn(scope, SharingStarted.WhileSubscribed(5_000))
 
     override fun events(): Flow<LibraryEvent> = shared

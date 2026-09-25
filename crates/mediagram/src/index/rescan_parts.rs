@@ -45,7 +45,9 @@ pub(super) fn upsert_part(
 ) -> Result<bool> {
     let existing = existing_part(conn, &caption.set, caption.part.i)?;
     let is_duplicate = match &existing {
-        Some(existing) => existing.status == PartStatus::Done && existing.message_id != Some(message_id),
+        Some(existing) => {
+            existing.status == PartStatus::Done && existing.message_id != Some(message_id)
+        }
         None => false,
     };
     if is_duplicate {

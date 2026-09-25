@@ -8,6 +8,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { catalogSet } from "./support/catalog-set";
 import {
   documentsUnder,
   firstItemOf,
@@ -20,24 +21,7 @@ import {
   type CatalogSet,
 } from "../public/lib/library.js";
 
-const set = (over: Record<string, unknown> = {}): CatalogSet => ({
-  setId: `01SET${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
-  kind: "movie",
-  title: "A Title",
-  show: null,
-  path: null,
-  chap: null,
-  season: null,
-  episode: null,
-  year: null,
-  container: "mp4",
-  vcodec: "h264",
-  acodec: "aac",
-  duration: 60,
-  total: 1000,
-  partCount: 1,
-  ...over,
-});
+const set = catalogSet;
 
 const lesson = (over: Record<string, unknown> = {}): CatalogSet =>
   set({ kind: "tut", show: "Kurs", ...over });
@@ -122,6 +106,17 @@ describe("a document is not in the playback order", () => {
     ]).tutorials[0]!;
 
     expect(firstItemOf(course.divisions)?.setId).toBe("L1");
+  });
+
+  test("a numbered child folder can precede its parent's first lesson", () => {
+    const course = groupLibrary([
+      lesson({ setId: "L2", path: "Chapter", episode: "2" }),
+      document({ setId: "D0", path: "Chapter/1. Earlier", episode: "0" }),
+      lesson({ setId: "L1", path: "Chapter/1. Earlier", episode: "1" }),
+    ]).tutorials[0]!;
+
+    expect(firstItemOf(course.divisions)?.setId).toBe("L1");
+    expect(flattenCollection(course).map((item) => item.setId)).toEqual(["L1", "L2"]);
   });
 });
 

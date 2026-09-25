@@ -22,6 +22,7 @@ pub mod merge;
 pub mod preferences;
 pub mod profiles;
 pub mod record;
+mod repair;
 pub mod rows;
 mod schema;
 pub(crate) mod sync;
@@ -41,33 +42,54 @@ const STATE_FILE: &str = "state.db";
 /// wrapping rusqlite in async machinery would buy nothing.
 pub struct StateDb {
     data_dir: PathBuf,
-    conn: Mutex<Option<Connection>>,
+    conn: Mutex<LocalState>,
+}
+
+enum LocalState {
+    Unopened,
+    Open(Connection),
+    Retired,
 }
 
 impl StateDb {
     pub fn new(data_dir: PathBuf) -> Self {
-        StateDb { data_dir, conn: Mutex::new(None) }
+        StateDb {
+            data_dir,
+            conn: Mutex::new(LocalState::Unopened),
+        }
+    }
+
+    /// Ends this owner's access, waiting for an existing action and closing
+    /// its connection. Files remain available to a replacement owner.
+    pub(crate) fn retire(&self) {
+        let mut guard = self.conn.lock().unwrap_or_else(|error| error.into_inner());
+        *guard = LocalState::Retired;
     }
 
     /// Runs `f` against the open connection, opening (and migrating) it on
-    /// first use. `None` on any failure — the lock poisoned, the file could
-    /// not be opened, or `f` itself failed — which is what every write
+    /// first use. `None` after retirement or on any failure — the lock
+    /// poisoned, the file could not be opened, or `f` itself failed — which is what every write
     /// degrades to and every read reads back as "remembers nothing". Nothing
     /// here may throw to Kotlin: a state directory that cannot be written is
     /// a player that forgets where you were, which is tolerable; one that
     /// refuses to start because of it is not.
     pub(crate) fn with<T>(&self, f: impl FnOnce(&Connection) -> rusqlite::Result<T>) -> Option<T> {
         let mut guard = self.conn.lock().ok()?;
-        if guard.is_none() {
+        if matches!(*guard, LocalState::Retired) {
+            return None;
+        }
+        if matches!(*guard, LocalState::Unopened) {
             match open(&self.data_dir) {
-                Ok(conn) => *guard = Some(conn),
+                Ok(conn) => *guard = LocalState::Open(conn),
                 Err(err) => {
                     eprintln!("state: not remembering anything ({err})");
                     return None;
                 }
             }
         }
-        let conn = guard.as_ref()?;
+        let LocalState::Open(conn) = &*guard else {
+            return None;
+        };
         match f(conn) {
             Ok(value) => Some(value),
             Err(err) => {
@@ -85,6 +107,7 @@ fn open(data_dir: &Path) -> anyhow::Result<Connection> {
     let conn = Connection::open(data_dir.join(STATE_FILE))?;
     conn.pragma_update(None, "journal_mode", "WAL")?;
     migrate(&conn)?;
+    repair::add_missing_kids_column(&conn)?;
     conn.pragma_update(None, "foreign_keys", true)?;
     Ok(conn)
 }
@@ -102,7 +125,10 @@ fn migrate(conn: &Connection) -> anyhow::Result<()> {
 
     let applied = schema::migrations_up_to(at).len();
     conn.execute_batch("BEGIN")?;
-    for statement in schema::migrations_up_to(schema::VERSION).into_iter().skip(applied) {
+    for statement in schema::migrations_up_to(schema::VERSION)
+        .into_iter()
+        .skip(applied)
+    {
         if let Err(err) = conn.execute(statement, []) {
             let _ = conn.execute_batch("ROLLBACK");
             return Err(err.into());
@@ -115,6 +141,13 @@ fn migrate(conn: &Connection) -> anyhow::Result<()> {
     conn.execute_batch("COMMIT")?;
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "migration_tests.rs"]
+mod migration_tests;
+
+#[cfg(test)]
+mod kids_profile_tests;
 
 #[cfg(test)]
 mod tests {
@@ -136,39 +169,24 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         {
             let db = StateDb::new(dir.path().to_path_buf());
-            db.with(|conn| profiles::create(conn, "André")).unwrap();
+            db.with(|conn| profiles::create(conn, "André", false))
+                .unwrap();
         }
         let db = StateDb::new(dir.path().to_path_buf());
-        let names: Vec<String> = db.with(profiles::list).unwrap().into_iter().map(|p| p.name).collect();
+        let names: Vec<String> = db
+            .with(profiles::list)
+            .unwrap()
+            .into_iter()
+            .map(|p| p.name)
+            .collect();
         assert_eq!(names, vec!["André".to_string()]);
-    }
-
-    /// A real device may already hold a v2 file — profiles, progress, and
-    /// the rest, but no `preferences` table yet. Gaining it must not disturb
-    /// what is already there.
-    #[test]
-    fn an_older_store_upgrades_to_preferences_with_its_rows_intact() {
-        let dir = tempfile::tempdir().unwrap();
-        {
-            let conn = Connection::open(dir.path().join(STATE_FILE)).unwrap();
-            for statement in schema::migrations_up_to(2) {
-                conn.execute(statement, []).unwrap();
-            }
-            conn.pragma_update(None, "user_version", 2i64).unwrap();
-            conn.execute("INSERT INTO profiles(id, name, created_at) VALUES ('p1', 'André', 0)", []).unwrap();
-            conn.execute(
-                "INSERT INTO progress(profile_id, set_id, at_seconds, duration, updated_at)
-                   VALUES ('p1', 'set1', 12.5, 90.0, 0)",
-                [],
-            )
-            .unwrap();
-        }
-
-        let db = StateDb::new(dir.path().to_path_buf());
-
-        let names: Vec<String> = db.with(profiles::list).unwrap().into_iter().map(|p| p.name).collect();
-        assert_eq!(names, vec!["André".to_string()]);
-        assert_eq!(db.with(|conn| rows::progress_for(conn, "p1")).unwrap().len(), 1);
-        assert!(db.with(|conn| preferences::set(conn, "p1", "show:x", "audio", Some("en"))).unwrap());
     }
 }
+
+#[cfg(test)]
+#[path = "retirement_tests.rs"]
+mod retirement_tests;
+
+#[cfg(test)]
+#[path = "upgrade_tests.rs"]
+mod upgrade_tests;

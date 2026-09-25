@@ -14,34 +14,52 @@ import kotlin.test.assertNull
  * test told it to would pin nothing about the app.
  */
 class RefreshLogTest {
+    private fun repositoryOver(
+        core: CoreClient,
+        log: RefreshLog,
+    ) = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), log)
 
-    private fun repositoryOver(core: FakeCore, log: RefreshLog) =
-        DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), log)
+    @Test
+    fun unknownRefreshFailuresKeepTheirCauseButDoNotExposeItInTheDisplayedLog() =
+        runTest {
+            val refusal = java.io.IOException("private-state-path")
+            val core =
+                object : CoreClient by FakeCore() {
+                    override suspend fun refreshLibrary(handle: String): Long = throw refusal
+                }
+            val log = RefreshLog()
+            val repository = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), log)
+            val outcome = repository.refresh()
+            kotlin.test.assertSame(refusal, outcome.exceptionOrNull())
+            assertEquals(RefreshOutcome.Refused("Could not refresh the library"), log.last())
+        }
 
     /** A refresh that installs a newer snapshot is the case worth reporting. */
     @Test
-    fun aNewerSnapshotReadsAsUpdated() = runTest {
-        val core = FakeCore(publishedAt = listOf(1_758_300_000L, 1_758_900_000L))
-        val log = RefreshLog()
+    fun aNewerSnapshotReadsAsUpdated() =
+        runTest {
+            val core = FakeCore(publishedAt = listOf(1_758_300_000L, 1_758_900_000L))
+            val log = RefreshLog()
 
-        repositoryOver(core, log).refresh()
+            repositoryOver(core, log).refresh()
 
-        assertEquals(RefreshOutcome.Updated, log.last())
-    }
+            assertEquals(RefreshOutcome.Updated, log.last())
+        }
 
     /**
      * Asking again when nothing has been pushed is the ordinary case, and it
      * is not a failure — the library is current, which is what was wanted.
      */
     @Test
-    fun anUnchangedSnapshotReadsAsAlreadyCurrent() = runTest {
-        val core = FakeCore(publishedAt = listOf(1_758_300_000L))
-        val log = RefreshLog()
+    fun anUnchangedSnapshotReadsAsAlreadyCurrent() =
+        runTest {
+            val core = FakeCore(publishedAt = listOf(1_758_300_000L))
+            val log = RefreshLog()
 
-        repositoryOver(core, log).refresh()
+            repositoryOver(core, log).refresh()
 
-        assertEquals(RefreshOutcome.AlreadyCurrent, log.last())
-    }
+            assertEquals(RefreshOutcome.AlreadyCurrent, log.last())
+        }
 
     /**
      * The first refresh a device ever makes finds nothing installed and
@@ -49,25 +67,31 @@ class RefreshLogTest {
      * update there is, not an absent reading.
      */
     @Test
-    fun theFirstLibraryEverInstalledReadsAsUpdated() = runTest {
-        val core = FakeCore(publishedAt = listOf(null, 1_758_900_000L))
-        val log = RefreshLog()
+    fun theFirstLibraryEverInstalledReadsAsUpdated() =
+        runTest {
+            val core = FakeCore(publishedAt = listOf(null, 1_758_900_000L))
+            val log = RefreshLog()
 
-        repositoryOver(core, log).refresh()
+            repositoryOver(core, log).refresh()
 
-        assertEquals(RefreshOutcome.Updated, log.last())
-    }
+            assertEquals(RefreshOutcome.Updated, log.last())
+        }
 
     /** A refusal keeps the sentence the core wrote, which says what to do about it. */
     @Test
-    fun aFailedRefreshKeepsTheCoresOwnSentence() = runTest {
-        val core = FakeCore(refreshFails = "the channel could not be reached")
-        val log = RefreshLog()
+    fun aFailedRefreshKeepsTheCoresOwnSentence() =
+        runTest {
+            val core =
+                object : CoreClient by FakeCore() {
+                    override suspend fun refreshLibrary(handle: String): Long =
+                        throw uniffi.mediagram_core.CoreException.Network("the channel could not be reached")
+                }
+            val log = RefreshLog()
 
-        repositoryOver(core, log).refresh()
+            repositoryOver(core, log).refresh()
 
-        assertEquals(RefreshOutcome.Refused("the channel could not be reached"), log.last())
-    }
+            assertEquals(RefreshOutcome.Refused("the channel could not be reached"), log.last())
+        }
 
     /**
      * A refresh nobody waited for is not a refresh that was refused. The
@@ -77,15 +101,16 @@ class RefreshLogTest {
      * machinery's own words on the System screen.
      */
     @Test
-    fun aCancelledRefreshIsNotRecordedAsARefusal() = runTest {
-        val log = RefreshLog()
+    fun aCancelledRefreshIsNotRecordedAsARefusal() =
+        runTest {
+            val log = RefreshLog()
 
-        assertFailsWith<CancellationException> {
-            repositoryOver(FakeCore(refreshCancels = true), log).refresh()
+            assertFailsWith<CancellationException> {
+                repositoryOver(FakeCore(refreshCancels = true), log).refresh()
+            }
+
+            assertNull(log.last())
         }
-
-        assertNull(log.last())
-    }
 
     /** Before anything has been asked, there is nothing to report. */
     @Test

@@ -55,7 +55,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object PlaybackModule {
-
     @Provides
     @Singleton
     fun providePlaybackScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -75,13 +74,14 @@ object PlaybackModule {
         coreProvider: CoreProvider,
         counters: PlaybackCounters,
         scope: CoroutineScope,
-    ): @JvmSuppressWildcards Deferred<ExoPlayer> = scope.async {
-        // Awaited once so the cache is not built on a device that has never
-        // been set up, then read per data source rather than captured: the
-        // player outlives a start-over, the core it reads through does not.
-        coreProvider.awaitCore()
-        buildPlayer(context, counters) { coreProvider.core.value }
-    }
+    ): @JvmSuppressWildcards Deferred<ExoPlayer> =
+        scope.async {
+            // Awaited once so the cache is not built on a device that has never
+            // been set up, then read per data source rather than captured: the
+            // player outlives a start-over, the core it reads through does not.
+            coreProvider.awaitCore()
+            buildPlayer(context, counters) { coreProvider.core.value }
+        }
 
     @Provides
     @Singleton

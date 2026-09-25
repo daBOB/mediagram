@@ -12,9 +12,9 @@ use std::path::PathBuf;
 
 use mlib_spec::Kind;
 
-use mediagram_tmdb::posters::kind_key;
 use mediagram_tmdb::disk_cache::DiskCachedApi;
 use mediagram_tmdb::localized::Localized;
+use mediagram_tmdb::posters::kind_key;
 use mediagram_tmdb::tmdb_client::{HttpStatus, TmdbApi, TmdbClient};
 
 use crate::catalog::PlayableSet;
@@ -45,13 +45,18 @@ pub fn plan_fetch(core: &Core, fallback: &str) -> Result<FetchPlan, CoreError> {
     let dir = std::fs::canonicalize(store::current_dir(core))
         .map_err(CoreError::NotFound("no catalog is loaded yet".into()).logged())?;
     let conn = versions::open_ro(&versions::library_db(&dir))?;
-    let sets = crate::catalog::list_playable(&conn)
-        .map_err(CoreError::io("reading the catalog"))?;
+    let sets =
+        crate::catalog::list_playable(&conn).map_err(CoreError::io("reading the catalog"))?;
     let language = language_of(&conn, fallback);
     drop(conn);
 
     let (titles, without_id) = split_titles(&sets);
-    Ok(FetchPlan { artwork_dir: store::artwork_dir(core), titles, without_id, language })
+    Ok(FetchPlan {
+        artwork_dir: store::artwork_dir(core),
+        titles,
+        without_id,
+        language,
+    })
 }
 
 /// Fills both gaps a library leaves, for every title the provider numbers:
@@ -65,7 +70,10 @@ pub(in crate::api) async fn fetch_missing(
     if plan.titles.is_empty() {
         // Nothing the provider could answer about — no reason to spend a
         // request validating a key that will never be used.
-        return Ok(FetchReport { no_provider_id: plan.without_id, ..FetchReport::default() });
+        return Ok(FetchReport {
+            no_provider_id: plan.without_id,
+            ..FetchReport::default()
+        });
     }
 
     // One client for both the provider and the downloads.
@@ -112,7 +120,11 @@ pub fn split_titles(sets: &[PlayableSet]) -> (Vec<(Kind, u64)>, u32) {
                 // collection, and the ones naming none share the single card
                 // `Shelves.kt` gives them instead of being counted apart.
                 let held_by = set.show.as_deref().map(str::trim).filter(|s| !s.is_empty());
-                let alone = if set.kind == Kind::Movie.as_str() { set.set_id.as_str() } else { "" };
+                let alone = if set.kind == Kind::Movie.as_str() {
+                    set.set_id.as_str()
+                } else {
+                    ""
+                };
                 unaskable.insert((set.kind.as_str(), held_by.unwrap_or(alone)));
             }
         }
@@ -125,10 +137,12 @@ pub fn split_titles(sets: &[PlayableSet]) -> (Vec<(Kind, u64)>, u32) {
 async fn verify_key(api: &impl TmdbApi) -> Result<(), CoreError> {
     match api.get_json("/authentication", &[]).await {
         Ok(_) => Ok(()),
-        Err(err) if rejected_the_key(&err) => {
-            Err(CoreError::NotAuthorized("the artwork provider rejected this key".into()))
-        }
-        Err(err) => Err(CoreError::network("could not reach the artwork provider")(err)),
+        Err(err) if rejected_the_key(&err) => Err(CoreError::NotAuthorized(
+            "the artwork provider rejected this key".into(),
+        )),
+        Err(err) => Err(CoreError::network("could not reach the artwork provider")(
+            err,
+        )),
     }
 }
 

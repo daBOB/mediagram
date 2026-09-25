@@ -8,7 +8,7 @@ import {
   framingStyle,
   framings,
   nextFraming,
-} from "../public/lib/framing.js";
+} from "../public/lib/playback/framing.js";
 
 describe("the cycle", () => {
   test("walks every framing and comes back", () => {

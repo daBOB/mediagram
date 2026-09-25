@@ -1,17 +1,12 @@
-//! The surface Kotlin calls through UniFFI: signing in, choosing and
-//! refreshing a library, reading bytes, and fetching what a library lacks.
+//! Kotlin's UniFFI surface: authentication, library refresh, playback and
+//! enrichment. Calls orchestrate domain modules over one [`Core`].
 //!
-//! The machinery lives in this crate's other modules — range planning,
-//! catalog queries, the byte transport, catalog versions, package
-//! decryption, the `shows` stores. What stays here is each call's
-//! orchestration over one `Core`, for a caller that never sees a
-//! `Connection` or a `Client` and never learns a `chat_id`, a `message_id`
-//! or a `doc_id`: no [`CoreError`] variant may carry one, because the player
-//! is told what it may play, never where the bytes live.
+//! Kotlin never receives connections, clients, or Telegram chat/message/doc
+//! IDs, including through [`CoreError`]: the player learns what it can play,
+//! never where the bytes live.
 
 mod account;
 mod blocking;
-mod store;
 mod channel;
 pub mod enrich;
 mod events;
@@ -24,21 +19,23 @@ mod state;
 mod state_sync;
 #[cfg(test)]
 mod test_support;
+mod store;
 
+pub use crate::dto::{AuthOutcome, LibraryChoice};
+pub use crate::error::CoreError;
+use crate::transport::documents::PartDocuments;
+use account::auth::{PendingLogin, PendingPassword};
+use account::session::ClientHandle;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::Mutex as AsyncMutex;
-use account::auth::{PendingLogin, PendingPassword};
-use account::session::ClientHandle;
-use crate::transport::documents::PartDocuments;
-pub use crate::dto::{AuthOutcome, LibraryChoice};
-pub use crate::error::CoreError;
 
 /// State a running app keeps between calls: the connection once opened,
 /// whichever login step is in flight, and where the set being played lives.
 #[derive(Default)]
 struct State {
     client: Option<ClientHandle>,
+    login_attempt: Option<Arc<()>>,
     pending_login: Option<PendingLogin>,
     pending_password: Option<PendingPassword>,
     documents: Arc<PartDocuments>,
@@ -47,11 +44,8 @@ struct State {
 /// One player's whole Telegram surface, kept alive by Kotlin for the life of
 /// the app.
 ///
-/// `api_id`/`api_hash` identify the *application* to Telegram, not the
-/// account — leaking them lets someone impersonate the app, never sign in as
-/// a user. An Android process has no settable environment to read them from,
-/// so Kotlin passes them in from `BuildConfig`, itself populated at build
-/// time from `local.properties`.
+/// `api_id`/`api_hash` identify the Telegram application, not a signed-in
+/// account. Kotlin passes the identity stored by the app's setup flow.
 #[derive(uniffi::Object)]
 pub struct Core {
     data_dir: PathBuf,
@@ -125,11 +119,9 @@ impl Core {
         channel::refresh_library(self, handle).await
     }
 
-    /// Refreshes from **a published package**: fetches the pointer at
-    /// `pointer_url`, then the encrypted package it names, and installs the
-    /// index inside it. Kept whole beside [`Core::refresh_library`]: it is
-    /// the only source that carries poster art, though nothing in the
-    /// first-run flow reaches it any more.
+    /// Installs the encrypted package named by `pointer_url`, including its
+    /// poster art. Unlike [`Core::refresh_library`], this source is not used
+    /// by the first-run flow.
     pub async fn refresh_catalog(
         &self,
         pointer_url: String,
@@ -138,10 +130,8 @@ impl Core {
         refresh::refresh_catalog(self, pointer_url, key_b64).await
     }
 
-    /// Every playable set in the current catalog. An empty list, not
-    /// `NotFound`, when no catalog is loaded yet: a shelf with nothing on it
-    /// is what a first launch shows, whereas the calls that ask about one
-    /// named set have nothing sensible to return and say so.
+    /// Every playable set in the current catalog, or an empty list before
+    /// the first catalog is loaded. Calls for a named set use `NotFound`.
     pub async fn list_sets(self: Arc<Self>) -> Result<Vec<crate::dto::SetSummary>, CoreError> {
         self.blocking(store::list_sets).await
     }
@@ -157,39 +147,44 @@ impl Core {
     /// A course has no provider entry and a library assembled without a TMDB
     /// key has no rows at all; both are ordinary, so neither is an error.
     pub async fn title_info(self: Arc<Self>, poster_key: String) -> Option<crate::dto::TitleInfo> {
-        self.blocking(move |core| enrich::details::title_info(core, poster_key)).await
+        self.blocking(move |core| enrich::details::title_info(core, poster_key))
+            .await
     }
 
     pub async fn total_size(self: Arc<Self>, set_id: String) -> Result<u64, CoreError> {
-        self.blocking(move |core| store::total_size(core, set_id)).await
+        self.blocking(move |core| store::total_size(core, set_id))
+            .await
     }
 
-    /// What the installed catalog is, for the screen that says so.
-    ///
-    /// Total failure is reported as zeroes rather than an error: this is
-    /// read to draw a screen, and a screen that cannot draw because a count
-    /// failed is worse than one that says a library is empty.
+    /// Installed-catalog status; unavailable counts are reported as zeroes
+    /// so the display remains usable when its local data cannot be read.
     pub async fn catalog_facts(self: Arc<Self>) -> crate::dto::CatalogFacts {
         self.blocking(store::facts).await
     }
 
-    pub async fn read(self: Arc<Self>, set_id: String, offset: u64, len: u32) -> Result<Vec<u8>, CoreError> {
-        let locations = self.blocking(move |core| read::locations(core, &set_id)).await?;
+    /// Reads at most `len` bytes from `offset`, clamping the result at EOF.
+    /// `NotFound` covers absent/unplayable sets or offsets at/beyond EOF, even
+    /// for `len == 0`. An in-range empty request returns no bytes without
+    /// resolving channels. Nonempty reads also return `NotFound` for missing
+    /// channel addresses. Storage, transport and authorization errors propagate;
+    /// failed downloads never return a partial buffer.
+    pub async fn read(
+        self: Arc<Self>,
+        set_id: String,
+        offset: u64,
+        len: u32,
+    ) -> Result<Vec<u8>, CoreError> {
+        let locations = self
+            .blocking(move |core| read::locations(core, &set_id))
+            .await?;
         read::read(&self, locations, offset, len).await
     }
 
-    /// Fills in what the library it was handed does not carry, for every
-    /// title TMDB can answer about: the poster artwork a channel index has
-    /// no room for, and the descriptions of whatever nobody ran `mediagram
-    /// metadata` over before pushing it. One run answers both, because they
-    /// come from one request per title and a viewer who asked for the
-    /// missing pieces did not ask for half of them.
+    /// Fetches missing TMDB posters and descriptions together, once per title.
     ///
-    /// `language` is only a fallback: the library itself says what language
-    /// it was described in, and that is what the provider is asked in.
+    /// The library's language takes precedence over the `language` fallback.
     ///
-    /// The key is used for this call only and never stored — Kotlin owns
-    /// holding it, this crate only ever spends it.
+    /// Kotlin owns the key; this call uses it without storing it.
     pub async fn fetch_missing(
         &self,
         tmdb_key: String,

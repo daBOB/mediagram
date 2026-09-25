@@ -75,7 +75,18 @@ async fn resumes_via_adoption_without_duplicate_upload() {
     // Part 0: already recorded done in a prior run.
     let range0 = plan[0];
     let hash0 = hex_sha256(&data[range0.off as usize..(range0.off + range0.len) as usize]);
-    parts::mark_done(&conn, &set_row.set_id, 0, &parts::Landed { chat_id: CHAT_ID, message_id: 501, doc_id: 10_501, sha256: hash0.clone() }).unwrap();
+    parts::mark_done(
+        &conn,
+        &set_row.set_id,
+        0,
+        &parts::Landed {
+            chat_id: CHAT_ID,
+            message_id: 501,
+            doc_id: 10_501,
+            sha256: hash0.clone(),
+        },
+    )
+    .unwrap();
 
     // Part 1: uploaded to Telegram, but the crash happened before mark_done.
     let range1 = plan[1];
@@ -297,7 +308,18 @@ mod resume_and_recovery {
 
         let range0 = plan[0];
         let hash0 = hex_sha256(&data[range0.off as usize..(range0.off + range0.len) as usize]);
-        parts::mark_done(&conn, &set_row.set_id, 0, &parts::Landed { chat_id: CHAT_ID, message_id: 501, doc_id: 10_501, sha256: hash0 }).unwrap();
+        parts::mark_done(
+            &conn,
+            &set_row.set_id,
+            0,
+            &parts::Landed {
+                chat_id: CHAT_ID,
+                message_id: 501,
+                doc_id: 10_501,
+                sha256: hash0,
+            },
+        )
+        .unwrap();
 
         let transport = FakeTransport::new();
         transport.set_fail_on_part(1);
@@ -421,7 +443,18 @@ mod resume_and_recovery {
 
         let range = plan[0];
         let hash = hex_sha256(&data[range.off as usize..(range.off + range.len) as usize]);
-        parts::mark_done(&conn, &set_row.set_id, 0, &parts::Landed { chat_id: CHAT_ID, message_id: 999, doc_id: 10_999, sha256: hash.clone() }).unwrap();
+        parts::mark_done(
+            &conn,
+            &set_row.set_id,
+            0,
+            &parts::Landed {
+                chat_id: CHAT_ID,
+                message_id: 999,
+                doc_id: 10_999,
+                sha256: hash.clone(),
+            },
+        )
+        .unwrap();
 
         let set_hash = mlib_spec::set_hash::set_hash(std::slice::from_ref(&hash));
         sets::set_hash_and_complete(&conn, &set_row.set_id, &set_hash).unwrap();
@@ -477,10 +510,10 @@ mod index_and_storage {
         let mut conn = db::open(db_dir.path()).unwrap();
 
         let caption1 = sample_caption("01J0000000000000000000FST8", 1024 * 1024, 1);
-        let set1 = SetRow::from_caption(&caption1, 1_700_000_000).unwrap();
+        let set1 = SetRow::from_caption(&caption1, 1_700_000_000);
 
         let caption2 = sample_caption("01J0000000000000000000FST9", 1024 * 1024, 1);
-        let set2 = SetRow::from_caption(&caption2, 1_700_000_001).unwrap();
+        let set2 = SetRow::from_caption(&caption2, 1_700_000_001);
 
         {
             let tx = conn.transaction().unwrap();

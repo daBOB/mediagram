@@ -7,7 +7,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class CacheBudgetChoicesTest {
-
     @Test
     fun theChoicesRunFromTheFloorAndIncludeTheDefault() {
         val choices = cacheBudgetChoices()

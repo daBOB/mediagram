@@ -23,9 +23,9 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import data.WatchSync
-import ui.LocalIsInPictureInPicture
+import ui.player.LocalIsInPictureInPicture
 import ui.MobileApp
-import ui.PipEntryPoint
+import ui.player.PipEntryPoint
 import javax.inject.Inject
 
 /**
@@ -37,7 +37,6 @@ import javax.inject.Inject
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
     // Field-injected rather than read from a ViewModel: the watch-state
     // cadence is a property of the process, not of this screen, and
     // onStart/onStop are Activity lifecycle callbacks a Composable has no

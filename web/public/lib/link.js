@@ -12,7 +12,7 @@ import { decidePlayback } from "./playable.js";
 
 /** Assumed local until the server says otherwise: the common case, and the
  *  one where being wrong only costs a conversion nobody needed. */
-let link = { remote: false, maxBitrate: 0, decodes: browserDecodes() };
+let link = { remote: false, maxBitrate: 0, decodes: [] };
 
 /**
  * What the server said about the catalogue, or `null` before it answered.
@@ -23,6 +23,7 @@ let link = { remote: false, maxBitrate: 0, decodes: browserDecodes() };
 let catalog = null;
 
 export async function loadLink() {
+  link = { ...link, decodes: browserDecodes() };
   try {
     const response = await fetch("/api/player");
     if (!response.ok) return;

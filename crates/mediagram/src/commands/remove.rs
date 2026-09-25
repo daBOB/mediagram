@@ -6,14 +6,34 @@
 //! nothing happens without `--yes`.
 
 use anyhow::{Context, Result, bail};
+use rusqlite::Connection;
 
 use crate::config::Config;
 use crate::index::{db, parts, sets};
-use crate::remove::apply::{delete_messages, delete_rows};
-use crate::remove::plan::plan_removal;
+use crate::remove::apply::{apply_removals, delete_messages};
+use crate::remove::plan::{Removal, plan_removal};
 use crate::telegram::client::Tg;
 
 pub async fn run(cfg: &Config, set_ids: Vec<String>, dry_run: bool, yes: bool) -> Result<()> {
+    run_with(cfg, set_ids, dry_run, yes, async |conn, removals| {
+        let tg = Tg::connect(cfg).await?;
+        let result = apply_removals(conn, removals, async |removal| {
+            delete_messages(&tg.client, tg.channel, removal, cfg.max_attempts).await
+        })
+        .await;
+        tg.shutdown().await;
+        result
+    })
+    .await
+}
+
+async fn run_with(
+    cfg: &Config,
+    set_ids: Vec<String>,
+    dry_run: bool,
+    yes: bool,
+    apply: impl AsyncFnOnce(&Connection, &[Removal]) -> Result<usize>,
+) -> Result<()> {
     let conn = db::open(&cfg.data_dir()?)?;
 
     let mut removals = Vec::new();
@@ -46,31 +66,12 @@ pub async fn run(cfg: &Config, set_ids: Vec<String>, dry_run: bool, yes: bool) -
         bail!("refusing to delete without --yes; run with --dry-run first to see what that means");
     }
 
-    let tg = Tg::connect(cfg).await?;
-    let mut deleted = 0;
-    let mut result = Ok(());
-    for removal in &removals {
-        match delete_messages(&tg.client, tg.channel, removal, cfg.max_attempts).await {
-            Ok(count) => {
-                deleted += count;
-                // Rows only after the messages are gone, so the index never
-                // claims to hold what the channel no longer has.
-                if let Err(err) = delete_rows(&conn, &removal.set_id) {
-                    result = Err(err);
-                    break;
-                }
-                println!("removed {}", removal.set_id);
-            }
-            Err(err) => {
-                result = Err(err);
-                break;
-            }
-        }
-    }
-    tg.shutdown().await;
-    result?;
-
+    let deleted = apply(&conn, &removals).await?;
     println!("\ndeleted {deleted} message(s)");
     println!("the player's cached chunks for these sets are now stale; they age out on their own");
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "remove_tests.rs"]
+mod tests;

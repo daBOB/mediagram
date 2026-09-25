@@ -1,6 +1,6 @@
 //! Set verification: metadata-only by default, or a full re-download and
 //! hash comparison with `--full`. [`report`] is the pure decision layer,
-//! [`download_hash`] is the only piece that talks to Telegram, and this
+//! `source` and [`download_hash`] handle Telegram IO, and this
 //! module reads/writes the local index rows `commands::verify` needs
 //! (kept here rather than in `index::parts`, which only tracks the upload
 //! side of a part, not verification).
@@ -15,7 +15,7 @@ pub mod download_hash;
 pub mod render;
 pub mod report;
 pub mod session;
-
+mod source;
 
 /// Resolves the CLI's `set_id`/`--all` choice into concrete set ids, oldest
 /// first. Callers validate up front that exactly one of the two is set.
@@ -34,7 +34,6 @@ pub fn resolve_set_ids(conn: &Connection, set_id: Option<&str>, all: bool) -> Re
         .context("listing sets for --all")?;
     Ok(ids)
 }
-
 
 /// Records a successful `--full` hash match. `verified_at` is the result of
 /// the last verification, not a high-water mark: [`clear_verified`] wipes it

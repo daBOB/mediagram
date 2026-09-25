@@ -9,6 +9,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { catalogSet } from "./support/catalog-set";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -16,7 +17,7 @@ import { mergeStates, type MergedState } from "../src/state/merge";
 import { parseRecord, type SyncRecord } from "../src/state/sync-record";
 import type { CatalogSet } from "../public/lib/library.js";
 import { groupLibrary } from "../public/lib/library.js";
-import { homeShelves } from "../public/lib/home-shelves.js";
+import { homeShelves } from "../public/lib/catalog/home-shelves.js";
 import {
   isFinished,
   resumeAt,
@@ -64,6 +65,7 @@ describe("merge fixtures", () => {
         .map((profile) => ({
           name: profile.name,
           displayName: profile.displayName,
+          ...(profile.kids ? { kids: profile.kids } : {}),
           progress: [...profile.progress].sort((a, b) => a.setId.localeCompare(b.setId)),
           watched: [...profile.watched].sort((a, b) => a.setId.localeCompare(b.setId)),
         }))
@@ -85,10 +87,7 @@ describe("lists-merge fixtures", () => {
   interface Case {
     name: string;
     records: SyncRecord[];
-    expect: {
-      kids: unknown[];
-      profiles: Array<{ name: string; displayName: string; watchlist: unknown[]; collections: unknown[] }>;
-    };
+    expect: ReturnType<typeof canonicalLists>;
   }
 
   /** The list-carrying fields only — progress and watched are `merge.json`'s
@@ -149,7 +148,7 @@ describe("next-up fixtures", () => {
 
   /** One episode of a single synthetic show, numbered by its place in `order`. */
   function episodeOf(setId: string, number: number): CatalogSet {
-    return {
+    return catalogSet({
       setId,
       kind: "ep",
       title: `Show ${number}`,
@@ -166,7 +165,7 @@ describe("next-up fixtures", () => {
       total: 1000,
       partCount: 1,
       addedAt: 1000,
-    };
+    });
   }
 
   for (const one of load<Case[]>("next-up.json")) {

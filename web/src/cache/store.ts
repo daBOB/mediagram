@@ -103,7 +103,11 @@ export class ChunkCache {
     }
   }
 
-  /** Stores a chunk, then brings the cache back under its budget. */
+  /**
+   * Attempts to store a chunk and enforce the budget without interrupting playback.
+   * Write failures are ignored and eviction failures are logged; successful
+   * resolution guarantees neither persistence nor compliance with the budget.
+   */
   async put(setId: string, partIdx: number, index: number, bytes: Uint8Array): Promise<void> {
     const path = chunkPath(this.root, setId, partIdx, index);
 
@@ -126,7 +130,9 @@ export class ChunkCache {
       // A cache that cannot write is a slow cache, not a broken player.
       return;
     }
-    await this.evict();
+    // Maintenance must not reject bytes already fetched for playback. An
+    // explicit evict() still reports failures to its caller.
+    await this.evict().catch((error) => console.warn("cache eviction failed:", error));
   }
 
   /** Total bytes currently held. */
@@ -165,8 +171,9 @@ export class ChunkCache {
       let listing;
       try {
         listing = await readdir(directory, { withFileTypes: true });
-      } catch {
-        return;
+      } catch (error) {
+        if (isMissing(error)) return;
+        throw error;
       }
       for (const item of listing) {
         const path = join(directory, item.name);
@@ -176,8 +183,9 @@ export class ChunkCache {
           try {
             const info = await stat(path);
             found.push({ path, size: info.size, usedAt: info.atimeMs });
-          } catch {
+          } catch (error) {
             // Evicted by someone else between the listing and the stat.
+            if (!isMissing(error)) throw error;
           }
         }
       }
@@ -185,4 +193,8 @@ export class ChunkCache {
     await walk(this.root);
     return found;
   }
+}
+
+function isMissing(error: unknown): boolean {
+  return error instanceof Error && "code" in error && error.code === "ENOENT";
 }

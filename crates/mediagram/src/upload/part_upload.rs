@@ -28,7 +28,11 @@ impl<T: Transport> SetUpload<'_, T> {
     /// Streams one part through the transport, hashing as it goes, and says
     /// where it landed. `bytes_done` is how much of the set was already in
     /// the channel, for the progress a watcher sees.
-    pub(super) async fn send(&self, part: &parts::PartRow, bytes_done: u64) -> Result<parts::Landed> {
+    pub(super) async fn send(
+        &self,
+        part: &parts::PartRow,
+        bytes_done: u64,
+    ) -> Result<parts::Landed> {
         let Self {
             transport,
             template,

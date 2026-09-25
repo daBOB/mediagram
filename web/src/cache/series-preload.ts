@@ -12,6 +12,7 @@
  */
 
 import type { PartLocation } from "../catalog";
+import { failureMessage } from "../failure-message";
 import type { FetchRange } from "./reader";
 
 /** A set to take, with where its parts live — resolved by the caller, who holds the catalog. */
@@ -28,7 +29,7 @@ export interface SeriesPreloadOptions {
   /** Whether a set is already on disk in full; skipped if so. */
   isHeld: (setId: string) => Promise<boolean>;
   /** Told when a set has been taken in full, so the offline badge can follow. */
-  onHeld?: (setId: string) => void;
+  onHeld?: (setId: string) => void | Promise<void>;
   log?: (line: string) => void;
 }
 
@@ -37,6 +38,7 @@ export class SeriesPreload {
   private current: string | null = null;
   private worker: Promise<void> | null = null;
   private running = false;
+  private stopped = false;
 
   constructor(private readonly options: SeriesPreloadOptions) {}
 
@@ -49,6 +51,7 @@ export class SeriesPreload {
    * is usually still one of the wanted ones.
    */
   want(items: PreloadItem[]): void {
+    if (this.stopped) return;
     this.waiting = items.filter((item) => item.setId !== this.current);
     if (this.running) return;
     this.running = true;
@@ -60,28 +63,42 @@ export class SeriesPreload {
     while (this.running) await this.worker;
   }
 
+  /** Close admission and drain the range already downloading; discard later work. */
+  async stop(): Promise<void> {
+    this.stopped = true;
+    this.waiting = [];
+    await this.worker;
+  }
+
   private async drain(): Promise<void> {
     for (let item = this.waiting.shift(); item; item = this.waiting.shift()) {
       this.current = item.setId;
       try {
         if (await this.options.isHeld(item.setId)) continue;
         for (const location of item.locations) {
+          if (this.stopped) return;
+          const fetch = this.options.fetcherFor(location.messageId);
           await this.options.fill(
             item.setId,
             location.span.idx,
             location.span.len,
-            this.options.fetcherFor(location.messageId),
+            (offset, length) => {
+              if (this.stopped) throw new Error("preload stopped");
+              return fetch(offset, length);
+            },
           );
         }
-        this.options.onHeld?.(item.setId);
+        if (this.stopped) return;
+        await this.options.onHeld?.(item.setId);
         this.options.log?.(`preload: ${item.title} held`);
       } catch (error) {
         // A preload that fails costs nothing but the wait it was meant to
         // save; the episode still streams when it is opened. Said once, and
         // the next one is tried.
-        this.options.log?.(`preload: ${item.title} stopped: ${(error as Error).message}`);
+        this.options.log?.(`preload: ${item.title} stopped: ${failureMessage(error)}`);
       } finally {
         this.current = null;
+        if (this.stopped) this.running = false;
       }
     }
     // Cleared in the same step that found the queue empty, so a `want` that

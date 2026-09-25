@@ -66,9 +66,7 @@ pub fn spawn_finish_set(
         });
     }
 
-    let child = command
-        .spawn()
-        .context("starting the background upload")?;
+    let child = command.spawn().context("starting the background upload")?;
     Ok(Started {
         pid: child.id(),
         log: log_path,

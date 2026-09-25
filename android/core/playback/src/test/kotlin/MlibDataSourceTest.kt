@@ -11,25 +11,26 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-private fun coreWithBytes(n: Int) = FakeCore(
-    // byte at index i has value (i % 251).toByte() - a pattern that catches
-    // both a wrong offset and a wrong length.
-    bytesOf = { off, len -> ByteArray(len) { ((off + it) % 251).toByte() } },
-    totalSize = n.toLong(),
-)
+private fun coreWithBytes(n: Int) =
+    FakeCore(
+        // byte at index i has value (i % 251).toByte() - a pattern that catches
+        // both a wrong offset and a wrong length.
+        bytesOf = { off, len -> ByteArray(len) { ((off + it) % 251).toByte() } },
+        totalSize = n.toLong(),
+    )
 
 /** Half of whatever is asked for arrives, forcing a caller to notice a short read. */
-private fun coreWithShortReads() = FakeCore(
-    totalSize = 1_000L,
-    bytesOf = { off, len ->
-        val short = maxOf(1, len / 2)
-        ByteArray(short) { ((off + it) % 251).toByte() }
-    },
-)
+private fun coreWithShortReads() =
+    FakeCore(
+        totalSize = 1_000L,
+        bytesOf = { off, len ->
+            val short = maxOf(1, len / 2)
+            ByteArray(short) { ((off + it) % 251).toByte() }
+        },
+    )
 
 @RunWith(RobolectricTestRunner::class)
 class MlibDataSourceTest {
-
     @Test
     fun openReportsTheWholeSetWhenNoLengthIsAsked() {
         val source = MlibDataSource(coreWithBytes(1_000), PlaybackCounters())
@@ -40,7 +41,13 @@ class MlibDataSourceTest {
     @Test
     fun aSeekStartsReadingAtTheRequestedOffset() {
         val source = MlibDataSource(coreWithBytes(1_000), PlaybackCounters())
-        source.open(DataSpec.Builder().setUri(setUri("s1")).setPosition(400).build())
+        source.open(
+            DataSpec
+                .Builder()
+                .setUri(setUri("s1"))
+                .setPosition(400)
+                .build(),
+        )
         val buf = ByteArray(4)
         source.read(buf, 0, 4)
         assertEquals((400 % 251).toByte(), buf[0])
@@ -49,7 +56,14 @@ class MlibDataSourceTest {
     @Test
     fun openAtANonZeroPositionReturnsOnlyWhatIsLeft() {
         val source = MlibDataSource(coreWithBytes(1_000), PlaybackCounters())
-        val available = source.open(DataSpec.Builder().setUri(setUri("s1")).setPosition(400).build())
+        val available =
+            source.open(
+                DataSpec
+                    .Builder()
+                    .setUri(setUri("s1"))
+                    .setPosition(400)
+                    .build(),
+            )
         assertEquals(600L, available)
     }
 
@@ -57,21 +71,40 @@ class MlibDataSourceTest {
     fun openPastTheEndOfTheSetThrowsRatherThanReturningANegativeLength() {
         val source = MlibDataSource(coreWithBytes(1_000), PlaybackCounters())
         assertFailsWith<DataSourceException> {
-            source.open(DataSpec.Builder().setUri(setUri("s1")).setPosition(1_001).build())
+            source.open(
+                DataSpec
+                    .Builder()
+                    .setUri(setUri("s1"))
+                    .setPosition(1_001)
+                    .build(),
+            )
         }
     }
 
     @Test
     fun openHonoursAnExplicitLengthShorterThanTheSet() {
         val source = MlibDataSource(coreWithBytes(1_000), PlaybackCounters())
-        val available = source.open(DataSpec.Builder().setUri(setUri("s1")).setLength(50).build())
+        val available =
+            source.open(
+                DataSpec
+                    .Builder()
+                    .setUri(setUri("s1"))
+                    .setLength(50)
+                    .build(),
+            )
         assertEquals(50L, available)
     }
 
     @Test
     fun aBoundedReadNeverReturnsMoreThanTheDataSpecLength() {
         val source = MlibDataSource(coreWithBytes(1_000), PlaybackCounters())
-        source.open(DataSpec.Builder().setUri(setUri("s1")).setLength(10).build())
+        source.open(
+            DataSpec
+                .Builder()
+                .setUri(setUri("s1"))
+                .setLength(10)
+                .build(),
+        )
         val read = source.read(ByteArray(64), 0, 64)
         assertEquals(10, read)
     }
@@ -79,7 +112,14 @@ class MlibDataSourceTest {
     @Test
     fun aBoundedLengthPastTheRealEndFailsInsteadOfFabricatingBytes() {
         val source = MlibDataSource(coreWithBytes(1_000), PlaybackCounters())
-        source.open(DataSpec.Builder().setUri(setUri("s1")).setPosition(990).setLength(100).build())
+        source.open(
+            DataSpec
+                .Builder()
+                .setUri(setUri("s1"))
+                .setPosition(990)
+                .setLength(100)
+                .build(),
+        )
         // The real 10 bytes between 990 and the set's end arrive normally.
         assertEquals(10, source.read(ByteArray(100), 0, 100))
         // The DataSpec claimed 90 more exist past the set's real end; the
@@ -150,7 +190,13 @@ class MlibDataSourceTest {
         source.open(DataSpec(setUri("s1")))
         source.read(ByteArray(8), 0, 8)
 
-        source.open(DataSpec.Builder().setUri(setUri("s1")).setPosition(500_000).build())
+        source.open(
+            DataSpec
+                .Builder()
+                .setUri(setUri("s1"))
+                .setPosition(500_000)
+                .build(),
+        )
 
         val buf = ByteArray(1)
         source.read(buf, 0, 1)

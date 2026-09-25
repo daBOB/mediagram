@@ -11,10 +11,20 @@
 import { readdirSync } from "node:fs";
 import type { Encoder } from "./args";
 
+interface EncoderIo {
+  readDirectory(path: string): string[];
+  spawn(command: string[]): { exited: Promise<number> };
+}
+
+const encoderIo: EncoderIo = {
+  readDirectory: (path) => readdirSync(path),
+  spawn: (command) => Bun.spawn(command, { stdout: "ignore", stderr: "ignore" }),
+};
+
 /** The DRM render nodes this machine has, in a stable order. */
-function renderNodes(): string[] {
+function renderNodes(io: EncoderIo): string[] {
   try {
-    return readdirSync("/dev/dri")
+    return io.readDirectory("/dev/dri")
       .filter((name) => name.startsWith("renderD"))
       .sort()
       .map((name) => `/dev/dri/${name}`);
@@ -24,11 +34,8 @@ function renderNodes(): string[] {
 }
 
 /** A one-second encode of a test pattern: enough to prove initialisation. */
-async function works(args: string[]): Promise<boolean> {
-  const proc = Bun.spawn(["ffmpeg", "-hide_banner", "-v", "error", ...args], {
-    stdout: "ignore",
-    stderr: "ignore",
-  });
+async function works(io: EncoderIo, args: string[]): Promise<boolean> {
+  const proc = io.spawn(["ffmpeg", "-hide_banner", "-v", "error", ...args]);
   return (await proc.exited) === 0;
 }
 
@@ -41,13 +48,13 @@ const TEST_SOURCE = ["-f", "lavfi", "-i", "testsrc=duration=1:size=640x480:rate=
  * manages many times realtime on a modern desktop — but it leaves the CPU for
  * everything else the machine is doing.
  */
-export async function detectEncoder(): Promise<Encoder> {
+export async function detectEncoder(io: EncoderIo = encoderIo): Promise<Encoder> {
   // `readdir` rather than a glob: render nodes are character devices, which
   // Bun's Glob does not match, so a glob silently finds nothing and every
   // machine looks like it has no GPU.
-  for (const device of renderNodes()) {
+  for (const device of renderNodes(io)) {
     const path = device;
-    const usable = await works([
+    const usable = await works(io, [
       "-vaapi_device",
       path,
       ...TEST_SOURCE,
@@ -62,7 +69,7 @@ export async function detectEncoder(): Promise<Encoder> {
     if (usable) return { kind: "vaapi", name: "h264_vaapi", device: path };
   }
 
-  if (await works([...TEST_SOURCE, "-c:v", "libx264", "-f", "null", "-"])) {
+  if (await works(io, [...TEST_SOURCE, "-c:v", "libx264", "-f", "null", "-"])) {
     return { kind: "software", name: "libx264" };
   }
 

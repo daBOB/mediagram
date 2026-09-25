@@ -14,3 +14,8 @@ fn rejects_other_versions_and_garbage() {
     assert!(is_mlib("#mlib v=3\n{}"));
     assert!(!is_mlib("#mlib-index v=2"));
 }
+/// The caption marker and the package's spec number describe one wire version.
+#[test]
+fn the_marker_names_the_spec_version() {
+    assert_eq!(super::MARKER, format!("#mlib v={}", crate::SPEC_VERSION));
+}

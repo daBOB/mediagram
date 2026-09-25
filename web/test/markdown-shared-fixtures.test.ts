@@ -9,7 +9,7 @@
 
 import { describe, expect, test } from "bun:test";
 import cases from "./fixtures/markdown/cases.json";
-import { parseMarkdown } from "../public/lib/markdown.js";
+import { parseMarkdown } from "../public/lib/playback/notes/markdown.js";
 
 describe("shared markdown fixtures", () => {
   for (const { name, input, blocks } of cases) {
