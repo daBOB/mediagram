@@ -112,15 +112,25 @@ object CacheProvider {
                         null
                     } else {
                         openCache(volumes, chosenId, budgetBytes, databaseProvider).also {
-                            instance = it.cache
+                            // evictor and opened published before instance: a
+                            // concurrent caller's lock-free `instance?.let`
+                            // fast path above must never observe a non-null
+                            // instance before these are visible too.
                             evictor = it.evictor
                             opened = it
+                            instance = it.cache
                         }
                     }
                 }
             // Off the open path and after it: a card full of another
-            // title's leftovers never delays this cache's first frame.
-            built?.let { cleanupJob = scheduleStaleVolumeCleanup(dispatcher, databaseProvider, volumes, it.volume) }
+            // title's leftovers never delays this cache's first frame. Never
+            // when the open itself could not be confirmed: a cache this open
+            // failed to initialise is not grounds to delete anything else.
+            built?.let {
+                if (it.initialised) {
+                    cleanupJob = scheduleStaleVolumeCleanup(dispatcher, databaseProvider, volumes, it.volume, it.chosenVolume)
+                }
+            }
             instance!!
         }
     }
