@@ -29,6 +29,9 @@ sealed interface TvKeyAction {
     /** Brings the controls up with focus already on the seek bar — Up/Down's first press. */
     data object ShowControlsAndFocusSeekBar : TvKeyAction
 
+    /** Closes the settings panel, and only that: the controls stay up behind it. */
+    data object ClosePanel : TvKeyAction
+
     /** Puts the controls away without leaving the title. */
     data object HideControls : TvKeyAction
 
@@ -41,6 +44,10 @@ sealed interface TvKeyAction {
     /** A key this remote can send that has no row here. */
     data object Ignore : TvKeyAction
 }
+
+/** The keys the settings panel takes for itself while it is open: moving between its rows, and choosing one. */
+private val PANEL_KEYS =
+    setOf(Key.DirectionUp, Key.DirectionDown, Key.DirectionLeft, Key.DirectionRight, Key.DirectionCenter, Key.Enter)
 
 /** Ten seconds, the same skip the phone and the web both use. */
 private const val SKIP_SECONDS = 10
@@ -63,13 +70,28 @@ private const val SKIP_SECONDS = 10
  * so offers nothing to press. Then every key but Back is ignored: a skip or
  * a pause aimed at a player with nothing loaded would be a command nobody
  * could see land.
+ *
+ * [panelOpen] is the settings panel, which answers before anything else:
+ * Back closes it, and the D-pad and Centre are ordinary focus movement and
+ * selection inside it — a Left meant for the next row of choices must not
+ * skip the film ten seconds. The dedicated media keys keep their meaning,
+ * as they do everywhere: a viewer can pause to look at a subtitle size
+ * without closing the panel first.
  */
 fun tvKeyAction(
     key: Key,
     controlsShowing: Boolean,
     focusInControls: Boolean,
     canControl: Boolean = true,
+    panelOpen: Boolean = false,
 ): TvKeyAction {
+    if (panelOpen) {
+        return when (key) {
+            Key.Back -> TvKeyAction.ClosePanel
+            in PANEL_KEYS -> TvKeyAction.PassThrough
+            else -> tvKeyAction(key, controlsShowing = true, focusInControls = false, canControl = canControl)
+        }
+    }
     if (!canControl) return if (key == Key.Back) TvKeyAction.Leave else TvKeyAction.Ignore
     if (!controlsShowing) {
         return when (key) {

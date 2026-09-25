@@ -58,6 +58,8 @@ class TvPlayerMarksTest : TvPlayerScreenHarness() {
     @Test
     fun theStatisticsToggleFromTheEndOfTheTransport() {
         compose.onNodeWithTag(TvStatsOverlayTag).assertDoesNotExist()
+        // Past forward and the settings gear: the toggle ends the row.
+        press(Key.DirectionRight)
         press(Key.DirectionRight)
         press(Key.DirectionRight)
         compose.onNodeWithContentDescription("Show playback statistics").assertIsFocused()

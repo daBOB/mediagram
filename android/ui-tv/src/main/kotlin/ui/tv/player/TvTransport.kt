@@ -6,6 +6,7 @@
 package ui.tv.player
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -28,6 +29,7 @@ import androidx.tv.material3.Text
 import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
+import player.speedLabel
 import ui.tv.TvFocus
 
 /**
@@ -35,19 +37,20 @@ import ui.tv.TvFocus
  * — the phone's transport row, read through the same media3 state holders
  * the phone reads, so a label cannot come to say one thing and do another
  * and nothing about the player is carried through the ViewModel. After
- * them, as on the phone, the one that only reports: the statistics toggle.
+ * them the ones that do not move it: the settings gear, with the speed
+ * beside it while it is not the default — where the phone and the web both
+ * put that number, so a viewer looks for it in one place on every surface —
+ * and, last, the statistics toggle, which only reports.
  *
- * Up from any of them goes to the seek bar ([up]), the one row above; Down
- * goes to the marks rail ([down]), the one below.
+ * Up from any of them goes to the seek bar, the one row above; Down goes to
+ * the marks rail ([down]), the one below.
  */
 @Composable
 internal fun TvTransport(
     player: Player,
-    playPauseFocus: FocusRequester,
-    up: FocusRequester,
+    focus: TvPlayerFocus,
     down: FocusRequester,
-    statsShown: Boolean,
-    onToggleStats: () -> Unit,
+    extras: TvPlayerExtras,
     modifier: Modifier = Modifier,
 ) {
     val playPause = rememberPlayPauseButtonState(player)
@@ -55,7 +58,7 @@ internal fun TvTransport(
     val seekForward = rememberSeekForwardButtonState(player)
     val toSeekBar =
         Modifier.focusProperties {
-            this.up = up
+            this.up = focus.seekBar
             this.down = down
         }
 
@@ -76,7 +79,7 @@ internal fun TvTransport(
             description = if (playPause.showPlay) "Play" else "Pause",
             enabled = playPause.isEnabled,
             onClick = playPause::onClick,
-            modifier = toSeekBar.focusRequester(playPauseFocus),
+            modifier = toSeekBar.focusRequester(focus.playPause),
         )
         TvGlyphButton(
             glyph = "⏩",
@@ -85,15 +88,25 @@ internal fun TvTransport(
             onClick = seekForward::onClick,
             modifier = toSeekBar,
         )
-        // Last, after the three that move the film, because it does not
-        // move it. Named for which way the press goes, as play/pause is: a
+        if (extras.speed != 1f) {
+            Text(text = speedLabel(extras.speed), style = TvTypeScale.body, color = Palette.Text)
+        }
+        TvGlyphButton(
+            glyph = "⚙",
+            description = "Playback settings",
+            enabled = true,
+            onClick = extras.onOpenSettings,
+            modifier = toSeekBar.focusRequester(focus.settings),
+        )
+        // Last, because it neither moves the film nor changes how it
+        // plays. Named for which way the press goes, as play/pause is: a
         // glyph that stays put while what it does reverses tells a screen
         // reader nothing about which it is about to do.
         TvGlyphButton(
             glyph = "ⓘ",
-            description = if (statsShown) "Hide playback statistics" else "Show playback statistics",
+            description = if (extras.statsShown) "Hide playback statistics" else "Show playback statistics",
             enabled = true,
-            onClick = onToggleStats,
+            onClick = extras.onToggleStats,
             modifier = toSeekBar,
         )
     }
@@ -102,8 +115,8 @@ internal fun TvTransport(
 /**
  * A transport control drawn as a character, named for a screen reader —
  * a glyph has no accessible text of its own. Glyphs rather than icons, as
- * on the phone: this surface has no icon set, and four characters do not
- * earn one.
+ * on the phone: this surface has no icon set, and a handful of characters
+ * do not earn one.
  */
 @Composable
 internal fun TvGlyphButton(
@@ -142,6 +155,23 @@ internal fun TvOverlayButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    TvOverlaySurface(onClick = onClick, enabled = enabled, modifier = modifier) {
+        Text(
+            text = text,
+            style = style,
+            modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.small),
+        )
+    }
+}
+
+/** [TvOverlayButton]'s treatment around any content, for a control that is more than one line of text. */
+@Composable
+internal fun TvOverlaySurface(
+    onClick: () -> Unit,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+    content: @Composable BoxScope.() -> Unit,
+) {
     Surface(
         onClick = onClick,
         enabled = enabled,
@@ -161,11 +191,6 @@ internal fun TvOverlayButton(
         scale = TvFocus.surfaceScale(),
         border = TvFocus.surfaceBorder(),
         glow = TvFocus.surfaceGlow(),
-    ) {
-        Text(
-            text = text,
-            style = style,
-            modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.small),
-        )
-    }
+        content = content,
+    )
 }

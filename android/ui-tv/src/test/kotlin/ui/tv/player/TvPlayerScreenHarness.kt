@@ -75,6 +75,13 @@ abstract class TvPlayerScreenHarness {
         compose.waitForIdle()
     }
 
+    /** From the controls as they open, on play/pause: across to the gear, and pressed. */
+    internal fun openSettings() {
+        press(Key.DirectionRight)
+        press(Key.DirectionRight)
+        press(Key.DirectionCenter)
+    }
+
     internal fun back() {
         compose.runOnUiThread { controller.get().onBackPressedDispatcher.onBackPressed() }
         compose.waitForIdle()

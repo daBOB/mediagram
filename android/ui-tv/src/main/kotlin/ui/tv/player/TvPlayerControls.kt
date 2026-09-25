@@ -39,10 +39,11 @@ import ui.player.SCRIM_ALPHA
 internal class TvPlayerFocus {
     val playPause = FocusRequester()
     val seekBar = FocusRequester()
+    val settings = FocusRequester()
     val marks = FocusRequester()
 }
 
-/** What the controls show beyond the transport, and what pressing it does: the marks rail and the statistics. */
+/** What the controls show beyond the transport, and what pressing it does: the marks rail, the statistics and the settings. */
 internal class TvPlayerExtras(
     val marks: PlayerMarksState?,
     val markActions: TvMarksActions,
@@ -51,6 +52,9 @@ internal class TvPlayerExtras(
     val totals: () -> PlaybackTotals,
     /** Whether this device holds the title in full, which the statistics' buffer row reports as "cached". */
     val held: Boolean = false,
+    /** The chosen playback speed, read out beside the settings gear while it is not the default. */
+    val speed: Float = 1f,
+    val onOpenSettings: () -> Unit = {},
 )
 
 /**
@@ -130,12 +134,10 @@ internal fun TvPlayerControls(
             )
             TvTransport(
                 player = player,
-                playPauseFocus = focus.playPause,
-                up = focus.seekBar,
+                focus = focus,
                 // Nowhere further down while nothing is open to mark.
                 down = if (extras.marks != null) focus.marks else FocusRequester.Default,
-                statsShown = extras.statsShown,
-                onToggleStats = extras.onToggleStats,
+                extras = extras,
             )
             TvMarksRail(marks = extras.marks, actions = extras.markActions, first = focus.marks, up = focus.playPause)
         }

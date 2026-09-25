@@ -15,7 +15,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.Util
 
 /** Where the remote lands when a key brings the controls up. */
-internal enum class TvControlsLanding { PlayPause, SeekBar }
+internal enum class TvControlsLanding { PlayPause, SeekBar, Settings }
 
 /**
  * How far one press of a held Left/Right moves the film. A held key
@@ -70,11 +70,12 @@ internal class TvPlayerRemote(
         controlsShowing: Boolean,
         onSeekBar: Boolean,
         canControl: Boolean,
+        panelOpen: Boolean = false,
     ): Boolean {
         if (event.type == KeyEventType.KeyUp) return taken.remove(event.key)
         if (event.type != KeyEventType.KeyDown || event.key == Key.Back) return false
         val repeat = event.nativeKeyEvent.repeatCount
-        val took = apply(tvKeyAction(event.key, controlsShowing, onSeekBar, canControl), repeat, player)
+        val took = apply(tvKeyAction(event.key, controlsShowing, onSeekBar, canControl, panelOpen), repeat, player)
         val heldOver = repeat > 0 && event.key in taken
         if (took) taken += event.key
         return took || heldOver
@@ -122,7 +123,7 @@ internal class TvPlayerRemote(
                 show(TvControlsLanding.SeekBar)
                 true
             }
-            TvKeyAction.HideControls, TvKeyAction.Leave, TvKeyAction.PassThrough, TvKeyAction.Ignore -> false
+            TvKeyAction.ClosePanel, TvKeyAction.HideControls, TvKeyAction.Leave, TvKeyAction.PassThrough, TvKeyAction.Ignore -> false
         }
 }
 

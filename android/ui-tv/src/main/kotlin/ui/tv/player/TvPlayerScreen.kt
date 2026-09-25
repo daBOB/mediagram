@@ -28,13 +28,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Overscan
-import kotlinx.coroutines.delay
 import model.MediaSet
-import player.CONTROLS_LINGER_MS
 import player.PlayerUiState
 import player.PlayerViewModel
 import player.controlsMayShow
-import player.controlsShouldFade
 import player.createListAndAdd
 import player.setInList
 import player.toggleKids
@@ -63,6 +60,10 @@ internal const val TvPlayerScreenTag = "tv-player-screen"
  * controls are away the screen itself holds the remote, so no key is ever
  * lost to a focus that went with them; while they are up it cannot be
  * focused at all, so moving around them never lands on the picture.
+ *
+ * The transport's gear opens the phone's playback settings as a panel to
+ * one side ([TvPlayerSettingsPanel]); Back closes that before it does
+ * anything else — before the controls go, before the player is left.
  *
  * [set] is the catalogue's entry for [setId], for what the top bar says
  * and the runtime the end time is read from; its age rating is what the
@@ -103,18 +104,11 @@ fun TvPlayerScreen(
     // for the numbers to go, nor for the list they were filing into to close.
     var statsShown by rememberSaveable { mutableStateOf(false) }
     var choosingList by rememberSaveable { mutableStateOf(false) }
+    var settingsOpen by rememberSaveable { mutableStateOf(false) }
     // Marks go with the title they belong to; a list choice still open when
     // they go would otherwise come back over whatever opens next.
     LaunchedEffect(marks == null) { if (marks == null) choosingList = false }
-    // The list dialog holds the controls the way a drag holds the phone's:
-    // its keys go to its own window, so no press here restarts the fade, and
-    // the controls it returns to must still be there when it closes.
-    LaunchedEffect(controlsShown, state, presses, choosingList) {
-        if (!controlsShown) return@LaunchedEffect
-        if (!controlsShouldFade(isPlaying = state is PlayerUiState.Playing, isScrubbing = choosingList)) return@LaunchedEffect
-        delay(CONTROLS_LINGER_MS)
-        controlsShown = false
-    }
+    TvControlsAutoHide(controlsShown, state, presses, held = choosingList || settingsOpen, onHide = { controlsShown = false })
 
     val barShown = controlsShown && controlsMayShow(state) && player != null
     // Where the bottom controls begin, for the subtitles to clear them.
@@ -128,21 +122,16 @@ fun TvPlayerScreen(
                 controlsShown = true
             }
         }
-    // Wherever the controls go, the remote goes with them: onto the
-    // control the key that raised them asked for, or back to the screen
-    // itself when they leave.
-    LaunchedEffect(barShown) {
-        when {
-            !barShown -> root.requestFocus()
-            landing == TvControlsLanding.SeekBar -> focus.seekBar.requestFocus()
-            else -> focus.playPause.requestFocus()
-        }
-    }
+    TvRemoteFollowsControls(barShown, settingsOpen, landing, root, focus)
 
     // The table's Back row, answered here rather than as a key so a Back
     // that is not one — a gesture, the dispatcher itself — does the same.
     BackHandler {
-        when (tvKeyAction(Key.Back, controlsShowing = barShown, focusInControls = onSeekBar)) {
+        when (tvKeyAction(Key.Back, controlsShowing = barShown, focusInControls = onSeekBar, panelOpen = settingsOpen)) {
+            TvKeyAction.ClosePanel -> {
+                landing = TvControlsLanding.Settings
+                settingsOpen = false
+            }
             TvKeyAction.HideControls -> controlsShown = false
             else -> onBack()
         }
@@ -161,6 +150,7 @@ fun TvPlayerScreen(
                         controlsShowing = barShown,
                         onSeekBar = onSeekBar,
                         canControl = controlsMayShow(state),
+                        panelOpen = settingsOpen,
                     )
                 }.focusRequester(root)
                 .focusProperties { canFocus = !barShown }
@@ -188,10 +178,15 @@ fun TvPlayerScreen(
                             onToggleStats = { statsShown = !statsShown },
                             totals = viewModel.totals,
                             held = held,
+                            speed = choices.speed,
+                            onOpenSettings = { settingsOpen = true },
                         ),
                     onSeekBarFocused = { onSeekBar = it },
                     onBarTopChanged = { barTop = it },
                 )
+            }
+            if (settingsOpen) {
+                TvPlayerSettingsPanel(choices = choices, viewModel = viewModel, modifier = Modifier.align(Alignment.CenterEnd))
             }
         }
         marks?.takeIf { choosingList }?.let { open ->

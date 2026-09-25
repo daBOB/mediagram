@@ -53,7 +53,7 @@ internal fun TvVideoWithSubtitles(
     choices: PlayerChoices,
     barTop: Float?,
 ) {
-    Video(player) {
+    Video(player, framing = choices.framing) {
         SubtitleLayer(
             player = player,
             cues = cues,
