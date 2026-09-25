@@ -1,5 +1,8 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,18 +14,26 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Text
 import catalog.CollectionRow
 import catalog.Division
 import catalog.rowsOf
 import catalog.watchedFractionOf
 import designsystem.Overscan
 import designsystem.Spacing
+import designsystem.TvTypeScale
 import model.Kind
 import model.WatchSnapshot
+import ui.tv.TvFocus
 import ui.tv.TvTextRow
 
 /**
@@ -69,17 +80,18 @@ internal fun TvCollectionRows(
         remember(rows, restoreKey) {
             rows.indexOfFirst { opens(it) && (it as CollectionRow.Item).set.setId == restoreKey }.takeIf { it >= 0 }
                 ?: rows.indexOfFirst(opens).takeIf { it >= 0 }
+                // Nothing here opens — a folder of handouts — so the first
+                // document takes the remote rather than leaving it on nothing.
+                ?: rows.indexOfFirst { it is CollectionRow.Item }.takeIf { it >= 0 }
         }
-    val firstOpen = rows.indexOfFirst(opens)
+    val firstFocus = remember(rows) { rows.indexOfFirst(opens).takeIf { it >= 0 } ?: rows.indexOfFirst { it is CollectionRow.Item } }
     val offset = if (header != null) 1 else 0
 
-    // A collection of nothing but documents has nothing to land on; Back
-    // still leaves it.
     LaunchedEffect(focusIndex, restoreKey) {
         if (focusIndex != null) {
             // The first row scrolls the page to its very top, so the header
             // above it is on screen rather than scrolled past.
-            listState.scrollToItem(if (focusIndex == firstOpen) 0 else focusIndex + offset)
+            listState.scrollToItem(if (focusIndex == firstFocus) 0 else focusIndex + offset)
             focus.requestFocus()
         }
     }
@@ -93,7 +105,7 @@ internal fun TvCollectionRows(
         if (header != null) item(key = "header") { header() }
         itemsIndexed(rows, key = { index, row -> rowKeyOf(row, index) }) { index, row ->
             when (row) {
-                is CollectionRow.Heading -> TvSectionHeading(row.title, Modifier.padding(start = indentOf(row.depth), top = Spacing.medium))
+                is CollectionRow.Heading -> TvSectionHeading(row.title, Modifier.padding(start = indentOf(row.depth)))
                 is CollectionRow.Item ->
                     ItemRow(
                         row = row,
@@ -114,8 +126,9 @@ internal fun TvCollectionRows(
  *
  * A document is shown and not opened — nothing here can display a handout,
  * so the row says what it is rather than offering a press that could only
- * fail. It takes no focus at all, the remote's way of greying a line out:
- * the D-pad passes over it to the next thing that opens.
+ * fail. The remote can still rest on it — a folder of nothing but
+ * handouts must have somewhere to land — but a press there does nothing,
+ * and it reads as disabled, the way a greyed-out menu item does.
  */
 @Composable
 private fun ItemRow(
@@ -128,12 +141,34 @@ private fun ItemRow(
     val text = "${row.position}. ${if (watched) "✓ " else ""}${row.set.title}"
     Column(modifier = Modifier.fillMaxWidth().padding(start = indentOf(row.depth))) {
         if (row.set.kind == Kind.DOCUMENT) {
-            TvQuietLine(text)
-            TvQuietLine(DocumentReason)
+            DocumentRow(text, focus)
         } else {
             TvTextRow(text = text, onClick = { onOpenTitle(row.set.setId) }, modifier = Modifier.fillMaxWidth(), focusRequester = focus)
             progress?.let { TvProgressRule(fraction = it, modifier = Modifier.padding(top = Spacing.small)) }
         }
+    }
+}
+
+@Composable
+private fun DocumentRow(
+    text: String,
+    focus: FocusRequester?,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val focused by interactionSource.collectIsFocusedAsState()
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .let { if (focus != null) it.focusRequester(focus) else it }
+                .focusable(interactionSource = interactionSource)
+                .semantics(mergeDescendants = true) { disabled() },
+    ) {
+        Text(
+            text = text,
+            style = TvFocus.textStyle(TvTypeScale.body.copy(color = MaterialTheme.colorScheme.onSurfaceVariant), focused),
+        )
+        TvQuietLine(DocumentReason)
     }
 }
 

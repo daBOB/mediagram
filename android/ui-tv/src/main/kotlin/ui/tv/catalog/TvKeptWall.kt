@@ -1,11 +1,14 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import catalog.Entry
 import catalog.KeptKind
 import catalog.KidsShelf
@@ -151,6 +154,10 @@ private fun KeptSetPlate(
 private fun EmptyKeptWall(kind: KeptKind) {
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical)) {
         TvCountedHeading(kind.label, 0)
-        TvCenteredMessage(kind.empty)
+        // Centred in what is left, not through TvCenteredMessage: this
+        // column already stands inside the overscan inset.
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            TvQuietLine(kind.empty, textAlign = TextAlign.Center)
+        }
     }
 }

@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
@@ -76,11 +77,13 @@ internal fun TvSectionHeading(
 internal fun TvQuietLine(
     text: String,
     modifier: Modifier = Modifier,
+    textAlign: TextAlign? = null,
 ) {
     Text(
         text = text,
         style = TvTypeScale.body,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = textAlign,
         modifier = modifier,
     )
 }

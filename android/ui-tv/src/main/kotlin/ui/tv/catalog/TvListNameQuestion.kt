@@ -4,7 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import ui.tv.setup.TvTextQuestion
 
@@ -26,7 +26,9 @@ internal fun TvListNameQuestion(
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var name by remember { mutableStateOf(initial) }
+    // Saveable like the flag that shows this question, so a rotation keeps
+    // what was typed along with the question itself.
+    var name by rememberSaveable { mutableStateOf(initial) }
     BackHandler(onBack = onDismiss)
     TvTextQuestion(
         heading = "",

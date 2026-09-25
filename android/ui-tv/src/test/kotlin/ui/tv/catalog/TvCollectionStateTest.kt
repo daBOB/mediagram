@@ -18,6 +18,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
  * [TvCollection] and [TvSeason]: a show of several seasons is a wall of
@@ -60,7 +61,7 @@ class TvCollectionStateTest : TvScreenStateTest() {
 
     @Test
     fun aCourseHeadsEachFolderAndADocumentSaysWhyItDoesNotOpen() {
-        val handout = lesson("d1", "Workbook").copy(kind = Kind.DOCUMENT)
+        val handout = document("d1", "Workbook")
         val course =
             collection(
                 CollectionKind.COURSE,
@@ -72,11 +73,29 @@ class TvCollectionStateTest : TvScreenStateTest() {
         compose.onNodeWithText("Basics").assertExists()
         compose.onNodeWithText("Deeper").assertExists()
         compose.onNodeWithText("Document — the television cannot open one yet").assertExists()
-        val document = compose.onNodeWithText("1. Workbook").fetchSemanticsNode()
+        val document = compose.onNodeWithText("1. Workbook", substring = true).fetchSemanticsNode()
         assertFalse(SemanticsActions.OnClick in document.config, "a document offers nothing to press")
         assertFalse(document.config.getOrElse(SemanticsProperties.Focused) { false })
         // The remote passes over the document to the first thing that opens.
         compose.onNodeWithText("2. Welcome").assertIsFocused()
+    }
+
+    @Test
+    fun aCourseOfDocumentsOnlyFocusesItsFirstDocumentWithoutOfferingAPress() {
+        val course = collection(CollectionKind.COURSE, "Handouts", division("Basics", null, document("d1", "Workbook"), document("d2", "Answers")))
+        showCollection(course)
+
+        compose.onNodeWithText("1. Workbook", substring = true).assertIsFocused()
+        val node = compose.onNodeWithText("1. Workbook", substring = true).fetchSemanticsNode()
+        assertFalse(SemanticsActions.OnClick in node.config, "a document offers nothing to press")
+        assertTrue(SemanticsProperties.Disabled in node.config, "a document reads as disabled")
+    }
+
+    @Test
+    fun aSeasonOfDocumentsOnlyFocusesItsFirstDocument() {
+        show { TvSeason(division("Extras", null, document("d1", "Script"), document("d2", "Notes")), WatchSnapshot.Empty, onOpenTitle = {}) }
+
+        compose.onNodeWithText("1. Script", substring = true).assertIsFocused()
     }
 
     @Test
@@ -135,6 +154,11 @@ class TvCollectionStateTest : TvScreenStateTest() {
         id: String,
         title: String,
     ) = set(id, Kind.EPISODE, title, show = "A Show", addedAt = 0)
+
+    private fun document(
+        id: String,
+        title: String,
+    ) = lesson(id, title).copy(kind = Kind.DOCUMENT)
 
     private fun lesson(
         id: String,

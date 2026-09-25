@@ -1,5 +1,6 @@
 package ui.tv.catalog
 
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.onAllNodesWithText
@@ -51,6 +52,33 @@ class TvListStateTest : TvScreenStateTest() {
     }
 
     @Test
+    fun afterRemoveTheRemoteMovesToTheNextTitle() {
+        showRemovable(films(3))
+
+        compose.onAllNodesWithText("Remove")[0].performSemanticsAction(SemanticsActions.OnClick)
+
+        compose.onNodeWithText("Film 1").assertIsFocused()
+    }
+
+    @Test
+    fun afterRemovingTheLastTitleTheRemoteMovesToTheOneBefore() {
+        showRemovable(films(3))
+
+        compose.onAllNodesWithText("Remove")[2].performSemanticsAction(SemanticsActions.OnClick)
+
+        compose.onNodeWithText("Film 1").assertIsFocused()
+    }
+
+    @Test
+    fun afterRemovingTheOnlyTitleTheRemoteMovesToRename() {
+        showRemovable(films(1))
+
+        compose.onNodeWithText("Remove").performSemanticsAction(SemanticsActions.OnClick)
+
+        compose.onNodeWithText("Rename").assertIsFocused()
+    }
+
+    @Test
     fun anEmptyListSaysThePhonesWordsAndLandsOnRename() {
         showList(emptyList())
 
@@ -81,6 +109,12 @@ class TvListStateTest : TvScreenStateTest() {
 
         compose.onNodeWithText("Delete \"Sunday\"?").assertExists()
         compose.onNodeWithText("The titles stay in the library.").assertExists()
+    }
+
+    /** A list whose Remove really takes the title off, as the ViewModel's next snapshot would. */
+    private fun showRemovable(sets: List<MediaSet>) {
+        val held = mutableStateListOf(*sets.toTypedArray())
+        show { TvList(list, held.toList(), onPlay = {}, onRename = {}, onDelete = {}, onRemove = { id -> held.removeAll { it.setId == id } }) }
     }
 
     private fun showList(
