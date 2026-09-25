@@ -1,6 +1,5 @@
 package ui.tv.setup
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,7 +24,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.tv.material3.Border
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
@@ -68,12 +66,14 @@ internal fun resolvedKeyboardType(
  *
  * [heading] and [explanation] are kept as separate slots, not one joined
  * string, because they read at different sizes on the phone
- * ([TvTypeScale.title] versus [TvTypeScale.body]) — collapsing them into a
- * single title-sized block was the bug this shape replaces: the heading
- * stopped reading as a heading, and a tall enough block pushed itself
- * off-screen entirely under a centred layout. [heading] is skipped when
- * blank, for a step like sign-in whose field label is the only text the
- * phone shows — there is no separate page heading to duplicate.
+ * ([TvTypeScale.title] versus [TvTypeScale.body]) — a heading needs to keep
+ * reading as a heading, and a long explanation needs to grow downward
+ * without pushing the heading itself out of a centred layout. [heading] is
+ * skipped when blank, for a step like sign-in whose field label is the only
+ * text the phone shows — there is no separate page heading to duplicate.
+ * [error] is a third slot rather than folded into [explanation], so it can
+ * draw in the theme's error colour the way the phone's own error text does,
+ * between the explanation and the field label.
  *
  * [keyboardType] mirrors whichever `KeyboardType` the phone's own field
  * asks for — `Number` for `api_id`, plain `Text` everywhere else the phone
@@ -105,6 +105,7 @@ fun TvTextQuestion(
     onSubmit: () -> Unit,
     secret: Boolean = false,
     keyboardType: KeyboardType = KeyboardType.Text,
+    error: String? = null,
 ) {
     val focusRequester = remember { FocusRequester() }
     var focused by remember { mutableStateOf(false) }
@@ -131,6 +132,14 @@ fun TvTextQuestion(
                 modifier = Modifier.padding(top = Spacing.small),
             )
         }
+        if (error != null) {
+            Text(
+                text = error,
+                style = TvTypeScale.body,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = Spacing.small),
+            )
+        }
         Text(
             text = label,
             style = TvTypeScale.body,
@@ -146,19 +155,11 @@ fun TvTextQuestion(
                 ),
             // Plain Surface takes one fixed Border rather than tv-material's
             // stateful focused/unfocused pair, so the accent this field
-            // borrows from TvFocus is applied by hand here from the local
-            // `focused` flag instead of through TvFocus.surfaceBorder(),
-            // which is built for the ClickableSurfaceBorder a Surface with
-            // an onClick takes, not this one.
-            border =
-                Border(
-                    border =
-                        BorderStroke(
-                            TvFocus.BorderWidth,
-                            if (focused) Palette.Imprint else MaterialTheme.colorScheme.border,
-                        ),
-                    shape = RectangleShape,
-                ),
+            // borrows from TvFocus comes from the local `focused` flag
+            // instead of through TvFocus.surfaceBorder(), which is built
+            // for the ClickableSurfaceBorder a Surface with an onClick
+            // takes, not this one.
+            border = TvFocus.fieldBorder(focused),
         ) {
             BasicTextField(
                 value = value,

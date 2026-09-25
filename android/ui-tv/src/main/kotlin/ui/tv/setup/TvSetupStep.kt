@@ -6,9 +6,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,12 +28,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
 import designsystem.Overscan
-import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import setup.SetupUiState
 import setup.SetupViewModel
 import ui.tv.TvFocus
+import ui.tv.TvTextRow
 
 /**
  * The television counterpart to `ui.MobileApp`'s private `SetupStep`: the
@@ -150,18 +147,17 @@ private fun TvStartOverRow(
     onClick: () -> Unit,
     focusRequester: FocusRequester?,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val focused by interactionSource.collectIsFocusedAsState()
-
-    Text(
+    TvTextRow(
         text = "Start over",
-        style = TvFocus.textStyle(TvTypeScale.body, focused),
+        onClick = onClick,
+        // Bottom padding matches Overscan.vertical, not Spacing.medium: this
+        // is the last row on the screen, so its own bottom margin is the
+        // frame's safe-area edge, the same as every other screen's last row.
         modifier =
             Modifier
                 .testTag(TvStartOverRowTag)
-                .let { if (focusRequester != null) it.focusRequester(focusRequester) else it }
-                .padding(horizontal = Overscan.horizontal, vertical = Spacing.medium)
-                .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
+                .padding(start = Overscan.horizontal, end = Overscan.horizontal, top = Spacing.medium, bottom = Overscan.vertical),
+        focusRequester = focusRequester,
     )
 }
 
@@ -191,15 +187,19 @@ internal fun TvLoadingIndicator() {
             label = "tv-loading-angle",
         )
 
+    // The always-focused accent this spinner spins in: the same border a
+    // focused field draws, since neither is a ClickableSurface state.
+    val accent = TvFocus.fieldBorder(focused = true).border
+
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.size(48.dp)) {
             rotate(angle) {
                 drawArc(
-                    color = Palette.Imprint,
+                    brush = accent.brush,
                     startAngle = 0f,
                     sweepAngle = 270f,
                     useCenter = false,
-                    style = Stroke(width = 4.dp.toPx(), cap = StrokeCap.Round),
+                    style = Stroke(width = accent.width.toPx(), cap = StrokeCap.Round),
                 )
             }
         }

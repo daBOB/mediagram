@@ -6,6 +6,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performImeAction
@@ -59,6 +60,26 @@ class TvProfilePickerTest {
         compose.onNodeWithTag("tv-profile-tile-bea").assertIsFocused()
     }
 
+    /**
+     * Fixed-width tiles in a plain, non-scrolling row run out of the
+     * screen's own safe width once there are enough of them — the row this
+     * replaces squeezed a later tile down to zero width rather than letting
+     * the D-pad scroll to reach it. Six profiles is comfortably past that
+     * point; the row now scrolls with the D-pad instead of running out of
+     * room.
+     */
+    @Test
+    fun dPadRightRepeatedlyReachesAndFocusesTheAddTileWithSixProfiles() {
+        val profiles = (1..6).map { Profile(id = "profile-$it", name = "Profile $it") }
+        show(profiles = profiles)
+
+        repeat(profiles.size) {
+            compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionRight) }
+        }
+
+        compose.onNodeWithTag(TvProfilePickerAddTileTag).assertIsFocused()
+    }
+
     @Test
     fun centreChoosesWhicheverTileIsFocused() {
         var chosen: String? = null
@@ -110,11 +131,12 @@ class TvProfilePickerTest {
     private fun show(
         onChoose: (String) -> Unit = {},
         onAdd: (String, Boolean) -> Unit = { _, _ -> },
+        profiles: List<Profile> = listOf(ada, bea),
     ) {
         compose.setContent {
             TvTheme {
                 TvProfilePicker(
-                    state = ProfileUiState.Picking(profiles = listOf(ada, bea), canStay = false),
+                    state = ProfileUiState.Picking(profiles = profiles, canStay = false),
                     onChoose = onChoose,
                     onAdd = onAdd,
                     onStay = {},

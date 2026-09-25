@@ -55,9 +55,14 @@ fun TvConfirmDialog(
     cancelLabel: String = "Cancel",
 ) {
     val cancelFocusRequester = remember { FocusRequester() }
-    LaunchedEffect(Unit) { cancelFocusRequester.requestFocus() }
 
     Dialog(onDismissRequest = cancel) {
+        // Inside the Dialog's own content, not beside it: `Dialog` composes
+        // this lambda into a second window with its own composition, and a
+        // FocusRequester's target has to exist in that window before
+        // requesting focus on it does anything.
+        LaunchedEffect(Unit) { cancelFocusRequester.requestFocus() }
+
         Surface(
             shape = RectangleShape,
             colors =
@@ -85,10 +90,10 @@ fun TvConfirmDialog(
                         onClick = cancel,
                         modifier = Modifier.testTag(TvConfirmDialogCancelTag).focusRequester(cancelFocusRequester),
                     ) {
-                        Text(cancelLabel)
+                        Text(cancelLabel, style = TvTypeScale.body)
                     }
                     Button(onClick = confirm, modifier = Modifier.testTag(TvConfirmDialogConfirmTag)) {
-                        Text(confirmLabel)
+                        Text(confirmLabel, style = TvTypeScale.body)
                     }
                 }
             }

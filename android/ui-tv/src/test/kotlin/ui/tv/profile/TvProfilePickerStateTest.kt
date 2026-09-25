@@ -28,8 +28,13 @@ import ui.tv.TvTheme
  * live in `ui-tv/src/androidTest/kotlin/ui/tv/profile/TvProfilePickerTest.kt`
  * instead.
  */
+// A television-sized window, not Robolectric's own narrow default: the tile
+// row is a LazyRow now (see TvProfilePicker), which only composes semantics
+// nodes for tiles that actually land inside the measured viewport — a
+// narrower window would drop the trailing "New profile" tile from the tree
+// these tests query, not just fail to show it.
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35])
+@Config(sdk = [35], qualifiers = "w1280dp-h720dp")
 class TvProfilePickerStateTest {
     @get:Rule val compose = createEmptyComposeRule()
     private lateinit var controller: ActivityController<ComponentActivity>

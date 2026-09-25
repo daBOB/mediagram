@@ -14,6 +14,7 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
+import setup.API_HASH_ERROR
 import setup.LibraryOption
 import setup.SetupUiState
 import ui.tv.TvAppFixture
@@ -76,6 +77,20 @@ class TvSetupStepTest {
     fun needsApplicationShowsAnErrorAboveTheField() {
         show(SetupUiState.NeedsApplication(error = "The api_id is the number shown next to your application."))
         compose.onNodeWithText("The api_id is the number shown next to your application.", substring = true).assertExists()
+    }
+
+    /**
+     * A hash rejection used to send the remote back to api_id regardless —
+     * the api_hash error text shown on the api_id screen, which reads as
+     * nothing having happened when what was actually typed was the hash.
+     * [API_HASH_ERROR] now keeps the viewer on api_hash instead.
+     */
+    @Test
+    fun needsApplicationWithAHashErrorShowsItOnTheHashStep() {
+        show(SetupUiState.NeedsApplication(error = API_HASH_ERROR))
+        compose.onNodeWithText("api_hash").assertExists()
+        compose.onNodeWithText(API_HASH_ERROR, substring = true).assertExists()
+        compose.onNodeWithText("api_id").assertDoesNotExist()
     }
 
     @Test

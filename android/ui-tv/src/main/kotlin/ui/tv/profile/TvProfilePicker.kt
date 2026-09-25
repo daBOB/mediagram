@@ -2,12 +2,10 @@ package ui.tv.profile
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Card
+import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
@@ -43,6 +44,7 @@ import designsystem.Spacing
 import designsystem.TvTypeScale
 import model.Profile
 import ui.tv.TvFocus
+import ui.tv.TvTextRow
 import ui.tv.setup.TvLoadingIndicator
 import ui.tv.setup.TvTextQuestion
 
@@ -138,50 +140,77 @@ private fun TvPickerBody(
     val firstFocusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { firstFocusRequester.requestFocus() }
 
+    val error = state.error
+    // With nothing loaded and a reason why, "Try again" is the only useful
+    // thing on screen — the Add tile still opens, but starting an account's
+    // very first profile is not the answer to a load that just failed.
+    val focusTryAgainFirst = error != null && state.profiles.isEmpty()
+
     Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
+        modifier = Modifier.fillMaxSize().padding(vertical = Overscan.vertical),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(HEADING, style = TvTypeScale.title)
-        val error = state.error
+        Text(HEADING, style = TvTypeScale.title, modifier = Modifier.padding(horizontal = Overscan.horizontal))
         if (error != null) {
             Text(
                 text = error,
                 style = TvTypeScale.body,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(top = Spacing.small),
+                modifier = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Spacing.small),
             )
-            TvTextRow(text = TRY_AGAIN, onClick = onRetry, modifier = Modifier.padding(top = Spacing.small))
+            TvTextRow(
+                text = TRY_AGAIN,
+                onClick = onRetry,
+                modifier = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Spacing.small),
+                focusRequester = if (focusTryAgainFirst) firstFocusRequester else null,
+            )
         }
-        Row(
+        // A LazyRow, not a plain Row: fixed-width tiles in a Row that is
+        // never given more space than the screen's own safe width run out
+        // of room once there are enough profiles to add up past it — a
+        // later tile is squeezed down to nothing rather than the row
+        // scrolling to reach it. contentPadding carries the same
+        // Overscan.horizontal margin a plain wrapping padding would, but
+        // without clipping a focused edge tile's own growth the way that
+        // wrapping padding does.
+        LazyRow(
             modifier = Modifier.fillMaxWidth().padding(top = Spacing.large),
+            contentPadding = PaddingValues(horizontal = Overscan.horizontal),
+            // Centred, the same as the plain Row this replaces: with few
+            // enough profiles that the row does not scroll, the tiles still
+            // read as one centred group rather than pinned to the left edge.
+            // Once there are enough to fill the row, centring has nothing
+            // left to do and the row simply scrolls.
             horizontalArrangement = Arrangement.spacedBy(Spacing.medium, Alignment.CenterHorizontally),
         ) {
-            state.profiles.forEachIndexed { index, profile ->
+            itemsIndexed(items = state.profiles, key = { _, profile -> profile.id }) { index, profile ->
                 TvProfileTile(
                     profile = profile,
                     onClick = { onChoose(profile.id) },
-                    focusRequester = if (index == 0) firstFocusRequester else null,
+                    focusRequester = if (!focusTryAgainFirst && index == 0) firstFocusRequester else null,
                     tag = if (index == 0) TvProfilePickerFirstTileTag else "tv-profile-tile-${profile.id}",
                 )
             }
-            TvAddTile(
-                onClick = { adding = true },
-                focusRequester = if (state.profiles.isEmpty()) firstFocusRequester else null,
-                tag = if (state.profiles.isEmpty()) TvProfilePickerFirstTileTag else TvProfilePickerAddTileTag,
-            )
+            item {
+                TvAddTile(
+                    onClick = { adding = true },
+                    focusRequester = if (!focusTryAgainFirst && state.profiles.isEmpty()) firstFocusRequester else null,
+                    tag = if (state.profiles.isEmpty()) TvProfilePickerFirstTileTag else TvProfilePickerAddTileTag,
+                )
+            }
         }
         Text(
             NOTE,
             style = TvTypeScale.body,
             textAlign = TextAlign.Center,
-            modifier = Modifier.widthIn(max = NoteMaxWidth).padding(top = Spacing.large),
+            modifier = Modifier.widthIn(max = NoteMaxWidth).padding(horizontal = Overscan.horizontal).padding(top = Spacing.large),
         )
         if (state.canStay) {
-            TvTextRow(text = STAY, onClick = onStay, modifier = Modifier.padding(top = Spacing.small))
+            TvTextRow(
+                text = STAY,
+                onClick = onStay,
+                modifier = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Spacing.small),
+            )
         }
     }
 }
@@ -205,6 +234,7 @@ private fun TvProfileTile(
         scale = TvFocus.cardScale(),
         border = TvFocus.cardBorder(),
         glow = TvFocus.cardGlow(),
+        colors = CardDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column(
             modifier = Modifier.fillMaxSize().padding(Spacing.medium),
@@ -249,6 +279,7 @@ private fun TvAddTile(
         scale = TvFocus.cardScale(),
         border = TvFocus.cardBorder(),
         glow = TvFocus.cardGlow(),
+        colors = CardDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column(
             modifier = Modifier.fillMaxSize().padding(Spacing.medium),
@@ -271,32 +302,17 @@ private fun TvProfileAvatar(letters: String) {
             Modifier
                 .size(AvatarSize)
                 .clip(CircleShape)
+                // The tile's own card explicitly takes `surface` (see
+                // `TvProfileTile`/`TvAddTile` above), leaving `surfaceVariant`
+                // here as a genuinely different tone rather than the two
+                // resolving to the same value — tv-material's own default
+                // card container is `surfaceVariant` too, which is what made
+                // this circle disappear into its card before.
                 .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
     ) {
         Text(letters, style = TvTypeScale.title, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
-}
-
-/** A plain clickable text row, focus read the same way every other TV list row reads it. */
-@Composable
-private fun TvTextRow(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    focusRequester: FocusRequester? = null,
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val focused by interactionSource.collectIsFocusedAsState()
-
-    Text(
-        text = text,
-        style = TvFocus.textStyle(TvTypeScale.body, focused),
-        modifier =
-            modifier
-                .let { if (focusRequester != null) it.focusRequester(focusRequester) else it }
-                .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
-    )
 }
 
 private enum class AddStep { NAME, KIDS }

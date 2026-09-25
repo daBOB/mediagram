@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.KeyboardType
+import setup.API_HASH_ERROR
 
 private const val APPLICATION_HEADING = "Connect this device to Telegram"
 
@@ -27,11 +28,12 @@ private enum class ApplicationStep { API_ID, API_HASH }
  * person moving from api_id to api_hash should not have to remember where
  * my.telegram.org's page went.
  *
- * [error] does not say which of the two typed values Telegram rejected —
- * `setup.SetupUiState.NeedsApplication` carries one message for both — so an
- * error sends the remote back to api_id rather than guessing which field to
- * reopen. Both values stay in hand across that return: a rejection is a
- * reason to re-check what was typed, not to retype it from nothing.
+ * [error] does say which of the two typed values Telegram rejected —
+ * `setup.API_ID_ERROR` and [API_HASH_ERROR] are two different sentences —
+ * so a hash rejection reopens api_hash instead of every error bouncing the
+ * remote back to api_id regardless of which field it was actually about.
+ * Both values stay in hand across that return: a rejection is a reason to
+ * re-check what was typed, not to retype it from nothing.
  *
  * Back from api_hash returns to api_id instead of leaving the app — the
  * phone has both fields on one screen with nowhere for Back to go; TV's
@@ -47,18 +49,23 @@ fun TvApplicationScreen(
     var apiId by remember { mutableStateOf("") }
     var apiHash by remember { mutableStateOf("") }
 
-    LaunchedEffect(error) { if (error != null) step = ApplicationStep.API_ID }
+    LaunchedEffect(error) {
+        if (error != null) {
+            step = if (error == API_HASH_ERROR) ApplicationStep.API_HASH else ApplicationStep.API_ID
+        }
+    }
 
     when (step) {
         ApplicationStep.API_ID ->
             TvTextQuestion(
                 heading = APPLICATION_HEADING,
-                explanation = applicationExplanation(error),
+                explanation = APPLICATION_EXPLANATION,
                 label = "api_id",
                 value = apiId,
                 onValue = { apiId = it },
                 onSubmit = { if (apiId.isNotBlank()) step = ApplicationStep.API_HASH },
                 keyboardType = KeyboardType.Number,
+                error = error?.takeIf { it != API_HASH_ERROR },
             )
 
         ApplicationStep.API_HASH -> {
@@ -71,9 +78,8 @@ fun TvApplicationScreen(
                 onValue = { apiHash = it },
                 onSubmit = { if (apiHash.isNotBlank()) onSubmit(apiId, apiHash) },
                 secret = true,
+                error = error?.takeIf { it == API_HASH_ERROR },
             )
         }
     }
 }
-
-private fun applicationExplanation(error: String?): String = listOfNotNull(error, APPLICATION_EXPLANATION).joinToString("\n\n")
