@@ -30,6 +30,7 @@ internal fun TvCatalogRoot(
     onOpenCollection: (key: String) -> Unit,
     onOpenList: (id: String) -> Unit,
     onCreateList: (name: String) -> Unit,
+    onTabChanged: () -> Unit,
 ) {
     val masthead = remember { FocusRequester() }
     var onMasthead by remember { mutableStateOf(false) }
@@ -47,6 +48,7 @@ internal fun TvCatalogRoot(
         fetching = fetching,
         restoreKey = restoreKey,
         onMastheadFocusChanged = { onMasthead = it },
+        onTabChanged = onTabChanged,
     )
 }
 

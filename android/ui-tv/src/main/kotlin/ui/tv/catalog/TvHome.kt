@@ -26,8 +26,7 @@ import model.WatchSnapshot
  * [restoreKey] names the stop a viewer opened, so coming back lands the
  * remote on it rather than at the top; with none, or one no row holds any
  * more, the first row's first stop takes it. A title on two rows at once —
- * underway, and also among the latest — is found on the upper one, which
- * is the one nearer the top a viewer came from nine times in ten.
+ * underway, and also among the latest — is found on the upper one.
  *
  * The rows stack down the page and the page scrolls, never a row: see
  * [TvHomeRow]. The first row's first stop takes focus the moment the page
@@ -61,7 +60,11 @@ internal fun TvHome(
             } ?: (0 to 0)
         }
 
-    LaunchedEffect(target) {
+    // On arrival, on a new restore key, and when the first rows arrive —
+    // never merely because the rows moved: a fetch finishing or Continue
+    // appearing reorders them while the viewer is browsing, and the remote
+    // must stay where the viewer put it.
+    LaunchedEffect(restoreKey, rows.isNotEmpty()) {
         if (rows.isNotEmpty()) first.requestFocus()
     }
 

@@ -115,6 +115,23 @@ class TvLibraryTest {
         plate("Film 1").assertIsFocused()
     }
 
+    /**
+     * The remembered plate belongs to the tab it was opened from: Film 1
+     * is Home's first plate but the second on Movies, where the wall's own
+     * first plate is where a viewer arriving at the tab should land.
+     */
+    @Test
+    fun choosingAnotherTabLandsOnItsFirstPlateNotOneOpenedElsewhere() {
+        press(plate("Film 1"))
+        back()
+        plate("Film 1").assertIsFocused()
+
+        compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+
+        plate("Film 0").assertIsFocused()
+    }
+
     @Test
     fun backAtTheCatalogRootGoesUpToTheMastheadFirst() {
         compose.onNodeWithText("Film 1").assertIsFocused()

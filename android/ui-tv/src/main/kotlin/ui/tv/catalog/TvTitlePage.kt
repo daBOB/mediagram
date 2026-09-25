@@ -14,6 +14,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.tv.material3.Text
 import catalog.factsLine
 import catalog.resumeLine
+import data.ProgressPoint
+import data.ResumePoint
 import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvTypeScale
@@ -32,10 +34,12 @@ import uniffi.mediagram_core.TitleInfo
  * Play takes the remote the moment the page appears. It is the one thing
  * here to press and the reason a viewer came, so a single centre press
  * from the plate that opened this starts the title. It says Resume when
- * [progress] has somewhere to carry on from, over the line that says
- * where — [resumeLine], the same words the Continue wall captions its
- * plates with; picking the moment up again is the player's job, as it is
- * from any card.
+ * [progress] is a place the player will actually carry on from —
+ * [ResumePoint.resumeAt], the rule the player and the web's film page both
+ * start by, so a glance at the opening or a position in the credits says
+ * Play — over the line that says where, in [resumeLine]'s words, the same
+ * the Continue wall captions its plates with. The phone's title page always
+ * says Play; this follows the web's page, which says Resume.
  *
  * [info] being null is ordinary rather than a failure, for the phone's
  * reason: a course has no provider entry, and a library assembled without
@@ -49,7 +53,11 @@ internal fun TvTitlePage(
     onPlay: () -> Unit,
 ) {
     val play = remember { FocusRequester() }
-    val resume = resumeLine(progress)
+    val resume =
+        remember(progress) {
+            val resumes = progress?.let { ResumePoint.resumeAt(ProgressPoint(it.at, it.duration)) } != null
+            if (resumes) resumeLine(progress) else ""
+        }
 
     Column(
         modifier =
@@ -65,6 +73,7 @@ internal fun TvTitlePage(
             title = set.title,
             facts = factsLine(set.year, set.durationSecs, set.ageLabel()),
             info = info,
+            readableOverview = true,
         ) {
             // As stored, not shouted, for the phone's reason: the web prints
             // the container and codecs in the case the index recorded them.

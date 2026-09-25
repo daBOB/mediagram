@@ -48,6 +48,9 @@ import ui.tv.profile.TvChosenProfile
  * there. [restoreKey] names what was last opened from here, handed to
  * whichever wall is showing so Back lands on it — the tab itself is kept
  * by whoever keeps this screen's saved state while it is off screen.
+ * [onTabChanged] tells the caller a different tab was chosen, so it can
+ * drop that key: it names a plate on the tab that was left, and a film
+ * opened from Home would otherwise pull the remote to its plate on Movies.
  *
  * [fetching] is the artwork-and-descriptions run the phone reports on the
  * same line as a channel refresh: both change what is on these shelves, so
@@ -65,6 +68,7 @@ fun TvCatalogScreen(
     fetching: Boolean = false,
     restoreKey: String? = null,
     onMastheadFocusChanged: (Boolean) -> Unit = {},
+    onTabChanged: () -> Unit = {},
 ) {
     val ready = (state as? CatalogUiState.Ready)?.takeIf { it.shelves.isNotEmpty() }
     val shelves = ready?.shelves.orEmpty()
@@ -75,6 +79,12 @@ fun TvCatalogScreen(
     // A refresh can return a library with fewer shelves than the one that
     // was on screen when it started.
     val selected = chosen.coerceIn(0, tabs.titles.lastIndex)
+    val choose = { index: Int ->
+        if (index != selected) {
+            chosen = index
+            onTabChanged()
+        }
+    }
 
     // With no wall below to take focus, the masthead is the one thing on
     // screen the remote can rest on.
@@ -88,7 +98,7 @@ fun TvCatalogScreen(
             selected = selected,
             firstKeptIndex = tabs.firstKept,
             profile = profile,
-            onSelect = { chosen = it },
+            onSelect = choose,
             focusRequester = mastheadFocus,
             modifier = Modifier.onFocusChanged { onMastheadFocusChanged(it.hasFocus) },
         )
@@ -121,7 +131,7 @@ fun TvCatalogScreen(
                         watch = ready.watch,
                         onOpenTitle = onOpenTitle,
                         onOpenCollection = onOpenCollection,
-                        onSeeAll = { shelf -> chosen = tabs.titles.indexOf(shelf).coerceAtLeast(0) },
+                        onSeeAll = { shelf -> choose(tabs.titles.indexOf(shelf).coerceAtLeast(0)) },
                         restoreKey = restoreKey,
                     )
                 }

@@ -166,6 +166,7 @@ internal fun TvLibrary(profile: TvChosenProfile) {
                         at.listId = id
                     },
                     onCreateList = catalogViewModel::createList,
+                    onTabChanged = { restore.forget(TvPlace.Catalog) },
                 )
             }
         }

@@ -1,6 +1,15 @@
 package ui.tv.catalog
 
 import androidx.activity.ComponentActivity
+import android.view.KeyEvent
+import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.test.platform.app.InstrumentationRegistry
+import designsystem.Palette
+import org.junit.Assert.assertEquals
+import ui.tv.setup.TvConfirmDialogCancelTag
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.hasText
@@ -51,6 +60,29 @@ class TvListAndCollectionTest {
         press(Key.DirectionUp)
 
         waitUntilFocused("Rename")
+    }
+
+    /**
+     * A centre press on "Delete list" is how its question opens, and a
+     * button focused in that same moment can hold the remote while drawn
+     * as if it did not — so this reads Cancel's pixels, where a focused
+     * button is filled in the catalogue's text colour.
+     */
+    @Test
+    fun cancelIsDrawnFocusedWhenACentrePressOpensTheDeleteQuestion() {
+        show { TvList(ListOfSets("a", "Sunday", emptyList()), emptyList(), {}, {}, {}, {}) }
+        waitUntilFocused("Rename")
+        press(Key.DirectionRight)
+        waitUntilFocused("Delete list")
+
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER)
+        compose.waitUntil(timeoutMillis = 5_000) {
+            compose.onAllNodes(hasTestTag(TvConfirmDialogCancelTag) and isFocused()).fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.waitForIdle()
+
+        val pixels = compose.onNodeWithTag(TvConfirmDialogCancelTag).captureToImage().toPixelMap()
+        assertEquals(Palette.Text, pixels[4, pixels.height / 2])
     }
 
     @Test
