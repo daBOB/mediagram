@@ -15,6 +15,7 @@ import { clockTime, humanDuration, technicalLine } from "../format.js";
 import { genreHash, genresOf, scoreLabel } from "./genres.js";
 import { ageLabel } from "../age-rating.js";
 import { pinControl } from "./pin-control.js";
+import { artworkUrl } from "./plate.js";
 
 /**
  * The page for `set`. `resume` is the second to carry on from, or `null`;
@@ -26,7 +27,7 @@ export function filmPage(set, { resume, onPlay }) {
   if (set.poster) {
     const art = el("div", "series-art");
     const image = el("img");
-    image.src = `/api/posters/${encodeURIComponent(set.poster)}.jpg`;
+    image.src = artworkUrl(set.poster);
     // The title is the heading beside it; the artwork is decoration.
     image.alt = "";
     art.append(image);

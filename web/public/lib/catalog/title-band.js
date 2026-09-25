@@ -8,6 +8,7 @@
  */
 
 import { el } from "../dom.js";
+import { artworkUrl } from "./plate.js";
 
 /** The band for `set`, or `null` when it has no backdrop to show. */
 export function titleBand(set) {
@@ -15,7 +16,7 @@ export function titleBand(set) {
   const band = el("div", "title-band");
   band.setAttribute("aria-hidden", "true");
   const image = el("img");
-  image.src = `/api/posters/${encodeURIComponent(set.backdrop)}.jpg`;
+  image.src = artworkUrl(set.backdrop);
   image.alt = "";
   image.decoding = "async";
   image.setAttribute("fetchpriority", "high");

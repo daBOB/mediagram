@@ -12,12 +12,12 @@ import { el } from "../dom.js";
 import { humanDuration } from "../format.js";
 import { ageLabel } from "../age-rating.js";
 import { genresOf, scoreLabel } from "./genres.js";
+import { artworkUrl } from "./plate.js";
 
 const HOLD_MS = 9000;
 /** Past this many characters a title is set a size smaller, so it still fits in three lines. */
 const LONG_TITLE = 18;
 
-export const artUrl = (key) => `/api/posters/${encodeURIComponent(key)}.jpg`;
 
 /**
  * @param {import("../library.js").CatalogSet[]} films the cover's films, each with a backdrop
@@ -109,7 +109,7 @@ function slide(set, at, count, play) {
   article.setAttribute("aria-roledescription", "slide");
   article.setAttribute("aria-label", `${at + 1} of ${count}`);
   const image = el("img", "cover-image");
-  image.src = artUrl(set.backdrop);
+  image.src = artworkUrl(set.backdrop);
   // The headline beside it says what the picture is of.
   image.alt = "";
   image.decoding = "async";

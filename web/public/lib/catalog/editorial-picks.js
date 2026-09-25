@@ -19,10 +19,10 @@ export const DAY_MS = 86_400_000;
 /** How many films the cover story rotates through. */
 export const COVER_COUNT = 5;
 /** The staff pick rotates among this many of the best-rated. */
-export const STAFF_POOL = 10;
+const STAFF_POOL = 10;
 /** "This month" means arrivals in the last thirty days. */
-export const MONTH_MS = 30 * DAY_MS;
-export const THIS_MONTH_LIMIT = 5;
+const MONTH_MS = 30 * DAY_MS;
+const THIS_MONTH_LIMIT = 5;
 
 /** Which day `now` falls on, counted from the epoch; the rotation's seed. */
 export const dayOf = (now) => Math.floor(now / DAY_MS);

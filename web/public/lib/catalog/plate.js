@@ -12,6 +12,14 @@ import { isWatched, progressOf } from "../watch-state.js";
 import { watchedFraction } from "../resume-point.js";
 import { progressRule } from "./set-badge.js";
 
+/**
+ * Where a piece of artwork is served: a poster, a season's poster or a
+ * backdrop, by its key. The one place the path is spelled.
+ */
+export function artworkUrl(key) {
+  return `/api/posters/${encodeURIComponent(key)}.jpg`;
+}
+
 /** Two letters to stand in for artwork that is not there. */
 export function initialsOf(text) {
   return (text ?? "?")
@@ -33,7 +41,7 @@ export function plate({ poster, name, initials, progress, watched }) {
     // The initials stay underneath as the alt text, so a poster that fails to
     // load leaves a plate that still says what it is.
     const image = el("img");
-    image.src = `/api/posters/${encodeURIComponent(poster)}.jpg`;
+    image.src = artworkUrl(poster);
     image.alt = name;
     image.loading = "lazy";
     thumb.append(image);

@@ -5,7 +5,18 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Unreleased — 0.55.5
+## Unreleased — 0.55.6
+
+**Changed**
+
+- The artwork path `/api/posters/<key>.jpg` is built in one place,
+  `artworkUrl` in `lib/catalog/plate.js`. Seven hand-written copies across the
+  plate, film page, series header, title band, Featured reel and home modules
+  now call it. Module-internal constants and helpers in `editorial-picks.js` and
+  `home-features.js` are no longer exported, and the dead `.page-title` selector
+  is gone. No visible change.
+
+## 0.55.5
 
 **Fixed**
 

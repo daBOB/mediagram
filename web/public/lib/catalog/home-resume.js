@@ -12,7 +12,7 @@ import { el } from "../dom.js";
 import { episodeLabel, humanDuration, resumeLine } from "../format.js";
 import { progressOf } from "../watch-state.js";
 import { progressRuleFor } from "./set-badge.js";
-import { artUrl } from "./home-cover.js";
+import { artworkUrl } from "./plate.js";
 
 /**
  * @param {import("./home-shelves.js").HomeShelves} shelves
@@ -38,7 +38,7 @@ function resumeCard(set, caption, play) {
   const key = set.backdrop ?? set.poster;
   if (key) {
     const image = el("img", set.backdrop ? null : "poster-crop");
-    image.src = artUrl(key);
+    image.src = artworkUrl(key);
     image.alt = "";
     image.loading = "lazy";
     image.decoding = "async";

@@ -14,6 +14,7 @@
 import { el } from "../dom.js";
 import { genresOf, scoreLabel } from "./genres.js";
 import { stepFrom } from "./featured-picks.js";
+import { artworkUrl } from "./plate.js";
 
 const HOLD_MS = 7000;
 // Matches the crossfade in the stylesheet, so the old slide goes when it is invisible.
@@ -141,12 +142,12 @@ async function show(at) {
 }
 
 function slideFor(set, at) {
-  const poster = `/api/posters/${encodeURIComponent(set.poster)}.jpg`;
+  const poster = artworkUrl(set.poster);
   const node = el("section", "featured-slide");
   // The film's own wide artwork behind the poster where it has one, only
   // softened; otherwise the poster itself, blurred into a wash.
   const blur = el("div", set.backdrop ? "featured-blur backdrop" : "featured-blur");
-  const behind = set.backdrop ? `/api/posters/${encodeURIComponent(set.backdrop)}.jpg` : poster;
+  const behind = set.backdrop ? artworkUrl(set.backdrop) : poster;
   blur.style.backgroundImage = `url("${behind}")`;
   const frame = el("figure", "featured-poster");
   const image = el("img");

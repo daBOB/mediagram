@@ -23,6 +23,7 @@ import { genreLinks } from "./film-page.js";
 import { ageLabel } from "../age-rating.js";
 import { firstItemOf } from "../library.js";
 import { pinControl } from "./pin-control.js";
+import { artworkUrl } from "./plate.js";
 
 /**
  * @param {Pick<import("../library.js").Collection, "divisions">} collection a grouped show's seasons
@@ -36,7 +37,7 @@ export function seriesHeader(collection, poster, meta = null) {
   if (poster) {
     const art = el("div", "series-art");
     const image = el("img");
-    image.src = `/api/posters/${encodeURIComponent(poster)}.jpg`;
+    image.src = artworkUrl(poster);
     // The name is already the heading beside it, so the artwork is
     // decoration: announcing it again only makes a screen reader repeat.
     image.alt = "";

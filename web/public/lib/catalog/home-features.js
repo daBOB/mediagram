@@ -10,9 +10,9 @@
 
 import { el } from "../dom.js";
 import { genresOf } from "./genres.js";
-import { artUrl } from "./home-cover.js";
+import { artworkUrl } from "./plate.js";
 
-export const FEATURE_LABELS = {
+const FEATURE_LABELS = {
   editor: "Editor’s choice",
   staff: "Staff pick",
   trending: "Trending on TMDB",
@@ -20,7 +20,7 @@ export const FEATURE_LABELS = {
 };
 
 /** Where a featured title opens: a film's page, or its show's. */
-export function featureHref(set) {
+function featureHref(set) {
   return set.kind === "ep" && set.show
     ? `#/series/${encodeURIComponent(set.show)}`
     : `#/film/${encodeURIComponent(set.setId)}`;
@@ -43,7 +43,7 @@ function featureCard({ kind, set }) {
   const art = set.backdrop ?? set.poster;
   if (art) {
     const image = el("img", set.backdrop ? "feature-image" : "feature-image poster-crop");
-    image.src = artUrl(art);
+    image.src = artworkUrl(art);
     image.alt = "";
     image.loading = "lazy";
     image.decoding = "async";

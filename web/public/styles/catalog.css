@@ -2,7 +2,7 @@
    Section openers are set like a magazine's: a display-serif title with the
    extent and controls on the same baseline. The home page's own blocks are
    in `home.css`. */
-.page-title, .shelf-head h1 {
+.shelf-head h1 {
   margin: 0;
   font: 600 clamp(2.2rem, 4.4vw, 3.6rem)/1 var(--display);
   letter-spacing: -0.03em;
