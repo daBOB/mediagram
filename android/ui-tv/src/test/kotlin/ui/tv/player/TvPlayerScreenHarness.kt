@@ -87,8 +87,19 @@ abstract class TvPlayerScreenHarness {
         press(Key.DirectionCenter)
     }
 
+    /** Back through the dispatcher alone, as a gesture delivers it: no key for focus to take first. */
     internal fun back() {
         compose.runOnUiThread { controller.get().onBackPressedDispatcher.onBackPressed() }
         compose.waitForIdle()
+    }
+
+    /**
+     * Back as a remote sends it: a key, down and up, through the window —
+     * where focus sees it before the dispatcher does and could take it as
+     * a move out of whatever holds the remote.
+     */
+    internal fun pressBackKey() {
+        keyDown(KeyEvent.KEYCODE_BACK, 0)
+        keyUp(KeyEvent.KEYCODE_BACK)
     }
 }

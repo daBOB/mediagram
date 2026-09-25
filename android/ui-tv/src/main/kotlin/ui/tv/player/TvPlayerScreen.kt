@@ -1,7 +1,6 @@
 package ui.tv.player
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -16,13 +15,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusProperties
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.platform.testTag
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Overscan
@@ -36,9 +32,6 @@ import ui.player.KeepScreenOnWhile
 import ui.player.PlayerLifecycle
 import ui.player.PlayerNavigationEffects
 
-/** Finds the screen itself in a test: the node that holds the remote while the controls are away. */
-internal const val TvPlayerScreenTag = "tv-player-screen"
-
 /**
  * A title playing on a television, driven by the remote — the phone's
  * `PlayerScreen` with keys where the phone has taps. The same lifecycle
@@ -51,9 +44,8 @@ internal const val TvPlayerScreenTag = "tv-player-screen"
  *
  * Every key is read once, here, before anything focused sees it, and
  * answered by [tvKeyAction]'s table through [TvPlayerRemote]. While the
- * controls are away the screen itself holds the remote, so no key is ever
- * lost to a focus that went with them; while they are up it cannot be
- * focused at all, so moving around them never lands on the picture.
+ * controls are away [TvPlayerKeyHolder] holds the remote, so no key is
+ * ever lost to a focus that went with them.
  *
  * The transport's gear opens the phone's playback settings as a panel to
  * one side ([TvPlayerSettingsPanel]); Back closes that before it does
@@ -138,7 +130,7 @@ fun TvPlayerScreen(
             )
         }
     TvRemoteFollowsControls(barShown, settingsOpen, upNextShown, landing, root, focus, failed, notesOpen = { notesOpen }, busy = { choosingList || onSeekBar })
-    TvNotesFollow(notesOpen, barShown, notesFocus, root, focus, busy = { settingsOpen || failed })
+    TvNotesFollow(notesOpen, barShown, notesFocus, root, focus, busy = { settingsOpen }, failed = { failed })
     TvPlayerBack(
         barShown = barShown,
         onSeekBar = onSeekBar,
@@ -160,6 +152,8 @@ fun TvPlayerScreen(
             Modifier
                 .fillMaxSize()
                 .background(Color.Black)
+                // Not focusable itself: see TvPlayerKeyHolder for why the
+                // one that holds the remote must never be an ancestor.
                 .onPreviewKeyEvent { event ->
                     if (event.type == KeyEventType.KeyDown) presses++
                     remote.onKey(
@@ -172,11 +166,9 @@ fun TvPlayerScreen(
                         upNextShown = upNextShown,
                         notesOpen = notesOpen,
                     )
-                }.focusRequester(root)
-                .focusProperties { canFocus = !barShown }
-                .focusable()
-                .testTag(TvPlayerScreenTag),
+                },
     ) {
+        TvPlayerKeyHolder(root, canHold = !barShown)
         TvNotesBeside(notes, focus.notesRegion, notesFocus, button = focus.notes.takeIf { barShown }) {
             player?.let { current ->
                 TvPlayerStage(

@@ -92,8 +92,10 @@ private const val NOTES_SHARE = 0.38f
  *
  * Closed, the column hands the remote back: to the screen itself with the
  * controls away, or to the Notes button when Back closed it from inside
- * with the controls up. [busy] — the settings panel, or a failure's Retry
- * — keeps the remote where it is either way.
+ * with the controls up. [busy] — the settings panel — keeps the remote
+ * where it is either way. A [failed] title keeps it on Retry, and takes it
+ * back there when the column closes: Retry is then the only thing left to
+ * press, and a remote left in a column that has gone is on nothing.
  */
 @Composable
 internal fun TvNotesFollow(
@@ -103,6 +105,7 @@ internal fun TvNotesFollow(
     root: FocusRequester,
     controls: TvPlayerFocus,
     busy: () -> Boolean,
+    failed: () -> Boolean = { false },
 ) {
     LaunchedEffect(notesOpen) {
         val asked = focus.asked
@@ -111,6 +114,7 @@ internal fun TvNotesFollow(
         focus.returnToButton = false
         if (busy()) return@LaunchedEffect
         when {
+            failed() -> if (!notesOpen) controls.retry.requestFocus()
             notesOpen -> if (asked || !barShown) controls.notesRegion.requestFocus()
             !barShown -> root.requestFocus()
             toButton -> controls.notes.requestFocus()

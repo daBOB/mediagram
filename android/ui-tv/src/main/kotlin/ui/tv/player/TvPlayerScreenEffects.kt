@@ -1,6 +1,5 @@
 package ui.tv.player
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -8,7 +7,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.input.key.Key
 import kotlinx.coroutines.delay
 import player.CONTROLS_LINGER_MS
 import player.PlayerUiState
@@ -85,37 +83,6 @@ internal fun TvRemoteFollowsControls(
             landing == TvControlsLanding.SeekBar -> focus.seekBar.requestFocus()
             landing == TvControlsLanding.Settings -> focus.settings.requestFocus()
             else -> focus.playPause.requestFocus()
-        }
-    }
-}
-
-/**
- * The table's Back row, answered from the dispatcher rather than as a key
- * so a Back that is not one — a gesture, the dispatcher itself — does the
- * same: the panel closes first, then the up-next card goes, then the
- * notes, then the controls, and only then is the player left.
- */
-@Composable
-internal fun TvPlayerBack(
-    barShown: Boolean,
-    onSeekBar: Boolean,
-    settingsOpen: Boolean,
-    upNextShown: Boolean,
-    notesOpen: Boolean,
-    onClosePanel: () -> Unit,
-    onCancelUpNext: () -> Unit,
-    onCloseNotes: () -> Unit,
-    onHideControls: () -> Unit,
-    onLeave: () -> Unit,
-) {
-    BackHandler {
-        val action = tvKeyAction(Key.Back, barShown, onSeekBar, panelOpen = settingsOpen, upNextShown = upNextShown, notesOpen = notesOpen)
-        when (action) {
-            TvKeyAction.ClosePanel -> onClosePanel()
-            TvKeyAction.CancelUpNext -> onCancelUpNext()
-            TvKeyAction.CloseNotes -> onCloseNotes()
-            TvKeyAction.HideControls -> onHideControls()
-            else -> onLeave()
         }
     }
 }

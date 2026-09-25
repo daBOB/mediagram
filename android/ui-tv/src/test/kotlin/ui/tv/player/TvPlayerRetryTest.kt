@@ -61,4 +61,12 @@ class TvPlayerRetryTest : TvPlayerScreenHarness() {
         back()
         compose.onNodeWithText("Library").assertExists()
     }
+
+    @Test
+    fun aBackKeyOnRetryLeavesAFailedTitle() {
+        failNow()
+        compose.onNodeWithText("Retry").assertIsFocused()
+        pressBackKey()
+        compose.onNodeWithText("Library").assertExists()
+    }
 }
