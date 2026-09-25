@@ -2,6 +2,7 @@ package ui.tv.catalog
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.focus.FocusRequester
 import catalog.KeptKind
 import catalog.Shelf
 import catalog.continueWall
@@ -12,6 +13,8 @@ import model.WatchSnapshot
 /**
  * Which of the masthead's four kept entries is selected, dispatched to what
  * draws it — the phone's `KeptTabContent`, over the same four functions.
+ * [tabFocus] is the masthead tab that chose this, where an empty wall
+ * sends the remote, having no plate of its own to hold it.
  */
 @Composable
 internal fun TvKeptTab(
@@ -22,12 +25,16 @@ internal fun TvKeptTab(
     onOpenCollection: (key: String) -> Unit,
     onOpenList: (id: String) -> Unit,
     onCreateList: (name: String) -> Unit,
+    tabFocus: FocusRequester,
     restoreKey: String?,
 ) {
     when (kind) {
-        KeptKind.CONTINUE -> TvKeptWall(kind, remember(shelves, watch) { continueWall(shelves, watch) }, watch, onOpenTitle, restoreKey)
-        KeptKind.WATCHLIST -> TvKeptWall(kind, remember(shelves, watch) { watchlistWall(shelves, watch) }, watch, onOpenTitle, restoreKey)
-        KeptKind.KIDS -> TvKidsWall(remember(shelves, watch) { kidsShelf(shelves, watch) }, watch, onOpenTitle, onOpenCollection, restoreKey)
+        KeptKind.CONTINUE ->
+            TvKeptWall(kind, remember(shelves, watch) { continueWall(shelves, watch) }, watch, onOpenTitle, tabFocus, restoreKey)
+        KeptKind.WATCHLIST ->
+            TvKeptWall(kind, remember(shelves, watch) { watchlistWall(shelves, watch) }, watch, onOpenTitle, tabFocus, restoreKey)
+        KeptKind.KIDS ->
+            TvKidsWall(remember(shelves, watch) { kidsShelf(shelves, watch) }, watch, onOpenTitle, onOpenCollection, tabFocus, restoreKey)
         KeptKind.COLLECTIONS -> TvLists(lists = watch.collections, onOpen = onOpenList, onCreate = onCreateList, restoreKey = restoreKey)
     }
 }

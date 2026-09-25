@@ -50,7 +50,8 @@ import ui.tv.profile.TvChosenProfile
  *
  * [focusRequester] is how a caller sends the remote back up here. It lands
  * on the tab last focused, or the selected one the first time, rather than
- * on whichever tab happens to be leftmost.
+ * on whichever tab happens to be leftmost. [selectedFocus] lands on the
+ * selected tab itself, wherever on the masthead the remote already is.
  */
 @Composable
 internal fun TvMasthead(
@@ -61,15 +62,15 @@ internal fun TvMasthead(
     onSelect: (Int) -> Unit,
     focusRequester: FocusRequester,
     modifier: Modifier = Modifier,
+    selectedFocus: FocusRequester = remember { FocusRequester() },
 ) {
-    val selectedEntry = remember { FocusRequester() }
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .padding(start = Overscan.horizontal, end = Overscan.horizontal, top = Overscan.vertical)
                 .focusRequester(focusRequester)
-                .focusRestorer(selectedEntry),
+                .focusRestorer(selectedFocus),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (titles.isNotEmpty()) {
@@ -93,7 +94,7 @@ internal fun TvMasthead(
                         selected = index == selected,
                         apart = index == firstKeptIndex,
                         onClick = { onSelect(index) },
-                        modifier = if (index == selected) Modifier.focusRequester(selectedEntry) else Modifier,
+                        modifier = if (index == selected) Modifier.focusRequester(selectedFocus) else Modifier,
                     )
                 }
             }
@@ -108,7 +109,7 @@ internal fun TvMasthead(
         TvTextRow(
             text = profile.name,
             onClick = profile.onChoose,
-            focusRequester = if (titles.isEmpty()) selectedEntry else null,
+            focusRequester = if (titles.isEmpty()) selectedFocus else null,
             modifier =
                 Modifier
                     .padding(start = Spacing.medium)

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -86,6 +87,8 @@ fun TvCatalogScreen(
         }
     }
 
+    val selectedTab = remember { FocusRequester() }
+
     // With no wall below to take focus, the masthead is the one thing on
     // screen the remote can rest on.
     LaunchedEffect(ready == null) {
@@ -100,6 +103,7 @@ fun TvCatalogScreen(
             profile = profile,
             onSelect = choose,
             focusRequester = mastheadFocus,
+            selectedFocus = selectedTab,
             modifier = Modifier.onFocusChanged { onMastheadFocusChanged(it.hasFocus) },
         )
         // Words where the phone draws a bar: the same sentences its Update
@@ -120,35 +124,42 @@ fun TvCatalogScreen(
             )
         }
         Box(modifier = Modifier.fillMaxSize()) {
-            when {
-                state is CatalogUiState.Loading -> TvCenteredMessage("Loading your library…")
-                state is CatalogUiState.KidsEmpty -> TvCenteredMessage("Nothing rated FSK 12 or under yet.")
-                state is CatalogUiState.Failed -> TvCenteredMessage(state.message)
-                ready == null -> TvCenteredMessage("The library is empty.")
-                selected == 0 -> {
-                    TvHome(
-                        rows = remember(shelves, ready.watch) { homeRowsOf(shelves, ready.watch) },
-                        watch = ready.watch,
-                        onOpenTitle = onOpenTitle,
-                        onOpenCollection = onOpenCollection,
-                        onSeeAll = { shelf -> choose(tabs.titles.indexOf(shelf).coerceAtLeast(0)) },
-                        restoreKey = restoreKey,
-                    )
-                }
-                selected < tabs.firstKept -> {
-                    TvShelfWall(shelves[selected - 1], ready.watch, onOpenTitle, onOpenCollection, restoreKey)
-                }
-                else -> {
-                    TvKeptTab(
-                        kind = KeptKind.entries[selected - tabs.firstKept],
-                        shelves = shelves,
-                        watch = ready.watch,
-                        onOpenTitle = onOpenTitle,
-                        onOpenCollection = onOpenCollection,
-                        onOpenList = onOpenList,
-                        onCreateList = onCreateList,
-                        restoreKey = restoreKey,
-                    )
+            // One composition per tab, not one reused across them: every
+            // shelf draws through the same wall, which would otherwise carry
+            // the last shelf's scroll over and never take the remote from the
+            // tab, its first plate sitting at the same index as before.
+            key(selected) {
+                when {
+                    state is CatalogUiState.Loading -> TvCenteredMessage("Loading your library…")
+                    state is CatalogUiState.KidsEmpty -> TvCenteredMessage("Nothing rated FSK 12 or under yet.")
+                    state is CatalogUiState.Failed -> TvCenteredMessage(state.message)
+                    ready == null -> TvCenteredMessage("The library is empty.")
+                    selected == 0 -> {
+                        TvHome(
+                            rows = remember(shelves, ready.watch) { homeRowsOf(shelves, ready.watch) },
+                            watch = ready.watch,
+                            onOpenTitle = onOpenTitle,
+                            onOpenCollection = onOpenCollection,
+                            onSeeAll = { shelf -> choose(tabs.titles.indexOf(shelf).coerceAtLeast(0)) },
+                            restoreKey = restoreKey,
+                        )
+                    }
+                    selected < tabs.firstKept -> {
+                        TvShelfWall(shelves[selected - 1], ready.watch, onOpenTitle, onOpenCollection, restoreKey)
+                    }
+                    else -> {
+                        TvKeptTab(
+                            kind = KeptKind.entries[selected - tabs.firstKept],
+                            shelves = shelves,
+                            watch = ready.watch,
+                            onOpenTitle = onOpenTitle,
+                            onOpenCollection = onOpenCollection,
+                            onOpenList = onOpenList,
+                            onCreateList = onCreateList,
+                            tabFocus = selectedTab,
+                            restoreKey = restoreKey,
+                        )
+                    }
                 }
             }
         }

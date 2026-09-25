@@ -1,5 +1,6 @@
 package ui.tv.catalog
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
@@ -104,6 +105,51 @@ class TvKeptWallStateTest : TvScreenStateTest() {
         assertEquals("b", opened)
     }
 
+    /**
+     * The library records the set id a hand-marked title was opened by,
+     * while its plate here is keyed apart from a rated one; Back from it
+     * still lands on it rather than on the wall's first plate.
+     */
+    @Test
+    fun backToAHandMarkedTitleLandsOnItsPlate() {
+        val rated = set("film-rated", Kind.MOVIE, "Rated Film", addedAt = 0).copy(fsk = "6")
+        val marked = (1..3).map { set("film-marked-$it", Kind.MOVIE, "Marked $it", addedAt = it.toLong()) }
+        val watch = WatchSnapshot.Empty.copy(kids = marked.map { it.setId })
+        showCatalog(withWatch(listOf(rated) + marked, watch), restoreKey = "film-marked-2")
+
+        compose.onNodeWithText("Kids").performSemanticsAction(SemanticsActions.OnClick)
+
+        compose.onNodeWithText("Marked 2").assertIsFocused()
+    }
+
+    /** The last title taken off the Watchlist from its own page leaves no plate; the remote goes up to the masthead. */
+    @Test
+    fun aKeptWallEmptiedUnderTheViewerSendsTheRemoteToTheMasthead() {
+        val sets = films(2)
+        val state = mutableStateOf(withWatch(sets, WatchSnapshot.Empty.copy(watchlist = listOf("film-0"))))
+        show {
+            TvCatalogScreen(
+                state = state.value,
+                profile = TvChosenProfile(name = "Ada", onChoose = {}),
+                onOpenTitle = {},
+                onOpenCollection = {},
+                onOpenList = {},
+                onCreateList = {},
+            )
+        }
+        // Walked to and pressed, as a remote does: the masthead then
+        // remembers Watchlist as the tab the remote was last on.
+        compose.onNodeWithText("Watchlist").performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.onNodeWithText("Watchlist").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText("Film 0").assertIsFocused()
+
+        compose.runOnUiThread { state.value = withWatch(sets, WatchSnapshot.Empty) }
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Nothing on the list.").assertExists()
+        compose.onNodeWithText("Watchlist").assertIsFocused()
+    }
+
     private fun withWatch(
         sets: List<MediaSet>,
         watch: WatchSnapshot,
@@ -113,6 +159,7 @@ class TvKeptWallStateTest : TvScreenStateTest() {
         state: CatalogUiState,
         onOpenTitle: (String) -> Unit = {},
         onOpenList: (String) -> Unit = {},
+        restoreKey: String? = null,
     ) = show {
         TvCatalogScreen(
             state = state,
@@ -121,6 +168,7 @@ class TvKeptWallStateTest : TvScreenStateTest() {
             onOpenCollection = {},
             onOpenList = onOpenList,
             onCreateList = {},
+            restoreKey = restoreKey,
         )
     }
 }

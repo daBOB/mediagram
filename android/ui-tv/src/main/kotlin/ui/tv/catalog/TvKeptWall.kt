@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.text.style.TextAlign
 import catalog.Entry
 import catalog.KeptKind
@@ -39,10 +41,11 @@ internal fun TvKeptWall(
     sets: List<MediaSet>,
     watch: WatchSnapshot,
     onOpenTitle: (setId: String) -> Unit,
+    tabFocus: FocusRequester,
     restoreKey: String? = null,
 ) {
     if (sets.isEmpty()) {
-        EmptyKeptWall(kind)
+        EmptyKeptWall(kind, tabFocus)
         return
     }
     val (positions, watchedIds) = rememberWatchMarks(watch)
@@ -69,10 +72,11 @@ internal fun TvKidsWall(
     watch: WatchSnapshot,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
+    tabFocus: FocusRequester,
     restoreKey: String? = null,
 ) {
     if (shelf.total == 0) {
-        EmptyKeptWall(KeptKind.KIDS)
+        EmptyKeptWall(KeptKind.KIDS, tabFocus)
         return
     }
     val (positions, watchedIds) = rememberWatchMarks(watch)
@@ -82,11 +86,22 @@ internal fun TvKidsWall(
                 shelf.series.map { KidsItem.Rated(it, "Series") } +
                 shelf.byHand.map { KidsItem.ByHand(it) }
         }
+    // The library records the set id a title was opened by; a hand-marked
+    // plate is keyed apart from it, so the id is turned back into that key
+    // or Back from one would land on the first plate instead.
+    val restore =
+        remember(items, restoreKey) {
+            restoreKey?.let { wanted ->
+                items.firstOrNull { it.key == wanted }?.key
+                    ?: items.firstOrNull { it is KidsItem.ByHand && it.set.setId == wanted }?.key
+                    ?: wanted
+            }
+        }
     val headed = listOf(shelf.films, shelf.series, shelf.byHand).count { it.isNotEmpty() } > 1
     TvWall(
         items = items,
         key = KidsItem::key,
-        restoreKey = restoreKey,
+        restoreKey = restore,
         onOpen = { item ->
             when (item) {
                 is KidsItem.Rated -> openEntry(item.entry, onOpenTitle, onOpenCollection)
@@ -147,10 +162,18 @@ private fun KeptSetPlate(
 /**
  * The heading still stands over an empty wall, as on the phone — it says
  * which tab this is — with the phone's own empty text under it. Nothing
- * here takes focus: the remote stays on the masthead tab that led here.
+ * here takes focus, so the remote goes up to this wall's own tab on the
+ * masthead: already there when the tab was just chosen, but not when the
+ * wall empties under the viewer — the last title taken off the Watchlist
+ * from its own page — when it would otherwise be left resting on nothing,
+ * or on whatever tab the window's own search picked for it.
  */
 @Composable
-private fun EmptyKeptWall(kind: KeptKind) {
+private fun EmptyKeptWall(
+    kind: KeptKind,
+    tabFocus: FocusRequester,
+) {
+    LaunchedEffect(Unit) { tabFocus.requestFocus() }
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical)) {
         TvCountedHeading(kind.label, 0)
         // Centred in what is left, not through TvCenteredMessage: this

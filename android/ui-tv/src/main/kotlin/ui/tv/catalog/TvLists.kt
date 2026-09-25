@@ -62,7 +62,10 @@ internal fun TvLists(
     // One past the last list is "＋ New list", which is where an empty tab lands.
     val focusIndex = remember(lists, restoreKey) { lists.indexOfFirst { it.id == restoreKey }.coerceAtLeast(0) }
     val focusNew = lists.isEmpty()
-    LaunchedEffect(focusIndex, focusNew) {
+    // Keyed on the restore key as well as the index it resolves to, as
+    // TvWall's is: coming back from a different list means "go there" even
+    // when that list sits at the index the remote was already on.
+    LaunchedEffect(focusIndex, focusNew, restoreKey) {
         listState.scrollToItem(focusIndex)
         focus.requestFocus()
     }

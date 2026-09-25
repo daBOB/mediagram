@@ -4,6 +4,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -136,6 +138,26 @@ class TvCatalogScreenStateTest {
 
         assertEquals("film-0", title)
         assertEquals("COURSE/Course 0", collection)
+    }
+
+    /**
+     * Every shelf draws through the same wall; moving from one shelf to the
+     * next still hands the remote down to the new wall's first plate rather
+     * than leaving it on the tab.
+     */
+    @Test
+    fun choosingAnotherShelfLandsOnItsFirstPlate() {
+        val pilot = set("pilot", Kind.EPISODE, "Pilot", show = "A Show", addedAt = 5, episode = 1)
+        show(ready(films(2) + pilot))
+        compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNode(hasText("Film", substring = true) and isFocused()).assertExists()
+
+        // Walked along to and pressed, as a remote does.
+        compose.onNodeWithText("Series").performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.onNodeWithText("Series").performSemanticsAction(SemanticsActions.OnClick)
+
+        compose.onNode(hasText("A Show") and isFocused()).assertExists()
     }
 
     @Test
