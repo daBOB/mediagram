@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.geometry.Offset
@@ -53,7 +54,8 @@ import ui.tv.profile.TvChosenProfile
  * the phone's, whose Search button stands beside its profile button. Like
  * the name it is an action, not a place, so it is never selected; it is
  * only offered once there is a library to search. [searchFocus] is how
- * the catalogue puts the remote back on it when search is left.
+ * the catalogue puts the remote back on it when search is left, and
+ * [searchDown] where Down from it goes — the wall's own first stop.
  *
  * [focusRequester] is how a caller sends the remote back up here. It lands
  * on the tab last focused, or the selected one the first time, rather than
@@ -72,6 +74,7 @@ internal fun TvMasthead(
     selectedFocus: FocusRequester = remember { FocusRequester() },
     onSearch: () -> Unit = {},
     searchFocus: FocusRequester = remember { FocusRequester() },
+    searchDown: FocusRequester = FocusRequester.Default,
 ) {
     Row(
         modifier =
@@ -115,7 +118,7 @@ internal fun TvMasthead(
                 text = "Search",
                 onClick = onSearch,
                 focusRequester = searchFocus,
-                modifier = Modifier.padding(start = Spacing.medium).apartOnMasthead(),
+                modifier = Modifier.focusProperties { down = searchDown }.padding(start = Spacing.medium).apartOnMasthead(),
             )
         }
         // Outside the TabRow, not its last tab: a TabRow scrolls its tabs

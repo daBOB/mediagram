@@ -16,6 +16,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.style.TextAlign
 import androidx.tv.material3.MaterialTheme
@@ -56,7 +57,13 @@ import ui.tv.profile.TvChosenProfile
  *
  * [onOpenSearch] is the masthead's Search. Coming back from it —
  * [restoreKey] is then [TvSearchEntryKey] — the remote goes back to Search
- * rather than down to the wall, which leaves it alone for once.
+ * rather than down to the wall, which leaves it alone for once, and
+ * [onSearchRestored] then lets the caller forget that key: it has done its
+ * work, and the walls below must take the remote again whenever they
+ * otherwise would. They are never handed the key itself, so forgetting it
+ * is not a new key to them and pulls nothing down from Search. Down from
+ * Search goes into the wall below by the wall's own first stop, not to
+ * whichever plate happens to sit under the far end of the masthead.
  *
  * [fetching] is the artwork-and-descriptions run the phone reports on the
  * same line as a channel refresh: both change what is on these shelves, so
@@ -76,6 +83,7 @@ fun TvCatalogScreen(
     onMastheadFocusChanged: (Boolean) -> Unit = {},
     onTabChanged: () -> Unit = {},
     onOpenSearch: () -> Unit = {},
+    onSearchRestored: () -> Unit = {},
 ) {
     val ready = (state as? CatalogUiState.Ready)?.takeIf { it.shelves.isNotEmpty() }
     val shelves = ready?.shelves.orEmpty()
@@ -96,6 +104,8 @@ fun TvCatalogScreen(
     val selectedTab = remember { FocusRequester() }
     val search = remember { FocusRequester() }
     val backFromSearch = restoreKey == TvSearchEntryKey
+    val wallKey = restoreKey.takeUnless { backFromSearch }
+    val wall = remember { FocusRequester() }
 
     // With no wall below to take focus, the masthead is the one thing on
     // screen the remote can rest on.
@@ -103,7 +113,10 @@ fun TvCatalogScreen(
         if (ready == null) mastheadFocus.requestFocus()
     }
     LaunchedEffect(backFromSearch, ready != null) {
-        if (backFromSearch && ready != null) search.requestFocus()
+        if (backFromSearch && ready != null) {
+            search.requestFocus()
+            onSearchRestored()
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -117,6 +130,7 @@ fun TvCatalogScreen(
             selectedFocus = selectedTab,
             onSearch = onOpenSearch,
             searchFocus = search,
+            searchDown = wall,
             modifier = Modifier.onFocusChanged { onMastheadFocusChanged(it.hasFocus) },
         )
         // Words where the phone draws a bar: the same sentences its Update
@@ -137,7 +151,7 @@ fun TvCatalogScreen(
             )
         }
         CompositionLocalProvider(LocalTakesArrivalFocus provides !backFromSearch) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.fillMaxSize().focusRequester(wall)) {
                 // One composition per tab, not one reused across them: every
                 // shelf draws through the same wall, which would otherwise carry
                 // the last shelf's scroll over and never take the remote from the
@@ -155,11 +169,11 @@ fun TvCatalogScreen(
                                 onOpenTitle = onOpenTitle,
                                 onOpenCollection = onOpenCollection,
                                 onSeeAll = { shelf -> choose(tabs.titles.indexOf(shelf).coerceAtLeast(0)) },
-                                restoreKey = restoreKey,
+                                restoreKey = wallKey,
                             )
                         }
                         selected < tabs.firstKept -> {
-                            TvShelfWall(shelves[selected - 1], ready.watch, onOpenTitle, onOpenCollection, restoreKey)
+                            TvShelfWall(shelves[selected - 1], ready.watch, onOpenTitle, onOpenCollection, wallKey)
                         }
                         else -> {
                             TvKeptTab(
@@ -170,7 +184,7 @@ fun TvCatalogScreen(
                                 onOpenList = onOpenList,
                                 onCreateList = onCreateList,
                                 tabFocus = selectedTab,
-                                restoreKey = restoreKey,
+                                restoreKey = wallKey,
                             )
                         }
                     }

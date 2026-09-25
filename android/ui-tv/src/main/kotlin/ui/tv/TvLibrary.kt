@@ -184,6 +184,7 @@ internal fun TvLibrary(profile: TvChosenProfile) {
                         restore.opened(here, TvSearchEntryKey)
                         at.openSearch()
                     },
+                    onSearchRestored = { restore.forget(here) },
                 )
             }
         }

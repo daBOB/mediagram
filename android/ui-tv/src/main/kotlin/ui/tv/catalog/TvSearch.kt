@@ -127,13 +127,15 @@ internal fun TvSearchScreen(
             placeholder = "Search titles and summaries",
             imeAction = ImeAction.Search,
         )
-        TvSearchResults(state, rows, catalogReady, watch, ask, onPlay)
+        TvSearchResults(state, rows, catalogReady, watch, ask, onAnswered = { ask = null }, onPlay = onPlay)
     }
 }
 
 /**
  * One request for a row to take the remote. A fresh object each time, so
  * asking for the same row twice — Search pressed again on the same answer —
- * is still a new request.
+ * is still a new request. Dropped the moment it is answered: the rows leave
+ * composition whenever an answer has none, and a request still standing
+ * when they came back would pull the remote out of the field mid-typing.
  */
 internal class RowAsk(val index: Int)

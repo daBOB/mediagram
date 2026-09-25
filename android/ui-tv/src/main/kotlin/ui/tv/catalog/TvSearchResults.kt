@@ -48,7 +48,8 @@ import ui.tv.TvFocus
  * and the phone's sentences for a failure, a library still loading and an
  * answer with nothing in it. [ask] is the row the screen wants the remote
  * on — scrolled to first, since a row below the fold has nothing to focus
- * until it is laid out.
+ * until it is laid out — and [onAnswered] tells the screen it is done, so
+ * the request is never answered twice.
  */
 @Composable
 internal fun TvSearchResults(
@@ -57,6 +58,7 @@ internal fun TvSearchResults(
     catalogReady: Boolean,
     watch: WatchSnapshot,
     ask: RowAsk?,
+    onAnswered: () -> Unit,
     onPlay: (setId: String) -> Unit,
 ) {
     if (state is SearchUiState.Failed) {
@@ -72,9 +74,12 @@ internal fun TvSearchResults(
             val listState = rememberLazyListState()
             val focus = remember { FocusRequester() }
             LaunchedEffect(ask) {
-                val index = ask?.index?.takeIf { it in rows.indices } ?: return@LaunchedEffect
-                listState.scrollToItem(index)
-                focus.requestFocus()
+                val index = ask?.index ?: return@LaunchedEffect
+                if (index in rows.indices) {
+                    listState.scrollToItem(index)
+                    focus.requestFocus()
+                }
+                onAnswered()
             }
             Said(countOf(rows.size, "result"))
             LazyColumn(

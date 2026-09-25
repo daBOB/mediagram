@@ -11,7 +11,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
 import io.mockk.every
 import io.mockk.mockkStatic
@@ -120,6 +122,63 @@ class TvSearchAndGenreTest {
 
         compose.onNodeWithText("No title, folder or summary in the library mentions that.").assertExists()
         field().assertIsFocused()
+    }
+
+    /**
+     * A row asked for once is not asked for again: going back up to the
+     * field and typing through an answer with no rows, then back to one
+     * with rows, leaves the remote in the field.
+     */
+    @Test
+    fun typingThroughNoHitsAfterTheSearchKeyKeepsTheRemoteInTheField() {
+        press(compose.onNodeWithText("Search"))
+        type("film")
+        field().performImeAction()
+        compose.waitForIdle()
+        row("Film 0").assertIsFocused()
+        key(KeyEvent.KEYCODE_DPAD_UP)
+        field().assertIsFocused()
+
+        type("zz")
+        compose.onNodeWithText("No title, folder or summary in the library mentions that.").assertExists()
+        field().performTextReplacement("film")
+        settle()
+
+        compose.onNodeWithText("2 results").assertExists()
+        field().assertIsFocused()
+    }
+
+    @Test
+    fun aNewQueryAfterComingBackFromThePlayerKeepsTheRemoteInTheField() {
+        press(compose.onNodeWithText("Search"))
+        type("film")
+        press(row("Film 1"))
+        back()
+        back()
+        awaitNode(hasText("Film 1") and hasClickAction())
+        row("Film 1").assertIsFocused()
+        key(KeyEvent.KEYCODE_DPAD_UP)
+        key(KeyEvent.KEYCODE_DPAD_UP)
+        field().assertIsFocused()
+
+        field().performTextClearance()
+        settle()
+        type("film")
+
+        compose.onNodeWithText("2 results").assertExists()
+        field().assertIsFocused()
+    }
+
+    /** Down from Search enters Home by its own first stop, and the way back to Search is spent once used. */
+    @Test
+    fun downFromTheMastheadsSearchLandsOnHomesFirstStop() {
+        press(compose.onNodeWithText("Search"))
+        back()
+        compose.onNodeWithText("Search").assertIsFocused()
+
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
+
+        plate("Film 1").assertIsFocused()
     }
 
     /** Film 1 carries Drama, as does the show: both kinds, so the wall labels each. */

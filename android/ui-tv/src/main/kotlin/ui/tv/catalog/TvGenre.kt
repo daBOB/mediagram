@@ -1,13 +1,18 @@
 package ui.tv.catalog
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import catalog.CatalogUiState
 import catalog.Entry
 import catalog.GenreShelf
 import catalog.genreShelf
 import catalog.keyOf
 import model.WatchSnapshot
+import ui.tv.TvSafeArea
 
 /**
  * Everything tagged with one genre, films first, then series — the
@@ -30,7 +35,7 @@ internal fun TvGenre(
     restoreKey: String?,
 ) {
     if (catalogState !is CatalogUiState.Ready) {
-        TvCenteredMessage("Loading your library…")
+        GenreMessage("Loading your library…")
         return
     }
     val shelf = remember(catalogState.shelves, name) { genreShelf(catalogState.shelves, name) }
@@ -54,7 +59,7 @@ internal fun TvGenreWall(
 ) {
     val entries: List<Entry> = remember(shelf) { shelf.films + shelf.series }
     if (entries.isEmpty()) {
-        TvCenteredMessage("Nothing in the library is tagged with this genre.")
+        GenreMessage("Nothing in the library is tagged with this genre.")
         return
     }
     val headings =
@@ -75,4 +80,19 @@ internal fun TvGenreWall(
             },
         )
     }
+}
+
+/**
+ * The phone's centred sentence, as a stop the remote rests on: a genre page
+ * with nothing to open would otherwise leave the remote on nothing at all,
+ * with only Back — which still leaves to the title — to tell it apart from
+ * a frozen screen.
+ */
+@Composable
+private fun GenreMessage(text: String) {
+    val focus = remember { FocusRequester() }
+    TvSafeArea {
+        TvReadableParagraph(text, modifier = Modifier.focusRequester(focus))
+    }
+    LaunchedEffect(Unit) { focus.requestFocus() }
 }
