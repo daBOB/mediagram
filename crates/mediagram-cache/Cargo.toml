@@ -1,0 +1,39 @@
+[package]
+name = "mediagram-cache"
+description = "A dumb LAN chunk store: Android devices on the home network share Telegram downloads through it"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories = ["network-programming", "caching"]
+
+[[bin]]
+name = "mediagram_cache"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+axum.workspace = true
+clap = { version = "4.6.7", features = ["derive"] }
+directories = "6.0.0"
+getrandom.workspace = true
+hex.workspace = true
+hmac.workspace = true
+mdns-sd.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "fs", "io-util", "net", "signal", "time"] }
+toml = "1.1.6"
+tracing.workspace = true
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+
+[dev-dependencies]
+http-body-util = "0.1"
+tempfile.workspace = true
+tokio = { workspace = true, features = ["test-util"] }
+tower = { version = "0.5", features = ["util"] }
