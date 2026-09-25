@@ -2,9 +2,12 @@ package ui.catalog
 
 import kotlinx.coroutines.CancellationException
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -13,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,12 +25,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import designsystem.Spacing
 import model.MediaSet
 import model.ageLabel
 import uniffi.mediagram_core.TitleInfo
+import java.io.File
 
 /** Wide enough to recognise a poster by, narrow enough to leave the facts a column. */
 private val POSTER_WIDTH = 120.dp
@@ -46,39 +55,80 @@ private val POSTER_WIDTH = 120.dp
  * Scrolling rather than fitting: an overview runs to a paragraph, and on a
  * short screen in landscape the Play button would otherwise be off the
  * bottom with no way to reach it.
+ *
+ * [editorsChoice] is the household's current pin, if any — [onToggleEditorsChoice]
+ * is `null` on a kids profile, which is what hides the action: a household
+ * mark is not a kids profile's to make, the same restriction [onOpenGenre]'s
+ * neighbours already carry for Kids marks elsewhere.
  */
 @Composable
-fun TitleDetailScreen(set: MediaSet, info: TitleInfo?, onPlay: () -> Unit, onOpenGenre: (String) -> Unit) {
+fun TitleDetailScreen(
+    set: MediaSet,
+    info: TitleInfo?,
+    onPlay: () -> Unit,
+    onOpenGenre: (String) -> Unit,
+    editorsChoice: String? = null,
+    onToggleEditorsChoice: (() -> Unit)? = null,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(Spacing.large),
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
-        TitleHeader(
-            posterPath = set.posterPath,
-            title = set.title,
-            facts = factsLine(set.year, set.durationSecs, set.ageLabel()),
-            info = info,
-            genres = set.genres,
-            onOpenGenre = onOpenGenre,
-        )
-
-        // As stored, not shouted: the web player prints the container and
-        // codecs in the case the index recorded, and a viewer reading both
-        // surfaces should not be told the same file two ways.
-        technicalLine(set).takeIf(String::isNotEmpty)?.let { line ->
-            Text(
-                text = line,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        val backdropPath = set.backdropPath
+        if (backdropPath != null) {
+            Box(modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
+                AsyncImage(
+                    model = File(backdropPath),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize(),
+                )
+                Box(
+                    modifier =
+                        Modifier
+                            .matchParentSize()
+                            .background(Brush.verticalGradient(listOf(Color.Transparent, MaterialTheme.colorScheme.background))),
+                )
+            }
         }
 
-        // The one prominent control on the screen: this stands between a
-        // card and playback now, so it should not have to be looked for.
-        Button(onClick = onPlay, modifier = Modifier.fillMaxWidth()) { Text("▶ Play") }
+        Column(
+            modifier = Modifier.padding(Spacing.large),
+            verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+        ) {
+            TitleHeader(
+                posterPath = set.posterPath,
+                title = set.title,
+                facts = factsLine(set.year, set.durationSecs, set.ageLabel()),
+                info = info,
+                genres = set.genres,
+                onOpenGenre = onOpenGenre,
+            )
+
+            // As stored, not shouted: the web player prints the container and
+            // codecs in the case the index recorded, and a viewer reading both
+            // surfaces should not be told the same file two ways.
+            technicalLine(set).takeIf(String::isNotEmpty)?.let { line ->
+                Text(
+                    text = line,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            // The one prominent control on the screen: this stands between a
+            // card and playback now, so it should not have to be looked for.
+            Button(onClick = onPlay, modifier = Modifier.fillMaxWidth()) { Text("▶ Play") }
+
+            if (onToggleEditorsChoice != null) {
+                val pinned = editorsChoice == set.setId
+                OutlinedButton(onClick = onToggleEditorsChoice, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (pinned) "Remove as editor's choice" else "Make editor's choice")
+                }
+            }
+        }
     }
 }
 
