@@ -2,6 +2,7 @@ package designsystem
 
 import androidx.compose.ui.graphics.Color
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -90,5 +91,26 @@ class CatalogueColorsTest {
     @Test
     fun theProgressTrackIsNotMaterialsLavender() {
         assertTrue(CatalogueColors.secondaryContainer != Color(0xFF4A4458))
+    }
+
+    /**
+     * `Palette` is public so a television theme — which never sees M3 and so
+     * can't build a `ColorScheme` at all — can still read the same named
+     * values this scheme was built from, instead of a hex getting retyped
+     * into a second file. Pinning the mapping here means the two roles
+     * can't quietly drift apart.
+     */
+    @Test
+    fun paletteExposesTheSameValuesCatalogueColorsUses() {
+        assertEquals(Palette.Ground, CatalogueColors.background)
+        assertEquals(Palette.Page, CatalogueColors.surface)
+        assertEquals(Palette.Sunk, CatalogueColors.surfaceVariant)
+        assertEquals(Palette.Text, CatalogueColors.onBackground)
+        assertEquals(Palette.Figures, CatalogueColors.onSurfaceVariant)
+        assertEquals(Palette.Imprint, CatalogueColors.primary)
+        assertEquals(Palette.Ochre, CatalogueColors.error)
+        assertEquals(Palette.Sage, CatalogueColors.tertiary)
+        assertEquals(Palette.Rule, CatalogueColors.outlineVariant)
+        assertEquals(Palette.RuleStrong, CatalogueColors.outline)
     }
 }

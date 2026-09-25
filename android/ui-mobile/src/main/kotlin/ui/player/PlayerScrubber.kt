@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import designsystem.Spacing
+import player.clockTime
 
 /**
  * The scrub bar and the clock row under it — split out of [PlayerControls]

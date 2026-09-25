@@ -22,6 +22,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -57,7 +58,7 @@ internal fun NotesPanel(blocks: List<Block>, onClose: () -> Unit, modifier: Modi
 private fun NotesBlock(block: Block) {
     when (block) {
         is Block.Heading -> Text(
-            text = rememberNotesText(block.spans),
+            text = notesText(block.spans),
             style = headingStyle(block.level),
             modifier = Modifier.padding(top = Spacing.small, bottom = Spacing.small),
         )
@@ -93,17 +94,17 @@ private fun NotesBlock(block: Block) {
 
 @Composable
 private fun NotesLine(spans: List<Span>) {
-    Text(text = rememberNotesText(spans), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = Spacing.small))
+    Text(text = notesText(spans), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = Spacing.small))
 }
 
-/**
- * Floored rather than shifted, as on the web: the panel has its own head,
- * so nothing in it is a top-level title, but these notes write their
- * sections as `###` and demoting every level would shrink those to the
- * smallest label there is.
- */
+/** The phone's colours for [rememberNotesText], and its links handed on to another app. */
 @Composable
-private fun headingStyle(level: Int): TextStyle = when (level.coerceAtLeast(2)) {
+private fun notesText(spans: List<Span>) =
+    rememberNotesText(spans, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.surfaceVariant, LocalUriHandler.current)
+
+/** By [notesHeadingLevel]'s floor. */
+@Composable
+private fun headingStyle(level: Int): TextStyle = when (notesHeadingLevel(level)) {
     2 -> MaterialTheme.typography.titleLarge
     3 -> MaterialTheme.typography.titleMedium
     else -> MaterialTheme.typography.titleSmall

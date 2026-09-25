@@ -19,7 +19,7 @@ class CoreLoadsTest {
     @Test
     fun theNativeLibraryLoadsAndReportsNoSession() {
         val dir = ApplicationProvider.getApplicationContext<Context>().filesDir
-        val core = Core(dir.absolutePath, apiId = 0, apiHash = "test-only-dummy-hash")
+        val core = Core(dir.absolutePath, apiId = 0, apiHash = "test-only-dummy-hash", deviceName = "core-loads-test")
 
         assertFalse(core.isAuthorized())
     }

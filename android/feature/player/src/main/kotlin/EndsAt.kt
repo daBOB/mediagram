@@ -1,5 +1,6 @@
 package player
 
+import data.ResumePoint
 import java.time.Instant
 import java.time.ZoneId
 
@@ -42,4 +43,37 @@ fun endsAtLabel(
     val remaining = maxOf(0.0, runtimeSeconds - positionSeconds) / rate
     val clock = endsAtClock(remaining, nowMs, zone)
     return if (clock.isEmpty()) "" else "ends $clock"
+}
+
+/**
+ * The end-time line both players draw beside their clock, from what a
+ * player has on hand: the catalogue's runtime ([cataloguedSecs]) trusted
+ * over media3's own length ([durationMs]) until it has one — see
+ * [ResumePoint.trustedRuntime] — so the line is there before media3 has
+ * buffered enough to report a length, and blank when neither knows it.
+ * [positionMs] is the playhead, never a scrub thumb, which only previews
+ * where a seek would land.
+ */
+fun endsLine(
+    cataloguedSecs: Int?,
+    positionMs: Long,
+    durationMs: Long,
+    speed: Float,
+    nowMs: Long,
+    zone: ZoneId = ZoneId.systemDefault(),
+): String {
+    val runtimeSeconds =
+        ResumePoint
+            .trustedRuntime(
+                catalogued = cataloguedSecs?.toDouble(),
+                observed = durationMs.takeIf { it > 0 }?.let { it / 1_000.0 },
+                direct = true,
+            ).takeIf { it > 0 }
+    return endsAtLabel(
+        runtimeSeconds = runtimeSeconds,
+        positionSeconds = positionMs.coerceAtLeast(0L) / 1_000.0,
+        speed = speed,
+        nowMs = nowMs,
+        zone = zone,
+    )
 }

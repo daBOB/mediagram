@@ -5,12 +5,13 @@ import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogViewModel
+import catalog.MenuScreen
+import catalog.fetchResultMessage
+import catalog.updateDisabledReason
 import system.FetchViewModel
+import ui.catalog.FetchResultDialog
 import ui.profile.ProfileGate
 import ui.settings.SettingsOutcomes
-import ui.catalog.updateDisabledReason
-import ui.catalog.FetchResultDialog
-import ui.catalog.fetchResultMessage
 
 /**
  * The catalog, whichever show or course it opened, whichever title that

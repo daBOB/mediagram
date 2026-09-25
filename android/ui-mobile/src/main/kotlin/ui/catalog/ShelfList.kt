@@ -16,6 +16,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import catalog.Entry
+import catalog.extentOf
+import catalog.factsLine
+import catalog.keyOf
+import catalog.watchedFractionOf
 import designsystem.Spacing
 import model.Progress
 import androidx.compose.foundation.lazy.rememberLazyListState

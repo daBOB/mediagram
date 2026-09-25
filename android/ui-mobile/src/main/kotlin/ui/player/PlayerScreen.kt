@@ -30,6 +30,7 @@ import designsystem.Spacing
 import player.UpNextPhase
 import player.PlayerUiState
 import player.PlayerViewModel
+import player.controlsMayShow
 import player.chooseFraming
 import player.createListAndAdd
 import player.retry

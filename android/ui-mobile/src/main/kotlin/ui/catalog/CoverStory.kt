@@ -1,5 +1,7 @@
 package ui.catalog
 
+import catalog.ratingLabel
+import catalog.factsLine
 import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

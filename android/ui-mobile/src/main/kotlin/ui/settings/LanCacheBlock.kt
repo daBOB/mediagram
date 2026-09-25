@@ -28,7 +28,7 @@ import system.LanCacheConnection
 import system.LanCacheUiState
 import system.LanCacheViewModel
 import ui.components.Block
-import ui.formatting.humanSize
+import model.humanSize
 
 private const val ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"
 

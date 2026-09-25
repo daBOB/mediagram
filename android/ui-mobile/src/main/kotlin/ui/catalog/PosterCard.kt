@@ -11,10 +11,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import data.ProgressPoint
-import data.ResumePoint
 import designsystem.Spacing
-import model.Progress
 
 /**
  * A plate, named underneath rather than across its face.
@@ -83,7 +80,3 @@ internal fun PosterCard(
         if (held) OfflineBadge(modifier = Modifier.padding(top = 2.dp))
     }
 }
-
-/** [PosterCard.progress] from a raw position — shared by every screen that draws a mark from [model.WatchSnapshot]. */
-internal fun watchedFractionOf(progress: Progress?): Float? =
-    ResumePoint.watchedFraction(progress?.let { ProgressPoint(it.at, it.duration) })?.toFloat()

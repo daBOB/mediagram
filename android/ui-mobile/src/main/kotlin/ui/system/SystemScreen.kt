@@ -16,9 +16,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Spacing
 import system.SystemUiState
 import system.SystemViewModel
+import system.cacheRows
+import system.refreshLine
+import system.telegramLine
+import system.upstreamRows
+import system.uptimeLine
 import ui.components.Block
-import ui.formatting.heldOfBudget
-import ui.formatting.humanSize
 
 /**
  * What the app is actually doing, in four blocks: the installed catalog,
@@ -109,32 +112,8 @@ private fun CatalogueBlock(state: SystemUiState) =
 @Composable
 private fun CacheBlock(state: SystemUiState) = Block(heading = "Cache", rows = cacheRows(state))
 
-/**
- * What the Cache block says, as label-and-value pairs.
- *
- * Pure and `internal` so a test pins the counters this screen hands over and
- * not only the sentence they are handed to. For as long as the sentence
- * alone was tested, these rows called round trips to Telegram "hits" and
- * reads that raised "misses", and printed the second of those twice on one
- * screen under two names, with nothing able to see it.
- */
-internal fun cacheRows(state: SystemUiState): List<Pair<String, String?>> =
-    listOf(
-        "Held" to heldOfBudget(state.heldBytes, state.budgetBytes),
-        "Where" to cacheWhereLine(state.volumeLabel, state.fellBack),
-        "Reads" to cacheReadsLine(state.fromCacheBytes, state.fromUpstreamBytes, state.fetches),
-        "Source" to sourceLine(state.lastReadWasLan, state.lanHost, state.lanHits),
-    )
-
 @Composable
 private fun UpstreamBlock(state: SystemUiState) = Block(heading = "Upstream", rows = upstreamRows(state))
-
-/** What the Upstream block says. Pure for the reason [cacheRows] is, and pinned by the same test. */
-internal fun upstreamRows(state: SystemUiState): List<Pair<String, String?>> =
-    listOf(
-        "Since starting" to humanSize(state.fromUpstreamBytes),
-        "Failed reads" to if (state.failedReads > 0) "${state.failedReads}" else "none",
-    )
 
 @Composable
 private fun ThisAppBlock(state: SystemUiState) =

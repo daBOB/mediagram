@@ -18,7 +18,7 @@ import designsystem.Spacing
 import playback.INTERNAL_VOLUME_ID
 import system.CacheBudgetViewModel
 import ui.components.Block
-import ui.formatting.humanSize
+import model.humanSize
 
 /**
  * Settings' "Where" row: every volume the cache could live on, with its

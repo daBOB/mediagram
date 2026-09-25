@@ -18,10 +18,13 @@ package setup
 /** Telegram issues the api hash as exactly 32 hexadecimal characters. */
 private val API_HASH_SHAPE = Regex("[0-9a-f]{32}")
 
-internal const val API_ID_ERROR = "The api_id is the number shown next to your application on my.telegram.org."
+// Public, not internal: the television setup screen splits api_id and
+// api_hash across two steps and needs these two exact strings to tell which
+// field an error belongs to and route the viewer back to it.
+const val API_ID_ERROR = "The api_id is the number shown next to your application on my.telegram.org."
 
-internal const val API_HASH_ERROR = "The api_hash is 32 hexadecimal characters, copied from my.telegram.org."
+const val API_HASH_ERROR = "The api_hash is 32 hexadecimal characters, copied from my.telegram.org."
 
-internal fun apiIdOrNull(typed: String): Int? = typed.trim().toIntOrNull()?.takeIf { it > 0 }
+fun apiIdOrNull(typed: String): Int? = typed.trim().toIntOrNull()?.takeIf { it > 0 }
 
-internal fun apiHashOrNull(typed: String): String? = typed.trim().lowercase().takeIf(API_HASH_SHAPE::matches)
+fun apiHashOrNull(typed: String): String? = typed.trim().lowercase().takeIf(API_HASH_SHAPE::matches)

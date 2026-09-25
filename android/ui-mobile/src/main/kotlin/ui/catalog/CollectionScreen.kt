@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import catalog.Division
 import catalog.Entry
 import catalog.firstItemOf
+import catalog.rowsOf
 import catalog.seasonPlatesOf
 import designsystem.Spacing
 import model.WatchSnapshot

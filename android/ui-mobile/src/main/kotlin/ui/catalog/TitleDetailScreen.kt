@@ -19,11 +19,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -31,9 +26,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import catalog.factsLine
+import catalog.ratingLabel
 import designsystem.Spacing
 import model.MediaSet
 import model.ageLabel
+import player.technicalLine
 import uniffi.mediagram_core.TitleInfo
 import java.io.File
 
@@ -182,30 +180,4 @@ internal fun TitleHeader(
             Text(text = overview, style = MaterialTheme.typography.bodyMedium)
         }
     }
-}
-
-/**
- * What the index records about the title a poster key names, looked up once
- * per key.
- *
- * Null both while the answer is on its way and when there is no answer, and
- * the screen renders the same either way: a title with no provider entry is
- * the ordinary case, so a spinner over the blocks it would fill would
- * promise something that is never coming.
- */
-@Composable
-internal fun rememberTitleInfo(posterKey: String?, lookup: suspend (String) -> TitleInfo?): TitleInfo? {
-    var info by remember(posterKey) { mutableStateOf<TitleInfo?>(null) }
-    LaunchedEffect(posterKey) {
-        try {
-            info = posterKey?.let { lookup(it) }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught") e: Exception,
-        ) {
-            Log.w("CatalogMetadata", "Could not load title details", e)
-        }
-    }
-    return info
 }

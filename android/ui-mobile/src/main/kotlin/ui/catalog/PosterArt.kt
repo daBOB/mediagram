@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import catalog.initialsOf
 import coil3.compose.AsyncImage
 import designsystem.Spacing
 import java.io.File
@@ -142,14 +143,3 @@ private const val INITIAL_SHARE = 0.26f
 private val INITIAL_TRACKING = 2.sp
 
 private val HAIRLINE = 0.5.dp
-
-/** Two letters to stand in for artwork that is not there. */
-internal fun initialsOf(title: String): String = title
-    .split(WHITESPACE)
-    .take(2)
-    .mapNotNull { word -> word.firstOrNull(Char::isLetterOrDigit) }
-    .joinToString("")
-    .uppercase()
-    .ifEmpty { "?" }
-
-private val WHITESPACE = Regex("\\s+")

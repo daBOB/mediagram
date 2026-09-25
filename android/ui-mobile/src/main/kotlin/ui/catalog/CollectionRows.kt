@@ -14,10 +14,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import catalog.Division
+import catalog.CollectionRow
+import catalog.watchedFractionOf
 import designsystem.Spacing
 import model.Kind
-import model.MediaSet
 import model.Progress
 
 /**
@@ -26,39 +26,8 @@ import model.Progress
  * file should carry alongside the layout that places these rows.
  */
 
-/**
- * One line of the screen: a heading for a division, or a set under it.
- *
- * Internal rather than private: [SeasonScreen] renders the same rows for
- * the one division a season plate was opened from, and a set of episodes
- * is not something worth two rendering paths.
- */
-internal sealed interface Row {
-    val depth: Int
-
-    data class Heading(override val depth: Int, val title: String) : Row
-    data class Item(override val depth: Int, val set: MediaSet, val position: Int) : Row
-}
-
-/**
- * The divisions and their sets, in reading order, each with how deep it
- * sits.
- *
- * A division holding nothing but folders still gets its heading: it is how
- * the course was built, and dropping it would join two levels that are not
- * the same level.
- */
-internal fun rowsOf(divisions: List<Division>, depth: Int = 0): List<Row> =
-    divisions.flatMap { division ->
-        buildList {
-            add(Row.Heading(depth, division.title))
-            division.items.forEachIndexed { index, set -> add(Row.Item(depth, set, index + 1)) }
-            addAll(rowsOf(division.children, depth + 1))
-        }
-    }
-
 internal fun LazyListScope.items(
-    rows: List<Row>,
+    rows: List<CollectionRow>,
     positions: Map<String, Progress>,
     watchedIds: Set<String>,
     heldIds: Set<String>,
@@ -69,13 +38,13 @@ internal fun LazyListScope.items(
         key = { index -> keyOf(rows[index], index) },
     ) { index ->
         when (val row = rows[index]) {
-            is Row.Heading -> Text(
+            is CollectionRow.Heading -> Text(
                 text = row.title,
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(start = indentOf(row.depth), top = Spacing.medium),
             )
 
-            is Row.Item -> ItemRow(row, positions[row.set.setId], row.set.setId in watchedIds, row.set.setId in heldIds, onOpenTitle)
+            is CollectionRow.Item -> ItemRow(row, positions[row.set.setId], row.set.setId in watchedIds, row.set.setId in heldIds, onOpenTitle)
         }
     }
 }
@@ -100,7 +69,7 @@ internal fun LazyListScope.items(
  * where a viewer looks for what the preload already took.
  */
 @Composable
-private fun ItemRow(row: Row.Item, progress: Progress?, watched: Boolean, held: Boolean, onOpenTitle: (setId: String) -> Unit) {
+private fun ItemRow(row: CollectionRow.Item, progress: Progress?, watched: Boolean, held: Boolean, onOpenTitle: (setId: String) -> Unit) {
     val document = row.set.kind == Kind.DOCUMENT
     Column(modifier = Modifier.padding(start = indentOf(row.depth))) {
         Text(
@@ -150,9 +119,9 @@ internal const val DOCUMENT_REASON = "Document — the phone cannot open one yet
  * A set id is unique and a heading is not — two courses can both have a
  * folder called "Grundlagen" — so a heading is keyed by where it sits.
  */
-private fun keyOf(row: Row, index: Int): String = when (row) {
-    is Row.Heading -> "heading-$index-${row.title}"
-    is Row.Item -> row.set.setId
+private fun keyOf(row: CollectionRow, index: Int): String = when (row) {
+    is CollectionRow.Heading -> "heading-$index-${row.title}"
+    is CollectionRow.Item -> row.set.setId
 }
 
 private fun indentOf(depth: Int) = (depth * INDENT_STEP).dp

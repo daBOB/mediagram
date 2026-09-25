@@ -1,5 +1,6 @@
 package ui.catalog
 
+import catalog.ratingLabel
 import android.os.Build
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat

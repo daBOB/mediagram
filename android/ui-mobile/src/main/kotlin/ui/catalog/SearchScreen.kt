@@ -23,7 +23,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogUiState
 import catalog.SearchUiState
 import catalog.SearchViewModel
@@ -89,19 +88,8 @@ fun SearchScreen(
 /**
  * Wires [SearchViewModel] to [SearchScreen] — kept beside the screen rather
  * than in the branch that opens it, so that branch only ever wires a
- * position, never a ViewModel.
- *
- * [SearchViewModel] outlives one visit to this screen — it is scoped above
- * it, the same as every other ViewModel [LibraryFlowBranches] reaches for —
- * so [SearchViewModel.open] runs once on the way in to make this visit's
- * query its own, rather than going on showing whatever a previous visit,
- * possibly for an entirely different query, last found.
- *
- * [opened] gates the very first frame on that call having actually run:
- * [LaunchedEffect] fires after composition, one frame later than
- * [collectAsStateWithLifecycle]'s own first read, which would otherwise
- * read whatever this ViewModel still held from before [open] had the
- * chance to clear it.
+ * position, never a ViewModel. When an answer belongs to this visit is
+ * [searchVisitState]'s, shared with the television's search.
  */
 @Composable
 internal fun SearchBranch(
@@ -112,15 +100,9 @@ internal fun SearchBranch(
     onPlay: (String) -> Unit,
 ) {
     val viewModel: SearchViewModel = hiltViewModel()
-    var opened by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        viewModel.open(query)
-        opened = true
-    }
-    val collected by viewModel.state.collectAsStateWithLifecycle()
     SearchScreen(
         query = query,
-        state = if (opened) collected else SearchUiState.Idle,
+        state = searchVisitState(viewModel, query),
         catalogState = catalogState,
         watch = watch,
         onQueryChange = { text -> onQueryChange(text); viewModel.setQuery(text) },

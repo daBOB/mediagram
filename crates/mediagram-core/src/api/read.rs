@@ -91,11 +91,7 @@ pub(super) async fn read(
         channel_of: &|location| channels[&location.chat_id],
     };
 
-    // Clamped to what this read can actually return, not to the caller's
-    // raw `len`: an out-of-range `UInt` from Kotlin must not become an
-    // attempt to reserve up to 4 GiB before a single byte is read.
-    let capacity = usize::try_from(end - offset + 1).unwrap_or(usize::MAX);
-    let mut out = Vec::with_capacity(capacity);
+    let mut out = Vec::with_capacity(reservation(offset, end));
     // Drained while the download runs, so a read larger than the buffer
     // cannot deadlock against a receiver that waits for the sender to finish.
     let (tx, mut rx) = mpsc::channel(BUFFERED_CHUNKS);
@@ -114,6 +110,22 @@ pub(super) async fn read(
 }
 
 const INTERRUPTED: &str = "the download ended before it finished";
+
+/// The most a read reserves before its first byte arrives. The player asks
+/// for 1 MiB at a time, so this never limits it; anything larger grows as
+/// bytes are actually delivered.
+const MAX_RESERVATION: u64 = 4 * 1024 * 1024;
+
+/// How much to reserve for the inclusive range `offset..=end`.
+///
+/// Bounded rather than taken from the caller's `len`: a `UInt` of up to
+/// 4 GiB would otherwise be reserved before a single byte is read, and on a
+/// 32-bit device — where no allocation may exceed `isize::MAX`, 2 GiB — the
+/// reservation alone panics. The subtraction stays in `u64`, because
+/// `offset` and `end` are positions in a film that can run past 4 GiB.
+fn reservation(offset: u64, end: u64) -> usize {
+    usize::try_from((end - offset + 1).min(MAX_RESERVATION)).unwrap_or(0)
+}
 
 /// What Kotlin is told when a Telegram call fails: `what`, with the cause
 /// logged in Rust — or `NotAuthorized` when the login itself was refused.

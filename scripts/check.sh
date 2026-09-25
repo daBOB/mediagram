@@ -41,8 +41,10 @@ step "gradle test and lint"
 # stays a Kotlin-only build with no Rust toolchain in it.
 if [ -n "${ANDROID_HOME:-}" ]; then
   # `:core:model` is a plain JVM module: it has `test`, not `testDebugUnitTest`,
-  # so it is named here or its tests never run.
-  (cd android && ./gradlew testDebugUnitTest :core:model:test lint)
+  # so it is named here or its tests never run. compileDebugAndroidTestKotlin
+  # catches an instrumented test that does not compile without needing a device
+  # connected — testDebugUnitTest and lint never touch the androidTest source set.
+  (cd android && ./gradlew testDebugUnitTest :core:model:test lint :ui-tv:compileDebugAndroidTestKotlin)
 else
   echo "skipping: no Android SDK (set ANDROID_HOME to run the Android checks)"
 fi

@@ -13,12 +13,15 @@ android {
 
 dependencies {
     implementation(project(":core:data"))
+    implementation(project(":core:model"))
     // Only for PlaybackCounters — nothing here touches ExoPlayer directly.
     implementation(project(":core:playback"))
 
-    // LanCacheViewModel reads a real Context (permission checks); the rest
-    // of this module's ViewModels never have, which is why this was not
-    // already here.
+    testImplementation(libs.findLibrary("mockk").get())
+    // SystemViewModelTest and LanCacheViewModel's tests need a real
+    // android.content.Context (ApplicationProvider, permission checks); the
+    // plain unit-test android.jar stub has none, so they run under
+    // Robolectric. androidx-junit brings ApplicationProvider itself.
     testImplementation(libs.findLibrary("robolectric").get())
     testImplementation(libs.findLibrary("androidx.junit").get())
 }

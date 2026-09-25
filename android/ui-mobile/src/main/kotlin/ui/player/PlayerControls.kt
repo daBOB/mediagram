@@ -30,26 +30,10 @@ import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
 import androidx.media3.ui.compose.state.rememberSeekBackButtonState
 import androidx.media3.ui.compose.state.rememberSeekForwardButtonState
-import data.ResumePoint
 import designsystem.Spacing
-import player.endsAtLabel
+import player.READOUT_TICK_MS
+import player.endsLine
 import player.speedLabel
-
-/**
- * How often the readout catches up with the playhead. Twice a second: a clock
- * printing whole seconds needs no more, and a tick is a recomposition.
- *
- * Shared with the statistics overlay rather than copied, so the two read the
- * player on one interval instead of drifting apart on two.
- */
-internal const val TICK_MS = 500L
-
-/**
- * Enough to keep white legible over a bright frame without hiding it. The
- * overlay lays the same scrim over the picture, and one film cannot sit
- * under two different greys.
- */
-internal const val SCRIM_ALPHA = 0.55f
 
 /**
  * The transport bar.
@@ -60,8 +44,9 @@ internal const val SCRIM_ALPHA = 0.55f
  * holders start and stop observing with the composition, so nothing here runs
  * a timer or removes a listener.
  *
- * Glyphs rather than icons: `PlayerScreen` already draws its back arrow as
- * text, and five more characters do not earn an artifact.
+ * Glyphs where a character draws plainly — the back arrow, the gear, the
+ * ⓘ — and the shared [TransportIcons] for play, pause, the skips and next,
+ * whose characters Android draws as colour emoji.
  */
 @Composable
 fun PlayerControls(
@@ -71,7 +56,7 @@ fun PlayerControls(
     onToggleStats: () -> Unit,
     speed: Float,
     onOpenSettings: () -> Unit,
-    /** The catalogue's own runtime, in whole seconds — trusted over media3's until it has one; see [ResumePoint.trustedRuntime]. */
+    /** The catalogue's own runtime, in whole seconds — trusted over media3's until it has one; see [endsLine]. */
     catalogedDurationSecs: Int?,
     /** Whether a next title exists at all — the standing button stays even once the up-next card is cancelled. */
     hasNext: Boolean,
@@ -82,7 +67,7 @@ fun PlayerControls(
     val playPause = rememberPlayPauseButtonState(player)
     val seekBack = rememberSeekBackButtonState(player)
     val seekForward = rememberSeekForwardButtonState(player)
-    val progress = rememberProgressStateWithTickInterval(player, TICK_MS)
+    val progress = rememberProgressStateWithTickInterval(player, READOUT_TICK_MS)
 
     // Null except mid-drag, when it holds where the thumb is rather than
     // where the film is. A slider snapped back to the playhead twice a
@@ -93,19 +78,12 @@ fun PlayerControls(
     val durationMs = progress.durationMs.coerceAtLeast(0L)
     val positionMs = scrubbingTo?.toLong() ?: progress.currentPositionMs.coerceAtLeast(0L)
 
-    // The catalogue's runtime first (known before media3 has buffered
-    // enough to report its own), falling back to media3's once there is
-    // one — never a transcode's still-growing length here, unlike the
-    // web's own case. Counted from the playhead, not the scrub thumb,
-    // which only previews where a seek would land.
-    val runtimeSeconds = ResumePoint.trustedRuntime(
-        catalogued = catalogedDurationSecs?.toDouble(),
-        observed = progress.durationMs.takeIf { it > 0 }?.let { it / 1_000.0 },
-        direct = true,
-    ).takeIf { it > 0 }
-    val endsLabel = endsAtLabel(
-        runtimeSeconds = runtimeSeconds,
-        positionSeconds = progress.currentPositionMs.coerceAtLeast(0L) / 1_000.0,
+    // Counted from the playhead, not the scrub thumb, which only previews
+    // where a seek would land.
+    val endsLabel = endsLine(
+        cataloguedSecs = catalogedDurationSecs,
+        positionMs = progress.currentPositionMs,
+        durationMs = progress.durationMs,
         speed = speed,
         nowMs = System.currentTimeMillis(),
     )
@@ -137,20 +115,20 @@ fun PlayerControls(
         ) {
             // Both labels are read back off the player rather than written
             // here, so a button cannot come to say one thing and do another.
-            GlyphButton(
-                glyph = "⏪",
+            TransportButton(
+                icon = TransportIcons.SkipBack,
                 description = "Skip back ${seekBack.seekBackAmountMs / 1_000} seconds",
                 enabled = seekBack.isEnabled,
                 onClick = seekBack::onClick,
             )
-            GlyphButton(
-                glyph = if (playPause.showPlay) "▶" else "⏸",
+            TransportButton(
+                icon = if (playPause.showPlay) TransportIcons.Play else TransportIcons.Pause,
                 description = if (playPause.showPlay) "Play" else "Pause",
                 enabled = playPause.isEnabled,
                 onClick = playPause::onClick,
             )
-            GlyphButton(
-                glyph = "⏩",
+            TransportButton(
+                icon = TransportIcons.SkipForward,
                 description = "Skip forward ${seekForward.seekForwardAmountMs / 1_000} seconds",
                 enabled = seekForward.isEnabled,
                 onClick = seekForward::onClick,
@@ -166,8 +144,8 @@ fun PlayerControls(
             // Standing, not just in the card: cancelling the card's own offer
             // never withdraws this one.
             if (hasNext) {
-                GlyphButton(
-                    glyph = "⏭",
+                TransportButton(
+                    icon = TransportIcons.Next,
                     description = if (nextTitleLine.isNotEmpty()) "Play next: $nextTitleLine" else "Play next",
                     enabled = true,
                     onClick = onPlayNext,

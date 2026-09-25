@@ -6,6 +6,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 
@@ -41,6 +42,27 @@ internal fun GlyphButton(
             color = Color.White,
             style = MaterialTheme.typography.headlineMedium,
         )
+    }
+}
+
+/**
+ * [GlyphButton] for a shape with no reliable character: the transport's
+ * play, pause, skips and next, which as text fall back to colour emoji
+ * (see [TransportIcons]). Named for a screen reader the same way.
+ */
+@Composable
+internal fun TransportButton(
+    icon: ImageVector,
+    description: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    TextButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.semantics { contentDescription = description },
+    ) {
+        TransportIcon(icon = icon, tint = Color.White, size = MaterialTheme.typography.headlineMedium.fontSize)
     }
 }
 

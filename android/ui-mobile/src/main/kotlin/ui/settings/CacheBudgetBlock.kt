@@ -16,11 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Spacing
+import model.heldOfBudget
+import model.humanSize
 import system.CacheBudgetViewModel
 import system.cacheBudgetChoices
 import ui.components.Block
-import ui.formatting.heldOfBudget
-import ui.formatting.humanSize
 
 /**
  * The cache block of Settings: what is held against the allowance, then the

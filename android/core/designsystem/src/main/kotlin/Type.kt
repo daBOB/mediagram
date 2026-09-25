@@ -8,6 +8,7 @@ package designsystem
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
@@ -119,3 +120,30 @@ internal val CatalogueTypography =
                 ),
         )
     }
+
+/**
+ * The same two faces, set for a screen read from the couch rather than
+ * from the hand. Plain `TextStyle`, not an M3 `Typography` like
+ * [CatalogueTypography] above: `:ui-tv` never has material3 on its compile
+ * classpath, only `compose-ui`, so `TextStyle` is the type this scale can
+ * actually hand across that boundary.
+ *
+ * Newsreader body copy holds at 18sp — this catalogue's floor for what
+ * reads at roughly 3m, the couch distance a 960x540dp TV viewport assumes.
+ * Fraunces titles are set at 34sp, since a shelf name here is read across
+ * the room rather than at arm's length, the way the phone's own titles are.
+ */
+object TvTypeScale {
+    val title: TextStyle =
+        TextStyle(
+            fontFamily = Display,
+            fontWeight = FontWeight.Medium,
+            fontSize = 34.sp,
+            letterSpacing = (-0.1).sp,
+        )
+    val body: TextStyle =
+        TextStyle(
+            fontFamily = Read,
+            fontSize = 18.sp,
+        )
+}

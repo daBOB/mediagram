@@ -44,6 +44,10 @@ include(":app")
 include(":ui-mobile")
 include(":ui-tv")
 
+// Compose lifecycle glue shared by both surfaces - runtime and lifecycle
+// only, no material component library of either surface's own
+include(":ui-common")
+
 // Feature modules - ViewModels and UiState only, no composables, no feature-to-feature deps
 include(":feature:catalog")
 include(":feature:player")

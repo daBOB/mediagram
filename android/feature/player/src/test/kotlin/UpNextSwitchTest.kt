@@ -88,6 +88,40 @@ class UpNextSwitchTest {
         controller.stop()
     }
 
+    /**
+     * The gate is waiting on s2 when a different title opens instead — the
+     * television's Previous, which moves through the run without asking
+     * for a switch. The wait must end with it, or it would start that title
+     * later over whatever the viewer did to it meanwhile.
+     */
+    @Test
+    fun anotherTitleOpeningEndsAGateAwaitingADifferentOne() = runTest {
+        val handle = FakePlayerHandle()
+        val catalogRepository = FakeCatalogRepository(mapOf("s2" to fakeMediaSet("s2", durationSecs = 100)))
+        val (controller, session) = buildController(this, handle, catalogRepository)
+        session.open("s1")
+        controller.startTitle("s1", listOf("s1", "s2"))
+        runCurrent()
+        controller.onEnded()
+        advanceTimeBy(10_000)
+        runCurrent()
+        val switch = requireNotNull(controller.pendingSwitch.value)
+        session.open("s2")
+        controller.startTitle("s2", switch.run)
+        assertTrue(controller.state.value.awaitingStart)
+
+        session.open("s1")
+        controller.startTitle("s1", switch.run)
+        assertFalse(controller.state.value.awaitingStart)
+
+        // What would have satisfied the gate, had it still been polling.
+        handle.fakeBufferedPositionMs = 61_000L
+        advanceTimeBy(60_000)
+        runCurrent()
+        assertFalse(handle.playCalled)
+        controller.stop()
+    }
+
     @Test
     fun playNowAsksForAnImmediateSwitchWithNoGate() = runTest {
         val handle = FakePlayerHandle()

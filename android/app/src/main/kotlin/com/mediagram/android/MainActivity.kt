@@ -8,24 +8,17 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import data.WatchSync
 import ui.player.LocalIsInPictureInPicture
 import ui.MobileApp
 import ui.player.PipEntryPoint
+import ui.tv.TvApp
 import javax.inject.Inject
 
 /**
@@ -73,9 +66,7 @@ class MainActivity : ComponentActivity() {
         val onTelevision = isTelevision(this)
         setContent {
             if (onTelevision) {
-                MaterialTheme {
-                    Surface(modifier = Modifier.fillMaxSize()) { TvPlaceholder() }
-                }
+                TvApp()
             } else {
                 CompositionLocalProvider(LocalIsInPictureInPicture provides isInPip) {
                     MobileApp()
@@ -138,10 +129,3 @@ class MainActivity : ComponentActivity() {
  */
 internal fun isPipDismissal(isInPictureInPictureMode: Boolean, lifecycleState: Lifecycle.State): Boolean =
     !isInPictureInPictureMode && lifecycleState == Lifecycle.State.CREATED
-
-@Composable
-private fun TvPlaceholder() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = "Mediagram — television surface")
-    }
-}

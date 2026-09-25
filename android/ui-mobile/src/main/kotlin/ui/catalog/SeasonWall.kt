@@ -1,7 +1,5 @@
 package ui.catalog
 
-import kotlinx.coroutines.CancellationException
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,16 +13,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import catalog.Division
 import catalog.Entry
 import catalog.SeasonPlate
 import catalog.firstItemOf
+import catalog.rowsOf
 import designsystem.Spacing
 import model.WatchSnapshot
 import model.ageLabel
@@ -111,28 +106,4 @@ internal fun SeasonScreen(division: Division, watch: WatchSnapshot, heldIds: Set
     ) {
         items(rows, positions, watchedIds, heldIds, onOpenTitle)
     }
-}
-
-/**
- * The local file for a poster key, looked up once per key.
- *
- * The same shape as [rememberTitleInfo], generalised to artwork: a wall
- * opens several of these at once, one per plate, where a title screen only
- * ever asks for one synopsis.
- */
-@Composable
-private fun rememberPosterPath(key: String?, lookup: suspend (String) -> String?): String? {
-    var path by remember(key) { mutableStateOf<String?>(null) }
-    LaunchedEffect(key) {
-        try {
-            path = key?.let { lookup(it) }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught") e: Exception,
-        ) {
-            Log.w("CatalogMetadata", "Could not load season poster", e)
-        }
-    }
-    return path
 }
