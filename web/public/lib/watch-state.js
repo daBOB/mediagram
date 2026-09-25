@@ -359,6 +359,22 @@ export function setWatched(setId, finished) {
 }
 
 /**
+ * Treats a title as watched to the end: what the player does when the credits
+ * roll, and what a viewer does by hand for something finished elsewhere or
+ * given up on.
+ *
+ * The position goes, because a finished title has nowhere to resume to. The
+ * fact that it finished stays, because otherwise nothing anywhere would
+ * remember it was ever watched — but a title already finished keeps the date
+ * it was first finished, which is when the start page last saw it touched.
+ * @returns {void} Local update only; persistence is best-effort.
+ */
+export function markFinished(setId) {
+  clearProgress(setId);
+  if (!isWatched(setId)) setWatched(setId, true);
+}
+
+/**
  * The titles marked as a child's.
  *
  * Read once at startup and not per profile, because the mark belongs to the

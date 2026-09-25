@@ -5,7 +5,19 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Unreleased — 0.43.0
+## Unreleased — 0.44.0
+
+**Added**
+
+- "Mark finished" on the web player's Continue shelf. Each title there has a
+  quiet word beside it that does what reaching the credits does: the resume
+  position goes and the title counts as watched, synced like any other watch
+  state. For a film finished on another device, or one given up on, that
+  would otherwise sit on the shelf until played to the end. The player's own
+  end-of-title path now calls the same function. The phone's Continue wall
+  does not have it yet; it is the next change.
+
+## 0.43.0
 
 **Added**
 

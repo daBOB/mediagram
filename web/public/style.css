@@ -848,6 +848,21 @@ main > .page-title + .row-head { margin-top: 0; }
 }
 .card:first-child { padding-top: 1.6rem; }
 
+/* A card with a word beside it: the card stays the whole row, and the word
+   sits at the row's lower right, level with the resume line, so the list
+   keeps the rhythm of every other shelf. The rule under the row moves from
+   the card to the wrapper, which is now what one row is. */
+.with-action { position: relative; }
+.grid:not(.plates) > .with-action { border-bottom: 1px solid var(--rule-soft); }
+.grid:not(.plates) > .with-action > .card { border-bottom: none; }
+.grid:not(.plates) > .with-action:not(:first-child) > .card { padding-top: 1.35rem; }
+.grid:not(.plates) > .with-action > .card-action {
+  position: absolute;
+  right: 0.25rem;
+  bottom: 1.2rem;
+  margin: 0;
+}
+
 /* Held at the ratio a poster is actually drawn at, so nothing is cropped.
    The old tile was landscape and cut the bottom third off every one of them. */
 .thumb {

@@ -411,7 +411,8 @@ function viewContinue() {
 
   heading(main, KEPT.continue.label, countOf(started.length, "title"));
   if (started.length === 0) return main.append(el("p", "empty", KEPT.continue.empty));
-  main.append(setGrid(started, play));
+  // The shelf redraws itself from the change, so the title simply leaves it.
+  main.append(setGrid(started, play, { finish: (set) => state.markFinished(set.setId) }));
 }
 
 /** Titles marked to come back to. */

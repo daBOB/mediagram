@@ -157,7 +157,12 @@ export function movieGrid(movies, onPlay, options = {}) {
  * came from rather than assuming everything on the shelf is one kind of thing.
  * @param {CatalogSet[]} sets
  * @param {(set: CatalogSet) => void} onPlay
- * @param {GridOptions & {caption?: (set: import("../library.js").CatalogSet) => string}} [options]
+ * @param {GridOptions & {
+ *   caption?: (set: import("../library.js").CatalogSet) => string,
+ *   finish?: (set: import("../library.js").CatalogSet) => void,
+ * }} [options] `finish` puts a "Mark finished" control beside each title,
+ *   for a shelf of things started: a film finished on another device, or
+ *   given up on, would otherwise sit there until played to the credits.
  */
 export function setGrid(sets, onPlay, options = {}) {
   // Where this viewer got to, unless the caller knows better. The start
@@ -170,8 +175,7 @@ export function setGrid(sets, onPlay, options = {}) {
   const mode = options.mode ?? LIST;
   const grid = container(mode);
   for (const set of sets) {
-    grid.append(
-      card({
+    const shown = card({
         name: set.title ?? set.setId,
         // Under a plate, what identifies an episode is its show and its
         // number; the year and the runtime are what a list has room for.
@@ -190,10 +194,29 @@ export function setGrid(sets, onPlay, options = {}) {
         resume: caption(set),
         watched: isWatched(set.setId),
         onClick: () => onPlay(set),
-      }),
-    );
+      });
+    const finish = options.finish;
+    grid.append(finish ? withAction(shown, "Mark finished", () => finish(set)) : shown);
   }
   return grid;
+}
+
+/**
+ * A card with a second thing to do beside it.
+ *
+ * Beside rather than inside: the card is itself a button, and a button inside
+ * a button is one control to a screen reader and a keyboard, which would make
+ * this one unreachable.
+ * @param {HTMLElement} card
+ * @param {string} label
+ * @param {() => void} onAction
+ */
+function withAction(card, label, onAction) {
+  const row = el("div", "with-action");
+  const action = el("button", "quiet card-action", label);
+  action.addEventListener("click", onAction);
+  row.append(card, action);
+  return row;
 }
 
 /**
