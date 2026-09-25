@@ -1,14 +1,15 @@
 package ui.tv
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.tv.material3.Text
 import designsystem.TvTypeScale
 
@@ -29,8 +30,11 @@ internal fun TvTextRow(
     modifier: Modifier = Modifier,
     focusRequester: FocusRequester? = null,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val focused by interactionSource.collectIsFocusedAsState()
+    // Read from the focus state itself rather than from the click's
+    // interaction stream: a row focused in the same moment a centre press
+    // opened its page never heard the focus interaction — it held the
+    // remote while looking exactly as if it did not.
+    var focused by remember { mutableStateOf(false) }
 
     Text(
         text = text,
@@ -38,6 +42,7 @@ internal fun TvTextRow(
         modifier =
             modifier
                 .let { if (focusRequester != null) it.focusRequester(focusRequester) else it }
-                .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
+                .onFocusChanged { focused = it.isFocused }
+                .clickable(indication = null, interactionSource = null, onClick = onClick),
     )
 }
