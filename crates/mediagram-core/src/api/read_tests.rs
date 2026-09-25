@@ -151,3 +151,30 @@ async fn a_set_that_is_not_playable_cannot_be_read() {
 
     assert!(matches!(refused, CoreError::NotFound(_)));
 }
+
+const GIB: u64 = 1 << 30;
+
+/// A player read deep into a film past 4 GiB reserves exactly what it
+/// asked for: the positions stay 64-bit and only the length narrows.
+#[test]
+fn a_read_past_four_gib_reserves_its_own_length() {
+    let offset = 5 * GIB;
+    let end = offset + (1 << 20) - 1;
+    assert_eq!(reservation(offset, end), 1 << 20);
+}
+
+/// The largest `len` Kotlin can send is not reserved up front. On a 32-bit
+/// device that reservation would exceed `isize::MAX` and panic.
+#[test]
+fn a_huge_read_reserves_no_more_than_the_cap() {
+    let offset = 5 * GIB;
+    let end = offset + u64::from(u32::MAX) - 1;
+    assert_eq!(reservation(offset, end), MAX_RESERVATION as usize);
+}
+
+/// A single byte, even at the far end of a 7 GiB film, reserves one byte.
+#[test]
+fn a_one_byte_read_at_the_end_of_a_long_film_reserves_one_byte() {
+    let last = 7 * GIB - 1;
+    assert_eq!(reservation(last, last), 1);
+}
