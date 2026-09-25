@@ -5,7 +5,21 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Unreleased — 0.55.3
+## Unreleased — 0.55.4
+
+**Changed**
+
+- Cleanup of the home page code, with no visible change:
+  - The poster rows are a `strip` option of the shelf grids, and Recently Added
+    passes `captions: false` instead of hiding captions with CSS.
+  - The override block at the end of `home.css` is merged into the rules it
+    overrode.
+  - The feature facts line that was built and then hidden is gone.
+  - The shared `.sr-only`, `initialOf`, and `--progress`, `--tint-active` and
+    `--icon-search` tokens replace inline copies.
+  - The poster rows hold 8 cards; wide cards and lists keep 6.
+
+## 0.55.3
 
 **Changed**
 

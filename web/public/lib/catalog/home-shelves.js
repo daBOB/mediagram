@@ -14,9 +14,11 @@
 import { flattenCollection } from "../library.js";
 import { resumeAt } from "../resume-point.js";
 
-/** How many cards a row holds before the rest is left to its own shelf:
- *  eight, the single row of posters the home page sets across its width. */
-export const SHELF_LIMIT = 8;
+/** How many cards a row holds before the rest is left to its own shelf. */
+export const SHELF_LIMIT = 6;
+/** The poster rows (latest films and series) hold eight: one row across the
+ *  page's width. Rows of wide cards and lists keep the shorter limit. */
+export const POSTER_ROW_LIMIT = 8;
 
 /**
  * The five rows, from the library and what this viewer has watched.
@@ -28,7 +30,9 @@ export const SHELF_LIMIT = 8;
  *
  * @param {import("./home-shelves.js").HomeShelvesInput} from
  */
-export function homeShelves({ library, byId, progress = [], watchedAt = () => null, limit = SHELF_LIMIT }) {
+export function homeShelves({
+  library, byId, progress = [], watchedAt = () => null, limit = SHELF_LIMIT, posterLimit = POSTER_ROW_LIMIT,
+}) {
   const positions = new Map(progress.map((row) => [row.setId, row]));
 
   const underway = [];
@@ -54,8 +58,8 @@ export function homeShelves({ library, byId, progress = [], watchedAt = () => nu
   return {
     continues: underwaySets.slice(0, limit),
     nextUp,
-    latestMovies: byArrival(library.movies, addedAt).slice(0, limit),
-    latestSeries: byArrival(library.series, newestIn).slice(0, limit),
+    latestMovies: byArrival(library.movies, addedAt).slice(0, posterLimit),
+    latestSeries: byArrival(library.series, newestIn).slice(0, posterLimit),
     latestCourses: byArrival(library.tutorials, newestIn).slice(0, limit),
     // How much is behind each row, for its heading. A row shows six; the
     // number is the whole of what "See all" would open, which is the thing

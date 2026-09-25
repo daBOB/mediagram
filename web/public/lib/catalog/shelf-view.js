@@ -17,7 +17,10 @@ import { GRID, LIST } from "./shelf-mode.js";
 import { seasonPlate } from "./season-wall.js";
 
 /**
- * @typedef {{mode?: "list"|"grid"}} GridOptions
+ * `strip` lays plates out as one row that scrolls sideways, as the home page
+ * sets its poster rows; `captions: false` draws the plates alone, for a row
+ * where the poster is the whole card and the name is its alt text.
+ * @typedef {{mode?: "list"|"grid", strip?: boolean, captions?: boolean}} GridOptions
  * @typedef {import("../library.js").CatalogSet} CatalogSet
  * @typedef {import("../library.js").Collection} Collection
  * @typedef {import("../library.js").Division} Division
@@ -39,8 +42,8 @@ export const SECTIONS = {
  * grid twice would be two places for a badge or a progress rule to be
  * forgotten.
  */
-function container(mode) {
-  return el("div", mode === GRID ? "grid plates" : "grid");
+function container(mode, strip = false) {
+  return el("div", mode === GRID ? (strip ? "grid plates strip" : "grid plates") : "grid");
 }
 
 /**
@@ -64,9 +67,14 @@ function filmMeta(set, mode) {
 }
 
 /** A card for a film, a show or a course. */
-function card({ name, meta, resume, initials, onClick, badges, poster, progress, watched }) {
+function card({ name, meta, resume, initials, onClick, badges, poster, progress, watched, captions = true }) {
   const button = el("button", "card");
   const thumb = plate({ poster, name, initials, progress, watched });
+  button.addEventListener("click", onClick);
+  if (!captions) {
+    button.append(thumb);
+    return button;
+  }
 
   const body = el("div", "body");
   body.append(el("div", "name", name));
@@ -78,7 +86,6 @@ function card({ name, meta, resume, initials, onClick, badges, poster, progress,
   // conversion reads from the same cache.
   for (const badge of badges ?? []) if (badge) body.append(badge);
   button.append(thumb, body);
-  button.addEventListener("click", onClick);
   return button;
 }
 
@@ -131,10 +138,11 @@ export function seasonGrid(divisions, onOpen) {
  */
 export function movieGrid(movies, onPlay, options = {}) {
   const mode = options.mode ?? LIST;
-  const grid = container(mode);
+  const grid = container(mode, options.strip);
   for (const set of movies) {
     grid.append(
       card({
+        captions: options.captions,
         name: set.title ?? set.setId,
         meta: filmMeta(set, mode),
         initials: initialsOf(set.title),
@@ -229,7 +237,7 @@ function withAction(card, label, onAction) {
 export function collectionGrid(section, collections, onOpen, options = {}) {
   const mode = options.mode ?? LIST;
   const series = section === "series";
-  const grid = container(mode);
+  const grid = container(mode, options.strip);
   for (const collection of collections) {
     // `chapters` counts the folders that hold something, however deep: a
     // course's top-level folders are too few to describe it, its total

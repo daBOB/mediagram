@@ -14,7 +14,7 @@ import { el } from "./dom.js";
 import * as state from "./watch-state.js";
 
 /** The letter on a profile's tile. */
-const initialOf = (name) => (name ?? "?").trim().charAt(0).toUpperCase() || "?";
+export const initialOf = (name) => (name ?? "?").trim().charAt(0).toUpperCase() || "?";
 
 /**
  * Shows the chooser and resolves once somebody has been chosen.

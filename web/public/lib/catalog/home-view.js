@@ -89,7 +89,7 @@ export function renderHome(main, shelves, editorial, { play, open, openFilm }) {
   const library = el("div", "home-band home-library");
   if (shelves.latestMovies.length > 0) {
     library.append(section("latest", "latestMovies", "Recently Added", shelves.totals.latestMovies, "#/movies",
-      movieGrid(shelves.latestMovies, openFilm, { mode: GRID })));
+      movieGrid(shelves.latestMovies, openFilm, { mode: GRID, strip: true, captions: false })));
   }
   if (editorial.thisMonth.length > 0) {
     const column = thisMonth(editorial.thisMonth);
@@ -100,7 +100,7 @@ export function renderHome(main, shelves, editorial, { play, open, openFilm }) {
 
   if (shelves.latestSeries.length > 0) {
     main.append(section("series-row", "latestSeries", "Latest series", shelves.totals.latestSeries, "#/series",
-      collectionGrid("series", shelves.latestSeries, (name) => open("series", name), { mode: GRID })));
+      collectionGrid("series", shelves.latestSeries, (name) => open("series", name), { mode: GRID, strip: true })));
   }
   if (shelves.latestCourses.length > 0) {
     // An index, not plates, for the reason the Tutorials shelf is one: a

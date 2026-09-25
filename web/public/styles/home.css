@@ -7,8 +7,10 @@
   position: relative;
   isolation: isolate;
   height: var(--cover-height);
-  /* Bleeds to the column's edges and up under the translucent masthead. */
-  margin: calc(-1 * (var(--main-top) + var(--masthead-height))) calc(-1 * var(--gutter)) 0;
+  /* Bleeds to the column's right edge and up under the translucent masthead,
+     and starts where the rail beside it ends (the home view sets `data-cover`,
+     which gives `main` the full width). */
+  margin: calc(-1 * (var(--main-top) + var(--masthead-height))) calc(-1 * var(--gutter)) 0 calc(var(--rail-width) - var(--gutter));
   overflow: hidden;
   color: var(--on-image);
   background: #0a0a0b;
@@ -123,7 +125,7 @@
   white-space: pre-line;
   color: var(--on-image-2);
 }
-.cover-pager { position: absolute; right: var(--gutter); bottom: 18px; display: flex; gap: 6px; }
+.cover-pager { position: absolute; right: var(--gutter); bottom: 18px; display: flex; align-items: center; gap: 6px; }
 .cover-dot {
   position: relative;
   width: 28px;
@@ -196,7 +198,6 @@
 .feature-deck { max-width: 24rem; font: 400 1rem/1.4 var(--serif); color: var(--on-image-2); }
 /* The middle feature is set in upper and lower case, for rhythm across the three. */
 .feature:nth-child(2) .feature-title { text-transform: none; font-size: clamp(2rem, 3vw, 3.1rem); }
-.feature-meta { margin-top: 10px; font-size: 0.75rem; letter-spacing: 0.06em; color: var(--on-image-2); }
 .feature:focus-visible { outline-offset: -4px; }
 
 /* ── Bands: two columns that share a baseline ────────────────────────── */
@@ -228,7 +229,8 @@
 .see-all:hover { color: var(--ink); }
 .see-all:hover::after { transform: translateX(4px); }
 
-/* Continue watching: quiet landscape cards in one scrolling row. */
+/* Continue watching: quiet landscape cards in one scrolling row, each with
+   its caption and progress bar over the bottom of the picture. */
 .resume-strip {
   display: grid;
   grid-auto-flow: column;
@@ -240,9 +242,9 @@
   padding-bottom: 8px;
 }
 .resume-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;
   min-width: 0;
   padding: 0;
   border: 0;
@@ -255,31 +257,51 @@
   position: relative;
   display: grid;
   place-items: center;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 16 / 8.4;
   overflow: hidden;
-  border-radius: var(--radius);
+  border-radius: 3px;
   background: var(--paper-sunk);
 }
 .resume-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 1200ms var(--ease); }
 .resume-card:hover .resume-art img { transform: scale(1.04); }
 .resume-initial { color: var(--ink-3); font: 600 2rem var(--display); }
-.resume-art .watched { height: 3px; background: rgba(8, 8, 9, 0.55); }
-.resume-art .watched-at { background: var(--accent); }
-.resume-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.resume-name { font-size: 0.9375rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.resume-sub { color: var(--ink-3); font-size: 0.8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.resume-at { color: var(--accent); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+/* The progress rule sits on the episode line, as a bar beside it. */
+.resume-art .watched {
+  z-index: 1;
+  left: auto;
+  right: 12px;
+  bottom: 16px;
+  width: 52%;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(246, 242, 234, 0.22);
+}
+.resume-art .watched-at { border-radius: 2px; background: var(--progress); }
+.resume-text {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 26px 12px 10px;
+  border-radius: 0 0 3px 3px;
+  background: linear-gradient(0deg, rgba(8, 8, 9, 0.9) 0%, rgba(8, 8, 9, 0.6) 60%, rgba(8, 8, 9, 0) 100%);
+  color: var(--on-image);
+}
+.resume-name { font-size: 0.875rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.resume-sub { max-width: 42%; color: var(--on-image-2); font-size: 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* The pull-quote: a real tagline, set large with room around it. */
+/* The pull-quote: a real tagline, set large, the mark hung in the margin. */
 .pull-quote { margin: 0; padding: 8px 0 0; }
-.pull-quote blockquote { margin: 0; position: relative; }
+.pull-quote blockquote { position: relative; margin: 0; padding-left: 3.4rem; }
 .pull-quote blockquote::before {
   content: "\201C";
-  display: block;
-  height: 0.5em;
-  margin-bottom: 0.2em;
-  font: 600 4.5rem/1 var(--display);
-  color: var(--accent);
+  position: absolute;
+  top: -0.05em;
+  left: 0;
+  font: 600 4rem/1 var(--display);
+  color: var(--ink);
 }
 .pull-quote p {
   margin: 0;
@@ -289,59 +311,39 @@
 }
 .pull-quote figcaption {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 24px;
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 24px 0 0 3.4rem;
   color: var(--ink-3);
   font: 500 0.6875rem/1.8 var(--text);
   letter-spacing: 0.28em;
   text-transform: uppercase;
 }
+.pull-quote figcaption::before { content: ""; width: 32px; height: 1px; margin: 4px 0 18px; background: currentColor; }
 .pull-quote figcaption a { color: var(--ink-2); text-decoration: none; transition: color 320ms var(--ease); }
 .pull-quote figcaption a:hover { color: var(--accent); }
 
-/* This month: the contents page, numbered. */
-.this-month { padding-top: 6px; border-top: 1px solid var(--rule); }
+/* This month: the contents page, numbered, in a ruled column. */
+.this-month { padding-left: 28px; border-left: 1px solid var(--rule-soft); }
 .this-month-title { margin: 14px 0 8px; }
 .this-month ol { margin: 0; padding: 0; list-style: none; }
 .this-month a {
   display: grid;
-  grid-template-columns: 3rem minmax(0, 1fr);
+  grid-template-columns: 2.2rem minmax(0, 1fr);
   align-items: baseline;
   gap: 8px;
-  padding: 16px 0;
+  padding: 10px 0;
   border-bottom: 1px solid var(--rule-soft);
   color: inherit;
   text-decoration: none;
 }
-.this-month-num { font: 400 1.9rem/1 var(--display); color: var(--ink-3); font-variant-numeric: lining-nums; transition: color 480ms var(--ease); }
+.this-month-num { font: 400 1.3rem/1 var(--display); color: var(--ink-3); font-variant-numeric: lining-nums; transition: color 480ms var(--ease); }
 .this-month-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.this-month-name { font: 500 1.0625rem/1.3 var(--display); overflow-wrap: anywhere; transition: color 320ms var(--ease); }
+.this-month-name { font: 500 0.9375rem/1.3 var(--display); overflow-wrap: anywhere; transition: color 320ms var(--ease); }
 .this-month-meta { color: var(--ink-3); font-size: 0.75rem; letter-spacing: 0.04em; }
 .this-month a:hover .this-month-num, .this-month a:hover .this-month-name { color: var(--accent); }
 
-@media (max-width: 1180px) {
-  .features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .feature:first-child { grid-column: 1 / -1; min-height: 360px; }
-  .cover-side { display: none; }
-  .cover-copy { max-width: 72%; }
-}
-@media (max-width: 900px) {
-  .cover { min-height: 78vh; margin: calc(-1 * var(--main-top)) -16px 0; }
-  .cover-copy { max-width: 100%; padding: 96px 16px 104px; }
-  .cover-scrim {
-    background:
-      linear-gradient(0deg, var(--paper) 0%, rgba(8, 8, 9, 0.82) 30%, rgba(8, 8, 9, 0.35) 70%, rgba(8, 8, 9, 0.2) 100%);
-  }
-  .cover-pager { right: 16px; bottom: 40px; }
-  .features { grid-template-columns: minmax(0, 1fr); margin: 0 -16px; }
-  .feature:first-child { grid-column: auto; }
-  .feature { min-height: 280px; }
-  .home-band { grid-template-columns: minmax(0, 1fr); }
-  .resume-strip { grid-auto-columns: 78%; }
-}
-
-.cover-pager { align-items: center; }
+/* The cover's pause control, beside its dots. */
 .cover-pause {
   width: 32px;
   height: 32px;
@@ -357,48 +359,24 @@
 }
 .cover-pause:hover { border-color: var(--on-image); }
 
-/* ── Reference fidelity: the cover sits right of the rail, cards carry their
-   caption over the picture, and Recently Added is one row. ───────────── */
-@media (min-width: 901px) {
-  [data-cover] .cover { margin-left: calc(var(--rail-width) - var(--gutter)); }
+@media (max-width: 1180px) {
+  .features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .feature:first-child { grid-column: 1 / -1; min-height: 360px; }
+  .cover-side { display: none; }
+  .cover-copy { max-width: 72%; }
 }
-.feature-meta { display: none; }
-.resume-card { position: relative; gap: 0; }
-.resume-art { aspect-ratio: 16 / 8.4; border-radius: 3px; }
-.resume-text {
-  position: absolute;
-  inset: auto 0 0;
-  padding: 26px 12px 10px;
-  border-radius: 0 0 3px 3px;
-  background: linear-gradient(0deg, rgba(8, 8, 9, 0.9) 0%, rgba(8, 8, 9, 0.6) 60%, rgba(8, 8, 9, 0) 100%);
-  color: var(--on-image);
-}
-.resume-name { font-size: 0.875rem; font-weight: 500; }
-.resume-sub { color: var(--on-image-2); font-size: 0.75rem; max-width: 42%; }
-/* The progress rule sits on the episode line, as a bar beside it. */
-.resume-art .watched { left: auto; right: 12px; bottom: 16px; width: 52%; height: 3px; border-radius: 2px; background: rgba(246, 242, 234, 0.22); z-index: 1; }
-.resume-art .watched-at { background: #6fb7e8; border-radius: 2px; }
-.resume-at { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.pull-quote blockquote { padding-left: 3.4rem; }
-.pull-quote blockquote::before { position: absolute; left: 0; top: -0.05em; height: auto; margin: 0; font-size: 4rem; color: var(--ink); }
-.pull-quote figcaption { flex-direction: column; align-items: flex-start; gap: 0; margin-left: 3.4rem; }
-.pull-quote figcaption::before { content: ""; width: 32px; height: 1px; margin: 4px 0 18px; background: currentColor; }
-.home-section.latest .grid.plates, .home-section.series-row .grid.plates {
-  grid-template-columns: none;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(8.5rem, calc((100% - 7 * 14px) / 8));
-  gap: 14px;
-  overflow-x: auto;
-  scrollbar-width: thin;
-}
-.home-section.latest .grid.plates .body { display: none; }
-.home-section.latest .thumb, .home-section.series-row .thumb { border-radius: 3px; }
-.home-section.series-row .grid.plates .name { font-size: 0.9375rem; }
-.this-month { border-top: 0; border-left: 1px solid var(--rule-soft); padding: 0 0 0 28px; }
-.this-month a { padding: 10px 0; grid-template-columns: 2.2rem minmax(0, 1fr); }
-.this-month-num { font-size: 1.3rem; }
-.this-month-name { font-size: 0.9375rem; }
 @media (max-width: 900px) {
-  .this-month { border-left: 0; padding-left: 0; }
-  .cover { height: auto; min-height: 84vh; }
+  .cover { height: auto; min-height: 84vh; margin: calc(-1 * var(--main-top)) -16px 0; }
+  .cover-copy { max-width: 100%; padding: 96px 16px 104px; }
+  .cover-scrim {
+    background:
+      linear-gradient(0deg, var(--paper) 0%, rgba(8, 8, 9, 0.82) 30%, rgba(8, 8, 9, 0.35) 70%, rgba(8, 8, 9, 0.2) 100%);
+  }
+  .cover-pager { right: 16px; bottom: 40px; }
+  .features { grid-template-columns: minmax(0, 1fr); margin: 0 -16px; }
+  .feature:first-child { grid-column: auto; }
+  .feature { min-height: 280px; }
+  .home-band { grid-template-columns: minmax(0, 1fr); }
+  .resume-strip { grid-auto-columns: 78%; }
+  .this-month { padding-left: 0; border-left: 0; }
 }

@@ -11,7 +11,7 @@
 import { describe, expect, test } from "bun:test";
 import { catalogSet } from "./support/catalog-set";
 import { groupLibrary, type CatalogSet } from "../public/lib/library.js";
-import { SHELF_LIMIT, homeShelves } from "../public/lib/catalog/home-shelves.js";
+import { POSTER_ROW_LIMIT, homeShelves } from "../public/lib/catalog/home-shelves.js";
 
 const set = (over: Partial<CatalogSet> = {}): CatalogSet => catalogSet({ duration: 3600, addedAt: 1_000, ...over });
 
@@ -48,7 +48,9 @@ function shelvesOf(
     // The store hands these over newest first; so does this.
     progress: [...(state.progress ?? [])].sort((a, b) => b.updatedAt - a.updatedAt),
     watchedAt: (setId: string) => watched[setId] ?? null,
+    // One cap for every row, so a test can ask for a short page of anything.
     limit,
+    posterLimit: limit,
   });
 }
 
@@ -88,7 +90,7 @@ describe("what arrived recently", () => {
   test("a row holds no more than the limit", () => {
     const many = Array.from({ length: 12 }, (_, n) => set({ title: `Film ${n}`, addedAt: n }));
 
-    expect(shelvesOf(many).latestMovies).toHaveLength(SHELF_LIMIT);
+    expect(shelvesOf(many).latestMovies).toHaveLength(POSTER_ROW_LIMIT);
     // The heading still counts the whole shelf, not the eight on the row.
     expect(shelvesOf(many).totals.latestMovies).toBe(12);
     expect(shelvesOf(many, {}, 3).latestMovies).toHaveLength(3);

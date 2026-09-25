@@ -31,7 +31,7 @@ import { openFeatured } from "./lib/catalog/featured-reel.js";
 import * as state from "./lib/watch-state.js";
 import { resumeAt } from "./lib/resume-point.js";
 import { renderLists, renderList } from "./lib/catalog/collections-view.js";
-import { chooseProfile } from "./lib/profile-picker.js";
+import { chooseProfile, initialOf } from "./lib/profile-picker.js";
 import { homeShelves } from "./lib/catalog/home-shelves.js";
 import { renderHome } from "./lib/catalog/home-view.js";
 import { homeEditorial } from "./lib/catalog/editorial-picks.js";
@@ -404,7 +404,7 @@ function showProfile() {
   const current = state.profile();
   button.textContent = current ? current.name : "Who\u2019s watching?";
   // Drawn as an initial in a circle; the name stays the button's text.
-  button.dataset.initial = current ? current.name.trim().slice(0, 1).toUpperCase() : "?";
+  button.dataset.initial = current ? initialOf(current.name) : "?";
   button.hidden = false;
 }
 

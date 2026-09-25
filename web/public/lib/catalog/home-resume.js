@@ -55,7 +55,8 @@ function resumeCard(set, caption, play) {
     ? [episodeLabel(set), set.title].filter(Boolean).join(" · ")
     : [set.year, humanDuration(set.duration)].filter(Boolean).join(" · ");
   if (sub) text.append(el("span", "resume-sub", sub));
-  if (caption) text.append(el("span", "resume-at", caption));
+  // Read aloud, not drawn: the progress bar says it to the eye.
+  if (caption) text.append(el("span", "sr-only", caption));
   card.append(art, text);
   card.addEventListener("click", () => play(set));
   return card;

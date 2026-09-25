@@ -28,6 +28,17 @@
 
 .grid { display: flex; flex-direction: column; }
 .grid.plates { display: grid; grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); gap: 36px 22px; }
+/* One row of plates that scrolls sideways: the home page's poster rows. */
+.grid.plates.strip {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(8.5rem, calc((100% - 7 * 14px) / 8));
+  gap: 14px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.strip .thumb { border-radius: 3px; }
+.strip .name { font-size: 0.9375rem; }
 .card { display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 20px; width: 100%; min-width: 0; padding: 16px 0; border: 0; border-bottom: 1px solid var(--rule-soft); border-radius: 0; background: none; color: inherit; font: inherit; text-align: left; }
 .card .body { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 24px; min-width: 0; }
 .card .name { font-size: 1rem; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; transition: color 320ms var(--ease); }

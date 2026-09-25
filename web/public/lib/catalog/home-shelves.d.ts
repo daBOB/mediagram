@@ -45,6 +45,7 @@ export interface ProgressRow {
 }
 
 export const SHELF_LIMIT: number;
+export const POSTER_ROW_LIMIT: number;
 
 export interface HomeShelvesInput {
   library: Library;
@@ -54,6 +55,8 @@ export interface HomeShelvesInput {
   /** When a set was finished, or `null`. */
   watchedAt?: (setId: string) => number | null;
   limit?: number;
+  /** The poster rows' own cap (latest films and series). */
+  posterLimit?: number;
 }
 
 export function homeShelves(from: HomeShelvesInput): HomeShelves;

@@ -53,7 +53,7 @@
 .rail-nav a { gap: 12px; padding: 10px 12px; white-space: nowrap; }
 .rail-nav .n { margin-left: auto; }
 .rail-nav a:hover, .departments a:hover { color: var(--ink); background: var(--rule-soft); }
-.rail-nav a.active, .departments a.active { color: var(--ink); background: color-mix(in srgb, var(--ink) 10%, transparent); }
+.rail-nav a.active, .departments a.active { color: var(--ink); background: var(--tint-active); }
 .rail-nav a.apart { margin-top: 12px; }
 /* Line icons, drawn in the text colour at a hairline weight. */
 .icon { flex: none; width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linejoin: round; stroke-linecap: round; }
@@ -103,8 +103,8 @@
   translate: 0 -50%;
   pointer-events: none;
   background: currentColor;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='m15.5 15.5 5 5'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='m15.5 15.5 5 5'/%3E%3C/svg%3E") center / contain no-repeat;
+  -webkit-mask: var(--icon-search) center / contain no-repeat;
+  mask: var(--icon-search) center / contain no-repeat;
 }
 .search {
   width: 44px;
@@ -203,7 +203,6 @@ main {
   .rail-nav a { padding: 10px; font-size: 0.8125rem; }
   .rail-nav .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .rail-nav a.apart { margin-top: 0; }
-  .rail-nav a.active { background: color-mix(in srgb, var(--ink) 10%, transparent); }
   .rail-nav .n { display: none; }
   .masthead { position: static; flex-wrap: wrap; gap: 8px 12px; padding: 10px 16px; }
   .departments { width: 100%; overflow-x: auto; scrollbar-width: none; }
@@ -241,7 +240,6 @@ main {
     }
     [data-cover] .departments a, [data-cover] .search-field { color: var(--bar-ink); }
     [data-cover] .departments .n { color: color-mix(in srgb, var(--bar-ink) 65%, transparent); }
-    [data-cover] .search { color: var(--bar-ink); }
     [data-cover] .search:focus, [data-cover] .search:not(:placeholder-shown) {
       border-color: color-mix(in srgb, var(--bar-ink) 30%, transparent);
       background: color-mix(in srgb, var(--bar-bg) 60%, transparent);

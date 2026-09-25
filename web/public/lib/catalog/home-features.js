@@ -9,7 +9,7 @@
  */
 
 import { el } from "../dom.js";
-import { genresOf, scoreLabel } from "./genres.js";
+import { genresOf } from "./genres.js";
 import { artUrl } from "./home-cover.js";
 
 export const FEATURE_LABELS = {
@@ -57,8 +57,6 @@ function featureCard({ kind, set }) {
   copy.append(el("span", "feature-rule"));
   const deck = set.tagline ?? genresOf(set).slice(0, 3).join(", ");
   if (deck) copy.append(el("span", "feature-deck", deck));
-  const facts = [series ? null : set.year, scoreLabel(set.rating)].filter(Boolean);
-  if (facts.length > 0) copy.append(el("span", "feature-meta", facts.join(" · ")));
   card.append(copy);
   return card;
 }
