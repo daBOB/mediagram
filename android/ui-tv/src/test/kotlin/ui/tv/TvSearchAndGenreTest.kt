@@ -99,6 +99,22 @@ class TvSearchAndGenreTest {
         field().assertIsFocused()
     }
 
+    /**
+     * Down leaves the field for the results by itself, the keyboard put
+     * away or never shown: the text field only moves focus for a D-pad on
+     * a physical device, and a remote's keys may arrive as a virtual one.
+     */
+    @Test
+    fun downFromTheFieldReachesTheFirstRow() {
+        press(compose.onNodeWithText("Search"))
+        type("film")
+        compose.onNodeWithText("2 results").assertExists()
+        field().assertIsFocused()
+
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
+        row("Film 0").assertIsFocused()
+    }
+
     /** The second row, so landing back on it is the row that played rather than simply the first. */
     @Test
     fun aRowPlaysAndBackFromThePlayerLandsOnThatRow() {

@@ -12,11 +12,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -40,6 +47,12 @@ import designsystem.TvTypeScale
  * separately. [secret] masks what is typed; [placeholder] says what the
  * field is for while it is empty, the way the web's search box does.
  * [fieldModifier] reaches the text field itself, for a test tag.
+ *
+ * Up and Down leave the field for whatever lies above or below it. The
+ * text field only does that itself for a D-pad on a physical input
+ * device, and a remote's keys can arrive as a virtual one — then Down,
+ * with the keyboard put away, would never reach the results or the next
+ * question. A single line has nowhere else for Up or Down to go.
  */
 @Composable
 internal fun TvTextField(
@@ -55,6 +68,7 @@ internal fun TvTextField(
     imeAction: ImeAction = ImeAction.Done,
 ) {
     var focused by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RectangleShape,
@@ -78,6 +92,15 @@ internal fun TvTextField(
                 fieldModifier
                     .focusRequester(focusRequester)
                     .onFocusChanged { focused = it.isFocused }
+                    .onPreviewKeyEvent { event ->
+                        val direction =
+                            when (event.key) {
+                                Key.DirectionUp -> FocusDirection.Up
+                                Key.DirectionDown -> FocusDirection.Down
+                                else -> return@onPreviewKeyEvent false
+                            }
+                        event.type == KeyEventType.KeyDown && focusManager.moveFocus(direction)
+                    }
                     .fillMaxWidth()
                     .padding(Spacing.medium),
             textStyle = TvTypeScale.body.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
