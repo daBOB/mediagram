@@ -4,6 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import catalog.Entry
 import catalog.SetCard
+import catalog.episodeLabel
+import catalog.extentOf
+import catalog.factsLine
 import catalog.watchedFractionOf
 import java.io.File
 import model.Progress
@@ -33,6 +36,9 @@ internal fun TvEntryPlate(
                 posterPath = entry.set.posterPath?.let(::File),
                 onOpen = onOpen,
                 modifier = modifier,
+                // The year and the runtime, as the phone's shelf plate sets
+                // them: the line that tells two versions of a title apart.
+                caption = factsLine(entry.set.year, entry.set.durationSecs),
                 progress = watchedFractionOf(positions[entry.set.setId]),
                 watched = entry.set.setId in watchedIds,
             )
@@ -44,6 +50,7 @@ internal fun TvEntryPlate(
                 posterPath = entry.posterPath?.let(::File),
                 onOpen = onOpen,
                 modifier = modifier,
+                caption = extentOf(entry),
             )
         }
     }
@@ -66,9 +73,10 @@ internal fun openEntry(
 }
 
 /**
- * One set on Continue or Next up — the twin of the phone's `SetPlate`. Its
- * marks arrive already worked out on the [SetCard], by the same rule the
- * phone reads them from.
+ * One set on Continue or Next up — the twin of the phone's `SetPlate`, with
+ * its same two lines: the show and episode number, then the card's own
+ * caption. Its marks arrive already worked out on the [SetCard], by the same
+ * rule the phone reads them from.
  */
 @Composable
 internal fun TvSetPlate(
@@ -76,11 +84,16 @@ internal fun TvSetPlate(
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val set = card.set
     TvPlate(
-        title = card.set.title,
-        posterPath = card.set.posterPath?.let(::File),
+        title = set.title,
+        posterPath = set.posterPath?.let(::File),
         onOpen = onOpen,
         modifier = modifier,
+        meta = listOfNotNull(set.show, episodeLabel(set).ifEmpty { null }).joinToString(" · ").ifEmpty { null },
+        // Where this viewer stopped, or "Next up" — the difference between
+        // the two is what the row is for.
+        caption = card.caption.ifEmpty { null },
         progress = card.progress,
         watched = card.watched,
     )

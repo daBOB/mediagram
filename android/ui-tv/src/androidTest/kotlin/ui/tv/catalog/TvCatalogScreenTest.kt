@@ -2,17 +2,21 @@ package ui.tv.catalog
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import catalog.CatalogUiState
 import catalog.shelvesOf
+import designsystem.Overscan
 import model.Kind
 import model.MediaSet
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -71,12 +75,52 @@ class TvCatalogScreenTest {
         waitUntilFocused("See all")
     }
 
-    private fun show() {
+    /**
+     * Every shelf the library can have, so the masthead is as full as it
+     * gets: the viewer's name at its far end must still be on screen, not
+     * pushed past the edge by the tabs before it.
+     */
+    @Test
+    fun theViewersNameIsOnScreenBesideAFullMasthead() {
+        show(films(10) + episodes() + lessons(), profileName = "andre")
+
+        compose.onNodeWithText("andre").assertIsDisplayed()
+        // assertIsDisplayed passes on the merged entry while only its
+        // leading rule is on screen, and the clipped text beside it reports
+        // bounds of nothing at all. So each label's visible width has to be
+        // its whole laid-out width, ending inside the overscan-safe edge.
+        val safeRight = compose.onRoot().fetchSemanticsNode().boundsInWindow.right -
+            with(compose.density) { Overscan.horizontal.toPx() }
+        for (text in listOf("andre", "Kids")) {
+            val node = compose.onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode()
+            val shown = node.boundsInWindow
+            assertTrue("$text shows ${shown.width} of ${node.size.width}px", shown.width >= node.size.width - 1f)
+            assertTrue("$text ends at ${shown.right}, past the safe edge at $safeRight", shown.right <= safeRight + 1f)
+        }
+    }
+
+    @Test
+    fun rightAlongTheMastheadReachesTheViewersName() {
+        show(films(10) + episodes() + lessons(), profileName = "andre")
+        waitUntilFocused("Film 9")
+        compose.onNodeWithText("Film 9").performKeyInput { pressKey(Key.DirectionUp) }
+        waitUntilFocused("Home")
+
+        // Home, three shelves, four kept entries: eight steps to the name.
+        repeat(8) { compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionRight) } }
+
+        waitUntilFocused("andre")
+    }
+
+    private fun show(
+        sets: List<MediaSet> = films(10),
+        profileName: String = "Ada",
+    ) {
         compose.setContent {
             TvTheme {
                 TvCatalogScreen(
-                    state = CatalogUiState.Ready(shelvesOf(films(10))),
-                    profile = TvChosenProfile(name = "Ada", onChoose = {}),
+                    state = CatalogUiState.Ready(shelvesOf(sets)),
+                    profile = TvChosenProfile(name = profileName, onChoose = {}),
                     onOpenTitle = {},
                     onOpenCollection = {},
                     onOpenList = {},
@@ -91,13 +135,23 @@ class TvCatalogScreenTest {
         }
     }
 
-    private fun films(count: Int) =
-        (0 until count).map {
-            MediaSet(
-                setId = "film-$it",
-                kind = Kind.MOVIE,
-                title = "Film $it",
-                show = null,
+    private fun films(count: Int) = (0 until count).map { set("film-$it", Kind.MOVIE, "Film $it", null, it.toLong()) }
+
+    private fun episodes() = listOf(set("episode-0", Kind.EPISODE, "Pilot", "A Show", 0))
+
+    private fun lessons() = listOf(set("lesson-0", Kind.TUTORIAL, "Lesson", "A Course", 0))
+
+    private fun set(
+        id: String,
+        kind: Kind,
+        title: String,
+        show: String?,
+        addedAt: Long,
+    ) = MediaSet(
+                setId = id,
+                kind = kind,
+                title = title,
+                show = show,
                 chapter = null,
                 path = null,
                 season = null,
@@ -107,7 +161,6 @@ class TvCatalogScreenTest {
                 durationSecs = null,
                 posterPath = null,
                 totalBytes = 0,
-                addedAt = it.toLong(),
+                addedAt = addedAt,
             )
-        }
 }

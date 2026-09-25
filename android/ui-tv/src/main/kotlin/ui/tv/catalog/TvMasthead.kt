@@ -2,11 +2,15 @@ package ui.tv.catalog
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
@@ -27,14 +31,15 @@ import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import ui.tv.TvFocus
+import ui.tv.TvTextRow
 import ui.tv.profile.TvChosenProfile
 
 /**
  * The masthead the web player and the phone both have, across the top of
  * the screen rather than down a side drawer: [titles] in `catalogTabsOf`'s
  * order — Home, the catalog shelves, then the four kept from watch state —
- * and last, set apart as the web's `#who` is, the name of whoever is
- * watching. Choosing that name reopens the picker, the way the phone's bar
+ * and at the far end, set apart as the web's `#who` is, the name of whoever
+ * is watching. Choosing that name reopens the picker, the way the phone's bar
  * button does.
  *
  * A tab is selected by pressing it, not by landing on it. tv-material's
@@ -57,43 +62,58 @@ internal fun TvMasthead(
     focusRequester: FocusRequester,
     modifier: Modifier = Modifier,
 ) {
-    val selectedTab = remember { FocusRequester() }
-    TabRow(
-        selectedTabIndex = selected,
+    val selectedEntry = remember { FocusRequester() }
+    Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .padding(start = Overscan.horizontal, end = Overscan.horizontal, top = Overscan.vertical)
                 .focusRequester(focusRequester)
-                .focusRestorer(selectedTab),
-        // Type on the ground rather than a band laid over it — the phone's
-        // masthead makes the same choice for the same reason.
-        containerColor = Color.Transparent,
-        indicator = { positions, focused ->
-            // The profile entry is never "selected": it is an action, not a
-            // place, so there is no position of its own to underline.
-            positions.getOrNull(selected)?.takeIf { selected < titles.size }?.let { position ->
-                TabRowDefaults.UnderlinedIndicator(currentTabPosition = position, doesTabRowHaveFocus = focused)
-            }
-        },
+                .focusRestorer(selectedEntry),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        titles.forEachIndexed { index, name ->
-            MastheadTab(
-                name = name,
-                selected = index == selected,
-                apart = index == firstKeptIndex,
-                onClick = { onSelect(index) },
-                modifier = if (index == selected) Modifier.focusRequester(selectedTab) else Modifier,
-            )
+        if (titles.isNotEmpty()) {
+            TabRow(
+                selectedTabIndex = selected,
+                // Held to the start rather than left to centre itself in the
+                // space the name leaves it, so Home lines up over the rows.
+                modifier = Modifier.weight(1f).wrapContentWidth(Alignment.Start),
+                // Type on the ground rather than a band laid over it — the
+                // phone's masthead makes the same choice for the same reason.
+                containerColor = Color.Transparent,
+                indicator = { positions, focused ->
+                    positions.getOrNull(selected)?.let { position ->
+                        TabRowDefaults.UnderlinedIndicator(currentTabPosition = position, doesTabRowHaveFocus = focused)
+                    }
+                },
+            ) {
+                titles.forEachIndexed { index, name ->
+                    MastheadTab(
+                        name = name,
+                        selected = index == selected,
+                        apart = index == firstKeptIndex,
+                        onClick = { onSelect(index) },
+                        modifier = if (index == selected) Modifier.focusRequester(selectedEntry) else Modifier,
+                    )
+                }
+            }
+        } else {
+            Spacer(Modifier.weight(1f))
         }
-        MastheadTab(
-            name = profile.name,
-            selected = false,
-            apart = true,
+        // Outside the TabRow, not its last tab: a TabRow scrolls its tabs
+        // inside its own width, and a full masthead pushed the name past
+        // that edge, leaving only its leading rule on screen. Here it keeps
+        // a slot of its own at the far end, as the web's `#who` does, and
+        // is never selected — it is an action, not a place.
+        TvTextRow(
+            text = profile.name,
             onClick = profile.onChoose,
-            // With no shelves to show there is no selected tab, and the name
-            // is then the one thing up here to return to.
-            modifier = if (titles.isEmpty()) Modifier.focusRequester(selectedTab) else Modifier,
+            focusRequester = if (titles.isEmpty()) selectedEntry else null,
+            modifier =
+                Modifier
+                    .padding(start = Spacing.medium)
+                    .leadingRule(MaterialTheme.colorScheme.borderVariant)
+                    .padding(start = Spacing.medium, top = Spacing.small, bottom = Spacing.small),
         )
     }
 }
@@ -119,7 +139,7 @@ private fun androidx.tv.material3.TabRowScope.MastheadTab(
         selected = selected,
         onFocus = {},
         onClick = onClick,
-        modifier = modifier.let { if (apart) it.padding(start = Spacing.large).leadingRule(ruleColor) else it },
+        modifier = modifier.let { if (apart) it.padding(start = Spacing.medium).leadingRule(ruleColor) else it },
         colors =
             TabDefaults.underlinedIndicatorTabColors(
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -134,7 +154,10 @@ private fun androidx.tv.material3.TabRowScope.MastheadTab(
             style = TvFocus.textStyle(TvTypeScale.body, focused),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small),
+            // Tight enough that Home, three shelves and the four kept entries
+            // fit a 960dp television beside the viewer's name without the
+            // row having to scroll.
+            modifier = Modifier.padding(horizontal = Spacing.small, vertical = Spacing.small),
         )
     }
 }

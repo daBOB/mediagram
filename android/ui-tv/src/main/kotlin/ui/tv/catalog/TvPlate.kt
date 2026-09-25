@@ -8,16 +8,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -29,17 +25,10 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.initialsOf
 import coil3.compose.AsyncImage
-import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import java.io.File
 import ui.tv.TvFocus
-
-/** The progress rule's own tag, so a test can tell it apart from the tick. */
-internal const val TvPlateProgressTag = "tv-plate-progress"
-
-/** The watched tick's own tag, for the same reason [TvPlateProgressTag] carries one. */
-internal const val TvPlateWatchedTickTag = "tv-plate-watched-tick"
 
 /**
  * One poster, for every television screen a plate is built from — Home
@@ -56,7 +45,12 @@ internal const val TvPlateWatchedTickTag = "tv-plate-watched-tick"
  * [posterPath] is a resolved [File], not a lookup key — a wall opens many
  * plates at once and resolving each one's artwork is a caller concern
  * (`rememberPosterPath`), not something a single plate should each do on
- * its own. [progress] and [watched] are the phone plate's own two marks,
+ * its own. [meta] and [caption] are the phone plate's two lines under the
+ * name, in its order: [meta] a fact about the title itself (an episode's
+ * show and number), [caption] one about this viewer's place in it or the
+ * shelf's facts — "Next up" beside a resume line is the whole point of a
+ * Home row, so a plate that dropped it would hide why it is there.
+ * [progress] and [watched] are the phone plate's own two marks,
  * independent of each other the way `PosterCard`'s are: [progress] draws a
  * rule along the foot of the art, only when there is a runtime to measure
  * a position against (`catalog.watchedFractionOf` is where `null` already
@@ -77,6 +71,8 @@ fun TvPlate(
     posterPath: File?,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
+    meta: String? = null,
+    caption: String? = null,
     progress: Float? = null,
     watched: Boolean = false,
 ) {
@@ -98,8 +94,23 @@ fun TvPlate(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = Spacing.small, start = Spacing.small, end = Spacing.small),
             )
+            meta?.let { PlateLine(it) }
+            caption?.let { PlateLine(it) }
         }
     }
+}
+
+/** One quieter line under the name — [TvPlate]'s [meta][TvPlate] or caption. */
+@Composable
+private fun PlateLine(text: String) {
+    Text(
+        text = text,
+        style = TvTypeScale.body,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.padding(horizontal = Spacing.small),
+    )
 }
 
 /**
@@ -159,58 +170,9 @@ private fun TvPlateArt(
     }
 }
 
-/**
- * The progress rule along the foot of a plate. Not tv-material's own — it
- * ships no progress indicator ([ui.tv.setup.TvLoadingIndicator] hits the
- * same wall for its spinner) — so this is the plain fractional-width box
- * that stands in for one, drawn in the catalogue's one accent. [modifier]
- * carries the `align` the caller's `BoxWithConstraints` scope alone can
- * grant — a scoped modifier only resolves inside the scope that produced it,
- * not in a composable split out from it.
- */
-@Composable
-private fun TvProgressRule(
-    fraction: Float,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier.testTag(TvPlateProgressTag).fillMaxWidth().height(ProgressHeight).background(Palette.Rule),
-    ) {
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize(fraction = fraction.coerceIn(0f, 1f))
-                    .background(Palette.Imprint),
-        )
-    }
-}
-
-/**
- * The tick a finished title draws — see [TvPlate]'s own note on why it is
- * a mark of its own rather than a full progress rule. Ported from the
- * phone plate's own mark, in the same corner. [modifier] carries `align` for
- * the same reason [TvProgressRule]'s does.
- */
-@Composable
-private fun TvWatchedTick(modifier: Modifier = Modifier) {
-    Box(
-        modifier =
-            modifier
-                .testTag(TvPlateWatchedTickTag)
-                .padding(Spacing.small)
-                .size(TickSize)
-                .background(MaterialTheme.colorScheme.primary, CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text = "✓", style = TvTypeScale.body, color = MaterialTheme.colorScheme.onPrimary)
-    }
-}
-
 /** A poster's own proportions, the same ratio the phone plate is cut to. */
 private const val PosterAspectRatio = 2f / 3f
 
-private val TickSize = 28.dp
-private val ProgressHeight = 4.dp
 private val Hairline = 0.5.dp
 
 /** How much of a plate's width one line of initials takes — see the phone plate's own constant. */

@@ -7,10 +7,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusRestorer
 import catalog.HomeRow
 import designsystem.Overscan
 import designsystem.Spacing
@@ -51,20 +53,30 @@ internal fun TvHome(
         modifier =
             Modifier
                 .fillMaxSize()
+                // Coming down from the masthead lands where the viewer last
+                // was on this page, or on its first stop, rather than on
+                // whichever plate happens to sit under the tab the remote
+                // left from.
+                .focusRestorer(first)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Overscan.horizontal)
                 .padding(bottom = Overscan.vertical, top = Spacing.small),
     ) {
         rows.forEachIndexed { index, row ->
-            TvHomeRow(
-                row = row,
-                positions = positions,
-                watchedIds = watchedIds,
-                onOpenTitle = onOpenTitle,
-                onOpenCollection = onOpenCollection,
-                onSeeAll = onSeeAll,
-                firstItem = if (index == 0) Modifier.focusRequester(first) else Modifier,
-            )
+            // Keyed by title, so a row that appears above — Continue, the
+            // moment something is started — does not hand this row's
+            // plates, and the focus on one of them, to a different row.
+            key(row.title) {
+                TvHomeRow(
+                    row = row,
+                    positions = positions,
+                    watchedIds = watchedIds,
+                    onOpenTitle = onOpenTitle,
+                    onOpenCollection = onOpenCollection,
+                    onSeeAll = onSeeAll,
+                    firstItem = if (index == 0) Modifier.focusRequester(first) else Modifier,
+                )
+            }
         }
     }
 }

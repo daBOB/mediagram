@@ -8,9 +8,14 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import catalog.CatalogUiState
+import catalog.factsLine
+import catalog.resumeLine
 import catalog.shelvesOf
 import model.Kind
 import model.MediaSet
+import model.Progress
+import model.WatchSnapshot
+import model.Watched
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
@@ -37,11 +42,14 @@ import kotlin.test.assertEquals
 @Config(sdk = [35])
 class TvCatalogScreenStateTest {
     @get:Rule val compose = createEmptyComposeRule()
-    private lateinit var controller: ActivityController<ComponentActivity>
+    // Cleared as it is closed, so a test that closes one screen before
+    // showing the next never has it closed a second time after it.
+    private var controller: ActivityController<ComponentActivity>? = null
 
     @After
     fun close() {
-        compose.runOnUiThread { if (::controller.isInitialized) controller.close() }
+        compose.runOnUiThread { controller?.close() }
+        controller = null
     }
 
     @Test
@@ -107,6 +115,32 @@ class TvCatalogScreenStateTest {
     }
 
     @Test
+    fun continuePlatesSayWhereTheViewerStoppedAndNextUpSaysNextUp() {
+        val episodes = (1..3).map { set("ep-$it", Kind.EPISODE, "Episode $it", show = "A Show", addedAt = 0, episode = it) }
+        val film = films(1)
+        val stopped = Progress(setId = "film-0", at = 1_200.0, duration = 6_000.0, updatedAt = 2)
+        val watch =
+            WatchSnapshot.Empty.copy(
+                progress = listOf(stopped),
+                watched = listOf(Watched(setId = "ep-1", finishedAt = 1)),
+            )
+        show(CatalogUiState.Ready(shelvesOf(film + episodes), watch = watch))
+
+        compose.onNodeWithText(resumeLine(stopped)).assertExists()
+        compose.onNodeWithText("Next up").assertExists()
+    }
+
+    @Test
+    fun shelfPlatesCarryThePhonesCaptions() {
+        show(ready(listOf(set("film-0", Kind.MOVIE, "A Film", addedAt = 0, year = 1999, durationSecs = 5_400)) + courses(1)))
+
+        compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText(factsLine(1999, 5_400)!!).assertExists()
+        compose.onNodeWithText("Tutorials").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText("1 chapter").assertExists()
+    }
+
+    @Test
     fun aKeptEntryHoldsAPlaceholderForNow() {
         show(ready(films(1)))
 
@@ -140,8 +174,9 @@ class TvCatalogScreenStateTest {
         onOpenCollection: (String) -> Unit = {},
     ) {
         compose.runOnUiThread {
-            controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
-            controller.get().setContent {
+            val built = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
+            controller = built
+            built.get().setContent {
                 TvTheme {
                     TvCatalogScreen(
                         state = state,
@@ -165,12 +200,15 @@ internal fun films(count: Int) = (0 until count).map { set("film-$it", Kind.MOVI
 internal fun courses(count: Int) =
     (0 until count).map { set("lesson-$it", Kind.TUTORIAL, "Lesson $it", show = "Course $it", addedAt = it.toLong()) }
 
-private fun set(
+internal fun set(
     id: String,
     kind: Kind,
     title: String,
     show: String? = null,
     addedAt: Long,
+    episode: Int? = null,
+    year: Int? = null,
+    durationSecs: Int? = null,
 ) = MediaSet(
     setId = id,
     kind = kind,
@@ -179,10 +217,10 @@ private fun set(
     chapter = null,
     path = null,
     season = null,
-    episodeFirst = null,
-    episodeLast = null,
-    year = null,
-    durationSecs = null,
+    episodeFirst = episode,
+    episodeLast = episode,
+    year = year,
+    durationSecs = durationSecs,
     posterPath = null,
     totalBytes = 0,
     addedAt = addedAt,

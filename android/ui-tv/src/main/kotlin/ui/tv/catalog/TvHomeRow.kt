@@ -32,7 +32,7 @@ import ui.tv.TvTextRow
 
 /**
  * One row of the start page: its heading, at most [HOME_ROW_LIMIT] plates
- * side by side, and "See all" after them as the row's last stop.
+ * side by side (`homeRowsOf` already cuts every row to that), and "See all" after them as the row's last stop.
  *
  * The plates do not scroll sideways. The web start page rules rails out on
  * purpose — a rail hides how much is on a shelf and ranks whatever it shows
@@ -60,7 +60,7 @@ internal fun TvHomeRow(
         RowHeading(row)
         when (val content = row.content) {
             is RowContent.Entries -> {
-                val entries = content.entries.take(HOME_ROW_LIMIT)
+                val entries = content.entries
                 if (entries.all(::isCourse)) {
                     CourseIndex(entries.filterIsInstance<Entry.Collection>(), onOpenCollection, seeAll, firstItem)
                 } else {
@@ -78,7 +78,7 @@ internal fun TvHomeRow(
             }
 
             is RowContent.Sets -> {
-                val cards = content.cards.take(HOME_ROW_LIMIT)
+                val cards = content.cards
                 PlateRow(cards.size, seeAll) { index, modifier ->
                     val card = cards[index]
                     TvSetPlate(
