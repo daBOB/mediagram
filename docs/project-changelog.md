@@ -37,6 +37,17 @@ to `main`. Full phase-by-phase detail lives in
   card is measured clear of the transport bar and the system's own bottom
   inset the same way `SubtitleLayer` clears the picture, rather than a fixed
   padding that clipped under three-button navigation.
+- Android player: after the picture-in-picture window's own ✕ pauses and
+  drops the media session (`pauseForPipDismissal`, a user decision — the
+  title stays open), pressing play again on that same still-open title
+  never runs through `open()`, so nothing had restarted the session,
+  foreground state or notification — a viewer could keep listening with
+  the screen off and no lock-screen controls, unprotected from the process
+  being killed for having no foreground service. `PlayerViewModel.onPlayingChanged`
+  now restarts `PlaybackServiceController` on every transition into
+  playing, matching a real player's own `onIsPlayingChanged(true)` —
+  idempotent, since starting an already-running service is a no-op, so
+  the ordinary case (opening a title) is unaffected.
 
 **Added**
 
@@ -132,6 +143,30 @@ to `main`. Full phase-by-phase detail lives in
   blank title. The button, its auto-enter and the lack of a web-side
   equivalent (the web has only the `p` key) are recorded as deliberate,
   phone-only touch equivalents, not owed to the web.
+- Android series preload and offline badges, matching the web's own
+  `series-preload.ts`/`held.ts`: opening an episode asks a new
+  `:core:playback` `SeriesPreloader` for the next two episodes of the
+  run `UpNextController` already resolves — the same `nextInQueue`, so
+  nothing computes "next" a second way. One worker, one download at a
+  time, over a media3 `CacheWriter` on the same `cacheDataSourceFactory`
+  playback itself reads through (`CacheDataSourceWriter`), on its own
+  dedicated thread and its own `PlaybackCounters` so a quiet preload never
+  shows up as the playing title's own reads. A candidate is skipped when
+  Wi-Fi is not the active network (`ConnectivityManager.isActiveNetworkMetered`)
+  or when holding it would push held-plus-current-plus-candidate past 75%
+  of the cache budget (`fitsInPreloadBudget`) — phone-only limits the web
+  never needed, recorded as deliberate differences. `HeldSets` answers
+  whether a set is fully on disk from the cache alone
+  (`Cache.isCached(key, 0, totalBytes)`, no Telegram asked); `CatalogViewModel`
+  scans it once when the shelves are built and folds in every
+  `SeriesPreloader.heldEvents` id after, without a full rescan. An
+  `offline` badge (`OfflineBadge.kt`, the web's own wording) now shows on
+  Continue, Next up, Watchlist and Kids cards, on search rows, on
+  Collections-tab list rows, and on the episode and lesson rows of a season
+  or course (`course-view.js`'s `lessonRow`) — the place a viewer looks for
+  what the preload took; the player's stats overlay says `cached`
+  in place of an ahead-seconds reading once the open title is held,
+  matching `preload-readout.js`.
 
 ## 2026-09-24
 

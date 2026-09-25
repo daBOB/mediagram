@@ -51,6 +51,8 @@ class PlayerMarksTest {
         FakeCatalogRepository(),
         FakePlayerPreferences(),
         FakeSubtitleTrackSource(),
+        seriesPreloader = FakeSeriesPreloader(),
+        heldSets = FakeHeldSets(),
     )
 
     @Test

@@ -44,6 +44,7 @@ internal fun ListScreen(
     onRename: (String) -> Unit,
     onDelete: () -> Unit,
     onRemove: (setId: String) -> Unit,
+    heldIds: Set<String> = emptySet(),
 ) {
     var renaming by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
@@ -67,7 +68,7 @@ internal fun ListScreen(
                 contentPadding = PaddingValues(horizontal = Spacing.medium),
             ) {
                 items(items = sets, key = MediaSet::setId) { set ->
-                    ListedRow(set = set, onPlay = { onPlay(set.setId) }, onRemove = { onRemove(set.setId) })
+                    ListedRow(set = set, held = set.setId in heldIds, onPlay = { onPlay(set.setId) }, onRemove = { onRemove(set.setId) })
                     HorizontalDivider()
                 }
             }
@@ -93,7 +94,7 @@ internal fun ListScreen(
 }
 
 @Composable
-private fun ListedRow(set: MediaSet, onPlay: () -> Unit, onRemove: () -> Unit) {
+private fun ListedRow(set: MediaSet, held: Boolean, onPlay: () -> Unit, onRemove: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -102,7 +103,10 @@ private fun ListedRow(set: MediaSet, onPlay: () -> Unit, onRemove: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(set.title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(set.title, style = MaterialTheme.typography.bodyLarge)
+            if (held) OfflineBadge(modifier = Modifier.padding(top = Spacing.extraSmall))
+        }
         TextButton(onClick = onRemove) { Text("Remove") }
     }
 }

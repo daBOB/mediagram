@@ -45,6 +45,7 @@ internal fun KeptWall(
     watch: WatchSnapshot,
     columns: Int,
     onOpenTitle: (setId: String) -> Unit,
+    heldIds: Set<String> = emptySet(),
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         WallHeading(kind.label, sets.size)
@@ -68,6 +69,7 @@ internal fun KeptWall(
                         caption = resumeLine(positions[set.setId]),
                         progress = watchedFractionOf(positions[set.setId]),
                         watched = set.setId in watchedIds,
+                        held = set.setId in heldIds,
                     ),
                     onClick = { onOpenTitle(set.setId) },
                 )
@@ -120,6 +122,7 @@ internal fun KidsWall(
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
     onPlayRun: (setId: String, run: List<String>) -> Unit,
+    heldIds: Set<String> = emptySet(),
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         WallHeading(KeptKind.KIDS.label, shelf.total)
@@ -154,6 +157,7 @@ internal fun KidsWall(
                                 caption = resumeLine(positions[item.setId]),
                                 progress = watchedFractionOf(positions[item.setId]),
                                 watched = item.setId in watchedIds,
+                                held = item.setId in heldIds,
                             ),
                             onClick = { onPlayRun(item.setId, byHandIds) },
                         )

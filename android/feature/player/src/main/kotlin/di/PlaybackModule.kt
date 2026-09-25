@@ -1,6 +1,7 @@
 package player.di
 
 import android.content.Context
+import android.util.Log
 import androidx.media3.exoplayer.ExoPlayer
 import dagger.Module
 import dagger.Provides
@@ -13,14 +14,25 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.asCoroutineDispatcher
+import playback.CacheDataSourceWriter
 import playback.DefaultSubtitleTrackSource
+import playback.HeldSets
+import playback.HeldSetsQuery
 import playback.PlaybackCounters
+import playback.PreloadWriter
+import playback.SeriesPreloader
+import playback.SeriesPreloading
 import playback.SubtitleTrackSource
+import playback.SystemUnmeteredNetworkCheck
 import playback.buildPlayer
+import playback.CacheProvider
+import playback.fitsInPreloadBudget
 import player.AndroidPlaybackServiceController
 import player.DefaultPlayerHandle
 import player.PlaybackServiceController
 import player.PlayerHandle
+import java.util.concurrent.Executors
 import javax.inject.Singleton
 
 /**
@@ -88,4 +100,51 @@ object PlaybackModule {
     @Provides
     @Singleton
     fun providePlaybackServiceController(controller: AndroidPlaybackServiceController): PlaybackServiceController = controller
+
+    @Provides
+    @Singleton
+    fun provideHeldSets(@ApplicationContext context: Context): HeldSetsQuery = HeldSets(context)
+
+    /**
+     * Built here rather than constructor-injected into [SeriesPreloader]
+     * itself: `:core:playback` carries no Hilt plugin of its own (see
+     * [HeldSets]), so every real dependency — the dedicated thread, the
+     * network check, the budget read — is assembled once, in this module,
+     * the same as [provideExoPlayerDeferred] builds the player's own cache.
+     */
+    @Provides
+    @Singleton
+    fun provideSeriesPreloader(
+        @ApplicationContext context: Context,
+        coreProvider: CoreProvider,
+        heldSets: HeldSetsQuery,
+        scope: CoroutineScope,
+    ): SeriesPreloading {
+        // Its own dedicated thread, apart from Dispatchers.IO's shared
+        // pool: MlibDataSource's own reads block with `runBlocking`, and a
+        // preload must never be what starves the pool the rest of the
+        // app's IO shares.
+        val dispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+        // Its own counters, not the playing title's: the System screen's
+        // numbers should not move just because a series is quietly
+        // preloading in the background.
+        val writer: PreloadWriter = CacheDataSourceWriter(context, PlaybackCounters()) { coreProvider.core.value }
+        val network = SystemUnmeteredNetworkCheck(context)
+        return SeriesPreloader(
+            scope = scope,
+            dispatcher = dispatcher,
+            writer = writer,
+            isHeld = { item -> heldSets.isHeld(item.setId, item.totalBytes) },
+            fits = { candidateBytes, currentBytes ->
+                network.isUnmetered() &&
+                    CacheProvider.occupancy(context).let { occupancy ->
+                        fitsInPreloadBudget(occupancy.heldBytes, currentBytes, candidateBytes, occupancy.budgetBytes)
+                    }
+            },
+            log = { line -> Log.d(PRELOAD_LOG_TAG, line) },
+        )
+    }
 }
+
+/** What `adb logcat` filters on to watch a preload run — `preload: <title> held`/`skipped`/`stopped`. */
+private const val PRELOAD_LOG_TAG = "SeriesPreload"

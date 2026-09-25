@@ -32,14 +32,19 @@ sealed interface SearchUiState {
  * [MediaSet] every shelf card already reads; [matched] and [excerpt] are the
  * only two things a hit adds that a set does not already say about itself.
  */
-data class SearchRow(val set: MediaSet, val matched: String, val excerpt: String?)
+data class SearchRow(val set: MediaSet, val matched: String, val excerpt: String?, val held: Boolean = false)
 
 /**
  * Joins [hits] onto the catalog [CatalogUiState] already holds — no second
  * read of the core, no rebuilding of a [MediaSet] or a re-check of a
  * poster's file, both of which [CatalogViewModel] has already paid for
  * building the shelves. A hit naming a set the catalog no longer has is
- * dropped rather than shown as a broken row.
+ * dropped rather than shown as a broken row. [held] rides the same
+ * [CatalogUiState.Ready.heldIds] every other card reads.
  */
-fun searchRowsOf(hits: List<SearchHit>, catalogState: CatalogUiState): List<SearchRow> =
-    hits.mapNotNull { hit -> catalogState.mediaSet(hit.setId)?.let { SearchRow(it, hit.matched, hit.excerpt) } }
+fun searchRowsOf(hits: List<SearchHit>, catalogState: CatalogUiState): List<SearchRow> {
+    val heldIds = (catalogState as? CatalogUiState.Ready)?.heldIds.orEmpty()
+    return hits.mapNotNull { hit ->
+        catalogState.mediaSet(hit.setId)?.let { SearchRow(it, hit.matched, hit.excerpt, hit.setId in heldIds) }
+    }
+}

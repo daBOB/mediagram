@@ -55,6 +55,7 @@ private const val LABEL_ALPHA = 0.7f
 fun PlaybackStatsOverlay(
     player: Player,
     totals: () -> PlaybackTotals,
+    held: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     // The transport bar's own tick, shared rather than started again. These
@@ -106,7 +107,7 @@ fun PlaybackStatsOverlay(
                 value = audioStatLine(codec, audio.channelCount, audio.language.orEmpty()),
             )
         }
-        StatRow(label = "buffer", value = bufferStatLine(aheadMs))
+        StatRow(label = "buffer", value = bufferStatLine(aheadMs, held))
         StatRow(label = "cache", value = cacheStatLine(counted))
         StatRow(label = "reads", value = readsStatLine(counted))
         droppedStatLine(dropped)?.let { StatRow(label = "dropped", value = it) }

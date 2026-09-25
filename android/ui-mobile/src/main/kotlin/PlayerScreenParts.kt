@@ -177,6 +177,7 @@ internal fun PlayerTopChrome(
     onBack: () -> Unit,
     onEnterPip: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    held: Boolean = false,
 ) {
     if (isInPip) return
     Column(modifier = modifier) {
@@ -187,7 +188,7 @@ internal fun PlayerTopChrome(
         // itself away, and keeps them while the film is paused.
         if (statsShown && barShown) {
             player?.let { current ->
-                PlaybackStatsOverlay(player = current, totals = totals, modifier = Modifier.padding(start = Spacing.medium))
+                PlaybackStatsOverlay(player = current, totals = totals, held = held, modifier = Modifier.padding(start = Spacing.medium))
             }
         }
     }

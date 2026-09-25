@@ -4,8 +4,12 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
+import catalog.createList
+import catalog.deleteList
 import catalog.mediaSet
+import catalog.renameList
 import catalog.runFor
+import catalog.setInList
 import system.FetchUiState
 import system.FetchViewModel
 
@@ -91,7 +95,7 @@ internal fun LibraryBranches(
         }
 
         FrameKind.SEASON -> ResolvedBranch(resolved.season, catalogState, Destination.Season(LOADING), menuActions, profileBar, at, { Destination.Season(it.title) }) { season ->
-            SeasonScreen(division = season, watch = resolved.watch, onOpenTitle = at::openTitle)
+            SeasonScreen(division = season, watch = resolved.watch, heldIds = catalogState.heldIdsOrEmpty(), onOpenTitle = at::openTitle)
         }
 
         FrameKind.COLLECTION -> ResolvedBranch(resolved.collection, catalogState, Destination.Collection(LOADING), menuActions, profileBar, at, { Destination.Collection(it.name) }) { collection ->
@@ -99,6 +103,7 @@ internal fun LibraryBranches(
                 collection = collection,
                 info = rememberTitleInfo(collection.posterKey, catalogViewModel::titleInfo),
                 watch = resolved.watch,
+                heldIds = catalogState.heldIdsOrEmpty(),
                 posterPath = catalogViewModel::posterPath,
                 onOpenTitle = at::openTitle,
                 onOpenSeason = { at.openSeason(it.title) },
@@ -123,6 +128,7 @@ internal fun LibraryBranches(
                 onRename = { name -> catalogViewModel.renameList(list.id, name) },
                 onDelete = { catalogViewModel.deleteList(list.id); at.pop() },
                 onRemove = { removedId -> catalogViewModel.setInList(list.id, removedId, false) },
+                heldIds = catalogState.heldIdsOrEmpty(),
             )
         }
 
@@ -183,3 +189,5 @@ internal fun LibraryBranch(
     )
 }
 
+/** What this device holds in full, or nothing while the shelves are still loading. */
+private fun CatalogUiState.heldIdsOrEmpty(): Set<String> = (this as? CatalogUiState.Ready)?.heldIds.orEmpty()

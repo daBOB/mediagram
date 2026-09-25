@@ -12,6 +12,10 @@ android {
 dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:model"))
+    // Only for HeldSetsQuery/SeriesPreloading and PreloadItem — the offline
+    // badge and the shelves' own "next two episodes" event feed; no
+    // composable and no media3 type is ever reached from this module.
+    implementation(project(":core:playback"))
 
     // NextUpFixtureTest reads the web's own next-up.json as plain JSON — no
     // @Serializable models, so the compiler plugin isn't needed, just the

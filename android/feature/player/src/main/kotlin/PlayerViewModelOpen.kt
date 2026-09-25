@@ -57,5 +57,6 @@ fun PlayerViewModel.open(setId: String, run: List<String> = emptyList(), fsk: St
     if (!sameTitle) {
         viewModelScope.launch { choicesController.resolve(setId) }
         upNextController.startTitle(setId, run)
+        preloadController.startTitle(setId, run)
     }
 }

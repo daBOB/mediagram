@@ -24,6 +24,7 @@ fun fakeMediaSet(
     posterPath: String? = null,
     durationSecs: Int? = null,
     fsk: String? = null,
+    totalBytes: Long = 0,
 ): MediaSet = MediaSet(
     setId = setId,
     kind = kind,
@@ -38,7 +39,7 @@ fun fakeMediaSet(
     year = null,
     durationSecs = durationSecs,
     posterPath = posterPath,
-    totalBytes = 0,
+    totalBytes = totalBytes,
     posterKey = posterKey,
     fsk = fsk,
 )

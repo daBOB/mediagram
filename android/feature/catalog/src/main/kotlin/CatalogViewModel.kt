@@ -23,7 +23,8 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
+import playback.HeldSetsQuery
+import playback.SeriesPreloading
 import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.TitleInfo
 import javax.inject.Inject
@@ -34,12 +35,19 @@ import javax.inject.Inject
  * combined in rather than read once, so a sync round or a title just left in
  * the player carries the start page's Continue and Next up rows forward
  * without the screen having to ask for a reload of its own.
+ *
+ * [heldSets] is asked for [CatalogUiState.Ready.heldIds] every time the
+ * shelves are built; [seriesPreloader]'s own [SeriesPreloading.heldEvents]
+ * updates that set again the moment a running preload finishes, without
+ * waiting for the shelves to be rebuilt.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CatalogViewModel @Inject constructor(
     private val repository: CatalogRepository,
-    private val watchState: WatchStateRepository,
+    internal val watchState: WatchStateRepository,
+    internal val heldSets: HeldSetsQuery = HeldSetsQuery.Noop,
+    seriesPreloader: SeriesPreloading = SeriesPreloading.Noop,
     libraryEvents: LibraryEvents = LibraryEvents.None,
 ) : ViewModel() {
 
@@ -58,7 +66,7 @@ class CatalogViewModel @Inject constructor(
     // re-reads, both collected on the main dispatcher, so never at once —
     // and each re-read takes it only after its own suspension, so it never
     // writes back a copy another read has since replaced.
-    private var lastReady: CatalogUiState.Ready? = null
+    internal var lastReady: CatalogUiState.Ready? = null
 
     // Asks for the shelves to be built again from this device alone. Dropped
     // when nobody is watching, which is safe: watching again reads the channel.
@@ -124,7 +132,7 @@ class CatalogViewModel @Inject constructor(
                 val failure = repository.refresh().exceptionOrNull()
                 val shelves = shelvesOf(runCatching { repository.sets() }.getOrDefault(emptyList()))
                 val answer = when {
-                    shelves.isNotEmpty() -> CatalogUiState.Ready(shelves, notice = failure?.refreshSentence())
+                    shelves.isNotEmpty() -> CatalogUiState.Ready(shelves, heldIds = heldIdsOf(shelves), notice = failure?.refreshSentence())
                     failure != null -> CatalogUiState.Failed(failure.refreshSentence())
                     else -> CatalogUiState.Empty
                 }
@@ -138,7 +146,7 @@ class CatalogViewModel @Inject constructor(
         }
         // Beside the channel reads rather than among them: through the same
         // flatMapLatest, a fetch finishing mid-read would cancel that read.
-        .let { reads -> merge(reads, refetched.mapNotNull { regrouped() }) }
+        .let { reads -> merge(reads, refetched.mapNotNull { regrouped() }, seriesPreloader.heldEvents.mapNotNull(::heldEventApplied)) }
         // Joined with the watch snapshot last, so a write from the player or
         // a pulled sync round updates Continue and Next up on its own,
         // without waiting for the channel to be read again.
@@ -179,25 +187,7 @@ class CatalogViewModel @Inject constructor(
      */
     suspend fun posterPath(posterKey: String): String? = repository.posterPath(posterKey)
 
-    // The four writes the Collections tab and its list screen make. Each is
-    // a fire-and-forget wrapper over [WatchStateRepository], the same shape
-    // ProfileViewModel.add already uses: the write goes to the core on
-    // [viewModelScope] and [state] picks up the result on its own, through
-    // the snapshot already combined into it — a caller in Compose has
-    // nothing to await.
-    fun createList(name: String) {
-        viewModelScope.launch { watchState.createList(name) }
-    }
-
-    fun renameList(id: String, name: String) {
-        viewModelScope.launch { watchState.renameList(id, name) }
-    }
-
-    fun deleteList(id: String) {
-        viewModelScope.launch { watchState.deleteList(id) }
-    }
-
-    fun setInList(id: String, setId: String, included: Boolean) {
-        viewModelScope.launch { watchState.setInList(id, setId, included) }
-    }
+    // The Collections tab's "New list" and its rename/delete/membership
+    // writes live in CatalogListActions.kt, as extension functions — split
+    // out to keep this file under the project's line guideline.
 }

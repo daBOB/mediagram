@@ -112,7 +112,7 @@ private fun Shelves(
         }
         when {
             selected == 0 -> HomeScreen(
-                rows = remember(shelves, state.watch) { homeRowsOf(shelves, state.watch) },
+                rows = remember(shelves, state.watch, state.heldIds) { homeRowsOf(shelves, state.watch, state.heldIds) },
                 watch = state.watch,
                 columns = columns,
                 onOpenTitle = onOpenTitle,
@@ -126,6 +126,7 @@ private fun Shelves(
                 kind = KeptKind.entries[selected - firstKept],
                 shelves = shelves,
                 watch = state.watch,
+                heldIds = state.heldIds,
                 columns = columns,
                 onOpenTitle = onOpenTitle,
                 onOpenCollection = onOpenCollection,
@@ -149,6 +150,7 @@ private fun KeptTabContent(
     kind: KeptKind,
     shelves: List<Shelf>,
     watch: WatchSnapshot,
+    heldIds: Set<String>,
     columns: Int,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
@@ -157,9 +159,9 @@ private fun KeptTabContent(
     onPlayRun: (setId: String, run: List<String>) -> Unit,
 ) {
     when (kind) {
-        KeptKind.CONTINUE -> KeptWall(kind, continueWall(shelves, watch), watch, columns, onOpenTitle)
-        KeptKind.WATCHLIST -> KeptWall(kind, watchlistWall(shelves, watch), watch, columns, onOpenTitle)
-        KeptKind.KIDS -> KidsWall(kidsShelf(shelves, watch), watch, columns, onOpenTitle, onOpenCollection, onPlayRun)
+        KeptKind.CONTINUE -> KeptWall(kind, continueWall(shelves, watch), watch, columns, onOpenTitle, heldIds)
+        KeptKind.WATCHLIST -> KeptWall(kind, watchlistWall(shelves, watch), watch, columns, onOpenTitle, heldIds)
+        KeptKind.KIDS -> KidsWall(kidsShelf(shelves, watch), watch, columns, onOpenTitle, onOpenCollection, onPlayRun, heldIds)
         KeptKind.COLLECTIONS -> ListsScreen(lists = watch.collections, onOpen = onOpenList, onCreate = onCreateList)
     }
 }

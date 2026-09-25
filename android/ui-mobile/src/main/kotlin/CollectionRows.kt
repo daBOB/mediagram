@@ -61,6 +61,7 @@ internal fun LazyListScope.items(
     rows: List<Row>,
     positions: Map<String, Progress>,
     watchedIds: Set<String>,
+    heldIds: Set<String>,
     onOpenTitle: (setId: String) -> Unit,
 ) {
     items(
@@ -74,7 +75,7 @@ internal fun LazyListScope.items(
                 modifier = Modifier.padding(start = indentOf(row.depth), top = Spacing.medium),
             )
 
-            is Row.Item -> ItemRow(row, positions[row.set.setId], row.set.setId in watchedIds, onOpenTitle)
+            is Row.Item -> ItemRow(row, positions[row.set.setId], row.set.setId in watchedIds, row.set.setId in heldIds, onOpenTitle)
         }
     }
 }
@@ -93,10 +94,13 @@ internal fun LazyListScope.items(
  * played, so it carries neither. Ported from `course-view.js`'s
  * `lessonRow`: a tick before the title rather than after it, so a column of
  * them down a season reads at a glance, and a progress rule along the foot
- * of the row, the same rule a plate draws along its own.
+ * of the row, the same rule a plate draws along its own. [held] adds the
+ * "offline" badge under the title, as `lessonRow` does: an episode or a
+ * lesson is the thing most likely to be held in full, and a season list is
+ * where a viewer looks for what the preload already took.
  */
 @Composable
-private fun ItemRow(row: Row.Item, progress: Progress?, watched: Boolean, onOpenTitle: (setId: String) -> Unit) {
+private fun ItemRow(row: Row.Item, progress: Progress?, watched: Boolean, held: Boolean, onOpenTitle: (setId: String) -> Unit) {
     val document = row.set.kind == Kind.DOCUMENT
     Column(modifier = Modifier.padding(start = indentOf(row.depth))) {
         Text(
@@ -124,6 +128,7 @@ private fun ItemRow(row: Row.Item, progress: Progress?, watched: Boolean, onOpen
                 modifier = Modifier.padding(bottom = Spacing.small),
             )
         }
+        if (held) OfflineBadge(modifier = Modifier.padding(bottom = Spacing.small))
         watchedFractionOf(progress)?.let { fraction ->
             LinearProgressIndicator(
                 progress = { fraction },

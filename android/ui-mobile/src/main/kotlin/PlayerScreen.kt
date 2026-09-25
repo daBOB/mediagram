@@ -68,7 +68,7 @@ fun PlayerScreen(setId: String, run: List<String>, fsk: String?, onBack: () -> U
     val choices by viewModel.choices.collectAsStateWithLifecycle()
     val subtitleCues by viewModel.subtitleCues.collectAsStateWithLifecycle()
     val upNext by viewModel.upNext.collectAsStateWithLifecycle()
-
+    val held by viewModel.held.collectAsStateWithLifecycle()
     val isInPip = LocalIsInPictureInPicture.current
     val pip = PipController(player = player, isPlaying = state is PlayerUiState.Playing, onDismissed = viewModel::pauseForPipDismissal)
 
@@ -193,6 +193,7 @@ fun PlayerScreen(setId: String, run: List<String>, fsk: String?, onBack: () -> U
             onBack = onBack,
             onEnterPip = pip.enterPip.takeIf { pip.supported && player != null },
             modifier = Modifier.align(Alignment.TopStart),
+            held = held,
         )
     }
 }

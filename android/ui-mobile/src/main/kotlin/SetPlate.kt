@@ -22,6 +22,7 @@ internal fun SetPlate(card: SetCard, modifier: Modifier = Modifier, onClick: () 
         caption = card.caption.ifEmpty { null },
         progress = card.progress,
         watched = card.watched,
+        held = card.held,
         modifier = modifier,
         onClick = onClick,
     )

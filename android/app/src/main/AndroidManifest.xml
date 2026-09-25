@@ -12,6 +12,8 @@
         android:required="false" />
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- android.permission.ACCESS_NETWORK_STATE merges in from
+         :core:playback's own manifest (SystemUnmeteredNetworkCheck). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <!-- No android.permission.POST_NOTIFICATIONS: PlaybackService's own

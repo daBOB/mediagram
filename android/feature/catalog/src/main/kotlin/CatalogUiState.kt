@@ -24,6 +24,8 @@ sealed interface CatalogUiState {
         val watch: WatchSnapshot = WatchSnapshot.Empty,
         val notice: String? = null,
         val refreshing: Boolean = false,
+        /** Sets on this device's disk in full — the "offline" badge's own source. */
+        val heldIds: Set<String> = emptySet(),
     ) : CatalogUiState
     data object Empty : CatalogUiState
     data class Failed(val message: String) : CatalogUiState

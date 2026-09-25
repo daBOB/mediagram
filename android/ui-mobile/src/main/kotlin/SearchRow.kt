@@ -60,6 +60,7 @@ internal fun SearchResultRow(row: SearchRow, progress: Progress?, watched: Boole
         metaLineOf(set).takeIf(String::isNotEmpty)?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        if (row.held) OfflineBadge(modifier = Modifier.padding(top = Spacing.extraSmall))
         watchedFractionOf(progress)?.let { fraction ->
             LinearProgressIndicator(
                 progress = { fraction },

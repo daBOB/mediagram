@@ -25,6 +25,8 @@ internal fun buildViewModel(
     preferences: FakePlayerPreferences = FakePlayerPreferences(),
     subtitleTrackSource: FakeSubtitleTrackSource = FakeSubtitleTrackSource(),
     playbackServiceController: FakePlaybackServiceController = FakePlaybackServiceController(),
+    seriesPreloader: FakeSeriesPreloader = FakeSeriesPreloader(),
+    heldSets: FakeHeldSets = FakeHeldSets(),
 ) = PlayerViewModel(
     handle,
     PlaybackCounters(),
@@ -35,4 +37,6 @@ internal fun buildViewModel(
     preferences,
     subtitleTrackSource,
     playbackServiceController,
+    seriesPreloader,
+    heldSets,
 )

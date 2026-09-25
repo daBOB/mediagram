@@ -21,6 +21,8 @@ internal fun testViewModel(handle: PlayerHandle): PlayerViewModel {
         FakeCatalogRepository(),
         FakePlayerPreferences(),
         FakeSubtitleTrackSource(),
+        seriesPreloader = FakeSeriesPreloader(),
+        heldSets = FakeHeldSets(),
     )
 }
 

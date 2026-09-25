@@ -47,6 +47,7 @@ fun CollectionScreen(
     collection: Entry.Collection,
     info: TitleInfo?,
     watch: WatchSnapshot,
+    heldIds: Set<String>,
     posterPath: suspend (key: String) -> String?,
     onOpenTitle: (setId: String) -> Unit,
     onOpenSeason: (Division) -> Unit,
@@ -97,6 +98,6 @@ fun CollectionScreen(
                 )
             }
         }
-        items(rows, positions, watchedIds, onOpenTitle)
+        items(rows, positions, watchedIds, heldIds, onOpenTitle)
     }
 }

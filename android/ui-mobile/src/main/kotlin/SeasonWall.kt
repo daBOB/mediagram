@@ -98,7 +98,7 @@ internal fun SeasonWall(
  * plate stood for, so it is shown the same way.
  */
 @Composable
-internal fun SeasonScreen(division: Division, watch: WatchSnapshot, onOpenTitle: (setId: String) -> Unit) {
+internal fun SeasonScreen(division: Division, watch: WatchSnapshot, heldIds: Set<String>, onOpenTitle: (setId: String) -> Unit) {
     val rows = remember(division) { rowsOf(listOf(division)) }
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
@@ -107,7 +107,7 @@ internal fun SeasonScreen(division: Division, watch: WatchSnapshot, onOpenTitle:
         contentPadding = PaddingValues(Spacing.large),
         verticalArrangement = Arrangement.spacedBy(Spacing.small),
     ) {
-        items(rows, positions, watchedIds, onOpenTitle)
+        items(rows, positions, watchedIds, heldIds, onOpenTitle)
     }
 }
 

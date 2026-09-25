@@ -13,8 +13,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import model.MediaSet
+import playback.HeldSetsQuery
 import playback.PlaybackCounters
 import playback.PlaybackTotals
+import playback.SeriesPreloading
 import playback.SubtitleTrackSource
 import playback.TimedCue
 import javax.inject.Inject
@@ -31,6 +33,8 @@ class PlayerViewModel @Inject constructor(
     preferences: PlayerPreferences,
     subtitleTrackSource: SubtitleTrackSource,
     internal val playbackServiceController: PlaybackServiceController = PlaybackServiceController.Noop,
+    seriesPreloader: SeriesPreloading,
+    heldSets: HeldSetsQuery,
 ) : ViewModel(), PlayerHandle.Listener {
 
     internal val _state = MutableStateFlow<PlayerUiState>(PlayerUiState.Preparing)
@@ -79,6 +83,13 @@ class PlayerViewModel @Inject constructor(
     /** What follows the open title, and the countdown that may start it unattended — ported from `refreshUpNext`/`startWhenReady` in `player.js`. */
     internal val upNextController = UpNextController(viewModelScope, handle, session, catalogRepository, choicesController.openSet)
     val upNext: StateFlow<UpNextUiState> = upNextController.state
+
+    /** Takes the next two episodes of an open show into the cache while this one plays. */
+    internal val preloadController = PlayerPreloadController(viewModelScope, catalogRepository, seriesPreloader)
+
+    /** Whether the open title plays with no network at all — the stats overlay's "cached" line. */
+    internal val heldController = PlayerHeldController(viewModelScope, heldSets, seriesPreloader, choicesController.openSet)
+    val held: StateFlow<Boolean> = heldController.held
 
     /** A title to navigate to, once — the UI layer owns `LibraryPositions`, so it (not this VM) moves there and calls [switchAcknowledged]. */
     val pendingSwitch: StateFlow<PendingPlayerSwitch?> = upNextController.pendingSwitch
@@ -149,6 +160,13 @@ class PlayerViewModel @Inject constructor(
 
     override fun onPlayingChanged(isPlaying: Boolean) {
         _state.value = if (isPlaying) PlayerUiState.Playing else PlayerUiState.Paused
+        // A picture-in-picture dismissal pauses and stops the service
+        // without closing the title (`pauseForPipDismissal`); pressing play
+        // again on that same still-open title never runs through `open()`,
+        // so this is the only place that notices playback has resumed and
+        // has to bring the session back. Safe on every ordinary play too —
+        // starting an already-running service is a no-op.
+        if (isPlaying) playbackServiceController.start()
         session.onPlayingChanged(isPlaying)
         upNextController.onPlayingChanged(isPlaying)
     }

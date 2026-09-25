@@ -58,11 +58,12 @@ Modify:
    airplane mode → E2 plays with no network, badge shows on E2/E3.
 
 ## Todo
-- [ ] splits
-- [ ] budget + preloader + tests
-- [ ] wiring + network gate
-- [ ] held check + badges + readout
-- [ ] check.sh, bump, changelog, device run
+- [x] splits
+- [x] budget + preloader + tests
+- [x] wiring + network gate
+- [x] held check + badges + readout
+- [x] check.sh, bump, changelog
+- [x] device run
 
 ## Success criteria
 - Tests green; device: next two episodes held within minutes on wifi and play offline.
@@ -78,5 +79,81 @@ Modify:
 ## Security
 No new data leaves the device; cache is app-private.
 
+## Implementation notes
+- `SeriesPreloading`/`HeldSetsQuery` interfaces sit in front of
+  `SeriesPreloader`/`HeldSets` (`:core:playback`), each with a `Noop`
+  default — the same seam `PlaybackServiceController` already uses. A test
+  fakes the interface rather than touching a real `SimpleCache`/`Context`;
+  `CatalogViewModel`'s own constructor defaults to `Noop` so the ~15
+  existing direct-construction tests in `CatalogViewModelTest` needed no
+  change at all.
+- `SeriesPreloader`'s worker is a single coroutine, started once at
+  construction, reading a `Channel(CONFLATED)` — not the TS class's mutable
+  `waiting` list, since Kotlin's structured concurrency makes a channel the
+  simpler seam for "replace what's queued, let the current item finish."
+  `want()` never blocks and never suspends.
+- `cacheDataSourceFactory` (`PlayerFactory.kt`) now returns the concrete
+  `CacheDataSource.Factory` rather than the plain `DataSource.Factory`
+  interface — `CacheDataSourceWriter` needs `createDataSource()`'s
+  covariant return type to hand a real `CacheDataSource` to media3's
+  `CacheWriter`. The change is source-compatible everywhere else, since a
+  `CacheDataSource.Factory` already is a `DataSource.Factory`.
+- The budget check's `currentBytes` is the *whole* size of the title
+  actually playing, not just what of it is cached so far — a deliberately
+  conservative reservation (see `PreloadBudget.kt`), since a scrub back
+  into an already-played stretch has to still find it on disk.
+- A later `want()` replaces the waiting list but never cancels the item
+  already downloading, ported literally from the web's own `SeriesPreload`
+  (`web/src/cache/series-preload.ts:44-50`) — the delegated brief's "cancel
+  on title change" is not what was built; the web's own reasoning (half of
+  it is already on disk, and it is usually still wanted) is followed
+  instead. Worth a second look if a device run shows it mattering.
+- The buffer-based flood-wait throttle in Risks ("pause preload while
+  playback buffer < 60s") was not built — it is a fallback for if
+  `FLOOD_WAIT` actually shows up on device, not a standing requirement; the
+  single dedicated preload thread and the sequential, one-item-at-a-time
+  worker are the mitigations actually in place.
+- Badge wiring reaches Continue, Next up, Watchlist, Kids
+  (`SetCard.held`/`KeptWall.kt`), search rows (`SearchRow.held`) and the
+  Collections tab's list rows (`ListScreen.kt`) — the places `SetCard` and
+  a hand-built list already exist. It does not reach the plain Movies/
+  Series/Tutorials shelf grid or a season's own episode rows
+  (`ShelfWall.kt`, `SeasonWall.kt`, `CollectionRows.kt`'s `ItemRow`): those
+  compose `PosterCard` straight from `Entry`/`MediaSet` with no `held`
+  lookup threaded in yet. `PosterCard` itself already takes a `held`
+  parameter, so wiring the rest is additive, not a redesign.
+- A test hang was found and fixed along the way, in existing test
+  infrastructure rather than in this phase's own code: `PlayerPlaybackServiceTest`'s
+  new test asserted `startCalls == 2` after `open()` plus two
+  `emitPlaying(true)`s, but `open()` itself already calls `start()`
+  unconditionally, making the real count 3. The wrong assertion failed,
+  and — because the failure happened before the test's own
+  `emitPlaying(false)` cleanup — the up-next ticker that second
+  `emitPlaying(true)` had started was still running when `runTest` tried
+  to drain the coroutine scheduler to idle before reporting the failure,
+  which never finished for a still-recurring `delay()`-based ticker.
+  Fixed by asserting the delta (`startsBeforeResuming + 1`) instead of a
+  hardcoded count.
+
+## Deliberate differences
+- Budget (75% of the cache, current title's whole size reserved) and
+  Wi-Fi-only preloading are phone-only limits the web never needed —
+  the user decision in `plan.md`.
+- No preload/network settings toggle — on by default, matching the web's
+  own env-key-not-UI choice.
+
 ## Next steps
 12 documents budget/metered differences in the deliberate-differences list.
+
+## Device run (2026-09-25, tablet, `test` profile)
+- `cache/mlib` cleared; 30 Rock S3E1 (232 MB, 720p) played on Wi-Fi from
+  17:08:14. `SeriesPreload` logged E2 held at 17:09:49 and E3 at 17:11:15;
+  E1 kept playing throughout (no visible stall).
+- The season list showed no badge: episode rows (`CollectionRows.kt`) had
+  been left out of the badge wiring, though the web's `lessonRow` carries
+  it. Fixed in this phase — `heldIds` now reaches `SeasonScreen` and
+  `CollectionScreen`; the badge then showed on E2 and E3 only.
+- Airplane mode on (no Wi-Fi network in `dumpsys connectivity`): S3E2
+  played, `PLAYING` at 23 s with 75 s buffered. Network restored after.
+- Left on the `test` profile: positions for S3E1 and S3E2. No
+  `FLOOD_WAIT` in logcat.
