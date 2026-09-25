@@ -5,7 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Unreleased — 0.55.1
+## Unreleased — 0.55.2
+
+**Changed**
+
+- The home page's cover story is 20% taller (`--cover-height` clamp(528px, 54vh,
+  600px), 84vh on a phone); the rail beside it follows.
+
+## 0.55.1
 
 **Changed**
 

@@ -400,5 +400,5 @@
 .this-month-name { font-size: 0.9375rem; }
 @media (max-width: 900px) {
   .this-month { border-left: 0; padding-left: 0; }
-  .cover { height: auto; min-height: 70vh; }
+  .cover { height: auto; min-height: 84vh; }
 }
