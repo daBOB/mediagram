@@ -36,7 +36,7 @@ import { homeShelves } from "./lib/catalog/home-shelves.js";
 import { renderHome } from "./lib/catalog/home-view.js";
 import { describeFilm, filmPage } from "./lib/catalog/film-page.js";
 import { genreShelf } from "./lib/catalog/genres.js";
-import { forKidsProfile, kidsShelf } from "./lib/age-rating.js";
+import { forKidsProfile } from "./lib/age-rating.js";
 
 const main = document.getElementById("main");
 const player = document.getElementById("player");
@@ -63,10 +63,6 @@ const KEPT = {
   continue: { label: "Continue", empty: "Nothing started yet." },
   watchlist: { label: "Watchlist", empty: "Nothing on the list." },
   collections: { label: "Collections", empty: "No lists yet." },
-  kids: {
-    label: "Kids",
-    empty: "Nothing rated FSK 12 or younger, and nothing marked. An unrated title can be marked with Kids in the player.",
-  },
 };
 
 /** Ids to sets, quietly dropping any the catalog no longer holds. */
@@ -377,8 +373,6 @@ function refreshShelfCounts() {
   document.getElementById("n-continue").textContent = String(started.length);
   document.getElementById("n-watchlist").textContent = String(setsFor(state.watchlist()).length);
   document.getElementById("n-collections").textContent = String(state.collections().length);
-  const kids = kidsShelf(library, setsFor(state.kids()));
-  document.getElementById("n-kids").textContent = String(kids.films.length + kids.series.length + kids.byHand.length);
 }
 
 /** Whose shelves these are, and the way to become somebody else. */
@@ -421,40 +415,6 @@ function viewWatchlist() {
   heading(main, KEPT.watchlist.label, countOf(listed.length, "title"));
   if (listed.length === 0) return main.append(el("p", "empty", KEPT.watchlist.empty));
   main.append(setGrid(listed, play));
-}
-
-/**
- * What has been marked as a child's.
- *
- * Played as a run, the way a list is: a child handed a tablet should not have
- * to come back to the shelf between one film and the next.
- */
-/**
- * What a child may watch: everything rated FSK 12 or younger, and anything
- * unrated someone marked by hand. The rules are `age-rating.js`'s.
- */
-function viewKids() {
-  const { films, series, byHand } = kidsShelf(library, setsFor(state.kids()));
-  heading(main, KEPT.kids.label, countOf(films.length + series.length + byHand.length, "title"));
-  if (films.length + series.length + byHand.length === 0) {
-    return main.append(el("p", "empty", KEPT.kids.empty));
-  }
-  const parts = [
-    [films, SECTIONS.movies.label, () => movieGrid(films, openFilm, { mode: GRID })],
-    [
-      series,
-      SECTIONS.series.label,
-      () =>
-        collectionGrid("series", series, (title) => {
-          location.hash = `#/series/${encodeURIComponent(title)}`;
-        }, { mode: GRID }),
-    ],
-    [byHand, "Marked by hand", () => setGrid(byHand, (set) => play(set, byHand))],
-  ].filter(([items]) => items.length > 0);
-  for (const [, label, grid] of parts) {
-    if (parts.length > 1) main.append(el("h2", "shelf-sub", label));
-    main.append(grid());
-  }
 }
 
 /** Asks the server, because summaries live there and are not in the catalog. */
@@ -628,7 +588,6 @@ function route() {
   if (known === "system") return viewSystem();
   if (known === "continue") return viewContinue();
   if (known === "watchlist") return viewWatchlist();
-  if (known === "kids") return viewKids();
   if (known === "collections") {
     const list = state.collections().find((entry) => entry.id === decodeURIComponent(name ?? ""));
     return name

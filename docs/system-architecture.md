@@ -638,6 +638,11 @@ it once, where it takes in its catalog (`applyCatalog` in `app.js`,
 `CatalogViewModel` on the phone), so every shelf, search, reel and title page
 inherits it.
 
+There is no Kids shelf. It listed the same titles a kids profile now shows,
+so it was removed from both surfaces: a kids profile's library is that list.
+The "Kids" mark in the player stays, on grown-up profiles only — it is how an
+unrated title, such as a course, is let through.
+
 It is a filter, not a lock: anyone can choose another profile, the server
 does not know which profile is asking, and a direct stream URL still plays.
 The chunk cache is device-wide and shared by every profile.

@@ -1,21 +1,19 @@
 /**
- * Age ratings, and what they decide about the Kids shelf.
+ * Age ratings, and what they decide about a kids profile.
  *
  * The rating is TMDB's for the library's country — an FSK in Germany — carried
  * on every catalog row as `fsk` (`"12"`), or `null` when the title has none.
  * The rules, as the household chose them:
  *
- *  - Rated at or below `KIDS_AGE_LIMIT`: on the Kids shelf by itself. Nobody
- *    has to mark it, and a mark cannot take it off — the rating decides.
- *  - Rated above it: never on the Kids shelf. Marking it is refused, and a
- *    mark made before ratings were recorded no longer counts.
+ *  - Rated at or below `KIDS_AGE_LIMIT`: for kids by itself. Nobody has to
+ *    mark it, and a mark cannot take it off — the rating decides.
+ *  - Rated above it: never for kids. Marking it is refused, and a mark made
+ *    before ratings were recorded no longer counts.
  *  - Unrated: only what someone marked by hand, exactly as before ratings.
  *
- * Pure, so the rules are tested without a browser; the shelf and the player's
- * Kids button only ask.
+ * Pure, so the rules are tested without a browser; the catalog filter and the
+ * player's Kids button only ask.
  */
-
-import { firstItemOf } from "./library.js";
 
 /** The oldest rating that is still for kids. FSK 12 and younger. */
 export const KIDS_AGE_LIMIT = 12;
@@ -44,33 +42,10 @@ export function kidsVerdict(set) {
 }
 
 /**
- * What the Kids shelf holds.
- *
- * Films and series rated for kids, then whatever was marked by hand and is
- * not already there — minus anything rated too old, however it was marked. A
- * series is rated as a show, so its first episode answers for all of it, as
- * it does for its genres; a hand-marked episode of an unrated show is listed
- * on its own.
- */
-export function kidsShelf(library, marked) {
-  const films = library.movies.filter((set) => kidsVerdict(set) === "safe");
-  const series = library.series.filter(
-    (collection) => kidsVerdict(firstItemOf(collection.divisions)) === "safe",
-  );
-  const onShelf = new Set(films.map((set) => set.setId));
-  const safeShows = new Set(series.map((collection) => collection.name));
-  const byHand = marked.filter(
-    (set) =>
-      kidsVerdict(set) === "unrated" && !onShelf.has(set.setId) && !(set.show && safeShows.has(set.show)),
-  );
-  return { films, series, byHand };
-}
-
-/**
  * The catalog a kids profile sees: rated for kids, or unrated and marked by
  * hand. Applied once to the whole catalog, so every shelf, search and reel
  * built from it agrees. A rating decides on its own — a hand mark on a title
- * rated too old does not let it through, as on the Kids shelf.
+ * rated too old does not let it through.
  * @param {import("./library.js").CatalogSet[]} sets
  * @param {Set<string>} marked set ids marked for Kids by hand
  */
