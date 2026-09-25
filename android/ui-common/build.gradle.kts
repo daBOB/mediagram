@@ -21,6 +21,11 @@ dependencies {
     // compile classpath — ui-mobile carries the same direct dependency for
     // the same reason.
     implementation(project(":core:data"))
+    // The picture both players draw: media3's PlayerSurface and its
+    // presentation state, which core:playback exposes as `api`. Media3's
+    // Compose surface is not either surface's component library, so it
+    // belongs here with the rest of the player glue both share.
+    implementation(project(":core:playback"))
     implementation(libs.findLibrary("androidx.lifecycle.runtime.compose").get())
     implementation(libs.findLibrary("androidx.hilt.lifecycle.viewmodel.compose").get())
 

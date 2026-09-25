@@ -9,7 +9,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.focus.FocusRequester
 import catalog.CatalogUiState
 import ui.tv.catalog.TvCatalogScreen
-import ui.tv.catalog.TvCenteredMessage
 import ui.tv.profile.TvChosenProfile
 
 /**
@@ -50,15 +49,4 @@ internal fun TvCatalogRoot(
         onMastheadFocusChanged = { onMasthead = it },
         onTabChanged = onTabChanged,
     )
-}
-
-/**
- * Where a title plays. The player is not on this surface yet, so this says
- * which title was asked for and that it will play here — plainly, rather
- * than a blank page or a player that pretends — and Back returns to the
- * page that asked, as it will from the real one.
- */
-@Composable
-internal fun TvPlayerStandIn(title: String?) {
-    TvCenteredMessage(if (title != null) "“$title” will play here soon." else "This title will play here soon.")
 }

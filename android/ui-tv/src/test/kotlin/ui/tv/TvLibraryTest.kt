@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
@@ -26,6 +27,8 @@ import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import ui.tv.catalog.films
 import ui.tv.catalog.set
+import ui.tv.player.TvPlayerScreenTag
+import ui.tv.player.TvSeekBarTag
 
 /**
  * [TvLibrary] walked the way a remote walks it, over the real
@@ -104,10 +107,14 @@ class TvLibraryTest {
     }
 
     @Test
-    fun playShowsTheStandInAndBackReturnsToTheTitle() {
+    fun playOpensThePlayerAndBackPutsItsControlsAwayBeforeReturningToTheTitle() {
         press(plate("Film 1"))
         press(compose.onNodeWithText("▶ Play"))
-        compose.onNodeWithText("“Film 1” will play here soon.").assertExists()
+        compose.onNodeWithTag(TvSeekBarTag).assertExists()
+
+        back()
+        compose.onNodeWithTag(TvSeekBarTag).assertDoesNotExist()
+        compose.onNodeWithTag(TvPlayerScreenTag).assertExists()
 
         back()
         compose.onNodeWithText("▶ Play").assertIsFocused()

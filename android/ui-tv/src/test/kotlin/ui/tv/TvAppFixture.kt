@@ -20,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import model.MediaSet
 import model.Profile
+import player.PlayerViewModel
 import settings.InMemoryLibrarySettings
 import settings.InMemoryTelegramSettings
 import settings.InMemoryTmdbSettings
@@ -27,6 +28,7 @@ import setup.Libraries
 import setup.SetupViewModel
 import setup.login.LoginViewModel
 import system.FetchViewModel
+import ui.tv.player.TvPlayerFixture
 import uniffi.mediagram_core.LibraryChoice
 
 /** Which of [SetupViewModel]'s outstanding steps a [TvAppFixture] should land on. */
@@ -67,6 +69,8 @@ internal class TvAppFixture(
     private val profile: ProfileViewModel
     val catalog: CatalogViewModel
     private val fetch: FetchViewModel
+    private val playback: TvPlayerFixture
+    private val player: PlayerViewModel
 
     init {
         val core = mockk<CoreClient>()
@@ -93,7 +97,7 @@ internal class TvAppFixture(
             )
         // TvSignInScreen, TvProfileGate and the library each resolve their
         // own ViewModel through hiltViewModel(), the same way TvApp resolves
-        // SetupViewModel — this ViewModelStoreOwner has to hand back all five,
+        // SetupViewModel — this ViewModelStoreOwner has to hand back every one,
         // or reaching that step through TvApp falls back to
         // ViewModelProvider's default factory, which cannot construct one
         // with no Hilt entry point to supply its arguments.
@@ -108,6 +112,10 @@ internal class TvAppFixture(
         val enrichment = CatalogEnrichmentFetcher(provider, InMemoryTmdbSettings())
         catalog = CatalogViewModel(repository, viewer, LibraryUpdateCoordinator(repository, enrichment))
         fetch = FetchViewModel(enrichment)
+        // The player a title's Play opens, over an ExoPlayer that decodes
+        // nothing — the library's walk only needs it to open and to stop.
+        playback = TvPlayerFixture(viewer)
+        player = playback.factory.create(PlayerViewModel::class.java)
         val models =
             mapOf<Class<out ViewModel>, ViewModel>(
                 SetupViewModel::class.java to setup,
@@ -115,6 +123,7 @@ internal class TvAppFixture(
                 ProfileViewModel::class.java to profile,
                 CatalogViewModel::class.java to catalog,
                 FetchViewModel::class.java to fetch,
+                PlayerViewModel::class.java to player,
             )
         val held =
             ViewModelProvider(
@@ -126,5 +135,8 @@ internal class TvAppFixture(
         models.keys.forEach { held[it] }
     }
 
-    override fun close() = viewModelStore.clear()
+    override fun close() {
+        viewModelStore.clear()
+        playback.close()
+    }
 }

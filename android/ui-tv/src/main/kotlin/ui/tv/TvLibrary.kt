@@ -20,6 +20,7 @@ import ui.tv.catalog.TvFetchResultDialog
 import ui.tv.catalog.TvList
 import ui.tv.catalog.TvSeason
 import ui.tv.catalog.TvTitlePage
+import ui.tv.player.TvPlayerScreen
 import ui.tv.profile.TvChosenProfile
 
 /**
@@ -58,9 +59,14 @@ internal fun TvLibrary(profile: TvChosenProfile) {
     }
 
     when (resolved) {
+        // The player answers Back itself: the first press puts its
+        // controls away, and only a press with them already gone leaves.
         is ResolvedPosition.Player -> {
-            BackHandler { leave(resolved) }
-            TvPlayerStandIn(catalogState.mediaSet(resolved.setId)?.title)
+            TvPlayerScreen(
+                setId = resolved.setId,
+                set = catalogState.mediaSet(resolved.setId),
+                onBack = { leave(resolved) },
+            )
         }
 
         // Nothing on a television opens a menu screen yet, so a saved one

@@ -37,13 +37,6 @@ import player.READOUT_TICK_MS
 import player.clockTime
 
 /**
- * Enough to keep white legible over a bright frame without hiding it. The
- * overlay lays the same scrim over the picture, and one film cannot sit
- * under two different greys.
- */
-internal const val SCRIM_ALPHA = 0.55f
-
-/**
  * The transport bar.
  *
  * Everything shown here is a fact ExoPlayer already keeps, read through
