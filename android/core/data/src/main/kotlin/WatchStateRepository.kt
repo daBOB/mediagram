@@ -124,12 +124,15 @@ interface WatchStateRepository {
      * `watch-state.js`: what the player does when the credits roll, and what
      * a viewer does by hand from Continue for something finished elsewhere
      * or given up on. The position goes, because a finished title has nowhere
-     * to resume to; the fact that it finished stays, and a title already
-     * finished keeps the date it was first finished.
+     * to resume to; the fact that it finished stays.
+     *
+     * Stamped now even when the title was finished before: the completion is
+     * the deleted position's only tombstone, and one older than another
+     * device's copy of that position loses the merge.
      */
     suspend fun markFinished(setId: String) {
         clearProgress(setId)
-        if (snapshot.value.watched.none { it.setId == setId }) setWatched(setId, true)
+        setWatched(setId, true)
     }
     /** Clears retained account state after a successful reset; already-running reads cannot restore it. */
     fun invalidate()

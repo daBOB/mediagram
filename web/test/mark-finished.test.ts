@@ -40,12 +40,13 @@ describe("marking a title finished by hand", () => {
     ]);
   });
 
-  test("keeps the date a title was first finished", () => {
-    const before = state.watchedAt("seen");
-
+  test("re-stamps a title already finished, so no device's older position can bring it back", () => {
+    // The merge has no tombstone for a deleted position: only a completion at
+    // least as new beats one. Keeping the first date let another device's
+    // position, saved while re-watching, win the next pull.
     state.markFinished("seen");
 
-    expect(state.watchedAt("seen")).toBe(before);
-    expect(requests.some((r) => r.url.endsWith("/watched/seen"))).toBe(false);
+    expect(state.watchedAt("seen")).toBeGreaterThan(5);
+    expect(requests).toContainEqual({ url: "/api/profiles/base/watched/seen", method: "PUT" });
   });
 });

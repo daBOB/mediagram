@@ -365,13 +365,18 @@ export function setWatched(setId, finished) {
  *
  * The position goes, because a finished title has nowhere to resume to. The
  * fact that it finished stays, because otherwise nothing anywhere would
- * remember it was ever watched — but a title already finished keeps the date
- * it was first finished, which is when the start page last saw it touched.
+ * remember it was ever watched.
+ *
+ * Stamped now even when the title was finished before. The completion is the
+ * only tombstone the deleted position has: another device still holding the
+ * position saved while re-watching keeps it on the next merge unless this
+ * completion is newer. Next up is unaffected — it walks on to the first
+ * unfinished episode — and the show rising on the start page is true.
  * @returns {void} Local update only; persistence is best-effort.
  */
 export function markFinished(setId) {
   clearProgress(setId);
-  if (!isWatched(setId)) setWatched(setId, true);
+  setWatched(setId, true);
 }
 
 /**
