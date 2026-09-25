@@ -37,4 +37,20 @@ dependencies {
     // TvAppTest, the way ui-mobile's own MobileAppFixture does; TvApp
     // itself never reaches core:data.
     testImplementation(project(":core:data"))
+
+    // Focus, IME-submit and Back behaviour only run true on a real
+    // window manager — Robolectric's tv-material nodes misbehave for
+    // exactly this (see TvFocusTest) — so this module's first
+    // androidTest set needs the real instrumentation Compose test APIs,
+    // not just the JVM ones `testImplementation` above already has.
+    androidTestImplementation(libs.findLibrary("androidx.compose.ui.test.junit4").get())
+    // Backs the instrumented ComposeTestRule with a real Activity host;
+    // without it, createAndroidComposeRule has nothing to launch.
+    debugImplementation(libs.findLibrary("androidx.compose.ui.test.manifest").get())
+    // TvConfirmDialog hosts its content in its own Dialog window; a Key.Back
+    // sent through a Compose node interaction only ever reaches that node's
+    // own semantics tree, not the separate window's real back-press
+    // handling. Espresso.pressBack() injects the key event at the window
+    // manager instead, the same way a physical remote's Back button would.
+    androidTestImplementation(libs.findLibrary("androidx.espresso.core").get())
 }
