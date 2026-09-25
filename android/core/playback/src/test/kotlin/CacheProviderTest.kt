@@ -14,7 +14,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.File
 import java.io.RandomAccessFile
-import java.nio.file.Files
 import java.util.concurrent.Executors
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
@@ -44,18 +43,11 @@ private class RecordingDispatcher(
     }
 }
 
-/** A generous, fixed free-space figure so a test's expected [CacheOccupancy.capBytes] never depends on the host's real disk. */
-private const val FAKE_FREE_BYTES = 100L * 1024 * 1024 * 1024
-
-private fun internalVolume(context: Context, freeBytes: Long = FAKE_FREE_BYTES) =
-    CacheVolume(INTERNAL_VOLUME_ID, "Internal storage", File(context.cacheDir, "mlib"), freeBytes, removable = false)
-
-/** A volume rooted at a fresh temp directory, standing in for an SD card or USB drive under Robolectric. */
-private fun tempVolume(id: String, freeBytes: Long = FAKE_FREE_BYTES): CacheVolume {
-    val root = Files.createTempDirectory("cache-volume-$id-").toFile()
-    return CacheVolume(id, id, File(root, "mlib"), freeBytes, removable = true)
-}
-
+/**
+ * The locking behaviour a no-choice-recorded viewer must keep: today's
+ * cache dir, the dispatcher contract, and a live budget change surviving a
+ * reopen. Volume resolution and fallback are [CacheProviderVolumeTest]'s.
+ */
 @RunWith(RobolectricTestRunner::class)
 class CacheProviderTest {
     private val probeExecutor = Executors.newSingleThreadExecutor()
@@ -65,8 +57,7 @@ class CacheProviderTest {
     fun resetTheSharedCache() {
         CacheProvider.resetForTest()
         val context = ApplicationProvider.getApplicationContext<Context>()
-        // A deterministic single-internal-volume world by default; tests that
-        // need an external or a broken one override this themselves.
+        // A deterministic single-internal-volume world by default.
         CacheProvider.volumesFor = { listOf(internalVolume(context)) }
     }
 
@@ -177,104 +168,6 @@ class CacheProviderTest {
             )
         }
 
-    @Test
-    fun openingWithAPresentChosenVolumeUsesThatVolumesDirectory() =
-        runTest {
-            val context = ApplicationProvider.getApplicationContext<Context>()
-            val dispatcher = probeExecutor.asCoroutineDispatcher()
-            val external = tempVolume("card")
-            CacheProvider.volumesFor = { listOf(internalVolume(context), external) }
-            PlainCacheVolumeSettings(context).write("card")
-
-            val cache = CacheProvider.get(context, dispatcher).also { heldCache = it }
-            val file = commitSpan(cache, "kept")
-
-            assertUnder(file, external.dir)
-            val occupancy = CacheProvider.occupancy(context, dispatcher)
-            assertEquals("card", occupancy.volumeLabel)
-            assertFalse(occupancy.fellBack)
-        }
-
-    @Test
-    fun aChosenVolumeThatIsAbsentFallsBackToInternalAndKeepsTheRecordedChoice() =
-        runTest {
-            val context = ApplicationProvider.getApplicationContext<Context>()
-            val dispatcher = probeExecutor.asCoroutineDispatcher()
-            CacheProvider.volumesFor = { listOf(internalVolume(context)) } // "card" not present
-            PlainCacheVolumeSettings(context).write("card")
-
-            val cache = CacheProvider.get(context, dispatcher).also { heldCache = it }
-            val file = commitSpan(cache, "kept")
-
-            assertUnder(file, File(context.cacheDir, "mlib"))
-            val occupancy = CacheProvider.occupancy(context, dispatcher)
-            assertTrue(occupancy.fellBack)
-            assertEquals("Internal storage", occupancy.volumeLabel)
-            assertEquals("card", PlainCacheVolumeSettings(context).read())
-        }
-
-    @Test
-    fun staleMlibOnAnotherPresentVolumeIsDeletedAfterOpenAndNeverTheOpenedDir() =
-        runTest {
-            val context = ApplicationProvider.getApplicationContext<Context>()
-            val dispatcher = probeExecutor.asCoroutineDispatcher()
-            val staleMlib = tempVolume("stale")
-            val staleRoot = requireNotNull(staleMlib.dir.parentFile)
-            staleMlib.dir.mkdirs()
-            File(staleMlib.dir, "leftover.span").writeText("leftover")
-            val sibling = File(staleRoot, "sibling.txt").apply { writeText("keep me") }
-            CacheProvider.volumesFor = { listOf(internalVolume(context), staleMlib) }
-            // nothing chosen: opens internal, "stale" is present but unused
-
-            val cache = CacheProvider.get(context, dispatcher).also { heldCache = it }
-            CacheProvider.awaitCleanupForTest()
-
-            assertFalse(staleMlib.dir.exists(), "the stale mlib directory should be removed")
-            assertTrue(sibling.exists(), "a file next to mlib, not inside it, must survive")
-            val openedFile = commitSpan(cache, "kept")
-            assertUnder(openedFile, File(context.cacheDir, "mlib"))
-        }
-
-    @Test
-    fun aChosenVolumeWhoseCacheFailsToInitialiseFallsBackToInternalWithoutDeletingIt() =
-        runTest {
-            val context = ApplicationProvider.getApplicationContext<Context>()
-            val dispatcher = probeExecutor.asCoroutineDispatcher()
-            val readOnlyRoot = Files.createTempDirectory("cache-volume-readonly-").toFile()
-            readOnlyRoot.setWritable(false)
-            val broken = CacheVolume("broken", "broken", File(readOnlyRoot, "mlib"), FAKE_FREE_BYTES, removable = true)
-            CacheProvider.volumesFor = { listOf(internalVolume(context), broken) }
-            PlainCacheVolumeSettings(context).write("broken")
-
-            try {
-                val cache = CacheProvider.get(context, dispatcher).also { heldCache = it }
-                val file = commitSpan(cache, "kept")
-
-                assertUnder(file, File(context.cacheDir, "mlib"))
-                val occupancy = CacheProvider.occupancy(context, dispatcher)
-                assertTrue(occupancy.fellBack)
-                assertEquals("Internal storage", occupancy.volumeLabel)
-            } finally {
-                readOnlyRoot.setWritable(true)
-            }
-        }
-
-    @Test
-    fun aStoredBudgetAboveTheCapIsClampedToTheLargestLadderStepAndPrefsKeepTheOriginal() =
-        runTest {
-            val context = ApplicationProvider.getApplicationContext<Context>()
-            val dispatcher = probeExecutor.asCoroutineDispatcher()
-            // Nothing free: the cap floors at MIN_CACHE_BYTES, so the ladder is just that one step.
-            CacheProvider.volumesFor = { listOf(internalVolume(context, freeBytes = 0)) }
-            PlainCacheBudgetSettings(context).write(CACHE_MAX_BYTES)
-
-            CacheProvider.get(context, dispatcher).also { heldCache = it }
-            val occupancy = CacheProvider.occupancy(context, dispatcher)
-
-            assertEquals(MIN_CACHE_BYTES, occupancy.budgetBytes)
-            assertEquals(CACHE_MAX_BYTES, PlainCacheBudgetSettings(context).read())
-        }
-
     private fun occupancyOn(volume: CacheVolume, heldBytes: Long, budgetBytes: Long, capBytes: Long) =
         CacheOccupancy(
             heldBytes = heldBytes,
@@ -283,30 +176,4 @@ class CacheProviderTest {
             fellBack = false,
             capBytes = capBytes,
         )
-
-    private fun assertUnder(file: File, dir: File) =
-        assertTrue(file.absolutePath.startsWith(dir.absolutePath + File.separator), "$file is not under $dir")
-
-    private fun commitSpan(
-        cache: SimpleCache,
-        key: String,
-    ): File {
-        val hole = cache.startReadWrite(key, 0, MIN_CACHE_BYTES)
-        try {
-            val file = cache.startFile(key, 0, MIN_CACHE_BYTES)
-            // Sparse files exercise real persisted spans at the production budget
-            // floor without allocating or writing hundreds of MiB of fixture data.
-            RandomAccessFile(file, "rw").use { payload ->
-                payload.setLength(MIN_CACHE_BYTES)
-                payload.writeByte(0x42)
-                payload.seek(MIN_CACHE_BYTES - 1)
-                payload.writeByte(0x7f)
-            }
-            cache.commitFile(file, MIN_CACHE_BYTES)
-            assertTrue(cache.isCached(key, 0, MIN_CACHE_BYTES))
-            return file
-        } finally {
-            cache.releaseHoleSpan(hole)
-        }
-    }
 }
