@@ -5,7 +5,69 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Unreleased — 0.57.0
+## Unreleased — 0.58.0
+
+Merged into `main` on 2026-09-26: `feat/android-lan-cache` (it includes
+`feat/android-cache-volume`, `feat/android-chunk-reads` and
+`feat/mediagram-cache-server`), `feat/android-featured-and-paging`, and
+`feat/android-tv-ui`.
+
+**Added**
+
+- An Android TV interface (`ui-tv`), driven by the remote:
+  - browse shows, courses and lists; open titles and walk back;
+  - watch with the remote, with up next and autoplay;
+  - subtitles, playback settings, marks and playback stats;
+  - search and genre pages;
+  - offline marks, "mark finished" and profile removal.
+
+  Phone and TV share the catalog logic in `feature:catalog`, including the
+  tab labels and the title facts.
+- DTS and TrueHD play with sound on Android devices that have no decoder for
+  them. A Google TV box had played 269 DTS films silently. The app now carries
+  Media3's FFmpeg audio decoder, built from FFmpeg 6.0.1 (LGPL 2.1+) with only
+  the `dca`, `truehd` and `mlp` decoders, by `scripts/build-android-ffmpeg.sh`.
+  It is used only where the device's own decoders and passthrough decline a
+  track. Phone and television share it.
+- A home cache server and a cache that can live on another volume, for
+  Android. `mediagram_cache` is a new workspace binary: a LAN chunk store
+  with no Telegram session, found over mDNS. Chunk writes are signed with a
+  pairing token that never crosses the wire. On unmetered Wi-Fi the phone
+  asks it for each 1 MiB chunk before Telegram, and shares what it fetched,
+  so a title one device has played is not downloaded again by the next.
+  Settings pairs the device and shows the server. System counts the chunks
+  the server served. Settings can also move the cache to an SD or USB
+  volume ("Where"). The size list grows to that volume's capacity, and a
+  cache that fails mid-play (full disk, pulled card) now falls through to
+  the network instead of stopping playback. Reads are now whole aligned
+  1 MiB chunks. The phone asks for two new permissions:
+  `ACCESS_LOCAL_NETWORK` (runtime, API 37+) and
+  `CHANGE_WIFI_MULTICAST_STATE`. Plan:
+  `plans/260925-2046-external-cache-volume-and-lan-chunk-server/`.
+- The Featured reel and a paged Movies shelf on the phone, as on the web
+  (merged from `feat/android-featured-and-paging`). Featured sits above the
+  Movies shelf beside List · Grid and opens a dark, full-screen run of up to
+  twelve unwatched films with posters. The Movies shelf shows 48 films a page
+  with the web's page links. Picks and page links are ports of
+  `featured-picks.js` and `pager.js` with the web's test cases.
+- The phone's shelves keep their place under a title: coming back from a film,
+  a show or the player finds the same tab, page and scroll position, as the
+  web's back button does.
+
+**Changed**
+
+- One port of the web's `pickFeatured` on Android (`FeaturedPicks.kt`), shared by
+  the phone's Featured reel and the magazine cover. The two branches had
+  each ported it.
+- The System page's Cache block keeps its **Where** (cache volume) and
+  **Source** (LAN server) rows after `SystemRows` moved to `feature:system`.
+
+**Fixed**
+
+- `CoreLoadsTest` (an on-device test) passes the `deviceName` the core's
+  constructor has required for a while; it no longer compiled.
+
+## 0.57.0
 
 **Added**
 
@@ -27,16 +89,6 @@ to `main`. Full phase-by-phase detail lives in
 - The editor's choice syncs through the phone's watch state as well
   (`editorsChoice` in the core's sync record, same one-pick rule as the web).
   Shared watch-state fixtures cover it.
-
-- The Featured reel and a paged Movies shelf on the phone, as on the web
-  (merged from `feat/android-featured-and-paging`). Featured sits above the
-  Movies shelf beside List · Grid and opens a dark, full-screen run of up to
-  twelve unwatched films with posters. The Movies shelf shows 48 films a page
-  with the web's page links. Picks and page links are ports of
-  `featured-picks.js` and `pager.js` with the web's test cases.
-- The phone's shelves keep their place under a title: coming back from a film,
-  a show or the player finds the same tab, page and scroll position, as the
-  web's back button does.
 
 **Known difference:** a pinned episode's feature card opens its title page on
 Android, where the web opens the show. This is written down in the code.
@@ -229,22 +281,6 @@ Android, where the web opens the show. This is written down in the code.
 ## 0.54.0
 
 **Added**
-
-- A home cache server and a cache that can live on another volume, for
-  Android. `mediagram_cache` is a new workspace binary: a LAN chunk store
-  with no Telegram session, found over mDNS. Chunk writes are signed with a
-  pairing token that never crosses the wire. On unmetered Wi-Fi the phone
-  asks it for each 1 MiB chunk before Telegram, and shares what it fetched,
-  so a title one device has played is not downloaded again by the next.
-  Settings pairs the device and shows the server. System counts the chunks
-  the server served. Settings can also move the cache to an SD or USB
-  volume ("Where"). The size list grows to that volume's capacity, and a
-  cache that fails mid-play (full disk, pulled card) now falls through to
-  the network instead of stopping playback. Reads are now whole aligned
-  1 MiB chunks. The phone asks for two new permissions:
-  `ACCESS_LOCAL_NETWORK` (runtime, API 37+) and
-  `CHANGE_WIFI_MULTICAST_STATE`. Plan:
-  `plans/260925-2046-external-cache-volume-and-lan-chunk-server/`.
 
 - The Android web-parity work, merged: search and genre pages, audio and
   subtitle choice, the player's settings sheet, up next and queues,
