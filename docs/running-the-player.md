@@ -632,3 +632,135 @@ The HTTP API never returns a channel id, a message id or a document id. A
 viewer who authenticates sees the library and can stream it; they cannot learn
 where the bytes live in Telegram or reach them directly. That is a property of
 the routes, not of the proxy, and it holds however the player is exposed.
+
+## Home cache server
+
+`mediagram_cache` (`crates/mediagram-cache`) is a separate, optional process
+on the same home box: a dumb LAN chunk store Android devices read and write
+so a chunk fetched from Telegram once is not fetched again by the next
+device. It has no Telegram session, no index of its own, and nothing to do
+with the player above — the two run independently and neither depends on
+the other being up.
+
+### Installing it
+
+```ini
+# /etc/systemd/system/mediagram-cache.service
+[Unit]
+Description=mediagram-cache: a LAN chunk store for the Android app
+After=network-online.target
+
+[Service]
+DynamicUser=yes
+CacheDirectory=mediagram-cache
+StateDirectory=mediagram-cache
+ExecStart=/usr/local/bin/mediagram_cache
+Restart=on-failure
+
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+`DynamicUser=yes` needs no user to be created ahead of time; systemd makes
+`CacheDirectory=` and `StateDirectory=` for it and passes their paths in
+`$CACHE_DIRECTORY` and `$STATE_DIRECTORY`, which `mediagram_cache` reads by
+default (see `crates/mediagram-cache/src/config.rs`). Build and install the
+binary, then:
+
+```sh
+cargo build --release -p mediagram-cache
+sudo cp target/release/mediagram_cache /usr/local/bin/
+sudo systemctl enable --now mediagram-cache
+```
+
+It listens on `0.0.0.0:7788` by default — every interface, on purpose, the
+same choice `bun run dev` makes above — and is safe to leave running
+alongside the player; starting or restarting either one never touches the
+other.
+
+### Pairing a device
+
+```sh
+sudo cat /var/lib/mediagram-cache/token
+```
+
+is the 64-character hex pairing token — `DynamicUser=yes` puts
+`StateDirectory=mediagram-cache` at `/var/lib/mediagram-cache`, owned by a
+transient system user, but root can still read it. The file is created,
+mode 0600, on the very first request the server ever handles (or run
+`mediagram_cache token` directly, as the same user, to print it without
+starting the server). A device's owner enters this token once; it is never
+sent over the network — every PUT instead carries an HMAC-SHA256 signature
+keyed on it, checked in constant time, so a passive listener on the LAN
+learns nothing that lets it write.
+
+The exact bytes signed, and a worked example, so the Android client's HMAC
+and this server's cannot drift apart silently:
+
+```
+scheme:    Authorization: MGC1 <hex>
+signed:    HMAC-SHA256(token, "{method}\n{path}\n{total}\n" + hex(sha256(body)))
+
+token:     00112233445566778899aabbccddeeff00112233445566778899aabbccddee
+method:    PUT
+path:      /v1/sets/abc123/chunks/0
+total:     5
+body:      "hello"                 (5 ASCII bytes)
+
+signature: 5b6d16159fbd287ed1da02570ef266f83790c52de8ec1eb0d2a1500ed34aef18
+```
+
+`crates/mediagram-cache/src/token_tests.rs` asserts these same numbers in
+Rust (`the_shared_test_vector_signs_to_the_published_signature` and
+`the_shared_test_vector_verifies`); an Android-side test asserting them too
+is how the two implementations are checked against each other rather than
+against themselves.
+
+### Finding it: mDNS, with an avahi fallback
+
+`mediagram_cache` advertises itself as `_mediagram-cache._tcp.local.` (TXT
+`v=1`) via `mdns-sd`, which is documented to coexist with `avahi-daemon` on
+the same box — both bind the same multicast group without conflict. Confirm
+it independently of the app with:
+
+```sh
+avahi-browse -rt _mediagram-cache._tcp
+```
+
+Set `MEDIAGRAM_CACHE_MDNS=false` (or `mdns = false` in its config) to turn
+this off, and either publish a static Avahi service file instead —
+
+```xml
+<!-- /etc/avahi/services/mediagram-cache.service -->
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+<service-group>
+  <name>mediagram-cache</name>
+  <service>
+    <type>_mediagram-cache._tcp</type>
+    <port>7788</port>
+    <txt-record>v=1</txt-record>
+  </service>
+</service-group>
+```
+
+— or configure a device with the server's address by hand; either is a
+complete substitute, since the API itself carries no address of its own.
+
+### What a paired device can do, and what it cannot
+
+A write requires the token; a read does not. That asymmetry is deliberate:
+what a GET returns is exactly a chunk of a file already reachable from the
+Telegram channel a viewer is on, so serving it to anyone on the LAN costs
+nothing a paired viewer could not already have. A write is different — an
+unpaired flood of PUTs would evict everything a paired device worked to
+cache — which is what the signature guards. What it does not guard against
+is a *paired* device writing a wrong-but-right-length chunk; there is no
+per-chunk checksum to catch that (see `docs/system-architecture.md`
+[§12](system-architecture.md#12-the-lan-chunk-server-mediagram-cache)), and
+the remedy is deleting the affected set's directory under the cache root.
