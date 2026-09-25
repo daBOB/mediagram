@@ -1,6 +1,8 @@
 # Channel index merge (tech-debt #12)
 
-Status: decisions made 2026-09-25; implementing. Source:
+Status: phases 1-4 implemented 2026-09-25 (merge, pull-index, push-index --merge; all
+tests and clippy clean; one dry run verified read-only). Phase 5 (the real pull, second
+machine, and push) not run. Source:
 `plans/reports/tech-debt-260925-2230-mediagram-web-and-pipeline-report.md` #12, research
 brief of 2026-09-25 (this session).
 
@@ -47,21 +49,33 @@ Commands:
 
 ## Phases
 
-1. Extract `download_channel_index(tg, scratch) -> Option<PathBuf>` from `index_guard.rs`
-   (shared by the guard and the merge).
-2. `index/merge.rs`: `merge_from` plus tests. Cover:
+1. [x] Extract `download_channel_index(tg, scratch) -> Option<PathBuf>` from
+   `index_guard.rs` (`telegram/download_index.rs`; the guard now calls it too).
+2. [x] `index/merge.rs`: `merge_from` plus tests (`index/merge_tests.rs`, 10 cases). Covers:
    - a channel-only set with its parts and assets;
-   - a shared set where local wins;
+   - a shared set with differing metadata, reported as a conflict and not overwritten
+     (the "local wins" fallback from the design table above was superseded by the
+     2026-09-25 decision below — merge_from picks neither side, and leaves the caption
+     re-read to `merge_conflicts::resolve_from_captions`, also tested);
    - a v7 channel index without popularity;
-   - a pending channel set, which is skipped;
-   - `shows` NULL-fill;
+   - a pending channel set, which is skipped without reaching the removal check;
+   - `shows` NULL-fill (and that an already-filled value is never replaced);
    - `meta` left untouched;
    - running it twice changes nothing;
-   - foreign keys hold.
-3. The removal rule (decision 2), behind a closure so it can be tested.
-4. `pull-index` and `push-index --merge`. Docs; the version bump is minor.
-5. A live run: `pull-index --dry-run` on both machines, then a real pull on one, `push`,
-   and verify the web player serves the union (1164 + 21 expected).
+   - foreign keys hold (`pragma_foreign_key_check`).
+3. [x] The removal rule (decision 2): `merge_from` takes a `keep_if_live` closure,
+   called once with every channel-only complete candidate; `commands/pull_index/keep_live.rs`
+   backs it with one batched Telegram lookup, tests back it with a fixed answer.
+4. [x] `pull-index [--dry-run]` and `push-index --merge` (`commands/pull_index/`,
+   `commands/push_index.rs`). `--dry-run` runs the merge against a throwaway copy of
+   the local index so nothing is written; a real run backs up first via
+   `library.before-channel-merge-<YYMMDD-HHMM>.db` (`clock::backup_timestamp`). Docs
+   and the version bump are a separate phase (own file ownership); not done here.
+5. [ ] A live run: `pull-index --dry-run` on both machines, then a real pull on one,
+   `push`, and verify the web player serves the union. One dry run done this session
+   (269 sets would be added, 272 shows added, 0 conflicts) — read-only, confirmed
+   `library.db`'s mtime unchanged and no scratch files left behind. The real pull,
+   the second machine's dry run, and the push are left to the lead with the user.
 
 ## Decisions for the user
 
@@ -107,3 +121,25 @@ Order, on this machine:
 2. `mediagram resume`: finishes the 21; its automatic publish now passes the guard,
    because the local index holds everything the channel does.
 3. Verify the web player serves the union.
+
+## Review (code-reviewer, 2026-09-25), fixed before first use
+
+- **H1:** `push --merge` would have been refused by the guard for sets the merge
+  rightly skipped. Fixed: the guard counts only complete channel sets, and
+  `push --merge` passes the proven-removed ids through as exceptions.
+- **H2:** backup names were minute-precision and overwritable. Fixed: the name also
+  carries the pid, and an existing file is never replaced.
+- **M1:** captions are re-read in part order. **M2:** the report prints before the
+  re-read, and one set's fetch failure is a warning. **M3:** fails closed, so a set is
+  live only with a message for every part, all in this channel (also L2).
+  **M4:** show text is filled only from the same `lang`. **L1:** a failed commit
+  rolls back.
+- **Skipped, with reasons:**
+  - L3 (column quoting): names come only from `main`'s own schema, intersected
+    with the channel's.
+  - L4: the dry run opening the real db migrates it, as every command does.
+  - L5: a snapshot older than v6 fails closed, with a rollback.
+  - L6: backup pruning.
+  - L7: parts are not reconciled for shared sets.
+- Live dry run after the fixes: would add 271 sets and 274 shows; `library.db`
+  untouched; no leftovers.

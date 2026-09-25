@@ -15,6 +15,22 @@ to `main`. Full phase-by-phase detail lives in
   every player and phone. `push-index --force` replaces it anyway;
   `push-index --check` runs only the check and sends nothing. On 2026-09-25 the
   check reported 265 sets this machine lacks.
+- `mediagram pull-index [--dry-run]` merges the channel's newest index into
+  this machine's, so either uploading machine can publish the whole library.
+  The rules:
+  - It adds channel-only complete sets, but only those whose part messages
+    still exist in the channel (a removed set is not brought back).
+  - It re-reads sets that differ between the machines from their Telegram
+    captions, in part order.
+  - It adds missing shows and fills empty show fields; text is filled only
+    from a row in the same language.
+  - It never touches machine-local `meta`.
+  - It is one transaction, preceded by a backup that is never overwritten:
+    `library.before-channel-merge-<time>-<pid>.db`.
+
+  `push-index --merge` pulls first, then pushes. Its guard then allows the
+  sets the merge proved removed. The guard now counts only complete sets, as
+  another machine's unfinished uploads are no titles.
 - `mediagram metadata --refresh-older-than <DAYS>` asks TMDB again for cached
   answers older than that, so popularity (Trending), ratings and taglines stop
   being frozen at first lookup. A refresh that cannot reach TMDB keeps the old

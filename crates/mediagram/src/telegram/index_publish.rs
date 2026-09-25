@@ -1,5 +1,6 @@
 //! Publishing the local index as a pinned Telegram document.
 
+use std::collections::HashSet;
 use std::path::Path;
 
 use anyhow::{Context, Result};
@@ -15,10 +16,12 @@ use crate::telegram::retry::{with_flood_wait_only, with_retry};
 const INDEX_MIME_TYPE: &str = "application/vnd.sqlite3";
 
 /// Whether a push first checks that the channel holds nothing this index
-/// lacks (see `index_guard`). Only `push-index --force` skips it.
-#[derive(Clone, Copy, PartialEq, Eq)]
+/// lacks (see `index_guard`). Only `push-index --force` skips it;
+/// `push-index --merge` checks, excepting the sets its merge proved removed.
+#[derive(Clone, PartialEq, Eq)]
 pub enum Guard {
     Check,
+    CheckExcept(HashSet<String>),
     Skip,
 }
 
@@ -35,7 +38,8 @@ pub async fn check_only(cfg: &Config) -> Result<()> {
     let data_dir = cfg.data_dir()?;
     let conn = db::open(&data_dir)?;
     let tg = Tg::connect(cfg).await.context("connecting to Telegram")?;
-    let result = index_guard::refuse_if_channel_has_more(&tg, &conn, &data_dir).await;
+    let result =
+        index_guard::refuse_if_channel_has_more(&tg, &conn, &data_dir, &HashSet::new()).await;
     tg.shutdown().await;
     result
 }
@@ -71,7 +75,12 @@ async fn push_via_telegram(
 
     let tg = Tg::connect(cfg).await.context("connecting to Telegram")?;
     let checked = match guard {
-        Guard::Check => index_guard::refuse_if_channel_has_more(&tg, conn, scratch).await,
+        Guard::Check => {
+            index_guard::refuse_if_channel_has_more(&tg, conn, scratch, &HashSet::new()).await
+        }
+        Guard::CheckExcept(removed) => {
+            index_guard::refuse_if_channel_has_more(&tg, conn, scratch, &removed).await
+        }
         Guard::Skip => Ok(()),
     };
     let result = match checked {

@@ -6,7 +6,9 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use mediagram::commands::args::{AddArgs, AddCourseArgs, AddShowArgs, EditArgs, PrepareArgs};
-use mediagram::commands::{metadata::MetadataArgs, push_index::PushIndexArgs};
+use mediagram::commands::{
+    metadata::MetadataArgs, pull_index::PullIndexArgs, push_index::PushIndexArgs,
+};
 use mediagram::{commands, config};
 
 #[derive(Parser)]
@@ -45,6 +47,8 @@ enum Cmd {
     },
     /// Upload library.db to the channel and pin it
     PushIndex(PushIndexArgs),
+    /// Merge the channel's index into this one, so either machine can publish everything
+    PullIndex(PullIndexArgs),
     /// Check a set (or all sets); `--full` re-downloads and hashes every part
     Verify {
         set_id: Option<String>,
@@ -156,6 +160,7 @@ async fn main() -> Result<()> {
         Cmd::Edit(args) => commands::edit::run(&cfg, args).await,
         Cmd::Resume { no_push } => commands::resume::run(&cfg, no_push).await,
         Cmd::PushIndex(args) => commands::push_index::run(&cfg, args).await,
+        Cmd::PullIndex(args) => commands::pull_index::run(&cfg, args).await,
         Cmd::Verify {
             set_id,
             all,

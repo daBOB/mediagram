@@ -1,7 +1,8 @@
 //! `mediagram push-index`: publish the local index and report its message.
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 
+use crate::commands::pull_index;
 use crate::config::Config;
 use crate::telegram::index_publish::{self, Guard};
 
@@ -9,11 +10,15 @@ use crate::telegram::index_publish::{self, Guard};
 #[derive(clap::Args, Debug, Clone)]
 pub struct PushIndexArgs {
     /// Replace the channel's index even if it holds sets this one lacks
-    #[arg(long, conflicts_with = "check")]
+    #[arg(long, conflicts_with_all = ["check", "merge"])]
     pub force: bool,
     /// Only check whether a push would remove sets from the channel; send nothing
-    #[arg(long)]
+    #[arg(long, conflicts_with = "merge")]
     pub check: bool,
+    /// Pull the channel's index in first (see `pull-index`), so a push that
+    /// would otherwise be refused for dropping sets can proceed
+    #[arg(long)]
+    pub merge: bool,
 }
 
 pub async fn run(cfg: &Config, args: PushIndexArgs) -> Result<()> {
@@ -24,6 +29,11 @@ pub async fn run(cfg: &Config, args: PushIndexArgs) -> Result<()> {
     }
     let guard = if args.force {
         Guard::Skip
+    } else if args.merge {
+        let removed = pull_index::pull(cfg, false)
+            .await
+            .context("pulling the channel's index before pushing")?;
+        Guard::CheckExcept(removed)
     } else {
         Guard::Check
     };
