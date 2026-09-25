@@ -2,7 +2,9 @@ package ui.tv.catalog
 
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import catalog.CollectionKind
@@ -107,6 +109,15 @@ class TvCollectionStateTest : TvScreenStateTest() {
         compose.onNodeWithText("1. Late").assertIsFocused()
         compose.onNodeWithText("2. Later").performSemanticsAction(SemanticsActions.OnClick)
         assertEquals("e4", opened)
+    }
+
+    /** Named at a page's size, as the phone's bar names it — and once, not again as the rows' own heading under it. */
+    @Test
+    fun aSeasonIsHeadedWithItsTitleOnce() {
+        show { TvSeason(division("Season 2", 2, episode("e3", "Late")), WatchSnapshot.Empty, onOpenTitle = {}) }
+
+        compose.onAllNodesWithText("Season 2").assertCountEquals(1)
+        compose.onNodeWithText("1. Late").assertIsFocused()
     }
 
     private fun showCollection(

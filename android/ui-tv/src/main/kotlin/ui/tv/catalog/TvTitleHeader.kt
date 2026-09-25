@@ -1,47 +1,52 @@
 package ui.tv.catalog
 
 import androidx.compose.foundation.focusable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.Offset
-import designsystem.Palette
-import ui.tv.TvFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.ratingLabel
+import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import java.io.File
+import ui.tv.TvFocus
 import uniffi.mediagram_core.TitleInfo
 
 /**
- * The art beside the facts, then the tagline and the overview — the
- * television twin of the phone's `TitleHeader`, with the same blocks in the
- * same order: [facts] (a show's age rating, a film's year and runtime), the
- * genres, the provider's rating. Each block is left out when there is
- * nothing for it, so a title with no provider entry is its art and its
- * facts rather than a row of empty labels.
+ * The page's name, the art beside the facts, then the tagline and the
+ * overview — the television twin of the phone's `TitleHeader`, with the
+ * same blocks in the same order: [facts] (a show's age rating, a film's
+ * year and runtime), the genres, the provider's rating. Each block is left
+ * out when there is nothing for it, so a title with no provider entry is
+ * its art and its facts rather than a row of empty labels.
  *
  * [beside] goes at the foot of the facts, still beside the art — where a
  * title page puts its Play, as the web's film page does, so the one thing
  * to press is on screen from the start however long the overview under it
- * runs.
+ * runs. The name, the art and the facts are one block to scroll by
+ * ([revealsFromTop]): the remote coming back up to Play brings the name
+ * above it back too.
  *
  * [readableOverview] lets the remote rest on the overview — see
  * [TvReadableParagraph] — for a page where nothing else sits below it.
+ * [readableTitle] does the same for the name, on a page with no Play: the
+ * remote needs a stop up here to bring the top of the page back to.
  *
  * The tagline is quoted and the overview is not, for the phone's reason:
  * one is a line of marketing and the other a paragraph of description.
@@ -54,24 +59,32 @@ internal fun TvTitleHeader(
     info: TitleInfo?,
     modifier: Modifier = Modifier,
     readableOverview: Boolean = false,
+    readableTitle: Boolean = false,
     beside: @Composable ColumnScope.() -> Unit = {},
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.large)) {
-            TvPlateArt(
-                posterPath = posterPath?.let(::File),
-                title = title,
-                progress = null,
-                watched = false,
-                modifier = Modifier.width(PosterWidth),
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
-                facts?.let { Text(text = it, style = TvTypeScale.body) }
-                info?.genres?.takeIf(String::isNotBlank)?.let { genres ->
-                    Text(text = genres, style = TvTypeScale.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(modifier = Modifier.revealsFromTop(), verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
+            if (readableTitle) {
+                TvReadableParagraph(title, style = TvTypeScale.title)
+            } else {
+                Text(text = title, style = TvTypeScale.title)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.large)) {
+                TvPlateArt(
+                    posterPath = posterPath?.let(::File),
+                    title = title,
+                    progress = null,
+                    watched = false,
+                    modifier = Modifier.width(PosterWidth),
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
+                    facts?.let { Text(text = it, style = TvTypeScale.body) }
+                    info?.genres?.takeIf(String::isNotBlank)?.let { genres ->
+                        Text(text = genres, style = TvTypeScale.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    ratingLabel(info?.rating)?.let { Text(text = it, style = TvTypeScale.body) }
+                    beside()
                 }
-                ratingLabel(info?.rating)?.let { Text(text = it, style = TvTypeScale.body) }
-                beside()
             }
         }
         info?.tagline?.takeIf(String::isNotBlank)?.let { tagline ->
@@ -110,11 +123,12 @@ private val PosterWidth = 180.dp
 internal fun TvReadableParagraph(
     text: String,
     modifier: Modifier = Modifier,
+    style: TextStyle = TvTypeScale.body,
 ) {
     var focused by remember { mutableStateOf(false) }
     Text(
         text = text,
-        style = TvTypeScale.body,
+        style = style,
         modifier =
             modifier
                 .onFocusChanged { focused = it.isFocused }

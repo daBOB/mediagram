@@ -1,7 +1,5 @@
 package ui.tv.catalog
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -12,7 +10,6 @@ import catalog.SeasonPlate
 import catalog.firstItemOf
 import catalog.rowsOf
 import catalog.seasonPlatesOf
-import designsystem.Spacing
 import designsystem.TvTypeScale
 import java.io.File
 import model.WatchSnapshot
@@ -51,18 +48,44 @@ fun TvCollection(
     val watchedIds = rememberWatchMarks(watch).watchedIds
     val seasons = remember(collection, watchedIds) { seasonPlatesOf(collection, watchedIds) }
     val header: @Composable () -> Unit = { CollectionHeader(collection, info) }
-    if (seasons != null) {
-        TvWall(
-            items = seasons,
-            key = SeasonPlate::title,
-            restoreKey = restoreKey,
-            onOpen = { plate -> onOpenSeason(plate.division) },
-            header = header,
-            plate = { plate, modifier, onOpen -> TvSeasonPlate(collection, plate, posterPath, onOpen, modifier) },
-        )
-    } else {
-        val rows = remember(collection) { rowsOf(collection.divisions) }
-        TvCollectionRows(rows, watch, onOpenTitle, restoreKey, header)
+    TvPage {
+        if (seasons != null) {
+            TvWall(
+                items = seasons,
+                key = SeasonPlate::title,
+                restoreKey = restoreKey,
+                onOpen = { plate -> onOpenSeason(plate.division) },
+                header = header,
+                plate = { plate, modifier, onOpen -> TvSeasonPlate(collection, plate, posterPath, onOpen, modifier) },
+            )
+        } else {
+            val rows = remember(collection) { rowsOf(collection.divisions) }
+            TvCollectionRows(rows, watch, onOpenTitle, restoreKey, header)
+        }
+    }
+}
+
+/**
+ * One season's episodes — the television twin of the phone's
+ * `SeasonScreen`, in the same rows [TvCollectionRows] draws for a whole
+ * show or course: a season is just the one division the wall's plate stood
+ * for, so it is shown the same way.
+ *
+ * Headed with the season's title at the size every other page's name
+ * takes, as the phone's bar names it. The rows' own heading for the season
+ * is left out under it: the same words twice, one above the other, with
+ * nothing between them.
+ */
+@Composable
+fun TvSeason(
+    division: Division,
+    watch: WatchSnapshot,
+    onOpenTitle: (setId: String) -> Unit,
+    restoreKey: String? = null,
+) {
+    val rows = remember(division) { rowsOf(listOf(division)).drop(1) }
+    TvPage {
+        TvCollectionRows(rows, watch, onOpenTitle, restoreKey, header = { Text(text = division.title, style = TvTypeScale.title) })
     }
 }
 
@@ -71,6 +94,13 @@ fun TvCollection(
  * a show, so its first episode speaks for all of it, as `series-header.js`
  * asks; it has no one year and no one runtime, so its rating is the only
  * fact. A course has no rating.
+ *
+ * Art and an overview stand taller than the screen leaves above the first
+ * season, so arriving scrolls the name away. The name and the overview are
+ * both stops the remote can rest on, then — as on the title page, where a
+ * stop is the only way a remote scrolls — so Up from the first season reads
+ * the overview and Up again brings the name back. A course with nothing to
+ * show but its name stays short enough that nothing scrolls it away.
  */
 @Composable
 private fun CollectionHeader(
@@ -78,11 +108,17 @@ private fun CollectionHeader(
     info: TitleInfo?,
 ) {
     val age = remember(collection) { firstItemOf(collection.divisions)?.ageLabel() }
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
+    if (info != null || collection.posterPath != null || age != null) {
+        TvTitleHeader(
+            posterPath = collection.posterPath,
+            title = collection.name,
+            facts = age,
+            info = info,
+            readableOverview = true,
+            readableTitle = true,
+        )
+    } else {
         Text(text = collection.name, style = TvTypeScale.title)
-        if (info != null || collection.posterPath != null || age != null) {
-            TvTitleHeader(posterPath = collection.posterPath, title = collection.name, facts = age, info = info)
-        }
     }
 }
 

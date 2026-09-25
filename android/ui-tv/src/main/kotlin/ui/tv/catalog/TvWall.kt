@@ -11,13 +11,20 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import designsystem.Overscan
 import designsystem.Spacing
+import kotlinx.coroutines.flow.first
 
-/** Plates fit six across a 960dp-wide TV — see the phase's constraints for why this is fixed, not derived. */
+/**
+ * Six plates across, fixed rather than worked out from the window: every
+ * television this draws for is 960dp wide whatever its pixels, so there is
+ * no narrower screen to fit, and six is what that width holds at a size
+ * read from across a room — the same six Home's rows show.
+ */
 private const val Columns = 6
 
 /**
@@ -78,13 +85,23 @@ fun <T> TvWall(
     // LazyVerticalGrid only composes what is within (or near) the viewport —
     // and a FocusRequester has nothing to attach to until its item has been
     // laid out at least once. The first plate scrolls to the very top
-    // instead, so whatever heads the wall is on screen above it.
+    // instead, so whatever heads the wall is on screen above it — unless
+    // that header is taller than the screen, a show's art and a long
+    // overview, which leaves the first plate below the fold and never laid
+    // out, so the wall scrolls on down to it after all.
     // Keyed on the restore key as well as the index it resolves to: a caller
     // naming a new plate means "go there" even when it happens to sit at the
     // index the old one did — the next title after one taken off a list.
     LaunchedEffect(focusIndex, restoreKey) {
         if (focusIndex != null) {
-            gridState.scrollToItem(if (focusIndex == 0) 0 else cells.indexOf(WallCell.Plate(focusIndex)))
+            val cell = cells.indexOf(WallCell.Plate(focusIndex))
+            if (focusIndex == 0) {
+                gridState.scrollToItem(0)
+                val shown = snapshotFlow { gridState.layoutInfo.visibleItemsInfo }.first { it.isNotEmpty() }
+                if (shown.none { it.index == cell }) gridState.scrollToItem(cell)
+            } else {
+                gridState.scrollToItem(cell)
+            }
             focusRequester.requestFocus()
         }
     }

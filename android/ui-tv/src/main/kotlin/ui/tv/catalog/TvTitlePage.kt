@@ -1,7 +1,5 @@
 package ui.tv.catalog
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -59,20 +57,17 @@ internal fun TvTitlePage(
             if (resumes) resumeLine(progress) else ""
         }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
-        verticalArrangement = Arrangement.spacedBy(Spacing.medium),
-    ) {
-        Text(text = set.title, style = TvTypeScale.title)
+    TvPage {
         TvTitleHeader(
             posterPath = set.posterPath,
             title = set.title,
             facts = factsLine(set.year, set.durationSecs, set.ageLabel()),
             info = info,
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
             readableOverview = true,
         ) {
             // As stored, not shouted, for the phone's reason: the web prints

@@ -1,8 +1,6 @@
 package ui.tv.catalog
 
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,43 +13,29 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.CollectionRow
-import catalog.Division
-import catalog.rowsOf
 import catalog.watchedFractionOf
 import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvTypeScale
+import kotlinx.coroutines.flow.first
 import model.Kind
 import model.WatchSnapshot
 import ui.tv.TvFocus
 import ui.tv.TvTextRow
-
-/**
- * One season's episodes — the television twin of the phone's
- * `SeasonScreen`, in the same rows [TvCollectionRows] draws for a whole
- * show or course: a season is just the one division the wall's plate stood
- * for, so it is shown the same way.
- */
-@Composable
-fun TvSeason(
-    division: Division,
-    watch: WatchSnapshot,
-    onOpenTitle: (setId: String) -> Unit,
-    restoreKey: String? = null,
-) {
-    val rows = remember(division) { rowsOf(listOf(division)) }
-    TvCollectionRows(rows, watch, onOpenTitle, restoreKey, header = null)
-}
 
 /**
  * What is inside a show or a course, as the phone lists it: each folder's
@@ -88,9 +72,18 @@ internal fun TvCollectionRows(
 
     LaunchedEffect(focusIndex, restoreKey) {
         if (focusIndex != null) {
-            // The first row scrolls the page to its very top, so the header
-            // above it is on screen rather than scrolled past.
-            listState.scrollToItem(if (focusIndex == firstFocus) 0 else focusIndex + offset)
+            val item = focusIndex + offset
+            if (focusIndex == firstFocus) {
+                // The first row scrolls the page to its very top, so the
+                // header above it is on screen rather than scrolled past —
+                // unless the header fills the screen and leaves that row
+                // unlaid-out below it, with nothing for the focus to land on.
+                listState.scrollToItem(0)
+                val shown = snapshotFlow { listState.layoutInfo.visibleItemsInfo }.first { it.isNotEmpty() }
+                if (shown.none { it.index == item }) listState.scrollToItem(item)
+            } else {
+                listState.scrollToItem(item)
+            }
             focus.requestFocus()
         }
     }
@@ -153,14 +146,17 @@ private fun DocumentRow(
     text: String,
     focus: FocusRequester?,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val focused by interactionSource.collectIsFocusedAsState()
+    // Read from the focus state itself, as TvTextRow does: a row focused
+    // on arrival never hears a focus interaction and would hold the remote
+    // while drawn as if it did not.
+    var focused by remember { mutableStateOf(false) }
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .let { if (focus != null) it.focusRequester(focus) else it }
-                .focusable(interactionSource = interactionSource)
+                .onFocusChanged { focused = it.isFocused }
+                .focusable()
                 .semantics(mergeDescendants = true) { disabled() },
     ) {
         Text(

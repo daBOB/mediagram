@@ -85,25 +85,27 @@ fun TvList(
             }
         }
     }
-    if (sets.isEmpty()) {
-        Column(modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical)) {
-            header()
-            TvQuietLine("Nothing on this list yet. Add titles from the player.", Modifier.padding(top = Spacing.large))
+    TvPage {
+        if (sets.isEmpty()) {
+            Column(modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical)) {
+                header()
+                TvQuietLine("Nothing on this list yet. Add titles from the player.", Modifier.padding(top = Spacing.large))
+            }
+        } else {
+            TvWall(
+                items = sets,
+                key = MediaSet::setId,
+                restoreKey = afterRemoval ?: restoreKey,
+                onOpen = { set -> onPlay(set.setId) },
+                header = header,
+                plate = { set, modifier, onOpen ->
+                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
+                        TvSetPlate(card = SetCard(set, caption = "", progress = null, watched = false), onOpen = onOpen, modifier = modifier)
+                        TvTextRow(text = "Remove", onClick = { remove(set.setId) }, modifier = Modifier.padding(horizontal = Spacing.small))
+                    }
+                },
+            )
         }
-    } else {
-        TvWall(
-            items = sets,
-            key = MediaSet::setId,
-            restoreKey = afterRemoval ?: restoreKey,
-            onOpen = { set -> onPlay(set.setId) },
-            header = header,
-            plate = { set, modifier, onOpen ->
-                Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
-                    TvSetPlate(card = SetCard(set, caption = "", progress = null, watched = false), onOpen = onOpen, modifier = modifier)
-                    TvTextRow(text = "Remove", onClick = { remove(set.setId) }, modifier = Modifier.padding(horizontal = Spacing.small))
-                }
-            },
-        )
     }
 
     if (deleting) {
