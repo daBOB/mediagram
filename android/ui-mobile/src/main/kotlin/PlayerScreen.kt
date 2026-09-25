@@ -27,7 +27,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Spacing
-import kotlinx.coroutines.delay
 import player.UpNextPhase
 import player.PlayerUiState
 import player.PlayerViewModel
@@ -69,6 +68,7 @@ fun PlayerScreen(setId: String, run: List<String>, fsk: String?, onBack: () -> U
     val subtitleCues by viewModel.subtitleCues.collectAsStateWithLifecycle()
     val upNext by viewModel.upNext.collectAsStateWithLifecycle()
     val held by viewModel.held.collectAsStateWithLifecycle()
+    val notes by viewModel.notes.collectAsStateWithLifecycle()
     val isInPip = LocalIsInPictureInPicture.current
     val pip = PipController(player = player, isPlaying = state is PlayerUiState.Playing, onDismissed = viewModel::pauseForPipDismissal)
 
@@ -89,13 +89,7 @@ fun PlayerScreen(setId: String, run: List<String>, fsk: String?, onBack: () -> U
     // turned the phone to read a wider row did not ask for the numbers back.
     var statsShown by rememberSaveable { mutableStateOf(false) }
     var barTop by remember { mutableStateOf<Float?>(null) }
-    LaunchedEffect(controlsShown, state, scrubbing, settingsShown) {
-        if (!controlsShown || settingsShown) return@LaunchedEffect
-        val fades = controlsShouldFade(isPlaying = state is PlayerUiState.Playing, isScrubbing = scrubbing)
-        if (!fades) return@LaunchedEffect
-        delay(CONTROLS_LINGER_MS)
-        controlsShown = false
-    }
+    ControlsAutoHide(controlsShown, isPlaying = state is PlayerUiState.Playing, scrubbing, settingsShown, onHide = { controlsShown = false })
 
     // One predicate, read twice, because the bar and the statistics sit in
     // different corners and cannot be nested under a single `if`. Both are
@@ -112,88 +106,91 @@ fun PlayerScreen(setId: String, run: List<String>, fsk: String?, onBack: () -> U
     var screenBottom by remember { mutableStateOf<Float?>(null) }
     var pictureBottom by remember { mutableStateOf<Float?>(null) }
 
-    PlayerGestureLayer(
-        player = player,
-        onToggleControls = { controlsShown = !controlsShown },
-        onPinchFraming = viewModel::chooseFraming,
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .onGloballyPositioned { screenBottom = it.boundsInRoot().bottom },
-    ) {
-        player?.let { current ->
-            VideoWithSubtitles(current, subtitleCues, choices, barTop = barTop.takeIf { barShown }, isInPip = isInPip, onPictureBottomChanged = { pictureBottom = it })
-            if (barShown) {
-                PlayerControls(
-                    player = current,
-                    onScrubbingChanged = { scrubbing = it },
-                    statsShown = statsShown,
-                    onToggleStats = { statsShown = !statsShown },
-                    speed = choices.speed,
-                    onOpenSettings = { settingsShown = true },
-                    catalogedDurationSecs = openSet?.durationSecs,
-                    hasNext = upNext.hasNext,
-                    nextTitleLine = upNext.titleLine,
-                    onPlayNext = viewModel::playNext,
-                    modifier = Modifier.align(Alignment.BottomCenter).onGloballyPositioned { barTop = it.boundsInRoot().top },
-                )
-                // Top-right, opposite back: the web keeps these in the player
-                // because "this is where a viewer finds out what a film
-                // actually is", not because of where on the page they sit —
-                // this platform's transport bar already owns the bottom edge.
-                // Below the status bar's band, measured against the system
-                // bars even while hidden, so the row does not jump on fullscreen.
-                PlayerMarks(
-                    marks = marks,
-                    actions = PlayerMarksActions(
-                        onToggleWatchlist = viewModel::toggleWatchlist,
-                        onToggleKids = viewModel::toggleKids,
-                        onSetInList = viewModel::setInList,
-                        onCreateList = viewModel::createListAndAdd,
-                    ),
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .windowInsetsPadding(WindowInsets.systemBarsIgnoringVisibility)
-                        .padding(Spacing.medium),
+    NotesLayout(notes, isInPip, onClose = viewModel::toggleNotes) {
+        PlayerGestureLayer(
+            player = player,
+            onToggleControls = { controlsShown = !controlsShown },
+            onPinchFraming = viewModel::chooseFraming,
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .onGloballyPositioned { screenBottom = it.boundsInRoot().bottom },
+        ) {
+            player?.let { current ->
+                VideoWithSubtitles(current, subtitleCues, choices, barTop = barTop.takeIf { barShown }, isInPip = isInPip, onPictureBottomChanged = { pictureBottom = it })
+                if (barShown) {
+                    PlayerControls(
+                        player = current,
+                        onScrubbingChanged = { scrubbing = it },
+                        statsShown = statsShown,
+                        onToggleStats = { statsShown = !statsShown },
+                        speed = choices.speed,
+                        onOpenSettings = { settingsShown = true },
+                        catalogedDurationSecs = openSet?.durationSecs,
+                        hasNext = upNext.hasNext,
+                        nextTitleLine = upNext.titleLine,
+                        onPlayNext = viewModel::playNext,
+                        modifier = Modifier.align(Alignment.BottomCenter).onGloballyPositioned { barTop = it.boundsInRoot().top },
+                    )
+                    // Top-right, opposite back: the web keeps these in the player
+                    // because "this is where a viewer finds out what a film
+                    // actually is", not because of where on the page they sit —
+                    // this platform's transport bar already owns the bottom edge.
+                    // Below the status bar's band, measured against the system
+                    // bars even while hidden, so the row does not jump on fullscreen.
+                    PlayerMarks(
+                        marks = marks,
+                        actions = PlayerMarksActions(
+                            onToggleWatchlist = viewModel::toggleWatchlist,
+                            onToggleKids = viewModel::toggleKids,
+                            onSetInList = viewModel::setInList,
+                            onCreateList = viewModel::createListAndAdd,
+                        ),
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .windowInsetsPadding(WindowInsets.systemBarsIgnoringVisibility)
+                            .padding(Spacing.medium),
+                    )
+                }
+                if (settingsShown && !isInPip) {
+                    PlayerSettingsSheetForViewModel(
+                        choices = choices,
+                        viewModel = viewModel,
+                        onDismiss = { settingsShown = false },
+                    )
+                }
+                // The countdown that may run it keeps ticking either way — it
+                // lives in the up-next controller, not in this composable.
+                if (!isInPip) UpNextCard(
+                    state = upNext,
+                    onPlayNow = viewModel::playNext,
+                    onCancel = viewModel::cancelUpNext,
+                    barTop = barTop.takeIf { barShown },
+                    pictureBottom = pictureBottom,
+                    screenBottom = screenBottom,
+                    modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
-            if (settingsShown && !isInPip) {
-                PlayerSettingsSheetForViewModel(
-                    choices = choices,
-                    viewModel = viewModel,
-                    onDismiss = { settingsShown = false },
-                )
+
+            when (state) {
+                PlayerUiState.Preparing -> CenteredSpinner()
+                is PlayerUiState.Failed -> PlayerFailure((state as PlayerUiState.Failed).message, onRetry = viewModel::retry)
+                PlayerUiState.Playing, PlayerUiState.Paused -> Unit
             }
-            // The countdown that may run it keeps ticking either way — it
-            // lives in the up-next controller, not in this composable.
-            if (!isInPip) UpNextCard(
-                state = upNext,
-                onPlayNow = viewModel::playNext,
-                onCancel = viewModel::cancelUpNext,
-                barTop = barTop.takeIf { barShown },
-                pictureBottom = pictureBottom,
-                screenBottom = screenBottom,
-                modifier = Modifier.align(Alignment.BottomCenter),
+
+            PlayerTopChrome(
+                openSet = openSet,
+                barShown = barShown,
+                statsShown = statsShown,
+                isInPip = isInPip,
+                player = player,
+                totals = viewModel.totals,
+                onBack = onBack,
+                onEnterPip = pip.enterPip.takeIf { pip.supported && player != null },
+                modifier = Modifier.align(Alignment.TopStart),
+                held = held,
+                onNotes = viewModel::toggleNotes.takeIf { notes != null },
             )
         }
-
-        when (state) {
-            PlayerUiState.Preparing -> CenteredSpinner()
-            is PlayerUiState.Failed -> PlayerFailure((state as PlayerUiState.Failed).message, onRetry = viewModel::retry)
-            PlayerUiState.Playing, PlayerUiState.Paused -> Unit
-        }
-
-        PlayerTopChrome(
-            openSet = openSet,
-            barShown = barShown,
-            statsShown = statsShown,
-            isInPip = isInPip,
-            player = player,
-            totals = viewModel.totals,
-            onBack = onBack,
-            onEnterPip = pip.enterPip.takeIf { pip.supported && player != null },
-            modifier = Modifier.align(Alignment.TopStart),
-            held = held,
-        )
     }
 }

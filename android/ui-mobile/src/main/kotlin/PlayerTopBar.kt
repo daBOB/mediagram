@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +33,10 @@ import designsystem.Spacing
  * app has no keyboard for (CLAUDE.md § Surface Parity). Null hides it:
  * below API 26, or already inside picture-in-picture, where this whole
  * bar is hidden anyway.
+ *
+ * [onNotes], when non-null, is the web's own "Notes" button: the open title
+ * has notes, and this opens or closes their column. It fades with the title,
+ * as the web's sits in the HUD that fades.
  */
 @Composable
 internal fun PlayerTopBar(
@@ -39,6 +44,7 @@ internal fun PlayerTopBar(
     showTitle: Boolean,
     onBack: () -> Unit,
     onEnterPip: (() -> Unit)? = null,
+    onNotes: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -55,6 +61,9 @@ internal fun PlayerTopBar(
                 ) {
                     Text(text = "⧉", color = Color.White, style = MaterialTheme.typography.headlineSmall)
                 }
+            }
+            if (onNotes != null && showTitle) {
+                TextButton(onClick = onNotes) { Text(text = "Notes", color = Color.White) }
             }
         }
         if (showTitle && title.isNotEmpty()) {

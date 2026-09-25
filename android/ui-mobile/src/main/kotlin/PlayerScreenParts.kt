@@ -178,10 +178,11 @@ internal fun PlayerTopChrome(
     onEnterPip: (() -> Unit)?,
     modifier: Modifier = Modifier,
     held: Boolean = false,
+    onNotes: (() -> Unit)? = null,
 ) {
     if (isInPip) return
     Column(modifier = modifier) {
-        PlayerTopBar(title = titleLine(openSet), showTitle = barShown, onBack = onBack, onEnterPip = onEnterPip)
+        PlayerTopBar(title = titleLine(openSet), showTitle = barShown, onBack = onBack, onEnterPip = onEnterPip, onNotes = onNotes)
         // Gated on the bar being shown as well as on the toggle, so the
         // statistics have no visibility rule of their own: a viewer who
         // leaves the numbers on gets the picture back when the bar takes

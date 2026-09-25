@@ -18,6 +18,7 @@ import playback.PlaybackCounters
 import playback.PlaybackTotals
 import playback.SeriesPreloading
 import playback.SubtitleTrackSource
+import playback.SummarySource
 import playback.TimedCue
 import javax.inject.Inject
 
@@ -35,6 +36,7 @@ class PlayerViewModel @Inject constructor(
     internal val playbackServiceController: PlaybackServiceController = PlaybackServiceController.Noop,
     seriesPreloader: SeriesPreloading,
     heldSets: HeldSetsQuery,
+    summarySource: SummarySource = SummarySource.None,
 ) : ViewModel(), PlayerHandle.Listener {
 
     internal val _state = MutableStateFlow<PlayerUiState>(PlayerUiState.Preparing)
@@ -90,6 +92,11 @@ class PlayerViewModel @Inject constructor(
     /** Whether the open title plays with no network at all — the stats overlay's "cached" line. */
     internal val heldController = PlayerHeldController(viewModelScope, heldSets, seriesPreloader, choicesController.openSet)
     val held: StateFlow<Boolean> = heldController.held
+
+    /** The open title's notes, when it has any; see [PlayerNotesController]. */
+    internal val notesController = PlayerNotesController(viewModelScope, summarySource, choicesController.openSet)
+    val notes: StateFlow<PlayerNotes?> = notesController.notes
+    fun toggleNotes() = notesController.toggle()
 
     /** A title to navigate to, once — the UI layer owns `LibraryPositions`, so it (not this VM) moves there and calls [switchAcknowledged]. */
     val pendingSwitch: StateFlow<PendingPlayerSwitch?> = upNextController.pendingSwitch

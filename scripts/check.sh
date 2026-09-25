@@ -35,7 +35,9 @@ step "gradle test and lint"
 # a broken change. Neither task needs the cross-compiled native core, so this
 # stays a Kotlin-only build with no Rust toolchain in it.
 if [ -n "${ANDROID_HOME:-}" ]; then
-  (cd android && ./gradlew testDebugUnitTest lint)
+  # `:core:model` is a plain JVM module: it has `test`, not `testDebugUnitTest`,
+  # so it is named here or its tests never run.
+  (cd android && ./gradlew testDebugUnitTest :core:model:test lint)
 else
   echo "skipping: no Android SDK (set ANDROID_HOME to run the Android checks)"
 fi

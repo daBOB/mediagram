@@ -9,6 +9,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.delay
 import player.PlayerViewModel
 import player.open
 
@@ -91,5 +92,20 @@ internal fun PlayerNavigationEffects(
             onSwitch(switch.setId, switch.run)
             viewModel.switchAcknowledged()
         }
+    }
+}
+
+/**
+ * Takes the transport bar away after [CONTROLS_LINGER_MS] once
+ * [controlsShouldFade] says it may, and not while the settings sheet is
+ * open — the rule itself lives there, where it can be tested.
+ */
+@Composable
+internal fun ControlsAutoHide(controlsShown: Boolean, isPlaying: Boolean, scrubbing: Boolean, settingsShown: Boolean, onHide: () -> Unit) {
+    LaunchedEffect(controlsShown, isPlaying, scrubbing, settingsShown) {
+        if (!controlsShown || settingsShown) return@LaunchedEffect
+        if (!controlsShouldFade(isPlaying = isPlaying, isScrubbing = scrubbing)) return@LaunchedEffect
+        delay(CONTROLS_LINGER_MS)
+        onHide()
     }
 }

@@ -2,6 +2,7 @@ package player
 
 import data.WatchSync
 import playback.PlaybackCounters
+import playback.SummarySource
 
 /** Records `soon()` calls rather than doing anything with them — shared by every [PlayerViewModel] test that does not care about sync itself. */
 internal class FakeWatchSync : WatchSync {
@@ -27,6 +28,7 @@ internal fun buildViewModel(
     playbackServiceController: FakePlaybackServiceController = FakePlaybackServiceController(),
     seriesPreloader: FakeSeriesPreloader = FakeSeriesPreloader(),
     heldSets: FakeHeldSets = FakeHeldSets(),
+    summarySource: SummarySource = SummarySource.None,
 ) = PlayerViewModel(
     handle,
     PlaybackCounters(),
@@ -39,4 +41,5 @@ internal fun buildViewModel(
     playbackServiceController,
     seriesPreloader,
     heldSets,
+    summarySource,
 )

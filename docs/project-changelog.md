@@ -51,6 +51,21 @@ to `main`. Full phase-by-phase detail lives in
 
 **Added**
 
+- Android notes panel, matching the web player's: a title with a summary
+  gets a "Notes" button in the player's top bar, and a lesson's notes open by
+  themselves as the web's do. The markdown is parsed by a Kotlin port of
+  `markdown.js` in `:core:model` (`model.markdown`), held to the web's by a
+  shared fixture, `web/test/fixtures/markdown/cases.json`, that both
+  `bun test` and `MarkdownFixtureTest` run; the fixture pins today's quirks
+  too, such as emphasis not nesting inside emphasis. Links keep the web's
+  scheme allow-list; of the allowed ones only `http`, `https` and `mailto`
+  open (in another app), since `#` and `/` point into the web player's own
+  page. The column sits beside the picture on a landscape window and below
+  it in portrait; on a phone held sideways it is a sheet over the right of
+  the picture instead, a deliberate difference since the web never runs in
+  a window that short. A panel belongs to its title and resets on an
+  up-next switch. `scripts/check.sh` now runs `:core:model:test`, which
+  `testDebugUnitTest` never reached.
 - Player framing — Fit, Fill, 16:9 and 4:3 — on both surfaces, matching
   what `framing.js`'s own comments always intended: 16:9/4:3 crop the
   picture into a centred window of that shape, never stretch it to fill

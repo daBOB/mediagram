@@ -17,6 +17,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.asCoroutineDispatcher
 import playback.CacheDataSourceWriter
 import playback.DefaultSubtitleTrackSource
+import playback.DefaultSummarySource
 import playback.HeldSets
 import playback.HeldSetsQuery
 import playback.PlaybackCounters
@@ -24,6 +25,7 @@ import playback.PreloadWriter
 import playback.SeriesPreloader
 import playback.SeriesPreloading
 import playback.SubtitleTrackSource
+import playback.SummarySource
 import playback.SystemUnmeteredNetworkCheck
 import playback.buildPlayer
 import playback.CacheProvider
@@ -92,6 +94,10 @@ object PlaybackModule {
     @Singleton
     fun provideSubtitleTrackSource(coreProvider: CoreProvider): SubtitleTrackSource =
         DefaultSubtitleTrackSource(coreProvider)
+
+    @Provides
+    @Singleton
+    fun provideSummarySource(coreProvider: CoreProvider): SummarySource = DefaultSummarySource(coreProvider)
 
     // Upcasts a constructor-injected concrete type to the interface
     // PlayerViewModel actually depends on — this module is a plain
