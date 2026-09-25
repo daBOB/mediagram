@@ -28,13 +28,13 @@ class TvPlayerKeysTest {
     }
 
     @Test
-    fun mediaPlayTogglesPlayAloneWhileHidden() {
-        assertEquals(TvKeyAction.TogglePlay, tvKeyAction(Key.MediaPlay, controlsShowing = false, focusInControls = false))
+    fun mediaPlayOnlyPlaysWhileHidden() {
+        assertEquals(TvKeyAction.Play, tvKeyAction(Key.MediaPlay, controlsShowing = false, focusInControls = false))
     }
 
     @Test
-    fun mediaPauseTogglesPlayAloneWhileHidden() {
-        assertEquals(TvKeyAction.TogglePlay, tvKeyAction(Key.MediaPause, controlsShowing = false, focusInControls = false))
+    fun mediaPauseOnlyPausesWhileHidden() {
+        assertEquals(TvKeyAction.Pause, tvKeyAction(Key.MediaPause, controlsShowing = false, focusInControls = false))
     }
 
     @Test
@@ -100,13 +100,13 @@ class TvPlayerKeysTest {
     }
 
     @Test
-    fun mediaPlayStillTogglesPlayWhileShowing() {
-        assertEquals(TvKeyAction.TogglePlay, tvKeyAction(Key.MediaPlay, controlsShowing = true, focusInControls = false))
+    fun mediaPlayStillOnlyPlaysWhileShowing() {
+        assertEquals(TvKeyAction.Play, tvKeyAction(Key.MediaPlay, controlsShowing = true, focusInControls = false))
     }
 
     @Test
-    fun mediaPauseStillTogglesPlayWhileShowing() {
-        assertEquals(TvKeyAction.TogglePlay, tvKeyAction(Key.MediaPause, controlsShowing = true, focusInControls = false))
+    fun mediaPauseStillOnlyPausesWhileShowing() {
+        assertEquals(TvKeyAction.Pause, tvKeyAction(Key.MediaPause, controlsShowing = true, focusInControls = false))
     }
 
     @Test
@@ -181,5 +181,16 @@ class TvPlayerKeysTest {
     @Test
     fun anUnmappedKeyIsIgnoredWhileShowing() {
         assertEquals(TvKeyAction.Ignore, tvKeyAction(Key.A, controlsShowing = true, focusInControls = false))
+    }
+
+    // Nothing to control yet, or any more: preparing, or failed.
+
+    @Test
+    fun everyKeyButBackIsIgnoredWithNothingToControl() {
+        val keys = listOf(Key.DirectionCenter, Key.Enter, Key.MediaPlayPause, Key.MediaPlay, Key.MediaPause, Key.DirectionLeft, Key.DirectionRight, Key.DirectionUp, Key.DirectionDown, Key.MediaRewind, Key.MediaFastForward)
+        for (key in keys) {
+            assertEquals(TvKeyAction.Ignore, tvKeyAction(key, controlsShowing = false, focusInControls = false, canControl = false), "$key")
+        }
+        assertEquals(TvKeyAction.Leave, tvKeyAction(Key.Back, controlsShowing = false, focusInControls = false, canControl = false))
     }
 }

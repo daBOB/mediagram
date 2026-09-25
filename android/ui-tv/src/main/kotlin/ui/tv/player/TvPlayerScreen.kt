@@ -124,7 +124,13 @@ fun TvPlayerScreen(
                 .background(Color.Black)
                 .onPreviewKeyEvent { event ->
                     if (event.type == KeyEventType.KeyDown) presses++
-                    remote.onKey(event, player, controlsShowing = barShown, onSeekBar = onSeekBar)
+                    remote.onKey(
+                        event,
+                        player,
+                        controlsShowing = barShown,
+                        onSeekBar = onSeekBar,
+                        canControl = controlsMayShow(state),
+                    )
                 }.focusRequester(root)
                 .focusProperties { canFocus = !barShown }
                 .focusable()

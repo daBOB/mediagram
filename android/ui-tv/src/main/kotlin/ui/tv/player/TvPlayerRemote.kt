@@ -47,9 +47,11 @@ private const val FASTEST_AFTER = 60
  * decides; this only does — the one place a remote key becomes a media3
  * command, a show, or a focus landing.
  *
- * A key whose press is taken here has its release taken too. Otherwise a
- * Centre press that brought the controls up would let its release fall on
- * the play/pause button the controls just focused, and press it a second
+ * A key whose press is taken here has its repeats and its release taken
+ * too, whatever the table would say of them on their own. Otherwise a
+ * Centre press that brought the controls up would let the rest of it fall
+ * on the play/pause button the controls just focused: a held press would
+ * leave the button drawn pressed, and the release would press it a second
  * time.
  *
  * Back is not taken here at all: it goes on to the back dispatcher, where
@@ -67,13 +69,15 @@ internal class TvPlayerRemote(
         player: Player?,
         controlsShowing: Boolean,
         onSeekBar: Boolean,
+        canControl: Boolean,
     ): Boolean {
         if (event.type == KeyEventType.KeyUp) return taken.remove(event.key)
         if (event.type != KeyEventType.KeyDown || event.key == Key.Back) return false
         val repeat = event.nativeKeyEvent.repeatCount
-        val took = apply(tvKeyAction(event.key, controlsShowing, onSeekBar), repeat, player)
+        val took = apply(tvKeyAction(event.key, controlsShowing, onSeekBar, canControl), repeat, player)
+        val heldOver = repeat > 0 && event.key in taken
         if (took) taken += event.key
-        return took
+        return took || heldOver
     }
 
     private fun apply(
@@ -86,6 +90,14 @@ internal class TvPlayerRemote(
             // play and pause twenty times a second.
             TvKeyAction.TogglePlay -> {
                 if (repeat == 0) Util.handlePlayPauseButtonAction(player)
+                true
+            }
+            TvKeyAction.Play -> {
+                if (repeat == 0) Util.handlePlayButtonAction(player)
+                true
+            }
+            TvKeyAction.Pause -> {
+                if (repeat == 0) Util.handlePauseButtonAction(player)
                 true
             }
             TvKeyAction.TogglePlayAndShowControls -> {

@@ -8,8 +8,14 @@ import androidx.compose.ui.input.key.Key
  * exactly one thing and a test can assert on exactly one thing.
  */
 sealed interface TvKeyAction {
-    /** Toggles play/pause and nothing else — the dedicated media key, either state. */
+    /** Toggles play/pause and nothing else — the combined media key, either state. */
     data object TogglePlay : TvKeyAction
+
+    /** Plays, and does nothing to a film already playing — the dedicated Play key, either state. */
+    data object Play : TvKeyAction
+
+    /** Pauses, and does nothing to a film already paused — the dedicated Pause key, either state. */
+    data object Pause : TvKeyAction
 
     /** Toggles play/pause and brings the controls up: Centre/Enter's first press, with the controls not there yet to select from instead. */
     data object TogglePlayAndShowControls : TvKeyAction
@@ -51,16 +57,26 @@ private const val SKIP_SECONDS = 10
  * the position rather than moving focus. Everywhere else the controls are
  * showing, Left/Right is ordinary focus movement between them and this
  * function steps aside.
+ *
+ * [canControl] is whether there is a film to control at all — false while
+ * it is still preparing or has failed, when the phone shows no controls and
+ * so offers nothing to press. Then every key but Back is ignored: a skip or
+ * a pause aimed at a player with nothing loaded would be a command nobody
+ * could see land.
  */
 fun tvKeyAction(
     key: Key,
     controlsShowing: Boolean,
     focusInControls: Boolean,
+    canControl: Boolean = true,
 ): TvKeyAction {
+    if (!canControl) return if (key == Key.Back) TvKeyAction.Leave else TvKeyAction.Ignore
     if (!controlsShowing) {
         return when (key) {
             Key.DirectionCenter, Key.Enter -> TvKeyAction.TogglePlayAndShowControls
-            Key.MediaPlayPause, Key.MediaPlay, Key.MediaPause -> TvKeyAction.TogglePlay
+            Key.MediaPlayPause -> TvKeyAction.TogglePlay
+            Key.MediaPlay -> TvKeyAction.Play
+            Key.MediaPause -> TvKeyAction.Pause
             Key.DirectionLeft, Key.MediaRewind -> TvKeyAction.SeekByAndShowControls(-SKIP_SECONDS)
             Key.DirectionRight, Key.MediaFastForward -> TvKeyAction.SeekByAndShowControls(SKIP_SECONDS)
             Key.DirectionUp, Key.DirectionDown -> TvKeyAction.ShowControlsAndFocusSeekBar
@@ -72,7 +88,9 @@ fun tvKeyAction(
     }
 
     return when (key) {
-        Key.MediaPlayPause, Key.MediaPlay, Key.MediaPause -> TvKeyAction.TogglePlay
+        Key.MediaPlayPause -> TvKeyAction.TogglePlay
+        Key.MediaPlay -> TvKeyAction.Play
+        Key.MediaPause -> TvKeyAction.Pause
         Key.MediaRewind -> TvKeyAction.SeekBy(-SKIP_SECONDS)
         Key.MediaFastForward -> TvKeyAction.SeekBy(SKIP_SECONDS)
         Key.DirectionLeft -> if (focusInControls) TvKeyAction.SeekBy(-SKIP_SECONDS) else TvKeyAction.PassThrough
