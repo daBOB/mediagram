@@ -72,7 +72,8 @@ class DefaultCoreClient(
     override suspend fun fetchMissing(
         tmdbKey: String,
         language: String,
-    ): FetchReport = core.fetchMissing(tmdbKey, language)
+        backdropWidth: Int,
+    ): FetchReport = core.fetchMissing(tmdbKey, language, backdropWidth.toUInt())
 
     override suspend fun profiles(): List<Profile> = core.profiles()
 
@@ -117,6 +118,13 @@ class DefaultCoreClient(
         setId: String,
         marked: Boolean,
     ) = core.setKids(setId, marked)
+
+    override suspend fun editorsChoice(): String? = core.editorsChoice()
+
+    override suspend fun setEditorsChoice(
+        setId: String,
+        marked: Boolean,
+    ) = core.setEditorsChoice(setId, marked)
 
     override suspend fun createCollection(
         profileId: String,

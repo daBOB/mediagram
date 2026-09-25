@@ -6,6 +6,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import data.BackdropWidth
 import data.CatalogRepository
 import data.CoreLibraryEvents
 import data.CoreProvider
@@ -13,6 +14,7 @@ import data.CoreStorage
 import data.DefaultCatalogRepository
 import data.DefaultPlayerPreferences
 import data.DefaultWatchStateRepository
+import data.DeviceBackdropWidth
 import data.DefaultWatchSync
 import data.FileCoreStorage
 import data.LibraryEvents
@@ -71,6 +73,12 @@ object DataModule {
     fun provideTmdbSettings(
         @ApplicationContext context: Context,
     ): TmdbSettings = EncryptedTmdbSettings(context)
+
+    @Provides
+    @Singleton
+    fun provideBackdropWidth(
+        @ApplicationContext context: Context,
+    ): BackdropWidth = DeviceBackdropWidth(context)
 
     // The same directory the core is constructed with, so clearing it
     // clears the state that core wrote.

@@ -56,8 +56,14 @@ data class WatchSnapshot(
     val watchlist: List<String>,
     val kids: List<String>,
     val collections: List<ListOfSets>,
+    /**
+     * The household's editor's choice, the title the home page leads its
+     * features with — or `null` for no pick. Shared across every profile,
+     * like [kids].
+     */
+    val editorsChoice: String? = null,
 ) {
     companion object {
-        val Empty = WatchSnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
+        val Empty = WatchSnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), null)
     }
 }

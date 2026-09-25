@@ -1,5 +1,6 @@
 package catalog
 
+import data.BackdropWidth
 import data.CatalogEnrichmentFetcher
 import data.CoreClient
 import data.LibraryUpdateCoordinator
@@ -132,7 +133,7 @@ class LibraryUpdateCoordinatorTest {
 private class UpdateFixture(
     val repository: FakeCatalogRepository = FakeCatalogRepository(movies = 1),
 ) {
-    val report = FetchReport(1u, 0u, 1u, 0u, 0u, 0u)
+    val report = FetchReport(1u, 0u, 0u, 0u, 1u, 0u, 0u, 0u)
     val steps = mutableListOf<String>()
     var fetchGate: CompletableDeferred<Unit>? = null
     var refreshFailed = false
@@ -142,6 +143,7 @@ private class UpdateFixture(
             override suspend fun fetchMissing(
                 tmdbKey: String,
                 language: String,
+                backdropWidth: Int,
             ): FetchReport {
                 steps += "fetch"
                 fetchGate?.await()
@@ -149,7 +151,7 @@ private class UpdateFixture(
                 return report
             }
         }
-    val enrichment = CatalogEnrichmentFetcher(CatalogCoreProvider(core), InMemoryTmdbSettings())
+    val enrichment = CatalogEnrichmentFetcher(CatalogCoreProvider(core), InMemoryTmdbSettings(), BackdropWidth { 780 })
     val coordinator = LibraryUpdateCoordinator(repository, enrichment)
 
     suspend fun run(kind: LibraryUpdateKind = LibraryUpdateKind.Manual) {

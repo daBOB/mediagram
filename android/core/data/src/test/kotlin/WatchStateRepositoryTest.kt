@@ -49,7 +49,7 @@ private class StateCoreClient(
     }
 
     override suspend fun snapshot(profileId: String): StateSnapshot =
-        snapshots[profileId] ?: StateSnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
+        snapshots[profileId] ?: StateSnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), null)
 
     override suspend fun setProgress(
         profileId: String,
@@ -74,7 +74,7 @@ private class StateCoreClient(
         }
     }
 
-    private fun emptySnapshot() = StateSnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
+    private fun emptySnapshot() = StateSnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), null)
 }
 
 class WatchStateRepositoryTest {

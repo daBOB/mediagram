@@ -193,6 +193,10 @@ class DefaultCatalogRepository(
             genres = summary.genres,
             subtitleLanguages = summary.subtitles,
             hasSummary = summary.hasSummary,
+            backdropPath = summary.backdropKey?.let(core::posterPath),
+            tagline = summary.tagline,
+            rating = summary.rating,
+            popularity = summary.popularity,
         )
     }
 

@@ -20,7 +20,7 @@ import uniffi.mediagram_core.TitleInfo
  * never be caught still running.
  */
 class FakeCore(
-    var report: FetchReport = FetchReport(0u, 0u, 0u, 0u, 0u, 0u),
+    var report: FetchReport = FetchReport(0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u),
     var failure: Exception? = null,
     private val gate: CompletableDeferred<Unit>? = null,
 ) : CoreClient {
@@ -75,6 +75,7 @@ class FakeCore(
     override suspend fun fetchMissing(
         tmdbKey: String,
         language: String,
+        backdropWidth: Int,
     ): FetchReport {
         fetchCalls++
         lastKey = tmdbKey

@@ -61,13 +61,13 @@ class FetchViewModelTest {
     fun aSuccessfulFetchReportsWhatCameBack() =
         runTest {
             val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
-            val core = FakeCore(report = FetchReport(2u, 7u, 5u, 1u, 0u, 0u))
+            val core = FakeCore(report = FetchReport(2u, 7u, 0u, 0u, 5u, 1u, 0u, 0u))
             val viewModel = fetchViewModel(FakeCoreProvider(core), settings)
 
             viewModel.fetch()
 
             assertEquals("a-fake-key", core.lastKey)
-            assertEquals(FetchReport(2u, 7u, 5u, 1u, 0u, 0u), viewModel.state.value.report)
+            assertEquals(FetchReport(2u, 7u, 0u, 0u, 5u, 1u, 0u, 0u), viewModel.state.value.report)
             assertFalse(viewModel.state.value.running)
         }
 
@@ -101,7 +101,7 @@ class FetchViewModelTest {
         runTest {
             val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
             val gate = CompletableDeferred<Unit>()
-            val core = FakeCore(report = FetchReport(1u, 0u, 0u, 0u, 0u, 0u), gate = gate)
+            val core = FakeCore(report = FetchReport(1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u), gate = gate)
             val viewModel = fetchViewModel(FakeCoreProvider(core), settings)
 
             viewModel.fetch()
@@ -115,7 +115,7 @@ class FetchViewModelTest {
             advanceUntilIdle()
 
             assertFalse(viewModel.state.value.running)
-            assertEquals(FetchReport(1u, 0u, 0u, 0u, 0u, 0u), viewModel.state.value.report)
+            assertEquals(FetchReport(1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u), viewModel.state.value.report)
         }
 
     /** A rejected key is named as such — never quoted back, and never mistaken for a network fault. */
@@ -136,7 +136,7 @@ class FetchViewModelTest {
     fun dismissingAResultClearsItWithoutTouchingWhetherAKeyIsStored() =
         runTest {
             val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
-            val core = FakeCore(report = FetchReport(1u, 0u, 0u, 0u, 0u, 0u))
+            val core = FakeCore(report = FetchReport(1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u))
             val viewModel = fetchViewModel(FakeCoreProvider(core), settings)
             viewModel.fetch()
 
@@ -151,7 +151,7 @@ class FetchViewModelTest {
     fun aQuietFetchFillsInWithoutAReport() =
         runTest {
             val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
-            val core = FakeCore(report = FetchReport(2u, 7u, 5u, 1u, 0u, 0u))
+            val core = FakeCore(report = FetchReport(2u, 7u, 0u, 0u, 5u, 1u, 0u, 0u))
             val viewModel = fetchViewModel(FakeCoreProvider(core), settings)
 
             viewModel.fetch(quiet = true)
@@ -167,13 +167,13 @@ class FetchViewModelTest {
     fun aQuietFetchLeavesAResultStillOnScreen() =
         runTest {
             val settings = InMemoryTmdbSettings().apply { write("a-fake-key") }
-            val core = FakeCore(report = FetchReport(1u, 0u, 0u, 0u, 0u, 0u))
+            val core = FakeCore(report = FetchReport(1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u))
             val viewModel = fetchViewModel(FakeCoreProvider(core), settings)
             viewModel.fetch()
 
             viewModel.fetch(quiet = true)
 
-            assertEquals(FetchReport(1u, 0u, 0u, 0u, 0u, 0u), viewModel.state.value.report)
+            assertEquals(FetchReport(1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u), viewModel.state.value.report)
         }
 
     @Test

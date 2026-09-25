@@ -110,10 +110,14 @@ interface CoreClient {
      * The key is spent on this call and never stored by the core — Kotlin
      * owns holding it, so the start-over dialog's promise to clear it stays
      * true from exactly one place.
+     *
+     * [backdropWidth] is this device's own choice, by its screen class —
+     * see `BackdropWidth.kt` — narrower on a phone than on a tablet.
      */
     suspend fun fetchMissing(
         tmdbKey: String,
         language: String,
+        backdropWidth: Int,
     ): FetchReport
 
     /**
@@ -164,7 +168,8 @@ interface CoreClient {
     suspend fun deleteProfile(id: String): Boolean = false
 
     /** One profile's everything, in one read: progress, watched, lists. */
-    suspend fun snapshot(profileId: String): StateSnapshot = StateSnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
+    suspend fun snapshot(profileId: String): StateSnapshot =
+        StateSnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), null)
 
     suspend fun setProgress(
         profileId: String,
@@ -196,6 +201,19 @@ interface CoreClient {
      * it once for the whole session rather than per viewer.
      */
     suspend fun setKids(
+        setId: String,
+        marked: Boolean,
+    ) = Unit
+
+    /** The household's editor's choice, the title the home page leads its features with — or `null` for no pick. */
+    suspend fun editorsChoice(): String? = null
+
+    /**
+     * Pins [setId] as the editor's choice, or unpins it. Global, like
+     * [setKids]. Pinning retires every other live pick; unpinning retires
+     * all of them.
+     */
+    suspend fun setEditorsChoice(
         setId: String,
         marked: Boolean,
     ) = Unit

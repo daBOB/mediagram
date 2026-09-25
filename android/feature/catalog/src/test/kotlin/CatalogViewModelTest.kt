@@ -103,6 +103,11 @@ private class FakeCatalogWatchState(
         marked: Boolean,
     ) = Unit
 
+    override suspend fun setEditorsChoice(
+        setId: String,
+        marked: Boolean,
+    ) = Unit
+
     override suspend fun createList(name: String): ListOfSets? {
         writeFailure?.let { throw it }
         if (refuseWrites) return null
@@ -234,10 +239,11 @@ class CatalogViewModelTest {
                     override suspend fun fetchMissing(
                         tmdbKey: String,
                         language: String,
+                        backdropWidth: Int,
                     ): FetchReport {
                         fetches += 1
                         repository.postersArrived = true
-                        return FetchReport(1u, 0u, 0u, 0u, 0u, 0u)
+                        return FetchReport(1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u)
                     }
                 }
             val enrichment = CatalogEnrichmentFetcher(CatalogCoreProvider(core), InMemoryTmdbSettings().apply { write("key") })
@@ -274,9 +280,10 @@ class CatalogViewModelTest {
                     override suspend fun fetchMissing(
                         tmdbKey: String,
                         language: String,
+                        backdropWidth: Int,
                     ): FetchReport {
                         fetches += 1
-                        return FetchReport(0u, 0u, 0u, 0u, 0u, 0u)
+                        return FetchReport(0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u)
                     }
                 }
             val enrichment = CatalogEnrichmentFetcher(CatalogCoreProvider(core), InMemoryTmdbSettings().apply { write("key") })
@@ -552,9 +559,10 @@ class CatalogViewModelTest {
                         override suspend fun fetchMissing(
                             tmdbKey: String,
                             language: String,
+                            backdropWidth: Int,
                         ): FetchReport {
                             fetches += 1
-                            return FetchReport(0u, 0u, 0u, 0u, 0u, 0u)
+                            return FetchReport(0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u)
                         }
                     }
                 val enrichment = CatalogEnrichmentFetcher(CatalogCoreProvider(core), InMemoryTmdbSettings().apply { write("key") })

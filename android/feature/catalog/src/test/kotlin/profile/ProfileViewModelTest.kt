@@ -104,6 +104,11 @@ private class FakeWatchStateRepository(
         marked: Boolean,
     ) = Unit
 
+    override suspend fun setEditorsChoice(
+        setId: String,
+        marked: Boolean,
+    ) = Unit
+
     override suspend fun createList(name: String): ListOfSets? = null
 
     override suspend fun renameList(
