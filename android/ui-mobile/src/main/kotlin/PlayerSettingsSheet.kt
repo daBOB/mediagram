@@ -19,15 +19,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import designsystem.Spacing
 import playback.AudioOption
+import playback.Framing
 import player.PLAYBACK_SPEEDS
 import player.SubtitleOption
 import player.speedLabel
 
 /**
- * The settings sheet the control bar's gear opens. Speed, Audio, Subtitles
- * and Subtitle style are the sections built so far; Framing joins them
- * beside it, in the same sheet rather than one each — a viewer reaching for
- * one setting mid-film should not have to remember which button opens which.
+ * The settings sheet the control bar's gear opens. Speed, Audio, Subtitles,
+ * Subtitle style and Framing, all in the same sheet rather than one each —
+ * a viewer reaching for one setting mid-film should not have to remember
+ * which button opens which.
  *
  * [audioOptions] is empty for a title with only one audio track (or before
  * the file's own tracks and any remembered choice have both resolved),
@@ -58,6 +59,8 @@ fun PlayerSettingsSheet(
     subtitleOffsetMs: Long,
     onSubtitleNudge: (Int) -> Unit,
     onSubtitleOffsetReset: () -> Unit,
+    framing: Framing,
+    onFramingChosen: (Framing) -> Unit,
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -87,6 +90,7 @@ fun PlayerSettingsSheet(
                     onResetOffset = onSubtitleOffsetReset,
                 )
             }
+            FramingSection(framing = framing, onChosen = onFramingChosen)
         }
     }
 }

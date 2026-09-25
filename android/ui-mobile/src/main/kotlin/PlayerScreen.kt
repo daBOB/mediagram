@@ -6,12 +6,10 @@
 package ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.systemBarsIgnoringVisibility
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -27,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Spacing
@@ -36,6 +33,7 @@ import player.UpNextPhase
 import player.titleLine
 import player.PlayerUiState
 import player.PlayerViewModel
+import player.chooseFraming
 import player.createListAndAdd
 import player.retry
 import player.setInList
@@ -52,7 +50,8 @@ import player.toggleWatchlist
  *
  * A tap toggles the transport bar, which takes itself away while a film runs
  * and stays while it is paused, being scrubbed, or the settings sheet is
- * open; see [controlsShouldFade].
+ * open; see [controlsShouldFade]. Double-tap seeking, play/pause and pinch
+ * framing live in [PlayerGestureLayer], which wraps everything below.
  */
 // The toggles are inset by the system bars even while the player hides them,
 // which Compose still marks experimental.
@@ -103,20 +102,21 @@ fun PlayerScreen(setId: String, run: List<String>, fsk: String?, onBack: () -> U
     // a viewer who let it fade is exactly who most wants to see the panel.
     LaunchedEffect(upNext.phase) { if (upNext.phase != UpNextPhase.HIDDEN) controlsShown = true }
 
-    // The screen's own bottom, in root coordinates — how far the card lifts
-    // to clear the bar, measured the same way `SubtitleLayer` clears it.
+    // Root-coordinate measurements the up-next card clamps to; see UpNextCard.
     var screenBottom by remember { mutableStateOf<Float?>(null) }
+    var pictureBottom by remember { mutableStateOf<Float?>(null) }
 
-    Box(
+    PlayerGestureLayer(
+        player = player,
+        onToggleControls = { controlsShown = !controlsShown },
+        onPinchFraming = viewModel::chooseFraming,
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .pointerInput(Unit) { detectTapGestures { controlsShown = !controlsShown } }
             .onGloballyPositioned { screenBottom = it.boundsInRoot().bottom },
-        contentAlignment = Alignment.Center,
     ) {
         player?.let { current ->
-            VideoWithSubtitles(current, subtitleCues, choices, barTop = barTop.takeIf { barShown })
+            VideoWithSubtitles(current, subtitleCues, choices, barTop = barTop.takeIf { barShown }, onPictureBottomChanged = { pictureBottom = it })
             if (barShown) {
                 PlayerControls(
                     player = current,
@@ -162,8 +162,8 @@ fun PlayerScreen(setId: String, run: List<String>, fsk: String?, onBack: () -> U
                 state = upNext,
                 onPlayNow = viewModel::playNext,
                 onCancel = viewModel::cancelUpNext,
-                // `null` while the bar is hidden — nothing to clear then.
                 barTop = barTop.takeIf { barShown },
+                pictureBottom = pictureBottom,
                 screenBottom = screenBottom,
                 modifier = Modifier.align(Alignment.BottomCenter),
             )

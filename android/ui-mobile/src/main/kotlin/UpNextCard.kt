@@ -30,12 +30,19 @@ import player.UpNextUiState
  * of `#up-next` (`index.html`) + `refreshUpNext` (`player.js`);
  * [UpNextUiState.phase] decides whether it is on screen at all.
  *
- * [barTop]/[screenBottom] are root-coordinate measurements from `PlayerScreen`
- * — `null` for [barTop] while the transport bar is hidden, meaning nothing to
- * clear — so the card lifts clear of the bar exactly as far as it actually
- * covers, the same technique `SubtitleLayer` uses over the picture, and sits
- * inside the system's own bottom inset either way so a three-button
- * navigation bar never clips its own buttons.
+ * [barTop]/[screenBottom]/[pictureBottom] are root-coordinate measurements
+ * from `PlayerScreen` — `null` for [barTop] while the transport bar is
+ * hidden, meaning nothing of *it* to clear. The card still has to clear
+ * something else then: immersive mode (`ImmersiveEffect`) leaves the bar
+ * hidden over a picture that a letterboxing framing may not reach all the
+ * way to the screen's own bottom, and a card anchored past the picture's
+ * own edge would hang its background and buttons in the black band below
+ * it. So while the bar is hidden this clears [pictureBottom] instead — the
+ * same measurement `SubtitleLayer` already clamps its own text to — and
+ * while it is shown this clears the bar exactly as far as it actually
+ * covers, same as before. Either way it sits inside the system's own
+ * bottom inset too, so a three-button navigation bar never clips its own
+ * buttons.
  */
 @Composable
 internal fun UpNextCard(
@@ -43,12 +50,16 @@ internal fun UpNextCard(
     onPlayNow: () -> Unit,
     onCancel: () -> Unit,
     barTop: Float?,
+    pictureBottom: Float?,
     screenBottom: Float?,
     modifier: Modifier = Modifier,
 ) {
     if (state.phase == UpNextPhase.HIDDEN) return
+    // Nothing to clear once `screenBottom` itself is unknown (the very first
+    // frame) — `0.dp` then, the same as before either of these existed.
+    val clearAbove = barTop ?: pictureBottom ?: screenBottom
     val liftForBar = with(LocalDensity.current) {
-        if (barTop != null && screenBottom != null) (screenBottom - barTop).coerceAtLeast(0f).toDp() else 0.dp
+        if (screenBottom != null && clearAbove != null) (screenBottom - clearAbove).coerceAtLeast(0f).toDp() else 0.dp
     }
     Column(
         modifier = modifier

@@ -3,11 +3,12 @@ package player
 import playback.AudioOption
 import playback.DEFAULT_CUE_BACKING
 import playback.DEFAULT_CUE_SIZE_PERCENT
+import playback.Framing
 
 /**
- * What this viewer has chosen for the title currently open. Framing joins
- * this later rather than inventing its own store, so a leak across titles
- * has exactly one place to be prevented — [PlayerViewModel.open] always
+ * What this viewer has chosen for the title currently open, framing
+ * included — one store rather than each choice inventing its own, so a leak
+ * across titles has exactly one place to be prevented — [PlayerViewModel.open] always
  * replaces this with [Default] before the remembered choice (or the
  * default) is applied, since the player underneath is a single app-scoped
  * instance that never resets itself.
@@ -39,6 +40,8 @@ data class PlayerChoices(
     val subtitleBacking: String = DEFAULT_CUE_BACKING,
     /** How far a subtitle cue is shifted along the clock. */
     val subtitleOffsetMs: Long = 0L,
+    /** How the picture sits in the window — the sheet's own row, or a pinch. */
+    val framing: Framing = Framing.Default,
 ) {
     companion object {
         val Default = PlayerChoices()

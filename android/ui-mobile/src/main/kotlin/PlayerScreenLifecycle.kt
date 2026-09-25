@@ -16,8 +16,9 @@ import player.PlayerViewModel
  * anything on screen — split out to keep that file under the project's line
  * guideline. Stops playback when the screen leaves composition for real, not
  * on a rotation (see [shouldStopOnDispose]), saves on `ON_STOP` as a backstop
- * for a kill that skips `onDispose` entirely, and keeps the screen awake
- * while [isPlaying].
+ * for a kill that skips `onDispose` entirely, keeps the screen awake while
+ * [isPlaying], and hides the system bars for as long as this screen holds
+ * them — see [ImmersiveEffect].
  */
 @Composable
 internal fun PlayerLifecycleEffects(viewModel: PlayerViewModel, isPlaying: Boolean) {
@@ -40,6 +41,7 @@ internal fun PlayerLifecycleEffects(viewModel: PlayerViewModel, isPlaying: Boole
     }
 
     KeepScreenOnWhile(isPlaying = isPlaying)
+    ImmersiveEffect()
 }
 
 /**

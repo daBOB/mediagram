@@ -16,7 +16,7 @@
  */
 
 import { readVolume, writeVolume } from "./volume-store.js";
-import { DEFAULT_FRAMING, framingLabel, framingStyle, nextFraming } from "./framing.js";
+import { DEFAULT_FRAMING, framingBox, framingLabel, framingStyle, nextFraming } from "./framing.js";
 import { isLooping, loopBack, loopLabel, markLoop, NO_LOOP } from "./ab-loop.js";
 import { clockTime } from "./format.js";
 
@@ -226,10 +226,24 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime, recall, rem
     return framingLabel(framing);
   }
 
+  /**
+   * `fit`/`fill` are left to the stylesheet's own `inset: 0; width: 100%;
+   * height: 100%` — only `objectFit` changes for them. A named ratio
+   * overrides all four with a pixel box computed against the stage this
+   * element's parent already is (`framingBox`; see there for why `object-fit`
+   * alone cannot do this): cleared back to the stylesheet's own values the
+   * moment framing moves off a named ratio, so `fit`/`fill` are never left
+   * sized to a stale window from before.
+   */
   function applyFraming() {
     const style = framingStyle(framing);
     video.style.objectFit = style.objectFit;
     video.style.aspectRatio = style.aspectRatio;
+    const box = framingBox(framing, video.parentElement?.clientWidth ?? 0, video.parentElement?.clientHeight ?? 0);
+    video.style.left = box ? `${box.left}px` : "";
+    video.style.top = box ? `${box.top}px` : "";
+    video.style.width = box ? `${box.width}px` : "";
+    video.style.height = box ? `${box.height}px` : "";
   }
 
   function setVolume(to) {
@@ -319,6 +333,11 @@ export function mountTransport({ video, onSeekTo, filmTime, runtime, recall, rem
   }
   full.addEventListener("click", toggleFullscreen);
   document.addEventListener("fullscreenchange", () => refresh());
+  // A named ratio's window is computed against the stage's own pixels, which
+  // a window resize (or entering/leaving fullscreen, which resizes it too)
+  // changes without this bar hearing about it any other way; `fit`/`fill`
+  // re-apply the same 100% they already were, so this is a no-op for them.
+  window.addEventListener("resize", () => applyFraming());
 
   /** Everything the bar shows, from what the element and the film both say. */
   function refresh() {

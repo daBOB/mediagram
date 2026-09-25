@@ -1,6 +1,7 @@
 package player
 
 import playback.AudioOption
+import playback.Framing
 
 /**
  * Thin pass-throughs onto [PlayerViewModel]'s controllers, plus [retry] —
@@ -29,6 +30,7 @@ fun PlayerViewModel.setSubtitleSize(percent: Int) = choicesController.setSubtitl
 fun PlayerViewModel.setSubtitleBacking(stored: String) = choicesController.setSubtitleBacking(stored)
 fun PlayerViewModel.nudgeSubtitleOffset(steps: Int) = choicesController.nudgeSubtitleOffset(steps)
 fun PlayerViewModel.resetSubtitleOffset() = choicesController.resetSubtitleOffset()
+fun PlayerViewModel.chooseFraming(next: Framing) = choicesController.chooseFraming(next)
 
 fun PlayerViewModel.toggleWatchlist() = marksController.toggleWatchlist()
 fun PlayerViewModel.toggleKids() = marksController.toggleKids()

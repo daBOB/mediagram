@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import model.MediaSet
 import playback.AudioOption
+import playback.Framing
 import playback.SubtitleTrackSource
 import playback.TimedCue
 
@@ -60,6 +61,10 @@ class PlayerChoicesController(
         )
     }
 
+    private val framingChoice = FramingController(launchScope, preferences) { framing ->
+        _choices.value = _choices.value.copy(framing = framing)
+    }
+
     /** Where [setSpeed] remembers a choice; null before the open title's set resolves. */
     private var openScope: String? = null
 
@@ -80,6 +85,7 @@ class PlayerChoicesController(
         audioChoice.reset()
         subtitleChoice.reset()
         subtitleStyle.reset()
+        framingChoice.reset()
     }
 
     /** Detaches the audio listener this controller's [audioChoice] holds on the player. */
@@ -130,6 +136,7 @@ class PlayerChoicesController(
         audioChoice.onPreferencesLoaded(scope, profileId, loaded["audio"])
         subtitleChoice.onPreferencesLoaded(scope, profileId, loaded["subtitle"])
         subtitleStyle.onPreferencesLoaded(scope, profileId, loaded)
+        framingChoice.onPreferencesLoaded(scope, profileId, loaded["framing"])
     }
 
     /** Applies a chosen speed and remembers it for this show; a no-op write with no profile chosen. */
@@ -152,6 +159,9 @@ class PlayerChoicesController(
     fun setSubtitleBacking(stored: String) = subtitleStyle.setBacking(stored)
     fun nudgeSubtitleOffset(steps: Int) = subtitleStyle.nudgeOffset(steps)
     fun resetSubtitleOffset() = subtitleStyle.resetOffset()
+
+    /** The viewer picked a framing by hand — the sheet's own row, or a pinch. */
+    fun chooseFraming(next: Framing) = framingChoice.choose(next)
 
     /** Fire-and-forget: a core round trip failing to remember a speed is not a reason to crash the player. */
     private fun rememberSpeed(scope: String, rate: Float) {

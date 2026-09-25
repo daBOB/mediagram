@@ -43,8 +43,8 @@ Supersedes the unbuilt phases 1-3, 6, 7, 10 of
 | 04 | [Player foundation: sheet, per-show store, title, ends-at, retry, speed](phase-04-player-foundation-and-speed.md) | 01 | 6h | done (device check pending) |
 | 05 | [Audio track chooser](phase-05-audio-tracks.md) | 04 | 3h | done |
 | 06 | [Subtitles](phase-06-subtitles.md) | 04 | 6h | done |
-| 07 | [Up next and queues](phase-07-up-next-and-queues.md) | 04 | 6h | done (device re-check of fixes pending) |
-| 08 | [Fullscreen, double-tap, framing](phase-08-fullscreen-gestures-framing.md) | 04 | 5h | pending |
+| 07 | [Up next and queues](phase-07-up-next-and-queues.md) | 04 | 6h | done (list Play all and Kids tiles not device-checked) |
+| 08 | [Fullscreen, double-tap, framing](phase-08-fullscreen-gestures-framing.md) | 04 | 5h | done (pinch not device-checked: adb has no multi-touch) |
 | 09 | [Picture-in-picture and MediaSession](phase-09-pip-and-media-session.md) | 08 | 5h | pending |
 | 10 | [Series preload and offline badges](phase-10-series-preload-and-offline.md) | 07 | 5h | pending |
 | 11 | [Notes panel](phase-11-notes-panel.md) | 04 | 5h | pending |

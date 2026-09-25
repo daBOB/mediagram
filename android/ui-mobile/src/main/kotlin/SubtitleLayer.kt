@@ -42,11 +42,19 @@ private const val BASE_CUE_SIZE_SP = 18
 /**
  * The picture with its subtitles drawn over it — [barTop] is the transport
  * bar's top edge in root coordinates while the bar is on screen, `null`
- * while it is hidden.
+ * while it is hidden. [onPictureBottomChanged] reports the visible
+ * picture's own bottom edge, root-coordinate too, for `PlayerScreen` to
+ * clamp the up-next card to while the bar is hidden.
  */
 @Composable
-internal fun VideoWithSubtitles(player: Player, cues: List<TimedCue>, choices: PlayerChoices, barTop: Float?) {
-    Video(player) {
+internal fun VideoWithSubtitles(
+    player: Player,
+    cues: List<TimedCue>,
+    choices: PlayerChoices,
+    barTop: Float?,
+    onPictureBottomChanged: (Float) -> Unit,
+) {
+    Video(player, framing = choices.framing, onWindowBottomChanged = onPictureBottomChanged) {
         SubtitleLayer(
             player = player, cues = cues, barTop = barTop,
             sizePercent = choices.subtitleSizePercent,
@@ -58,11 +66,14 @@ internal fun VideoWithSubtitles(player: Player, cues: List<TimedCue>, choices: P
 
 /**
  * The subtitle text for whichever of [cues] is active at the playhead,
- * bottom-centred inside the video's own rectangle (this composable is only
- * ever called inside `Video`'s box). Ticks its own position while [cues] is
- * non-empty rather than reading `PlayerControls`' clock, which only exists
- * while the transport bar is shown — a cue has to keep moving with the bar
- * hidden too.
+ * bottom-centred inside the visible picture (this composable is only ever
+ * called inside `Video`'s own overlay box, which `Video` already sizes to
+ * `Framed.window` — the whole screen for `Fit`/`Fill`, or the smaller,
+ * fixed-shape window a named ratio crops into, never the raw box the
+ * picture itself was cropped from, which may run bigger than either; see
+ * `playback.frame`). Ticks its own position while [cues] is non-empty
+ * rather than reading `PlayerControls`' clock, which only exists while the
+ * transport bar is shown — a cue has to keep moving with the bar hidden too.
  *
  * Lifted by exactly as much of the picture as the bar covers, measured
  * rather than guessed: the bar's height differs by device and font scale,

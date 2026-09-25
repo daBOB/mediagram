@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import player.PlayerChoices
 import player.PlayerViewModel
 import player.chooseAudioTrack
+import player.chooseFraming
 import player.chooseSubtitleLanguage
 import player.nudgeSubtitleOffset
 import player.resetSubtitleOffset
@@ -37,6 +38,8 @@ internal fun PlayerSettingsSheetForViewModel(
         subtitleOffsetMs = choices.subtitleOffsetMs,
         onSubtitleNudge = viewModel::nudgeSubtitleOffset,
         onSubtitleOffsetReset = viewModel::resetSubtitleOffset,
+        framing = choices.framing,
+        onFramingChosen = viewModel::chooseFraming,
         onDismiss = onDismiss,
     )
 }

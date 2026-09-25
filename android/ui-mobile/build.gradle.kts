@@ -22,4 +22,8 @@ dependencies {
     implementation(project(":core:playback"))
     implementation(libs.findLibrary("androidx.activity.compose").get())
     implementation(libs.findLibrary("androidx.compose.material.icons.core").get())
+    // WindowCompat/WindowInsetsControllerCompat for ImmersiveEffect — the
+    // app convention plugin only adds this to :app, and this module reaches
+    // the Activity window directly rather than through it.
+    implementation(libs.findLibrary("androidx.core").get())
 }

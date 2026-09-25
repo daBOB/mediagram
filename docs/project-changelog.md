@@ -38,6 +38,52 @@ to `main`. Full phase-by-phase detail lives in
   inset the same way `SubtitleLayer` clears the picture, rather than a fixed
   padding that clipped under three-button navigation.
 
+**Added**
+
+- Player framing — Fit, Fill, 16:9 and 4:3 — on both surfaces, matching
+  what `framing.js`'s own comments always intended: 16:9/4:3 crop the
+  picture into a centred window of that shape, never stretch it to fill
+  one. The web's first cut didn't: `video { width: 100%; height: 100% }`
+  in `style.css` makes CSS ignore `aspect-ratio` entirely, so "16:9"/"4:3"
+  rendered identically to "fill" (a bug, not a decision) until
+  `framing.js`'s new `framingBox` sized the video element itself to a
+  `fitWithin`-computed window and `transport.js` applied it, kept in sync
+  across a resize. Android's `core:playback` `Framing.kt` (`frame`, ported
+  from the same `framing.js`) does the equivalent: a named ratio's window
+  fits within the screen and the picture covers *that*, never the screen
+  directly — `Video()`'s overlay slot (subtitles, and the up-next card
+  while the transport bar is hidden) sizes to the window rather than to
+  the picture's own box, which may be bigger. Fit and Fill are unchanged
+  on both surfaces. On Android, a settings-sheet section and per-show
+  memory alongside speed and subtitle style; a pinch over the picture sets
+  Fill or Fit directly, the Android idiom standing in for the web's `z`
+  key, which this app has no keyboard for.
+- The player is now immersive: the system bars hide while it is on screen
+  (`ImmersiveEffect`, `BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE`) and re-hide on
+  resume and on this window regaining focus — covering both a return from
+  the background and the settings sheet (its own dialog window) closing —
+  restored only when the player itself is left. There is no fullscreen
+  button, unlike the web — a phone's player is already fullscreen the
+  moment it opens.
+- A double tap over the picture seeks — left third back, right third
+  forward, by whatever the transport buttons' own increment already is —
+  and the middle toggles play/pause through the same buffering-aware
+  `Util.handlePlayPauseButtonAction` the transport button uses, so it works
+  mid-rebuffer too. A brief "-10 s"/"+10 s" label accumulates across
+  repeated double-taps on the same side. A single tap still toggles the
+  transport bar, delayed by the double-tap timeout; the gestures live in a
+  new `PlayerGestureLayer` over the whole screen rather than carved to the
+  video box, since the transport bar and sheet already consume their own
+  taps first. A pinch consumes its own pointers so it never also reads as
+  a tap, a double-tap, or a seek, and never fires from a finger already
+  claimed by the scrubber. `Video()` measures its own size with
+  `BoxWithConstraints` rather than after the fact, so neither the first
+  frame nor the first frame after a rotation ever draws full-bleed before
+  framing applies. The up-next card, previously clamped only to the
+  transport bar, now clamps to the visible picture itself while the bar is
+  hidden — otherwise, under a letterboxing framing, its scrim and buttons
+  hung in the black band below the picture.
+
 ## 2026-09-24
 
 **Added**
