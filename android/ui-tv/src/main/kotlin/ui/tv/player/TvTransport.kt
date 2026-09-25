@@ -26,7 +26,8 @@ import ui.player.TransportIcons
 
 /**
  * The three buttons that move the film — back ten, play/pause, forward ten
- * — the phone's transport row, read through the same media3 state holders
+ * — and "Play next" after them while the run has a next title: the phone's
+ * transport row, read through the same media3 state holders
  * the phone reads, so a label cannot come to say one thing and do another
  * and nothing about the player is carried through the ViewModel. After
  * them the ones that do not move it: the settings gear, with the speed
@@ -80,6 +81,19 @@ internal fun TvTransport(
             onClick = seekForward::onClick,
             modifier = toSeekBar,
         )
+        // Standing, not just in the card, as on the phone: cancelling the
+        // card's offer never withdraws this one. Beside the skips rather
+        // than after the statistics toggle, where the phone has it, since
+        // this row already gathers everything that moves the film first.
+        if (extras.hasNext) {
+            TvIconButton(
+                icon = TransportIcons.Next,
+                description = if (extras.nextTitleLine.isNotEmpty()) "Play next: ${extras.nextTitleLine}" else "Play next",
+                enabled = true,
+                onClick = extras.onPlayNext,
+                modifier = toSeekBar,
+            )
+        }
         if (extras.speed != 1f) {
             Text(text = speedLabel(extras.speed), style = TvTypeScale.body, color = Palette.Text)
         }

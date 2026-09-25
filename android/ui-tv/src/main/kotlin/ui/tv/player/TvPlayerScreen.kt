@@ -1,6 +1,5 @@
 package ui.tv.player
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
@@ -20,7 +19,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
@@ -31,11 +29,10 @@ import designsystem.Overscan
 import model.MediaSet
 import player.PlayerUiState
 import player.PlayerViewModel
+import player.UpNextPhase
 import player.controlsMayShow
 import player.createListAndAdd
 import player.setInList
-import player.toggleKids
-import player.toggleWatchlist
 import ui.player.KeepScreenOnWhile
 import ui.player.PlayerLifecycle
 import ui.player.PlayerNavigationEffects
@@ -69,12 +66,18 @@ internal const val TvPlayerScreenTag = "tv-player-screen"
  * and the runtime the end time is read from; its age rating is what the
  * player is opened with, as the phone opens it. Null while the catalogue
  * has no entry for it, which leaves only the top bar out.
+ *
+ * [run] is what the title plays into, as on the phone: up next, the next
+ * episodes taken ahead, and the remote's Next and Previous ([TvRunSteps])
+ * all walk it; [onSwitch] moves the library to another title of it.
  */
 @Composable
 fun TvPlayerScreen(
     setId: String,
     set: MediaSet?,
+    run: List<String>,
     onBack: () -> Unit,
+    onSwitch: (setId: String, run: List<String>) -> Unit,
     viewModel: PlayerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -84,14 +87,16 @@ fun TvPlayerScreen(
     val held by viewModel.held.collectAsStateWithLifecycle()
     val choices by viewModel.choices.collectAsStateWithLifecycle()
     val subtitleCues by viewModel.subtitleCues.collectAsStateWithLifecycle()
+    val upNext by viewModel.upNext.collectAsStateWithLifecycle()
+    val upNextShown = upNext.phase != UpNextPhase.HIDDEN
 
     PlayerLifecycle(viewModel)
-    // No run: a television has no up-next card yet, and a run is what lets
-    // the player count down into the next title — handing it one here would
-    // switch episodes under a viewer with nothing on screen to say so or to
-    // cancel it. Without one the title simply ends, as it always has here.
-    PlayerNavigationEffects(viewModel, setId, run = emptyList(), fsk = set?.fsk, onSwitch = { _, _ -> })
-    KeepScreenOnWhile(isPlaying = state is PlayerUiState.Playing)
+    PlayerNavigationEffects(viewModel, setId, run, set?.fsk, onSwitch)
+    // The phone's rule: the countdown drops playing (the title has ended)
+    // and the wait for the next title's buffer pauses on purpose; neither
+    // is a viewer looking away.
+    KeepScreenOnWhile(isPlaying = state is PlayerUiState.Playing || upNextShown || upNext.awaitingStart)
+    val steps = rememberTvRunSteps(viewModel, setId, run, onSwitch)
 
     var controlsShown by remember { mutableStateOf(true) }
     var landing by remember { mutableStateOf(TvControlsLanding.PlayPause) }
@@ -105,41 +110,43 @@ fun TvPlayerScreen(
     var statsShown by rememberSaveable { mutableStateOf(false) }
     var choosingList by rememberSaveable { mutableStateOf(false) }
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
-    // Marks go with the title they belong to; a list choice still open when
-    // they go would otherwise come back over whatever opens next.
-    LaunchedEffect(marks == null) { if (marks == null) choosingList = false }
-    // The panel is drawn over a player; without one (a restore that comes
-    // back before the player is built) it would be open but nowhere, and
-    // still taking the D-pad and Back for itself.
-    LaunchedEffect(player == null) { if (player == null) settingsOpen = false }
-    TvControlsAutoHide(controlsShown, state, presses, held = choosingList || settingsOpen, onHide = { controlsShown = false })
+    TvPlayerOverlaysReset(marks == null, player == null, closeList = { choosingList = false }, closePanel = { settingsOpen = false })
+    TvControlsAutoHide(controlsShown, state, presses, held = choosingList || settingsOpen || upNextShown, onHide = { controlsShown = false })
+    // Up with the card and left up after it, as the phone brings its bar
+    // back for it; the card counts as shown within the same frame, so the
+    // remote lands on it rather than on a picture it is being taken from.
+    LaunchedEffect(upNextShown) { if (upNextShown) controlsShown = true }
 
-    val barShown = controlsShown && controlsMayShow(state) && player != null
+    val barShown = (controlsShown || upNextShown) && controlsMayShow(state) && player != null
     // Where the bottom controls begin, for the subtitles to clear them.
     var barTop by remember { mutableStateOf<Float?>(null) }
     val root = remember { FocusRequester() }
     val focus = remember { TvPlayerFocus() }
     val remote =
         remember {
-            TvPlayerRemote { to ->
-                landing = to
-                controlsShown = true
-            }
+            TvPlayerRemote(
+                show = { to ->
+                    landing = to
+                    controlsShown = true
+                },
+                onNext = { steps.next() },
+                onPrevious = { steps.previous() },
+            )
         }
-    TvRemoteFollowsControls(barShown, settingsOpen, landing, root, focus)
-
-    // The table's Back row, answered here rather than as a key so a Back
-    // that is not one — a gesture, the dispatcher itself — does the same.
-    BackHandler {
-        when (tvKeyAction(Key.Back, controlsShowing = barShown, focusInControls = onSeekBar, panelOpen = settingsOpen)) {
-            TvKeyAction.ClosePanel -> {
-                landing = TvControlsLanding.Settings
-                settingsOpen = false
-            }
-            TvKeyAction.HideControls -> controlsShown = false
-            else -> onBack()
-        }
-    }
+    TvRemoteFollowsControls(barShown, settingsOpen, upNextShown, landing, root, focus, busy = { choosingList || onSeekBar })
+    TvPlayerBack(
+        barShown = barShown,
+        onSeekBar = onSeekBar,
+        settingsOpen = settingsOpen,
+        upNextShown = upNextShown,
+        onClosePanel = {
+            landing = TvControlsLanding.Settings
+            settingsOpen = false
+        },
+        onCancelUpNext = viewModel::cancelUpNext,
+        onHideControls = { controlsShown = false },
+        onLeave = onBack,
+    )
 
     Box(
         modifier =
@@ -155,6 +162,7 @@ fun TvPlayerScreen(
                         onSeekBar = onSeekBar,
                         canControl = controlsMayShow(state),
                         panelOpen = settingsOpen,
+                        upNextShown = upNextShown,
                     )
                 }.focusRequester(root)
                 .focusProperties { canFocus = !barShown }
@@ -165,28 +173,21 @@ fun TvPlayerScreen(
         player?.let { current ->
             TvVideoWithSubtitles(current, subtitleCues, choices, barTop = barTop.takeIf { barShown })
             if (barShown) {
-                TvPlayerControls(
+                TvPlayerControlsForViewModel(
                     player = current,
                     set = set,
                     focus = focus,
-                    extras =
-                        TvPlayerExtras(
-                            marks = marks,
-                            markActions =
-                                TvMarksActions(
-                                    onToggleWatchlist = viewModel::toggleWatchlist,
-                                    onToggleKids = viewModel::toggleKids,
-                                    onAddToList = { choosingList = true },
-                                ),
-                            statsShown = statsShown,
+                    viewModel = viewModel,
+                    view = TvControlsView(marks, held, choices.speed, upNext, statsShown),
+                    actions =
+                        TvControlsActions(
                             onToggleStats = { statsShown = !statsShown },
-                            totals = viewModel.totals,
-                            held = held,
-                            speed = choices.speed,
+                            onAddToList = { choosingList = true },
                             onOpenSettings = { settingsOpen = true },
+                            onPlayNext = steps.next,
+                            onSeekBarFocused = { onSeekBar = it },
+                            onBarTopChanged = { barTop = it },
                         ),
-                    onSeekBarFocused = { onSeekBar = it },
-                    onBarTopChanged = { barTop = it },
                 )
             }
             if (settingsOpen) {

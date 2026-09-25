@@ -73,13 +73,13 @@ class TvPlayerKeysTest {
     }
 
     @Test
-    fun mediaNextIsIgnoredWithNoPlayOrderWhileHidden() {
-        assertEquals(TvKeyAction.Ignore, tvKeyAction(Key.MediaNext, controlsShowing = false, focusInControls = false))
+    fun mediaNextStepsForwardThroughTheRunWhileHidden() {
+        assertEquals(TvKeyAction.Next, tvKeyAction(Key.MediaNext, controlsShowing = false, focusInControls = false))
     }
 
     @Test
-    fun mediaPreviousIsIgnoredWithNoPlayOrderWhileHidden() {
-        assertEquals(TvKeyAction.Ignore, tvKeyAction(Key.MediaPrevious, controlsShowing = false, focusInControls = false))
+    fun mediaPreviousStepsBackThroughTheRunWhileHidden() {
+        assertEquals(TvKeyAction.Previous, tvKeyAction(Key.MediaPrevious, controlsShowing = false, focusInControls = false))
     }
 
     // Controls showing, focus on an ordinary control (a transport button, not the seek bar).
@@ -145,13 +145,13 @@ class TvPlayerKeysTest {
     }
 
     @Test
-    fun mediaNextIsIgnoredWithNoPlayOrderWhileShowing() {
-        assertEquals(TvKeyAction.Ignore, tvKeyAction(Key.MediaNext, controlsShowing = true, focusInControls = false))
+    fun mediaNextStepsForwardThroughTheRunWhileShowing() {
+        assertEquals(TvKeyAction.Next, tvKeyAction(Key.MediaNext, controlsShowing = true, focusInControls = false))
     }
 
     @Test
-    fun mediaPreviousIsIgnoredWithNoPlayOrderWhileShowing() {
-        assertEquals(TvKeyAction.Ignore, tvKeyAction(Key.MediaPrevious, controlsShowing = true, focusInControls = false))
+    fun mediaPreviousStepsBackThroughTheRunWhileShowing() {
+        assertEquals(TvKeyAction.Previous, tvKeyAction(Key.MediaPrevious, controlsShowing = true, focusInControls = false))
     }
 
     // Controls showing, focus specifically on the seek bar: Left/Right step time rather than move focus.

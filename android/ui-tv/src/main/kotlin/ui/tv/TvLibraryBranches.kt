@@ -8,7 +8,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.focus.FocusRequester
 import catalog.CatalogUiState
+import catalog.mediaSet
+import catalog.runFor
+import ui.LibraryPositions
 import ui.tv.catalog.TvCatalogScreen
+import ui.tv.player.TvPlayerScreen
 import ui.tv.profile.TvChosenProfile
 
 /**
@@ -49,4 +53,26 @@ internal fun TvCatalogRoot(
         onMastheadFocusChanged = { onMasthead = it },
         onTabChanged = onTabChanged,
     )
+}
+
+/**
+ * The player, over the run its title belongs to — the phone's own rule:
+ * an explicit run (a list) wins, and everything else works its own out
+ * from the catalogue, a title's collection or nothing for a film. A switch
+ * to another title of it replaces this frame rather than stacking on it,
+ * so Back still leaves to whatever opened the player.
+ *
+ * The player answers Back itself: the first press puts its controls away,
+ * and only a press with them already gone leaves.
+ */
+@Composable
+internal fun TvPlayerBranch(
+    at: LibraryPositions,
+    catalogState: CatalogUiState,
+    leave: () -> Unit,
+) {
+    val setId = at.setId ?: return
+    val set = catalogState.mediaSet(setId)
+    val run = at.run ?: set?.let { runFor(it, catalogState) }.orEmpty()
+    TvPlayerScreen(setId = setId, set = set, run = run, onBack = leave, onSwitch = at::replacePlayer)
 }

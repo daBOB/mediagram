@@ -102,6 +102,23 @@ class TvListStateTest : TvScreenStateTest() {
     }
 
     @Test
+    fun playAllStartsTheListAndIsOnlyOfferedWithSomethingToPlay() {
+        var started = 0
+        showList(films(2), onPlayAll = { started++ })
+
+        compose.onNodeWithText("▶ Play all").performSemanticsAction(SemanticsActions.OnClick)
+
+        assertEquals(1, started)
+    }
+
+    @Test
+    fun anEmptyListOffersNoPlayAll() {
+        showList(emptyList())
+
+        compose.onNodeWithText("▶ Play all").assertDoesNotExist()
+    }
+
+    @Test
     fun deleteAsksFirstInThePhonesWords() {
         showList(films(1))
 
@@ -122,5 +139,6 @@ class TvListStateTest : TvScreenStateTest() {
         onPlay: (String) -> Unit = {},
         onRename: (String) -> Unit = {},
         onRemove: (String) -> Unit = {},
-    ) = show { TvList(list, sets, onPlay = onPlay, onRename = onRename, onDelete = {}, onRemove = onRemove) }
+        onPlayAll: () -> Unit = {},
+    ) = show { TvList(list, sets, onPlay = onPlay, onRename = onRename, onDelete = {}, onRemove = onRemove, onPlayAll = onPlayAll) }
 }

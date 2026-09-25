@@ -24,7 +24,6 @@ import ui.tv.catalog.TvFetchResultDialog
 import ui.tv.catalog.TvList
 import ui.tv.catalog.TvSeason
 import ui.tv.catalog.TvTitlePage
-import ui.tv.player.TvPlayerScreen
 import ui.tv.profile.TvChosenProfile
 import ui.tv.setup.TvLoadingIndicator
 
@@ -65,12 +64,7 @@ internal fun TvLibrary(profile: TvChosenProfile) {
     }
 
     when (top) {
-        // The player answers Back itself: the first press puts its
-        // controls away, and only a press with them already gone leaves.
-        FrameKind.PLAYER -> {
-            val setId = at.setId ?: return
-            TvPlayerScreen(setId = setId, set = catalogState.mediaSet(setId), onBack = leave)
-        }
+        FrameKind.PLAYER -> TvPlayerBranch(at, catalogState, leave)
 
         // Nothing on a television opens a menu screen, search or a genre
         // page yet, so a saved one can only be left over — and drawing
@@ -123,16 +117,21 @@ internal fun TvLibrary(profile: TvChosenProfile) {
             }
 
         // A list plays straight from its plate, as the phone's does: it is
-        // a viewer's own pick, already chosen, not a shelf to browse.
+        // a viewer's own pick, already chosen, not a shelf to browse. Every
+        // plate plays into the whole list, the same run from wherever a
+        // viewer started; `nextInQueue` walks on from there.
         FrameKind.LIST ->
             TvResolvedBranch(resolved.list, catalogState, leave) { list ->
+                val sets = list.items.mapNotNull(catalogState::mediaSet)
+                val ids = sets.map { it.setId }
                 TvList(
                     list = list,
-                    sets = list.items.mapNotNull(catalogState::mediaSet),
+                    sets = sets,
                     onPlay = { setId ->
                         restore.opened(TvPlace.List, setId)
-                        at.openPlayer(setId)
+                        at.openPlayer(setId, ids)
                     },
+                    onPlayAll = { ids.firstOrNull()?.let { first -> at.openPlayer(first, ids) } },
                     onRename = { name -> catalogViewModel.renameList(list.id, name) },
                     onDelete = {
                         catalogViewModel.deleteList(list.id)

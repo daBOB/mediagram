@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,6 +42,7 @@ internal class TvPlayerFocus {
     val seekBar = FocusRequester()
     val settings = FocusRequester()
     val marks = FocusRequester()
+    val upNext = FocusRequester()
 }
 
 /** What the controls show beyond the transport, and what pressing it does: the marks rail, the statistics and the settings. */
@@ -55,6 +57,10 @@ internal class TvPlayerExtras(
     /** The chosen playback speed, read out beside the settings gear while it is not the default. */
     val speed: Float = 1f,
     val onOpenSettings: () -> Unit = {},
+    /** Whether anything follows in the run — the standing "Play next" stays even once the up-next card is cancelled, as on the phone. */
+    val hasNext: Boolean = false,
+    val nextTitleLine: String = "",
+    val onPlayNext: () -> Unit = {},
 )
 
 /**
@@ -63,6 +69,11 @@ internal class TvPlayerExtras(
  * clock, the seek bar, the transport and the marks rail — top to bottom in
  * the order the remote moves through them, so Down always goes further
  * from the film's own facts and further into what can be done to it.
+ *
+ * [upNext] is drawn above the clock at the right-hand end, the up-next
+ * card when there is one: inside the same block, so the subtitles lift
+ * clear of it as of the rest, and directly above the seek bar, so Up from
+ * there reaches it.
  *
  * [onBarTopChanged] reports where the bottom block begins, in root
  * coordinates, so the subtitles can lift clear of it rather than be read
@@ -80,6 +91,7 @@ internal fun TvPlayerControls(
     extras: TvPlayerExtras,
     onSeekBarFocused: (Boolean) -> Unit,
     onBarTopChanged: (Float) -> Unit = {},
+    upNext: @Composable ColumnScope.() -> Unit = {},
 ) {
     val progress = rememberProgressStateWithTickInterval(player, READOUT_TICK_MS)
     val positionMs = progress.currentPositionMs.coerceAtLeast(0L)
@@ -120,6 +132,7 @@ internal fun TvPlayerControls(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.small),
         ) {
+            upNext()
             TvPlayerClock(
                 positionMs = positionMs,
                 durationMs = durationMs,

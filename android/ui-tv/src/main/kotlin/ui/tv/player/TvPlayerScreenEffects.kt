@@ -1,8 +1,10 @@
 package ui.tv.player
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.input.key.Key
 import kotlinx.coroutines.delay
 import player.CONTROLS_LINGER_MS
 import player.PlayerUiState
@@ -40,22 +42,84 @@ internal fun TvControlsAutoHide(
  * key that raised them asked for ([landing]), or back to the screen itself
  * ([root]) when they leave. While the settings panel is open it takes the
  * remote for itself; when it closes, [landing] says the gear.
+ *
+ * The up-next card, when it appears, takes the remote onto Play now — the
+ * phone's card is one tap away wherever a finger already is, and on a
+ * television the only way to make it as near is to put the remote on it.
+ * Never out from under a viewer in the middle of something, though: not
+ * from the settings panel or the list dialog ([busy]), whose own keys a
+ * card must not start answering, nor from the seek bar, where the next
+ * Right of someone seeking into the last half-minute has to keep moving
+ * the film. The card stays one press up from the seek bar for all of them.
+ * With the panel closed while the card is up, Play now is where the
+ * remote goes rather than the gear: the card is what is waiting on an
+ * answer.
  */
 @Composable
 internal fun TvRemoteFollowsControls(
     barShown: Boolean,
     settingsOpen: Boolean,
+    upNextShown: Boolean,
     landing: TvControlsLanding,
     root: FocusRequester,
     focus: TvPlayerFocus,
+    busy: () -> Boolean = { false },
 ) {
-    LaunchedEffect(barShown, settingsOpen) {
+    LaunchedEffect(barShown, settingsOpen, upNextShown) {
         when {
             settingsOpen -> Unit
             !barShown -> root.requestFocus()
+            upNextShown -> if (!busy()) focus.upNext.requestFocus()
             landing == TvControlsLanding.SeekBar -> focus.seekBar.requestFocus()
             landing == TvControlsLanding.Settings -> focus.settings.requestFocus()
             else -> focus.playPause.requestFocus()
         }
     }
+}
+
+/**
+ * The table's Back row, answered from the dispatcher rather than as a key
+ * so a Back that is not one — a gesture, the dispatcher itself — does the
+ * same: the panel closes first, then the up-next card goes, then the
+ * controls, and only then is the player left.
+ */
+@Composable
+internal fun TvPlayerBack(
+    barShown: Boolean,
+    onSeekBar: Boolean,
+    settingsOpen: Boolean,
+    upNextShown: Boolean,
+    onClosePanel: () -> Unit,
+    onCancelUpNext: () -> Unit,
+    onHideControls: () -> Unit,
+    onLeave: () -> Unit,
+) {
+    BackHandler {
+        val action = tvKeyAction(Key.Back, barShown, onSeekBar, panelOpen = settingsOpen, upNextShown = upNextShown)
+        when (action) {
+            TvKeyAction.ClosePanel -> onClosePanel()
+            TvKeyAction.CancelUpNext -> onCancelUpNext()
+            TvKeyAction.HideControls -> onHideControls()
+            else -> onLeave()
+        }
+    }
+}
+
+/**
+ * Closes what would otherwise outlive what it belongs to. Marks go with the
+ * title they belong to; a list choice still open when they go would come
+ * back over whatever opens next. The settings panel is drawn over a
+ * player; without one (a restore that comes back before the player is
+ * built) it would be open but nowhere, and still taking the D-pad and Back
+ * for itself.
+ */
+@Composable
+internal fun TvPlayerOverlaysReset(
+    marksGone: Boolean,
+    playerGone: Boolean,
+    closeList: () -> Unit,
+    closePanel: () -> Unit,
+) {
+    LaunchedEffect(marksGone) { if (marksGone) closeList() }
+    LaunchedEffect(playerGone) { if (playerGone) closePanel() }
 }

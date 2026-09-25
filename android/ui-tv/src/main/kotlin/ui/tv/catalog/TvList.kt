@@ -35,6 +35,10 @@ import ui.tv.setup.TvConfirmDialog
  * on every other wall; Rename and Delete are one press up. An empty list
  * lands on Rename instead, the one thing left to do with it.
  *
+ * "Play all" starts the list at its first title and plays on through it —
+ * the phone's own `PlayAllButton`, first in the row above, and only while
+ * the list has a title to start on.
+ *
  * Rename asks with [TvListNameQuestion]; Delete asks first with the phone's
  * own words, since the list is gone after it — the titles never are.
  */
@@ -47,6 +51,7 @@ fun TvList(
     onDelete: () -> Unit,
     onRemove: (setId: String) -> Unit,
     restoreKey: String? = null,
+    onPlayAll: () -> Unit = {},
 ) {
     var renaming by rememberSaveable { mutableStateOf(false) }
     var deleting by rememberSaveable { mutableStateOf(false) }
@@ -80,6 +85,7 @@ fun TvList(
         Column {
             TvCountedHeading(list.name, sets.size)
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.large)) {
+                if (sets.isNotEmpty()) TvTextRow(text = "▶ Play all", onClick = onPlayAll)
                 TvTextRow(text = "Rename", onClick = { renaming = true }, focusRequester = renameFocus)
                 TvTextRow(text = "Delete list", onClick = { deleting = true })
             }

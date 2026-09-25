@@ -1,5 +1,6 @@
 package ui.tv
 
+import android.view.KeyEvent
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsFocused
@@ -120,6 +121,29 @@ class TvLibraryTest {
         compose.onNodeWithText("▶ Play").assertIsFocused()
         back()
         plate("Film 1").assertIsFocused()
+    }
+
+    /**
+     * An episode plays into its show, as on the phone: Next moves the player
+     * on to the show's next episode in place, so Back still leaves to the
+     * episode's page, not to the episode that was left.
+     */
+    @Test
+    fun anEpisodePlaysIntoItsShowAndNextMovesOnInPlace() {
+        press(plate("A Show"))
+        press(compose.onNodeWithText("Season 1"))
+        press(compose.onNodeWithText("1. Pilot"))
+        press(compose.onNodeWithText("▶ Play"))
+        compose.onNodeWithText("Pilot", substring = true).assertExists()
+
+        compose.runOnUiThread { controller.get().dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_NEXT)) }
+        compose.runOnUiThread { controller.get().dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_NEXT)) }
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Return", substring = true).assertExists()
+        back()
+        back()
+        compose.onNodeWithText("▶ Play").assertIsFocused()
     }
 
     /**

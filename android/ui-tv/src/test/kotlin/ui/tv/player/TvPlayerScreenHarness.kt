@@ -30,11 +30,16 @@ abstract class TvPlayerScreenHarness {
 
     internal open fun makeFixture() = TvPlayerFixture()
 
+    /** The run the title is opened on; none, unless a test class needs one. */
+    internal open val run: List<String> = emptyList()
+
     @Before
     fun openPlayer() {
         compose.runOnUiThread {
             fixture = makeFixture()
             TvPlayerTestActivity.fixture = fixture
+            TvPlayerTestActivity.run = run
+            TvPlayerTestActivity.switches.clear()
             TvPlayerTestActivity.set =
                 set("set-one", Kind.EPISODE, "Pilot", show = "A Show", addedAt = 1, episode = 4, durationSecs = 600)
                     .copy(season = 1)

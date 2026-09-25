@@ -29,6 +29,15 @@ sealed interface TvKeyAction {
     /** Brings the controls up with focus already on the seek bar — Up/Down's first press. */
     data object ShowControlsAndFocusSeekBar : TvKeyAction
 
+    /** Starts what follows in the run now — the phone's "Play next" button, and the card's "Play now". */
+    data object Next : TvKeyAction
+
+    /** Goes back to what came before in the run. */
+    data object Previous : TvKeyAction
+
+    /** Puts the up-next card away for this title, as its own Cancel does. */
+    data object CancelUpNext : TvKeyAction
+
     /** Closes the settings panel, and only that: the controls stay up behind it. */
     data object ClosePanel : TvKeyAction
 
@@ -77,6 +86,19 @@ private const val SKIP_SECONDS = 10
  * skip the film ten seconds. The dedicated media keys keep their meaning,
  * as they do everywhere: a viewer can pause to look at a subtitle size
  * without closing the panel first.
+ *
+ * [upNextShown] is the up-next card, which Back cancels before it does
+ * anything else outside the panel — the card is the thing on screen most
+ * recently put in front of the viewer, and a Back that left the title
+ * instead would throw away the very choice the card was offering.
+ *
+ * Next and Previous move through the run whatever else is on screen,
+ * the way the dedicated media keys keep their meaning everywhere, and
+ * even with nothing loaded to control: a title that failed is exactly one
+ * a viewer wants to step past. They are always this table's, never
+ * [TvKeyAction.Ignore]: a key the screen leaves unanswered falls through
+ * to the playback session, whose own Previous restarts the title from
+ * nothing — a second, different answer to the same press.
  */
 fun tvKeyAction(
     key: Key,
@@ -84,7 +106,10 @@ fun tvKeyAction(
     focusInControls: Boolean,
     canControl: Boolean = true,
     panelOpen: Boolean = false,
+    upNextShown: Boolean = false,
 ): TvKeyAction {
+    if (key == Key.MediaNext) return TvKeyAction.Next
+    if (key == Key.MediaPrevious) return TvKeyAction.Previous
     if (panelOpen) {
         return when (key) {
             Key.Back -> TvKeyAction.ClosePanel
@@ -92,6 +117,7 @@ fun tvKeyAction(
             else -> tvKeyAction(key, controlsShowing = true, focusInControls = false, canControl = canControl)
         }
     }
+    if (upNextShown && key == Key.Back) return TvKeyAction.CancelUpNext
     if (!canControl) return if (key == Key.Back) TvKeyAction.Leave else TvKeyAction.Ignore
     if (!controlsShowing) {
         return when (key) {
@@ -103,8 +129,6 @@ fun tvKeyAction(
             Key.DirectionRight, Key.MediaFastForward -> TvKeyAction.SeekByAndShowControls(SKIP_SECONDS)
             Key.DirectionUp, Key.DirectionDown -> TvKeyAction.ShowControlsAndFocusSeekBar
             Key.Back -> TvKeyAction.Leave
-            // Next/Previous would move through a play order; the player has none, so there is nothing to do.
-            Key.MediaNext, Key.MediaPrevious -> TvKeyAction.Ignore
             else -> TvKeyAction.Ignore
         }
     }
@@ -119,7 +143,6 @@ fun tvKeyAction(
         Key.DirectionRight -> if (focusInControls) TvKeyAction.SeekBy(SKIP_SECONDS) else TvKeyAction.PassThrough
         Key.DirectionCenter, Key.Enter, Key.DirectionUp, Key.DirectionDown -> TvKeyAction.PassThrough
         Key.Back -> TvKeyAction.HideControls
-        Key.MediaNext, Key.MediaPrevious -> TvKeyAction.Ignore
         else -> TvKeyAction.Ignore
     }
 }

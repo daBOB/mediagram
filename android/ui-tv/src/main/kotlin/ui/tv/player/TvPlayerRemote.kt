@@ -58,8 +58,16 @@ private const val FASTEST_AFTER = 60
  * the player screen answers it from the same table, so a Back that does
  * not arrive as a key — a gesture, a test — does the same thing as one
  * that does.
+ *
+ * Next and Previous are always taken, press and release both, even at
+ * either end of the run where there is nowhere to go: whatever the window
+ * does not take goes on to the playback session, and its own answer to
+ * Previous — back to the start of the title — would be a second thing the
+ * one press did.
  */
 internal class TvPlayerRemote(
+    private val onNext: () -> Unit = {},
+    private val onPrevious: () -> Unit = {},
     private val show: (TvControlsLanding) -> Unit,
 ) {
     private val taken = mutableSetOf<Key>()
@@ -71,11 +79,12 @@ internal class TvPlayerRemote(
         onSeekBar: Boolean,
         canControl: Boolean,
         panelOpen: Boolean = false,
+        upNextShown: Boolean = false,
     ): Boolean {
         if (event.type == KeyEventType.KeyUp) return taken.remove(event.key)
         if (event.type != KeyEventType.KeyDown || event.key == Key.Back) return false
         val repeat = event.nativeKeyEvent.repeatCount
-        val took = apply(tvKeyAction(event.key, controlsShowing, onSeekBar, canControl, panelOpen), repeat, player)
+        val took = apply(tvKeyAction(event.key, controlsShowing, onSeekBar, canControl, panelOpen, upNextShown), repeat, player)
         val heldOver = repeat > 0 && event.key in taken
         if (took) taken += event.key
         return took || heldOver
@@ -123,7 +132,16 @@ internal class TvPlayerRemote(
                 show(TvControlsLanding.SeekBar)
                 true
             }
-            TvKeyAction.ClosePanel, TvKeyAction.HideControls, TvKeyAction.Leave, TvKeyAction.PassThrough, TvKeyAction.Ignore -> false
+            // A held key is one step through the run, not twenty.
+            TvKeyAction.Next -> {
+                if (repeat == 0) onNext()
+                true
+            }
+            TvKeyAction.Previous -> {
+                if (repeat == 0) onPrevious()
+                true
+            }
+            TvKeyAction.CancelUpNext, TvKeyAction.ClosePanel, TvKeyAction.HideControls, TvKeyAction.Leave, TvKeyAction.PassThrough, TvKeyAction.Ignore -> false
         }
 }
 
