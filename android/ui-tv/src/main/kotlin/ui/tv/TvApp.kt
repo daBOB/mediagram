@@ -14,12 +14,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
-import catalog.CatalogViewModel
 import designsystem.Overscan
 import setup.SetupUiState
 import setup.SetupViewModel
-import ui.tv.catalog.TvCatalogScreen
-import ui.tv.profile.TvChosenProfile
 import ui.tv.profile.TvProfileGate
 import ui.tv.setup.TvSetupStep
 
@@ -40,7 +37,8 @@ import ui.tv.setup.TvSetupStep
  * `Ready` gates on [TvProfileGate] before the catalogue, the way
  * `ui.LibraryFlow` gates the phone's own library behind
  * `ui.profile.ProfileGate` — a viewer, not this device's setup answers,
- * decides whose shelves come next.
+ * decides whose shelves come next, and [TvLibrary] is what those shelves
+ * and everything they open are.
  */
 @Composable
 fun TvApp() {
@@ -52,36 +50,12 @@ fun TvApp() {
 
         TvShell {
             if (setupState is SetupUiState.Ready) {
-                TvProfileGate { profile -> TvCatalog(profile) }
+                TvProfileGate { profile -> TvLibrary(profile) }
             } else {
                 TvSetupStep(state = setupState, viewModel = setupViewModel)
             }
         }
     }
-}
-
-/**
- * The catalogue over the same [CatalogViewModel] the phone's library reads.
- *
- * Nothing opens yet: the title, collection and list pages a plate leads to
- * are not reached from here, nor is what keeps the position between them,
- * so each open is deliberately a no-op until those arrive together — the
- * catalogue can be walked and checked on its own in the meantime. Making a
- * list is not a move anywhere, so the Collections tab's "New list" already
- * does what it says.
- */
-@Composable
-private fun TvCatalog(profile: TvChosenProfile) {
-    val catalogViewModel: CatalogViewModel = hiltViewModel()
-    val catalogState by catalogViewModel.state.collectAsStateWithLifecycle()
-    TvCatalogScreen(
-        state = catalogState,
-        profile = profile,
-        onOpenTitle = {},
-        onOpenCollection = {},
-        onOpenList = {},
-        onCreateList = catalogViewModel::createList,
-    )
 }
 
 /**

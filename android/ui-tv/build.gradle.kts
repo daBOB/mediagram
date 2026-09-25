@@ -24,6 +24,10 @@ dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":core:model"))
     implementation(project(":core:playback"))
+    // FetchViewModel's state is core:data's CatalogEnrichmentState; reading
+    // whether artwork is being fetched, and what the fetch reported, needs
+    // that type on the classpath, as it does for ui-mobile.
+    implementation(project(":core:data"))
     // A show's header takes the index's TitleInfo, core:rust's type, the
     // same one ui-common's rememberTitleInfo returns. Only the bindings'
     // types: nothing here calls into the core, which stays behind the
@@ -38,10 +42,6 @@ dependencies {
     testImplementation(libs.findLibrary("robolectric").get())
     testImplementation(libs.findLibrary("mockk").get())
     testImplementation(libs.findLibrary("androidx.compose.ui.test.junit4").get())
-    // Only to build a real SetupViewModel against a mocked CoreClient in
-    // TvAppTest, the way ui-mobile's own MobileAppFixture does; TvApp
-    // itself never reaches core:data.
-    testImplementation(project(":core:data"))
 
     // Focus, IME-submit and Back behaviour only run true on a real
     // window manager — Robolectric's tv-material nodes misbehave for

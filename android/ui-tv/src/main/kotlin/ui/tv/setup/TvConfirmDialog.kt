@@ -3,6 +3,7 @@ package ui.tv.setup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -56,12 +57,42 @@ fun TvConfirmDialog(
 ) {
     val cancelFocusRequester = remember { FocusRequester() }
 
-    Dialog(onDismissRequest = cancel) {
+    TvDialog(title = title, body = body, onDismissRequest = cancel, initialFocus = cancelFocusRequester) {
+        // Cancel is drawn first and takes initial focus: the remote's
+        // default direction of travel (right) then moves it toward Confirm,
+        // never away from Cancel by accident.
+        Button(
+            onClick = cancel,
+            modifier = Modifier.testTag(TvConfirmDialogCancelTag).focusRequester(cancelFocusRequester),
+        ) {
+            Text(cancelLabel, style = TvTypeScale.body)
+        }
+        Button(onClick = confirm, modifier = Modifier.testTag(TvConfirmDialogConfirmTag)) {
+            Text(confirmLabel, style = TvTypeScale.body)
+        }
+    }
+}
+
+/**
+ * The window every television dialog draws in: a title, a body, and a row
+ * of [buttons], with [initialFocus] — one of those buttons — taking the
+ * remote the moment it opens, so a dialog never appears with nothing
+ * focused. [onDismissRequest] is what Back does.
+ */
+@Composable
+internal fun TvDialog(
+    title: String,
+    body: String,
+    onDismissRequest: () -> Unit,
+    initialFocus: FocusRequester,
+    buttons: @Composable RowScope.() -> Unit,
+) {
+    Dialog(onDismissRequest = onDismissRequest) {
         // Inside the Dialog's own content, not beside it: `Dialog` composes
         // this lambda into a second window with its own composition, and a
         // FocusRequester's target has to exist in that window before
         // requesting focus on it does anything.
-        LaunchedEffect(Unit) { cancelFocusRequester.requestFocus() }
+        LaunchedEffect(Unit) { initialFocus.requestFocus() }
 
         Surface(
             shape = RectangleShape,
@@ -81,21 +112,8 @@ fun TvConfirmDialog(
                 Row(
                     modifier = Modifier.padding(top = Spacing.large),
                     horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
-                ) {
-                    // Cancel is drawn first and takes initial focus: the
-                    // remote's default direction of travel (right) then
-                    // moves it toward Confirm, never away from Cancel by
-                    // accident.
-                    Button(
-                        onClick = cancel,
-                        modifier = Modifier.testTag(TvConfirmDialogCancelTag).focusRequester(cancelFocusRequester),
-                    ) {
-                        Text(cancelLabel, style = TvTypeScale.body)
-                    }
-                    Button(onClick = confirm, modifier = Modifier.testTag(TvConfirmDialogConfirmTag)) {
-                        Text(confirmLabel, style = TvTypeScale.body)
-                    }
-                }
+                    content = buttons,
+                )
             }
         }
     }

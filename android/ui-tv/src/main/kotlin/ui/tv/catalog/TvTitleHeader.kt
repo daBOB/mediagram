@@ -2,6 +2,7 @@ package ui.tv.catalog
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
@@ -24,6 +25,11 @@ import uniffi.mediagram_core.TitleInfo
  * nothing for it, so a title with no provider entry is its art and its
  * facts rather than a row of empty labels.
  *
+ * [beside] goes at the foot of the facts, still beside the art — where a
+ * title page puts its Play, as the web's film page does, so the one thing
+ * to press is on screen from the start however long the overview under it
+ * runs.
+ *
  * The tagline is quoted and the overview is not, for the phone's reason:
  * one is a line of marketing and the other a paragraph of description.
  */
@@ -34,6 +40,7 @@ internal fun TvTitleHeader(
     facts: String?,
     info: TitleInfo?,
     modifier: Modifier = Modifier,
+    beside: @Composable ColumnScope.() -> Unit = {},
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.large)) {
@@ -50,6 +57,7 @@ internal fun TvTitleHeader(
                     Text(text = genres, style = TvTypeScale.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 ratingLabel(info?.rating)?.let { Text(text = it, style = TvTypeScale.body) }
+                beside()
             }
         }
         info?.tagline?.takeIf(String::isNotBlank)?.let { tagline ->

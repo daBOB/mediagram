@@ -18,6 +18,7 @@ import catalog.HOME_ROW_LIMIT
 import catalog.HomeRow
 import catalog.RowContent
 import catalog.extentOf
+import catalog.keyOf
 import designsystem.Spacing
 import model.Progress
 import ui.tv.TvTextRow
@@ -34,8 +35,12 @@ import ui.tv.TvTextRow
  *
  * "See all" sits where the remote runs out of plates, so it is reached by
  * the same Right that walked the row: the row admitting it is a window,
- * with the whole shelf one press away. [firstItem] carries the focus
- * requester Home hands its first row's first stop.
+ * with the whole shelf one press away. [focusAt] is the stop, if any, that
+ * carries the focus requester Home hands down in [focus] — the first row's
+ * first stop, or the one a viewer opened and has come back to.
+ *
+ * [keysOf] is what each stop is keyed by, in order: the same key the
+ * library records when the stop is opened, so Home can find it again.
  */
 @Composable
 internal fun TvHomeRow(
@@ -45,8 +50,10 @@ internal fun TvHomeRow(
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
     onSeeAll: (shelf: String) -> Unit,
-    firstItem: Modifier,
+    focusAt: Int?,
+    focus: Modifier,
 ) {
+    val at = { index: Int -> if (index == focusAt) focus else Modifier }
     val seeAll: (() -> Unit)? = row.seeAll?.let { shelf -> { onSeeAll(shelf) } }
     Column(modifier = Modifier.fillMaxWidth().padding(top = Spacing.large)) {
         TvCountedHeading(row.title, row.total)
@@ -54,7 +61,7 @@ internal fun TvHomeRow(
             is RowContent.Entries -> {
                 val entries = content.entries
                 if (entries.all(::isCourse)) {
-                    CourseIndex(entries.filterIsInstance<Entry.Collection>(), onOpenCollection, seeAll, firstItem)
+                    CourseIndex(entries.filterIsInstance<Entry.Collection>(), onOpenCollection, seeAll, at)
                 } else {
                     PlateRow(entries.size, seeAll) { index, modifier ->
                         val entry = entries[index]
@@ -63,7 +70,7 @@ internal fun TvHomeRow(
                             positions = positions,
                             watchedIds = watchedIds,
                             onOpen = { openEntry(entry, onOpenTitle, onOpenCollection) },
-                            modifier = if (index == 0) modifier.then(firstItem) else modifier,
+                            modifier = modifier.then(at(index)),
                         )
                     }
                 }
@@ -76,7 +83,7 @@ internal fun TvHomeRow(
                     TvSetPlate(
                         card = card,
                         onOpen = { onOpenTitle(card.set.setId) },
-                        modifier = if (index == 0) modifier.then(firstItem) else modifier,
+                        modifier = modifier.then(at(index)),
                     )
                 }
             }
@@ -117,19 +124,26 @@ private fun CourseIndex(
     courses: List<Entry.Collection>,
     onOpenCollection: (key: String) -> Unit,
     onSeeAll: (() -> Unit)?,
-    firstItem: Modifier,
+    at: (index: Int) -> Modifier,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         courses.forEachIndexed { index, course ->
             TvTextRow(
                 text = "${course.name} · ${extentOf(course)}",
                 onClick = { onOpenCollection(course.key) },
-                modifier = if (index == 0) firstItem else Modifier,
+                modifier = at(index),
             )
         }
         if (onSeeAll != null) TvTextRow(text = "See all", onClick = onSeeAll)
     }
 }
+
+/** Each stop of [row] by the key opening it records: a set's id, a film's, a show's or a course's own key. */
+internal fun keysOf(row: HomeRow): List<String> =
+    when (val content = row.content) {
+        is RowContent.Entries -> content.entries.map(::keyOf)
+        is RowContent.Sets -> content.cards.map { it.set.setId }
+    }
 
 private fun isCourse(entry: Entry): Boolean = entry is Entry.Collection && entry.kind == CollectionKind.COURSE
 

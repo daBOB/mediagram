@@ -3,6 +3,7 @@ package ui.tv.catalog
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -92,6 +93,29 @@ class TvCatalogScreenStateTest {
         compose.onNodeWithText("Film 0").assertExists()
     }
 
+    /** The phone's progress bar, as the words its Update item waits with. */
+    @Test
+    fun anArtworkFetchOrAChannelReadSaysSoAboveTheShelves() {
+        show(ready(films(1)), fetching = true)
+        compose.onNodeWithText("Fetching details and artwork…").assertExists()
+        close()
+
+        show(ready(films(1)).copy(refreshing = true))
+        compose.onNodeWithText("Reading the channel…").assertExists()
+        close()
+
+        show(ready(films(1)))
+        compose.onNodeWithText("Fetching details and artwork…").assertDoesNotExist()
+        compose.onNodeWithText("Reading the channel…").assertDoesNotExist()
+    }
+
+    @Test
+    fun homeLandsOnThePlateItIsToldWasOpened() {
+        show(ready(films(3)), restoreKey = "film-0")
+
+        compose.onNodeWithText("Film 0").assertIsFocused()
+    }
+
     @Test
     fun coursesOnHomeAreLinesOfTextNotPlates() {
         show(ready(courses(1)))
@@ -163,6 +187,8 @@ class TvCatalogScreenStateTest {
         onChoose: () -> Unit = {},
         onOpenTitle: (String) -> Unit = {},
         onOpenCollection: (String) -> Unit = {},
+        fetching: Boolean = false,
+        restoreKey: String? = null,
     ) {
         compose.runOnUiThread {
             val built = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
@@ -176,6 +202,8 @@ class TvCatalogScreenStateTest {
                         onOpenCollection = onOpenCollection,
                         onOpenList = {},
                         onCreateList = {},
+                        fetching = fetching,
+                        restoreKey = restoreKey,
                     )
                 }
             }

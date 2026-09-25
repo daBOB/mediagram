@@ -26,6 +26,7 @@ import settings.InMemoryTmdbSettings
 import setup.Libraries
 import setup.SetupViewModel
 import setup.login.LoginViewModel
+import system.FetchViewModel
 import uniffi.mediagram_core.LibraryChoice
 
 /** Which of [SetupViewModel]'s outstanding steps a [TvAppFixture] should land on. */
@@ -64,7 +65,8 @@ internal class TvAppFixture(
     val setup: SetupViewModel
     private val login: LoginViewModel
     private val profile: ProfileViewModel
-    private val catalog: CatalogViewModel
+    val catalog: CatalogViewModel
+    private val fetch: FetchViewModel
 
     init {
         val core = mockk<CoreClient>()
@@ -89,9 +91,9 @@ internal class TvAppFixture(
                 dispatcher = dispatcher,
                 watchState = watchState,
             )
-        // TvSignInScreen, TvProfileGate and the catalogue each resolve their
+        // TvSignInScreen, TvProfileGate and the library each resolve their
         // own ViewModel through hiltViewModel(), the same way TvApp resolves
-        // SetupViewModel — this ViewModelStoreOwner has to hand back all four,
+        // SetupViewModel — this ViewModelStoreOwner has to hand back all five,
         // or reaching that step through TvApp falls back to
         // ViewModelProvider's default factory, which cannot construct one
         // with no Hilt entry point to supply its arguments.
@@ -101,14 +103,18 @@ internal class TvAppFixture(
         val repository = mockk<CatalogRepository>()
         coEvery { repository.refresh() } returns Result.success(sets.size)
         coEvery { repository.sets() } returns sets
+        coEvery { repository.titleInfo(any()) } returns null
+        coEvery { repository.posterPath(any()) } returns null
         val enrichment = CatalogEnrichmentFetcher(provider, InMemoryTmdbSettings())
         catalog = CatalogViewModel(repository, viewer, LibraryUpdateCoordinator(repository, enrichment))
+        fetch = FetchViewModel(enrichment)
         val models =
             mapOf<Class<out ViewModel>, ViewModel>(
                 SetupViewModel::class.java to setup,
                 LoginViewModel::class.java to login,
                 ProfileViewModel::class.java to profile,
                 CatalogViewModel::class.java to catalog,
+                FetchViewModel::class.java to fetch,
             )
         val held =
             ViewModelProvider(

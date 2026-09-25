@@ -14,21 +14,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.style.TextAlign
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.CatalogUiState
 import catalog.KeptKind
-import catalog.Shelf
 import catalog.catalogTabsOf
-import catalog.continueWall
 import catalog.homeRowsOf
-import catalog.kidsShelf
-import catalog.watchlistWall
+import catalog.updateDisabledReason
 import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvTypeScale
-import model.WatchSnapshot
 import ui.tv.TvSafeArea
 import ui.tv.profile.TvChosenProfile
 
@@ -46,7 +43,15 @@ import ui.tv.profile.TvChosenProfile
  * profile left on a message with nothing to press would be a dead end.
  *
  * [mastheadFocus] is the handle a caller uses to send the remote back up to
- * the masthead, which is where Back goes first from the catalogue's root.
+ * the masthead, which is where Back goes first from the catalogue's root;
+ * [onMastheadFocusChanged] tells that caller when the remote is already
+ * there. [restoreKey] names what was last opened from here, handed to
+ * whichever wall is showing so Back lands on it — the tab itself is kept
+ * by whoever keeps this screen's saved state while it is off screen.
+ *
+ * [fetching] is the artwork-and-descriptions run the phone reports on the
+ * same line as a channel refresh: both change what is on these shelves, so
+ * a viewer watching one happen reads the same place for either.
  */
 @Composable
 fun TvCatalogScreen(
@@ -57,6 +62,9 @@ fun TvCatalogScreen(
     onOpenList: (id: String) -> Unit,
     onCreateList: (name: String) -> Unit,
     mastheadFocus: FocusRequester = remember { FocusRequester() },
+    fetching: Boolean = false,
+    restoreKey: String? = null,
+    onMastheadFocusChanged: (Boolean) -> Unit = {},
 ) {
     val ready = (state as? CatalogUiState.Ready)?.takeIf { it.shelves.isNotEmpty() }
     val shelves = ready?.shelves.orEmpty()
@@ -82,7 +90,14 @@ fun TvCatalogScreen(
             profile = profile,
             onSelect = { chosen = it },
             focusRequester = mastheadFocus,
+            modifier = Modifier.onFocusChanged { onMastheadFocusChanged(it.hasFocus) },
         )
+        // Words where the phone draws a bar: the same sentences its Update
+        // item gives as the reason it is waiting, so what is happening reads
+        // the same wherever a viewer meets it.
+        if (ready != null) {
+            updateDisabledReason(ready, fetching)?.let { TvQuietLine(it, Modifier.padding(horizontal = Overscan.horizontal)) }
+        }
         // Above the shelf, not instead of it: the library below is the one
         // that was on this device before the refresh was tried, and it is
         // still every bit of it.
@@ -107,10 +122,11 @@ fun TvCatalogScreen(
                         onOpenTitle = onOpenTitle,
                         onOpenCollection = onOpenCollection,
                         onSeeAll = { shelf -> chosen = tabs.titles.indexOf(shelf).coerceAtLeast(0) },
+                        restoreKey = restoreKey,
                     )
                 }
                 selected < tabs.firstKept -> {
-                    TvShelfWall(shelves[selected - 1], ready.watch, onOpenTitle, onOpenCollection)
+                    TvShelfWall(shelves[selected - 1], ready.watch, onOpenTitle, onOpenCollection, restoreKey)
                 }
                 else -> {
                     TvKeptTab(
@@ -121,32 +137,11 @@ fun TvCatalogScreen(
                         onOpenCollection = onOpenCollection,
                         onOpenList = onOpenList,
                         onCreateList = onCreateList,
+                        restoreKey = restoreKey,
                     )
                 }
             }
         }
-    }
-}
-
-/**
- * Which of the masthead's four kept entries is selected, dispatched to what
- * draws it — the phone's `KeptTabContent`, over the same four functions.
- */
-@Composable
-private fun TvKeptTab(
-    kind: KeptKind,
-    shelves: List<Shelf>,
-    watch: WatchSnapshot,
-    onOpenTitle: (setId: String) -> Unit,
-    onOpenCollection: (key: String) -> Unit,
-    onOpenList: (id: String) -> Unit,
-    onCreateList: (name: String) -> Unit,
-) {
-    when (kind) {
-        KeptKind.CONTINUE -> TvKeptWall(kind, remember(shelves, watch) { continueWall(shelves, watch) }, watch, onOpenTitle)
-        KeptKind.WATCHLIST -> TvKeptWall(kind, remember(shelves, watch) { watchlistWall(shelves, watch) }, watch, onOpenTitle)
-        KeptKind.KIDS -> TvKidsWall(remember(shelves, watch) { kidsShelf(shelves, watch) }, watch, onOpenTitle, onOpenCollection)
-        KeptKind.COLLECTIONS -> TvLists(lists = watch.collections, onOpen = onOpenList, onCreate = onCreateList)
     }
 }
 

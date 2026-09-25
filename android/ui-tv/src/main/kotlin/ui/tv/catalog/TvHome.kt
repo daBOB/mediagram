@@ -23,6 +23,12 @@ import model.WatchSnapshot
  * was already underway, and what arrived recently, as [rows] from
  * `homeRowsOf` with the same arguments the phone passes it.
  *
+ * [restoreKey] names the stop a viewer opened, so coming back lands the
+ * remote on it rather than at the top; with none, or one no row holds any
+ * more, the first row's first stop takes it. A title on two rows at once —
+ * underway, and also among the latest — is found on the upper one, which
+ * is the one nearer the top a viewer came from nine times in ten.
+ *
  * The rows stack down the page and the page scrolls, never a row: see
  * [TvHomeRow]. The first row's first stop takes focus the moment the page
  * appears, as every wall on this surface does, so the remote is never left
@@ -40,12 +46,22 @@ internal fun TvHome(
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
     onSeeAll: (shelf: String) -> Unit,
+    restoreKey: String? = null,
 ) {
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
     val first = remember { FocusRequester() }
+    // Which row, and which stop along it, takes the remote.
+    val target =
+        remember(rows, restoreKey) {
+            restoreKey?.let { wanted ->
+                rows.withIndex().firstNotNullOfOrNull { (row, content) ->
+                    keysOf(content).indexOf(wanted).takeIf { it >= 0 }?.let { row to it }
+                }
+            } ?: (0 to 0)
+        }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(target) {
         if (rows.isNotEmpty()) first.requestFocus()
     }
 
@@ -74,7 +90,8 @@ internal fun TvHome(
                     onOpenTitle = onOpenTitle,
                     onOpenCollection = onOpenCollection,
                     onSeeAll = onSeeAll,
-                    firstItem = if (index == 0) Modifier.focusRequester(first) else Modifier,
+                    focusAt = target.second.takeIf { index == target.first },
+                    focus = Modifier.focusRequester(first),
                 )
             }
         }

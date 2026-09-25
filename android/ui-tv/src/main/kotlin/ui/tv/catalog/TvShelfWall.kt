@@ -13,7 +13,8 @@ import model.WatchSnapshot
  * the web, and this only draws them.
  *
  * A film opens its title page and a show or a course opens what is inside
- * it, through [openEntry].
+ * it, through [openEntry]. Coming back lands on the plate [restoreKey]
+ * names, the one that was opened.
  */
 @Composable
 internal fun TvShelfWall(
@@ -21,6 +22,7 @@ internal fun TvShelfWall(
     watch: WatchSnapshot,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
+    restoreKey: String? = null,
 ) {
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
@@ -28,7 +30,7 @@ internal fun TvShelfWall(
     TvWall(
         items = shelf.entries,
         key = ::keyOf,
-        restoreKey = null,
+        restoreKey = restoreKey,
         onOpen = { entry -> openEntry(entry, onOpenTitle, onOpenCollection) },
         plate = { entry, modifier, onOpen ->
             TvEntryPlate(entry = entry, positions = positions, watchedIds = watchedIds, onOpen = onOpen, modifier = modifier)
