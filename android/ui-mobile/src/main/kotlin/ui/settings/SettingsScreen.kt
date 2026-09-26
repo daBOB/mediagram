@@ -99,6 +99,8 @@ internal fun SettingsScreen(cache: @Composable () -> Unit) {
                 },
                 onSignOut = { askingSignOut = true },
                 onRetryProfiles = viewModel::retryProfiles,
+                onLoadSessions = viewModel::loadSessions,
+                onRevokeSession = viewModel::revokeSession,
                 cache = cache,
             )
         }
@@ -118,6 +120,8 @@ private fun SettingsRows(
     onChangeApplication: () -> Unit,
     onSignOut: () -> Unit,
     onRetryProfiles: () -> Unit,
+    onLoadSessions: () -> Unit,
+    onRevokeSession: (String) -> Unit,
     cache: @Composable () -> Unit,
 ) {
     LazyColumn(
@@ -141,6 +145,14 @@ private fun SettingsRows(
                     state.notice?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                 }
             }
+        }
+        item {
+            SessionsSection(
+                sessions = state.sessions,
+                error = state.sessionsError,
+                onLoad = onLoadSessions,
+                onRevoke = onRevokeSession,
+            )
         }
         item { cache() }
     }

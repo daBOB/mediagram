@@ -105,3 +105,25 @@ pub enum AuthOutcome {
     Done,
     PasswordNeeded,
 }
+
+/// One of this app's sessions signed in to the account — or the current
+/// one, which shares no `api_id` with the rest to compare. `id` is the
+/// authorization's hash as a decimal string: an `i64` does not survive the
+/// FFI boundary into a Kotlin `Long` without one, and a hash of `0` (never a
+/// real authorization) marks the current row, which cannot be revoked from
+/// itself. Never the IP address — see `web/src/settings/sessions.ts`, the
+/// same shape read from the other surface.
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct SessionSummary {
+    pub id: String,
+    pub device: String,
+    pub platform: String,
+    pub app: String,
+    pub app_version: String,
+    /// `country`, or `country, region` — `None` when Telegram reports neither.
+    pub location: Option<String>,
+    pub last_active: i64,
+    pub created: i64,
+    pub current: bool,
+    pub unconfirmed: bool,
+}

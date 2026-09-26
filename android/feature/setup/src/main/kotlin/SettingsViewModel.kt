@@ -105,6 +105,38 @@ class SettingsViewModel
         /** Lists the account's libraries so another can be chosen. */
         fun listLibraries() = act { _state.update { it.copy(choices = libraries.list()) } }
 
+        /** Reads this app's active sessions. Its own error, apart from [SettingsUiState.notice]. */
+        fun loadSessions() {
+            viewModelScope.launch {
+                try {
+                    val sessions = coreProvider.awaitCore().sessions()
+                    _state.update { it.copy(sessions = sessions, sessionsError = null) }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (
+                    @Suppress("TooGenericExceptionCaught") e: Exception,
+                ) {
+                    _state.update { it.copy(sessionsError = e.coreSentence() ?: "Could not read sessions. Try again.") }
+                }
+            }
+        }
+
+        /** Ends session [id], then re-reads the list so a revoked row disappears from the server's own answer. */
+        fun revokeSession(id: String) {
+            viewModelScope.launch {
+                try {
+                    coreProvider.awaitCore().revokeSession(id)
+                    loadSessions()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (
+                    @Suppress("TooGenericExceptionCaught") e: Exception,
+                ) {
+                    _state.update { it.copy(sessionsError = e.coreSentence() ?: "Could not end that session. Try again.") }
+                }
+            }
+        }
+
         /**
          * Installs [handle]'s catalog and only then remembers it, as setup does;
          * the shelves are told to read it once it is in.

@@ -6,6 +6,7 @@ import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.LibraryChoice
+import uniffi.mediagram_core.SessionSummary
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.TitleInfo
 
@@ -29,9 +30,15 @@ class FakeCore(
     var accountAnswer: AccountSummary? = AccountSummary("A Viewer", "viewer"),
     var accountFailure: Exception? = null,
     var datacenter: Int? = 4,
+    var sessionsAnswer: List<SessionSummary> = emptyList(),
+    var sessionsFailure: Exception? = null,
+    var revokeFailure: Exception? = null,
 ) : CoreClient {
     var signedOut = false
         private set
+
+    /** Which ids were passed to [revokeSession], in order. */
+    val revokedIds = mutableListOf<String>()
 
     var datacenterReads = 0
         private set
@@ -108,6 +115,16 @@ class FakeCore(
         language: String,
         backdropWidth: Int,
     ): FetchReport = FetchReport(0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u)
+
+    override suspend fun sessions(): List<SessionSummary> {
+        sessionsFailure?.let { throw it }
+        return sessionsAnswer
+    }
+
+    override suspend fun revokeSession(id: String) {
+        revokeFailure?.let { throw it }
+        revokedIds.add(id)
+    }
 
     override fun close() = Unit
 }

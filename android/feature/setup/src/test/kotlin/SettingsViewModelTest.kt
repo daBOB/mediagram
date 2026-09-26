@@ -244,4 +244,59 @@ class SettingsViewModelTest {
             assertEquals(null, viewModel.state.value.notice)
             assertFalse(viewModel.state.value.busy)
         }
+
+    @Test
+    fun sessionsAreReadIntoTheirOwnState() =
+        runTest {
+            val session = uniffi.mediagram_core.SessionSummary(
+                id = "0", device = "this phone", platform = "Android", app = "mediagram",
+                appVersion = "1.0", location = "DE", lastActive = 2, created = 1, current = true, unconfirmed = false,
+            )
+            val core = FakeCore(sessionsAnswer = listOf(session))
+            val viewModel = signedInWithLibrary(core).settingsViewModel()
+
+            viewModel.loadSessions()
+
+            assertEquals(listOf(session), viewModel.state.value.sessions)
+            assertEquals(null, viewModel.state.value.sessionsError)
+        }
+
+    @Test
+    fun aFailedSessionsReadIsItsOwnErrorNotTheSharedNotice() =
+        runTest {
+            val core = FakeCore(sessionsFailure = IllegalStateException("offline"))
+            val viewModel = signedInWithLibrary(core).settingsViewModel()
+
+            viewModel.loadSessions()
+
+            assertEquals(null, viewModel.state.value.sessions)
+            assertTrue(viewModel.state.value.sessionsError != null)
+            assertEquals(null, viewModel.state.value.notice)
+        }
+
+    @Test
+    fun revokingASessionRereadsTheListAfterward() =
+        runTest {
+            val core = FakeCore()
+            val viewModel = signedInWithLibrary(core).settingsViewModel()
+
+            viewModel.revokeSession("111")
+
+            assertEquals(listOf("111"), core.revokedIds)
+            assertEquals(emptyList(), viewModel.state.value.sessions)
+        }
+
+    @Test
+    fun aFailedRevokeIsReportedWithoutLosingThePreviousList() =
+        runTest {
+            val core = FakeCore()
+            val viewModel = signedInWithLibrary(core).settingsViewModel()
+            viewModel.loadSessions()
+
+            core.revokeFailure = IllegalStateException("refused")
+            viewModel.revokeSession("111")
+
+            assertTrue(viewModel.state.value.sessionsError != null)
+            assertEquals(emptyList(), viewModel.state.value.sessions)
+        }
 }

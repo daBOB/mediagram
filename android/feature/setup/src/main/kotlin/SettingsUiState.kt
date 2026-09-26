@@ -1,5 +1,7 @@
 package setup
 
+import uniffi.mediagram_core.SessionSummary
+
 /**
  * What the Settings screen's Telegram section shows.
  *
@@ -20,6 +22,10 @@ data class SettingsUiState(
     val apiId: Int? = null,
     /** The account's libraries, once asked for to change the choice. */
     val choices: List<LibraryOption>? = null,
+    /** This app's active sessions, once asked for. `null` before the first read. */
+    val sessions: List<SessionSummary>? = null,
+    /** Why [sessions] could not be read, when it could not. */
+    val sessionsError: String? = null,
     /** Something is being done; actions wait for it. */
     val busy: Boolean = false,
     /** What the last action came to, when there is something to say. */

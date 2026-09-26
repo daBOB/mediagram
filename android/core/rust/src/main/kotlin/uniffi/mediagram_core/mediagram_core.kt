@@ -722,6 +722,10 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_search(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_revoke_session(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_sessions(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_text(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_choose_profile(
@@ -831,6 +835,10 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_set_preference(`ptr`: Long,`profileId`: RustBuffer.ByValue,`scope`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_search(`ptr`: Long,`query`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_revoke_session(`ptr`: Long,`id`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_sessions(`ptr`: Long,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_text(`ptr`: Long,`setId`: RustBuffer.ByValue,`kind`: RustBuffer.ByValue,`lang`: RustBuffer.ByValue,
     ): Long
@@ -1054,6 +1062,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_search() and 0xFFFF) != 53359) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_revoke_session() and 0xFFFF) != 2974) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_sessions() and 0xFFFF) != 48240) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_text() and 0xFFFF) != 64077) {
@@ -1772,6 +1786,16 @@ public interface CoreInterface {
      * neither is an error, both are "nothing to show".
      */
     suspend fun `search`(`query`: kotlin.String): List<SearchHit>
+
+    /**
+     * Revokes `id`. A session already gone counts as success.
+     */
+    suspend fun `revokeSession`(`id`: kotlin.String)
+
+    /**
+     * This app's sessions: the ones sharing its `api_id`, plus the current one.
+     */
+    suspend fun `sessions`(): List<SessionSummary>
 
     /**
      * `kind` is `"summary"` or `"subtitle"`; anything else answers `None`
@@ -2541,6 +2565,56 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { FfiConverterSequenceTypeSearchHit.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Revokes `id`. A session already gone counts as success.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `revokeSession`(`id`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_revoke_session(
+                uniffiHandle,
+
+        FfiConverterString.lower(`id`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+
+    /**
+     * This app's sessions: the ones sharing its `api_id`, plus the current one.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `sessions`() : List<SessionSummary> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_sessions(
+                uniffiHandle,
+
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypeSessionSummary.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
     )
     }
 
@@ -3605,6 +3679,96 @@ public object FfiConverterTypeSearchHit: FfiConverterRustBuffer<SearchHit> {
             FfiConverterString.write(value.`setId`, buf)
             FfiConverterString.write(value.`matched`, buf)
             FfiConverterOptionalString.write(value.`excerpt`, buf)
+    }
+}
+
+
+
+/**
+ * One of this app's sessions signed in to the account — or the current
+ * one, which shares no `api_id` with the rest to compare. `id` is the
+ * authorization's hash as a decimal string: an `i64` does not survive the
+ * FFI boundary into a Kotlin `Long` without one, and a hash of `0` (never a
+ * real authorization) marks the current row, which cannot be revoked from
+ * itself. Never the IP address — see `web/src/settings/sessions.ts`, the
+ * same shape read from the other surface.
+ */
+data class SessionSummary (
+    var `id`: kotlin.String
+    ,
+    var `device`: kotlin.String
+    ,
+    var `platform`: kotlin.String
+    ,
+    var `app`: kotlin.String
+    ,
+    var `appVersion`: kotlin.String
+    ,
+    /**
+     * `country`, or `country, region` — `None` when Telegram reports neither.
+     */
+    var `location`: kotlin.String?
+    ,
+    var `lastActive`: kotlin.Long
+    ,
+    var `created`: kotlin.Long
+    ,
+    var `current`: kotlin.Boolean
+    ,
+    var `unconfirmed`: kotlin.Boolean
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSessionSummary: FfiConverterRustBuffer<SessionSummary> {
+    override fun read(buf: ByteBuffer): SessionSummary {
+        return SessionSummary(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: SessionSummary) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterString.allocationSize(value.`device`) +
+            FfiConverterString.allocationSize(value.`platform`) +
+            FfiConverterString.allocationSize(value.`app`) +
+            FfiConverterString.allocationSize(value.`appVersion`) +
+            FfiConverterOptionalString.allocationSize(value.`location`) +
+            FfiConverterLong.allocationSize(value.`lastActive`) +
+            FfiConverterLong.allocationSize(value.`created`) +
+            FfiConverterBoolean.allocationSize(value.`current`) +
+            FfiConverterBoolean.allocationSize(value.`unconfirmed`)
+    )
+
+    override fun write(value: SessionSummary, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterString.write(value.`device`, buf)
+            FfiConverterString.write(value.`platform`, buf)
+            FfiConverterString.write(value.`app`, buf)
+            FfiConverterString.write(value.`appVersion`, buf)
+            FfiConverterOptionalString.write(value.`location`, buf)
+            FfiConverterLong.write(value.`lastActive`, buf)
+            FfiConverterLong.write(value.`created`, buf)
+            FfiConverterBoolean.write(value.`current`, buf)
+            FfiConverterBoolean.write(value.`unconfirmed`, buf)
     }
 }
 
@@ -4741,6 +4905,34 @@ public object FfiConverterSequenceTypeSearchHit: FfiConverterRustBuffer<List<Sea
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeSearchHit.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeSessionSummary: FfiConverterRustBuffer<List<SessionSummary>> {
+    override fun read(buf: ByteBuffer): List<SessionSummary> {
+        val len = buf.getInt()
+        return List<SessionSummary>(len) {
+            FfiConverterTypeSessionSummary.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<SessionSummary>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeSessionSummary.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<SessionSummary>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeSessionSummary.write(it, buf)
         }
     }
 }
