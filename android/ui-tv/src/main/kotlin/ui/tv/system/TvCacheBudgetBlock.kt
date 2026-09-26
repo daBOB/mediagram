@@ -46,6 +46,7 @@ internal fun TvCacheBudgetBlock() {
         }
         if (current == null) return@Column
         TvInfoBlock(heading = "Cache", rows = listOf("Held" to heldOfBudget(current.heldBytes, current.budgetBytes)))
+        if (current.fellBack) TvQuietLine("Could not use the chosen location; using ${current.volumeLabel} instead.")
         for (bytes in cacheBudgetChoices(current.capBytes)) {
             val chosen = bytes == current.budgetBytes
             TvTextRow(
@@ -61,5 +62,5 @@ internal fun TvCacheBudgetBlock() {
     }
 }
 
-private const val CHOSEN = "●"
-private const val NOT_CHOSEN = "○"
+internal const val CHOSEN = "●"
+internal const val NOT_CHOSEN = "○"

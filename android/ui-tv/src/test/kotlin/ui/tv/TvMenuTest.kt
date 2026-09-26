@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
 import io.mockk.every
+import io.mockk.verify
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import model.Profile
@@ -156,6 +157,16 @@ class TvMenuTest {
 
         compose.onNodeWithText("Menu").assertExists()
         compose.onNodeWithText("Update library").assertDoesNotExist()
+    }
+
+    @Test
+    fun settingsOffersEveryCacheVolumeAndChoosingOneReachesTheModel() {
+        openMenu()
+        press(compose.onNodeWithText("Settings"))
+        compose.onNodeWithText("Where").assertExists()
+        compose.onNodeWithText("●  Internal storage", substring = true).assertExists()
+        press(compose.onNodeWithText("○  USB drive", substring = true))
+        verify { fixture.cacheBudget.chooseVolume("6BBF-D2D8") }
     }
 
     private fun openMenu() {

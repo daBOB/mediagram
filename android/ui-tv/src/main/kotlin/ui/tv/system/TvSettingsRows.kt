@@ -23,7 +23,7 @@ import ui.tv.catalog.TvQuietLine
 
 /**
  * Settings' own page: the Telegram block, the three things that change it,
- * and the cache. The remote lands on Change library, or on the row whose
+ * the cache and where it lives. The remote lands on Change library, or on the row whose
  * panel was just left. Waiting on an answer draws the actions faint rather
  * than hiding them: what is on offer does not change, only when.
  */
@@ -64,6 +64,7 @@ internal fun TvSettingsRows(
                 }
             }
             TvCacheBudgetBlock()
+            TvCacheVolumeBlock()
         }
     }
 }

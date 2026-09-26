@@ -20,21 +20,23 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
-import playback.CacheOccupancy
 import model.MediaSet
 import model.Profile
 import model.WatchSnapshot
+import playback.CacheOccupancy
+import playback.CacheVolume
 import playback.HeldSetsQuery
+import playback.INTERNAL_VOLUME_ID
 import player.PlayerViewModel
 import settings.InMemoryLibrarySettings
 import settings.InMemoryTelegramSettings
 import settings.InMemoryTmdbSettings
 import setup.Libraries
-import setup.SetupViewModel
-import setup.login.LoginViewModel
 import setup.SettingsCompletion
 import setup.SettingsUiState
 import setup.SettingsViewModel
+import setup.SetupViewModel
+import setup.login.LoginViewModel
 import system.CacheBudgetViewModel
 import system.FetchViewModel
 import system.SystemUiState
@@ -42,6 +44,7 @@ import system.SystemViewModel
 import ui.tv.player.TvPlayerFixture
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SearchHit
+import java.io.File
 
 /** Which of [SetupViewModel]'s outstanding steps a [TvAppFixture] should land on. */
 internal enum class TvSetupStage { APPLICATION, SIGN_IN, LIBRARY, READY }
@@ -92,7 +95,7 @@ internal class TvAppFixture(
     private val player: PlayerViewModel
     val settings = mockk<SettingsViewModel>(relaxed = true)
     private val system = mockk<SystemViewModel>(relaxed = true)
-    private val cacheBudget = mockk<CacheBudgetViewModel>(relaxed = true)
+    val cacheBudget = mockk<CacheBudgetViewModel>(relaxed = true)
 
     init {
         val core = mockk<CoreClient>()
@@ -188,6 +191,14 @@ internal class TvAppFixture(
                 ),
             )
         every { cacheBudget.failure } returns MutableStateFlow(null)
+        every { cacheBudget.volumes } returns
+            MutableStateFlow(
+                listOf(
+                    CacheVolume(INTERNAL_VOLUME_ID, "Internal storage", File("internal"), freeBytes = 1_000_000, removable = false),
+                    CacheVolume("6BBF-D2D8", "USB drive", File("usb"), freeBytes = 2_000_000, removable = true),
+                ),
+            )
+        every { cacheBudget.chosenVolumeId } returns MutableStateFlow(null)
         val models =
             mapOf<Class<out ViewModel>, ViewModel>(
                 SetupViewModel::class.java to setup,
