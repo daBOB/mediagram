@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { dirBytes } from "../src/status/dir-bytes";
+import { countSegments, dirBytes } from "../src/status/dir-bytes";
 
 let root: string;
 
@@ -57,5 +57,25 @@ describe("measuring a directory", () => {
     } finally {
       await rm(nested, { recursive: true, force: true });
     }
+  });
+});
+
+describe("counting segments in a conversion's directory", () => {
+  test("counts .ts and .m4s files, and nothing else", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "mediagram-segments-"));
+    try {
+      await writeFile(join(dir, "seg1.ts"), new Uint8Array(1));
+      await writeFile(join(dir, "seg2.ts"), new Uint8Array(1));
+      await writeFile(join(dir, "seg1.m4s"), new Uint8Array(1));
+      await writeFile(join(dir, "index.m3u8"), new Uint8Array(1));
+      await writeFile(join(dir, "ffmpeg.log"), new Uint8Array(1));
+      expect(await countSegments(dir)).toBe(3);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("answers zero for a directory that does not exist yet", async () => {
+    expect(await countSegments(join(tmpdir(), "mediagram-segments-not-there"))).toBe(0);
   });
 });

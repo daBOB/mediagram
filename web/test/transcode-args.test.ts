@@ -107,6 +107,12 @@ describe("the HLS output", () => {
   test("the output path is last", () => {
     expect(argsFor().at(-1)).toBe("/work/session/index.m3u8");
   });
+
+  test("machine-readable progress goes to stdout, at the panel's own poll rate", () => {
+    const args = argsFor();
+    expect(valueOf(args, "-progress")).toBe("pipe:1");
+    expect(valueOf(args, "-stats_period")).toBe("2");
+  });
 });
 
 describe("encoders", () => {

@@ -475,6 +475,53 @@ describe("session snapshots", () => {
   });
 });
 
+describe("mode and progress in a listing", () => {
+  test.each([
+    [{ copyVideo: false }, "encode"],
+    [{ copyVideo: true, hevcCopy: false }, "copy"],
+    [{ copyVideo: true, hevcCopy: true }, "hevc-copy"],
+  ] as const)("labels %j as %s", async (extra, mode) => {
+    const registry = new TranscodeRegistry(work, fakeRunner());
+    await registry.acquireSession({ ...spec("01SET", 10, 8_000_000, 2), ...extra });
+    expect(registry.list()[0]?.mode).toBe(mode);
+  });
+
+  test("carries ffmpeg's own progress reading through to the listing", async () => {
+    const runner = {
+      start: () => ({ stop: async () => {}, progress: () => ({ speed: 1.2, fps: 24, outSeconds: 90, cpuPercent: 40 }) }),
+    };
+    const registry = new TranscodeRegistry(work, runner);
+    await registry.acquireSession(spec("01SET", 0, 8_000_000));
+    expect(registry.list()[0]?.progress).toEqual({ speed: 1.2, fps: 24, outSeconds: 90, cpuPercent: 40 });
+  });
+
+  test("reports no progress for a runner that offers none", async () => {
+    const registry = new TranscodeRegistry(work, fakeRunner());
+    await registry.acquireSession(spec("01SET", 0, 8_000_000));
+    expect(registry.list()[0]?.progress).toBe(null);
+  });
+});
+
+describe("sessions started since this process began", () => {
+  test("tallies by mode, and only for a genuinely new session", async () => {
+    const registry = new TranscodeRegistry(work, fakeRunner());
+    await registry.acquireSession(spec("01SETA", 0, 8_000_000));
+    await registry.acquireSession({ ...spec("01SETB", 0, 8_000_000), copyVideo: true });
+    await registry.acquireSession({ ...spec("01SETC", 0, 8_000_000), copyVideo: true, hevcCopy: true });
+    // The same spec again: a second viewer of a running session, not a new one.
+    await registry.acquireSession(spec("01SETA", 0, 8_000_000));
+    expect(registry.started).toEqual({ encode: 1, copy: 1, hevcCopy: 1 });
+  });
+
+  test("does not tally a session restarted after being stopped as free", async () => {
+    const registry = new TranscodeRegistry(work, fakeRunner());
+    const session = await registry.acquireSession(spec("01SET", 0, 8_000_000));
+    await registry.stop(session.id);
+    await registry.acquireSession(spec("01SET", 0, 8_000_000));
+    expect(registry.started).toEqual({ encode: 2, copy: 0, hevcCopy: 0 });
+  });
+});
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((done) => { resolve = done; });

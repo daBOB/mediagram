@@ -21,16 +21,20 @@ function processFixture() {
   const logged = deferred<void>();
   const killed = deferred<void>();
   let stderr!: ReadableStreamDefaultController<Uint8Array>;
-  let streamClosed = false;
+  let stdout!: ReadableStreamDefaultController<Uint8Array>;
+  let streamsClosed = false;
   const signals: string[] = [];
   const commands: string[][] = [];
   const logs: Array<{ path: string; text: string }> = [];
   const timers: Array<{ milliseconds: number; fire: () => void; cancelled: boolean }> = [];
+  const cpuTicks: Array<number | null> = [];
   let onSignal = (_signal: string) => {};
   const io = {
     spawn(command: string[]) {
       commands.push(command);
       return {
+        pid: 4242,
+        stdout: new ReadableStream<Uint8Array>({ start(controller) { stdout = controller; } }),
         stderr: new ReadableStream<Uint8Array>({ start(controller) { stderr = controller; } }),
         exited: exit.promise,
         kill(signal: "SIGTERM" | "SIGKILL") {
@@ -49,14 +53,23 @@ function processFixture() {
       timers.push(timer);
       return () => { timer.cancelled = true; };
     },
+    // No process to read by default; a test that cares about CPU percent
+    // queues readings here instead of touching a real /proc.
+    readCpuTicks: async () => (cpuTicks.length ? cpuTicks.shift()! : null),
+    now: () => 0,
   };
   return {
-    io, signals, commands, logs, timers, logged: logged.promise, killed: killed.promise,
+    io, signals, commands, logs, timers, cpuTicks, logged: logged.promise, killed: killed.promise,
     onSignal(handler: (signal: string) => void) { onSignal = handler; },
     write(bytes: Uint8Array) { stderr.enqueue(bytes); },
+    writeProgress(text: string) { stdout.enqueue(new TextEncoder().encode(text)); },
     finish(code = 0) {
       exit.resolve(code);
-      if (!streamClosed) { stderr.close(); streamClosed = true; }
+      if (!streamsClosed) {
+        stderr.close();
+        stdout.close();
+        streamsClosed = true;
+      }
     },
   };
 }
@@ -133,6 +146,39 @@ describe("the production ffmpeg runner", () => {
     const fixture = processFixture();
     fixture.io.spawn = () => { throw new Error("ffmpeg could not start"); };
     expect(() => new FfmpegRunner(OPTIONS, fixture.io).start("session", "/catalog/session", SPEC)).toThrow(/could not start/);
+  });
+
+  test("reports no progress before ffmpeg has written a block", () => {
+    const fixture = processFixture();
+    const running = new FfmpegRunner(OPTIONS, fixture.io).start("session", "/catalog/session", SPEC);
+    expect(running.progress?.()).toBe(null);
+    fixture.finish();
+  });
+
+  test("keeps the last complete progress block, decoded across chunk boundaries", async () => {
+    const fixture = processFixture();
+    const running = new FfmpegRunner(OPTIONS, fixture.io).start("session", "/catalog/session", SPEC);
+    fixture.writeProgress("fps=24.00\nout_time_us=2000");
+    fixture.writeProgress("000\nspeed=1.50x\nprogress=continue\n");
+    // The stdout reader is an async loop; give it a turn to run.
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(running.progress?.()).toMatchObject({ speed: 1.5, fps: 24, outSeconds: 2 });
+    fixture.finish();
+  });
+
+  test("computes CPU percent from ticks read alongside each progress block", async () => {
+    const fixture = processFixture();
+    const clock = [0, 2000];
+    fixture.io.now = () => clock.shift() ?? 2000;
+    fixture.cpuTicks.push(100, 300);
+    const running = new FfmpegRunner(OPTIONS, fixture.io).start("session", "/catalog/session", SPEC);
+    fixture.writeProgress("fps=24.00\nout_time_us=1000000\nspeed=1.00x\nprogress=continue\n");
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    fixture.writeProgress("fps=24.00\nout_time_us=3000000\nspeed=1.00x\nprogress=continue\n");
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    // 200 ticks over 2s at 100 ticks/s is 100% CPU.
+    expect(running.progress?.()?.cpuPercent).toBeCloseTo(100);
+    fixture.finish();
   });
 });
 

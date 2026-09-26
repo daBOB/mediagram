@@ -8,9 +8,13 @@
  * plays, and the cause is never obvious.
  */
 
-import { createHash } from "node:crypto";
 import { mkdir, rename, rm } from "node:fs/promises";
 import { join } from "node:path";
+import type { TranscodeProgress } from "./progress";
+import { modeOf, sessionId } from "./session-identity";
+import type { TranscodeMode } from "./session-identity";
+
+export type { TranscodeMode };
 
 /**
  * What one transcode is of.
@@ -54,6 +58,8 @@ export interface Running {
    * say. Optional because a runner need not be a process at all.
    */
   exited?: Promise<number>;
+  /** The last progress reading, or `null` before ffmpeg has written one. */
+  progress?(): TranscodeProgress | null;
 }
 
 export interface Session extends SessionSpec {
@@ -93,6 +99,8 @@ export class TranscodeRegistry {
   private readonly now: () => number;
   private closed = false;
   private shutdown: Promise<void> | null = null;
+  /** How many sessions of each mode have been started since this process began. */
+  private readonly startedCounts = { encode: 0, copy: 0, hevcCopy: 0 };
 
   constructor(
     private readonly workDir: string,
@@ -156,6 +164,12 @@ export class TranscodeRegistry {
     await mkdir(directory, { recursive: true });
 
     const process = this.runner.start(id, directory, spec);
+    // Tallied for a genuinely new session only: a second viewer joining one
+    // already running is not a new conversion having been started.
+    const mode = modeOf(spec);
+    if (mode === "encode") this.startedCounts.encode += 1;
+    else if (mode === "copy") this.startedCounts.copy += 1;
+    else this.startedCounts.hevcCopy += 1;
     const tracked: Tracked = {
       ...spec,
       id,
@@ -205,7 +219,7 @@ export class TranscodeRegistry {
    * able to reach the process handle or change the watcher count by holding
    * the row it was told about.
    */
-  list(): Array<Session & { watchers: number }> {
+  list(): Array<Session & { watchers: number; mode: TranscodeMode; progress: TranscodeProgress | null }> {
     return [...this.sessions.values()].map((tracked) => ({
       id: tracked.id,
       directory: tracked.directory,
@@ -216,6 +230,8 @@ export class TranscodeRegistry {
       copyVideo: tracked.copyVideo,
       hevcCopy: tracked.hevcCopy,
       watchers: tracked.watchers,
+      mode: modeOf(tracked),
+      progress: tracked.process.progress?.() ?? null,
     }));
   }
 
@@ -226,6 +242,11 @@ export class TranscodeRegistry {
 
   count(): number {
     return this.sessions.size;
+  }
+
+  /** Sessions started since this process began, by mode. Joining one already running does not count. */
+  get started(): { encode: number; copy: number; hevcCopy: number } {
+    return { ...this.startedCounts };
   }
 
   /** Stops a session and removes its segments. Absent is not an error. */
@@ -301,38 +322,3 @@ export class TranscodeRegistry {
 
 /** Makes each discarded directory's name unique within a run. */
 let discardCount = 0;
-
-/**
- * A stable id for one title, at one offset, at one bitrate.
- *
- * The bitrate is part of the identity because it is part of what the session
- * *is*: a viewer whose link cannot carry the default needs a different
- * encode, and an id that ignored the cap would hand them the one already
- * failing.
- *
- * Hashed rather than composed from the set id: this reaches a URL and then a
- * path, and a set id comes from a caption, so it must not be able to carry a
- * separator or a `..` into either.
- */
-function sessionId(spec: SessionSpec): string {
-  return createHash("sha256")
-    .update(spec.setId)
-    .update(new Uint8Array([0]))
-    .update(String(spec.seekSeconds))
-    .update(new Uint8Array([0]))
-    .update(String(spec.maxrateBits))
-    .update(new Uint8Array([0]))
-    // Part of the identity, not a detail of it: two viewers watching the same
-    // film in different languages want different encodes, and sharing one
-    // would hand the second viewer the first one's audio.
-    .update(String(spec.audioTrack))
-    .update(new Uint8Array([0]))
-    // And likewise a copy: the same title, offset and track, copied for one
-    // viewer and encoded for a capped one, are two different streams. An id
-    // that ignored this would hand the capped viewer the uncapped bytes their
-    // cap exists to prevent.
-    // An HEVC copy is fMP4 rather than TS: a different stream again.
-    .update(spec.copyVideo ? (spec.hevcCopy ? "copy-fmp4" : "copy") : "encode")
-    .digest("hex")
-    .slice(0, 16);
-}

@@ -52,3 +52,14 @@ export async function dirBytes(root: string): Promise<number> {
   for (const size of sizes) total += size;
   return total;
 }
+
+/** Segment files (`.ts`, `.m4s`) directly under `root`. `0` for a missing directory. */
+export async function countSegments(root: string): Promise<number> {
+  try {
+    const entries = await readdir(root);
+    return entries.filter((name) => /\.(ts|m4s)$/.test(name)).length;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return 0;
+    throw error;
+  }
+}

@@ -57,12 +57,47 @@ live-facts.ts: per session await countSegments(directory)   (status/dir-bytes.ts
    - `countSegments`
 
 ## Todo
-- [ ] progress parser + tests
-- [ ] args flags + test update
-- [ ] runner stdout + cpu
-- [ ] registry modeOf/tally/list
-- [ ] countSegments + test
-- [ ] snapshot wiring + test
+- [x] progress parser + tests
+- [x] args flags + test update
+- [x] runner stdout + cpu
+- [x] registry modeOf/tally/list
+- [x] countSegments + test
+- [x] snapshot wiring + test
+
+## Implementation notes (2026-09-26)
+
+Done. Deviations from the plan:
+
+- **`registry.ts` could not absorb the net growth.** The plan called the
+  file's being over the line limit "an accepted exception" and expected
+  about +12 lines. In this tree the file sat at exactly its ratchet ceiling
+  (338 lines, `test/code-standards.test.ts`), which this task's own
+  instructions hold as a hard limit — "split instead of raising ceilings" —
+  overriding the plan's exception. Extracted `modeOf` and the id-hashing
+  `sessionId` into a new `transcode/session-identity.ts` (pure, no registry
+  state needed), and moved the `TranscodeProgress` shape into `progress.ts`
+  next to `ProgressBlock`, which it extends. `registry.ts` ends at 324 lines,
+  under ceiling, and both new files are well under 200.
+- **`parseProgress`'s carry fixed a bug found while testing it.** The plan
+  described carrying only the trailing partial line between stdout reads.
+  That loses any complete lines received in an earlier read whose block
+  hadn't yet seen its `progress=` terminator — an ordinary case, since a
+  block is ten-odd lines and a chunk boundary can land between any two of
+  them, not only mid-line. `carry` now holds every line since the last
+  completed block, not just a partial final one; a test
+  ("holds whole lines a chunk boundary landed after") pins this.
+- **The existing ffmpeg test file is `transcode-runtime.test.ts`**, not a
+  new `transcode-ffmpeg.test.ts` as implied by context links elsewhere in
+  this plan set — extended in place rather than creating a duplicate.
+- **Unverified**: the stub harness (`scripts/preview.ts`) has no media
+  source or transcode registry wired at all ("Media is the one thing a
+  preview cannot serve without Telegram"), so the plan's success criterion
+  of watching `speed`/`segments` rise during a real conversion in the
+  harness was not exercised. `transcode-runtime.test.ts` covers the same
+  wiring — progress parsing across chunk boundaries, CPU percent from two
+  `/proc` readings — through a fake `ffmpeg` process instead. Building a
+  full held-cache-plus-encoder path into the stub harness was judged out of
+  scope for this phase; flagged here rather than silently skipped.
 
 ## Success criteria
 - Unit tests pass.

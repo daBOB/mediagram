@@ -12,6 +12,7 @@ import { join } from "node:path";
 
 import { transcodeArgs, type Encoder } from "./args";
 import type { Runner, Running, SessionSpec } from "./registry";
+import { cpuPercentSince, parseProgress, readCpuTicks, type TranscodeProgress } from "./progress";
 
 export interface FfmpegOptions {
   encoder: Encoder;
@@ -21,25 +22,31 @@ export interface FfmpegOptions {
 }
 
 interface ChildProcess {
+  pid: number;
+  stdout: ReadableStream<Uint8Array>;
   stderr: ReadableStream<Uint8Array>;
   exited: Promise<number>;
   kill(signal: "SIGTERM" | "SIGKILL"): void;
 }
 
-/** Raw process, log, and timer IO; supervision remains in the runner. */
+/** Raw process, log, timer and `/proc` IO; supervision remains in the runner. */
 interface ProcessIo {
   spawn(command: string[]): ChildProcess;
   appendLog(path: string, text: string): void;
   schedule(callback: () => void, milliseconds: number): () => void;
+  readCpuTicks(pid: number): Promise<number | null>;
+  now(): number;
 }
 
 const processIo: ProcessIo = {
-  spawn: (command) => Bun.spawn(command, { stdout: "ignore", stderr: "pipe" }),
+  spawn: (command) => Bun.spawn(command, { stdout: "pipe", stderr: "pipe" }),
   appendLog: appendFileSync,
   schedule(callback, milliseconds) {
     const timer = setTimeout(callback, milliseconds);
     return () => clearTimeout(timer);
   },
+  readCpuTicks,
+  now: () => performance.now(),
 };
 
 export class FfmpegRunner implements Runner {
@@ -80,10 +87,16 @@ export class FfmpegRunner implements Runner {
       }
     })();
 
+    let last: TranscodeProgress | null = null;
+    void this.readProgress(proc, (progress) => {
+      last = progress;
+    });
+
     return {
       // Surfaced so a wait for a first segment can give up the moment ffmpeg
       // dies, rather than polling for output that is never coming.
       exited: proc.exited,
+      progress: () => last,
       stop: async () => {
         let cancel = () => {};
         try {
@@ -105,5 +118,31 @@ export class FfmpegRunner implements Runner {
         await proc.exited;
       },
     };
+  }
+
+  /**
+   * Drains `-progress pipe:1`, the same way `stderr` is drained above: an
+   * unread pipe fills and blocks ffmpeg, so this runs for as long as the
+   * process does regardless of whether anyone is currently asking for a
+   * reading.
+   */
+  private async readProgress(proc: ChildProcess, onBlock: (progress: TranscodeProgress) => void): Promise<void> {
+    let carry = "";
+    let cpu: { ticks: number; atMs: number } | null = null;
+    try {
+      const decoder = new TextDecoder();
+      for await (const chunk of proc.stdout) {
+        const parsed = parseProgress(decoder.decode(chunk, { stream: true }), carry);
+        carry = parsed.carry;
+        for (const block of parsed.blocks) {
+          const ticks = await this.io.readCpuTicks(proc.pid);
+          const cpuReading = cpuPercentSince(cpu, ticks, this.io.now());
+          cpu = cpuReading.next;
+          onBlock({ ...block, cpuPercent: cpuReading.percent });
+        }
+      }
+    } catch {
+      // A lost progress reading is not worth failing a playback for.
+    }
   }
 }

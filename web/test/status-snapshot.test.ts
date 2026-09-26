@@ -29,7 +29,22 @@ const live: LiveFacts = {
   transcodes: {
     running: 1,
     capacity: 4,
-    sessions: [{ setId: "abc", seekSeconds: 120, maxrateBits: 8_000_000, audioTrack: 1, watchers: 2 }],
+    started: { encode: 3, copy: 1, hevcCopy: 0 },
+    sessions: [
+      {
+        setId: "abc",
+        seekSeconds: 120,
+        maxrateBits: 8_000_000,
+        audioTrack: 1,
+        watchers: 2,
+        mode: "encode",
+        speed: 1.4,
+        fps: 24,
+        outSeconds: 640,
+        cpuPercent: 38,
+        segments: 12,
+      },
+    ],
   },
   transcodeBytes: 3 * 1024 ** 3,
   telegramConnected: true,
@@ -101,6 +116,19 @@ describe("the readings added after the first pass", () => {
     const snapshot = buildSnapshot(facts, live);
     expect(snapshot.transcodes.heldBytes).toBe(3 * 1024 ** 3);
     expect(snapshot.transcodes.dir).toBe("/var/tmp/mediagram-transcode");
+  });
+
+  test("reports each session's mode and ffmpeg's own progress, alongside how many of each mode have run", () => {
+    const snapshot = buildSnapshot(facts, live);
+    expect(snapshot.transcodes.started).toEqual({ encode: 3, copy: 1, hevcCopy: 0 });
+    expect(snapshot.transcodes.sessions[0]).toMatchObject({
+      mode: "encode",
+      speed: 1.4,
+      fps: 24,
+      outSeconds: 640,
+      cpuPercent: 38,
+      segments: 12,
+    });
   });
 
   test("reports failed reads, which a viewer feels and cannot see", () => {

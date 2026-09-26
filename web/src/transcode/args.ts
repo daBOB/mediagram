@@ -156,6 +156,10 @@ export function transcodeArgs(request: TranscodeRequest): string[] {
   if (request.copyVideo === true && request.hevcCopy === true) {
     args.push("-hls_segment_type", "fmp4");
   }
+  // Machine-readable progress on stdout, independent of `-loglevel error` on
+  // stderr: the interface ffmpeg means for a program to read, at the same
+  // 2s cadence the panel polls.
+  args.push("-progress", "pipe:1", "-stats_period", "2");
   args.push(request.output);
   return args;
 }

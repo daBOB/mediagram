@@ -11,6 +11,25 @@ import type { StartupFacts } from "./facts";
 import type { LoopLagReading } from "./loop-lag";
 import type { DiskFree } from "./disk-free";
 import type { LinkSnapshot } from "../telegram/link-stats";
+import type { TranscodeMode } from "../transcode/registry";
+
+/** One running conversion, as the panel shows it. */
+export interface TranscodeSession {
+  setId: string;
+  seekSeconds: number;
+  maxrateBits: number;
+  audioTrack: number;
+  watchers: number;
+  mode: TranscodeMode;
+  /** As a multiple of realtime, or `null` for ffmpeg's own `N/A`. */
+  speed: number | null;
+  fps: number | null;
+  /** How far into the output ffmpeg has written, in seconds. */
+  outSeconds: number | null;
+  /** Since the previous reading; `null` off Linux or before there is one. */
+  cpuPercent: number | null;
+  segments: number;
+}
 
 /** The process and machine figures read fresh on every request. */
 export interface HostLiveFacts {
@@ -40,13 +59,9 @@ export interface LiveFacts {
   transcodes: {
     running: number;
     capacity: number;
-    sessions: Array<{
-      setId: string;
-      seekSeconds: number;
-      maxrateBits: number;
-      audioTrack: number;
-      watchers: number;
-    }>;
+    /** Sessions started since this process began, by mode. Joining one already running does not count. */
+    started: { encode: number; copy: number; hevcCopy: number };
+    sessions: TranscodeSession[];
   };
   /** Bytes the conversions have written and not yet had reaped. */
   transcodeBytes: number | null;

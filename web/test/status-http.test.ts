@@ -30,7 +30,7 @@ const live = () => ({
   cacheMisses: 1,
   cacheEvicted: 0,
   fetchedBytes: 10,
-  transcodes: { running: 0, capacity: 4, sessions: [] },
+  transcodes: { running: 0, capacity: 4, started: { encode: 0, copy: 0, hevcCopy: 0 }, sessions: [] },
   telegramConnected: true,
   link: { dcs: [], flood: { count: 0, totalSeconds: 0 }, reconnects: 0 },
   failedReads: 0,

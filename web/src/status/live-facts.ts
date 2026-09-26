@@ -7,8 +7,11 @@
  */
 
 import { diskFree } from "./disk-free";
+import { countSegments } from "./dir-bytes";
 import type { LoopLag } from "./loop-lag";
-import type { LiveFacts } from "./snapshot";
+import type { LiveFacts, TranscodeSession } from "./snapshot";
+import type { TranscodeMode } from "../transcode/registry";
+import type { TranscodeProgress } from "../transcode/progress";
 
 interface CacheStats {
   stats(): { hits: number; misses: number; evicted: number };
@@ -21,7 +24,17 @@ interface ReaderStats {
 interface TranscodeSessions {
   count(): number;
   capacity: number;
-  list(): Array<{ setId: string; seekSeconds: number; maxrateBits: number; audioTrack: number; watchers: number }>;
+  started: { encode: number; copy: number; hevcCopy: number };
+  list(): Array<{
+    setId: string;
+    seekSeconds: number;
+    maxrateBits: number;
+    audioTrack: number;
+    watchers: number;
+    directory: string;
+    mode: TranscodeMode;
+    progress: TranscodeProgress | null;
+  }>;
 }
 
 interface ByteSourceStats {
@@ -43,7 +56,7 @@ export async function readLiveFacts(
   deps: LiveFactsDeps,
 ): Promise<Omit<LiveFacts, "cacheHeldBytes" | "transcodeBytes" | "now">> {
   const cacheStats = deps.cache?.stats();
-  const disks = await diskFree(deps.diskDirs);
+  const [disks, sessions] = await Promise.all([diskFree(deps.diskDirs), transcodeSessions(deps.transcodes)]);
 
   return {
     cacheHits: cacheStats?.hits ?? 0,
@@ -53,13 +66,8 @@ export async function readLiveFacts(
     transcodes: {
       running: deps.transcodes.count(),
       capacity: deps.transcodes.capacity,
-      sessions: deps.transcodes.list().map(({ setId, seekSeconds, maxrateBits, audioTrack, watchers }) => ({
-        setId,
-        seekSeconds,
-        maxrateBits,
-        audioTrack,
-        watchers,
-      })),
+      started: deps.transcodes.started,
+      sessions,
     },
     telegramConnected: deps.telegram.connected,
     link: deps.telegram.link(),
@@ -73,4 +81,29 @@ export async function readLiveFacts(
       disks,
     },
   };
+}
+
+/**
+ * Each running session, plus its segment count.
+ *
+ * The one figure not already sitting on the tracked session: it costs a
+ * directory listing, so it is read here, at poll time, rather than kept
+ * up to date on every segment ffmpeg writes.
+ */
+async function transcodeSessions(transcodes: TranscodeSessions): Promise<TranscodeSession[]> {
+  return Promise.all(
+    transcodes.list().map(async (session) => ({
+      setId: session.setId,
+      seekSeconds: session.seekSeconds,
+      maxrateBits: session.maxrateBits,
+      audioTrack: session.audioTrack,
+      watchers: session.watchers,
+      mode: session.mode,
+      speed: session.progress?.speed ?? null,
+      fps: session.progress?.fps ?? null,
+      outSeconds: session.progress?.outSeconds ?? null,
+      cpuPercent: session.progress?.cpuPercent ?? null,
+      segments: await countSegments(session.directory),
+    })),
+  );
 }
