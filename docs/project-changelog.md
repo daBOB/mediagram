@@ -5,6 +5,13 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Unreleased — 0.62.1
+
+- **Navigation**: every link appears once. The departments (Home, Movies, Series,
+  Tutorials, Collections) live only in the top bar, which now carries the Collections
+  count; the side rail keeps the viewer's shelves and utilities (My List, Continue
+  watching, Latest, Genres, Settings, System).
+
 ## Unreleased — 0.62.0
 
 Pending merge on feat/editorial-departments branch: web player department pages,
