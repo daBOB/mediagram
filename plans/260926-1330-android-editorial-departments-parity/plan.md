@@ -1,32 +1,42 @@
 # Android — editorial departments parity
 
-Status: pending (owed under CLAUDE.md § Surface Parity). Created 2026-09-26 by the web
-plan `260926-1142-web-player-editorial-departments`, which is the reference: read its
-web implementation before building each screen here, and match its decisions.
+Status: planned 2026-09-26; **build waits for `feat/android-tv-ui` to merge** (user
+decision). Owed under CLAUDE.md § Surface Parity. The web player (0.62.x) is the
+reference: before each screen, read its web module (named per phase) and match its
+decisions. Any deliberate difference is written into the phase that makes it.
 
-## Hard prerequisite (before any v9 index or package is published)
+Scout: A = `android/`, C = `crates/mediagram-core/src/` (report in session, 2026-09-26).
 
-Installed Android builds read schemas 6–8 only and **refuse a v9 package**. The Rust core
-in this branch (`mlib_spec::READABLE_SCHEMAS = [6,7,8,9]`) fixes that, so a phone/TV build
-from 0.62.0 or later must be installed on the phone (caad49da), the TV emulator and the TV
-box (192.168.0.35:5555) before the first v9 push/export. Same for both uploader machines.
-**v10 (artwork table, 0.63.0) moves the bar:** a pre-0.63 Android build refuses a v10
-package, so install 0.63.0+ on all three devices before the first push from a 0.63 uploader.
+## Phases
 
-## Owed screens and data (web reference in parentheses)
+| # | Phase | Surface | Status |
+|---|-------|---------|--------|
+| 1 | [Core read API: franchise/type on rows, credits, person, franchises, people search, device portraits](phase-01-core-read-api.md) | Rust core + UniFFI | pending |
+| 2 | [Kotlin data + pure rules: Similar, SeriesResume, GenreIndex, Franchises, VisiblePeople](phase-02-kotlin-data-and-rules.md) | feature/catalog, core/data | pending |
+| 3 | [Navigation: departments in the masthead, new frames](phase-03-navigation.md) | ui-common, feature/catalog | pending |
+| 4 | [Phone title pages: film spread + tabs, series page](phase-04-phone-title-pages.md) | ui-mobile | pending |
+| 5 | [Phone departments, collections/franchises, person, search, Latest, Genres](phase-05-phone-departments-and-browse.md) | ui-mobile | pending |
+| 6 | [TV: the same screens on the television surface](phase-06-tv-surface.md) | ui-tv | pending |
+| 8 | [Settings › Appearance: theme + accent](phase-08-appearance.md) | ui-mobile, ui-tv, designsystem | pending |
+| 7 | [Verify on devices, docs, version](phase-07-verify-and-ship.md) | all | pending |
 
-| Web | Android today | Owed |
-|---|---|---|
-| Department pages: Movies/Series/Tutorials hero + curated rows (`department-pages.js`) | shelves | hero, Featured, Genres tiles, Acclaimed, Recently added; Continue-your-series |
-| Film page: spread + Overview/Cast/Similar/Details tabs (`film-page.js`) | title page | tabs, Similar (`similar.js` rule), "Part of" franchise |
-| Series page: Resume SxEy + season picker + About/Cast/Similar (`series-page.js`, `series-resume.js`) | season list | resume rule, cast |
-| Cast + person pages (`cast.js`) — only titles the profile can see | none | cast row, person page, kids filtering |
-| Collections: franchises (≥2 held) + lists; franchise page (`collections-page.js`) | lists | franchise cards and page |
-| Search: grouped results, People, Collections, filters (`search-view.js`) | flat | people + collections |
-| Latest, Genres index (`utility-pages.js`) | — | both |
-| Documentaries department (`documentaries.js`): `docu` kind, collections grouped like courses, singles row; search group; "N documentaries" | unknown kind → Movies shelf (core already derives `title-{slug}` art keys and reads the v10 `artwork` table) | department, catalog kind, search group |
-| Settings › Appearance (theme/accent/artwork) | settings screen | decide: TV/phone may deliberately differ — write down why |
+Phases 1–2 are surface-free and can start as soon as the TV branch lands. 4–5 and 6 share
+the view models from 2–3 and can run in parallel after that.
 
-v9 data: `shows.collection_id/collection_name/series_type`, tables `credits` (incl.
-`profile`) and `franchises`; portraits `tmdb-person-<id>.jpg`. Android's on-device artwork
-fetch currently skips portraits (like backdrops) — revisit when the cast row lands.
+## Prerequisite (unchanged)
+
+Installed Android builds read schemas 6–8 and refuse a v9 package; any build from main
+(0.62+) reads 6–9. Install on phone caad49da, TV emulator and TV box 192.168.0.35:5555
+(`ANDROID_SERIAL` pinned — never a bare installDebug) before the first v9 push/export.
+
+## Decisions (user, 2026-09-26 — do not reverse silently)
+
+- **Wait for the TV merge** before building; plan now.
+- **TV home gets the magazine layout** (cover story, features), sized for 10-foot/D-pad —
+  parity, not a TV exception. (Phase 6.)
+- **Settings › Appearance: port theme (Dark/Light/Auto) + the seven accents**, stored per
+  device as on the web. Artwork mode is **not** ported — a deliberate difference, recorded
+  in phase 8. (Phase 8.)
+- **Portraits fetched on device, lazily**: when a Cast row or person page first shows a
+  person, fetch `tmdb-person-<id>` (w185) from the index's `credits.profile` and cache it;
+  no bulk download. (Phase 1.)
