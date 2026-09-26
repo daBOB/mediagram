@@ -42,13 +42,13 @@ export function parsePage(text) {
 }
 
 /**
- * The address of one page. The first is the plain shelf, so links made before
- * there were pages are still the first page's links.
+ * The address of one page. Always numbered: the plain `#/movies` is the
+ * department's front page, not the shelf's first page.
  * @param {string} section
  * @param {number} page
  */
 export function pageHash(section, page) {
-  return page <= 1 ? `#/${section}` : `#/${section}/page/${page}`;
+  return `#/${section}/page/${Math.max(1, page)}`;
 }
 
 /**

@@ -256,7 +256,7 @@ test("collection rename and deletion redraw without view-owned invalidation call
   expect(env.node("n-collections").textContent).toBe("0");
 });
 
-test("series page owns the season wall, encoded navigation and episode layout", async () => {
+test("series page shows one season's episodes and picks another through the URL", async () => {
   catalog = JSON.stringify([
     { ...film("Episode one"), kind: "ep", show: "A/B", season: 1, episode: 1, showKey: "show-key" },
     { ...film("Episode two"), kind: "ep", show: "A/B", season: 2, episode: 1, showKey: "show-key" },
@@ -265,9 +265,12 @@ test("series page owns the season wall, encoded navigation and episode layout", 
   await start();
   await env.navigate("#/series/A%2FB");
   expect(page()).toContain("Series description");
-  expect(page()).toContain("Season 1");
-  const card = descendants(env.node("main")).find((node) => node.className === "card" && textOf(node).includes("Season 2"))!;
-  card.fire("click");
+  expect(page()).toContain("Play S1 E1");
+  expect(page()).toContain("Episode one");
+  expect(page()).not.toContain("Episode two");
+  const pick = descendants(env.node("main")).find((node) => node.tagName === "SELECT")! as unknown as { value: string; fire: (type: string) => void };
+  pick.value = "Season 2";
+  pick.fire("change");
   expect(env.location.hash).toBe("#/series/A%2FB/Season%202");
   await env.navigate(env.location.hash);
   expect(page()).toContain("Episode two");
@@ -300,7 +303,7 @@ test("a film opens immediately and adopts a fresher position that lands before p
   await env.navigate("#/film/First");
   const pending = deferred<Response>();
   intercept = (url) => url.endsWith("/state") ? pending.promise : null;
-  descendants(env.node("main")).find((node) => node.className === "film-play")!.fire("click");
+  descendants(env.node("main")).find((node) => node.className.split(" ").includes("film-play"))!.fire("click");
   await settle();
   // The dialog does not wait on the state refresh below to open.
   expect(env.node("player").open).toBe(true);
@@ -324,7 +327,7 @@ test("a fresh position arriving after playback has moved on is not applied", asy
   await env.navigate("#/film/First");
   const pending = deferred<Response>();
   intercept = (url) => url.endsWith("/state") ? pending.promise : null;
-  descendants(env.node("main")).find((node) => node.className === "film-play")!.fire("click");
+  descendants(env.node("main")).find((node) => node.className.split(" ").includes("film-play"))!.fire("click");
   await settle();
   env.video.duration = 600;
   env.video.fire("loadedmetadata");
@@ -344,11 +347,11 @@ test("a superseded play cannot replace the latest title when refreshes finish in
   let reads = 0;
   intercept = (url) => url.endsWith("/state") ? responses[reads++]!.promise : null;
   await env.navigate("#/film/First");
-  descendants(env.node("main")).find((node) => node.className === "film-play")!.fire("click");
+  descendants(env.node("main")).find((node) => node.className.split(" ").includes("film-play"))!.fire("click");
   await settle();
   expect(env.video.src).toBe("/api/sets/First/stream");
   await env.navigate("#/film/Second");
-  descendants(env.node("main")).find((node) => node.className === "film-play")!.fire("click");
+  descendants(env.node("main")).find((node) => node.className.split(" ").includes("film-play"))!.fire("click");
   await settle();
   expect(env.video.src).toBe("/api/sets/Second/stream");
   responses[1]!.resolve(Response.json({}));
@@ -586,6 +589,9 @@ test.each([true, false])("successful empty profile discovery (remembers=%s) offe
 test("the Movies shelf is drawn a page at a time, with its page in the address", async () => {
   catalog = JSON.stringify(Array.from({ length: 50 }, (_, index) => film(`Film ${String(index + 1).padStart(2, "0")}`)));
   await start();
+  // The plain address is the department's front page; the shelf is paged.
+  expect(page()).toContain("All 50 films");
+  await env.navigate("#/movies/page/1");
   expect(page()).toContain("50 films · page 1 of 2");
   expect(page()).toContain("Film 48");
   expect(page()).not.toContain("Film 49");
@@ -675,13 +681,13 @@ describe("kids profiles", () => {
     await env.navigate("#/film/Family");
     const pins = descendants(env.node("main")).filter((node) => node.className.startsWith("pin-control"));
     expect(pins).toEqual([]);
-    expect(descendants(env.node("main")).some((node) => node.className === "film-play")).toBe(true);
+    expect(descendants(env.node("main")).some((node) => node.className.split(" ").includes("film-play"))).toBe(true);
   });
 
   test("the player offers no Kids mark on a kids profile", async () => {
     await start();
     await env.navigate("#/film/Family");
-    descendants(env.node("main")).find((node) => node.className === "film-play")!.fire("click");
+    descendants(env.node("main")).find((node) => node.className.split(" ").includes("film-play"))!.fire("click");
     await settle();
     expect(env.node("kids").hidden).toBe(true);
   });
@@ -775,4 +781,36 @@ describe("the magazine home page", () => {
     expect(kinds).not.toContain("feature feature-editor");
     expect(kinds.length).toBeGreaterThan(0);
   });
+});
+
+test("Settings opens on Appearance, with a way to switch profile", async () => {
+  await start();
+  await env.navigate("#/settings");
+  expect(page()).toContain("Appearance");
+  expect(page()).toContain("Follows your device");
+  expect(page()).toContain("Profile");
+});
+
+test("a title page keeps the chosen tab when watch state redraws it", async () => {
+  await start();
+  await env.navigate("#/film/First");
+  const tab = (label: string) => descendants(env.node("main"))
+    .find((node) => node.className.split(" ").includes("tab") && textOf(node) === label)!;
+  tab("Details").fire("click");
+  state.setWatchlisted("First", true);
+  await settle();
+  const selected = (label: string) => (tab(label) as unknown as { getAttribute(name: string): string | null }).getAttribute("aria-selected");
+  expect(selected("Details")).toBe("true");
+  expect(selected("Overview")).toBe("false");
+});
+
+test("Settings offers the admin tab only to a viewer the settings API answers", async () => {
+  await start();
+  await env.navigate("#/settings");
+  expect(page()).not.toContain("Library & Telegram");
+
+  intercept = (url) => (url.startsWith("/api/settings") ? new Response(null, { status: 401 }) : null);
+  await start();
+  await env.navigate("#/settings");
+  expect(page()).toContain("Library & Telegram");
 });

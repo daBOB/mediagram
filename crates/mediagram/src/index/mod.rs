@@ -10,6 +10,7 @@ mod merge_candidates;
 mod merge_columns;
 pub mod merge_conflicts;
 mod merge_copy;
+mod merge_credits;
 mod merge_diff;
 mod merge_shows;
 mod migrations;

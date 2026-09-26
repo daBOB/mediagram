@@ -7,8 +7,10 @@
 //! apart the first time only one of them was fixed.
 
 pub mod certification;
+pub mod credits;
 pub mod details;
 pub mod disk_cache;
+pub mod franchise;
 pub mod localized;
 pub mod poster_files;
 pub mod posters;

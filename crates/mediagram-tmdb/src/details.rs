@@ -54,6 +54,12 @@ pub struct TitleDetailsRow {
     /// TMDB's popularity when the payload was cached. What a "trending" pick
     /// ranks by; a snapshot, so it says what was trending then.
     pub popularity: Option<f64>,
+    /// The franchise (TMDB "collection") a film belongs to, if any. Absent
+    /// for a series — TMDB does not group series this way.
+    pub collection_id: Option<u64>,
+    pub collection_name: Option<String>,
+    /// What TMDB calls a series: `Scripted`, `Miniseries`, … Absent for a movie.
+    pub series_type: Option<String>,
 }
 
 /// Reads a details payload into a row, keeping only what a viewer would read.
@@ -91,5 +97,12 @@ pub fn from_details(kind: Kind, lang: &str, details: &DetailsResponse) -> TitleD
         // A separate request; see `crate::certification`.
         certification: None,
         popularity: details.popularity.filter(|p| *p > 0.0),
+        collection_id: details.belongs_to_collection.as_ref().map(|c| c.id),
+        collection_name: details
+            .belongs_to_collection
+            .as_ref()
+            .and_then(|c| c.name.clone())
+            .filter(|t| !t.trim().is_empty()),
+        series_type: details.series_type.clone().filter(|t| !t.trim().is_empty()),
     }
 }

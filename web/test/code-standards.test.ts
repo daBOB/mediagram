@@ -23,11 +23,11 @@ const ROOT = join(import.meta.dir, "..");
  * admin-gated router, and the runtime wiring to swap either live.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 909,
-  "public/lib/catalog/course-view.js": 285,
+  "public/app.js": 888,
+  "public/lib/catalog/course-view.js": 234,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,
-  "public/lib/catalog/shelf-view.js": 314,
+  "public/lib/catalog/shelf-view.js": 289,
   "public/lib/library.js": 309,
   "public/lib/playback/notes/markdown.js": 227,
   "public/lib/playback/player.js": 996,
@@ -35,9 +35,9 @@ const CEILINGS: Record<string, number> = {
   "public/lib/playback/streaming/hls-playback.js": 220,
   "public/lib/playback/transport.js": 471,
   "public/lib/watch-state.js": 502,
-  "public/styles/home.css": 382,
+  "public/styles/home.css": 363,
   "public/styles/playback.css": 752,
-  "public/styles/shell.css": 272,
+  "public/styles/shell.css": 259,
   "public/styles/theme.css": 209,
   "src/cache/held.ts": 202,
   "src/cache/reader.ts": 295,

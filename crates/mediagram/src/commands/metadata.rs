@@ -47,11 +47,20 @@ pub async fn run(cfg: &Config, args: MetadataArgs) -> Result<()> {
     }
 
     let (mut recorded, mut skipped) = (0usize, 0usize);
+    let (mut credited, mut franchised) = (0usize, 0usize);
     for (kind, id) in &titles {
         match title_details::fetch(&api, *kind, *id, &cfg.tmdb_language).await {
             Ok(row) => {
                 shows::upsert(&conn, &row)?;
                 recorded += 1;
+                if title_details::backfill_credits(&conn, &api, *kind, *id).await? {
+                    credited += 1;
+                }
+                if let Some(collection_id) = row.collection_id
+                    && title_details::backfill_franchise(&conn, &api, collection_id).await?
+                {
+                    franchised += 1;
+                }
             }
             // One title the provider will not answer for costs that title its
             // description and nothing else.
@@ -66,6 +75,12 @@ pub async fn run(cfg: &Config, args: MetadataArgs) -> Result<()> {
         "{recorded} title(s) described, {} held in total",
         shows::count(&conn)?
     );
+    if credited > 0 {
+        println!("{credited} title(s) got a cast and crew list");
+    }
+    if franchised > 0 {
+        println!("{franchised} franchise(s) recorded");
+    }
     if skipped > 0 {
         println!("{skipped} could not be read and were left alone");
     }

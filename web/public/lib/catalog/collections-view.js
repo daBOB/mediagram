@@ -15,11 +15,6 @@ import { addTitles } from "./collection-add.js";
 import { crumbs, heading } from "./shelf-view.js";
 
 /** Complete list pages; the application supplies navigation and playback. */
-export function renderLists(main, onOpen) {
-  heading(main, "Collections", countOf(state.collections().length, "list"));
-  main.append(listsView(onOpen));
-}
-
 export function renderList(main, list, sets, { play, onEditing, onGone }) {
   main.append(crumbs("collections", "Collections", null, []));
   if (!list) {
@@ -35,23 +30,8 @@ export function renderList(main, list, sets, { play, onEditing, onGone }) {
   main.append(listView(list, sets, (set) => play(set, sets)));
 }
 
-/** The lists, each a door to its own view, with a way to make another. */
-export function listsView(onOpen) {
-  const block = el("section", "level");
-
-  for (const list of state.collections()) {
-    const row = el("button", "row folder");
-    row.append(el("div", "num", ""));
-
-    const title = el("div", "title");
-    title.append(el("b", null, list.name));
-    row.append(title);
-    row.append(el("div", "meta", countOf(list.items.length, "title")));
-    row.append(el("span", "chevron", "›"));
-    row.addEventListener("click", () => onOpen(list.id));
-    block.append(row);
-  }
-
+/** Makes a list, named through the browser's own prompt. */
+export function newListButton() {
   const make = el("button", "make", "＋  New list");
   make.addEventListener("click", () => {
     // `prompt` rather than a hand-built dialog: naming a list is one line of
@@ -63,8 +43,7 @@ export function listsView(onOpen) {
       if (!made) window.alert("Could not create the list. Please try again.");
     });
   });
-  block.append(make);
-  return block;
+  return make;
 }
 
 /** The controls at the head of one list: fill it, rename it, or delete it. */

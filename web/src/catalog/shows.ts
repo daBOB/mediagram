@@ -62,11 +62,19 @@ export interface ProviderFacts {
   rating: number | null;
   /** The provider's popularity when its entry was cached: a snapshot, not live. */
   popularity: number | null;
+  /** The film franchise it belongs to (schema v9), e.g. the Star Trek films. */
+  collectionId: number | null;
+  collectionName: string | null;
+  /** A show's form (v9): `Miniseries`, `Scripted`, … */
+  seriesType: string | null;
+  /** A show's run: `Ended`, `Returning Series`, … */
+  status: string | null;
 }
 
 type FactsRow = {
   kind: string; id: number; genres: string | null; tagline: string | null;
   rating: number | null; fsk: string | null; popularity: number | null;
+  collectionId: number | null; collectionName: string | null; seriesType: string | null; status: string | null;
 };
 
 /**
@@ -77,7 +85,8 @@ type FactsRow = {
  * row in one pass, and a genre, Kids or editorial shelf needs all of them.
  * Split here so the page never has to know the provider's separator.
  *
- * The age rating is schema v7 and popularity v8. An older index — a channel
+ * The age rating is schema v7, popularity v8, and the franchise and series
+ * type v9. An older index — a channel
  * whose uploader is not upgraded yet — lacks those columns, and its titles
  * read as unrated and unranked. Every other column is required: a table
  * missing one is broken, and says so.
@@ -90,11 +99,14 @@ export function providerFactsByShow(db: Database): Map<string, ProviderFacts> {
   );
   if (columns.size === 0) return byKey; // No such table: an index written before it.
   // Only these two literals are ever spliced into the query below.
-  const optional = (name: "certification" | "popularity") => (columns.has(name) ? name : "NULL");
+  const optional = (name: "status" | "certification" | "popularity" | "collection_id" | "collection_name" | "series_type") =>
+    (columns.has(name) ? name : "NULL");
   const rows = db
     .query(
-      `SELECT kind, id, genres, tagline, rating,
-              ${optional("certification")} AS fsk, ${optional("popularity")} AS popularity
+      `SELECT kind, id, genres, tagline, rating, ${optional("status")} AS status,
+              ${optional("certification")} AS fsk, ${optional("popularity")} AS popularity,
+              ${optional("collection_id")} AS collectionId, ${optional("collection_name")} AS collectionName,
+              ${optional("series_type")} AS seriesType
          FROM shows WHERE source = 'tmdb'`,
     )
     .all() as FactsRow[];
@@ -109,6 +121,10 @@ export function providerFactsByShow(db: Database): Map<string, ProviderFacts> {
       tagline: row.tagline?.trim() || null,
       rating: row.rating ?? null,
       popularity: row.popularity ?? null,
+      collectionId: row.collectionId ?? null,
+      collectionName: row.collectionName?.trim() || null,
+      seriesType: row.seriesType?.trim() || null,
+      status: row.status?.trim() || null,
     });
   }
   return byKey;

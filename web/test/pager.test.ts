@@ -34,8 +34,8 @@ describe("parsePage", () => {
 });
 
 describe("pageHash", () => {
-  test("page one is the plain shelf, so older links stay the same", () => {
-    expect(pageHash("movies", 1)).toBe("#/movies");
+  test("every page is numbered, because the plain #/movies is the department's front page", () => {
+    expect(pageHash("movies", 1)).toBe("#/movies/page/1");
     expect(pageHash("movies", 4)).toBe("#/movies/page/4");
   });
 });

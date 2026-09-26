@@ -120,6 +120,44 @@ pub struct DetailsResponse {
     /// `/tv/{id}` payload, so season posters cost no request either.
     #[serde(default)]
     pub seasons: Vec<SeasonRef>,
+
+    /// The franchise a film belongs to — TMDB's "Collection" — if any. Only
+    /// its id and name: the overview lives at `/collection/{id}`, its own
+    /// request; see `crate::franchise`.
+    #[serde(default)]
+    pub belongs_to_collection: Option<CollectionRef>,
+    /// What TMDB calls a series: `Scripted`, `Miniseries`, `Documentary`,
+    /// `Reality`, `News`, `Talk Show`, `Video`. Absent for a movie.
+    #[serde(default, rename = "type")]
+    pub series_type: Option<String>,
+    /// A series' creators. Absent for a movie, and not on `/tv/{id}/credits`
+    /// either — TMDB keeps it only on the details payload.
+    #[serde(default)]
+    pub created_by: Vec<CreatedBy>,
+}
+
+/// The franchise (TMDB "collection") a film's `belongs_to_collection` names.
+///
+/// `name` is optional though TMDB always sends it: these ride on the details
+/// payload, and a required field there that one record left null would fail
+/// the whole parse — costing the title its description and its artwork for
+/// the sake of a franchise name.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct CollectionRef {
+    pub id: u64,
+    #[serde(default)]
+    pub name: Option<String>,
+}
+
+/// One entry of a series' `created_by`. `name` is optional for the reason
+/// [`CollectionRef`]'s is; a creator without one is skipped.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct CreatedBy {
+    pub id: u64,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub profile_path: Option<String>,
 }
 
 /// One entry of a series' `seasons`: its number and its artwork, if any.

@@ -22,6 +22,9 @@ fn row(overview: &str) -> TitleDetailsRow {
         total_episodes: None,
         certification: None,
         popularity: None,
+        collection_id: None,
+        collection_name: None,
+        series_type: None,
     }
 }
 
@@ -106,12 +109,19 @@ fn a_newer_sidecar_is_not_rewound_by_an_older_build() {
     drop(open_or_create(&path).unwrap());
     Connection::open(&path)
         .unwrap()
-        .execute("UPDATE meta SET value = ?1 WHERE key = 'schema_version'", [&newer])
+        .execute(
+            "UPDATE meta SET value = ?1 WHERE key = 'schema_version'",
+            [&newer],
+        )
         .unwrap();
 
     let conn = open_or_create(&path).unwrap();
     let recorded: String = conn
-        .query_row("SELECT value FROM meta WHERE key = 'schema_version'", [], |row| row.get(0))
+        .query_row(
+            "SELECT value FROM meta WHERE key = 'schema_version'",
+            [],
+            |row| row.get(0),
+        )
         .unwrap();
     assert_eq!(recorded, newer);
 }

@@ -92,28 +92,9 @@
 .empty code { font-family: ui-monospace, monospace; font-size: 0.8125rem; padding: 4px 8px; border-radius: 4px; background: var(--paper-sunk); }
 .error { padding: 24px; border-radius: var(--radius); background: var(--accent-tint); color: var(--accent); max-width: 65ch; overflow-wrap: anywhere; }
 
-.series-header { position: relative; display: flex; align-items: flex-start; gap: clamp(24px, 3.5vw, 56px); margin: 8px 0 40px; padding-bottom: 40px; border-bottom: 1px solid var(--rule-soft); }
-.series-art { flex: 0 0 180px; aspect-ratio: 2 / 3; overflow: hidden; border-radius: 3px; background: var(--paper-sunk); box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.8); }
-.series-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.film-page .series-art { flex-basis: 240px; }
-.series-facts { min-width: 0; max-width: 68ch; }
-.series-facts p { margin: 0 0 12px; }
-.series-scale { font-size: 0.9375rem; font-weight: 500; }
-.series-years, .series-picture, .series-provenance, .series-age { color: var(--ink-3); font-size: 0.8125rem; overflow-wrap: anywhere; }
-.series-details { display: grid; gap: 8px; margin: 16px 0; }
-.series-details .detail { display: flex; gap: 16px; font-size: 0.8125rem; }
-.series-details dt { flex: 0 0 80px; color: var(--ink-3); }
-.series-details dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
-.series-tagline { color: var(--ink); font: italic 400 clamp(1.3rem, 1.9vw, 1.7rem)/1.3 var(--serif); max-width: 36ch; }
-.series-overview { color: var(--ink-2); font: 400 1.125rem/1.65 var(--serif); max-width: 62ch; }
-.series-overview::first-letter { float: left; margin: 0.06em 0.1em 0 0; font: 600 3.4em/0.8 var(--display); color: var(--ink); }
 .genre-links { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 0.8125rem; }
 .genre { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border: 1px solid var(--rule); border-radius: 999px; color: var(--ink-2); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; transition: border-color 320ms var(--ease), color 320ms var(--ease); }
 .genre:hover { border-color: var(--accent); color: var(--accent); }
-.film-score { color: var(--ink-2); font-size: 0.875rem; }
-.film-play { min-height: 52px; padding: 0 30px; border: 1px solid var(--ink); border-radius: 2px; background: var(--ink); color: var(--paper); font-size: 0.9375rem; font-weight: 500; letter-spacing: 0.02em; white-space: nowrap; transition: background-color 480ms var(--ease), color 480ms var(--ease); }
-.film-play:hover { background: transparent; color: var(--ink); }
-.film-play + p { margin-top: 24px; }
 .shelf-sub { font: 600 1.5rem/1.2 var(--display); margin: 40px 0 20px; }
 
 @media (max-width: 1100px) {
@@ -127,10 +108,6 @@
   .card .body { grid-template-columns: minmax(0, 1fr); }
   .shelf-aside { width: 100%; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
   .shelf-head { gap: 12px; }
-  .series-header { gap: 20px; }
-  .series-art { flex-basis: 96px; }
-  .film-page { flex-direction: column; }
-  .film-page .series-art { flex: none; width: 128px; }
   .row { flex-wrap: wrap; gap: 8px 12px; }
   .row .meta { text-align: left; }
   .row.folder .num { display: none; }
@@ -138,31 +115,7 @@
   .row .title { min-width: 50%; }
 }
 
-/* A title page's backdrop band: bleeds to the column's edges and up under
-   the masthead, fades into the page, and lets the heading and facts below
-   sit over its lower edge. */
-.title-band {
-  position: relative;
-  height: clamp(340px, 60vh, 640px);
-  margin: calc(-1 * (var(--main-top) + var(--masthead-height))) calc(-1 * var(--gutter)) calc(-1 * clamp(150px, 24vh, 280px));
-  overflow: hidden;
-  pointer-events: none;
-}
-.title-band img { width: 100%; height: 100%; object-fit: cover; object-position: 60% 25%; animation: band-in 1200ms var(--ease) both; }
-.title-band::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--paper) 40%, transparent) 0%, color-mix(in srgb, var(--paper) 0%, transparent) 30%, color-mix(in srgb, var(--paper) 70%, transparent) 66%, var(--paper) 100%),
-    linear-gradient(90deg, color-mix(in srgb, var(--paper) 70%, transparent) 0%, transparent 60%);
-}
-.title-band ~ * { position: relative; }
-.title-band + .shelf-head, .title-band + .crumbs { border-bottom-color: transparent; }
-@keyframes band-in { from { opacity: 0; transform: scale(1.04); } }
 
-.film-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 20px; }
-.film-actions + p { margin-top: 28px; }
 .pin-control {
   min-height: 44px;
   padding: 0 4px;
@@ -176,12 +129,27 @@
 }
 .pin-control:hover { color: var(--ink); border-color: var(--ink); }
 .pin-control.on { color: var(--accent); border-color: var(--accent); }
-.series-facts .pin-control { margin-bottom: 12px; }
-@media (max-width: 900px) {
-  .title-band { height: 42vh; margin: calc(-1 * var(--main-top)) -16px -110px; }
-}
 
 /* A redraw of the page already showing (see `lib/redraw.js`) replays no
    entrance: the cover and bands are already where the viewer saw them. A
    turn of the cover still fades. */
-.settled .cover-slide:not(.turned), .settled .cover-slide:not(.turned) .cover-image, .settled .title-band img { animation: none; }
+.settled .cover-slide:not(.turned), .settled .cover-slide:not(.turned) .cover-image { animation: none; }
+
+/* Genres as image tiles: the subject index, and later the Movies page's row. */
+.genre-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 14px; }
+.genre-tile { position: relative; display: flex; flex-direction: column; justify-content: flex-end; aspect-ratio: 16 / 9; padding: 16px 18px; overflow: hidden; border-radius: 12px; background: var(--paper-sunk); color: var(--on-image); text-decoration: none; isolation: isolate; }
+.genre-tile img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; transition: transform 1100ms var(--ease); }
+.genre-tile::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg, rgba(8, 8, 9, 0.82), rgba(8, 8, 9, 0.12) 70%); }
+.genre-tile:not(:has(img)) { color: var(--ink); }
+.genre-tile:not(:has(img))::before { display: none; }
+.genre-tile:hover img { transform: scale(1.05); }
+.genre-tile-name { font: 500 1.35rem/1.1 var(--display); letter-spacing: -0.01em; }
+.genre-tile-count { margin-top: 4px; font-size: 0.75rem; letter-spacing: 0.08em; opacity: 0.8; }
+
+/* Search: filter pills over the grouped results. */
+.search-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: -12px 0 8px; }
+.search-filter { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 18px; border: 1px solid var(--rule); border-radius: 999px; background: none; color: var(--ink-2); font-size: 0.875rem; transition: color 320ms var(--ease), background-color 320ms var(--ease), border-color 320ms var(--ease); }
+.search-filter:hover { color: var(--ink); border-color: color-mix(in srgb, var(--ink) 45%, transparent); }
+.search-filter[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.search-filter[aria-pressed="true"] .n { color: inherit; opacity: 0.7; }
+.search-part .shelf-sub { margin-top: 36px; }

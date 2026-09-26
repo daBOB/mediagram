@@ -322,3 +322,93 @@ fn show_text_is_only_filled_from_a_row_in_the_same_language() {
     assert_eq!(overview, None, "English text must not fill a German row");
     assert_eq!(rating, Some(7.1), "a figure reads the same in any language");
 }
+
+#[test]
+fn credits_and_franchises_this_index_lacks_are_copied_whole() {
+    let (_local_dir, local) = open_local();
+    let (_channel_dir, channel_path, channel) = open_channel();
+    channel
+        .execute(
+            "INSERT INTO credits(source, kind, id, ord, person_id, name, role, dept, profile)
+             VALUES ('tmdb', 'movie', 550, 0, 1, 'Lead', 'Hero', 'cast', '/a.jpg')",
+            [],
+        )
+        .unwrap();
+    channel
+        .execute(
+            "INSERT INTO franchises(source, id, name, overview)
+             VALUES ('tmdb', 115, 'A Franchise', 'An overview.')",
+            [],
+        )
+        .unwrap();
+    drop(channel);
+
+    let report = merge_from(&local, &channel_path, keep_all).unwrap();
+
+    assert_eq!(report.credits_added, 1);
+    assert_eq!(report.franchises_added, 1);
+    let (name, profile): (String, String) = local
+        .query_row(
+            "SELECT name, profile FROM credits WHERE source='tmdb' AND kind='movie' AND id=550",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!(name, "Lead");
+    assert_eq!(profile, "/a.jpg");
+    let franchise_name: String = local
+        .query_row(
+            "SELECT name FROM franchises WHERE source='tmdb' AND id=115",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(franchise_name, "A Franchise");
+}
+
+#[test]
+fn a_title_already_credited_locally_is_left_alone() {
+    let (_local_dir, local) = open_local();
+    local
+        .execute(
+            "INSERT INTO credits(source, kind, id, ord, person_id, name, role, dept)
+             VALUES ('tmdb', 'movie', 550, 0, 9, 'Local Cast', NULL, 'cast')",
+            [],
+        )
+        .unwrap();
+    let (_channel_dir, channel_path, channel) = open_channel();
+    channel
+        .execute(
+            "INSERT INTO credits(source, kind, id, ord, person_id, name, role, dept)
+             VALUES ('tmdb', 'movie', 550, 0, 1, 'Channel Cast', NULL, 'cast')",
+            [],
+        )
+        .unwrap();
+    drop(channel);
+
+    let report = merge_from(&local, &channel_path, keep_all).unwrap();
+
+    assert_eq!(
+        report.credits_added, 0,
+        "a title already credited is never topped up"
+    );
+    let count: i64 = local
+        .query_row("SELECT COUNT(*) FROM credits", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(count, 1);
+}
+
+#[test]
+fn a_v8_channel_index_has_no_credits_table_and_still_merges() {
+    let (_local_dir, local) = open_local();
+    let (_channel_dir, channel_path, channel) = open_channel_at(8);
+    insert_set(&channel, "S7", "A Film", "complete", 1);
+    insert_part(&channel, "S7", 0, 100, 7001);
+    drop(channel);
+
+    let report = merge_from(&local, &channel_path, keep_all).unwrap();
+
+    assert_eq!(report.sets_added, ["S7"]);
+    assert_eq!(report.credits_added, 0);
+    assert_eq!(report.franchises_added, 0);
+}

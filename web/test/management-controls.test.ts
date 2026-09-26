@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { chooseProfile } from "../public/lib/profile-picker.js";
-import { listControls, listsView } from "../public/lib/catalog/collections-view.js";
+import { listControls, newListButton } from "../public/lib/catalog/collections-view.js";
 import * as state from "../public/lib/watch-state.js";
 import { browserEnvironment, deferred, Node, settle } from "./support/player-environment.js";
 
@@ -130,7 +130,8 @@ test("profile deletion failure keeps the chooser and the profile", async () => {
 });
 
 test("an unreadable list creation reply reports failure and leaves the shelf usable", async () => {
-  const root = listsView(() => {});
+  const root = new Node("DIV");
+  root.append(newListButton() as unknown as Node);
   env.respondWith(async () => new Response("not json"));
   button(root, "＋  New list").fire("click");
   await settle();

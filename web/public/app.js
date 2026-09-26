@@ -6,7 +6,7 @@
  * server side.
  *
  * Routing is the URL hash, so the back button works and a view can be linked:
- *   #/movies                     #/series                #/tutorials
+ *   #/movies  #/movies/page/2   #/series                #/tutorials
  *   #/series/Widow%27s%20Bay     #/tutorials/Geldhochschule
  */
 
@@ -24,23 +24,28 @@ import { watchStatus } from "./lib/status/status-view.js";
 import { viewSettings as renderSettingsPage } from "./lib/settings-view.js";
 import { probeSettings } from "./lib/settings-api.js";
 import { renderCollection } from "./lib/catalog/course-view.js";
-import { SECTIONS, collectionGrid, emptyState, heading, movieGrid, setGrid } from "./lib/catalog/shelf-view.js";
+import { SECTIONS, emptyState, heading, movieGrid, setGrid } from "./lib/catalog/shelf-view.js";
 import { GRID, LIST, setShelfMode, shelfMode } from "./lib/catalog/shelf-mode.js";
 import { pageOf, pager, parsePage } from "./lib/catalog/pager.js";
 import { pickFeatured } from "./lib/catalog/featured-picks.js";
 import { openFeatured } from "./lib/catalog/featured-reel.js";
 import * as state from "./lib/watch-state.js";
 import { resumeAt } from "./lib/resume-point.js";
-import { renderLists, renderList } from "./lib/catalog/collections-view.js";
+import { renderList } from "./lib/catalog/collections-view.js";
+import { franchisesIn, renderCollectionsPage, renderFranchise } from "./lib/catalog/collections-page.js";
 import { chooseProfile, initialOf } from "./lib/profile-picker.js";
 import { homeShelves } from "./lib/catalog/home-shelves.js";
 import { renderHome } from "./lib/catalog/home-view.js";
 import { homeEditorial } from "./lib/catalog/editorial-picks.js";
 import { editorsChoice, loadEditorsChoice, onEditorsChoice } from "./lib/editors-choice.js";
 import { describeFilm, filmPage } from "./lib/catalog/film-page.js";
-import { titleBand } from "./lib/catalog/title-band.js";
+import { renderSeries } from "./lib/catalog/series-page.js";
+import { renderMoviesDept, renderShowsDept } from "./lib/catalog/department-pages.js";
+import { renderSettings } from "./lib/catalog/settings-page.js";
+import { renderPerson, titlesByKey, visiblePeople } from "./lib/catalog/cast.js";
+import { similarTo } from "./lib/catalog/similar.js";
 import { drawAt } from "./lib/redraw.js";
-import { genreShelf } from "./lib/catalog/genres.js";
+import { renderGenre, renderGenres, renderLatest } from "./lib/catalog/utility-pages.js";
 import { forKidsProfile } from "./lib/age-rating.js";
 
 const main = document.getElementById("main");
@@ -84,12 +89,12 @@ let library = { movies: [], series: [], tutorials: [] };
 let byId = new Map();
 
 /** Views that are neither a catalog shelf nor one built from watch state. */
-const PAGES = new Set(["home", "search", "system", "settings", "film", "genre"]);
+const PAGES = new Set(["home", "search", "system", "film", "genre", "genres", "latest", "settings", "person"]);
 
 /** The shelves that come from what has been watched rather than the catalog. */
 const KEPT = {
   continue: { label: "Continue", empty: "Nothing started yet." },
-  watchlist: { label: "Watchlist", empty: "Nothing on the list." },
+  watchlist: { label: "My List", empty: "Nothing on your list." },
   collections: { label: "Collections", empty: "No lists yet." },
 };
 
@@ -210,16 +215,28 @@ function viewMovies(requested) {
  */
 function movieControls() {
   const controls = el("div", "shelf-modes");
-  const picks = () => pickFeatured(library.movies, state.isWatched, Math.random);
-  if (picks().length > 0) {
-    const featured = el("button", "mode featured-open", "Featured");
-    featured.type = "button";
-    featured.addEventListener("click", () => openFeatured(picks(), { play: (set) => play(set), openFilm }));
-    controls.append(featured);
-  }
+  const featured = reelButton();
+  if (featured) controls.append(featured);
   controls.append(shelfToggle());
   return controls;
 }
+
+/** The Featured reel's button, when there is a film left to suggest. */
+function reelButton() {
+  const picks = () => pickFeatured(library.movies, state.isWatched, Math.random);
+  if (picks().length === 0) return null;
+  const featured = el("button", "mode featured-open", "Featured");
+  featured.type = "button";
+  featured.addEventListener("click", () => openFeatured(picks(), { play: (set) => play(set), openFilm }));
+  return featured;
+}
+
+/** What a department's front page draws from. */
+const deptContext = () => ({
+  library, byId, progress: state.inProgress(), watchedAt: state.watchedAt, isWatched: state.isWatched,
+  kids: kidsProfile(), play: (set) => play(set), openFilm, reel: reelButton(),
+  openShow: (section, name) => { location.hash = `#/${section}/${encodeURIComponent(name)}`; },
+});
 
 /** A film's card opens its page; the page's button plays it. */
 function openFilm(set) {
@@ -237,12 +254,12 @@ function viewFilm(setId) {
     main.append(el("p", "error", "That film is not in the library any more."));
     return;
   }
-  const band = titleBand(set);
-  if (band) main.append(band);
-  heading(main, set.title ?? set.setId);
   const page = filmPage(set, {
     resume: resumeAt(state.progressOf(set.setId)),
     onPlay: (film) => play(film),
+    similar: () => similarTo(set, library.movies, (film) => state.isWatched(film.setId)),
+    openFilm,
+    hasFranchise: franchisesIn(library.movies).some((franchise) => franchise.id === set.collectionId),
   });
   main.append(page);
   if (set.showKey) {
@@ -251,57 +268,6 @@ function viewFilm(setId) {
       .then((meta) => describeFilm(page, meta))
       .catch(() => {});
   }
-}
-
-/** Everything tagged with one genre: films first, then series. */
-function viewGenre(name) {
-  const { films, series } = genreShelf(library, name);
-  heading(main, name, countOf(films.length + series.length, "title"));
-  if (films.length + series.length === 0) {
-    main.append(el("p", "empty", "Nothing in the library is tagged with this genre."));
-    return;
-  }
-  // Labelled only when both are there; a shelf of one kind says what it is.
-  const both = films.length > 0 && series.length > 0;
-  if (films.length > 0) {
-    if (both) main.append(el("h2", "shelf-sub", SECTIONS.movies.label));
-    main.append(movieGrid(films, openFilm, { mode: GRID }));
-  }
-  if (series.length > 0) {
-    if (both) main.append(el("h2", "shelf-sub", SECTIONS.series.label));
-    main.append(
-      collectionGrid("series", series, (title) => {
-        location.hash = `#/series/${encodeURIComponent(title)}`;
-      }, { mode: GRID }),
-    );
-  }
-}
-
-/** Shows and courses: a grid of collections, each opening its own view. */
-function viewCollections(section) {
-  const collections = library[section];
-  // Series only. A course has no artwork — `posterKeyFor` files everything
-  // under a TMDB id and a course has none — so a wall of plates would be a
-  // wall of initials, and a hundred and seventy lessons are a list anyway.
-  const offersModes = section === "series" && collections.length > 0;
-  const mode = offersModes ? shelfMode() : LIST;
-  heading(main,
-    SECTIONS[section].label,
-    countOf(collections.length, SECTIONS[section].extent),
-    offersModes ? shelfToggle() : null,
-  );
-  if (collections.length === 0) return main.append(emptyState(section, { kids: kidsProfile() }));
-
-  main.append(
-    collectionGrid(
-      section,
-      collections,
-      (name) => {
-        location.hash = `#/${section}/${encodeURIComponent(name)}`;
-      },
-      { mode },
-    ),
-  );
 }
 
 /** Only the latest request may open, and closing the player withdraws it. */
@@ -455,7 +421,7 @@ function showProfile() {
 
 // The name in the header is also the way to become somebody else. A kids
 // profile is a filter, not a lock, so anyone can switch back from here.
-document.getElementById("who").addEventListener("click", async () => {
+async function switchProfile() {
   const before = state.profileId();
   const chosen = await chooseProfile(document.body, { canCancel: true });
   if (chosen === before) return;
@@ -463,7 +429,8 @@ document.getElementById("who").addEventListener("click", async () => {
   applyCatalog();
   refreshShelfCounts();
   route();
-});
+}
+document.getElementById("who").addEventListener("click", switchProfile);
 
 /** What was started and not finished, most recent first. */
 function viewContinue() {
@@ -493,11 +460,13 @@ async function viewSearch(query, generation) {
   try {
     const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
     if (!response.ok) throw new Error(`the server answered ${response.status}`);
-    const { hits } = await response.json();
+    const { hits, people } = await response.json();
     if (generation !== routeGeneration) return;
     main.textContent = "";
     // The server's search knows no profile; keep only what this one can see.
-    renderSearch(main, query, hits.filter((hit) => byId.has(hit.setId)), play);
+    renderSearch(main, query, hits.filter((hit) => byId.has(hit.setId)), {
+      ...deptContext(), shows: library.series, people: visiblePeople(people ?? [], titlesByKey(library)), franchises: franchisesIn(library.movies), lists: state.collections(),
+    });
   } catch (error) {
     if (generation !== routeGeneration) return;
     main.textContent = "";
@@ -606,8 +575,12 @@ async function offerSettings() {
   } catch {
     return;
   }
-  document.getElementById("nav-settings").hidden = false;
+  adminSettings = true;
+  // Settings may already be open: redraw so the tab appears.
+  if (location.hash.startsWith("#/settings")) route();
 }
+/** Whether this viewer is offered the admin tab; set by `offerSettings`. */
+let adminSettings = false;
 
 /**
  * Stops the status panel polling, if one is open.
@@ -631,11 +604,6 @@ function viewSystem() {
 /** Stops the Settings page's async work, if any is in flight. */
 let stopSettings = null;
 
-/** Telegram and cache, admin-gated. Local viewers only — see `offerSettings`. */
-function viewSettings() {
-  heading(main, "Settings", "Telegram connection and cache size");
-  stopSettings = renderSettingsPage(main);
-}
 
 // A route visit survives redraws, but not leaving and returning to its hash.
 let navigationGeneration = 0;
@@ -694,12 +662,23 @@ function drawRoute() {
 
   if (known === "home") return viewHome();
   if (known === "film") return viewFilm(decodeURIComponent(name ?? ""));
-  if (known === "genre") return viewGenre(decodeURIComponent(name ?? ""));
+  const openers = { openFilm, openShow: (kind, title) => { location.hash = `#/${kind}/${encodeURIComponent(title)}`; } };
+  if (known === "genre") return renderGenre(main, library, decodeURIComponent(name ?? ""), openers);
+  if (known === "genres") return renderGenres(main, library);
+  if (known === "latest") return renderLatest(main, library, byId, openers);
+  if (known === "person") return renderPerson(main, name ?? "", { ...openers, byKey: titlesByKey(library) }, () => generation === routeGeneration);
+  if (known === "settings") {
+    stopSettings = renderSettings(main, {
+      profile: state.profile(), switchProfile, systemVisible: !document.getElementById("nav-system").hidden,
+      admin: adminSettings ? renderSettingsPage : null,
+    });
+    return;
+  }
   if (known === "system") return viewSystem();
-  if (known === "settings") return viewSettings();
   if (known === "continue") return viewContinue();
   if (known === "watchlist") return viewWatchlist();
   if (known === "collections") {
+    if (name?.startsWith("tmdb-")) return renderFranchise(main, name.slice(5), { library, openFilm }, () => generation === routeGeneration);
     const list = state.collections().find((entry) => entry.id === decodeURIComponent(name ?? ""));
     return name
       ? renderList(main, list, list ? setsFor(list.items) : [], {
@@ -709,21 +688,21 @@ function drawRoute() {
             }
           },
         })
-      : renderLists(main, (id) => { location.hash = `#/collections/${encodeURIComponent(id)}`; });
+      : renderCollectionsPage(main, { library, lists: state.collections(), setsFor });
   }
 
   // Checked before a collection name: films have no collections, and "page"
   // must never be looked up as one.
-  if (known === "movies") return viewMovies(name === "page" ? parsePage(folders[0]) : 1);
+  if (known === "movies") return name === "page" ? viewMovies(parsePage(folders[0])) : renderMoviesDept(main, deptContext());
 
   if (name) {
     const decoded = decodeURIComponent(name);
-    renderCollection(main, known, library[known].find((entry) => entry.name === decoded), decoded,
-      folders.map(decodeURIComponent), { play, open: (section, collection, path) => {
+    (known === "series" ? renderSeries : renderCollection)(main, known, library[known].find((entry) => entry.name === decoded), decoded,
+      folders.map(decodeURIComponent), { play, shelf: library[known], open: (section, collection, path) => {
         location.hash = `#/${section}/${[collection, ...path].map(encodeURIComponent).join("/")}`;
       } });
   }
-  else viewCollections(known);
+  else renderShowsDept(main, known, deptContext());
 }
 
 /**

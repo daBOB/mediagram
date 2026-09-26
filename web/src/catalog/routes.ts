@@ -10,6 +10,7 @@ import { PosterStore, backdropKeyFor, posterKeyFor, seasonPosterKeyFor } from ".
 import { bodiless, withBody } from "../response";
 import { SearchIndex } from "../search/index";
 import { providerFactsByShow, showMeta } from "./shows";
+import { creditsFor, franchises, peopleSearch, personFor } from "./credits";
 import type { SheetStore } from "../thumbs/sheets";
 import { artworkResponse } from "./artwork-routes";
 
@@ -17,6 +18,8 @@ const SUMMARY_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/summary$/;
 const AUDIO_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/audio$/;
 const HELD_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/held$/;
 const SHOW_PATH = /^\/api\/shows\/(tmdb-(?:movie|tv)-\d{1,12})$/;
+const CREDITS_PATH = /^\/api\/shows\/(tmdb-(?:movie|tv)-\d{1,12})\/credits$/;
+const PERSON_PATH = /^\/api\/people\/(\d{1,12})$/;
 const SUBTITLE_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/subtitles\/([A-Za-z]{2,8})\.vtt$/;
 
 export interface CatalogRouterOptions {
@@ -33,6 +36,8 @@ export function createCatalogRouter(options: CatalogRouterOptions) {
   const posters = options.posters ?? new PosterStore(null);
   const index = new SearchIndex(listSearchable(db));
   const provider = providerFactsByShow(db);
+  const has = (key: string) => posters.has(key);
+  const people = peopleSearch(db, has);
 
   // Catalog and search results share the same browser-facing projection.
   // Storage/provider identifiers never become media locations in a response.
@@ -54,6 +59,10 @@ export function createCatalogRouter(options: CatalogRouterOptions) {
       tagline: facts?.tagline ?? null,
       rating: facts?.rating ?? null,
       popularity: facts?.popularity ?? null,
+      collectionId: facts?.collectionId ?? null,
+      collectionName: facts?.collectionName ?? null,
+      seriesType: facts?.seriesType ?? null,
+      showStatus: facts?.status ?? null,
       seasonPoster: posters.has(seasonKey) ? seasonKey : null,
       hasSummary: summary(db, set.setId) !== null,
       subtitles: subtitleLanguages(db, set.setId),
@@ -68,10 +77,18 @@ export function createCatalogRouter(options: CatalogRouterOptions) {
         .map(({ summary: _summary, matched, excerpt, ...set }) => ({
           ...forBrowser(set), matched, excerpt,
         }));
-      return json({ query: request.query ?? "", hits });
+      return json({ query: request.query ?? "", hits, people: people(request.query ?? "") });
     }
     if (request.path === "/api/sets") return json(listPlayable(db).map(forBrowser));
 
+    if (request.path === "/api/franchises") return json(franchises(db));
+    const credits = CREDITS_PATH.exec(request.path);
+    if (credits) return json(creditsFor(db, credits[1]!, has));
+    const person = PERSON_PATH.exec(request.path);
+    if (person) {
+      const found = personFor(db, Number(person[1]), has);
+      return found === null ? bodiless(404) : json(found);
+    }
     const show = SHOW_PATH.exec(request.path);
     if (show) {
       const meta = showMeta(db, show[1]!);

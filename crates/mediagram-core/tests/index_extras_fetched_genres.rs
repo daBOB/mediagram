@@ -13,7 +13,12 @@ use mediagram_tmdb::details::TitleDetailsRow;
 use mlib_spec::Kind;
 
 fn core(dir: &Path) -> std::sync::Arc<Core> {
-    Core::new(dir.display().to_string(), 1, "test-hash".into(), "test-device".into())
+    Core::new(
+        dir.display().to_string(),
+        1,
+        "test-hash".into(),
+        "test-device".into(),
+    )
 }
 
 /// `<dir>/catalog/current/library.db` at the current schema.
@@ -56,6 +61,9 @@ fn fetched_row(id: u64, genres: &str) -> TitleDetailsRow {
         total_episodes: None,
         certification: None,
         popularity: None,
+        collection_id: None,
+        collection_name: None,
+        series_type: None,
     }
 }
 
@@ -77,7 +85,10 @@ async fn a_title_the_index_omits_still_gets_genres_from_a_device_fetch() {
 
     let sets = core.list_sets().await.unwrap();
 
-    assert_eq!(set_of(&sets, "01FETCHEDONLY00000000000001").genres, vec!["Drama"]);
+    assert_eq!(
+        set_of(&sets, "01FETCHEDONLY00000000000001").genres,
+        vec!["Drama"]
+    );
 }
 
 /// The index's own row wins over a fetched one for the same title — the
@@ -99,7 +110,10 @@ async fn index_genres_are_preferred_to_a_fetched_value_for_the_same_title() {
 
     let sets = core.list_sets().await.unwrap();
 
-    assert_eq!(set_of(&sets, "01BOTHDESCRIBE00000000000A").genres, vec!["Drama"]);
+    assert_eq!(
+        set_of(&sets, "01BOTHDESCRIBE00000000000A").genres,
+        vec!["Drama"]
+    );
 }
 
 /// A fetched sidecar that cannot be read — no `shows` table at all, standing
@@ -125,6 +139,8 @@ async fn a_broken_fetched_sidecar_does_not_take_the_catalog_down() {
 
     let sets = core.list_sets().await.unwrap();
 
-    assert_eq!(set_of(&sets, "01STILLLISTED0000000000001").genres, vec!["Drama"]);
+    assert_eq!(
+        set_of(&sets, "01STILLLISTED0000000000001").genres,
+        vec!["Drama"]
+    );
 }
-

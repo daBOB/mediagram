@@ -6,7 +6,9 @@
  * film sharing an id with a series never collides with it. A season's own
  * artwork adds `-s<n>` to its show's key: `tmdb-tv-1396-s2`. A title's
  * backdrop, its wide landscape artwork, adds `-bg`: `tmdb-movie-550-bg`.
- * Seasons have none. `mlib_spec::package::poster_key_is_valid` is the same rule.
+ * Seasons have none. A cast member's portrait is `tmdb-person-<id>`.
+ * `mlib_spec::package::poster_key_is_valid` is the same rule for what a
+ * package may carry (portraits, like backdrops, it does not).
  *
  * The key reaches a URL and then a file name, so it is spelled out rather
  * than passed through: a store that accepts any string is one caption away
@@ -16,7 +18,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
-const KEY = /^tmdb-(?:movie|tv)-\d{1,12}(?:-s\d{1,4}|-bg)?$/;
+const KEY = /^tmdb-(?:(?:movie|tv)-\d{1,12}(?:-s\d{1,4}|-bg)?|person-\d{1,12})$/;
 
 /** The key for a set, or `null` when it has no TMDB id to build one from. */
 export function posterKeyFor(kind: string, tmdb: number | null): string | null {
@@ -35,6 +37,11 @@ export function seasonPosterKeyFor(showKey: string | null, season: number | null
 /** The key a title's backdrop is filed under, or `null` without a title key. */
 export function backdropKeyFor(key: string | null): string | null {
   return key === null ? null : `${key}-bg`;
+}
+
+/** The key a person's portrait is filed under. */
+export function personKeyFor(personId: number): string {
+  return `tmdb-person-${personId}`;
 }
 
 export function posterKeyIsValid(key: string): boolean {
@@ -71,8 +78,8 @@ export class PosterStore {
   }
 
   /**
-   * How many posters are held — backdrops, which sit in the same directory,
-   * are not posters and are not counted. Asked once, for the line the player
+   * How many posters are held — backdrops and portraits, which sit in the
+   * same directory, are not posters and are not counted. Asked once, for the line the player
    * logs at startup and the System page.
    */
   count(): number {
@@ -80,7 +87,8 @@ export class PosterStore {
     const path = join(this.dir, "posters");
     try {
       return readdirSync(path).filter(
-        (name) => name.endsWith(".jpg") && !name.endsWith("-bg.jpg") && posterKeyIsValid(name.slice(0, -4)),
+        (name) => name.endsWith(".jpg") && !name.endsWith("-bg.jpg") && !name.startsWith("tmdb-person-")
+          && posterKeyIsValid(name.slice(0, -4)),
       ).length;
     } catch (error) {
       // A library with no artwork is a normal library.

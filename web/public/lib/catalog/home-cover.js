@@ -13,6 +13,8 @@ import { humanDuration } from "../format.js";
 import { ageLabel } from "../age-rating.js";
 import { genresOf, scoreLabel } from "./genres.js";
 import { artworkUrl } from "./plate.js";
+import { playPill } from "./title-spread.js";
+import { listToggle } from "./list-toggle.js";
 
 const HOLD_MS = 9000;
 /** Past this many characters a title is set a size smaller, so it still fits in three lines. */
@@ -132,14 +134,11 @@ function slide(set, at, count, play) {
   if (facts.length > 0) copy.append(el("p", "cover-meta", facts.join(" · ")));
 
   const actions = el("div", "cover-actions");
-  const watch = el("button", "cover-watch");
-  watch.type = "button";
-  watch.append(el("span", "cover-watch-icon"), el("span", null, "Watch now"));
-  watch.addEventListener("click", () => play(set));
+  const watch = playPill("Watch now", () => play(set));
   const details = el("a", "cover-details", "Details");
   details.href = `#/film/${encodeURIComponent(set.setId)}`;
   details.setAttribute("aria-label", `Details: ${title}`);
-  actions.append(watch, details);
+  actions.append(watch, listToggle(set.setId), details);
   copy.append(actions);
   article.append(copy);
 

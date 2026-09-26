@@ -9,10 +9,12 @@
 
 mod facts;
 mod genres;
+mod poster_key;
 pub mod sidecar;
 
 pub use facts::{ShowFacts, facts};
 pub use genres::genres;
+pub use poster_key::{read, title_of};
 
 use mediagram_tmdb::details::TitleDetailsRow;
 use mediagram_tmdb::posters::kind_key;
@@ -36,8 +38,9 @@ pub fn upsert(conn: &Connection, row: &TitleDetailsRow) -> rusqlite::Result<()> 
     conn.execute(
         "INSERT INTO shows(source, kind, id, lang, overview, tagline, genres, rating,
                            network, status, first_air, last_air,
-                           total_seasons, total_episodes, certification, popularity)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)
+                           total_seasons, total_episodes, certification, popularity,
+                           collection_id, collection_name, series_type)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)
          ON CONFLICT(source, kind, id) DO UPDATE SET
              lang = excluded.lang, overview = excluded.overview,
              tagline = excluded.tagline, genres = excluded.genres,
@@ -46,7 +49,10 @@ pub fn upsert(conn: &Connection, row: &TitleDetailsRow) -> rusqlite::Result<()> 
              last_air = excluded.last_air, total_seasons = excluded.total_seasons,
              total_episodes = excluded.total_episodes,
              certification = excluded.certification,
-             popularity = excluded.popularity",
+             popularity = excluded.popularity,
+             collection_id = excluded.collection_id,
+             collection_name = excluded.collection_name,
+             series_type = excluded.series_type",
         params![
             SOURCE,
             kind_key(row.kind),
@@ -64,6 +70,9 @@ pub fn upsert(conn: &Connection, row: &TitleDetailsRow) -> rusqlite::Result<()> 
             row.total_episodes,
             row.certification,
             row.popularity,
+            row.collection_id,
+            row.collection_name,
+            row.series_type,
         ],
     )?;
     Ok(())
@@ -74,10 +83,14 @@ pub fn upsert(conn: &Connection, row: &TitleDetailsRow) -> rusqlite::Result<()> 
 pub fn get(conn: &Connection, kind: Kind, id: u64) -> rusqlite::Result<Option<TitleDetailsRow>> {
     let certification = optional_column(conn, "certification")?;
     let popularity = optional_column(conn, "popularity")?;
+    let collection_id = optional_column(conn, "collection_id")?;
+    let collection_name = optional_column(conn, "collection_name")?;
+    let series_type = optional_column(conn, "series_type")?;
     conn.query_row(
         &format!(
             "SELECT lang, overview, tagline, genres, rating, network, status, first_air, last_air,
-                    total_seasons, total_episodes, {certification}, {popularity}
+                    total_seasons, total_episodes, {certification}, {popularity},
+                    {collection_id}, {collection_name}, {series_type}
                FROM shows WHERE source = ?1 AND kind = ?2 AND id = ?3"
         ),
         params![SOURCE, kind_key(kind), id],
@@ -98,6 +111,9 @@ pub fn get(conn: &Connection, kind: Kind, id: u64) -> rusqlite::Result<Option<Ti
                 total_episodes: row.get(10)?,
                 certification: row.get(11)?,
                 popularity: row.get(12)?,
+                collection_id: row.get(13)?,
+                collection_name: row.get(14)?,
+                series_type: row.get(15)?,
             })
         },
     )
@@ -129,7 +145,8 @@ pub fn certifications(conn: &Connection) -> rusqlite::Result<HashMap<String, Str
 }
 
 /// `column`, or `NULL` where the table predates it — `certification` came in
-/// v7, `popularity` in v8.
+/// v7, `popularity` in v8, `collection_id`/`collection_name`/`series_type`
+/// in v9.
 ///
 /// A snapshot is written by whichever machine uploads, and that machine may
 /// still be on an older schema (see `mlib_spec::schema::OLDEST_READABLE_SCHEMA`).
@@ -138,7 +155,10 @@ pub fn certifications(conn: &Connection) -> rusqlite::Result<HashMap<String, Str
 ///
 /// `column` is always one of this file's literals, never outside input: the
 /// name is spliced into SQL.
-pub(super) fn optional_column(conn: &Connection, column: &'static str) -> rusqlite::Result<&'static str> {
+pub(super) fn optional_column(
+    conn: &Connection,
+    column: &'static str,
+) -> rusqlite::Result<&'static str> {
     let present: bool = conn.query_row(
         "SELECT EXISTS(SELECT 1 FROM pragma_table_info('shows') WHERE name = ?1)",
         [column],
@@ -158,29 +178,4 @@ pub fn language(conn: &Connection) -> rusqlite::Result<Option<String>> {
         |row| row.get(0),
     )
     .optional()
-}
-
-/// The title a poster key names, or `None` for anything that is not one, so
-/// a malformed value is refused here rather than reaching SQL. Every series
-/// kind is keyed `tv`, so a series key reads back as `Kind::Ep` and finds the
-/// same row any of them would.
-pub fn title_of(poster_key: &str) -> Option<(Kind, u64)> {
-    if !mlib_spec::package::poster_key_is_valid(poster_key) {
-        return None;
-    }
-    let (kind, id) = poster_key.strip_prefix("tmdb-")?.split_once('-')?;
-    let kind = match kind {
-        "movie" => Kind::Movie,
-        "tv" => Kind::Ep,
-        _ => return None,
-    };
-    Some((kind, id.parse().ok()?))
-}
-
-/// The entry for the title a poster key names.
-pub fn read(conn: &Connection, poster_key: &str) -> rusqlite::Result<Option<TitleDetailsRow>> {
-    match title_of(poster_key) {
-        Some((kind, id)) => get(conn, kind, id),
-        None => Ok(None),
-    }
 }

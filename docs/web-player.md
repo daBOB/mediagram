@@ -193,6 +193,54 @@ written verbatim by `server.ts`.
 Nothing the browser is served ever carries a `chat_id`, a `message_id` or a
 `doc_id`. The browser is told what it may play, never where the bytes live.
 
+## Routes and API endpoints
+
+Catalog routes (`#/`) are client-side (no server state); API endpoints answer
+from `web/src/routes.ts` and its handlers.
+
+### Client routes (fragments)
+
+| Route | Page |
+|---|---|
+| `#/home` | Home (magazine layout, editor's picks) |
+| `#/movies` | Movies department (paged shelf) |
+| `#/movies/page/N` | Movies page N (1–max, page 1 is plain `#/movies`) |
+| `#/series` | Series department |
+| `#/tutorials` | Tutorials department |
+| `#/<list-id>` | User-created list detail |
+| `#/collections` | Collections page (franchises and lists) |
+| `#/collections/<id>` | Collection detail (tmdb-<id> or list UUID) |
+| `#/person/<id>` | Person page (cast/crew filmography) |
+| `#/genres` | All genres |
+| `#/genre/<slug>` | Genre page |
+| `#/latest` | Latest added |
+| `#/search[?q=...]` | Search results (grouped by type) |
+| `#/settings` | Settings (Appearance/Profile/admin Library & Telegram) |
+| `#/film/<key>` | Film detail (Overview/Cast/Similar/Details tabs) |
+| `#/series/<show>` | Series detail with season selector |
+| `#/series/<show>/<division-title>` | Episode detail (unchanged from pre-0.62.0) |
+
+### HTTP endpoints (JSON)
+
+| Method | Route | Description |
+|---|---|---|
+| `GET` | `/api/sets` | Full catalog (all titles) |
+| `GET` | `/api/shows/:key` | Show/film metadata (title, tagline, description, cast, similar) |
+| `GET` | `/api/shows/:key/credits` | Credits for a title (cast, crew, creators) |
+| `GET` | `/api/people/:id` | Person page (name, filmography by title key) |
+| `GET` | `/api/franchises` | All franchises with film count |
+| `GET` | `/api/search?q=...` | Search results grouped by type (Movies, Series, Episodes, Lessons, People, Collections) |
+| `GET` | `/api/status` | Player status (cache, Telegram link, conversions, host) — own-network only |
+| `POST` | `/api/status/playback` | Playback telemetry from open player |
+| `HEAD`/`GET` | `/stream/:id` | Playable file, Range-responding |
+| `GET` | `/api/sets/:id/cached-stream` | Cache-only stream (for thumbnail generation) |
+| `GET` | `/api/events` | Server-sent events (catalog refresh, index install) |
+| `POST` | `/api/settings/unlock` | Mint admin session (own-network only, token required) |
+| `GET` | `/api/settings/*` | Settings endpoints (admin-gated: Telegram/cache/library) |
+| `GET`/`POST`/`DELETE` | `/api/settings/sessions` | Active sessions list, revoke |
+| `GET` | `/api/editors-choice` | Editor's choice pin (watch-state key) |
+| `GET` | `/artwork/...` | Posters, backdrops, person portraits (keyed, CDN-friendly) |
+
 ## Consumers of the index
 
 Five now, which is the reason the schema and the caption format are specified
