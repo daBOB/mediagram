@@ -47,7 +47,7 @@ export function openFeatured(picks, handlers) {
   reel.dialog.classList.remove("paused");
   reel.slides.textContent = "";
   drawDots();
-  history.pushState({ featured: true }, "");
+  history.pushState({ ...history.state, featured: true }, "");
   reel.dialog.showModal();
   void show(0);
 }

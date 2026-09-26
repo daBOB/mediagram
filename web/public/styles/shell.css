@@ -158,12 +158,9 @@ main {
   margin-left: var(--rail-width);
   padding: var(--main-top) var(--gutter) 96px;
   min-width: 0;
-  view-transition-name: page;
 }
-::view-transition-group(page) { animation: none; }
-::view-transition-old(page) { animation: page-out 140ms var(--ease) both; }
-::view-transition-new(page) { animation: page-in 420ms var(--ease) both; }
-@keyframes page-out { to { opacity: 0; } }
+/* A page gone to rises in; a redraw of the one showing stays put (page-turn.js). */
+main.turning { animation: page-in 420ms var(--ease) backwards; }
 @keyframes page-in { from { opacity: 0; transform: translateY(10px); } }
 .colophon {
   margin-left: var(--rail-width);

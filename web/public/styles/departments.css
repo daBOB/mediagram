@@ -13,7 +13,7 @@
   overflow: hidden;
 }
 .dept-hero.no-art { min-height: 0; padding-top: calc(var(--masthead-height) + 64px); }
-.dept-art { position: absolute; inset: 0 0 0 30%; pointer-events: none; }
+.dept-art { position: absolute; inset: 0 0 0 30%; overflow: hidden; pointer-events: none; }
 .dept-art img { width: 100%; height: 100%; object-fit: cover; object-position: 60% 25%; animation: art-in 1400ms var(--ease) both; }
 .dept-art::after {
   content: "";

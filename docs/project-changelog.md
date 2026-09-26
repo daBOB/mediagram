@@ -5,6 +5,23 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.66.1 — the web player turns its pages cleanly
+
+**Fixed**
+
+- Going to another page from partway down one could blank the screen for a
+  moment before the new page snapped in. The page turn was a view transition,
+  and the scroll offset moving under it (clamped to a shorter page) drew its
+  snapshots out of place. It also lifted the page above the masthead and rail
+  while it ran. The new page now rises in on a plain CSS animation of `main`
+  (`web/public/lib/page-turn.js`).
+- A page gone to opened at the offset of the page left, clamped to its
+  length. It now opens at its top, and Back or Forward returns to where the
+  page was left.
+- A vertical stripe crossed the backdrop of a film page and a department
+  front page while its art faded in: the art's entrance zoom reached past its
+  box, outside the paper gradient over it. The art box now clips it.
+
 ## 0.66.0 — the editorial departments on Android, phone and television
 
 Pays what 0.62.0 left "Owed to Android". Plan:

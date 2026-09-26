@@ -605,11 +605,13 @@ test("the Movies shelf is drawn a page at a time, with its page in the address",
   expect(page()).not.toContain("Film 48");
   expect(env.scrolls.length).toBe(scrolled + 1);
 
-  // A page past the end is the last one; a catalog redraw keeps the viewer's place.
+  // A page past the end is the last one, and opens at its top like any page
+  // gone to; a catalog redraw keeps the viewer's place.
   await env.navigate("#/movies/page/9");
   expect(page()).toContain("page 2 of 2");
+  expect(env.scrolls.length).toBe(scrolled + 2);
   stream().fire("catalog"); await settle();
-  expect(env.scrolls.length).toBe(scrolled + 1);
+  expect(env.scrolls.length).toBe(scrolled + 2);
 });
 
 describe("kids profiles", () => {
@@ -731,14 +733,15 @@ test("Featured suggests unwatched films and opens the one chosen after leaving i
 
   const reel = env.node("featured");
   expect(reel.open).toBe(true);
-  expect(env.history.state).toEqual({ featured: true });
+  expect(env.history.state).toHaveProperty("featured", true);
   expect(textOf(reel)).toContain("Unseen");
   expect(textOf(reel)).not.toContain("Seen·");
   expect(textOf(reel)).toContain("Featured · 1 / 1");
 
   descendants(reel).find((node) => node.className === "featured-details")!.fire("click"); await settle();
   expect(reel.open).toBe(false);
-  expect(env.history.state).toBeNull();
+  expect(env.history.length).toBe(1);
+  expect(env.history.state).not.toHaveProperty("featured");
   expect(env.location.hash).toBe("#/film/Unseen");
 });
 
@@ -750,7 +753,7 @@ test("a bare address opens home once, in place, rather than navigating there", a
   expect(env.location.hash).toBe("#/home");
   // Replaced, so no second route and no history entry for the bare address.
   expect(changes).toBe(0);
-  expect(env.history.state).toBeNull();
+  expect(env.history.length).toBe(1);
 });
 
 describe("the magazine home page", () => {

@@ -42,6 +42,7 @@ import { renderSettings } from "./lib/catalog/settings-page.js";
 import { renderPerson, titlesByKey, visiblePeople } from "./lib/catalog/cast.js";
 import { similarTo } from "./lib/catalog/similar.js";
 import { drawAt } from "./lib/redraw.js";
+import { turnPage } from "./lib/page-turn.js";
 import { renderGenre, renderGenres, renderLatest } from "./lib/catalog/utility-pages.js";
 import { forKidsProfile } from "./lib/age-rating.js";
 
@@ -182,7 +183,6 @@ function viewHome() {
 // A multiple of two, three, four, six and eight, so a wall of plates ends
 // on a full row at any width.
 const FILMS_PER_PAGE = 48;
-let shownMoviesPage = 0;
 
 /** Films: a flat grid, since a film is one thing, one page of it at a time. */
 function viewMovies(requested) {
@@ -196,10 +196,6 @@ function viewMovies(requested) {
     // and offering the choice would be offering it about nothing.
     library.movies.length > 0 ? movieControls() : null,
   );
-  // A new page starts at its top; a redraw of the same page after a catalog
-  // refresh keeps the viewer where they were.
-  if (page !== shownMoviesPage) window.scrollTo(0, 0);
-  shownMoviesPage = page;
   if (library.movies.length === 0) return main.append(emptyState("movies", { kids: kidsProfile() }));
   main.append(movieGrid(items, openFilm, { mode }));
   const links = pager("movies", page, pages);
@@ -732,24 +728,14 @@ searchBox.addEventListener("input", () => {
  * A catalog refresh redraws through `route()` directly and stays still: the
  * viewer did not move, so the page should not either. Typing a search moves
  * the hash every pause, and animating each one would make the results swim
- * under the cursor. A browser without view transitions, or a viewer who asked
- * for less motion, gets the plain swap.
+ * under the cursor.
  */
-const lessMotion = matchMedia("(prefers-reduced-motion: reduce)");
 let shownHash = location.hash;
 window.addEventListener("hashchange", () => {
   navigationGeneration++;
   const refining = shownHash.startsWith("#/search/") && location.hash.startsWith("#/search/");
   shownHash = location.hash;
-  if (refining || lessMotion.matches || !document.startViewTransition) {
-    route();
-    return;
-  }
-  // Not `startViewTransition(route)`: a view that returns a promise would
-  // hold the old page frozen until it settled.
-  document.startViewTransition(() => {
-    route();
-  });
+  turnPage(main, route, refining);
 });
 
 /**
@@ -870,7 +856,7 @@ try {
   // everything — what has arrived since.
   //
   // Replaced, not assigned: assigning fires `hashchange`, which would draw the
-  // page twice, the second inside a view transition that reads as a flicker.
+  // page twice, the second rising in again, which reads as a flicker.
   if (!location.hash) {
     history.replaceState(history.state, "", "#/home");
     shownHash = location.hash;
