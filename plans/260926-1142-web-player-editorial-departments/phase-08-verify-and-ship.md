@@ -1,6 +1,6 @@
 # Phase 8 — Verify and ship
 
-**Priority:** P1. **Status:** pending.
+**Priority:** P1. **Status:** done 2026-09-26 — results in plan.md § Phase 8 close-out.
 
 1. Run `cd web && bun run preview` and check every screen at 375/768/1024/1440, dark and
    light, with `/browse`. Test the player dialog and keyboard navigation. Check that no

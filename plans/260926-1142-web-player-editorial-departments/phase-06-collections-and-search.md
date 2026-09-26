@@ -1,6 +1,6 @@
 # Phase 6 — Collections and Search
 
-**Priority:** P2. **Status:** pending.
+**Priority:** P2. **Status:** done (0.62.0, 2026-09-26).
 
 ## Collections (panel 07)
 - A hero headed "Curated collections". Then **Franchises** (from `collection_id`, only those

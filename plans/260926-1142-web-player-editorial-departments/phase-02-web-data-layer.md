@@ -1,6 +1,6 @@
 # Phase 2 — Web data: v9 fields, portraits, similar, people search
 
-**Priority:** P1. **Status:** pending. The web tolerates a v8 index throughout.
+**Priority:** P1. **Status:** done (0.62.0, 2026-09-26). The web tolerates a v8 index throughout.
 
 ## Context
 `web/src/catalog/shows.ts` (optional-column probe, line 93), `web/src/catalog/routes.ts`,

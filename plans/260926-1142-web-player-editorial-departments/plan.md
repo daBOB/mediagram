@@ -1,6 +1,6 @@
 # Web player — editorial departments
 
-Status: phases 3–4 built 2026-09-26 on branch `feat/editorial-departments` (worktree `../mediagram-editorial`), uncommitted; waiting on the checkpoint. Builds on the shipped magazine shell
+Status: phases 1–8 done and merged to main as 0.62.0 (cdd3471c, 2026-09-26). Phase 9 (Documentaries) is a follow-up in `../mediagram-docu`. Builds on the shipped magazine shell
 (`260925-2014-web-player-magazine-redesign`, v0.55.0+). It restructures pages. It
 does not change the aesthetic.
 
@@ -33,14 +33,14 @@ different labels.**
 |---|-------|--------|
 | 1 | [Credits, franchises, series type (Rust, schema v9)](phase-01-credits-franchises-pipeline.md) | done (report: plans/reports/fullstack-developer-260926-1215-…) |
 | 2 | [Web data: v9 fields, portraits, similar, people search](phase-02-web-data-layer.md) | done |
-| 3 | [Shell, nav, and Home](phase-03-shell-nav-and-home.md) | built |
-| 4 | [Movie and series feature pages](phase-04-feature-detail-pages.md) | built |
+| 3 | [Shell, nav, and Home](phase-03-shell-nav-and-home.md) | done |
+| 4 | [Movie and series feature pages](phase-04-feature-detail-pages.md) | done |
 | — | **Checkpoint: screenshots of 3 + 4 to the user** | approved 2026-09-26 ("looks good"); phase 1 next so Similar and Collections get franchises |
-| 5 | [Departments: Movies, Series, Tutorials](phase-05-department-pages.md) | built (Completed/Limited rows wait for v9 status/type on sets) |
+| 5 | [Departments: Movies, Series, Tutorials](phase-05-department-pages.md) | done (Popular/New/Completed/Limited rows only above 12 shows) |
 | 6 | [Collections and Search](phase-06-collections-and-search.md) | done |
-| 7 | [Settings: Appearance, Playback, Profile](phase-07-settings-page.md) | built (Appearance + Profile; no Playback tab: playback prefs are per-show, none global) |
+| 7 | [Settings: Appearance, Playback, Profile](phase-07-settings-page.md) | done (Appearance + Profile; no Playback tab: playback prefs are per-show, none global) |
 | 9 | [Documentaries department and custom artwork](phase-09-documentaries-and-custom-artwork.md) | approved; follow-up after 1–8 ship (0.62.0), in its own worktree — v9 artwork table only if v9 still unpublished, else v10 |
-| 8 | [Verify and ship](phase-08-verify-and-ship.md) | pending |
+| 8 | [Verify and ship](phase-08-verify-and-ship.md) | done 2026-09-26 (0.62.0 merged, cdd3471c) |
 
 Phase 1 runs in parallel with 3 and 4. The web reads every v9 field as optional,
 so the preview can be built before a v9 index exists. Cast and franchises then show
@@ -133,3 +133,24 @@ Report: `plans/reports/code-reviewer-260926-1300-editorial-departments-branch-re
 admin-only "Library & Telegram" tab of this Settings page (shown when `/api/settings`
 answers 200/401, as their rail link was); their separate rail link removed. Web 2140 +
 Rust 1268 tests pass, lint/clippy/tsc clean.
+
+## Phase 8 close-out (2026-09-26)
+
+- Every route at 375/768/1024/1440 on merged main: no horizontal overflow.
+- Keyboard: Play opens the player with focus on Close; Escape closes; tabs move with
+  arrows/Home/End. **Follow-up (pre-existing, same on 0.61.0):** after the player closes,
+  focus lands on `<body>` instead of returning to Play — the close path redraws the page.
+- Lighthouse, home with a profile chosen (storage kept; not the picker), dark theme,
+  median of runs, vs the pre-merge commit ca58ab37 measured the same way:
+
+  | | perf | a11y | best practices | LCP | CLS |
+  |---|---|---|---|---|---|
+  | desktop 0.61.0 | 69 | 100 | 96 | 1.7 s | 0.888 |
+  | desktop 0.62.0 | 89 | 100 | 96 | 2.0 s | 0.089 |
+  | mobile 0.61.0 | 75–76 | 100 | 96 | 6.9–7.4 s | 0.002 |
+  | mobile 0.62.0 | 75–76 | 100 | 96 | 7.9–8.0 s | 0.003 |
+
+  Mobile LCP (simulated slow 4G) +~0.8 s: ten more page modules (+3 KB) load before the
+  first render; the cover image is JS-drawn, so it waits on them. Unthrottled LCP ~0.3 s.
+  **Accepted by the user 2026-09-26** (home/LAN player; score unchanged). Upgrade path if it
+  matters later: lazy-load route modules from the router.

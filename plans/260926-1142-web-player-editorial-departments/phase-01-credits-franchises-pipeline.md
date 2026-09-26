@@ -1,6 +1,6 @@
 # Phase 1 — Credits, franchises, series type (Rust, schema v9)
 
-**Priority:** P1. **Status:** pending. It runs in parallel with phases 3–4.
+**Priority:** P1. **Status:** done (0.62.0, 2026-09-26). It runs in parallel with phases 3–4.
 
 ## Context
 - `crates/mediagram-tmdb/src/details.rs:23` (append_to_response), `tmdb_types.rs`

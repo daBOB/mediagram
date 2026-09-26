@@ -1,6 +1,6 @@
 # Phase 4 — Movie and series feature pages
 
-**Priority:** P1. **Status:** pending. It goes into the preview checkpoint.
+**Priority:** P1. **Status:** done (0.62.0, 2026-09-26). It goes into the preview checkpoint.
 
 ## Context
 `lib/catalog/film-page.js`, `series-header.js`, `series-summary.js`, `season-wall.js`,
