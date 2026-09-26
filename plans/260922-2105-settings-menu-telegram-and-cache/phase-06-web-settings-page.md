@@ -8,8 +8,23 @@
 - Memory: verify UI with a stub harness, never the real player
 
 ## Overview
-Priority P2. Status: pending. `#/settings`: locked form → Telegram section → Cache section,
-in the existing System-page idiom.
+Priority P2. Status: **done 2026-09-26**. `#/settings`: locked form → Telegram section → Cache
+section, in the existing System-page idiom.
+
+Built as four files, not three: `settings-telegram.js`'s account rows, sign-in stepper and
+sign-out/library/app-form entry points did not fit this project's 200-line ceiling together
+with the three secondary forms (library picker, app id/hash, sign-out confirm), so those three
+moved to `settings-telegram-forms.js`. Stub-harness walkthrough done (locked → wrong token →
+unlock → each Telegram/cache action → sign-out confirm → sign-in through the code step); the
+password/2FA step was not exercised live — `computeCheck`'s SRP math needs a real
+`account.Password` answer this stub cannot fabricate — and is instead covered by
+`settings-sign-in.test.ts`. The walkthrough caught two real bugs, fixed in this phase's commit:
+`signOutTelegram()` sent no body and so no `content-type`, which its own route's same-origin
+guard then refused with 415; and the sign-out `<dialog>` rendered pinned top-left rather than
+centered (needed explicit `position: fixed; inset: 0; margin: auto` — this project's other
+overlays are non-`<dialog>` elements, so there was no existing centered-dialog rule to copy).
+Also fixed in the same pass: `AdminGate.lock`'s clearing cookie always carried `Secure`
+regardless of the caller's flag, found while wiring `routes.ts`'s `/lock` handler to it.
 
 ## Key insights
 - `offerSystem` already shows how to advertise a gated page without leaking it: HEAD probe,
