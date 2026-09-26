@@ -1,7 +1,10 @@
 # Phase 2 — Kotlin data and pure rules
 
-**Status:** pending. Web reference: `similar.js`, `series-resume.js`,
+**Status:** done (2026-09-26). Web reference: `similar.js`, `series-resume.js`,
 `utility-pages.js#genreIndex`, `collections-page.js#franchisesIn`, `cast.js#visiblePeople`.
+Report: `plans/reports/fullstack-developer-260926-1630-android-parity-data-and-navigation-report.md`
+(data + view-model half; the pure-rule half landed earlier — see
+`plans/reports/fullstack-developer-260926-1612-android-parity-pure-rules-report.md`).
 
 - `MediaSet` gains the four row fields; `CoreClient` (default impls for fakes) →
   `DefaultCoreClient` → `CatalogRepository`: `credits(key)`, `person(id)`, `franchises()`,

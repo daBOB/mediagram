@@ -1,6 +1,7 @@
 # Phase 1 — Core read API (Rust, UniFFI)
 
-**Status:** pending. Web reference: `web/src/catalog/{shows,credits}.ts`, `routes.ts`.
+**Status:** done (2026-09-26). Web reference: `web/src/catalog/{shows,credits}.ts`, `routes.ts`.
+Report: `plans/reports/fullstack-developer-260926-1610-android-parity-core-read-api-report.md`.
 
 ## Requirements
 - `SetSummary` gains `collection_id`, `collection_name`, `series_type`, `show_status`,

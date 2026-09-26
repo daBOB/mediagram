@@ -1,6 +1,7 @@
 # Phase 3 — Navigation
 
-**Status:** pending. Web reference: `web/public/index.html` (0.62.1: each link once).
+**Status:** done (2026-09-26). Web reference: `web/public/index.html` (0.62.1: each link once).
+Report: `plans/reports/fullstack-developer-260926-1630-android-parity-data-and-navigation-report.md`.
 
 - Masthead tabs (`CatalogTabs.kt`): Home · Movies · Series · Tutorials · Collections;
   utilities (My List, Continue, Latest, Genres, Settings) where the phone/TV already keep

@@ -11,9 +11,9 @@ Scout: A = `android/`, C = `crates/mediagram-core/src/` (report in session, 2026
 
 | # | Phase | Surface | Status |
 |---|-------|---------|--------|
-| 1 | [Core read API: franchise/type on rows, credits, person, franchises, people search, device portraits](phase-01-core-read-api.md) | Rust core + UniFFI | pending |
-| 2 | [Kotlin data + pure rules: Similar, SeriesResume, GenreIndex, Franchises, VisiblePeople](phase-02-kotlin-data-and-rules.md) | feature/catalog, core/data | pending |
-| 3 | [Navigation: departments in the masthead, new frames](phase-03-navigation.md) | ui-common, feature/catalog | pending |
+| 1 | [Core read API: franchise/type on rows, credits, person, franchises, people search, device portraits](phase-01-core-read-api.md) | Rust core + UniFFI | done |
+| 2 | [Kotlin data + pure rules: Similar, SeriesResume, GenreIndex, Franchises, VisiblePeople](phase-02-kotlin-data-and-rules.md) | feature/catalog, core/data | done |
+| 3 | [Navigation: departments in the masthead, new frames](phase-03-navigation.md) | ui-common, feature/catalog | done |
 | 4 | [Phone title pages: film spread + tabs, series page](phase-04-phone-title-pages.md) | ui-mobile | pending |
 | 5 | [Phone departments, collections/franchises, person, search, Latest, Genres](phase-05-phone-departments-and-browse.md) | ui-mobile | pending |
 | 6 | [TV: the same screens on the television surface](phase-06-tv-surface.md) | ui-tv | pending |
@@ -37,6 +37,9 @@ Installed Android builds read schemas 6–8 and refuse a v9 package; any build f
 - **Settings › Appearance: port theme (Dark/Light/Auto) + the seven accents**, stored per
   device as on the web. Artwork mode is **not** ported — a deliberate difference, recorded
   in phase 8. (Phase 8.)
+- **TV ownership** (user, 2026-09-26): phase 6 and the TV half of phase 8 are built by
+  this session (mediagram-55); session mediagram-93, which owns the TV surface, then
+  reviews them and walks them on the TV box, fixing what it finds.
 - **Portraits fetched on device, lazily**: when a Cast row or person page first shows a
   person, fetch `tmdb-person-<id>` (w185) from the index's `credits.profile` and cache it;
   no bulk download. (Phase 1.)
