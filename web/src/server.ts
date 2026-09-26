@@ -75,6 +75,8 @@ function describe(request: IncomingMessage, trustProxy: boolean): PlayerRequest 
     contentType: (request.headers["content-type"] ?? null)?.split(";")[0]?.trim().toLowerCase() ?? null,
     origin: typeof request.headers.origin === "string" ? request.headers.origin : null,
     host: typeof request.headers.host === "string" ? request.headers.host : null,
+    acceptEncoding: typeof request.headers["accept-encoding"] === "string" ? request.headers["accept-encoding"] : null,
+    ifNoneMatch: typeof request.headers["if-none-match"] === "string" ? request.headers["if-none-match"] : null,
     // Resolved here, once, rather than left for a route to work out: behind a
     // proxy every request arrives from loopback, and whether the forwarded
     // address may be believed is a property of how this server was started.

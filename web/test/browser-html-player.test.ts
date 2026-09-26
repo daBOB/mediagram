@@ -90,12 +90,22 @@ test("shipped HTML mounts the actual application and its player controls respond
   expect(env.video.src).toBe("");
 });
 
-test.each(["play-pause", "sub-track", "close"])("renaming required HTML control %s makes actual controller initialization fail", async (id) => {
-  env.restore();
-  env = await htmlApplicationEnvironment(html.replace(`id="${id}"`, `id="renamed-${id}"`));
-  expect(env.document.getElementById(id)).toBeNull();
-  await expect(start()).rejects.toThrow();
-});
+test.each(["play-pause", "sub-track", "close"])(
+  "renaming required HTML control %s leaves the library working and reports the player broken on Play",
+  async (id) => {
+    env.restore();
+    env = await htmlApplicationEnvironment(html.replace(`id="${id}"`, `id="renamed-${id}"`));
+    expect(env.document.getElementById(id)).toBeNull();
+    // The player's own modules are loaded lazily, so a broken control in
+    // them is not a reason the shelves above should fail to appear.
+    await start();
+    await env.navigate("#/film/Film");
+    descendants(env.node("main")).find((node) => node.className === "film-play")!.fire("click");
+    await settle();
+    expect(env.node("player").open).toBe(false);
+    expect(descendants(env.node("main")).some((node) => node.className === "error")).toBe(true);
+  },
+);
 
 test("subtitle language and explicit Off survive episode track order changes", async () => {
   await start();

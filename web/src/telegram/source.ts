@@ -124,27 +124,46 @@ export class TelegramSource implements ByteSource {
         continue;
       }
 
-      const media = await this.telegram.partMedia(location.messageId);
+      let media = await this.telegram.partMedia(location.messageId);
       let headDrop = step.headDrop;
       let owed = step.take;
+      let yieldedAny = false;
+      let retried = false;
 
-      for await (const chunk of this.telegram.client.iterDownload(media as never, {
-        offset: helpers.returnBigInt(step.offset) as never,
-        requestSize: requestSizeFor(headDrop + step.take),
-      })) {
-        let piece: Uint8Array = chunk;
+      for (;;) {
+        try {
+          for await (const chunk of this.telegram.client.iterDownload(media as never, {
+            offset: helpers.returnBigInt(step.offset) as never,
+            requestSize: requestSizeFor(headDrop + step.take),
+          })) {
+            let piece: Uint8Array = chunk;
 
-        if (headDrop > 0) {
-          const dropped = Math.min(headDrop, piece.length);
-          piece = piece.subarray(dropped);
-          headDrop -= dropped;
+            if (headDrop > 0) {
+              const dropped = Math.min(headDrop, piece.length);
+              piece = piece.subarray(dropped);
+              headDrop -= dropped;
+            }
+            if (piece.length === 0) continue;
+            if (piece.length > owed) piece = piece.subarray(0, owed);
+
+            owed -= piece.length;
+            yieldedAny = true;
+            yield piece;
+            if (owed === 0) break;
+          }
+          break;
+        } catch (error) {
+          // A reference that expired before this step sent anything can be
+          // retried with a fresh one. Once bytes are already on the wire a
+          // retry would duplicate or skip them, so only the failure can
+          // surface from there.
+          if (yieldedAny || retried || !isFileReferenceExpired(error)) throw error;
+          retried = true;
+          this.telegram.forgetPartMedia(location.messageId);
+          media = await this.telegram.partMedia(location.messageId);
+          headDrop = step.headDrop;
+          owed = step.take;
         }
-        if (piece.length === 0) continue;
-        if (piece.length > owed) piece = piece.subarray(0, owed);
-
-        owed -= piece.length;
-        yield piece;
-        if (owed === 0) break;
       }
 
       // The response already promised a length. Serving fewer bytes silently
@@ -154,6 +173,12 @@ export class TelegramSource implements ByteSource {
       }
     }
   }
+}
+
+/** Whether a Telegram request failed because the file reference it used expired. */
+function isFileReferenceExpired(error: unknown): boolean {
+  const message = (error as { errorMessage?: unknown } | null)?.errorMessage;
+  return typeof message === "string" && message.startsWith("FILE_REFERENCE");
 }
 
 /**
@@ -174,6 +199,25 @@ export function partFetcher(telegram: Telegram, messageId: number) {
 const downloads = new DownloadGate();
 
 async function fetchPart(
+  telegram: Telegram,
+  messageId: number,
+  offset: number,
+  length: number,
+): Promise<Uint8Array> {
+  // Collected into `out` before anything is handed back, so a reference that
+  // expired mid-download can simply be retried from scratch: nothing has
+  // reached a caller yet for the redo to duplicate or skip. Stays inside the
+  // gate slot `partFetcher` already holds, so a retry cannot add concurrency.
+  try {
+    return await fetchPartOnce(telegram, messageId, offset, length);
+  } catch (error) {
+    if (!isFileReferenceExpired(error)) throw error;
+    telegram.forgetPartMedia(messageId);
+    return fetchPartOnce(telegram, messageId, offset, length);
+  }
+}
+
+async function fetchPartOnce(
   telegram: Telegram,
   messageId: number,
   offset: number,

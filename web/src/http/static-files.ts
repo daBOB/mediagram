@@ -3,7 +3,8 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join, normalize } from "node:path";
 import type { PlayerRequest, PlayerResponse } from "./contracts";
-import { bodiless, withBody } from "../response";
+import { negotiatedResponse } from "./compression";
+import { bodiless } from "../response";
 
 /** The page and its script, served from `web/public`. */
 const PUBLIC_DIR = new URL("../../public/", import.meta.url).pathname;
@@ -69,13 +70,13 @@ function staticFile(urlPath: string): { body: Uint8Array; type: string } | null 
 export function staticResponse(request: PlayerRequest): PlayerResponse {
   const headOnly = request.method === "HEAD";
   if (request.path === HLS_LIBRARY_PATH) {
-    return withBody(hlsLibraryBytes(), "text/javascript; charset=utf-8", {
+    return negotiatedResponse(request, hlsLibraryBytes(), "text/javascript; charset=utf-8", {
       headOnly, headers: { "cache-control": "public, max-age=86400" },
     });
   }
   if (!request.path.startsWith("/api/")) {
     const file = staticFile(request.path);
-    if (file !== null) return withBody(file.body, file.type, {
+    if (file !== null) return negotiatedResponse(request, file.body, file.type, {
       headOnly, headers: { "cache-control": "no-cache" },
     });
   }

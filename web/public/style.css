@@ -1,6 +1,0 @@
-/* The library and the screening room share tokens, not layout rules. */
-@import url("./styles/theme.css");
-@import url("./styles/shell.css");
-@import url("./styles/catalog.css");
-@import url("./styles/library-controls.css");
-@import url("./styles/playback.css");

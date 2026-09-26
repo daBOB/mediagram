@@ -2,10 +2,10 @@
  * Chunks on disk, under a quota.
  *
  * A media cache with no ceiling fills whatever it is given, and this library
- * is tens of gigabytes on a machine with other work to do. The budget is the
- * point of the thing: eviction is least-recently-used, driven by each file's
- * access time, so a series being watched stays resident while last month's
- * film falls out.
+ * is tens of gigabytes — tens of thousands of chunk files — on a machine with
+ * other work to do. The budget is the point of the thing: eviction is
+ * least-recently-used, driven by each file's access time, so a series being
+ * watched stays resident while last month's film falls out.
  *
  * Writes go to a temporary name and are renamed into place, which is atomic
  * on the same filesystem. A reader therefore never sees a half-written chunk,
@@ -35,6 +35,23 @@ export interface CacheStats {
 export class ChunkCache {
   /** Chunks being written right now, so two viewers do not race one file. */
   private readonly inFlight = new Map<string, Promise<void>>();
+
+  /**
+   * Bytes of a chunk whose write has not landed on disk yet.
+   *
+   * The reader that fetched them does not wait for `put` before serving them
+   * or before a second reader of the same chunk asks: without this, that
+   * second reader would miss on disk and pay for the same bytes from
+   * Telegram a second time, mid-write. Cleared the moment the write settles,
+   * whatever its outcome — a failed write leaves nothing here to serve
+   * either.
+   */
+  private readonly pending = new Map<string, Uint8Array>();
+
+  /** The one eviction scan running now, if any. */
+  private evicting: Promise<number> | null = null;
+  /** A write landed while a scan was already running; run it again once. */
+  private evictAgain = false;
 
   /**
    * Counters, kept in memory and only ever incremented.
@@ -82,6 +99,17 @@ export class ChunkCache {
     expectedSize?: number,
   ): Promise<Uint8Array | null> {
     const path = chunkPath(this.root, setId, partIdx, index);
+
+    const held = this.pending.get(path);
+    if (held !== undefined) {
+      if (expectedSize !== undefined && held.byteLength !== expectedSize) {
+        this.misses += 1;
+        return null;
+      }
+      this.hits += 1;
+      return held;
+    }
+
     try {
       const bytes = new Uint8Array(await Bun.file(path).arrayBuffer());
       if (expectedSize !== undefined && bytes.byteLength !== expectedSize) {
@@ -104,6 +132,35 @@ export class ChunkCache {
   }
 
   /**
+   * Whether a chunk is held, without reading its bytes.
+   *
+   * For callers that only need to know a chunk is already there — deciding
+   * where a fetch run may stop, or which of a title's chunks are still
+   * missing — reading the whole 512 KiB just to test for `null` cost as much
+   * disk I/O as serving it, twice over during steady playback. A `stat` is
+   * one syscall's worth of metadata and does not count as a hit or a miss:
+   * it is not a read on anyone's behalf, so the status page's rate would
+   * otherwise flatter itself on every probe.
+   *
+   * Also does not bump the chunk's access time. Eviction should not be told
+   * a chunk was used because something asked whether it was there —
+   * `get` is what a real read touches, and stays the only thing that does.
+   */
+  async has(setId: string, partIdx: number, index: number, expectedSize?: number): Promise<boolean> {
+    const path = chunkPath(this.root, setId, partIdx, index);
+
+    const held = this.pending.get(path);
+    if (held !== undefined) return expectedSize === undefined || held.byteLength === expectedSize;
+
+    try {
+      const info = await stat(path);
+      return expectedSize === undefined || info.size === expectedSize;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Attempts to store a chunk and enforce the budget without interrupting playback.
    * Write failures are ignored and eviction failures are logged; successful
    * resolution guarantees neither persistence nor compliance with the budget.
@@ -114,7 +171,11 @@ export class ChunkCache {
     const existing = this.inFlight.get(path);
     if (existing) return existing;
 
-    const write = this.writeChunk(path, bytes).finally(() => this.inFlight.delete(path));
+    this.pending.set(path, bytes);
+    const write = this.writeChunk(path, bytes).finally(() => {
+      this.inFlight.delete(path);
+      this.pending.delete(path);
+    });
     this.inFlight.set(path, write);
     return write;
   }
@@ -132,7 +193,7 @@ export class ChunkCache {
     }
     // Maintenance must not reject bytes already fetched for playback. An
     // explicit evict() still reports failures to its caller.
-    await this.evict().catch((error) => console.warn("cache eviction failed:", error));
+    await this.scheduleEviction().catch((error) => console.warn("cache eviction failed:", error));
   }
 
   /** Total bytes currently held. */
@@ -143,11 +204,43 @@ export class ChunkCache {
   /**
    * Removes least-recently-used chunks until the cache fits its budget.
    *
-   * Returns the bytes freed. Scanning on each write is affordable because a
-   * cache of this size holds thousands of files, not millions, and it keeps
-   * the truth on disk rather than in an index that can drift from it.
+   * Returns the bytes freed. Delegates to the same coalesced scan a write
+   * schedules: an explicit call made while one is already running joins it
+   * rather than walking the disk a second time in parallel, and still
+   * resolves to a freed-bytes total once it settles.
    */
-  async evict(): Promise<number> {
+  evict(): Promise<number> {
+    return this.scheduleEviction();
+  }
+
+  /**
+   * Runs at most one scan at a time.
+   *
+   * A run of writes each schedule eviction, and each used to pay for its own
+   * full walk of the cache — the point a viewer actually waits on, since a
+   * write does not resolve until its eviction does. A write that lands while
+   * a scan is already in flight cannot have been seen by it, so rather than
+   * starting a second walk alongside the first it marks the running one to
+   * go again once, and both callers share its result.
+   */
+  private scheduleEviction(): Promise<number> {
+    if (this.evicting) {
+      this.evictAgain = true;
+      return this.evicting;
+    }
+    const run = async (): Promise<number> => {
+      let freed = 0;
+      do {
+        this.evictAgain = false;
+        freed += await this.runEviction();
+      } while (this.evictAgain);
+      return freed;
+    };
+    this.evicting = run().finally(() => { this.evicting = null; });
+    return this.evicting;
+  }
+
+  private async runEviction(): Promise<number> {
     const entries = await this.entries();
     let total = entries.reduce((sum, entry) => sum + entry.size, 0);
     if (total <= this.maxBytes) return 0;
@@ -175,9 +268,10 @@ export class ChunkCache {
         if (isMissing(error)) return;
         throw error;
       }
-      // Every write scans the whole cache, and a viewer waits on that write,
-      // so a directory's entries are looked at together rather than one by
-      // one. Order is free: eviction sorts by last use and the total only sums.
+      // A scan walks the whole cache — tens of thousands of files — and a
+      // write waits on the scan it schedules, so a directory's entries are
+      // looked at together rather than one by one. Order is free: eviction
+      // sorts by last use and the total only sums.
       await Promise.all(
         listing.map(async (item) => {
           const path = join(directory, item.name);

@@ -8,7 +8,7 @@
 
 import { collectRead } from "./support/cache-reader";
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
-import { chmod, mkdtemp, rm, stat, symlink, utimes, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, rm, stat, symlink, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -61,10 +61,14 @@ describe("inventory failures", () => {
     try {
       const cache = new ChunkCache(root, 10_000);
       const payload = block(2, 256);
-      const delivered = await collectRead(new CachedReader(cache), {
+      const reader = new CachedReader(cache);
+      const delivered = await collectRead(reader, {
         setId: "NEXT", partIdx: 0, start: 0, length: payload.length,
         partLength: payload.length, fetch: async () => payload,
       });
+      // The write and the eviction it schedules happen in the background: the
+      // stream above already has its bytes without waiting for either.
+      await reader.settle();
       expect(delivered).toEqual(payload);
       expect(warning).toHaveBeenCalledWith("cache eviction failed:", expect.objectContaining({ code: "EACCES" }));
       await expect(cache.sizeOnDisk()).rejects.toMatchObject({ code: "EACCES" });
@@ -102,6 +106,69 @@ describe("storing and reading", () => {
   });
 });
 
+describe("checking presence without reading", () => {
+  test("has reports a held chunk without counting a hit", async () => {
+    const cache = new ChunkCache(root, 10_000_000);
+    await cache.put(SET, 0, 0, block(1, 1024));
+
+    expect(await cache.has(SET, 0, 0, 1024)).toBe(true);
+    expect(await cache.has(SET, 0, 1)).toBe(false);
+    expect(cache.stats()).toMatchObject({ hits: 0, misses: 0 });
+  });
+
+  test("has rejects a chunk of the wrong size, the same as get", async () => {
+    const cache = new ChunkCache(root, 10_000_000);
+    await cache.put(SET, 0, 0, block(1, 100));
+
+    expect(await cache.has(SET, 0, 0, 200)).toBe(false);
+  });
+
+  test("has does not bump the access time a real read would", async () => {
+    const cache = new ChunkCache(root, 10_000_000);
+    await cache.put(SET, 0, 0, block(1, 100));
+    const path = chunkPath(root, SET, 0, 0);
+    const before = (await stat(path)).atimeMs;
+
+    await cache.has(SET, 0, 0, 100);
+
+    expect((await stat(path)).atimeMs).toBe(before);
+  });
+
+  test("has sees a chunk whose write has not landed on disk yet", async () => {
+    const cache = new ChunkCache(root, 10_000_000);
+    const payload = block(4, 2048);
+
+    const writing = cache.put(SET, 0, 2, payload);
+    expect(await cache.has(SET, 0, 2, payload.length)).toBe(true);
+
+    await writing;
+  });
+});
+
+describe("a write not yet on disk", () => {
+  test("a concurrent get is served the pending bytes rather than missing", async () => {
+    const cache = new ChunkCache(root, 10_000_000);
+    const payload = block(9, 4096);
+
+    // Not awaited: the write is still in flight when `get` is called below.
+    const writing = cache.put(SET, 0, 0, payload);
+    const seen = await cache.get(SET, 0, 0, payload.length);
+
+    expect(seen).toEqual(payload);
+    expect(cache.stats().hits).toBe(1);
+    await writing;
+  });
+
+  test("pending bytes are also rejected on a size mismatch", async () => {
+    const cache = new ChunkCache(root, 10_000_000);
+    const writing = cache.put(SET, 0, 0, block(1, 100));
+
+    expect(await cache.get(SET, 0, 0, 999)).toBeNull();
+
+    await writing;
+  });
+});
+
 describe("the quota", () => {
   // Root bypasses filesystem write permissions, so it cannot reproduce EACCES.
   test.skipIf(process.getuid?.() === 0)("automatic eviction failure preserves playback while explicit eviction reports it", async () => {
@@ -117,6 +184,9 @@ describe("the quota", () => {
       const reader = new CachedReader(cache);
 
       const delivered = await collectRead(reader, { setId: "NEXT", partIdx: 0, start: 0, length: payload.length, partLength: payload.length, fetch: async () => payload });
+      // The write and the eviction it schedules happen in the background: the
+      // stream above already has its bytes without waiting for either.
+      await reader.settle();
 
       expect(delivered).toEqual(payload);
       expect(await cache.get(SET, 0, 0)).toEqual(block(1));
@@ -231,5 +301,30 @@ describe("concurrency", () => {
     await Promise.all(Array.from({ length: 8 }, () => cache.put(SET, 0, 0, payload)));
 
     expect(await cache.get(SET, 0, 0, 8192)).toEqual(payload);
+  });
+
+  /** Many chunks landing together each schedule eviction; none of that may be lost or duplicated. */
+  test("writes past the budget arriving together still land under it once settled", async () => {
+    const cache = new ChunkCache(root, 4096);
+
+    await Promise.all(Array.from({ length: 20 }, (_, i) => cache.put(SET, 0, i, block(i, 1024))));
+
+    expect(await cache.sizeOnDisk()).toBeLessThanOrEqual(4096);
+  });
+
+  /** A scan already running is shared rather than walked a second time in parallel. */
+  test("two evictions requested together share one run and its result", async () => {
+    const cache = new ChunkCache(root, 1024);
+    // Written directly, bypassing `put`, so nothing has scheduled a scan yet
+    // and the two calls below are the first to ask for one.
+    const path = chunkPath(root, SET, 0, 0);
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(path, block(1, 2048));
+
+    const first = cache.evict();
+    const second = cache.evict();
+
+    expect(first).toBe(second);
+    expect(await first).toBe(2048);
   });
 });

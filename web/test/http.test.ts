@@ -120,6 +120,26 @@ describe("the catalog route", () => {
     expect(body).not.toContain("chatId");
     expect(body).not.toContain("messageId");
   });
+
+  test("answers 304 once its own etag comes back as If-None-Match", async () => {
+    const first = await request("/api/sets");
+    const etag = first.headers.get("etag");
+    expect(etag).not.toBeNull();
+
+    const revalidated = await rawRequest(server.port, "/api/sets", { headers: { "if-none-match": etag! } });
+
+    expect(revalidated.status).toBe(304);
+    expect(revalidated.headers.get("content-length")).toBe("0");
+  });
+
+  test("a stream response is never compressed even when the request accepts it", async () => {
+    const response = await rawRequest(server.port, `/api/sets/${SET}/stream`, {
+      headers: { "accept-encoding": "gzip, br" },
+    });
+
+    expect(response.headers.get("content-encoding")).toBeUndefined();
+    expect(lengthOf(response)).toBe(response.body.byteLength);
+  });
 });
 
 describe("the stream route", () => {

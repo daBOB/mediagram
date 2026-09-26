@@ -36,21 +36,27 @@ export async function findNewestChannelIndex(
   now: number = Math.floor(Date.now() / 1000),
 ): Promise<FoundIndex | NoIndex> {
   const found = new Map<number, Api.Message>();
-  const pinned = await telegram.client.getMessages(telegram.peer, {
+
+  // Independent reads over the same connection: the marker search does not
+  // need the pinned list's result to start, or the other way around. Only
+  // the pinned read is allowed to fail the whole call — the marker search
+  // already tolerates missing the channel's own supplement to it.
+  const pinnedRequest = telegram.client.getMessages(telegram.peer, {
     filter: new Api.InputMessagesFilterPinned(),
     limit: MOST_PINNED,
   });
+  const markedRequest = telegram.client
+    .getMessages(telegram.peer, { search: INDEX_MARKER, limit: MOST_MARKED })
+    .catch(() => [] as Api.Message[]);
+
+  const pinned = await pinnedRequest;
   for (const message of pinned) found.set(message.id, message);
 
-  try {
-    const marked = await telegram.client.getMessages(telegram.peer, {
-      search: INDEX_MARKER,
-      limit: MOST_MARKED,
-    });
-    for (const message of marked) if (!found.has(message.id)) found.set(message.id, message);
-  } catch {
-    // The pins are the half that matters; a stale library is better than none.
-  }
+  // The pins are the half that matters; a stale library is better than none,
+  // which is why a failure here was already swallowed above rather than
+  // awaited into a throw.
+  const marked = await markedRequest;
+  for (const message of marked) if (!found.has(message.id)) found.set(message.id, message);
 
   // Only the channel's own posts: a message a member slipped in is not a
   // snapshot anyone published.

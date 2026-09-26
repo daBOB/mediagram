@@ -36,6 +36,20 @@ test("subscription precedes initial sync and attaching a follower always request
   expect(order).toEqual(["subscribe", "sync", "unsubscribe"]);
 });
 
+test("start subscribes without waiting for a slow initial sync round", async () => {
+  const gate = deferred<void>();
+  const updates = new LibraryUpdates(() => () => {}, {
+    once: async () => { await gate.promise; return { pulled: 0, pushed: false }; },
+  });
+  let finished = false;
+  // If start() awaited the round this would hang until the gate opens, and
+  // the test's own timeout would be the failure.
+  await updates.start().then(() => { finished = true; });
+  expect(finished).toBe(true);
+  gate.resolve();
+  updates.stop();
+});
+
 test("a package catalog never follows channel index events", async () => {
   let event!: (kind: LibraryEvent) => void;
   let syncs = 0;

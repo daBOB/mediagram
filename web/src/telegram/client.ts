@@ -8,6 +8,7 @@
 
 import { Api, TelegramClient, sessions } from "teleproto";
 import type { Config } from "../config";
+import { MediaCache } from "./media-cache";
 import { sessionName } from "./session-name";
 
 /** Bot-API dialog ids are `-100` followed by the bare channel id. */
@@ -20,10 +21,14 @@ export function bareChannelId(chatId: number): number {
 }
 
 export class Telegram {
+  private readonly media: MediaCache<Api.TypeMessageMedia>;
+
   private constructor(
     readonly client: TelegramClient,
     private readonly channel: Api.InputChannel,
-  ) {}
+  ) {
+    this.media = new MediaCache((messageId) => this.fetchPartMedia(messageId));
+  }
 
   /**
    * The channel as a *peer*, which is what the convenience wrappers want.
@@ -71,18 +76,33 @@ export class Telegram {
   /**
    * The document media of a part's message.
    *
+   * Cached for a while rather than fetched fresh on every call: a run's
+   * chunk writes, its readahead, and the audio-track probe used to each pay
+   * their own `channels.GetMessages` for the same message, on an account
+   * where every request shares one flood limit (`download-gate.ts`). The
+   * file reference inside a document handle still expires on Telegram's own
+   * clock, though, so this is a cache of a recent answer, not of the truth:
+   * `forgetPartMedia` drops an entry the moment a download reports it stale,
+   * and the caller is expected to ask again and retry once.
+   */
+  async partMedia(messageId: number): Promise<Api.TypeMessageMedia> {
+    return this.media.get(messageId);
+  }
+
+  /** Drops a cached document handle so the next `partMedia` asks Telegram again. */
+  forgetPartMedia(messageId: number): void {
+    this.media.invalidate(messageId);
+  }
+
+  /**
    * Invoked directly rather than through `client.getMessages`, because
    * `channels.getMessages` takes an `InputChannel` and the convenience
    * wrapper is happy to be handed an `InputPeer` instead. The request then
    * serializes wrong, and the failure surfaces as a parse error deep in the
    * *response* — "a TLObject was trying to be read when it should not be
    * read" — which reads like a stale schema and is not.
-   *
-   * Fetched per stream rather than cached: a document handle carries a file
-   * reference that Telegram expires, and a stale one fails mid-download
-   * rather than at the start.
    */
-  async partMedia(messageId: number): Promise<Api.TypeMessageMedia> {
+  private async fetchPartMedia(messageId: number): Promise<Api.TypeMessageMedia> {
     const result = await this.client.invoke(
       new Api.channels.GetMessages({
         channel: this.channel,

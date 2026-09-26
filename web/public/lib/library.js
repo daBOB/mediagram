@@ -38,8 +38,15 @@ function episodeOrder(set) {
   return match ? Number(match[0]) : Number.MAX_SAFE_INTEGER;
 }
 
+/**
+ * Every title, show and course name in this library sorts through the same
+ * collator rather than a fresh one per comparison — building one is the
+ * expensive part, and a sort calls its comparator on every pair.
+ */
+const COLLATE = new Intl.Collator(undefined, { numeric: true }).compare;
+
 function byTitle(a, b) {
-  return (a.title ?? "").localeCompare(b.title ?? "", undefined, { numeric: true });
+  return COLLATE(a.title ?? "", b.title ?? "");
 }
 
 /**
@@ -76,7 +83,7 @@ function sortDivision(division) {
   division.items.sort((a, b) => episodeOrder(a) - episodeOrder(b) || byTitle(a, b));
   division.children.sort((a, b) => {
     if (a.season != null && b.season != null) return a.season - b.season;
-    return a.title.localeCompare(b.title, undefined, { numeric: true });
+    return COLLATE(a.title, b.title);
   });
   for (const child of division.children) sortDivision(child);
 }
@@ -271,7 +278,7 @@ function collections(sets, fallbackName) {
         ),
       };
     })
-    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    .sort((a, b) => COLLATE(a.name, b.name));
 }
 
 /**
