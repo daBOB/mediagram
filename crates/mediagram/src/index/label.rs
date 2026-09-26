@@ -3,7 +3,7 @@
 //! own title. `status` and `remove` both print it, so a set reads the same
 //! wherever a person meets it.
 
-use mlib_spec::caption::{Episode, Kind, document_code, episode_code, lesson_code};
+use mlib_spec::caption::{Episode, Kind, docu_code, document_code, episode_code, lesson_code};
 
 /// The fields a label is made of, borrowed from whichever row holds them.
 pub struct Named<'a> {
@@ -38,6 +38,7 @@ impl Named<'_> {
             Kind::Ep => Some(episode_code(season, episode)),
             Kind::Tut => Some(lesson_code(season, episode)),
             Kind::Doc => Some(document_code(season, episode)),
+            Kind::Docu => Some(docu_code(season, episode)),
             Kind::Movie => None,
         }
     }

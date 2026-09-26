@@ -28,8 +28,9 @@ pub fn distinct_titles(conn: &Connection) -> Result<Vec<(Kind, u64)>> {
         };
         match kind.parse::<Kind>() {
             Ok(kind @ (Kind::Movie | Kind::Ep)) => out.push((kind, id)),
-            // Poster keys exist only for films and series.
-            Ok(Kind::Tut | Kind::Doc) => {}
+            // Poster keys exist only for films and series; a course or a
+            // documentary is keyed by its title, not a provider id.
+            Ok(Kind::Tut | Kind::Doc | Kind::Docu) => {}
             // A kind this build does not know cannot be given a poster key.
             Err(err) => tracing::warn!(%err, "no poster"),
         }

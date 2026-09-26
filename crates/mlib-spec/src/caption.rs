@@ -2,6 +2,9 @@
 //! deterministic because captions are compared byte-for-byte in tests and
 //! rewritten in place when metadata is corrected.
 
+#[path = "caption_display.rs"]
+mod caption_display;
+
 use serde::{Deserialize, Serialize};
 
 use crate::ids::ProviderIds;
@@ -27,6 +30,14 @@ pub enum Kind {
     /// anything about a document, and a reader that finds them absent is
     /// looking at something it must not try to play.
     Doc,
+    /// A documentary recorded from a TV station, not looked up at any
+    /// provider — a TMDB film with the documentary genre stays `Movie`.
+    ///
+    /// Two shapes share this one kind: a standalone film (`show` absent, only
+    /// `title`, exactly like `Movie`), and one episode of a folder-collection
+    /// such as "Terra X" (`show` the collection title, `s`/`e` the chapter
+    /// and number within it, filed the way a course lesson is).
+    Docu,
 }
 
 /// Episode number: a single episode or an inclusive range for multi-episode files.
@@ -128,40 +139,6 @@ impl Caption {
             ..self.clone()
         }
     }
-
-    /// Human-readable label, e.g. `Dune: Part Two (2024)` or `Severance S02E01`.
-    #[must_use]
-    pub fn display_name(&self) -> String {
-        match self.t {
-            Kind::Movie => match (self.title.as_deref(), self.year) {
-                (Some(t), Some(y)) => format!("{t} ({y})"),
-                (Some(t), None) => t.to_string(),
-                (None, _) => self.set.clone(),
-            },
-            Kind::Ep => {
-                let show = self.show.as_deref().unwrap_or("?");
-                match (self.s, self.e, self.abs) {
-                    (Some(s), Some(e), _) => format!("{show} {}", episode_code(s, e)),
-                    (_, _, Some(a)) => format!("{show} #{a:03}"),
-                    _ => show.to_string(),
-                }
-            }
-            Kind::Tut => {
-                let course = self.show.as_deref().unwrap_or("?");
-                match (self.s, self.e) {
-                    (Some(c), Some(l)) => format!("{course} {}", lesson_code(c, l)),
-                    _ => course.to_string(),
-                }
-            }
-            Kind::Doc => {
-                let course = self.show.as_deref().unwrap_or("?");
-                match (self.s, self.e) {
-                    (Some(c), Some(d)) => format!("{course} {}", document_code(c, d)),
-                    _ => course.to_string(),
-                }
-            }
-        }
-    }
 }
 
 /// `C02L02`. Chapter and lesson rather than season and episode, so a course
@@ -177,6 +154,13 @@ pub fn lesson_code(chapter: u32, lesson: Episode) -> String {
 #[must_use]
 pub fn document_code(chapter: u32, document: Episode) -> String {
     format!("C{chapter:02}D{:02}", document.first())
+}
+
+/// `C02E03`. A documentary collection's episode, numbered inside its chapter
+/// the way a lesson or a document is; `E` keeps it from reading as either.
+#[must_use]
+pub fn docu_code(chapter: u32, episode: Episode) -> String {
+    format!("C{chapter:02}E{:02}", episode.first())
 }
 
 /// `S02E01` or `S02E01-E02`.

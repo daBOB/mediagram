@@ -33,11 +33,16 @@ pub async fn prepare_and_record_set(cfg: &Config, new: &NewSet) -> Result<Planne
         .with_context(|| format!("{} has no usable file name", new.file.display()))?
         .to_string();
 
-    // A lesson is described by hand, so it needs neither a key nor a lookup.
-    if new.lesson.is_some() && (new.tmdb.is_some() || new.tvdb.is_some() || new.imdb.is_some()) {
-        bail!("--course describes a tutorial, which has no provider id; drop --tmdb/--tvdb/--imdb");
+    // A lesson or a documentary is described by hand, so neither needs a key
+    // or a lookup.
+    let grouped_or_docu = new.lesson.is_some() || new.docu;
+    if grouped_or_docu && (new.tmdb.is_some() || new.tvdb.is_some() || new.imdb.is_some()) {
+        bail!(
+            "--course describes a tutorial and add-docu a documentary, neither of which has a \
+             provider id; drop --tmdb/--tvdb/--imdb"
+        );
     }
-    if new.lesson.is_none() && !new.manual && cfg.tmdb_key.is_none() {
+    if !grouped_or_docu && !new.manual && cfg.tmdb_key.is_none() {
         bail!("no tmdb_key configured in config.toml; set one or pass --manual");
     }
 
@@ -55,7 +60,8 @@ pub async fn prepare_and_record_set(cfg: &Config, new: &NewSet) -> Result<Planne
         manual: new.manual,
     };
     let resolved = match lesson {
-        Some(lesson) => resolve::lesson(&lesson.course, &resolve_input),
+        Some(lesson) => resolve::lesson(lesson.kind, &lesson.course, &resolve_input),
+        None if new.docu => resolve::docu_file(new.docu_title.as_deref(), &resolve_input),
         None => resolve::resolve(&api, &resolve_input, &mut DialoguerPrompter)
             .await
             .context("resolving metadata")?,

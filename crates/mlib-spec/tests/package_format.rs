@@ -5,6 +5,7 @@
 use mlib_spec::package::{
     LatestPointer, PACKAGE_FORMAT, PackageManifest, PointerError, PosterEntry, associated_data,
     backdrop_key, key_id, package_file_name, pointer_is_readable, poster_key_is_valid,
+    title_art_key,
 };
 
 fn pointer() -> LatestPointer {
@@ -327,6 +328,32 @@ fn poster_keys_accept_leading_zeros_in_the_id() {
     assert!(poster_key_is_valid("tmdb-movie-00693134"));
     assert!(poster_key_is_valid("tmdb-movie-0"));
     assert!(poster_key_is_valid("tmdb-movie-00000000"));
+}
+
+/// A title with no provider id — a documentary, or a course used as a
+/// tutorial's cover — is keyed by its own slug rather than a provider id.
+#[test]
+fn poster_keys_accept_a_title_slug_and_its_backdrop() {
+    assert!(poster_key_is_valid("title-terra-x"));
+    assert!(poster_key_is_valid("title-terra-x-bg"));
+    assert!(poster_key_is_valid("title-a"));
+    for bad in [
+        "title-",
+        "title--x",
+        "title-Terra-X",
+        "title-terra-x-",
+        "title-terra_x",
+        "title-terra-x-bg-bg",
+    ] {
+        assert!(!poster_key_is_valid(bad), "`{bad}` must be rejected");
+    }
+}
+
+#[test]
+fn title_art_key_slugs_the_name_and_rejects_an_empty_slug() {
+    assert_eq!(title_art_key("Terra X").as_deref(), Some("title-terra-x"));
+    assert_eq!(title_art_key("日本語"), None);
+    assert!(poster_key_is_valid(&title_art_key("Terra X").unwrap()));
 }
 
 #[test]

@@ -58,6 +58,7 @@ fn new_set(args: AddArgs) -> Result<NewSet> {
             chapter_title: args.chap,
             path: args.path,
             number: args.lesson,
+            kind: mlib_spec::Kind::Tut,
         }),
         None => None,
     };
@@ -76,5 +77,6 @@ fn new_set(args: AddArgs) -> Result<NewSet> {
         slang: args.slang,
         hdr: args.hdr,
         lesson,
+        ..NewSet::default()
     })
 }

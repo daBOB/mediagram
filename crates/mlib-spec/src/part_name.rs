@@ -1,7 +1,7 @@
 //! Telegram trims document names to 60 characters. Names here are a human
 //! convenience only; captions and the index are authoritative.
 
-use crate::caption::{Caption, Episode, Kind};
+use crate::caption::{Caption, Episode, Kind, docu_code};
 
 pub const MAX_NAME_LEN: usize = 60;
 const MAX_EXT_LEN: usize = 8;
@@ -42,6 +42,23 @@ pub fn base_name(c: &Caption) -> String {
                 (None, _) => course,
             }
         }
+        Kind::Docu => match c.show.as_deref() {
+            // A collection episode: same shape as a lesson's, its own code.
+            Some(_) => {
+                let collection = with_year(c.show.as_deref().unwrap_or(&c.set));
+                let code = match (c.s, c.e) {
+                    (Some(ch), Some(n)) => Some(docu_code(ch, n).to_lowercase()),
+                    _ => None,
+                };
+                match (code, c.title.as_deref()) {
+                    (Some(code), Some(title)) => format!("{collection} - {code} - {title}"),
+                    (Some(code), None) => format!("{collection} - {code}"),
+                    (None, _) => collection,
+                }
+            }
+            // A standalone documentary reads exactly as a movie does.
+            None => with_year(c.title.as_deref().unwrap_or(&c.set)),
+        },
     };
     sanitize(&raw)
 }

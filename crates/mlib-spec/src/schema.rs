@@ -5,26 +5,26 @@
 mod schema_versions;
 use schema_versions::{V1, V2, V3, V4, V5, V6};
 
-pub const SCHEMA_VERSION: i64 = 9;
+pub const SCHEMA_VERSION: i64 = 10;
 
 /// The oldest index a *reader* of someone else's snapshot still accepts.
 ///
 /// A channel snapshot is written by whichever machine uploads, and that
 /// machine is upgraded on its own schedule; refusing its snapshot until then
 /// would stop every reader. v7 only added `shows.certification`, v8 only
-/// `shows.popularity`, and v9 only `shows.collection_id`/`collection_name`/
-/// `series_type` plus the wholly new `credits` and `franchises` tables —
-/// every one of which every reader treats as optional. The web player's
-/// `OLDEST_READABLE_SCHEMA` (`web/src/catalog.ts`) is the same number. The
-/// uploader's own index is still held to [`SCHEMA_VERSION`]: that one it can
-/// migrate.
+/// `shows.popularity`, v9 only `shows.collection_id`/`collection_name`/
+/// `series_type` plus the wholly new `credits` and `franchises` tables, and
+/// v10 only the wholly new `artwork` table — every one of which every reader
+/// treats as optional. The web player's `OLDEST_READABLE_SCHEMA`
+/// (`web/src/catalog.ts`) is the same number. The uploader's own index is
+/// still held to [`SCHEMA_VERSION`]: that one it can migrate.
 pub const OLDEST_READABLE_SCHEMA: i64 = 6;
 
 /// Every layout a reader accepts: [`OLDEST_READABLE_SCHEMA`] through
 /// [`SCHEMA_VERSION`], each one. Spelled out because a package pointer is
 /// checked by membership — listing only the two ends once refused every
 /// version between them. A test holds this to the range.
-pub const READABLE_SCHEMAS: &[i64] = &[6, 7, 8, 9];
+pub const READABLE_SCHEMAS: &[i64] = &[6, 7, 8, 9, 10];
 
 /// The index's file name, wherever a copy of it sits: the uploader's data
 /// directory, the snapshot pinned in the channel, and a metadata package all
@@ -38,7 +38,7 @@ pub const INDEX_FILE: &str = "library.db";
 /// what lets a migration do something other than `CREATE ... IF NOT EXISTS`.
 /// SQLite has no `ADD COLUMN IF NOT EXISTS`, so an idempotent-by-wording list
 /// could never gain a column.
-pub const GROUPS: &[&[&str]] = &[V1, V2, V3, V4, V5, V6, V7, V8, V9];
+pub const GROUPS: &[&[&str]] = &[V1, V2, V3, V4, V5, V6, V7, V8, V9, V10];
 
 /// Every statement needed to reach `version` from an empty database. Used by
 /// tests and by anyone reconstructing an older layout.
@@ -101,6 +101,25 @@ const V9: &[&str] = &[
         PRIMARY KEY(source, id)
     )",
 ];
+
+/// v9 → v10: custom poster and backdrop art the uploader supplies directly,
+/// an additive group on top of v9 so nobody has to coordinate who publishes
+/// that one first.
+///
+/// One wholly new table, keyed the way a poster key already is: the existing
+/// `tmdb-…`/`tmdb-…-bg` key overrides TMDB's own art where both exist, and a
+/// title with no provider id — a documentary, or a course used as a
+/// tutorial's cover — gets `title-{slug}`/`title-{slug}-bg` instead, the slug
+/// taken from its show or course name (`mlib_spec::package::title_art_key`,
+/// the same derivation `add-course` uses for its default collection id). The
+/// bytes ride the index push like everything else in `library.db`, so web
+/// and Android both get them with no extra Telegram round trip, and a v9
+/// reader simply never queries a table it does not know exists.
+const V10: &[&str] = &["CREATE TABLE IF NOT EXISTS artwork(
+        key TEXT PRIMARY KEY,
+        mime TEXT NOT NULL,
+        bytes BLOB NOT NULL
+    )"];
 
 /// How `sets.status` and `parts.status` spell each state. Written once here,
 /// beside the one SQL fragment that has to spell them inline; every other

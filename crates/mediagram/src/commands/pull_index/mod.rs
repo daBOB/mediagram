@@ -172,4 +172,7 @@ fn print_report(report: &MergeReport, dry_run: bool) {
     if report.franchises_added > 0 {
         println!("{} franchise(s) added", report.franchises_added);
     }
+    if report.artwork_added > 0 {
+        println!("{} artwork row(s) added", report.artwork_added);
+    }
 }

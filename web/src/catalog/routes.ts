@@ -12,7 +12,7 @@ import { SearchIndex } from "../search/index";
 import { providerFactsByShow, showMeta } from "./shows";
 import { creditsFor, franchises, peopleSearch, personFor } from "./credits";
 import type { SheetStore } from "../thumbs/sheets";
-import { artworkResponse } from "./artwork-routes";
+import { artworkKeys, artworkResponse } from "./artwork-routes";
 
 const SUMMARY_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/summary$/;
 const AUDIO_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/audio$/;
@@ -34,15 +34,22 @@ export interface CatalogRouterOptions {
 export function createCatalogRouter(options: CatalogRouterOptions) {
   const { db, audio } = options;
   const posters = options.posters ?? new PosterStore(null);
+  // A custom image (the `artwork` table) counts as "has art" beside a
+  // packaged file: a course or an untagged title with only a manual upload
+  // must still show it, not fall back to its initials for want of a file.
+  const artwork = artworkKeys(db);
   const index = new SearchIndex(listSearchable(db));
   const provider = providerFactsByShow(db);
-  const has = (key: string) => posters.has(key);
+  const has = (key: string | null) => key !== null && (posters.has(key) || artwork.has(key));
   const people = peopleSearch(db, has);
 
   // Catalog and search results share the same browser-facing projection.
   // Storage/provider identifiers never become media locations in a response.
   function forBrowser({ tmdb, ...set }: PlayableSet) {
-    const key = posterKeyFor(set.kind, tmdb);
+    // A course, a documentary and an untagged film have no provider id; their
+    // art, if any, is keyed from their own name (the collection's, when they
+    // belong to one) rather than from an id nothing ever gave them.
+    const key = posterKeyFor(set.kind, tmdb, set.show ?? set.title);
     const seasonKey = set.kind === "ep" ? seasonPosterKeyFor(key, set.season) : null;
     const backdropKey = backdropKeyFor(key);
     const facts = key === null ? undefined : provider.get(key);
@@ -50,8 +57,8 @@ export function createCatalogRouter(options: CatalogRouterOptions) {
       ...set,
       offline: options.held?.has(set.setId) ?? false,
       showKey: key,
-      poster: posters.has(key) ? key : null,
-      backdrop: posters.has(backdropKey) ? backdropKey : null,
+      poster: has(key) ? key : null,
+      backdrop: has(backdropKey) ? backdropKey : null,
       genres: facts?.genres ?? [],
       fsk: facts?.fsk ?? null,
       // What the home page's editorial picks read: one catalog request
@@ -63,7 +70,7 @@ export function createCatalogRouter(options: CatalogRouterOptions) {
       collectionName: facts?.collectionName ?? null,
       seriesType: facts?.seriesType ?? null,
       showStatus: facts?.status ?? null,
-      seasonPoster: posters.has(seasonKey) ? seasonKey : null,
+      seasonPoster: has(seasonKey) ? seasonKey : null,
       hasSummary: summary(db, set.setId) !== null,
       subtitles: subtitleLanguages(db, set.setId),
     };

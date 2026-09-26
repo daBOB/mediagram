@@ -167,9 +167,11 @@ export function spellCount(count) {
   return count <= 20 ? NUMBER_WORDS[count] : String(count);
 }
 
-/** An extent: `three shows`, `one show`, `170 lessons`. */
+/** An extent: `three shows`, `one show`, `170 lessons`, `five documentaries`. */
 export function countOf(count, noun) {
-  return `${spellCount(count)} ${noun}${count === 1 ? "" : "s"}`;
+  if (count === 1) return `${spellCount(count)} ${noun}`;
+  const plural = /[^aeiou]y$/i.test(noun) ? `${noun.slice(0, -1)}ies` : `${noun}s`;
+  return `${spellCount(count)} ${plural}`;
 }
 
 /**

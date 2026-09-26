@@ -125,7 +125,7 @@ pub(super) async fn fetch_details(api: &impl TmdbApi, id: u64, kind: Kind) -> Re
     let path = match kind {
         Kind::Movie => format!("/movie/{id}"),
         Kind::Ep => format!("/tv/{id}"),
-        Kind::Tut | Kind::Doc => {
+        Kind::Tut | Kind::Doc | Kind::Docu => {
             bail!("a course has no TMDB entry; courses are described by hand")
         }
     };
@@ -157,14 +157,17 @@ pub(super) async fn fetch_details(api: &impl TmdbApi, id: u64, kind: Kind) -> Re
     })
 }
 
-/// Metadata for a course lesson. No lookup: TMDB has no courses, so
-/// everything comes from what the caller passed and from the file name.
-pub fn lesson(course: &str, input: &ResolveInput) -> ResolvedItem {
+/// Metadata for a course lesson, or a documentary collection's episode. No
+/// lookup: neither has a TMDB entry, so everything comes from what the
+/// caller passed and from the file name. `kind` is `Kind::Tut` for a lesson
+/// and `Kind::Docu` for a documentary filed inside a collection folder —
+/// both are numbered and grouped identically, and only the shelf differs.
+pub fn lesson(kind: Kind, course: &str, input: &ResolveInput) -> ResolvedItem {
     let (_, title) = crate::media::file_names::split_number_and_title(
         crate::media::file_names::stem(&input.file_name),
     );
     ResolvedItem {
-        kind: Kind::Tut,
+        kind,
         ids: ProviderIds::default(),
         show: Some(course.to_string()),
         title,
@@ -172,5 +175,26 @@ pub fn lesson(course: &str, input: &ResolveInput) -> ResolvedItem {
         season: input.season.or(Some(1)),
         episode: input.episode.map(Episode::Single),
         abs: input.abs,
+    }
+}
+
+/// Metadata for a standalone documentary: no course, no lookup, titled from
+/// its file name unless `title` overrides it.
+pub fn docu_file(title: Option<&str>, input: &ResolveInput) -> ResolvedItem {
+    let title = title.map(str::to_string).or_else(|| {
+        let (_, guessed) = crate::media::file_names::split_number_and_title(
+            crate::media::file_names::stem(&input.file_name),
+        );
+        guessed
+    });
+    ResolvedItem {
+        kind: Kind::Docu,
+        ids: ProviderIds::default(),
+        show: None,
+        title,
+        year: None,
+        season: None,
+        episode: None,
+        abs: None,
     }
 }

@@ -43,7 +43,7 @@ function shelvesOf(
 ) {
   const watched = state.watched ?? {};
   return homeShelves({
-    library: groupLibrary(sets),
+    library: { ...groupLibrary(sets), documentaries: { collections: [], singles: [] } },
     byId: new Map(sets.map((one) => [one.setId, one])),
     // The store hands these over newest first; so does this.
     progress: [...(state.progress ?? [])].sort((a, b) => b.updatedAt - a.updatedAt),

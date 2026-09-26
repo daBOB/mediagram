@@ -176,7 +176,7 @@ describe("next-up fixtures", () => {
     test(one.name, () => {
       const sets = one.order.map((setId, index) => episodeOf(setId, index + 1));
       const shelves = homeShelves({
-        library: groupLibrary(sets),
+        library: { ...groupLibrary(sets), documentaries: { collections: [], singles: [] } },
         byId: new Map(sets.map((set) => [set.setId, set])),
         // The store hands these over newest first; so does this.
         progress: [...one.progress].sort((a, b) => b.updatedAt - a.updatedAt),

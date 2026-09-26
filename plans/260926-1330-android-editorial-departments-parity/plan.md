@@ -10,6 +10,8 @@ Installed Android builds read schemas 6–8 only and **refuse a v9 package**. Th
 in this branch (`mlib_spec::READABLE_SCHEMAS = [6,7,8,9]`) fixes that, so a phone/TV build
 from 0.62.0 or later must be installed on the phone (caad49da), the TV emulator and the TV
 box (192.168.0.35:5555) before the first v9 push/export. Same for both uploader machines.
+**v10 (artwork table, 0.63.0) moves the bar:** a pre-0.63 Android build refuses a v10
+package, so install 0.63.0+ on all three devices before the first push from a 0.63 uploader.
 
 ## Owed screens and data (web reference in parentheses)
 
@@ -22,6 +24,7 @@ box (192.168.0.35:5555) before the first v9 push/export. Same for both uploader 
 | Collections: franchises (≥2 held) + lists; franchise page (`collections-page.js`) | lists | franchise cards and page |
 | Search: grouped results, People, Collections, filters (`search-view.js`) | flat | people + collections |
 | Latest, Genres index (`utility-pages.js`) | — | both |
+| Documentaries department (`documentaries.js`): `docu` kind, collections grouped like courses, singles row; search group; "N documentaries" | unknown kind → Movies shelf (core already derives `title-{slug}` art keys and reads the v10 `artwork` table) | department, catalog kind, search group |
 | Settings › Appearance (theme/accent/artwork) | settings screen | decide: TV/phone may deliberately differ — write down why |
 
 v9 data: `shows.collection_id/collection_name/series_type`, tables `credits` (incl.

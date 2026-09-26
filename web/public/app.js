@@ -13,11 +13,8 @@
 import { el } from "./lib/dom.js";
 import { countOf } from "./lib/format.js";
 import { renderSearch } from "./lib/catalog/search-view.js";
-import {
-  groupLibrary,
-  nextAfter,
-  nextInQueue,
-} from "./lib/library.js";
+import { groupLibrary, nextAfter, nextInQueue } from "./lib/library.js";
+import { countDocumentaries, groupDocumentaries } from "./lib/documentaries.js";
 import { catalogOf, loadLink } from "./lib/link.js";
 import { colophonLine } from "./lib/colophon.js";
 import { watchStatus } from "./lib/status/status-view.js";
@@ -40,7 +37,7 @@ import { homeEditorial } from "./lib/catalog/editorial-picks.js";
 import { editorsChoice, loadEditorsChoice, onEditorsChoice } from "./lib/editors-choice.js";
 import { describeFilm, filmPage } from "./lib/catalog/film-page.js";
 import { renderSeries } from "./lib/catalog/series-page.js";
-import { renderMoviesDept, renderShowsDept } from "./lib/catalog/department-pages.js";
+import { renderDocumentariesDept, renderMoviesDept, renderShowsDept } from "./lib/catalog/department-pages.js";
 import { renderSettings } from "./lib/catalog/settings-page.js";
 import { renderPerson, titlesByKey, visiblePeople } from "./lib/catalog/cast.js";
 import { similarTo } from "./lib/catalog/similar.js";
@@ -77,7 +74,7 @@ function loadPlayer() {
 }
 
 /** @type {import("./lib/library.js").Library} */
-let library = { movies: [], series: [], tutorials: [] };
+let library = { movies: [], series: [], tutorials: [], documentaries: { collections: [], singles: [] } };
 
 /**
  * Every set by id, for the shelves built from watch state.
@@ -330,8 +327,8 @@ async function openTitle(set, queue, options, request) {
     });
     return;
   }
-  const collection = [...library.series, ...library.tutorials].find((entry) =>
-    entry.name === set.show,
+  const collection = [...library.series, ...library.tutorials, ...library.documentaries.collections].find(
+    (entry) => entry.name === set.show,
   );
   if (collection && set.kind === "ep") preloadAfter(collection, set.setId);
   openPlayer(set, {
@@ -508,11 +505,13 @@ const visibleSets = (sets = catalogSets) =>
  */
 function applyCatalog(sets = catalogSets) {
   const visible = visibleSets(sets);
-  library = groupLibrary(visible);
+  const documentaries = groupDocumentaries(visible.filter((set) => set.kind === "docu"));
+  library = { ...groupLibrary(visible), documentaries };
   byId = new Map(visible.map((set) => [set.setId, set]));
   document.getElementById("n-movies").textContent = String(library.movies.length);
   document.getElementById("n-series").textContent = String(library.series.length);
   document.getElementById("n-tutorials").textContent = String(library.tutorials.length);
+  document.getElementById("n-documentaries").textContent = String(countDocumentaries(library.documentaries));
   document.getElementById("rail-masthead").textContent = ["movies", "series", "tutorials"]
     .map((section) => countOf(library[section].length, SECTIONS[section].extent))
     .join("\n");
@@ -604,7 +603,6 @@ function viewSystem() {
 /** Stops the Settings page's async work, if any is in flight. */
 let stopSettings = null;
 
-
 // A route visit survives redraws, but not leaving and returning to its hash.
 let navigationGeneration = 0;
 let routeGeneration = 0;
@@ -694,11 +692,13 @@ function drawRoute() {
   // Checked before a collection name: films have no collections, and "page"
   // must never be looked up as one.
   if (known === "movies") return name === "page" ? viewMovies(parsePage(folders[0])) : renderMoviesDept(main, deptContext());
+  if (known === "documentaries" && !name) return renderDocumentariesDept(main, deptContext());
 
   if (name) {
     const decoded = decodeURIComponent(name);
-    (known === "series" ? renderSeries : renderCollection)(main, known, library[known].find((entry) => entry.name === decoded), decoded,
-      folders.map(decodeURIComponent), { play, shelf: library[known], open: (section, collection, path) => {
+    const shelf = known === "documentaries" ? library.documentaries.collections : library[known];
+    (known === "series" ? renderSeries : renderCollection)(main, known, shelf.find((entry) => entry.name === decoded), decoded,
+      folders.map(decodeURIComponent), { play, shelf, open: (section, collection, path) => {
         location.hash = `#/${section}/${[collection, ...path].map(encodeURIComponent).join("/")}`;
       } });
   }

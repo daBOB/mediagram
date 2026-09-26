@@ -14,6 +14,7 @@ import { watchedFraction } from "../resume-point.js";
 import { firstItemOf } from "../library.js";
 import { offlineBadge, transcodeBadge } from "./set-badge.js";
 import { GRID, LIST } from "./shelf-mode.js";
+import { SECTIONS } from "./sections.js";
 
 /**
  * `strip` lays plates out as one row that scrolls sideways, as the home page
@@ -25,13 +26,7 @@ import { GRID, LIST } from "./shelf-mode.js";
  * @typedef {import("../library.js").Division} Division
  */
 
-// `extent` is what the shelf counts in, for the line under its title: a
-// catalogue says "twelve films", not "12 items".
-export const SECTIONS = {
-  movies: { label: "Movies", empty: "No films yet.", extent: "film" },
-  series: { label: "Series", empty: "No series yet.", extent: "show" },
-  tutorials: { label: "Tutorials", empty: "No courses yet.", extent: "course" },
-};
+export { SECTIONS };
 
 /**
  * The container the cards go in, in whichever of the two shapes.
@@ -88,9 +83,17 @@ function card({ name, meta, resume, initials, onClick, badges, poster, progress,
   return button;
 }
 
+/** The uploader command a department's empty state points a viewer to. */
+const UPLOAD_HINT = {
+  movies: ["Upload one with ", "mediagram add <file> --tmdb <id>"],
+  series: ["Upload episodes with ", "mediagram add <file> --season 1 --episode 1"],
+  tutorials: ["Upload a course with ", "mediagram add-course <folder>"],
+  documentaries: ["Upload one with ", "mediagram add-docu <file|folder>"],
+};
+
 /**
  * What to say when a shelf is empty: the command that would fill it.
- * @param {"movies"|"series"|"tutorials"} section
+ * @param {"movies"|"series"|"tutorials"|"documentaries"} section
  * @param {{kids?: boolean}} [options] a kids profile is waiting for ratings,
  *   not uploads, so it is told that instead of how to upload
  */
@@ -98,10 +101,8 @@ export function emptyState(section, { kids = false } = {}) {
   if (kids) return el("p", "empty", "Nothing rated FSK 12 or under yet.");
   const p = el("p", "empty");
   p.append(SECTIONS[section].empty + " ");
-  if (section === "movies") p.append("Upload one with "), p.append(el("code", null, "mediagram add <file> --tmdb <id>"));
-  if (section === "series") p.append("Upload episodes with "), p.append(el("code", null, "mediagram add <file> --season 1 --episode 1"));
-  if (section === "tutorials") p.append("Upload a course with "), p.append(el("code", null, "mediagram add-course <folder>"));
-  p.append(".");
+  const [lead, command] = UPLOAD_HINT[section];
+  p.append(lead, el("code", null, command), ".");
   return p;
 }
 
@@ -203,15 +204,16 @@ function withAction(card, label, onAction) {
 }
 
 /**
- * Shows and courses: a grid of collections, each opening its own view.
- * @param {"series"|"tutorials"} section
+ * Shows, courses and documentary collections: a grid of collections, each
+ * opening its own view.
+ * @param {"series"|"tutorials"|"documentaries"} section
  * @param {Collection[]} collections
  * @param {(name: string) => void} onOpen
  * @param {GridOptions} [options]
  */
 export function collectionGrid(section, collections, onOpen, options = {}) {
   const mode = options.mode ?? LIST;
-  const series = section === "series";
+  const { noun, chapterNoun } = SECTIONS[section];
   const grid = container(mode, options.strip);
   for (const collection of collections) {
     // `chapters` counts the folders that hold something, however deep: a
@@ -221,10 +223,7 @@ export function collectionGrid(section, collections, onOpen, options = {}) {
     grid.append(
       card({
         name: collection.name,
-        meta: [
-          countOf(count, series ? "episode" : "lesson"),
-          countOf(chapters, series ? "season" : "chapter"),
-        ].join(" · "),
+        meta: [countOf(count, noun), countOf(chapters, chapterNoun)].join(" · "),
         initials: initialsOf(collection.name),
         // A show's artwork is the one its episodes share.
         poster: firstItemOf(collection.divisions)?.poster ?? null,

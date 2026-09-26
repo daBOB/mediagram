@@ -13,7 +13,7 @@ use crate::course::identity::{collection_id, course_title, duplicate_identity};
 use crate::course::report::{Outcome, Summary, dry_run_table};
 use crate::course::walk::walk_course;
 use crate::index::status::SetStatus;
-use crate::index::{db, set_lookup};
+use crate::index::{artwork, db, set_lookup};
 use crate::telegram::index_publish;
 use crate::upload::finish_set::Uploader;
 use crate::upload::new_set::{LessonOf, NewSet};
@@ -50,6 +50,13 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
     }
 
     let conn = db::open(&cfg.data_dir()?)?;
+    if let Some(key) = mlib_spec::package::title_art_key(&course) {
+        match artwork::adopt_folder(&conn, &args.dir, &key) {
+            Ok(0) => {}
+            Ok(n) => println!("picked up {n} artwork file(s) from {}", args.dir.display()),
+            Err(err) => println!("artwork not stored: {err:#}"),
+        }
+    }
     let mut uploader = Uploader::new(cfg);
     let mut summary = Summary::default();
     for lesson in &walked.lessons {
@@ -137,6 +144,7 @@ async fn upload_one(
             // caption spells as absent rather than as an empty string.
             path: Some(lesson.rel_path.clone()).filter(|p| !p.is_empty()),
             number: Some(lesson.lesson),
+            kind: mlib_spec::Kind::Tut,
         }),
         ..NewSet::default()
     };

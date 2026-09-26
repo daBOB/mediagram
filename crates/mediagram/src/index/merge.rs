@@ -12,7 +12,7 @@
 //! | `parts` | Every row of a set just added. |
 //! | `assets` | Missing `(set_id, kind, lang)` rows, added or shared alike. |
 //! | `shows` | Missing keys inserted; shared keys get their `NULL`s filled. |
-//! | `credits`, `franchises` | Missing keys inserted whole; never partially filled. |
+//! | `credits`, `franchises`, `artwork` | Missing keys inserted whole; never partially filled. |
 //! | `meta` | Never touched — machine-local state, not library content. |
 //!
 //! A shared set whose metadata differs between the two is not decided here:
@@ -24,6 +24,7 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use rusqlite::Connection;
 
+use crate::index::merge_artwork;
 use crate::index::merge_candidates;
 use crate::index::merge_columns::shared_columns;
 use crate::index::merge_copy::{fill_missing_assets, insert_row};
@@ -51,6 +52,7 @@ pub struct MergeReport {
     pub shows_filled: usize,
     pub credits_added: usize,
     pub franchises_added: usize,
+    pub artwork_added: usize,
 }
 
 /// Merges `channel_path`'s index into `local`, one transaction, via `ATTACH`.
@@ -150,6 +152,7 @@ fn copy_kept(
     fill_missing_assets(conn)?;
     let (shows_added, shows_filled) = merge_shows::merge(conn)?;
     let (credits_added, franchises_added) = merge_credits::merge(conn)?;
+    let artwork_added = merge_artwork::merge(conn)?;
 
     Ok(MergeReport {
         sets_added,
@@ -158,6 +161,7 @@ fn copy_kept(
         shows_filled,
         credits_added,
         franchises_added,
+        artwork_added,
         ..MergeReport::default()
     })
 }

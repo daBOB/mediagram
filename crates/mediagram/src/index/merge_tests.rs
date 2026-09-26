@@ -412,3 +412,74 @@ fn a_v8_channel_index_has_no_credits_table_and_still_merges() {
     assert_eq!(report.credits_added, 0);
     assert_eq!(report.franchises_added, 0);
 }
+
+#[test]
+fn artwork_this_index_lacks_is_copied_whole() {
+    let (_local_dir, local) = open_local();
+    let (_channel_dir, channel_path, channel) = open_channel();
+    channel
+        .execute(
+            "INSERT INTO artwork(key, mime, bytes) VALUES ('title-terra-x', 'image/jpeg', X'01')",
+            [],
+        )
+        .unwrap();
+    drop(channel);
+
+    let report = merge_from(&local, &channel_path, keep_all).unwrap();
+
+    assert_eq!(report.artwork_added, 1);
+    let (mime, bytes): (String, Vec<u8>) = local
+        .query_row(
+            "SELECT mime, bytes FROM artwork WHERE key = 'title-terra-x'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!(mime, "image/jpeg");
+    assert_eq!(bytes, vec![1]);
+}
+
+#[test]
+fn a_key_already_held_locally_is_never_overwritten_by_the_channel() {
+    let (_local_dir, local) = open_local();
+    local
+        .execute(
+            "INSERT INTO artwork(key, mime, bytes) VALUES ('title-terra-x', 'image/jpeg', X'01')",
+            [],
+        )
+        .unwrap();
+    let (_channel_dir, channel_path, channel) = open_channel();
+    channel
+        .execute(
+            "INSERT INTO artwork(key, mime, bytes) VALUES ('title-terra-x', 'image/png', X'02')",
+            [],
+        )
+        .unwrap();
+    drop(channel);
+
+    let report = merge_from(&local, &channel_path, keep_all).unwrap();
+
+    assert_eq!(report.artwork_added, 0);
+    let mime: String = local
+        .query_row(
+            "SELECT mime FROM artwork WHERE key = 'title-terra-x'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(mime, "image/jpeg", "the local image is never replaced");
+}
+
+#[test]
+fn a_v9_channel_index_has_no_artwork_table_and_still_merges() {
+    let (_local_dir, local) = open_local();
+    let (_channel_dir, channel_path, channel) = open_channel_at(9);
+    insert_set(&channel, "S8", "A Film", "complete", 1);
+    insert_part(&channel, "S8", 0, 100, 8001);
+    drop(channel);
+
+    let report = merge_from(&local, &channel_path, keep_all).unwrap();
+
+    assert_eq!(report.sets_added, ["S8"]);
+    assert_eq!(report.artwork_added, 0);
+}

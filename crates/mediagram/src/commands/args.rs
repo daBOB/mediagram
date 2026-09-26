@@ -1,8 +1,13 @@
 //! clap argument structs for the commands that take more than a flag or two.
 
+#[path = "args_docu.rs"]
+mod args_docu;
+
 use std::path::PathBuf;
 
 use clap::Args;
+
+pub use args_docu::{AddCourseArgs, AddDocuArgs, ArtworkArgs};
 
 #[derive(Args, Debug, Clone, Default)]
 pub struct AddArgs {
@@ -75,31 +80,6 @@ pub struct AddArgs {
     pub watch: bool,
 }
 
-/// Arguments for `mediagram add-course`.
-#[derive(Args, Debug, Clone)]
-pub struct AddCourseArgs {
-    /// The course folder: chapters are its subdirectories
-    pub dir: PathBuf,
-    /// Course title; defaults to the folder name
-    #[arg(long)]
-    pub course: Option<String>,
-    /// Collection id; defaults to a slug of the course title
-    #[arg(long)]
-    pub cid: Option<String>,
-    /// Show what would be uploaded and stop
-    #[arg(long)]
-    pub dry_run: bool,
-    /// Do not push the index after the walk completes
-    #[arg(long)]
-    pub no_push: bool,
-    /// Variant label applied to every lesson
-    #[arg(long)]
-    pub variant: Option<String>,
-    /// Skip the MP4 faststart remux
-    #[arg(long)]
-    pub no_remux: bool,
-}
-
 /// Arguments for `mediagram prepare`.
 #[derive(Args, Debug, Clone)]
 pub struct PrepareArgs {
@@ -141,7 +121,7 @@ pub struct EditArgs {
     /// ids point at is right; the words may be in the wrong language
     #[arg(long)]
     pub refresh: bool,
-    /// Move the set to another shelf: movie, ep or tut
+    /// Move the set to another shelf: movie, ep, tut or docu
     #[arg(long)]
     pub kind: Option<String>,
     /// Set the TMDB id, so `--refresh` has something to ask about

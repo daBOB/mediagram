@@ -12,7 +12,7 @@
 
 import { el } from "../dom.js";
 import { countOf } from "../format.js";
-import { firstItemOf } from "../library.js";
+import { firstItemOf, flattenCollection } from "../library.js";
 import { collectionGrid, emptyState, movieGrid, SECTIONS } from "./shelf-view.js";
 import { GRID, LIST } from "./shelf-mode.js";
 import { departmentHero, deptRow } from "./department-hero.js";
@@ -67,6 +67,58 @@ export function renderMoviesDept(main, cx) {
   if (latest.length > 0) main.append(deptRow("Recently added", shelf(latest), { href: "#/latest", label: "Latest" }));
 
   main.append(allLink(all));
+  revealWithin(main);
+}
+
+/**
+ * Documentaries: no popularity or genre to browse by, since none of these
+ * came from TMDB — a hero, what is underway, what arrived, then a row for
+ * every collected folder and one more for whatever was uploaded on its own.
+ * @param {HTMLElement} main @param {Context} cx
+ */
+export function renderDocumentariesDept(main, cx) {
+  const { collections: groups, singles } = cx.library.documentaries;
+  const items = [...singles, ...groups.flatMap((group) => flattenCollection(group))];
+  if (items.length === 0) return main.append(emptyState("documentaries", { kids: cx.kids }));
+
+  const byRecent = [...items].sort((a, b) => (Number(b.addedAt) || 0) - (Number(a.addedAt) || 0));
+  const lead = byRecent.find((set) => set.backdrop) ?? null;
+
+  main.append(departmentHero({
+    kicker: "Only in your library",
+    title: SECTIONS.documentaries.label,
+    line: countOf(items.length, SECTIONS.documentaries.extent),
+    lead,
+    leadName: lead?.title ?? null,
+    leadHref: null,
+  }));
+
+  const shelf = (sets) => movieGrid(sets, cx.play, { mode: GRID, strip: true });
+  const shelves = homeShelves({ library: cx.library, byId: cx.byId, progress: cx.progress, watchedAt: cx.watchedAt });
+  const underway = resumeCards(
+    { continues: shelves.continues.filter((set) => set.kind === "docu"), nextUp: [] },
+    cx.play,
+  );
+  if (underway.length > 0) {
+    const strip = el("div", "resume-strip");
+    strip.append(...underway);
+    main.append(deptRow("Continue watching", strip));
+  }
+
+  if (byRecent.length > 0) main.append(deptRow("Recently added", shelf(byRecent.slice(0, ROW))));
+
+  for (const group of groups) {
+    const groupItems = flattenCollection(group);
+    if (groupItems.length === 0) continue;
+    const more = groupItems.length > ROW
+      ? { href: `#/documentaries/${encodeURIComponent(group.name)}`, label: `All ${groupItems.length}` }
+      : null;
+    main.append(deptRow(group.name, shelf(groupItems.slice(0, ROW)), more));
+  }
+
+  // ponytail: caps a single row rather than paging it — add a "singles" page
+  // if a library ever holds more standalone documentaries than one row shows.
+  if (singles.length > 0) main.append(deptRow("Standalone documentaries", shelf(singles.slice(0, ROW))));
   revealWithin(main);
 }
 

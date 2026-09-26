@@ -154,6 +154,21 @@ pub fn get_set(conn: &Connection, set_id: &str) -> Result<Option<SetRow>> {
     .map_err(Into::into)
 }
 
+/// One set whose `show` or `title` is exactly `name`, for resolving the
+/// `<set-id|title>` argument `mediagram artwork` takes. Arbitrary among
+/// several matches: a course, a documentary collection or a film's own title
+/// only collides when two very different uploads share the same words, and
+/// any of them names the same art key by that name.
+pub fn find_by_name(conn: &Connection, name: &str) -> Result<Option<SetRow>> {
+    conn.query_row(
+        &format!("SELECT {COLUMNS} FROM sets WHERE show = ?1 OR title = ?1 LIMIT 1"),
+        [name],
+        SetRow::from_row,
+    )
+    .optional()
+    .map_err(Into::into)
+}
+
 /// Every set still `pending`, oldest first (so `resume` finishes older sets before newer ones).
 pub fn list_pending(conn: &Connection) -> Result<Vec<SetRow>> {
     let mut stmt = conn.prepare(&format!(

@@ -6,8 +6,10 @@
 pub mod accept_login;
 pub mod add;
 pub mod add_course;
+pub mod add_docu;
 pub mod add_show;
 pub mod args;
+pub mod artwork;
 pub mod background;
 pub mod edit;
 pub mod export_package;
