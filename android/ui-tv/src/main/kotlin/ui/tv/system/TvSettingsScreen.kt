@@ -16,7 +16,7 @@ import ui.tv.setup.TvConfirmDialog
 import ui.tv.setup.TvLibraryChoiceScreen
 
 /** A part of Settings that takes the whole screen while it is open. */
-internal enum class TvSettingsPanel { Library, Application }
+internal enum class TvSettingsPanel { Library, Application, LanAddress, LanToken }
 
 /**
  * The phone's Settings on a television: the Telegram connection — who,
@@ -81,6 +81,12 @@ internal fun TvSettingsScreen() {
             }
         }
 
+        TvSettingsPanel.LanAddress, TvSettingsPanel.LanToken -> {
+            val close = { panel = null }
+            BackHandler(onBack = close)
+            TvLanCachePanel(panel = checkNotNull(panel), onDone = close)
+        }
+
         null ->
             TvSettingsRows(
                 state = state,
@@ -90,6 +96,7 @@ internal fun TvSettingsScreen() {
                     viewModel.listLibraries()
                 },
                 onChangeApplication = { open(TvSettingsPanel.Application) },
+                onOpenLanCache = open,
                 onSignOut = { askingSignOut = true },
                 onRetryProfiles = viewModel::retryProfiles,
             )

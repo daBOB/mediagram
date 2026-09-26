@@ -27,8 +27,8 @@ import designsystem.Spacing
 import system.LanCacheConnection
 import system.LanCacheUiState
 import system.LanCacheViewModel
+import system.lanCacheStatusLine
 import ui.components.Block
-import model.humanSize
 
 private const val ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"
 
@@ -110,16 +110,3 @@ internal fun LanCacheBlockContent(
         Button(onClick = { onSaveToken(token); token = "" }) { Text("Save token") }
     }
 }
-
-/** "Searching" / "Connected to host, holding X" / "Not found" / "Needs local network permission". */
-internal fun lanCacheStatusLine(state: LanCacheUiState): String =
-    when (state.connection) {
-        LanCacheConnection.NEEDS_PERMISSION -> "Needs local network permission"
-        LanCacheConnection.NOT_FOUND -> "Not found"
-        LanCacheConnection.SEARCHING -> "Searching"
-        LanCacheConnection.CONNECTED -> {
-            val host = state.connectedHost ?: "server"
-            val held = state.heldBytes?.let { ", holding ${humanSize(it)}" }.orEmpty()
-            "Connected to $host$held"
-        }
-    }

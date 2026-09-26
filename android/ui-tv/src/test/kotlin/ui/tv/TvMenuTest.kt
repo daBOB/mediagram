@@ -3,16 +3,19 @@ package ui.tv
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTextInput
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
 import io.mockk.every
-import io.mockk.verify
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
+import io.mockk.verify
 import model.Profile
 import org.junit.After
 import org.junit.Before
@@ -167,6 +170,42 @@ class TvMenuTest {
         compose.onNodeWithText("●  Internal storage", substring = true).assertExists()
         press(compose.onNodeWithText("○  USB drive", substring = true))
         verify { fixture.cacheBudget.chooseVolume("6BBF-D2D8") }
+    }
+
+    @Test
+    fun settingsShowsTheHomeCacheServerAndAnAcceptedAddressReturnsToItsRow() {
+        every { fixture.lanCache.setManualAddress("192.168.0.9:7788") } returns true
+        openMenu()
+        press(compose.onNodeWithText("Settings"))
+        compose.onNodeWithText("Not found").assertExists()
+        compose.onNodeWithText("Use the home cache server — on").assertExists()
+        press(compose.onNodeWithText("Server address — found on the network"))
+        compose.onNodeWithText("Home cache server address").assertExists()
+        compose.onNode(hasSetTextAction()).performTextInput("192.168.0.9:7788")
+        compose.onNode(hasSetTextAction()).performImeAction()
+        compose.waitForIdle()
+        verify { fixture.lanCache.setManualAddress("192.168.0.9:7788") }
+        compose.onNodeWithText("Server address — found on the network").assertIsFocused()
+    }
+
+    @Test
+    fun aRefusedTokenKeepsItsQuestionOpen() {
+        every { fixture.lanCache.saveToken("short") } returns false
+        openMenu()
+        press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithText("Pairing token — none"))
+        compose.onNode(hasSetTextAction()).performTextInput("short")
+        compose.onNode(hasSetTextAction()).performImeAction()
+        compose.waitForIdle()
+        compose.onNodeWithText("Pair with the home cache server").assertExists()
+    }
+
+    @Test
+    fun theSwitchRowTurnsTheServerOff() {
+        openMenu()
+        press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithText("Use the home cache server — on"))
+        verify { fixture.lanCache.setEnabled(false) }
     }
 
     private fun openMenu() {

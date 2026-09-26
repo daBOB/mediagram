@@ -23,12 +23,14 @@
 ## Implementation steps
 
 ### Task 1: Menu page and screens
-- [ ] **1.1** `TvMenuPage` with the five actions; first focused. Start over → `TvConfirmDialog` (Cancel focused).
-- [ ] **1.2** `TvSystemScreen`, `TvSettingsScreen` (incl. cache budget choices, sign out behind confirm), `TvTmdbKeyScreen`; completions handled by shared `SettingsOutcomes`.
-- [ ] **1.3** Robolectric: each screen has initial focus; Back returns to menu page, then masthead.
-- [ ] **1.3a** Carried from phase 7: after coming back to Play all, a Remove on the list leaves nothing focused — `TvList.kt` `takesArrivalFocus = !backFromPlayAll || afterRemoval != null`; test it.
-- [ ] **1.3b** The phone's menu changed on main (merged at 2d7dfd8): read `ui-mobile/.../AppChrome.kt` / `OverflowMenu.kt` for the current items and mirror them, not the list above if it differs.
-- [ ] **1.4** Commit — `feat(android): system and settings on a television`.
+- [x] **1.1** `TvMenuPage` with the five actions; first focused. Start over → `TvConfirmDialog` (Cancel focused).
+- [x] **1.2** `TvSystemScreen`, `TvSettingsScreen` (incl. cache budget choices, sign out behind confirm), `TvTmdbKeyScreen`; completions handled by shared `SettingsOutcomes`.
+- [x] **1.3** Robolectric: each screen has initial focus; Back returns to menu page, then masthead.
+- [x] **1.3a** Carried from phase 7: after coming back to Play all, a Remove on the list leaves nothing focused — `TvList.kt` `takesArrivalFocus = !backFromPlayAll || afterRemoval != null`; test it.
+- [x] **1.3b** The phone's menu changed on main (merged at 2d7dfd8): read `ui-mobile/.../AppChrome.kt` / `OverflowMenu.kt` for the current items and mirror them, not the list above if it differs.
+- [x] **1.4** Commit — `feat(android): system and settings on a television` (a5ae7291; 1.3a in 91df4e01).
+- [x] **1.5** Cache volume picker (the phone's Where block) on TV Settings, plus the fallback line (803b2150). Real box: USB stick as *portable* storage shows as a row; adopted storage never does.
+- [x] **1.6** Home cache server block on TV Settings — owed here by `260925-2046-external-cache-volume-and-lan-chunk-server`. Status, switch, and address/token as text questions that return focus to their row; `lanCacheStatusLine` moved to `feature:system` so both surfaces share it.
 
 ### Task 2: Docs
 - [ ] **2.1** `system-architecture.md`: `ui-tv` and `ui-common` modules, what moved into `feature:*` and why, TV key model, focus-restoration rule.
@@ -48,7 +50,7 @@
 - [ ] **4.5** Code review (`code-reviewer` agent) over the branch diff; fix; commit — `docs: describe the television surface` and version commit.
 
 ## Todo list
-- [ ] Menu page + system/settings/TMDB screens
+- [x] Menu page + system/settings/TMDB screens, cache volume, home cache server
 - [ ] Docs incl. deliberate-difference list
 - [ ] Version bumped in all three manifests
 - [ ] check.sh green

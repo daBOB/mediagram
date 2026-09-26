@@ -23,7 +23,7 @@ import ui.tv.catalog.TvQuietLine
 
 /**
  * Settings' own page: the Telegram block, the three things that change it,
- * the cache and where it lives. The remote lands on Change library, or on the row whose
+ * the cache and where it lives, and the home cache server. The remote lands on Change library, or on the row whose
  * panel was just left. Waiting on an answer draws the actions faint rather
  * than hiding them: what is on offer does not change, only when.
  */
@@ -33,12 +33,20 @@ internal fun TvSettingsRows(
     returningFrom: TvSettingsPanel?,
     onChangeLibrary: () -> Unit,
     onChangeApplication: () -> Unit,
+    onOpenLanCache: (TvSettingsPanel) -> Unit,
     onSignOut: () -> Unit,
     onRetryProfiles: () -> Unit,
 ) {
     val library = remember { FocusRequester() }
     val application = remember { FocusRequester() }
-    LaunchedEffect(Unit) { (if (returningFrom == TvSettingsPanel.Application) application else library).requestFocus() }
+    LaunchedEffect(Unit) {
+        when (returningFrom) {
+            TvSettingsPanel.Application -> application.requestFocus()
+            // The home cache server's own rows take the remote back themselves, once its state is read.
+            TvSettingsPanel.LanAddress, TvSettingsPanel.LanToken -> Unit
+            TvSettingsPanel.Library, null -> library.requestFocus()
+        }
+    }
 
     // Arriving on the first row leaves the heading where it is rather than
     // scrolling it up into the overscan edge — the rule every catalogue page keeps.
@@ -65,6 +73,7 @@ internal fun TvSettingsRows(
             }
             TvCacheBudgetBlock()
             TvCacheVolumeBlock()
+            TvLanCacheBlock(returningFrom = returningFrom, onOpen = onOpenLanCache)
         }
     }
 }
