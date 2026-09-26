@@ -155,6 +155,11 @@ ffmpeg, out as HLS.
 The lists live in `web/public/lib/playable.js` and a test fails if this table
 stops matching them.
 
+A conversion is started with `-progress pipe:1 -stats_period 2`, which needs
+**ffmpeg 4.4 or newer**. An older ffmpeg refuses `-stats_period` outright, so
+this fails loudly at the first conversion rather than silently losing the
+System page's speed and segment figures.
+
 ### What the player remembers
 
 Watch positions, the watchlist and collections live in the player's own

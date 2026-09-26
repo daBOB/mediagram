@@ -5,6 +5,41 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Unreleased — system stats
+
+Four new groups on the web player's System page (`GET /api/status`), on
+`feat/system-page-stats`, not yet merged.
+
+**Added**
+
+- **Telegram link.** Per-DC request counts, bytes, latency percentiles over
+  the last 256 requests, flood waits and main-connection reconnects, from a
+  `TelegramClient` subclass measuring around `invoke` — the one seam every
+  download passes through.
+- **Watching now.** Each open player POSTs its own reading (mode, codecs,
+  bitrate, buffer health, dropped frames) every 5s to the new
+  `POST /api/status/playback`; the server keeps the most recent one per
+  viewer for 15s and drops the viewer id before it reaches the snapshot. The
+  one group the server cannot measure itself, since the System page and the
+  player it describes are usually different devices.
+- **Conversion progress.** Speed, fps and output position from ffmpeg's own
+  `-progress pipe:1`, CPU time from `/proc`, segment counts, and how many
+  re-encodes/copies/HEVC copies have run since the process started.
+  Conversions now need ffmpeg 4.4 or newer.
+- **Host.** Resident and heap memory, event-loop lag over the last complete
+  10s window, free disk under the cache and transcode directories, and the
+  Bun version.
+
+`memoryBytes` at the top level of the snapshot moves to `host.rssBytes`, a
+breaking JSON change (this project is pre-release; welcomed rather than
+avoided). None of the above touches the hot byte path: a download counts a
+request and writes a ring-buffer slot, once per `upload.GetFile`, and
+nothing else runs per chunk.
+
+**Owed to Android:** per-DC link stats and host memory/free-disk, in a
+separate Android/core plan — not built here. See `docs/web-player.md`
+"Differences from Android" for the full parity record.
+
 ## Unreleased — 0.59.0
 
 Merged into `main` on 2026-09-26: `fix/sync-watched-removal` and

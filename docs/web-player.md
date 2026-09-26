@@ -273,10 +273,42 @@ What it reports beyond the startup facts: the cache's hits, misses and
 evictions; bytes fetched upstream, and the failed reads that are the one
 upstream problem a viewer feels and cannot see; what the conversions are
 holding on disk, which unlike the cache has no budget and no eviction beyond
-the idle reaper; resident memory; and the uptime. The *rate* upstream is not
-in the snapshot: the server does not know how often it is being asked, and an
-average since startup is not the number anyone watching a stall wants. Two
-readings and the seconds between them go to the page, which subtracts.
+the idle reaper; and the uptime. The *rate* upstream is not in the snapshot:
+the server does not know how often it is being asked, and an average since
+startup is not the number anyone watching a stall wants. Two readings and the
+seconds between them go to the page, which subtracts.
+
+Four more groups sit alongside those, each read fresh on every poll:
+
+- **Telegram link** (`telegram/link-stats.ts`). Per-DC request counts, bytes,
+  latency percentiles over the last 256 requests, and flood waits. Measured
+  around `MeasuredClient.invoke`, the one seam every download passes through —
+  `iterDownload` and `partMedia` both call it on the instance — so the
+  latency includes any lease wait and flood sleep, which is what the viewer
+  actually waited for, not just the wire time. Reconnects count the *main*
+  MTProto connection only: a download-DC sender is pooled and rebuilt without
+  notice, and its failures already show up as that DC's own request errors.
+- **Watching now** (`status/playback-reports.ts`). Every open player POSTs its
+  own reading — mode, codecs, bitrate, buffer health, dropped frames — every
+  5s to `POST /api/status/playback`, kept for 15s and shown without the
+  per-page viewer id that names it in memory. This is the one group the
+  server cannot measure itself: the System page and the player it describes
+  are usually different devices, a phone checking on what the television is
+  playing.
+- **Conversion progress** (`transcode/progress.ts`). ffmpeg's own
+  `-progress pipe:1` output — speed, fps, output position — read off stdout
+  independently of the `-loglevel error` stderr log, plus CPU time from
+  `/proc/<pid>/stat` between two readings. Segment counts come from a
+  directory listing taken at poll time, not tracked as ffmpeg writes.
+- **Host** (`status/loop-lag.ts`, `status/disk-free.ts`). Resident and heap
+  memory, event-loop lag over the last complete 10s window, free space under
+  the cache and transcode directories (merged into one row when they share a
+  device), and the Bun version.
+
+None of this touches the byte path: a download counts a request and writes a
+ring-buffer slot, once per `upload.GetFile`, and nothing else runs per chunk.
+Percentiles, directory listings and `/proc` reads happen when the page polls
+or on ffmpeg's own 2s progress tick.
 
 The panel polls every two seconds, which is why both directory measurements
 sit behind a fifteen-second memo (`status/dir-bytes.ts` for the transcodes,
@@ -285,9 +317,34 @@ every file, and a twenty-gigabyte cache is some forty thousand of them. The
 two scans run together rather than one after the other, so the slow case is
 the longer of them and not their sum.
 
-What a reading *says* is in `public/lib/status/status-lines.js`, apart from where its
-nodes go in `status-view.js`, for the reason `buffer-health.js` is apart from
-`adapt-playback.js`: only the first can be tested without a browser.
+What a reading *says* is split by concern rather than kept in one file:
+`status-lines.js` for the readings from the first pass, `status-link-lines.js`
+for the Telegram link and host groups, `status-session-lines.js` for
+conversions and playback — apart from where their nodes go in `status-view.js`,
+for the reason `buffer-health.js` is apart from `adapt-playback.js`: only the
+formatters can be tested without a browser.
+
+### Differences from Android
+
+Android has a system screen and a playback-stats overlay
+(`docs/superpowers/specs/2026-09-20-android-system-menu-and-playback-stats-design.md`
+§5, §7, §9). Against the four groups above:
+
+- **Telegram link and host are owed.** Android's system screen already shows
+  `connected`, fetch counts and failed reads, and its own uptime and version —
+  but not per-DC latency, flood waits, reconnects, memory or free disk. Those
+  belong in `mediagram-core`'s grammers byte path, not this player, so they
+  are a separate Android/core plan rather than something this phase builds.
+- **Watching now has no Android counterpart, on purpose.** Its
+  `PlaybackStatsOverlay` already shows codec, buffer, cache, reads and dropped
+  frames — covered on the device doing the playing. The web's version exists
+  because the web *can* be asked about a device it is not running on; Android
+  cannot watch itself from across the room.
+- **Conversion is a deliberate difference**, already recorded as "No
+  Conversion block" in
+  `docs/superpowers/specs/2026-09-20-android-system-menu-and-playback-stats-design.md`
+  §9: Android decodes natively and never transcodes, so there is no encoder,
+  no session and nothing this group could report.
 
 Three smaller readings come from measurements that were already being taken
 and thrown away — the buffer's fill rate in the HUD (`buffer-health.js`

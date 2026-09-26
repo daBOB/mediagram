@@ -1,7 +1,7 @@
 ---
 title: "System page nerd stats"
 description: "Telegram link, live playback sessions, transcoder and host figures on the web player's System page"
-status: pending
+status: implemented
 priority: P2
 effort: 14h
 branch: feat/system-page-stats
@@ -26,7 +26,7 @@ Playback stats are the one group that starts in the browser. Each open player PO
 | 3 | [Transcoder progress](phase-03-transcoder-progress.md) | 2.5h | done |
 | 4 | [Playback session reports](phase-04-playback-session-reports.md) | 3h | done |
 | 5 | [System page rendering](phase-05-system-page-rendering.md) | 2.5h | done |
-| 6 | [Docs, version, parity record](phase-06-docs-version-parity.md) | 1h | pending |
+| 6 | [Docs, version, parity record](phase-06-docs-version-parity.md) | 1h | done |
 
 ## Dependencies
 

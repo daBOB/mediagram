@@ -36,11 +36,46 @@ Priority P2 · pending. Record what was built, bump the version, and write down 
 4. Commit per phase with conventional messages. No plan references in any commit.
 
 ## Todo
-- [ ] architecture + running docs
-- [ ] changelog
-- [ ] parity paragraph
-- [ ] version bump ×3
-- [ ] final test run
+- [x] architecture + running docs
+- [x] changelog
+- [x] parity paragraph
+- [x] version bump ×3 (deliberately skipped, see notes)
+- [x] final test run
+
+## Implementation notes (2026-09-26)
+
+Done, with one deliberate deviation from the plan and one correction to it.
+
+- **Version bump skipped, on explicit instruction from the dispatching
+  task**, which overrides this phase's own step 2: "the lead does that at
+  merge." All three manifests already agree at `0.59.0` — verified with
+  `grep -n version Cargo.toml web/package.json android/app/build.gradle.kts`
+  — so there is nothing to reconcile before that bump happens; `versionCode`
+  (16) is untouched, as the rule requires regardless.
+- **Docs land in `docs/web-player.md`, not `docs/system-architecture.md`.**
+  The plan's own context links cite `docs/system-architecture.md:333-345`
+  for the `/api/status` section, but that section does not exist there —
+  §7 "Playback: the web player" is one paragraph that points to
+  `docs/web-player.md` for exactly this ("the System page ... are in
+  docs/web-player.md"), which already carried the pre-phase-1 description
+  under "Saying what it is doing". Extended that section in place — four new
+  groups, the POST contract, the invoke-latency rationale, ffmpeg's minimum
+  version — and added a "Differences from Android" subsection there, since
+  it is where a reader already lands for this exact page.
+- Changelog entry is at the top of `docs/project-changelog.md`, under
+  `## Unreleased — system stats`, ahead of the existing `## Unreleased —
+  0.59.0` entry (a different, already-merged change) — per this task's
+  explicit instruction, not the plan's own step, which assumed a version
+  bump would happen in this phase and the changelog would carry that number.
+- ffmpeg's minimum version note landed in `docs/running-the-player.md`,
+  beside the direct-play/convert table, matching the plan's own citation.
+- No separate Android/core follow-up plan stub was opened. Plan question 1
+  asks whether the owed items (per-DC link stats, host memory/disk) should
+  be their own plan now or scheduled later; that is a scope decision for the
+  user, not something to resolve by writing a stub plan unasked. The
+  "Owed to Android" record itself is written in both
+  `docs/web-player.md` and `docs/project-changelog.md`, so the debt is not
+  silent regardless of when a plan for it exists.
 
 ## Success criteria
 - The three manifests carry one version.
