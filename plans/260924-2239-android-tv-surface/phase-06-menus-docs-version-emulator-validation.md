@@ -42,18 +42,18 @@
 - [ ] **3.1** Merge `main` first (as at 2d7dfd8 — merge, not rebase; the phone's behaviour wins, the TV branch's shared-code locations win). Bump by regex, not exact string (memory: another session commits to main): current version + minor in `Cargo.toml` `[workspace.package]`, `web/package.json`, `android/app/build.gradle.kts` `versionName`; `versionCode` + 1. `cargo check` to refresh `Cargo.lock`; confirm all three agree.
 
 ### Task 4: Final validation
-- [ ] **4.1** `scripts/check.sh` with `ANDROID_HOME` set → all green (clippy, cargo test, bun, gradle test + lint).
+- [x] **4.1** `scripts/check.sh` with `ANDROID_HOME` set → all green (clippy, cargo test, bun, gradle test + lint).
 - [ ] **4.2** Emulator, fresh `pm clear` (**emulator only**), key events only: setup → profile `TV test` → every masthead section → series/season/episode → play/seek/pause/back → System menu → every item → Back out of the app. Screenshots into `reports/`.
-- [ ] **4.2a** Real box `192.168.0.35:5555` (signed in — never pm clear/Start over/sign out): the same walk on the `TV test` profile, plus a DTS film with sound and the Movies wall scroll on the benchmark build.
-- [ ] **4.3** Phone smoke on the real device **without** clearing data (memory: never start over on it): launch, browse, open a title, back. Confirms phase 1 changed nothing visible.
-- [ ] **4.4** Write `reports/validation-<date>-android-tv-emulator-walk-report.md`: what was walked, titles played, preferences touched and reset, open gaps.
+- [x] **4.2a** Real box `192.168.0.35:5555` (signed in — never pm clear/Start over/sign out): the same walk on the `TV test` profile, plus a DTS film with sound and the Movies wall scroll on the benchmark build.
+- [x] **4.3** Phone smoke on the real device **without** clearing data (memory: never start over on it): launch, browse, open a title, back. Confirms phase 1 changed nothing visible.
+- [x] **4.4** (`reports/validation-260926-android-tv-box-and-phone-walk-report.md`; emulator walk still open — needs a Telegram login code) Write `reports/validation-<date>-android-tv-emulator-walk-report.md`: what was walked, titles played, preferences touched and reset, open gaps.
 - [ ] **4.5** Code review (`code-reviewer` agent) over the branch diff; fix; commit — `docs: describe the television surface` and version commit.
 
 ## Todo list
 - [x] Menu page + system/settings/TMDB screens, cache volume, home cache server
 - [ ] Docs incl. deliberate-difference list
 - [ ] Version bumped in all three manifests
-- [ ] check.sh green
+- [x] check.sh green
 - [ ] Emulator mouse-free walk + phone smoke
 - [ ] Review done
 

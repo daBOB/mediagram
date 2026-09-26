@@ -194,17 +194,27 @@ progress; no audio-track or subtitle selection, which reaches 312 and 206 sets
 respectively; no search; no notes; no start page. The parity plan above closes
 them in order and names the ones that will stay different.
 
-## Later: the television surface
+## The television surface
 
-`:ui-tv` is a registered Gradle module with no source in it. A Fire Stick, a
-Chromecast or a TV box installs the app today and gets a placeholder string.
+Planned in `plans/260924-2239-android-tv-surface/` and built on branch
+`feat/android-tv-ui`. The television surface is a second renderer over the
+`feature:*` ViewModels, built on `androidx.tv:tv-material`. Phone and TV share
+the catalog and player logic; TV adds remote navigation and 10-foot UI.
 
-This is a new surface rather than a gap in an existing one, and it starts from
-its own planning round. Everything under `android/core/` is already
-surface-independent — `Shelves.kt` says so in its own documentation, and the
-cache and parity plans both name the television surface as the reason their
-pure modules are pure — so what it needs is screens and a D-pad, not new
-machinery.
+| Phase | Scope | Status |
+|---|---|---|
+| 1 | Move shared rules out of `ui-mobile` into `ui-common` and feature modules | Complete |
+| 2 | Foundation: 10-foot theme, overscan, `TvApp` shell | Complete |
+| 3 | Setup, sign-in, library and profile choice via D-pad | Complete |
+| 4 | Catalog browse: masthead, Home, walls, series, courses, title pages | Complete |
+| 5 | Player: full-screen, remote keys, marks, subtitles, settings, up next | Complete |
+| 7 | Catch up with main: audio, subtitles, search, genres, offline, profile removal | Complete |
+| 6 | System/Settings menu, docs, version bump, emulator validation | In review |
+
+Walked on the real TV box and smoke-tested on the phone on 2026-09-26
+(`plans/260924-2239-android-tv-surface/reports/validation-260926-android-tv-box-and-phone-walk-report.md`).
+Remaining before merge: the emulator walk from a fresh install, the code review's
+fixes, and the version bump.
 
 ## Explicitly deferred (from the v1 implementation logs, not tracked as bugs)
 
