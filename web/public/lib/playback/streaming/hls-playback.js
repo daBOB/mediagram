@@ -172,6 +172,10 @@ export async function warmTranscode(setId, options = {}) {
  * @returns {Promise<() => void>}
  */
 export async function playTranscoded(video, setId, options = {}) {
+  // Requested alongside the session rather than after it: the server does not
+  // answer until a first segment exists, which is seconds the download would
+  // otherwise sit idle for.
+  const hlsLoading = needsNativeHls() ? null : loadHls();
   const session = await acquireSession(setId, options);
   try {
     session.check();
@@ -182,7 +186,7 @@ export async function playTranscoded(video, setId, options = {}) {
       };
       video.src = session.playlist;
     } else {
-      const Hls = await loadHls();
+      const Hls = await hlsLoading;
       session.check();
       if (!Hls.isSupported()) throw new Error("this browser cannot play a transcode");
       // A growing playlist looks live. Start at its beginning, and keep a

@@ -51,7 +51,13 @@ export class LibraryUpdates {
       if (event === "state") void syncOnce(this.sync, "push");
       else this.onIndex();
     });
-    await syncOnce(this.sync, "start");
+    // Not awaited: the local database is already the source of truth (see
+    // state/sync.ts), so a page has nothing correct to gain by waiting on a
+    // round trip to the channel before it can be served — it gets the same
+    // update moments later over the SSE `state` event this round announces.
+    // Shutdown's own round still waits for whatever this one is doing:
+    // `StateSync.once` shares one drain between overlapping callers.
+    void syncOnce(this.sync, "start");
   }
 
   followCatalog(follower: Pick<CatalogFollower, "refresh"> | null): Promise<void> {

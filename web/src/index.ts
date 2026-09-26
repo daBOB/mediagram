@@ -112,26 +112,31 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     // A budget of zero turns caching off, which is a legitimate choice on a
     // machine with no disk to spare.
     const cache = config.cacheMaxBytes > 0 ? new ChunkCache(config.cacheDir, config.cacheMaxBytes) : null;
+
+    // None of the three below need Telegram or each other, and none of their
+    // results are needed until the lines that log or use them: a cold count
+    // of the cache (a full stat of every chunk file), probing what ffmpeg can
+    // encode with, and clearing a previous run's leftovers. Run together
+    // rather than one after another so a restart is not the sum of three
+    // waits nobody is blocked on until here.
+    const [cacheBytes, encoder] = await Promise.all([
+      cache ? cache.sizeOnDisk() : Promise.resolve(null),
+      io.detectEncoder(),
+      rm(config.transcodeDir, { recursive: true, force: true }),
+    ]);
+
     if (cache) {
-      const held = await cache.sizeOnDisk();
       console.log(
-        `cache: ${(held / 1024 ** 3).toFixed(2)} GB of ${(config.cacheMaxBytes / 1024 ** 3).toFixed(2)} GB in ${config.cacheDir}` +
+        `cache: ${(cacheBytes! / 1024 ** 3).toFixed(2)} GB of ${(config.cacheMaxBytes / 1024 ** 3).toFixed(2)} GB in ${config.cacheDir}` +
           `, readahead ${config.cacheReadahead} chunk(s)`,
       );
     } else {
       console.log("cache: disabled");
     }
-
-    // Probed once here rather than at first play: `ffmpeg -encoders` lists what
-    // was compiled in, not what initialises, and discovering that when someone
+    // Probed here rather than at first play: `ffmpeg -encoders` lists what was
+    // compiled in, not what initialises, and discovering that when someone
     // presses play is too late.
-    const encoder = await io.detectEncoder();
     console.log(`encoder: ${encoder.name}${encoder.kind === "vaapi" ? ` on ${encoder.device}` : ""}`);
-
-    // Cleared on startup. ffmpeg dies with this process, so anything here is a
-    // previous run's segments: stale playlists that a restarted session would
-    // otherwise be handed, and directories nobody will ever delete.
-    await rm(config.transcodeDir, { recursive: true, force: true });
 
     // Constructors perform no requests. The listener resolves before a request
     // can start media work, including when the OS chooses the port.

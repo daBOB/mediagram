@@ -60,14 +60,18 @@ export function applicationEnvironment() {
   env.replace("EventSource", LibraryStream);
   env.replace("requestAnimationFrame", (run: (time: number) => void) => { queueMicrotask(() => run(0)); return 0; });
   // Session history as far as the page uses it: entries pushed without a
-  // hash change, and a back() that reports itself the way a browser does.
+  // hash change, a replace that moves the hash without adding an entry —
+  // exactly what a real `replaceState` does and a `hashchange` listener never
+  // sees — and a back() that reports itself the way a browser does.
   const entries: unknown[] = [null];
   const history = {
+    get length() { return entries.length; },
     get state() { return entries.at(-1) ?? null; },
     pushState(state: unknown) { entries.push(state); },
     replaceState(state: unknown, _title: string, url?: string) {
       entries[entries.length - 1] = state;
-      if (url?.startsWith("#")) location.hash = url;
+      const at = typeof url === "string" ? url.indexOf("#") : -1;
+      if (at !== -1) location.hash = url!.slice(at);
     },
     back() {
       if (entries.length > 1) entries.pop();

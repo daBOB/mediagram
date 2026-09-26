@@ -37,6 +37,10 @@ export interface PlayerRequest {
   origin?: string | null;
   /** `Host`, to compare an `Origin` against. */
   host?: string | null;
+  /** `Accept-Encoding`, for deciding whether a compressible body may be gzipped/brotlied. */
+  acceptEncoding?: string | null;
+  /** `If-None-Match`, compared against a response's own ETag to answer 304 without a body. */
+  ifNoneMatch?: string | null;
 }
 
 export interface PlayerResponse {

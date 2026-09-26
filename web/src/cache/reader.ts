@@ -53,6 +53,18 @@ export class CachedReader {
   private readonly tracker: ReadaheadTracker;
   /** Readahead fetches in flight, so tests and shutdown can wait for them. */
   private readonly warming = new Set<Promise<void>>();
+  /**
+   * Cache writes started in the background, so tests and shutdown can wait
+   * for them too.
+   *
+   * A foreground read yields its bytes as soon as they arrive rather than
+   * waiting for them to land on disk — persistence is upkeep, not something
+   * the viewer in front of this stream should pay latency for. Tracked
+   * separately from `warming` because these come from every read, not only
+   * speculative ones, and are never skipped by `stop()` the way a new
+   * readahead fetch is.
+   */
+  private readonly persisting = new Set<Promise<void>>();
   private stopping: Promise<void> | null = null;
   /**
    * Bytes that actually crossed the wire, as opposed to coming off disk.
@@ -76,9 +88,9 @@ export class CachedReader {
     return { fetchedBytes: this.fetchedBytes };
   }
 
-  /** Resolves once speculative fetches have finished. For tests. */
+  /** Resolves once speculative fetches and background cache writes have finished. For tests. */
   async settle(): Promise<void> {
-    await Promise.all([...this.warming]);
+    await Promise.all([...this.warming, ...this.persisting]);
   }
 
   /** Prevent new speculative reads and await those already admitted. Foreground reads remain usable. */
@@ -120,18 +132,17 @@ export class CachedReader {
       }
 
       // How far the miss runs, so it can be fetched in one request — up to
-      // the cap, past which a run is split rather than grown.
+      // the cap, past which a run is split rather than grown. A presence
+      // check rather than `get`: the chunk that stops the run is not served
+      // from here, it is picked up by the top of the outer loop on the next
+      // pass, so reading it now would mean reading it twice and, worse,
+      // counting it as a hit twice.
       const maxChunks = MAX_RUN_BYTES / CACHE_CHUNK;
       let end = at;
       while (end + 1 < slices.length && end + 1 - at < maxChunks) {
         const next = slices[end + 1]!;
-        const cached = await this.cache.get(
-          setId,
-          partIdx,
-          next.index,
-          expectedSize(next.index, partLength),
-        );
-        if (cached !== null) break;
+        const cached = await this.cache.has(setId, partIdx, next.index, expectedSize(next.index, partLength));
+        if (cached) break;
         end += 1;
       }
 
@@ -166,8 +177,8 @@ export class CachedReader {
     const lastInPart = Math.floor((partLength - 1) / CACHE_CHUNK);
     const missing: number[] = [];
     for (let index = 0; index <= lastInPart; index++) {
-      const held = await this.cache.get(setId, partIdx, index, expectedSize(index, partLength));
-      if (held === null) missing.push(index);
+      const held = await this.cache.has(setId, partIdx, index, expectedSize(index, partLength));
+      if (!held) missing.push(index);
     }
     for (const run of runsOf(missing)) {
       await this.fillRun(setId, partIdx, run, partLength, fetch, new Map());
@@ -208,9 +219,20 @@ export class CachedReader {
       if (chunk.length === 0) break;
       into.set(index, chunk);
       // Cached per chunk, not per run, so a later read of any part of this
-      // stretch hits without knowing how it was fetched.
-      await this.cache.put(setId, partIdx, index, chunk);
+      // stretch hits without knowing how it was fetched. Not awaited: the
+      // bytes above are already in `into` for the caller to yield, and
+      // `ChunkCache` keeps them visible to a concurrent `get` of the same
+      // chunk while the write is still in flight, so nothing here can cost a
+      // second fetch upstream. `put` never rejects, so this is safe to track
+      // rather than handle.
+      this.background(this.cache.put(setId, partIdx, index, chunk));
     }
+  }
+
+  /** Tracks a fire-and-forget cache write so `settle`/`stop` can wait for it. */
+  private background(write: Promise<void>): void {
+    const tracked = write.finally(() => this.persisting.delete(tracked));
+    this.persisting.add(tracked);
   }
 
   /**
@@ -241,8 +263,8 @@ export class CachedReader {
     const task = (async () => {
       const missing: number[] = [];
       for (let index = firstAfter; index <= last; index++) {
-        const held = await this.cache.get(setId, partIdx, index, expectedSize(index, partLength));
-        if (held === null) missing.push(index);
+        const held = await this.cache.has(setId, partIdx, index, expectedSize(index, partLength));
+        if (!held) missing.push(index);
       }
       for (const run of runsOf(missing)) {
         await this.fillRun(setId, partIdx, run, partLength, fetch, new Map());

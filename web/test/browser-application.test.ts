@@ -11,7 +11,7 @@ let env: ReturnType<typeof applicationEnvironment>;
 let state: typeof import("../public/lib/watch-state.js");
 let catalog: string;
 let snapshot: object;
-let intercept: (url: string, init?: RequestInit) => Promise<Response> | null;
+let intercept: (url: string, init?: RequestInit) => Promise<Response> | Response | null;
 const film = (setId: string) => ({ setId, title: setId, kind: "movie", duration: 600, addedAt: 1, total: 1000, container: "mp4", vcodec: "h264", acodec: "aac" });
 const page = () => textOf(env.node("main"));
 const stream = () => env.streams.at(-1)!;
@@ -65,6 +65,42 @@ test("startup waits for the chosen profile before drawing its shelves", async ()
   expect(env.node("n-continue").textContent).toBe("1");
   expect(env.node("n-watchlist").textContent).toBe("1");
   expect(page()).toContain("First");
+});
+
+test("a bare load replaces the hash with Home instead of pushing a history entry", async () => {
+  env.location.hash = "";
+  await start();
+  expect(env.location.hash).toBe("#/home");
+  // A pushed entry would be what sends the back button to a phantom Movies
+  // page; a replaced one leaves nothing there to go back to.
+  expect(env.history.length).toBe(1);
+});
+
+test("startup asks the link, kids marks, editor's choice, catalog and profile list at once, and state only once a profile is known", async () => {
+  // Each of the five calls a real `fetch` synchronously as its first step, so
+  // five requests issued without waiting on one another land here as the
+  // first five entries, in whatever order `Promise.all` listed them — a
+  // profile's state, which needs the list, can only ever come after.
+  const requested: string[] = [];
+  intercept = (url) => {
+    requested.push(url);
+    if (url === "/api/player") return Response.json({ remote: false });
+    if (url === "/api/kids") return Response.json({ kids: [] });
+    if (url === "/api/editors-choice") return Response.json({ setId: null });
+    if (url === "/api/sets") return new Response(catalog);
+    if (url === "/api/profiles") return Response.json({ remembers: true, profiles: [{ id: "viewer", name: "Viewer" }] });
+    return null;
+  };
+  await start();
+  expect(requested.slice(0, 5).sort()).toEqual([
+    "/api/editors-choice",
+    "/api/kids",
+    "/api/player",
+    "/api/profiles",
+    "/api/sets",
+  ]);
+  const stateIndex = requested.findIndex((url) => url.endsWith("/state"));
+  expect(stateIndex).toBeGreaterThanOrEqual(5);
 });
 
 test.each(["{", "[null]"])("failed catalog construction is retried for the identical response %s", async (invalid) => {
@@ -259,25 +295,46 @@ test("course pages preserve nested folders, breadcrumbs and document links", asy
   expect(page()).toContain('has no folder called "Absent"');
 });
 
-test("opening a film refreshes its position before the real player resumes it", async () => {
+test("a film opens immediately and adopts a fresher position that lands before playback moves", async () => {
   await start();
   await env.navigate("#/film/First");
   const pending = deferred<Response>();
   intercept = (url) => url.endsWith("/state") ? pending.promise : null;
   descendants(env.node("main")).find((node) => node.className === "film-play")!.fire("click");
-  expect(env.node("player").open).toBe(false);
-  pending.resolve(Response.json({ progress: [{ setId: "First", at: 90, duration: 600, updatedAt: 1 }] }));
   await settle();
+  // The dialog does not wait on the state refresh below to open.
   expect(env.node("player").open).toBe(true);
   expect(env.video.src).toBe("/api/sets/First/stream");
   env.video.duration = 600;
   env.video.fire("loadedmetadata");
+  expect(env.video.currentTime).toBe(0);
+  pending.resolve(Response.json({ progress: [{ setId: "First", at: 90, duration: 600, updatedAt: 1 }] }));
+  await settle();
+  // Landed while the viewer had not yet pressed play, so it is honoured.
   expect(env.video.currentTime).toBe(90);
   await env.video.play();
   env.video.currentTime = 140;
   env.node("player").close();
   expect(state.progressOf("First")?.at).toBe(140);
   expect(page()).toContain("Resume from 2:20");
+});
+
+test("a fresh position arriving after playback has moved on is not applied", async () => {
+  await start();
+  await env.navigate("#/film/First");
+  const pending = deferred<Response>();
+  intercept = (url) => url.endsWith("/state") ? pending.promise : null;
+  descendants(env.node("main")).find((node) => node.className === "film-play")!.fire("click");
+  await settle();
+  env.video.duration = 600;
+  env.video.fire("loadedmetadata");
+  await env.video.play();
+  env.video.currentTime = 45;
+  pending.resolve(Response.json({ progress: [{ setId: "First", at: 90, duration: 600, updatedAt: 1 }] }));
+  await settle();
+  // Already a real way past the opening frame: the late position is not
+  // allowed to undo where the viewer actually is.
+  expect(env.video.currentTime).toBe(45);
 });
 
 test("a superseded play cannot replace the latest title when refreshes finish in reverse order", async () => {
@@ -288,15 +345,19 @@ test("a superseded play cannot replace the latest title when refreshes finish in
   intercept = (url) => url.endsWith("/state") ? responses[reads++]!.promise : null;
   await env.navigate("#/film/First");
   descendants(env.node("main")).find((node) => node.className === "film-play")!.fire("click");
+  await settle();
+  expect(env.video.src).toBe("/api/sets/First/stream");
   await env.navigate("#/film/Second");
   descendants(env.node("main")).find((node) => node.className === "film-play")!.fire("click");
+  await settle();
+  expect(env.video.src).toBe("/api/sets/Second/stream");
   responses[1]!.resolve(Response.json({}));
   await settle();
   expect(env.video.src).toBe("/api/sets/Second/stream");
   responses[0]!.resolve(Response.json({}));
   await settle();
   expect(env.video.src).toBe("/api/sets/Second/stream");
-  expect(env.video.attachments).toEqual(["/api/sets/Second/stream"]);
+  expect(env.video.attachments).toEqual(["/api/sets/First/stream", "/api/sets/Second/stream"]);
 });
 
 test.each(["close", "pagehide"])("%s invalidates Play next while its state refresh is pending", async (exit) => {

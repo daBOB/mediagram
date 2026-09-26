@@ -21,7 +21,6 @@ import {
 import { catalogOf, loadLink } from "./lib/link.js";
 import { colophonLine } from "./lib/colophon.js";
 import { watchStatus } from "./lib/status/status-view.js";
-import { initializePlayer, openPlayer } from "./lib/playback/player.js";
 import { renderCollection } from "./lib/catalog/course-view.js";
 import { SECTIONS, collectionGrid, emptyState, heading, movieGrid, setGrid } from "./lib/catalog/shelf-view.js";
 import { GRID, LIST, setShelfMode, shelfMode } from "./lib/catalog/shelf-mode.js";
@@ -48,7 +47,27 @@ const searchBox = document.getElementById("search");
 // A fragment link would be consumed as an application route. Move focus
 // directly so keyboard users can skip navigation without leaving their shelf.
 document.getElementById("skip-library")?.addEventListener("click", () => main.focus());
-initializePlayer();
+
+/**
+ * The player's own module graph — some 200 KB across three dozen files that
+ * only playing something ever needs. Started once, kicked off in the
+ * background right after the first shelf is drawn; a Play pressed before it
+ * lands simply waits its turn on the promise already under way.
+ */
+let playerReady = null;
+function loadPlayer() {
+  return (playerReady ??= import("./lib/playback/player.js")
+    .then((mod) => {
+      mod.initializePlayer();
+      return mod;
+    })
+    .catch((error) => {
+      // A later Play may as well try again — nothing about this profile or
+      // catalog caused it, so nothing about them will fix it either.
+      playerReady = null;
+      throw error;
+    }));
+}
 
 /** @type {import("./lib/library.js").Library} */
 let library = { movies: [], series: [], tutorials: [] };
@@ -297,27 +316,49 @@ let pendingOpen = 0;
  * A snapshot, deliberately: a title removed from the list halfway through a
  * run does not change the run. Re-reading the list under a viewer who is
  * watching it would be the stranger behaviour.
+ *
+ * Opens without waiting for either the player's own modules or a fresh read
+ * of this profile's state — the dialog would otherwise sit blank for a round
+ * trip. The state read still happens, and lands its position on the title
+ * that asked for it, for as long as that is still the latest request and
+ * playback has not really moved on; see `player.js`'s `RESUME_DRIFT_SECONDS`.
  */
 function play(set, queue = null, options = {}) {
   const request = ++pendingOpen;
-  // The position to resume from is read fresh: this tab may have been open
-  // while the same viewer watched further on another device.
-  void state.refreshState().finally(() => {
-    if (request === pendingOpen) openTitle(set, queue, options);
-  });
+  // This tab may have been open while the same viewer watched further on
+  // another device. Started here, not awaited: a superseded request resolves
+  // to `null` rather than a stale position.
+  const freshResume = state.refreshState().then(() =>
+    request === pendingOpen ? resumeAt(state.progressOf(set.setId)) : null,
+  );
+  void openTitle(set, queue, { ...options, freshResume }, request);
 }
 
-function openTitle(set, queue, options) {
+async function openTitle(set, queue, options, request) {
+  // Warmed in the background since the first shelf drew; a click that beat
+  // it here simply waits its turn, and one superseded before it arrives
+  // never opens at all.
+  let openPlayer;
+  try {
+    ({ openPlayer } = await loadPlayer());
+  } catch (error) {
+    if (request === pendingOpen) main.append(el("p", "error", `Could not start the player: ${error.message}`));
+    return;
+  }
+  if (request !== pendingOpen) return;
+
   // `autoplay` is set only by the player handing over to what follows, and
   // says which kind of start that is. Opening a title from a shelf never
   // carries one, so it loads and waits for the viewer as it always has.
   const autoplay = options.autoplay ?? null;
+  const { freshResume } = options;
 
   if (queue) {
     openPlayer(set, {
       next: nextInQueue(queue, set.setId),
       onOpenNext: (following, how) => play(following, queue, how),
       autoplay,
+      freshResume,
     });
     return;
   }
@@ -329,6 +370,7 @@ function openTitle(set, queue, options) {
     next: collection ? nextAfter(collection, set.setId) : null,
     onOpenNext: (following, how) => play(following, null, how),
     autoplay,
+    freshResume,
   });
 }
 
@@ -785,18 +827,17 @@ document.addEventListener("visibilitychange", () => {
 if (document.visibilityState === "visible") listenForLibrary();
 
 try {
-  // Asked for first: every shelf badge depends on whether this page is being
-  // watched from the sofa or from somewhere with an uplink in between.
-  await loadLink();
-  // Shared by everyone on this player, so it is read once rather than per
-  // profile — see `loadKids`.
-  await state.loadKids();
-  // The home page's features lead with it; asked for alongside the Kids
-  // marks, which are the other thing that belongs to the library, not a profile.
-  await loadEditorsChoice();
-  // Who, before anything else: every shelf below is one profile's, and the
-  // first render already draws progress rules.
-  const [, profilesLoaded] = await Promise.all([loadCatalog(), state.loadProfiles()]);
+  // None of these depends on another: the link, the kids marks, the editor's
+  // choice and the catalog are all facts about the library itself, and the
+  // profile list is asked here only to learn who there is to choose from.
+  // Only choosing one waits on that list; everything else runs alongside it.
+  const [, , , , profilesLoaded] = await Promise.all([
+    loadLink(),
+    state.loadKids(),
+    loadEditorsChoice(),
+    loadCatalog(),
+    state.loadProfiles(),
+  ]);
 
   // Remembered on this device, if that profile is still one of them; asked
   // otherwise, which is also the first run on a new player.
@@ -824,6 +865,11 @@ try {
     shownHash = location.hash;
   }
   pageReady = true;
+  // Kicked off once the first shelf is about to draw, not awaited: Play
+  // usually finds it already there by the time anyone presses it. A failure
+  // here is reported when Play actually asks for it, not against a page the
+  // viewer has not touched yet.
+  void loadPlayer().catch(() => {});
   route();
 } catch (error) {
   main.textContent = "";

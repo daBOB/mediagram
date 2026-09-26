@@ -5,6 +5,7 @@ import type { AudioTrackReader } from "./audio-tracks";
 import type { HeldSets } from "../cache/held";
 import { listPlayable, listSearchable, playableSet, type PlayableSet } from "../catalog";
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
+import { negotiatedResponse } from "../http/compression";
 import { PosterStore, backdropKeyFor, posterKeyFor, seasonPosterKeyFor } from "../package/posters";
 import { bodiless, withBody } from "../response";
 import { SearchIndex } from "../search/index";
@@ -61,7 +62,7 @@ export function createCatalogRouter(options: CatalogRouterOptions) {
 
   return async function catalogRoute(request: PlayerRequest): Promise<PlayerResponse | null> {
     const headOnly = request.method === "HEAD";
-    const json = (value: unknown) => withBody(JSON.stringify(value), "application/json", { headOnly });
+    const json = (value: unknown) => negotiatedResponse(request, JSON.stringify(value), "application/json", { headOnly });
     if (request.path === "/api/search") {
       const hits = index.search(request.query ?? "")
         .map(({ summary: _summary, matched, excerpt, ...set }) => ({

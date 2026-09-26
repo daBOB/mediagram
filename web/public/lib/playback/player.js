@@ -39,7 +39,19 @@ let mounted = null;
  * @property {"buffered"|"asap"|null} [autoplay]
  * @property {CatalogSet|null} [next]
  * @property {(set: CatalogSet, options: PlayerOptions) => void} [onOpenNext]
+ * @property {Promise<number|null>} [freshResume] A position read from the
+ *   server after the title was already open — see `play` in `app.js`. Applied
+ *   on arrival only for direct playback, and only while the viewer has not
+ *   really begun; see `RESUME_DRIFT_SECONDS`.
  */
+
+/**
+ * How far into a title "has not really begun" still reaches once a fresher
+ * resume position lands. A viewer still sitting with the opening frame has
+ * made no choice a late position would undo; one a few seconds further in has,
+ * and keeps the place they are actually at.
+ */
+const RESUME_DRIFT_SECONDS = 3;
 
 /** Mount controls after the page exists. Repeated initialization is a no-op. */
 export function initializePlayer() {
@@ -668,28 +680,53 @@ function mountPlayer() {
       };
       source = operation;
       appliedAudioTrack = 0;
+      // Whether metadata has already been read, so a fresher position landing
+      // afterwards knows to set the clock itself rather than leave a value in
+      // `operation.resume` that nothing will read again.
+      let metadataSeen = false;
       // Watched too: the original is the stream most likely to be too much for
       // a link, since nothing caps what it was mastered at.
       watch.begin({ capBits: null, sourceBits: sourceBitrate(set) });
+      // Registered unconditionally, not only when there is a position to
+      // start at: `freshResume` below may still put one in `operation.resume`
+      // before metadata arrives, and `currentTime` before then is discarded —
+      // which is how a resume silently becomes a start.
+      video.addEventListener(
+        "loadedmetadata",
+        () => {
+          const at = operation.resume;
+          operation.resume = null;
+          metadataSeen = true;
+          if (at) video.currentTime = at;
+        },
+        {
+          once: true,
+          signal: operation.controller.signal,
+        },
+      );
       if (resume > 0) {
-        // Once metadata is in: `currentTime` before then is discarded, which is
-        // how a resume silently becomes a start.
-        video.addEventListener(
-          "loadedmetadata",
-          () => {
-            const at = operation.resume;
-            operation.resume = null;
-            video.currentTime = at;
-          },
-          {
-            once: true,
-            signal: operation.controller.signal,
-          },
-        );
         note.textContent = `Carrying on from ${clockTime(resume)}.`;
         note.hidden = false;
       }
       video.src = `/api/sets/${encodeURIComponent(set.setId)}/stream`;
+
+      // A position read fresh from the server, joined after the title is
+      // already open — the dialog itself never waits on it. Applied only
+      // while the viewer has not really begun: past `RESUME_DRIFT_SECONDS`
+      // they have made a choice a late-arriving position must not undo.
+      // Conversions are not revisited here — restarting one mid-flight for a
+      // position a few seconds different is not worth the encoder churn.
+      options.freshResume?.then((at) => {
+        if (at == null || converting || signal.aborted) return;
+        if (Math.abs(filmTime() - resume) > RESUME_DRIFT_SECONDS) return;
+        if (metadataSeen) video.currentTime = at;
+        else operation.resume = at;
+        if (at > 0) {
+          note.textContent = `Carrying on from ${clockTime(at)}.`;
+          note.hidden = false;
+        }
+      });
+
       // No `play()` unless this title started itself: `preload="auto"` fills
       // the buffer and the viewer starts it, which is the whole behaviour for
       // anything opened by hand.

@@ -103,6 +103,15 @@ describe("shelves", () => {
     expect(library.series.map((s) => s.name)).toEqual(["Alpha", "Zed"]);
   });
 
+  /** The shared collator must sort exactly as a fresh, per-call one did. */
+  test("movie titles sort numerically through the shared collator, not as text", () => {
+    const library = groupLibrary(
+      ["Film 10", "Film 9", "Film 1"].map((title) => set({ kind: "movie", title })),
+    );
+
+    expect(library.movies.map((m) => m.title)).toEqual(["Film 1", "Film 9", "Film 10"]);
+  });
+
   test("a set with no show still lands somewhere", () => {
     const library = groupLibrary([set({ kind: "ep", show: null, episode: "1" })]);
 

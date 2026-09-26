@@ -18,9 +18,8 @@
 //! A removal instead carries `last_finished_at`, the completion it took the
 //! mark from, and a position is compared against that: one no newer stays
 //! suppressed, a genuine rewatch made since survives. `watched::reconcile`
-//! is where a live row and its removal are weighed against each other, on a
-//! different key for a reason `record.rs` explains — including why a tie
-//! goes to the removal rather than a device-id tie-break. Watchlist, Kids
+//! weighs a live row against its removal, on a different key for a reason
+//! `record.rs` explains, as it does why a tie goes to the removal. Watchlist, Kids
 //! and collections need no such trick — each row carries its own `removed`
 //! flag, reconciled by `keep` below the same as any other.
 

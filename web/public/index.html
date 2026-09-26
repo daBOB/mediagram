@@ -9,7 +9,27 @@
          serif is left to load on first use, below the fold. -->
     <link rel="preload" href="/font/geist-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/font/fraunces-latin.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="/style.css" />
+    <!-- The library and the screening room share tokens, not layout rules. -->
+    <link rel="stylesheet" href="/styles/theme.css" />
+    <link rel="stylesheet" href="/styles/shell.css" />
+    <link rel="stylesheet" href="/styles/catalog.css" />
+    <link rel="stylesheet" href="/styles/home.css" />
+    <link rel="stylesheet" href="/styles/library-controls.css" />
+    <link rel="stylesheet" href="/styles/playback.css" />
+    <!-- The deepest modules the first shelf's own render reaches, fetched
+         alongside the shallower ones that import them rather than after: an
+         `@import`-style chain of five whole round trips deep, flattened to
+         about two. The player's own modules are loaded separately, lazily —
+         see `app.js`. -->
+    <link rel="modulepreload" href="/lib/library.js" />
+    <link rel="modulepreload" href="/lib/watch-state.js" />
+    <link rel="modulepreload" href="/lib/playable.js" />
+    <link rel="modulepreload" href="/lib/codec-support.js" />
+    <link rel="modulepreload" href="/lib/link.js" />
+    <link rel="modulepreload" href="/lib/catalog/set-badge.js" />
+    <link rel="modulepreload" href="/lib/catalog/plate.js" />
+    <link rel="modulepreload" href="/lib/catalog/shelf-view.js" />
+    <link rel="modulepreload" href="/lib/catalog/course-view.js" />
   </head>
   <body>
     <button type="button" class="skip-link" id="skip-library">Skip to library</button>
