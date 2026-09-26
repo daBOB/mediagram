@@ -3,7 +3,6 @@ package player
 import data.CatalogRepository
 import data.PlayerPreferences
 import data.WatchStateRepository
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -169,14 +168,5 @@ class PlayerChoicesController(
         launchScope.launch {
             safely(Unit) { preferences.remember(profileId, scope, "speed", speedPreferenceValue(rate)) }
         }
-    }
-
-    /** Runs [block], answering [default] for anything but cancellation — which is rethrown, so a cancelled coroutine stays cancelled. */
-    private suspend fun <T> safely(default: T, block: suspend () -> T): T = try {
-        block()
-    } catch (e: CancellationException) {
-        throw e
-    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-        default
     }
 }

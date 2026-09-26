@@ -20,6 +20,22 @@ export function artworkUrl(key) {
   return `/api/posters/${encodeURIComponent(key)}.jpg`;
 }
 
+/**
+ * The decorative backdrop behind a page's heading: hidden from assistive
+ * technology, and fetched first because it is the largest thing above the fold.
+ */
+export function backdropFigure(className, art) {
+  const figure = el("div", className);
+  figure.setAttribute("aria-hidden", "true");
+  const image = el("img");
+  image.src = artworkUrl(art);
+  image.alt = "";
+  image.decoding = "async";
+  image.setAttribute("fetchpriority", "high");
+  figure.append(image);
+  return figure;
+}
+
 /** Two letters to stand in for artwork that is not there. */
 export function initialsOf(text) {
   return (text ?? "?")

@@ -1,5 +1,7 @@
 package catalog
 
+import model.Kind
+import model.MediaSet
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -73,5 +75,18 @@ class TitleFactsTest {
     @Test
     fun aTitleNoProviderScoredShowsNoStar() {
         assertNull(ratingLabel(null))
+    }
+
+    @Test
+    fun aCoverStoryPutsTheScoreAfterTheFactsAndSaysNothingWhenBothAreMissing() {
+        val film =
+            MediaSet(
+                setId = "f", kind = Kind.MOVIE, title = "f", show = null, chapter = null, path = null, season = null,
+                episodeFirst = null, episodeLast = null, year = 2004, durationSecs = 6780, posterPath = null, totalBytes = 0,
+                fsk = "12", rating = 5.9,
+            )
+        assertEquals("2004 · 1h 53m · FSK 12 · ★ 5.9", coverFactsLine(film))
+        assertEquals("★ 5.9", coverFactsLine(film.copy(year = null, durationSecs = null, fsk = null)))
+        assertNull(coverFactsLine(film.copy(year = null, durationSecs = null, fsk = null, rating = null)))
     }
 }

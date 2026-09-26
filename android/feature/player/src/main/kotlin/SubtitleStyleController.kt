@@ -1,7 +1,6 @@
 package player
 
 import data.PlayerPreferences
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import playback.DEFAULT_CUE_BACKING
@@ -111,14 +110,5 @@ class SubtitleStyleController(
         val scope = scope ?: return
         val profileId = profileId ?: return
         launchScope.launch { safely(Unit) { preferences.remember(profileId, scope, key, value) } }
-    }
-
-    /** Runs [block], answering [default] for anything but cancellation — which is rethrown, so a cancelled coroutine stays cancelled. */
-    private suspend fun <T> safely(default: T, block: suspend () -> T): T = try {
-        block()
-    } catch (e: CancellationException) {
-        throw e
-    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-        default
     }
 }

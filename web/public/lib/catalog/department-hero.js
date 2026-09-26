@@ -9,7 +9,7 @@
  */
 
 import { el } from "../dom.js";
-import { artworkUrl } from "./plate.js";
+import { backdropFigure } from "./plate.js";
 
 /**
  * @param {{ kicker: string, title: string, line: string,
@@ -18,17 +18,7 @@ import { artworkUrl } from "./plate.js";
 export function departmentHero({ kicker, title, line, lead = null, leadName = null, leadHref = null }) {
   const art = lead?.backdrop ?? null;
   const hero = el("header", art ? "dept-hero" : "dept-hero no-art");
-  if (art) {
-    const figure = el("div", "dept-art");
-    figure.setAttribute("aria-hidden", "true");
-    const image = el("img");
-    image.src = artworkUrl(art);
-    image.alt = "";
-    image.decoding = "async";
-    image.setAttribute("fetchpriority", "high");
-    figure.append(image);
-    hero.append(figure);
-  }
+  if (art) hero.append(backdropFigure("dept-art", art));
   const copy = el("div", "dept-copy");
   copy.append(el("p", "eyebrow dept-kicker", kicker), el("h1", "dept-title", title), el("p", "dept-line", line));
   hero.append(copy);

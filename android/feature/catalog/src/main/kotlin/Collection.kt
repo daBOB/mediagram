@@ -75,22 +75,3 @@ fun Division.walk(): Sequence<Division> =
 
 /** The first playable set under [divisions], in display order, skipping documents. */
 fun firstItemOf(divisions: List<Division>): MediaSet? = playableInOrder(divisions).firstOrNull()
-
-/**
- * The division [names] leads to, or `null` when it names a folder that is
- * not there — which is what a stale saved position produces.
- *
- * An empty trail is the collection itself, which is not a division and has
- * to be stood in for, so that every level of a course is one shape the
- * screen can render.
- */
-fun divisionAt(
-    divisions: List<Division>,
-    names: List<String>,
-): Division? {
-    var here = Division(title = "", season = null, items = emptyList(), children = divisions)
-    for (name in names) {
-        here = here.children.find { it.title == name } ?: return null
-    }
-    return here
-}

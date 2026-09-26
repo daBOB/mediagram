@@ -33,14 +33,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import catalog.factsLine
-import catalog.ratingLabel
+import catalog.coverFactsLine
 import coil3.compose.AsyncImage
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import kotlinx.coroutines.delay
 import model.MediaSet
-import model.ageLabelOf
 import java.io.File
 import ui.tv.TvTextRow
 
@@ -173,8 +171,7 @@ private fun TvCoverSlide(
                     modifier = Modifier.padding(top = Spacing.small),
                 )
             }
-            val facts = factsLine(set.year, set.durationSecs, ageLabelOf(set.fsk))
-            val meta = listOfNotNull(facts, ratingLabel(set.rating)).joinToString(" · ").ifEmpty { null }
+            val meta = coverFactsLine(set)
             if (meta != null) {
                 Text(text = meta, style = TvTypeScale.body, color = Color.White.copy(alpha = 0.8f), modifier = Modifier.padding(top = Spacing.extraSmall))
             }

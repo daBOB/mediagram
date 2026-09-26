@@ -1,7 +1,6 @@
 package ui.catalog
 
-import catalog.ratingLabel
-import catalog.factsLine
+import catalog.coverFactsLine
 import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -42,7 +41,6 @@ import coil3.compose.AsyncImage
 import designsystem.Spacing
 import kotlinx.coroutines.delay
 import model.MediaSet
-import model.ageLabelOf
 import java.io.File
 
 /** How long one cover story holds before advancing, the web's own `HOLD_MS`. */
@@ -172,8 +170,7 @@ private fun CoverSlide(
                     modifier = Modifier.padding(top = Spacing.small),
                 )
             }
-            val facts = factsLine(set.year, set.durationSecs, ageLabelOf(set.fsk))
-            val meta = listOfNotNull(facts, ratingLabel(set.rating)).joinToString(" · ").ifEmpty { null }
+            val meta = coverFactsLine(set)
             if (meta != null) {
                 Text(
                     text = meta,

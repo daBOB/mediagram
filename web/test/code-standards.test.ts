@@ -40,7 +40,7 @@ const CEILINGS: Record<string, number> = {
   "public/styles/shell.css": 259,
   "public/styles/theme.css": 209,
   "src/cache/held.ts": 202,
-  "src/cache/reader.ts": 295,
+  "src/cache/reader.ts": 293,
   "src/cache/store.ts": 313,
   "src/config.ts": 265,
   "src/index.ts": 435,

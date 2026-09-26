@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -70,41 +71,22 @@ internal fun TvProfileTile(
     tag: String,
     width: Dp = TileWidth,
 ) {
-    Card(
-        onClick = onClick,
-        modifier =
-            Modifier
-                .width(width)
-                .height(TileHeight)
-                .testTag(tag)
-                .let { if (focusRequester != null) it.focusRequester(focusRequester) else it },
-        shape = TvFocus.cardShape(),
-        scale = TvFocus.cardScale(),
-        border = TvFocus.cardBorder(),
-        glow = TvFocus.cardGlow(),
-        colors = CardDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(Spacing.medium),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            // The shared, two-letter `initialsOf` poster art already falls back
-            // to — not the phone dialog's own single-letter `initialOf` — so a
-            // second surface never reimplements what one function already
-            // covers. The two only ever visibly differ on a two-word name.
-            TvProfileAvatar(letters = initialsOf(profile.name))
-            Text(profile.name, style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.small))
-            if (profile.kids) {
-                Text(
-                    // The phone's own tile label, unabridged — see
-                    // `ui.profile.ProfilePickerScreen.ProfileTile`.
-                    "KIDS",
-                    style = TvTypeScale.body,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = Spacing.extraSmall),
-                )
-            }
+    TileCard(onClick, focusRequester, tag, width) {
+        // The shared, two-letter `initialsOf` poster art already falls back
+        // to — not the phone dialog's own single-letter `initialOf` — so a
+        // second surface never reimplements what one function already
+        // covers. The two only ever visibly differ on a two-word name.
+        TvProfileAvatar(letters = initialsOf(profile.name))
+        Text(profile.name, style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.small))
+        if (profile.kids) {
+            Text(
+                // The phone's own tile label, unabridged — see
+                // `ui.profile.ProfilePickerScreen.ProfileTile`.
+                "KIDS",
+                style = TvTypeScale.body,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = Spacing.extraSmall),
+            )
         }
     }
 }
@@ -115,6 +97,24 @@ internal fun TvAddTile(
     focusRequester: FocusRequester?,
     tag: String,
     width: Dp = TileWidth,
+) {
+    TileCard(onClick, focusRequester, tag, width) {
+        // A literal glyph, not a title to derive letters from — `initialsOf`
+        // drops anything that is not a letter or digit, which would turn
+        // this into "?" instead of the "+" the phone itself draws.
+        TvProfileAvatar(letters = "+")
+        Text(NEW_PROFILE, style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.small))
+    }
+}
+
+/** The focusable, fixed-height card both tiles share; only what sits centred inside it differs. */
+@Composable
+private fun TileCard(
+    onClick: () -> Unit,
+    focusRequester: FocusRequester?,
+    tag: String,
+    width: Dp,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     Card(
         onClick = onClick,
@@ -134,13 +134,8 @@ internal fun TvAddTile(
             modifier = Modifier.fillMaxSize().padding(Spacing.medium),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            // A literal glyph, not a title to derive letters from — `initialsOf`
-            // drops anything that is not a letter or digit, which would turn
-            // this into "?" instead of the "+" the phone itself draws.
-            TvProfileAvatar(letters = "+")
-            Text(NEW_PROFILE, style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.small))
-        }
+            content = content,
+        )
     }
 }
 
@@ -152,7 +147,7 @@ private fun TvProfileAvatar(letters: String) {
                 .size(AvatarSize)
                 .clip(CircleShape)
                 // The tile's own card explicitly takes `surface` (see
-                // `TvProfileTile`/`TvAddTile` above), leaving `surfaceVariant`
+                // `TileCard` above), leaving `surfaceVariant`
                 // here as a genuinely different tone rather than the two
                 // resolving to the same value — tv-material's own default
                 // card container is `surfaceVariant` too, which is what made

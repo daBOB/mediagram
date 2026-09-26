@@ -1,6 +1,8 @@
 package catalog
 
 import java.util.Locale
+import model.MediaSet
+import model.ageLabelOf
 
 /*
  * The short facts that sit beside a poster: when a title is from, how long
@@ -57,3 +59,12 @@ fun factsLine(
  * rating in a shape the other surface never uses.
  */
 fun ratingLabel(rating: Double?): String? = rating?.let { String.format(Locale.ROOT, "★ %.1f", it) }
+
+/**
+ * The line under a cover story's tagline: the [factsLine] with the
+ * provider's score after it, as both the phone and the TV print it.
+ */
+fun coverFactsLine(set: MediaSet): String? =
+    listOfNotNull(factsLine(set.year, set.durationSecs, ageLabelOf(set.fsk)), ratingLabel(set.rating))
+        .joinToString(" · ")
+        .takeIf(String::isNotEmpty)

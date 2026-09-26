@@ -3,7 +3,6 @@ package player
 import androidx.media3.common.Player
 import androidx.media3.common.Tracks
 import data.PlayerPreferences
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import playback.AudioOption
@@ -179,14 +178,5 @@ class AudioChoiceController(
         }
         onOptionsChanged(audioOptions(tracks, remembered))
         if (preferencesLoaded) settled = true
-    }
-
-    /** Runs [block], answering [default] for anything but cancellation — which is rethrown, so a cancelled coroutine stays cancelled. */
-    private suspend fun <T> safely(default: T, block: suspend () -> T): T = try {
-        block()
-    } catch (e: CancellationException) {
-        throw e
-    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-        default
     }
 }

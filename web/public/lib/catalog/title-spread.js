@@ -9,7 +9,7 @@
  */
 
 import { el } from "../dom.js";
-import { artworkUrl } from "./plate.js";
+import { backdropFigure } from "./plate.js";
 
 /**
  * @param {{ back: {href: string, label: string}, title: string, eyebrow?: string|null,
@@ -18,17 +18,7 @@ import { artworkUrl } from "./plate.js";
 export function titleSpread({ back, title, eyebrow = null, facts, art, actions }) {
   const hero = el("header", art ? "spread" : "spread no-art");
 
-  if (art) {
-    const figure = el("div", "spread-art");
-    figure.setAttribute("aria-hidden", "true");
-    const image = el("img");
-    image.src = artworkUrl(art);
-    image.alt = "";
-    image.decoding = "async";
-    image.setAttribute("fetchpriority", "high");
-    figure.append(image);
-    hero.append(figure);
-  }
+  if (art) hero.append(backdropFigure("spread-art", art));
 
   const copy = el("div", "spread-copy");
   const backLink = el("a", "spread-back", `← ${back.label}`);

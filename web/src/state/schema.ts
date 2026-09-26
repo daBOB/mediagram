@@ -11,11 +11,10 @@
  * different database and the two must never be confused.
  */
 
-export const STATE_SCHEMA = 10;
-
 /**
  * Statements grouped by the version they produce, the same shape the index's
- * migrations use: `GROUPS[0]` takes an empty file to version 1.
+ * migrations use: `GROUPS[0]` takes an empty file to version 1, so the current
+ * version is `GROUPS.length`.
  */
 export const GROUPS: readonly (readonly string[])[] = [
   [

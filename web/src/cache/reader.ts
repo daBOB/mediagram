@@ -175,8 +175,15 @@ export class CachedReader {
    */
   async fill(setId: string, partIdx: number, partLength: number, fetch: FetchRange): Promise<void> {
     const lastInPart = Math.floor((partLength - 1) / CACHE_CHUNK);
+    await this.fillMissing(setId, partIdx, 0, lastInPart, partLength, fetch);
+  }
+
+  /** Fetches whichever chunks from `first` to `last` are not cached yet, a run at a time. */
+  private async fillMissing(
+    setId: string, partIdx: number, first: number, last: number, partLength: number, fetch: FetchRange,
+  ): Promise<void> {
     const missing: number[] = [];
-    for (let index = 0; index <= lastInPart; index++) {
+    for (let index = first; index <= last; index++) {
       const held = await this.cache.has(setId, partIdx, index, expectedSize(index, partLength));
       if (!held) missing.push(index);
     }
@@ -260,16 +267,7 @@ export class CachedReader {
     const last = Math.min(firstAfter + ahead - 1, lastInPart);
     if (last < firstAfter) return;
 
-    const task = (async () => {
-      const missing: number[] = [];
-      for (let index = firstAfter; index <= last; index++) {
-        const held = await this.cache.has(setId, partIdx, index, expectedSize(index, partLength));
-        if (!held) missing.push(index);
-      }
-      for (const run of runsOf(missing)) {
-        await this.fillRun(setId, partIdx, run, partLength, fetch, new Map());
-      }
-    })()
+    const task = this.fillMissing(setId, partIdx, firstAfter, last, partLength, fetch)
       .catch(() => {})
       .finally(() => this.warming.delete(task));
     this.warming.add(task);

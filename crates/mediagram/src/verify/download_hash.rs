@@ -5,7 +5,6 @@ use std::collections::HashMap;
 use anyhow::{Context, Result, bail};
 use grammers_client::Client;
 use grammers_client::client::DownloadIter;
-use grammers_client::media::Document;
 use grammers_client::message::Message;
 use grammers_session::types::PeerRef;
 use sha2::{Digest, Sha256};
@@ -42,25 +41,6 @@ pub async fn fetch_messages(
     Ok(map)
 }
 
-/// Downloads `document` chunk by chunk via `iter_download` and returns the
-/// lowercase hex SHA-256 of the concatenated bytes. Nothing beyond the
-/// current chunk is ever held in memory, so this is safe on multi-gigabyte
-/// parts.
-///
-/// No retry here: `grammers-client` 0.10's `DownloadIter::next` leaves its
-/// internal state emptied after any failed chunk request (`files.rs`), so a
-/// retry would silently resume as an *end of stream* instead of re-fetching
-/// the chunk — that would produce a wrong, truncated hash instead of a loud
-/// error. A transient failure therefore surfaces as an error here, and the
-/// caller re-runs `verify --full` to try the part again from the start.
-pub async fn hash_document(
-    client: &Client,
-    document: &Document,
-    expected_len: u64,
-) -> Result<String> {
-    hash_chunks(client.iter_download(document), expected_len).await
-}
-
 /// One chunk at a time, with failures propagated instead of retried as EOF.
 pub(super) trait ChunkSource {
     async fn next(&mut self) -> Result<Option<Vec<u8>>>;
@@ -74,6 +54,16 @@ impl ChunkSource for DownloadIter {
     }
 }
 
+/// Returns the lowercase hex SHA-256 of every chunk in `chunks`. Nothing
+/// beyond the current chunk is ever held in memory, so this is safe on
+/// multi-gigabyte parts.
+///
+/// No retry here: `grammers-client` 0.10's `DownloadIter::next` leaves its
+/// internal state emptied after any failed chunk request (`files.rs`), so a
+/// retry would silently resume as an *end of stream* instead of re-fetching
+/// the chunk — that would produce a wrong, truncated hash instead of a loud
+/// error. A transient failure therefore surfaces as an error here, and the
+/// caller re-runs `verify --full` to try the part again from the start.
 pub(super) async fn hash_chunks(mut chunks: impl ChunkSource, expected_len: u64) -> Result<String> {
     let mut hasher = Sha256::new();
     let mut hashed = 0u64;
