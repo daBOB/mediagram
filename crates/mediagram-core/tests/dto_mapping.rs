@@ -199,3 +199,15 @@ fn an_sdr_title_still_reports_its_dynamic_range() {
 
     assert_eq!(summary_from(&set).hdr.as_deref(), Some("SDR"));
 }
+
+/// A franchise, series type and status are never on the row itself — the
+/// index keeps them per title, and a listing attaches them (see
+/// `store::list_sets`) — so this flattening alone always answers `None`.
+#[test]
+fn a_franchise_and_series_type_are_not_on_the_row_itself() {
+    let summary = summary_from(&playable_set_fixture());
+    assert_eq!(summary.collection_id, None);
+    assert_eq!(summary.collection_name, None);
+    assert_eq!(summary.series_type, None);
+    assert_eq!(summary.show_status, None);
+}

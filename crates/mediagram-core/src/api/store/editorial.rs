@@ -75,6 +75,10 @@ pub(in crate::api) fn list_sets(core: &Core) -> Result<Vec<SetSummary>, CoreErro
                 summary.tagline = row.tagline.clone();
                 summary.rating = row.rating;
                 summary.popularity = row.popularity;
+                summary.show_status = row.show_status.clone();
+                summary.collection_id = row.collection_id;
+                summary.collection_name = row.collection_name.clone();
+                summary.series_type = row.series_type.clone();
             }
             summary.backdrop_key = summary
                 .poster_key

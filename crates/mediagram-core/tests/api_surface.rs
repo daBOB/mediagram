@@ -80,6 +80,23 @@ async fn listing_sets_before_any_refresh_is_empty_not_an_error() {
     assert_eq!(core(dir.path()).list_sets().await.unwrap(), Vec::new());
 }
 
+/// Before any refresh there is no `credits`/`franchises` table to even open
+/// — every departments lookup answers "nothing" rather than an error, the
+/// same rule an unrefreshed `list_sets` is held to above.
+#[tokio::test]
+async fn the_departments_surface_is_empty_not_an_error_before_any_refresh() {
+    let dir = tempfile::tempdir().unwrap();
+    let player = core(dir.path());
+    assert_eq!(
+        player.clone().title_credits("tmdb-movie-550".into()).await,
+        mediagram_core::dto::TitleCreditsRecord::default()
+    );
+    assert_eq!(player.clone().person(1).await, None);
+    assert!(player.clone().franchises().await.is_empty());
+    assert!(player.clone().search_people("anna".into()).await.is_empty());
+    assert_eq!(player.fetch_portrait(1).await, None);
+}
+
 #[test]
 fn a_poster_key_of_the_wrong_shape_is_never_looked_up() {
     let dir = tempfile::tempdir().unwrap();

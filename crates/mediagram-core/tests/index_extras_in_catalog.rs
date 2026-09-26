@@ -156,6 +156,61 @@ async fn tagline_rating_and_popularity_are_read_from_the_index_by_poster_key() {
     assert_eq!(set.popularity, Some(42.0));
 }
 
+/// The series page's status line and a film's franchise, read from `shows`
+/// by poster key like the rest of `ShowFacts`.
+#[tokio::test]
+async fn status_and_franchise_are_read_from_the_index_by_poster_key() {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = index_at(dir.path(), mlib_spec::schema::SCHEMA_VERSION);
+    add_set(&conn, "01FILM0000000000000000000E", "movie", Some(550));
+    conn.execute(
+        "INSERT INTO shows(source, kind, id, status, collection_id, collection_name)
+           VALUES ('tmdb', 'movie', 550, 'Released', 9735, 'Fight Club Collection')",
+        [],
+    )
+    .unwrap();
+    add_set(&conn, "01SERIES000000000000000E", "ep", Some(1399));
+    conn.execute(
+        "INSERT INTO shows(source, kind, id, status, series_type) VALUES ('tmdb', 'tv', 1399, 'Ended', 'Scripted')",
+        [],
+    )
+    .unwrap();
+
+    let sets = core(dir.path()).list_sets().await.unwrap();
+
+    let film = set_of(&sets, "01FILM0000000000000000000E");
+    assert_eq!(film.show_status.as_deref(), Some("Released"));
+    assert_eq!(film.collection_id, Some(9735));
+    assert_eq!(film.collection_name.as_deref(), Some("Fight Club Collection"));
+    assert_eq!(film.series_type, None);
+
+    let series = set_of(&sets, "01SERIES000000000000000E");
+    assert_eq!(series.show_status.as_deref(), Some("Ended"));
+    assert_eq!(series.series_type.as_deref(), Some("Scripted"));
+}
+
+/// A v8 index predates `collection_id`/`collection_name`/`series_type`
+/// (v9); a title still lists, just without a franchise or series type.
+#[tokio::test]
+async fn a_v8_index_reads_no_franchise_or_series_type() {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = index_at(dir.path(), 8);
+    add_set(&conn, "01OLDFILM000000000000000E", "movie", Some(550));
+    conn.execute(
+        "INSERT INTO shows(source, kind, id, status) VALUES ('tmdb', 'movie', 550, 'Released')",
+        [],
+    )
+    .unwrap();
+
+    let sets = core(dir.path()).list_sets().await.unwrap();
+
+    let film = set_of(&sets, "01OLDFILM000000000000000E");
+    assert_eq!(film.show_status.as_deref(), Some("Released"), "status predates v9");
+    assert_eq!(film.collection_id, None);
+    assert_eq!(film.collection_name, None);
+    assert_eq!(film.series_type, None);
+}
+
 /// A backdrop is named only when the file is actually on disk — a poster
 /// key that merely resolves is not a picture anyone can show.
 #[tokio::test]

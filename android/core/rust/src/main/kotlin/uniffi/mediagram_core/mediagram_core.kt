@@ -714,6 +714,16 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_sign_out(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_fetch_portrait(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_franchises(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_person(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_search_people(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_title_credits(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_next_library_event(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_preferences(
@@ -827,6 +837,16 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_dc_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     external fun uniffi_mediagram_core_fn_method_core_sign_out(`ptr`: Long,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_fetch_portrait(`ptr`: Long,`personId`: Long,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_franchises(`ptr`: Long,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_person(`ptr`: Long,`personId`: Long,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_search_people(`ptr`: Long,`query`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_title_credits(`ptr`: Long,`key`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_next_library_event(`ptr`: Long,`handle`: RustBuffer.ByValue,`ownDevice`: RustBuffer.ByValue,
     ): Long
@@ -1007,7 +1027,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_check_password() and 0xFFFF) != 58515) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_fetch_missing() and 0xFFFF) != 27946) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_fetch_missing() and 0xFFFF) != 44413) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_is_authorized() and 0xFFFF) != 30182) {
@@ -1050,6 +1070,21 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_sign_out() and 0xFFFF) != 40268) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_fetch_portrait() and 0xFFFF) != 36612) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_franchises() and 0xFFFF) != 8346) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_person() and 0xFFFF) != 61075) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_search_people() and 0xFFFF) != 12861) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_title_credits() and 0xFFFF) != 3782) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_next_library_event() and 0xFFFF) != 13174) {
@@ -1661,8 +1696,7 @@ public interface CoreInterface {
     suspend fun `checkPassword`(`password`: kotlin.String)
 
     /**
-     * Fetches missing TMDB posters, backdrops and descriptions together,
-     * once per title.
+     * Fetches missing TMDB posters, backdrops and descriptions together, once per title.
      *
      * The library's language takes precedence over the `language` fallback.
      * `backdrop_width` is Kotlin's own choice, by its screen class — narrow
@@ -1754,6 +1788,43 @@ public interface CoreInterface {
      * reached. Safe to call when already signed out.
      */
     suspend fun `signOut`()
+
+    /**
+     * Downloads this person's portrait (w185) from the profile path the
+     * index — or, failing that, this device's own fetched descriptions —
+     * recorded for them, into the artwork directory `poster_path` already
+     * searches, and returns the file's path.
+     *
+     * Idempotent: a file already on disk is returned without another
+     * request. `None` when nobody recorded a profile for this person, or
+     * the download failed — a missing face is a cosmetic loss, never an
+     * error a caller must handle.
+     */
+    suspend fun `fetchPortrait`(`personId`: kotlin.ULong): kotlin.String?
+
+    /**
+     * Every film franchise the index names, alphabetically.
+     */
+    suspend fun `franchises`(): List<FranchiseRecord>
+
+    /**
+     * One person and the keys of every title they are credited on, or
+     * `None` when nobody by this id is credited on anything the index holds.
+     */
+    suspend fun `person`(`personId`: kotlin.ULong): PersonRecord?
+
+    /**
+     * People whose name matches every word of `query`, most-credited first
+     * — see [`crate::credits::people_matching`].
+     */
+    suspend fun `searchPeople`(`query`: kotlin.String): List<PeopleHitRecord>
+
+    /**
+     * A title's cast, in billing order, apart from its crew. Empty for a
+     * key this device cannot parse, or an index with no `credits` table
+     * (v8 and older, or none installed yet) — neither is an error.
+     */
+    suspend fun `titleCredits`(`key`: kotlin.String): TitleCreditsRecord
 
     /**
      * Waits until the library `handle` names changes in a way worth a
@@ -2086,8 +2157,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
-     * Fetches missing TMDB posters, backdrops and descriptions together,
-     * once per title.
+     * Fetches missing TMDB posters, backdrops and descriptions together, once per title.
      *
      * The library's language takes precedence over the `language` fallback.
      * `backdrop_width` is Kotlin's own choice, by its screen class — narrow
@@ -2452,6 +2522,137 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
         // Error FFI converter
         CoreException.ErrorHandler,
+    )
+    }
+
+
+    /**
+     * Downloads this person's portrait (w185) from the profile path the
+     * index — or, failing that, this device's own fetched descriptions —
+     * recorded for them, into the artwork directory `poster_path` already
+     * searches, and returns the file's path.
+     *
+     * Idempotent: a file already on disk is returned without another
+     * request. `None` when nobody recorded a profile for this person, or
+     * the download failed — a missing face is a cosmetic loss, never an
+     * error a caller must handle.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `fetchPortrait`(`personId`: kotlin.ULong) : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_fetch_portrait(
+                uniffiHandle,
+
+        FfiConverterULong.lower(`personId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Every film franchise the index names, alphabetically.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `franchises`() : List<FranchiseRecord> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_franchises(
+                uniffiHandle,
+
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypeFranchiseRecord.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * One person and the keys of every title they are credited on, or
+     * `None` when nobody by this id is credited on anything the index holds.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `person`(`personId`: kotlin.ULong) : PersonRecord? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_person(
+                uniffiHandle,
+
+        FfiConverterULong.lower(`personId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalTypePersonRecord.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * People whose name matches every word of `query`, most-credited first
+     * — see [`crate::credits::people_matching`].
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `searchPeople`(`query`: kotlin.String) : List<PeopleHitRecord> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_search_people(
+                uniffiHandle,
+
+        FfiConverterString.lower(`query`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypePeopleHitRecord.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * A title's cast, in billing order, apart from its crew. Empty for a
+     * key this device cannot parse, or an index with no `credits` table
+     * (v8 and older, or none installed yet) — neither is an error.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `titleCredits`(`key`: kotlin.String) : TitleCreditsRecord {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_title_credits(
+                uniffiHandle,
+
+        FfiConverterString.lower(`key`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeTitleCreditsRecord.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
     )
     }
 
@@ -3299,6 +3500,60 @@ public object FfiConverterTypeCatalogFacts: FfiConverterRustBuffer<CatalogFacts>
 
 
 /**
+ * One person credited on a title, or found by a name search: their id,
+ * name, the character they played (cast) or their job (crew), and the key
+ * their portrait is held under — present only when this device already
+ * holds the file, the same rule `SetSummary::backdrop_key` is held to.
+ */
+data class CreditRecord (
+    var `personId`: kotlin.ULong
+    ,
+    var `name`: kotlin.String
+    ,
+    var `role`: kotlin.String?
+    ,
+    var `portraitKey`: kotlin.String?
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCreditRecord: FfiConverterRustBuffer<CreditRecord> {
+    override fun read(buf: ByteBuffer): CreditRecord {
+        return CreditRecord(
+            FfiConverterULong.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: CreditRecord) = (
+            FfiConverterULong.allocationSize(value.`personId`) +
+            FfiConverterString.allocationSize(value.`name`) +
+            FfiConverterOptionalString.allocationSize(value.`role`) +
+            FfiConverterOptionalString.allocationSize(value.`portraitKey`)
+    )
+
+    override fun write(value: CreditRecord, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`personId`, buf)
+            FfiConverterString.write(value.`name`, buf)
+            FfiConverterOptionalString.write(value.`role`, buf)
+            FfiConverterOptionalString.write(value.`portraitKey`, buf)
+    }
+}
+
+
+
+/**
  * What one fetch did, for the screen that reports it.
  *
  * Every count is a number of titles — what a shelf shows as one card, so a
@@ -3394,6 +3649,52 @@ public object FfiConverterTypeFetchReport: FfiConverterRustBuffer<FetchReport> {
 
 
 /**
+ * A film franchise (TMDB "collection"), by name.
+ */
+data class FranchiseRecord (
+    var `id`: kotlin.ULong
+    ,
+    var `name`: kotlin.String
+    ,
+    var `overview`: kotlin.String?
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFranchiseRecord: FfiConverterRustBuffer<FranchiseRecord> {
+    override fun read(buf: ByteBuffer): FranchiseRecord {
+        return FranchiseRecord(
+            FfiConverterULong.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FranchiseRecord) = (
+            FfiConverterULong.allocationSize(value.`id`) +
+            FfiConverterString.allocationSize(value.`name`) +
+            FfiConverterOptionalString.allocationSize(value.`overview`)
+    )
+
+    override fun write(value: FranchiseRecord, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`id`, buf)
+            FfiConverterString.write(value.`name`, buf)
+            FfiConverterOptionalString.write(value.`overview`, buf)
+    }
+}
+
+
+
+/**
  * One library the signed-in account could choose, as the caller sees it.
  *
  * A title to render and a handle to send back, and nothing else. The handle
@@ -3477,6 +3778,111 @@ public object FfiConverterTypeListRow: FfiConverterRustBuffer<ListRow> {
             FfiConverterString.write(value.`id`, buf)
             FfiConverterString.write(value.`name`, buf)
             FfiConverterSequenceString.write(value.`items`, buf)
+    }
+}
+
+
+
+/**
+ * One name [`crate::api::Core::search_people`] found, most-credited people
+ * surfacing first.
+ */
+data class PeopleHitRecord (
+    var `personId`: kotlin.ULong
+    ,
+    var `name`: kotlin.String
+    ,
+    var `portraitKey`: kotlin.String?
+    ,
+    var `titleKeys`: List<kotlin.String>
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePeopleHitRecord: FfiConverterRustBuffer<PeopleHitRecord> {
+    override fun read(buf: ByteBuffer): PeopleHitRecord {
+        return PeopleHitRecord(
+            FfiConverterULong.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterSequenceString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: PeopleHitRecord) = (
+            FfiConverterULong.allocationSize(value.`personId`) +
+            FfiConverterString.allocationSize(value.`name`) +
+            FfiConverterOptionalString.allocationSize(value.`portraitKey`) +
+            FfiConverterSequenceString.allocationSize(value.`titleKeys`)
+    )
+
+    override fun write(value: PeopleHitRecord, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`personId`, buf)
+            FfiConverterString.write(value.`name`, buf)
+            FfiConverterOptionalString.write(value.`portraitKey`, buf)
+            FfiConverterSequenceString.write(value.`titleKeys`, buf)
+    }
+}
+
+
+
+/**
+ * One person and the keys of every title they are credited on — a caller
+ * resolves these against the rows it was already allowed to see, so a Kids
+ * profile is shown only the titles it can already open.
+ */
+data class PersonRecord (
+    var `personId`: kotlin.ULong
+    ,
+    var `name`: kotlin.String
+    ,
+    var `portraitKey`: kotlin.String?
+    ,
+    var `titleKeys`: List<kotlin.String>
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePersonRecord: FfiConverterRustBuffer<PersonRecord> {
+    override fun read(buf: ByteBuffer): PersonRecord {
+        return PersonRecord(
+            FfiConverterULong.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterSequenceString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: PersonRecord) = (
+            FfiConverterULong.allocationSize(value.`personId`) +
+            FfiConverterString.allocationSize(value.`name`) +
+            FfiConverterOptionalString.allocationSize(value.`portraitKey`) +
+            FfiConverterSequenceString.allocationSize(value.`titleKeys`)
+    )
+
+    override fun write(value: PersonRecord, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`personId`, buf)
+            FfiConverterString.write(value.`name`, buf)
+            FfiConverterOptionalString.write(value.`portraitKey`, buf)
+            FfiConverterSequenceString.write(value.`titleKeys`, buf)
     }
 }
 
@@ -3879,6 +4285,29 @@ data class SetSummary (
      * show's, like `genres`.
      */
     var `popularity`: kotlin.Double?
+    ,
+    /**
+     * What TMDB currently says this title's status is (`Ended`, `Returning
+     * Series`, `Released`, …), for the series page's status line. Absent
+     * from an index written before v9 recorded it. A series carries its
+     * show's, like `genres`.
+     */
+    var `showStatus`: kotlin.String?
+    ,
+    /**
+     * The franchise (TMDB "collection") a film belongs to. Absent for a
+     * series, and from an index written before v9. A series carries its
+     * show's, like `genres` — though a series is never itself in one.
+     */
+    var `collectionId`: kotlin.ULong?
+    ,
+    var `collectionName`: kotlin.String?
+    ,
+    /**
+     * What TMDB calls a series: `Scripted`, `Miniseries`, … Absent for a
+     * film, and from an index written before v9.
+     */
+    var `seriesType`: kotlin.String?
 
 ){
 
@@ -3923,6 +4352,10 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalDouble.read(buf),
             FfiConverterOptionalDouble.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalULong.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
         )
     }
 
@@ -3954,7 +4387,11 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.allocationSize(value.`backdropKey`) +
             FfiConverterOptionalString.allocationSize(value.`tagline`) +
             FfiConverterOptionalDouble.allocationSize(value.`rating`) +
-            FfiConverterOptionalDouble.allocationSize(value.`popularity`)
+            FfiConverterOptionalDouble.allocationSize(value.`popularity`) +
+            FfiConverterOptionalString.allocationSize(value.`showStatus`) +
+            FfiConverterOptionalULong.allocationSize(value.`collectionId`) +
+            FfiConverterOptionalString.allocationSize(value.`collectionName`) +
+            FfiConverterOptionalString.allocationSize(value.`seriesType`)
     )
 
     override fun write(value: SetSummary, buf: ByteBuffer) {
@@ -3986,6 +4423,10 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.write(value.`tagline`, buf)
             FfiConverterOptionalDouble.write(value.`rating`, buf)
             FfiConverterOptionalDouble.write(value.`popularity`, buf)
+            FfiConverterOptionalString.write(value.`showStatus`, buf)
+            FfiConverterOptionalULong.write(value.`collectionId`, buf)
+            FfiConverterOptionalString.write(value.`collectionName`, buf)
+            FfiConverterOptionalString.write(value.`seriesType`, buf)
     }
 }
 
@@ -4105,6 +4546,48 @@ public object FfiConverterTypeSyncOutcome: FfiConverterRustBuffer<SyncOutcome> {
             FfiConverterULong.write(value.`pulled`, buf)
             FfiConverterBoolean.write(value.`pushed`, buf)
             FfiConverterOptionalString.write(value.`failed`, buf)
+    }
+}
+
+
+
+/**
+ * A title's cast, in billing order, apart from its crew (director(s), a
+ * series' creators).
+ */
+data class TitleCreditsRecord (
+    var `cast`: List<CreditRecord>
+    ,
+    var `crew`: List<CreditRecord>
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeTitleCreditsRecord: FfiConverterRustBuffer<TitleCreditsRecord> {
+    override fun read(buf: ByteBuffer): TitleCreditsRecord {
+        return TitleCreditsRecord(
+            FfiConverterSequenceTypeCreditRecord.read(buf),
+            FfiConverterSequenceTypeCreditRecord.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: TitleCreditsRecord) = (
+            FfiConverterSequenceTypeCreditRecord.allocationSize(value.`cast`) +
+            FfiConverterSequenceTypeCreditRecord.allocationSize(value.`crew`)
+    )
+
+    override fun write(value: TitleCreditsRecord, buf: ByteBuffer) {
+            FfiConverterSequenceTypeCreditRecord.write(value.`cast`, buf)
+            FfiConverterSequenceTypeCreditRecord.write(value.`crew`, buf)
     }
 }
 
@@ -4527,6 +5010,38 @@ public object FfiConverterOptionalInt: FfiConverterRustBuffer<kotlin.Int?> {
 /**
  * @suppress
  */
+public object FfiConverterOptionalULong: FfiConverterRustBuffer<kotlin.ULong?> {
+    override fun read(buf: ByteBuffer): kotlin.ULong? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterULong.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.ULong?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterULong.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.ULong?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterULong.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalLong: FfiConverterRustBuffer<kotlin.Long?> {
     override fun read(buf: ByteBuffer): kotlin.Long? {
         if (buf.get().toInt() == 0) {
@@ -4655,6 +5170,38 @@ public object FfiConverterOptionalTypeListRow: FfiConverterRustBuffer<ListRow?> 
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypePersonRecord: FfiConverterRustBuffer<PersonRecord?> {
+    override fun read(buf: ByteBuffer): PersonRecord? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypePersonRecord.read(buf)
+    }
+
+    override fun allocationSize(value: PersonRecord?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypePersonRecord.allocationSize(value)
+        }
+    }
+
+    override fun write(value: PersonRecord?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypePersonRecord.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeProfile: FfiConverterRustBuffer<Profile?> {
     override fun read(buf: ByteBuffer): Profile? {
         if (buf.get().toInt() == 0) {
@@ -4747,6 +5294,62 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypeCreditRecord: FfiConverterRustBuffer<List<CreditRecord>> {
+    override fun read(buf: ByteBuffer): List<CreditRecord> {
+        val len = buf.getInt()
+        return List<CreditRecord>(len) {
+            FfiConverterTypeCreditRecord.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<CreditRecord>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeCreditRecord.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<CreditRecord>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeCreditRecord.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeFranchiseRecord: FfiConverterRustBuffer<List<FranchiseRecord>> {
+    override fun read(buf: ByteBuffer): List<FranchiseRecord> {
+        val len = buf.getInt()
+        return List<FranchiseRecord>(len) {
+            FfiConverterTypeFranchiseRecord.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<FranchiseRecord>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeFranchiseRecord.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<FranchiseRecord>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeFranchiseRecord.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeLibraryChoice: FfiConverterRustBuffer<List<LibraryChoice>> {
     override fun read(buf: ByteBuffer): List<LibraryChoice> {
         val len = buf.getInt()
@@ -4793,6 +5396,34 @@ public object FfiConverterSequenceTypeListRow: FfiConverterRustBuffer<List<ListR
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeListRow.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypePeopleHitRecord: FfiConverterRustBuffer<List<PeopleHitRecord>> {
+    override fun read(buf: ByteBuffer): List<PeopleHitRecord> {
+        val len = buf.getInt()
+        return List<PeopleHitRecord>(len) {
+            FfiConverterTypePeopleHitRecord.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<PeopleHitRecord>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypePeopleHitRecord.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<PeopleHitRecord>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypePeopleHitRecord.write(it, buf)
         }
     }
 }

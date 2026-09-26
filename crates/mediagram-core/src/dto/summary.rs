@@ -62,6 +62,19 @@ pub struct SetSummary {
     /// from an index written before it was recorded. A series carries its
     /// show's, like `genres`.
     pub popularity: Option<f64>,
+    /// What TMDB currently says this title's status is (`Ended`, `Returning
+    /// Series`, `Released`, …), for the series page's status line. Absent
+    /// from an index written before v9 recorded it. A series carries its
+    /// show's, like `genres`.
+    pub show_status: Option<String>,
+    /// The franchise (TMDB "collection") a film belongs to. Absent for a
+    /// series, and from an index written before v9. A series carries its
+    /// show's, like `genres` — though a series is never itself in one.
+    pub collection_id: Option<u64>,
+    pub collection_name: Option<String>,
+    /// What TMDB calls a series: `Scripted`, `Miniseries`, … Absent for a
+    /// film, and from an index written before v9.
+    pub series_type: Option<String>,
 }
 
 /// Flattens one catalog row. Never fails: a set whose episode field this
@@ -106,6 +119,10 @@ pub fn summary_from(set: &PlayableSet) -> SetSummary {
         tagline: None,
         rating: None,
         popularity: None,
+        show_status: None,
+        collection_id: None,
+        collection_name: None,
+        series_type: None,
     }
 }
 

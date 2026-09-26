@@ -8,6 +8,7 @@
 mod account;
 mod blocking;
 mod channel;
+mod credits;
 pub mod enrich;
 mod events;
 mod preferences;
@@ -181,8 +182,7 @@ impl Core {
         read::read(&self, locations, offset, len).await
     }
 
-    /// Fetches missing TMDB posters, backdrops and descriptions together,
-    /// once per title.
+    /// Fetches missing TMDB posters, backdrops and descriptions together, once per title.
     ///
     /// The library's language takes precedence over the `language` fallback.
     /// `backdrop_width` is Kotlin's own choice, by its screen class — narrow

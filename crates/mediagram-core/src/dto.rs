@@ -2,7 +2,9 @@
 //! text; [`summary::summary_from`] hands the boundary two plain numbers
 //! instead.
 
+mod credits;
 mod summary;
+pub use credits::{CreditRecord, FranchiseRecord, PeopleHitRecord, PersonRecord, TitleCreditsRecord};
 pub use summary::{SetSummary, summary_from};
 
 use mediagram_tmdb::details::TitleDetailsRow;

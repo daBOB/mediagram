@@ -10,9 +10,13 @@
 use mediagram_tmdb::credits::CreditRow;
 use mediagram_tmdb::posters::{PORTRAIT_WIDTH, PosterRef, is_image_path, kind_key};
 use mlib_spec::Kind;
-use rusqlite::{Connection, params};
+use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::shows::SOURCE;
+
+#[path = "credits_read.rs"]
+mod read;
+pub use read::{Credited, PeopleHit, PersonCredits, TitleCredits, for_person, for_title, people_matching};
 
 /// Replaces a title's credited people, wholly: every row for `(kind, id)` is
 /// deleted first, so a shrunk cast list, or a director no longer credited,
@@ -83,12 +87,7 @@ pub fn has(conn: &Connection, kind: Kind, id: u64) -> rusqlite::Result<bool> {
 /// accommodation `shows::optional_column` makes for a column, extended here
 /// to a whole missing table.
 pub fn portraits(conn: &Connection) -> rusqlite::Result<Vec<PosterRef>> {
-    let has_table: bool = conn.query_row(
-        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'credits')",
-        [],
-        |row| row.get(0),
-    )?;
-    if !has_table {
+    if !read::has_table(conn)? {
         return Ok(Vec::new());
     }
     let mut stmt = conn.prepare(
@@ -115,6 +114,25 @@ pub fn portraits(conn: &Connection) -> rusqlite::Result<Vec<PosterRef>> {
         });
     }
     Ok(found)
+}
+
+/// The profile path TMDB gave for one person's credit, if this index ever
+/// recorded one and the path is well-formed — the single-person counterpart
+/// of [`portraits`], for a caller (`Core::fetch_portrait`) that only needs
+/// one face rather than every one this index holds.
+pub fn profile_of(conn: &Connection, person_id: u64) -> rusqlite::Result<Option<String>> {
+    if !read::has_table(conn)? {
+        return Ok(None);
+    }
+    let path: Option<String> = conn
+        .query_row(
+            "SELECT profile FROM credits
+              WHERE source = ?1 AND person_id = ?2 AND profile IS NOT NULL LIMIT 1",
+            params![SOURCE, person_id],
+            |row| row.get(0),
+        )
+        .optional()?;
+    Ok(path.filter(|p| is_image_path(p)))
 }
 
 #[cfg(test)]

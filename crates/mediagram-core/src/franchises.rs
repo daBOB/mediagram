@@ -44,6 +44,31 @@ pub fn has(conn: &Connection, id: u64) -> rusqlite::Result<bool> {
     )
 }
 
+/// Every franchise this index names, alphabetically — the same order the
+/// web player's `franchises` reads them in. Empty for an index that
+/// predates this table (v8 and older), the same accommodation
+/// `credits::portraits` makes for a whole missing table.
+pub fn all(conn: &Connection) -> rusqlite::Result<Vec<Franchise>> {
+    let has_table: bool = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'franchises')",
+        [],
+        |row| row.get(0),
+    )?;
+    if !has_table {
+        return Ok(Vec::new());
+    }
+    let mut stmt =
+        conn.prepare("SELECT id, name, overview FROM franchises WHERE source = ?1 ORDER BY name")?;
+    let rows = stmt.query_map(params![SOURCE], |row| {
+        Ok(Franchise {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            overview: row.get(2)?,
+        })
+    })?;
+    rows.collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -89,5 +114,32 @@ mod tests {
     fn an_unknown_franchise_is_none() {
         let conn = conn_with_franchises();
         assert_eq!(get(&conn, 999).unwrap(), None);
+    }
+
+    #[test]
+    fn every_franchise_is_listed_alphabetically() {
+        let conn = conn_with_franchises();
+        upsert(
+            &conn,
+            &Franchise { id: 2, name: "Zeta Collection".into(), overview: None },
+        )
+        .unwrap();
+        upsert(
+            &conn,
+            &Franchise { id: 1, name: "Alpha Collection".into(), overview: None },
+        )
+        .unwrap();
+
+        let names: Vec<String> = all(&conn).unwrap().into_iter().map(|f| f.name).collect();
+        assert_eq!(names, vec!["Alpha Collection", "Zeta Collection"]);
+    }
+
+    #[test]
+    fn an_index_predating_franchises_lists_none() {
+        let conn = Connection::open_in_memory().unwrap();
+        for stmt in mlib_spec::schema::migrations_up_to(8) {
+            conn.execute(stmt, []).unwrap();
+        }
+        assert_eq!(all(&conn).unwrap(), Vec::new());
     }
 }
