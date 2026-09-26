@@ -25,7 +25,7 @@ Playback stats are the one group that starts in the browser. Each open player PO
 | 2 | [Telegram link counters](phase-02-telegram-link-counters.md) | 3h | done |
 | 3 | [Transcoder progress](phase-03-transcoder-progress.md) | 2.5h | done |
 | 4 | [Playback session reports](phase-04-playback-session-reports.md) | 3h | done |
-| 5 | [System page rendering](phase-05-system-page-rendering.md) | 2.5h | pending |
+| 5 | [System page rendering](phase-05-system-page-rendering.md) | 2.5h | done |
 | 6 | [Docs, version, parity record](phase-06-docs-version-parity.md) | 1h | pending |
 
 ## Dependencies

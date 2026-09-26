@@ -16,15 +16,9 @@
 
 import { el } from "../dom.js";
 import { humanSize } from "../format.js";
-import {
-  cacheReadsLine,
-  ofBudget,
-  pollStatus,
-  refreshLine,
-  throughput,
-  transcodeRows,
-  uptime,
-} from "./status-lines.js";
+import { cacheReadsLine, ofBudget, pollStatus, refreshLine, throughput, uptime } from "./status-lines.js";
+import { hostRows, linkRows } from "./status-link-lines.js";
+import { playbackRows, transcodeRows } from "./status-session-lines.js";
 
 /** Where the catalogue comes from, in the words the Source row uses. */
 const SOURCES = { package: "published package", channel: "the channel's index" };
@@ -85,7 +79,7 @@ function upstreamRows(snapshot, previous) {
  * @param {object} snapshot what `/api/status` answered
  */
 export function renderStatus(root, snapshot, previous = null) {
-  const { catalog, cache, encoder, transcodes, telegram, state } = snapshot;
+  const { catalog, cache, encoder, transcodes, telegram, link, playback, state, host } = snapshot;
   const panel = el("div", "status");
 
   panel.append(
@@ -97,9 +91,11 @@ export function renderStatus(root, snapshot, previous = null) {
     ]),
     block("Cache", cacheRows(cache)),
     block("Upstream", upstreamRows(snapshot, previous)),
+    block("Telegram link", linkRows(link)),
+    block("Watching now", playbackRows(playback)),
     block("Conversion", [
       ["Encoder", encoder.device ? `${encoder.name} on ${encoder.device}` : encoder.name],
-      ...transcodeRows(transcodes),
+      ...transcodeRows(transcodes, encoder.name),
     ]),
     block("This player", [
       [
@@ -111,7 +107,7 @@ export function renderStatus(root, snapshot, previous = null) {
             : "disconnected",
       ],
       ["Watch state", state.remembered ? state.path : "not remembered"],
-      ["Memory", humanSize(snapshot.memoryBytes)],
+      ...hostRows(host, cache?.dir ?? null, transcodes.dir),
       ["Uptime", uptime(snapshot.uptimeSeconds)],
     ]),
   );

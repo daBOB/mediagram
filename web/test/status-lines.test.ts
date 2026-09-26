@@ -1,13 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  cacheReadsLine,
-  ofBudget,
-  pollStatus,
-  refreshLine,
-  throughput,
-  transcodeRows,
-  uptime,
-} from "../public/lib/status/status-lines.js";
+import { cacheReadsLine, ofBudget, pollStatus, refreshLine, throughput, uptime } from "../public/lib/status/status-lines.js";
 
 describe("what the cache is holding", () => {
   test("is said against the budget it was given", () => {
@@ -94,25 +86,6 @@ describe("the cache reads line", () => {
     expect(cacheReadsLine({ hitRate: 0.9, hits: 900, misses: 100 })).toBe(
       "90% from disk (900 hits, 100 misses)",
     );
-  });
-});
-
-describe("the conversion rows", () => {
-  test("say the capacity even when nothing is running", () => {
-    expect(transcodeRows({ running: 0, capacity: 4, sessions: [] })).toContainEqual([
-      "Running",
-      "none, of 4 allowed",
-    ]);
-  });
-
-  test("describe each conversion by rate, position and audience", () => {
-    const rows = transcodeRows({
-      running: 1,
-      capacity: 4,
-      sessions: [{ maxrateBits: 8_000_000, seekSeconds: 1_800, watchers: 2 }],
-    });
-    expect(rows[0]).toEqual(["Running", "1 of 4"]);
-    expect(rows[1]?.[1]).toBe("8.0 Mbps from 30m, 2 watching");
   });
 });
 
@@ -226,22 +199,3 @@ describe("upstream throughput", () => {
   });
 });
 
-describe("the conversion rows, with disk", () => {
-  test("say what is on disk even when nothing is running", () => {
-    // Segments outlive the conversion that wrote them until the reaper runs.
-    const rows = transcodeRows({
-      running: 0,
-      capacity: 4,
-      sessions: [],
-      heldBytes: 7 * 1024 ** 3,
-      dir: "/var/tmp/t",
-    });
-    expect(rows).toContainEqual(["On disk", "7.0 GB"]);
-    expect(rows).toContainEqual(["Directory", "/var/tmp/t"]);
-  });
-
-  test("say nothing about disk when it could not be measured", () => {
-    const rows = transcodeRows({ running: 0, capacity: 4, sessions: [], heldBytes: null });
-    expect(rows).toContainEqual(["On disk", null]);
-  });
-});

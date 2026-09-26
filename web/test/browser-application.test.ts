@@ -414,9 +414,13 @@ for (const returnToList of [false, true]) {
 const statusSnapshot = (sets: number) => ({
   catalog: { origin: "package", publishedAt: null, refresh: "current", sets, posters: 2, schema: 6 },
   cache: null, encoder: { name: "libx264", device: null },
-  transcodes: { running: 0, capacity: 2, sessions: [], heldBytes: 0, dir: "/tmp/conversions" },
-  telegram: { connected: true, failedReads: 0 }, state: { remembered: true, path: "/tmp/state.db" },
-  fetchedBytes: 1000, memoryBytes: 2000, uptimeSeconds: 30,
+  transcodes: { running: 0, capacity: 2, started: { encode: 0, copy: 0, hevcCopy: 0 }, sessions: [], heldBytes: 0, dir: "/tmp/conversions" },
+  telegram: { connected: true, failedReads: 0 },
+  link: { dcs: [], flood: { count: 0, totalSeconds: 0 }, reconnects: 0 },
+  playback: [],
+  state: { remembered: true, path: "/tmp/state.db" },
+  host: { rssBytes: 2000, heapBytes: 1000, loopLagMs: null, disks: [], bun: "1.4.2" },
+  fetchedBytes: 1000, uptimeSeconds: 30,
 });
 
 test("System route renders its initial status, reports a polling failure and recovers", async () => {

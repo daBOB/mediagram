@@ -83,30 +83,6 @@ export function cacheReadsLine(cache) {
   return `${Math.round(cache.hitRate * 100)}% from disk (${cache.hits} hits, ${cache.misses} misses)`;
 }
 
-/** The conversions, as label-and-value pairs. */
-export function transcodeRows(transcodes) {
-  const running =
-    transcodes.running === 0
-      ? [["Running", `none, of ${transcodes.capacity} allowed`]]
-      : [
-          ["Running", `${transcodes.running} of ${transcodes.capacity}`],
-          ...transcodes.sessions.map((session, index) => [
-            `Conversion ${index + 1}`,
-            `${(session.maxrateBits / 1e6).toFixed(1)} Mbps from ${Math.round(session.seekSeconds / 60)}m` +
-              `, ${session.watchers} watching`,
-          ]),
-        ];
-
-  // Segments outlive the conversion that wrote them until the reaper gets to
-  // them, so this is not zero just because nothing is running — and it has no
-  // budget, unlike the cache, which is the reason to show it at all.
-  return [
-    ...running,
-    ["On disk", transcodes.heldBytes === null ? null : humanSize(transcodes.heldBytes)],
-    ["Directory", transcodes.dir ?? null],
-  ];
-}
-
 /**
  * Asks for a reading, over and over, until told to stop.
  *

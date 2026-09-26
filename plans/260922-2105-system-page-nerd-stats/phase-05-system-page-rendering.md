@@ -67,11 +67,54 @@ status-view.js ── block("Telegram link", linkRows(snapshot.link))        ←
 6. Stub-harness check: take screenshots with gstack `/browse` (`screenshot --viewport`), including a real conversion on a held set and two viewer tabs.
 
 ## Todo
-- [ ] transcodeRows move
-- [ ] session lines + tests
-- [ ] link/host lines + tests
-- [ ] view wiring
-- [ ] stub-harness screenshots reviewed
+- [x] transcodeRows move
+- [x] session lines + tests
+- [x] link/host lines + tests
+- [x] view wiring
+- [x] stub-harness screenshots reviewed
+
+## Implementation notes (2026-09-26)
+
+Done. `status-view.js`/`status-lines.js` were at 151/154 lines against the
+plan's own citations (`status-view.js:28-120`, `status-lines.js` "154
+lines") — matched exactly, so no drift to record there. Real deviations:
+
+- **`transcodeRows` needed the encoder name it did not have.** The new
+  wording ("re-encode with h264_vaapi") names the actual encoder for an
+  `encode` session, which lives in `facts.encoder.name` — a startup fact,
+  not part of a session. `transcodeRows` now takes `encoderName` as a second
+  argument; `status-view.js` passes `encoder.name`.
+- **Disk-free rows needed a purpose, not just a path.** `host.disks[].dirs`
+  carries the raw cache/transcode directory paths (from phase 1), not
+  labels. Rather than plumb a label through the server side, `hostRows`
+  takes `cacheDir`/`transcodeDir` as extra arguments and maps a path to
+  `"cache"` or `"conversions"` for the sentence at render time — the paths
+  themselves already appear elsewhere in the snapshot (`cache.dir`,
+  `transcodes.dir`), so this names nothing that was not already visible.
+- **Event loop row uses p50/max, not p50/p99** — "2 ms typical, 38 ms worst"
+  reads as two numbers, and `p99` would have been a third with no place in
+  the sentence. `loopLagMs.p99` is still in the JSON for anyone who wants it.
+- **`browser-application.test.ts`'s `statusSnapshot()` fixture** (an
+  integration test rendering the real page, not part of this phase's own
+  file list) needed the four phases' new required fields — it was still
+  shaped for the pre-phase-1 snapshot and its two tests failed once
+  `renderStatus` started reading `link`/`playback`/`host`. Updated in place;
+  not owned by this phase but broken by the cumulative schema change and
+  worth fixing rather than leaving for phase 6.
+- **Verified with real screenshots**, not just prose: `plans/.../visuals/`
+  has desktop (1400×1200) and phone (390×844) captures via gstack's
+  `browse`, including one with a live `Watching now` row (posted by hand
+  with `curl` against the stub, since the real player cannot be started).
+  Sentences read exactly as specified, e.g. `hevc / aac · HEVC copy · 8.2
+  Mbps · 1:12 ahead · falling behind · 3 dropped of 41,200 · cached · from
+  127.0.0.1`; at phone width this row wraps to three lines, right-aligned,
+  the same as the existing `Watch state` row already did. No row shows a
+  label next to a blank; the new blocks sit in the same serif/thin-rule
+  editorial type as the rest of the page — nothing reads as a bolted-on
+  dashboard. One incidental finding during the check: a stale, disconnected
+  `browse` backend had a leftover tab open on an unrelated port (8796,
+  someone/something else's session) — worked around by opening a fresh tab
+  rather than reusing tab 1, so nothing of this task touched that session.
 
 ## Success criteria
 - Every formatter has tests, and `bun test` passes.
