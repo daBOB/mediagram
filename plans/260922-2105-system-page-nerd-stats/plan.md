@@ -4,7 +4,7 @@ description: "Telegram link, live playback sessions, transcoder and host figures
 status: pending
 priority: P2
 effort: 14h
-branch: desloppify/code-health
+branch: feat/system-page-stats
 tags: [web, status, telemetry, telegram, transcode]
 created: 2026-09-22
 ---
@@ -55,7 +55,13 @@ Android has a System screen (`android/ui-mobile/src/main/kotlin/SystemScreen.kt`
 - Playback group: already covered by the overlay on the device itself.
 - Link group and host group: **parity is owed**, through a follow-up Android/Rust-core plan.
 
-## Unresolved questions
+## Answers (user, 2026-09-26)
+
+Defaults accepted: Android link/host parity is recorded as owed and scheduled later, not built
+here; reconnects count the main connection only; playback rows show the viewer's address;
+latency window stays the last 256 requests per DC.
+
+## Unresolved questions (answered above)
 
 1. Should the Android parity work (per-DC link stats in the grammers core, memory and disk-free rows) be its own plan now, or be scheduled later? This plan records it but does not build it.
 2. "Reconnects" covers only the main MTProto connection. Download-DC senders are pooled and rebuilt without notice. Their failures show up as per-DC request errors instead. Is that acceptable, or should phase 2 also count the per-DC `Connection to dc N failed` log lines?

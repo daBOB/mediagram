@@ -4,7 +4,7 @@ description: "One Settings surface on both players: connection view, library swi
 status: pending
 priority: P2
 effort: 44h
-branch: feat/settings-menu (cut from main once desloppify/code-health lands)
+branch: feat/settings-menu
 tags: [web, android, rust-core, telegram, cache, security, settings]
 created: 2026-09-22
 ---
@@ -60,7 +60,15 @@ Every phase is additive and revertable by commit. v6 table is `CREATE TABLE IF N
 older builds skip unknown versions (`web/src/state/store.ts:643`). Deleting
 `telegram.json` returns the web player to env config.
 
-## Unresolved questions
+## Answers (user, 2026-09-26)
+
+All eight defaults below accepted as written: secrets in owner-only `telegram.json`; own network
+only, behind the admin token; phone code + 2FA only, no QR; signing in as a different account
+logs the old one out (best effort); 512 MiB floor, 0 stays env-only; channel libraries fall back
+to the env poster directory. Q6 is overtaken: `feat/android-tv-ui` carries its own settings.
+Phase 10 is in this round, listing and revoking **only this app's sessions** (same api_id).
+
+## Unresolved questions (answered above)
 
 1. Secrets in `telegram.json` (0600) vs in the state DB's v6 table? Plan chooses the file:
    the state DB is copied/backed-up casually and holds no secret today. Confirm.
