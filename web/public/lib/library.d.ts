@@ -79,9 +79,17 @@ export interface Library {
   movies: CatalogSet[];
   series: Collection[];
   tutorials: Collection[];
+  /** Set by `applyCatalog`, from `documentaries.js`; empty before the first catalog load. */
+  documentaries: import("./documentaries.js").DocumentaryLibrary;
 }
 
-export function groupLibrary(sets: CatalogSet[]): Library;
+export function groupLibrary(sets: CatalogSet[]): Omit<Library, "documentaries">;
+
+/** Sorted comparator every shelf collates its titles through. */
+export function byTitle(a: CatalogSet, b: CatalogSet): number;
+
+/** Groups one kind's sets by container (show or course), then by folder. */
+export function collections(sets: CatalogSet[], fallbackName: string): Collection[];
 
 /** The first *playable* set under these divisions, in display order. */
 export function firstItemOf(divisions: Division[]): CatalogSet | null;

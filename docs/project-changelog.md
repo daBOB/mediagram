@@ -5,6 +5,48 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Unreleased — documentaries and custom artwork
+
+Rust half of the `feat/documentaries-and-artwork` branch: schema v10, the
+`artwork` table, `mediagram artwork`, `add-docu`, and the new `Kind::Docu`.
+
+**Schema**
+
+- Schema version 10 (`mlib-spec`): new `artwork` table `(key, mime, bytes)`,
+  additive over v9. `READABLE_SCHEMAS=[6,7,8,9,10]`; `OLDEST_READABLE_SCHEMA`
+  stays 6. Readers tolerate v9 and earlier (the table is simply absent). A
+  channel merge carries missing keys the same way it already carries missing
+  credits and franchises (`index::merge_artwork`).
+
+**Added**
+
+- **`Kind::Docu`**: a documentary recorded from a TV station, never looked up
+  at any provider (a TMDB film with the documentary genre stays `Movie`). A
+  standalone file is titled from its name, exactly like a movie; a file inside
+  a collection folder is grouped and numbered exactly like a course lesson
+  (`Kind::Tut`), sharing `add-course`'s walk, identity and dry-run machinery.
+  Gains its own display code (`C02E03`), `edit --kind` target, and label.
+- **`mediagram add-docu <file|dir>`**: a file uploads one documentary; a
+  folder uploads a collection (e.g. "Terra X"), grouped by the folder name the
+  way `add-course` groups by course title. Summaries and subtitles via the
+  same sidecars a course lesson reads. `poster.*`/`backdrop.*` at a
+  collection's root become its artwork. Flags: `--title`, `--cid`,
+  `--dry-run`, `--no-push`, `--no-remux`, `--variant`.
+- **`mediagram artwork <set-id|title> --poster <file> --backdrop <file>
+  [--clear]`**: custom poster/backdrop bytes, stored in the index and
+  overriding TMDB's own art when both exist. Resolves to the existing
+  `tmdb-…` key when the target has a provider id, else `title-{slug}` (the
+  same slug `add-course` derives a default collection id from). 1 MB cap per
+  image; the uploader asks for a resize rather than storing a larger one.
+  `add-show` and `add-course` pick up `poster.*`/`backdrop.*` from a folder's
+  root the same way.
+- `mlib_spec::package::title_art_key`: the one place a title-with-no-provider-id
+  art key is derived, called by the uploader and by `mediagram-core`'s
+  `poster_key_for`. `poster_key_is_valid` accepts `title-{slug}[-bg]` beside
+  the existing `tmdb-…` shapes.
+- Android/core `poster_path` checks the `artwork` table before falling back to
+  a TMDB fetch, writing a hit into the artwork directory once.
+
 ## Unreleased — 0.62.0
 
 Pending merge on feat/editorial-departments branch: web player department pages,

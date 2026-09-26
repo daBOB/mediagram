@@ -55,6 +55,11 @@ commands/          one module per subcommand, each exposing `run(...)`; thin
                      and upload each episode, push the index once at the end
   add_course.rs      walk a course folder, upload each lesson then each
                      document, push the index once at the end
+  add_docu/          upload a documentary: one file (add.rs's path), or a
+                     folder walked and grouped exactly like add_course.rs
+                     (collection.rs), `Kind::Docu` instead of `Kind::Tut`
+  artwork.rs         set or clear a title's custom poster/backdrop
+                     (index/artwork.rs), resolved from a set id or a title
   finish_set.rs      upload one planned set, then push: what `add` runs, in
                      this process or a background one
   background.rs      re-runs this binary detached, so an upload outlives the
@@ -109,7 +114,8 @@ course/            reading a course folder: which files are lessons and which
 index/             library.db: open/migrate (after letting the session store
                    configure SQLite, see sqlite_init), sets/parts CRUD and
                    counts, typed set/part status, set labels, pin
-                   bookkeeping, rescan folding, snapshot/vacuum
+                   bookkeeping, rescan folding, snapshot/vacuum, custom
+                   poster/backdrop bytes (artwork.rs)
 edit/              planning and applying a metadata correction: one caption
                    rewrite per part
 remove/            planning and applying a set's destruction
@@ -597,7 +603,7 @@ and `web/.env` are not like that — losing both means logging in again, because
 a session string cannot be recovered from anywhere else. `state.db` is the
 only thing this process writes that cannot be refetched at all.
 
-## 10.1. Index schema (library.db, v9)
+## 10.1. Index schema (library.db, v10)
 
 The canonical index (`library.db`, in `mlib-spec` schema) carries:
 
@@ -614,11 +620,24 @@ The canonical index (`library.db`, in `mlib-spec` schema) carries:
 - **franchises** table (new in v9): TMDB collections. Rows: `(source, id, name,
   overview)` — `id` is the TMDB collection id, same value as `shows.collection_id`.
   Scraped from `belongs_to_collection` on first metadata run.
+- **artwork** table (new in v10): custom poster and backdrop bytes the uploader
+  supplies directly. Rows: `(key, mime, bytes)` — `key` is either an existing
+  `tmdb-…`/`tmdb-…-bg` poster key, which this table overrides, or `title-{slug}`/
+  `title-{slug}-bg` for a title with no provider id (a documentary, or a course
+  used as a tutorial's cover), the slug taken from its show or course name
+  (`mlib_spec::package::title_art_key`, the same derivation `add-course` uses for
+  its default collection id). Written by `mediagram artwork`, and picked up
+  automatically from `poster.*`/`backdrop.*` at the root of a folder `add-show`,
+  `add-course` or `add-docu` walks. The bytes ride the ordinary index push, so web
+  and Android both get them with no extra Telegram round trip; `poster_path`
+  (Android) and the web player's poster route both check this table before
+  falling back to a TMDB fetch.
 
-Version tracking: `SCHEMA_VERSION=9`, `READABLE_SCHEMAS=[6,7,8,9]`, `OLDEST_READABLE_SCHEMA=6`.
-Readers tolerant of v8 (optional columns/tables); writers (uploaders ≥0.62.0) produce
-v9. Both uploaders and Android installs must run ≥0.62.0 before any push/export; older
-Android builds refuse v9 packages.
+Version tracking: `SCHEMA_VERSION=10`, `READABLE_SCHEMAS=[6,7,8,9,10]`,
+`OLDEST_READABLE_SCHEMA=6`. Readers tolerant of v9 and earlier (optional
+columns/tables); writers from the release introducing this table produce v10.
+Both uploaders and Android installs must run that release or later before any
+push/export; older Android builds refuse v10 packages.
 
 ## 11. Telegram limits relied on
 

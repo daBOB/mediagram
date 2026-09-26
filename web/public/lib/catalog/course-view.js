@@ -36,8 +36,8 @@ const MAX_INDENT = 3;
  * third kind of thing appears in a course.
  */
 export function extentOf(division) {
-  const { lessons, documents } = countsUnder(division);
-  return [countOf(lessons, "lesson"), documents > 0 ? countOf(documents, "document") : null]
+  const { lessons, documents, noun } = countsUnder(division);
+  return [countOf(lessons, noun), documents > 0 ? countOf(documents, "document") : null]
     .filter(Boolean)
     .join(" · ");
 }
@@ -192,30 +192,29 @@ export function divisionBlock(division, depth, onPlay) {
 /**
  * One level of one course. A course is four levels and 162 lessons, so one
  * floor goes on the page and the folders are doors. (A show is
- * `series-page.js`: its seasons are one flat level.)
+ * `series-page.js`: its seasons are one flat level.) A documentary collection
+ * nests the same way and reuses this unchanged; `section` is threaded through
+ * rather than assumed, so its own routes and heading come back out.
  */
-export function renderCollection(main, _section, collection, name, folders, { play, open }) {
-  if (!collection) {
-    main.append(el("p", "error", `No course called "${name}".`));
-    return;
-  }
-  return viewCourseLevel(main, collection, folders, { play, open });
+export function renderCollection(main, section, collection, name, folders, { play, open }) {
+  if (!collection) return main.append(el("p", "error", `No course called "${name}".`));
+  return viewCourseLevel(main, section, collection, folders, { play, open });
 }
 
 /** One floor of a course: the lessons in this folder, and the doors below. */
-function viewCourseLevel(main, collection, folders, { play, open }) {
+function viewCourseLevel(main, section, collection, folders, { play, open }) {
   const level = divisionAt(collection.divisions, folders);
   if (level === null) {
     // A stale or hand-typed URL. Says which folder, because "not found" about
     // a four-deep trail leaves the viewer to work out which part was wrong.
-    main.append(crumbs("tutorials", SECTIONS.tutorials.label, collection.name, []));
+    main.append(crumbs(section, SECTIONS[section].label, collection.name, []));
     main.append(
       el("p", "error", `"${collection.name}" has no folder called "${folders.join(" › ")}".`),
     );
     return;
   }
 
-  main.append(crumbs("tutorials", SECTIONS.tutorials.label, collection.name, folders));
+  main.append(crumbs(section, SECTIONS[section].label, collection.name, folders));
   // `title` is null only for the stand-in at the top, where the course's own
   // name is the heading.
   // Both counts, because a folder of workbooks holds no lessons at all and
@@ -226,7 +225,7 @@ function viewCourseLevel(main, collection, folders, { play, open }) {
     levelBlock(
       level,
       (folder) => {
-        open("tutorials", collection.name, [...folders, folder]);
+        open(section, collection.name, [...folders, folder]);
       },
       play,
     ),

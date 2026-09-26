@@ -79,6 +79,51 @@ fn a_poster_key_is_derived_from_kind_and_tmdb() {
     assert_eq!(summary_from(&movie_with_tmdb(None)).poster_key, None);
 }
 
+/// A course lesson has no TMDB id, but its course name still names a stable
+/// key — the same one `mediagram artwork` would resolve to.
+#[test]
+fn a_course_lesson_with_no_tmdb_id_is_keyed_by_its_course_slug() {
+    let s = PlayableSet {
+        kind: "tut".into(),
+        tmdb: None,
+        show: Some("Terra X".into()),
+        ..playable_set_fixture()
+    };
+    assert_eq!(
+        summary_from(&s).poster_key.as_deref(),
+        Some("title-terra-x")
+    );
+}
+
+/// A standalone documentary carries no `show`, only its own `title`.
+#[test]
+fn a_standalone_documentary_is_keyed_by_its_own_title() {
+    let s = PlayableSet {
+        kind: "docu".into(),
+        tmdb: None,
+        show: None,
+        title: Some("Deep Ocean".into()),
+        ..playable_set_fixture()
+    };
+    assert_eq!(
+        summary_from(&s).poster_key.as_deref(),
+        Some("title-deep-ocean")
+    );
+}
+
+/// A manually-entered film or episode with no TMDB id is not this stable —
+/// two of them sharing a title would collide onto one key — so it gets none.
+#[test]
+fn a_manual_movie_with_no_tmdb_id_gets_no_title_key() {
+    let s = PlayableSet {
+        kind: "movie".into(),
+        tmdb: None,
+        title: Some("Home Video".into()),
+        ..playable_set_fixture()
+    };
+    assert_eq!(summary_from(&s).poster_key, None);
+}
+
 #[test]
 fn a_show_s_poster_key_is_filed_under_tv_not_the_episode() {
     let s = PlayableSet {

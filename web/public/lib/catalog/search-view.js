@@ -77,11 +77,13 @@ export function renderSearch(main, query, hits, { play, openFilm, shows, openSho
   const episodes = hits.filter((hit) => hit.kind === "ep");
   const matchedShows = [...new Set(episodes.map((hit) => hit.show))]
     .map((name) => shows.find((show) => show.name === name)).filter(Boolean);
-  const lessons = hits.filter((hit) => hit.kind !== "movie" && hit.kind !== "ep");
+  const docus = hits.filter((hit) => hit.kind === "docu");
+  const lessons = hits.filter((hit) => !["movie", "ep", "docu"].includes(hit.kind));
   const kinds = [
     ["all", "All", total],
     ["movies", "Movies", films.length],
     ["series", "Series", episodes.length],
+    ["documentaries", "Documentaries", docus.length],
     ["tutorials", "Tutorials", lessons.length],
     ["people", "People", people.length],
     ["collections", "Collections", places.length],
@@ -102,6 +104,7 @@ export function renderSearch(main, query, hits, { play, openFilm, shows, openSho
       part("series", "Series", collectionGrid("series", matchedShows, (name) => openShow("series", name), { mode: GRID }));
     }
     if (episodes.length > 0) part("series", "Episodes", rows(episodes, play));
+    if (docus.length > 0) part("documentaries", "Documentaries", rows(docus, play));
     if (lessons.length > 0) part("tutorials", "Lessons", rows(lessons, play));
     if (people.length > 0) {
       const faces = el("div", "people");

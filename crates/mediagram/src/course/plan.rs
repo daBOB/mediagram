@@ -24,7 +24,7 @@ pub fn assign_numbers<T: Clone>(entries: &[(String, T)]) -> Vec<(u32, Option<Str
         (Some(x), Some(y)) => x.cmp(&y).then_with(|| a.2.cmp(&b.2)),
         (Some(_), None) => std::cmp::Ordering::Less,
         (None, Some(_)) => std::cmp::Ordering::Greater,
-        (None, None) => a.2.cmp(&b.2),
+        (None, None) => natural_cmp(&a.2, &b.2),
     });
 
     let mut next = parsed.iter().filter_map(|p| p.0).max().unwrap_or(0);
@@ -38,6 +38,33 @@ pub fn assign_numbers<T: Clone>(entries: &[(String, T)]) -> Vec<(u32, Option<Str
             (number, title, payload)
         })
         .collect()
+}
+
+/// Name order with the numbers inside a name compared as numbers, so the
+/// parts of a documentary run `Teil 1, Teil 2, … Teil 10` rather than putting
+/// `Teil 10` second.
+fn natural_cmp(a: &str, b: &str) -> std::cmp::Ordering {
+    let (mut a, mut b) = (a, b);
+    loop {
+        let (Some(x), Some(y)) = (a.chars().next(), b.chars().next()) else {
+            return a.len().cmp(&b.len());
+        };
+        if x.is_ascii_digit() && y.is_ascii_digit() {
+            let da = a.find(|c: char| !c.is_ascii_digit()).unwrap_or(a.len());
+            let db = b.find(|c: char| !c.is_ascii_digit()).unwrap_or(b.len());
+            let (na, nb) = (a[..da].trim_start_matches('0'), b[..db].trim_start_matches('0'));
+            let order = na.len().cmp(&nb.len()).then_with(|| na.cmp(nb));
+            if order.is_ne() {
+                return order;
+            }
+            (a, b) = (&a[da..], &b[db..]);
+        } else {
+            if x != y {
+                return x.cmp(&y);
+            }
+            (a, b) = (&a[x.len_utf8()..], &b[y.len_utf8()..]);
+        }
+    }
 }
 
 /// [`assign_numbers`], with the numbers guaranteed distinct.
@@ -64,4 +91,17 @@ pub fn assign_unique_numbers<T: Clone>(entries: &[(String, T)]) -> Vec<(u32, Opt
         .enumerate()
         .map(|(i, (_, title, payload))| (i as u32 + 1, title, payload))
         .collect()
+}
+
+#[cfg(test)]
+mod natural_order_tests {
+    use super::assign_numbers;
+
+    #[test]
+    fn unnumbered_parts_run_in_numeric_order() {
+        let names = ["Die Römer - Teil 10", "Die Römer - Teil 2", "Die Römer - Teil 1"];
+        let entries: Vec<(String, &str)> = names.iter().map(|n| (n.to_string(), *n)).collect();
+        let order: Vec<&str> = assign_numbers(&entries).into_iter().map(|(_, _, n)| n).collect();
+        assert_eq!(order, ["Die Römer - Teil 1", "Die Römer - Teil 2", "Die Römer - Teil 10"]);
+    }
 }

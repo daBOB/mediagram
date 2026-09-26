@@ -65,14 +65,36 @@ describe("which sets can have artwork", () => {
     expect(posterKeyFor("ep", 550)).toBe("tmdb-tv-550");
   });
 
-  test("a course has no id to key a poster by", () => {
+  test("a course has no id to key a poster by, and no title to fall back to either", () => {
     expect(posterKeyFor("tut", null)).toBeNull();
   });
 
-  test("an id that is not a positive integer keys nothing", () => {
+  test("an id that is not a positive integer keys nothing, without a fallback title", () => {
     expect(posterKeyFor("movie", 0)).toBeNull();
     expect(posterKeyFor("movie", -1)).toBeNull();
     expect(posterKeyFor("movie", 1.5)).toBeNull();
+  });
+
+  test("without a provider id, a title's own name keys its artwork instead", () => {
+    expect(posterKeyFor("tut", null, "Geldhochschule")).toBe("title-geldhochschule");
+    expect(posterKeyFor("docu", null, "Terra X")).toBe("title-terra-x");
+  });
+
+  test("a provider id wins over a fallback title when both are given", () => {
+    expect(posterKeyFor("movie", 550, "Fight Club")).toBe("tmdb-movie-550");
+  });
+
+  test("a title that slugs to nothing keys nothing", () => {
+    expect(posterKeyFor("tut", null, "日本語")).toBeNull();
+    expect(posterKeyFor("tut", null, "")).toBeNull();
+  });
+
+  test("a title key is valid with and without a backdrop suffix, and nothing looser", () => {
+    expect(posterKeyIsValid("title-geldhochschule")).toBe(true);
+    expect(posterKeyIsValid("title-geldhochschule-bg")).toBe(true);
+    for (const bad of ["title-", "title-Geldhochschule", "title--x", "title-x-", "title-x_y"]) {
+      expect(posterKeyIsValid(bad)).toBe(false);
+    }
   });
 });
 
@@ -210,6 +232,92 @@ describe("a season's own artwork", () => {
 
     const [set] = JSON.parse(await new Response((await route(get("/api/sets"))).body).text());
     expect(set.seasonPoster).toBeNull();
+  });
+});
+
+/** A set with no provider id, keyed from its own name instead. */
+function titledSet(db: Database, setId: string, kind: string, title: string, show: string | null = null) {
+  db.run(
+    `INSERT INTO sets(set_id, kind, tmdb, title, show, container, vcodec, acodec,
+                      duration, total, part_count, status, created_at, spec_version, season, episode, year)
+     VALUES (?, ?, NULL, ?, ?, 'mp4', 'h264', 'aac', 1200, 2048, 1, 'complete', 1700000000, 3, NULL, NULL, NULL)`,
+    [setId, kind, title, show],
+  );
+  db.run(
+    `INSERT INTO parts(set_id, idx, byte_offset, byte_length, chat_id, message_id, doc_id, sha256, status)
+     VALUES (?, 0, 0, 2048, -1001, 1, 2, ?, 'done')`,
+    [setId, "b".repeat(64)],
+  );
+}
+
+/**
+ * `mediagram artwork` / `add-docu --poster` writes here — a table riding the
+ * v10 push, so it exists on any index new enough to carry it.
+ */
+function withArtwork(db: Database, key: string, mime: string, bytes: string) {
+  db.run("CREATE TABLE IF NOT EXISTS artwork(key TEXT PRIMARY KEY, mime TEXT NOT NULL, bytes BLOB NOT NULL)");
+  db.run("INSERT INTO artwork(key, mime, bytes) VALUES (?, ?, ?)", [key, mime, Buffer.from(bytes)]);
+}
+
+describe("custom artwork, from the `artwork` table", () => {
+  test("a course with no provider id shows the poster its own name was given", async () => {
+    const db = emptyIndex();
+    titledSet(db, "01SET0000000000000000030", "tut", "Geldhochschule");
+    withArtwork(db, "title-geldhochschule", "image/png", "the course poster");
+    const route = createRouter({ db, source: NO_BYTES, posters: new PosterStore(null) });
+
+    const [set] = JSON.parse(await new Response((await route(get("/api/sets"))).body).text());
+    expect(set.poster).toBe("title-geldhochschule");
+
+    const image = await route(get("/api/posters/title-geldhochschule.jpg"));
+    expect(image.status).toBe(200);
+    expect(image.headers["content-type"]).toBe("image/png");
+    expect(await new Response(image.body).text()).toBe("the course poster");
+  });
+
+  test("every lesson of a collection shares the one key its collection name gives", async () => {
+    const db = emptyIndex();
+    titledSet(db, "01SET0000000000000000031", "docu", "Episode 1", "Terra X");
+    titledSet(db, "01SET0000000000000000032", "docu", "Episode 2", "Terra X");
+    withArtwork(db, "title-terra-x", "image/jpeg", "terra x poster");
+    const route = createRouter({ db, source: NO_BYTES, posters: new PosterStore(null) });
+
+    const sets = JSON.parse(await new Response((await route(get("/api/sets"))).body).text());
+    expect(sets.map((set: any) => set.poster)).toEqual(["title-terra-x", "title-terra-x"]);
+  });
+
+  test("a row in the table overrides a packaged file under the same key", async () => {
+    const dir = withPosters("tmdb-movie-550.jpg");
+    const db = emptyIndex();
+    completeSet(db, "01SET0000000000000000033", "movie", 550);
+    withArtwork(db, "tmdb-movie-550", "image/webp", "the manual override");
+    const route = createRouter({ db, source: NO_BYTES, posters: new PosterStore(dir) });
+
+    const image = await route(get("/api/posters/tmdb-movie-550.jpg"));
+    expect(image.headers["content-type"]).toBe("image/webp");
+    expect(await new Response(image.body).text()).toBe("the manual override");
+  });
+
+  test("a mime type this build will not relay falls back to the packaged file", async () => {
+    const dir = withPosters("tmdb-movie-551.jpg");
+    const db = emptyIndex();
+    completeSet(db, "01SET0000000000000000034", "movie", 551);
+    withArtwork(db, "tmdb-movie-551", "text/html", "<script>not an image</script>");
+    const route = createRouter({ db, source: NO_BYTES, posters: new PosterStore(dir) });
+
+    const image = await route(get("/api/posters/tmdb-movie-551.jpg"));
+    expect(image.headers["content-type"]).toBe("image/jpeg");
+    expect(await new Response(image.body).text()).toBe("bytes of tmdb-movie-551.jpg");
+  });
+
+  test("an index written before the table existed is a blank card, not a 500", async () => {
+    const db = emptyIndex();
+    titledSet(db, "01SET0000000000000000035", "tut", "Geldhochschule");
+    const route = createRouter({ db, source: NO_BYTES, posters: new PosterStore(null) });
+
+    const [set] = JSON.parse(await new Response((await route(get("/api/sets"))).body).text());
+    expect(set.poster).toBeNull();
+    expect((await route(get("/api/posters/title-geldhochschule.jpg"))).status).toBe(404);
   });
 });
 

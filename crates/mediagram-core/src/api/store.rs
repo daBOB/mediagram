@@ -56,26 +56,54 @@ pub(super) fn open(core: &Core) -> Result<Connection, CoreError> {
 mod editorial;
 pub(super) use editorial::list_sets;
 
-/// Looks in the current version's own `posters/` first, then in the
-/// artwork directory a fetch writes to — both behind the same key
-/// validation, so a second lookup location is never a second way past it.
+/// Looks in the current version's own `posters/` first, then in the artwork
+/// directory a fetch writes to, then in the index's own `artwork` table —
+/// all three behind the same key validation, so a second or third lookup
+/// location is never a second way past it.
 ///
-/// A package ships its own chosen artwork inside the version it arrived
-/// in, so that copy stays authoritative for the keys it covers: a fetch
-/// only ever ran for a title the package had nothing for.
+/// A package ships its own chosen artwork inside the version it arrived in,
+/// so that copy stays authoritative for the keys it covers: a fetch or a
+/// table lookup only ever runs for a title the package had nothing for.
+///
+/// A table hit is written into the artwork directory once, the same file a
+/// fetch would have left there, so every later lookup for that key is a
+/// plain file check like the two above — the table itself is only ever
+/// consulted on a miss.
 pub(super) fn poster_path(core: &Core, poster_key: String) -> Option<String> {
     if !mlib_spec::package::poster_key_is_valid(&poster_key) {
         return None;
     }
+    // ponytail: every artwork file is named `.jpg` regardless of its real
+    // mime, matching the convention TMDB posters already used here; an image
+    // loader that sniffs by content (as Coil does) still renders a PNG or
+    // WebP fine under that name. Give the table's own `mime` its own
+    // extension if a loader ever needs one.
     let name = format!("{poster_key}.jpg");
     let in_version = current_dir(core).join("posters").join(&name);
     if in_version.exists() {
         return Some(in_version.display().to_string());
     }
     let in_artwork = artwork_dir(core).join(&name);
-    in_artwork
-        .exists()
-        .then(|| in_artwork.display().to_string())
+    if in_artwork.exists() {
+        return Some(in_artwork.display().to_string());
+    }
+    write_from_table(core, &poster_key, &in_artwork).then(|| in_artwork.display().to_string())
+}
+
+/// Writes `poster_key`'s bytes from the index's `artwork` table to `dest`,
+/// if the index holds any. `false` on any failure — a missing table, a
+/// missing key, or a write error — all of which leave this lookup with
+/// nothing, exactly as if the table did not exist.
+fn write_from_table(core: &Core, poster_key: &str, dest: &Path) -> bool {
+    let Ok(conn) = open(core) else { return false };
+    let Ok(Some((_mime, bytes))) = crate::artwork::get(&conn, poster_key) else {
+        return false;
+    };
+    dest.parent()
+        .map(std::fs::create_dir_all)
+        .transpose()
+        .and_then(|_| std::fs::write(dest, bytes))
+        .is_ok()
 }
 
 pub(super) fn total_size(core: &Core, set_id: String) -> Result<u64, CoreError> {

@@ -107,6 +107,11 @@ describe("extents", () => {
     expect(countOf(0, "film")).toBe("zero films");
     expect(countOf(170, "lesson")).toBe("170 lessons");
   });
+
+  test("a noun ending in a consonant and y pluralises to -ies, not -ys", () => {
+    expect(countOf(5, "documentary")).toBe("five documentaries");
+    expect(countOf(1, "documentary")).toBe("one documentary");
+  });
 });
 
 describe("when it ends", () => {

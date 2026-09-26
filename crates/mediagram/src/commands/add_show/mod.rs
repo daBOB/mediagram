@@ -19,7 +19,7 @@ use anyhow::{Context, Result, bail};
 use super::args::AddShowArgs;
 use crate::config::Config;
 use crate::index::status::SetStatus;
-use crate::index::{db, set_lookup};
+use crate::index::{artwork, db, set_lookup};
 use crate::media::show_episodes::{Episode, duplicate_episode, walk};
 use crate::paths::file_name;
 use crate::telegram::index_publish;
@@ -69,6 +69,12 @@ pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
     }
 
     let conn = db::open(&cfg.data_dir()?)?;
+    let art_key = mediagram_tmdb::posters::poster_key(mlib_spec::Kind::Ep, tmdb);
+    match artwork::adopt_folder(&conn, &args.dir, &art_key) {
+        Ok(0) => {}
+        Ok(n) => println!("picked up {n} artwork file(s) from {}", args.dir.display()),
+        Err(err) => println!("artwork not stored: {err:#}"),
+    }
     let mut uploader = Uploader::new(cfg);
     let (mut uploaded, mut skipped, mut pending, mut failed) = (0usize, 0usize, 0usize, 0usize);
     for ep in &episodes {

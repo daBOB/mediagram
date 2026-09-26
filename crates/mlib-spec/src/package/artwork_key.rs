@@ -13,7 +13,28 @@ use super::charset::{is_digits, is_lower_alpha};
 ///
 /// A title's backdrop is the same key with the literal `bg` as that fourth
 /// part — `tmdb-movie-550-bg`. Seasons have no backdrops of their own.
+///
+/// A title with no provider id — a documentary, or a course used as a
+/// tutorial's cover — is keyed `title-{slug}` instead, with the same `-bg`
+/// suffix for its backdrop; see [`title_art_key`].
 pub fn poster_key_is_valid(key: &str) -> bool {
+    if let Some(rest) = key.strip_prefix("title-") {
+        let mut parts: Vec<&str> = rest.split('-').collect();
+        // `bg` may appear at most once, and only as the trailing segment —
+        // never twice, and never in the slug itself. A title literally
+        // slugging to a segment named `bg` collides with the backdrop
+        // marker; accepted as a known, narrow limitation rather than
+        // designing a second delimiter for a case this unlikely.
+        if parts.iter().filter(|p| **p == BACKDROP_SUFFIX).count() > 1 {
+            return false;
+        }
+        if parts.last() == Some(&BACKDROP_SUFFIX) {
+            parts.pop();
+        } else if parts.contains(&BACKDROP_SUFFIX) {
+            return false;
+        }
+        return is_slug(&parts.join("-"));
+    }
     let mut parts = key.split('-');
     let (Some(source), Some(kind), Some(id)) = (parts.next(), parts.next(), parts.next()) else {
         return false;
@@ -25,6 +46,31 @@ pub fn poster_key_is_valid(key: &str) -> bool {
         _ => false,
     };
     is_lower_alpha(source) && is_lower_alpha(kind) && is_digits(id) && season_ok
+}
+
+/// Whether `s` is exactly what [`crate::slug::slug`] would produce: nonempty,
+/// lowercase alphanumeric segments joined by single dashes, no leading,
+/// trailing or doubled one.
+fn is_slug(s: &str) -> bool {
+    !s.is_empty()
+        && !s.starts_with('-')
+        && !s.ends_with('-')
+        && s.split('-')
+            .all(|part| !part.is_empty() && part.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit()))
+}
+
+/// The key a title with no provider id is stored under: `title-{slug}`, the
+/// slug taken from its show or course name — the same derivation
+/// `add-course` uses for its default collection id ([`crate::slug::slug`]),
+/// so a documentary's title and a course's title land on the key a person
+/// familiar with either would expect.
+///
+/// `None` when the name slugs to nothing: a title of only punctuation, or
+/// only a script the slug drops.
+#[must_use]
+pub fn title_art_key(name: &str) -> Option<String> {
+    let slug = crate::slug::slug(name);
+    (!slug.is_empty()).then(|| format!("title-{slug}"))
 }
 
 /// The fourth key part that marks a title's backdrop rather than its poster.

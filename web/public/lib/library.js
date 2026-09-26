@@ -45,7 +45,7 @@ function episodeOrder(set) {
  */
 const COLLATE = new Intl.Collator(undefined, { numeric: true }).compare;
 
-function byTitle(a, b) {
+export function byTitle(a, b) {
   return COLLATE(a.title ?? "", b.title ?? "");
 }
 
@@ -122,13 +122,15 @@ export function firstItemOf(divisions) {
 export function countsUnder(division) {
   let lessons = 0;
   let documents = 0;
+  let noun = "lesson"; // a documentary collection counts documentaries
   for (const node of walk([division])) {
     for (const set of node.items) {
       if (isDocument(set)) documents += 1;
       else lessons += 1;
+      if (set.kind === "docu") noun = "documentary";
     }
   }
-  return { lessons, documents };
+  return { lessons, documents, noun };
 }
 
 /** How many lessons sit under `division`, at whatever depth. */
@@ -243,7 +245,7 @@ export function nextAfter(collection, setId) {
 }
 
 /** Groups one kind's sets by container (show or course), then by folder. */
-function collections(sets, fallbackName) {
+export function collections(sets, fallbackName) {
   const byName = new Map();
 
   for (const set of sets) {
@@ -297,9 +299,7 @@ function collections(sets, fallbackName) {
 export function groupLibrary(sets) {
   const episodes = sets.filter((set) => set.kind === "ep");
   const course = sets.filter((set) => set.kind === "tut" || isDocument(set));
-  const rest = sets.filter(
-    (set) => set.kind !== "ep" && set.kind !== "tut" && !isDocument(set),
-  );
+  const rest = sets.filter((set) => !["ep", "tut", "docu"].includes(set.kind) && !isDocument(set));
 
   return {
     movies: [...rest].sort(byTitle),

@@ -15,6 +15,7 @@ use charset::is_lower_hex;
 
 pub use artwork_key::{
     BACKDROP_SUFFIX, backdrop_key, is_backdrop_key, poster_key_is_valid, season_poster_key,
+    title_art_key,
 };
 pub use naming::package_file_name;
 

@@ -42,7 +42,7 @@ pub async fn credits(api: &impl TmdbApi, kind: Kind, id: u64) -> Result<Vec<Cred
     let path = match kind {
         Kind::Movie => format!("/movie/{id}/credits"),
         Kind::Ep => format!("/tv/{id}/credits"),
-        Kind::Tut | Kind::Doc => bail!("a course has no provider entry"),
+        Kind::Tut | Kind::Doc | Kind::Docu => bail!("a course has no provider entry"),
     };
     let value = api
         .get_json(&path, &[])

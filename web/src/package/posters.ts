@@ -7,8 +7,11 @@
  * artwork adds `-s<n>` to its show's key: `tmdb-tv-1396-s2`. A title's
  * backdrop, its wide landscape artwork, adds `-bg`: `tmdb-movie-550-bg`.
  * Seasons have none. A cast member's portrait is `tmdb-person-<id>`.
- * `mlib_spec::package::poster_key_is_valid` is the same rule for what a
- * package may carry (portraits, like backdrops, it does not).
+ *
+ * A title with no provider id — a course, a documentary, an untagged film —
+ * is keyed `title-<slug>` instead, from its own name rather than an id
+ * nothing gave it. `mlib_spec::package::poster_key_is_valid` is the same rule
+ * for what a package may carry (portraits, like backdrops, it does not).
  *
  * The key reaches a URL and then a file name, so it is spelled out rather
  * than passed through: a store that accepts any string is one caption away
@@ -18,14 +21,48 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
-const KEY = /^tmdb-(?:(?:movie|tv)-\d{1,12}(?:-s\d{1,4}|-bg)?|person-\d{1,12})$/;
+const TITLE_SLUG = "[a-z0-9]+(?:-[a-z0-9]+)*";
+const KEY = new RegExp(`^(?:tmdb-(?:(?:movie|tv)-\\d{1,12}(?:-s\\d{1,4}|-bg)?|person-\\d{1,12})|title-${TITLE_SLUG}(?:-bg)?)$`);
 
-/** The key for a set, or `null` when it has no TMDB id to build one from. */
-export function posterKeyFor(kind: string, tmdb: number | null): string | null {
-  if (tmdb === null || !Number.isInteger(tmdb) || tmdb <= 0) return null;
-  // Everything that is not a film is filed under a show: an episode's artwork
-  // is the series', which is also the only poster the package carries for it.
-  return `tmdb-${kind === "movie" ? "movie" : "tv"}-${tmdb}`;
+/**
+ * Lowercase ASCII alphanumerics, runs of anything else collapsed to a single
+ * dash, trimmed. Non-ASCII characters are dropped rather than transliterated,
+ * so a title of only non-ASCII yields an empty slug.
+ *
+ * A byte-for-byte port of `mlib_spec::slug::slug` — see
+ * `mediagram artwork <title>` and `add-docu`/`add-course`, which derive the
+ * same id on the uploader's side from the same title. `slug.test.ts` pins the
+ * two together with the Rust function's own cases.
+ */
+export function slug(title: string): string {
+  let out = "";
+  let pendingDash = false;
+  for (const ch of title) {
+    if (/^[a-zA-Z0-9]$/.test(ch)) {
+      if (pendingDash && out !== "") out += "-";
+      pendingDash = false;
+      out += ch.toLowerCase();
+    } else {
+      pendingDash = true;
+    }
+  }
+  return out;
+}
+
+/**
+ * The key for a set: its provider id when it has one, else a slug of
+ * `fallbackTitle` — the course, collection or film name a viewer would
+ * recognise, for a title TMDB never named.
+ */
+export function posterKeyFor(kind: string, tmdb: number | null, fallbackTitle?: string | null): string | null {
+  if (tmdb !== null && Number.isInteger(tmdb) && tmdb > 0) {
+    // Everything that is not a film is filed under a show: an episode's
+    // artwork is the series', which is also the only poster the package
+    // carries for it.
+    return `tmdb-${kind === "movie" ? "movie" : "tv"}-${tmdb}`;
+  }
+  const key = fallbackTitle ? slug(fallbackTitle) : "";
+  return key ? `title-${key}` : null;
 }
 
 /** The key a season's artwork is filed under, or `null` without a show key. */

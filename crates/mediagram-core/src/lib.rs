@@ -4,6 +4,7 @@
 uniffi::setup_scaffolding!();
 
 pub mod api;
+pub mod artwork;
 pub mod catalog;
 pub mod catalog_assets;
 pub mod connection_params;

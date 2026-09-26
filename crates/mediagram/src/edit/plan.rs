@@ -96,7 +96,7 @@ impl Edits {
 /// The kinds a set can be moved between. `Doc` is left out on purpose: its
 /// bytes are a document and every other kind's are a video, so filing one as
 /// the other would give a player something it cannot open.
-const EDITABLE_KINDS: [Kind; 3] = [Kind::Movie, Kind::Ep, Kind::Tut];
+const EDITABLE_KINDS: [Kind; 4] = [Kind::Movie, Kind::Ep, Kind::Tut, Kind::Docu];
 
 /// Parses a `--kind` value, refusing a kind the spec does not have (its
 /// caption would be unreadable) and one a set cannot be moved to.

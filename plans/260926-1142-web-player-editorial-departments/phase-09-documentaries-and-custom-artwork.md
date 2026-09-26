@@ -1,6 +1,6 @@
 # Phase 9 — Documentaries department and custom artwork
 
-**Priority:** P2. **Status:** approved 2026-09-26; in progress. Runs before phase 8.
+**Priority:** P2. **Status:** built 2026-09-26 on `feat/documentaries-and-artwork` (0.63.0), uncommitted. Rust 1290 + web 2162 tests green. Reports: `plans/reports/fullstack-developer-260926-1400-*`. Runs before phase 8.
 
 ## Locked decisions (user, 2026-09-26)
 - **Documentaries** becomes a department: Home · Movies · Series · **Documentaries** ·
@@ -29,7 +29,7 @@
 - Art keys are `tmdb-{movie|tv}-{id}[-bg]` (`artwork_key.rs:16`). A course has no key.
 
 ## Design
-1. **`artwork` table in schema v9** (v9 is not pushed yet, so no extra bump):
+1. **`artwork` table in schema v10**, an additive group on top of v9. This removes any need to coordinate who publishes v9 first:
    `artwork(key TEXT PRIMARY KEY, mime TEXT NOT NULL, bytes BLOB NOT NULL)`. It rides the
    index push, so web and Android both get it with no extra Telegram round trip.
    - Keys: the existing `tmdb-…` / `tmdb-…-bg` key **overrides** TMDB art.
@@ -45,6 +45,9 @@
 3. **Documentary kind `docu`, uploaded by `mediagram add-docu <file|dir>`**, modelled on
    `add-course` (no TMDB lookup):
    - a file is one documentary, titled from its file name (`--title` overrides)
+   - **multi-part documentaries** (user, 2026-09-26) are a folder of parts: `Die Römer/Teil 1..N`
+     standalone, or `Terra X/Die Römer/Teil 1..N` as a group inside a collection. Unnumbered
+     names order naturally (`Teil 2` before `Teil 10`, `course/plan.rs` `natural_cmp`)
    - a folder is a collection such as "Terra X": the folder name is its title, and the
      course `cid` mechanism groups its files
    - `poster.*`/`backdrop.*` in the folder are picked up as that collection's art
@@ -64,7 +67,7 @@
      `app.js:696`
 
 ## Todo
-- [ ] v9 `artwork` table + migration test (`schema.rs`, `READABLE_SCHEMAS`)
+- [ ] v10 `artwork` table + migration test (`schema.rs`, `READABLE_SCHEMAS`)
 - [ ] `artwork_key.rs` accepts `title-{slug}[-bg]`, plus a test
 - [ ] `index/artwork.rs` put/get/clear with the 1 MB cap, plus a test
 - [ ] `mediagram artwork` command; folder pickup in `add-show`/`add-course`
@@ -81,7 +84,7 @@
 - A TMDB documentary with custom art shows the custom art on both surfaces.
 - `#/documentaries` lists every `docu` upload and no TMDB film; Unsere Erde and the other
   TMDB-genre documentaries stay in Movies.
-- A v8 reader opening a v9 snapshot with artwork rows still works.
+- A v9 reader opening a v10 snapshot with artwork rows still works.
 
 ## Risks
 - Index size: 20 posters plus backdrops at up to 1 MB each is about 40 MB against the
