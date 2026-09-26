@@ -13,3 +13,6 @@
   `web/test/appearance-contrast.test.ts`).
 - **Deliberate difference:** the web's artwork mode (Default/Blurred/Artwork/Solid) is
   not ported (user decision 2026-09-26).
+
+**TV theme (user decision, 2026-09-26, via the TV session):** the TV stays always dark and
+takes the accent only. Recorded in docs/system-architecture.md "Television differs".
