@@ -58,3 +58,34 @@ device walk on TV box 192.168.0.35 (benchmark build, 32-bit armeabi-v7a).
 ## Unresolved
 - M7: keep the TV always dark, or port Dark/Light/Auto as decided?
 - Whether `requestFocus()` on an unattached requester crashes (decides C1's severity).
+
+## Fixes and device walk (TV box, benchmark build, `andre` profile, 2026-09-26 evening)
+
+Branch `review/tv-editorial-parity` on top of 1e851e77: 906fdc41 (launch crash), cf142d28 (review
+fixes, two agents), e9eee4ca, 58232dbf, de875726 (found on the box). `scripts/check.sh` green.
+
+Walked and fixed on the box, beyond the review's list:
+- Title/series tabs: default pill indicator + underline colours made the selected tab's label vanish
+  once the row had focus → underline indicator, start-aligned.
+- Back from Cast/Similar still opened Overview: credits load after the page, so the restored tab was
+  chosen from empty credits and kept → switch once they arrive (test with late credits).
+- Movies front page: hero full-bleed (outside overscan, taller than the screen) and arrival on Featured
+  → inset like Home, arrive on the hero like Home and Series.
+- Person page: portrait + first row taller than 540dp, header scrolled off → 120dp portrait.
+- Search: Back from a show/person/collection landed on the first result — frame recorded bare ids,
+  rows are keyed `show:`/`person:`/`dest:` → recorded under the rows' keys (test added).
+- Collections: lists double-indented; arrival on the first list; 70 franchise posters non-lazy →
+  inset once, arrive on the first franchise, LazyRow.
+- "Recently added" Z→A: not a bug — real `created_at` (Telegram send time) shows the Z titles were
+  uploaded last (851 distinct stamps over 902 films).
+
+Verified on the box: launch; Home cover + landscape features; Movies/Series fronts; film page tabs,
+franchise line, crew line, cast portraits, 8th cast member reachable; person page; Back to Cast +
+that person; genre page; grouped search with chips; franchise page; Latest wall (55); Menu utilities;
+Collections.
+
+Still open (minor):
+- Up into a title's tab row lands on the geometrically nearest tab, not the selected one.
+- Menu order: My List/Continue/Latest/Genres come after "Start over".
+- Search chip "Movies" vs section heading "Films".
+- Not walked: Tutorials front, Settings › Appearance accent, a Watch now play, the emulator.
