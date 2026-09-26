@@ -12,6 +12,7 @@ import type { LoopLag } from "./loop-lag";
 import type { LiveFacts, TranscodeSession } from "./snapshot";
 import type { TranscodeMode } from "../transcode/registry";
 import type { TranscodeProgress } from "../transcode/progress";
+import type { PlaybackRow } from "./playback-reports";
 
 interface CacheStats {
   stats(): { hits: number; misses: number; evicted: number };
@@ -50,6 +51,7 @@ export interface LiveFactsDeps {
   loopLag: Pick<LoopLag, "reading">;
   /** Directories to report free space under: the cache and the transcode dir. */
   diskDirs: string[];
+  playback: { list(): PlaybackRow[] };
 }
 
 export async function readLiveFacts(
@@ -71,6 +73,7 @@ export async function readLiveFacts(
     },
     telegramConnected: deps.telegram.connected,
     link: deps.telegram.link(),
+    playback: deps.playback.list(),
     failedReads: deps.bytes.stats().failedReads,
     host: {
       // Resident set size: the figure that says whether a player left running

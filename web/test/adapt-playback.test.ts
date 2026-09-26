@@ -143,6 +143,53 @@ describe("nothing left to try", () => {
   });
 });
 
+describe("health(), for a report that cannot see the decision itself", () => {
+  test("starts ok, before anything has been judged", () => {
+    const { watch } = run({ fill: 1.3, seconds: 0, capBits: null });
+    expect(watch.health()).toBe("ok");
+  });
+
+  test("stays ok while the link keeps up", () => {
+    const { watch } = run({ fill: 1.3, seconds: 60, capBits: null });
+    expect(watch.health()).toBe("ok");
+  });
+
+  test("reports the verdict's own state once a switch has been asked for", () => {
+    const { watch, switches } = run({ fill: 0.3, seconds: 120, capBits: 8_000_000 });
+    expect(switches.length).toBeGreaterThan(0);
+    expect(["behind", "starving", "ok"]).toContain(watch.health());
+  });
+
+  test("resets to ok on the next begin, not carried over from the last title", () => {
+    const video = fakeVideo();
+    let clock = 0;
+    let healthAtSwitch: string | null = null;
+    const watch = watchPlayback({
+      video: video.element as never,
+      // Read inline: `fakeVideo` fires every registered listener for every
+      // event name it does not distinguish, so a state read after `tick()`
+      // returns can already reflect a second, redundant call `begin` itself
+      // never made — a fixture quirk, not something a real `timeupdate`,
+      // `progress` and `waiting` firing at genuinely different times has.
+      onSwitch: () => { healthAtSwitch = watch.health(); },
+      onExhausted: () => {},
+      now: () => clock,
+    });
+    // The same setup as "the first switch comes within a few seconds": a
+    // buffer already close to a stall, which the watch judges as not ok.
+    video.ahead = 8;
+    watch.begin({ capBits: null, sourceBits: 13_900_000 });
+    for (let tick = 0; tick < 15 && healthAtSwitch === null; tick++) {
+      clock += 1000;
+      video.tick(1, 0.4);
+    }
+    expect(healthAtSwitch).not.toBe("ok");
+
+    watch.begin({ capBits: null, sourceBits: null });
+    expect(watch.health()).toBe("ok");
+  });
+});
+
 describe("what the original demands", () => {
   test("bitrate comes from size over duration", () => {
     expect(sourceBitrate({ total: 1_000_000, duration: 8 })).toBe(1_000_000);

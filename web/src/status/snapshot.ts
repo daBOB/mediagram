@@ -12,6 +12,7 @@ import type { LoopLagReading } from "./loop-lag";
 import type { DiskFree } from "./disk-free";
 import type { LinkSnapshot } from "../telegram/link-stats";
 import type { TranscodeMode } from "../transcode/registry";
+import type { PlaybackRow } from "./playback-reports";
 
 /** One running conversion, as the panel shows it. */
 export interface TranscodeSession {
@@ -70,6 +71,8 @@ export interface LiveFacts {
   /** Reads that ended in an error rather than in bytes. */
   failedReads: number;
   link: LinkSnapshot;
+  /** Every open player's own reading, none of them older than its 15s TTL. */
+  playback: PlaybackRow[];
   host: HostLiveFacts;
   now: number;
 }
@@ -106,6 +109,7 @@ export function buildSnapshot(facts: StartupFacts, live: LiveFacts) {
     },
     telegram: { connected: live.telegramConnected, failedReads: live.failedReads },
     link: live.link,
+    playback: live.playback,
     state: facts.state,
     host: { ...live.host, bun: facts.runtime.bun },
     uptimeSeconds: Math.max(0, Math.round((live.now - facts.startedAt) / 1000)),

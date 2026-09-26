@@ -73,6 +73,13 @@ export function watchPlayback(options) {
    * before it did describes a situation that has ended.
    */
   let liveRate = null;
+  /**
+   * The verdict's own state as of the last sample, for `health()`.
+   *
+   * `"ok"` until the first sample that actually measures one: a title just
+   * opened is not behind, it simply has not been judged yet.
+   */
+  let lastState = "ok";
 
   /**
    * Starts measuring a newly attached source.
@@ -86,6 +93,7 @@ export function watchPlayback(options) {
   function begin(attached) {
     health.reset();
     liveRate = null;
+    lastState = "ok";
     capBits = attached.capBits ?? null;
     sourceBits = attached.sourceBits ?? null;
     exhausted = false;
@@ -110,6 +118,7 @@ export function watchPlayback(options) {
       duration: video.duration,
     });
     liveRate = verdict.measured ? verdict.ratio : null;
+    lastState = verdict.state;
     if (verdict.state === "ok") return;
     if (now() < eligibleAt) return;
 
@@ -154,6 +163,8 @@ export function watchPlayback(options) {
      * full enough that the browser has stopped asking for more.
      */
     fillRate: () => liveRate,
+    /** `"ok" | "behind" | "starving"`, as of the last sample. */
+    health: () => lastState,
     stop() {
       for (const name of EVENTS) video.removeEventListener(name, evaluateBitrateSwitch);
     },

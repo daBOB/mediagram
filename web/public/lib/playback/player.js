@@ -30,8 +30,10 @@ import { scopeOf } from "./preference-scope.js";
 import { placeCues } from "./subtitle-style.js";
 import { subtitlePanel } from "./subtitle-panel.js";
 import { thumbStrip } from "./thumb-strip.js";
+import { playbackFields, playbackMeta, reportPlayback } from "./playback-report.js";
 
 let mounted = null;
+const viewer = crypto.randomUUID();
 
 /**
  * @typedef {import("../library.js").CatalogSet} CatalogSet
@@ -108,6 +110,9 @@ function mountPlayer() {
    * encoded, and whether a seek is a `currentTime` or a new conversion.
    */
   let converting = false;
+  /** Whether the conversion copies the picture; and the server-report stopper, `null` when idle. */
+  let copiedOutput = false;
+  let stopReporting = null;
   /**
    * What a choice made on the open title is remembered against.
    *
@@ -234,6 +239,7 @@ function mountPlayer() {
       audioTrack,
       onStarted: ({ copied }) => {
         if (!current()) return;
+        copiedOutput = copied;
         said = noteFor(set, copied) ?? said;
         note.textContent = `${said} Starting at ${clockTime(seconds)}…`;
       },
@@ -591,23 +597,7 @@ function mountPlayer() {
 
   /** How much is held, and whether the player is waiting on any of it. */
   function refreshPreload() {
-    // `getVideoPlaybackQuality` is absent on older engines and on an element
-    // with no video track at all, so it is asked for rather than assumed.
-    const quality = video.getVideoPlaybackQuality?.();
-    preload.textContent = preloadReadout({
-      readyState: video.readyState,
-      ahead: bufferedAhead(video.buffered, video.currentTime),
-      starved,
-      // Only the buffered wait is worth announcing. "asap" is over in the time
-      // it takes to say it.
-      awaitingStart: waitingToStart?.mode === "buffered",
-      // The watch is the only thing measuring the link, and it measures whether
-      // or not it ever decides to switch. Reading its rate here is what turns a
-      // decision the viewer never sees into one they can.
-      fillRate: watch.fillRate(),
-      dropped: quality?.droppedVideoFrames,
-      held,
-    });
+    preload.textContent = preloadReadout(playbackFields(video, { starved, waitingToStart, held, watch }));
   }
 
   /**
@@ -618,6 +608,7 @@ function mountPlayer() {
   function openPlayer(set, options = {}) {
     saveProgress(true);
     stop();
+    stopReporting?.(); // An "up next" open is the one path `teardown` does not already cover.
     title?.abort();
     title = new AbortController();
     const signal = title.signal;
@@ -629,6 +620,7 @@ function mountPlayer() {
     base = 0;
     capBits = null;
     converting = false;
+    copiedOutput = false;
     audioTrack = 0;
     audio.hidden = true;
     starved = false;
@@ -663,6 +655,10 @@ function mountPlayer() {
     startSaving();
     hud.open();
     dialog.showModal();
+    const meta = () => playbackMeta(playing, { converting, copiedOutput, capBits });
+    stopReporting = reportPlayback({
+      read: () => ({ ...playbackFields(video, { starved, waitingToStart, held, watch }), ...meta(), viewer, title: titleLine(set) }),
+    });
 
     // Where this profile left off, if that is a place worth going back to —
     // `resume-point.js` decides what counts. Announced rather than done
@@ -960,6 +956,7 @@ function mountPlayer() {
     title.abort();
     title = null;
     stop();
+    stopReporting?.();
     upNext.clear();
     stopWaitingToStart();
     clearInterval(saveTimer);
@@ -982,6 +979,7 @@ function mountPlayer() {
     seek.hidden = true;
     thumbs.hide();
     converting = false;
+    copiedOutput = false;
     held = false;
     audio.hidden = true;
     ends.textContent = "";

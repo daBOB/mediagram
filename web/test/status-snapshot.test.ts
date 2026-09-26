@@ -53,6 +53,25 @@ const live: LiveFacts = {
     flood: { count: 0, totalSeconds: 0 },
     reconnects: 0,
   },
+  playback: [
+    {
+      setId: "abc",
+      title: "A Film",
+      mode: "direct",
+      videoCodec: "h264",
+      audioCodec: "aac",
+      bitrateBits: 8_200_000,
+      ahead: 72,
+      health: "ok",
+      fillRate: 1.1,
+      dropped: 0,
+      frames: 41_200,
+      paused: false,
+      held: false,
+      from: "192.168.1.23",
+      ageSeconds: 2,
+    },
+  ],
   failedReads: 2,
   host: {
     rssBytes: 180 * 1024 ** 2,
@@ -133,6 +152,13 @@ describe("the readings added after the first pass", () => {
 
   test("reports failed reads, which a viewer feels and cannot see", () => {
     expect(buildSnapshot(facts, live).telegram.failedReads).toBe(2);
+  });
+
+  test("passes each open player's own reading through, with who and how stale but no viewer id", () => {
+    const snapshot = buildSnapshot(facts, live);
+    expect(snapshot.playback).toHaveLength(1);
+    expect(snapshot.playback[0]).toMatchObject({ setId: "abc", mode: "direct", from: "192.168.1.23", ageSeconds: 2 });
+    expect(JSON.stringify(snapshot.playback)).not.toContain("viewer");
   });
 
   test("reports resident memory, for a player left running for a week", () => {

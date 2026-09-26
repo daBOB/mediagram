@@ -20,11 +20,14 @@
 
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
 import { isOwnNetwork } from "../client-reach";
+import { refuseUnsafeBrowserWrite } from "../http/browser-write";
 import { bodiless, withBody } from "../response";
 import { buildSnapshot, type LiveFacts } from "./snapshot";
 import type { StartupFacts } from "./facts";
+import { validateReport, type PlaybackReport } from "./playback-reports";
 
 const STATUS = /^\/api\/status$/;
+const PLAYBACK = /^\/api\/status\/playback$/;
 
 /**
  * How long a cache measurement is reused.
@@ -52,6 +55,8 @@ export interface StatusRouterOptions {
   heldBytes?: () => Promise<number>;
   /** Bytes the conversions hold, measured the same way. */
   transcodeBytes?: () => Promise<number>;
+  /** Where a validated `POST /api/status/playback` body is kept. */
+  playback: { put(report: PlaybackReport, from: PlayerRequest["client"]): void };
   now?: () => number;
 }
 
@@ -61,14 +66,23 @@ const json = (body: string, headOnly: boolean): PlayerResponse =>
 
 const status = bodiless;
 
+function parseJson(body: string | null | undefined): unknown {
+  if (typeof body !== "string" || body === "") return null;
+  try {
+    return JSON.parse(body);
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Answers a status request, or `null` when the path is not this one.
+ * Answers a status request, or `null` when the path is not one of these.
  *
  * `null` rather than a 404 so the caller can go on to its own routes; this
- * module knows about its own path and nothing else.
+ * module knows about its own paths and nothing else.
  */
 export function createStatusRouter(options: StatusRouterOptions) {
-  const { facts, live, heldBytes } = options;
+  const { facts, live, heldBytes, playback } = options;
   const now = options.now ?? (() => Date.now());
 
   /**
@@ -108,11 +122,22 @@ export function createStatusRouter(options: StatusRouterOptions) {
   const transcodeHeldBytes = memoizedScan(options.transcodeBytes);
 
   return async function statusRoute(request: PlayerRequest): Promise<PlayerResponse | null> {
-    if (!STATUS.test(request.path)) return null;
+    const isPlayback = PLAYBACK.test(request.path);
+    if (!STATUS.test(request.path) && !isPlayback) return null;
 
     // Before the method check, so a caller from outside cannot learn the
     // difference between "wrong method here" and "nothing here".
     if (!isOwnNetwork(request.client ?? "")) return status(404);
+
+    if (isPlayback) {
+      if (request.method !== "POST") return status(405);
+      const refusal = refuseUnsafeBrowserWrite(request);
+      if (refusal) return refusal;
+      const report = validateReport(parseJson(request.body));
+      if (!report) return status(400);
+      playback.put(report, request.client);
+      return status(204);
+    }
 
     const reading = request.method === "GET" || request.method === "HEAD";
     if (!reading) return status(405);

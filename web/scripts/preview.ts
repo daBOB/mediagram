@@ -30,6 +30,7 @@ import { EXPECTED_SCHEMA, listPlayable } from "../src/catalog";
 import { createStatusRouter } from "../src/status/routes";
 import { readLiveFacts } from "../src/status/live-facts";
 import { startLoopLag } from "../src/status/loop-lag";
+import { PlaybackReports } from "../src/status/playback-reports";
 import type { StartupFacts } from "../src/status/facts";
 
 const home = process.env.HOME ?? "";
@@ -72,6 +73,7 @@ const facts: StartupFacts = {
   runtime: { bun: Bun.version },
 };
 const loopLag = startLoopLag();
+const playback = new PlaybackReports();
 const server = await startServer({
   db,
   // Media is the one thing a preview cannot serve without Telegram.
@@ -96,7 +98,9 @@ const server = await startServer({
         bytes: { stats: () => ({ failedReads: 0 }) },
         loopLag,
         diskDirs: [scratch],
+        playback,
       }),
+    playback,
   }),
 });
 

@@ -32,6 +32,7 @@ import { createStatusRouter } from "./status/routes";
 import { dirBytes } from "./status/dir-bytes";
 import { readLiveFacts } from "./status/live-facts";
 import { startLoopLag } from "./status/loop-lag";
+import { PlaybackReports } from "./status/playback-reports";
 import type { StartupFacts } from "./status/facts";
 import { Telegram, bareChannelId } from "./telegram/client";
 import { TelegramSource, partFetcher } from "./telegram/source";
@@ -265,6 +266,8 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
         return timer;
       },
     });
+    // What each open player says about itself, from any device on the household.
+    const playbackReports = new PlaybackReports();
 
     /**
      * Preview frames for the scrub bar.
@@ -323,18 +326,13 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
       preload,
       status: createStatusRouter({
         facts,
-        live: () =>
-          readLiveFacts({
-            cache,
-            reader: reader ?? null,
-            transcodes,
-            telegram,
-            bytes,
-            loopLag,
-            diskDirs: [config.cacheDir, config.transcodeDir],
-          }),
+        live: () => readLiveFacts({
+          cache, reader: reader ?? null, transcodes, telegram, bytes, loopLag,
+          diskDirs: [config.cacheDir, config.transcodeDir], playback: playbackReports,
+        }),
         heldBytes: cache ? () => cache.sizeOnDisk() : undefined,
         transcodeBytes: () => dirBytes(config.transcodeDir),
+        playback: playbackReports,
       }),
     });
 
