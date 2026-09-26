@@ -33,7 +33,9 @@ import { thumbStrip } from "./thumb-strip.js";
 import { playbackFields, playbackMeta, reportPlayback } from "./playback-report.js";
 
 let mounted = null;
-const viewer = crypto.randomUUID();
+// Not crypto.randomUUID: it exists only in secure contexts, and the player is
+// usually opened over plain http on a LAN address. getRandomValues works there.
+const viewer = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
 
 /**
  * @typedef {import("../library.js").CatalogSet} CatalogSet
