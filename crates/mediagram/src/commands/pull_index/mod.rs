@@ -166,4 +166,10 @@ fn print_report(report: &MergeReport, dry_run: bool) {
             report.shows_added, report.shows_filled
         );
     }
+    if report.credits_added > 0 {
+        println!("{} credit row(s) added", report.credits_added);
+    }
+    if report.franchises_added > 0 {
+        println!("{} franchise(s) added", report.franchises_added);
+    }
 }

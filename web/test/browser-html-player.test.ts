@@ -63,10 +63,13 @@ async function start() {
 test("shipped HTML mounts the actual application and its player controls respond", async () => {
   expect(env.document.getElementById("not-in-the-page")).toBeNull();
   expect(env.document.querySelector(".not-in-the-page")).toBeNull();
-  expect(env.document.querySelector("script")?.getAttribute("src")).toBe("/app.js");
+  // The appearance boot script runs first, blocking, so the theme is right at first paint.
+  const scripts = (env.document.querySelectorAll as unknown as (selector: string) => { getAttribute(name: string): string | null }[])("script");
+  expect([...scripts].map((node) => node.getAttribute("src")))
+    .toEqual(["/lib/appearance-boot.js", "/app.js"]);
   await start();
   await env.navigate("#/film/Film");
-  descendants(env.node("main")).find((node) => node.className === "film-play")!.fire("click");
+  descendants(env.node("main")).find((node) => node.className.split(" ").includes("film-play"))!.fire("click");
   await settle();
   expect(env.node("player").tagName).toBe("DIALOG");
   expect(env.node("video").tagName).toBe("VIDEO");
@@ -100,7 +103,7 @@ test.each(["play-pause", "sub-track", "close"])(
     // them is not a reason the shelves above should fail to appear.
     await start();
     await env.navigate("#/film/Film");
-    descendants(env.node("main")).find((node) => node.className === "film-play")!.fire("click");
+    descendants(env.node("main")).find((node) => node.className.split(" ").includes("film-play"))!.fire("click");
     await settle();
     expect(env.node("player").open).toBe(false);
     expect(descendants(env.node("main")).some((node) => node.className === "error")).toBe(true);

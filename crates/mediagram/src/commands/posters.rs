@@ -10,6 +10,10 @@
 //! Backdrops come too, for the web player's cover story. They are fetched
 //! here and nowhere else: the package and the phone leave them out.
 //!
+//! Cast and crew portraits come from the index itself — `credits.profile`,
+//! filled by `mediagram metadata` — rather than from TMDB, so a machine with
+//! no TMDB cache of its own (any snapshot's `--index`) still gets them.
+//!
 //! Only films and series have artwork here. A course has no provider id to
 //! key a poster by, so `titles::distinct_titles` never yields one and nothing
 //! in this file has to know about the distinction.
@@ -49,6 +53,13 @@ pub async fn run(cfg: &Config, index: Option<&Path>) -> Result<()> {
     // The widest TMDB serves short of the original: this command fills the
     // web player's cover story, drawn desktop-wide.
     refs.extend(resolve_backdrops(&api, &titles, 1280).await);
+    // From the index, not TMDB: see this file's own doc comment.
+    refs.extend(
+        mediagram_core::credits::portraits(&conn).unwrap_or_else(|err| {
+            tracing::warn!(error = %err, "no portraits could be read from this index");
+            Vec::new()
+        }),
+    );
     if refs.is_empty() {
         println!(
             "{} title(s), none with artwork recorded at TMDB",

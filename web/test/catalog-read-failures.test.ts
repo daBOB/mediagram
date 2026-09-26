@@ -28,12 +28,22 @@ test("provider facts tolerate only the legacy table and the later optional colum
     db.run("INSERT INTO shows VALUES ('tmdb', 'movie', 1, 'Ein Satz.', 'Drama, Comedy', 7.5)");
     expect(providerFactsByShow(db).get("tmdb-movie-1")).toEqual({
       genres: ["Drama", "Comedy"], fsk: null, tagline: "Ein Satz.", rating: 7.5, popularity: null,
+      collectionId: null, collectionName: null, seriesType: null, status: null,
     });
     db.run("ALTER TABLE shows ADD COLUMN certification TEXT");
     db.run("ALTER TABLE shows ADD COLUMN popularity REAL");
     db.run("UPDATE shows SET certification = ' 12 ', popularity = 88.5, tagline = '  '");
     expect(providerFactsByShow(db).get("tmdb-movie-1")).toEqual({
       genres: ["Drama", "Comedy"], fsk: "12", tagline: null, rating: 7.5, popularity: 88.5,
+      collectionId: null, collectionName: null, seriesType: null, status: null,
+    });
+    // v9: the franchise and the form of a show.
+    db.run("ALTER TABLE shows ADD COLUMN collection_id INTEGER");
+    db.run("ALTER TABLE shows ADD COLUMN collection_name TEXT");
+    db.run("ALTER TABLE shows ADD COLUMN series_type TEXT");
+    db.run("UPDATE shows SET collection_id = 115575, collection_name = 'Star Trek Filmreihe', series_type = ' '");
+    expect(providerFactsByShow(db).get("tmdb-movie-1")).toMatchObject({
+      collectionId: 115575, collectionName: "Star Trek Filmreihe", seriesType: null,
     });
     db.run("ALTER TABLE shows DROP COLUMN genres");
     expect(() => providerFactsByShow(db)).toThrow("no such column: genres");

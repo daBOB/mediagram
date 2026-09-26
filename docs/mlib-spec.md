@@ -244,9 +244,60 @@ CREATE TABLE IF NOT EXISTS assets(
 );
 ```
 
+### Schema v9 additions
+
+Version 9 adds three tables for editorial metadata (credits, franchises) and
+series classification:
+
+```sql
+-- New columns on existing 'shows' table (both nullable):
+ALTER TABLE shows ADD COLUMN collection_id INTEGER;      -- TMDB franchise id
+ALTER TABLE shows ADD COLUMN collection_name TEXT;       -- TMDB franchise name
+ALTER TABLE shows ADD COLUMN series_type TEXT;           -- TV series type: Scripted, Miniseries, Documentary, Reality, News, Talk Show, Video (null for movies)
+
+-- Cast, crew, creators from TMDB. Part of the primary key to allow
+-- multiple credits per title; 'ord' is display order within the title.
+CREATE TABLE IF NOT EXISTS credits(
+    source TEXT NOT NULL,                 -- 'tmdb' or other provider
+    kind TEXT NOT NULL,                   -- 'movie' or 'tv'
+    id INTEGER NOT NULL,                  -- TMDB title id
+    ord INTEGER NOT NULL,                 -- Display order (cast by billing, then crew, then creators)
+    person_id INTEGER NOT NULL,           -- TMDB person id
+    name TEXT NOT NULL,                   -- Person's name
+    role TEXT,                            -- Character name (for cast) or job (for crew), e.g. 'Director', 'Creator'
+    dept TEXT NOT NULL,                   -- 'cast' or 'crew'
+    profile TEXT,                         -- Bare TMDB portrait path (e.g. '/abc.jpg'), or null
+    PRIMARY KEY(source, kind, id, ord)
+);
+
+-- TMDB collections (franchises). Keyed by TMDB collection id.
+CREATE TABLE IF NOT EXISTS franchises(
+    source TEXT NOT NULL,                 -- 'tmdb'
+    id INTEGER NOT NULL,                  -- TMDB collection id (same as shows.collection_id)
+    name TEXT NOT NULL,                   -- Collection name
+    overview TEXT,                        -- Description, may be null or empty
+    PRIMARY KEY(source, id)
+);
+```
+
+Readers of schema v6–v8 tolerate missing columns/tables (treat them as absent).
+A reader probes for the `credits` and `franchises` tables; if absent, it
+renders without cast/crew/franchises. A reader that understands v8 but not v9
+(schema version comparison or table probe) will never see v9 data; once it
+upgrades, its next `library.db` snapshot refreshes from the channel.
+
+The uploader's v9 metadata comes from two backfills after `mediagram metadata`
+runs: `backfill_credits` (top 12 cast, directors, series creators) and
+`backfill_franchises` (from `belongs_to_collection`). On the web player's end,
+portrait keys follow the pattern `tmdb-person-<id>.jpg` (185px wide) and are
+downloaded by `mediagram posters --index <snapshot>`.
+
+**`episode` and `role` field formats**
+
 `episode` stores the JSON encoding of the caption's `e` field (a bare
 integer or a `[a,b]` array), not a separate season/episode pair, so it
-round-trips single- and multi-episode files identically. `doc_id` is the
+round-trips single- and multi-episode files identically. `role` in credits
+carries the character name for cast or the job title for crew; `doc_id` is the
 Telegram document id (`Document::id()` — a signed 64-bit integer distinct
 from the message id); it is recorded for reference but message lookup
 always keys on `(chat_id, message_id)`, since a document can be re-sent
@@ -282,19 +333,23 @@ caption:
 
 ```text
 #mlib-index v=2
-{"pushed_at":1700000000,"schema":2,"sets":42}
+{"pushed_at":1700000000,"schema":9,"sets":42}
 ```
 
 `pushed_at` is a Unix timestamp, `sets` is the row count of the `sets`
 table at snapshot time, `schema` is `mlib_spec::schema::SCHEMA_VERSION`
 (the `library.db` table layout version — distinct from the caption spec
-version `v=2`). This marker (`#mlib-index v=`) never collides with a part
-caption's marker (`#mlib v=`), so a reader can tell the two apart by
-prefix alone. Each push pins the new index message and unpins whatever
-index message it replaces, so a reader looking for the current index reads
-the channel's pinned messages and picks the newest `#mlib-index` one. "Newest" is by `pushed_at`, and a reader does not believe one more than a
-day ahead of its own clock — such a caption is treated like one whose time
-cannot be read, so it never outranks a real snapshot. Only the channel's own posts are candidates: a library is a broadcast
+version `v=2`, which carries `v=2` or `v=3` captions on parts). The index
+caption's `schema` field reads current on every push; READABLE_SCHEMAS
+(in the crate) defines which index versions this reader accepts. This marker
+(`#mlib-index v=`) never collides with a part caption's marker (`#mlib v=`),
+so a reader can tell the two apart by prefix alone. Each push pins the new
+index message and unpins whatever index message it replaces, so a reader
+looking for the current index reads the channel's pinned messages and picks
+the newest `#mlib-index` one. "Newest" is by `pushed_at`, and a reader does
+not believe one more than a day ahead of its own clock — such a caption is
+treated like one whose time cannot be read, so it never outranks a real
+snapshot. Only the channel's own posts are candidates: a library is a broadcast
 channel, where only its admins can post, and a message anyone else managed to
 put there is not a snapshot anyone published. The marker, the JSON
 line and both rules live in `mlib_spec::index_caption`.

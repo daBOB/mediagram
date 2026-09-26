@@ -12,6 +12,7 @@
 //! | `parts` | Every row of a set just added. |
 //! | `assets` | Missing `(set_id, kind, lang)` rows, added or shared alike. |
 //! | `shows` | Missing keys inserted; shared keys get their `NULL`s filled. |
+//! | `credits`, `franchises` | Missing keys inserted whole; never partially filled. |
 //! | `meta` | Never touched — machine-local state, not library content. |
 //!
 //! A shared set whose metadata differs between the two is not decided here:
@@ -26,6 +27,7 @@ use rusqlite::Connection;
 use crate::index::merge_candidates;
 use crate::index::merge_columns::shared_columns;
 use crate::index::merge_copy::{fill_missing_assets, insert_row};
+use crate::index::merge_credits;
 use crate::index::merge_diff::conflicting_sets;
 use crate::index::merge_shows;
 
@@ -47,6 +49,8 @@ pub struct MergeReport {
     pub conflicts: Vec<String>,
     pub shows_added: usize,
     pub shows_filled: usize,
+    pub credits_added: usize,
+    pub franchises_added: usize,
 }
 
 /// Merges `channel_path`'s index into `local`, one transaction, via `ATTACH`.
@@ -145,12 +149,15 @@ fn copy_kept(
     let conflicts = conflicting_sets(conn)?;
     fill_missing_assets(conn)?;
     let (shows_added, shows_filled) = merge_shows::merge(conn)?;
+    let (credits_added, franchises_added) = merge_credits::merge(conn)?;
 
     Ok(MergeReport {
         sets_added,
         conflicts,
         shows_added,
         shows_filled,
+        credits_added,
+        franchises_added,
         ..MergeReport::default()
     })
 }

@@ -13,3 +13,12 @@ export function el(tag, className, text) {
   if (text !== undefined) node.textContent = text;
   return node;
 }
+
+/**
+ * Focuses `node` once it is in the document. A redraw may build the new page
+ * before swapping it in, so focusing straight away would focus nothing.
+ */
+export function focusWhenAttached(node, frames = 30) {
+  if (node.isConnected !== false) return node.focus();
+  if (frames > 0) requestAnimationFrame(() => focusWhenAttached(node, frames - 1));
+}

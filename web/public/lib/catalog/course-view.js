@@ -17,12 +17,9 @@
  */
 
 import { el } from "../dom.js";
-import { crumbs, heading, seasonGrid, SECTIONS } from "./shelf-view.js";
-import { describeSeries, seriesHeader } from "./series-header.js";
-import { titleBand } from "./title-band.js";
-import { hasSeasonWall, seasonNamed } from "./season-wall.js";
+import { crumbs, heading, SECTIONS } from "./shelf-view.js";
 import { codecLine, countOf, episodeLabel, humanDuration, humanSize } from "../format.js";
-import { countsUnder, divisionAt, firstItemOf, isDocument, levelEntries } from "../library.js";
+import { countsUnder, divisionAt, isDocument, levelEntries } from "../library.js";
 import { offlineBadge, progressRuleFor, transcodeBadge, watchedTick } from "./set-badge.js";
 
 /**
@@ -193,64 +190,16 @@ export function divisionBlock(division, depth, onPlay) {
 }
 
 /**
- * One show, or one level of one course.
- *
- * The two part company here because the containers do. A show's seasons are
- * one flat level holding episodes, so they are a wall of season posters and
- * each opens its own page; a show of one season skips the wall. A course is
- * four levels and 162 lessons, so one floor goes on the page and the folders
- * are doors.
+ * One level of one course. A course is four levels and 162 lessons, so one
+ * floor goes on the page and the folders are doors. (A show is
+ * `series-page.js`: its seasons are one flat level.)
  */
-export function renderCollection(main, section, collection, name, folders, { play, open }) {
+export function renderCollection(main, _section, collection, name, folders, { play, open }) {
   if (!collection) {
-    main.append(el("p", "error", `No ${section === "series" ? "show" : "course"} called "${name}".`));
+    main.append(el("p", "error", `No course called "${name}".`));
     return;
   }
-
-  if (section === "tutorials") return viewCourseLevel(main, collection, folders, { play, open });
-
-  // A season opened from the wall: its episodes, under the show's trail.
-  if (folders.length > 0) {
-    const season = seasonNamed(collection, folders[0]);
-    main.append(crumbs(section, SECTIONS[section].label, collection.name, [folders[0]]));
-    if (!season) {
-      main.append(el("p", "error", `"${collection.name}" has no ${folders[0]}.`));
-      return;
-    }
-    heading(main, season.title, countOf(season.items.length, "episode"));
-    main.append(seasonBlock(season, play));
-    return;
-  }
-
-  // The artwork a show's episodes share is the show's own; `firstItemOf`
-  // is what the shelf card already uses to find it.
-  const first = firstItemOf(collection.divisions);
-  const band = titleBand(first);
-  if (band) main.append(band);
-  main.append(crumbs(section, SECTIONS[section].label, collection.name, []));
-  heading(main, collection.name, countOf(collection.count, "episode"));
-  const header = seriesHeader(collection, first?.poster ?? null);
-  main.append(header);
-  // Asked for separately, and late: the description is one page's worth of
-  // text, and putting it on every catalog row would send all of it to build
-  // a shelf that shows none of it. The facts are already on screen; what the
-  // provider says is added to them rather than rebuilding the header, which
-  // would recount every episode and swap the poster under the viewer.
-  if (first?.showKey) {
-    fetch(`/api/shows/${encodeURIComponent(first.showKey)}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((meta) => describeSeries(header, meta))
-      .catch(() => {});
-  }
-  if (hasSeasonWall(collection)) {
-    main.append(
-      seasonGrid(collection.divisions, (title) => {
-        open("series", collection.name, [title]);
-      }),
-    );
-    return;
-  }
-  for (const division of collection.divisions) main.append(divisionBlock(division, 0, play));
+  return viewCourseLevel(main, collection, folders, { play, open });
 }
 
 /** One floor of a course: the lessons in this folder, and the doors below. */

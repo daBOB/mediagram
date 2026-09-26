@@ -74,7 +74,7 @@
    Artwork-backed blocks (cover, features) carry their own light-on-image
    colours, so they read the same in both. */
 :root {
-  color-scheme: dark light;
+  color-scheme: dark;
   --paper: #0d0d0e;
   --paper-sunk: #1b1b1d;
   --surface: #151517;
@@ -86,7 +86,7 @@
   --rule: rgba(243, 239, 231, 0.18);
   --rule-soft: rgba(243, 239, 231, 0.08);
   --accent: #e57a61;
-  --accent-tint: rgba(229, 122, 97, 0.14);
+  --accent-tint: color-mix(in srgb, var(--accent) 14%, transparent);
   --on-accent: #1a0d09;
   --warn: #e6c47f;
   --held: #a3d3a4;
@@ -128,23 +128,23 @@
   --layer-profile: 4;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --paper: #f4f0e8;
-    --paper-sunk: #e5dfd3;
-    --surface: #fbf8f2;
-    --sidebar: #ebe5d9;
-    --ink: #1b1916;
-    --ink-2: #48433b;
-    --ink-3: #676157;
-    --rule: rgba(27, 25, 22, 0.2);
-    --rule-soft: rgba(27, 25, 22, 0.09);
-    --accent: #a3392a;
-    --accent-tint: rgba(163, 57, 42, 0.1);
-    --on-accent: #fff8f4;
-    --warn: #7a5510;
-    --held: #2f6a35;
-  }
+/* The light "paper" variant, chosen by `data-theme`: `lib/appearance-boot.js`
+   sets it before first paint from Settings (Dark, Light, or Auto = device). */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --paper: #f4f0e8;
+  --paper-sunk: #e5dfd3;
+  --surface: #fbf8f2;
+  --sidebar: #ebe5d9;
+  --ink: #1b1916;
+  --ink-2: #48433b;
+  --ink-3: #676157;
+  --rule: rgba(27, 25, 22, 0.2);
+  --rule-soft: rgba(27, 25, 22, 0.09);
+  --accent: #a3392a;
+  --on-accent: #fff8f4;
+  --warn: #7a5510;
+  --held: #2f6a35;
 }
 
 * { box-sizing: border-box; }

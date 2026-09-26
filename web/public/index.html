@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>mediagram</title>
     <meta name="color-scheme" content="dark light" />
+    <!-- Before any stylesheet: sets the theme, so the first paint is right. -->
+    <script src="/lib/appearance-boot.js"></script>
     <!-- Interface text and display serif are both available offline; the text
          serif is left to load on first use, below the fold. -->
     <link rel="preload" href="/font/geist-latin.woff2" as="font" type="font/woff2" crossorigin />
@@ -14,6 +16,9 @@
     <link rel="stylesheet" href="/styles/shell.css" />
     <link rel="stylesheet" href="/styles/catalog.css" />
     <link rel="stylesheet" href="/styles/home.css" />
+    <link rel="stylesheet" href="/styles/title-page.css" />
+    <link rel="stylesheet" href="/styles/departments.css" />
+    <link rel="stylesheet" href="/styles/appearance.css" />
     <link rel="stylesheet" href="/styles/library-controls.css" />
     <link rel="stylesheet" href="/styles/playback.css" />
     <!-- The deepest modules the first shelf's own render reaches, fetched
@@ -33,28 +38,33 @@
   </head>
   <body>
     <button type="button" class="skip-link" id="skip-library">Skip to library</button>
-    <!-- Two navigations, as a magazine has two: the rail is the reader's own
-         index (what they started, kept and listed), the bar is the library's
-         departments. Every link keeps its hash, label and `data-section`, so
-         routing and the counts `app.js` writes are unchanged. -->
+    <!-- Two navigations, as the reference has two: a rail down the side
+         and a bar of departments along the top. Every link keeps its hash
+         and `data-section`, so routing and the counts `app.js` writes work
+         on both. -->
     <aside class="library-rail">
-      <!-- The wordmark goes where a masthead's does: back to the front
-           page. Nothing else in the rail is a way home. -->
+      <!-- The wordmark goes where a masthead's does: back to the front page. -->
       <a class="brand" href="#/home">mediagram</a>
+      <!-- The rail mirrors the reference: the library's departments first,
+           then, under a rule, the reader's utilities — what they started,
+           kept and listed, what is new, and the subject index. The bar
+           along the top repeats the departments with their counts. -->
       <nav class="rail-nav" aria-label="Your shelves">
-        <!-- Home again, as the reference front page has it: the rail is where
-             a reader finds their way back to the front, not only the bar. -->
         <a href="#/home" data-section="home"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5 12 3.5l8.5 7V20h-5.5v-5.5h-6V20H3.5z"></path></svg><span class="label">Home</span></a>
-        <!-- The three that come from what has been watched rather than from
-             the catalog: a shelf you filled, not one the library filled. -->
+        <a href="#/movies" data-section="movies" class="dept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="1.5"></rect><path d="M3.5 9h17M3.5 15h17M8 5v4M16 5v4M8 15v4M16 15v4"></path></svg><span class="label">Movies</span></a>
+        <a href="#/series" data-section="series" class="dept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12" rx="1.5"></rect><path d="m9 3 3 3 3-3M9 21h6"></path></svg><span class="label">Series</span></a>
+        <a href="#/tutorials" data-section="tutorials" class="dept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h6a2 2 0 0 1 2 2V20a2 2 0 0 0-2-2H4zM20 5.5h-6a2 2 0 0 0-2 2V20a2 2 0 0 1 2-2h6z"></path></svg><span class="label">Tutorials</span></a>
+        <a href="#/collections" data-section="collections" class="dept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1"></rect><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"></rect><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"></rect></svg><span class="label">Collections</span><span class="n" id="n-collections"></span></a>
+        <span class="rail-rule" aria-hidden="true"></span>
+        <a href="#/watchlist" data-section="watchlist" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h11v17l-5.5-3.8-5.5 3.8z"></path></svg><span class="label">My List</span><span class="n" id="n-watchlist"></span></a>
         <a href="#/continue" data-section="continue" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M10.2 8.6v6.8l5.6-3.4z"></path></svg><span class="label">Continue watching</span><span class="n" id="n-continue"></span></a>
-        <a href="#/watchlist" data-section="watchlist" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h11v17l-5.5-3.8-5.5 3.8z"></path></svg><span class="label">Watchlist</span><span class="n" id="n-watchlist"></span></a>
-        <a href="#/collections" data-section="collections" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1"></rect><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"></rect><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"></rect></svg><span class="label">Collections</span><span class="n" id="n-collections"></span></a>
+        <a href="#/latest" data-section="latest" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg><span class="label">Latest</span></a>
+        <a href="#/genres" data-section="genres" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7l8.3 8.3-8.7 8.7z"></path><circle cx="8" cy="8" r="1.4"></circle></svg><span class="label">Genres</span></a>
+        <a href="#/settings" data-section="settings" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M18 6l-1.6 1.6M7.6 16.4 6 18M18 18l-1.6-1.6M7.6 7.6 6 6"></path></svg><span class="label">Settings</span></a>
         <!-- Not a shelf: what the player itself is doing. Hidden until
              `/api/status` answers, which it does for this household's own
-             devices — this network, or a peer on the tailnet. A viewer from
-             outside is never shown a way in to a page they would get a 404
-             from. -->
+             devices. A viewer from outside is never shown a way in to a page
+             they would get a 404 from. -->
         <a href="#/system" data-section="system" class="apart" id="nav-system" hidden><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"></path><circle cx="15" cy="7" r="2"></circle><circle cx="9" cy="17" r="2"></circle></svg><span class="label">System</span></a>
         <!-- Hidden until `/api/settings` answers 200 or 401 — either way there
              is a page to open; a 404 means off this household's network. -->
@@ -73,6 +83,7 @@
         <a href="#/movies" data-section="movies">Movies<span class="n" id="n-movies"></span></a>
         <a href="#/series" data-section="series">Series<span class="n" id="n-series"></span></a>
         <a href="#/tutorials" data-section="tutorials">Tutorials<span class="n" id="n-tutorials"></span></a>
+        <a href="#/collections" data-section="collections">Collections</a>
       </nav>
       <div class="library-toolbar">
         <div class="search-field" role="search">

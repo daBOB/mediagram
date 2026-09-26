@@ -24,6 +24,9 @@ fn described(kind: Kind, id: u64, overview: &str) -> TitleDetailsRow {
         total_episodes: None,
         certification: None,
         popularity: None,
+        collection_id: None,
+        collection_name: None,
+        series_type: None,
     }
 }
 

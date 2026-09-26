@@ -7,10 +7,9 @@
   position: relative;
   isolation: isolate;
   height: var(--cover-height);
-  /* Bleeds to the column's right edge and up under the translucent masthead,
-     and starts where the rail beside it ends (the home view sets `data-cover`,
-     which gives `main` the full width). */
-  margin: calc(-1 * (var(--main-top) + var(--masthead-height))) calc(-1 * var(--gutter)) 0 calc(var(--rail-width) - var(--gutter));
+  /* Bleeds to both edges of the column beside the rail, and up under the
+     translucent masthead. */
+  margin: calc(-1 * (var(--main-top) + var(--masthead-height))) calc(-1 * var(--gutter)) 0;
   overflow: hidden;
   color: var(--on-image);
   background: #0a0a0b;
@@ -68,32 +67,13 @@
   color: var(--on-image-2);
   font-variant-numeric: tabular-nums;
 }
-.cover-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; margin-top: 34px; }
-.cover-watch {
-  display: inline-flex;
-  align-items: center;
-  gap: 14px;
-  min-height: 52px;
-  padding: 0 28px 0 22px;
-  border: 1px solid rgba(246, 242, 234, 0.7);
-  border-radius: 2px;
-  background: rgba(8, 8, 9, 0.28);
-  color: var(--on-image);
-  font-size: 0.9375rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  transition: background-color 480ms var(--ease), color 480ms var(--ease), transform 480ms var(--ease);
-}
-.cover-watch-icon {
-  width: 0;
-  height: 0;
-  border-left: 11px solid currentColor;
-  border-top: 7px solid transparent;
-  border-bottom: 7px solid transparent;
-  transition: transform 480ms var(--ease);
-}
-.cover-watch:hover { background: var(--on-image); color: #0a0a0b; }
-.cover-watch:hover .cover-watch-icon { transform: translateX(3px); }
+.cover-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 34px; }
+.cover-details { margin-left: 16px; }
+/* Pills over artwork keep the artwork's colours in both themes. */
+.cover-actions .pill-solid { background: var(--on-image); color: #0a0a0b; }
+.cover-actions .pill-solid:hover { background: #fff; }
+.cover-actions .pill-line { border-color: rgba(246, 242, 234, 0.4); background: rgba(8, 8, 9, 0.28); color: var(--on-image); }
+.cover-actions .pill-line:hover { border-color: rgba(246, 242, 234, 0.8); background: rgba(8, 8, 9, 0.45); }
 .cover-details {
   color: var(--on-image-2);
   font-size: 0.875rem;
@@ -151,8 +131,8 @@
 .features {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0;
-  margin: 0 calc(-1 * var(--gutter));
+  gap: 12px;
+  margin: 12px 0 0;
 }
 .feature {
   position: relative;
@@ -162,6 +142,7 @@
   min-height: clamp(220px, 16vw, 270px);
   overflow: hidden;
   color: var(--on-image);
+  border-radius: 14px;
   background: #141416;
   text-decoration: none;
 }
@@ -373,7 +354,7 @@
       linear-gradient(0deg, var(--paper) 0%, rgba(8, 8, 9, 0.82) 30%, rgba(8, 8, 9, 0.35) 70%, rgba(8, 8, 9, 0.2) 100%);
   }
   .cover-pager { right: 16px; bottom: 40px; }
-  .features { grid-template-columns: minmax(0, 1fr); margin: 0 -16px; }
+  .features { grid-template-columns: minmax(0, 1fr); }
   .feature:first-child { grid-column: auto; }
   .feature { min-height: 280px; }
   .home-band { grid-template-columns: minmax(0, 1fr); }

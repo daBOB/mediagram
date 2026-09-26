@@ -16,6 +16,10 @@ use crate::tmdb_client::TmdbApi;
 /// television shelf, and keeps a 300-title package near eight megabytes.
 const IMAGE_BASE: &str = "https://image.tmdb.org/t/p/w342";
 
+/// The width a cast or crew portrait is fetched at — a face on a credits row
+/// needs far fewer pixels than a poster does.
+pub const PORTRAIT_WIDTH: u32 = 185;
+
 /// One image to fetch: the key it will be stored under, TMDB's path, and —
 /// for a backdrop only — the width it was resolved at.
 ///
@@ -78,7 +82,11 @@ pub async fn resolve_posters(api: &impl TmdbApi, titles: &[(Kind, u64)]) -> Vec<
 /// phone's on-device fetch both build on that one, and neither wants
 /// backdrops at package-build time — the package has a size cap, and a
 /// phone's width is only known once Kotlin asks.
-pub async fn resolve_backdrops(api: &impl TmdbApi, titles: &[(Kind, u64)], width: u32) -> Vec<PosterRef> {
+pub async fn resolve_backdrops(
+    api: &impl TmdbApi,
+    titles: &[(Kind, u64)],
+    width: u32,
+) -> Vec<PosterRef> {
     let mut found: Vec<PosterRef> = Vec::new();
     for (kind, id) in titles {
         let key = mlib_spec::package::backdrop_key(&poster_key(*kind, *id));
@@ -93,7 +101,11 @@ pub async fn resolve_backdrops(api: &impl TmdbApi, titles: &[(Kind, u64)], width
             }
         };
         if let Some(path) = details.backdrop_path.filter(|p| is_image_path(p)) {
-            found.push(PosterRef { key, path, backdrop_width: Some(width) });
+            found.push(PosterRef {
+                key,
+                path,
+                backdrop_width: Some(width),
+            });
         }
     }
     found
@@ -120,7 +132,11 @@ async fn posters_for(api: &impl TmdbApi, kind: Kind, id: u64, key: &str) -> Vec<
     let seasons = details.seasons.into_iter().filter_map(|season| {
         let path = season.poster_path.filter(|p| is_image_path(p))?;
         let key = mlib_spec::package::season_poster_key(key, season.season_number);
-        Some(PosterRef { key, path, backdrop_width: None })
+        Some(PosterRef {
+            key,
+            path,
+            backdrop_width: None,
+        })
     });
     show.into_iter().chain(seasons).collect()
 }
@@ -128,7 +144,11 @@ async fn posters_for(api: &impl TmdbApi, kind: Kind, id: u64, key: &str) -> Vec<
 /// A poster path is remote data that becomes part of a URL and a file name.
 /// TMDB's own shape is `/<name>.<ext>`, so anything else is refused rather
 /// than passed along.
-fn is_image_path(path: &str) -> bool {
+///
+/// Public because `mediagram_core::credits::portraits` checks a `profile`
+/// path read out of a possibly-foreign channel snapshot the same way, before
+/// it ever reaches a URL.
+pub fn is_image_path(path: &str) -> bool {
     let Some(rest) = path.strip_prefix('/') else {
         return false;
     };

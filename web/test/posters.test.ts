@@ -168,12 +168,14 @@ describe("a title's backdrop", () => {
 
   test("backdrops beside the posters are not counted as posters", () => {
     expect(new PosterStore(withPosters("tmdb-movie-5.jpg", "tmdb-movie-5-bg.jpg")).count()).toBe(1);
+    expect(new PosterStore(withPosters("tmdb-movie-5.jpg", "tmdb-person-2387.jpg")).count()).toBe(1);
   });
 
   test("backdrop keys follow the uploader's rule and nothing looser", () => {
     expect(backdropKeyFor("tmdb-movie-5")).toBe("tmdb-movie-5-bg");
     expect(backdropKeyFor(null)).toBeNull();
     expect(posterKeyIsValid("tmdb-tv-7-bg")).toBe(true);
+    expect(posterKeyIsValid("tmdb-person-2387")).toBe(true);
     for (const bad of ["tmdb-tv-7-s2-bg", "tmdb-tv-7-bg-s2", "tmdb-tv-7-BG", "tmdb-tv-7-bgx"]) {
       expect(posterKeyIsValid(bad)).toBe(false);
     }

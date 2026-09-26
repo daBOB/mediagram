@@ -14,7 +14,6 @@ import { watchedFraction } from "../resume-point.js";
 import { firstItemOf } from "../library.js";
 import { offlineBadge, transcodeBadge } from "./set-badge.js";
 import { GRID, LIST } from "./shelf-mode.js";
-import { seasonPlate } from "./season-wall.js";
 
 /**
  * `strip` lays plates out as one row that scrolls sideways, as the home page
@@ -104,30 +103,6 @@ export function emptyState(section, { kids = false } = {}) {
   if (section === "tutorials") p.append("Upload a course with "), p.append(el("code", null, "mediagram add-course <folder>"));
   p.append(".");
   return p;
-}
-
-/**
- * A show's seasons, as a wall. A season is ticked once every episode in it
- * is, which is the only sense in which a season is watched.
- * @param {Division[]} divisions
- * @param {(title: string) => void} onOpen
- */
-export function seasonGrid(divisions, onOpen) {
-  const grid = container(GRID);
-  for (const division of divisions) {
-    const { name, meta, poster } = seasonPlate(division);
-    grid.append(
-      card({
-        name,
-        meta,
-        poster,
-        initials: initialsOf(name),
-        watched: division.items.length > 0 && division.items.every((set) => isWatched(set.setId)),
-        onClick: () => onOpen(division.title),
-      }),
-    );
-  }
-  return grid;
 }
 
 /**
