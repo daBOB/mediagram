@@ -11,6 +11,7 @@ import model.WatchSnapshot
 import ui.FrameResolution
 import ui.LibraryPositions
 import ui.resolveFrame
+import ui.tv.catalog.TvCatalogExtras
 import ui.tv.catalog.TvGenre
 import ui.tv.catalog.TvList
 import ui.tv.catalog.TvPlayAllKey
@@ -19,7 +20,9 @@ import ui.tv.setup.TvLoadingIndicator
 
 /**
  * Search, over whatever it was opened from. A hit plays straight away, as
- * on the phone, and Back from the player lands on the row that played.
+ * on the phone, and Back from the player lands on the row that played. A
+ * matched show, a person or a collection destination each open their own
+ * page instead, over search, the same way a title's genre link does.
  */
 @Composable
 internal fun TvSearchBranch(
@@ -27,6 +30,7 @@ internal fun TvSearchBranch(
     catalogState: CatalogUiState,
     watch: WatchSnapshot,
     restore: TvRestoreKeys,
+    extras: TvCatalogExtras,
     leave: () -> Unit,
 ) {
     val here = at.depth
@@ -41,6 +45,24 @@ internal fun TvSearchBranch(
             restore.opened(here, setId)
             at.openPlayer(setId)
         },
+        onOpenCollection = { key ->
+            restore.opened(here, key)
+            at.openCollection(key)
+        },
+        onOpenPerson = { personId ->
+            restore.opened(here, personId.toString())
+            at.openPerson(personId.toString())
+        },
+        onOpenFranchise = { id ->
+            restore.opened(here, id.toString())
+            at.openFranchise(id.toString())
+        },
+        onOpenList = { id ->
+            restore.opened(here, id)
+            at.openList(id)
+        },
+        shouldRequestPortrait = extras::shouldRequestPortrait,
+        fetchPortrait = extras::fetchPortrait,
     )
 }
 

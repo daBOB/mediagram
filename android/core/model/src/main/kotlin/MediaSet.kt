@@ -80,6 +80,17 @@ data class MediaSet(
     val rating: Double? = null,
     /** The provider's popularity figure, for the trending feature. An episode carries its show's. */
     val popularity: Double? = null,
+    /**
+     * TMDB's `belongs_to_collection` id for a film, or `null` for a title
+     * with none. An episode carries `null`: a show is not a TMDB collection.
+     */
+    val collectionId: Long? = null,
+    /** The collection's own name, alongside [collectionId]; `null` when it is. */
+    val collectionName: String? = null,
+    /** TMDB's kind for a show, e.g. `"scripted"`, `"documentary"`; `null` when unknown. */
+    val seriesType: String? = null,
+    /** TMDB's status for a show, e.g. `"Ended"`, `"Returning Series"`; `null` when unknown. */
+    val showStatus: String? = null,
 )
 
 enum class Kind {

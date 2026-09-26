@@ -13,7 +13,9 @@ import data.CoreClient
 import data.DefaultWatchStateRepository
 import data.InMemoryCoreStorage
 import data.LibraryUpdateCoordinator
+import data.PortraitRequestLog
 import data.StoredCoreProvider
+import designsystem.InMemoryAppearanceSettings
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -22,6 +24,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import model.MediaSet
 import model.Profile
+import model.TitleCredits
 import model.WatchSnapshot
 import playback.CacheOccupancy
 import playback.CacheVolume
@@ -31,6 +34,7 @@ import player.PlayerViewModel
 import settings.InMemoryLibrarySettings
 import settings.InMemoryTelegramSettings
 import settings.InMemoryTmdbSettings
+import setup.AppearanceViewModel
 import setup.Libraries
 import setup.SettingsCompletion
 import setup.SettingsUiState
@@ -44,6 +48,7 @@ import system.LanCacheUiState
 import system.LanCacheViewModel
 import system.SystemUiState
 import system.SystemViewModel
+import ui.tv.catalog.TvCatalogExtras
 import ui.tv.player.TvPlayerFixture
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SearchHit
@@ -98,6 +103,8 @@ internal class TvAppFixture(
     private val player: PlayerViewModel
     val settings = mockk<SettingsViewModel>(relaxed = true)
     private val system = mockk<SystemViewModel>(relaxed = true)
+    /** Exposed so a test can restub a single call — `searchPeople`, for a grouped-search test naming a person the query matches. */
+    val repository = mockk<CatalogRepository>()
     val cacheBudget = mockk<CacheBudgetViewModel>(relaxed = true)
     val lanCache = mockk<LanCacheViewModel>(relaxed = true)
     val lanCacheState =
@@ -145,7 +152,6 @@ internal class TvAppFixture(
         login = LoginViewModel(provider, dispatcher)
         val viewer = FakeWatchStateRepository(profiles, chosenProfileId, watch)
         profile = ProfileViewModel(viewer, NoopWatchSync)
-        val repository = mockk<CatalogRepository>()
         coEvery { repository.refresh() } returns Result.success(sets.size)
         coEvery { repository.sets() } returns sets
         coEvery { repository.titleInfo(any()) } returns null
@@ -154,6 +160,19 @@ internal class TvAppFixture(
             val query = firstArg<String>()
             sets.filter { it.title.contains(query, ignoreCase = true) }.map { SearchHit(setId = it.setId, matched = "title", excerpt = null) }
         }
+        // SearchViewModel now asks for people alongside hits in the same
+        // round (phase 2's search grouping); the television screen does not
+        // read them yet (phase 6 redesigns it), but the strict mock still
+        // has to answer the call or every search in this fixture fails.
+        coEvery { repository.searchPeople(any()) } returns emptyList()
+        // The five new lookups `TvCatalogExtras` forwards straight to the
+        // repository (phase 6's own title tabs, person and franchise pages) —
+        // this mock is strict, so every one this fixture's walk can reach
+        // needs its own answer, the same reason `searchPeople` above does.
+        coEvery { repository.titleCredits(any()) } returns TitleCredits.Empty
+        coEvery { repository.person(any()) } returns null
+        coEvery { repository.franchises() } returns emptyList()
+        coEvery { repository.fetchPortrait(any()) } returns null
         val enrichment = CatalogEnrichmentFetcher(provider, InMemoryTmdbSettings())
         catalog =
             CatalogViewModel(
@@ -229,6 +248,15 @@ internal class TvAppFixture(
                 SystemViewModel::class.java to system,
                 CacheBudgetViewModel::class.java to cacheBudget,
                 LanCacheViewModel::class.java to lanCache,
+                // TvApp's TvTheme and TvSettingsScreen each resolve an
+                // AppearanceViewModel through hiltViewModel(), the same reason
+                // every other entry in this map exists (see the comment above
+                // login/profile/etc.).
+                AppearanceViewModel::class.java to AppearanceViewModel(InMemoryAppearanceSettings()),
+                // TvLibrary resolves TvCatalogExtras through hiltViewModel()
+                // for the same reason every entry above exists — see that
+                // comment.
+                TvCatalogExtras::class.java to TvCatalogExtras(repository, PortraitRequestLog()),
             )
         val held =
             ViewModelProvider(

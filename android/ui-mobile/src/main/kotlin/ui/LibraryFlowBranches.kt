@@ -1,31 +1,40 @@
 package ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.setValue
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import catalog.BrowseViewModel
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.Destination
 import catalog.MenuScreen
+import catalog.Shelf
+import catalog.firstItemOf
 import catalog.mediaSet
 import catalog.runFor
 import system.FetchUiState
 import system.FetchViewModel
-import ui.player.PlayerScreen
-import ui.system.SystemScreen
-import ui.settings.TmdbKeyScreen
-import ui.settings.SettingsScreen
-import ui.settings.CacheSection
-import ui.catalog.SearchBranch
-import ui.catalog.GenreBranch
-import ui.catalog.TitleDetailScreen
-import ui.catalog.rememberTitleInfo
-import ui.catalog.SeasonScreen
-import ui.catalog.CollectionScreen
-import ui.catalog.ListScreen
 import ui.catalog.CatalogScreen
-import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import ui.catalog.CollectionScreen
+import ui.catalog.GenreBranch
+import ui.catalog.ListScreen
+import ui.catalog.SearchBranch
+import ui.catalog.SeasonScreen
+import ui.catalog.TitleDetailScreen
+import ui.catalog.posterColumnsFor
+import ui.catalog.rememberTitleInfo
+import ui.player.PlayerScreen
+import ui.settings.CacheSection
+import ui.settings.SettingsScreen
+import ui.settings.TmdbKeyScreen
+import ui.system.SystemScreen
 
 /**
  * The library's own screens, one for each [FrameKind] — dispatched on
@@ -50,6 +59,21 @@ internal fun LibraryBranches(
     // far down — outlives a title, collection or the player opened over them,
     // so coming back finds the shelf as it was left, as the web's back button does.
     val shelvesState = rememberSaveableStateHolder()
+    val columns = posterColumnsFor(currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass)
+
+    // Which of catalogTabsOf's full index space the shelves screen shows —
+    // lifted up here (rather than kept inside CatalogScreen) so the
+    // overflow menu's own My List/Continue watching utilities can land on
+    // it from anywhere, the same way the web's rail-nav can. See
+    // [BrowseActions].
+    var chosenTab by rememberSaveable { mutableIntStateOf(0) }
+    val shelvesCount = (catalogState as? CatalogUiState.Ready)?.shelves?.size ?: 0
+    val browse = BrowseActions(
+        onMyList = { at.toCatalog(); chosenTab = shelvesCount + 2 },
+        onContinueWatching = { at.toCatalog(); chosenTab = shelvesCount + 1 },
+        onLatest = at::openLatest,
+        onGenres = at::openGenresIndex,
+    )
 
     when (at.top) {
         // The player gets the whole window; a film is the one thing here
@@ -67,7 +91,7 @@ internal fun LibraryBranches(
 
         FrameKind.MENU -> {
             val menuScreen = at.menuScreen ?: return
-            LibraryBranch(menuScreen.destination, menuActions, profileBar, at, at::pop) {
+            LibraryBranch(menuScreen.destination, menuActions, profileBar, browse, at, at::pop) {
                 when (menuScreen) {
                     MenuScreen.System -> SystemScreen()
                     MenuScreen.TmdbKey -> TmdbKeyScreen(hasKey = fetchState.hasKey, onSave = fetchViewModel::saveKey)
@@ -79,20 +103,25 @@ internal fun LibraryBranches(
 
         FrameKind.SEARCH -> {
             val search = at.search ?: return
-            LibraryBranch(Destination.Search, menuActions, profileBar, at, at::pop) {
+            LibraryBranch(Destination.Search, menuActions, profileBar, browse, at, at::pop) {
                 SearchBranch(
                     query = search,
                     catalogState = catalogState,
                     watch = resolved.watch,
                     onQueryChange = { at.typeSearch(it) },
                     onPlay = at::openPlayer,
+                    onOpenTitle = at::openTitle,
+                    onOpenCollection = at::openCollection,
+                    onOpenPerson = { id -> at.openPerson(id.toString()) },
+                    onOpenFranchise = { id -> at.openFranchise(id.toString()) },
+                    onOpenList = at::openList,
                 )
             }
         }
 
         FrameKind.GENRE -> {
             val genre = at.genre ?: return
-            LibraryBranch(Destination.Genre(genre), menuActions, profileBar, at, at::pop) {
+            LibraryBranch(Destination.Genre(genre), menuActions, profileBar, browse, at, at::pop) {
                 GenreBranch(
                     name = genre,
                     catalogState = catalogState,
@@ -103,8 +132,9 @@ internal fun LibraryBranches(
             }
         }
 
-        FrameKind.TITLE -> ResolvedBranch(resolved.title, catalogState, Destination.Title(LOADING), menuActions, profileBar, at, { Destination.Title(it.title) }) { title ->
+        FrameKind.TITLE -> ResolvedBranch(resolved.title, catalogState, Destination.Title(LOADING), menuActions, profileBar, browse, at, { Destination.Title(it.title) }) { title ->
             val kidsProfile by catalogViewModel.kidsProfile.collectAsStateWithLifecycle()
+            val browseViewModel: BrowseViewModel = hiltViewModel()
             TitleDetailScreen(
                 set = title,
                 info = rememberTitleInfo(title.posterKey, catalogViewModel::titleInfo),
@@ -119,14 +149,30 @@ internal fun LibraryBranches(
                             catalogViewModel.setEditorsChoice(title.setId, resolved.watch.editorsChoice != title.setId)
                         }
                     },
+                watch = resolved.watch,
+                shelves = catalogState.shelvesOrEmpty(),
+                onOpenTitle = at::openTitle,
+                onOpenFranchise = { id -> at.openFranchise(id.toString()) },
+                onOpenPerson = { id -> at.openPerson(id.toString()) },
+                onToggleWatchlist = { catalogViewModel.setWatchlisted(title.setId, title.setId !in resolved.watch.watchlist) },
+                titleCredits = catalogViewModel::titleCredits,
+                fetchPortrait = browseViewModel::fetchPortrait,
+                shouldRequestPortrait = browseViewModel::shouldRequestPortrait,
             )
         }
 
-        FrameKind.SEASON -> ResolvedBranch(resolved.season, catalogState, Destination.Season(LOADING), menuActions, profileBar, at, { Destination.Season(it.title) }) { season ->
+        FrameKind.SEASON -> ResolvedBranch(resolved.season, catalogState, Destination.Season(LOADING), menuActions, profileBar, browse, at, { Destination.Season(it.title) }) { season ->
             SeasonScreen(division = season, watch = resolved.watch, heldIds = catalogState.heldIdsOrEmpty(), onOpenTitle = at::openTitle)
         }
 
-        FrameKind.COLLECTION -> ResolvedBranch(resolved.collection, catalogState, Destination.Collection(LOADING), menuActions, profileBar, at, { Destination.Collection(it.name) }) { collection ->
+        FrameKind.COLLECTION -> ResolvedBranch(resolved.collection, catalogState, Destination.Collection(LOADING), menuActions, profileBar, browse, at, { Destination.Collection(it.name) }) { collection ->
+            val kidsProfile by catalogViewModel.kidsProfile.collectAsStateWithLifecycle()
+            val browseViewModel: BrowseViewModel = hiltViewModel()
+            // A show's first episode stands for the whole show, the same way
+            // its own page's pills already key "My List"/editor's choice off
+            // it (see `CollectionScreen`'s own `firstEpisode`); a course has
+            // none of these controls, so a null first episode never matters here.
+            val firstEpisodeId = firstItemOf(collection.divisions)?.setId
             CollectionScreen(
                 collection = collection,
                 info = rememberTitleInfo(collection.posterKey, catalogViewModel::titleInfo),
@@ -136,13 +182,32 @@ internal fun LibraryBranches(
                 onOpenTitle = at::openTitle,
                 onOpenSeason = { at.openSeason(it.title) },
                 onOpenGenre = at::openGenre,
+                shelves = catalogState.shelvesOrEmpty(),
+                onOpenCollection = at::openCollection,
+                onOpenPerson = { id -> at.openPerson(id.toString()) },
+                onPlay = at::openPlayer,
+                editorsChoice = resolved.watch.editorsChoice,
+                onToggleEditorsChoice =
+                    if (kidsProfile || firstEpisodeId == null) {
+                        null
+                    } else {
+                        { catalogViewModel.setEditorsChoice(firstEpisodeId, resolved.watch.editorsChoice != firstEpisodeId) }
+                    },
+                onToggleWatchlist = {
+                    firstEpisodeId?.let { catalogViewModel.setWatchlisted(it, it !in resolved.watch.watchlist) }
+                },
+                titleCredits = catalogViewModel::titleCredits,
+                fetchPortrait = browseViewModel::fetchPortrait,
+                shouldRequestPortrait = browseViewModel::shouldRequestPortrait,
+                season = at.collectionSeason,
+                onSelectSeason = at::setCollectionSeason,
             )
         }
 
         // A hand-built list, opened from the Collections tab — a peer of
         // the collection branch above rather than something under it: a
         // list is never reached through the catalog shelves.
-        FrameKind.LIST -> ResolvedBranch(resolved.list, catalogState, Destination.List(LOADING), menuActions, profileBar, at, { Destination.List(it.name) }) { list ->
+        FrameKind.LIST -> ResolvedBranch(resolved.list, catalogState, Destination.List(LOADING), menuActions, profileBar, browse, at, { Destination.List(it.name) }) { list ->
             val sets = list.items.mapNotNull(catalogState::mediaSet)
             val ids = sets.map { it.setId }
             // Every row plays into the list, not just from where it was
@@ -160,6 +225,12 @@ internal fun LibraryBranches(
             )
         }
 
+        FrameKind.PERSON -> PersonFrame(at, catalogState, resolved.watch, menuActions, profileBar, browse)
+        FrameKind.FRANCHISE -> FranchiseFrame(at, catalogState, resolved.watch, columns, menuActions, profileBar, browse)
+        FrameKind.GENRES -> GenresFrame(at, catalogState, columns, menuActions, profileBar, browse)
+        FrameKind.LATEST -> LatestFrame(at, catalogState, resolved.watch, columns, menuActions, profileBar, browse)
+        FrameKind.MOVIES_PAGE -> MoviesPageFrame(at, catalogState, catalogViewModel, resolved.watch, columns, menuActions, profileBar, browse)
+
         // Nothing open: the shelves.
         null -> LibraryScaffold(
             destination = Destination.Catalog,
@@ -169,15 +240,23 @@ internal fun LibraryBranches(
             onBack = {},
             menu = menuActions,
             profile = profileBar,
+            browse = browse,
             onSearch = at::openSearch,
         ) {
             shelvesState.SaveableStateProvider(SHELVES_KEY) { CatalogScreen(
                 state = catalogState,
                 fetching = fetchState.running,
+                chosenTab = chosenTab,
+                onTabChange = { chosenTab = it },
                 onOpenTitle = at::openTitle,
                 onOpenCollection = at::openCollection,
                 onOpenList = at::openList,
                 onCreateList = catalogViewModel::createList,
+                onOpenGenre = at::openGenre,
+                onOpenGenresIndex = at::openGenresIndex,
+                onOpenLatest = at::openLatest,
+                onOpenMoviesPage = at::openMoviesPage,
+                onOpenFranchise = { id -> at.openFranchise(id.toString()) },
                 onPlayRun = at::openPlayer,
                 onFinish = { catalogViewModel.markFinished(it) },
                 titleInfo = catalogViewModel::titleInfo,
@@ -206,6 +285,7 @@ internal fun LibraryBranch(
     destination: Destination,
     menu: MenuActions,
     profile: ProfileBarState,
+    browse: BrowseActions,
     at: LibraryPositions,
     onLeave: () -> Unit,
     content: @Composable () -> Unit,
@@ -216,10 +296,14 @@ internal fun LibraryBranch(
         onBack = onLeave,
         menu = menu,
         profile = profile,
+        browse = browse,
         onSearch = at::openSearch,
         content = content,
     )
 }
 
 /** What this device holds in full, or nothing while the shelves are still loading. */
-private fun CatalogUiState.heldIdsOrEmpty(): Set<String> = (this as? CatalogUiState.Ready)?.heldIds.orEmpty()
+internal fun CatalogUiState.heldIdsOrEmpty(): Set<String> = (this as? CatalogUiState.Ready)?.heldIds.orEmpty()
+
+/** The shelves a title or a collection page ranks Similar/a franchise link against, or nothing while still loading. */
+internal fun CatalogUiState.shelvesOrEmpty(): List<Shelf> = (this as? CatalogUiState.Ready)?.shelves.orEmpty()

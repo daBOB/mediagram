@@ -55,13 +55,21 @@ class TvCatalogScreenStateTest {
         controller = null
     }
 
+    /**
+     * `mastheadSplitOf`'s own split (phase 3, wired here): the masthead's
+     * tab row is departments only — Home, the shelves, Collections — and
+     * Continue/Watchlist are no longer drawn there at all, reachable
+     * instead from the overflow menu (`TvMenuTest` covers reaching them).
+     */
     @Test
-    fun theMastheadCarriesHomeTheShelvesTheThreeKeptEntriesAndTheViewer() {
+    fun theMastheadCarriesHomeTheShelvesCollectionsAndTheViewerButNotContinueOrWatchlist() {
         show(ready(films(2) + courses(1)))
 
-        for (entry in listOf("Home", "Movies", "Tutorials", "Continue", "Watchlist", "Collections", "Ada")) {
+        for (entry in listOf("Home", "Movies", "Tutorials", "Collections", "Ada")) {
             compose.onAllNodesWithText(entry).fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "missing $entry" } }
         }
+        compose.onNodeWithText("Continue").assertDoesNotExist()
+        compose.onNodeWithText("Watchlist").assertDoesNotExist()
     }
 
     @Test
@@ -74,11 +82,12 @@ class TvCatalogScreenStateTest {
         assertEquals(1, reopened)
     }
 
+    /** The magazine layout's own "Recently added" replaces the plain grid's "Latest films" on Home — see `TvHome`'s own doc. */
     @Test
     fun aHomeRowOfTenShowsSixPlatesAndSeeAll() {
         show(ready(films(10)))
 
-        compose.onNodeWithText("Latest films · 10").assertExists()
+        compose.onNodeWithText("Recently added · 10").assertExists()
         // Newest first: films 9 down to 4 are on the row, 3 down to 0 are not.
         (4..9).forEach { compose.onNodeWithText("Film $it").assertExists() }
         (0..3).forEach { compose.onNodeWithText("Film $it").assertDoesNotExist() }
@@ -91,8 +100,40 @@ class TvCatalogScreenStateTest {
 
         compose.onNodeWithText("See all").performSemanticsAction(SemanticsActions.OnClick)
 
-        compose.onNodeWithText("Latest films · 10").assertDoesNotExist()
-        compose.onNodeWithText("Film 0").assertExists()
+        compose.onNodeWithText("Recently added · 10").assertDoesNotExist()
+        compose.onAllNodesWithText("Film 0").fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "Film 0 missing from the Movies shelf" } }
+    }
+
+    /** [catalog.EditorialPicks]' own cover and features draw on Home once the library is large enough to feature something. */
+    @Test
+    fun aLibraryWithBackdropsShowsTheCoverStoryAndFeatureCards() {
+        val featured = (0 until 4).map { set("film-$it", Kind.MOVIE, "Film $it", addedAt = it.toLong()).copy(backdropPath = "/bd$it", posterPath = "/p$it") }
+        show(ready(featured))
+
+        compose.onAllNodesWithText("Cover story", substring = true).fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "no cover story" } }
+        compose.onAllNodesWithText("▶ Watch now").fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "no Watch now on the cover" } }
+    }
+
+    /** Past a dozen films, Movies gets its own department front page instead of the plain wall. */
+    @Test
+    fun aLargeMoviesShelfGetsItsOwnDepartmentFrontPage() {
+        val films = (0 until 20).map { set("film-$it", Kind.MOVIE, "Film $it", addedAt = it.toLong()) }
+        show(ready(films))
+
+        compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText("All 20 films").assertExists()
+    }
+
+    /** Collections is a department tab now, not a kept tab — franchises beside the household's own lists. */
+    @Test
+    fun collectionsShowsFranchisesAndLists() {
+        val a1 = set("a1", Kind.MOVIE, "Adventure One", addedAt = 0).copy(collectionId = 9L, collectionName = "Adventure Saga")
+        val a2 = set("a2", Kind.MOVIE, "Adventure Two", addedAt = 1).copy(collectionId = 9L, collectionName = "Adventure Saga")
+        show(ready(listOf(a1, a2)))
+
+        compose.onNodeWithText("Collections").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText("Adventure Saga").assertExists()
+        compose.onNodeWithText("Your lists").assertExists()
     }
 
     /** The phone's progress bar, as the words its Update item waits with. */
@@ -132,7 +173,10 @@ class TvCatalogScreenStateTest {
         show(ready(films(1) + courses(1)), onOpenTitle = { title = it }, onOpenCollection = { collection = it })
 
         compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.OnClick)
-        compose.onNodeWithText("Film 0").performSemanticsAction(SemanticsActions.OnClick)
+        // The one film sits under both Featured and Recently added on its own
+        // department front page — either presses the same title, so the first
+        // found is as good as any.
+        compose.onAllNodesWithText("Film 0")[0].performSemanticsAction(SemanticsActions.OnClick)
         compose.onNodeWithText("Tutorials").performSemanticsAction(SemanticsActions.OnClick)
         compose.onNodeWithText("Course 0").performSemanticsAction(SemanticsActions.OnClick)
 
@@ -181,7 +225,10 @@ class TvCatalogScreenStateTest {
         show(ready(listOf(set("film-0", Kind.MOVIE, "A Film", addedAt = 0, year = 1999, durationSecs = 5_400)) + courses(1)))
 
         compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.OnClick)
-        compose.onNodeWithText(factsLine(1999, 5_400)!!).assertExists()
+        // Duplicated across Featured and Recently added on the one-film
+        // department front page — "it is offered" is what this checks, not
+        // "exactly once".
+        compose.onAllNodesWithText(factsLine(1999, 5_400)!!).fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "caption missing" } }
         compose.onNodeWithText("Tutorials").performSemanticsAction(SemanticsActions.OnClick)
         compose.onNodeWithText("1 chapter").assertExists()
     }

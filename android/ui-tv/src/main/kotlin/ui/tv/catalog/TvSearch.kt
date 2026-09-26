@@ -17,9 +17,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import catalog.CatalogUiState
+import catalog.Entry
+import catalog.SearchDestination
+import catalog.SearchFilter
 import catalog.SearchUiState
 import catalog.SearchViewModel
-import catalog.searchRowsOf
+import catalog.franchisesIn
+import catalog.searchGroupsOf
 import designsystem.Overscan
 import model.WatchSnapshot
 import ui.catalog.searchVisitState
@@ -41,6 +45,12 @@ internal fun TvSearch(
     restoreKey: String?,
     onQueryChange: (String) -> Unit,
     onPlay: (setId: String) -> Unit,
+    onOpenCollection: (key: String) -> Unit = {},
+    onOpenPerson: (personId: Long) -> Unit = {},
+    onOpenFranchise: (id: Long) -> Unit = {},
+    onOpenList: (id: String) -> Unit = {},
+    shouldRequestPortrait: (Long) -> Boolean = { false },
+    fetchPortrait: suspend (Long) -> String? = { null },
 ) {
     val viewModel: SearchViewModel = hiltViewModel()
     TvSearchScreen(
@@ -54,16 +64,22 @@ internal fun TvSearch(
             viewModel.setQuery(text)
         },
         onPlay = onPlay,
+        onOpenCollection = onOpenCollection,
+        onOpenPerson = onOpenPerson,
+        onOpenFranchise = onOpenFranchise,
+        onOpenList = onOpenList,
+        shouldRequestPortrait = shouldRequestPortrait,
+        fetchPortrait = fetchPortrait,
     )
 }
 
 /**
  * Search on a television — the phone's `SearchScreen` and the web's
- * `search-view.js`: a field, typed through the system keyboard, over one
- * flat ranked list of rows, where the best answer is first. Rows rather
- * than plates, as the phone and the web draw them: a hundred lessons named
- * "Definition" are told apart by where they sit and why they matched, which
- * a poster cannot say.
+ * `search-view.js`: a field, typed through the system keyboard, over the
+ * query grouped the way [catalog.searchGroupsOf] groups it — films, matched
+ * shows, episodes, lessons, people (only those this profile can see) and
+ * collections — each its own section, with a filter chip row over them once
+ * there is more than one kind to narrow to.
  *
  * The remote lands in the field when nothing has been typed, so the
  * keyboard is up the moment search opens. Coming back with a query —
@@ -84,15 +100,40 @@ internal fun TvSearchScreen(
     restoreKey: String?,
     onQueryChange: (String) -> Unit,
     onPlay: (setId: String) -> Unit,
+    onOpenCollection: (key: String) -> Unit = {},
+    onOpenPerson: (personId: Long) -> Unit = {},
+    onOpenFranchise: (id: Long) -> Unit = {},
+    onOpenList: (id: String) -> Unit = {},
+    shouldRequestPortrait: (Long) -> Boolean = { false },
+    fetchPortrait: suspend (Long) -> String? = { null },
 ) {
     var text by rememberSaveable { mutableStateOf(query) }
     val field = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     val catalogReady = catalogState is CatalogUiState.Ready
-    val rows =
-        remember(state, catalogState) {
-            if (state is SearchUiState.Ready && catalogReady) searchRowsOf(state.hits, catalogState) else emptyList()
+    val movies =
+        remember(catalogState) {
+            (catalogState as? CatalogUiState.Ready)?.shelves?.firstOrNull { it.title == "Movies" }
+                ?.entries.orEmpty().filterIsInstance<Entry.Film>().map { it.set }
+                ?: emptyList()
         }
+    val franchises = remember(movies) { franchisesIn(movies) }
+    val groups =
+        remember(state, catalogState, text, franchises, watch.collections) {
+            if (state is SearchUiState.Ready && catalogReady) {
+                searchGroupsOf(text, catalogState, state.hits, state.people, franchises, watch.collections)
+            } else {
+                null
+            }
+        }
+    var filter by rememberSaveable { mutableStateOf(SearchFilter.ALL) }
+    // A narrower query can drop the kind a viewer had chosen — back to All
+    // rather than a filter chip that no longer exists to switch away from.
+    LaunchedEffect(groups?.filters) {
+        if (groups != null && filter != SearchFilter.ALL && groups.filters.none { it.first == filter }) filter = SearchFilter.ALL
+    }
+    val sections = remember(groups, filter) { groups?.let { sectionsFor(it, filter) }.orEmpty() }
+    val entries = remember(sections) { sections.flatMap { it.entries } }
     var ask by remember { mutableStateOf<RowAsk?>(null) }
     // Whether this visit has put the remote somewhere yet — at once for an
     // empty field, and once the answer is in when it arrives with a query.
@@ -103,12 +144,17 @@ internal fun TvSearchScreen(
     LaunchedEffect(answered) {
         if (answered && !arrived) {
             arrived = true
-            if (rows.isEmpty()) {
+            if (entries.isEmpty()) {
                 field.requestFocus()
             } else {
-                ask = RowAsk(rows.indexOfFirst { it.set.setId == restoreKey }.coerceAtLeast(0))
+                ask = RowAsk(entries.indexOfFirst { keyOf(it) == restoreKey }.coerceAtLeast(0))
             }
         }
+    }
+
+    val onOpenDestination: (SearchDestination) -> Unit = { destination ->
+        val franchiseId = destination.href.removePrefix("tmdb-").toLongOrNull()
+        if (destination.href.startsWith("tmdb-") && franchiseId != null) onOpenFranchise(franchiseId) else onOpenList(destination.href)
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(start = Overscan.horizontal, end = Overscan.horizontal, top = Overscan.vertical)) {
@@ -120,22 +166,39 @@ internal fun TvSearchScreen(
             },
             onAction = {
                 keyboard?.hide()
-                if (rows.isNotEmpty()) ask = RowAsk(0)
+                if (entries.isNotEmpty()) ask = RowAsk(0)
             },
             focusRequester = field,
             fieldModifier = Modifier.testTag(TvSearchFieldTag),
             placeholder = "Search titles and summaries",
             imeAction = ImeAction.Search,
         )
-        TvSearchResults(state, rows, catalogReady, watch, ask, onAnswered = { ask = null }, onPlay = onPlay)
+        TvSearchResults(
+            state = state,
+            sections = sections,
+            filters = groups?.filters.orEmpty(),
+            filter = filter,
+            onFilterChange = { filter = it },
+            catalogReady = catalogReady,
+            watch = watch,
+            ask = ask,
+            onAnswered = { ask = null },
+            onPlay = onPlay,
+            onOpenCollection = onOpenCollection,
+            onOpenPerson = onOpenPerson,
+            onOpenDestination = onOpenDestination,
+            shouldRequestPortrait = shouldRequestPortrait,
+            fetchPortrait = fetchPortrait,
+        )
     }
 }
 
 /**
- * One request for a row to take the remote. A fresh object each time, so
- * asking for the same row twice — Search pressed again on the same answer —
- * is still a new request. Dropped the moment it is answered: the rows leave
- * composition whenever an answer has none, and a request still standing
- * when they came back would pull the remote out of the field mid-typing.
+ * One request for an entry to take the remote. A fresh object each time, so
+ * asking for the same entry twice — Search pressed again on the same answer —
+ * is still a new request. Dropped the moment it is answered: the entries
+ * leave composition whenever an answer has none, and a request still
+ * standing when they came back would pull the remote out of the field
+ * mid-typing.
  */
 internal class RowAsk(val index: Int)

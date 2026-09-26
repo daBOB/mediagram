@@ -15,6 +15,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
 import designsystem.Overscan
+import setup.AppearanceViewModel
 import setup.SetupUiState
 import setup.SetupViewModel
 import ui.tv.profile.TvProfileGate
@@ -42,7 +43,9 @@ import ui.tv.setup.TvSetupStep
  */
 @Composable
 fun TvApp() {
-    TvTheme {
+    val appearanceViewModel: AppearanceViewModel = hiltViewModel()
+    val appearance by appearanceViewModel.state.collectAsStateWithLifecycle()
+    TvTheme(accent = appearance.accent) {
         val setupViewModel: SetupViewModel = hiltViewModel()
         val setupState by setupViewModel.state.collectAsStateWithLifecycle()
 

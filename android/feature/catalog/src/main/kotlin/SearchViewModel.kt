@@ -89,9 +89,10 @@ class SearchViewModel @Inject constructor(
         val started = System.nanoTime()
         return try {
             val hits = repository.search(text)
+            val people = repository.searchPeople(text)
             val elapsedMs = (System.nanoTime() - started) / 1_000_000
-            Log.d(TAG, "\"$text\" ranked ${hits.size} hits in ${elapsedMs}ms")
-            SearchUiState.Ready(hits)
+            Log.d(TAG, "\"$text\" ranked ${hits.size} hits and ${people.size} people in ${elapsedMs}ms")
+            SearchUiState.Ready(hits, people)
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (error: Exception) {

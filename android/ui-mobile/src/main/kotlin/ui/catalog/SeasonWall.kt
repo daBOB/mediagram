@@ -1,98 +1,113 @@
 package ui.catalog
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import catalog.Division
 import catalog.Entry
-import catalog.SeasonPlate
-import catalog.firstItemOf
 import catalog.rowsOf
 import designsystem.Spacing
 import model.WatchSnapshot
-import model.ageLabel
-import uniffi.mediagram_core.TitleInfo
 
 /**
- * A show's seasons, one plate each, above the collection's own header.
+ * The Episodes tab on a show's own page: a season picker over a readable
+ * list of that season's episodes — a Compose port of `series-page.js`'s own
+ * `episodes()`, replacing the season-poster wall that used to be this
+ * screen's own front door. No picker at all for a single-season show, the
+ * same "nothing to pick from" gate the old wall followed.
  *
- * A plate's artwork falls back in three steps — its season's poster, then
- * the show's, then the initials [PosterCard] draws on its own — which is
- * why [seasonPoster] only ever supplies the first of those and leaves the
- * rest to the `?:` and to the card.
+ * A [LazyListScope] extension rather than its own scrollable composable: a
+ * show's episode list can run to a few hundred rows, and nesting a second
+ * lazily-scrolled list inside the series page's own would either crash on
+ * unbounded height or clip to whichever bound won. Its rows join the page's
+ * own [androidx.compose.foundation.lazy.LazyColumn] instead, the same way
+ * [items] already does for a course.
+ *
+ * [season]/[onSelectSeason] are the caller's own [androidx.compose.runtime.saveable.rememberSaveable]
+ * state rather than this function's own: the same season must still be
+ * shown once a watch-state update recomposes the whole series page, the
+ * finding this phase's tab work was asked to carry over to the season
+ * choice too.
  */
-@Composable
-internal fun SeasonWall(
+internal fun LazyListScope.seriesEpisodes(
     collection: Entry.Collection,
-    info: TitleInfo?,
-    plates: List<SeasonPlate>,
-    posterPath: suspend (key: String) -> String?,
-    onOpenSeason: (Division) -> Unit,
-    onOpenGenre: (String) -> Unit,
+    season: String?,
+    onSelectSeason: (String) -> Unit,
+    watch: WatchSnapshot,
+    heldIds: Set<String>,
+    onOpenTitle: (setId: String) -> Unit,
 ) {
-    val columns = posterColumnsFor(currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass)
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(Spacing.large),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
-        verticalArrangement = Arrangement.spacedBy(Spacing.medium),
-    ) {
-        item(key = "title", span = { GridItemSpan(maxLineSpan) }) {
+    val shown = collection.divisions.find { it.title == season } ?: collection.divisions.firstOrNull() ?: return
+    if (collection.divisions.size > 1) {
+        item(key = "season-picker") { SeasonPicker(collection.divisions, shown, onSelectSeason) }
+    }
+    val rows = rowsOf(listOf(shown))
+    val positions = watch.progress.associateBy { it.setId }
+    val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
+    items(rows, positions, watchedIds, heldIds, onOpenTitle)
+}
+
+@Composable
+private fun SeasonPicker(
+    divisions: List<Division>,
+    shown: Division,
+    onSelect: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Column(modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.small)) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(role = Role.Button) { expanded = true }
+                    .semantics { contentDescription = "Season: ${shown.title}" }
+                    .padding(vertical = Spacing.small),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
             Text(
-                text = collection.name,
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(bottom = Spacing.medium),
+                text = "${shown.title} · ${shown.items.size} ${if (shown.items.size == 1) "episode" else "episodes"}",
+                style = MaterialTheme.typography.titleMedium,
             )
+            Text(text = "▾", style = MaterialTheme.typography.titleMedium)
         }
-        // A show is rated as a show, so any episode speaks for it — the
-        // first, as `series-header.js` asks. A course has no rating.
-        val firstEpisode = firstItemOf(collection.divisions)
-        val age = firstEpisode?.ageLabel()
-        val genres = firstEpisode?.genres ?: emptyList()
-        if (info != null || collection.posterPath != null || age != null || genres.isNotEmpty()) {
-            item(key = "header", span = { GridItemSpan(maxLineSpan) }) {
-                TitleHeader(
-                    posterPath = collection.posterPath,
-                    title = collection.name,
-                    facts = age,
-                    info = info,
-                    genres = genres,
-                    onOpenGenre = onOpenGenre,
-                    modifier = Modifier.padding(bottom = Spacing.medium),
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            for (division in divisions) {
+                DropdownMenuItem(
+                    text = { Text("${division.title} · ${division.items.size} ${if (division.items.size == 1) "episode" else "episodes"}") },
+                    onClick = {
+                        expanded = false
+                        onSelect(division.title)
+                    },
                 )
             }
-        }
-        items(items = plates, key = { it.title }) { plate ->
-            val seasonPoster = rememberPosterPath(plate.posterKey, posterPath)
-            PosterCard(
-                posterPath = seasonPoster ?: collection.posterPath,
-                title = plate.title,
-                caption = plate.caption,
-                watched = plate.watched,
-                modifier = Modifier,
-                onClick = { onOpenSeason(plate.division) },
-            )
         }
     }
 }
 
 /**
  * One season's episodes, in the same rows [CollectionScreen] draws for a
- * whole show or course — a season is just the one division the wall's
- * plate stood for, so it is shown the same way.
+ * course — a season is just the one division a search result or another
+ * direct link may still open on its own, the same way it always has.
  */
 @Composable
 internal fun SeasonScreen(division: Division, watch: WatchSnapshot, heldIds: Set<String>, onOpenTitle: (setId: String) -> Unit) {

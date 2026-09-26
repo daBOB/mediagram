@@ -5,9 +5,17 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import model.Credit
+import model.FranchiseInfo
 import model.Kind
 import model.MediaSet
+import model.Person
+import model.PersonHit
+import model.TitleCredits
 import settings.LibrarySettings
+import uniffi.mediagram_core.CreditRecord
+import uniffi.mediagram_core.PeopleHitRecord
+import uniffi.mediagram_core.PersonRecord
 import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.TitleInfo
@@ -56,6 +64,25 @@ interface CatalogRepository {
      * `null` with nothing found, including a catalog not yet loaded.
      */
     suspend fun mediaSet(setId: String): MediaSet? = sets().find { it.setId == setId }
+
+    /**
+     * A title's cast and crew, or both empty for an index with no `credits`
+     * table (v8 and older) — not an error. Defaulted so a fake repository
+     * (`feature:player`'s among them) need not know this call exists.
+     */
+    suspend fun titleCredits(key: String): TitleCredits = TitleCredits.Empty
+
+    /** One person and the titles they are credited on, or `null` when nobody by this id is. */
+    suspend fun person(personId: Long): Person? = null
+
+    /** Every film franchise the index names, alphabetically. */
+    suspend fun franchises(): List<FranchiseInfo> = emptyList()
+
+    /** People whose name matches every word of [query], most-credited first. */
+    suspend fun searchPeople(query: String): List<PersonHit> = emptyList()
+
+    /** Downloads a person's portrait and answers its file's path, or `null` — see [CoreClient.fetchPortrait]. */
+    suspend fun fetchPortrait(personId: Long): String? = null
 }
 
 /**
@@ -197,8 +224,40 @@ class DefaultCatalogRepository(
             tagline = summary.tagline,
             rating = summary.rating,
             popularity = summary.popularity,
+            collectionId = summary.collectionId?.toLong(),
+            collectionName = summary.collectionName,
+            seriesType = summary.seriesType,
+            showStatus = summary.showStatus,
         )
     }
+
+    override suspend fun titleCredits(key: String): TitleCredits {
+        val core = coreProvider.awaitCore()
+        val record = core.titleCredits(key)
+        return TitleCredits(record.cast.map { it.toCredit(core) }, record.crew.map { it.toCredit(core) })
+    }
+
+    override suspend fun person(personId: Long): Person? {
+        val core = coreProvider.awaitCore()
+        val record: PersonRecord = core.person(personId) ?: return null
+        return Person(record.personId.toLong(), record.name, record.portraitKey?.let(core::posterPath), record.titleKeys)
+    }
+
+    override suspend fun franchises(): List<FranchiseInfo> =
+        coreProvider.awaitCore().franchises().map { FranchiseInfo(it.id.toLong(), it.name, it.overview) }
+
+    override suspend fun searchPeople(query: String): List<PersonHit> {
+        val core = coreProvider.awaitCore()
+        return core.searchPeople(query).map { it.toPersonHit(core) }
+    }
+
+    override suspend fun fetchPortrait(personId: Long): String? = coreProvider.awaitCore().fetchPortrait(personId)
+
+    private fun CreditRecord.toCredit(core: CoreClient): Credit =
+        Credit(personId.toLong(), name, role, portraitKey?.let(core::posterPath))
+
+    private fun PeopleHitRecord.toPersonHit(core: CoreClient): PersonHit =
+        PersonHit(personId.toLong(), name, portraitKey?.let(core::posterPath), titleKeys)
 
     private companion object {
         const val TAG = "catalog"

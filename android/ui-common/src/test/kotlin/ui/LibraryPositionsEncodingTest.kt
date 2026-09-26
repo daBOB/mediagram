@@ -49,4 +49,26 @@ class LibraryPositionsEncodingTest {
         assertEquals(FrameKind.SEARCH, at.top)
         assertEquals("abc", at.search)
     }
+
+    /**
+     * A stack a build before [FrameKind.PERSON] and its siblings wrote is
+     * still exactly the stack it was: encoding keys every frame by
+     * [FrameKind.name], never by its ordinal, so widening the enum after the
+     * fact — the whole point of this phase's own frames — never shifts what
+     * an already-saved token names.
+     */
+    @Test
+    fun aStackSavedBeforeTheNewFramesExistedRestoresUnchanged() {
+        val at = positions("COLLECTION\u001Fspartacus\u001ESEASON\u001FSeason 1\u001ETITLE\u001Fset-1")
+
+        assertEquals(FrameKind.TITLE, at.top)
+        assertEquals("set-1", at.titleId)
+        assertEquals("spartacus", at.collection)
+        assertEquals("Season 1", at.season)
+
+        at.pop()
+        assertEquals(FrameKind.SEASON, at.top)
+        at.pop()
+        assertEquals(FrameKind.COLLECTION, at.top)
+    }
 }

@@ -4,7 +4,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import model.Kind
 import settings.InMemoryLibrarySettings
+import uniffi.mediagram_core.CreditRecord
 import uniffi.mediagram_core.SearchHit
+import uniffi.mediagram_core.TitleCreditsRecord
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -129,5 +131,70 @@ class CatalogRepositoryTest {
         val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog(), dispatcher = Dispatchers.Unconfined)
 
         assertEquals(null, repo.mediaSet("nobody"))
+    }
+
+    /** A film's franchise rides in on the same four v9 columns `showStatus` and the rest do. */
+    @Test
+    fun aSetKeepsItsFranchiseAndSeriesFacts() = runTest {
+        val core = FakeCore(
+            sets = listOf(
+                summary(
+                    setId = "dune2",
+                    collectionId = 7,
+                    collectionName = "Dune Collection",
+                    showStatus = "Ended",
+                    seriesType = "Scripted",
+                ),
+            ),
+        )
+        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+
+        val set = repo.sets().single()
+        assertEquals(7L, set.collectionId)
+        assertEquals("Dune Collection", set.collectionName)
+        assertEquals("Ended", set.showStatus)
+        assertEquals("Scripted", set.seriesType)
+    }
+
+    /** A v8 index answers none of the four — `null` throughout, not a mapping failure. */
+    @Test
+    fun aSetFromAV8IndexHasNoFranchiseOrSeriesFacts() = runTest {
+        val core = FakeCore(sets = listOf(summary(setId = "plain")))
+        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+
+        val set = repo.sets().single()
+        assertEquals(null, set.collectionId)
+        assertEquals(null, set.collectionName)
+        assertEquals(null, set.showStatus)
+        assertEquals(null, set.seriesType)
+    }
+
+    @Test
+    fun creditsResolveEachPersonsPortraitAgainstTheDeviceStore() = runTest {
+        val cast = CreditRecord(personId = 5uL, name = "Zendaya", role = "Chani", portraitKey = "tmdb-person-5")
+        val crew = CreditRecord(personId = 9uL, name = "Denis Villeneuve", role = "Director", portraitKey = null)
+        val core = FakeCore(
+            creditsAnswer = TitleCreditsRecord(cast = listOf(cast), crew = listOf(crew)),
+            posters = mapOf("tmdb-person-5" to "/cache/person-5.jpg"),
+        )
+        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+
+        val credits = repo.titleCredits("tmdb-movie-1")
+        assertEquals("/cache/person-5.jpg", credits.cast.single().portraitPath)
+        assertEquals(null, credits.crew.single().portraitPath)
+    }
+
+    @Test
+    fun personAnswersNothingForAnUnknownId() = runTest {
+        val repo = DefaultCatalogRepository(ResolvedCoreProvider(FakeCore()), settingsWithAChosenLibrary(), RefreshLog())
+        assertEquals(null, repo.person(1))
+    }
+
+    @Test
+    fun fetchPortraitDelegatesStraightToTheCore() = runTest {
+        val core = FakeCore(portraits = mapOf(5L to "/cache/person-5.jpg"))
+        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+        assertEquals("/cache/person-5.jpg", repo.fetchPortrait(5))
+        assertEquals(null, repo.fetchPortrait(6))
     }
 }

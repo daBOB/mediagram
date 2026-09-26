@@ -10,6 +10,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import setup.AppearanceViewModel
 import setup.SettingsViewModel
 import ui.tv.setup.TvApplicationScreen
 import ui.tv.setup.TvConfirmDialog
@@ -34,6 +35,8 @@ internal enum class TvSettingsPanel { Library, Application, LanAddress, LanToken
 internal fun TvSettingsScreen() {
     val viewModel: SettingsViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val appearanceViewModel: AppearanceViewModel = hiltViewModel()
+    val appearance by appearanceViewModel.state.collectAsStateWithLifecycle()
     var panel by rememberSaveable { mutableStateOf<TvSettingsPanel?>(null) }
     var lastPanel by rememberSaveable { mutableStateOf<TvSettingsPanel?>(null) }
     var openedBeforeAction by rememberSaveable { mutableStateOf(state.completedActionId) }
@@ -90,6 +93,8 @@ internal fun TvSettingsScreen() {
         null ->
             TvSettingsRows(
                 state = state,
+                accent = appearance.accent,
+                onChooseAccent = appearanceViewModel::chooseAccent,
                 returningFrom = lastPanel,
                 onChangeLibrary = {
                     open(TvSettingsPanel.Library)

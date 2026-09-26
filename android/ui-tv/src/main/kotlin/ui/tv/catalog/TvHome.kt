@@ -14,6 +14,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import catalog.HomeRow
+import catalog.MagazineHome
 import designsystem.Overscan
 import designsystem.Spacing
 import model.WatchSnapshot
@@ -37,6 +38,25 @@ import model.WatchSnapshot
  * a focused plate at the edge grows into space the page reserves for it
  * instead of being clipped — the reason `TvWall` passes it as
  * `contentPadding`.
+ *
+ * [magazine] is Home's own editorial header — the cover story, the three
+ * feature cards and the magazine's own "Recently added" row (in place of the
+ * plain grid's "Latest films", which the caller drops from [rows] once it
+ * passes a [magazine] — the same film shelf shown once rather than twice),
+ * TV parity's own decision (the household's, recorded in the plan: "TV home
+ * gets the magazine layout"). `null` draws the plain rows alone, which is
+ * what every existing caller before this phase still passes. The cover and
+ * the features are not part of the arrival-focus or restore-key mechanism
+ * below — reached by Up from the first row instead — but "Recently added"
+ * is: it joins the same row list [rows] does, so a film opened from it and
+ * left again is found the same way any other row's plate is.
+ *
+ * Unlike the phone's own magazine header, Continue and Next up stay in
+ * [rows] rather than folding into a merged resume strip: TV's plain rows
+ * already draw them (`homeRowsOf`'s own output), and building a second,
+ * TV-only resume-strip component to match the phone's merged one was not
+ * worth its own risk for this pass — a deliberate, documented difference,
+ * not a silent gap.
  */
 @Composable
 internal fun TvHome(
@@ -46,14 +66,19 @@ internal fun TvHome(
     onOpenCollection: (key: String) -> Unit,
     onSeeAll: (shelf: String) -> Unit,
     restoreKey: String? = null,
+    magazine: MagazineHome? = null,
 ) {
     val (positions, watchedIds) = rememberWatchMarks(watch)
     val first = remember { FocusRequester() }
+    val allRows =
+        remember(rows, magazine) {
+            listOfNotNull(magazine?.recentlyAddedRow?.takeIf { it.total > 0 }) + rows
+        }
     // Which row, and which stop along it, takes the remote.
     val target =
-        remember(rows, restoreKey) {
+        remember(allRows, restoreKey) {
             restoreKey?.let { wanted ->
-                rows.withIndex().firstNotNullOfOrNull { (row, content) ->
+                allRows.withIndex().firstNotNullOfOrNull { (row, content) ->
                     keysOf(content).indexOf(wanted).takeIf { it >= 0 }?.let { row to it }
                 }
             } ?: (0 to 0)
@@ -64,8 +89,8 @@ internal fun TvHome(
     // appearing reorders them while the viewer is browsing, and the remote
     // must stay where the viewer put it.
     val takesFocus = LocalTakesArrivalFocus.current
-    LaunchedEffect(restoreKey, rows.isNotEmpty()) {
-        if (rows.isNotEmpty() && takesFocus) first.requestFocus()
+    LaunchedEffect(restoreKey, allRows.isNotEmpty()) {
+        if (allRows.isNotEmpty() && takesFocus) first.requestFocus()
     }
 
     Column(
@@ -81,7 +106,11 @@ internal fun TvHome(
                 .padding(horizontal = Overscan.horizontal)
                 .padding(bottom = Overscan.vertical, top = Spacing.small),
     ) {
-        rows.forEachIndexed { index, row ->
+        magazine?.editorial?.let { editorial ->
+            if (editorial.cover.isNotEmpty()) TvCoverStory(films = editorial.cover, onPlay = onOpenTitle, onOpenTitle = onOpenTitle)
+            if (editorial.features.isNotEmpty()) TvFeatureStrip(features = editorial.features, onOpenTitle = onOpenTitle)
+        }
+        allRows.forEachIndexed { index, row ->
             // Keyed by title, so a row that appears above — Continue, the
             // moment something is started — does not hand this row's
             // plates, and the focus on one of them, to a different row.

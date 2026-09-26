@@ -117,6 +117,75 @@ class LibraryPositionsTest {
     }
 
     @Test
+    fun openingAPersonOrAFranchiseLeavesToWhateverOpenedThem() {
+        val at = positions()
+        at.openTitle("set-1")
+        at.openPerson("42")
+
+        assertEquals(FrameKind.PERSON, at.top)
+        assertEquals("42", at.personId)
+
+        at.pop()
+        assertEquals(FrameKind.TITLE, at.top)
+
+        at.openFranchise("7")
+        assertEquals(FrameKind.FRANCHISE, at.top)
+        assertEquals("7", at.franchiseId)
+    }
+
+    @Test
+    fun theGenresIndexLatestAndTheMoviesPagedShelfAreEachOneFrame() {
+        val at = positions()
+        at.openGenresIndex()
+        assertEquals(FrameKind.GENRES, at.top)
+        at.pop()
+
+        at.openLatest()
+        assertEquals(FrameKind.LATEST, at.top)
+        at.pop()
+
+        at.openMoviesPage()
+        assertEquals(FrameKind.MOVIES_PAGE, at.top)
+        at.pop()
+        assertNull(at.top)
+    }
+
+    /**
+     * A show's own page remembers which season it was showing across a
+     * title opened from it (Similar, Cast, an episode) and back — the
+     * collection frame's own payload carries the season the same way a
+     * player frame's carries its run, so this survives without a second
+     * frame of its own.
+     */
+    @Test
+    fun aCollectionsChosenSeasonSurvivesATitleOpenedOverItAndLeftAgain() {
+        val at = positions()
+        at.openCollection("breaking-bad")
+        assertNull(at.collectionSeason)
+
+        at.setCollectionSeason("Season 2")
+        assertEquals("Season 2", at.collectionSeason)
+        assertEquals("breaking-bad", at.collection)
+
+        at.openTitle("set-1")
+        at.pop()
+
+        assertEquals(FrameKind.COLLECTION, at.top)
+        assertEquals("Season 2", at.collectionSeason)
+        assertEquals("breaking-bad", at.collection)
+    }
+
+    @Test
+    fun settingASeasonWithNoCollectionFrameOnTopDoesNothing() {
+        val at = positions()
+        at.openTitle("set-1")
+
+        at.setCollectionSeason("Season 2")
+
+        assertEquals(FrameKind.TITLE, at.top)
+    }
+
+    @Test
     fun poppingWithNothingOpenDoesNothing() {
         val at = positions()
 

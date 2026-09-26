@@ -35,11 +35,21 @@ import ui.tv.setup.TvConfirmDialog
  * [restoreKey] is the row whose screen was just left, so Back from System
  * lands on System; with none, the first row takes the remote. Start over
  * asks first, in the phone's words, with Cancel under the remote.
+ *
+ * [onMyList]/[onContinueWatching]/[onLatest]/[onGenres] are the four
+ * utilities `mastheadSplitOf` moved off the masthead's own tab row and into
+ * this overflow — reachable once each, the phase's own design (see
+ * `CatalogTabs.kt`'s `UtilityDestination`), appended after the phone's five
+ * so every existing row keeps its place and this page's own tests of them.
  */
 @Composable
 internal fun TvMenuPage(
     menu: MenuActions,
     restoreKey: String?,
+    onMyList: () -> Unit = {},
+    onContinueWatching: () -> Unit = {},
+    onLatest: () -> Unit = {},
+    onGenres: () -> Unit = {},
     onBack: () -> Unit,
 ) {
     var askingStartOver by rememberSaveable { mutableStateOf(false) }
@@ -66,6 +76,10 @@ internal fun TvMenuPage(
         }
         TvTextRow(text = "TMDB key…", onClick = menu.onTmdbKey, focusRequester = rows.getValue(MenuRow.TmdbKey))
         TvTextRow(text = "Start over", onClick = { askingStartOver = true }, focusRequester = rows.getValue(MenuRow.StartOver))
+        TvTextRow(text = "My List", onClick = onMyList, focusRequester = rows.getValue(MenuRow.MyList))
+        TvTextRow(text = "Continue watching", onClick = onContinueWatching, focusRequester = rows.getValue(MenuRow.ContinueWatching))
+        TvTextRow(text = "Latest", onClick = onLatest, focusRequester = rows.getValue(MenuRow.Latest))
+        TvTextRow(text = "Genres", onClick = onGenres, focusRequester = rows.getValue(MenuRow.Genres))
     }
 
     if (askingStartOver) {
@@ -95,6 +109,10 @@ private enum class MenuRow(
     Update(null),
     TmdbKey(menuRestoreKey(MenuScreen.TmdbKey)),
     StartOver(null),
+    MyList(null),
+    ContinueWatching(null),
+    Latest(null),
+    Genres(null),
 }
 
 /** What the menu page remembers it opened [screen] by — never a plate's id, so never mistaken for one. */

@@ -20,6 +20,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.MediagramTheme
 import designsystem.Spacing
+import setup.AppearanceViewModel
 import setup.SetupUiState
 import setup.SetupViewModel
 import setup.login.LoginViewModel
@@ -37,7 +38,9 @@ import ui.setup.TelegramApplicationScreen
  */
 @Composable
 fun MobileApp() {
-    MediagramTheme {
+    val appearanceViewModel: AppearanceViewModel = hiltViewModel()
+    val appearance by appearanceViewModel.state.collectAsStateWithLifecycle()
+    MediagramTheme(appearance = appearance) {
         Surface(modifier = Modifier.fillMaxSize()) {
             val setupViewModel: SetupViewModel = hiltViewModel()
             val setupState by setupViewModel.state.collectAsStateWithLifecycle()

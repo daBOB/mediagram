@@ -11,10 +11,14 @@ import uniffi.mediagram_core.AccountSummary
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.FetchReport
+import uniffi.mediagram_core.FranchiseRecord
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.LibraryEvent
+import uniffi.mediagram_core.PeopleHitRecord
+import uniffi.mediagram_core.PersonRecord
 import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.SetSummary
+import uniffi.mediagram_core.TitleCreditsRecord
 import uniffi.mediagram_core.TitleInfo
 
 class FakeCore(
@@ -44,7 +48,27 @@ class FakeCore(
     private val account: Result<AccountSummary> = Result.success(AccountSummary("A Viewer", "viewer")),
     /** What [search] answers, regardless of the query asked. */
     private val searchHits: List<SearchHit> = emptyList(),
+    /** What [titleCredits] answers, regardless of the key asked. */
+    private val creditsAnswer: TitleCreditsRecord = TitleCreditsRecord(cast = emptyList(), crew = emptyList()),
+    /** What [person] answers, keyed by the id asked. */
+    private val people: Map<Long, PersonRecord> = emptyMap(),
+    /** What [franchises] answers. */
+    private val franchiseRecords: List<FranchiseRecord> = emptyList(),
+    /** What [searchPeople] answers, regardless of the query asked. */
+    private val peopleHits: List<PeopleHitRecord> = emptyList(),
+    /** What [fetchPortrait] answers, keyed by the id asked. */
+    private val portraits: Map<Long, String> = emptyMap(),
 ) : CoreClient {
+
+    override suspend fun titleCredits(key: String): TitleCreditsRecord = creditsAnswer
+
+    override suspend fun person(personId: Long): PersonRecord? = people[personId]
+
+    override suspend fun franchises(): List<FranchiseRecord> = franchiseRecords
+
+    override suspend fun searchPeople(query: String): List<PeopleHitRecord> = peopleHits
+
+    override suspend fun fetchPortrait(personId: Long): String? = portraits[personId]
 
     var searchedFor: String? = null
         private set
@@ -204,6 +228,10 @@ fun summary(
     tagline: String? = null,
     rating: Double? = null,
     popularity: Double? = null,
+    showStatus: String? = null,
+    collectionId: Long? = null,
+    collectionName: String? = null,
+    seriesType: String? = null,
 ): SetSummary = SetSummary(
     setId = setId,
     kind = kind,
@@ -233,6 +261,10 @@ fun summary(
     tagline = tagline,
     rating = rating,
     popularity = popularity,
+    showStatus = showStatus,
+    collectionId = collectionId?.toULong(),
+    collectionName = collectionName,
+    seriesType = seriesType,
 )
 
 fun settingsWithAChosenLibrary(handle: String = "a1b2c3"): LibrarySettings =

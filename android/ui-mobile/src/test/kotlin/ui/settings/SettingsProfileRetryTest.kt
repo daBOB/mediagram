@@ -35,8 +35,10 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
+import designsystem.InMemoryAppearanceSettings
 import settings.InMemoryLibrarySettings
 import settings.InMemoryTelegramSettings
+import setup.AppearanceViewModel
 import setup.Libraries
 import setup.SettingsViewModel
 import uniffi.mediagram_core.AccountSummary
@@ -74,12 +76,23 @@ class SettingsProfileRetryTest {
         val watch = DefaultWatchStateRepository(provider, Dispatchers.Main.immediate)
         compose.runOnUiThread {
             model = SettingsViewModel(provider, library, InMemoryCoreStorage(), settings, Dispatchers.Main.immediate, watch)
-            ViewModelProvider(
-                owner.viewModelStore,
-                object : ViewModelProvider.Factory {
-                    override fun <T : ViewModel> create(modelClass: Class<T>): T = modelClass.cast(model)!!
-                },
-            )[SettingsViewModel::class.java]
+            // SettingsScreen also resolves an AppearanceViewModel through
+            // hiltViewModel(); this owner has to hand back both, or that second
+            // lookup falls to ViewModelProvider's default factory, which cannot
+            // construct one with no Hilt entry point to supply its arguments.
+            val appearanceModel = AppearanceViewModel(InMemoryAppearanceSettings())
+            val models = mapOf<Class<out ViewModel>, ViewModel>(
+                SettingsViewModel::class.java to model,
+                AppearanceViewModel::class.java to appearanceModel,
+            )
+            val held =
+                ViewModelProvider(
+                    owner.viewModelStore,
+                    object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T = modelClass.cast(models.getValue(modelClass))!!
+                    },
+                )
+            models.keys.forEach { held[it] }
             // The initial row read awaits credentials; installing them starts the
             // real Settings model before opening its retained Activity-owned screen.
             kotlinx.coroutines.runBlocking { provider.supply(1234, "0123456789abcdef0123456789abcdef") }

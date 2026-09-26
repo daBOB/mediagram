@@ -20,7 +20,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import designsystem.Accent
+import designsystem.Appearance
 import designsystem.Spacing
+import designsystem.ThemeChoice
+import setup.AppearanceViewModel
 import setup.SettingsUiState
 import setup.SettingsViewModel
 import setup.telegramRows
@@ -44,6 +48,8 @@ private enum class SettingsPanel { Library, Application }
 internal fun SettingsScreen(cache: @Composable () -> Unit) {
     val viewModel: SettingsViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val appearanceViewModel: AppearanceViewModel = hiltViewModel()
+    val appearance by appearanceViewModel.state.collectAsStateWithLifecycle()
     var panel by rememberSaveable { mutableStateOf<SettingsPanel?>(null) }
     var openedBeforeAction by rememberSaveable { mutableStateOf(state.completedActionId) }
     var askingSignOut by remember { mutableStateOf(false) }
@@ -86,6 +92,9 @@ internal fun SettingsScreen(cache: @Composable () -> Unit) {
         null -> {
             SettingsRows(
                 state = state,
+                appearance = appearance,
+                onChooseTheme = appearanceViewModel::chooseTheme,
+                onChooseAccent = appearanceViewModel::chooseAccent,
                 onChangeLibrary = {
                     viewModel.clearNotice()
                     openedBeforeAction = state.completedActionId
@@ -116,6 +125,9 @@ internal fun SettingsScreen(cache: @Composable () -> Unit) {
 @Composable
 private fun SettingsRows(
     state: SettingsUiState,
+    appearance: Appearance,
+    onChooseTheme: (ThemeChoice) -> Unit,
+    onChooseAccent: (Accent) -> Unit,
     onChangeLibrary: () -> Unit,
     onChangeApplication: () -> Unit,
     onSignOut: () -> Unit,
@@ -155,6 +167,13 @@ private fun SettingsRows(
             )
         }
         item { cache() }
+        // Last, not first: shared tests that click "Sign out"/"Application id
+        // and hash…" without scrolling (MobileAppTest, LibraryFlowTest,
+        // SettingsProfileRetryTest) rely on those rows sitting exactly where
+        // they did before Appearance existed. Appending keeps every one of
+        // them at its original position; nothing here needs Appearance to be
+        // read before the rest, unlike the web's tab order.
+        item { AppearanceSection(appearance = appearance, onChooseTheme = onChooseTheme, onChooseAccent = onChooseAccent) }
     }
 }
 

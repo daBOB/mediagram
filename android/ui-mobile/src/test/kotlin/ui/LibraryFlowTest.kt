@@ -26,8 +26,12 @@ import org.robolectric.annotation.Config
 import player.PlayerUiState
 import kotlin.test.assertEquals
 
+// A tall window: the show's own page is a LazyColumn (its Episodes tab can
+// run to a few hundred rows), and Robolectric's default window is short
+// enough that even its first episode row sits past the prefetch window and
+// is never composed — see ui.catalog.title.SeriesPageTest's own note.
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35])
+@Config(sdk = [35], qualifiers = "w400dp-h2400dp")
 class LibraryFlowTest {
     @get:Rule val compose = createEmptyComposeRule()
     private lateinit var fixture: LibraryFlowFixture
@@ -57,21 +61,29 @@ class LibraryFlowTest {
         }
     }
 
+    /** Opens the show's own page — the Episodes tab is its default, Season 1 shown first. */
     private fun collection() {
         compose.onNode(hasText("Series") and hasClickAction()).performClick()
         compose.onNode(hasText("Example Show") and hasClickAction()).performClick()
-        compose.onNode(hasText("Season 1") and hasClickAction()).assertIsDisplayed()
+        compose.onNode(hasText("First episode", substring = true) and hasClickAction()).assertIsDisplayed()
     }
 
+    /**
+     * Picks Season 2 from the show page's own season picker — replaces the
+     * old season-poster wall's own hop. `hasClickAction()` is what tells the
+     * picker's own button apart from the episode list's plain "Season 1"
+     * heading right below it, which names the same season but opens nothing.
+     */
     private fun season() {
         collection()
-        compose.onNode(hasText("Season 1") and hasClickAction()).performClick()
-        compose.onNode(hasText("First episode", substring = true) and hasClickAction()).assertIsDisplayed()
+        compose.onNode(hasText("Season 1", substring = true) and hasClickAction()).performClick()
+        compose.onNodeWithText("Season 2 · 1 episode").performClick()
+        compose.onNode(hasText("Second episode", substring = true) and hasClickAction()).assertIsDisplayed()
     }
 
     private fun title() {
         season()
-        compose.onNode(hasText("First episode", substring = true) and hasClickAction()).performClick()
+        compose.onNode(hasText("Second episode", substring = true) and hasClickAction()).performClick()
         compose.onNodeWithText("▶ Play").assertIsDisplayed()
     }
 
@@ -96,9 +108,7 @@ class LibraryFlowTest {
         compose.onNodeWithText("▶ Play").assertIsDisplayed()
         verify(exactly = 1) { fixture.playback.media.stop() }
         systemBack()
-        compose.onNode(hasText("First episode", substring = true) and hasClickAction()).assertIsDisplayed()
-        back()
-        compose.onNode(hasText("Season 1") and hasClickAction()).assertIsDisplayed()
+        compose.onNode(hasText("Second episode", substring = true) and hasClickAction()).assertIsDisplayed()
         back()
         compose.onNodeWithText("Mediagram").assertIsDisplayed()
         compose.onNodeWithContentDescription("Back").assertDoesNotExist()
@@ -115,7 +125,7 @@ class LibraryFlowTest {
         systemBack()
         compose.onNodeWithText("▶ Play").assertIsDisplayed()
         back()
-        compose.onNode(hasText("First episode", substring = true) and hasClickAction()).assertIsDisplayed()
+        compose.onNode(hasText("Second episode", substring = true) and hasClickAction()).assertIsDisplayed()
     }
 
     @Test fun aSavedTitleResolvesAfterTheRecreatedCatalogFinishesLoading() {
@@ -126,19 +136,25 @@ class LibraryFlowTest {
         compose.runOnUiThread { fixture.catalogReady.complete(Unit) }
         compose.onNodeWithText("▶ Play").assertIsDisplayed()
         back()
-        compose.onNode(hasText("First episode", substring = true) and hasClickAction()).assertIsDisplayed()
+        compose.onNode(hasText("Second episode", substring = true) and hasClickAction()).assertIsDisplayed()
         back()
-        compose.onNode(hasText("Season 1") and hasClickAction()).assertIsDisplayed()
+        compose.onNodeWithText("Mediagram").assertIsDisplayed()
     }
 
+    /**
+     * Season 2 — chosen by [season] rather than the default — survives a
+     * killed-and-recreated process the same way the collection's own key
+     * already did: both ride the same saved frame payload
+     * ([ui.LibraryPositions.setCollectionSeason]).
+     */
     @Test fun aSavedSeasonResolvesAfterLoadingAndBackUncoversItsCollection() {
         season()
         restoreWhileLoading()
         compose.onNodeWithText("Loading your library…").assertIsDisplayed()
         compose.runOnUiThread { fixture.catalogReady.complete(Unit) }
-        compose.onNode(hasText("First episode", substring = true) and hasClickAction()).assertIsDisplayed()
+        compose.onNode(hasText("Second episode", substring = true) and hasClickAction()).assertIsDisplayed()
         back()
-        compose.onNode(hasText("Season 1") and hasClickAction()).assertIsDisplayed()
+        compose.onNodeWithText("Mediagram").assertIsDisplayed()
     }
 
     @Test fun updatingFromAnOverlayReturnsToTheCatalogAndClearsTheDeepStack() {

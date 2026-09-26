@@ -21,13 +21,19 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.CatalogUiState
+import catalog.Entry
 import catalog.KeptKind
 import catalog.catalogTabsOf
+import catalog.franchisesIn
 import catalog.homeRowsOf
+import catalog.magazineHomeOf
+import catalog.mastheadSplitOf
 import catalog.updateDisabledReason
 import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvTypeScale
+import ui.tv.TvContinueEntryKey
+import ui.tv.TvWatchlistEntryKey
 import ui.tv.profile.TvChosenProfile
 
 /**
@@ -91,12 +97,27 @@ fun TvCatalogScreen(
     onOpenMenu: () -> Unit = {},
     onEntryRestored: () -> Unit = {},
     onFinish: (setId: String) -> Unit = {},
+    onOpenGenre: (name: String) -> Unit = {},
+    onOpenFranchise: (id: Long) -> Unit = {},
+    onOpenMoviesPage: () -> Unit = {},
 ) {
     val ready = (state as? CatalogUiState.Ready)?.takeIf { it.shelves.isNotEmpty() }
     val shelves = ready?.shelves.orEmpty()
     // Ordering, index-to-tab mapping and the labels themselves are
-    // catalogTabsOf's, the same function the phone's masthead reads.
+    // catalogTabsOf's, the same function the phone's masthead reads — the
+    // full 8-wide index space (Home, shelves, Continue, Watchlist,
+    // Collections) that `chosen` still lives in, unchanged by the masthead
+    // split below: only what the masthead *draws* narrows, not what a tab
+    // index means.
     val tabs = remember(shelves) { catalogTabsOf(shelves) }
+    // What the masthead itself draws — departments only, `mastheadSplitOf`'s
+    // own decision (phase 3): Continue and Watchlist move to the overflow
+    // menu, reached instead by the two sentinel restore keys below; Collections
+    // moves from the third kept tab into the department row's own last entry.
+    val masthead = remember(shelves) { mastheadSplitOf(shelves) }
+    val continueIndex = tabs.firstKept
+    val watchlistIndex = tabs.firstKept + 1
+    val collectionsIndex = tabs.firstKept + 2
     var chosen by rememberSaveable { mutableIntStateOf(0) }
     // A refresh can return a library with fewer shelves than the one that
     // was on screen when it started.
@@ -107,14 +128,29 @@ fun TvCatalogScreen(
             onTabChanged()
         }
     }
+    // The masthead's own tab index space is departments-only: Home, the
+    // shelves, then Collections at the end — Continue/Watchlist have no
+    // masthead position any more, so a viewer on either sees no tab
+    // selected (`-1`, which every entry in the row simply is not).
+    val mastheadSelected =
+        when {
+            selected <= shelves.size -> selected
+            selected == collectionsIndex -> masthead.departments.lastIndex
+            else -> -1
+        }
+    val onMastheadSelect = { visiblePosition: Int ->
+        choose(if (visiblePosition == masthead.departments.lastIndex) collectionsIndex else visiblePosition)
+    }
 
     val selectedTab = remember { FocusRequester() }
     val search = remember { FocusRequester() }
     val menu = remember { FocusRequester() }
     val backFromSearch = restoreKey == TvSearchEntryKey
     val backFromMenu = restoreKey == TvMenuEntryKey
+    val backFromContinue = restoreKey == TvContinueEntryKey
+    val backFromWatchlist = restoreKey == TvWatchlistEntryKey
     val backToMasthead = backFromSearch || backFromMenu
-    val wallKey = restoreKey.takeUnless { backToMasthead }
+    val wallKey = restoreKey.takeUnless { backToMasthead || backFromContinue || backFromWatchlist }
     val wall = remember { FocusRequester() }
 
     // With no wall below to take focus, the masthead is the one thing on
@@ -136,14 +172,30 @@ fun TvCatalogScreen(
             onEntryRestored()
         }
     }
+    // The overflow menu's own "My List"/"Continue watching" rows: no
+    // masthead tab to reopen, so this selects the same hidden tab index the
+    // old three-kept-tabs masthead used to carry, and leaves the remote for
+    // that tab's own wall to take, the same as choosing a real tab does.
+    LaunchedEffect(backFromContinue, ready != null) {
+        if (backFromContinue && ready != null) {
+            choose(continueIndex)
+            onEntryRestored()
+        }
+    }
+    LaunchedEffect(backFromWatchlist, ready != null) {
+        if (backFromWatchlist && ready != null) {
+            choose(watchlistIndex)
+            onEntryRestored()
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         TvMasthead(
-            titles = if (ready != null) tabs.titles else emptyList(),
-            selected = selected,
-            firstKeptIndex = tabs.firstKept,
+            titles = if (ready != null) masthead.departments else emptyList(),
+            selected = mastheadSelected,
+            firstKeptIndex = masthead.departments.lastIndex,
             profile = profile,
-            onSelect = choose,
+            onSelect = onMastheadSelect,
             focusRequester = mastheadFocus,
             selectedFocus = selectedTab,
             onSearch = onOpenSearch,
@@ -184,16 +236,57 @@ fun TvCatalogScreen(
                         ready == null -> TvCenteredMessage("The library is empty.")
                         selected == 0 -> {
                             TvHome(
-                                rows = remember(shelves, ready.watch, ready.heldIds) { homeRowsOf(shelves, ready.watch, ready.heldIds) },
+                                rows =
+                                    remember(shelves, ready.watch, ready.heldIds) {
+                                        homeRowsOf(shelves, ready.watch, ready.heldIds).filterNot { it.title == "Latest films" }
+                                    },
                                 watch = ready.watch,
                                 onOpenTitle = onOpenTitle,
                                 onOpenCollection = onOpenCollection,
                                 onSeeAll = { shelf -> choose(tabs.titles.indexOf(shelf).coerceAtLeast(0)) },
                                 restoreKey = wallKey,
+                                // The magazine header already carries its own
+                                // "Recently added" row over the Movies shelf —
+                                // dropping "Latest films" above is what keeps
+                                // Home from showing the same films twice.
+                                magazine =
+                                    remember(shelves, ready.watch, ready.heldIds) {
+                                        magazineHomeOf(
+                                            shelves,
+                                            ready.watch,
+                                            editorsChoice = ready.watch.editorsChoice,
+                                            now = System.currentTimeMillis(),
+                                            heldIds = ready.heldIds,
+                                        )
+                                    },
                             )
                         }
                         selected < tabs.firstKept -> {
-                            TvShelfWall(shelves[selected - 1], ready.watch, onOpenTitle, onOpenCollection, wallKey, ready.heldIds)
+                            val shelf = shelves[selected - 1]
+                            DepartmentOrShelfWall(
+                                shelf = shelf,
+                                watch = ready.watch,
+                                heldIds = ready.heldIds,
+                                onOpenTitle = onOpenTitle,
+                                onOpenCollection = onOpenCollection,
+                                onOpenGenre = onOpenGenre,
+                                onOpenMoviesPage = onOpenMoviesPage,
+                                restoreKey = wallKey,
+                            )
+                        }
+                        selected == collectionsIndex -> {
+                            val movies =
+                                remember(shelves) {
+                                    shelves.firstOrNull { it.title == "Movies" }?.entries.orEmpty().filterIsInstance<Entry.Film>().map { it.set }
+                                }
+                            TvCollectionsPage(
+                                franchises = remember(movies) { franchisesIn(movies) },
+                                lists = ready.watch.collections,
+                                onOpenFranchise = onOpenFranchise,
+                                onOpenList = onOpenList,
+                                onCreateList = onCreateList,
+                                restoreKey = wallKey,
+                            )
                         }
                         else -> {
                             TvKeptTab(
@@ -203,7 +296,18 @@ fun TvCatalogScreen(
                                 onOpenTitle = onOpenTitle,
                                 onOpenList = onOpenList,
                                 onCreateList = onCreateList,
-                                tabFocus = selectedTab,
+                                // Continue and Watchlist have no masthead
+                                // tab of their own any more (reached from the
+                                // overflow menu instead), so `selectedTab` —
+                                // attached only to whichever tab the masthead
+                                // itself currently marks selected — is never
+                                // claimed while one of them is showing, and
+                                // asking it to take focus would find nothing
+                                // to land on. `mastheadFocus` is the row's own
+                                // requester, always attached, so it is what a
+                                // wall that empties under the viewer falls
+                                // back to instead.
+                                tabFocus = if (mastheadSelected >= 0) selectedTab else mastheadFocus,
                                 restoreKey = wallKey,
                                 heldIds = ready.heldIds,
                                 onFinish = onFinish,

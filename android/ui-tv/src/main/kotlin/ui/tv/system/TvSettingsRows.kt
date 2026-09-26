@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.tv.material3.Text
+import designsystem.Accent
 import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvTypeScale
@@ -31,6 +32,8 @@ import ui.tv.catalog.TvQuietLine
 @Composable
 internal fun TvSettingsRows(
     state: SettingsUiState,
+    accent: Accent,
+    onChooseAccent: (Accent) -> Unit,
     returningFrom: TvSettingsPanel?,
     onChangeLibrary: () -> Unit,
     onChangeApplication: () -> Unit,
@@ -63,6 +66,7 @@ internal fun TvSettingsRows(
             verticalArrangement = Arrangement.spacedBy(Spacing.large),
         ) {
             Text(text = "Settings", style = TvTypeScale.title)
+            TvAppearanceBlock(selected = accent, onSelect = onChooseAccent)
             TvInfoBlock(heading = "Telegram", rows = telegramRows(state))
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
                 TvTextRow(text = "Change library", onClick = onChangeLibrary, focusRequester = library, enabled = !state.busy)

@@ -12,4 +12,8 @@ android {
 
 dependencies {
     implementation(project(":core:data"))
+    // Appearance/ThemeChoice/Accent and the SharedPreferences-backed
+    // AppearanceSettings AppearanceViewModel wraps live in designsystem,
+    // next to the theme composables that resolve them.
+    implementation(project(":core:designsystem"))
 }

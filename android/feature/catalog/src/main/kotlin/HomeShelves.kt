@@ -150,8 +150,13 @@ private fun latestTitleFor(shelf: String): String =
         else -> "Latest $shelf"
     }
 
-/** Newest first, on a copy — the shelf keeps the order it was built in. */
-private fun newestFirst(
+/**
+ * Newest first, on a copy — the shelf keeps the order it was built in.
+ * Internal rather than private: [showsDepartmentOf] (`Departments.kt`) ranks
+ * a department's own "New episodes" row the same way, over a department's
+ * shows rather than a whole shelf.
+ */
+internal fun newestFirst(
     entries: List<Entry>,
     limit: Int,
 ): List<Entry> = entries.sortedByDescending(::arrivedAt).take(limit)

@@ -6,6 +6,7 @@ import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -160,7 +161,11 @@ class TvLibraryTest {
         compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
 
-        plate("Film 0").assertIsFocused()
+        // Movies' own department front page can carry "Film 0" under more
+        // than one heading with only two films in the shelf (Featured and
+        // Recently added both) — `isFocused()` alone is still unambiguous:
+        // only one of the two is ever the remote's own stop.
+        compose.onNode(hasText("Film 0") and hasClickAction() and isFocused()).assertExists()
     }
 
     @Test

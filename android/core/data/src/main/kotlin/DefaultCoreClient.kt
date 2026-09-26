@@ -5,9 +5,12 @@ import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.Core
 import uniffi.mediagram_core.FetchReport
+import uniffi.mediagram_core.FranchiseRecord
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.ListRow
+import uniffi.mediagram_core.PeopleHitRecord
+import uniffi.mediagram_core.PersonRecord
 import uniffi.mediagram_core.PreferenceRow
 import uniffi.mediagram_core.Profile
 import uniffi.mediagram_core.SearchHit
@@ -15,6 +18,7 @@ import uniffi.mediagram_core.SessionSummary
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.StateSnapshot
 import uniffi.mediagram_core.SyncOutcome
+import uniffi.mediagram_core.TitleCreditsRecord
 import uniffi.mediagram_core.TitleInfo
 
 /** Delegates every call straight through to the generated native core. */
@@ -173,4 +177,14 @@ class DefaultCoreClient(
         core.retireLocalState()
         core.close()
     }
+
+    override suspend fun titleCredits(key: String): TitleCreditsRecord = core.titleCredits(key)
+
+    override suspend fun person(personId: Long): PersonRecord? = core.person(personId.toULong())
+
+    override suspend fun franchises(): List<FranchiseRecord> = core.franchises()
+
+    override suspend fun searchPeople(query: String): List<PeopleHitRecord> = core.searchPeople(query)
+
+    override suspend fun fetchPortrait(personId: Long): String? = core.fetchPortrait(personId.toULong())
 }

@@ -28,3 +28,36 @@ const val HOME = "Home"
 
 /** The three kept labels, in the web's own order — `index.html`'s Continue, Watchlist, Collections. */
 private val KEPT_TITLES: List<String> = KeptKind.entries.map(KeptKind::label)
+
+/**
+ * Where each destination in web 0.62.1's masthead belongs on a screen too
+ * narrow to print `index.html`'s two navigations side by side: the
+ * departments (`nav.departments` — Home, Movies, Series, Tutorials,
+ * Collections) as the visible tabs, and the rail's own utilities (My List,
+ * Continue watching, Latest, Genres, Settings) reachable once each from the
+ * overflow menu that already carries System, Settings, TMDB key and Start
+ * over — see [android.ui.OverflowMenu]. `catalogTabsOf` above is untouched:
+ * both phone and TV screens still read it, and this is additive for the
+ * phase that rebuilds those screens onto the new split.
+ *
+ * Web has no Documentaries counterpart here: that department has no
+ * Android kind of its own (a prior, already-recorded difference), so it is
+ * not part of either list.
+ */
+data class MastheadSplit(val departments: List<String>, val utilities: List<UtilityDestination>)
+
+/** A utility destination, web 0.62.1's own order — `index.html`'s rail-nav, minus Settings' spot before System. */
+enum class UtilityDestination(val label: String) {
+    MY_LIST("My List"),
+    CONTINUE_WATCHING("Continue watching"),
+    LATEST("Latest"),
+    GENRES("Genres"),
+    SETTINGS("Settings"),
+}
+
+/** [MastheadSplit] for [shelves] — the department tab row plus the five utilities, every one reachable once. */
+fun mastheadSplitOf(shelves: List<Shelf>): MastheadSplit =
+    MastheadSplit(
+        departments = listOf(HOME) + shelves.map(Shelf::title) + KeptKind.COLLECTIONS.label,
+        utilities = UtilityDestination.entries,
+    )

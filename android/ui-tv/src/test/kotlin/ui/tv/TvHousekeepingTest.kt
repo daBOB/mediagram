@@ -74,14 +74,19 @@ class TvHousekeepingTest {
         compose.onAllNodes(hasText("Film 1") and hasText("offline")).assertCountEquals(0)
 
         press(compose.onNodeWithText("Movies"))
-        compose.onNode(hasText("Film 0") and hasText("offline")).assertExists()
+        // The Movies department front page can carry the same film under more
+        // than one heading (Featured and Recently added both, with only two
+        // films in the shelf) — the web's own `renderMoviesDept` draws the
+        // same way, so this checks the badge is offered at all rather than
+        // exactly once.
+        compose.onAllNodes(hasText("Film 0") and hasText("offline")).fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "Film 0 never says offline" } }
         compose.onAllNodes(hasText("Film 1") and hasText("offline")).assertCountEquals(0)
     }
 
     @Test
     fun markFinishedTakesTheTitleOffContinueAndTheRemoteToTheOneBesideIt() {
         launch(watch = started("film-0", "film-1"), films = 2)
-        press(compose.onNodeWithText("Continue"))
+        openContinueWatching()
         compose.onNodeWithText("Continue · 2").assertExists()
         val first = focusedPlateTitle()
 
@@ -93,16 +98,27 @@ class TvHousekeepingTest {
         compose.onAllNodes(hasText(first) and hasClickAction()).assertCountEquals(0)
     }
 
+    /**
+     * Continue has no masthead tab of its own since this phase moved it to
+     * the overflow menu — the remote it lands on instead is the masthead's
+     * own row ([TvCatalogScreen]'s `mastheadFocus`), which enters at Home,
+     * the first thing on it, rather than a tab that no longer exists.
+     */
     @Test
-    fun markingTheLastTitleFinishedEmptiesContinueAndLandsOnItsTab() {
+    fun markingTheLastTitleFinishedEmptiesContinueAndLandsOnTheMasthead() {
         launch(watch = started("film-0"), films = 1)
-        compose.onNodeWithText("Continue").performSemanticsAction(SemanticsActions.RequestFocus)
-        press(compose.onNodeWithText("Continue"))
+        openContinueWatching()
 
         press(compose.onNodeWithText("Mark finished"))
 
         compose.onNodeWithText("Nothing started yet.").assertExists()
-        compose.onNodeWithText("Continue").assertIsFocused()
+        compose.onNodeWithText("Home").assertIsFocused()
+    }
+
+    /** Continue watching is reached from the overflow menu now, not a masthead tab — see `mastheadSplitOf`. */
+    private fun openContinueWatching() {
+        press(compose.onNodeWithText("Menu"))
+        press(compose.onNodeWithText("Continue watching"))
     }
 
     @Test

@@ -3,10 +3,12 @@ package ui.tv
 import android.view.KeyEvent
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performImeAction
@@ -15,11 +17,13 @@ import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import model.Kind
 import model.MediaSet
+import model.PersonHit
 import model.Profile
 import org.junit.After
 import org.junit.Before
@@ -55,7 +59,14 @@ class TvSearchAndGenreTest {
         mockkStatic(::HiltViewModelFactory)
         every { HiltViewModelFactory(any(), any()) } answers { secondArg() }
         compose.runOnUiThread {
-            val sets = films(2).map { if (it.setId == "film-1") it.copy(genres = listOf("Drama", "Comedy")) else it } + show()
+            val sets =
+                films(2).map {
+                    val withGenres = if (it.setId == "film-1") it.copy(genres = listOf("Drama", "Comedy")) else it
+                    // A stable poster key per film, so a grouped-search test can
+                    // name one as a person's own credit (`PersonHit.titleKeys`) —
+                    // `visiblePeople`'s own visibility check needs one to match.
+                    withGenres.copy(posterKey = "poster-${it.setId}")
+                } + show()
             fixture = TvAppFixture(TvSetupStage.READY, listOf(Profile(id = "ada", name = "Ada")), "ada", sets)
             TvAppTestActivity.fixture = fixture
             controller = Robolectric.buildActivity(TvAppTestActivity::class.java).setup().visible()
@@ -231,6 +242,45 @@ class TvSearchAndGenreTest {
         compose.onNodeWithText("Drama").assertIsFocused()
         back()
         plate("A Show").assertIsFocused()
+    }
+
+    /**
+     * People (only those the profile can see — `visiblePeople`'s own rule)
+     * and filter chips: pressing "People" narrows to just that section, and
+     * pressing a person's row opens their own page.
+     */
+    @Test
+    fun peopleGroupWithFilterChipsNarrowsToJustThatSection() {
+        val hit = PersonHit(personId = 9L, name = "Ada Actor", portraitPath = null, titleKeys = listOf("poster-film-0"))
+        coEvery { fixture.repository.searchPeople(any()) } returns listOf(hit)
+
+        press(compose.onNodeWithText("Search"))
+        type("film")
+
+        compose.onNodeWithText("Ada Actor").assertExists()
+        compose.onNodeWithText("●  All · 3").assertExists()
+        compose.onNodeWithText("○  Movies · 2").assertExists()
+        press(compose.onNodeWithText("○  People · 1"))
+
+        compose.onNodeWithText("Film 0").assertDoesNotExist()
+        compose.onNodeWithText("Ada Actor").assertExists()
+
+        press(compose.onNodeWithText("Ada Actor"))
+        compose.onNodeWithText("Nobody by that number is credited on anything in your library.").assertExists()
+    }
+
+    /** A person nobody in the library can see — no title key of theirs matches anything — is never offered at all. */
+    @Test
+    fun aPersonWithNoVisibleTitleNeverAppears() {
+        val hit = PersonHit(personId = 9L, name = "Nobody Here", portraitPath = null, titleKeys = listOf("no-such-poster"))
+        coEvery { fixture.repository.searchPeople(any()) } returns listOf(hit)
+
+        press(compose.onNodeWithText("Search"))
+        type("film")
+
+        compose.onNodeWithText("Nobody Here").assertDoesNotExist()
+        // Two kinds only (Movies), so no chip row at all — nothing to narrow to.
+        compose.onAllNodesWithText("●  All", substring = true).assertCountEquals(0)
     }
 
     private fun field() = compose.onNodeWithTag(TvSearchFieldTag)

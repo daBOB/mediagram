@@ -1,6 +1,7 @@
 package catalog
 
 import model.MediaSet
+import model.PersonHit
 import uniffi.mediagram_core.SearchHit
 
 /**
@@ -19,8 +20,13 @@ sealed interface SearchUiState {
     /** The field is empty, or has not yet been typed in. */
     data object Idle : SearchUiState
 
-    /** [hits] empty is what the web calls "nothing found" — not a failure. */
-    data class Ready(val hits: List<SearchHit>) : SearchUiState
+    /**
+     * [hits] and [people] both empty is what the web calls "nothing found"
+     * — not a failure. [people] rides alongside [hits] rather than joined
+     * to it: like [hits], it is what the core itself ranked, before
+     * [searchGroupsOf] narrows it to titles this profile can see.
+     */
+    data class Ready(val hits: List<SearchHit>, val people: List<PersonHit> = emptyList()) : SearchUiState
 
     /** The core could not be asked at all — a round that raised rather than answering. */
     data class Failed(val message: String) : SearchUiState

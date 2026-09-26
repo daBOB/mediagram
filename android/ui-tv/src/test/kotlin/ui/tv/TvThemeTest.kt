@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.unit.TextUnit
 import androidx.tv.material3.MaterialTheme
+import designsystem.Accent
 import designsystem.Palette
 import designsystem.TvTypeScale
 import org.junit.After
@@ -41,10 +42,16 @@ class TvThemeTest {
     }
 
     @Test
-    fun primaryColourIsTheCatalogueImprint() {
+    fun primaryColourIsTheDefaultAccentsDarkValue() {
         var primary: Color? = null
         show { primary = MaterialTheme.colorScheme.primary }
-        assertEquals(Palette.Imprint, primary)
+        assertEquals(Accent.Default.dark, primary)
+    }
+
+    @Test
+    fun choosingAnAccentSetsPaletteImprintSoEveryOtherWidgetFollowsIt() {
+        show(accent = Accent.TEAL) {}
+        assertEquals(Accent.TEAL.dark, Palette.Imprint)
     }
 
     @Test
@@ -62,32 +69,36 @@ class TvThemeTest {
     }
 
     /**
-     * No composition needed for this one: [TvColors] is a plain value, so
-     * the roles a later screen actually reaches for — the ground it draws
-     * on, the plate a card sits on, the text on both, and the two rule
-     * weights a divider or a focus outline would use — can be pinned
-     * straight against [Palette] the way [CatalogueColorsTest] pins the
-     * phone's scheme, without a Robolectric activity in between.
+     * No composition needed for this one: [tvColorScheme] is a plain
+     * function, so the roles a later screen actually reaches for — the
+     * ground it draws on, the plate a card sits on, the text on both, and
+     * the two rule weights a divider or a focus outline would use — can be
+     * pinned straight against [Palette] the way [CatalogueColorsTest] pins
+     * the phone's scheme, without a Robolectric activity in between.
      */
     @Test
     fun coreRolesComeFromThePalette() {
-        assertEquals(Palette.Ground, TvColors.background)
-        assertEquals(Palette.Text, TvColors.onBackground)
-        assertEquals(Palette.Page, TvColors.surface)
-        assertEquals(Palette.Text, TvColors.onSurface)
-        assertEquals(Palette.RuleStrong, TvColors.border)
-        assertEquals(Palette.Rule, TvColors.borderVariant)
-        assertEquals(Palette.Imprint, TvColors.primary)
-        assertEquals(Palette.Sunk, TvColors.surfaceVariant)
-        assertEquals(Palette.Figures, TvColors.onSurfaceVariant)
-        assertEquals(Palette.Ochre, TvColors.error)
-        assertEquals(Palette.Sage, TvColors.tertiary)
+        val colours = tvColorScheme(Accent.Default.dark)
+        assertEquals(Palette.Ground, colours.background)
+        assertEquals(Palette.Text, colours.onBackground)
+        assertEquals(Palette.Page, colours.surface)
+        assertEquals(Palette.Text, colours.onSurface)
+        assertEquals(Palette.RuleStrong, colours.border)
+        assertEquals(Palette.Rule, colours.borderVariant)
+        assertEquals(Accent.Default.dark, colours.primary)
+        assertEquals(Palette.Sunk, colours.surfaceVariant)
+        assertEquals(Palette.Figures, colours.onSurfaceVariant)
+        assertEquals(Palette.Ochre, colours.error)
+        assertEquals(Palette.Sage, colours.tertiary)
     }
 
-    private fun show(content: @Composable () -> Unit) {
+    private fun show(
+        accent: Accent = Accent.Default,
+        content: @Composable () -> Unit,
+    ) {
         compose.runOnUiThread {
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
-            controller.get().setContent { TvTheme { content() } }
+            controller.get().setContent { TvTheme(accent = accent) { content() } }
         }
         compose.waitForIdle()
     }

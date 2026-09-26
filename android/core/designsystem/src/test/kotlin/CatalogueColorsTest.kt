@@ -34,7 +34,7 @@ class CatalogueColorsTest {
                 Palette.Sage,
             )
 
-        val strangers = rolesOf(CatalogueColors).filterNot { (_, colour) -> colour in ours }
+        val strangers = rolesOf(catalogueColorScheme(dark = true, accent = Palette.Imprint)).filterNot { (_, colour) -> colour in ours }
 
         assertTrue(
             strangers.isEmpty(),
@@ -90,7 +90,7 @@ class CatalogueColorsTest {
     /** The exact value that was on screen, so the bug cannot come back unnoticed. */
     @Test
     fun theProgressTrackIsNotMaterialsLavender() {
-        assertTrue(CatalogueColors.secondaryContainer != Color(0xFF4A4458))
+        assertTrue(catalogueColorScheme(dark = true, accent = Palette.Imprint).secondaryContainer != Color(0xFF4A4458))
     }
 
     /**
@@ -101,16 +101,33 @@ class CatalogueColorsTest {
      * can't quietly drift apart.
      */
     @Test
-    fun paletteExposesTheSameValuesCatalogueColorsUses() {
-        assertEquals(Palette.Ground, CatalogueColors.background)
-        assertEquals(Palette.Page, CatalogueColors.surface)
-        assertEquals(Palette.Sunk, CatalogueColors.surfaceVariant)
-        assertEquals(Palette.Text, CatalogueColors.onBackground)
-        assertEquals(Palette.Figures, CatalogueColors.onSurfaceVariant)
-        assertEquals(Palette.Imprint, CatalogueColors.primary)
-        assertEquals(Palette.Ochre, CatalogueColors.error)
-        assertEquals(Palette.Sage, CatalogueColors.tertiary)
-        assertEquals(Palette.Rule, CatalogueColors.outlineVariant)
-        assertEquals(Palette.RuleStrong, CatalogueColors.outline)
+    fun paletteExposesTheSameValuesCatalogueColorSchemeUses() {
+        val scheme = catalogueColorScheme(dark = true, accent = Palette.Imprint)
+        assertEquals(Palette.Ground, scheme.background)
+        assertEquals(Palette.Page, scheme.surface)
+        assertEquals(Palette.Sunk, scheme.surfaceVariant)
+        assertEquals(Palette.Text, scheme.onBackground)
+        assertEquals(Palette.Figures, scheme.onSurfaceVariant)
+        assertEquals(Palette.Imprint, scheme.primary)
+        assertEquals(Palette.Ochre, scheme.error)
+        assertEquals(Palette.Sage, scheme.tertiary)
+        assertEquals(Palette.Rule, scheme.outlineVariant)
+        assertEquals(Palette.RuleStrong, scheme.outline)
+    }
+
+    /** [catalogueColorScheme]'s light branch reads from the same [Palette] Light* roles Settings' Light theme resolves to. */
+    @Test
+    fun lightBranchUsesTheLightPaletteRoles() {
+        val scheme = catalogueColorScheme(dark = false, accent = Accent.CORAL.light)
+        assertEquals(Palette.LightGround, scheme.background)
+        assertEquals(Palette.LightPage, scheme.surface)
+        assertEquals(Palette.LightSunk, scheme.surfaceVariant)
+        assertEquals(Palette.LightText, scheme.onBackground)
+        assertEquals(Palette.LightFigures, scheme.onSurfaceVariant)
+        assertEquals(Accent.CORAL.light, scheme.primary)
+        assertEquals(Palette.LightOchre, scheme.error)
+        assertEquals(Palette.LightSage, scheme.tertiary)
+        assertEquals(Palette.LightRule, scheme.outlineVariant)
+        assertEquals(Palette.LightRuleStrong, scheme.outline)
     }
 }

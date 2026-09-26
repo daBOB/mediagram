@@ -21,15 +21,16 @@ internal fun <T> ResolvedBranch(
     loading: Destination,
     menu: MenuActions,
     profile: ProfileBarState,
+    browse: BrowseActions,
     at: LibraryPositions,
     destinationOf: (T) -> Destination,
     content: @Composable (T) -> Unit,
 ) {
     when (val outcome = resolveFrame(resolved, catalogState is CatalogUiState.Ready)) {
-        is FrameResolution.Resolved -> LibraryBranch(destinationOf(outcome.value), menu, profile, at, at::pop) {
+        is FrameResolution.Resolved -> LibraryBranch(destinationOf(outcome.value), menu, profile, browse, at, at::pop) {
             content(outcome.value)
         }
-        FrameResolution.Loading -> LibraryBranch(loading, menu, profile, at, at::pop) {
+        FrameResolution.Loading -> LibraryBranch(loading, menu, profile, browse, at, at::pop) {
             CenteredMessage("Loading your library…")
         }
         FrameResolution.Stale -> LaunchedEffect(Unit) { at.pop() }

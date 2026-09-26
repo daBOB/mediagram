@@ -4,6 +4,7 @@ import data.CatalogRepository
 import kotlinx.coroutines.CompletableDeferred
 import model.Kind
 import model.MediaSet
+import model.PersonHit
 import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.TitleInfo
 
@@ -18,6 +19,8 @@ class FakeCatalogRepository(
     private val searchHits: List<SearchHit> = emptyList(),
     /** What [search] raises instead, or `null` to answer [searchHits] as normal. */
     private val searchThrows: Throwable? = null,
+    /** What [searchPeople] answers, regardless of the query asked. */
+    private val peopleHits: List<PersonHit> = emptyList(),
     /** Sets given whole, for tests that need a rating or a particular id. */
     private val given: List<MediaSet> = emptyList(),
 ) : CatalogRepository {
@@ -72,6 +75,8 @@ class FakeCatalogRepository(
 
     /** No artwork held for any key — the ordinary case for a library assembled without a TMDB key. */
     override suspend fun posterPath(posterKey: String): String? = null
+
+    override suspend fun searchPeople(query: String): List<PersonHit> = peopleHits
 }
 
 internal fun fakeSet(

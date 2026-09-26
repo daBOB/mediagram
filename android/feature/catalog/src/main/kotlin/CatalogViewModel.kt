@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import model.MediaSet
+import model.TitleCredits
 import model.forKidsProfile
 import playback.HeldSetsQuery
 import playback.SeriesPreloading
@@ -82,6 +83,14 @@ class CatalogViewModel
             marked: Boolean,
         ) {
             viewModelScope.launch { watchState.setEditorsChoice(setId, marked) }
+        }
+
+        /** Adds or removes [setId] from "My List" — see [data.WatchStateRepository.setWatchlisted]. */
+        fun setWatchlisted(
+            setId: String,
+            listed: Boolean,
+        ) {
+            viewModelScope.launch { watchState.setWatchlisted(setId, listed) }
         }
 
         /**
@@ -249,6 +258,13 @@ class CatalogViewModel
          * whole library's worth.
          */
         suspend fun posterPath(posterKey: String): String? = repository.posterPath(posterKey)
+
+        /**
+         * A title's cast and crew, for the Cast tab that only appears once
+         * credits arrive and name somebody — the same on-demand shape
+         * [titleInfo] already follows, for the same reason.
+         */
+        suspend fun titleCredits(key: String): TitleCredits = repository.titleCredits(key)
 
         fun createList(name: String) {
             writeCollection("create") { watchState.createList(name) != null }

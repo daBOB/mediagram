@@ -37,6 +37,25 @@ sealed interface Destination {
         val name: String,
     ) : Destination
 
+    /** A person's page: their portrait, and the titles this profile can see them in. */
+    data class Person(
+        val name: String,
+    ) : Destination
+
+    /** A film franchise's own page, opened from a collection card. */
+    data class Franchise(
+        val name: String,
+    ) : Destination
+
+    /** The Movies department's own paged shelf — "All N films", one step in from its front page. */
+    data object MoviesPage : Destination
+
+    /** Every genre the library holds, as a page of its own — not [Genre], which is one shelf. */
+    data object Genres : Destination
+
+    /** Films, shows and courses, newest arrival first. */
+    data object Latest : Destination
+
     data object System : Destination
 
     data object TmdbKey : Destination
@@ -58,6 +77,11 @@ fun barTitleFor(destination: Destination): String =
         is Destination.List -> destination.name
         Destination.Search -> "Search"
         is Destination.Genre -> destination.name
+        is Destination.Person -> destination.name
+        is Destination.Franchise -> destination.name
+        Destination.MoviesPage -> "Movies"
+        Destination.Genres -> "Genres"
+        Destination.Latest -> "Latest"
         Destination.System -> "System"
         Destination.TmdbKey -> "TMDB key"
         Destination.Settings -> "Settings"
@@ -77,6 +101,11 @@ fun backLabelFor(destination: Destination): String? =
         is Destination.List -> "Back"
         Destination.Search -> "Back"
         is Destination.Genre -> "Back"
+        is Destination.Person -> "Back"
+        is Destination.Franchise -> "Back"
+        Destination.MoviesPage -> "Back"
+        Destination.Genres -> "Back"
+        Destination.Latest -> "Back"
         Destination.System -> "Back"
         Destination.TmdbKey -> "Back"
         Destination.Settings -> "Back"

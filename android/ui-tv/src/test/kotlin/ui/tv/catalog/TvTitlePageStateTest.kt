@@ -5,8 +5,8 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
-import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performSemanticsAction
@@ -66,6 +66,12 @@ class TvTitlePageStateTest : TvScreenStateTest() {
      * The page scrolls inside the overscan-safe band, so an overview longer
      * than the screen stops at the safe line instead of running on into the
      * panel's bottom edge — and scrolled to its end, still ends there.
+     *
+     * The scrollable body's own top now sits below the Overview/Details tab
+     * row this phase adds above it, rather than flush with the overscan
+     * line itself — the tabs are the page's first stop now, not the body;
+     * the bottom line, where the overview is asked to stay inside, is
+     * unchanged.
      */
     @Test
     fun aLongOverviewStaysInsideTheOverscanSafeLine() {
@@ -73,10 +79,11 @@ class TvTitlePageStateTest : TvScreenStateTest() {
         val info = TitleInfo(overview = overview, tagline = null, genres = null, rating = null, network = null, status = null)
         show { TvTitlePage(set = film, info = info, progress = null, onPlay = {}) }
         val screen = compose.onRoot().getBoundsInRoot()
+        val safeTop = screen.top + Overscan.vertical
         val safeBottom = screen.bottom - Overscan.vertical
 
-        val page = compose.onNode(hasScrollAction()).getBoundsInRoot()
-        assertEquals(screen.top + Overscan.vertical, page.top)
+        val page = compose.onNodeWithTag(TvTitlePageBodyTag).getBoundsInRoot()
+        assertTrue(page.top >= safeTop, "the body starts at or below the overscan line, under the tabs")
         assertEquals(safeBottom, page.bottom)
 
         compose.onNodeWithText("▶ Play").performKeyInput { pressKey(Key.DirectionDown) }

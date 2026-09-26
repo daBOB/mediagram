@@ -8,6 +8,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CancellationException
+import model.FranchiseInfo
+import model.Person
+import model.TitleCredits
 import uniffi.mediagram_core.TitleInfo
 
 /**
@@ -61,6 +64,105 @@ fun rememberPosterPath(
             @Suppress("TooGenericExceptionCaught") e: Exception,
         ) {
             Log.w("CatalogMetadata", "Could not load season poster", e)
+        }
+    }
+    return path
+}
+
+/**
+ * A title's cast and crew, looked up once per key — the same shape as
+ * [rememberTitleInfo], for the Cast tab that only appears once credits
+ * arrive and name somebody.
+ */
+@Composable
+fun rememberTitleCredits(
+    key: String?,
+    lookup: suspend (String) -> TitleCredits,
+): TitleCredits {
+    var credits by remember(key) { mutableStateOf(TitleCredits.Empty) }
+    LaunchedEffect(key) {
+        try {
+            credits = key?.let { lookup(it) } ?: TitleCredits.Empty
+        } catch (e: CancellationException) {
+            throw e
+        } catch (
+            @Suppress("TooGenericExceptionCaught") e: Exception,
+        ) {
+            Log.w("CatalogMetadata", "Could not load credits", e)
+        }
+    }
+    return credits
+}
+
+/** One person, looked up once per id — the same shape as [rememberTitleInfo]. */
+@Composable
+fun rememberPerson(
+    personId: Long,
+    lookup: suspend (Long) -> Person?,
+): Person? {
+    var person by remember(personId) { mutableStateOf<Person?>(null) }
+    LaunchedEffect(personId) {
+        try {
+            person = lookup(personId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (
+            @Suppress("TooGenericExceptionCaught") e: Exception,
+        ) {
+            Log.w("CatalogMetadata", "Could not load a person", e)
+        }
+    }
+    return person
+}
+
+/**
+ * Every franchise's TMDB overview, fetched once for as long as this
+ * Composable stays in the tree — the Collections tab and a franchise page
+ * both read the same list rather than each asking the index again.
+ */
+@Composable
+fun rememberFranchiseOverviews(lookup: suspend () -> List<FranchiseInfo>): List<FranchiseInfo> {
+    var overviews by remember { mutableStateOf<List<FranchiseInfo>>(emptyList()) }
+    LaunchedEffect(Unit) {
+        try {
+            overviews = lookup()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (
+            @Suppress("TooGenericExceptionCaught") e: Exception,
+        ) {
+            Log.w("CatalogMetadata", "Could not load franchise overviews", e)
+        }
+    }
+    return overviews
+}
+
+/**
+ * A person's portrait, fetched lazily and at most once per session when
+ * [known] is `null` — the phase's own "portraits fetched on device, lazily"
+ * rule. [shouldRequest] is `data.PortraitRequestLog.shouldRequest`, held
+ * above this Composable so the "once" survives this screen closing and
+ * reopening, not just this recomposition.
+ */
+@Composable
+fun rememberPortrait(
+    personId: Long,
+    known: String?,
+    shouldRequest: (Long) -> Boolean,
+    fetch: suspend (Long) -> String?,
+): String? {
+    var path by remember(personId, known) { mutableStateOf(known) }
+    LaunchedEffect(personId, known) {
+        if (known == null && shouldRequest(personId)) {
+            try {
+                path = fetch(personId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (
+                @Suppress("TooGenericExceptionCaught") e: Exception,
+            ) {
+                Log.w("CatalogMetadata", "Could not fetch a portrait", e)
+            }
         }
     }
     return path

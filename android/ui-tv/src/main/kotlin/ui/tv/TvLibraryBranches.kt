@@ -38,6 +38,9 @@ internal fun TvCatalogRoot(
     onOpenMenu: () -> Unit,
     onEntryRestored: () -> Unit,
     onFinish: (setId: String) -> Unit,
+    onOpenGenre: (name: String) -> Unit = {},
+    onOpenFranchise: (id: Long) -> Unit = {},
+    onOpenMoviesPage: () -> Unit = {},
 ) {
     val masthead = remember { FocusRequester() }
     var onMasthead by remember { mutableStateOf(false) }
@@ -60,6 +63,9 @@ internal fun TvCatalogRoot(
         onOpenMenu = onOpenMenu,
         onEntryRestored = onEntryRestored,
         onFinish = onFinish,
+        onOpenGenre = onOpenGenre,
+        onOpenFranchise = onOpenFranchise,
+        onOpenMoviesPage = onOpenMoviesPage,
     )
 }
 

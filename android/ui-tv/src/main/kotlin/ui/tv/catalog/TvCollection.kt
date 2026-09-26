@@ -1,41 +1,61 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.tv.material3.Text
 import catalog.Division
 import catalog.Entry
+import catalog.ResumeVerb
 import catalog.SeasonPlate
+import catalog.SeriesResumePick
+import catalog.episodeShort
 import catalog.firstItemOf
+import catalog.ratingLabel
 import catalog.rowsOf
 import catalog.seasonPlatesOf
+import designsystem.Overscan
+import designsystem.Spacing
 import designsystem.TvTypeScale
 import java.io.File
+import model.TitleCredits
 import model.WatchSnapshot
 import model.ageLabel
 import ui.catalog.rememberPosterPath
+import ui.tv.TvTextRow
 import uniffi.mediagram_core.TitleInfo
 
 /**
  * What is inside one show or course — the television twin of the phone's
- * `CollectionScreen`, deciding the same way what that is.
+ * `CollectionScreen` and the web's series page: Episodes (a season wall,
+ * [seasonPlatesOf]'s rule, or [TvCollectionRows]' flat list — a course, and
+ * a show of just one season), About, Cast (only once [credits] names
+ * somebody) and Similar (only once [similar] holds a show), the same split
+ * [TvTitlePage] makes for a film.
  *
- * A show with more than one season is a wall of season plates
- * ([seasonPlatesOf]'s rule, the web's and the phone's): a show drills into
- * seasons and only a season has artwork of its own to put on a plate.
- * Everything else — a course, and a show with just one season — is the
- * flat, indented list of [TvCollectionRows].
- *
- * [info] describes the show or the course itself. A course has neither a
- * provider entry nor artwork, so its header is left out entirely rather
- * than drawn empty: an empty block would claim the library looked and
- * found nothing, when nobody recorded anything.
+ * The header — name, art, facts, genre links, overview, and the
+ * [SeriesResumePick] pill — sits on the Episodes tab, above the wall or the
+ * rows, the same place the film page's own header sits on its Overview tab:
+ * neither repeats it on the tabs beside it, which show only their own body.
  *
  * [restoreKey] names what was opened from here — a season's title on the
  * wall, a set's id in the list, or a genre from the header's links
- * ([onOpenGenre]) — so coming back lands on it. A genre sits above the wall
- * or the rows, so they leave the remote to it rather than taking it first.
+ * ([onOpenGenre]) — so coming back lands on it, and also lands the viewer
+ * back on the Episodes tab, the only one any of those keys name a stop on.
+ *
+ * [selected] survives the page's own state updates ([rememberSaveable],
+ * keyed to [collection]'s own identity rather than to [credits]/[similar]
+ * arriving a moment after the page does): a body that refetches must not
+ * reset which tab is showing, the same rule [TvTitlePage]'s own tabs follow.
  */
 @Composable
 fun TvCollection(
@@ -48,26 +68,98 @@ fun TvCollection(
     onOpenGenre: (String) -> Unit = {},
     restoreKey: String? = null,
     heldIds: Set<String> = emptySet(),
+    credits: TitleCredits = TitleCredits.Empty,
+    onOpenPerson: (personId: Long) -> Unit = {},
+    shouldRequestPortrait: (Long) -> Boolean = { false },
+    fetchPortrait: suspend (Long) -> String? = { null },
+    similar: List<Entry.Collection> = emptyList(),
+    onOpenCollection: (key: String) -> Unit = {},
+    resume: SeriesResumePick? = null,
+    onResume: (setId: String) -> Unit = {},
 ) {
     val watchedIds = rememberWatchMarks(watch).watchedIds
     val seasons = remember(collection, watchedIds) { seasonPlatesOf(collection, watchedIds) }
     val genres = remember(collection) { firstItemOf(collection.divisions)?.genres.orEmpty() }
     val genreFocus = restoreKey?.takeIf { it in genres }
-    val header: @Composable () -> Unit = { CollectionHeader(collection, info, onOpenGenre, genreFocus) }
-    TvPage(takesArrivalFocus = genreFocus == null) {
-        if (seasons != null) {
-            TvWall(
-                items = seasons,
-                key = SeasonPlate::title,
-                restoreKey = restoreKey,
-                onOpen = { plate -> onOpenSeason(plate.division) },
-                header = header,
-                plate = { plate, modifier, onOpen -> TvSeasonPlate(collection, plate, posterPath, onOpen, modifier) },
-            )
-        } else {
-            val rows = remember(collection) { rowsOf(collection.divisions) }
-            TvCollectionRows(rows, watch, onOpenTitle, restoreKey, header, heldIds)
+    val tabs =
+        remember(credits, similar) {
+            buildList {
+                add("Episodes")
+                add("About")
+                if (credits.cast.isNotEmpty()) add("Cast")
+                if (similar.isNotEmpty()) add("Similar")
+            }
         }
+    var selected by rememberSaveable(collection.key) { mutableIntStateOf(0) }
+    if (selected >= tabs.size) selected = 0
+
+    val header: @Composable () -> Unit = {
+        Column {
+            CollectionHeader(collection, info, onOpenGenre, genreFocus)
+            resume?.let { pick -> SeriesResumeRow(pick, onResume) }
+        }
+    }
+    TvPage(takesArrivalFocus = selected == 0 && genreFocus == null) {
+        // No overscan padding of its own on this outer Column: `TvWall` and
+        // `TvCollectionRows` already carry their own top/bottom overscan as
+        // `contentPadding`, unchanged from before this phase — adding it here
+        // too would double the gap above the Episodes tab's own content.
+        // Only the tab row, which now sits above that content rather than
+        // inside it, needs its own top inset.
+        Column(modifier = Modifier.fillMaxSize()) {
+            TvSectionTabs(
+                titles = tabs,
+                selected = selected,
+                onSelect = { selected = it },
+                modifier = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Overscan.vertical),
+            )
+            when (tabs[selected]) {
+                "About" -> TvCollectionTabBody { TvSeriesAbout(info) }
+
+                "Cast" -> TvCollectionTabBody { TvCastRow(credits, onOpenPerson, shouldRequestPortrait, fetchPortrait) }
+
+                "Similar" -> TvCollectionTabBody { TvSimilarShows(similar, onOpenCollection) }
+
+                else ->
+                    if (seasons != null) {
+                        TvWall(
+                            items = seasons,
+                            key = SeasonPlate::title,
+                            restoreKey = restoreKey,
+                            onOpen = { plate -> onOpenSeason(plate.division) },
+                            header = header,
+                            plate = { plate, modifier, onOpen -> TvSeasonPlate(collection, plate, posterPath, onOpen, modifier) },
+                        )
+                    } else {
+                        val rows = remember(collection) { rowsOf(collection.divisions) }
+                        TvCollectionRows(rows, watch, onOpenTitle, restoreKey, header, heldIds)
+                    }
+            }
+        }
+    }
+}
+
+/** A tab's own body, scrolled the way the phone's screens and the film page's own tabs already are. */
+@Composable
+private fun TvCollectionTabBody(content: @Composable () -> Unit) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Overscan.horizontal, vertical = Spacing.medium),
+    ) {
+        content()
+    }
+}
+
+/** About: the provider's rating, network and status — a show's counterpart to the film page's Details tab, minus the editor's-choice toggle, which is a film's own pin. */
+@Composable
+private fun TvSeriesAbout(info: TitleInfo?) {
+    Column {
+        ratingLabel(info?.rating)?.let { Text(text = it, style = TvTypeScale.body) }
+        info?.network?.takeIf(String::isNotBlank)?.let { Text(text = it, style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.small)) }
+        info?.status?.takeIf(String::isNotBlank)?.let { Text(text = it, style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.small)) }
     }
 }
 
@@ -136,6 +228,29 @@ private fun CollectionHeader(
     } else {
         Text(text = collection.name, style = TvTypeScale.title)
     }
+}
+
+/**
+ * "Resume"/"Continue"/"Play" on a show's own page — [catalog.seriesResume]'s
+ * own pick, worded the way the phone's Continue wall words its own resume
+ * caption, with [ResumeVerb] naming which of the three it is.
+ */
+@Composable
+private fun SeriesResumeRow(
+    pick: SeriesResumePick,
+    onResume: (setId: String) -> Unit,
+) {
+    val verb =
+        when (pick.verb) {
+            ResumeVerb.RESUME -> "Resume"
+            ResumeVerb.CONTINUE -> "Continue"
+            ResumeVerb.PLAY -> "Play"
+        }
+    TvTextRow(
+        text = "▶ $verb · ${episodeShort(pick.set)}",
+        onClick = { onResume(pick.set.setId) },
+        modifier = Modifier.padding(top = Spacing.small),
+    )
 }
 
 /**

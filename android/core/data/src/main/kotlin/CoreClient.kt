@@ -5,9 +5,12 @@ import uniffi.mediagram_core.AccountSummary
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.FetchReport
+import uniffi.mediagram_core.FranchiseRecord
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.ListRow
+import uniffi.mediagram_core.PeopleHitRecord
+import uniffi.mediagram_core.PersonRecord
 import uniffi.mediagram_core.PreferenceRow
 import uniffi.mediagram_core.Profile
 import uniffi.mediagram_core.SearchHit
@@ -15,6 +18,7 @@ import uniffi.mediagram_core.SessionSummary
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.StateSnapshot
 import uniffi.mediagram_core.SyncOutcome
+import uniffi.mediagram_core.TitleCreditsRecord
 import uniffi.mediagram_core.TitleInfo
 
 /**
@@ -308,4 +312,31 @@ interface CoreClient {
      * close is idempotent; failures propagate so the owner can retry cleanup.
      */
     fun close()
+
+    /**
+     * A title's cast, in billing order, apart from its crew. Empty for a
+     * key this device cannot parse, or an index with no `credits` table
+     * (v8 and older, or none installed yet) — neither is an error, and a
+     * default answers it so a fake need not know this call exists.
+     */
+    suspend fun titleCredits(key: String): TitleCreditsRecord = TitleCreditsRecord(cast = emptyList(), crew = emptyList())
+
+    /**
+     * One person and the keys of every title they are credited on, or
+     * `null` when nobody by this id is credited on anything the index holds.
+     */
+    suspend fun person(personId: Long): PersonRecord? = null
+
+    /** Every film franchise the index names, alphabetically. */
+    suspend fun franchises(): List<FranchiseRecord> = emptyList()
+
+    /** People whose name matches every word of [query], most-credited first. */
+    suspend fun searchPeople(query: String): List<PeopleHitRecord> = emptyList()
+
+    /**
+     * Downloads this person's portrait (w185), idempotently, and answers its
+     * file's path — or `null` when nobody recorded a profile for them, or the
+     * download failed. A missing face is cosmetic, never an error to handle.
+     */
+    suspend fun fetchPortrait(personId: Long): String? = null
 }

@@ -8,8 +8,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import catalog.MenuScreen
 
-/** Which kind of screen a [Frame] stands for. */
-enum class FrameKind { PLAYER, MENU, SEARCH, GENRE, TITLE, SEASON, COLLECTION, LIST }
+/**
+ * Which kind of screen a [Frame] stands for.
+ *
+ * [PERSON], [FRANCHISE], [GENRES], [LATEST] and [MOVIES_PAGE] are additive:
+ * every existing branch keeps its own value, so a stack encoded by an older
+ * build still decodes the same frames it always did — see [encode]/[decode].
+ */
+enum class FrameKind { PLAYER, MENU, SEARCH, GENRE, TITLE, SEASON, COLLECTION, LIST, PERSON, FRANCHISE, GENRES, LATEST, MOVIES_PAGE }
 
 /**
  * One screen on [LibraryPositions]'s stack: which kind it is, and the one
@@ -23,6 +29,8 @@ private const val FIELD_SEP = "\u001F"
 private const val FRAME_SEP = "\u001E"
 /** Joins a player frame's own setId to the explicit run it was opened with, when it has one — see [LibraryPositions.run]. */
 private const val RUN_SEP = "\u001D"
+/** Joins a collection frame's own key to the season its own page is showing, when one was chosen — see [LibraryPositions.collectionSeason]. */
+private const val SEASON_SEP = "\u001C"
 
 private fun encode(frames: List<Frame>): String = frames.joinToString(FRAME_SEP) { "${it.kind.name}$FIELD_SEP${it.payload}" }
 
@@ -105,7 +113,25 @@ class LibraryPositions(frames: MutableState<String>) {
         }
 
     val titleId: String? get() = payloadOf(FrameKind.TITLE)
-    val collection: String? get() = payloadOf(FrameKind.COLLECTION)
+    val collection: String? get() = payloadOf(FrameKind.COLLECTION)?.substringBefore(SEASON_SEP)
+
+    /**
+     * Which season a show's own page is showing, by its title — the
+     * collection frame's own payload carries it alongside the key, the same
+     * way a player frame's carries its run, so opening a title from that
+     * page (Similar, Cast, an episode) and coming back still finds it. Web's
+     * own counterpart is the season named right in the URL,
+     * `#/series/Show/Season N`; a phone has no URL bar, so this rides the
+     * same frame instead. `null` until [setCollectionSeason] first writes
+     * one — the page picks its own first default (a resume point, or the
+     * first season) and is not asked to agree on it up front.
+     */
+    val collectionSeason: String?
+        get() =
+            payloadOf(FrameKind.COLLECTION)?.let { payload ->
+                val at = payload.indexOf(SEASON_SEP)
+                if (at == -1) null else payload.substring(at + 1)
+            }
     val season: String? get() = payloadOf(FrameKind.SEASON)
     /** Which hand-built list is open, by its own id — the Collections tab's counterpart to [collection]. */
     val listId: String? get() = payloadOf(FrameKind.LIST)
@@ -114,6 +140,10 @@ class LibraryPositions(frames: MutableState<String>) {
     /** The genre a chip opened, by its own name. */
     val genre: String? get() = payloadOf(FrameKind.GENRE)
     val menuScreen: MenuScreen? get() = payloadOf(FrameKind.MENU)?.let { runCatching { MenuScreen.valueOf(it) }.getOrNull() }
+    /** The person a cast row or a search result opened, by their id. */
+    val personId: String? get() = payloadOf(FrameKind.PERSON)
+    /** The franchise a collection card opened, by its id. */
+    val franchiseId: String? get() = payloadOf(FrameKind.FRANCHISE)
 
     private fun push(kind: FrameKind, payload: String) = setStack(stack + Frame(kind, payload))
 
@@ -144,6 +174,13 @@ class LibraryPositions(frames: MutableState<String>) {
     fun openSeason(name: String) = push(FrameKind.SEASON, name)
     fun openCollection(key: String) = push(FrameKind.COLLECTION, key)
     fun openList(id: String) = push(FrameKind.LIST, id)
+    fun openPerson(id: String) = push(FrameKind.PERSON, id)
+    fun openFranchise(id: String) = push(FrameKind.FRANCHISE, id)
+    /** The Genres index — every department, not [openGenre]'s one shelf. */
+    fun openGenresIndex() = push(FrameKind.GENRES, "")
+    fun openLatest() = push(FrameKind.LATEST, "")
+    /** "All N films": the Movies department's own paged shelf, one step in from its front page. */
+    fun openMoviesPage() = push(FrameKind.MOVIES_PAGE, "")
 
     /**
      * Moves between menu screens rather than stacking them — asking for the
@@ -171,6 +208,19 @@ class LibraryPositions(frames: MutableState<String>) {
         if (current.lastOrNull()?.kind != FrameKind.SEARCH) return
         val sanitized = text.filterNot(Character::isISOControl)
         setStack(current.dropLast(1) + Frame(FrameKind.SEARCH, sanitized))
+    }
+
+    /**
+     * Remembers which season a show's own page is showing — see
+     * [collectionSeason]. A no-op with the collection frame not on top,
+     * which should not happen: only that page's own season picker calls this.
+     */
+    fun setCollectionSeason(name: String) {
+        val current = stack
+        val top = current.lastOrNull() ?: return
+        if (top.kind != FrameKind.COLLECTION) return
+        val key = top.payload.substringBefore(SEASON_SEP)
+        setStack(current.dropLast(1) + Frame(FrameKind.COLLECTION, "$key$SEASON_SEP$name"))
     }
 
     /** Leaves whichever screen is on top. A no-op with nothing open. */

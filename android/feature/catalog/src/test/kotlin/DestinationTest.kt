@@ -55,6 +55,26 @@ class DestinationTest {
     }
 
     @Test
+    fun aPersonPageIsNamedAfterThem() {
+        assertEquals("Bryan Cranston", barTitleFor(Destination.Person("Bryan Cranston")))
+        assertEquals("Back", backLabelFor(Destination.Person("Bryan Cranston")))
+    }
+
+    @Test
+    fun aFranchisePageIsNamedAfterIt() {
+        assertEquals("Dune Collection", barTitleFor(Destination.Franchise("Dune Collection")))
+        assertEquals("Back", backLabelFor(Destination.Franchise("Dune Collection")))
+    }
+
+    @Test
+    fun theMoviesPagedShelfGenresIndexAndLatestPageAreEachNamedAndCanBeLeft() {
+        for (destination in listOf(Destination.MoviesPage, Destination.Genres, Destination.Latest)) {
+            assertTrue(barTitleFor(destination).isNotEmpty())
+            assertEquals("Back", backLabelFor(destination))
+        }
+    }
+
+    @Test
     fun theSystemScreenSaysWhatItIs() {
         assertEquals("System", barTitleFor(Destination.System))
     }

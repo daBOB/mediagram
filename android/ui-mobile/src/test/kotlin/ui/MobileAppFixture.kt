@@ -7,6 +7,7 @@ import data.CoreClient
 import data.DefaultWatchStateRepository
 import data.InMemoryCoreStorage
 import data.StoredCoreProvider
+import designsystem.InMemoryAppearanceSettings
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -15,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import settings.InMemoryLibrarySettings
 import settings.InMemoryTelegramSettings
 import settings.InMemoryTmdbSettings
+import setup.AppearanceViewModel
 import setup.Libraries
 import setup.SettingsViewModel
 import setup.SetupViewModel
@@ -82,6 +84,10 @@ internal class MobileAppFixture :
             mapOf<Class<out ViewModel>, ViewModel>(
                 SetupViewModel::class.java to setup,
                 LoginViewModel::class.java to login,
+                // MobileApp itself resolves an AppearanceViewModel through
+                // hiltViewModel() for MediagramTheme; this owner has to hand it
+                // back too, the same reason it hands back the other two above.
+                AppearanceViewModel::class.java to AppearanceViewModel(InMemoryAppearanceSettings()),
             )
         val held =
             ViewModelProvider(

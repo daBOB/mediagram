@@ -68,6 +68,7 @@ fun LibraryScaffold(
     onBack: () -> Unit,
     menu: MenuActions,
     profile: ProfileBarState,
+    browse: BrowseActions,
     onSearch: () -> Unit,
     content: @Composable () -> Unit,
 ) {
@@ -109,7 +110,7 @@ fun LibraryScaffold(
                         ) { Icon(imageVector = Icons.Default.Search, contentDescription = null) }
                     }
                     ProfileButton(profile)
-                    OverflowMenu(menu = menu, onAskStartOver = { askingStartOver = true })
+                    OverflowMenu(menu = menu, browse = browse, onAskStartOver = { askingStartOver = true })
                 },
             )
         },

@@ -8,6 +8,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import model.PersonHit
 import org.junit.After
 import uniffi.mediagram_core.SearchHit
 import kotlin.test.Test
@@ -81,6 +82,23 @@ class SearchViewModelTest {
             runCurrent()
 
             assertEquals(SearchUiState.Ready(listOf(hit)), awaitItem())
+        }
+    }
+
+    /** People ride alongside the hits a settled query answers, both from the same round. */
+    @Test
+    fun aSettledQueryAlsoAnswersTheCoresOwnPeople() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val person = PersonHit(1, "Bryan Cranston", null, listOf("tmdb-movie-1"))
+        val vm = SearchViewModel(FakeCatalogRepository(movies = 1, peopleHits = listOf(person)))
+
+        vm.state.test {
+            awaitItem()
+            vm.setQuery("bryan")
+            advanceTimeBy(250)
+            runCurrent()
+
+            assertEquals(listOf(person), (awaitItem() as SearchUiState.Ready).people)
         }
     }
 

@@ -1,15 +1,24 @@
 package ui.tv
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
+import androidx.tv.material3.ColorScheme
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Typography
 import androidx.tv.material3.darkColorScheme
+import designsystem.Accent
 import designsystem.Palette
 import designsystem.TvTypeScale
 
 /**
- * Dark by default, like the phone: a media library read from the couch is
- * still read in the dark, regardless of what the set's own theme is set to.
+ * Dark, always: a media library read from the couch is read in the dark,
+ * regardless of what the set's own theme is set to, and a television is
+ * watched in a dark room in a way a phone is not — Settings › Appearance's
+ * theme choice (Dark/Light/Auto) is a phone-only question here, a
+ * deliberate difference from the web recorded in phase 8 of the
+ * editorial-departments parity plan. [accent] is the one part of
+ * Appearance the television does answer, at its own dark value.
  *
  * tv-material brings its own `MaterialTheme` and `ColorScheme` type —
  * `:ui-tv` never has material3 on its compile classpath, so
@@ -19,13 +28,13 @@ import designsystem.TvTypeScale
  * retyped for the television, so both theme adapters read one palette the
  * same way and a hex changed in one place changes on both surfaces.
  */
-internal val TvColors =
+internal fun tvColorScheme(accent: Color): ColorScheme =
     darkColorScheme(
-        primary = Palette.Imprint,
+        primary = accent,
         onPrimary = Palette.Ground,
         primaryContainer = Palette.Sunk,
-        onPrimaryContainer = Palette.Imprint,
-        inversePrimary = Palette.Imprint,
+        onPrimaryContainer = accent,
+        inversePrimary = accent,
         secondary = Palette.Figures,
         onSecondary = Palette.Ground,
         secondaryContainer = Palette.Sunk,
@@ -40,7 +49,7 @@ internal val TvColors =
         onSurface = Palette.Text,
         surfaceVariant = Palette.Sunk,
         onSurfaceVariant = Palette.Figures,
-        surfaceTint = Palette.Imprint,
+        surfaceTint = accent,
         inverseSurface = Palette.Text,
         inverseOnSurface = Palette.Ground,
         error = Palette.Ochre,
@@ -75,9 +84,16 @@ private val TvTypography =
 
 /** The one theme every TV screen composes under; no screen builds its own. */
 @Composable
-fun TvTheme(content: @Composable () -> Unit) {
+fun TvTheme(
+    accent: Accent = Accent.Default,
+    content: @Composable () -> Unit,
+) {
+    val accentColor = accent.dark
+    // The one place this module is allowed to write Palette.Imprint: see
+    // designsystem.MediagramTheme's own SideEffect for why.
+    SideEffect { Palette.Imprint = accentColor }
     MaterialTheme(
-        colorScheme = TvColors,
+        colorScheme = tvColorScheme(accentColor),
         typography = TvTypography,
         content = content,
     )

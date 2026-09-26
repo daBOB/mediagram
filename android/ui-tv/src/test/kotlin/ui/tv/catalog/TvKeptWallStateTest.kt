@@ -17,6 +17,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import ui.tv.TvContinueEntryKey
+import ui.tv.TvWatchlistEntryKey
 import ui.tv.profile.TvChosenProfile
 import kotlin.test.assertEquals
 
@@ -26,33 +28,42 @@ import kotlin.test.assertEquals
  * to hold. The empty texts are spelled out here, not read back from
  * [KeptKind], so a change to the shared wording shows up as a change to
  * what both surfaces say rather than passing silently.
+ *
+ * Continue and Watchlist have no masthead tab of their own since this phase
+ * moved them to the overflow menu (`mastheadSplitOf`) — `TvLibrary`'s own
+ * menu rows reach them by asking for [TvContinueEntryKey]/[TvWatchlistEntryKey]
+ * as the [TvCatalogScreen.restoreKey], which these tests do directly instead
+ * of pressing a masthead tab that is no longer there; `TvMenuTest` covers the
+ * menu rows themselves. Collections stays on the masthead, so it is still
+ * reached the way it always was.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
 class TvKeptWallStateTest : TvScreenStateTest() {
     @Test
     fun eachEmptyKeptTabSaysThePhonesWords() {
-        val empty =
-            mapOf(
-                "Continue" to "Nothing started yet.",
-                "Watchlist" to "Nothing on the list.",
-                "Collections" to "No lists yet.",
-            )
-        for ((tab, text) in empty) {
-            showCatalog(ready(films(1)))
-            compose.onNodeWithText(tab).performSemanticsAction(SemanticsActions.OnClick)
-            compose.onNodeWithText(text).assertExists()
-            close()
-        }
+        showCatalog(ready(films(1)), restoreKey = TvContinueEntryKey)
+        compose.onNodeWithText("Nothing started yet.").assertExists()
+        close()
+
+        showCatalog(ready(films(1)), restoreKey = TvWatchlistEntryKey)
+        compose.onNodeWithText("Nothing on the list.").assertExists()
+        close()
+
+        showCatalog(ready(films(1)))
+        compose.onNodeWithText("Collections").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText("No lists yet.").assertExists()
     }
 
     @Test
     fun continueHoldsWhatWasStartedCaptionedWithWhereItStoppedAndFocusesIt() {
         val stopped = Progress(setId = "film-1", at = 1_200.0, duration = 6_000.0, updatedAt = 2)
         var opened: String? = null
-        showCatalog(withWatch(films(3), WatchSnapshot.Empty.copy(progress = listOf(stopped))), onOpenTitle = { opened = it })
-
-        compose.onNodeWithText("Continue").performSemanticsAction(SemanticsActions.OnClick)
+        showCatalog(
+            withWatch(films(3), WatchSnapshot.Empty.copy(progress = listOf(stopped))),
+            onOpenTitle = { opened = it },
+            restoreKey = TvContinueEntryKey,
+        )
 
         compose.onNodeWithText("Continue · 1").assertExists()
         compose.onNodeWithText(resumeLine(stopped)).assertExists()
@@ -63,9 +74,7 @@ class TvKeptWallStateTest : TvScreenStateTest() {
 
     @Test
     fun watchlistHoldsWhatWasListedNewestFirstAndFocusesTheFirst() {
-        showCatalog(withWatch(films(3), WatchSnapshot.Empty.copy(watchlist = listOf("film-2", "film-0"))))
-
-        compose.onNodeWithText("Watchlist").performSemanticsAction(SemanticsActions.OnClick)
+        showCatalog(withWatch(films(3), WatchSnapshot.Empty.copy(watchlist = listOf("film-2", "film-0"))), restoreKey = TvWatchlistEntryKey)
 
         compose.onNodeWithText("Watchlist · 2").assertExists()
         compose.onNodeWithText("Film 2").assertIsFocused()
@@ -85,7 +94,12 @@ class TvKeptWallStateTest : TvScreenStateTest() {
         assertEquals("b", opened)
     }
 
-    /** The last title taken off the Watchlist from its own page leaves no plate; the remote goes up to the masthead. */
+    /**
+     * The last title taken off the Watchlist from its own page leaves no
+     * plate; the remote goes up to the masthead — its own row, entering at
+     * Home, since Watchlist has no masthead tab of its own to return to any
+     * more (see the class doc).
+     */
     @Test
     fun aKeptWallEmptiedUnderTheViewerSendsTheRemoteToTheMasthead() {
         val sets = films(2)
@@ -98,19 +112,16 @@ class TvKeptWallStateTest : TvScreenStateTest() {
                 onOpenCollection = {},
                 onOpenList = {},
                 onCreateList = {},
+                restoreKey = TvWatchlistEntryKey,
             )
         }
-        // Walked to and pressed, as a remote does: the masthead then
-        // remembers Watchlist as the tab the remote was last on.
-        compose.onNodeWithText("Watchlist").performSemanticsAction(SemanticsActions.RequestFocus)
-        compose.onNodeWithText("Watchlist").performSemanticsAction(SemanticsActions.OnClick)
         compose.onNodeWithText("Film 0").assertIsFocused()
 
         compose.runOnUiThread { state.value = withWatch(sets, WatchSnapshot.Empty) }
         compose.waitForIdle()
 
         compose.onNodeWithText("Nothing on the list.").assertExists()
-        compose.onNodeWithText("Watchlist").assertIsFocused()
+        compose.onNodeWithText("Home").assertIsFocused()
     }
 
     private fun withWatch(
