@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
+import catalog.BrowseViewModel
 import catalog.CatalogViewModel
 import catalog.SearchViewModel
 import catalog.profile.ProfileViewModel
@@ -48,7 +49,6 @@ import system.LanCacheUiState
 import system.LanCacheViewModel
 import system.SystemUiState
 import system.SystemViewModel
-import ui.tv.catalog.TvCatalogExtras
 import ui.tv.player.TvPlayerFixture
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SearchHit
@@ -161,14 +161,13 @@ internal class TvAppFixture(
             sets.filter { it.title.contains(query, ignoreCase = true) }.map { SearchHit(setId = it.setId, matched = "title", excerpt = null) }
         }
         // SearchViewModel now asks for people alongside hits in the same
-        // round (phase 2's search grouping); the television screen does not
-        // read them yet (phase 6 redesigns it), but the strict mock still
-        // has to answer the call or every search in this fixture fails.
+        // round for search's People group; the strict mock has to answer the
+        // call or every search in this fixture fails.
         coEvery { repository.searchPeople(any()) } returns emptyList()
-        // The five new lookups `TvCatalogExtras` forwards straight to the
-        // repository (phase 6's own title tabs, person and franchise pages) —
-        // this mock is strict, so every one this fixture's walk can reach
-        // needs its own answer, the same reason `searchPeople` above does.
+        // The lookups the title tabs, person and franchise pages make through
+        // CatalogViewModel and BrowseViewModel — this mock is strict, so every
+        // one this fixture's walk can reach needs its own answer, the same
+        // reason `searchPeople` above does.
         coEvery { repository.titleCredits(any()) } returns TitleCredits.Empty
         coEvery { repository.person(any()) } returns null
         coEvery { repository.franchises() } returns emptyList()
@@ -253,10 +252,10 @@ internal class TvAppFixture(
                 // every other entry in this map exists (see the comment above
                 // login/profile/etc.).
                 AppearanceViewModel::class.java to AppearanceViewModel(InMemoryAppearanceSettings()),
-                // TvLibrary resolves TvCatalogExtras through hiltViewModel()
+                // TvLibrary resolves BrowseViewModel through hiltViewModel()
                 // for the same reason every entry above exists — see that
                 // comment.
-                TvCatalogExtras::class.java to TvCatalogExtras(repository, PortraitRequestLog()),
+                BrowseViewModel::class.java to BrowseViewModel(repository, PortraitRequestLog()),
             )
         val held =
             ViewModelProvider(

@@ -1,5 +1,6 @@
 package ui.tv
 
+import catalog.BrowseViewModel
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -11,7 +12,6 @@ import model.WatchSnapshot
 import ui.FrameResolution
 import ui.LibraryPositions
 import ui.resolveFrame
-import ui.tv.catalog.TvCatalogExtras
 import ui.tv.catalog.TvGenre
 import ui.tv.catalog.TvList
 import ui.tv.catalog.TvPlayAllKey
@@ -30,7 +30,7 @@ internal fun TvSearchBranch(
     catalogState: CatalogUiState,
     watch: WatchSnapshot,
     restore: TvRestoreKeys,
-    extras: TvCatalogExtras,
+    browse: BrowseViewModel,
     leave: () -> Unit,
 ) {
     val here = at.depth
@@ -61,8 +61,8 @@ internal fun TvSearchBranch(
             restore.opened(here, id)
             at.openList(id)
         },
-        shouldRequestPortrait = extras::shouldRequestPortrait,
-        fetchPortrait = extras::fetchPortrait,
+        shouldRequestPortrait = browse::shouldRequestPortrait,
+        fetchPortrait = browse::fetchPortrait,
     )
 }
 

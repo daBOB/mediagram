@@ -12,6 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogUiState
+import catalog.BrowseViewModel
 import catalog.CatalogViewModel
 import catalog.Entry
 import catalog.allTitles
@@ -36,7 +37,6 @@ import ui.rememberLibraryPositions
 import ui.resolve
 import ui.tv.catalog.TvCollection
 import ui.settings.SettingsOutcomes
-import ui.tv.catalog.TvCatalogExtras
 import ui.tv.catalog.TvFetchResultDialog
 import ui.tv.catalog.TvFranchisePage
 import ui.tv.catalog.TvGenresIndex
@@ -80,7 +80,7 @@ internal fun TvLibrary(
     val catalogState by catalogViewModel.state.collectAsStateWithLifecycle()
     val fetchViewModel: FetchViewModel = hiltViewModel()
     val fetchState by fetchViewModel.state.collectAsStateWithLifecycle()
-    val extras: TvCatalogExtras = hiltViewModel()
+    val browse: BrowseViewModel = hiltViewModel()
     val kidsProfile by catalogViewModel.kidsProfile.collectAsStateWithLifecycle()
     val at = rememberLibraryPositions()
     val restore = rememberTvRestoreKeys()
@@ -119,13 +119,13 @@ internal fun TvLibrary(
 
         FrameKind.MENU -> TvMenuScreenBranch(at, fetchState, fetchViewModel, leave)
 
-        FrameKind.SEARCH -> TvSearchBranch(at, catalogState, watch, restore, extras, leave)
+        FrameKind.SEARCH -> TvSearchBranch(at, catalogState, watch, restore, browse, leave)
 
         FrameKind.GENRE -> TvGenreBranch(at, catalogState, watch, restore, leave)
 
         FrameKind.TITLE ->
             TvResolvedBranch(resolved.title, catalogState, leave) { title ->
-                val credits = rememberTitleCredits(title.posterKey, extras::titleCredits)
+                val credits = rememberTitleCredits(title.posterKey, catalogViewModel::titleCredits)
                 val similar = remember(title, allFilms) { similarTo(title, allFilms) { false } }
                 TvTitlePage(
                     set = title,
@@ -147,8 +147,8 @@ internal fun TvLibrary(
                         restore.opened(here, personId.toString())
                         at.openPerson(personId.toString())
                     },
-                    shouldRequestPortrait = extras::shouldRequestPortrait,
-                    fetchPortrait = extras::fetchPortrait,
+                    shouldRequestPortrait = browse::shouldRequestPortrait,
+                    fetchPortrait = browse::fetchPortrait,
                     similar = similar,
                     onOpenTitle = { setId ->
                         restore.opened(here, setId)
@@ -180,7 +180,7 @@ internal fun TvLibrary(
 
         FrameKind.COLLECTION ->
             TvResolvedBranch(resolved.collection, catalogState, leave) { collection ->
-                val credits = rememberTitleCredits(collection.posterKey, extras::titleCredits)
+                val credits = rememberTitleCredits(collection.posterKey, catalogViewModel::titleCredits)
                 val similar = remember(collection, allShows) { similarShows(collection, allShows) { false } }
                 val resume = remember(collection, watch) { seriesResumeFor(collection, watch) }
                 TvCollection(
@@ -207,8 +207,8 @@ internal fun TvLibrary(
                         restore.opened(here, personId.toString())
                         at.openPerson(personId.toString())
                     },
-                    shouldRequestPortrait = extras::shouldRequestPortrait,
-                    fetchPortrait = extras::fetchPortrait,
+                    shouldRequestPortrait = browse::shouldRequestPortrait,
+                    fetchPortrait = browse::fetchPortrait,
                     similar = similar,
                     onOpenCollection = { key ->
                         restore.opened(here, key)
@@ -230,9 +230,9 @@ internal fun TvLibrary(
                 LaunchedEffect(Unit) { leave() }
             } else {
                 BackHandler(onBack = leave)
-                val person: Person? = rememberPerson(personId, extras::person)
+                val person: Person? = rememberPerson(personId, browse::person)
                 val page = remember(person, shelves) { personPageOf(person, shelves) }
-                val portrait = rememberPortrait(personId, person?.portraitPath, extras::shouldRequestPortrait, extras::fetchPortrait)
+                val portrait = rememberPortrait(personId, person?.portraitPath, browse::shouldRequestPortrait, browse::fetchPortrait)
                 TvPersonPage(
                     page = page,
                     portrait = portrait,
@@ -255,7 +255,7 @@ internal fun TvLibrary(
                 LaunchedEffect(Unit) { leave() }
             } else {
                 BackHandler(onBack = leave)
-                val overviews = rememberFranchiseOverviews(extras::franchises)
+                val overviews = rememberFranchiseOverviews(browse::franchiseOverviews)
                 val page = remember(franchiseId, allFilms, overviews) { franchisePageOf(franchiseId, allFilms, overviews) }
                 if (page == null) {
                     LaunchedEffect(Unit) { leave() }
