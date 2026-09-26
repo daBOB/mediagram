@@ -1,17 +1,23 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.testTag
 import androidx.tv.material3.Tab
 import androidx.tv.material3.TabDefaults
 import androidx.tv.material3.TabRow
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import designsystem.Overscan
 import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
@@ -60,5 +66,41 @@ internal fun TvSectionTabs(
                 )
             }
         }
+    }
+}
+
+/**
+ * [TvTitlePage]'s own scrollable body's tag — its tab row above carries a
+ * horizontal scroll capability of its own on a television-wide tab strip, so
+ * a test asking for "the" scrollable node by `hasScrollAction()` alone finds
+ * two; this is the one that is actually the page's own body, whichever tab
+ * is showing.
+ */
+internal const val TvTitlePageBodyTag = "tv-title-page-body"
+
+/**
+ * One tab's own scrollable body — a film page's Cast/Similar/Details, a
+ * series page's About/Cast/Similar — padded and scrolled the same way
+ * whichever tab is showing, so each tab's file only supplies what actually
+ * differs between them.
+ *
+ * [testTag] names the scrollable node for a test that needs to tell it apart
+ * from [TvSectionTabs]' own horizontal scroll on a television-wide tab strip
+ * — `hasScrollAction()` alone would otherwise find both.
+ */
+@Composable
+internal fun TvTabBody(
+    testTag: String? = null,
+    content: @Composable () -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .let { if (testTag != null) it.testTag(testTag) else it }
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Overscan.horizontal, vertical = Spacing.medium),
+    ) {
+        content()
     }
 }

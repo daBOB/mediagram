@@ -72,3 +72,13 @@ internal fun sectionsFor(groups: SearchGroups, filter: SearchFilter): List<Searc
         }
     }
 }
+
+/**
+ * One request for an entry to take the remote. A fresh object each time, so
+ * asking for the same entry twice — Search pressed again on the same answer —
+ * is still a new request. Dropped the moment it is answered: the entries
+ * leave composition whenever an answer has none, and a request still
+ * standing when they came back would pull the remote out of the field
+ * mid-typing.
+ */
+internal class RowAsk(val index: Int)

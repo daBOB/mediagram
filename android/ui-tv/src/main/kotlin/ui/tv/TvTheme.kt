@@ -16,9 +16,9 @@ import designsystem.TvTypeScale
  * regardless of what the set's own theme is set to, and a television is
  * watched in a dark room in a way a phone is not — Settings › Appearance's
  * theme choice (Dark/Light/Auto) is a phone-only question here, a
- * deliberate difference from the web recorded in phase 8 of the
- * editorial-departments parity plan. [accent] is the one part of
- * Appearance the television does answer, at its own dark value.
+ * deliberate difference from the web recorded in
+ * `docs/system-architecture.md`. [accent] is the one part of Appearance the
+ * television does answer, at its own dark value.
  *
  * tv-material brings its own `MaterialTheme` and `ColorScheme` type —
  * `:ui-tv` never has material3 on its compile classpath, so

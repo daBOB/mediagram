@@ -17,7 +17,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.tv.material3.Text
 import catalog.factsLine
-import catalog.ratingLabel
+import catalog.franchisesIn
 import catalog.resumeLine
 import data.ProgressPoint
 import data.ResumePoint
@@ -49,8 +49,13 @@ import uniffi.mediagram_core.TitleInfo
  * says Play; this follows the web's page, which says Resume.
  *
  * Its genres open their own pages through [onOpenGenre]; coming back from
- * one, [restoreKey] names it and that link takes the remote instead of
- * Play, so Back lands where the viewer was.
+ * one, [restoreKey] names it and that link takes the remote instead of Play.
+ * The same [restoreKey] also picks up whichever of Cast or Similar it was
+ * opened from — a person's or a similar film's id — and drives both which
+ * tab is initially showing and which of its plates takes focus, recomputed
+ * fresh on every composition: this page is torn down and rebuilt on the way
+ * back from a person's page rather than staying alive underneath it, so a
+ * plain `rememberSaveable` restart has nothing of its own to restore from.
  *
  * [info] being null is ordinary rather than a failure, for the phone's
  * reason: a course has no provider entry, and a library assembled without
@@ -77,6 +82,8 @@ internal fun TvTitlePage(
     fetchPortrait: suspend (Long) -> String? = { null },
     similar: List<MediaSet> = emptyList(),
     onOpenTitle: (setId: String) -> Unit = {},
+    allFilms: List<MediaSet> = emptyList(),
+    onOpenFranchise: (id: Long) -> Unit = {},
     editorsChoice: String? = null,
     onToggleEditorsChoice: (() -> Unit)? = null,
 ) {
@@ -85,6 +92,10 @@ internal fun TvTitlePage(
         remember(progress) {
             val resumes = progress?.let { ResumePoint.resumeAt(ProgressPoint(it.at, it.duration)) } != null
             if (resumes) resumeLine(progress) else ""
+        }
+    val franchise =
+        remember(set.setId, set.collectionId, allFilms) {
+            set.collectionId?.let { id -> franchisesIn(allFilms).find { it.id == id } }
         }
     val tabs =
         remember(credits, similar) {
@@ -95,7 +106,17 @@ internal fun TvTitlePage(
                 add("Details")
             }
         }
-    var selected by rememberSaveable(set.setId) { mutableIntStateOf(0) }
+    // See the class doc: restoreKey, not rememberSaveable, is what survives.
+    val initialTab =
+        remember(tabs, credits, similar, restoreKey) {
+            when {
+                restoreKey == null -> 0
+                credits.cast.any { it.personId.toString() == restoreKey } -> tabs.indexOf("Cast")
+                similar.any { it.setId == restoreKey } -> tabs.indexOf("Similar")
+                else -> 0
+            }
+        }
+    var selected by rememberSaveable(set.setId) { mutableIntStateOf(initialTab) }
     if (selected >= tabs.size) selected = 0
 
     TvPage {
@@ -108,17 +129,17 @@ internal fun TvTitlePage(
             )
             when (tabs[selected]) {
                 "Cast" ->
-                    TvPageBody {
-                        TvCastRow(credits, onOpenPerson, shouldRequestPortrait, fetchPortrait)
+                    TvTabBody(TvTitlePageBodyTag) {
+                        TvCastRow(credits, onOpenPerson, shouldRequestPortrait, fetchPortrait, restoreKey)
                     }
 
                 "Similar" ->
-                    TvPageBody {
-                        TvSimilarFilms(similar, onOpenTitle)
+                    TvTabBody(TvTitlePageBodyTag) {
+                        TvSimilarFilms(similar, onOpenTitle, restoreKey)
                     }
 
                 "Details" ->
-                    TvPageBody {
+                    TvTabBody(TvTitlePageBodyTag) {
                         TvTitleDetails(set, info, editorsChoice, onToggleEditorsChoice)
                     }
 
@@ -142,6 +163,16 @@ internal fun TvTitlePage(
                                 .padding(horizontal = Overscan.horizontal),
                         readableOverview = true,
                     ) {
+                        // The franchise a film belongs to — `film-page.js`'s
+                        // own "Part of" fact — sits with the genres above it,
+                        // before the file's own technical line.
+                        franchise?.let { own ->
+                            TvTextRow(
+                                text = "Part of ${own.name}",
+                                onClick = { onOpenFranchise(own.id) },
+                                modifier = Modifier.padding(bottom = Spacing.small),
+                            )
+                        }
                         // As stored, not shouted: the web prints the container
                         // and codecs in the case the index recorded them.
                         technicalLine(set).takeIf(String::isNotEmpty)?.let { TvQuietLine(it) }
@@ -158,59 +189,5 @@ internal fun TvTitlePage(
     }
     LaunchedEffect(set.setId, selected) {
         if (selected == 0 && restoreKey !in set.genres) play.requestFocus()
-    }
-}
-
-/** A tab's own body, scrolled the same way the Overview tab's header already is. */
-@Composable
-private fun TvPageBody(content: @Composable () -> Unit) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .testTag(TvTitlePageBodyTag)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = Overscan.horizontal, vertical = Spacing.medium),
-    ) {
-        content()
-    }
-}
-
-/**
- * The scrollable body's own tag — the tab row above it (`TvSectionTabs`)
- * carries a horizontal scroll capability of its own on a television-wide
- * tab strip, so a test asking for "the" scrollable node by
- * `hasScrollAction()` alone finds two; this is the one that is actually the
- * page's own body, whichever tab is showing.
- */
-internal const val TvTitlePageBodyTag = "tv-title-page-body"
-
-/**
- * Details: the file as it sits on disk, the provider's rating and status,
- * and the editor's-choice toggle — the phone's own "Make editor's
- * choice"/"Remove as editor's choice" button, ported to a television for
- * the first time by this phase. `null` [onToggleEditorsChoice] hides the
- * row entirely, same as the phone's kids-profile gate.
- */
-@Composable
-private fun TvTitleDetails(
-    set: MediaSet,
-    info: TitleInfo?,
-    editorsChoice: String?,
-    onToggleEditorsChoice: (() -> Unit)?,
-) {
-    Column {
-        technicalLine(set).takeIf(String::isNotEmpty)?.let { Text(text = it, style = TvTypeScale.body) }
-        ratingLabel(info?.rating)?.let { Text(text = it, style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.small)) }
-        info?.network?.takeIf(String::isNotBlank)?.let { Text(text = it, style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.small)) }
-        info?.status?.takeIf(String::isNotBlank)?.let { Text(text = it, style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.small)) }
-        if (onToggleEditorsChoice != null) {
-            val pinned = editorsChoice == set.setId
-            TvTextRow(
-                text = if (pinned) "Remove as editor's choice" else "Make editor's choice",
-                onClick = onToggleEditorsChoice,
-                modifier = Modifier.padding(top = Spacing.medium),
-            )
-        }
     }
 }

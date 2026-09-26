@@ -6,10 +6,14 @@ import javax.inject.Singleton
 
 /**
  * Which people this session has already asked [CatalogRepository.fetchPortrait]
- * for — once per person per session, the phase's own rule: a cast row or a
- * person page asks at most once, even recomposed or reopened many times
- * while the app process stays alive. A device restart is a new session and
- * asks again, the same as a device that never asked at all.
+ * for — at most once per person per session: a cast row or a person page
+ * asks once, even recomposed or reopened many times while the app process
+ * stays alive. A device restart is a new session and asks again, the same
+ * as a device that never asked at all.
+ *
+ * This only reserves; `ui.catalog.rememberPortrait` (the sole caller) is
+ * what decides whether a reservation whose fetch was cut short — a screen
+ * left mid-request — gets tried again later in the same session.
  */
 @Singleton
 class PortraitRequestLog

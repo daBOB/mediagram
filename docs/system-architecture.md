@@ -552,8 +552,15 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   blank one is saved; on a remote the keyboard's action key is also how a viewer who
   only came to look closes the keyboard, so the television ignores a blank answer and
   offers "Clear stored key" behind a confirmation instead.
-- **No picture-in-picture, gesture controls or media session.** No touch input and no
-  lock screen to control from; these are phone affordances.
+- **No picture-in-picture or gesture controls.** No touch input and no window to shrink
+  into; these are phone affordances. The player does publish a media session, so the
+  remote's play/pause, fast-forward and rewind keys reach it.
+- **Always dark; Appearance offers the accent only.** A television is watched in a dark
+  room, where a light 10-foot page glares, so the theme choice (Dark/Light/Auto) is not
+  ported; the seven accents are, at their dark values (user decision, 2026-09-26).
+- **Continue and My List live in the Menu, not the masthead.** The web moved them to its
+  side rail's utilities; the Menu is the television's rail, so they sit there with Latest
+  and Genres, reachable once each.
 - **No voice search.** Search is typed through the system keyboard.
 - **Artwork needs a TMDB key on the device.** As on the phone, posters and backdrops come
   from TMDB; a device without a key shows initials on plain plates.

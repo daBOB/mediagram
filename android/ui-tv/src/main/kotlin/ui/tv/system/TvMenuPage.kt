@@ -38,8 +38,8 @@ import ui.tv.setup.TvConfirmDialog
  *
  * [onMyList]/[onContinueWatching]/[onLatest]/[onGenres] are the four
  * utilities `mastheadSplitOf` moved off the masthead's own tab row and into
- * this overflow — reachable once each, the phase's own design (see
- * `CatalogTabs.kt`'s `UtilityDestination`), appended after the phone's five
+ * this overflow — reachable once each, as the web's side rail offers them
+ * (see `CatalogTabs.kt`'s `UtilityDestination`), appended after the phone's five
  * so every existing row keeps its place and this page's own tests of them.
  */
 @Composable

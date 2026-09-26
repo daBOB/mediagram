@@ -86,4 +86,59 @@ class RememberLookupTest {
         assertTrue(requireNotNull(job).isCancelled)
         assertTrue(ShadowLog.getLogsForTag("CatalogMetadata").isEmpty())
     }
+
+    /**
+     * [rememberPortrait] marks a person's reservation reserved-not-done the
+     * moment it starts a fetch; a fetch cut short (here, by cancelling it
+     * outright, the same shape as the composable being disposed mid-fetch)
+     * is retried the next time something asks, even though [shouldRequest]
+     * — standing in for `data.PortraitRequestLog`'s own shared "already
+     * asked" answer — says no a second time.
+     */
+    @Test
+    fun aPortraitFetchCutShortIsRetriedLaterInTheSession() {
+        var attempts = 0
+        var result: String? = null
+        // A fake with the same shape as the real `PortraitRequestLog.shouldRequest`:
+        // true only the first time this session, never again after that.
+        val reserved = mutableSetOf<Long>()
+        val shouldRequest: (Long) -> Boolean = { id -> reserved.add(id) }
+        show {
+            result =
+                rememberPortrait(personId = PersonId, known = null, shouldRequest = shouldRequest) {
+                    attempts++
+                    throw CancellationException("left mid-fetch")
+                }
+        }
+        assertEquals(1, attempts)
+        assertEquals(null, result)
+
+        // The shared log still says no — already reserved on the first ask
+        // — proving the retry does not wait for it to say yes again.
+        show {
+            result =
+                rememberPortrait(personId = PersonId, known = null, shouldRequest = shouldRequest) {
+                    attempts++
+                    "portrait.jpg"
+                }
+        }
+        assertEquals(2, attempts)
+        assertEquals("portrait.jpg", result)
+    }
+
+    /** A fetch that ran to completion, successfully or not, is never retried — [shouldRequest] alone still gates it. */
+    @Test
+    fun aFinishedPortraitFetchIsNotRetried() {
+        var attempts = 0
+        val reserved = mutableSetOf<Long>()
+        val shouldRequest: (Long) -> Boolean = { id -> reserved.add(id) }
+        show { rememberPortrait(personId = PersonId + 1, known = null, shouldRequest = shouldRequest) { attempts++; "portrait.jpg" } }
+        assertEquals(1, attempts)
+
+        show { rememberPortrait(personId = PersonId + 1, known = null, shouldRequest = shouldRequest) { attempts++; "portrait.jpg" } }
+        assertEquals(1, attempts)
+    }
 }
+
+/** Distinct from any personId another test in this class or module might use, so the process-wide portrait sets never collide across tests. */
+private const val PersonId = 90210001L

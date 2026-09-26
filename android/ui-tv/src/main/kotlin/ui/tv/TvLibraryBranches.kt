@@ -5,13 +5,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.focus.FocusRequester
 import catalog.CatalogUiState
+import catalog.CatalogViewModel
 import catalog.mediaSet
 import catalog.runFor
 import ui.LibraryPositions
 import ui.tv.catalog.TvCatalogScreen
+import ui.tv.catalog.TvSearchEntryKey
 import ui.tv.player.TvPlayerScreen
 import ui.tv.profile.TvChosenProfile
 
@@ -41,6 +44,7 @@ internal fun TvCatalogRoot(
     onOpenGenre: (name: String) -> Unit = {},
     onOpenFranchise: (id: Long) -> Unit = {},
     onOpenMoviesPage: () -> Unit = {},
+    onPlay: (setId: String) -> Unit = onOpenTitle,
 ) {
     val masthead = remember { FocusRequester() }
     var onMasthead by remember { mutableStateOf(false) }
@@ -66,6 +70,7 @@ internal fun TvCatalogRoot(
         onOpenGenre = onOpenGenre,
         onOpenFranchise = onOpenFranchise,
         onOpenMoviesPage = onOpenMoviesPage,
+        onPlay = onPlay,
     )
 }
 
@@ -90,3 +95,82 @@ internal fun TvPlayerBranch(
     val run = at.run ?: set?.let { runFor(it, catalogState) }.orEmpty()
     TvPlayerScreen(setId = setId, set = set, run = run, onBack = leave, onSwitch = at::replacePlayer)
 }
+
+/**
+ * The shelves, with nothing open over them — [TvLibrary]'s own "nothing
+ * else is showing" frame, kept apart from its dispatcher for the same
+ * reason [TvCatalogRoot] already is. [saved] holds [TvCatalogRoot]'s own
+ * state — which masthead tab was chosen, how far its wall had scrolled —
+ * apart from the rest of the library's, so Back finds the tab it left
+ * rather than Home once whatever covered it is gone.
+ */
+@Composable
+internal fun TvLibraryHomeFrame(
+    saved: SaveableStateHolder,
+    catalogState: CatalogUiState,
+    profile: TvChosenProfile,
+    fetching: Boolean,
+    restore: TvRestoreKeys,
+    here: Int,
+    at: LibraryPositions,
+    catalogViewModel: CatalogViewModel,
+    onOpenMenu: () -> Unit,
+) {
+    saved.SaveableStateProvider(CatalogStateKey) {
+        TvCatalogRoot(
+            state = catalogState,
+            profile = profile,
+            fetching = fetching,
+            restoreKey = restore.of(here),
+            onOpenTitle = { setId ->
+                restore.opened(here, setId)
+                at.openTitle(setId)
+            },
+            onOpenCollection = { key ->
+                restore.opened(here, key)
+                at.openCollection(key)
+            },
+            onOpenList = { id ->
+                restore.opened(here, id)
+                at.openList(id)
+            },
+            onCreateList = catalogViewModel::createList,
+            onTabChanged = { restore.forget(here) },
+            onOpenSearch = {
+                restore.opened(here, TvSearchEntryKey)
+                at.openSearch()
+            },
+            onOpenMenu = {
+                restore.forget(here)
+                onOpenMenu()
+            },
+            onEntryRestored = { restore.forget(here) },
+            onFinish = catalogViewModel::markFinished,
+            onOpenGenre = { name ->
+                restore.opened(here, name)
+                at.openGenre(name)
+            },
+            onOpenFranchise = { id ->
+                restore.opened(here, id.toString())
+                at.openFranchise(id.toString())
+            },
+            onOpenMoviesPage = {
+                restore.opened(here, TvMoviesPageEntryKey)
+                at.openMoviesPage()
+            },
+            // The cover story's own "Watch now" — straight to the player,
+            // the same as `web/home-cover.js:137`, rather than the title
+            // page every other plate on this screen opens.
+            onPlay = { setId ->
+                restore.opened(here, setId)
+                at.openPlayer(setId)
+            },
+        )
+    }
+}
+
+/** Where [TvCatalogRoot]'s own saved state — its tab, its wall's scroll — is held while something covers it. */
+private const val CatalogStateKey = "catalog"
+
+/** The catalogue's restore key for ""All N films" was opened from the Movies department" — no plate of its own to remember instead. */
+internal const val TvMoviesPageEntryKey = "movies:all"

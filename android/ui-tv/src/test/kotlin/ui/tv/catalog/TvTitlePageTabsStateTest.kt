@@ -1,6 +1,7 @@
 package ui.tv.catalog
 
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import model.Credit
@@ -75,5 +76,38 @@ class TvTitlePageTabsStateTest : TvScreenStateTest() {
 
         compose.onNodeWithText("Details").performSemanticsAction(SemanticsActions.OnClick)
         compose.onNodeWithText("Make editor's choice").assertDoesNotExist()
+    }
+
+    /**
+     * A page rebuilt fresh on the way back from a person's page (this page
+     * is torn down while that one is shown, not kept alive underneath it)
+     * still lands on Cast, and on that person, because [restoreKey] — not a
+     * `rememberSaveable` this rebuild has nothing saved for — is what says so.
+     */
+    @Test
+    fun comingBackFromAPersonLandsOnCastTabWithThatPersonFocused() {
+        val credits =
+            TitleCredits(
+                cast =
+                    listOf(
+                        Credit(personId = 7L, name = "Ada Actor", role = "Herself", portraitPath = null),
+                        Credit(personId = 8L, name = "Bo Actor", role = "Himself", portraitPath = null),
+                    ),
+                crew = emptyList(),
+            )
+        show { TvTitlePage(set = film, info = null, progress = null, onPlay = {}, credits = credits, restoreKey = "8") }
+
+        compose.onNodeWithText("▶ Play").assertDoesNotExist()
+        compose.onNodeWithText("Bo Actor").assertIsFocused()
+    }
+
+    /** The same restore rule, for a similar film opened from the Similar tab. */
+    @Test
+    fun comingBackFromASimilarFilmLandsOnSimilarTabWithThatFilmFocused() {
+        val other = set("g", Kind.MOVIE, "Another Film", addedAt = 1)
+        show { TvTitlePage(set = film, info = null, progress = null, onPlay = {}, similar = listOf(other), restoreKey = "g") }
+
+        compose.onNodeWithText("▶ Play").assertDoesNotExist()
+        compose.onNodeWithText("Another Film").assertIsFocused()
     }
 }

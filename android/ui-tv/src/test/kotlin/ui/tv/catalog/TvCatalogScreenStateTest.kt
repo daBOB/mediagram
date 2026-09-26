@@ -2,6 +2,7 @@ package ui.tv.catalog
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasText
@@ -56,9 +57,9 @@ class TvCatalogScreenStateTest {
     }
 
     /**
-     * `mastheadSplitOf`'s own split (phase 3, wired here): the masthead's
-     * tab row is departments only — Home, the shelves, Collections — and
-     * Continue/Watchlist are no longer drawn there at all, reachable
+     * `mastheadSplitOf`'s own split: the masthead's tab row is departments
+     * only — Home, the shelves, Collections — and Continue/Watchlist are no
+     * longer drawn there at all, reachable
      * instead from the overflow menu (`TvMenuTest` covers reaching them).
      */
     @Test
@@ -257,6 +258,47 @@ class TvCatalogScreenStateTest {
         show(CatalogUiState.Failed("Could not reach the channel."), restoreKey = TvMenuEntryKey)
 
         compose.onNodeWithText("Menu").assertIsFocused()
+    }
+
+    /**
+     * A department page must not take the remote back from Search: `TvPage`'s
+     * own default (`takesArrivalFocus = true`) would otherwise override the
+     * catalogue's `LocalTakesArrivalFocus provides !backToMasthead` the
+     * moment a department page composes, stealing the remote onto one of its
+     * own plates the instant Back from Search lands here.
+     */
+    @Test
+    fun aDepartmentPageDoesNotStealFocusFromSearchOnBackFromIt() {
+        val restoreKey = mutableStateOf<String?>(null)
+        val films = (0 until 15).map { set("film-$it", Kind.MOVIE, "Film $it", addedAt = it.toLong()) }
+        compose.runOnUiThread {
+            val built = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
+            controller = built
+            built.get().setContent {
+                TvTheme {
+                    TvCatalogScreen(
+                        state = ready(films),
+                        profile = TvChosenProfile(name = "Ada", onChoose = {}),
+                        onOpenTitle = {},
+                        onOpenCollection = {},
+                        onOpenList = {},
+                        onCreateList = {},
+                        restoreKey = restoreKey.value,
+                    )
+                }
+            }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onAllNodesWithText("Film 0").fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "department page never opened" } }
+
+        // Search opened from the masthead, then Back — the catalogue's own
+        // sentinel for it.
+        compose.runOnUiThread { restoreKey.value = TvSearchEntryKey }
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Search").assertIsFocused()
+        compose.onNode(hasText("Film", substring = true) and isFocused()).assertDoesNotExist()
     }
 
     private fun show(

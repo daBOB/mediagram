@@ -23,6 +23,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -56,12 +58,21 @@ private const val HOLD_MS = 9_000L
  * here instead — a viewer who has stepped onto the cover to press one of
  * them is exactly the viewer the rotation must stop under, the same reason
  * hovering pauses it on the web.
+ *
+ * [kicker] is the small caps line above the title — "Cover story" for
+ * Home's own magazine header, "Only in your library" when a department page
+ * reuses this same slide for its single-film hero (`department-hero.js`'s
+ * own kicker; that hero has no rotation of its own either, which one film
+ * already guarantees here). [arrivalFocus], attached to the first slide's
+ * Watch now, is how a caller makes this cover the page's own arrival stop.
  */
 @Composable
 internal fun TvCoverStory(
     films: List<MediaSet>,
     onPlay: (setId: String) -> Unit,
     onOpenTitle: (setId: String) -> Unit,
+    kicker: String = "Cover story",
+    arrivalFocus: FocusRequester? = null,
 ) {
     if (films.isEmpty()) return
     val pagerState = rememberPagerState(pageCount = { films.size })
@@ -81,9 +92,14 @@ internal fun TvCoverStory(
             val set = films[page]
             TvCoverSlide(
                 set = set,
+                kicker = kicker,
                 onPlay = { onPlay(set.setId) },
                 onDetails = { onOpenTitle(set.setId) },
                 onHeld = { held = it },
+                // Only the first page is ever the arrival stop: a fresh
+                // composition always opens on page 0, the same page every
+                // arrival-focus caller means.
+                arrivalFocus = arrivalFocus.takeIf { page == 0 },
             )
         }
         if (films.size > 1) {
@@ -108,9 +124,11 @@ internal fun TvCoverStory(
 @Composable
 private fun TvCoverSlide(
     set: MediaSet,
+    kicker: String,
     onPlay: () -> Unit,
     onDetails: () -> Unit,
     onHeld: (Boolean) -> Unit,
+    arrivalFocus: FocusRequester?,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         val backdropPath = set.backdropPath
@@ -133,7 +151,7 @@ private fun TvCoverSlide(
         Column(modifier = Modifier.align(Alignment.BottomStart).padding(Spacing.large)) {
             val genre = set.genres.firstOrNull()
             Text(
-                text = listOfNotNull("Cover story", genre).joinToString(" · "),
+                text = listOfNotNull(kicker, genre).joinToString(" · "),
                 style = TvTypeScale.body,
                 color = Color.White.copy(alpha = 0.8f),
             )
@@ -164,7 +182,10 @@ private fun TvCoverSlide(
                 TvTextRow(
                     text = "▶ Watch now",
                     onClick = onPlay,
-                    modifier = Modifier.onFocusChanged { onHeld(it.isFocused) },
+                    modifier =
+                        Modifier
+                            .onFocusChanged { onHeld(it.isFocused) }
+                            .let { if (arrivalFocus != null) it.focusRequester(arrivalFocus) else it },
                 )
                 TvTextRow(
                     text = "Details",

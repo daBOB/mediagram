@@ -13,6 +13,8 @@ import catalog.PersonPage
 import catalog.keyOf
 import designsystem.Spacing
 import java.io.File
+import model.WatchSnapshot
+import ui.tv.setup.TvLoadingIndicator
 
 /** How wide a person's own portrait sits at the head of their page. */
 private val PortraitWidth = 180.dp
@@ -20,25 +22,37 @@ private val PortraitWidth = 180.dp
 /**
  * A person's own page — the television twin of the web's
  * `cast.js#renderPerson`: their portrait and name, then the titles in *this*
- * profile's own library they appear in, films and shows on the one wall.
+ * profile's own library they appear in, films and shows on the one wall,
+ * each carrying the same watched/offline marks every other wall's plates do.
  *
- * [page] is `null` both for nobody by that id and for somebody nobody in
- * this profile can see; either way this says only the fixed sentence, never
- * a name, so a kids profile never learns who was in a title it cannot open
- * — the same rule the web's own page follows.
+ * [page] is `null` for three different reasons a viewer cannot tell apart by
+ * looking: still asking, nobody by that id, or somebody nobody in this
+ * profile can see. [loading] tells the first from the other two — a fixed
+ * "loading" mark rather than the empty sentence flashing up before an answer
+ * has even arrived — and once it clears, `null` says only the fixed
+ * sentence, never a name, so a kids profile never learns who was in a title
+ * it cannot open, the same rule the web's own page follows.
  */
 @Composable
 internal fun TvPersonPage(
     page: PersonPage?,
+    loading: Boolean,
     portrait: String?,
+    watch: WatchSnapshot,
+    heldIds: Set<String>,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
     restoreKey: String? = null,
 ) {
     if (page == null) {
-        TvCenteredMessage("Nobody by that number is credited on anything in your library.")
+        if (loading) {
+            TvLoadingIndicator()
+        } else {
+            TvCenteredMessage("Nobody by that number is credited on anything in your library.")
+        }
         return
     }
+    val (positions, watchedIds) = rememberWatchMarks(watch)
     val entries = remember(page) { page.films.map(Entry::Film) + page.shows }
     TvPage {
         TvWall(
@@ -61,7 +75,7 @@ internal fun TvPersonPage(
                 }
             },
             plate = { entry, modifier, onOpen ->
-                TvEntryPlate(entry, emptyMap(), emptySet(), onOpen, modifier)
+                TvEntryPlate(entry, positions, watchedIds, onOpen, modifier, heldIds)
             },
         )
     }

@@ -115,6 +115,39 @@ fun rememberPerson(
     return person
 }
 
+/** [rememberPerson]'s answer, plus whether it is still on its way. */
+data class PersonLookup(val person: Person?, val loading: Boolean)
+
+/**
+ * [rememberPerson], with [PersonLookup.loading] alongside its answer — a
+ * person page needs the two told apart: nobody by that id and "still
+ * asking" both start as a `null` [Person], and only one of them is the page's
+ * own empty sentence to show.
+ */
+@Composable
+fun rememberPersonLookup(
+    personId: Long,
+    lookup: suspend (Long) -> Person?,
+): PersonLookup {
+    var person by remember(personId) { mutableStateOf<Person?>(null) }
+    var loading by remember(personId) { mutableStateOf(true) }
+    LaunchedEffect(personId) {
+        loading = true
+        try {
+            person = lookup(personId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (
+            @Suppress("TooGenericExceptionCaught") e: Exception,
+        ) {
+            Log.w("CatalogMetadata", "Could not load a person", e)
+        } finally {
+            loading = false
+        }
+    }
+    return PersonLookup(person, loading)
+}
+
 /**
  * Every franchise's TMDB overview, fetched once for as long as this
  * Composable stays in the tree — the Collections tab and a franchise page
@@ -135,35 +168,4 @@ fun rememberFranchiseOverviews(lookup: suspend () -> List<FranchiseInfo>): List<
         }
     }
     return overviews
-}
-
-/**
- * A person's portrait, fetched lazily and at most once per session when
- * [known] is `null` — the phase's own "portraits fetched on device, lazily"
- * rule. [shouldRequest] is `data.PortraitRequestLog.shouldRequest`, held
- * above this Composable so the "once" survives this screen closing and
- * reopening, not just this recomposition.
- */
-@Composable
-fun rememberPortrait(
-    personId: Long,
-    known: String?,
-    shouldRequest: (Long) -> Boolean,
-    fetch: suspend (Long) -> String?,
-): String? {
-    var path by remember(personId, known) { mutableStateOf(known) }
-    LaunchedEffect(personId, known) {
-        if (known == null && shouldRequest(personId)) {
-            try {
-                path = fetch(personId)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (
-                @Suppress("TooGenericExceptionCaught") e: Exception,
-            ) {
-                Log.w("CatalogMetadata", "Could not fetch a portrait", e)
-            }
-        }
-    }
-    return path
 }

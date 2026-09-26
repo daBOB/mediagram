@@ -42,14 +42,15 @@ import model.WatchSnapshot
  * [magazine] is Home's own editorial header — the cover story, the three
  * feature cards and the magazine's own "Recently added" row (in place of the
  * plain grid's "Latest films", which the caller drops from [rows] once it
- * passes a [magazine] — the same film shelf shown once rather than twice),
- * TV parity's own decision (the household's, recorded in the plan: "TV home
- * gets the magazine layout"). `null` draws the plain rows alone, which is
- * what every existing caller before this phase still passes. The cover and
- * the features are not part of the arrival-focus or restore-key mechanism
- * below — reached by Up from the first row instead — but "Recently added"
- * is: it joins the same row list [rows] does, so a film opened from it and
- * left again is found the same way any other row's plate is.
+ * passes a [magazine] — the same film shelf shown once rather than twice).
+ * `null` draws the plain rows alone. The features are reached by Up from the
+ * first row, outside the arrival-focus/restore-key mechanism below, but the
+ * cover and "Recently added" both take part in it: arriving fresh (no
+ * restore key naming a row's own stop) lands the remote on the cover's own
+ * Watch now, so the cover is what a viewer sees first rather than scrolled
+ * off above whatever row used to open the page — and "Recently added" joins
+ * the same row list [rows] does, so a film opened from it and left again is
+ * found the same way any other row's plate is.
  *
  * Unlike the phone's own magazine header, Continue and Next up stay in
  * [rows] rather than folding into a merged resume strip: TV's plain rows
@@ -67,30 +68,41 @@ internal fun TvHome(
     onSeeAll: (shelf: String) -> Unit,
     restoreKey: String? = null,
     magazine: MagazineHome? = null,
+    // Playing the cover's own film straight away — the web's `play(set)` on
+    // its "Watch now" (`home-cover.js:137`) — rather than opening its title
+    // page the way every plate on this row otherwise does.
+    onPlay: (setId: String) -> Unit = onOpenTitle,
 ) {
     val (positions, watchedIds) = rememberWatchMarks(watch)
     val first = remember { FocusRequester() }
+    val coverFocus = remember { FocusRequester() }
     val allRows =
         remember(rows, magazine) {
             listOfNotNull(magazine?.recentlyAddedRow?.takeIf { it.total > 0 }) + rows
         }
-    // Which row, and which stop along it, takes the remote.
-    val target =
+    val hasCover = magazine?.editorial?.cover?.isNotEmpty() == true
+    // Which row, and which stop along it, takes the remote — `null` when no
+    // restore key names one still on the page, which the cover then claims
+    // instead of the row list's own first stop.
+    val rowTarget =
         remember(allRows, restoreKey) {
             restoreKey?.let { wanted ->
                 allRows.withIndex().firstNotNullOfOrNull { (row, content) ->
                     keysOf(content).indexOf(wanted).takeIf { it >= 0 }?.let { row to it }
                 }
-            } ?: (0 to 0)
+            }
         }
+    val landOnCover = hasCover && rowTarget == null
+    val target = rowTarget ?: (0 to 0)
 
     // On arrival, on a new restore key, and when the first rows arrive —
     // never merely because the rows moved: a fetch finishing or Continue
     // appearing reorders them while the viewer is browsing, and the remote
     // must stay where the viewer put it.
     val takesFocus = LocalTakesArrivalFocus.current
-    LaunchedEffect(restoreKey, allRows.isNotEmpty()) {
-        if (allRows.isNotEmpty() && takesFocus) first.requestFocus()
+    LaunchedEffect(restoreKey, allRows.isNotEmpty(), landOnCover) {
+        if (!takesFocus) return@LaunchedEffect
+        if (landOnCover) coverFocus.requestFocus() else if (allRows.isNotEmpty()) first.requestFocus()
     }
 
     Column(
@@ -101,13 +113,15 @@ internal fun TvHome(
                 // was on this page, or on its first stop, rather than on
                 // whichever plate happens to sit under the tab the remote
                 // left from.
-                .focusRestorer(first)
+                .focusRestorer(if (hasCover) coverFocus else first)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Overscan.horizontal)
                 .padding(bottom = Overscan.vertical, top = Spacing.small),
     ) {
         magazine?.editorial?.let { editorial ->
-            if (editorial.cover.isNotEmpty()) TvCoverStory(films = editorial.cover, onPlay = onOpenTitle, onOpenTitle = onOpenTitle)
+            if (editorial.cover.isNotEmpty()) {
+                TvCoverStory(films = editorial.cover, onPlay = onPlay, onOpenTitle = onOpenTitle, arrivalFocus = coverFocus)
+            }
             if (editorial.features.isNotEmpty()) TvFeatureStrip(features = editorial.features, onOpenTitle = onOpenTitle)
         }
         allRows.forEachIndexed { index, row ->

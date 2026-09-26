@@ -129,6 +129,71 @@ class TvCollectionTabsStateTest : TvScreenStateTest() {
         assertEquals("e1", played)
     }
 
+    /**
+     * A page rebuilt fresh on the way back from a person's page (this page
+     * is torn down while that one is shown, not kept alive underneath it)
+     * still lands on Cast, and on that person, because [restoreKey] — not a
+     * `rememberSaveable` this rebuild has nothing saved for — is what says so.
+     */
+    @Test
+    fun comingBackFromAPersonLandsOnCastTabWithThatPersonFocused() {
+        val credits =
+            TitleCredits(
+                cast =
+                    listOf(
+                        Credit(personId = 4L, name = "Ada Actor", role = "Herself", portraitPath = null),
+                        Credit(personId = 5L, name = "Bo Actor", role = "Himself", portraitPath = null),
+                    ),
+                crew = emptyList(),
+            )
+        show {
+            TvCollection(
+                show,
+                info = null,
+                watch = WatchSnapshot.Empty,
+                posterPath = { null },
+                onOpenTitle = {},
+                onOpenSeason = {},
+                credits = credits,
+                restoreKey = "5",
+            )
+        }
+
+        compose.onNodeWithText("1. Pilot").assertDoesNotExist()
+        compose.onNodeWithText("Bo Actor").assertIsFocused()
+    }
+
+    /** The same restore rule, for a similar show opened from the Similar tab. */
+    @Test
+    fun comingBackFromASimilarShowLandsOnSimilarTabWithThatShowFocused() {
+        val other =
+            Entry.Collection(
+                key = "SHOW/Another Show",
+                kind = CollectionKind.SHOW,
+                name = "Another Show",
+                posterPath = null,
+                posterKey = null,
+                count = 1,
+                chapters = 1,
+                divisions = emptyList(),
+            )
+        show {
+            TvCollection(
+                show,
+                info = null,
+                watch = WatchSnapshot.Empty,
+                posterPath = { null },
+                onOpenTitle = {},
+                onOpenSeason = {},
+                similar = listOf(other),
+                restoreKey = "SHOW/Another Show",
+            )
+        }
+
+        compose.onNodeWithText("1. Pilot").assertDoesNotExist()
+        compose.onNodeWithText("Another Show").assertIsFocused()
+    }
+
     /** A state update after the page opens (credits arriving a moment later) must not reset which tab is showing. */
     @Test
     fun tabSelectionSurvivesCreditsArrivingAfterThePage() {
