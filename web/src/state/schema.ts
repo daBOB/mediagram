@@ -11,7 +11,7 @@
  * different database and the two must never be confused.
  */
 
-export const STATE_SCHEMA = 8;
+export const STATE_SCHEMA = 10;
 
 /**
  * Statements grouped by the version they produce, the same shape the index's
@@ -225,6 +225,18 @@ export const GROUPS: readonly (readonly string[])[] = [
   // tombstone `watchlist`, `kids` and `collections` already carry.
   // `finished_at` keeps its meaning: when the title was last marked finished.
   [`ALTER TABLE watched ADD COLUMN removed_at INTEGER`],
+
+  // v9 -> v10: what a viewer changed from the Settings page. Kept apart from
+  // `state_meta`, which is this file's own bookkeeping (schema version,
+  // device id) rather than anything a person set. Not synced: a cache
+  // budget is a fact about this machine's disk, not about the account.
+  [
+    `CREATE TABLE IF NOT EXISTS settings(
+       name TEXT PRIMARY KEY,
+       value TEXT NOT NULL,
+       updated_at INTEGER NOT NULL
+     )`,
+  ],
 ];
 
 /** Every statement needed to reach `version` from nothing. */

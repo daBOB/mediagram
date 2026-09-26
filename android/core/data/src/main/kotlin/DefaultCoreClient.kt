@@ -11,6 +11,7 @@ import uniffi.mediagram_core.ListRow
 import uniffi.mediagram_core.PreferenceRow
 import uniffi.mediagram_core.Profile
 import uniffi.mediagram_core.SearchHit
+import uniffi.mediagram_core.SessionSummary
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.StateSnapshot
 import uniffi.mediagram_core.SyncOutcome
@@ -43,6 +44,10 @@ class DefaultCoreClient(
     override suspend fun account(): AccountSummary = core.account()
 
     override suspend fun signOut() = core.signOut()
+
+    override suspend fun sessions(): List<SessionSummary> = core.sessions()
+
+    override suspend fun revokeSession(id: String) = core.revokeSession(id)
 
     override suspend fun refreshLibrary(handle: String): Long = core.refreshLibrary(handle).toLong()
 

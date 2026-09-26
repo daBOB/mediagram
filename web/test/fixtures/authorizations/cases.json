@@ -1,0 +1,57 @@
+{
+  "apiId": 555000,
+  "authorizations": [
+    {
+      "current": true, "officialApp": false, "unconfirmed": false,
+      "hash": "0", "deviceModel": "mediagram web · host", "platform": "Linux",
+      "apiId": 555000, "appName": "mediagram", "appVersion": "0.4.0",
+      "dateCreated": 1700000000, "dateActive": 1700100000,
+      "ip": "203.0.113.5", "country": "DE", "region": ""
+    },
+    {
+      "current": false, "officialApp": false, "unconfirmed": false,
+      "hash": "1111111111111111", "deviceModel": "mediagram Android · Pixel 8", "platform": "Android",
+      "apiId": 555000, "appName": "mediagram", "appVersion": "0.4.0",
+      "dateCreated": 1690000000, "dateActive": 1700200000,
+      "ip": "203.0.113.9", "country": "DE", "region": "BY"
+    },
+    {
+      "current": false, "officialApp": true, "unconfirmed": false,
+      "hash": "2222222222222222", "deviceModel": "iPhone 15", "platform": "iOS",
+      "apiId": 2040, "appName": "Telegram iOS", "appVersion": "10.9",
+      "dateCreated": 1680000000, "dateActive": 1700050000,
+      "ip": "203.0.113.20", "country": "DE", "region": ""
+    },
+    {
+      "current": false, "officialApp": false, "unconfirmed": false,
+      "hash": "3333333333333333", "deviceModel": "someone else's app", "platform": "Linux",
+      "apiId": 999999, "appName": "other", "appVersion": "1.0",
+      "dateCreated": 1670000000, "dateActive": 1699900000,
+      "ip": "198.51.100.1", "country": "US", "region": ""
+    },
+    {
+      "current": false, "officialApp": false, "unconfirmed": true,
+      "hash": "4444444444444444", "deviceModel": "mediagram uploader · host2", "platform": "Linux",
+      "apiId": 555000, "appName": "mediagram", "appVersion": "0.4.0",
+      "dateCreated": 1700300000, "dateActive": 1700300000,
+      "ip": "", "country": "", "region": ""
+    }
+  ],
+  "expect": [
+    {
+      "id": "4444444444444444", "device": "mediagram uploader · host2", "platform": "Linux",
+      "app": "mediagram", "appVersion": "0.4.0", "location": null,
+      "lastActive": 1700300000, "created": 1700300000, "current": false, "unconfirmed": true
+    },
+    {
+      "id": "1111111111111111", "device": "mediagram Android · Pixel 8", "platform": "Android",
+      "app": "mediagram", "appVersion": "0.4.0", "location": "DE, BY",
+      "lastActive": 1700200000, "created": 1690000000, "current": false, "unconfirmed": false
+    },
+    {
+      "id": "0", "device": "mediagram web · host", "platform": "Linux",
+      "app": "mediagram", "appVersion": "0.4.0", "location": "DE",
+      "lastActive": 1700100000, "created": 1700000000, "current": true, "unconfirmed": false
+    }
+  ]
+}

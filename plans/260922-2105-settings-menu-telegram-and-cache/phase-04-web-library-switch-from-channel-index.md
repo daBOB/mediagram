@@ -12,9 +12,28 @@
 - `tasks/lessons.md` 2026-09-18 — two implementations of one decision must be pinned by a test
 
 ## Overview
-Priority P2. Status: pending. Web can list the account's channels, pick the newest index
-snapshot a channel holds, install it as the catalog, and hand back what 05 needs to
+Priority P2. Status: **done 2026-09-26**. Web can list the account's channels, pick the newest
+index snapshot a channel holds, install it as the catalog, and hand back what 05 needs to
 rebuild the runtime — no restart.
+
+Most of this phase already existed by 2026-09-26, built for the channel-index auto-refresh
+feature under different names than this plan used: `pick-newest-index.ts` (`pickNewestIndex`,
+`pushedAt`, `versionStamp`), `find-newest-channel-index.ts`, `install-channel-index.ts`
+(`installChannelIndex`, `MAX_INDEX_BYTES` = 256 MiB, atomic stage→verify→swap), and
+`refresh-from-channel.ts`, all under `web/src/channel-index/`, not `web/src/package/` as
+sketched. The shared fixture (`web/test/fixtures/pick-index/cases.json`) and both a TS test
+(`pick-newest-index-fixtures.test.ts`) and a Rust test (`channel/index_tests.rs`) already read
+it, and `catalog-versions.ts` already exported `swapCurrent`/`removeOtherVersions`. The only
+new piece this phase actually added is `telegram/libraries.ts` (`listLibraries`): channels
+(excluding megagroups) from `iterDialogs`, capped at core's 500, with no handle mapping inside
+it — that is `settings/handles.ts`'s `HandleMap`, added in 05 since only the settings router
+hands opaque handles to the browser. A channel chosen from Settings installs under
+`channelCatalogDir/<chatId>` (one subdirectory per channel), not a single shared
+`channelCatalogDir`: a single shared root would let switching to a channel with an *older*
+`pushed_at` than whatever the shared root last held be refused as "unchanged" — the per-channel
+subdirectory is what actually delivers this plan's "the two never delete each other's
+versions" for repeated switches between more than two channels, not just between the original
+`channelIndexDir` and one Settings-chosen channel.
 
 ## Key insights
 - A "library" on Android is a channel whose pins/history carry a `#mlib-index` snapshot of

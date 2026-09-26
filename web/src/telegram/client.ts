@@ -23,6 +23,18 @@ export function bareChannelId(chatId: number): number {
   return bare;
 }
 
+/**
+ * Built, not resolved. `getEntity` would cost a round trip on every start and
+ * can fail on a channel the account has never opened in a client; the
+ * uploader exported the access hash precisely so this needs no lookup.
+ */
+function channelOf(chatId: number, accessHash: bigint): Api.InputChannel {
+  return new Api.InputChannel({
+    channelId: BigInt(bareChannelId(chatId)) as never,
+    accessHash: accessHash as never,
+  });
+}
+
 export class Telegram {
   private readonly media: MediaCache<Api.TypeMessageMedia>;
 
@@ -49,7 +61,19 @@ export class Telegram {
     });
   }
 
-  static async connect(config: Config): Promise<Telegram> {
+  /**
+   * Opens a client for `config`, or answers `null` for signed out.
+   *
+   * `null` covers both a `session` never set and one Telegram no longer
+   * honours — neither is a reason to refuse to start: the catalog, cached
+   * chunks and state on this disk are all still servable, and only an
+   * uncached read needs a live client. A caller that instead wants the old
+   * throwing behaviour (the CLI, which has nothing useful to serve without
+   * one) is `connect`, below.
+   */
+  static async open(config: Config): Promise<Telegram | null> {
+    if (config.session === null) return null;
+
     const client = new MeasuredClient(
       new sessions.StringSession(config.session),
       config.apiId,
@@ -57,27 +81,31 @@ export class Telegram {
       { connectionRetries: 3, ...sessionName() },
     );
     await client.connect();
-    // Only the main connection's own reconnects; a download-DC sender is
-    // pooled and rebuilt without notice, and its failures already show up as
-    // per-DC request errors instead.
     client.watchReconnects();
 
-    // Fail loudly rather than prompting: the player may have no terminal, and
-    // a half-open login would look like an empty library.
     if (!(await client.isUserAuthorized())) {
-      throw new Error(
-        "the configured session is not authorized; log in again with `bun run login`",
-      );
+      console.warn("telegram: the configured session is not authorized; signed out");
+      await client.disconnect().catch(() => {});
+      await client.destroy().catch(() => {});
+      return null;
     }
 
-    // Built, not resolved. `getEntity` would cost a round trip on every start
-    // and can fail on a channel the account has never opened in a client; the
-    // uploader exported the access hash precisely so this needs no lookup.
-    const channel = new Api.InputChannel({
-      channelId: BigInt(bareChannelId(config.chatId)) as never,
-      accessHash: config.channelAccessHash as never,
-    });
-    return new Telegram(client, channel);
+    return new Telegram(client, channelOf(config.chatId, config.channelAccessHash));
+  }
+
+  /** `open`, but a signed-out result is a startup failure rather than a mode. */
+  static async connect(config: Config): Promise<Telegram> {
+    const telegram = await Telegram.open(config);
+    if (!telegram) throw new Error("the configured session is not authorized; log in again with `bun run login`");
+    return telegram;
+  }
+
+  /**
+   * The same client, pointed at a different channel — no reconnect, and so
+   * no risk of the two-clients-on-one-key failure a restart must avoid.
+   */
+  static withChannel(existing: Telegram, chatId: number, accessHash: bigint): Telegram {
+    return new Telegram(existing.client, channelOf(chatId, accessHash));
   }
 
   /**
@@ -149,5 +177,22 @@ export class Telegram {
   async disconnect(): Promise<void> {
     await this.client.disconnect();
     await this.client.destroy();
+  }
+
+  /**
+   * This account's name and datacenter, for the Settings page's read-only
+   * rows. `name` is `null` on any failure — a phone that briefly cannot
+   * reach `getMe` is not a reason to hide the rest of the page.
+   */
+  async account(): Promise<{ name: string | null; username: string | null; dcId: number | null }> {
+    const dcId = (this.client.session as unknown as { dcId?: number }).dcId ?? null;
+    try {
+      const me = await this.client.getMe();
+      const user = me as { firstName?: string; lastName?: string; username?: string };
+      const name = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+      return { name: name || null, username: user.username ?? null, dcId };
+    } catch {
+      return { name: null, username: null, dcId };
+    }
   }
 }

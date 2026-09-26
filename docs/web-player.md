@@ -353,6 +353,51 @@ is being converted, now on the shelf badge as well as in the player, and the
 technical line under a title, whose average bitrate is what makes the
 `needs transcode` badge legible.
 
+## Settings: changing the account and the cache without a restart
+
+`/api/settings/*` (`web/src/settings/`) is the one router with a lock of its
+own. It answers the same own-network 404 `/api/status` does, and past that a
+token: `POST /api/settings/unlock {token}` mints an HttpOnly, `SameSite=Strict`
+session cookie (`admin-gate.ts`), scoped to `/api/settings` and compared with
+`crypto.timingSafeEqual` against a token generated on first start (or
+`MEDIAGRAM_ADMIN_TOKEN`) — only its path is ever logged. Every write also
+needs the same same-origin, JSON-only guard (`http/browser-write.ts`) every
+other write route already used.
+
+**The account is swappable at runtime.** `telegram/connection.ts`'s
+`TelegramConnection` holds the live `Telegram` client or `null` (signed out);
+`TelegramSource` and `TelegramStateChannel` read it fresh on every call rather
+than holding one, so a restart — sign in, sign out, a new api id/hash — never
+leaves them pointed at a client that is gone. `restart()` is strictly
+sequential: gate reads, disconnect the old client, open the new one, release —
+never two clients on one auth key (`login.ts`, measured). A channel switch
+needs none of that: `Telegram.withChannel` reuses the same client with a
+different `InputChannel`, and `CatalogFollower.retarget(root)` points the
+existing follower at a fresh per-channel directory
+(`~/.cache/mediagram-channel-catalog/<chat id>/`) so a newly chosen channel's
+`pushed_at` is never compared against an unrelated channel's history.
+
+**Sign-in runs on its own client**, on an empty session — a separate auth key
+from the live one, so an attempt in progress can never collide with it
+(`settings/sign-in.ts`). Only a finished attempt's session string reaches the
+live connection, through the same `restart()` every other identity change
+uses.
+
+**Sessions**: `GET /api/settings/sessions` / `POST .../sessions/revoke` list
+and end this app's logins (`account.getAuthorizations`/`resetAuthorization`),
+scoped to this app's `api_id` plus the current row — the account's official
+Telegram apps are not listed or touchable from here. `settings/sessions.ts`'s
+`shape`/`revokeError` are pure and pinned to
+`web/test/fixtures/authorizations/cases.json`, which
+`crates/mediagram-core::api::sessions` also reads, so the web and Android
+session lists agree.
+
+**The admin gate is this plan's one deliberate difference from Android's
+Settings screen** (§8): the phone has no gate at all, because the account
+holder's own phone does not need one, while the web player can be reached by
+anyone on the household's network or CGNAT range. Everything else — sections,
+rows, wording, the sessions list — is the same on both.
+
 ## Updates Telegram pushes
 
 Every session of the account hears about a message sent, edited or pinned in

@@ -100,7 +100,7 @@ export function createStatusRouter(options: StatusRouterOptions) {
     let held: { bytes: number; at: number } | null = null;
     let measuring: Promise<number> | null = null;
 
-    return async function read(): Promise<number | null> {
+    const read = async (): Promise<number | null> => {
       if (!scan) return null;
       if (held && now() - held.at < HELD_BYTES_TTL_MS) return held.bytes;
       if (!measuring) {
@@ -116,12 +116,16 @@ export function createStatusRouter(options: StatusRouterOptions) {
       }
       return measuring;
     };
+    // So a settings change that just freed space is reflected on the very
+    // next poll, rather than waiting out the rest of the TTL window.
+    read.invalidate = () => { held = null; };
+    return read;
   }
 
   const cacheHeldBytes = memoizedScan(heldBytes);
   const transcodeHeldBytes = memoizedScan(options.transcodeBytes);
 
-  return async function statusRoute(request: PlayerRequest): Promise<PlayerResponse | null> {
+  const statusRoute = async function statusRoute(request: PlayerRequest): Promise<PlayerResponse | null> {
     const isPlayback = PLAYBACK.test(request.path);
     if (!STATUS.test(request.path) && !isPlayback) return null;
 
@@ -153,4 +157,8 @@ export function createStatusRouter(options: StatusRouterOptions) {
     });
     return json(JSON.stringify(snapshot), request.method === "HEAD");
   };
+  // A settings change that just freed space invalidates the reading rather
+  // than waiting out the rest of `HELD_BYTES_TTL_MS`.
+  statusRoute.invalidateHeldBytes = () => cacheHeldBytes.invalidate();
+  return statusRoute;
 }

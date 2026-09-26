@@ -7,6 +7,7 @@ import { ChunkCache } from "../src/cache/store";
 import { CACHE_CHUNK, chunkPath } from "../src/cache/key";
 import { HeldSets, expectedChunks } from "../src/cache/held";
 import { TelegramSource } from "../src/telegram/source";
+import { TelegramConnection } from "../src/telegram/connection";
 import { SheetStore } from "../src/thumbs/sheets";
 import { startServer } from "../src/server";
 import { createRouter } from "../src/routes";
@@ -31,7 +32,7 @@ test.each(["evicted", "truncated"])("a chunk %s after thumbnail admission cannot
   const telegram = telegramBoundary([]);
   telegram.partMedia = async () => { upstream++; return {} as never; };
   telegram.client.iterDownload = (async function* () { yield payload; }) as never;
-  const source = new TelegramSource(telegram, new CachedReader(cache, 4));
+  const source = new TelegramSource(TelegramConnection.fixed(telegram), new CachedReader(cache, 4));
   const server = await startServer({ db, source,
     cacheSource: { stream: (...args) => source.streamCached(...args) },
   });
@@ -75,7 +76,7 @@ test("cache-only stream preserves GET and HEAD ranges and refuses writes or abse
   await cache.put("01SET", 0, 0, payload);
   const db = library("Cached");
   db.run("UPDATE parts SET chat_id = 1");
-  const source = new TelegramSource(telegramBoundary([]), new CachedReader(cache));
+  const source = new TelegramSource(TelegramConnection.fixed(telegramBoundary([])), new CachedReader(cache));
   const cached = spyOn(source, "streamCached");
   const route = createRouter({ db, source, cacheSource: { stream: (...args) => source.streamCached(...args) } });
   const request = { method: "GET", path: "/api/sets/01SET/cached-stream", range: "bytes=2-5" };
@@ -105,7 +106,7 @@ test("cache-only stream preserves GET and HEAD ranges and refuses writes or abse
 test("cache-only streaming without a cache refuses rather than using Telegram", async () => {
   const telegram = telegramBoundary([]);
   const partMedia = spyOn(telegram, "partMedia");
-  const source = new TelegramSource(telegram);
+  const source = new TelegramSource(TelegramConnection.fixed(telegram));
   try {
     const body = source.streamCached(
       [{ span: { idx: 0, off: 0, len: 10 }, chatId: 1, messageId: 1 }],

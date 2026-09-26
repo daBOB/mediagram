@@ -11,7 +11,7 @@ import type { AudioTrackReader } from "../catalog/audio-tracks";
 import type { CachedReader } from "../cache/reader";
 import type { WriteDebounce } from "./write-debounce";
 
-type Sync = Pick<StateSync, "once"> | null;
+export type Sync = Pick<StateSync, "once"> | null;
 
 export async function syncOnce(sync: Sync, why: string): Promise<void> {
   if (!sync) return;
@@ -76,7 +76,7 @@ export class LibraryUpdates {
 
 export interface ApplicationResources {
   timers: Array<ReturnType<typeof setInterval>>;
-  updates?: LibraryUpdates;
+  updates?: Pick<LibraryUpdates, "stop">;
   events?: Pick<CatalogEvents, "close">;
   sync?: Sync;
   /** The debounce a local write arms; cancelled before shutdown's own final

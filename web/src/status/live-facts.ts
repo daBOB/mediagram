@@ -13,6 +13,7 @@ import type { LiveFacts, TranscodeSession } from "./snapshot";
 import type { TranscodeMode } from "../transcode/registry";
 import type { TranscodeProgress } from "../transcode/progress";
 import type { PlaybackRow } from "./playback-reports";
+import { LinkStats } from "../telegram/link-stats";
 
 interface CacheStats {
   stats(): { hits: number; misses: number; evicted: number };
@@ -52,6 +53,20 @@ export interface LiveFactsDeps {
   /** Directories to report free space under: the cache and the transcode dir. */
   diskDirs: string[];
   playback: { list(): PlaybackRow[] };
+}
+
+type LiveTelegram = LiveFactsDeps["telegram"];
+
+/**
+ * The link figures of whichever client is current. Settings can restart the
+ * client, and the new one's counters start from nothing; signed out, there
+ * is no link to describe.
+ */
+export function currentLink(connection: { current(): LiveTelegram | null }): LiveTelegram {
+  return {
+    get connected() { return connection.current()?.connected ?? null; },
+    link: () => connection.current()?.link() ?? new LinkStats().snapshot(),
+  };
 }
 
 export async function readLiveFacts(

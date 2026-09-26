@@ -18,10 +18,12 @@ const ROOT = join(import.meta.dir, "..");
 /**
  * Files over the limit on 2026-09-25, and the size each may not exceed.
  * Revised 2026-09-26 for the watched-removal sync and the streaming/startup
- * work, written alongside this list and merged after it.
+ * work, written alongside this list and merged after it. Revised again the
+ * same day for the settings menu: a stored account and cache budget, an
+ * admin-gated router, and the runtime wiring to swap either live.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 877,
+  "public/app.js": 909,
   "public/lib/catalog/course-view.js": 285,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,
@@ -39,16 +41,15 @@ const CEILINGS: Record<string, number> = {
   "public/styles/theme.css": 209,
   "src/cache/held.ts": 202,
   "src/cache/reader.ts": 295,
-  "src/cache/store.ts": 299,
-  "src/config.ts": 238,
-  "src/index.ts": 381,
+  "src/cache/store.ts": 313,
+  "src/config.ts": 265,
+  "src/index.ts": 435,
   "src/package/refresh.ts": 272,
-  "src/server.ts": 268,
+  "src/server.ts": 269,
   "src/state/routes.ts": 267,
-  "src/state/schema.ts": 233,
-  "src/state/store.ts": 796,
+  "src/state/schema.ts": 245,
+  "src/state/store.ts": 800,
   "src/state/sync-record.ts": 328,
-  "src/telegram/source.ts": 244,
   "src/transcode/registry.ts": 338,
 };
 

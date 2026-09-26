@@ -9,8 +9,25 @@
 - Phases 05 (settings router, gate), 06 (web page), 07 (core account exports), 08 (Android screen)
 
 ## Overview
-Priority P2. Status: **step 1 (naming) done 2026-09-23**; steps 2–7 blocked by phases 05, 06, 08 (no settings
-router/admin gate, no web page, no Android Settings screen yet — user chose to build 07 next).
+Priority P2. Status: **done 2026-09-26** (step 1 was already done 2026-09-23; steps 2-7 built once
+05/06/08 landed).
+
+Built as specified. `crates/mediagram-core/src/api/sessions.rs` (`Core::sessions()`,
+`Core::revoke_session(id)`) and `web/src/settings/sessions.ts` (`listSessions`, `revokeSession`)
+both port `shape`/`revokeError` from the same pure logic, pinned to
+`web/test/fixtures/authorizations/cases.json` — read by a Rust unit test
+(`api::sessions::tests::shape_matches_the_shared_fixture`, inline beside the source rather than
+under `crates/mediagram-core/tests/`, since `shape`/`RawAuthorization` are `pub(crate)` and an
+external integration test cannot see them — the same reason `channel/index_tests.rs` reads its
+fixture from inside the crate) and a TS one (`settings-sessions-fixture.test.ts`). Both raw TL
+guesses (`tl::enums::Authorization::Authorization(a)`, `tl::enums::account::Authorizations::Authorizations(list)`,
+`tl::functions::account::{GetAuthorizations,ResetAuthorization}`) compiled and passed on the
+first `cargo check` — verified against the real grammers-tl-types 0.10 source (`tl/api.tl`) and
+a local `cargo check`, never against a live account. Android: `SessionsSection.kt` composable +
+`SettingsViewModel.loadSessions()`/`revokeSession(id)`, bindings regenerated for all four ABIs.
+Not verified: revoking a real throwaway web session on the phone (hard constraint — no real
+Telegram sign-in/revoke in this work); the password/2FA branch of sign-in is likewise untested
+live (05/06's own note).
 
 Step 1 as built: `mediagram-core::connection_params` (`device_model`, `connection_params`, `host_name`) used by the
 uploader (`uploader · <hostname>`) and the core (`Android · <manufacturer model>`, passed into `Core::new` as
@@ -76,12 +93,12 @@ web settings page (06), regenerated uniffi Kotlin (script only).
 
 ## Todo
 - [x] connection params (web, core, uploader)
-- [ ] shared fixture
-- [ ] Rust shape + revoke + tests
-- [ ] TS shape + revoke + tests
-- [ ] web routes + page section
-- [ ] Android section + bindings
-- [ ] stub + device validation
+- [x] shared fixture
+- [x] Rust shape + revoke + tests
+- [x] TS shape + revoke + tests
+- [x] web routes + page section
+- [x] Android section + bindings
+- [x] stub + device validation (web only; Android device revoke not attempted, see status note)
 
 ## Success criteria
 - Rust and TS produce identical rows from the fixture; no test output or answer contains the fixture's IP.

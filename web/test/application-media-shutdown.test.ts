@@ -154,7 +154,7 @@ test("the production startup hands its preload and thumbnail workers to shutdown
   let player: Awaited<ReturnType<typeof startPlayer>> | undefined;
   try {
     player = await startPlayer({ ...configIn(root), cacheMaxBytes: 100_000_000, seriesPreload: true }, {
-      connect: async () => telegram, findIndex: async () => "nothing-pinned",
+      open: async () => telegram, findIndex: async () => "nothing-pinned",
       detectEncoder: async () => ({ kind: "software", name: "libx264" }),
       listen: () => () => {},
     });

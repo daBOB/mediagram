@@ -11,8 +11,21 @@
 - `docs/code-standards.md` § Security; `docs/system-architecture.md` § 10 On-disk layout
 
 ## Overview
-Priority P1 (everything else depends on it). Status: pending.
-Adds the two stores settings persist to and the gate every settings route passes.
+Priority P1 (everything else depends on it). Status: **done 2026-09-26** (landed with 02-05
+in one commit; see their notes for why). Adds the two stores settings persist to and the gate
+every settings route passes.
+
+Built as specified with these differences: `STATE_SCHEMA` was already stale (declared `8`
+while `GROUPS` already produced v9 — a pre-existing, unrelated bug); the new group is v9→v10
+and the constant is corrected to `10` in the same change. `channelCatalogDir`,
+`telegramFilePath`, `adminTokenPath` default under `~/.local/share/mediagram-player` /
+`~/.cache/mediagram-channel-catalog` rather than the exact paths sketched, matching this
+project's existing `~/.cache`/`~/.local/share` split (state vs. refetchable data). The admin
+gate's `unlock`/`isUnlocked`/`lock` take a raw `Cookie` header string, not a `PlayerRequest` —
+`PlayerRequest.cookie` did not exist yet when this was written and is added in the same change
+that wires the settings router in (folded into 02-05's commit). `resolveTelegram` and the
+`telegram.json` reader/writer live under `web/src/settings/`, not inside `config.ts`, to keep
+`config.ts` under its line ceiling.
 
 ## Key insights
 - **Viewer auth today: none.** `login.ts` is a one-time CLI that writes `web/.env`, not

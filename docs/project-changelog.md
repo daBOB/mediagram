@@ -5,6 +5,47 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Unreleased — 0.61.0
+
+Merged into `main` on 2026-09-26: `feat/settings-menu`.
+
+A Settings surface on both the web player and Android: read-only Telegram
+connection info, switching library without a restart, editing the api
+id/hash, signing in or out, a live cache budget, and an active-sessions list
+with remote revoke. Android's Settings screen and the Rust core account/session
+exports landed earlier; this entry covers the web side and the
+sessions feature that spans all three.
+
+**Added**
+
+- `#/settings` on the web player: locked behind this household's own network
+  plus an admin token (`~/.local/share/mediagram-player/admin-token`, minted
+  on first start unless `MEDIAGRAM_ADMIN_TOKEN` is set). Telegram section
+  (account, library, datacenter, session), Change library, Application
+  id/hash, Sign in/out, a Cache section with a live size field, and an Active
+  sessions list.
+- The account (api id/hash, session, chosen channel) now lives in
+  `~/.local/share/mediagram-player/telegram.json` once Settings has been
+  opened once; `web/.env` stays the bootstrap. The cache budget lives in the
+  state database's new `settings` table (schema v10) and overrides
+  `MEDIAGRAM_CACHE_MAX`.
+- The web player's Telegram client is swappable at runtime (`TelegramConnection`):
+  sign in, sign out and an api id/hash change all restart it without a
+  process restart, never running two clients on one auth key. A channel
+  switch reuses the same client with a different channel — no restart at all.
+- Active sessions: `crates/mediagram-core::api::sessions` and
+  `web/src/settings/sessions.ts` list and revoke this app's Telegram logins
+  (`account.getAuthorizations`/`resetAuthorization`), scoped to this app's
+  `api_id` plus the current row. Both ports read the same shared fixture
+  (`web/test/fixtures/authorizations/cases.json`), and Android's Settings
+  screen gained an Active sessions section over the same core calls.
+
+**Deliberate surface difference**
+
+- The web Settings page sits behind the admin-token gate described above;
+  Android's does not, because the phone is the account holder's own device
+  and nothing else can reach it.
+
 ## Unreleased — 0.60.0
 
 Merged into `main` on 2026-09-26: `feat/system-page-stats` — four new groups

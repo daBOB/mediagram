@@ -67,7 +67,7 @@ export class ChunkCache {
 
   constructor(
     private readonly root: string,
-    private readonly maxBytes: number,
+    private maxBytes: number,
   ) {}
 
   /** What this cache has done so far, and what it is allowed to hold. */
@@ -82,6 +82,20 @@ export class ChunkCache {
   /** The budget this cache was given, in bytes. */
   get budget(): number {
     return this.maxBytes;
+  }
+
+  /**
+   * Changes the budget and, when it shrank, evicts down to it.
+   *
+   * Applied before eviction runs, so a crash mid-evict still starts next time
+   * at the new budget rather than the old one: the caller persists this
+   * number first (Settings' own precedence), and this only ever makes the
+   * on-disk cache agree with what is already recorded.
+   */
+  async setBudget(bytes: number): Promise<{ freedBytes: number }> {
+    this.maxBytes = bytes;
+    const freedBytes = await this.scheduleEviction();
+    return { freedBytes };
   }
 
   /**

@@ -11,6 +11,7 @@ import uniffi.mediagram_core.ListRow
 import uniffi.mediagram_core.PreferenceRow
 import uniffi.mediagram_core.Profile
 import uniffi.mediagram_core.SearchHit
+import uniffi.mediagram_core.SessionSummary
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.StateSnapshot
 import uniffi.mediagram_core.SyncOutcome
@@ -282,6 +283,20 @@ interface CoreClient {
      * the key file alone left the login valid in the account's sessions.
      */
     suspend fun signOut() = Unit
+
+    /**
+     * This app's sessions signed in to the account, plus the current one.
+     * Scoped to this app's `api_id` — the account's official Telegram apps
+     * are not listed. Asks Telegram; never returns an IP address.
+     */
+    suspend fun sessions(): List<SessionSummary> = emptyList()
+
+    /**
+     * Ends a session by [SessionSummary.id]. The current session (id `"0"`)
+     * is refused — sign out ends it instead. A session already gone counts
+     * as revoked.
+     */
+    suspend fun revokeSession(id: String) = Unit
 
     /**
      * Permanently retires local watch-state access, then releases the native

@@ -23,6 +23,7 @@ import { FfmpegRunner } from "./transcode/ffmpeg";
 import { TranscodeRegistry } from "./transcode/registry";
 import { TranscodeFiles } from "./transcode/server";
 import { ChunkCache } from "./cache/store";
+import { startBudget } from "./cache/budget";
 import { HeldSets, expectedChunks } from "./cache/held";
 import { AudioTrackReader } from "./catalog/audio-tracks";
 import { WatchState } from "./state/store";
@@ -30,21 +31,30 @@ import { PosterStore } from "./package/posters";
 import type { RefreshOptions } from "./package/refresh";
 import { createStatusRouter } from "./status/routes";
 import { dirBytes } from "./status/dir-bytes";
-import { readLiveFacts } from "./status/live-facts";
+import { currentLink, readLiveFacts } from "./status/live-facts";
 import { startLoopLag } from "./status/loop-lag";
 import { PlaybackReports } from "./status/playback-reports";
 import type { StartupFacts } from "./status/facts";
-import { Telegram, bareChannelId } from "./telegram/client";
-import { TelegramSource, partFetcher } from "./telegram/source";
+import { Telegram } from "./telegram/client";
+import { TelegramConnection } from "./telegram/connection";
+import { TelegramSource, connectionFetcher } from "./telegram/source";
 import { SeriesPreload } from "./cache/series-preload";
 import { CatalogEvents } from "./catalog-events";
-import { findNewestChannelIndex } from "./channel-index/find-newest-channel-index";
+import { findNewestChannelIndex, type FoundIndex } from "./channel-index/find-newest-channel-index";
 import { fetchPostersForIndex } from "./channel-index/fetch-posters-for-index";
+import type { NoIndex } from "./channel-index/pick-newest-index";
 
 import { openCatalog } from "./application/open-catalog";
 import { CatalogFollower } from "./application/catalog-follow";
-import { LibraryUpdates, announcingPulls, installShutdownSignals, shutdownFor, syncOnce, type ApplicationResources } from "./application/lifecycle";
+import { ChannelState, UpdatesBinding } from "./application/telegram-binding";
+import { announcingPulls, installShutdownSignals, shutdownFor, syncOnce, type ApplicationResources } from "./application/lifecycle";
 import { WriteDebounce } from "./application/write-debounce";
+import { readTelegramFile } from "./settings/telegram-file";
+import { resolveTelegram } from "./settings/resolve-telegram";
+import { resolveAdminToken, AdminGate } from "./settings/admin-gate";
+import { SettingsRuntime } from "./settings/context";
+import { createSettingsRouter } from "./settings/routes";
+import type { PlayerRequest, PlayerResponse } from "./http/contracts";
 
 /**
  * How long a player waits, after the last local write, before running a
@@ -57,15 +67,15 @@ const WRITE_SYNC_DEBOUNCE_MS = 5_000;
 
 /** Only external network, process, and subscription IO is replaceable. */
 interface StartupIo {
-  connect: typeof Telegram.connect;
-  findIndex: typeof findNewestChannelIndex;
+  open: typeof Telegram.open;
+  findIndex: (telegram: Telegram) => Promise<FoundIndex | NoIndex>;
   detectEncoder: typeof detectEncoder;
   listen: typeof listenForLibraryEvents;
   fetchPosters: typeof fetchPostersForIndex;
   fetch?: RefreshOptions["fetch"];
 }
 const startupIo: StartupIo = {
-  connect: (config) => Telegram.connect(config), findIndex: findNewestChannelIndex,
+  open: (config) => Telegram.open(config), findIndex: findNewestChannelIndex,
   detectEncoder, listen: listenForLibraryEvents, fetchPosters: fetchPostersForIndex,
 };
 
@@ -75,19 +85,25 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
   const resources: ApplicationResources = { timers: [] };
   const stop = shutdownFor(resources);
   try {
+    // A stored account beats the environment, which stays the bootstrap for
+    // a player that has never opened Settings.
+    const telegramFile = await readTelegramFile(config.telegramFilePath);
+    config = resolveTelegram(config, telegramFile);
     console.log("player:", describe(config));
 
-    // Connected before the catalog is chosen: without a package, the catalog is
-    // whatever the channel last pinned.
-    const telegram = await io.connect(config);
-    resources.telegram = telegram;
+    // Signed out is a mode, not a startup failure: the catalog, cached
+    // chunks and state on this disk are all still servable without a client.
+    const connection = new TelegramConnection(await io.open(config));
+    resources.telegram = { disconnect: async () => { await connection.current()?.disconnect(); } };
+    console.log(connection.current() ? "telegram: connected" : "telegram: signed out");
 
     // Where the catalog comes from. A published package makes the player
     // independent of the uploader's filesystem: it fetches `latest.json`,
     // decrypts what it names, and reads the index out of it. Without one it
     // takes the channel's newest index instead, as the Android app does, and
     // reads the index on this disk only when neither can be had.
-    const catalog = await openCatalog(config, () => io.findIndex(telegram), io.fetch);
+    const findViaConnection = () => connection.ready().then((t) => (t ? io.findIndex(t) : "nothing-pinned" as const));
+    const catalog = await openCatalog(config, findViaConnection, io.fetch);
     const catalogDir = catalog.dir;
 
     // One or the other is always set: `load()` requires a local index unless a
@@ -112,9 +128,17 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     const playableCount = listPlayable(db).length;
     console.log(`catalog: ${playableCount} playable sets, ${posters.count()} poster(s)`);
 
-    // A budget of zero turns caching off, which is a legitimate choice on a
-    // machine with no disk to spare.
-    const cache = config.cacheMaxBytes > 0 ? new ChunkCache(config.cacheDir, config.cacheMaxBytes) : null;
+    // The one thing this process writes. A store that cannot be opened says so
+    // and the player carries on without a memory, because a watch position is
+    // not worth refusing to play a library over.
+    const state = new WatchState(config.stateDb);
+    resources.state = state;
+    console.log(state.remembers ? `state: ${config.stateDb}` : "state: not remembered");
+
+    // A stored budget beats `MEDIAGRAM_CACHE_MAX`; env `0` (and no stored
+    // value) still turns caching off entirely, exactly as before Settings.
+    const cacheMaxBytes = startBudget(state.settings(), config.cacheMaxBytes);
+    const cache = cacheMaxBytes > 0 ? new ChunkCache(config.cacheDir, cacheMaxBytes) : null;
 
     // None of the three below need Telegram or each other, and none of their
     // results are needed until the lines that log or use them: a cold count
@@ -130,7 +154,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
 
     if (cache) {
       console.log(
-        `cache: ${(cacheBytes! / 1024 ** 3).toFixed(2)} GB of ${(config.cacheMaxBytes / 1024 ** 3).toFixed(2)} GB in ${config.cacheDir}` +
+        `cache: ${(cacheBytes! / 1024 ** 3).toFixed(2)} GB of ${(cacheMaxBytes / 1024 ** 3).toFixed(2)} GB in ${config.cacheDir}` +
           `, readahead ${config.cacheReadahead} chunk(s)`,
       );
     } else {
@@ -170,13 +194,6 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     const audio = new AudioTrackReader(endpoint);
     resources.audio = audio;
 
-    // The one thing this process writes. A store that cannot be opened says so
-    // and the player carries on without a memory, because a watch position is
-    // not worth refusing to play a library over.
-    const state = new WatchState(config.stateDb);
-    resources.state = state;
-    console.log(state.remembers ? `state: ${config.stateDb}` : "state: not remembered");
-
     /**
      * Sharing that state with this account's other devices, if asked.
      *
@@ -196,12 +213,12 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
 
     const sync = announcingPulls(
       config.syncState && state.remembers
-        ? new StateSync(state, new TelegramStateChannel(telegram), state.deviceId())
+        ? new StateSync(state, new TelegramStateChannel(connection), state.deviceId())
         : null,
       events,
     );
-
     resources.sync = sync;
+
     /**
      * A local write reaches another device sooner than the timer, without a
      * second sync path: a few seconds of quiet after the last one runs the
@@ -209,20 +226,24 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
      */
     const writeDebounce = sync ? new WriteDebounce(() => void syncOnce(sync, "write"), WRITE_SYNC_DEBOUNCE_MS) : null;
     resources.writeDebounce = writeDebounce ?? undefined;
-    const updates = new LibraryUpdates(
-      (onEvent) => io.listen(telegram.client, { channel: bareChannelId(config.chatId), ownDevice: state.deviceId() }, onEvent),
-      sync,
-    );
-    resources.updates = updates;
-    if (sync) console.log(`sync: ${state.deviceId()} every ${Math.round(config.syncEveryMs / 1000)}s`);
-    await updates.start();
-    if (sync) resources.timers.push(setInterval(() => void syncOnce(sync, "timer"), config.syncEveryMs));
 
-    // The same facts the lines above printed, kept this time. Everything here was
-    // already decided; none of it is worked out twice.
+    // The channel this player follows for its catalog and its watch-state
+    // sync, mutable across a library switch from Settings. Subscribed here,
+    // before the follower or the server exist: a listener bound and later
+    // torn down on a startup failure must not depend on how far startup got.
+    const channel = new ChannelState(config.chatId, config.channelAccessHash, telegramFile?.title ?? null);
+    const updatesBinding = new UpdatesBinding(connection, channel, state.deviceId(), sync, null, io.listen);
+    resources.updates = { stop: () => updatesBinding.stop() };
+    await updatesBinding.start();
+
+    if (sync) {
+      console.log(`sync: ${state.deviceId()} every ${Math.round(config.syncEveryMs / 1000)}s`);
+      resources.timers.push(setInterval(() => void syncOnce(sync, "timer"), config.syncEveryMs));
+    }
+
     const reader = cache ? new CachedReader(cache, config.cacheReadahead) : null;
     resources.reader = reader ?? undefined;
-    const bytes = new TelegramSource(telegram, reader ?? undefined);
+    const bytes = new TelegramSource(connection, reader ?? undefined);
 
     // Which titles are on this disk in full, for the shelf's offline badge. The
     // expectation is folded again whenever the catalog is swapped, and the first
@@ -296,7 +317,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
       config.seriesPreload && reader && held
         ? new SeriesPreload({
             fill: (setId, partIdx, partLength, fetch) => reader.fill(setId, partIdx, partLength, fetch),
-            fetcherFor: (messageId) => partFetcher(telegram, messageId),
+            fetcherFor: (messageId) => connectionFetcher(connection, messageId),
             isHeld: (setId) => held.check(setId),
             // So the shelf's offline badge follows at once, not a scan later.
             onHeld: () => held.refresh(),
@@ -305,6 +326,18 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
         : undefined;
     resources.preload = preload;
     console.log(`preload: next 2 episodes ${preload ? "on" : "off"}`);
+
+    // Settings, gated behind this household's network and an admin token
+    // (`docs/system-architecture.md` §7). Built before the router, since the
+    // router needs it, and after everything it touches — cache, held, facts.
+    const adminToken = await resolveAdminToken(process.env, config.adminTokenPath);
+    const gate = new AdminGate(adminToken);
+    const statusHeldByteInvalidation = { current: () => {} };
+    // Filled in once `runtime` exists, after `follower` — both need the
+    // running server. `createRouter` reads through this box on every
+    // request, so the settings route becomes live without rebuilding the
+    // router the way a catalog swap does.
+    const settingsBox: { route: ((request: PlayerRequest) => Promise<PlayerResponse | null>) | null } = { route: null };
 
     const server = await startServer({
       db,
@@ -324,16 +357,21 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
       catalog: { origin: catalog.origin, publishedAt: catalog.publishedAt },
       held: held ?? undefined,
       preload,
-      status: createStatusRouter({
-        facts,
-        live: () => readLiveFacts({
-          cache, reader: reader ?? null, transcodes, telegram, bytes, loopLag,
-          diskDirs: [config.cacheDir, config.transcodeDir], playback: playbackReports,
-        }),
-        heldBytes: cache ? () => cache.sizeOnDisk() : undefined,
-        transcodeBytes: () => dirBytes(config.transcodeDir),
-        playback: playbackReports,
-      }),
+      status: (() => {
+        const statusRouter = createStatusRouter({
+          facts,
+          live: () => readLiveFacts({
+            cache, reader: reader ?? null, transcodes, telegram: currentLink(connection), bytes, loopLag,
+            diskDirs: [config.cacheDir, config.transcodeDir], playback: playbackReports,
+          }),
+          heldBytes: cache ? () => cache.sizeOnDisk() : undefined,
+          transcodeBytes: () => dirBytes(config.transcodeDir),
+          playback: playbackReports,
+        });
+        statusHeldByteInvalidation.current = () => statusRouter.invalidateHeldBytes();
+        return statusRouter;
+      })(),
+      settings: (request) => settingsBox.route?.(request) ?? Promise.resolve(null),
     });
 
     boundUrl = server.baseUrl;
@@ -341,25 +379,44 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     const follower = new CatalogFollower({
       db, catalog, server, facts, events, held: held ?? undefined,
       root: config.channelIndexDir,
-      find: () => io.findIndex(telegram),
+      find: findViaConnection,
       fetchPosters: (index) => io.fetchPosters(config.postersCommand, index),
       posterCount: () => posters.count(),
     });
     resources.catalog = follower;
-    const ready = updates.followCatalog(catalog.origin === "package" ? null : follower);
+
+    updatesBinding.setFollower(catalog.origin === "package" ? null : follower);
+    const ready = updatesBinding.followCatalog();
     if (catalog.origin === "channel" && catalog.dir !== null) void follower.refreshPosters(catalog.dir);
+
+    const runtime = new SettingsRuntime(
+      {
+        connection, channel, updatesBinding, follower, facts, settings: state.settings(),
+        cache: cache ?? null, held: held ?? undefined,
+        invalidateHeldBytes: () => statusHeldByteInvalidation.current(),
+        channelCatalogDir: config.channelCatalogDir,
+        telegramFilePath: config.telegramFilePath,
+      },
+      { apiId: config.apiId, apiHash: config.apiHash },
+      null,
+    );
+    settingsBox.route = createSettingsRouter({
+      gate,
+      runtime,
+      secure: (request) => Boolean(config.trustProxy) && request.host !== null,
+    });
 
     const urls = reachableUrls(config.hostname, server.port);
     console.log(`serving on ${urls[0]}`);
     for (const url of urls.slice(1)) console.log(`          ${url}`);
 
     if (isExposed(config.hostname)) {
-      // This API has no authentication of its own. Anyone who can reach the port
-      // can browse and stream the whole library, so say so rather than leaving it
-      // to be discovered.
+      // This API has no authentication beyond Settings' own gate. Anyone who
+      // can reach the port can browse and stream the whole library, so say so
+      // rather than leaving it to be discovered.
       console.log(
-        "\n  ! Reachable from the network, and this API has no authentication.\n" +
-          "    Anyone who can reach this port can stream the whole library.\n" +
+        "\n  ! Reachable from the network. Settings is admin-gated, but the\n" +
+          "    catalog and streaming API are not.\n" +
           "    Put a reverse proxy in front of it before exposing it beyond a\n" +
           "    network you trust.\n",
       );

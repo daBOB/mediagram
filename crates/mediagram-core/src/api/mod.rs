@@ -14,6 +14,7 @@ mod preferences;
 mod read;
 mod refresh;
 mod search;
+mod sessions;
 mod set_text;
 mod state;
 mod state_sync;

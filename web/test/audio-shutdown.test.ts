@@ -88,7 +88,7 @@ test("production startup terminates and reaps an active audio probe before disco
   let request: Promise<unknown> | undefined;
   try {
     player = await startPlayer(configIn(root), {
-      connect: async () => telegramBoundary(order), findIndex: async () => "nothing-pinned",
+      open: async () => telegramBoundary(order), findIndex: async () => "nothing-pinned",
       detectEncoder: async () => ({ kind: "software", name: "libx264" }), listen: () => () => {},
     });
     await player.ready;

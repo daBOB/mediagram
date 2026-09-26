@@ -157,3 +157,22 @@ test("shutdown drains an artwork process already started and admits no more", as
   await follower.refreshPosters(root);
   expect(starts).toBe(1);
 });
+
+test("retarget forgets what was served, so a different channel's index is not compared against it", async () => {
+  const before = library("Before");
+  databases.push(before);
+  server = await startServer({ db: before, source: { stream: () => new ReadableStream<Uint8Array>() } });
+  const status = facts();
+  follower = new CatalogFollower({
+    db: before, catalog: { dir: null, origin: "channel", publishedAt: 999_000, refresh: "updated", reason: null },
+    root: join(root, "channel-a"), find: async () => snapshot("From B", 5, "01FROMB"), server,
+    facts: status, events: { catalogChanged: () => {} },
+    fetchPosters: async () => ({ ok: false, reason: "art unavailable" }), posterCount: () => 0,
+  });
+  // A lower pushedAt than what this follower already believes it is serving
+  // (999) would be refused as "unchanged" without retarget resetting that.
+  follower.retarget(join(root, "channel-b"));
+  await follower.refresh();
+  expect(await titles()).toEqual(["From B"]);
+  expect(status.catalog).toMatchObject({ publishedAt: 5000, refresh: "updated" });
+});

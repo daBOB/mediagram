@@ -576,6 +576,25 @@ Worth stating, because each of these looks like an omission and is a decision:
   chosen from the link rather than adapted during playback. Adaptive bitrate
   would mean several encoders per viewer for a household that has one.
 
+## Settings
+
+`#/settings` in the player itself does what used to need `bun run login` and a
+restart: change the api id/hash, sign in or out, switch which channel's index
+is served, resize the cache, and see the account's active sessions — all live,
+no restart. It only answers this household's own network (the same rule
+`/api/status` follows) and, past that, a token: the first start prints where
+it wrote one (`~/.local/share/mediagram-player/admin-token`, 0600) unless
+`MEDIAGRAM_ADMIN_TOKEN` is set. Unlocking sets a cookie for 12 hours; "Lock"
+in the page ends it early.
+
+Once used, the account's api id/hash, session and chosen channel live in
+`~/.local/share/mediagram-player/telegram.json` (0600) rather than
+`web/.env` — the file wins from then on, field by field, and `web/.env`
+becomes the bootstrap a fresh install or a deleted `telegram.json` falls back
+to. Signing out sets the file's session to `null`; the player keeps serving
+its catalog and cached chunks, and an uncached read answers a clear "signed
+out" error instead of hanging.
+
 ## Revoking access
 
 - **One viewer**: delete their line from `basic_auth` and reload Caddy
@@ -583,10 +602,15 @@ Worth stating, because each of these looks like an omission and is a decision:
   policy; existing sessions end at their next request.
 - **Everyone, now**: stop the proxy. The player is on loopback, so nothing
   else can reach it.
+- **Settings, from the browser**: `#/settings` → Active sessions lists every
+  device signed in through this app (its own `api_id`) and lets you end one
+  remotely — for a lost phone or a retired server. The row this player itself
+  is using has no button; sign out instead.
 - **The Telegram session**, if you believe the host itself is compromised:
   terminate it from Telegram (Settings → Devices), then issue a new one with
-  `bun run login`. This is the one that matters — the auth key is the account,
-  not just the library. Rotating the player's password does nothing for it.
+  `bun run login` or from `#/settings` itself. This is the one that matters —
+  the auth key is the account, not just the library. Rotating the player's
+  password, or its Settings admin token, does nothing for it.
 
 ## Running it as a service
 
@@ -611,7 +635,8 @@ PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=read-only
 ReadWritePaths=/home/andre/.cache/mediagram-player /home/andre/.cache/mediagram-hls \
-               /home/andre/.cache/mediagram-catalog
+               /home/andre/.cache/mediagram-catalog /home/andre/.cache/mediagram-channel-catalog \
+               /home/andre/.local/share/mediagram-player
 DeviceAllow=/dev/dri/renderD128 rw
 NoNewPrivileges=true
 

@@ -66,7 +66,11 @@ export class MeasuredClient extends TelegramClient {
     }
   }
 
-  /** Counts a reconnect on the main connection; the first `connected` does not count as one. */
+  /**
+   * Counts a reconnect on the main connection; the first `connected` does not
+   * count as one. Only the main connection: a download-DC sender is pooled and
+   * rebuilt without notice, and its failures show up as per-DC request errors.
+   */
   watchReconnects(): void {
     let seenFirstConnect = false;
     this.addEventHandler((update: UpdateConnectionState) => {

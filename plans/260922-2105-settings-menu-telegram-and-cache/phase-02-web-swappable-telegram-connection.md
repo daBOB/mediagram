@@ -8,9 +8,31 @@
 - `web/src/login.ts:4-8` — two MTProto clients on one auth key break each other (measured)
 
 ## Overview
-Priority P1. Status: pending. Makes the Telegram client and the catalog replaceable at
-runtime, with no settings UI yet. Pure refactor + signed-out mode; behaviour with an
-unchanged `.env` must be identical.
+Priority P1. Status: **done 2026-09-26**. Makes the Telegram client and the catalog
+replaceable at runtime, with no settings UI yet. Pure refactor + signed-out mode; behaviour
+with an unchanged `.env` is identical (the full existing `bun test` suite is the oracle and
+passes unmodified in its assertions, only in its fixtures — see below).
+
+Built substantially smaller than planned, because most of "library-runtime.ts" already
+existed by 2026-09-26: `server.ts` already exposed `replaceCatalog`, and
+`application/catalog-follow.ts`'s `CatalogFollower` already did the install→verify→swap→retire
+dance this phase's `library-runtime.ts` was meant to extract. No `library-runtime.ts` or
+`setRouter` were written; `CatalogFollower` instead gained one method, `retarget(root)`, so a
+channel switch (05) can point it at a fresh per-channel directory without rebuilding it.
+`Telegram.connect` stayed (CLI/tests still want the throwing form) and a new `Telegram.open`
+returns `null` instead of throwing; `Telegram.withChannel(existing, chatId, accessHash)` reuses
+a client's connection for a new channel. The holder is `telegram/connection.ts`'s
+`TelegramConnection` (`current()`, `ready()`, `generation`, `withChannel()`, `restart()`).
+`TelegramSource`/`TelegramStateChannel` take the holder and read it fresh per call rather than
+holding a `Telegram`; every test that built one directly now wraps a fake in
+`TelegramConnection.fixed(telegram)`. The update listener (`LibraryUpdates`) is the one thing
+that still binds to one concrete client/channel at construction, so it is rebuilt via a new
+`application/telegram-binding.ts` (`UpdatesBinding`) on every restart or channel switch — kept
+apart from the holder because its `start()` must run *before* the HTTP server does (a listener
+bound and torn down on a failed server bind must not depend on how far startup got — proven by
+`application-startup.test.ts`'s EADDRINUSE case) while its `followCatalog()` must run *after*
+the server and follower exist, unawaited, exactly as the original single-phase `updates.start()`
+/ `updates.followCatalog()` split did.
 
 ## Key insights
 - Every consumer holds the `Telegram` instance directly (source, state channel, index.ts

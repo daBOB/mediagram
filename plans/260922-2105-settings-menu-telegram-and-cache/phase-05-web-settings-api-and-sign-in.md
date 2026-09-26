@@ -8,8 +8,36 @@
 - Android flow: `android/feature/catalog/src/main/kotlin/login/LoginViewModel.kt:67-104` (phone → code → password)
 
 ## Overview
-Priority P1. Status: pending. One admin-gated router under `/api/settings`, the sign-in
-state machine, and all wiring into `index.ts`.
+Priority P1. Status: **done 2026-09-26**. One admin-gated router under `/api/settings`, the
+sign-in state machine, and all wiring into `index.ts`.
+
+Built as specified with these differences. `refuseUnsafeBrowserWrite` (same-origin + JSON-only
+guard) already existed in `web/src/http/browser-write.ts` and is reused directly — no
+`request-guard.ts` extraction was needed, it was already the one shared implementation
+`state/routes.ts` used. The settings route is not wired into `createRouter`'s option list as a
+plain field checked once: `index.ts` builds `follower` and the `SettingsRuntime` *after*
+`startServer` (they need `server.replaceCatalog` and the follower needs the running server),
+so `routes.ts` gained a `settings` option slot backed by a mutable box
+(`{ route: SettingsRoute | null }`) the running server already closes over — filled in once
+`runtime`/`gate` exist, the same way `replaceCatalog` lets the catalog itself become live after
+the fact. `PlayerRequest.cookie` was added to `http/contracts.ts` and read in `server.ts`.
+Business logic lives in `settings/context.ts` (`SettingsRuntime`: view, cache, library) and
+`settings/account-actions.ts` (`AccountActions`: app id/hash, sign-in, sign-out) — split in two
+because the combined file would not fit this project's 200-line ceiling for a new file, not for
+any architectural reason. Sign-in (`settings/sign-in.ts`) uses raw `auth.SendCode` /
+`auth.SignIn` / `account.GetPassword` + `computeCheck` (from `teleproto/Password`) /
+`auth.CheckPassword` rather than `client.start()` — the plan flagged the exact teleproto method
+names as unverified, and the state-machine shape `client.start()` wants (one interactive
+callback-driven call) does not fit an HTTP request per step; this was verified structurally
+against teleproto's TL types at write time (field names, response classes) but never against a
+live account — see phase report. Sign-in of a different account does **not** clear the
+previously chosen channel outright (a nullable `chatId`/`accessHash` would have meant threading
+`null` through `Telegram.open`/`bareChannelId` everywhere): the channel is left in place, the
+next read against it fails exactly as it would if the channel had changed ownership, and the
+sign-in answer carries a `differentAccount` flag so the page can prompt "Change library" without
+the backend forcing the state. Everything else (routes, request/response shapes, prove-then-
+persist-then-swap order, rollback on a bad app id/hash, one pending sign-in with a 10-minute
+TTL) matches the plan.
 
 ## Key insights
 - Sign-in uses a **separate** pending client on an empty session → a new auth key, so it
