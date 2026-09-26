@@ -38,25 +38,14 @@
   </head>
   <body>
     <button type="button" class="skip-link" id="skip-library">Skip to library</button>
-    <!-- Two navigations, as the reference has two: a rail down the side
-         and a bar of departments along the top. Every link keeps its hash
-         and `data-section`, so routing and the counts `app.js` writes work
-         on both. -->
+    <!-- Two navigations, each link in one of them: the departments along
+         the top, the viewer's shelves and utilities down the side. -->
     <aside class="library-rail">
       <!-- The wordmark goes where a masthead's does: back to the front page. -->
       <a class="brand" href="#/home">mediagram</a>
-      <!-- The rail mirrors the reference: the library's departments first,
-           then, under a rule, the reader's utilities — what they started,
-           kept and listed, what is new, and the subject index. The bar
-           along the top repeats the departments with their counts. -->
+      <!-- The reader's own shelves and the utilities. The library's
+           departments are the bar along the top, and only there. -->
       <nav class="rail-nav" aria-label="Your shelves">
-        <a href="#/home" data-section="home"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5 12 3.5l8.5 7V20h-5.5v-5.5h-6V20H3.5z"></path></svg><span class="label">Home</span></a>
-        <a href="#/movies" data-section="movies" class="dept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="1.5"></rect><path d="M3.5 9h17M3.5 15h17M8 5v4M16 5v4M8 15v4M16 15v4"></path></svg><span class="label">Movies</span></a>
-        <a href="#/series" data-section="series" class="dept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12" rx="1.5"></rect><path d="m9 3 3 3 3-3M9 21h6"></path></svg><span class="label">Series</span></a>
-        <a href="#/documentaries" data-section="documentaries" class="dept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.5 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.5-3.5-8.5s1-5.9 3.5-8.5z"></path></svg><span class="label">Documentaries</span></a>
-        <a href="#/tutorials" data-section="tutorials" class="dept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h6a2 2 0 0 1 2 2V20a2 2 0 0 0-2-2H4zM20 5.5h-6a2 2 0 0 0-2 2V20a2 2 0 0 1 2-2h6z"></path></svg><span class="label">Tutorials</span></a>
-        <a href="#/collections" data-section="collections" class="dept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1"></rect><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"></rect><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"></rect></svg><span class="label">Collections</span><span class="n" id="n-collections"></span></a>
-        <span class="rail-rule" aria-hidden="true"></span>
         <a href="#/watchlist" data-section="watchlist" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h11v17l-5.5-3.8-5.5 3.8z"></path></svg><span class="label">My List</span><span class="n" id="n-watchlist"></span></a>
         <a href="#/continue" data-section="continue" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M10.2 8.6v6.8l5.6-3.4z"></path></svg><span class="label">Continue watching</span><span class="n" id="n-continue"></span></a>
         <a href="#/latest" data-section="latest" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg><span class="label">Latest</span></a>
@@ -82,7 +71,7 @@
         <a href="#/series" data-section="series">Series<span class="n" id="n-series"></span></a>
         <a href="#/documentaries" data-section="documentaries">Documentaries<span class="n" id="n-documentaries"></span></a>
         <a href="#/tutorials" data-section="tutorials">Tutorials<span class="n" id="n-tutorials"></span></a>
-        <a href="#/collections" data-section="collections">Collections</a>
+        <a href="#/collections" data-section="collections">Collections<span class="n" id="n-collections"></span></a>
       </nav>
       <div class="library-toolbar">
         <div class="search-field" role="search">

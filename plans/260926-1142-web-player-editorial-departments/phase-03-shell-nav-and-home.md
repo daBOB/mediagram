@@ -1,6 +1,6 @@
 # Phase 3 — Shell, nav, and Home
 
-**Priority:** P1. **Status:** pending. It goes into the preview checkpoint.
+**Priority:** P1. **Status:** done (0.62.0, 2026-09-26). It goes into the preview checkpoint.
 
 ## Context
 `web/public/index.html` (rail + departments), `styles/shell.css`, `styles/theme.css`,

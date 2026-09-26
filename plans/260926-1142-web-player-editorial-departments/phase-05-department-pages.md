@@ -1,6 +1,6 @@
 # Phase 5 — Departments: Movies, Series, Tutorials
 
-**Priority:** P2. **Status:** pending. It starts after checkpoint approval.
+**Priority:** P2. **Status:** done (0.62.0, 2026-09-26). It starts after checkpoint approval.
 
 ## Context
 `app.js` `viewMovies` / `viewCollections`, `lib/catalog/shelf-view.js`, `pager.js`, `genres.js`.

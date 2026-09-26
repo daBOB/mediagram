@@ -1,5 +1,7 @@
 # A cache that can live on another volume — Implementation Plan
 
+> **Superseded 2026-09-25** by [`260925-2046-external-cache-volume-and-lan-chunk-server`](../260925-2046-external-cache-volume-and-lan-chunk-server/plan.md). The budget half shipped differently in `b91e9e8` (live slider); phase 1 Task 1 is reused there verbatim.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make where the Android cache lives and how large it grows a viewer's

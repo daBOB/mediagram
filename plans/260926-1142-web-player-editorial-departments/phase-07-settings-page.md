@@ -1,6 +1,6 @@
 # Phase 7 — Settings: Appearance, Playback, Profile
 
-**Priority:** P2. **Status:** pending.
+**Priority:** P2. **Status:** done (0.62.0, 2026-09-26).
 
 ## Context
 There is no settings page today. `260922-2105-settings-menu-telegram-and-cache` phase 06

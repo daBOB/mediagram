@@ -5,10 +5,13 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Unreleased — documentaries and custom artwork
+## 0.63.0 — documentaries and custom artwork
 
-Rust half of the `feat/documentaries-and-artwork` branch: schema v10, the
-`artwork` table, `mediagram artwork`, `add-docu`, and the new `Kind::Docu`.
+Schema v10, the `artwork` table, `mediagram artwork`, `add-docu`, and the new
+`Kind::Docu`. **Web:** a Documentaries department in the top bar (between
+Series and Tutorials), artwork-table images served before TMDB files, tutorial
+cards with their own art, and a Documentaries group in search. Unnumbered lesson
+and part names sort naturally (`Teil 2` before `Teil 10`).
 
 **Schema**
 
@@ -46,6 +49,13 @@ Rust half of the `feat/documentaries-and-artwork` branch: schema v10, the
   the existing `tmdb-…` shapes.
 - Android/core `poster_path` checks the `artwork` table before falling back to
   a TMDB fetch, writing a hit into the artwork directory once.
+
+## Unreleased — 0.62.1
+
+- **Navigation**: every link appears once. The departments (Home, Movies, Series,
+  Tutorials, Collections) live only in the top bar, which now carries the Collections
+  count; the side rail keeps the viewer's shelves and utilities (My List, Continue
+  watching, Latest, Genres, Settings, System).
 
 ## Unreleased — 0.62.0
 
