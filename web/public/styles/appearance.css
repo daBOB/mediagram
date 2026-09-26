@@ -1,0 +1,70 @@
+/* Settings › Appearance: the accent colours and how heroes treat artwork,
+   keyed to the attributes `lib/appearance-boot.js` sets on <html>.
+   Each accent has a dark-theme and a light-theme value, each at least
+   4.5:1 against that theme's paper (held by test/appearance-contrast.test.ts).
+   Coral is the theme's own, in theme.css. */
+:root[data-accent="blue"] { --accent: #7cb4f0; }
+:root[data-accent="violet"] { --accent: #b9a1f7; }
+:root[data-accent="teal"] { --accent: #5ec9c0; }
+:root[data-accent="green"] { --accent: #93cf80; }
+:root[data-accent="amber"] { --accent: #e8b058; }
+:root[data-accent="rose"] { --accent: #f08aa2; }
+:root[data-theme="light"][data-accent="blue"] { --accent: #2c5c9a; }
+:root[data-theme="light"][data-accent="violet"] { --accent: #6243a6; }
+:root[data-theme="light"][data-accent="teal"] { --accent: #1d6a65; }
+:root[data-theme="light"][data-accent="green"] { --accent: #3a6a2a; }
+:root[data-theme="light"][data-accent="amber"] { --accent: #80530c; }
+:root[data-theme="light"][data-accent="rose"] { --accent: #a1304d; }
+
+/* Artwork: how a hero (cover, title spread, department) shows its picture.
+   Default fades it into the page; Blurred softens it to colour and light;
+   Artwork lets it run behind the words; Solid leaves the page plain. */
+[data-backdrop="blurred"] :is(.spread-art, .dept-art, .cover-stage) img { filter: blur(28px) saturate(1.25); transform: scale(1.12); }
+[data-backdrop="artwork"] :is(.spread-art, .dept-art) { inset: 0; }
+[data-backdrop="solid"] :is(.spread-art, .dept-art) { display: none; }
+[data-backdrop="solid"] :is(.spread, .dept-hero) { min-height: 0; }
+[data-backdrop="solid"] :is(.spread-quote, .dept-quote) { display: none; }
+
+/* The Settings page's controls: native radios drawn as swatches. */
+.settings-head { min-height: 0; }
+.settings-head .dept-title { margin-bottom: 10px; }
+.settings-panel { display: grid; gap: 40px; max-width: 52rem; }
+.setting { margin: 0; padding: 0; border: 0; min-width: 0; }
+.setting legend, .setting-title { margin: 0 0 16px; padding: 0; font: 600 1rem/1.3 var(--text); }
+.setting-value { margin: 0 0 16px; color: var(--ink-2); }
+.setting.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr)); gap: 14px; }
+.setting.accents { display: flex; flex-wrap: wrap; gap: 10px 18px; }
+.option { position: relative; display: grid; gap: 10px; cursor: pointer; }
+.option input { position: absolute; opacity: 0; pointer-events: none; }
+.option-words { display: grid; gap: 2px; }
+.option-label { font-size: 0.875rem; font-weight: 500; }
+.option-note { color: var(--ink-3); font-size: 0.75rem; }
+.swatch {
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px var(--rule);
+  transition: box-shadow 320ms var(--ease), transform 520ms var(--ease);
+}
+.option:hover .swatch { transform: translateY(-2px); }
+.option input:checked + .swatch { box-shadow: inset 0 0 0 1px var(--rule), 0 0 0 2px var(--paper), 0 0 0 4px var(--accent); }
+.option input:focus-visible + :is(.swatch, .dot) { outline: 2px solid var(--accent); outline-offset: 6px; }
+.theme-dark { background: linear-gradient(135deg, #1d1d20, #0b0b0c); }
+.theme-light { background: linear-gradient(135deg, #fbf8f2, #e5dfd3); }
+.theme-auto { background: linear-gradient(135deg, #fbf8f2 0 50%, #0b0b0c 50%); }
+.backdrop-default { background: linear-gradient(90deg, var(--paper) 30%, transparent), linear-gradient(120deg, #6b4b2a, #1c2a3a); }
+.backdrop-blurred { background: radial-gradient(circle at 70% 40%, #c07a4a, #2b3550 70%); filter: saturate(0.8); }
+.backdrop-artwork { background: linear-gradient(120deg, #6b4b2a, #1c2a3a); }
+.backdrop-solid { background: var(--paper-sunk); }
+.accents .option { grid-template-columns: auto; justify-items: center; }
+.dot { display: block; width: 34px; height: 34px; border-radius: 50%; transition: box-shadow 320ms var(--ease), transform 520ms var(--ease); }
+.option:hover .dot { transform: scale(1.08); }
+.option input:checked + .dot { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink); }
+.accent-coral { background: #e57a61; }
+.accent-blue { background: #7cb4f0; }
+.accent-violet { background: #b9a1f7; }
+.accent-teal { background: #5ec9c0; }
+.accent-green { background: #93cf80; }
+.accent-amber { background: #e8b058; }
+.accent-rose { background: #f08aa2; }
+.accents .option-label { font-size: 0.75rem; color: var(--ink-2); }

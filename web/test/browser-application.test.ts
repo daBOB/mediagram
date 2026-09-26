@@ -803,3 +803,14 @@ test("a title page keeps the chosen tab when watch state redraws it", async () =
   expect(selected("Details")).toBe("true");
   expect(selected("Overview")).toBe("false");
 });
+
+test("Settings offers the admin tab only to a viewer the settings API answers", async () => {
+  await start();
+  await env.navigate("#/settings");
+  expect(page()).not.toContain("Library & Telegram");
+
+  intercept = (url) => (url.startsWith("/api/settings") ? new Response(null, { status: 401 }) : null);
+  await start();
+  await env.navigate("#/settings");
+  expect(page()).toContain("Library & Telegram");
+});
