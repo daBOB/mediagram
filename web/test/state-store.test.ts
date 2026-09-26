@@ -359,6 +359,66 @@ describe("titles watched to the end", () => {
     expect(state.snapshot(me).watched.map((row) => row.setId)).toEqual(["01SET0000000000000000001"]);
   });
 
+  test("taking it back never touches a position", () => {
+    // `setWatched` alone does not clear a position — the caller pairs it
+    // with `clearProgress` when finishing playback — so a position left in
+    // place must still be exactly there after an un-mark.
+    const { state, me } = stateIn();
+    state.setProgress(me, "01SET0000000000000000001", 30, 1800);
+    state.setWatched(me, "01SET0000000000000000001", true);
+    state.setWatched(me, "01SET0000000000000000001", false);
+    expect(state.snapshot(me).progress[0]).toMatchObject({ setId: "01SET0000000000000000001", at: 30 });
+  });
+
+  test("an un-mark round-trips through export and merge, and survives a re-import on the same device", () => {
+    const { state, me } = stateIn();
+    state.setWatched(me, "01SET0000000000000000001", true);
+    state.setWatched(me, "01SET0000000000000000001", false);
+
+    // What this device would send is what a sync round merges with anyone
+    // else's — including its own record, the way `StateSync` always does.
+    const merged = mergeStates([state.exportRecord("this-device")]);
+    state.importMerged(merged);
+    expect(state.snapshot(me).watched.map((row) => row.setId)).toEqual([]);
+  });
+
+  test("a re-mark after an un-mark can be seen again", () => {
+    const { state, me } = stateIn();
+    state.setWatched(me, "01SET0000000000000000001", true);
+    state.setWatched(me, "01SET0000000000000000001", false);
+    state.setWatched(me, "01SET0000000000000000001", true);
+    expect(state.snapshot(me).watched.map((row) => row.setId)).toEqual(["01SET0000000000000000001"]);
+  });
+
+  test("a re-mark always beats a future-dated removal (R1)", () => {
+    // A removal this device only knows about through an import can carry
+    // another device's clock — one running ahead of this one's. Marking
+    // watched again has to win the next merge regardless, or the mark is
+    // stuck un-winnable until this device's own clock catches up.
+    const { state, me } = stateIn();
+    const name = state.profiles().find((p) => p.id === me)!.name;
+    const setId = "01SET0000000000000000001";
+    const farFuture = Date.now() + 100_000;
+    state.importMerged({
+      profiles: [
+        {
+          name,
+          displayName: name,
+          progress: [],
+          watched: [],
+          unwatched: [{ setId, updatedAt: farFuture, lastFinishedAt: farFuture - 1000 }],
+        },
+      ],
+    });
+    expect(state.snapshot(me).watched).toEqual([]);
+
+    state.setWatched(me, setId, true);
+    expect(state.snapshot(me).watched.map((row) => row.setId)).toEqual([setId]);
+
+    const exported = state.exportRecord("this-device").profiles[0]!.watched[0]!;
+    expect(exported.updatedAt).toBeGreaterThan(farFuture);
+  });
+
   test("survive keeping a position again, which is what re-watching does", () => {
     const { state, me } = stateIn();
     state.setWatched(me, "01SET0000000000000000001", true);
@@ -507,6 +567,65 @@ describe("what this player takes back", () => {
 
     expect(state.snapshot(me).progress).toEqual([]);
     expect(state.snapshot(me).watched.map((row) => row.setId)).toEqual(["01SET"]);
+  });
+
+  test("an un-mark elsewhere leaves a rewatch position here alone, but still suppresses one from before the finish it carries", () => {
+    // Unlike a live completion, a removal is not itself a tombstone for
+    // progress — `lastFinishedAt` is: a position made since that completion
+    // (a genuine rewatch) survives, one from before it does not.
+    const { state, me } = stateIn();
+    const name = state.profiles().find((p) => p.id === me)!.name;
+    state.setProgress(me, "01OLD", 100, 1204);
+    state.setProgress(me, "01SET", 900, 1204);
+    const rowFor = (setId: string) => state.snapshot(me).progress.find((row) => row.setId === setId)!;
+    const oldRow = rowFor("01OLD");
+    const newRow = rowFor("01SET");
+
+    state.importMerged({
+      profiles: [
+        {
+          name,
+          displayName: name,
+          progress: [],
+          watched: [],
+          unwatched: [
+            // Suppressed: this position is no newer than the finish carried here.
+            { setId: "01OLD", updatedAt: oldRow.updatedAt + 10_000, lastFinishedAt: oldRow.updatedAt },
+            // Survives: made after that finish, before the removal — a rewatch.
+            { setId: "01SET", updatedAt: newRow.updatedAt + 10_000, lastFinishedAt: newRow.updatedAt - 1 },
+          ],
+        },
+      ],
+    });
+
+    expect(state.snapshot(me).progress.map((row) => row.setId)).toEqual(["01SET"]);
+    expect(state.snapshot(me).watched).toEqual([]);
+  });
+
+  test("import applies a removal tied exactly with a local live mark (R2)", () => {
+    // `watched-reconcile.ts` gives an exact tie between a live row and its
+    // removal to the removal, not a device-id tie-break. Import has to
+    // agree: a local live mark only blocks a removal when it is strictly
+    // newer, not merely as new.
+    const { state, me } = stateIn();
+    const name = state.profiles().find((p) => p.id === me)!.name;
+    const setId = "01SET0000000000000000001";
+    state.setWatched(me, setId, true);
+    const tie = state.snapshot(me).watched.find((row) => row.setId === setId)!.finishedAt;
+
+    state.importMerged({
+      profiles: [
+        {
+          name,
+          displayName: name,
+          progress: [],
+          watched: [],
+          unwatched: [{ setId, updatedAt: tie, lastFinishedAt: tie }],
+        },
+      ],
+    });
+
+    expect(state.snapshot(me).watched).toEqual([]);
   });
 
   test("a position this player has and the merge does not is left alone", () => {

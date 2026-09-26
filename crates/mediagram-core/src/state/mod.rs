@@ -27,6 +27,7 @@ mod repair;
 pub mod rows;
 mod schema;
 pub(crate) mod sync;
+mod watched_exchange;
 
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;

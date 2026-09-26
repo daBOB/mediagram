@@ -797,7 +797,11 @@ function mountPlayer() {
     hud.show();
   });
   video.addEventListener("ratechange", refreshEnds);
-  video.addEventListener("pause", () => saveProgress());
+  // The final flush, not the periodic one: a pause is a natural break point
+  // worth telling another device about soon, the same as leaving a title —
+  // and `flushProgress`'s `sendBeacon` is how the server tells the two apart
+  // (`write-debounce.ts`), which the ordinary ten-second tick is not.
+  video.addEventListener("pause", () => saveProgress(true));
 
   video.addEventListener("timeupdate", () => {
     upNext.preload(bufferedAhead(video.buffered, video.currentTime));

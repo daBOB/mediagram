@@ -17,6 +17,16 @@ export interface PlayerRequest {
   audio?: string | null;
   /** `?q=` on a search request. */
   query?: string | null;
+  /**
+   * `?final=1` on a progress write: the caller identifying it as the last
+   * one for this playback — leaving a title, or pausing — rather than the
+   * periodic autosave tick. Explicit because the HTTP method cannot be
+   * trusted to say so: `sendBeacon`'s POST is how `flushProgress` usually
+   * sends this, but an older browser that refuses `sendBeacon` a JSON body
+   * falls back to the same PUT the tick already uses. See
+   * `routes.ts`'s `writeWorthSyncing`.
+   */
+  final?: string | null;
   /** The address the request came from, already resolved through any proxy. */
   client?: string;
   /** The body of a write, already read and bounded. `null` for a read. */

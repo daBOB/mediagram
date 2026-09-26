@@ -7,7 +7,7 @@ use serde_json::Value;
 
 use super::hostile_json::{as_array, is_integer, js_number, text_};
 use super::list_record::{collection_row, list_row};
-use super::{ProfileState, ProgressRow, SYNC_FORMAT, SyncRecord, WatchedRow};
+use super::{ProfileState, ProgressRow, SYNC_FORMAT, SyncRecord, UnwatchedRow, WatchedRow};
 
 /// Reads a document from the channel, or `None` if it cannot be trusted.
 ///
@@ -76,6 +76,10 @@ fn profile_state(raw: &Value) -> Option<ProfileState> {
             .iter()
             .filter_map(watched_row)
             .collect(),
+        unwatched: as_array(row.get("unwatched"))
+            .iter()
+            .filter_map(unwatched_row)
+            .collect(),
         watchlist: as_array(row.get("watchlist"))
             .iter()
             .filter_map(list_row)
@@ -122,4 +126,22 @@ fn watched_row(raw: &Value) -> Option<WatchedRow> {
         return None;
     }
     Some(WatchedRow { set_id, updated_at })
+}
+
+fn unwatched_row(raw: &Value) -> Option<UnwatchedRow> {
+    let row = raw.as_object()?;
+    let set_id = text_(row.get("setId"))?;
+    let updated_at = js_number(row.get("updatedAt"));
+    let last_finished_at = js_number(row.get("lastFinishedAt"));
+    if !updated_at.is_finite() || updated_at <= 0.0 {
+        return None;
+    }
+    if !last_finished_at.is_finite() || last_finished_at <= 0.0 {
+        return None;
+    }
+    Some(UnwatchedRow {
+        set_id,
+        updated_at,
+        last_finished_at,
+    })
 }

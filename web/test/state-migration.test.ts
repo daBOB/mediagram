@@ -285,3 +285,22 @@ describe("v6 to v7", () => {
     state.close();
   });
 });
+
+describe("v7 to v8", () => {
+  test("a watched mark from before the removal column stays watched, and can now be taken back", () => {
+    const path = tempPath();
+    const db = new Database(path, { create: true });
+    for (const statement of migrationsUpTo(7)) db.exec(statement);
+    db.query("INSERT INTO state_meta(key, value) VALUES ('schema_version', '7')").run();
+    db.query("INSERT INTO profiles(id, name, created_at) VALUES ('p1', 'André', 1)").run();
+    db.query("INSERT INTO watched(profile_id, set_id, finished_at) VALUES ('p1', '01DONE', 1)").run();
+    db.close();
+
+    const state = new WatchState(path);
+    expect(state.snapshot("p1").watched.map((row) => row.setId)).toEqual(["01DONE"]);
+
+    state.setWatched("p1", "01DONE", false);
+    expect(state.snapshot("p1").watched).toEqual([]);
+    state.close();
+  });
+});

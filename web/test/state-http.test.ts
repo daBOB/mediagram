@@ -378,7 +378,10 @@ describe("recording that a title was watched to the end", () => {
 
     expect(row).toBeDefined();
     expect(row!.finishedAt).toBeGreaterThanOrEqual(before);
-    expect(row!.finishedAt).toBeLessThanOrEqual(Date.now());
+    // +1: the previous test tombstoned this same set a moment ago, and a
+    // re-mark is clamped to at least one millisecond past that removal
+    // (R1) — on a fast run the two can land in the same millisecond.
+    expect(row!.finishedAt).toBeLessThanOrEqual(Date.now() + 1);
   });
 
   test("refuses a title the catalog cannot play", async () => {

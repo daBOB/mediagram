@@ -7,8 +7,9 @@ use rusqlite::{Connection, OptionalExtension, params};
 use super::lists_exchange;
 use super::merge::MergedState;
 use super::profiles;
-use super::record::{ProfileState, ProgressRow, SYNC_FORMAT, SyncRecord, WatchedRow};
+use super::record::{ProfileState, ProgressRow, SYNC_FORMAT, SyncRecord};
 use super::rows;
+use super::watched_exchange;
 
 /// What this device has to say about where things were left off.
 ///
@@ -28,13 +29,7 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
                 updated_at: row.updated_at as f64,
             })
             .collect();
-        let watched = rows::watched_for(conn, &profile.id)?
-            .into_iter()
-            .map(|row| WatchedRow {
-                set_id: row.set_id,
-                updated_at: row.finished_at as f64,
-            })
-            .collect();
+        let (watched, unwatched) = watched_exchange::export_watched(conn, &profile.id)?;
         let watchlist = lists_exchange::export_watchlist(conn, &profile.id)?;
         let collections = lists_exchange::export_collections(conn, &profile.id)?;
         profiles.push(ProfileState {
@@ -43,6 +38,7 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
             kids: profile.kids,
             progress,
             watched,
+            unwatched,
             watchlist,
             collections,
         });
@@ -96,9 +92,8 @@ pub fn import_merged(conn: &Connection, merged: &MergedState) -> rusqlite::Resul
         for row in &profile.progress {
             changed += import_progress(conn, &profile_id, row)?;
         }
-        for row in &profile.watched {
-            changed += import_watched(conn, &profile_id, row)?;
-        }
+        changed += watched_exchange::import_watched(conn, &profile_id, &profile.watched)?;
+        changed += watched_exchange::import_unwatched(conn, &profile_id, &profile.unwatched)?;
         changed += lists_exchange::import_watchlist(conn, &profile_id, &profile.watchlist)?;
         changed += lists_exchange::import_collections(conn, &profile_id, &profile.collections)?;
     }
@@ -137,34 +132,6 @@ fn import_progress(
         ],
     )?;
     Ok(1)
-}
-
-/// The completion's tombstone half. The position goes whether or not the
-/// completion itself is news: a device that already knew of it may still be
-/// holding a position another device has only now reported.
-fn import_watched(conn: &Connection, profile_id: &str, row: &WatchedRow) -> rusqlite::Result<u64> {
-    let mut changed = conn.execute(
-        "DELETE FROM progress WHERE profile_id = ?1 AND set_id = ?2 AND updated_at <= ?3",
-        params![profile_id, row.set_id, row.updated_at as i64],
-    )? as u64;
-
-    let standing: Option<i64> = conn
-        .query_row(
-            "SELECT finished_at FROM watched WHERE profile_id = ?1 AND set_id = ?2",
-            params![profile_id, row.set_id],
-            |r| r.get(0),
-        )
-        .optional()?;
-    if standing.is_some_and(|at| at as f64 >= row.updated_at) {
-        return Ok(changed);
-    }
-    conn.execute(
-        "INSERT INTO watched(profile_id, set_id, finished_at) VALUES (?1, ?2, ?3)
-           ON CONFLICT(profile_id, set_id) DO UPDATE SET finished_at = excluded.finished_at",
-        params![profile_id, row.set_id, row.updated_at as i64],
-    )?;
-    changed += 1;
-    Ok(changed)
 }
 
 #[cfg(test)]

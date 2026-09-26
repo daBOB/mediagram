@@ -321,6 +321,48 @@ Android, where the web opens the show. This is written down in the code.
   paper-coloured on hover instead of pure white. All three were colours from
   outside the player's palette.
 
+**Fixed**
+
+- Un-marking a title as watched now survives a sync round, on new builds,
+  the moment they merge with each other — an un-mark heard only by devices
+  that already run this fix. The removal travels as its own row, on its own
+  key (`unwatched`, not a `removed` flag on the existing `watched` row): a
+  build that predates this one does not recognise that key and drops it, so
+  it goes on reporting its unchanged, always-older live mark rather than
+  turning the removal into a live mark of its own at the same moment — which
+  is what a `removed` flag on the same row would have let it do, and what
+  would have handed a same-time tie to device id instead of to what actually
+  happened. A device on an old build still shows the title as watched until
+  it updates; once it does, the next merge resolves correctly on its own,
+  with no extra un-mark needed. A later re-mark always wins over an older
+  removal, even one with a future timestamp from a device whose clock runs
+  ahead — and the reverse holds too, an un-mark always wins over an older
+  mark. Taking a mark back never touches a position, on this device or any
+  other — matching what marking one has always done; a removal instead
+  carries the finish it took the mark from, so a position from before that
+  finish stays suppressed while a genuine rewatch made since survives.
+  Ported identically to the web
+  (`web/src/state/*`) and the Rust core Android uses
+  (`crates/mediagram-core/src/state/*`, `state.db` schema v8/v4), held
+  together by shared fixtures covering both merge orders and mixed
+  old/new documents. Android's `WatchStateRepository` already accepted
+  `finished = false`; no screen calls it yet, so nothing changes there for
+  now.
+- A local write on the web now reaches another device within a few seconds,
+  not up to five minutes, for the writes worth telling another device about
+  soon: watched, the watchlist, Kids, a profile change, forgetting a
+  position outright, and the final progress save on leaving a title or
+  pausing — which now marks itself `?final=1` rather than being inferred
+  from the HTTP method, since an older browser that refuses `sendBeacon` a
+  JSON body falls back to the same PUT the ten-second autosave tick already
+  uses, and the method alone could not tell the two apart. That tick does
+  not trigger a round — one every ten seconds would repeat the flood limit
+  this project has already hit once — and neither does a preference, which
+  is per-device and never synced. A debounced sync round runs a few seconds
+  after the last such write settles, alongside the
+  existing start, timer, push and shutdown rounds — matching Android's own
+  `WatchSync.soon()` after leaving a title.
+
 ## 0.43.0
 
 **Added**

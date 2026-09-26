@@ -45,6 +45,37 @@ export interface RouterOptions extends CatalogRouterOptions {
   state?: WatchState;
   /** Maximum remote-link bitrate, in bits per second. */
   maxBitrate?: number;
+  /**
+   * Called once per state write worth a sync round — the one choke point
+   * every mutation passes through, so a caller does not have to hook every
+   * branch inside `state/routes.ts`. See `writeWorthSyncing` for what does,
+   * and does not, count.
+   */
+  onWrite?: () => void;
+}
+
+/**
+ * Whether a successful state write is worth a debounced sync round.
+ *
+ * A film playing sends a position PUT every ten seconds (`player.js`'s
+ * `startSaving`) — a round every ten seconds for the length of playback
+ * would invite exactly the flood limit this project has already hit once.
+ * Only the *final* flush on leaving a title or pausing counts, and a write
+ * under `/progress/` says so itself, with `?final=1` — not the HTTP method:
+ * `flushProgress` usually sends that flush through `navigator.sendBeacon`
+ * as a POST, but a browser that refuses `sendBeacon` a JSON body falls back
+ * to the same PUT the periodic tick already uses, and inferring "final"
+ * from the method would then silently stop triggering a round at all for
+ * that browser. A `DELETE` under `/progress/` — forgetting a position — is
+ * always deliberate and always counts, no marker needed. A preference is a
+ * per-device, unsynced choice and is never worth one.
+ */
+function writeWorthSyncing(request: PlayerRequest): boolean {
+  if (request.path.includes("/progress/")) {
+    return request.method === "DELETE" || request.final === "1";
+  }
+  if (request.path.endsWith("/preferences")) return false;
+  return true;
 }
 
 export function createRouter(options: RouterOptions) {
@@ -59,7 +90,11 @@ export function createRouter(options: RouterOptions) {
 
   return async function route(request: PlayerRequest): Promise<PlayerResponse> {
     const state = stateRoute?.(request);
-    if (state) return state;
+    if (state) {
+      const wrote = request.method !== "GET" && request.method !== "HEAD" && state.status < 400;
+      if (wrote && writeWorthSyncing(request)) options.onWrite?.();
+      return state;
+    }
     const status = await options.status?.(request);
     if (status) return status;
 

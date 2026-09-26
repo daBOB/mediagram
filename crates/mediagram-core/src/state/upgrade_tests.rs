@@ -41,7 +41,11 @@ fn a_version_three_file_without_kids_gains_the_column_on_open() {
         for statement in schema::migrations_up_to(2) {
             conn.execute(statement, []).unwrap();
         }
-        conn.execute(schema::migrations_up_to(schema::VERSION).last().unwrap(), []).unwrap();
+        let preferences = schema::migrations_up_to(schema::VERSION)
+            .into_iter()
+            .find(|statement| statement.contains("TABLE IF NOT EXISTS preferences"))
+            .unwrap();
+        conn.execute(preferences, []).unwrap();
         conn.pragma_update(None, "user_version", 3i64).unwrap();
         conn.execute("INSERT INTO profiles(id, name, created_at) VALUES ('p1', 'André', 0)", []).unwrap();
     }

@@ -75,7 +75,8 @@ pub fn clear_progress(conn: &Connection, profile_id: &str, set_id: &str) -> rusq
 
 pub fn watched_for(conn: &Connection, profile_id: &str) -> rusqlite::Result<Vec<WatchedRow>> {
     let mut stmt = conn.prepare(
-        "SELECT set_id, finished_at FROM watched WHERE profile_id = ?1 ORDER BY finished_at DESC",
+        "SELECT set_id, finished_at FROM watched
+           WHERE profile_id = ?1 AND removed_at IS NULL ORDER BY finished_at DESC",
     )?;
     let rows = stmt.query_map([profile_id], |row| {
         Ok(WatchedRow {
@@ -88,8 +89,17 @@ pub fn watched_for(conn: &Connection, profile_id: &str) -> rusqlite::Result<Vec<
 
 /// Records that a title was watched to the end, or takes it back.
 ///
-/// The position is cleared at the same moment — a finished title has no
-/// resume point — so this is the only thing that survives it.
+/// Finishing clears the position at the same moment — a finished title has
+/// no resume point. Taking it back does not: the mark is kept as a
+/// tombstone (`removed_at`), the same reason and shape as
+/// `set_watchlisted`, so a sync round can tell another device the un-mark
+/// happened instead of that device re-importing the older mark it still
+/// holds — and it must not touch a position it has nothing to say about
+/// (`merge.rs`). Both directions are clamped to at least one millisecond
+/// past whichever clock last touched this row: a value this device
+/// imported can carry another device's clock, and this device's own clock
+/// running behind would otherwise let a stale import win the next merge
+/// back.
 pub fn set_watched(
     conn: &Connection,
     profile_id: &str,
@@ -98,15 +108,16 @@ pub fn set_watched(
 ) -> rusqlite::Result<()> {
     if finished {
         conn.execute(
-            "INSERT INTO watched(profile_id, set_id, finished_at) VALUES (?1, ?2, ?3)
-               ON CONFLICT(profile_id, set_id) DO UPDATE SET finished_at = excluded.finished_at",
+            "INSERT INTO watched(profile_id, set_id, finished_at, removed_at) VALUES (?1, ?2, ?3, NULL)
+               ON CONFLICT(profile_id, set_id) DO UPDATE SET
+                 finished_at = MAX(excluded.finished_at, COALESCE(removed_at, 0) + 1), removed_at = NULL",
             params![profile_id, set_id, now_ms()],
         )?;
         clear_progress(conn, profile_id, set_id)?;
     } else {
         conn.execute(
-            "DELETE FROM watched WHERE profile_id = ?1 AND set_id = ?2",
-            params![profile_id, set_id],
+            "UPDATE watched SET removed_at = MAX(?3, finished_at + 1) WHERE profile_id = ?1 AND set_id = ?2 AND removed_at IS NULL",
+            params![profile_id, set_id, now_ms()],
         )?;
     }
     Ok(())

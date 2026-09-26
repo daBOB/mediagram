@@ -10,14 +10,23 @@
  * record for *one title* with the highest `updatedAt` is the one that counts.
  * Watching S1E4 on the phone and S1E9 on the laptop leaves both correct.
  *
- * **`watched` is the tombstone for `progress`.** Finishing a title deletes its
- * position and writes a completion at the same moment — `clearProgress` and
- * `setWatched` are called together, and the v4 migration exists because
+ * **A completion is the tombstone for `progress`.** Finishing a title deletes
+ * its position and writes a completion at the same moment — `clearProgress`
+ * and `setWatched` are called together, and the v4 migration exists because
  * finishing would otherwise erase every trace. So a device that has never
  * heard of the completion still holds a position, and merging naively would
  * hand it back and put a finished film on the Continue shelf. A completion at
- * least as new as a position therefore beats it. This is what lets removals
- * work at all without tombstone rows in the schema.
+ * least as new as a position therefore beats it.
+ *
+ * **An `UnwatchedRow` removal is not a completion and does not, by itself,
+ * suppress `progress`.** Un-marking says "not finished", not "finished at
+ * this moment" — the player's own un-mark already leaves `progress` alone
+ * (`store.ts`'s `setWatched`). A removal instead carries `lastFinishedAt`,
+ * the completion it took the mark from, and a position is compared against
+ * that: one no newer stays suppressed, a genuine rewatch made since
+ * survives. See `watched-reconcile.ts` for how a live row and its removal
+ * are weighed against each other, on a different key for a reason
+ * `sync-record.ts` explains.
  */
 
 import {
@@ -26,8 +35,11 @@ import {
   type ListRow,
   type ProgressRow,
   type SyncRecord,
+  type UnwatchedRow,
   type WatchedRow,
 } from "./sync-record";
+import { reconcileWatched } from "./watched-reconcile";
+import { keep, type Held } from "./tie-break";
 
 /** Everything the devices agree on, once they have been reconciled. */
 export interface MergedProfile {
@@ -50,6 +62,7 @@ export interface MergedProfile {
   /** `mergeStates` always fills these; optional only so a hand-built
    * `MergedState` — a test, or `importMerged`'s caller — need not repeat an
    * empty array for every kind it has nothing to say about. */
+  unwatched?: UnwatchedRow[];
   watchlist?: ListRow[];
   collections?: CollectionRow[];
 }
@@ -80,6 +93,7 @@ export function mergeStates(records: SyncRecord[]): MergedState {
       kids: boolean;
       progress: Map<string, Held<ProgressRow>>;
       watched: Map<string, Held<WatchedRow>>;
+      unwatched: Map<string, Held<UnwatchedRow>>;
       watchlist: Map<string, Held<ListRow>>;
       collections: Map<string, Held<CollectionRow>>;
     }
@@ -107,6 +121,7 @@ export function mergeStates(records: SyncRecord[]): MergedState {
           kids: false,
           progress: new Map(),
           watched: new Map(),
+          unwatched: new Map(),
           watchlist: new Map(),
           collections: new Map(),
         };
@@ -125,6 +140,7 @@ export function mergeStates(records: SyncRecord[]): MergedState {
 
       for (const row of profile.progress ?? []) keep(held.progress, row.setId, row, device);
       for (const row of profile.watched ?? []) keep(held.watched, row.setId, row, device);
+      for (const row of profile.unwatched ?? []) keep(held.unwatched, row.setId, row, device);
       for (const row of profile.watchlist ?? []) keep(held.watchlist, row.setId, row, device);
       // A collection is one row on the wire — the whole list, `removed`
       // included — so it is kept by its id rather than reconciled item by
@@ -136,8 +152,10 @@ export function mergeStates(records: SyncRecord[]): MergedState {
 
   const profiles: MergedProfile[] = [];
   for (const [name, held] of byViewer) {
-    const watched = [...held.watched.values()].map((one) => one.row);
-    const finishedAt = new Map(watched.map((row) => [row.setId, row.updatedAt]));
+    const { watched, unwatched, finishedAt } = reconcileWatched(
+      new Map([...held.watched].map(([setId, one]) => [setId, one.row])),
+      new Map([...held.unwatched].map(([setId, one]) => [setId, one.row])),
+    );
 
     const progress = [...held.progress.values()]
       .map((one) => one.row)
@@ -153,6 +171,7 @@ export function mergeStates(records: SyncRecord[]): MergedState {
       ...(held.kids ? { kids: true as const } : {}),
       progress,
       watched,
+      unwatched,
       watchlist: [...held.watchlist.values()].map((one) => one.row),
       collections: [...held.collections.values()].map((one) => one.row),
     });
@@ -162,37 +181,4 @@ export function mergeStates(records: SyncRecord[]): MergedState {
     kids: [...kids.values()].map((one) => one.row),
     editorsChoice: [...editorsChoice.values()].map((one) => one.row),
   };
-}
-
-interface Held<T> {
-  row: T;
-  device: string;
-}
-
-/**
- * Keeps whichever of two rows should win.
- *
- * A tie breaks on the device id — arbitrary, but *consistently* arbitrary,
- * which is the property that matters. Two machines merging the same pair of
- * documents have to reach the same answer, or they will push their
- * disagreement back and forth for ever.
- */
-function keep<T extends { updatedAt: number }>(
-  into: Map<string, Held<T>>,
-  key: string,
-  row: T,
-  device: string,
-): void {
-  const standing = into.get(key);
-  if (standing === undefined) {
-    into.set(key, { row, device });
-    return;
-  }
-  if (row.updatedAt > standing.row.updatedAt) {
-    into.set(key, { row, device });
-    return;
-  }
-  if (row.updatedAt === standing.row.updatedAt && device > standing.device) {
-    into.set(key, { row, device });
-  }
 }

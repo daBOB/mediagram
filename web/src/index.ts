@@ -41,6 +41,16 @@ import { fetchPostersForIndex } from "./channel-index/fetch-posters-for-index";
 import { openCatalog } from "./application/open-catalog";
 import { CatalogFollower } from "./application/catalog-follow";
 import { LibraryUpdates, announcingPulls, installShutdownSignals, shutdownFor, syncOnce, type ApplicationResources } from "./application/lifecycle";
+import { WriteDebounce } from "./application/write-debounce";
+
+/**
+ * How long a player waits, after the last local write, before running a
+ * sync round on its account. A few seconds: long enough to collapse a
+ * burst — seeking, pausing, marking a title watched — into one round,
+ * short enough that a change reaches another device quickly rather than
+ * waiting for `syncEveryMs`.
+ */
+const WRITE_SYNC_DEBOUNCE_MS = 5_000;
 
 /** Only external network, process, and subscription IO is replaceable. */
 interface StartupIo {
@@ -184,6 +194,13 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     );
 
     resources.sync = sync;
+    /**
+     * A local write reaches another device sooner than the timer, without a
+     * second sync path: a few seconds of quiet after the last one runs the
+     * same round the timer, a push, and shutdown all already share.
+     */
+    const writeDebounce = sync ? new WriteDebounce(() => void syncOnce(sync, "write"), WRITE_SYNC_DEBOUNCE_MS) : null;
+    resources.writeDebounce = writeDebounce ?? undefined;
     const updates = new LibraryUpdates(
       (onEvent) => io.listen(telegram.client, { channel: bareChannelId(config.chatId), ownDevice: state.deviceId() }, onEvent),
       sync,
@@ -271,6 +288,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
       db,
       events,
       state,
+      onWrite: () => writeDebounce?.touch(),
       hls: new TranscodeFiles(transcodes),
       audio,
       source: bytes,

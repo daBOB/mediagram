@@ -440,5 +440,52 @@
         }
       ]
     }
+  },
+  {
+    "name": "an unwatched row parses with its removal and the finish it took the mark from",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"localId\":\"b398013d\",\"progress\":[],\"watched\":[],\"unwatched\":[{\"setId\":\"01B\",\"updatedAt\":1789000000000,\"lastFinishedAt\":1788000000000}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "localId": "b398013d",
+          "progress": [],
+          "watched": [],
+          "unwatched": [{ "setId": "01B", "updatedAt": 1789000000000, "lastFinishedAt": 1788000000000 }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "an unwatched row with no lastFinishedAt is dropped, leaving the key present but empty",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"localId\":\"b398013d\",\"progress\":[],\"watched\":[],\"unwatched\":[{\"setId\":\"01B\",\"updatedAt\":1789000000000}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        { "name": "André", "localId": "b398013d", "progress": [], "watched": [], "unwatched": [] }
+      ]
+    }
+  },
+  {
+    "name": "a document from a build that predates unwatched has no unwatched key, and that is not the same as an empty one",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"localId\":\"b398013d\",\"progress\":[],\"watched\":[{\"setId\":\"01B\",\"updatedAt\":1789000000000}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "localId": "b398013d",
+          "progress": [],
+          "watched": [{ "setId": "01B", "updatedAt": 1789000000000 }]
+        }
+      ]
+    }
   }
 ]

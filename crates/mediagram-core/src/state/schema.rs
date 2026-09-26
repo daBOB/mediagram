@@ -123,6 +123,14 @@ const GROUPS: &[&[&str]] = &[
        marked_at INTEGER NOT NULL,
        removed_at INTEGER
      )"],
+    // v5 -> v6: a removal a merge can see, for `watched` too. Un-marking a
+    // title was a plain `DELETE`, so nothing survived to tell another device
+    // it had happened — a sync would resurrect it from whichever machine had
+    // not yet caught up. `removed_at` is that row kept instead of dropped,
+    // the same tombstone `watchlist`, `kids` and `collections` already
+    // carry. `finished_at` keeps its meaning: when the title was last
+    // marked finished.
+    &["ALTER TABLE watched ADD COLUMN removed_at INTEGER"],
 ];
 
 pub const VERSION: i64 = GROUPS.len() as i64;

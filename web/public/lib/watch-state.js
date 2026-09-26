@@ -299,18 +299,25 @@ export function setProgress(setId, at, duration) {
  *
  * `sendBeacon` because a normal request made while the tab is going away is
  * cancelled with it — which is exactly the moment the position matters most.
+ *
+ * Marked `?final=1` on both the beacon and its fallback: the server decides
+ * whether a position write is worth a sync round by that marker, not by
+ * the HTTP method — an older browser that refuses `sendBeacon` a JSON body
+ * falls through to the same `PUT` the periodic tick already uses, and the
+ * marker is what still tells the two apart.
  * @returns {void} Local update only; a queued beacon is not a persistence acknowledgement.
  */
 export function flushProgress(setId, at, duration) {
   held.progress.set(setId, { at, duration: duration ?? null, updatedAt: Date.now() });
   changed();
+  const path = `${under(`/progress/${encodeURIComponent(setId)}`)}?final=1`;
   try {
     const body = new Blob([JSON.stringify({ at, duration })], { type: "application/json" });
-    if (navigator.sendBeacon(under(`/progress/${encodeURIComponent(setId)}`), body)) return;
+    if (navigator.sendBeacon(path, body)) return;
   } catch {
     // Falls through to the ordinary write, which may still make it.
   }
-  void write(under(`/progress/${encodeURIComponent(setId)}`), "PUT", { at, duration });
+  void write(path, "PUT", { at, duration });
 }
 
 /** Forgets a position locally and persists best-effort. @returns {void} */
