@@ -21,13 +21,14 @@
 use std::path::Path;
 
 use anyhow::Result;
-use mediagram_tmdb::poster_files::{already_held, download_into};
+use mediagram_tmdb::poster_files::{already_held, download_each};
 use mediagram_tmdb::posters::{resolve_backdrops, resolve_posters};
 
 use crate::config::Config;
 use crate::export::stage::POSTER_DIR;
 use crate::export::titles::distinct_titles;
 use crate::index::db;
+use crate::term;
 
 pub async fn run(cfg: &Config, index: Option<&Path>) -> Result<()> {
     let data_dir = cfg.data_dir()?;
@@ -49,6 +50,10 @@ pub async fn run(cfg: &Config, index: Option<&Path>) -> Result<()> {
     let api = cfg.tmdb_client(http.clone())?;
     // Both read the same cached details payload, so the second pass costs
     // no request.
+    term::redraw(&format!(
+        "looking up artwork for {} title(s)…",
+        titles.len()
+    ));
     let mut refs = resolve_posters(&api, &titles).await;
     // The widest TMDB serves short of the original: this command fills the
     // web player's cover story, drawn desktop-wide.
@@ -60,6 +65,7 @@ pub async fn run(cfg: &Config, index: Option<&Path>) -> Result<()> {
             Vec::new()
         }),
     );
+    term::redraw("");
     if refs.is_empty() {
         println!(
             "{} title(s), none with artwork recorded at TMDB",
@@ -70,7 +76,17 @@ pub async fn run(cfg: &Config, index: Option<&Path>) -> Result<()> {
 
     let dir = data_dir.join(POSTER_DIR);
     let held = already_held(&refs, &dir);
-    let written = download_into(&http, &refs, &dir).await?;
+    let started = std::time::Instant::now();
+    let written = download_each(&http, &refs, &dir, |done| {
+        term::redraw(&term::count_line(
+            "fetching",
+            done,
+            refs.len(),
+            started.elapsed(),
+        ));
+    })
+    .await?;
+    term::redraw("");
 
     let fetched = written.len().saturating_sub(held);
     let missing = refs.len() - written.len();

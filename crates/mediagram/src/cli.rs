@@ -11,6 +11,7 @@ use mediagram::commands::args::{
 };
 use mediagram::commands::{
     metadata::MetadataArgs, pull_index::PullIndexArgs, push_index::PushIndexArgs,
+    sync_index::SyncIndexArgs,
 };
 
 #[derive(Parser)]
@@ -55,6 +56,9 @@ pub enum Cmd {
     PushIndex(PushIndexArgs),
     /// Merge the channel's index into this one, so either machine can publish everything
     PullIndex(PullIndexArgs),
+    /// Pull the channel's index, describe titles, fetch artwork, and push: the
+    /// four index commands in one
+    SyncIndex(SyncIndexArgs),
     /// Check a set (or all sets); `--full` re-downloads and hashes every part
     Verify {
         set_id: Option<String>,

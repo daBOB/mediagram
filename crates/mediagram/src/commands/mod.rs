@@ -28,5 +28,6 @@ pub mod serve;
 pub mod setup;
 pub mod smoke_upload;
 pub mod status;
+pub mod sync_index;
 pub mod verify;
 pub mod whoami;

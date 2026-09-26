@@ -5,6 +5,72 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.66.0 — the editorial departments on Android, phone and television
+
+Pays what 0.62.0 left "Owed to Android". Plan:
+`plans/260926-1330-android-editorial-departments-parity/`; TV review and device walk:
+`plans/reports/code-reviewer-260926-1835-tv-editorial-parity-review-report.md`.
+
+**Added**
+
+- Core read API for credits, people, franchises and lazily fetched portraits (a person's
+  portrait is fetched the first time a Cast row or person page shows them, then cached).
+- Phone and television: department pages (Movies, Series, Tutorials) with a hero, film pages
+  with Overview/Cast/Similar/Details tabs and "Part of <franchise>", series pages with
+  Episodes/About/Cast/Similar, person and franchise pages, Collections with franchises and
+  lists, grouped search (Films, Series, Tutorials, People, Collections, with filters), Latest
+  and Genres. The television's Home takes the web's magazine layout.
+- Settings › Appearance: theme and the seven accents on the phone; the television stays dark
+  and takes the accent only (user decision).
+
+**Fixed (television, found in review and on the real box)**
+
+- Every build crashed at launch: a view model declared in `ui-tv`, which runs no Hilt
+  processor. The television now uses `feature:catalog`'s own.
+- Back returns to what was opened — a search result below the fold, a show, person or
+  collection from search, a cast member or similar title (with its tab) — and department
+  pages no longer take the remote from Search or the Menu.
+- Rows show every title instead of six; the cast row scrolls; Home, Movies and Series arrive
+  on their hero inside the overscan margin; tab labels stay readable when the row has focus;
+  Collections insets its lists once; long rows compose lazily for the box's CPU.
+
+## 0.65.1 — sync-index no longer stops before its push
+
+**Fixed**
+
+- `sync-index` failed at step 4 with "…library.before-channel-merge-….db
+  already exists; not overwriting a backup". It pulls twice in one process,
+  usually within one minute, and both pulls chose the same backup name. A
+  second backup now takes the next free `-2`, `-3`… name, and the first is
+  still never overwritten (`pull_index/backup_path.rs`).
+
+## 0.65.0 — sync-index, merge-first publishing, progress lines
+
+**Changed**
+
+- Every publish after an upload (`add`, `add-show`, `add-course`, `add-docu`,
+  `resume`) now pulls the channel's index in first, then pushes
+  (`pull_index::merge_and_publish`). Before, a push from the other machine
+  in the meantime got the publish refused ("the channel's index holds N set(s)
+  this index does not"), which is why uploads ran on one machine at a time. Two
+  machines on 0.65+ can now upload at once. A push landing between the pull and
+  the publish is still refused by the guard, never dropped. Keep the two
+  machines on different folders, since nothing detects the same file uploaded
+  on both.
+- The refusal message now suggests `push-index --merge` first, then `--force`.
+  The hint after a failed publish says `sync-index`.
+
+**Added**
+
+- `mediagram sync-index` pulls the channel's index, runs `metadata` and
+  `posters`, then pushes, so one command does what took four. Takes `metadata`'s
+  `--refresh-older-than`. A failed artwork fetch is reported and does not stop
+  the push, since that art never leaves this machine.
+- `metadata` and `posters` keep a progress line on the terminal: count,
+  percentage and time left (`describing 451/908 (50%) · eta 2m10s`,
+  `fetching 5200/8718 (60%) · eta 2s`). They draw nothing when piped. The line
+  is `term::count_line`, shared by both.
+
 ## Unreleased — 0.64.0
 
 The television surface, from `feat/android-tv-ui`.

@@ -17,12 +17,12 @@ use std::io::IsTerminal;
 use anyhow::{Context, Result, bail};
 
 use super::args::AddShowArgs;
+use crate::commands::pull_index;
 use crate::config::Config;
 use crate::index::status::SetStatus;
 use crate::index::{artwork, db, set_lookup};
 use crate::media::show_episodes::{Episode, duplicate_episode, walk};
 use crate::paths::file_name;
-use crate::telegram::index_publish;
 use crate::upload::finish_set::Uploader;
 use crate::upload::new_set::NewSet;
 use crate::upload::prepare_set::prepare_and_record_set;
@@ -117,7 +117,7 @@ pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
         println!("{pending} pending; run mediagram resume to finish them");
     }
     if uploaded > 0 && !args.no_push {
-        let message_id = index_publish::publish(cfg)
+        let message_id = pull_index::merge_and_publish(cfg)
             .await
             .context("pushing the index after the show")?;
         println!("pushed index as message {message_id}");

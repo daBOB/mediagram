@@ -25,6 +25,17 @@ pub async fn download_into(
     refs: &[PosterRef],
     dir: &Path,
 ) -> Result<Vec<String>> {
+    download_each(http, refs, dir, |_| {}).await
+}
+
+/// [`download_into`], calling `step(done)` before each image so a caller
+/// watching a terminal can say how far it has got.
+pub async fn download_each(
+    http: &reqwest::Client,
+    refs: &[PosterRef],
+    dir: &Path,
+    mut step: impl FnMut(usize),
+) -> Result<Vec<String>> {
     if refs.is_empty() {
         return Ok(Vec::new());
     }
@@ -32,7 +43,8 @@ pub async fn download_into(
     restrict_dir(dir)?;
 
     let mut written = Vec::new();
-    for poster in refs {
+    for (done, poster) in refs.iter().enumerate() {
+        step(done);
         // The key becomes a file name, a manifest path and a tar member
         // name, so it is checked here rather than trusted from upstream.
         if !mlib_spec::package::poster_key_is_valid(&poster.key) {

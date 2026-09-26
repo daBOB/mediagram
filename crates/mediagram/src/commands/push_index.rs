@@ -1,6 +1,6 @@
 //! `mediagram push-index`: publish the local index and report its message.
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 
 use crate::commands::pull_index;
 use crate::config::Config;
@@ -27,17 +27,13 @@ pub async fn run(cfg: &Config, args: PushIndexArgs) -> Result<()> {
         println!("safe to push: the channel's index holds nothing this one lacks");
         return Ok(());
     }
-    let guard = if args.force {
-        Guard::Skip
-    } else if args.merge {
-        let removed = pull_index::pull(cfg, false)
-            .await
-            .context("pulling the channel's index before pushing")?;
-        Guard::CheckExcept(removed)
+    let message_id = if args.merge {
+        pull_index::merge_and_publish(cfg).await?
+    } else if args.force {
+        index_publish::publish_with(cfg, Guard::Skip).await?
     } else {
-        Guard::Check
+        index_publish::publish_with(cfg, Guard::Check).await?
     };
-    let message_id = index_publish::publish_with(cfg, guard).await?;
     println!("pushed index as message {message_id}");
     Ok(())
 }

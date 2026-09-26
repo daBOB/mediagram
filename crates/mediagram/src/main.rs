@@ -41,6 +41,7 @@ async fn main() -> Result<()> {
         Cmd::Resume { no_push } => commands::resume::run(&cfg, no_push).await,
         Cmd::PushIndex(args) => commands::push_index::run(&cfg, args).await,
         Cmd::PullIndex(args) => commands::pull_index::run(&cfg, args).await,
+        Cmd::SyncIndex(args) => commands::sync_index::run(&cfg, args).await,
         Cmd::Verify {
             set_id,
             all,

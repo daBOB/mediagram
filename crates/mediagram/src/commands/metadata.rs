@@ -14,6 +14,7 @@ use crate::config::Config;
 use crate::export::titles::distinct_titles;
 use crate::index::{db, shows};
 use crate::metadata::title_details;
+use crate::term;
 
 /// Arguments for `mediagram metadata`.
 #[derive(clap::Args, Debug, Clone)]
@@ -48,7 +49,14 @@ pub async fn run(cfg: &Config, args: MetadataArgs) -> Result<()> {
 
     let (mut recorded, mut skipped) = (0usize, 0usize);
     let (mut credited, mut franchised) = (0usize, 0usize);
-    for (kind, id) in &titles {
+    let started = std::time::Instant::now();
+    for (done, (kind, id)) in titles.iter().enumerate() {
+        term::redraw(&term::count_line(
+            "describing",
+            done,
+            titles.len(),
+            started.elapsed(),
+        ));
         match title_details::fetch(&api, *kind, *id, &cfg.tmdb_language).await {
             Ok(row) => {
                 shows::upsert(&conn, &row)?;
@@ -71,6 +79,7 @@ pub async fn run(cfg: &Config, args: MetadataArgs) -> Result<()> {
         }
     }
 
+    term::redraw("");
     println!(
         "{recorded} title(s) described, {} held in total",
         shows::count(&conn)?
