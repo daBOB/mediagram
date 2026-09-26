@@ -5,10 +5,10 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Unreleased — system stats
+## Unreleased — 0.60.0
 
-Four new groups on the web player's System page (`GET /api/status`), on
-`feat/system-page-stats`, not yet merged.
+Merged into `main` on 2026-09-26: `feat/system-page-stats` — four new groups
+on the web player's System page (`GET /api/status`).
 
 **Added**
 
