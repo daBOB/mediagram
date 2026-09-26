@@ -87,7 +87,7 @@ const server = await startServer({
         cache: null,
         reader: null,
         transcodes: { count: () => 0, capacity: 0, list: () => [] },
-        telegram: { connected: null },
+        telegram: { connected: null, link: () => ({ dcs: [], flood: { count: 0, totalSeconds: 0 }, reconnects: 0 }) },
         bytes: { stats: () => ({ failedReads: 0 }) },
         loopLag,
         diskDirs: [scratch],

@@ -32,7 +32,7 @@ export interface LiveFactsDeps {
   cache: CacheStats | null;
   reader: ReaderStats | null;
   transcodes: TranscodeSessions;
-  telegram: { connected: boolean | null };
+  telegram: { connected: boolean | null; link(): LiveFacts["link"] };
   bytes: ByteSourceStats;
   loopLag: Pick<LoopLag, "reading">;
   /** Directories to report free space under: the cache and the transcode dir. */
@@ -62,6 +62,7 @@ export async function readLiveFacts(
       })),
     },
     telegramConnected: deps.telegram.connected,
+    link: deps.telegram.link(),
     failedReads: deps.bytes.stats().failedReads,
     host: {
       // Resident set size: the figure that says whether a player left running

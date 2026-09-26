@@ -33,6 +33,11 @@ const live: LiveFacts = {
   },
   transcodeBytes: 3 * 1024 ** 3,
   telegramConnected: true,
+  link: {
+    dcs: [{ dc: 2, requests: 400, errors: 1, bytes: 900_000_000, p50Ms: 120, p95Ms: 480 }],
+    flood: { count: 0, totalSeconds: 0 },
+    reconnects: 0,
+  },
   failedReads: 2,
   host: {
     rssBytes: 180 * 1024 ** 2,

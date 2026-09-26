@@ -32,6 +32,7 @@ const live = () => ({
   fetchedBytes: 10,
   transcodes: { running: 0, capacity: 4, sessions: [] },
   telegramConnected: true,
+  link: { dcs: [], flood: { count: 0, totalSeconds: 0 }, reconnects: 0 },
   failedReads: 0,
   host: { rssBytes: 1024, heapBytes: 512, loopLagMs: null, disks: [] },
 });

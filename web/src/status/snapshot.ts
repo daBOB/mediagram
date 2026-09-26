@@ -10,6 +10,7 @@
 import type { StartupFacts } from "./facts";
 import type { LoopLagReading } from "./loop-lag";
 import type { DiskFree } from "./disk-free";
+import type { LinkSnapshot } from "../telegram/link-stats";
 
 /** The process and machine figures read fresh on every request. */
 export interface HostLiveFacts {
@@ -53,6 +54,7 @@ export interface LiveFacts {
   telegramConnected: boolean | null;
   /** Reads that ended in an error rather than in bytes. */
   failedReads: number;
+  link: LinkSnapshot;
   host: HostLiveFacts;
   now: number;
 }
@@ -88,6 +90,7 @@ export function buildSnapshot(facts: StartupFacts, live: LiveFacts) {
       heldBytes: live.transcodeBytes,
     },
     telegram: { connected: live.telegramConnected, failedReads: live.failedReads },
+    link: live.link,
     state: facts.state,
     host: { ...live.host, bun: facts.runtime.bun },
     uptimeSeconds: Math.max(0, Math.round((live.now - facts.startedAt) / 1000)),

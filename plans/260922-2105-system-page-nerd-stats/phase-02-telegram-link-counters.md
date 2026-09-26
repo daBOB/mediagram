@@ -63,11 +63,50 @@ Telegram.link(): LinkStats snapshot → live-facts → buildSnapshot.link
    - The `MeasuredClient` invoke path gets **no** test, because it needs a live client (see Risks). `LinkStats` covers the logic.
 
 ## Todo
-- [ ] link-stats + tests
-- [ ] measured-client (invoke, logger, reconnect)
-- [ ] client.ts uses it; header updated
-- [ ] pin test
-- [ ] snapshot `link` wired + test
+- [x] link-stats + tests
+- [x] measured-client (invoke, logger, reconnect)
+- [x] client.ts uses it; header updated
+- [x] pin test
+- [x] snapshot `link` wired + test
+
+## Implementation notes (2026-09-26)
+
+Done. The three seams the plan's research named against teleproto 1.229.0
+were re-verified by reading the installed package directly (its `.d.ts` and
+`.js` under Bun's module cache, not `node_modules` — this tree vendors
+nothing there) rather than trusting the plan's line numbers, which had
+drifted: `invoke<R extends Api.AnyRequest>(request: R, dcId?: number):
+Promise<R["__response"]>` in `client/TelegramClient.js`, the flood log line
+in `client/users.js` (`Sleeping for ${e.seconds}s on flood wait...`, logged
+via `_log.info`, no error object), and `UpdateConnectionState.connected = 1`
+in `network/UpdateConnectionState.js`, dispatched through
+`client.addEventHandler` with `new events.Raw({ types: [...] })`. All three
+matched the plan exactly. `Logger`'s default `log()` was also read directly:
+setting `.handler` fully replaces the built-in `console.log` print rather
+than running alongside it, confirming the plan's own risk note, and gave the
+exact color codes (`error` red, `warn` magenta, `info` yellow, `debug` cyan)
+reproduced in `countingLogger`.
+
+Deviations:
+- `MeasuredClient`'s constructor builds its own `LinkStats` and passes
+  `countingLogger(stats)` as `baseLogger` itself, rather than `client.ts`
+  wiring the logger separately — `baseLogger` has to be set before
+  `TelegramClient`'s own constructor runs, so the subclass is the only place
+  that can do both. A caller-supplied `baseLogger` (none today) would still
+  win, since it spreads after the default.
+- A `telegram-measured-client.test.ts` was added beyond the plan's own test
+  list, covering `countingLogger` directly (flood-line detection, ordinary
+  lines still printing, and the error-object console.error). The plan
+  reasoned the `invoke` path itself needs a live client to test and left
+  `LinkStats` to cover the logic; `countingLogger` doesn't need one and had
+  no coverage otherwise.
+- `errors.FloodWaitError`'s constructor takes `{ request, capture }` (capture
+  becomes `.seconds`), not `{ seconds }` as the test file first assumed —
+  corrected against the real `ErrorArgs` type.
+- Stub harness (`scripts/preview.ts`, not `stub-offline.ts`) has no Telegram
+  client, so its `telegram` dependency for `live-facts.ts` is a stub
+  returning `link: () => ({ dcs: [], flood: {...}, reconnects: 0 })`.
+  Verified `/api/status` returns exactly that shape.
 
 ## Success criteria
 - Unit tests pass.

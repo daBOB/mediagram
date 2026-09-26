@@ -3,12 +3,15 @@
  *
  * Everything else in the player deals in parts, ranges and bytes. If
  * `teleproto` — a single-maintainer fork of the archived GramJS — ever needs
- * replacing, this is the file to port.
+ * replacing, this is the file to port, along with `measured-client.ts`,
+ * which is the same client subclassed to count requests.
  */
 
-import { Api, TelegramClient, sessions } from "teleproto";
+import { Api, sessions } from "teleproto";
 import type { Config } from "../config";
 import { MediaCache } from "./media-cache";
+import { MeasuredClient } from "./measured-client";
+import type { LinkSnapshot } from "./link-stats";
 import { sessionName } from "./session-name";
 
 /** Bot-API dialog ids are `-100` followed by the bare channel id. */
@@ -24,7 +27,7 @@ export class Telegram {
   private readonly media: MediaCache<Api.TypeMessageMedia>;
 
   private constructor(
-    readonly client: TelegramClient,
+    readonly client: MeasuredClient,
     private readonly channel: Api.InputChannel,
   ) {
     this.media = new MediaCache((messageId) => this.fetchPartMedia(messageId));
@@ -47,13 +50,17 @@ export class Telegram {
   }
 
   static async connect(config: Config): Promise<Telegram> {
-    const client = new TelegramClient(
+    const client = new MeasuredClient(
       new sessions.StringSession(config.session),
       config.apiId,
       config.apiHash,
       { connectionRetries: 3, ...sessionName() },
     );
     await client.connect();
+    // Only the main connection's own reconnects; a download-DC sender is
+    // pooled and rebuilt without notice, and its failures already show up as
+    // per-DC request errors instead.
+    client.watchReconnects();
 
     // Fail loudly rather than prompting: the player may have no terminal, and
     // a half-open login would look like an empty library.
@@ -132,6 +139,11 @@ export class Telegram {
   get connected(): boolean | null {
     const said = (this.client as { connected?: boolean }).connected;
     return typeof said === "boolean" ? said : null;
+  }
+
+  /** Per-DC request counts, latency, flood waits and reconnects, for the status page. */
+  link(): LinkSnapshot {
+    return this.client.stats.snapshot();
   }
 
   async disconnect(): Promise<void> {
