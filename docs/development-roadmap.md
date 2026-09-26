@@ -213,8 +213,8 @@ the catalog and player logic; TV adds remote navigation and 10-foot UI.
 
 Walked on the real TV box and smoke-tested on the phone on 2026-09-26
 (`plans/260924-2239-android-tv-surface/reports/validation-260926-android-tv-box-and-phone-walk-report.md`).
-Remaining before merge: the emulator walk from a fresh install, the code review's
-fixes, and the version bump.
+Reviewed, fixed and versioned 0.64.0. Remaining before merge: the emulator walk
+from a fresh install, which needs a Telegram login code.
 
 ## Explicitly deferred (from the v1 implementation logs, not tracked as bugs)
 

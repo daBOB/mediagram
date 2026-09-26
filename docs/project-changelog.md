@@ -5,9 +5,9 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Unreleased — the television surface
+## Unreleased — 0.64.0
 
-On `feat/android-tv-ui`; the version is bumped when it merges.
+The television surface, from `feat/android-tv-ui`.
 
 **Added**
 
@@ -23,6 +23,11 @@ On `feat/android-tv-ui`; the version is bumped when it merges.
 - TV Settings: the home cache server block — status, on/off, and the address and
   pairing token each asked as a text question. `lanCacheStatusLine` moved into
   `feature:system` so the phone and the television share one sentence.
+- TV Settings: active sessions, as the phone has them — this device marked, a
+  second press on another session's row to revoke it.
+- TV TMDB key: a blank answer is ignored rather than clearing the stored key
+  (the keyboard's action key also just closes the keyboard on a remote);
+  "Clear stored key" is its own row behind a confirmation.
 - A `benchmark` build type: minified and not debuggable like a release, but
   debug-signed so it installs over a signed-in debug install. A debug build felt
   slow on the TV box.
