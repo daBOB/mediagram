@@ -140,6 +140,76 @@ that; do not copy `session.sqlite` around casually — it is the account.
 Either way, `mediagram status` afterwards should show the library you
 expect, and adding continues as on any other machine.
 
+### Uploading a folder of films and shows
+
+The everyday job: a download folder holding some films and some series, part
+of which may already be in the library. In order:
+
+**1. Merge the channel's index first.** Another machine may have uploaded
+titles this one does not know about, and "already held" can only be checked
+against an index that includes them:
+
+```sh
+mediagram pull-index
+```
+
+**2. Prepare the files.** Matroska files and AC-3/E-AC-3 audio are converted
+by the web player on every play. `prepare --mp4` fixes that once, before
+upload, by changing only the container and the audio. It also drops audio
+and subtitle tracks that are not German or English (`--audio`, `--subs`).
+
+```sh
+mediagram prepare "Mad Men (2007)"                          # report only
+mediagram prepare "Mad Men (2007)" --mp4 --out ~/prepared   # copies, originals kept
+mediagram prepare "Mad Men (2007)" --mp4 --replace          # rewrite in place
+```
+
+HEVC video cannot be helped this way, because the picture is never
+re-encoded; `prepare` says so when it applies. `add-show` runs the same
+survey and asks before uploading anything it would leave converting, and
+`--yes` skips that question, so pass `--yes` only once you have seen the
+report.
+
+**3. Upload what is not there yet.**
+
+- **Series:** `add-show` skips episodes that are already complete, so it
+  can be pointed at a whole show every time. Look the id up on TMDB, and
+  dry-run first:
+
+  ```sh
+  mediagram add-show "Mad Men (2007)" --tmdb 1104 --dry-run
+  mediagram add-show "Mad Men (2007)" --tmdb 1104 --no-push
+  ```
+
+  It refuses a folder holding two files for one episode, for example an
+  `.mkv` beside its converted `mp4/` copy. Point it at one of them.
+- **Films:** `add` does **not** check whether a film is already held.
+  Look the title up in `mediagram status` (or search `library.db`) before
+  adding it again, and pass `--tmdb` so nothing prompts:
+
+  ```sh
+  mediagram add "Anaconda (2025).mkv" --tmdb 1234731 --no-push
+  ```
+
+- Skip anything still downloading (`*.tmp`, `*.part`).
+
+Uploads queue behind each other, so it is fine to start them one after
+another; `mediagram status` shows the one on the wire and the rest waiting.
+
+**4. Publish once at the end.** Every push re-pins the index, and Telegram
+answers a burst of pins with a long `FLOOD_WAIT`. That is why step 3 passes
+`--no-push`. When everything is up (or whenever the titles so far should
+appear in the players), publish once:
+
+```sh
+mediagram push-index --merge
+```
+
+`--merge` pulls the channel in again first, so titles another machine
+uploaded in the meantime are kept rather than dropped. Two machines may
+upload at the same time, but each must upload its own folders: nothing
+de-duplicates across machines until the next merge.
+
 ## Commands
 
 | Command | Description |
@@ -148,11 +218,13 @@ expect, and adding continues as on any other machine.
 | `mediagram whoami` | Print the signed-in account and the resolved library channel. |
 | `mediagram add <file>` | Split, upload, caption and index one media file. Returns as soon as the set is planned and leaves the upload to a background process; `--watch` stays and shows it instead. `--delete-source` removes the file once every part of it is in the channel. See flags below. |
 | `mediagram resume [--no-push]` | Finish every set left `pending` by an interrupted `add` (adopts already-uploaded parts instead of re-uploading them). |
-| `mediagram push-index` | Snapshot `library.db` and upload it to the channel as a pinned document. |
+| `mediagram push-index [--merge \| --check \| --force]` | Snapshot `library.db` and upload it to the channel as a pinned document. Refuses a push that would drop sets the channel holds; `--merge` pulls them in first. |
+| `mediagram pull-index [--dry-run]` | Merge the channel's index into this one, so titles uploaded from another machine are known here. Backs up the local index first. |
 | `mediagram sync-index [--refresh-older-than <days>]` | The whole round trip with the channel: `pull-index`, then `metadata`, then `posters`, then a push that the pull cleared (like `push-index --merge`). Artwork is only for this machine's web player, so a failed fetch is reported and the push goes ahead. |
 | `mediagram verify <set-id> \| --all [--full] [--since <unix>]` | Check a set (or every set): default mode compares each part's message/document against the index; `--full` re-downloads and hashes every part, and `--since` skips parts already verified at or after that timestamp so an interrupted sweep resumes. `--all` skips sets that are still uploading. |
 | `mediagram add-course <dir> [--dry-run]` | Walk a course folder and upload every lesson and document: subdirectories are chapters, video files inside them are lessons, PDFs beside them are documents. Re-running skips what already finished. |
 | `mediagram add-show <dir> --tmdb <id> [--dry-run] [--yes]` | Walk a series folder and upload every episode, one set each. Season and episode come from the file name; the show comes from `--tmdb`, which is required because release prefixes defeat the title guess. Prints what it would file where, says which files the player would convert on every play and whether `prepare` can fix it, then asks. Re-running skips complete episodes and directs pending episodes to `mediagram resume`. |
+| `mediagram add-docu <path> [--dry-run]` | Upload a documentary, or a folder of them as one collection. Re-running skips what already finished. |
 | `mediagram status` | What the library holds and what is still going in: the one set uploading with its part and byte progress, any sets waiting their turn behind it, how far each show has got against what the provider says exists, and anything left unfinished. Read-only, so it is safe to run in another terminal while an upload is working. |
 | `mediagram metadata` | Record what TMDB says about each film and series — synopsis, genres, rating, network, status, and how many seasons and episodes exist — into the `shows` table. Reads the payloads `add` already cached, so a library that predates the table fills in with no API key and no network. |
 | `mediagram posters` | Fetch cover art for the films and series in the index into `<data dir>/posters/`, where a player reading this machine's index finds it. Paths come from the TMDB payloads `add` already cached, so it usually needs no key and no network. Re-running skips what is already held; delete the directory to fetch it again. A course has no provider id and so has no poster. |
