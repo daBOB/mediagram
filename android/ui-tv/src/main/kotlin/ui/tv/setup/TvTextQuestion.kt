@@ -58,6 +58,9 @@ internal fun resolvedKeyboardType(
  * draw in the theme's error colour the way the phone's own error text does,
  * between the explanation and the field label.
  *
+ * [below] holds anything the question offers besides its answer — a row
+ * the remote reaches by pressing down from the field.
+ *
  * [keyboardType] mirrors whichever `KeyboardType` the phone's own field
  * asks for — `Number` for `api_id`, plain `Text` everywhere else the phone
  * does not specialise it. [secret] overrides it to `Password` regardless of
@@ -89,6 +92,7 @@ fun TvTextQuestion(
     secret: Boolean = false,
     keyboardType: KeyboardType = KeyboardType.Text,
     error: String? = null,
+    below: @Composable () -> Unit = {},
 ) {
     val focusRequester = remember { FocusRequester() }
 
@@ -140,5 +144,6 @@ fun TvTextQuestion(
             secret = secret,
             keyboardType = resolvedKeyboardType(secret, keyboardType),
         )
+        below()
     }
 }

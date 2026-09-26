@@ -548,6 +548,10 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   key and the home cache server's address and token are each asked as one question with
   the system keyboard, rather than in a field inside a list. Pairing from the phone would
   be new machinery and is out of scope.
+- **A blank TMDB key is ignored, not saved.** The phone clears a stored key when a
+  blank one is saved; on a remote the keyboard's action key is also how a viewer who
+  only came to look closes the keyboard, so the television ignores a blank answer and
+  offers "Clear stored key" behind a confirmation instead.
 - **No picture-in-picture, gesture controls or media session.** No touch input and no
   lock screen to control from; these are phone affordances.
 - **No voice search.** Search is typed through the system keyboard.
