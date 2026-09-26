@@ -19,11 +19,11 @@ evicts down, persisted in the state DB, overriding `MEDIAGRAM_CACHE_MAX`.
 
 | # | Phase | Track | Blocked by | Effort | Status |
 |---|---|---|---|---|---|
-| 01 | [Web settings storage + admin gate](phase-01-web-settings-storage-and-admin-gate.md) | web | – | 5h | pending |
-| 02 | [Web swappable Telegram connection + runtime](phase-02-web-swappable-telegram-connection.md) | web | 01 | 6h | pending |
-| 03 | [Web live cache budget](phase-03-web-live-cache-budget.md) | web | 02 | 2h | pending |
-| 04 | [Web library switch from channel index](phase-04-web-library-switch-from-channel-index.md) | web+rust test | 02 | 5h | pending |
-| 05 | [Web settings API + sign-in flow](phase-05-web-settings-api-and-sign-in.md) | web | 03, 04 | 5h | pending |
+| 01 | [Web settings storage + admin gate](phase-01-web-settings-storage-and-admin-gate.md) | web | – | 5h | done 2026-09-26 |
+| 02 | [Web swappable Telegram connection + runtime](phase-02-web-swappable-telegram-connection.md) | web | 01 | 6h | done 2026-09-26 |
+| 03 | [Web live cache budget](phase-03-web-live-cache-budget.md) | web | 02 | 2h | done 2026-09-26 |
+| 04 | [Web library switch from channel index](phase-04-web-library-switch-from-channel-index.md) | web+rust test | 02 | 5h | done 2026-09-26 |
+| 05 | [Web settings API + sign-in flow](phase-05-web-settings-api-and-sign-in.md) | web | 03, 04 | 5h | done 2026-09-26 |
 | 06 | [Web Settings page](phase-06-web-settings-page.md) | web UI | 05 | 4h | pending |
 | 07 | [Rust core: account summary + sign out](phase-07-rust-core-account-and-sign-out.md) | rust | – | 3h | done |
 | 08 | [Android Settings screen](phase-08-android-settings-screen.md) | android | 07 | 6h | done |

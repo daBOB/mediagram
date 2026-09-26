@@ -8,8 +8,14 @@
 - Phase 01 `state/settings.ts` (`cacheMaxBytes`)
 
 ## Overview
-Priority P2. Status: pending. Budget changes apply immediately, evict down when smaller,
-persist in the state DB, and override the env on next start.
+Priority P2. Status: **done 2026-09-26**. Budget changes apply immediately, evict down when
+smaller, persist in the state DB, and override the env on next start. Built as specified:
+`ChunkCache.maxBytes` is mutable, `setBudget(n)` sets then evicts through the existing coalesced
+scan; `cache/budget.ts` adds `startBudget`, `validateBudget`, `applyBudget` (persist, then
+apply, then refresh `held`). `status/routes.ts`'s held-bytes memoization gained an
+`invalidateHeldBytes()` method on the returned route function (a property on the function
+itself, not a second return value) so a shrink is reflected on the next poll rather than the
+rest of the 15s TTL.
 
 ## Key insights
 - Eviction is already LRU by atime over the real files (`store.ts:144`); shrinking is
