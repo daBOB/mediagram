@@ -123,6 +123,39 @@ signed in `mlib-package-v1` format 1 (a hostile host can withhold updates, not
 forge one), a conversion produces one rendition rather than an adaptive
 ladder, and the transcode directory has no quota of its own.
 
+## Web player: editorial departments and schema v9 (0.62.0)
+
+Released 2026-09-26: department pages (Home, Movies, Series, Tutorials, Collections),
+feature pages with tabs (Overview, Cast, Similar, Details), Cast from schema v9
+credits with circular portraits, franchises, people search, Settings shell with
+Appearance (Dark/Light/Auto + 7-accent swatches) and Profile, theme system via
+`data-theme`, and search grouping. Schema v9 adds shows columns, credits table,
+and franchises table. Both uploaders and Android must run ≥0.62.0 before any v9
+push/export.
+
+| Phase | Scope | Status |
+|---|---|---|
+| 1 | Schema v9 (Rust): shows columns + credits/franchises tables, portrait pipeline | Complete |
+| 2 | Web data layer: v9 queries, portrait resolution, similar, people search | Complete |
+| 3 | Shell, navigation, Home page (magazine layout) | Complete |
+| 4 | Feature detail pages (film, series) with tabs, Cast | Complete |
+| 5 | Departments (Movies/Series/Tutorials), paging, genre shelf | Complete |
+| 6 | Collections (franchises + lists) and Search (grouped by type) | Complete |
+| 7 | Settings (Appearance, Profile, admin Library & Telegram), theme system | Complete |
+| 8 | Verify and ship, docs update | Complete |
+
+All phases complete, tests passing (web 2141, Rust 1268), lint clean. Code review (DONE_WITH_CONCERNS) identified
+3 high-severity behavioural fixes applied before ship, 2 medium-severity items (async
+page redraw, season picker focus), and medium-severity credits atomicity (now transactional).
+Versions bumped to 0.62.0 in all three manifests. Plan:
+`plans/260926-1142-web-player-editorial-departments/`.
+
+## Android: parity for editorial departments
+
+Android lacks departments, feature pages, Cast, franchises, and people search.
+Follow-up plan: `plans/260926-1330-android-editorial-departments-parity/`. Android
+must tolerate v9 before any v9 push. Existing Android builds refuse v9 packages.
+
 ## Android: shipping, and reaching for parity
 
 The phone app exists and is installed on a real device. It is the third

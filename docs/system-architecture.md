@@ -597,6 +597,29 @@ and `web/.env` are not like that — losing both means logging in again, because
 a session string cannot be recovered from anywhere else. `state.db` is the
 only thing this process writes that cannot be refetched at all.
 
+## 10.1. Index schema (library.db, v9)
+
+The canonical index (`library.db`, in `mlib-spec` schema) carries:
+
+- **shows** table: all titles (movies, TV series, tutorials). Gains in v9:
+  `collection_id` (TMDB franchises), `collection_name`, `series_type` (tv types:
+  Scripted, Miniseries, Documentary, Reality, News, Talk Show, Video; null for
+  movies).
+- **credits** table (new in v9): cast, crew, creators. Rows: `(source, kind, id,
+  ord, person_id, name, role, dept, profile)` — `ord` is display order within
+  a title (cast by billing, then directors, then creators); `dept` is 'cast' or
+  'crew'; `role` is character name for cast, job for crew (e.g. 'Director',
+  'Creator'); `profile` is the bare TMDB portrait path or null (so a device
+  reading a channel snapshot needs no TMDB cache of its own).
+- **franchises** table (new in v9): TMDB collections. Rows: `(source, id, name,
+  overview)` — `id` is the TMDB collection id, same value as `shows.collection_id`.
+  Scraped from `belongs_to_collection` on first metadata run.
+
+Version tracking: `SCHEMA_VERSION=9`, `READABLE_SCHEMAS=[6,7,8,9]`, `OLDEST_READABLE_SCHEMA=6`.
+Readers tolerant of v8 (optional columns/tables); writers (uploaders ≥0.62.0) produce
+v9. Both uploaders and Android installs must run ≥0.62.0 before any push/export; older
+Android builds refuse v9 packages.
+
 ## 11. Telegram limits relied on
 
 - 4 GB per-message document cap on Telegram Premium; parts default to 3.5
