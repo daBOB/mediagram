@@ -39,8 +39,15 @@ const HELD_BYTES_TTL_MS = 15_000;
 
 export interface StatusRouterOptions {
   facts: StartupFacts;
-  /** Everything that has to be read at the moment of asking. */
-  live: () => Omit<LiveFacts, "cacheHeldBytes" | "transcodeBytes" | "now">;
+  /**
+   * Everything that has to be read at the moment of asking.
+   *
+   * A promise since phase 1: the host group's disk-free reading is IO, where
+   * the figures before it were memory already held by the process.
+   */
+  live: () =>
+    | Omit<LiveFacts, "cacheHeldBytes" | "transcodeBytes" | "now">
+    | Promise<Omit<LiveFacts, "cacheHeldBytes" | "transcodeBytes" | "now">>;
   /** Bytes the cache holds, measured by scanning. Absent when caching is off. */
   heldBytes?: () => Promise<number>;
   /** Bytes the conversions hold, measured the same way. */
@@ -110,12 +117,11 @@ export function createStatusRouter(options: StatusRouterOptions) {
     const reading = request.method === "GET" || request.method === "HEAD";
     if (!reading) return status(405);
 
-    // Both scans at once: they are independent, and one after the other would
-    // make the slow case the sum of two directory walks rather than the
-    // longer of them.
-    const [cached, transcoded] = await Promise.all([cacheHeldBytes(), transcodeHeldBytes()]);
+    // All three at once: they are independent, and one after another would
+    // make the slow case the sum of three reads rather than the longest one.
+    const [cached, transcoded, liveFacts] = await Promise.all([cacheHeldBytes(), transcodeHeldBytes(), live()]);
     const snapshot = buildSnapshot(facts, {
-      ...live(),
+      ...liveFacts,
       cacheHeldBytes: cached,
       transcodeBytes: transcoded,
       now: now(),

@@ -17,6 +17,7 @@ const facts: StartupFacts = {
   cache: { dir: "/var/cache/mediagram", budget: 20 * 1024 ** 3, readahead: 4 },
   state: { remembered: true, path: "/var/lib/mediagram/state.db" },
   startedAt: 1_000_000,
+  runtime: { bun: "1.4.2" },
 };
 
 const live: LiveFacts = {
@@ -33,7 +34,12 @@ const live: LiveFacts = {
   transcodeBytes: 3 * 1024 ** 3,
   telegramConnected: true,
   failedReads: 2,
-  memoryBytes: 180 * 1024 ** 2,
+  host: {
+    rssBytes: 180 * 1024 ** 2,
+    heapBytes: 90 * 1024 ** 2,
+    loopLagMs: { p50: 2, p99: 18, max: 40 },
+    disks: [{ dirs: ["/var/cache/mediagram"], freeBytes: 100 * 1024 ** 3, totalBytes: 500 * 1024 ** 3 }],
+  },
   now: 1_000_000 + 3_600_000,
 };
 
@@ -97,7 +103,20 @@ describe("the readings added after the first pass", () => {
   });
 
   test("reports resident memory, for a player left running for a week", () => {
-    expect(buildSnapshot(facts, live).memoryBytes).toBe(180 * 1024 ** 2);
+    expect(buildSnapshot(facts, live).host.rssBytes).toBe(180 * 1024 ** 2);
+  });
+
+  test("carries the host group's heap, loop lag and disk figures, plus the runtime version", () => {
+    const snapshot = buildSnapshot(facts, live);
+    expect(snapshot.host.heapBytes).toBe(90 * 1024 ** 2);
+    expect(snapshot.host.loopLagMs).toEqual({ p50: 2, p99: 18, max: 40 });
+    expect(snapshot.host.disks).toHaveLength(1);
+    expect(snapshot.host.bun).toBe("1.4.2");
+  });
+
+  test("says the event loop cannot be measured rather than guessing", () => {
+    const snapshot = buildSnapshot(facts, { ...live, host: { ...live.host, loopLagMs: null } });
+    expect(snapshot.host.loopLagMs).toBe(null);
   });
 
   test("hands over fetched bytes rather than a rate it cannot compute", () => {

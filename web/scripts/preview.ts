@@ -26,6 +26,11 @@ import { dirname, join } from "node:path";
 import { startServer } from "../src/server";
 import { PosterStore } from "../src/package/posters";
 import { WatchState } from "../src/state/store";
+import { EXPECTED_SCHEMA, listPlayable } from "../src/catalog";
+import { createStatusRouter } from "../src/status/routes";
+import { readLiveFacts } from "../src/status/live-facts";
+import { startLoopLag } from "../src/status/loop-lag";
+import type { StartupFacts } from "../src/status/facts";
 
 const home = process.env.HOME ?? "";
 const channelIndexDir = process.env.MEDIAGRAM_CHANNEL_INDEX_DIR ?? `${home}/.cache/mediagram-channel-index`;
@@ -50,20 +55,51 @@ const stateCopy = join(scratch, "state.db");
 if (existsSync(stateDb)) copyFileSync(stateDb, stateCopy);
 
 const db = new Database(indexCopy, { readonly: true });
+const state = new WatchState(stateCopy);
+
+/**
+ * A System page needs somewhere to poll even without Telegram, a cache or a
+ * transcoder. Every group the real player fills answers honestly that it has
+ * nothing to report, the same way it would on a machine with caching off.
+ */
+const facts: StartupFacts = {
+  catalog: { origin: "local", publishedAt: null, refresh: null, reason: null, schema: EXPECTED_SCHEMA, sets: listPlayable(db).length, posters: 0 },
+  encoder: { name: "none (preview)", kind: "software", device: null },
+  transcodeDir: scratch,
+  cache: null,
+  state: { remembered: state.remembers, path: state.remembers ? stateCopy : null },
+  startedAt: Date.now(),
+  runtime: { bun: Bun.version },
+};
+const loopLag = startLoopLag();
 const server = await startServer({
   db,
   // Media is the one thing a preview cannot serve without Telegram.
   source: { stream: () => new ReadableStream() } as never,
   posters: new PosterStore(posterDir),
-  state: new WatchState(stateCopy),
+  state,
   hostname: "127.0.0.1",
   port,
+  status: createStatusRouter({
+    facts,
+    live: () =>
+      readLiveFacts({
+        cache: null,
+        reader: null,
+        transcodes: { count: () => 0, capacity: 0, list: () => [] },
+        telegram: { connected: null },
+        bytes: { stats: () => ({ failedReads: 0 }) },
+        loopLag,
+        diskDirs: [scratch],
+      }),
+  }),
 });
 
 console.log(`preview: http://127.0.0.1:${port}  (index ${index}, artwork ${posterDir})`);
 console.log("preview: watch state is a copy; nothing here reaches the real player");
 
 const stop = async () => {
+  loopLag.stop();
   await server.close();
   db.close();
   rmSync(scratch, { recursive: true, force: true });

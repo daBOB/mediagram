@@ -52,4 +52,6 @@ export interface StartupFacts {
   state: { remembered: boolean; path: string | null };
   /** `Date.now()` as the process finished starting. */
   startedAt: number;
+  /** What this process is running on, fixed for its whole life. */
+  runtime: { bun: string };
 }

@@ -54,13 +54,42 @@ facts.ts: StartupFacts.runtime = { bun: Bun.version }
 7. Tests: loop-lag window rotation, using a fake timer or an injected histogram. Disk-free dedupe on the same dir given twice, and a missing dir. Snapshot shape. The HTTP route still returns 404 to a caller outside the household.
 
 ## Todo
-- [ ] live-facts extraction (no behaviour change)
-- [ ] async `live`
-- [ ] loop-lag window + test
-- [ ] disk-free + test
-- [ ] Bun version fact
-- [ ] snapshot `host` + tests updated
-- [ ] `bun test` green, `bunx tsc --noEmit` clean
+- [x] live-facts extraction (no behaviour change)
+- [x] async `live`
+- [x] loop-lag window + test
+- [x] disk-free + test
+- [x] Bun version fact
+- [x] snapshot `host` + tests updated
+- [x] `bun test` green, `bunx tsc --noEmit` clean
+
+## Implementation notes (2026-09-26)
+
+Done. Deviations from the plan, which was written 2026-09-22 against an
+older tree:
+
+- The `live()` closure the plan cites at `index.ts:271-298` had moved to
+  `index.ts:310-339` by the time of implementation (unrelated streaming work
+  landed in between). Moved from there instead; behaviour is unchanged.
+- `host.bun` is assembled in `buildSnapshot` from `StartupFacts.runtime.bun`,
+  not inside `live-facts.ts`'s reading — the version is a startup fact, fixed
+  for the process's life, so it does not need re-reading every request. The
+  live-computed part of the group is typed separately (`HostLiveFacts`) and
+  `HostFacts` extends it with `bun`.
+- `index.ts` did not shrink by 20 lines as the plan's success criterion
+  expected: the inline `live()` closure (about 30 lines) was replaced by a
+  shorter call into `readLiveFacts`, but the loop-lag timer now has to be
+  wired through `resources.timers` at the call site so shutdown still clears
+  it, which cost back most of what was saved. Net line count is unchanged;
+  the closure itself is gone from `index.ts`, which was the actual point.
+- `scripts/preview.ts` (the stub harness the plan calls `stub-offline.ts` —
+  no file of that name exists in this tree) had no `status` route at all
+  before this phase, so `/api/status` 404'd in the harness. Wired a minimal
+  `StartupFacts` and a `live()` with no cache, no transcodes and no Telegram,
+  so every group answers honestly that it has nothing to report. Verified by
+  running the harness and polling `/api/status` directly: `host.rssBytes`,
+  `heapBytes`, `disks` and `bun` are present immediately, and `loopLagMs`
+  goes from `null` to a real `{p50,p99,max}` reading after the first 10s
+  window completes.
 
 ## Success criteria
 - `bun test` passes.

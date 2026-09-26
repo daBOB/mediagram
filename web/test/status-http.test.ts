@@ -22,6 +22,7 @@ const facts: StartupFacts = {
   cache: { dir: "/tmp/cache", budget: 1024, readahead: 2 },
   state: { remembered: false, path: null },
   startedAt: 0,
+  runtime: { bun: "1.4.2" },
 };
 
 const live = () => ({
@@ -32,7 +33,7 @@ const live = () => ({
   transcodes: { running: 0, capacity: 4, sessions: [] },
   telegramConnected: true,
   failedReads: 0,
-  memoryBytes: 1024,
+  host: { rssBytes: 1024, heapBytes: 512, loopLagMs: null, disks: [] },
 });
 
 function ask(over: Partial<PlayerRequest> = {}): PlayerRequest {

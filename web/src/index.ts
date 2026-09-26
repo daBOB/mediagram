@@ -30,6 +30,8 @@ import { PosterStore } from "./package/posters";
 import type { RefreshOptions } from "./package/refresh";
 import { createStatusRouter } from "./status/routes";
 import { dirBytes } from "./status/dir-bytes";
+import { readLiveFacts } from "./status/live-facts";
+import { startLoopLag } from "./status/loop-lag";
 import type { StartupFacts } from "./status/facts";
 import { Telegram, bareChannelId } from "./telegram/client";
 import { TelegramSource, partFetcher } from "./telegram/source";
@@ -250,7 +252,19 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
         : null,
       state: { remembered: state.remembers, path: state.remembers ? config.stateDb : null },
       startedAt: Date.now(),
+      runtime: { bun: Bun.version },
     };
+
+    // Windowed rather than averaged since startup, so one hiccup at boot does
+    // not stay in the figure forever. Scheduled through `resources.timers` so
+    // shutdown clears it the same way as every other interval here.
+    const loopLag = startLoopLag({
+      schedule: (rotate, ms) => {
+        const timer = setInterval(rotate, ms).unref();
+        resources.timers.push(timer);
+        return timer;
+      },
+    });
 
     /**
      * Preview frames for the scrub bar.
@@ -309,31 +323,16 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
       preload,
       status: createStatusRouter({
         facts,
-        live: () => {
-          const stats = cache?.stats();
-          return {
-          cacheHits: stats?.hits ?? 0,
-          cacheMisses: stats?.misses ?? 0,
-          cacheEvicted: stats?.evicted ?? 0,
-          fetchedBytes: reader?.stats().fetchedBytes ?? 0,
-          transcodes: {
-            running: transcodes.count(),
-            capacity: transcodes.capacity,
-            sessions: transcodes.list().map(({ setId, seekSeconds, maxrateBits, audioTrack, watchers }) => ({
-              setId,
-              seekSeconds,
-              maxrateBits,
-              audioTrack,
-              watchers,
-            })),
-          },
-          telegramConnected: telegram.connected,
-          failedReads: bytes.stats().failedReads,
-          // Resident set size: the figure that says whether a player left running
-          // for a week is still the size it started at.
-          memoryBytes: process.memoryUsage.rss(),
-          };
-        },
+        live: () =>
+          readLiveFacts({
+            cache,
+            reader: reader ?? null,
+            transcodes,
+            telegram,
+            bytes,
+            loopLag,
+            diskDirs: [config.cacheDir, config.transcodeDir],
+          }),
         heldBytes: cache ? () => cache.sizeOnDisk() : undefined,
         transcodeBytes: () => dirBytes(config.transcodeDir),
       }),

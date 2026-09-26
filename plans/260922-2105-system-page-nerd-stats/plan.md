@@ -21,7 +21,7 @@ Playback stats are the one group that starts in the browser. Each open player PO
 
 | # | Phase | Effort | Status |
 |---|---|---|---|
-| 1 | [Plumbing and process/host](phase-01-snapshot-plumbing-and-host.md) | 2h | pending |
+| 1 | [Plumbing and process/host](phase-01-snapshot-plumbing-and-host.md) | 2h | done |
 | 2 | [Telegram link counters](phase-02-telegram-link-counters.md) | 3h | pending |
 | 3 | [Transcoder progress](phase-03-transcoder-progress.md) | 2.5h | pending |
 | 4 | [Playback session reports](phase-04-playback-session-reports.md) | 3h | pending |

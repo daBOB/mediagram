@@ -8,6 +8,24 @@
  */
 
 import type { StartupFacts } from "./facts";
+import type { LoopLagReading } from "./loop-lag";
+import type { DiskFree } from "./disk-free";
+
+/** The process and machine figures read fresh on every request. */
+export interface HostLiveFacts {
+  /** Resident set size, in bytes. */
+  rssBytes: number;
+  /** `heapUsed` only: Bun's `heapTotal` can read lower than `heapUsed`. */
+  heapBytes: number;
+  /** The last complete 10s window, or `null` before one has finished. */
+  loopLagMs: LoopLagReading | null;
+  disks: DiskFree[];
+}
+
+/** The host group as the snapshot reports it: the live figures plus the runtime version. */
+export interface HostFacts extends HostLiveFacts {
+  bun: string;
+}
 
 /** What is true only at the moment the question is asked. */
 export interface LiveFacts {
@@ -35,8 +53,7 @@ export interface LiveFacts {
   telegramConnected: boolean | null;
   /** Reads that ended in an error rather than in bytes. */
   failedReads: number;
-  /** Resident set size, in bytes. */
-  memoryBytes: number;
+  host: HostLiveFacts;
   now: number;
 }
 
@@ -72,7 +89,7 @@ export function buildSnapshot(facts: StartupFacts, live: LiveFacts) {
     },
     telegram: { connected: live.telegramConnected, failedReads: live.failedReads },
     state: facts.state,
-    memoryBytes: live.memoryBytes,
+    host: { ...live.host, bun: facts.runtime.bun },
     uptimeSeconds: Math.max(0, Math.round((live.now - facts.startedAt) / 1000)),
     // Two readings and the seconds between them are all a caller needs to
     // work out a rate, so the rate is not computed here: the panel polls at a
