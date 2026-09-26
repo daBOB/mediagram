@@ -269,6 +269,25 @@ class TvSearchAndGenreTest {
         compose.onNodeWithText("Nobody by that number is credited on anything in your library.").assertExists()
     }
 
+    /**
+     * Back from a person opened in search lands on that person's own row,
+     * below the films — the row is recorded under the results' own key for
+     * it, not the bare id, which no row carries and so fell to the first.
+     */
+    @Test
+    fun backFromAPersonLandsOnTheirRowNotTheFirstResult() {
+        val hit = PersonHit(personId = 9L, name = "Ada Actor", portraitPath = null, titleKeys = listOf("poster-film-0"))
+        coEvery { fixture.repository.searchPeople(any()) } returns listOf(hit)
+
+        press(compose.onNodeWithText("Search"))
+        type("film")
+        press(compose.onNodeWithText("Ada Actor"))
+        back()
+        settle()
+
+        compose.onNodeWithText("Ada Actor").assertIsFocused()
+    }
+
     /** A person nobody in the library can see — no title key of theirs matches anything — is never offered at all. */
     @Test
     fun aPersonWithNoVisibleTitleNeverAppears() {

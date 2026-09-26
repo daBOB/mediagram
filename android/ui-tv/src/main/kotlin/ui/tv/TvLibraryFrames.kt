@@ -45,20 +45,22 @@ internal fun TvSearchBranch(
             restore.opened(here, setId)
             at.openPlayer(setId)
         },
+        // Recorded under the results' own row keys (`keyOf` in TvSearchGroups.kt), so Back
+        // finds the show, person or collection that was opened rather than the first result.
         onOpenCollection = { key ->
-            restore.opened(here, key)
+            restore.opened(here, "show:$key")
             at.openCollection(key)
         },
         onOpenPerson = { personId ->
-            restore.opened(here, personId.toString())
+            restore.opened(here, "person:$personId")
             at.openPerson(personId.toString())
         },
         onOpenFranchise = { id ->
-            restore.opened(here, id.toString())
+            restore.opened(here, "dest:tmdb-$id")
             at.openFranchise(id.toString())
         },
         onOpenList = { id ->
-            restore.opened(here, id)
+            restore.opened(here, "dest:$id")
             at.openList(id)
         },
         shouldRequestPortrait = browse::shouldRequestPortrait,
