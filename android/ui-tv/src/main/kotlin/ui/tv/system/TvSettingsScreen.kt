@@ -99,6 +99,8 @@ internal fun TvSettingsScreen() {
                 onOpenLanCache = open,
                 onSignOut = { askingSignOut = true },
                 onRetryProfiles = viewModel::retryProfiles,
+                onLoadSessions = viewModel::loadSessions,
+                onRevokeSession = viewModel::revokeSession,
             )
     }
 

@@ -16,6 +16,7 @@ import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import kotlinx.coroutines.flow.MutableStateFlow
 import model.Profile
 import org.junit.After
 import org.junit.Before
@@ -26,8 +27,10 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
+import setup.SettingsUiState
 import ui.tv.catalog.films
 import ui.tv.setup.TvTextQuestionFieldTag
+import uniffi.mediagram_core.SessionSummary
 import kotlin.test.assertEquals
 
 /**
@@ -218,6 +221,32 @@ class TvMenuTest {
         press(compose.onNodeWithText("Use the home cache server — on"))
         verify { fixture.lanCache.setEnabled(false) }
     }
+
+    @Test
+    fun activeSessionsSignOutOnlyOnTheSecondPressAndNeverThisDevice() {
+        every { fixture.settings.state } returns
+            MutableStateFlow(
+                SettingsUiState(
+                    account = "Ada",
+                    library = "Family films",
+                    sessions = listOf(session("1", "Living room TV", current = true), session("2", "Old laptop", current = false)),
+                ),
+            )
+        openMenu()
+        press(compose.onNodeWithText("Settings"))
+        compose.onNodeWithText("Living room TV (this device)").assertExists()
+        compose.onNodeWithText("Sign out Living room TV").assertDoesNotExist()
+        press(compose.onNodeWithText("Sign out Old laptop"))
+        verify(exactly = 0) { fixture.settings.revokeSession(any()) }
+        press(compose.onNodeWithText("Confirm sign out — Old laptop"))
+        verify { fixture.settings.revokeSession("2") }
+    }
+
+    private fun session(
+        id: String,
+        device: String,
+        current: Boolean,
+    ) = SessionSummary(id, device, "Android", "Mediagram", "0.61.0", "Berlin", 0, 0, current, false)
 
     private fun openMenu() {
         press(compose.onNodeWithText("Menu"))

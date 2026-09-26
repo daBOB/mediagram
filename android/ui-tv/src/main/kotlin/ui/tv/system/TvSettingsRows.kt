@@ -23,7 +23,8 @@ import ui.tv.catalog.TvQuietLine
 
 /**
  * Settings' own page: the Telegram block, the three things that change it,
- * the cache and where it lives, and the home cache server. The remote lands on Change library, or on the row whose
+ * the account's active sessions, the cache and where it lives, and the
+ * home cache server. The remote lands on Change library, or on the row whose
  * panel was just left. Waiting on an answer draws the actions faint rather
  * than hiding them: what is on offer does not change, only when.
  */
@@ -36,6 +37,8 @@ internal fun TvSettingsRows(
     onOpenLanCache: (TvSettingsPanel) -> Unit,
     onSignOut: () -> Unit,
     onRetryProfiles: () -> Unit,
+    onLoadSessions: () -> Unit,
+    onRevokeSession: (String) -> Unit,
 ) {
     val library = remember { FocusRequester() }
     val application = remember { FocusRequester() }
@@ -71,6 +74,7 @@ internal fun TvSettingsRows(
                     state.notice?.let { TvQuietLine(it) }
                 }
             }
+            TvSessionsBlock(state.sessions, state.sessionsError, onLoadSessions, onRevokeSession)
             TvCacheBudgetBlock()
             TvCacheVolumeBlock()
             TvLanCacheBlock(returningFrom = returningFrom, onOpen = onOpenLanCache)
