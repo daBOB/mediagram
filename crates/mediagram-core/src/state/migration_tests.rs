@@ -55,13 +55,17 @@ fn assert_kept_rows(conn: &Connection) {
             updated_at: 22,
         }]
     );
-    assert_eq!(
-        rows::watched_for(conn, "viewer").unwrap(),
-        [rows::WatchedRow {
-            set_id: "finished".into(),
-            finished_at: 33,
-        }]
-    );
+    // Not `rows::watched_for`: its `removed_at IS NULL` filter reaches for a
+    // column the rolled-back v1 connection this is also checked against does
+    // not have.
+    let finished_at: i64 = conn
+        .query_row(
+            "SELECT finished_at FROM watched WHERE set_id = 'finished'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(finished_at, 33);
 }
 
 fn assert_migrated(conn: &Connection) {
@@ -84,7 +88,7 @@ fn assert_migrated(conn: &Connection) {
             }
         ]
     );
-    for table in ["watchlist", "kids", "collections"] {
+    for table in ["watchlist", "kids", "collections", "watched"] {
         let live: i64 = conn
             .query_row(
                 &format!("SELECT COUNT(*) FROM {table} WHERE removed_at IS NOT NULL"),
@@ -94,6 +98,16 @@ fn assert_migrated(conn: &Connection) {
             .unwrap();
         assert_eq!(live, 0, "existing {table} rows must remain live");
     }
+    // Once migrated, the live-only reader can see the same row again —
+    // proof the new `removed_at IS NULL` filter matches what the v1 -> v4
+    // ALTER actually left behind, not just what `assert_kept_rows` read raw.
+    assert_eq!(
+        rows::watched_for(conn, "viewer").unwrap(),
+        [rows::WatchedRow {
+            set_id: "finished".into(),
+            finished_at: 33,
+        }]
+    );
     let mut query = conn
         .prepare("SELECT created_at, updated_at FROM collections ORDER BY id")
         .unwrap();

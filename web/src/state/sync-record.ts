@@ -11,16 +11,39 @@
  * prefer whole documents, and whichever device pushed last would overwrite a
  * position it had never heard of.
  *
- * **Positions and completions carry their removal for free.** See `merge.ts`
- * on why `watched` is the tombstone for `progress` — no separate row needed.
+ * **A position carries its removal for free.** See `merge.ts` on why a
+ * `watched` completion is the tombstone for `progress` — no separate row
+ * needed.
  *
- * **Watchlist, Kids and collections carry an explicit one.** A watchlist
- * entry used to be deleted outright, leaving nothing to say it *was*
- * deleted, so a merge would resurrect it from whichever device had not yet
- * heard. `removed` is that missing fact, on the row itself, with its own
- * `updatedAt` — the same last-writer-wins rule as everything else here, kept
- * to a row rather than a whole document so one removal cannot cost another
- * device's unrelated addition.
+ * **The watchlist, Kids and collections carry an explicit removal.** Taking
+ * a title off a watchlist, or deleting a list, used to delete the row
+ * outright, leaving nothing to say it *was* removed — a merge would
+ * resurrect it from whichever device had not yet heard. `removed` is that
+ * missing fact, on the row itself, with its own `updatedAt` — the same
+ * last-writer-wins rule as everything else here, kept to a row rather than a
+ * whole document so one removal cannot cost another device's unrelated
+ * addition.
+ *
+ * **`watched` carries its removal under a different key instead —
+ * `unwatched`, not a `removed` flag on `WatchedRow`.** A reader that
+ * predates this cannot both understand `WatchedRow.removed` and not: it
+ * either shipped with the flag or it did not, and right now there are
+ * builds in the fleet that do not. Such a reader seeing
+ * `{setId, updatedAt, removed: true}` would drop the flag it does not
+ * recognise and import the row as a *live* mark at that same moment — and
+ * the next merge, weighing that resurrected live row against the real
+ * removal at an exact tie, would decide the outcome by device id rather
+ * than by what happened, differently on different device pairs, forever (an
+ * old reader never learns of the removal, so it never stops re-exporting
+ * that same live row). A `SYNC_FORMAT` bump does not fix this either — an
+ * old reader refuses a document past its known format outright, cutting off
+ * every other row a new device has to say, not just this one. `unwatched` on
+ * its own key is what an old reader simply does not know to look for and so
+ * drops (`parseRecord` below), the same way it already drops `kids?` and its
+ * optional siblings — leaving its own live mark unchanged and always older
+ * than the removal a new device holds. See `merge.ts` for the reconciliation
+ * this makes possible, and why a tie there favours the removal outright
+ * rather than a device-id tie-break.
  *
  * **`kids?` and its optional siblings are new keys, not a format bump.** A
  * format-1 reader older than this drops a key it does not recognise
@@ -43,6 +66,26 @@ export interface ProgressRow {
 export interface WatchedRow {
   setId: string;
   updatedAt: number;
+}
+
+/**
+ * Un-marking `watched` — its own row, its own key, not a flag on
+ * `WatchedRow`. See this file's header for why, and `merge.ts` for how a
+ * `WatchedRow` and an `UnwatchedRow` for the same title are reconciled.
+ */
+export interface UnwatchedRow {
+  setId: string;
+  updatedAt: number;
+  /**
+   * The `finished_at` this removal took the mark from.
+   *
+   * Carried so a position from before that completion stays suppressed
+   * after the un-mark, the same as it would under a live mark, while one
+   * made since — a genuine rewatch between finishing and un-marking —
+   * survives. Without it, un-marking would forget *when* the title was ever
+   * finished and every position before it would resurface.
+   */
+  lastFinishedAt: number;
 }
 
 /** A watchlist entry or a Kids mark: a title, when it last changed, and
@@ -76,7 +119,9 @@ export interface ProfileState {
   kids?: true;
   progress: ProgressRow[];
   watched: WatchedRow[];
-  /** Absent on a document from before this existed — not the same as empty. */
+  /** Absent on a document from before this existed — not the same as empty,
+   * and never present at all in a document an older build wrote. */
+  unwatched?: UnwatchedRow[];
   watchlist?: ListRow[];
   collections?: CollectionRow[];
 }
@@ -152,6 +197,7 @@ export function parseRecord(text: string): SyncRecord | null {
         const at = watchedRow(entry);
         return at === null ? [] : [at];
       }),
+      unwatched: row.unwatched === undefined ? undefined : parseUnwatchedRows(row.unwatched),
       watchlist: row.watchlist === undefined ? undefined : parseListRows(row.watchlist),
       collections: row.collections === undefined ? undefined : parseCollectionRows(row.collections),
     });
@@ -192,6 +238,24 @@ function watchedRow(value: unknown): WatchedRow | null {
   const updatedAt = numberFromScalar(raw.updatedAt);
   if (setId === null || !Number.isFinite(updatedAt) || updatedAt <= 0) return null;
   return { setId, updatedAt };
+}
+
+function parseUnwatchedRows(value: unknown): UnwatchedRow[] {
+  return asArray(value).flatMap((entry) => {
+    const row = unwatchedRow(entry);
+    return row === null ? [] : [row];
+  });
+}
+
+function unwatchedRow(value: unknown): UnwatchedRow | null {
+  const raw = objectRow(value);
+  if (raw === null) return null;
+  const setId = text_(raw.setId);
+  const updatedAt = numberFromScalar(raw.updatedAt);
+  const lastFinishedAt = numberFromScalar(raw.lastFinishedAt);
+  if (setId === null || !Number.isFinite(updatedAt) || updatedAt <= 0) return null;
+  if (!Number.isFinite(lastFinishedAt) || lastFinishedAt <= 0) return null;
+  return { setId, updatedAt, lastFinishedAt };
 }
 
 function parseListRows(value: unknown): ListRow[] {

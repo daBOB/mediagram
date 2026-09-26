@@ -30,6 +30,7 @@ import {
   importKids,
   importWatchlist,
 } from "./lists-exchange";
+import { exportWatched, importUnwatched, importWatched } from "./watched-exchange";
 
 export interface Progress {
   setId: string;
@@ -204,7 +205,7 @@ export class WatchState {
     const watched = this.db
       .query(
         `SELECT set_id AS setId, finished_at AS finishedAt
-           FROM watched WHERE profile_id = ?1 ORDER BY finished_at DESC`,
+           FROM watched WHERE profile_id = ?1 AND removed_at IS NULL ORDER BY finished_at DESC`,
       )
       .all(profileId) as Watched[];
 
@@ -266,22 +267,36 @@ export class WatchState {
    * Records that a title was watched to the end, or takes it back.
    *
    * Only the completion marker changes here. Finishing playback also calls
-   * clearProgress separately, so the title no longer has a resume point.
+   * clearProgress separately, so the title no longer has a resume point;
+   * taking the mark back does not call it — see `merge.ts` on why a removal
+   * must not touch `progress`.
+   *
+   * A removal is kept as a tombstone (`removed_at`) rather than a deleted
+   * row, the same reason and shape as `setWatchlisted`: so a sync round can
+   * tell another device the un-mark happened, instead of that device
+   * re-importing the older mark it still holds. Both directions are clamped
+   * to at least one millisecond past whichever clock last touched this row:
+   * a value this device imported can carry another device's clock, and this
+   * device's own clock running behind would otherwise let a stale import
+   * win the next merge back — see `watched-reconcile.ts`.
    */
   setWatched(profileId: string, setId: string, finished: boolean): void {
     if (finished) {
       tolerate(() =>
         this.db
           ?.query(
-            `INSERT INTO watched(profile_id, set_id, finished_at) VALUES (?1, ?2, ?3)
-               ON CONFLICT(profile_id, set_id) DO UPDATE SET finished_at = excluded.finished_at`,
+            `INSERT INTO watched(profile_id, set_id, finished_at, removed_at) VALUES (?1, ?2, ?3, NULL)
+               ON CONFLICT(profile_id, set_id) DO UPDATE SET
+                 finished_at = MAX(excluded.finished_at, COALESCE(removed_at, 0) + 1), removed_at = NULL`,
           )
           .run(profileId, setId, Date.now()),
       );
     } else {
       this.db
-        ?.query("DELETE FROM watched WHERE profile_id = ?1 AND set_id = ?2")
-        .run(profileId, setId);
+        ?.query(
+          "UPDATE watched SET removed_at = MAX(?3, finished_at + 1) WHERE profile_id = ?1 AND set_id = ?2 AND removed_at IS NULL",
+        )
+        .run(profileId, setId, Date.now());
     }
   }
 
@@ -366,22 +381,24 @@ export class WatchState {
    * snapshots retain progress and watched timestamps for playback and shelves.
    */
   exportRecord(device: string): SyncRecord {
-    const profiles = this.profiles().map((profile) => ({
-      name: profile.name,
-      localId: profile.id,
-      ...(profile.kids ? { kids: true as const } : {}),
-      progress: (this.db
-        ?.query(
-          `SELECT set_id AS setId, at_seconds AS at, duration, updated_at AS updatedAt
-             FROM progress WHERE profile_id = ?1`,
-        )
-        .all(profile.id) ?? []) as SyncRecord["profiles"][number]["progress"],
-      watched: (this.db
-        ?.query("SELECT set_id AS setId, finished_at AS updatedAt FROM watched WHERE profile_id = ?1")
-        .all(profile.id) ?? []) as SyncRecord["profiles"][number]["watched"],
-      watchlist: exportWatchlist(this.db, profile.id),
-      collections: exportCollections(this.db, profile.id),
-    }));
+    const profiles = this.profiles().map((profile) => {
+      const { watched, unwatched } = exportWatched(this.db, profile.id);
+      return {
+        name: profile.name,
+        localId: profile.id,
+        ...(profile.kids ? { kids: true as const } : {}),
+        progress: (this.db
+          ?.query(
+            `SELECT set_id AS setId, at_seconds AS at, duration, updated_at AS updatedAt
+               FROM progress WHERE profile_id = ?1`,
+          )
+          .all(profile.id) ?? []) as SyncRecord["profiles"][number]["progress"],
+        watched,
+        unwatched,
+        watchlist: exportWatchlist(this.db, profile.id),
+        collections: exportCollections(this.db, profile.id),
+      };
+    });
     return { format: SYNC_FORMAT, device, writtenAt: Date.now(), profiles, kids: exportKids(this.db) };
   }
 
@@ -442,27 +459,8 @@ export class WatchState {
           changed += 1;
         }
 
-        for (const row of profile.watched) {
-          const standing = this.db
-            .query("SELECT finished_at AS updatedAt FROM watched WHERE profile_id = ?1 AND set_id = ?2")
-            .get(profileId, row.setId) as { updatedAt: number } | null;
-          // The position goes whether or not the completion itself is news: a
-          // device that learns of a completion it already had may still be
-          // holding the position another device has only now told it about.
-          const dropped = this.db
-            .query("DELETE FROM progress WHERE profile_id = ?1 AND set_id = ?2 AND updated_at <= ?3")
-            .run(profileId, row.setId, row.updatedAt);
-          changed += dropped.changes;
-          if (standing !== null && standing.updatedAt >= row.updatedAt) continue;
-          this.db
-            .query(
-              `INSERT INTO watched(profile_id, set_id, finished_at) VALUES (?1, ?2, ?3)
-                 ON CONFLICT(profile_id, set_id) DO UPDATE SET finished_at = excluded.finished_at`,
-            )
-            .run(profileId, row.setId, row.updatedAt);
-          changed += 1;
-        }
-
+        changed += importWatched(this.db, profileId, profile.watched);
+        changed += importUnwatched(this.db, profileId, profile.unwatched ?? []);
         changed += importWatchlist(this.db, profileId, profile.watchlist ?? []);
         changed += importCollections(this.db, profileId, profile.collections ?? []);
       }

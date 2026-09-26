@@ -672,16 +672,66 @@ Sync is the web's channel sync. Each device keeps one pinned
 place; a round reads every device's, merges them with its own export, takes
 in what is newer and sends its own only when something changed. A first
 document whose pin is refused is taken back and the round fails, since an
-unpinned document is invisible and the next round would send another. Lists
-travel as rows with times, and a removal as a tombstone, so a merge cannot
-bring back what was taken off. A kids profile also carries `kids: true`; see
-Kids profiles. `WatchSync` runs a round on start, every five minutes while
-the app is in front, when a film is left, when the app goes to the
-background, and within seconds of another device's write, heard through
-the shared push listener; rounds never overlap. Picker callers join work for
-the current core and library, while a pushed update during a round retains one
-follow-up read. Changing identity invalidates the old work. The device id is a
-random UUID in `state.db`, never the host name.
+unpinned document is invisible and the next round would send another. The
+watchlist, Kids and collections travel as rows with times, and a removal as
+a `removed` flag on the same row, so a merge cannot bring back what was
+taken off. A kids profile also carries `kids: true`; see Kids profiles.
+
+**Un-marking `watched` travels under its own key, `unwatched`, not a
+`removed` flag.** A reader that predates this feature cannot both
+understand that flag and not — and at the moment this shipped there were
+builds in the fleet that did not. Such a reader, seeing
+`{setId, updatedAt, removed: true}` on a `WatchedRow`, would drop the flag
+it does not recognise and import the row as a *live* mark at that same
+moment; the next merge, weighing that resurrected live row against the real
+removal at an exact tie, would decide the outcome by device id rather than
+by what happened — and since the old reader never learns of the removal, it
+never stops re-exporting that same live row, so the wrong side of the tie
+stays wrong forever. `unwatched` on its own key is what such a reader simply
+does not know to look for and so drops, the same way it already drops
+`kids` and its optional siblings, leaving its own live mark unchanged and
+always older than a removal a new device holds. On a new device, a removal
+wins whenever its `updatedAt` is at least as new as the live mark it is
+weighed against — a tie goes to the removal outright, not to a device-id
+tie-break, because the two rows are unrelated claims from different
+devices, not two writes of the same kind. An `UnwatchedRow` also carries
+`lastFinishedAt`, the completion it took the mark from: a position no newer
+than that stays suppressed, exactly as it would under a live completion,
+while a genuine rewatch made since survives. See
+`crates/mediagram-core/src/state/merge/watched.rs` and
+`web/src/state/watched-reconcile.ts` for the reconciliation, pinned by
+shared fixtures in both merge orders and across mixed old/new documents.
+Importing a removal agrees with that same tie rule: it is skipped only when
+the local live mark it would replace is *strictly* newer, never merely as
+new. Marking watched again, and taking it back, are each clamped to at
+least one millisecond past whichever clock last touched the row — an
+import can leave `finished_at` or `removed_at` set from another device's
+clock, and this device's own clock running behind must not let that stale
+value outlast a fresh local write to the same title.
+
+The web runs a round on start, every five minutes while the process is up,
+on shutdown, on another device's push, and — `WriteDebounce`
+(`web/src/application/write-debounce.ts`, latched after `stop()` so a write
+racing shutdown cannot re-arm it) — a few seconds after the last
+*sync-worthy* local write. Not every write qualifies: a film playing sends a
+position PUT every ten seconds, and a round on every one of those would
+invite the same flood limit this project has already hit once, so a
+position write only counts when it says so itself, with `?final=1`
+(`writeWorthSyncing` in `routes.ts`) — not by HTTP method, since
+`flushProgress`'s `sendBeacon` usually sends that as a POST but falls back
+to the same PUT the periodic tick uses when a browser refuses `sendBeacon`
+a JSON body, and inferring "final" from the verb would then silently drop
+the trigger for that browser. Forgetting a position outright (`DELETE`)
+always counts, no marker needed, and so do watched, watchlist, Kids and
+profile writes; a preference, being per-device and unsynced, never does.
+`WatchSync` mirrors that cadence on Android: a round on start, every five
+minutes while the app is in front, when a film is left, when the app goes
+to the background, and within seconds of another device's write, heard
+through the shared push listener; rounds never overlap on either surface.
+Picker callers join work for the current core and library, while a pushed
+update during a round retains one follow-up read. Changing identity
+invalidates the old work. The device id is a random UUID in `state.db`,
+never the host name.
 
 Receiving another device's progress remains useful even if this device cannot
 publish its own. Both sync engines keep a successful import when sending fails,

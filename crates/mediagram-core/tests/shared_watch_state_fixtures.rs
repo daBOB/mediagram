@@ -80,6 +80,7 @@ fn canonical(mut state: MergedState) -> MergedState {
     for profile in &mut state.profiles {
         profile.progress.sort_by(|a, b| a.set_id.cmp(&b.set_id));
         profile.watched.sort_by(|a, b| a.set_id.cmp(&b.set_id));
+        profile.unwatched.sort_by(|a, b| a.set_id.cmp(&b.set_id));
         profile.watchlist.sort_by(|a, b| a.set_id.cmp(&b.set_id));
         profile.collections.sort_by(|a, b| a.id.cmp(&b.id));
     }

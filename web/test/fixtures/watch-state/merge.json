@@ -866,5 +866,104 @@
     "expect": {
       "profiles": [{ "name": "mia", "displayName": "Mia", "kids": true, "progress": [], "watched": [] }]
     }
+  },
+  {
+    "name": "an unwatched removal beats an older live mark from a build that predates it",
+    "records": [
+      { "format": 1, "device": "laptop", "writtenAt": 0,
+        "profiles": [{ "name": "André", "progress": [], "watched": [{ "setId": "01A", "updatedAt": 1000 }] }] },
+      { "format": 1, "device": "desktop", "writtenAt": 0,
+        "profiles": [{ "name": "André", "progress": [], "watched": [],
+          "unwatched": [{ "setId": "01A", "updatedAt": 2000, "lastFinishedAt": 1000 }] }] }
+    ],
+    "expect": {
+      "profiles": [{
+        "name": "andré", "displayName": "André", "progress": [], "watched": [],
+        "unwatched": [{ "setId": "01A", "updatedAt": 2000, "lastFinishedAt": 1000 }]
+      }]
+    }
+  },
+  {
+    "name": "re-marking watched after a removal wins when it is the newer row",
+    "records": [
+      { "format": 1, "device": "laptop", "writtenAt": 0,
+        "profiles": [{ "name": "André", "progress": [], "watched": [],
+          "unwatched": [{ "setId": "01A", "updatedAt": 1000, "lastFinishedAt": 500 }] }] },
+      { "format": 1, "device": "desktop", "writtenAt": 0,
+        "profiles": [{ "name": "André", "progress": [], "watched": [{ "setId": "01A", "updatedAt": 2000 }] }] }
+    ],
+    "expect": {
+      "profiles": [{
+        "name": "andré", "displayName": "André", "progress": [],
+        "watched": [{ "setId": "01A", "updatedAt": 2000 }]
+      }]
+    }
+  },
+  {
+    "name": "a removal at the same moment as a live mark wins outright, regardless of device id",
+    "records": [
+      { "format": 1, "device": "zulu", "writtenAt": 0,
+        "profiles": [{ "name": "André", "progress": [], "watched": [{ "setId": "01A", "updatedAt": 1000 }] }] },
+      { "format": 1, "device": "alpha", "writtenAt": 0,
+        "profiles": [{ "name": "André", "progress": [], "watched": [],
+          "unwatched": [{ "setId": "01A", "updatedAt": 1000, "lastFinishedAt": 1000 }] }] }
+    ],
+    "expect": {
+      "profiles": [{
+        "name": "andré", "displayName": "André", "progress": [], "watched": [],
+        "unwatched": [{ "setId": "01A", "updatedAt": 1000, "lastFinishedAt": 1000 }]
+      }]
+    }
+  },
+  {
+    "name": "several old devices repeating the same stale live mark do not out-vote a removal",
+    "records": [
+      { "format": 1, "device": "aaa", "writtenAt": 0,
+        "profiles": [{ "name": "André", "progress": [], "watched": [{ "setId": "01A", "updatedAt": 1000 }] }] },
+      { "format": 1, "device": "zzz", "writtenAt": 0,
+        "profiles": [{ "name": "André", "progress": [], "watched": [{ "setId": "01A", "updatedAt": 1000 }] }] },
+      { "format": 1, "device": "mid", "writtenAt": 0,
+        "profiles": [{ "name": "André", "progress": [], "watched": [],
+          "unwatched": [{ "setId": "01A", "updatedAt": 2000, "lastFinishedAt": 1000 }] }] }
+    ],
+    "expect": {
+      "profiles": [{
+        "name": "andré", "displayName": "André", "progress": [], "watched": [],
+        "unwatched": [{ "setId": "01A", "updatedAt": 2000, "lastFinishedAt": 1000 }]
+      }]
+    }
+  },
+  {
+    "name": "a removal suppresses a position from before the finish it carries",
+    "records": [
+      { "format": 1, "device": "laptop", "writtenAt": 0,
+        "profiles": [{ "name": "André", "progress": [{ "setId": "01A", "at": 80, "duration": 3600, "updatedAt": 100 }], "watched": [] }] },
+      { "format": 1, "device": "desktop", "writtenAt": 0,
+        "profiles": [{ "name": "André", "progress": [], "watched": [],
+          "unwatched": [{ "setId": "01A", "updatedAt": 2000, "lastFinishedAt": 1500 }] }] }
+    ],
+    "expect": {
+      "profiles": [{
+        "name": "andré", "displayName": "André", "progress": [], "watched": [],
+        "unwatched": [{ "setId": "01A", "updatedAt": 2000, "lastFinishedAt": 1500 }]
+      }]
+    }
+  },
+  {
+    "name": "a rewatch position after the finish but before the removal survives",
+    "records": [
+      { "format": 1, "device": "laptop", "writtenAt": 0,
+        "profiles": [{ "name": "André", "progress": [{ "setId": "01A", "at": 200, "duration": 3600, "updatedAt": 1700 }], "watched": [] }] },
+      { "format": 1, "device": "desktop", "writtenAt": 0,
+        "profiles": [{ "name": "André", "progress": [], "watched": [],
+          "unwatched": [{ "setId": "01A", "updatedAt": 2000, "lastFinishedAt": 1500 }] }] }
+    ],
+    "expect": {
+      "profiles": [{
+        "name": "andré", "displayName": "André", "watched": [],
+        "progress": [{ "setId": "01A", "at": 200, "duration": 3600, "updatedAt": 1700 }],
+        "unwatched": [{ "setId": "01A", "updatedAt": 2000, "lastFinishedAt": 1500 }]
+      }]
+    }
   }
 ]

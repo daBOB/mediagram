@@ -17,6 +17,7 @@ fn merged(name: &str, kids: bool) -> MergedState {
             kids,
             progress: vec![],
             watched: vec![],
+            unwatched: vec![],
             watchlist: vec![],
             collections: vec![],
         }],

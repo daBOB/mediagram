@@ -9,6 +9,7 @@ import type { SeriesPreload } from "../cache/series-preload";
 import type { SheetStore } from "../thumbs/sheets";
 import type { AudioTrackReader } from "../catalog/audio-tracks";
 import type { CachedReader } from "../cache/reader";
+import type { WriteDebounce } from "./write-debounce";
 
 type Sync = Pick<StateSync, "once"> | null;
 
@@ -56,6 +57,9 @@ export interface ApplicationResources {
   updates?: LibraryUpdates;
   events?: Pick<CatalogEvents, "close">;
   sync?: Sync;
+  /** The debounce a local write arms; cancelled before shutdown's own final
+   * round so that round is never followed by a second, redundant one. */
+  writeDebounce?: Pick<WriteDebounce, "stop">;
   transcodes?: Pick<TranscodeRegistry, "stopAll">;
   preload?: Pick<SeriesPreload, "stop">;
   sheets?: Pick<SheetStore, "stop">;
@@ -84,6 +88,9 @@ export function shutdownFor(resources: ApplicationResources): () => Promise<void
       attempt(() => resources.reader?.stop()),
     ];
     for (const timer of resources.timers.splice(0)) clearInterval(timer);
+    // Before the final round below, not after: a pending debounce firing
+    // once shutdown has already published would be a second, redundant one.
+    resources.writeDebounce?.stop();
     await attempt(() => resources.updates?.stop());
     await attempt(() => resources.events?.close());
     await attempt(() => resources.catalog?.stopFollowing?.());

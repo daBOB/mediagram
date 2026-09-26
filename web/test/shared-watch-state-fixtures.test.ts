@@ -68,6 +68,9 @@ describe("merge fixtures", () => {
           ...(profile.kids ? { kids: profile.kids } : {}),
           progress: [...profile.progress].sort((a, b) => a.setId.localeCompare(b.setId)),
           watched: [...profile.watched].sort((a, b) => a.setId.localeCompare(b.setId)),
+          ...(profile.unwatched?.length
+            ? { unwatched: [...profile.unwatched].sort((a, b) => a.setId.localeCompare(b.setId)) }
+            : {}),
         }))
         .sort((a, b) => a.name.localeCompare(b.name)),
     };

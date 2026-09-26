@@ -6,21 +6,32 @@
 //! **Last writer wins, per row** — the record for *one title* with the
 //! highest `updated_at`, not per device and not per document.
 //!
-//! **`watched` is the tombstone for `progress`.** Finishing a title deletes
-//! its position and writes a completion at the same moment, so a device
-//! that has never heard of the completion still holds a position, and
-//! merging naively would hand it back. A completion at least as new as a
-//! position therefore beats it. Watchlist, Kids and collections need no such
-//! trick — each row carries its own `removed` flag, reconciled by `keep`
-//! below the same as any other.
+//! **A completion is the tombstone for `progress`.** Finishing a title
+//! deletes its position and writes a completion at the same moment, so a
+//! device that has never heard of the completion still holds a position,
+//! and merging naively would hand it back. A completion at least as new as
+//! a position therefore beats it.
+//!
+//! **An `UnwatchedRow` removal is not a completion and does not, by itself,
+//! suppress `progress`.** Un-marking says "not finished", not "finished at
+//! this moment" — the player's own un-mark already leaves `progress` alone.
+//! A removal instead carries `last_finished_at`, the completion it took the
+//! mark from, and a position is compared against that: one no newer stays
+//! suppressed, a genuine rewatch made since survives. `watched::reconcile`
+//! is where a live row and its removal are weighed against each other, on a
+//! different key for a reason `record.rs` explains — including why a tie
+//! goes to the removal rather than a device-id tie-break. Watchlist, Kids
+//! and collections need no such trick — each row carries its own `removed`
+//! flag, reconciled by `keep` below the same as any other.
 
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use super::record::{CollectionRow, ListRow, ProgressRow, SyncRecord, WatchedRow, normal_name};
+use super::record::{CollectionRow, ListRow, ProgressRow, SyncRecord, UnwatchedRow, WatchedRow, normal_name};
 
 mod tie_break;
+mod watched;
 use tie_break::{Held, keep};
 
 /// Everything the devices agree on, once they have been reconciled.
@@ -43,6 +54,8 @@ pub struct MergedProfile {
     #[serde(default)]
     pub watched: Vec<WatchedRow>,
     #[serde(default)]
+    pub unwatched: Vec<UnwatchedRow>,
+    #[serde(default)]
     pub watchlist: Vec<ListRow>,
     #[serde(default)]
     pub collections: Vec<CollectionRow>,
@@ -64,6 +77,7 @@ struct ViewerState {
     kids: bool,
     progress: HashMap<String, Held<ProgressRow>>,
     watched: HashMap<String, Held<WatchedRow>>,
+    unwatched: HashMap<String, Held<UnwatchedRow>>,
     watchlist: HashMap<String, Held<ListRow>>,
     collections: HashMap<String, Held<CollectionRow>>,
 }
@@ -94,6 +108,7 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
                 kids: false,
                 progress: HashMap::new(),
                 watched: HashMap::new(),
+                unwatched: HashMap::new(),
                 watchlist: HashMap::new(),
                 collections: HashMap::new(),
             });
@@ -116,6 +131,9 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
             for row in &profile.watched {
                 keep(&mut held.watched, row.set_id.clone(), row.clone(), device);
             }
+            for row in &profile.unwatched {
+                keep(&mut held.unwatched, row.set_id.clone(), row.clone(), device);
+            }
             for row in &profile.watchlist {
                 keep(&mut held.watchlist, row.set_id.clone(), row.clone(), device);
             }
@@ -129,11 +147,15 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
 
     let mut profiles = Vec::with_capacity(by_viewer.len());
     for (name, held) in by_viewer {
-        let watched: Vec<WatchedRow> = held.watched.into_values().map(|h| h.row).collect();
-        let finished_at: HashMap<&str, f64> = watched
-            .iter()
-            .map(|row| (row.set_id.as_str(), row.updated_at))
-            .collect();
+        let watched_map: HashMap<String, WatchedRow> =
+            held.watched.into_iter().map(|(k, h)| (k, h.row)).collect();
+        let unwatched_map: HashMap<String, UnwatchedRow> =
+            held.unwatched.into_iter().map(|(k, h)| (k, h.row)).collect();
+        let watched::Reconciled {
+            watched,
+            unwatched,
+            finished_at,
+        } = watched::reconcile(watched_map, unwatched_map);
 
         let progress: Vec<ProgressRow> = held
             .progress
@@ -157,6 +179,7 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
             kids: held.kids,
             progress,
             watched,
+            unwatched,
             watchlist: held.watchlist.into_values().map(|h| h.row).collect(),
             collections: held.collections.into_values().map(|h| h.row).collect(),
         });

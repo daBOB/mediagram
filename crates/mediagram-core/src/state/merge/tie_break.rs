@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-use crate::state::record::{CollectionRow, ListRow, ProgressRow, WatchedRow};
+use crate::state::record::{CollectionRow, ListRow, ProgressRow, UnwatchedRow, WatchedRow};
 
 /// Which device a held row (or spelling) came from, for the tie-break below.
 pub(super) struct Held<T> {
@@ -26,7 +26,7 @@ macro_rules! timestamped_by_own_field {
         })+
     };
 }
-timestamped_by_own_field!(ProgressRow, WatchedRow, ListRow, CollectionRow);
+timestamped_by_own_field!(ProgressRow, WatchedRow, UnwatchedRow, ListRow, CollectionRow);
 
 /// Keeps whichever of two rows should win.
 ///

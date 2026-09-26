@@ -137,7 +137,10 @@ describe("nothing to merge", () => {
     expect(mergeStates([])).toEqual({ profiles: [], kids: [] });
     expect(mergeStates([from("laptop", "André")])).toEqual({
       profiles: [
-        { name: "andré", displayName: "André", progress: [], watched: [], watchlist: [], collections: [] },
+        {
+          name: "andré", displayName: "André", progress: [], watched: [], unwatched: [],
+          watchlist: [], collections: [],
+        },
       ],
       kids: [],
     });

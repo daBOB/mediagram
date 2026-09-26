@@ -1,7 +1,7 @@
 use super::*;
 use crate::state::StateDb;
 use crate::state::merge::MergedProfile;
-use crate::state::record::{ProgressRow, WatchedRow};
+use crate::state::record::{ProgressRow, UnwatchedRow, WatchedRow};
 
 fn db() -> (tempfile::TempDir, StateDb) {
     let dir = tempfile::tempdir().unwrap();
@@ -102,6 +102,41 @@ fn a_completion_deletes_a_position_no_newer_than_it() {
         db.with(|conn| rows::watched_for(conn, &id)).unwrap().len(),
         1
     );
+}
+
+/// An `UnwatchedRow` removal is not itself a tombstone for progress —
+/// `last_finished_at` is: a position made since that completion (a genuine
+/// rewatch) survives, unlike under a live completion
+/// (`a_completion_deletes_a_position_no_newer_than_it`).
+#[test]
+fn a_removal_leaves_a_rewatch_position_alone() {
+    let (_dir, db) = db();
+    let id = profile(&db);
+    db.with(|conn| rows::set_progress(conn, &id, "01A", 300.0, None))
+        .unwrap();
+
+    let merged = MergedState {
+        profiles: vec![MergedProfile {
+            name: "andré".into(),
+            display_name: "André".into(),
+            progress: vec![],
+            watched: vec![],
+            unwatched: vec![UnwatchedRow {
+                set_id: "01A".into(),
+                updated_at: 9_999_999_999_999.0,
+                last_finished_at: 1.0,
+            }],
+            ..Default::default()
+        }],
+        ..Default::default()
+    };
+    db.with(|conn| import_merged(conn, &merged)).unwrap();
+
+    assert_eq!(
+        db.with(|conn| rows::progress_for(conn, &id)).unwrap()[0].at,
+        300.0
+    );
+    assert_eq!(db.with(|conn| rows::watched_for(conn, &id)).unwrap(), Vec::new());
 }
 
 /// A viewer named in the merge but never seen on this device gets a local
