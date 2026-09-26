@@ -500,9 +500,9 @@ web opens on its list.
 ### Parity with the web player
 
 Reached by
-[`plans/260924-0139-android-web-parity/`](../plans/260924-0139-android-web-parity/plan.md),
+`260924-0139-android-web-parity` (removed; in git history),
 which superseded the unbuilt half of
-[`plans/260922-0124-android-web-parity/`](../plans/260922-0124-android-web-parity/plan.md):
+`260922-0124-android-web-parity` (removed; in git history):
 search and genre pages, audio and subtitle choice, speed and framing, up next
 and queues, fullscreen gestures, picture-in-picture and a media session,
 series preload with offline badges, notes, profile removal and the List/Grid
