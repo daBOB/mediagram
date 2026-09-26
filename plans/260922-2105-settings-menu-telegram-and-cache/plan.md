@@ -1,7 +1,7 @@
 ---
 title: "Settings menu: Telegram connection and cache size, web + Android"
 description: "One Settings surface on both players: connection view, library switch, app id/hash, sign in/out, live cache budget."
-status: pending
+status: done
 priority: P2
 effort: 44h
 branch: feat/settings-menu
@@ -27,8 +27,8 @@ evicts down, persisted in the state DB, overriding `MEDIAGRAM_CACHE_MAX`.
 | 06 | [Web Settings page](phase-06-web-settings-page.md) | web UI | 05 | 4h | done 2026-09-26 |
 | 07 | [Rust core: account summary + sign out](phase-07-rust-core-account-and-sign-out.md) | rust | – | 3h | done |
 | 08 | [Android Settings screen](phase-08-android-settings-screen.md) | android | 07 | 6h | done |
-| 09 | [Docs, parity note, versions, validation](phase-09-docs-versions-and-validation.md) | all | 06, 08, 10 | 2h | pending |
-| 10 | [Active sessions: list + revoke](phase-10-active-sessions-list-and-revoke.md) | all | 06, 08 | 6h | naming done; rest blocked |
+| 09 | [Docs, parity note, versions, validation](phase-09-docs-versions-and-validation.md) | all | 06, 08, 10 | 2h | done 2026-09-26 (version bump left to the lead at merge) |
+| 10 | [Active sessions: list + revoke](phase-10-active-sessions-list-and-revoke.md) | all | 06, 08 | 6h | done 2026-09-26 |
 
 Tracks run in parallel: web (01→02→{03,04}→05→06) and Android (07→08); 10 joins both before 09. 03 and 04 own
 disjoint files; all wiring into `web/src/index.ts`/runtime happens in 05 only.

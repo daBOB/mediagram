@@ -581,16 +581,21 @@ The player keeps its own, on whatever host it runs on, all overridable by
 
 | Path | Contents |
 |---|---|
-| `web/.env` | The player's configuration, including its session string. Mode 0600; gitignored. |
-| `~/.cache/mediagram-player/` | Chunk cache, bounded by `MEDIAGRAM_CACHE_MAX`. |
+| `web/.env` | The player's bootstrap configuration. Mode 0600; gitignored. Once Settings has been opened once, `telegram.json` (below) overrides its account fields; `web/.env` is what a first run before that has, and what a deleted `telegram.json` falls back to. |
+| `~/.local/share/mediagram-player/telegram.json` | This account's api id/hash, session (`null` when signed out), and chosen channel — written by the Settings page, never by hand. Directory `chmod 0700`, file `chmod 0600`. File beats env, field by field, once it exists. |
+| `~/.local/share/mediagram-player/admin-token` | The Settings page's own token, generated on first start unless `MEDIAGRAM_ADMIN_TOKEN` is set. Mode 0600; only its *path* is ever logged. |
+| `~/.local/share/mediagram-player/state.db` | Watch state — positions, lists, Kids, editor's choice — and, since the `settings` table (schema v10), the live cache budget a viewer set from Settings. Overrides `MEDIAGRAM_CACHE_MAX` once set. |
+| `~/.cache/mediagram-player/` | Chunk cache, bounded by the resolved budget (state DB, then `MEDIAGRAM_CACHE_MAX`). |
 | `~/.cache/mediagram-hls/` | Segments of running conversions. Cleared at startup. |
 | `~/.cache/mediagram-catalog/` | Decrypted packages, one directory per version, `current` a symlink to the live one. |
+| `~/.cache/mediagram-channel-index/` | The env-configured channel's own index history, followed automatically. |
+| `~/.cache/mediagram-channel-catalog/<chat id>/` | A channel chosen from Settings' index history, one subdirectory per channel so switching between more than two never compares one's `pushed_at` against an unrelated one's. |
 
-The three cache directories hold nothing canonical: delete any of them and the
-player rebuilds what it needs on the next start, more slowly. `web/.env` is
-not like that — losing it means logging in again or exporting a session from
-the uploader, because a session string cannot be recovered from anywhere
-else.
+The cache directories hold nothing canonical: delete any of them and the
+player rebuilds what it needs on the next start, more slowly. `telegram.json`
+and `web/.env` are not like that — losing both means logging in again, because
+a session string cannot be recovered from anywhere else. `state.db` is the
+only thing this process writes that cannot be refetched at all.
 
 ## 11. Telegram limits relied on
 
