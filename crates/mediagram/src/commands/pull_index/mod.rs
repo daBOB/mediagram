@@ -6,6 +6,7 @@
 //! downloads the channel's index, merges it (see `index::merge`), and
 //! reports what changed.
 
+mod backup_path;
 mod conflicts;
 mod keep_live;
 
@@ -22,6 +23,7 @@ use crate::index::{db, snapshot};
 use crate::telegram::client::Tg;
 use crate::telegram::download_index::download_channel_index;
 use crate::telegram::index_publish::{self, Guard};
+use backup_path::free_backup_path;
 use keep_live::live_sets;
 
 /// Arguments for `mediagram pull-index`.
@@ -93,19 +95,7 @@ async fn merge_and_report(
     }
 
     let local = db::open(data_dir)?;
-    // Named to the process as well as the minute, and never replaced: a
-    // second merge in the same minute must not overwrite the first one's
-    // only rollback point.
-    let backup_path = data_dir.join(format!(
-        "library.before-channel-merge-{}-{}.db",
-        backup_timestamp(now_unix()),
-        std::process::id()
-    ));
-    anyhow::ensure!(
-        !backup_path.exists(),
-        "{} already exists; not overwriting a backup",
-        backup_path.display()
-    );
+    let backup_path = free_backup_path(data_dir, &backup_timestamp(now_unix()));
     snapshot::copy_to(&local, &backup_path).context("backing up the local index before merging")?;
     println!("backed up the local index to {}", backup_path.display());
 

@@ -5,6 +5,16 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.65.1 — sync-index no longer stops before its push
+
+**Fixed**
+
+- `sync-index` failed at step 4 with "…library.before-channel-merge-….db
+  already exists; not overwriting a backup". It pulls twice in one process,
+  usually within one minute, and both pulls chose the same backup name. A
+  second backup now takes the next free `-2`, `-3`… name, and the first is
+  still never overwritten (`pull_index/backup_path.rs`).
+
 ## 0.65.0 — sync-index, merge-first publishing, progress lines
 
 **Changed**
