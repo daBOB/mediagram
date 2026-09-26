@@ -198,6 +198,17 @@ class TvMenuTest {
         compose.onNode(hasSetTextAction()).performImeAction()
         compose.waitForIdle()
         compose.onNodeWithText("Pair with the home cache server").assertExists()
+        fixture.lanCacheState.value = fixture.lanCacheState.value?.copy(tokenError = "Too short to be a pairing token.")
+        compose.waitForIdle()
+        compose.onNodeWithText("Too short to be a pairing token.").assertExists()
+    }
+
+    @Test
+    fun reopeningAQuestionClearsTheLastRefusal() {
+        openMenu()
+        press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithText("Server address — found on the network"))
+        verify { fixture.lanCache.clearErrors() }
     }
 
     @Test

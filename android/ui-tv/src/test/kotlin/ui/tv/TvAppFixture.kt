@@ -100,6 +100,18 @@ internal class TvAppFixture(
     private val system = mockk<SystemViewModel>(relaxed = true)
     val cacheBudget = mockk<CacheBudgetViewModel>(relaxed = true)
     val lanCache = mockk<LanCacheViewModel>(relaxed = true)
+    val lanCacheState =
+        MutableStateFlow<LanCacheUiState?>(
+            LanCacheUiState(
+                enabled = true,
+                hasToken = false,
+                manualAddress = "",
+                connection = LanCacheConnection.NOT_FOUND,
+                connectedHost = null,
+                heldBytes = null,
+                tokenRejected = false,
+            ),
+        )
 
     init {
         val core = mockk<CoreClient>()
@@ -203,18 +215,7 @@ internal class TvAppFixture(
                 ),
             )
         every { cacheBudget.chosenVolumeId } returns MutableStateFlow(null)
-        every { lanCache.state } returns
-            MutableStateFlow(
-                LanCacheUiState(
-                    enabled = true,
-                    hasToken = false,
-                    manualAddress = "",
-                    connection = LanCacheConnection.NOT_FOUND,
-                    connectedHost = null,
-                    heldBytes = null,
-                    tokenRejected = false,
-                ),
-            )
+        every { lanCache.state } returns lanCacheState
         val models =
             mapOf<Class<out ViewModel>, ViewModel>(
                 SetupViewModel::class.java to setup,

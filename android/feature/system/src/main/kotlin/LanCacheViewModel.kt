@@ -108,6 +108,12 @@ class LanCacheViewModel
                 },
             )
 
+        /** A fresh question for the address or token: the reason a previous answer was refused no longer applies. */
+        fun clearErrors() {
+            _addressError.value = null
+            _tokenError.value = null
+        }
+
         /** The permission launcher returned, granted or not — worth an immediate re-read rather than the next 5-second window. */
         fun permissionResolved() = requests.update { it + 1 }
 

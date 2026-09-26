@@ -1,6 +1,7 @@
 package ui.tv.system
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,6 +27,8 @@ internal fun TvLanCachePanel(
     val viewModel: LanCacheViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val requestPermission = rememberLocalNetworkRequest(viewModel::permissionResolved)
+    // The view model outlives the question, so a refusal from the last visit would otherwise greet this one.
+    LaunchedEffect(panel) { viewModel.clearErrors() }
     if (panel == TvSettingsPanel.LanAddress) {
         var address by remember(state?.manualAddress) { mutableStateOf(state?.manualAddress.orEmpty()) }
         TvTextQuestion(

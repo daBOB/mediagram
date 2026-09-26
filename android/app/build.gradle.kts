@@ -21,9 +21,11 @@ android {
                 "proguard-rules.pro",
             )
         }
-        // A release build in everything that decides how fast it runs —
-        // not debuggable, so ART compiles it ahead of time instead of
-        // interpreting it, and minified by R8 — but signed with the debug
+        // A build as fast as a release is meant to be — not debuggable, so
+        // ART compiles it ahead of time instead of interpreting it, and
+        // minified by R8. `release` above is not minified yet, so what this
+        // measures is the ceiling a minified release would reach, not what
+        // today's release delivers. Signed with the debug
         // key, so it installs over a debug install on a device that is
         // already signed in, keeping that session instead of asking for a
         // new SMS code. Only for measuring on a real device: a debug build
