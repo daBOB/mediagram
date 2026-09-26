@@ -268,9 +268,10 @@ in the core stay `u64` throughout; only in-memory buffer lengths narrow.
 | `core:ffmpeg` | Media3's FFmpeg audio decoder, vendored, for DTS and TrueHD |
 | `core:model` | `MediaSet` and `Kind`, shared by every surface |
 | `core:designsystem` | theme and spacing |
-| `feature:{catalog,player,setup,system}` | view models and UI state |
+| `feature:{catalog,player,setup,system}` | view models and UI state, surface-independent |
 | `ui-mobile` | every screen the phone has |
-| `ui-tv` | a `build.gradle.kts` and no source — see below |
+| `ui-common` | composables and pure rules shared by phone and TV (formatters, position model, player lifecycle) |
+| `ui-tv` | television surface: masthead, home, catalog, player, system and settings, driven by remote |
 
 Direction is `ui → feature → core:data → core:rust`, with
 `core:playback → core:data`. A feature module never imports another.
@@ -518,9 +519,60 @@ address, the phone keeps it in the shelves' saved state, which a title opened
 over them no longer clears. What differs on purpose, and why, is recorded in
 `docs/superpowers/specs/2026-09-20-android-system-menu-and-playback-stats-design.md` §9.
 
-**`ui-tv` is empty.** The television surface is a registered Gradle module with
-no source in it, so a Fire Stick or a TV box installs the app and gets a
-placeholder. Everything in `core:` is surface-independent and waiting for it.
+### The television surface
+
+`:ui-tv` is a second renderer over the same `feature:*` ViewModels and UiState,
+built on `androidx.tv:tv-material` 1.1.0. It shares the catalog logic (`feature:catalog`)
+with the phone, including tab labels, shelf grouping, and title facts; the player
+lifecycle is the same shared contract (`feature:player`). Shared pure rules that lived
+`internal` inside `:ui-mobile` (≈30 formatters, the library-position model, player
+state and control mechanics) moved into `ui-common` so both surfaces call one copy.
+
+The TV surface's own responsibility is navigation and focus: a D-pad and remote
+buttons (center/play-pause/left/right/back) steer every screen. The masthead tabs
+(Home, Movies, Series, …, System, profile name) are reached by Up from any content.
+Home holds shelves of up to 6 plates each, no sideways scroll. Walls are 2:3 posters
+in a 6-column grid; focus restores to the plate that was opened when Back returns.
+The system menu is a page reachable only from the masthead; Settings there include
+cache volume choice ("Where" — a USB drive must be set up as *portable* storage to
+appear; adopted storage never shows), and the home cache server status and pairing.
+
+### Television differs from the web player
+
+Deliberate differences between television and web, all in the context of the Surface
+Parity rule (web is the reference; a gap on TV is a defect unless written here):
+
+- **No list/grid toggle.** Shelves open as walls of plates only, with no list mode to
+  switch to: a remote walks a grid of plates more easily than a dense list.
+- **Text entry on a screen of its own.** Sign-in, the application id and hash, the TMDB
+  key and the home cache server's address and token are each asked as one question with
+  the system keyboard, rather than in a field inside a list. Pairing from the phone would
+  be new machinery and is out of scope.
+- **A blank TMDB key is ignored, not saved.** The phone clears a stored key when a
+  blank one is saved; on a remote the keyboard's action key is also how a viewer who
+  only came to look closes the keyboard, so the television ignores a blank answer and
+  offers "Clear stored key" behind a confirmation instead.
+- **No picture-in-picture, gesture controls or media session.** No touch input and no
+  lock screen to control from; these are phone affordances.
+- **No voice search.** Search is typed through the system keyboard.
+- **Artwork needs a TMDB key on the device.** As on the phone, posters and backdrops come
+  from TMDB; a device without a key shows initials on plain plates.
+- **The local network permission is asked only on API 37 and up.** The home cache server
+  block itself shows on every version; `ACCESS_LOCAL_NETWORK` does not exist below 37, so
+  there is nothing to ask for there.
+- **Notes links not followable, no ✕, no selection.** A remote has no pointer. Links
+  stay as words; Back and the Notes button close the panel instead of a ✕.
+- **Tools at the end of the marks row.** The remote has no top bar to press; Notes,
+  settings and info sit at the row's end alongside marks, where focus can reach them.
+- **Up-next card floats opaque, bottom-right.** The web's card is translucent; a
+  countdown read through a bright scene is unreadable on a TV.
+- **Mark finished as a row under a Continue plate.** The phone's long-press menu has
+  no remote equivalent; the action sits one press down from the plate.
+- **Previous key is previous-in-run, never restart.** The remote's Previous steps back
+  through the episode run; the session's own "restart this title" is not exposed.
+- **Subtitles never rise above the title band.** Lifted clear of the controls and the
+  up-next card as on phone, but capped under the statistics bar so cues over the title
+  are not unreadable.
 
 ## 9. Backend portability
 

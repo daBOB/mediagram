@@ -129,4 +129,27 @@ class LanCacheViewModelValidationTest {
                 vm.viewModelScope.cancel()
             }
         }
+
+    @Test
+    fun clearingErrorsDropsBothRefusals() =
+        runTest {
+            val vm = testLanCacheViewModel(locator = FakeLocator())
+            try {
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
+                runCurrent()
+                assertEquals(false, vm.setManualAddress("htp://bad-scheme"))
+                assertEquals(false, vm.saveToken(" "))
+                runCurrent()
+                assertNotNull(assertNotNull(vm.state.value).addressError)
+
+                vm.clearErrors()
+                runCurrent()
+
+                val state = assertNotNull(vm.state.value)
+                assertNull(state.addressError)
+                assertNull(state.tokenError)
+            } finally {
+                vm.viewModelScope.cancel()
+            }
+        }
 }

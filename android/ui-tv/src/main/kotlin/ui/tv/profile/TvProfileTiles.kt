@@ -17,6 +17,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
@@ -30,7 +32,28 @@ import ui.tv.TvFocus
 
 private const val NEW_PROFILE = "New profile"
 
+/** A tile's width when there is room for it; [profileTileWidth] narrows it towards [MinTileWidth] to fit more. */
 private val TileWidth = 180.dp
+
+/** As narrow as a tile goes — "New profile" still reads in full on one line. */
+private val MinTileWidth = 140.dp
+
+/**
+ * How wide each of [count] tiles is drawn so the whole row fits [room] with
+ * [gap] between them — every profile in view at once, as the phone's picker
+ * shows them all. The row's own width at most, and never narrower than
+ * [MinTileWidth]: past that many profiles the row scrolls with the remote
+ * instead, rather than every name being squeezed to an ellipsis.
+ */
+internal fun profileTileWidth(
+    count: Int,
+    room: Dp,
+    gap: Dp,
+): Dp {
+    if (count <= 0) return TileWidth
+    val fit = (room - gap * (count - 1)) / count
+    return fit.coerceIn(MinTileWidth, TileWidth)
+}
 
 // Fixed, not derived from content: a kids tile carries one more line ("KIDS")
 // than a plain one, and a row of `Card`s sized only by their own content
@@ -45,12 +68,13 @@ internal fun TvProfileTile(
     onClick: () -> Unit,
     focusRequester: FocusRequester?,
     tag: String,
+    width: Dp = TileWidth,
 ) {
     Card(
         onClick = onClick,
         modifier =
             Modifier
-                .width(TileWidth)
+                .width(width)
                 .height(TileHeight)
                 .testTag(tag)
                 .let { if (focusRequester != null) it.focusRequester(focusRequester) else it },
@@ -90,12 +114,13 @@ internal fun TvAddTile(
     onClick: () -> Unit,
     focusRequester: FocusRequester?,
     tag: String,
+    width: Dp = TileWidth,
 ) {
     Card(
         onClick = onClick,
         modifier =
             Modifier
-                .width(TileWidth)
+                .width(width)
                 .height(TileHeight)
                 .testTag(tag)
                 .let { if (focusRequester != null) it.focusRequester(focusRequester) else it },

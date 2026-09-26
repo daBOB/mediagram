@@ -101,7 +101,9 @@ fun TvList(
             }
         }
     }
-    TvPage(takesArrivalFocus = !backFromPlayAll) {
+    // A Remove after coming back to Play all has taken a plate away, and the
+    // wall must be let to put the remote on its neighbour.
+    TvPage(takesArrivalFocus = !backFromPlayAll || afterRemoval != null) {
         if (sets.isEmpty()) {
             Column(modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical)) {
                 header()

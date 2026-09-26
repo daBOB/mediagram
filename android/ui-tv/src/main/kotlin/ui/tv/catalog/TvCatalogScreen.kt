@@ -56,12 +56,17 @@ import ui.tv.profile.TvChosenProfile
  * [onOpenSearch] is the masthead's Search. Coming back from it —
  * [restoreKey] is then [TvSearchEntryKey] — the remote goes back to Search
  * rather than down to the wall, which leaves it alone for once, and
- * [onSearchRestored] then lets the caller forget that key: it has done its
+ * [onEntryRestored] then lets the caller forget that key: it has done its
  * work, and the walls below must take the remote again whenever they
  * otherwise would. They are never handed the key itself, so forgetting it
  * is not a new key to them and pulls nothing down from Search. Down from
  * Search goes into the wall below by the wall's own first stop, not to
  * whichever plate happens to sit under the far end of the masthead.
+ *
+ * [onOpenMenu] is the masthead's Menu, and coming back from it —
+ * [restoreKey] is then [TvMenuEntryKey] — works the same way, the remote
+ * going back to Menu. That holds with no shelves too, where Menu is the
+ * way to Start over.
  *
  * [onFinish] is Continue's "Mark finished".
  *
@@ -83,7 +88,8 @@ fun TvCatalogScreen(
     onMastheadFocusChanged: (Boolean) -> Unit = {},
     onTabChanged: () -> Unit = {},
     onOpenSearch: () -> Unit = {},
-    onSearchRestored: () -> Unit = {},
+    onOpenMenu: () -> Unit = {},
+    onEntryRestored: () -> Unit = {},
     onFinish: (setId: String) -> Unit = {},
 ) {
     val ready = (state as? CatalogUiState.Ready)?.takeIf { it.shelves.isNotEmpty() }
@@ -104,8 +110,11 @@ fun TvCatalogScreen(
 
     val selectedTab = remember { FocusRequester() }
     val search = remember { FocusRequester() }
+    val menu = remember { FocusRequester() }
     val backFromSearch = restoreKey == TvSearchEntryKey
-    val wallKey = restoreKey.takeUnless { backFromSearch }
+    val backFromMenu = restoreKey == TvMenuEntryKey
+    val backToMasthead = backFromSearch || backFromMenu
+    val wallKey = restoreKey.takeUnless { backToMasthead }
     val wall = remember { FocusRequester() }
 
     // With no wall below to take focus, the masthead is the one thing on
@@ -116,7 +125,15 @@ fun TvCatalogScreen(
     LaunchedEffect(backFromSearch, ready != null) {
         if (backFromSearch && ready != null) {
             search.requestFocus()
-            onSearchRestored()
+            onEntryRestored()
+        }
+    }
+    // After the effect above that sends an empty catalogue's remote to the
+    // masthead, so Menu is where it rests rather than the viewer's name.
+    LaunchedEffect(backFromMenu) {
+        if (backFromMenu) {
+            menu.requestFocus()
+            onEntryRestored()
         }
     }
 
@@ -132,6 +149,8 @@ fun TvCatalogScreen(
             onSearch = onOpenSearch,
             searchFocus = search,
             searchDown = wall,
+            onMenu = onOpenMenu,
+            menuFocus = menu,
             modifier = Modifier.onFocusChanged { onMastheadFocusChanged(it.hasFocus) },
         )
         // Words where the phone draws a bar: the same sentences its Update
@@ -151,7 +170,7 @@ fun TvCatalogScreen(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = Overscan.horizontal, vertical = Spacing.small),
             )
         }
-        CompositionLocalProvider(LocalTakesArrivalFocus provides !backFromSearch) {
+        CompositionLocalProvider(LocalTakesArrivalFocus provides !backToMasthead) {
             Box(modifier = Modifier.fillMaxSize().focusRequester(wall)) {
                 // One composition per tab, not one reused across them: every
                 // shelf draws through the same wall, which would otherwise carry

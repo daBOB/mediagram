@@ -39,14 +39,19 @@ private enum class ApplicationStep { API_ID, API_HASH }
  * phone has both fields on one screen with nowhere for Back to go; TV's
  * own two-screen split invents exactly one place Back needs to reach that
  * the phone never had to.
+ *
+ * [initialApiId] is the one already on record when Settings asks again, as
+ * the phone's form fills it in: an api_id is not a secret, and changing
+ * only the hash should not mean retyping it. The hash always starts blank.
  */
 @Composable
 fun TvApplicationScreen(
     error: String?,
     onSubmit: (apiId: String, apiHash: String) -> Unit,
+    initialApiId: String = "",
 ) {
     var step by remember { mutableStateOf(ApplicationStep.API_ID) }
-    var apiId by remember { mutableStateOf("") }
+    var apiId by remember { mutableStateOf(initialApiId) }
     var apiHash by remember { mutableStateOf("") }
 
     LaunchedEffect(error) {

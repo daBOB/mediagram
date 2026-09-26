@@ -136,7 +136,7 @@ internal fun TvWithStartOver(
  * goes, not just that something will, and both surfaces ask in the same
  * words so the choice reads the same wherever it is made.
  */
-private const val START_OVER_BODY =
+internal const val START_OVER_BODY =
     "This signs this device out of Telegram and forgets the api_id and " +
         "api_hash, the library address and its key, the library itself, the " +
         "TMDB key, and where you left off on this device. All of it has to be " +

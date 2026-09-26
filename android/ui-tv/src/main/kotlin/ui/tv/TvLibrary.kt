@@ -1,9 +1,11 @@
 package ui.tv
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.setValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogUiState
@@ -16,18 +18,21 @@ import ui.catalog.rememberTitleInfo
 import ui.rememberLibraryPositions
 import ui.resolve
 import ui.tv.catalog.TvCollection
+import ui.settings.SettingsOutcomes
 import ui.tv.catalog.TvFetchResultDialog
+import ui.tv.catalog.TvMenuEntryKey
 import ui.tv.catalog.TvSearchEntryKey
 import ui.tv.catalog.TvSeason
 import ui.tv.catalog.TvTitlePage
 import ui.tv.profile.TvChosenProfile
+import ui.tv.system.TvMenuPage
 
 /**
  * The library on a television — the twin of the phone's `LibraryFlow`: the
  * catalogue, whichever show or course it opened, whichever season of that,
  * whichever title that described, whichever set that played, whichever
- * hand-built list the Collections tab opened, search, and whichever genre
- * a title's link opened. Where the viewer is, and what Back uncovers, is
+ * hand-built list the Collections tab opened, search, whichever genre a
+ * title's link opened, and the menu with the screens it opens. Where the viewer is, and what Back uncovers, is
  * the shared [LibraryPositions] stack, asked the same way the phone asks
  * it, so the two surfaces cannot disagree about where Back goes.
  *
@@ -41,7 +46,11 @@ import ui.tv.profile.TvChosenProfile
  * so Back finds the tab it left rather than Home.
  */
 @Composable
-internal fun TvLibrary(profile: TvChosenProfile) {
+internal fun TvLibrary(
+    profile: TvChosenProfile,
+    onStartOver: () -> Unit = {},
+    onSignedOut: () -> Unit = {},
+) {
     val catalogViewModel: CatalogViewModel = hiltViewModel()
     val catalogState by catalogViewModel.state.collectAsStateWithLifecycle()
     val fetchViewModel: FetchViewModel = hiltViewModel()
@@ -49,6 +58,12 @@ internal fun TvLibrary(profile: TvChosenProfile) {
     val at = rememberLibraryPositions()
     val restore = rememberTvRestoreKeys()
     val saved = rememberSaveableStateHolder()
+    // The menu page stands over the shelves rather than on the positions'
+    // stack: it is where System, Settings and the key screen are chosen,
+    // and Back from any of them comes back to it before the masthead.
+    var menuOpen by rememberSaveable { mutableStateOf(false) }
+
+    SettingsOutcomes(onLibraryChanged = catalogViewModel::reload, onSignedOut = onSignedOut)
 
     val resolved = at.resolve(catalogState)
     val watch = resolved.watch
@@ -59,18 +74,12 @@ internal fun TvLibrary(profile: TvChosenProfile) {
         restore.forget(here)
         at.pop()
     }
+    val menu = tvMenuActions(at, restore, here, catalogState, catalogViewModel, fetchState, { menuOpen = false }, onStartOver)
 
     when (top) {
         FrameKind.PLAYER -> TvPlayerBranch(at, catalogState, leave)
 
-        // Nothing on a television opens a menu screen — its settings are
-        // the player's own panel — so a saved one can only be left over,
-        // and drawing nothing for it would strand the viewer on a blank
-        // page Back could not see past. Leaving it uncovers whatever it was
-        // laid over.
-        FrameKind.MENU -> {
-            LaunchedEffect(top) { leave() }
-        }
+        FrameKind.MENU -> TvMenuScreenBranch(at, fetchState, fetchViewModel, leave)
 
         FrameKind.SEARCH -> TvSearchBranch(at, catalogState, watch, restore, leave)
 
@@ -136,6 +145,14 @@ internal fun TvLibrary(profile: TvChosenProfile) {
 
         FrameKind.LIST -> TvListBranch(at, resolved.list, catalogState, catalogViewModel, restore, leave)
 
+        // Nothing open, the menu page chosen from the masthead: Back from
+        // it puts the remote back on the masthead's Menu.
+        null if menuOpen ->
+            TvMenuPage(menu = menu, restoreKey = restore.of(here)) {
+                menuOpen = false
+                restore.opened(here, TvMenuEntryKey)
+            }
+
         // Nothing open: the shelves.
         null -> {
             saved.SaveableStateProvider(CatalogStateKey) {
@@ -162,7 +179,11 @@ internal fun TvLibrary(profile: TvChosenProfile) {
                         restore.opened(here, TvSearchEntryKey)
                         at.openSearch()
                     },
-                    onSearchRestored = { restore.forget(here) },
+                    onOpenMenu = {
+                        restore.forget(here)
+                        menuOpen = true
+                    },
+                    onEntryRestored = { restore.forget(here) },
                     onFinish = catalogViewModel::markFinished,
                 )
             }

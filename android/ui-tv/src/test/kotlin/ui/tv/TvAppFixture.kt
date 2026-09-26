@@ -18,22 +18,36 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import model.MediaSet
 import model.Profile
 import model.WatchSnapshot
+import playback.CacheOccupancy
+import playback.CacheVolume
 import playback.HeldSetsQuery
+import playback.INTERNAL_VOLUME_ID
 import player.PlayerViewModel
 import settings.InMemoryLibrarySettings
 import settings.InMemoryTelegramSettings
 import settings.InMemoryTmdbSettings
 import setup.Libraries
+import setup.SettingsCompletion
+import setup.SettingsUiState
+import setup.SettingsViewModel
 import setup.SetupViewModel
 import setup.login.LoginViewModel
+import system.CacheBudgetViewModel
 import system.FetchViewModel
+import system.LanCacheConnection
+import system.LanCacheUiState
+import system.LanCacheViewModel
+import system.SystemUiState
+import system.SystemViewModel
 import ui.tv.player.TvPlayerFixture
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SearchHit
+import java.io.File
 
 /** Which of [SetupViewModel]'s outstanding steps a [TvAppFixture] should land on. */
 internal enum class TvSetupStage { APPLICATION, SIGN_IN, LIBRARY, READY }
@@ -82,6 +96,22 @@ internal class TvAppFixture(
     private val fetch: FetchViewModel
     private val playback: TvPlayerFixture
     private val player: PlayerViewModel
+    val settings = mockk<SettingsViewModel>(relaxed = true)
+    private val system = mockk<SystemViewModel>(relaxed = true)
+    val cacheBudget = mockk<CacheBudgetViewModel>(relaxed = true)
+    val lanCache = mockk<LanCacheViewModel>(relaxed = true)
+    val lanCacheState =
+        MutableStateFlow<LanCacheUiState?>(
+            LanCacheUiState(
+                enabled = true,
+                hasToken = false,
+                manualAddress = "",
+                connection = LanCacheConnection.NOT_FOUND,
+                connectedHost = null,
+                heldBytes = null,
+                tokenRejected = false,
+            ),
+        )
 
     init {
         val core = mockk<CoreClient>()
@@ -138,6 +168,54 @@ internal class TvAppFixture(
         // nothing — the library's walk only needs it to open and to stop.
         playback = TvPlayerFixture(viewer)
         player = playback.factory.create(PlayerViewModel::class.java)
+        // The menu's three screens, as the phone's own library fixture holds
+        // them: stand-ins with the facts a screen draws, since what those
+        // screens do is each ViewModel's own tests' business.
+        every { settings.state } returns MutableStateFlow(SettingsUiState(account = "Ada", library = "Family films"))
+        every { settings.completions } returns MutableStateFlow<List<SettingsCompletion>>(emptyList())
+        every { system.failure } returns MutableStateFlow(null)
+        every { system.state } returns
+            MutableStateFlow(
+                SystemUiState(
+                    origin = "channel",
+                    sets = sets.size.toLong(),
+                    posters = 0,
+                    schema = 4,
+                    publishedAt = null,
+                    lastRefresh = null,
+                    heldBytes = 0,
+                    budgetBytes = 1_000_000,
+                    volumeLabel = "Internal storage",
+                    fellBack = false,
+                    fromCacheBytes = 0,
+                    fromUpstreamBytes = 0,
+                    fetches = 0,
+                    failedReads = 0,
+                    connected = true,
+                    versionName = "test",
+                    uptimeSeconds = 0,
+                ),
+            )
+        every { cacheBudget.state } returns
+            MutableStateFlow(
+                CacheOccupancy(
+                    heldBytes = 0,
+                    budgetBytes = 1_000_000,
+                    volumeLabel = "Internal storage",
+                    fellBack = false,
+                    capBytes = 1_000_000,
+                ),
+            )
+        every { cacheBudget.failure } returns MutableStateFlow(null)
+        every { cacheBudget.volumes } returns
+            MutableStateFlow(
+                listOf(
+                    CacheVolume(INTERNAL_VOLUME_ID, "Internal storage", File("internal"), freeBytes = 1_000_000, removable = false),
+                    CacheVolume("6BBF-D2D8", "USB drive", File("usb"), freeBytes = 2_000_000, removable = true),
+                ),
+            )
+        every { cacheBudget.chosenVolumeId } returns MutableStateFlow(null)
+        every { lanCache.state } returns lanCacheState
         val models =
             mapOf<Class<out ViewModel>, ViewModel>(
                 SetupViewModel::class.java to setup,
@@ -147,6 +225,10 @@ internal class TvAppFixture(
                 FetchViewModel::class.java to fetch,
                 SearchViewModel::class.java to search,
                 PlayerViewModel::class.java to player,
+                SettingsViewModel::class.java to settings,
+                SystemViewModel::class.java to system,
+                CacheBudgetViewModel::class.java to cacheBudget,
+                LanCacheViewModel::class.java to lanCache,
             )
         val held =
             ViewModelProvider(

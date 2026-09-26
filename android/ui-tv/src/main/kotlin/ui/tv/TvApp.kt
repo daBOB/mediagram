@@ -50,7 +50,9 @@ fun TvApp() {
 
         TvShell {
             if (setupState is SetupUiState.Ready) {
-                TvProfileGate { profile -> TvLibrary(profile) }
+                TvProfileGate { profile ->
+                    TvLibrary(profile, onStartOver = setupViewModel::startOver, onSignedOut = setupViewModel::recheck)
+                }
             } else {
                 TvSetupStep(state = setupState, viewModel = setupViewModel)
             }

@@ -1,5 +1,6 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,6 +9,7 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -15,6 +17,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.unit.dp
 import designsystem.Overscan
 import designsystem.Spacing
 import kotlinx.coroutines.flow.first
@@ -26,6 +29,17 @@ import kotlinx.coroutines.flow.first
  * read from across a room — the same six Home's rows show.
  */
 private const val Columns = 6
+
+/**
+ * How far past the screen's edge the wall keeps plates composed. A line of
+ * six plates is a lot of work for a slow television box, and without this
+ * the grid composes the line the remote scrolls into during the very frame
+ * that reveals it — a visible hitch on every press. Composed ahead in the
+ * idle time between frames instead, a line or so before it is needed; and
+ * kept a line behind, so pressing Up does not rebuild what was just left.
+ */
+private val CacheAhead = 320.dp
+private val CacheBehind = 320.dp
 
 /**
  * One catalogue wall, for every television screen a grid of plates is built
@@ -58,6 +72,7 @@ private const val Columns = 6
  * line of plates under a label of its own before the item at each index — a
  * genre page's Movies, then its Series.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun <T> TvWall(
     items: List<T>,
@@ -68,7 +83,7 @@ fun <T> TvWall(
     headings: Map<Int, String> = emptyMap(),
     plate: @Composable (item: T, modifier: Modifier, onOpen: () -> Unit) -> Unit,
 ) {
-    val gridState = rememberLazyGridState()
+    val gridState = rememberLazyGridState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = CacheAhead, behind = CacheBehind) })
     val takesFocus = LocalTakesArrivalFocus.current
     val focusRequester = remember { FocusRequester() }
     val cells = remember(items, header != null, headings) { cellsOf(items, header != null, headings) }
@@ -125,6 +140,10 @@ fun <T> TvWall(
                 }
             },
             span = { cell -> if (cell is WallCell.Plate) GridItemSpan(1) else GridItemSpan(maxLineSpan) },
+            // A plate scrolled off is recomposed as the next plate scrolled
+            // on, never as a heading — the reuse a lazy grid only does
+            // between items of one declared type.
+            contentType = { cell -> cell::class },
         ) { cell ->
             when (cell) {
                 WallCell.Header -> header?.invoke()

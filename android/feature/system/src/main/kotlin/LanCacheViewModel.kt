@@ -74,7 +74,8 @@ class LanCacheViewModel
 
         fun setEnabled(value: Boolean) = act { settings.setEnabled(value) }
 
-        fun setManualAddress(address: String) {
+        /** Saves [address] if it parses; `false` when it was refused and [LanCacheUiState.addressError] says why. */
+        fun setManualAddress(address: String): Boolean =
             normalizeManualAddress(address).fold(
                 onSuccess = { normalized ->
                     _addressError.value = null
@@ -82,12 +83,16 @@ class LanCacheViewModel
                         settings.setManualAddress(normalized)
                         locator.discover()
                     }
+                    true
                 },
-                onFailure = { e -> _addressError.value = e.message },
+                onFailure = { e ->
+                    _addressError.value = e.message
+                    false
+                },
             )
-        }
 
-        fun saveToken(token: String) {
+        /** Saves [token] if it is well formed; `false` when it was refused and [LanCacheUiState.tokenError] says why. */
+        fun saveToken(token: String): Boolean =
             normalizePairingToken(token).fold(
                 onSuccess = { normalized ->
                     _tokenError.value = null
@@ -95,9 +100,18 @@ class LanCacheViewModel
                         tokenSettings.write(normalized)
                         tokenStatus.clear()
                     }
+                    true
                 },
-                onFailure = { e -> _tokenError.value = e.message },
+                onFailure = { e ->
+                    _tokenError.value = e.message
+                    false
+                },
             )
+
+        /** A fresh question for the address or token: the reason a previous answer was refused no longer applies. */
+        fun clearErrors() {
+            _addressError.value = null
+            _tokenError.value = null
         }
 
         /** The permission launcher returned, granted or not — worth an immediate re-read rather than the next 5-second window. */
