@@ -4,10 +4,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -15,6 +17,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.tv.material3.Tab
 import androidx.tv.material3.TabDefaults
 import androidx.tv.material3.TabRow
+import androidx.tv.material3.TabRowDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import designsystem.Overscan
@@ -43,8 +46,16 @@ internal fun TvSectionTabs(
 ) {
     TabRow(
         selectedTabIndex = selected,
-        modifier = modifier.fillMaxWidth().focusRequester(focusRequester),
+        // Held to the start like the masthead's tabs, so they line up over the title below.
+        modifier = modifier.fillMaxWidth().wrapContentWidth(Alignment.Start).focusRequester(focusRequester),
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        // An underline, as the colours below assume: the default pill fills with the same light
+        // colour as the selected tab's label once the row has focus, and the label vanishes.
+        indicator = { positions, focused ->
+            positions.getOrNull(selected)?.let { position ->
+                TabRowDefaults.UnderlinedIndicator(currentTabPosition = position, doesTabRowHaveFocus = focused)
+            }
+        },
     ) {
         titles.forEachIndexed { index, title ->
             Tab(

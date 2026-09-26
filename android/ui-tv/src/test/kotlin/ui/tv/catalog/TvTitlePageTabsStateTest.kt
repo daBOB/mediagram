@@ -1,5 +1,6 @@
 package ui.tv.catalog
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.onNodeWithText
@@ -96,6 +97,28 @@ class TvTitlePageTabsStateTest : TvScreenStateTest() {
                 crew = emptyList(),
             )
         show { TvTitlePage(set = film, info = null, progress = null, onPlay = {}, credits = credits, restoreKey = "8") }
+
+        compose.onNodeWithText("▶ Play").assertDoesNotExist()
+        compose.onNodeWithText("Bo Actor").assertIsFocused()
+    }
+
+    /**
+     * What the real library does on the way back: credits are looked up
+     * again and arrive after the page is drawn, empty until then. The
+     * restore must still land on the Cast tab and that person once they do.
+     */
+    @Test
+    fun comingBackLandsOnCastEvenWhenCreditsArriveAfterThePage() {
+        val arrived =
+            TitleCredits(
+                cast = listOf(Credit(personId = 8L, name = "Bo Actor", role = "Himself", portraitPath = null)),
+                crew = emptyList(),
+            )
+        val credits = mutableStateOf(TitleCredits.Empty)
+        show { TvTitlePage(set = film, info = null, progress = null, onPlay = {}, credits = credits.value, restoreKey = "8") }
+
+        compose.runOnUiThread { credits.value = arrived }
+        compose.waitForIdle()
 
         compose.onNodeWithText("▶ Play").assertDoesNotExist()
         compose.onNodeWithText("Bo Actor").assertIsFocused()

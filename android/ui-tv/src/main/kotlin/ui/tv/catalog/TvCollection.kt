@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -90,6 +91,10 @@ fun TvCollection(
             }
         }
     var selected by rememberSaveable(collection.key) { mutableIntStateOf(initialTab) }
+    // Credits and Similar arrive after the page does — on the way back from a person or a
+    // title they are still empty at first, so [initialTab] starts at 0 and the saved state
+    // keeps it. Once they land and name what was opened, switch to its tab.
+    LaunchedEffect(initialTab) { if (restoreKey != null && initialTab > 0) selected = initialTab }
     if (selected >= tabs.size) selected = 0
 
     val header: @Composable () -> Unit = {

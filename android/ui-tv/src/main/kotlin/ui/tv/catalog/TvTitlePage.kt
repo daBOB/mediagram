@@ -117,6 +117,10 @@ internal fun TvTitlePage(
             }
         }
     var selected by rememberSaveable(set.setId) { mutableIntStateOf(initialTab) }
+    // Credits and Similar arrive after the page does — on the way back from a person or a
+    // title they are still empty at first, so [initialTab] starts at 0 and the saved state
+    // keeps it. Once they land and name what was opened, switch to its tab.
+    LaunchedEffect(initialTab) { if (restoreKey != null && initialTab > 0) selected = initialTab }
     if (selected >= tabs.size) selected = 0
 
     TvPage {

@@ -16,8 +16,12 @@ import java.io.File
 import model.WatchSnapshot
 import ui.tv.setup.TvLoadingIndicator
 
-/** How wide a person's own portrait sits at the head of their page. */
-private val PortraitWidth = 180.dp
+/**
+ * How wide a person's own portrait sits at the head of their page — small
+ * enough that the 2:3 portrait and the first line of plates fit one 540dp
+ * screen together, so arriving on the first film keeps the name in view.
+ */
+private val PortraitWidth = 120.dp
 
 /**
  * A person's own page — the television twin of the web's
