@@ -26,7 +26,7 @@ import { applyBudget, validateBudget, MIN_CACHE_BUDGET_BYTES } from "../cache/bu
 import type { Settings } from "../state/settings";
 import { listLibraries, type LibraryCandidate } from "../telegram/libraries";
 import { HandleMap } from "./handles";
-import type { SignInStep } from "./sign-in";
+import type { SignInFlow, SignInStep } from "./sign-in";
 import { AccountActions } from "./account-actions";
 import { failureMessage } from "../failure-message";
 import { join } from "node:path";
@@ -74,8 +74,9 @@ export class SettingsRuntime {
     private readonly deps: SettingsDeps,
     creds: { apiId: number; apiHash: string },
     accountUserId: string | null,
+    signInFlow?: SignInFlow,
   ) {
-    this.account = new AccountActions(deps, creds, accountUserId);
+    this.account = new AccountActions(deps, creds, accountUserId, signInFlow);
   }
 
   async view(): Promise<SettingsView> {

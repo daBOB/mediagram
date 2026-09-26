@@ -92,7 +92,7 @@ describe("AdminGate", () => {
     const result = gate.unlock("secret", "10.0.0.5", false);
     if (!result.ok) throw new Error("unreachable");
     const cookie = result.setCookie.split(";")[0]!;
-    gate.lock(cookie);
+    gate.lock(cookie, false);
     expect(gate.isUnlocked(cookie)).toBe(false);
   });
 

@@ -23,7 +23,7 @@ const ROOT = join(import.meta.dir, "..");
  * admin-gated router, and the runtime wiring to swap either live.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 877,
+  "public/app.js": 909,
   "public/lib/catalog/course-view.js": 285,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,

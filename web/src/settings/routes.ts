@@ -79,7 +79,7 @@ export function createSettingsRouter(options: SettingsRouterOptions) {
 
     if (request.path === `${PREFIX}/lock`) {
       if (request.method !== "POST") return bodiless(405);
-      return json({ locked: true }, 200, gate.lock(request.cookie));
+      return json({ locked: true }, 200, gate.lock(request.cookie, options.secure(request)));
     }
 
     if (!gate.isUnlocked(request.cookie)) return json({ locked: true }, 401);

@@ -25,12 +25,12 @@ export interface AccountDeps {
 }
 
 export class AccountActions {
-  private readonly signInFlow = new SignInFlow();
-
   constructor(
     private readonly deps: AccountDeps,
     private creds: { apiId: number; apiHash: string },
     private accountUserId: string | null,
+    /** Overridable so a stub harness can answer sign-in without teleproto ever reaching Telegram. */
+    private readonly signInFlow: SignInFlow = new SignInFlow(),
   ) {}
 
   get credentials(): { apiId: number; apiHash: string } {

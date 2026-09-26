@@ -113,10 +113,10 @@ export class AdminGate {
   }
 
   /** Ends the session `cookieHeader` names, and answers the cookie to clear it. */
-  lock(cookieHeader: string | null | undefined): string {
+  lock(cookieHeader: string | null | undefined, secure: boolean): string {
     const id = cookieValue(cookieHeader, COOKIE_NAME);
     if (id !== null) this.sessions.delete(id);
-    return this.cookie("", 0, true);
+    return this.cookie("", 0, secure);
   }
 
   private cookie(value: string, maxAgeSeconds: number, secure: boolean): string {

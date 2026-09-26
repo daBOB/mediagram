@@ -21,6 +21,8 @@ import {
 import { catalogOf, loadLink } from "./lib/link.js";
 import { colophonLine } from "./lib/colophon.js";
 import { watchStatus } from "./lib/status/status-view.js";
+import { viewSettings as renderSettingsPage } from "./lib/settings-view.js";
+import { probeSettings } from "./lib/settings-api.js";
 import { renderCollection } from "./lib/catalog/course-view.js";
 import { SECTIONS, collectionGrid, emptyState, heading, movieGrid, setGrid } from "./lib/catalog/shelf-view.js";
 import { GRID, LIST, setShelfMode, shelfMode } from "./lib/catalog/shelf-mode.js";
@@ -82,7 +84,7 @@ let library = { movies: [], series: [], tutorials: [] };
 let byId = new Map();
 
 /** Views that are neither a catalog shelf nor one built from watch state. */
-const PAGES = new Set(["home", "search", "system", "film", "genre"]);
+const PAGES = new Set(["home", "search", "system", "settings", "film", "genre"]);
 
 /** The shelves that come from what has been watched rather than the catalog. */
 const KEPT = {
@@ -593,6 +595,21 @@ async function offerSystem() {
 }
 
 /**
+ * Shows the Settings entry to a viewer `/api/settings` will answer at all —
+ * 200 unlocked, 401 locked, either way there is a page to open. 404 (off
+ * this household's network) hides it, the same rule `offerSystem` follows.
+ */
+async function offerSettings() {
+  try {
+    const response = await probeSettings();
+    if (response.status !== 200 && response.status !== 401) return;
+  } catch {
+    return;
+  }
+  document.getElementById("nav-settings").hidden = false;
+}
+
+/**
  * Stops the status panel polling, if one is open.
  *
  * Held here rather than inside the view because only the router knows the
@@ -611,6 +628,15 @@ function viewSystem() {
   stopStatus = watchStatus(panel);
 }
 
+/** Stops the Settings page's async work, if any is in flight. */
+let stopSettings = null;
+
+/** Telegram and cache, admin-gated. Local viewers only — see `offerSettings`. */
+function viewSettings() {
+  heading(main, "Settings", "Telegram connection and cache size");
+  stopSettings = renderSettingsPage(main);
+}
+
 // A route visit survives redraws, but not leaving and returning to its hash.
 let navigationGeneration = 0;
 let routeGeneration = 0;
@@ -627,6 +653,10 @@ function drawRoute() {
   if (stopStatus) {
     stopStatus();
     stopStatus = null;
+  }
+  if (stopSettings) {
+    stopSettings();
+    stopSettings = null;
   }
 
   // Everything after the collection is the trail of folders into a course.
@@ -666,6 +696,7 @@ function drawRoute() {
   if (known === "film") return viewFilm(decodeURIComponent(name ?? ""));
   if (known === "genre") return viewGenre(decodeURIComponent(name ?? ""));
   if (known === "system") return viewSystem();
+  if (known === "settings") return viewSettings();
   if (known === "continue") return viewContinue();
   if (known === "watchlist") return viewWatchlist();
   if (known === "collections") {
@@ -852,6 +883,7 @@ try {
   applyCatalog();
 
   void offerSystem();
+  void offerSettings();
   refreshShelfCounts();
 
   // The start page, which answers both halves of what used to be decided
