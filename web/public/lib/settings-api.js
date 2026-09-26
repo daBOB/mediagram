@@ -62,3 +62,5 @@ export const signInPhone = (phone) => call("/telegram/sign-in/phone", { method: 
 export const signInCode = (code) => call("/telegram/sign-in/code", { method: "POST", body: { code } });
 export const signInPassword = (password) => call("/telegram/sign-in/password", { method: "POST", body: { password } });
 export const signOutTelegram = () => call("/telegram/sign-out", { method: "POST", body: {} });
+export const listSessions = () => call("/sessions");
+export const revokeSession = (id) => call("/sessions/revoke", { method: "POST", body: { id } });

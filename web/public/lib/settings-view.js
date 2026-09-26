@@ -10,6 +10,7 @@
 import { el } from "./dom.js";
 import { humanSize } from "./format.js";
 import { renderTelegramSection } from "./settings-telegram.js";
+import { renderSessionsSection } from "./settings-sessions.js";
 import { formatSizeInput, lockSettings, parseSizeInput, readSettings, setCacheBudget, unlockSettings } from "./settings-api.js";
 
 function renderLocked(root, onUnlocked) {
@@ -109,6 +110,7 @@ export function viewSettings(main) {
     }
     renderTelegramSection(panel, result, draw);
     cacheSection(panel, result, draw);
+    if (result.telegram.signedIn) renderSessionsSection(panel, draw);
 
     const lock = el("button", "settings-button", "Lock");
     lock.type = "button";

@@ -143,6 +143,18 @@ export function createSettingsRouter(options: SettingsRouterOptions) {
       return answer(await runtime.signOut());
     }
 
+    if (request.path === `${PREFIX}/sessions`) {
+      if (!reading) return bodiless(405);
+      return answer(await runtime.sessions());
+    }
+
+    if (request.path === `${PREFIX}/sessions/revoke`) {
+      if (request.method !== "POST") return bodiless(405);
+      const id = parse(request.body).id;
+      if (typeof id !== "string") return json({ error: "a session id is required" }, 400);
+      return answer(await runtime.revokeSession(id));
+    }
+
     return json({ error: "not found" }, 404);
   };
 }

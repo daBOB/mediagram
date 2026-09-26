@@ -28,6 +28,7 @@ import { listLibraries, type LibraryCandidate } from "../telegram/libraries";
 import { HandleMap } from "./handles";
 import type { SignInFlow, SignInStep } from "./sign-in";
 import { AccountActions } from "./account-actions";
+import { listSessions, revokeSession, type RevokeOutcome, type SessionSummary } from "./sessions";
 import { failureMessage } from "../failure-message";
 import { join } from "node:path";
 
@@ -170,5 +171,21 @@ export class SettingsRuntime {
 
   signOut(): Promise<{ ok: true } | { ok: false; error: string }> {
     return this.account.signOut();
+  }
+
+  async sessions(): Promise<ActionResult<{ sessions: SessionSummary[] }>> {
+    const telegram = this.deps.connection.current();
+    if (!telegram) return { ok: false, error: "cannot list sessions while signed out" };
+    try {
+      return { ok: true, sessions: await listSessions(telegram, this.account.credentials.apiId) };
+    } catch (error) {
+      return { ok: false, error: failureMessage(error) };
+    }
+  }
+
+  async revokeSession(id: string): Promise<RevokeOutcome> {
+    const telegram = this.deps.connection.current();
+    if (!telegram) return { ok: false, error: "cannot revoke a session while signed out" };
+    return revokeSession(telegram, id);
   }
 }
