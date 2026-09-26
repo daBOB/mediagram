@@ -8,13 +8,13 @@
 use anyhow::{Context, Result, bail};
 
 use super::args::AddCourseArgs;
+use crate::commands::pull_index;
 use crate::config::Config;
 use crate::course::identity::{collection_id, course_title, duplicate_identity};
 use crate::course::report::{Outcome, Summary, dry_run_table};
 use crate::course::walk::walk_course;
 use crate::index::status::SetStatus;
 use crate::index::{artwork, db, set_lookup};
-use crate::telegram::index_publish;
 use crate::upload::finish_set::Uploader;
 use crate::upload::new_set::{LessonOf, NewSet};
 use crate::upload::prepare_set::prepare_and_record_set;
@@ -106,7 +106,7 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
     }
 
     if summary.uploaded_anything() && !args.no_push {
-        let message_id = index_publish::publish(cfg)
+        let message_id = pull_index::merge_and_publish(cfg)
             .await
             .context("pushing the index after the course")?;
         println!("pushed index as message {message_id}");

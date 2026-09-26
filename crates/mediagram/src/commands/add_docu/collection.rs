@@ -8,13 +8,13 @@ use anyhow::{Context, Result, bail};
 use mlib_spec::Kind;
 
 use super::AddDocuArgs;
+use crate::commands::pull_index;
 use crate::config::Config;
 use crate::course::identity::{collection_id, course_title, duplicate_identity};
 use crate::course::report::{Outcome, Summary, dry_run_table};
 use crate::course::walk::{Document, Lesson, walk_course};
 use crate::index::status::SetStatus;
 use crate::index::{artwork, db, set_lookup};
-use crate::telegram::index_publish;
 use crate::upload::finish_set::Uploader;
 use crate::upload::new_set::{LessonOf, NewSet};
 use crate::upload::prepare_set::prepare_and_record_set;
@@ -60,21 +60,21 @@ pub(super) async fn run(cfg: &Config, args: AddDocuArgs) -> Result<()> {
     let mut uploader = Uploader::new(cfg);
     let mut summary = Summary::default();
     for episode in &walked.lessons {
-        let outcome =
-            match set_lookup::lesson_status(&conn, &cid, episode.chapter, episode.lesson)? {
-                Some(SetStatus::Complete) => Outcome::AlreadyDone,
-                Some(_) => Outcome::Pending,
-                None => match upload_episode(cfg, &mut uploader, &args, &collection, &cid, episode)
-                    .await
-                {
+        let outcome = match set_lookup::lesson_status(&conn, &cid, episode.chapter, episode.lesson)?
+        {
+            Some(SetStatus::Complete) => Outcome::AlreadyDone,
+            Some(_) => Outcome::Pending,
+            None => {
+                match upload_episode(cfg, &mut uploader, &args, &collection, &cid, episode).await {
                     Ok(()) => Outcome::Uploaded,
                     // One unreadable file must not abandon the rest.
                     Err(err) => {
                         println!("  episode {}: {err:#}", episode.lesson);
                         Outcome::Failed
                     }
-                },
-            };
+                }
+            }
+        };
         summary.record_lesson(outcome);
     }
 
@@ -83,15 +83,17 @@ pub(super) async fn run(cfg: &Config, args: AddDocuArgs) -> Result<()> {
             match set_lookup::document_status(&conn, &cid, document.chapter, document.number)? {
                 Some(SetStatus::Complete) => Outcome::AlreadyDone,
                 Some(_) => Outcome::Pending,
-                None => match upload_document(cfg, &mut uploader, &args, &collection, &cid, document)
-                    .await
-                {
-                    Ok(()) => Outcome::Uploaded,
-                    Err(err) => {
-                        println!("  document {}: {err:#}", document.number);
-                        Outcome::Failed
+                None => {
+                    match upload_document(cfg, &mut uploader, &args, &collection, &cid, document)
+                        .await
+                    {
+                        Ok(()) => Outcome::Uploaded,
+                        Err(err) => {
+                            println!("  document {}: {err:#}", document.number);
+                            Outcome::Failed
+                        }
                     }
-                },
+                }
             };
         summary.record_document(outcome);
     }
@@ -103,7 +105,7 @@ pub(super) async fn run(cfg: &Config, args: AddDocuArgs) -> Result<()> {
     }
 
     if summary.uploaded_anything() && !args.no_push {
-        let message_id = index_publish::publish(cfg)
+        let message_id = pull_index::merge_and_publish(cfg)
             .await
             .context("pushing the index after the collection")?;
         println!("pushed index as message {message_id}");

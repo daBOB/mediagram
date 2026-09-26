@@ -69,8 +69,8 @@ pub async fn refuse_if_channel_has_more(
     let shown: Vec<&str> = missing.iter().take(NAMED).map(String::as_str).collect();
     bail!(
         "the channel's index holds {} set(s) this index does not (e.g. {}). Pushing would remove \
-         them from every player and phone. Push from the machine that has them, or run \
-         `mediagram push-index --force` to replace the channel's index anyway",
+         them from every player and phone. Run `mediagram push-index --merge` to bring them in \
+         and push both, or `mediagram push-index --force` to replace the channel's index anyway",
         missing.len(),
         shown.join(", ")
     )

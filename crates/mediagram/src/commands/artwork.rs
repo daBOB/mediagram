@@ -23,8 +23,8 @@ pub fn run(cfg: &Config, args: ArtworkArgs) -> Result<()> {
     let backdrop = mlib_spec::package::backdrop_key(&key);
 
     if args.clear {
-        let cleared =
-            usize::from(artwork::clear(&conn, &key)?) + usize::from(artwork::clear(&conn, &backdrop)?);
+        let cleared = usize::from(artwork::clear(&conn, &key)?)
+            + usize::from(artwork::clear(&conn, &backdrop)?);
         println!("cleared {cleared} artwork row(s) for {key}");
     }
 
@@ -58,6 +58,10 @@ fn art_key_for(row: &SetRow) -> String {
     if let Some(id) = row.tmdb {
         return mediagram_tmdb::posters::poster_key(row.kind, id);
     }
-    let name = row.show.as_deref().or(row.title.as_deref()).unwrap_or(&row.set_id);
+    let name = row
+        .show
+        .as_deref()
+        .or(row.title.as_deref())
+        .unwrap_or(&row.set_id);
     mlib_spec::package::title_art_key(name).unwrap_or_else(|| row.set_id.clone())
 }

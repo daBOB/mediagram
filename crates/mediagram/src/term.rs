@@ -44,9 +44,38 @@ pub fn human_duration(seconds: u64) -> String {
     }
 }
 
+/// `describing 120/907 (13%) · eta 4m10s`, for a loop over a known number of
+/// things. `done` is how many are finished; the line names the one in hand.
+/// The eta waits for a first result, because a guess from nothing is noise.
+pub fn count_line(verb: &str, done: usize, total: usize, elapsed: std::time::Duration) -> String {
+    let mut line = format!(
+        "{verb} {}/{total} ({}%)",
+        (done + 1).min(total),
+        percent(done as u64, total as u64)
+    );
+    if done > 0 && done < total {
+        let left = elapsed.as_secs_f64() / done as f64 * (total - done) as f64;
+        line.push_str(&format!(" · eta {}", human_duration(left as u64)));
+    }
+    line
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_count_line_names_the_item_in_hand_and_estimates_the_rest() {
+        use std::time::Duration;
+        assert_eq!(
+            count_line("describing", 0, 10, Duration::ZERO),
+            "describing 1/10 (0%)"
+        );
+        assert_eq!(
+            count_line("describing", 5, 10, Duration::from_secs(50)),
+            "describing 6/10 (50%) · eta 50s"
+        );
+    }
 
     #[test]
     fn durations_read_as_time() {

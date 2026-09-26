@@ -5,6 +5,33 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.65.0 — sync-index, merge-first publishing, progress lines
+
+**Changed**
+
+- Every publish after an upload (`add`, `add-show`, `add-course`, `add-docu`,
+  `resume`) now pulls the channel's index in first, then pushes
+  (`pull_index::merge_and_publish`). Before, a push from the other machine
+  in the meantime got the publish refused ("the channel's index holds N set(s)
+  this index does not"), which is why uploads ran on one machine at a time. Two
+  machines on 0.65+ can now upload at once. A push landing between the pull and
+  the publish is still refused by the guard, never dropped. Keep the two
+  machines on different folders, since nothing detects the same file uploaded
+  on both.
+- The refusal message now suggests `push-index --merge` first, then `--force`.
+  The hint after a failed publish says `sync-index`.
+
+**Added**
+
+- `mediagram sync-index` pulls the channel's index, runs `metadata` and
+  `posters`, then pushes, so one command does what took four. Takes `metadata`'s
+  `--refresh-older-than`. A failed artwork fetch is reported and does not stop
+  the push, since that art never leaves this machine.
+- `metadata` and `posters` keep a progress line on the terminal: count,
+  percentage and time left (`describing 451/908 (50%) · eta 2m10s`,
+  `fetching 5200/8718 (60%) · eta 2s`). They draw nothing when piped. The line
+  is `term::count_line`, shared by both.
+
 ## Unreleased — 0.64.0
 
 The television surface, from `feat/android-tv-ui`.

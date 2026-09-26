@@ -25,13 +25,6 @@ pub enum Guard {
     Skip,
 }
 
-/// Snapshots and publishes the index, returning its message ID, after
-/// checking the channel holds no set this index lacks. A failed unpin is a
-/// warning: the new pin supersedes the previous index.
-pub async fn publish(cfg: &Config) -> Result<i32> {
-    publish_with(cfg, Guard::Check).await
-}
-
 /// Runs only the check a push would: whether the channel's index holds sets
 /// this one lacks. Sends nothing.
 pub async fn check_only(cfg: &Config) -> Result<()> {
@@ -44,7 +37,10 @@ pub async fn check_only(cfg: &Config) -> Result<()> {
     result
 }
 
-/// [`publish`], choosing whether to check the channel first.
+/// Snapshots and publishes the index, returning its message ID, after the
+/// check `guard` asks for. A failed unpin is a warning: the new pin supersedes
+/// the previous index. Commands that publish after an upload reach this through
+/// `pull_index::merge_and_publish`.
 pub async fn publish_with(cfg: &Config, guard: Guard) -> Result<i32> {
     let data_dir = cfg.data_dir()?;
     let conn = db::open(&data_dir)?;

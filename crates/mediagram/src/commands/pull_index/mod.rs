@@ -21,6 +21,7 @@ use crate::index::merge::{self, MergeReport};
 use crate::index::{db, snapshot};
 use crate::telegram::client::Tg;
 use crate::telegram::download_index::download_channel_index;
+use crate::telegram::index_publish::{self, Guard};
 use keep_live::live_sets;
 
 /// Arguments for `mediagram pull-index`.
@@ -33,6 +34,18 @@ pub struct PullIndexArgs {
 
 pub async fn run(cfg: &Config, args: PullIndexArgs) -> Result<()> {
     pull(cfg, args.dry_run).await.map(|_| ())
+}
+
+/// Pulls the channel's index in, then publishes. Every command that publishes
+/// after an upload goes through here, so another machine's push in the
+/// meantime is merged in rather than refused, and two machines can upload at
+/// once. A push that lands between this pull and this publish is still caught
+/// by the guard, and refused rather than dropped.
+pub async fn merge_and_publish(cfg: &Config) -> Result<i32> {
+    let removed = pull(cfg, false)
+        .await
+        .context("pulling the channel's index before publishing")?;
+    index_publish::publish_with(cfg, Guard::CheckExcept(removed)).await
 }
 
 /// Merges the channel's index in and returns the sets it proved removed
