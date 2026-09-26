@@ -20,6 +20,7 @@ import { dirname } from "node:path";
 import { failureMessage } from "../failure-message";
 
 import { GROUPS } from "./schema";
+import { Settings } from "./settings";
 import { normalName, SYNC_FORMAT, type SyncRecord } from "./sync-record";
 import type { MergedState } from "./merge";
 import {
@@ -674,6 +675,11 @@ export class WatchState {
 
   close(): void {
     this.db?.close();
+  }
+
+  /** Values a viewer set from the Settings page, over this same database. */
+  settings(): Settings {
+    return new Settings(this.db);
   }
 }
 

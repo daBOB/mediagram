@@ -41,6 +41,8 @@ export interface PlayerRequest {
   acceptEncoding?: string | null;
   /** `If-None-Match`, compared against a response's own ETag to answer 304 without a body. */
   ifNoneMatch?: string | null;
+  /** The raw `Cookie` header, for the Settings admin session. Nothing else reads it. */
+  cookie?: string | null;
 }
 
 export interface PlayerResponse {

@@ -38,7 +38,7 @@ export class CatalogFollower {
   private readonly pendingPosterFetches = new Set<Promise<void>>();
   private readonly follow = oneAtATime(async () => { if (!this.closed) await this.replace(); });
 
-  constructor(private readonly options: FollowOptions) {
+  constructor(private options: FollowOptions) {
     this.db = options.db;
     this.servingPushedAt = options.catalog.origin === "channel" && options.catalog.publishedAt !== null
       ? options.catalog.publishedAt / 1000 : null;
@@ -48,6 +48,18 @@ export class CatalogFollower {
     if (this.closed) return Promise.resolve();
     this.running = this.follow();
     return this.running;
+  }
+
+  /**
+   * Points future refreshes at a different install root and, through it, a
+   * different `find` (the connection's channel changed before this is
+   * called). Used when a viewer switches to a channel chosen from Settings:
+   * a different channel's history is not comparable to the old root's, so
+   * whatever this was last serving is forgotten rather than compared against.
+   */
+  retarget(root: string): void {
+    this.options = { ...this.options, root };
+    this.servingPushedAt = null;
   }
 
   async stopFollowing(): Promise<void> {

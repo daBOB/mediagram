@@ -66,7 +66,7 @@ test.each(["127.0.0.2", "0.0.0.0", "::1", "::"])(
     let player: Awaited<ReturnType<typeof startPlayer>> | undefined;
     try {
       player = await startPlayer(config, {
-        connect: async () => telegramBoundary(order), findIndex: async () => "nothing-pinned",
+        open: async () => telegramBoundary(order), findIndex: async () => "nothing-pinned",
         detectEncoder: async () => ({ kind: "software", name: "libx264" }),
         listen: () => () => {},
       });

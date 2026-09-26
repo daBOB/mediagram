@@ -6,6 +6,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { TelegramStateChannel } from "../src/telegram/state-channel";
+import { TelegramConnection } from "../src/telegram/connection";
 import type { Telegram } from "../src/telegram/client";
 
 function fakeTelegram(pin: () => Promise<void>) {
@@ -26,7 +27,7 @@ const body = JSON.stringify({ device: "laptop" });
 describe("a first send", () => {
   test("answers the new message once it is pinned", async () => {
     const { telegram, deleted } = fakeTelegram(async () => {});
-    expect(await new TelegramStateChannel(telegram).put(body, null)).toBe(3200);
+    expect(await new TelegramStateChannel(TelegramConnection.fixed(telegram)).put(body, null)).toBe(3200);
     expect(deleted).toEqual([]);
   });
 
@@ -36,7 +37,7 @@ describe("a first send", () => {
     const { telegram, deleted } = fakeTelegram(async () => {
       throw new Error("FLOOD_WAIT_633");
     });
-    await expect(new TelegramStateChannel(telegram).put(body, null)).rejects.toThrow("FLOOD_WAIT_633");
+    await expect(new TelegramStateChannel(TelegramConnection.fixed(telegram)).put(body, null)).rejects.toThrow("FLOOD_WAIT_633");
     expect(deleted).toEqual([[3200]]);
   });
 
@@ -47,6 +48,6 @@ describe("a first send", () => {
     (telegram.client as unknown as { deleteMessages: () => Promise<void> }).deleteMessages = async () => {
       throw new Error("offline");
     };
-    await expect(new TelegramStateChannel(telegram).put(body, null)).rejects.toThrow("FLOOD_WAIT_633");
+    await expect(new TelegramStateChannel(TelegramConnection.fixed(telegram)).put(body, null)).rejects.toThrow("FLOOD_WAIT_633");
   });
 });

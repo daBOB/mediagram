@@ -24,7 +24,7 @@ describe("the production application startup", () => {
     const order: string[] = [];
     let newest = snapshot("Before", 100);
     const player = await startPlayer(configIn(root), {
-      connect: async () => { order.push("connect"); return telegramBoundary(order); },
+      open: async () => { order.push("connect"); return telegramBoundary(order); },
       findIndex: async () => { order.push(`read-${newest.pushedAt}`); return newest; },
       detectEncoder: async () => {
         // No callback exists yet: this update cannot set a missed-event flag.
@@ -49,7 +49,7 @@ describe("the production application startup", () => {
     db.close();
     const order: string[] = [];
     const player = await startPlayer(configIn(root), {
-      connect: async () => telegramBoundary(order), findIndex: async () => "nothing-pinned",
+      open: async () => telegramBoundary(order), findIndex: async () => "nothing-pinned",
       detectEncoder: async () => ({ kind: "software", name: "libx264" }),
       listen: () => () => { order.push("unsubscribe"); },
       fetchPosters: async () => { throw new Error("local catalogs do not fetch channel art"); },
@@ -65,7 +65,7 @@ describe("the production application startup", () => {
     const order: string[] = [];
     const config = { ...configIn(root), packageUrl: "https://catalog.test", packageKey: Buffer.alloc(32).toString("base64") };
     await expect(startPlayer(config, {
-      connect: async () => telegramBoundary(order),
+      open: async () => telegramBoundary(order),
       findIndex: async () => { throw new Error("must not read the channel"); },
       detectEncoder: async () => { throw new Error("must not probe the encoder"); },
       fetch: async () => new Response(null, { status: 503 }),
@@ -79,7 +79,7 @@ describe("the production application startup", () => {
     stops.push(async () => { await occupied.close(); db.close(); });
     const order: string[] = [];
     await expect(startPlayer({ ...configIn(root), port: occupied.port }, {
-      connect: async () => telegramBoundary(order), findIndex: async () => snapshot("Candidate", 100),
+      open: async () => telegramBoundary(order), findIndex: async () => snapshot("Candidate", 100),
       detectEncoder: async () => ({ kind: "software", name: "libx264" }),
       listen: () => { order.push("subscribe"); return () => { order.push("unsubscribe"); }; },
     })).rejects.toMatchObject({ code: "EADDRINUSE" });

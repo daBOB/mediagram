@@ -39,6 +39,8 @@ export interface RouterOptions extends CatalogRouterOptions {
   catalog?: CatalogOrigin;
   /** Absent optional features answer 404, except transcode startup (501). */
   status?: (request: PlayerRequest) => Promise<PlayerResponse | null>;
+  /** `/api/settings/*`; own-network and admin-gated inside itself, so it is tried before the method gate below. */
+  settings?: (request: PlayerRequest) => Promise<PlayerResponse | null>;
   hls?: HlsServer;
   preload?: SeriesPreload;
   events?: CatalogEvents;
@@ -89,6 +91,9 @@ export function createRouter(options: RouterOptions) {
   const maxBitrate = options.maxBitrate ?? DEFAULT_MAX_BITRATE;
 
   return async function route(request: PlayerRequest): Promise<PlayerResponse> {
+    const settings = await options.settings?.(request);
+    if (settings) return settings;
+
     const state = stateRoute?.(request);
     if (state) {
       const wrote = request.method !== "GET" && request.method !== "HEAD" && state.status < 400;

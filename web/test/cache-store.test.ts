@@ -259,6 +259,30 @@ describe("the quota", () => {
 
     expect(await cache.sizeOnDisk()).toBeLessThanOrEqual(512);
   });
+
+  test("setBudget shrinks live, oldest first", async () => {
+    const cache = new ChunkCache(root, 1024 ** 3);
+    await cache.put(SET, 0, 0, block(0, 1024));
+    await utimes(chunkPath(root, SET, 0, 0), new Date(0), new Date(0));
+    await cache.put(SET, 0, 1, block(1, 1024));
+
+    const { freedBytes } = await cache.setBudget(1024);
+
+    expect(freedBytes).toBe(1024);
+    expect(cache.budget).toBe(1024);
+    expect(await cache.get(SET, 0, 0)).toBeNull();
+    expect(await cache.get(SET, 0, 1)).not.toBeNull();
+  });
+
+  test("setBudget growing evicts nothing", async () => {
+    const cache = new ChunkCache(root, 1024);
+    await cache.put(SET, 0, 0, block(0, 1024));
+
+    const { freedBytes } = await cache.setBudget(1024 ** 2);
+
+    expect(freedBytes).toBe(0);
+    expect(await cache.get(SET, 0, 0)).not.toBeNull();
+  });
 });
 
 describe("what must never be served", () => {

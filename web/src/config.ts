@@ -8,8 +8,13 @@
 export interface Config {
   apiId: number;
   apiHash: string;
-  /** teleproto `StringSession`, written by `bun run login`. */
-  session: string;
+  /**
+   * teleproto `StringSession`, written by `bun run login` or by signing in
+   * from the Settings page. `null` means signed out: the player still serves
+   * its catalog and cached chunks, and fails an uncached read with a clear
+   * error rather than refusing to start.
+   */
+  session: string | null;
   /** Bot-API form, as recorded in `parts.chat_id`: `-100…`. */
   chatId: number;
   /**
@@ -123,6 +128,17 @@ export interface Config {
   seriesPreload: boolean;
   hostname: string;
   port: number;
+  /**
+   * Where this account's api id/hash, session and chosen channel are kept
+   * once the Settings page has written them once. Beside `state.db`, not in
+   * it: see `settings/telegram-file.ts`. Read here only wins when the file
+   * exists — `resolveTelegram` is what applies it.
+   */
+  telegramFilePath: string;
+  /** Where the admin token for the Settings page is created, unless `MEDIAGRAM_ADMIN_TOKEN` is set. */
+  adminTokenPath: string;
+  /** Where a channel chosen from Settings installs its index, apart from `channelIndexDir`'s own history. */
+  channelCatalogDir: string;
 }
 
 /**
@@ -170,7 +186,7 @@ export function load(): Config {
   return {
     apiId: Number(required("MEDIAGRAM_API_ID")),
     apiHash: required("MEDIAGRAM_API_HASH"),
-    session: required("MEDIAGRAM_SESSION"),
+    session: process.env.MEDIAGRAM_SESSION || null,
     chatId: Number(required("MEDIAGRAM_CHAT_ID")),
     channelAccessHash: BigInt(required("MEDIAGRAM_CHANNEL_ACCESS_HASH")),
     // Read before the package settings below so both are decided together.
@@ -203,6 +219,14 @@ export function load(): Config {
     seriesPreload: !/^(0|false|no|off)$/i.test(process.env.MEDIAGRAM_SERIES_PRELOAD ?? ""),
     hostname: addr.slice(0, colon) || "127.0.0.1",
     port: Number(addr.slice(colon + 1)),
+    telegramFilePath:
+      process.env.MEDIAGRAM_TELEGRAM_FILE ??
+      `${process.env.HOME}/.local/share/mediagram-player/telegram.json`,
+    adminTokenPath:
+      process.env.MEDIAGRAM_ADMIN_TOKEN_PATH ??
+      `${process.env.HOME}/.local/share/mediagram-player/admin-token`,
+    channelCatalogDir:
+      process.env.MEDIAGRAM_CHANNEL_CATALOG_DIR ?? `${process.env.HOME}/.cache/mediagram-channel-catalog`,
   };
 }
 
@@ -214,7 +238,7 @@ export function describe(config: Config): Record<string, unknown> {
   return {
     apiId: config.apiId,
     apiHash: "<redacted>",
-    session: "<redacted>",
+    session: config.session === null ? null : "<redacted>",
     chatId: config.chatId,
     channelAccessHash: String(config.channelAccessHash),
     libraryDb: config.libraryDb,
@@ -234,5 +258,8 @@ export function describe(config: Config): Record<string, unknown> {
     channelIndexDir: config.channelIndexDir,
     postersCommand: config.postersCommand,
     address: `${config.hostname}:${config.port}`,
+    telegramFilePath: config.telegramFilePath,
+    adminTokenPath: config.adminTokenPath,
+    channelCatalogDir: config.channelCatalogDir,
   };
 }

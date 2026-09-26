@@ -2,6 +2,7 @@ import { expect, spyOn, test } from "bun:test";
 import { shutdownFor } from "../src/application/lifecycle";
 import { startServer } from "../src/server";
 import { TelegramSource } from "../src/telegram/source";
+import { TelegramConnection } from "../src/telegram/connection";
 import { deferred, library, telegramBoundary } from "./application-fixture";
 
 async function within<T>(promise: Promise<T>, description = "cleanup"): Promise<T> {
@@ -40,7 +41,7 @@ test.each([null, new Error("upstream cleanup refused"), undefined])("application
       if (rejectCleanup) throw failure;
     }
   }) as never;
-  const server = await startServer({ db, source: new TelegramSource(telegram) });
+  const server = await startServer({ db, source: new TelegramSource(TelegramConnection.fixed(telegram)) });
   const controller = new AbortController();
   const request = fetch(`${server.baseUrl}/api/sets/01SET/stream`, { signal: controller.signal })
     .then((response) => response.arrayBuffer()).catch(() => {});

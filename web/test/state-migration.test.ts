@@ -304,3 +304,22 @@ describe("v7 to v8", () => {
     state.close();
   });
 });
+
+describe("v9 to v10", () => {
+  test("a database from before the Settings page gains somewhere to keep one", () => {
+    const path = tempPath();
+    const db = new Database(path, { create: true });
+    for (const statement of migrationsUpTo(9)) db.exec(statement);
+    db.query("INSERT INTO state_meta(key, value) VALUES ('schema_version', '9')").run();
+    db.query("INSERT INTO profiles(id, name, created_at) VALUES ('p1', 'André', 1)").run();
+    db.close();
+
+    const state = new WatchState(path);
+    expect(state.profiles()).toEqual([{ id: "p1", name: "André", createdAt: 1, kids: false }]);
+    expect(state.settings().cacheMaxBytes()).toBeNull();
+
+    state.settings().setCacheMaxBytes(1024 ** 3);
+    expect(state.settings().cacheMaxBytes()).toBe(1024 ** 3);
+    state.close();
+  });
+});

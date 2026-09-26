@@ -7,6 +7,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { partFetcher, TelegramSource } from "../src/telegram/source";
+import { TelegramConnection } from "../src/telegram/connection";
 import type { PartLocation } from "../src/catalog";
 import type { Step } from "../src/range";
 
@@ -48,7 +49,7 @@ describe("the uncached streaming path", () => {
       },
     };
 
-    const source = new TelegramSource(telegram as never);
+    const source = new TelegramSource(TelegramConnection.fixed(telegram as never));
     const got = await drain(source.stream(LOCATIONS, [STEP], "SET"));
 
     expect(got).toEqual(new Uint8Array(10).fill(9));
@@ -63,7 +64,7 @@ describe("the uncached streaming path", () => {
       client: { iterDownload: (async function* () { throw fileReferenceExpired(); }) as never },
     };
 
-    const source = new TelegramSource(telegram as never);
+    const source = new TelegramSource(TelegramConnection.fixed(telegram as never));
     await expect(drain(source.stream(LOCATIONS, [STEP], "SET"))).rejects.toThrow("FILE_REFERENCE_EXPIRED");
   });
 
@@ -81,7 +82,7 @@ describe("the uncached streaming path", () => {
       },
     };
 
-    const source = new TelegramSource(telegram as never);
+    const source = new TelegramSource(TelegramConnection.fixed(telegram as never));
     await expect(drain(source.stream(LOCATIONS, [STEP], "SET"))).rejects.toThrow("FILE_REFERENCE_EXPIRED");
     expect(attempts).toBe(1);
   });
@@ -93,7 +94,7 @@ describe("the uncached streaming path", () => {
       client: { iterDownload: (async function* () { throw new Error("boom"); }) as never },
     };
 
-    const source = new TelegramSource(telegram as never);
+    const source = new TelegramSource(TelegramConnection.fixed(telegram as never));
     await expect(drain(source.stream(LOCATIONS, [STEP], "SET"))).rejects.toThrow("boom");
   });
 });

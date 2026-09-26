@@ -30,6 +30,8 @@ export function configIn(root: string): Config {
     thumbsDir: join(root, "thumbs"), transcodeMaxrate: 8000000, packageUrl: null, packageKey: null,
     catalogDir: join(root, "package"), channelIndexDir: join(root, "channel"), postersCommand: "unused-posters",
     trustProxy: false, seriesPreload: false, hostname: "127.0.0.1", port: 0,
+    telegramFilePath: join(root, "telegram.json"), adminTokenPath: join(root, "admin-token"),
+    channelCatalogDir: join(root, "channel-catalog"),
   };
 }
 

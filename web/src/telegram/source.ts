@@ -18,9 +18,11 @@ import { helpers } from "teleproto";
 import type { CachedReader } from "../cache/reader";
 import type { PartLocation } from "../catalog";
 import { requestSizeFor, type Step } from "../range";
-import { DownloadGate } from "./download-gate";
 import type { ByteSource } from "../http/stream";
-import type { Telegram } from "./client";
+import type { TelegramConnection } from "./connection";
+import { connectionFetcher, isFileReferenceExpired } from "./part-fetch";
+
+export { partFetcher, connectionFetcher } from "./part-fetch";
 
 export class TelegramSource implements ByteSource {
   /**
@@ -39,7 +41,7 @@ export class TelegramSource implements ByteSource {
    * correct but pays for the same bytes on every replay and every seek back.
    */
   constructor(
-    private readonly telegram: Telegram,
+    private readonly connection: TelegramConnection,
     private readonly reader?: CachedReader,
   ) {}
 
@@ -119,12 +121,18 @@ export class TelegramSource implements ByteSource {
           start: step.offset + step.headDrop,
           length: step.take,
           partLength: location.span.len,
-          fetch: cacheOnly ? undefined : partFetcher(this.telegram, location.messageId),
+          fetch: cacheOnly ? undefined : connectionFetcher(this.connection, location.messageId),
         });
         continue;
       }
 
-      let media = await this.telegram.partMedia(location.messageId);
+      // Resolved once per step rather than once per `bytesOf` call: a step
+      // that starts while a restart is already parked at the gate should see
+      // the client it settles on, not fail for asking too early.
+      const startGeneration = this.connection.generation;
+      let telegram = await this.connection.ready();
+      if (!telegram) throw new Error("this part is not cached, and the player is signed out");
+      let media = await telegram.partMedia(location.messageId);
       let headDrop = step.headDrop;
       let owed = step.take;
       let yieldedAny = false;
@@ -132,7 +140,7 @@ export class TelegramSource implements ByteSource {
 
       for (;;) {
         try {
-          for await (const chunk of this.telegram.client.iterDownload(media as never, {
+          for await (const chunk of telegram.client.iterDownload(media as never, {
             offset: helpers.returnBigInt(step.offset) as never,
             requestSize: requestSizeFor(headDrop + step.take),
           })) {
@@ -154,13 +162,20 @@ export class TelegramSource implements ByteSource {
           break;
         } catch (error) {
           // A reference that expired before this step sent anything can be
-          // retried with a fresh one. Once bytes are already on the wire a
-          // retry would duplicate or skip them, so only the failure can
-          // surface from there.
-          if (yieldedAny || retried || !isFileReferenceExpired(error)) throw error;
+          // retried with a fresh one, and so can a step caught mid-restart —
+          // the client it started with is gone, not merely stale. Once bytes
+          // are already on the wire a retry would duplicate or skip them, so
+          // only the failure can surface from there.
+          const swapped = this.connection.generation !== startGeneration;
+          if (yieldedAny || retried || !(isFileReferenceExpired(error) || swapped)) throw error;
           retried = true;
-          this.telegram.forgetPartMedia(location.messageId);
-          media = await this.telegram.partMedia(location.messageId);
+          if (swapped) {
+            telegram = await this.connection.ready();
+            if (!telegram) throw new Error("this part is not cached, and the player is signed out");
+          } else {
+            telegram.forgetPartMedia(location.messageId);
+          }
+          media = await telegram.partMedia(location.messageId);
           headDrop = step.headDrop;
           owed = step.take;
         }
@@ -175,70 +190,3 @@ export class TelegramSource implements ByteSource {
   }
 }
 
-/** Whether a Telegram request failed because the file reference it used expired. */
-function isFileReferenceExpired(error: unknown): boolean {
-  const message = (error as { errorMessage?: unknown } | null)?.errorMessage;
-  return typeof message === "string" && message.startsWith("FILE_REFERENCE");
-}
-
-/**
- * Fetches one aligned range of a part straight from Telegram.
- *
- * Handed to the cache as its way of filling a miss, so the cache knows
- * nothing about MTProto and this file stays the only place that does.
- */
-export function partFetcher(telegram: Telegram, messageId: number) {
-  return (offset: number, length: number): Promise<Uint8Array> =>
-    downloads.run(() => fetchPart(telegram, messageId, offset, length));
-}
-
-/**
- * One gate for the whole process: the limit is Telegram's, per account, so
- * every reader of every title shares it.
- */
-const downloads = new DownloadGate();
-
-async function fetchPart(
-  telegram: Telegram,
-  messageId: number,
-  offset: number,
-  length: number,
-): Promise<Uint8Array> {
-  // Collected into `out` before anything is handed back, so a reference that
-  // expired mid-download can simply be retried from scratch: nothing has
-  // reached a caller yet for the redo to duplicate or skip. Stays inside the
-  // gate slot `partFetcher` already holds, so a retry cannot add concurrency.
-  try {
-    return await fetchPartOnce(telegram, messageId, offset, length);
-  } catch (error) {
-    if (!isFileReferenceExpired(error)) throw error;
-    telegram.forgetPartMedia(messageId);
-    return fetchPartOnce(telegram, messageId, offset, length);
-  }
-}
-
-async function fetchPartOnce(
-  telegram: Telegram,
-  messageId: number,
-  offset: number,
-  length: number,
-): Promise<Uint8Array> {
-  const media = await telegram.partMedia(messageId);
-  const out: Uint8Array[] = [];
-  let got = 0;
-  for await (const chunk of telegram.client.iterDownload(media as never, {
-    offset: helpers.returnBigInt(offset) as never,
-    requestSize: requestSizeFor(length),
-  })) {
-    out.push(chunk);
-    got += chunk.length;
-    if (got >= length) break;
-  }
-  const joined = new Uint8Array(got);
-  let at = 0;
-  for (const piece of out) {
-    joined.set(piece, at);
-    at += piece.length;
-  }
-  return joined.subarray(0, Math.min(length, got));
-}

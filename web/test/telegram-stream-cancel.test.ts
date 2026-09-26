@@ -2,6 +2,7 @@ import { expect, spyOn, test } from "bun:test";
 import { ServerResponse } from "node:http";
 import { createConnection } from "node:net";
 import { TelegramSource } from "../src/telegram/source";
+import { TelegramConnection } from "../src/telegram/connection";
 import { startServer } from "../src/server";
 import { deferred, library, telegramBoundary } from "./application-fixture";
 
@@ -11,7 +12,7 @@ function sourceFor(iterate: () => AsyncGenerator<Uint8Array, void, unknown>) {
   const telegram = telegramBoundary([]);
   telegram.partMedia = async () => ({}) as never;
   telegram.client.iterDownload = iterate as never;
-  return new TelegramSource(telegram);
+  return new TelegramSource(TelegramConnection.fixed(telegram));
 }
 
 function stream(iterate: () => AsyncGenerator<Uint8Array, void, unknown>) {

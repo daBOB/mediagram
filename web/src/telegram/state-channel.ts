@@ -34,7 +34,7 @@
 import { Api } from "teleproto";
 import { CustomFile } from "teleproto/client/uploads";
 import type { ChannelDocument, StateChannel } from "../state/sync";
-import type { Telegram } from "./client";
+import type { TelegramConnection } from "./connection";
 
 import { stateCaption, deviceFromCaption } from "./channel-captions";
 
@@ -42,11 +42,23 @@ const STATE_DOCUMENT_NAME = "watch-state.json";
 /** How many pins to read. One state message per device; this is not close. */
 const MOST = 100;
 
+/**
+ * Watch-state documents, on whichever channel the connection currently
+ * points at.
+ *
+ * Reads the client fresh from the connection on every call rather than
+ * holding one: signed out, there is no channel to read or write, and
+ * `StateSync.once` already treats a failed round as one to try again later
+ * rather than a reason to stop.
+ */
 export class TelegramStateChannel implements StateChannel {
-  constructor(private readonly telegram: Telegram) {}
+  constructor(private readonly connection: TelegramConnection) {}
 
   async list(): Promise<ChannelDocument[]> {
-    const messages = await this.telegram.client.getMessages(this.telegram.peer, {
+    const telegram = await this.connection.ready();
+    if (!telegram) return [];
+
+    const messages = await telegram.client.getMessages(telegram.peer, {
       filter: new Api.InputMessagesFilterPinned(),
       limit: MOST,
     });
@@ -58,7 +70,7 @@ export class TelegramStateChannel implements StateChannel {
       // Downloaded one at a time rather than in parallel: there are as many of
       // these as there are devices, and a burst of downloads on startup is a
       // good way to meet a flood wait for no benefit.
-      const body = await this.telegram.client.downloadMedia(message);
+      const body = await telegram.client.downloadMedia(message);
       if (!body) continue;
       documents.push({
         messageId: message.id,
@@ -70,6 +82,9 @@ export class TelegramStateChannel implements StateChannel {
   }
 
   async put(body: string, messageId: number | null): Promise<number> {
+    const telegram = await this.connection.ready();
+    if (!telegram) throw new Error("cannot sync while signed out");
+
     const caption = stateCaption(JSON.parse(body).device as string);
     // `CustomFile`, not a web `File`. teleproto is a fork of GramJS, which
     // predates `File` being a thing in Node and rejects one outright —
@@ -81,7 +96,7 @@ export class TelegramStateChannel implements StateChannel {
     if (messageId !== null) {
       // Edited, never re-sent. A device writes one message for ever; a second
       // would be a second opinion nobody asked for and nothing would clean up.
-      const edited = await this.telegram.client.editMessage(this.telegram.peer, {
+      const edited = await telegram.client.editMessage(telegram.peer, {
         message: messageId,
         text: caption,
         file,
@@ -89,7 +104,7 @@ export class TelegramStateChannel implements StateChannel {
       return edited?.id ?? messageId;
     }
 
-    const sent = await this.telegram.client.sendFile(this.telegram.peer, {
+    const sent = await telegram.client.sendFile(telegram.peer, {
       file,
       caption,
       // Sent as a document rather than letting Telegram decide: a `.json` is
@@ -103,7 +118,7 @@ export class TelegramStateChannel implements StateChannel {
     // for the life of the install. Silent, because nobody wants a notification
     // that a machine has recorded where a film got to.
     try {
-      await this.telegram.client.pinMessage(this.telegram.peer, sent.id, { notify: false });
+      await telegram.client.pinMessage(telegram.peer, sent.id, { notify: false });
     } catch (error) {
       // Unpinned, the document is invisible — discovery is the pin list — so
       // the next round would send another beside it, and nothing would ever
@@ -111,7 +126,7 @@ export class TelegramStateChannel implements StateChannel {
       // minutes, measured), so this is not hypothetical. Take the document
       // back and let the next round start over: a refused pin then costs a
       // round, not a stray document per round.
-      await this.telegram.client.deleteMessages(this.telegram.peer, [sent.id], { revoke: true }).catch(() => {});
+      await telegram.client.deleteMessages(telegram.peer, [sent.id], { revoke: true }).catch(() => {});
       throw error;
     }
     return sent.id;
