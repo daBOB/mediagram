@@ -14,7 +14,7 @@ import { join } from "node:path";
 
 import { CACHE_CHUNK } from "../src/cache/key";
 import { CachedReader } from "../src/cache/reader";
-import { SeriesPreload, type PreloadItem } from "../src/cache/series-preload";
+import { PRELOAD_REQUEST_INTERVAL_MS, SeriesPreload, type PreloadItem } from "../src/cache/series-preload";
 import { ChunkCache } from "../src/cache/store";
 import { createRouter } from "../src/routes";
 import type { ByteSource } from "../src/http/stream";
@@ -188,6 +188,63 @@ describe("SeriesPreload", () => {
     await run.preload.settle();
 
     expect(run.filled).toEqual(["E2/0", "E3/0"]);
+  });
+});
+
+describe("SeriesPreload pacing", () => {
+  test("fetches at most one cache chunk per request, one per interval, in order", async () => {
+    const part = upstream(CACHE_CHUNK * 2 + 100);
+    const pauses: number[] = [];
+    let collected!: Uint8Array;
+    const preload = new SeriesPreload({
+      fill: async (_setId, _partIdx, partLength, fetch) => {
+        collected = await fetch(0, partLength);
+      },
+      fetcherFor: () => part.fetch,
+      isHeld: async () => false,
+      pause: async (ms) => void pauses.push(ms),
+    });
+
+    preload.want([{
+      setId: "E2",
+      title: "E2",
+      locations: [{ span: { idx: 0, off: 0, len: part.bytes.length }, chatId: -1001, messageId: 901 }],
+    }]);
+    await preload.settle();
+
+    expect(part.asked.map((a) => a.length)).toEqual([CACHE_CHUNK, CACHE_CHUNK, 100]);
+    expect(pauses).toEqual([PRELOAD_REQUEST_INTERVAL_MS, PRELOAD_REQUEST_INTERVAL_MS, PRELOAD_REQUEST_INTERVAL_MS]);
+    expect(collected).toEqual(part.bytes);
+  });
+
+  test("stop() during a paced fill stops further slices", async () => {
+    const requested: number[] = [];
+    const pauses: number[] = [];
+    let stopPromise: Promise<void> | null = null;
+    const preload = new SeriesPreload({
+      fill: (_setId, _partIdx, partLength, fetch) => fetch(0, partLength).then(() => {}),
+      fetcherFor: () => async (offset: number, length: number) => {
+        requested.push(offset);
+        return new Uint8Array(length);
+      },
+      isHeld: async () => false,
+      pause: async (ms) => {
+        pauses.push(ms);
+        // Stops the preload during the wait before the second slice: once a
+        // stop is asked for, no new request goes out.
+        if (pauses.length === 2) stopPromise = preload.stop();
+      },
+    });
+
+    preload.want([{
+      setId: "E2",
+      title: "E2",
+      locations: [{ span: { idx: 0, off: 0, len: CACHE_CHUNK * 3 }, chatId: -1001, messageId: 901 }],
+    }]);
+    await preload.settle();
+    if (stopPromise) await stopPromise;
+
+    expect(requested).toEqual([0]);
   });
 });
 

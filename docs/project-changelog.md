@@ -5,6 +5,24 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.68.2 — the series preload stops tripping Telegram's flood limit
+
+What the viewer saw: `[INFO] Sleeping for Ns on flood wait (Caused by
+upload.GetFile)` every few seconds while a show or tutorial episode played,
+with the background preload of the next two episodes as the likely cause of
+occasional stalls (`plans/reports/debugger-260927-0310-web-getfile-flood-wait-report.md`).
+The preload's whole-episode download shared the same 4-slot `DownloadGate`
+as playback but held a slot continuously and issued requests back-to-back,
+fast enough on its own to trip the limit even with no other reader active.
+
+What changed: the gate now has a `background` lane (`telegram/download-gate.ts`)
+that never starts fresh, and never holds a freed slot, while any foreground
+read (playback, readahead, the audio-track probe, transcode) is running or
+queued — the series preload (`cache/series-preload.ts`) runs in that lane
+(`telegram/part-fetch.ts`'s `backgroundFetcher`). The preload also paces
+itself to one 512 KiB request per second, regardless of the gate, so it
+cannot flood Telegram by itself either.
+
 ## 0.68.1 — a completed set is owed a publish the moment it lands
 
 Review follow-up to 0.68.0

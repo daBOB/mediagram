@@ -62,4 +62,44 @@ describe("DownloadGate", () => {
     await Promise.all([running, ...queued]);
     expect(started).toEqual([0, 1, 2, 3]);
   });
+
+  test("a background task waits while a foreground task runs", async () => {
+    const gate = new DownloadGate(2);
+    const started: number[] = [];
+    const fg = held(started, 0);
+    const running = gate.run(fg.task);
+    const bg = gate.run(async () => void started.push(1), { background: true });
+
+    await tick();
+    // A slot is free (limit 2, one running), but the foreground task still
+    // running is enough to hold the background one back.
+    expect(started).toEqual([0]);
+
+    fg.release();
+    await Promise.all([running, bg]);
+    expect(started).toEqual([0, 1]);
+  });
+
+  test("a foreground task queued behind a full gate goes before a background waiter", async () => {
+    const gate = new DownloadGate(1);
+    const started: number[] = [];
+    const first = held(started, 0);
+    const running = gate.run(first.task, { background: true });
+    const bg = gate.run(async () => void started.push(1), { background: true });
+    const fg = gate.run(async () => void started.push(2));
+
+    await tick();
+    first.release();
+    await Promise.all([running, bg, fg]);
+    // The foreground request queued after the background one still runs first.
+    expect(started).toEqual([0, 2, 1]);
+  });
+
+  test("a background task runs at once on an idle gate", async () => {
+    const gate = new DownloadGate(2);
+    const started: number[] = [];
+    await gate.run(async () => void started.push(0), { background: true });
+    expect(started).toEqual([0]);
+    expect(gate.inFlight()).toBe(0);
+  });
 });

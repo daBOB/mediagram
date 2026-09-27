@@ -22,7 +22,7 @@ import type { ByteSource } from "../http/stream";
 import type { TelegramConnection } from "./connection";
 import { connectionFetcher, isFileReferenceExpired } from "./part-fetch";
 
-export { partFetcher, connectionFetcher } from "./part-fetch";
+export { partFetcher, connectionFetcher, backgroundFetcher } from "./part-fetch";
 
 export class TelegramSource implements ByteSource {
   /**

@@ -89,6 +89,18 @@ rendering; `status/` owns the system
 panel. Shared catalog, state, formatting, and playback-policy helpers remain
 at the library root. The installed HLS client is still served at `/lib/hls.mjs`.
 
+Every `upload.getFile` — playback, its readahead, the audio-track probe,
+transcode reads and the series preload alike — passes through one process-wide
+`DownloadGate` (`telegram/download-gate.ts`, 4 slots): Telegram's flood limit is
+per account, so every reader of every title shares it. The series preload
+(`cache/series-preload.ts`) runs its slot `background`: a background task
+never starts fresh while a foreground one (anything a viewer is waiting on) is
+running or queued, and a freed slot always goes to a waiting foreground task
+first. The preload also paces itself independently of the gate — one 512 KiB
+chunk per second (`PRELOAD_REQUEST_INTERVAL_MS`) — because a whole episode
+fetched flat-out is by itself enough requests to trip the flood limit even
+with no other reader active.
+
 `public/style.css` imports the presentation modules in `public/styles/`:
 `theme.css` owns local fonts, tokens and the reveal primitives; `shell.css`
 owns the library rail (`.library-rail`, the reader's own shelves; `.rail` is

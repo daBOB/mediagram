@@ -44,6 +44,16 @@ export function connectionFetcher(connection: TelegramConnection, messageId: num
     downloads.run(() => fetchPartViaConnection(connection, messageId, offset, length));
 }
 
+/**
+ * The same fetch as `connectionFetcher`, but marked `background` in the gate:
+ * for the series preload, whose whole-episode download must never make a
+ * viewer's own read wait behind it.
+ */
+export function backgroundFetcher(connection: TelegramConnection, messageId: number) {
+  return (offset: number, length: number): Promise<Uint8Array> =>
+    downloads.run(() => fetchPartViaConnection(connection, messageId, offset, length), { background: true });
+}
+
 async function fetchPartViaConnection(
   connection: TelegramConnection,
   messageId: number,

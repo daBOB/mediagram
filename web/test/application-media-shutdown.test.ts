@@ -33,6 +33,7 @@ test("shutdown drains the active preload range before disconnecting and discards
     },
     isHeld: async () => false,
     onHeld: (setId) => { held.push(setId); },
+    pause: async () => {},
   });
   const item = (setId: string): PreloadItem => ({
     setId, title: setId,
@@ -55,7 +56,9 @@ test("shutdown drains the active preload range before disconnecting and discards
     await preload.settle();
   }
   expect(disconnected).toBe(true);
-  expect(fetched).toEqual([{ messageId: 1, offset: 0, length: MAX_RUN_BYTES }]);
+  // The preload paces its own requests to one cache chunk at a time, so a
+  // drain that lands mid-run stops after the chunk in flight, not the run.
+  expect(fetched).toEqual([{ messageId: 1, offset: 0, length: CACHE_CHUNK }]);
   expect(held).toEqual([]);
 });
 

@@ -37,7 +37,7 @@ import { PlaybackReports } from "./status/playback-reports";
 import type { StartupFacts } from "./status/facts";
 import { Telegram } from "./telegram/client";
 import { TelegramConnection } from "./telegram/connection";
-import { TelegramSource, connectionFetcher } from "./telegram/source";
+import { TelegramSource, backgroundFetcher } from "./telegram/source";
 import { SeriesPreload } from "./cache/series-preload";
 import { CatalogEvents } from "./catalog-events";
 import { findNewestChannelIndex, type FoundIndex } from "./channel-index/find-newest-channel-index";
@@ -317,7 +317,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
       config.seriesPreload && reader && held
         ? new SeriesPreload({
             fill: (setId, partIdx, partLength, fetch) => reader.fill(setId, partIdx, partLength, fetch),
-            fetcherFor: (messageId) => connectionFetcher(connection, messageId),
+            fetcherFor: (messageId) => backgroundFetcher(connection, messageId),
             isHeld: (setId) => held.check(setId),
             // So the shelf's offline badge follows at once, not a scan later.
             onHeld: () => held.refresh(),
