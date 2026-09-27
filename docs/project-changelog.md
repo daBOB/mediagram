@@ -5,6 +5,33 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.68.13 — the Android app speaks to its core through the generated interface
+
+**Internal**
+
+- `CoreClient` and `DefaultCoreClient` (android/core/data) are gone. Every
+  ViewModel and repository above `core:data` now reaches the generated core
+  through its own `CoreInterface` directly; the 7 call sites where it uses
+  unsigned integers (`refreshLibrary`, `refreshCatalog`, `totalSize`, `read`,
+  `fetchMissing`, `person`, `fetchPortrait`) convert at the call site instead
+  of through a wrapper. The close fence — retire local state, then release
+  the native handle, once, with a failed retirement left open for retry —
+  moved into `CoreProvider`, which already owned every production close;
+  `StoredCoreProvider` is now generic over a type that is both `CoreInterface`
+  and `AutoCloseable`, since the generated interface itself has no `close()`.
+- A new module, `core:testing`, holds the one fake of `CoreInterface` every
+  other module's tests now build on (`FakeCore`, plus `FakeCoreProvider` and
+  two same-shaped aliases, `ResolvedCoreProvider`/`CatalogCoreProvider`),
+  replacing six separate per-module fakes and five `mockk<CoreClient>`
+  doubles. `FakeCore` keeps the real contract where tests touch it — `NotFound`
+  reading past a set's end or an unknown set, the same for `totalSize`,
+  `revokeSession("0")` refused — checked by a shared contract suite run once
+  against the fake (`core:testing`'s own unit test) and once against the real
+  generated `Core` on a device (`core:rust`'s `androidTest`, next to
+  `CoreLoadsTest`).
+- No behaviour change: this is the seam the app talks to the core through,
+  not what either side of it does.
+
 ## 0.68.12 — Android preloads what the web player preloads
 
 **Fixed**

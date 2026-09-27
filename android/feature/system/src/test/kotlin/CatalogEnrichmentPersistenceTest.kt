@@ -10,6 +10,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import settings.InMemoryTmdbSettings
 import settings.TmdbSettings
+import testing.FakeCore
+import testing.FakeCoreProvider
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

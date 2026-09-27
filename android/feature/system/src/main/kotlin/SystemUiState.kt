@@ -3,7 +3,7 @@ package system
 import data.RefreshOutcome
 
 /**
- * What the System screen has to say, read straight off [data.CoreClient]'s
+ * What the System screen has to say, read straight off [uniffi.mediagram_core.CoreInterface]'s
  * catalog facts, [playback.CacheProvider]'s occupancy, and
  * [playback.PlaybackCounters]'s totals.
  *

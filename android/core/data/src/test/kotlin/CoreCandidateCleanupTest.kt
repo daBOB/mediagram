@@ -10,6 +10,8 @@ import kotlinx.coroutines.test.runTest
 import settings.InMemoryTelegramSettings
 import settings.TelegramCredentials
 import settings.TelegramSettings
+import testing.FakeCore
+import testing.FakeCoreHandle
 import uniffi.mediagram_core.AccountSummary
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -52,9 +54,9 @@ class CoreCandidateCleanupTest {
                 }
             }
         val closeFailure = IllegalArgumentException("candidate close failed").takeIf { closeFails }
-        val old = ClosingCandidate()
-        val rejected = ClosingCandidate(closeFailure)
-        val retried = ClosingCandidate()
+        val old = FakeCore()
+        val rejected = FakeCore(closeFailure = closeFailure)
+        val retried = FakeCore()
         val candidates = ArrayDeque(listOf(rejected, retried))
         val provider =
             StoredCoreProvider(settings, StandardTestDispatcher(testScheduler)) {
@@ -69,8 +71,9 @@ class CoreCandidateCleanupTest {
         val failure = assertFailsWith<SecurityException> { install() }
 
         assertTrue(failureChain(failure).any { it === refusal }, "original persistence exception was lost: $failure")
-        assertEquals(1, rejected.closes)
-        assertEquals(if (replacing) 1 else 0, old.closes)
+        assertEquals(1, rejected.closeCalls)
+        assertEquals(1, rejected.retireCalls, "discard retires local state before releasing an unpublished candidate too")
+        assertEquals(if (replacing) 1 else 0, old.closeCalls)
         assertNull(provider.core.value)
         assertEquals(if (replacing) TelegramCredentials(1, CANDIDATE_HASH) else null, stored.read())
         if (closeFailure != null) {
@@ -82,7 +85,7 @@ class CoreCandidateCleanupTest {
         writeFailure = null
         install()
         assertSame(retried, provider.awaitCore())
-        assertEquals(0, retried.closes)
+        assertEquals(0, retried.closeCalls)
         assertEquals(TelegramCredentials(2, CANDIDATE_HASH), stored.read())
     }
 
@@ -91,14 +94,14 @@ class CoreCandidateCleanupTest {
         runTest {
             val refusal = IllegalStateException("account refused")
             val closeFailure = IllegalArgumentException("candidate close failed")
-            val candidate = ClosingCandidate(closeFailure, Result.failure(refusal))
+            val candidate = FakeCore(closeFailure = closeFailure, accountFailure = refusal)
             val provider = StoredCoreProvider(InMemoryTelegramSettings(), StandardTestDispatcher(testScheduler)) { candidate }
 
             val failure = assertFailsWith<IllegalStateException> { provider.replace(2, CANDIDATE_HASH) }
 
             assertTrue(failureChain(failure).any { it === refusal })
             assertTrue(failureChain(failure).any { closeFailure in it.suppressed })
-            assertEquals(1, candidate.closes)
+            assertEquals(1, candidate.closeCalls)
             assertNull(provider.core.value)
         }
 
@@ -106,9 +109,9 @@ class CoreCandidateCleanupTest {
     fun cancelledAccountValidationStillClosesItsUnpublishedCandidate() =
         runTest {
             val gate = CompletableDeferred<AccountSummary>()
-            val closed = ClosingCandidate()
+            val closed = FakeCore()
             val candidate =
-                object : CoreClient by closed {
+                object : FakeCoreHandle by closed {
                     override suspend fun account(): AccountSummary = gate.await()
                 }
             val provider = StoredCoreProvider(InMemoryTelegramSettings(), StandardTestDispatcher(testScheduler)) { candidate }
@@ -117,7 +120,7 @@ class CoreCandidateCleanupTest {
 
             replacing.cancelAndJoin()
 
-            assertEquals(1, closed.closes)
+            assertEquals(1, closed.closeCalls)
             assertNull(provider.core.value)
         }
 
@@ -135,7 +138,7 @@ class CoreCandidateCleanupTest {
         replacing: Boolean,
         restoring: Boolean = false,
     ) = runTest {
-        val candidate = ClosingCandidate()
+        val candidate = FakeCore()
         lateinit var installing: Job
         val settings = InMemoryTelegramSettings()
         if (restoring) settings.write(2, CANDIDATE_HASH)
@@ -155,21 +158,9 @@ class CoreCandidateCleanupTest {
         installing.join()
 
         assertTrue(installing.isCancelled)
-        assertEquals(1, candidate.closes)
+        assertEquals(1, candidate.closeCalls)
         assertNull(provider.core.value)
     }
 }
 
 private fun failureChain(failure: Throwable) = generateSequence(failure) { it.cause }
-
-private class ClosingCandidate(
-    private val closeFailure: Throwable? = null,
-    account: Result<AccountSummary> = Result.success(AccountSummary("A Viewer", null)),
-) : CoreClient by FakeCore(account = account) {
-    var closes = 0
-
-    override fun close() {
-        closes++
-        closeFailure?.let { throw it }
-    }
-}

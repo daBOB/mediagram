@@ -21,4 +21,5 @@ dependencies {
     // @Serializable models, so the compiler plugin isn't needed, just the
     // runtime's JsonElement parser. Mirrors core:data's ResumePointFixtureTest.
     testImplementation(libs.findLibrary("kotlinx.serialization").get())
+    testImplementation(project(":core:testing"))
 }

@@ -3,7 +3,6 @@ package catalog
 import app.cash.turbine.test
 import data.CatalogEnrichmentFetcher
 import data.CatalogRepository
-import data.CoreClient
 import data.LibraryEvents
 import data.LibraryUpdateCoordinator
 import data.WatchStateRepository
@@ -26,6 +25,9 @@ import model.Progress
 import model.WatchSnapshot
 import org.junit.After
 import settings.InMemoryTmdbSettings
+import testing.CatalogCoreProvider
+import testing.FakeCore
+import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.LibraryEvent
 import kotlin.test.Test
@@ -36,7 +38,7 @@ import kotlin.test.assertTrue
 private fun catalogViewModel(
     repository: CatalogRepository,
     watchState: WatchStateRepository,
-    enrichment: CatalogEnrichmentFetcher = CatalogEnrichmentFetcher(CatalogCoreProvider(CatalogCore()), InMemoryTmdbSettings()),
+    enrichment: CatalogEnrichmentFetcher = CatalogEnrichmentFetcher(CatalogCoreProvider(FakeCore()), InMemoryTmdbSettings()),
     events: LibraryEvents = LibraryEvents.None,
 ): CatalogViewModel = CatalogViewModel(repository, watchState, LibraryUpdateCoordinator(repository, enrichment), events)
 
@@ -235,11 +237,11 @@ class CatalogViewModelTest {
             val repository = FakeCatalogRepository(movies = 1)
             var fetches = 0
             val core =
-                object : CoreClient by CatalogCore() {
+                object : CoreInterface by FakeCore() {
                     override suspend fun fetchMissing(
                         tmdbKey: String,
                         language: String,
-                        backdropWidth: Int,
+                        backdropWidth: UInt,
                     ): FetchReport {
                         fetches += 1
                         repository.postersArrived = true
@@ -276,11 +278,11 @@ class CatalogViewModelTest {
             val repository = FakeCatalogRepository(movies = 1)
             var fetches = 0
             val core =
-                object : CoreClient by CatalogCore() {
+                object : CoreInterface by FakeCore() {
                     override suspend fun fetchMissing(
                         tmdbKey: String,
                         language: String,
-                        backdropWidth: Int,
+                        backdropWidth: UInt,
                     ): FetchReport {
                         fetches += 1
                         return FetchReport(0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u)
@@ -555,11 +557,11 @@ class CatalogViewModelTest {
                 val pushed = MutableSharedFlow<LibraryEvent>()
                 var fetches = 0
                 val core =
-                    object : CoreClient by CatalogCore() {
+                    object : CoreInterface by FakeCore() {
                         override suspend fun fetchMissing(
                             tmdbKey: String,
                             language: String,
-                            backdropWidth: Int,
+                            backdropWidth: UInt,
                         ): FetchReport {
                             fetches += 1
                             return FetchReport(0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u)

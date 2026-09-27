@@ -19,6 +19,7 @@ import org.junit.Rule
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import testing.FakeCore
 import java.io.File
 import java.io.IOException
 import kotlin.test.Test
@@ -48,7 +49,7 @@ class CacheErrorFallthroughTest {
      * and not only when the source is closed.
      */
     private val totalSize = 6L * 1024 * 1024 + 12_345
-    private val core = FakeCore(totalSize) { offset, len -> ByteArray(len) { ((offset + it) % 251).toByte() } }
+    private val core = FakeCore(totalSize = totalSize, bytesOf = { offset, len -> ByteArray(len) { ((offset + it) % 251).toByte() } })
     private val expected = ByteArray(totalSize.toInt()) { (it % 251).toByte() }
     private lateinit var cache: SimpleCache
 

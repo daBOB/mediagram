@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import settings.LibrarySettings
+import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.LibraryEvent
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -79,7 +80,7 @@ class DefaultWatchSync(
     private val roundLock = Mutex()
 
     private data class Running(
-        val core: CoreClient,
+        val core: CoreInterface,
         val handle: String,
         val task: Deferred<Unit>,
         var again: Boolean = false,
@@ -159,7 +160,7 @@ class DefaultWatchSync(
     }
 
     private suspend fun startOrJoin(
-        core: CoreClient,
+        core: CoreInterface,
         handle: String,
         why: String,
         followUp: Boolean,
@@ -197,7 +198,7 @@ class DefaultWatchSync(
         }
 
     private suspend fun attempt(
-        core: CoreClient,
+        core: CoreInterface,
         handle: String,
         why: String,
     ) {

@@ -4,8 +4,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import model.Kind
 import settings.InMemoryLibrarySettings
+import testing.FakeCore
+import testing.ResolvedCoreProvider
 import uniffi.mediagram_core.CreditRecord
 import uniffi.mediagram_core.SearchHit
+import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.TitleCreditsRecord
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -198,3 +201,72 @@ class CatalogRepositoryTest {
         assertEquals(null, repo.fetchPortrait(6))
     }
 }
+
+/** A [SetSummary] with sensible defaults, so a test only names what it cares about. */
+private fun summary(
+    setId: String = "set-1",
+    kind: String = "movie",
+    title: String? = "Title",
+    show: String? = null,
+    chap: String? = null,
+    path: String? = null,
+    season: Int? = null,
+    episodeFirst: Int? = null,
+    episodeLast: Int? = null,
+    year: Int? = null,
+    container: String = "mp4",
+    vcodec: String? = null,
+    acodec: String? = null,
+    quality: String? = null,
+    hdr: String? = null,
+    duration: Int? = null,
+    posterKey: String? = null,
+    total: Long = 0L,
+    partCount: Int = 1,
+    addedAt: Long = 0,
+    fsk: String? = null,
+    genres: List<String> = emptyList(),
+    subtitles: List<String> = emptyList(),
+    hasSummary: Boolean = false,
+    backdropKey: String? = null,
+    tagline: String? = null,
+    rating: Double? = null,
+    popularity: Double? = null,
+    showStatus: String? = null,
+    collectionId: Long? = null,
+    collectionName: String? = null,
+    seriesType: String? = null,
+): SetSummary = SetSummary(
+    setId = setId,
+    kind = kind,
+    title = title,
+    show = show,
+    chap = chap,
+    path = path,
+    season = season?.toUInt(),
+    episodeFirst = episodeFirst?.toUInt(),
+    episodeLast = episodeLast?.toUInt(),
+    year = year?.toUInt(),
+    container = container,
+    vcodec = vcodec,
+    acodec = acodec,
+    quality = quality,
+    hdr = hdr,
+    duration = duration?.toUInt(),
+    posterKey = posterKey,
+    total = total.toULong(),
+    partCount = partCount.toUInt(),
+    addedAt = addedAt,
+    fsk = fsk,
+    genres = genres,
+    subtitles = subtitles,
+    hasSummary = hasSummary,
+    backdropKey = backdropKey,
+    tagline = tagline,
+    rating = rating,
+    popularity = popularity,
+    showStatus = showStatus,
+    collectionId = collectionId?.toULong(),
+    collectionName = collectionName,
+    seriesType = seriesType,
+)

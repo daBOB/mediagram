@@ -10,7 +10,6 @@ import catalog.SearchViewModel
 import catalog.profile.ProfileViewModel
 import data.CatalogEnrichmentFetcher
 import data.CatalogRepository
-import data.CoreClient
 import data.DefaultWatchStateRepository
 import data.InMemoryCoreStorage
 import data.LibraryUpdateCoordinator
@@ -49,6 +48,7 @@ import system.LanCacheUiState
 import system.LanCacheViewModel
 import system.SystemUiState
 import system.SystemViewModel
+import testing.FakeCore
 import ui.tv.player.TvPlayerFixture
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SearchHit
@@ -58,7 +58,7 @@ import java.io.File
 internal enum class TvSetupStage { APPLICATION, SIGN_IN, LIBRARY, READY }
 
 /**
- * A real [SetupViewModel] over a mocked [CoreClient] — the minimum TvApp's
+ * A real [SetupViewModel] over a fake `CoreInterface` — the minimum TvApp's
  * setup screens need, not ui-mobile's full login/library fixture. TvApp and
  * `TvSetupStep` only ever drive [SetupViewModel] itself; sign-in and library
  * selection each have their own ViewModel, which nothing under test here
@@ -74,8 +74,8 @@ internal enum class TvSetupStage { APPLICATION, SIGN_IN, LIBRARY, READY }
  * [profiles] and [chosenProfileId] back a real [ProfileViewModel] the same
  * way — `TvApp` resolves one through `TvProfileGate` the moment `Ready` is
  * reached, so any test that reaches `READY` needs one ready to resolve too,
- * over [FakeWatchStateRepository] rather than the `CoreClient` mock the
- * setup plumbing above uses: that mock is stubbed only for the calls
+ * over [FakeWatchStateRepository] rather than the fake core the
+ * setup plumbing above uses: that fake is configured only for the calls
  * `SetupViewModel` itself makes. A real [CatalogViewModel] over a mocked
  * [CatalogRepository] holding [sets] stands behind the catalogue the gate
  * opens onto, the way ui-mobile's `LibraryFlowFixture` builds its own. A
@@ -121,9 +121,11 @@ internal class TvAppFixture(
         )
 
     init {
-        val core = mockk<CoreClient>()
-        every { core.isAuthorized() } returns (stage == TvSetupStage.LIBRARY || stage == TvSetupStage.READY)
-        coEvery { core.listLibraries() } returns listOf(LibraryChoice("films", "Family films"))
+        val core =
+            FakeCore(
+                authorized = stage == TvSetupStage.LIBRARY || stage == TvSetupStage.READY,
+                libraries = listOf(LibraryChoice("films", "Family films")),
+            )
         val telegram = InMemoryTelegramSettings()
         val library = InMemoryLibrarySettings()
         val dispatcher = Dispatchers.Main.immediate

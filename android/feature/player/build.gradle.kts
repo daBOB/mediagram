@@ -3,7 +3,7 @@
 //
 // What belongs here and what does not: this module owns the library. Which
 // set is open, whether it is preparing or has failed, stopping when a screen
-// is left for good — anything that needs CoreClient. It does not own
+// is left for good — anything that needs the generated core. It does not own
 // transport. Whether the player is playing, where the playhead is, how long
 // the set runs, and seeking by an increment are facts ExoPlayer already
 // keeps, and the surfaces read them through media3's own Compose state

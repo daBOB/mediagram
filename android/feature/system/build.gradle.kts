@@ -18,6 +18,7 @@ dependencies {
     implementation(project(":core:playback"))
 
     testImplementation(libs.findLibrary("mockk").get())
+    testImplementation(project(":core:testing"))
     // SystemViewModelTest and LanCacheViewModel's tests need a real
     // android.content.Context (ApplicationProvider, permission checks); the
     // plain unit-test android.jar stub has none, so they run under

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.shareIn
 import settings.LibrarySettings
+import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.LibraryEvent
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -71,7 +72,7 @@ class CoreLibraryEvents(
         }
 
     private fun listenOn(
-        core: CoreClient,
+        core: CoreInterface,
         handle: String,
     ): Flow<LibraryEvent> =
         flow {

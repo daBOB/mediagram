@@ -1,6 +1,9 @@
 package data
 
 import kotlinx.coroutines.test.runTest
+import testing.FakeCore
+import testing.ResolvedCoreProvider
+import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.PreferenceRow
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -8,11 +11,11 @@ import kotlin.test.assertTrue
 
 /**
  * A core whose preference calls are backed by an in-memory list, the same
- * shape [WatchStateRepositoryTest]'s `StateCoreClient` uses: this
+ * shape [WatchStateRepositoryTest]'s `StateCore` uses: this
  * repository filters and writes back what it read, which `FakeCore`'s
  * fixed answers cannot stand in for.
  */
-private class PreferenceCoreClient : CoreClient by FakeCore() {
+private class PreferenceCore : CoreInterface by FakeCore() {
     private val rows = mutableListOf<PreferenceRow>()
 
     override suspend fun preferences(profileId: String): List<PreferenceRow> = rows.toList()
@@ -28,7 +31,7 @@ class PlayerPreferencesTest {
 
     @Test
     fun loadFiltersToTheAskedScope() = runTest {
-        val core = PreferenceCoreClient()
+        val core = PreferenceCore()
         val preferences = DefaultPlayerPreferences(ResolvedCoreProvider(core))
         core.setPreference("p1", "key:tmdb-tv-1399", "speed", "1.5")
         core.setPreference("p1", "set:01FILM", "speed", "1")
@@ -40,14 +43,14 @@ class PlayerPreferencesTest {
 
     @Test
     fun nothingRememberedForAScopeAnswersAnEmptyMap() = runTest {
-        val preferences = DefaultPlayerPreferences(ResolvedCoreProvider(PreferenceCoreClient()))
+        val preferences = DefaultPlayerPreferences(ResolvedCoreProvider(PreferenceCore()))
 
         assertEquals(emptyMap(), preferences.load("p1", "set:01FILM"))
     }
 
     @Test
     fun rememberingNullForgetsTheChoice() = runTest {
-        val core = PreferenceCoreClient()
+        val core = PreferenceCore()
         val preferences = DefaultPlayerPreferences(ResolvedCoreProvider(core))
         preferences.remember("p1", "show:Geldhochschule", "speed", "1.5")
         assertEquals(mapOf("speed" to "1.5"), preferences.load("p1", "show:Geldhochschule"))

@@ -1,6 +1,7 @@
 package playback
 
 import kotlinx.coroutines.test.runTest
+import testing.FakeCore
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -12,7 +13,7 @@ class SetChunkSourceTest {
         runTest {
             val total = 2L * CHUNK_BYTES + 777
             val core =
-                FakeCore(totalSize = total) { offset, len -> ByteArray(len) { ((offset + it) % 251).toByte() } }
+                FakeCore(totalSize = total, bytesOf = { offset, len -> ByteArray(len) { ((offset + it) % 251).toByte() } })
             val source = TelegramChunkSource(core, PlaybackCounters())
 
             val chunk = source.chunk("s1", index = 2, totalSize = total)
@@ -25,7 +26,7 @@ class SetChunkSourceTest {
         runTest {
             val total = 3L * CHUNK_BYTES
             val core =
-                FakeCore(totalSize = total) { offset, len -> ByteArray(len) { ((offset + it) % 251).toByte() } }
+                FakeCore(totalSize = total, bytesOf = { offset, len -> ByteArray(len) { ((offset + it) % 251).toByte() } })
             val source = TelegramChunkSource(core, PlaybackCounters())
 
             val chunk = source.chunk("s1", index = 1, totalSize = total)

@@ -15,6 +15,9 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import settings.InMemoryLibrarySettings
 import settings.LibrarySettings
+import testing.FakeCore
+import testing.ResolvedCoreProvider
+import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.LibraryEvent
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -108,10 +111,10 @@ class LibraryEventsTest {
         runTest {
             val settings = InMemoryLibrarySettings().apply { write("library-1") }
             val quiet = FakeCore()
-            val current = MutableStateFlow<CoreClient?>(quiet)
+            val current = MutableStateFlow<CoreInterface?>(quiet)
             val provider =
                 object : CoreProvider by ResolvedCoreProvider(quiet) {
-                    override val core: StateFlow<CoreClient?> = current
+                    override val core: StateFlow<CoreInterface?> = current
                 }
             val heard = async { CoreLibraryEvents(provider, settings).events().first() }
             runCurrent()

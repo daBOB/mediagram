@@ -6,6 +6,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import settings.InMemoryTelegramSettings
 import settings.TelegramSettings
+import testing.FakeCore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

@@ -23,12 +23,19 @@ dependencies {
     // desktop jar.
     implementation("${libs.findLibrary("jna").get().get()}@aar")
     implementation(libs.findLibrary("kotlinx.coroutines.android").get())
+
+    // RealCoreContractTest runs :core:testing's CoreContract suite against
+    // this module's own real Core — the dependency points down to core:data
+    // (by way of :core:testing) only for this androidTest configuration,
+    // never for core:rust's own main sources, so it does not reverse the
+    // "feature/ui -> core:data -> core:rust" module direction.
+    androidTestImplementation(project(":core:testing"))
 }
 
 // The cross-compiled .so is not committed (see .gitignore), so a clean
 // checkout has bindings but no library behind them. Kotlin compiles,
 // the APK assembles, installs and launches — and then throws
-// UnsatisfiedLinkError the first time a screen resolves CoreClient. This
+// UnsatisfiedLinkError the first time a screen resolves the core. This
 // makes that a build failure instead of a runtime one.
 //
 // The guard refuses rather than running the build script itself. The .so

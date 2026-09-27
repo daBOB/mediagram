@@ -1,11 +1,12 @@
 package setup
 
-import data.CoreClient
 import data.DefaultWatchSync
 import data.LibraryEvents
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
+import testing.FakeCore
+import testing.FakeCoreHandle
 import uniffi.mediagram_core.Profile
 import uniffi.mediagram_core.StateSnapshot
 import uniffi.mediagram_core.SyncOutcome
@@ -16,7 +17,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
-private class WatchCore : CoreClient by FakeCore(authorized = true) {
+private class WatchCore : FakeCoreHandle by FakeCore(authorized = true) {
     val writes = mutableListOf<String>()
     var syncs = 0
     var readFailure: Exception? = null

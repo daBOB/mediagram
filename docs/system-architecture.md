@@ -286,11 +286,12 @@ in the core stay `u64` throughout; only in-memory buffer lengths narrow.
 |---|---|
 | `app` | the single activity, and the phone-or-television branch |
 | `core:rust` | the generated UniFFI binding over `mediagram-core` |
-| `core:data` | `CoreClient`, `CatalogRepository`, and settings in `EncryptedSharedPreferences` |
+| `core:data` | `CoreProvider`, `CatalogRepository`, and settings in `EncryptedSharedPreferences` |
 | `core:playback` | `MlibDataSource`, `CacheProvider`, `PlayerFactory` |
 | `core:ffmpeg` | Media3's FFmpeg audio decoder, vendored, for DTS and TrueHD |
 | `core:model` | `MediaSet` and `Kind`, shared by every surface |
 | `core:designsystem` | theme and spacing |
+| `core:testing` | `FakeCore`, the one fake of the generated core's `CoreInterface`, and the contract suite run against it and against the real core |
 | `feature:{catalog,player,setup,system}` | view models and UI state, surface-independent |
 | `ui-mobile` | every screen the phone has |
 | `ui-common` | composables and pure rules shared by phone and TV (formatters, position model, player lifecycle) |
@@ -298,6 +299,11 @@ in the core stay `u64` throughout; only in-memory buffer lengths narrow.
 
 Direction is `ui → feature → core:data → core:rust`, with
 `core:playback → core:data`. A feature module never imports another.
+`core:testing` sits outside this chain, depended on only by other modules'
+test sources (`core:rust`'s `androidTest` included), never by any main source
+set. Every ViewModel and repository above `core:data` reaches the generated
+core through its own `CoreInterface`, not a hand-written wrapper: `CoreProvider`
+hands one out, and owns closing it.
 The `setup.login` package owns the phone, code, and password sign-in state
 machine; catalog owns profile selection and library browsing.
 Inside `ui-mobile`, screens live in `ui.catalog`, `ui.player`, `ui.profile`,
@@ -502,14 +508,22 @@ network failure; the next round still retries the send. Imported profile creatio
 counts as a change on both surfaces, even when the profile has no watched titles.
 
 Android's provider serializes closing and clearing account storage with core
-construction. `DefaultCoreClient.close()` first calls `retireLocalState()`: the
-native database mutex closes any open connection and permanently rejects that
-core's queued or later local-state operations. Releasing a UniFFI handle alone
-cannot guarantee this, because queued blocking work owns a separate native
-reference. Retirement preserves files for ordinary core replacement; account
-reset deletes them only after retirement. This boundary does not drain network
-operations. Profile state is invalidated after a completed reset, and asynchronous
-reads publish only while their originating core and selection are current.
+construction. `StoredCoreProvider`'s close fence first calls `retireLocalState()`:
+the native database mutex closes any open connection and permanently rejects
+that core's queued or later local-state operations. Releasing a UniFFI handle
+alone cannot guarantee this, because queued blocking work owns a separate
+native reference. Retirement preserves files for ordinary core replacement;
+account reset deletes them only after retirement. This boundary does not
+drain network operations. Profile state is invalidated after a completed
+reset, and asynchronous reads publish only while their originating core and
+selection are current.
+
+The fence lives in `CoreProvider`, not in a wrapper around the generated
+`Core`: the generated `CoreInterface` carries no `close()` of its own, so
+`StoredCoreProvider` is generic over a type that is both `CoreInterface` and
+`AutoCloseable` — the real `Core` is both already, and `core:testing`'s
+`FakeCore` implements the same pair (as `FakeCoreHandle`) so a lifecycle test
+needs no native library.
 
 Initial provisioning refuses to overwrite an installed core. Application
 replacement reloads watch-state ownership before reporting success. If the

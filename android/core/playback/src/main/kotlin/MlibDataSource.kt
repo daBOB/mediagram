@@ -10,9 +10,9 @@ import androidx.media3.common.C
 import androidx.media3.datasource.BaseDataSource
 import androidx.media3.datasource.DataSourceException
 import androidx.media3.datasource.DataSpec
-import data.CoreClient
 import kotlinx.coroutines.runBlocking
 import uniffi.mediagram_core.CoreException
+import uniffi.mediagram_core.CoreInterface
 import java.io.IOException
 
 /**
@@ -43,7 +43,7 @@ fun setUri(setId: String): Uri =
  * be current when the player was built.
  */
 class MlibDataSource(
-    private val core: CoreClient?,
+    private val core: CoreInterface?,
     private val chunks: SetChunkSource,
 ) : BaseDataSource(true) {
     private var setId: String? = null
@@ -66,7 +66,7 @@ class MlibDataSource(
         // thread and expects it to block until the size is known.
         val setTotal =
             try {
-                runBlocking { client.totalSize(id) }
+                runBlocking { client.totalSize(id).toLong() }
             } catch (e: CoreException) {
                 throw IOException("could not read the set's size", e)
             }

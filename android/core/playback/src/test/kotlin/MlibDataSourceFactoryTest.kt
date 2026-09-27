@@ -1,9 +1,9 @@
 package playback
 
 import androidx.media3.datasource.DataSpec
-import data.CoreClient
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import uniffi.mediagram_core.CoreInterface
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -20,7 +20,7 @@ class MlibDataSourceFactoryTest {
      */
     @Test
     fun eachReadSessionIsBoundToWhicheverCoreIsCurrentThen() {
-        var current: CoreClient? = coreWithBytes(1_000)
+        var current: CoreInterface? = coreWithBytes(1_000)
         val factory = MlibDataSourceFactory(PlaybackCounters()) { current }
 
         val before = factory.createDataSource().open(DataSpec(setUri("s1")))

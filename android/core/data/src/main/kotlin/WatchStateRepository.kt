@@ -13,13 +13,14 @@ import model.Profile
 import model.Progress
 import model.WatchSnapshot
 import model.Watched
+import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.ListRow
 import uniffi.mediagram_core.ProgressRow
 import uniffi.mediagram_core.StateSnapshot
 import uniffi.mediagram_core.WatchedRow
 
 /**
- * The chosen profile's watch state, over [CoreClient]. Everything reads
+ * The chosen profile's watch state, over [CoreInterface]. Everything reads
  * from the in-memory flows below; a write goes to the core first, on
  * [dispatcher], and only updates the flow once the core has confirmed it —
  * this is the one copy the rest of the app trusts, so it never shows a
@@ -168,16 +169,16 @@ class DefaultWatchStateRepository(
     private var revision = 0L
     private var resetRevision = 0L
     private var choiceRequest = 0L
-    private var selectedCore: CoreClient? = null
+    private var selectedCore: CoreInterface? = null
 
     private data class Selection(
-        val core: CoreClient,
+        val core: CoreInterface,
         val revision: Long,
         val id: String,
     )
 
     private data class Read(
-        val core: CoreClient,
+        val core: CoreInterface,
         val revision: Long,
         val profiles: List<Profile>,
         val chosen: String?,
@@ -339,14 +340,14 @@ class DefaultWatchStateRepository(
         }
 
     /** A write that always has somewhere to write to — no chosen profile, nothing to do. */
-    private suspend fun writing(write: suspend (CoreClient, String) -> Unit) {
+    private suspend fun writing(write: suspend (CoreInterface, String) -> Unit) {
         val selected = selection() ?: return
         withContext(dispatcher) { write(selected.core, selected.id) }
         refreshSnapshot(selected)
     }
 
     /** As [writing], for a call that answers whether it took effect. */
-    private suspend fun listWriting(write: suspend (CoreClient, String) -> Boolean): Boolean {
+    private suspend fun listWriting(write: suspend (CoreInterface, String) -> Boolean): Boolean {
         val selected = selection() ?: return false
         val ok = withContext(dispatcher) { write(selected.core, selected.id) }
         if (ok) refreshSnapshot(selected)
@@ -376,7 +377,7 @@ class DefaultWatchStateRepository(
 
     /** Called with [publicationLock] held so invalidation cannot race the following publication. */
     private fun current(
-        core: CoreClient,
+        core: CoreInterface,
         started: Long,
     ): Boolean = revision == started && coreProvider.core.value === core
 }

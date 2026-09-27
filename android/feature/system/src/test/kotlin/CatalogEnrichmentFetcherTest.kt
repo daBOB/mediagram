@@ -6,6 +6,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import settings.InMemoryTmdbSettings
+import testing.FakeCore
+import testing.FakeCoreProvider
 import uniffi.mediagram_core.FetchReport
 import kotlin.test.Test
 import kotlin.test.assertEquals

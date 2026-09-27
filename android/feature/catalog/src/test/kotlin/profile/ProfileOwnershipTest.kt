@@ -1,9 +1,6 @@
 package catalog.profile
 
-import catalog.CatalogCore
-import catalog.CatalogCoreProvider
 import catalog.MainDispatcherRule
-import data.CoreClient
 import data.DefaultWatchStateRepository
 import data.WatchSync
 import kotlinx.coroutines.CompletableDeferred
@@ -14,11 +11,14 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import model.Profile
 import org.junit.Rule
+import testing.CatalogCoreProvider
+import testing.FakeCore
+import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.StateSnapshot
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-private class ProfileCore : CoreClient by CatalogCore() {
+private class ProfileCore : CoreInterface by FakeCore() {
     var chosen = "a"
     var pauseNext = false
     var failPaused = false

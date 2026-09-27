@@ -3,6 +3,8 @@ package data
 import kotlinx.coroutines.test.runTest
 import settings.InMemoryTelegramSettings
 import settings.TelegramCredentials
+import testing.FakeCore
+import testing.FakeCoreHandle
 import uniffi.mediagram_core.AccountSummary
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -23,15 +25,12 @@ class CoreProviderReplaceTest {
     ) = StoredCoreProvider(settings) { credentials ->
         log += "build ${credentials.apiId}"
         val core =
-            FakeCore(
-                account =
-                    if (answers(credentials)) {
-                        Result.success(AccountSummary("A Viewer", null))
-                    } else {
-                        Result.failure(IllegalStateException("API_ID_INVALID"))
-                    },
-            )
-        object : CoreClient by core {
+            if (answers(credentials)) {
+                FakeCore(accountAnswer = AccountSummary("A Viewer", null))
+            } else {
+                FakeCore(accountFailure = IllegalStateException("API_ID_INVALID"))
+            }
+        object : FakeCoreHandle by core {
             override fun close() {
                 log += "close ${credentials.apiId}"
                 core.close()

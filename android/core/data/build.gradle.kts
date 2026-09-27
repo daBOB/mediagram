@@ -9,13 +9,16 @@ android {
 }
 
 dependencies {
-    // `api`, not `implementation`: CoreClient's own signatures (SetSummary,
-    // AuthOutcome) come straight from the generated bindings, so anything
-    // that implements or calls CoreClient needs them on its own classpath.
+    // `api`, not `implementation`: CoreProvider hands out the generated
+    // CoreInterface directly (SetSummary, AuthOutcome and the rest of its
+    // signatures come straight from the generated bindings), so anything
+    // that calls through it needs them on its own classpath.
     api(project(":core:rust"))
     implementation(project(":core:model"))
 
     androidTestImplementation(libs.findLibrary("kotlinx.coroutines.test").get())
+
+    testImplementation(project(":core:testing"))
 
     // ResumePointFixtureTest reads the web's own resume-point.json as plain
     // JSON — no @Serializable models, so the compiler plugin isn't needed,

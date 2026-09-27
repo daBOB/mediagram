@@ -1,11 +1,11 @@
 package setup
 
-import data.CoreClient
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import settings.InMemoryTelegramSettings
 import settings.TelegramCredentials
 import settings.TelegramSettings
+import testing.FakeCore
 import uniffi.mediagram_core.CoreException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -20,13 +20,8 @@ class SettingsIdentityFailureTest {
     @Test
     fun failureClosingTheOldCoreDoesNotClaimTelegramRejectedTheIdentity() =
         runTest {
-            val core = FakeCore()
-            val fixture =
-                SetupFixture(core = core, build = {
-                    object : CoreClient by core {
-                        override fun close(): Unit = throw IllegalStateException("local close failed")
-                    }
-                }).signedIn()
+            val core = FakeCore(closeFailure = IllegalStateException("local close failed"))
+            val fixture = SetupFixture(core = core).signedIn()
 
             assertFailedReplacement(fixture, fixture.settingsViewModel())
         }

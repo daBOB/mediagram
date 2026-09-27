@@ -4,6 +4,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import model.Profile
 import model.WatchSnapshot
+import testing.FakeCore
+import testing.ResolvedCoreProvider
+import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.ProgressRow
 import uniffi.mediagram_core.StateSnapshot
 import kotlin.test.Test
@@ -18,11 +21,11 @@ import uniffi.mediagram_core.Profile as CoreProfile
  * `FakeCore`'s fixed answers — this repository writes and immediately reads
  * back what it wrote, which a canned list of results cannot stand in for.
  */
-private class StateCoreClient(
+private class StateCore(
     initialProfiles: List<CoreProfile> = emptyList(),
     private var chosen: String? = null,
     private val refuseChoose: Boolean = false,
-) : CoreClient by FakeCore() {
+) : CoreInterface by FakeCore() {
     private val profileList = initialProfiles.toMutableList()
     private val snapshots = mutableMapOf<String, StateSnapshot>()
 
@@ -82,7 +85,7 @@ class WatchStateRepositoryTest {
     fun reloadPopulatesProfilesAndTheChosenOnesSnapshot() =
         runTest {
             val alice = CoreProfile("p1", "Alice")
-            val core = StateCoreClient(initialProfiles = listOf(alice), chosen = "p1")
+            val core = StateCore(initialProfiles = listOf(alice), chosen = "p1")
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             repository.reload()
@@ -95,7 +98,7 @@ class WatchStateRepositoryTest {
     @Test
     fun noProfileChosenReloadsToAnEmptySnapshot() =
         runTest {
-            val core = StateCoreClient()
+            val core = StateCore()
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             repository.reload()
@@ -107,7 +110,7 @@ class WatchStateRepositoryTest {
     @Test
     fun choosingAKnownProfileSetsItAndLoadsItsSnapshot() =
         runTest {
-            val core = StateCoreClient(initialProfiles = listOf(CoreProfile("p1", "Alice")))
+            val core = StateCore(initialProfiles = listOf(CoreProfile("p1", "Alice")))
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             val chose = repository.chooseProfile("p1")
@@ -119,7 +122,7 @@ class WatchStateRepositoryTest {
     @Test
     fun choosingAnUnknownProfileChangesNothing() =
         runTest {
-            val core = StateCoreClient(refuseChoose = true)
+            val core = StateCore(refuseChoose = true)
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             val chose = repository.chooseProfile("nobody")
@@ -131,7 +134,7 @@ class WatchStateRepositoryTest {
     @Test
     fun creatingAProfileAddsItWithoutChoosingIt() =
         runTest {
-            val core = StateCoreClient()
+            val core = StateCore()
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             val created = repository.createProfile("Bea")
@@ -144,7 +147,7 @@ class WatchStateRepositoryTest {
     @Test
     fun aKidsProfileIsCreatedAndListedAsOne() =
         runTest {
-            val core = StateCoreClient()
+            val core = StateCore()
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             val created = repository.createProfile("Mia", kids = true)
@@ -156,7 +159,7 @@ class WatchStateRepositoryTest {
     @Test
     fun aWriteWithNoChosenProfileDoesNothing() =
         runTest {
-            val core = StateCoreClient()
+            val core = StateCore()
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             repository.setProgress("set-1", 12.0, 100.0)
@@ -167,7 +170,7 @@ class WatchStateRepositoryTest {
     @Test
     fun setProgressWritesUnderTheChosenProfileAndRefreshesTheSnapshot() =
         runTest {
-            val core = StateCoreClient(initialProfiles = listOf(CoreProfile("p1", "Alice")), chosen = "p1")
+            val core = StateCore(initialProfiles = listOf(CoreProfile("p1", "Alice")), chosen = "p1")
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
             repository.reload()
 
@@ -181,11 +184,11 @@ class WatchStateRepositoryTest {
             )
         }
 
-    /** [CoreClient.setKids] takes no profile id — marking is shared, not this profile's own. */
+    /** [CoreInterface.setKids] takes no profile id — marking is shared, not this profile's own. */
     @Test
     fun setKidsWritesGloballyRatherThanUnderAProfile() =
         runTest {
-            val core = StateCoreClient(initialProfiles = listOf(CoreProfile("p1", "Alice")), chosen = "p1")
+            val core = StateCore(initialProfiles = listOf(CoreProfile("p1", "Alice")), chosen = "p1")
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
             repository.reload()
 

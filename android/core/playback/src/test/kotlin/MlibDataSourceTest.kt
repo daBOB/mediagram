@@ -3,9 +3,10 @@ package playback
 import androidx.media3.common.C
 import androidx.media3.datasource.DataSourceException
 import androidx.media3.datasource.DataSpec
-import data.CoreClient
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import testing.FakeCore
+import uniffi.mediagram_core.CoreInterface
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -19,7 +20,7 @@ internal fun coreWithBytes(n: Int) =
     )
 
 /** [MlibDataSource] reading straight through [TelegramChunkSource], with no memo in front of it. */
-internal fun dataSource(core: CoreClient) = MlibDataSource(core, TelegramChunkSource(core, PlaybackCounters()))
+internal fun dataSource(core: CoreInterface) = MlibDataSource(core, TelegramChunkSource(core, PlaybackCounters()))
 
 @RunWith(RobolectricTestRunner::class)
 class MlibDataSourceTest {

@@ -10,7 +10,7 @@ android {
     defaultConfig {
         applicationId = "com.mediagram.android"
         versionCode = 18
-        versionName = "0.68.12"
+        versionName = "0.68.13"
     }
 
     buildTypes {
@@ -51,7 +51,7 @@ dependencies {
     implementation(project(":ui-mobile"))
     implementation(project(":ui-tv"))
     implementation(project(":core:model"))
-    // Provides the Core/CoreClient DI wiring in di/CoreModule.kt and the
+    // Provides the CoreProvider DI wiring in di/CoreModule.kt and the
     // PackageSettings field MainActivity injects to route between screens.
     implementation(project(":core:data"))
 }

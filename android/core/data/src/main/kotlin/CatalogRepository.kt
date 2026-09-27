@@ -13,6 +13,7 @@ import model.Person
 import model.PersonHit
 import model.TitleCredits
 import settings.LibrarySettings
+import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.CreditRecord
 import uniffi.mediagram_core.PeopleHitRecord
 import uniffi.mediagram_core.PersonRecord
@@ -33,7 +34,7 @@ interface CatalogRepository {
 
     /**
      * The catalog's sets matching every word of [query], best first — the
-     * same ranking [CoreClient.search] runs. A thin pass-through rather than
+     * same ranking [uniffi.mediagram_core.CoreInterface.search] runs. A thin pass-through rather than
      * a join onto [sets]: the caller already holds that list and joining it
      * here would be a second copy of the same lookup.
      */
@@ -81,12 +82,12 @@ interface CatalogRepository {
     /** People whose name matches every word of [query], most-credited first. */
     suspend fun searchPeople(query: String): List<PersonHit> = emptyList()
 
-    /** Downloads a person's portrait and answers its file's path, or `null` — see [CoreClient.fetchPortrait]. */
+    /** Downloads a person's portrait and answers its file's path, or `null` — see [uniffi.mediagram_core.CoreInterface.fetchPortrait]. */
     suspend fun fetchPortrait(personId: Long): String? = null
 }
 
 /**
- * Reads the catalog through [CoreClient], mapping its raw `kind` strings
+ * Reads the catalog through [CoreInterface], mapping its raw `kind` strings
  * onto [Kind]. An unrecognised kind remains visible with the films because
  * a newer uploader may write a kind this client predates.
  *
@@ -136,7 +137,7 @@ class DefaultCatalogRepository(
         }
 
     // `posterPath` is a plain synchronous call — a disk check per set with
-    // a poster key — and `CoreClient` makes no promise of its own about
+    // a poster key — and `CoreInterface` makes no promise of its own about
     // which thread a suspend function resumes on. Off [dispatcher] rather
     // than left to run wherever the caller's scope happens to be (usually
     // main, for a ViewModel): a few hundred of those in a row is exactly
@@ -183,7 +184,7 @@ class DefaultCatalogRepository(
      * fifth before this app is rebuilt.
      */
     private fun toMediaSet(
-        core: CoreClient,
+        core: CoreInterface,
         summary: SetSummary,
     ): MediaSet {
         val kind =
@@ -239,7 +240,7 @@ class DefaultCatalogRepository(
 
     override suspend fun person(personId: Long): Person? {
         val core = coreProvider.awaitCore()
-        val record: PersonRecord = core.person(personId) ?: return null
+        val record: PersonRecord = core.person(personId.toULong()) ?: return null
         return Person(record.personId.toLong(), record.name, record.portraitKey?.let(core::posterPath), record.titleKeys)
     }
 
@@ -251,12 +252,12 @@ class DefaultCatalogRepository(
         return core.searchPeople(query).map { it.toPersonHit(core) }
     }
 
-    override suspend fun fetchPortrait(personId: Long): String? = coreProvider.awaitCore().fetchPortrait(personId)
+    override suspend fun fetchPortrait(personId: Long): String? = coreProvider.awaitCore().fetchPortrait(personId.toULong())
 
-    private fun CreditRecord.toCredit(core: CoreClient): Credit =
+    private fun CreditRecord.toCredit(core: CoreInterface): Credit =
         Credit(personId.toLong(), name, role, portraitKey?.let(core::posterPath))
 
-    private fun PeopleHitRecord.toPersonHit(core: CoreClient): PersonHit =
+    private fun PeopleHitRecord.toPersonHit(core: CoreInterface): PersonHit =
         PersonHit(personId.toLong(), name, portraitKey?.let(core::posterPath), titleKeys)
 
     private companion object {

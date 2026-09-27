@@ -1,9 +1,10 @@
 package setup
 
-import data.CoreClient
 import data.InMemoryCoreStorage
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
+import testing.FakeCore
+import testing.FakeCoreHandle
 import uniffi.mediagram_core.Profile
 import uniffi.mediagram_core.StateSnapshot
 import kotlin.test.Test
@@ -18,7 +19,7 @@ class ProfileResetTest {
     private fun fixture(storage: InMemoryCoreStorage = InMemoryCoreStorage()): SetupFixture {
         val raw = FakeCore(authorized = true)
         val core =
-            object : CoreClient by raw {
+            object : FakeCoreHandle by raw {
                 override suspend fun profiles() = listOf(Profile("alice", "Alice"))
 
                 override suspend fun chosenProfile() = "alice"
@@ -32,23 +33,19 @@ class ProfileResetTest {
     @Test
     fun signingOutReopensFreshProfileStorageWithTheSameDeviceCredentials() =
         runTest {
-            var closed = false
             var builds = 0
+            val firstRaw = FakeCore(authorized = true)
             val first =
-                object : CoreClient by FakeCore(authorized = true) {
+                object : FakeCoreHandle by firstRaw {
                     override suspend fun profiles() = listOf(Profile("alice", "Alice"))
 
                     override suspend fun chosenProfile() = "alice"
-
-                    override fun close() {
-                        closed = true
-                    }
                 }
             val fixture = SetupFixture(build = { if (builds++ == 0) first else FakeCore() }).signedIn()
             fixture.watchState.reload()
             val vm = fixture.settingsViewModel()
             vm.signOut()
-            assertTrue(closed)
+            assertTrue(firstRaw.closed)
             fixture.watchState.reload()
             assertNull(fixture.watchState.chosenProfileId.value)
             assertEquals(2, builds)

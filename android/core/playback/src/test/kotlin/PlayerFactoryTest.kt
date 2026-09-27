@@ -19,6 +19,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import testing.FakeCore
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -58,7 +59,7 @@ class PlayerFactoryTest {
     fun repeatedBoundedReadsUseCachedBytesWithoutAnotherCoreRead() =
         runTest {
             val context = ApplicationProvider.getApplicationContext<Context>()
-            val core = FakeCore(totalSize = 32_768) { offset, len -> ByteArray(len) { ((offset + it) % 251).toByte() } }
+            val core = FakeCore(totalSize = 32_768, bytesOf = { offset, len -> ByteArray(len) { ((offset + it) % 251).toByte() } })
             val counters = PlaybackCounters()
             val factory = cacheDataSourceFactory(context, counters) { core }
             val start = 73L

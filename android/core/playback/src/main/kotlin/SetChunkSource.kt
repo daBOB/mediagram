@@ -1,7 +1,7 @@
 package playback
 
-import data.CoreClient
 import uniffi.mediagram_core.CoreException
+import uniffi.mediagram_core.CoreInterface
 import java.io.IOException
 
 /**
@@ -52,7 +52,7 @@ fun expectedChunkLength(
  * chunk asks for the full, aligned amount.
  */
 class TelegramChunkSource(
-    private val core: CoreClient,
+    private val core: CoreInterface,
     private val counters: PlaybackCounters,
 ) : SetChunkSource {
     override suspend fun chunk(
@@ -61,7 +61,9 @@ class TelegramChunkSource(
         totalSize: Long,
     ): ByteArray {
         return try {
-            core.read(setId, index * CHUNK_BYTES, expectedChunkLength(index, totalSize)).also { counters.fetched(it.size) }
+            core
+                .read(setId, (index * CHUNK_BYTES).toULong(), expectedChunkLength(index, totalSize).toUInt())
+                .also { counters.fetched(it.size) }
         } catch (e: CoreException) {
             // Wrapped so ExoPlayer's Loader can retry an IOException (a
             // dropped Telegram connection, most likely) through its

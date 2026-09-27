@@ -10,7 +10,7 @@ import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.cache.Cache
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.CacheWriter
-import data.CoreClient
+import uniffi.mediagram_core.CoreInterface
 
 /**
  * The real [PreloadWriter]: a media3 `CacheWriter` over the strict
@@ -32,7 +32,7 @@ import data.CoreClient
  */
 class CacheDataSourceWriter internal constructor(
     private val counters: PlaybackCounters,
-    private val currentCore: () -> CoreClient?,
+    private val currentCore: () -> CoreInterface?,
     private val lan: LanCacheRuntime? = null,
     private val openCache: suspend () -> Cache,
 ) : PreloadWriter {
@@ -40,7 +40,7 @@ class CacheDataSourceWriter internal constructor(
         context: Context,
         counters: PlaybackCounters,
         lan: LanCacheRuntime? = null,
-        currentCore: () -> CoreClient?,
+        currentCore: () -> CoreInterface?,
     ) : this(counters, currentCore, lan, { CacheProvider.get(context) })
 
     private var factory: CacheDataSource.Factory? = null

@@ -95,7 +95,7 @@ class CatalogEnrichmentFetcher
                     return null
                 }
                 current.update { if (quiet) it.copy(hasKey = true) else it.copy(hasKey = true, report = null, error = null) }
-                val report = coreProvider.awaitCore().fetchMissing(key, fallbackLanguage, backdropWidth.pixels())
+                val report = coreProvider.awaitCore().fetchMissing(key, fallbackLanguage, backdropWidth.pixels().toUInt())
                 if (!quiet) current.update { it.copy(report = report) }
                 return report
             } catch (e: CancellationException) {

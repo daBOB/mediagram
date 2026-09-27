@@ -15,14 +15,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
-import data.CoreClient
 import data.DefaultWatchStateRepository
 import data.InMemoryCoreStorage
 import data.StoredCoreProvider
-import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import kotlinx.coroutines.Dispatchers
@@ -41,6 +37,7 @@ import settings.InMemoryTelegramSettings
 import setup.AppearanceViewModel
 import setup.Libraries
 import setup.SettingsViewModel
+import testing.FakeCore
 import uniffi.mediagram_core.AccountSummary
 import java.io.IOException
 import kotlin.test.assertEquals
@@ -56,16 +53,17 @@ class SettingsProfileRetryTest {
         }
     private lateinit var model: SettingsViewModel
     private lateinit var controller: ActivityController<ComponentActivity>
-    private val core = mockk<CoreClient>()
+    private val core =
+        FakeCore(
+            accountAnswer = AccountSummary("Viewer", null),
+            datacenter = 4,
+            profilesFailure = IOException("private-state-path"),
+        )
     private var builds = 0
 
     @Before fun open() {
         mockkStatic(::HiltViewModelFactory)
         every { HiltViewModelFactory(any(), any()) } answers { secondArg() }
-        coEvery { core.account() } returns AccountSummary("Viewer", null)
-        every { core.dcId() } returns 4
-        coEvery { core.profiles() } throws IOException("private-state-path")
-        coEvery { core.chosenProfile() } returns null
         val settings = InMemoryTelegramSettings()
         val provider =
             StoredCoreProvider(settings, Dispatchers.Main.immediate) {
@@ -96,7 +94,6 @@ class SettingsProfileRetryTest {
             // The initial row read awaits credentials; installing them starts the
             // real Settings model before opening its retained Activity-owned screen.
             kotlinx.coroutines.runBlocking { provider.supply(1234, "0123456789abcdef0123456789abcdef") }
-            every { core.close() } returns Unit
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
             controller.get().setContent {
                 CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
@@ -127,12 +124,12 @@ class SettingsProfileRetryTest {
         compose.onNodeWithText("api_hash").assertDoesNotExist()
         compose.onNodeWithText("private-state-path").assertDoesNotExist()
         assertTrue(model.completions.value.isEmpty())
-        coEvery { core.profiles() } returns emptyList()
+        core.profilesFailure = null
         compose.onNodeWithText("Try again").performClick()
         compose.onNodeWithText("Telegram").assertIsDisplayed()
         compose.onNodeWithText("Try again").assertDoesNotExist()
         assertEquals(2, builds)
         assertEquals(1, model.completions.value.size)
-        coVerify(exactly = 2) { core.profiles() }
+        assertEquals(2, core.profilesCalls)
     }
 }

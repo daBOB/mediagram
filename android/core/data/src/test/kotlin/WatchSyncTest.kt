@@ -16,6 +16,9 @@ import model.Profile
 import model.WatchSnapshot
 import settings.InMemoryLibrarySettings
 import settings.LibrarySettings
+import testing.FakeCore
+import testing.ResolvedCoreProvider
+import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.SyncOutcome
 import kotlin.test.Test
@@ -25,9 +28,9 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 
 /** Answers [syncState] from a fixed list, in order, holding the last answer once the list runs out. */
-private class SyncCoreClient(
+private class SyncCore(
     private val outcomes: List<SyncOutcome> = emptyList(),
-) : CoreClient by FakeCore() {
+) : CoreInterface by FakeCore() {
     /** Every handle a round asked to sync, in order — one entry per attempted round. */
     val calls = mutableListOf<String>()
     private var next = 0
@@ -125,7 +128,7 @@ class WatchSyncTest {
             val release = CompletableDeferred<Unit>()
             var calls = 0
             val core =
-                object : CoreClient by FakeCore() {
+                object : CoreInterface by FakeCore() {
                     override suspend fun syncState(handle: String): SyncOutcome {
                         calls++
                         if (calls == 1) release.await()
@@ -155,7 +158,7 @@ class WatchSyncTest {
             val release = CompletableDeferred<Unit>()
             val calls = mutableListOf<String>()
             val core =
-                object : CoreClient by FakeCore() {
+                object : CoreInterface by FakeCore() {
                     override suspend fun syncState(handle: String): SyncOutcome {
                         calls += handle
                         if (calls.size == 1) release.await()
@@ -185,20 +188,20 @@ class WatchSyncTest {
             val release = CompletableDeferred<Unit>()
             var oldCalls = 0
             val old =
-                object : CoreClient by FakeCore() {
+                object : CoreInterface by FakeCore() {
                     override suspend fun syncState(handle: String): SyncOutcome {
                         oldCalls++
                         release.await()
                         return SyncOutcome(0uL, false, null)
                     }
                 }
-            val replacement = SyncCoreClient()
-            val current = MutableStateFlow<CoreClient?>(old)
+            val replacement = SyncCore()
+            val current = MutableStateFlow<CoreInterface?>(old)
             val provider =
                 object : CoreProvider by ResolvedCoreProvider(old) {
                     override val core = current
 
-                    override suspend fun coreOrNull(): CoreClient? = current.value
+                    override suspend fun coreOrNull(): CoreInterface? = current.value
                 }
             val events = TestLibraryEvents()
             val sync = DefaultWatchSync(provider, settingsWithAChosenLibrary(), RecordingRepository(), events, backgroundScope)
@@ -222,7 +225,7 @@ class WatchSyncTest {
             val release = CompletableDeferred<Unit>()
             var calls = 0
             val core =
-                object : CoreClient by FakeCore() {
+                object : CoreInterface by FakeCore() {
                     override suspend fun syncState(handle: String): SyncOutcome {
                         calls++
                         release.await()
@@ -261,7 +264,7 @@ class WatchSyncTest {
             val calls = mutableListOf<String>()
             var oldCancelled = false
             val core =
-                object : CoreClient by FakeCore() {
+                object : CoreInterface by FakeCore() {
                     override suspend fun syncState(handle: String): SyncOutcome {
                         calls += handle
                         if (handle == "old") {
@@ -300,7 +303,7 @@ class WatchSyncTest {
             var completed = false
             var cancelled = false
             val core =
-                object : CoreClient by FakeCore() {
+                object : CoreInterface by FakeCore() {
                     override suspend fun syncState(handle: String): SyncOutcome {
                         try {
                             release.await()
@@ -334,7 +337,7 @@ class WatchSyncTest {
     @Test
     fun foregroundRunsARoundAtOnce() =
         runTest {
-            val core = SyncCoreClient(listOf(SyncOutcome(0uL, false, null)))
+            val core = SyncCore(listOf(SyncOutcome(0uL, false, null)))
             val sync =
                 DefaultWatchSync(
                     ResolvedCoreProvider(core),
@@ -353,7 +356,7 @@ class WatchSyncTest {
     @Test
     fun theTimerRunsAnotherRoundEveryFiveMinutes() =
         runTest {
-            val core = SyncCoreClient(List(3) { SyncOutcome(0uL, false, null) })
+            val core = SyncCore(List(3) { SyncOutcome(0uL, false, null) })
             val sync =
                 DefaultWatchSync(
                     ResolvedCoreProvider(core),
@@ -379,7 +382,7 @@ class WatchSyncTest {
     @Test
     fun backgroundCancelsTheTimerAndRunsOneLastRound() =
         runTest {
-            val core = SyncCoreClient(List(2) { SyncOutcome(0uL, false, null) })
+            val core = SyncCore(List(2) { SyncOutcome(0uL, false, null) })
             val sync =
                 DefaultWatchSync(
                     ResolvedCoreProvider(core),
@@ -404,7 +407,7 @@ class WatchSyncTest {
     @Test
     fun aFailedRoundIsNotedAndDoesNotReload() =
         runTest {
-            val core = SyncCoreClient(listOf(SyncOutcome(0uL, false, "offline")))
+            val core = SyncCore(listOf(SyncOutcome(0uL, false, "offline")))
             val repository = RecordingRepository()
             val sync =
                 DefaultWatchSync(
@@ -424,7 +427,7 @@ class WatchSyncTest {
     @Test
     fun aRoundThatPulledRowsReloadsTheRepository() =
         runTest {
-            val core = SyncCoreClient(listOf(SyncOutcome(3uL, false, null)))
+            val core = SyncCore(listOf(SyncOutcome(3uL, false, null)))
             val repository = RecordingRepository()
             val sync =
                 DefaultWatchSync(
@@ -444,7 +447,7 @@ class WatchSyncTest {
     @Test
     fun aRoundThatPulledNothingDoesNotReload() =
         runTest {
-            val core = SyncCoreClient(listOf(SyncOutcome(0uL, true, null)))
+            val core = SyncCore(listOf(SyncOutcome(0uL, true, null)))
             val repository = RecordingRepository()
             val sync =
                 DefaultWatchSync(
@@ -464,7 +467,7 @@ class WatchSyncTest {
     @Test
     fun aPushedStateEventRunsAnExtraRound() =
         runTest {
-            val core = SyncCoreClient(List(2) { SyncOutcome(0uL, false, null) })
+            val core = SyncCore(List(2) { SyncOutcome(0uL, false, null) })
             val events = TestLibraryEvents()
             val sync =
                 DefaultWatchSync(
@@ -487,7 +490,7 @@ class WatchSyncTest {
     @Test
     fun awaitFirstRoundRequestsTheCurrentLibraryWithoutWaitingForForeground() =
         runTest {
-            val core = SyncCoreClient(listOf(SyncOutcome(0uL, false, null)))
+            val core = SyncCore(listOf(SyncOutcome(0uL, false, null)))
             val sync =
                 DefaultWatchSync(
                     ResolvedCoreProvider(core),
@@ -512,11 +515,11 @@ class WatchSyncTest {
     @Test
     fun awaitFirstRoundReturnsAtOnceWithNoLibraryChosen() =
         runTest {
-            val core = SyncCoreClient()
+            val core = SyncCore()
             var coreLookups = 0
             val provider =
                 object : CoreProvider by ResolvedCoreProvider(core) {
-                    override suspend fun coreOrNull(): CoreClient? {
+                    override suspend fun coreOrNull(): CoreInterface? {
                         coreLookups++
                         return null
                     }
@@ -548,7 +551,7 @@ class WatchSyncTest {
             val entered = CompletableDeferred<Unit>()
             val release = CompletableDeferred<Unit>()
             val core =
-                object : CoreClient by FakeCore() {
+                object : CoreInterface by FakeCore() {
                     override suspend fun syncState(handle: String): SyncOutcome {
                         entered.complete(Unit)
                         release.await()
@@ -573,16 +576,16 @@ class WatchSyncTest {
     @Test
     fun readinessIsResetWhenTheCoreOrLibraryChanges() =
         runTest {
-            val first = SyncCoreClient()
-            val second = SyncCoreClient()
-            val current = MutableStateFlow<CoreClient?>(first)
+            val first = SyncCore()
+            val second = SyncCore()
+            val current = MutableStateFlow<CoreInterface?>(first)
             val provider =
                 object : CoreProvider by ResolvedCoreProvider(first) {
                     override val core = current
 
-                    override suspend fun coreOrNull(): CoreClient? = current.value
+                    override suspend fun coreOrNull(): CoreInterface? = current.value
 
-                    override suspend fun awaitCore(): CoreClient = current.value!!
+                    override suspend fun awaitCore(): CoreInterface = current.value!!
                 }
             val settings = InMemoryLibrarySettings().apply { write("first-library") }
             val sync = DefaultWatchSync(provider, settings, RecordingRepository(), LibraryEvents.None, backgroundScope)
@@ -609,7 +612,7 @@ class WatchSyncTest {
                         return stored.read()
                     }
                 }
-            val core = SyncCoreClient()
+            val core = SyncCore()
             val sync = DefaultWatchSync(ResolvedCoreProvider(core), settings, RecordingRepository(), LibraryEvents.None, backgroundScope)
 
             val waiting = backgroundScope.async { sync.awaitFirstRound() }

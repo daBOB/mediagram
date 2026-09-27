@@ -2,6 +2,9 @@ package data
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
+import testing.FakeCore
+import testing.ResolvedCoreProvider
+import uniffi.mediagram_core.CoreInterface
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -15,7 +18,7 @@ import kotlin.test.assertNull
  */
 class RefreshLogTest {
     private fun repositoryOver(
-        core: CoreClient,
+        core: CoreInterface,
         log: RefreshLog,
     ) = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), log)
 
@@ -24,8 +27,8 @@ class RefreshLogTest {
         runTest {
             val refusal = java.io.IOException("private-state-path")
             val core =
-                object : CoreClient by FakeCore() {
-                    override suspend fun refreshLibrary(handle: String): Long = throw refusal
+                object : CoreInterface by FakeCore() {
+                    override suspend fun refreshLibrary(handle: String): ULong = throw refusal
                 }
             val log = RefreshLog()
             val repository = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), log)
@@ -82,8 +85,8 @@ class RefreshLogTest {
     fun aFailedRefreshKeepsTheCoresOwnSentence() =
         runTest {
             val core =
-                object : CoreClient by FakeCore() {
-                    override suspend fun refreshLibrary(handle: String): Long =
+                object : CoreInterface by FakeCore() {
+                    override suspend fun refreshLibrary(handle: String): ULong =
                         throw uniffi.mediagram_core.CoreException.Network("the channel could not be reached")
                 }
             val log = RefreshLog()

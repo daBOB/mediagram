@@ -13,7 +13,7 @@ import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import data.CoreClient
+import uniffi.mediagram_core.CoreInterface
 
 /**
  * Wraps [MlibDataSourceFactory] in the process-wide disk cache: a cache hit
@@ -30,7 +30,7 @@ suspend fun cacheDataSourceFactory(
     context: Context,
     counters: PlaybackCounters,
     lan: LanCacheRuntime? = null,
-    currentCore: () -> CoreClient?,
+    currentCore: () -> CoreInterface?,
 ): CacheDataSource.Factory = cacheDataSourceFactory(CacheProvider.get(context), counters, lan, currentCore)
 
 /**
@@ -48,7 +48,7 @@ internal fun playbackDataSourceFactory(
     cache: Cache,
     counters: PlaybackCounters,
     lan: LanCacheRuntime? = null,
-    currentCore: () -> CoreClient?,
+    currentCore: () -> CoreInterface?,
 ): CacheDataSource.Factory =
     cacheDataSourceFactory(cache, counters, lan, currentCore)
         // setFlags replaces rather than adds; the base factory sets none.
@@ -58,7 +58,7 @@ internal fun cacheDataSourceFactory(
     cache: Cache,
     counters: PlaybackCounters,
     lan: LanCacheRuntime? = null,
-    currentCore: () -> CoreClient?,
+    currentCore: () -> CoreInterface?,
 ): CacheDataSource.Factory =
     CacheDataSource
         .Factory()
@@ -106,7 +106,7 @@ suspend fun buildPlayer(
     context: Context,
     counters: PlaybackCounters,
     lan: LanCacheRuntime? = null,
-    currentCore: () -> CoreClient?,
+    currentCore: () -> CoreInterface?,
 ): ExoPlayer =
     ExoPlayer
         .Builder(context, renderersFactory(context))

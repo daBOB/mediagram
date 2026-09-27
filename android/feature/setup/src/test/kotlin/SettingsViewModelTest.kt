@@ -8,6 +8,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Rule
 import settings.TelegramCredentials
+import testing.FakeCore
 import uniffi.mediagram_core.LibraryChoice
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -84,7 +85,7 @@ class SettingsViewModelTest {
                 assertEquals(SettingsEvent.LibraryChanged, awaitItem().single().event)
             }
 
-            assertEquals("h2", fixture.core.installedHandle)
+            assertEquals("h2", fixture.core.refreshedHandle)
             assertEquals("h2", fixture.library.read())
             assertEquals("Films", viewModel.state.value.library)
         }

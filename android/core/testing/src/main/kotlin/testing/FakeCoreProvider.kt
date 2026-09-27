@@ -1,0 +1,51 @@
+package testing
+
+import data.CoreProvider
+import data.CoreStorage
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import uniffi.mediagram_core.CoreInterface
+
+/**
+ * A [CoreProvider] whose core is already there, or is swapped in by hand —
+ * the one fake every module's tests built their own copy of (`ResolvedCoreProvider`
+ * twice, `FakeCoreProvider`, `CatalogCoreProvider`), all four the same few
+ * lines over a [MutableStateFlow]. These tests are about what a caller does
+ * with a core, not about waiting for one — `CoreProviderTest` (core:data)
+ * covers the waiting, against the real `StoredCoreProvider`.
+ *
+ * [set] is how a test moves the published core mid-run — a start-over
+ * completing, a picker replacing the identity — the same thing reassigning
+ * `override val core = MutableStateFlow(...)` did in each of the four it
+ * replaces.
+ */
+class FakeCoreProvider(
+    initial: CoreInterface? = null,
+) : CoreProvider {
+    private val built = MutableStateFlow(initial)
+
+    override val core: StateFlow<CoreInterface?> = built
+
+    override suspend fun awaitCore(): CoreInterface = built.value ?: error("no core built for this fixture")
+
+    override suspend fun coreOrNull(): CoreInterface? = built.value
+
+    override suspend fun supply(apiId: Int, apiHash: String) = Unit
+
+    override suspend fun resetAccount(storage: CoreStorage) = error("this fixture does not reset accounts")
+
+    override suspend fun forget() = Unit
+
+    override suspend fun replace(apiId: Int, apiHash: String) = Unit
+
+    /** Swaps the published core, e.g. to simulate a start-over or a replaced identity completing mid-test. */
+    fun set(core: CoreInterface?) {
+        built.value = core
+    }
+}
+
+/** [FakeCoreProvider] over an always-present core, matching every call site that never needs [FakeCoreProvider.set]. */
+fun ResolvedCoreProvider(core: CoreInterface): FakeCoreProvider = FakeCoreProvider(core)
+
+/** As [ResolvedCoreProvider] — feature:catalog's own name for the same fixture, kept so its tests read as they did. */
+fun CatalogCoreProvider(core: CoreInterface): FakeCoreProvider = FakeCoreProvider(core)

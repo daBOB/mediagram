@@ -2,7 +2,6 @@ package catalog
 
 import data.BackdropWidth
 import data.CatalogEnrichmentFetcher
-import data.CoreClient
 import data.LibraryUpdateCoordinator
 import data.LibraryUpdateKind
 import kotlinx.coroutines.CompletableDeferred
@@ -11,6 +10,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import settings.InMemoryTmdbSettings
+import testing.CatalogCoreProvider
+import testing.FakeCore
+import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.FetchReport
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -139,11 +141,11 @@ private class UpdateFixture(
     var refreshFailed = false
     var artworkVisible = false
     private val core =
-        object : CoreClient by CatalogCore() {
+        object : CoreInterface by FakeCore() {
             override suspend fun fetchMissing(
                 tmdbKey: String,
                 language: String,
-                backdropWidth: Int,
+                backdropWidth: UInt,
             ): FetchReport {
                 steps += "fetch"
                 fetchGate?.await()

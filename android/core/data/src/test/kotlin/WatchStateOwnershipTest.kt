@@ -7,6 +7,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import model.WatchSnapshot
+import testing.FakeCore
+import testing.ResolvedCoreProvider
+import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.ListRow
 import uniffi.mediagram_core.Profile
 import uniffi.mediagram_core.StateSnapshot
@@ -18,7 +21,7 @@ import kotlin.test.assertTrue
 
 private class DelayedStateCore(
     var chosen: String = "a",
-) : CoreClient by FakeCore() {
+) : CoreInterface by FakeCore() {
     var delaySnapshot = false
     var delayWrite = false
     var delayChoice = false
@@ -103,7 +106,7 @@ class WatchStateOwnershipTest {
             var pauseNext = false
             val provider =
                 object : CoreProvider by ResolvedCoreProvider(core) {
-                    override suspend fun awaitCore(): CoreClient {
+                    override suspend fun awaitCore(): CoreInterface {
                         if (pauseNext) {
                             pauseNext = false
                             waiting.complete(Unit)
@@ -137,7 +140,7 @@ class WatchStateOwnershipTest {
             val secondDone = CompletableDeferred<Unit>()
             val snapshotsDone = CompletableDeferred<Unit>()
             val core =
-                object : CoreClient by FakeCore() {
+                object : CoreInterface by FakeCore() {
                     var chosen = "c"
 
                     override suspend fun profiles() = listOf(Profile("a", "Alice"), Profile("b", "Bea"), Profile("c", "Chris"))
@@ -348,7 +351,7 @@ class WatchStateOwnershipTest {
     fun aReloadFromAReplacedCoreCannotRestoreItsProfilesOrSnapshot() =
         runTest {
             val first = DelayedStateCore()
-            val current = MutableStateFlow<CoreClient?>(first)
+            val current = MutableStateFlow<CoreInterface?>(first)
             val provider =
                 object : CoreProvider by ResolvedCoreProvider(first) {
                     override val core = current

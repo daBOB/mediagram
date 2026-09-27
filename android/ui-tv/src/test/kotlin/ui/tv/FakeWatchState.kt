@@ -13,10 +13,10 @@ import model.Watched
 /**
  * The minimum [WatchStateRepository] a test's own `ProfileViewModel` needs:
  * profiles and a chosen id it can read back immediately, with every write a
- * no-op — no `CoreClient`, no Telegram account, the same rule [TvAppFixture]
+ * no-op — no core, no Telegram account, the same rule [TvAppFixture]
  * already follows for `SetupViewModel`. Kept separate from the
  * `DefaultWatchStateRepository` that fixture builds for its own setup
- * plumbing: that one is backed by a mocked `CoreClient` stubbed only for the
+ * plumbing: that one is backed by a fake core configured only for the
  * setup calls `SetupViewModel` makes, and `ProfileViewModel.reload()` would
  * reach calls on it nothing there stubs.
  */

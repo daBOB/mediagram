@@ -3,14 +3,10 @@ package ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
-import data.CoreClient
 import data.DefaultWatchStateRepository
 import data.InMemoryCoreStorage
 import data.StoredCoreProvider
 import designsystem.InMemoryAppearanceSettings
-import io.mockk.coEvery
-import io.mockk.every
-import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import settings.InMemoryLibrarySettings
@@ -21,6 +17,7 @@ import setup.Libraries
 import setup.SettingsViewModel
 import setup.SetupViewModel
 import setup.login.LoginViewModel
+import testing.FakeCore
 import uniffi.mediagram_core.AccountSummary
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.LibraryChoice
@@ -29,11 +26,19 @@ import uniffi.mediagram_core.LibraryChoice
 internal class MobileAppFixture :
     ViewModelStoreOwner,
     AutoCloseable {
-    val core = mockk<CoreClient>()
-    var authorized = false
-    var authorizationReads = 0
+    val core =
+        FakeCore(
+            authorized = false,
+            accountAnswer = AccountSummary("Viewer", "viewer"),
+            libraries = listOf(LibraryChoice("films", "Family films")),
+        )
     var passwordRequired = false
-    val phoneRequests = mutableListOf<String>()
+
+    /** Every (token, code) pair [setup.login.LoginViewModel.submitCode] actually sent, in order. */
+    val signInCalls = mutableListOf<Pair<String, String>>()
+
+    /** Every password [setup.login.LoginViewModel.submitPassword] actually sent, in order. */
+    val passwordChecks = mutableListOf<String>()
     val installs = mutableListOf<String>()
     val installReady = CompletableDeferred<Unit>()
     val telegram = InMemoryTelegramSettings()
@@ -48,30 +53,22 @@ internal class MobileAppFixture :
     override val viewModelStore get() = flow.viewModelStore
 
     init {
-        every { core.isAuthorized() } answers {
-            authorizationReads++
-            authorized
-        }
-        every { core.dcId() } returns 4
-        every { core.close() } returns Unit
-        coEvery { core.account() } returns AccountSummary("Viewer", "viewer")
-        coEvery { core.requestCode(any()) } coAnswers {
-            phoneRequests += firstArg<String>()
-            "attempt-${phoneRequests.size}"
-        }
-        coEvery { core.signIn(any(), any()) } coAnswers {
+        core.requestCodeAnswer = { "attempt-${core.requestedPhones.size}" }
+        core.signInAnswer = { token, code ->
+            signInCalls += token to code
             if (passwordRequired) {
                 AuthOutcome.PASSWORD_NEEDED
             } else {
-                authorized = true
+                core.authorized = true
                 AuthOutcome.DONE
             }
         }
-        coEvery { core.checkPassword(any()) } coAnswers { authorized = true }
-        coEvery { core.signOut() } coAnswers { authorized = false }
-        coEvery { core.listLibraries() } returns listOf(LibraryChoice("films", "Family films"))
-        coEvery { core.refreshLibrary(any()) } coAnswers {
-            installs += firstArg<String>()
+        core.checkPasswordAnswer = { password ->
+            passwordChecks += password
+            core.authorized = true
+        }
+        core.refreshLibraryAnswer = { handle ->
+            installs += handle
             installReady.await()
             2L
         }

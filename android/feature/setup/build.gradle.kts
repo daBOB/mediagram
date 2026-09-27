@@ -16,4 +16,6 @@ dependencies {
     // AppearanceSettings AppearanceViewModel wraps live in designsystem,
     // next to the theme composables that resolve them.
     implementation(project(":core:designsystem"))
+
+    testImplementation(project(":core:testing"))
 }

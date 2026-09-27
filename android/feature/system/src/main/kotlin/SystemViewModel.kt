@@ -33,7 +33,7 @@ import javax.inject.Inject
  * on the next visit — the same shape [catalog.CatalogViewModel] refreshes
  * the shelves by.
  *
- * [CoreProvider], not [data.CoreClient] directly: there is a window
+ * [CoreProvider], not [uniffi.mediagram_core.CoreInterface] directly: there is a window
  * between signing a device out and setting it up again in which no core
  * exists, so it is reached the way every other screen reaches it — through
  * [CoreProvider.awaitCore], never captured.

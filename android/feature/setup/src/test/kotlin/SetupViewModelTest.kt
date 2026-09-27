@@ -2,6 +2,7 @@ package setup
 
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
+import testing.FakeCore
 import uniffi.mediagram_core.CoreException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -126,7 +127,7 @@ class SetupViewModelTest {
             vm.chooseLibrary("h-films")
 
             assertEquals(SetupUiState.Ready, vm.state.value)
-            assertEquals("h-films", fixture.core.installedHandle)
+            assertEquals("h-films", fixture.core.refreshedHandle)
             assertEquals("h-films", fixture.library.read())
         }
 

@@ -42,6 +42,7 @@ dependencies {
     testImplementation(libs.findLibrary("robolectric").get())
     testImplementation(libs.findLibrary("mockk").get())
     testImplementation(libs.findLibrary("androidx.compose.ui.test.junit4").get())
+    testImplementation(project(":core:testing"))
 
     // Focus, IME-submit and Back behaviour only run true on a real
     // window manager — Robolectric's tv-material nodes misbehave for

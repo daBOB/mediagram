@@ -152,6 +152,23 @@ async fn a_set_that_is_not_playable_cannot_be_read() {
     assert!(matches!(refused, CoreError::NotFound(_)));
 }
 
+/// `read.rs`'s own early return: an offset at or past a set's total size is
+/// refused before any channel is resolved or any byte fetched, the same as
+/// an unplayable set is (checked above, at the same point).
+#[tokio::test]
+async fn a_read_at_the_sets_total_size_is_not_found() {
+    let dir = tempfile::tempdir().unwrap();
+    let core = core_with_one_part(dir.path(), "01SET0000000000000000003", 1000, "complete");
+
+    let refused = core
+        .clone()
+        .read("01SET0000000000000000003".into(), 1000, 10)
+        .await
+        .unwrap_err();
+
+    assert!(matches!(refused, CoreError::NotFound(_)));
+}
+
 const GIB: u64 = 1 << 30;
 
 /// A player read deep into a film past 4 GiB reserves exactly what it

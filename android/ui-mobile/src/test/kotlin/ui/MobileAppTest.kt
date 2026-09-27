@@ -10,7 +10,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
-import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
@@ -90,32 +89,32 @@ class MobileAppTest {
 
     @Test fun actualLoginAndLibraryCallbacksEnterTheReadyCatalogOnlyAfterInstallation() {
         ready()
-        coVerify(exactly = 1) { fixture.core.requestCode("+49123456789") }
-        coVerify(exactly = 1) { fixture.core.signIn("attempt-1", "12345") }
+        assertEquals(listOf("+49123456789"), fixture.core.requestedPhones)
+        assertEquals(listOf("attempt-1" to "12345"), fixture.signInCalls)
         assertEquals(1234, runBlocking { fixture.telegram.read()?.apiId })
     }
 
     @Test fun twoFactorCompletionAlsoHandsOffToLibrarySelection() {
         fixture.passwordRequired = true
         ready()
-        coVerify(exactly = 1) { fixture.core.checkPassword("only-for-this-request") }
+        assertEquals(listOf("only-for-this-request"), fixture.passwordChecks)
     }
 
     @Test fun losingAuthorizationInTheBackgroundReturnsToUsableSignIn() {
         ready()
         compose.runOnUiThread { controller.pause().stop() }
-        val reads = fixture.authorizationReads
-        fixture.authorized = false
+        val reads = fixture.core.authorizedReads
+        fixture.core.authorized = false
         compose.runOnUiThread { controller.restart().start().resume() }
         compose.onNodeWithText("Phone number").assertIsDisplayed()
         compose.onNodeWithText("Mediagram").assertDoesNotExist()
-        assertEquals(reads + 1, fixture.authorizationReads, "entry must not replay the previous login's completion")
+        assertEquals(reads + 1, fixture.core.authorizedReads, "entry must not replay the previous login's completion")
         submit("Phone number", "+49987654321")
         compose.onNodeWithText("Login code").assertIsDisplayed()
-        coVerify(exactly = 1) { fixture.core.requestCode("+49987654321") }
+        assertEquals(listOf("+49123456789", "+49987654321"), fixture.core.requestedPhones)
         submit("Login code", "67890")
         compose.onNodeWithText("Mediagram").assertIsDisplayed()
-        coVerify(exactly = 1) { fixture.core.signIn("attempt-2", "67890") }
+        assertEquals(listOf("attempt-1" to "12345", "attempt-2" to "67890"), fixture.signInCalls)
     }
 
     @Test fun signingOutInSettingsReturnsToUsableSignInWithoutReplacingTheCore() {
@@ -126,12 +125,13 @@ class MobileAppTest {
         compose.onNode(hasText("Sign out") and hasAnyAncestor(isDialog())).performClick()
         compose.onNodeWithText("Phone number").assertIsDisplayed()
         compose.onNodeWithText("Mediagram").assertDoesNotExist()
-        coVerify(exactly = 1) { fixture.core.signOut() }
+        assertTrue(fixture.core.signedOut)
+        assertEquals(1, fixture.core.signOutCalls)
         assertTrue(fixture.storage.cleared)
         assertEquals(null, runBlocking { fixture.library.read() })
         submit("Phone number", "+49987654321")
         submit("Login code", "67890")
         compose.onNodeWithText("Which library should this device read?").assertIsDisplayed()
-        coVerify(exactly = 1) { fixture.core.signIn("attempt-2", "67890") }
+        assertEquals(listOf("attempt-1" to "12345", "attempt-2" to "67890"), fixture.signInCalls)
     }
 }

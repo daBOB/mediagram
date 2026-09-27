@@ -13,11 +13,14 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import settings.InMemoryLibrarySettings
+import testing.FakeCore
+import testing.ResolvedCoreProvider
+import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.LibraryEvent
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-private class ListeningCore : CoreClient by FakeCore() {
+private class ListeningCore : CoreInterface by FakeCore() {
     val handles = mutableListOf<String>()
     val incoming = Channel<LibraryEvent>(Channel.UNLIMITED)
     var active = 0
@@ -86,10 +89,10 @@ class LibraryEventsLifecycleTest {
     fun removingTheCoreCancelsItsWaitWhileSubscribersRemain() =
         runTest {
             val core = ListeningCore()
-            val current = MutableStateFlow<CoreClient?>(core)
+            val current = MutableStateFlow<CoreInterface?>(core)
             val provider =
                 object : CoreProvider by ResolvedCoreProvider(core) {
-                    override val core: StateFlow<CoreClient?> = current
+                    override val core: StateFlow<CoreInterface?> = current
                 }
             val settings = InMemoryLibrarySettings().apply { write("library") }
             val events = SharedLibraryEvents(CoreLibraryEvents(provider, settings), backgroundScope)

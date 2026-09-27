@@ -37,4 +37,5 @@ dependencies {
     testImplementation(libs.findLibrary("robolectric").get())
     testImplementation(libs.findLibrary("mockk").get())
     testImplementation(libs.findLibrary("androidx.compose.ui.test.junit4").get())
+    testImplementation(project(":core:testing"))
 }

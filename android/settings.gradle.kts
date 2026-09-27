@@ -61,3 +61,7 @@ include(":core:rust")
 include(":core:model")
 include(":core:playback")
 include(":core:ffmpeg")
+
+// Test-only support: one fake CoreInterface, one contract suite run against
+// it in unit tests and against the real Core in an instrumented test
+include(":core:testing")

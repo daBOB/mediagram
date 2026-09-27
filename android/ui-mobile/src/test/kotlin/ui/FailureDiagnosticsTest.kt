@@ -5,7 +5,6 @@ import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import data.CatalogEnrichmentFetcher
 import data.CatalogRepository
-import data.CoreClient
 import data.CoreProvider
 import data.LibraryUpdateCoordinator
 import data.WatchStateRepository
@@ -34,6 +33,8 @@ import settings.InMemoryTmdbSettings
 import setup.login.LoginStep
 import setup.login.LoginUiState
 import setup.login.LoginViewModel
+import testing.FakeCore
+import testing.FakeCoreProvider
 import uniffi.mediagram_core.AuthOutcome
 import java.io.IOException
 import kotlin.test.assertEquals
@@ -158,38 +159,29 @@ class FailureDiagnosticsTest {
             }
         }
 
-    private fun loginCore(): CoreClient =
-        mockk<CoreClient>().also {
-            every { it.isAuthorized() } returns false
-            coEvery { it.requestCode(any()) } returns "token"
-            coEvery { it.signIn(any(), any()) } returns AuthOutcome.PASSWORD_NEEDED
-        }
+    private fun loginCore(): FakeCore = FakeCore(authorized = false, signInOutcome = AuthOutcome.PASSWORD_NEEDED)
 
-    private fun provider(client: CoreClient): CoreProvider =
-        mockk<CoreProvider>().also {
-            every { it.core } returns MutableStateFlow(client)
-            coEvery { it.awaitCore() } returns client
-        }
+    private fun provider(client: FakeCore): CoreProvider = FakeCoreProvider(client)
 
     private fun failLogin(
-        core: CoreClient,
+        core: FakeCore,
         model: LoginViewModel,
         step: LoginStep,
         failure: Exception,
     ) {
         when (step) {
             LoginStep.PHONE -> {
-                coEvery { core.requestCode(any()) } throws failure
+                core.requestFailure = failure
                 model.submitPhone("private-phone")
             }
 
             LoginStep.CODE -> {
-                coEvery { core.signIn(any(), any()) } throws failure
+                core.signInFailure = failure
                 model.submitCode("private-code")
             }
 
             LoginStep.PASSWORD -> {
-                coEvery { core.checkPassword(any()) } throws failure
+                core.passwordFailure = failure
                 model.submitPassword("private-password")
             }
         }

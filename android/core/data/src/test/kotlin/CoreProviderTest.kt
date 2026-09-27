@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import settings.InMemoryTelegramSettings
 import settings.TelegramSettings
+import testing.FakeCore
 import java.util.concurrent.Executors
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test

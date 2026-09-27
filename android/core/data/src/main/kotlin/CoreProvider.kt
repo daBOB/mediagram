@@ -13,6 +13,8 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import settings.TelegramCredentials
 import settings.TelegramSettings
+import uniffi.mediagram_core.Core
+import uniffi.mediagram_core.CoreInterface
 
 /**
  * Hands out the native core. Deferred the way the player is, for a
@@ -36,13 +38,13 @@ interface CoreProvider {
      * would otherwise go on using an identity the person was told had been
      * signed out.
      */
-    val core: StateFlow<CoreClient?>
+    val core: StateFlow<CoreInterface?>
 
     /** The core, once there are credentials to build it from. Suspends until then. */
-    suspend fun awaitCore(): CoreClient
+    suspend fun awaitCore(): CoreInterface
 
     /** The core if the credentials are already stored, `null` if they are not. */
-    suspend fun coreOrNull(): CoreClient?
+    suspend fun coreOrNull(): CoreInterface?
 
     /** Installs the initial identity. Throws if a core is already published; use [replace] to change it. */
     suspend fun supply(
@@ -81,30 +83,42 @@ interface CoreProvider {
  * Builds at most one core per stored identity on [dispatcher]. Native library,
  * keystore, and auth-key filesystem work stay off the calling thread.
  *
- * [build] hides the final generated Core behind [CoreClient], allowing lifecycle
- * tests without a native library. Unpublished clients are closed on failure,
- * including cancellation at dispatcher handoffs; close failures are suppressed.
+ * [build] hides the final generated `Core` behind [CoreInterface], allowing
+ * lifecycle tests without a native library — [T] carries [AutoCloseable] too
+ * because [CoreInterface] itself has no `close()`: the generated `Core` is
+ * `AutoCloseable` on its own, and this is where that second interface is
+ * used, once, rather than every caller above needing to know it exists.
+ * Unpublished clients are closed on failure, including cancellation at
+ * dispatcher handoffs; close failures are suppressed.
  */
-class StoredCoreProvider(
+class StoredCoreProvider<T>(
     private val settings: TelegramSettings,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val build: (TelegramCredentials) -> CoreClient,
-) : CoreProvider {
+    private val build: (TelegramCredentials) -> T,
+) : CoreProvider where T : CoreInterface, T : AutoCloseable {
     // Guards the read-then-build sequence: two screens resolving at once
     // must not each construct a core over the same data directory.
     private val mutex = Mutex()
 
-    private val built = MutableStateFlow<CoreClient?>(null)
-    private var pendingClose: CoreClient? = null
-    override val core: StateFlow<CoreClient?> = built.asStateFlow()
+    private val built = MutableStateFlow<T?>(null)
+    private var pendingClose: T? = null
 
-    override suspend fun awaitCore(): CoreClient = coreOrNull() ?: built.filterNotNull().first()
+    // Set once retireLocalState() succeeds for the core pendingClose currently
+    // holds, and only cleared alongside it: a retry that only needs close()
+    // to succeed again must not call retireLocalState() a second time — the
+    // real generated Core refuses every call once destroyed, so a first
+    // close() that flips it and only then throws would otherwise make a
+    // second retireLocalState() throw too, forever.
+    private var pendingCloseRetired = false
+    override val core: StateFlow<CoreInterface?> = built.asStateFlow()
 
-    override suspend fun coreOrNull(): CoreClient? =
+    override suspend fun awaitCore(): CoreInterface = coreOrNull() ?: built.filterNotNull().first()
+
+    override suspend fun coreOrNull(): CoreInterface? =
         mutex.withLock {
             if (pendingClose != null) withContext(NonCancellable + dispatcher) { closeHeld() }
             built.value?.let { return@withLock it }
-            var candidate: CoreClient? = null
+            var candidate: T? = null
             try {
                 withContext(dispatcher) {
                     settings.read()?.let { credentials -> build(credentials).also { candidate = it } }
@@ -129,7 +143,7 @@ class StoredCoreProvider(
         check(built.value == null) { "An application identity is already installed" }
         if (pendingClose != null) withContext(NonCancellable + dispatcher) { closeHeld() }
         val credentials = TelegramCredentials(apiId, apiHash)
-        var candidate: CoreClient? = null
+        var candidate: T? = null
         try {
             val client =
                 withContext(dispatcher) {
@@ -154,7 +168,7 @@ class StoredCoreProvider(
         mutex.withLock {
             withContext(NonCancellable + dispatcher) { closeHeld() }
             // Capture ownership before returning across a cancellable dispatcher handoff.
-            var candidate: CoreClient? = null
+            var candidate: T? = null
             try {
                 val client =
                     withContext(dispatcher) {
@@ -171,12 +185,12 @@ class StoredCoreProvider(
         }
 
     private suspend fun discard(
-        candidate: CoreClient?,
+        candidate: T?,
         failure: Throwable,
     ): Nothing {
         val closed =
             withContext(NonCancellable) {
-                withContext(dispatcher) { runCatching { candidate?.close() } }
+                withContext(dispatcher) { runCatching { candidate?.let(::closeFully) } }
             }
         // Attach after the dispatcher handoff: coroutine stack recovery can
         // replace a rethrown exception and lose suppression added before it.
@@ -194,11 +208,44 @@ class StoredCoreProvider(
 
     /** Under the lifecycle mutex and on [dispatcher]; a failed close remains owned. */
     private fun closeHeld() {
-        if (pendingClose == null) pendingClose = built.value
+        if (pendingClose == null) {
+            pendingClose = built.value
+            pendingCloseRetired = false
+        }
         built.value = null
-        pendingClose?.close()
+        pendingClose?.let { core ->
+            if (!isAlreadyDestroyed(core)) {
+                if (!pendingCloseRetired) {
+                    core.retireLocalState()
+                    pendingCloseRetired = true
+                }
+                core.close()
+            }
+        }
         pendingClose = null
+        pendingCloseRetired = false
     }
+
+    /**
+     * Fences local state before releasing the native handle: queued native
+     * work can outlive it. [CoreInterface] has no `close()` of its own —
+     * [T]'s [AutoCloseable] bound is what lets this call it at all.
+     *
+     * Only [discard] uses this directly, for an unpublished candidate that
+     * never retries: a failure here is caught and suppressed onto the
+     * original failure, not retried. [closeHeld] keeps its own record of
+     * whether retirement already succeeded for the core it holds, so its
+     * retry — unlike this one-shot attempt — does not call
+     * [CoreInterface.retireLocalState] again once it has.
+     */
+    private fun closeFully(core: T) {
+        if (isAlreadyDestroyed(core)) return
+        core.retireLocalState()
+        core.close()
+    }
+
+    /** The generated `Core` refuses every call once destroyed; nothing else in [T] carries that concept, so a fake is never treated as one. */
+    private fun isAlreadyDestroyed(core: T): Boolean = (core as? Core)?.uniffiIsDestroyed == true
 
     override suspend fun forget(): Unit =
         mutex.withLock {

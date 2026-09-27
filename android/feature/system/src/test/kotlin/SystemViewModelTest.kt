@@ -3,13 +3,9 @@ package system
 import android.content.Context
 import androidx.lifecycle.viewModelScope
 import androidx.test.core.app.ApplicationProvider
-import data.CoreClient
-import data.CoreProvider
 import data.RefreshLog
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
-import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +27,8 @@ import org.robolectric.annotation.Config
 import playback.CacheOccupancy
 import playback.CacheProvider
 import playback.PlaybackCounters
+import testing.FakeCore
+import testing.FakeCoreProvider
 import uniffi.mediagram_core.CatalogFacts
 import java.io.IOException
 import kotlin.test.assertEquals
@@ -44,13 +42,12 @@ private const val READ_FAILED = "System information could not be read. Try again
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class SystemViewModelTest {
-    private lateinit var core: CoreClient
+    private lateinit var core: FakeCore
 
     @Before fun prepareIoBoundaries() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        core = mockk()
-        coEvery { core.catalogFacts() } returns CatalogFacts("channel", 4u, 2u, 3u, 10)
-        every { core.isAuthorized() } returns true
+        core = FakeCore(authorized = true)
+        core.catalogFactsAnswer = { CatalogFacts("channel", 4u, 2u, 3u, 10) }
         mockkObject(CacheProvider)
         coEvery { CacheProvider.occupancy(any(), any()) } returns
             CacheOccupancy(heldBytes = 12, budgetBytes = 100, volumeLabel = "Internal storage", fellBack = false, capBytes = 100)
@@ -63,7 +60,7 @@ class SystemViewModelTest {
 
     @Test fun aCoreReadFailureDoesNotEscapeTheSnapshotCollector() =
         runTest {
-            coEvery { core.catalogFacts() } throws IOException("private catalog path")
+            core.catalogFactsAnswer = { throw IOException("private catalog path") }
             val vm = model()
             try {
                 backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
@@ -73,12 +70,12 @@ class SystemViewModelTest {
                 vm.retry()
                 runCurrent()
                 assertEquals(READ_FAILED, vm.failure.value)
-                coEvery { core.catalogFacts() } returns CatalogFacts("channel", 7u, 2u, 3u, 10)
+                core.catalogFactsAnswer = { CatalogFacts("channel", 7u, 2u, 3u, 10) }
                 vm.retry()
                 runCurrent()
                 assertEquals(7L, assertNotNull(vm.state.value).sets)
                 assertNull(vm.failure.value)
-                coVerify(exactly = 3) { core.catalogFacts() }
+                assertEquals(3, core.catalogFactsCalls)
             } finally {
                 vm.viewModelScope.cancel()
             }
@@ -114,12 +111,12 @@ class SystemViewModelTest {
                 backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
                 runCurrent()
                 val previous = assertNotNull(vm.state.value)
-                coEvery { core.catalogFacts() } throws IOException("private account details")
+                core.catalogFactsAnswer = { throw IOException("private account details") }
                 vm.retry()
                 runCurrent()
                 assertSame(previous, vm.state.value)
                 assertEquals(READ_FAILED, vm.failure.value)
-                coEvery { core.catalogFacts() } returns CatalogFacts("channel", 8u, 2u, 3u, 10)
+                core.catalogFactsAnswer = { CatalogFacts("channel", 8u, 2u, 3u, 10) }
                 vm.retry()
                 runCurrent()
                 assertEquals(8L, assertNotNull(vm.state.value).sets)
@@ -132,7 +129,7 @@ class SystemViewModelTest {
     @Test fun leavingCancelsTheSnapshotWithoutAnErrorAndReentryReadsAgain() =
         runTest {
             var cancelled = false
-            coEvery { core.catalogFacts() } coAnswers {
+            core.catalogFactsAnswer = {
                 try {
                     awaitCancellation()
                 } finally {
@@ -148,20 +145,19 @@ class SystemViewModelTest {
                 runCurrent()
                 assertTrue(cancelled)
                 assertNull(vm.failure.value)
-                coEvery { core.catalogFacts() } returns CatalogFacts("channel", 9u, 2u, 3u, 10)
+                core.catalogFactsAnswer = { CatalogFacts("channel", 9u, 2u, 3u, 10) }
                 backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
                 runCurrent()
                 assertEquals(9L, assertNotNull(vm.state.value).sets)
                 assertNull(vm.failure.value)
-                coVerify(exactly = 2) { core.catalogFacts() }
+                assertEquals(2, core.catalogFactsCalls)
             } finally {
                 vm.viewModelScope.cancel()
             }
         }
 
     private fun model(): SystemViewModel {
-        val provider = mockk<CoreProvider>()
-        coEvery { provider.awaitCore() } returns core
+        val provider = FakeCoreProvider(core)
         return SystemViewModel(ApplicationProvider.getApplicationContext<Context>(), provider, PlaybackCounters(), RefreshLog())
     }
 }

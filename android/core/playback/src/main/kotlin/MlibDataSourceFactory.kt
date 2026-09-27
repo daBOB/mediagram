@@ -6,8 +6,8 @@
 package playback
 
 import androidx.media3.datasource.DataSource
-import data.CoreClient
 import java.io.IOException
+import uniffi.mediagram_core.CoreInterface
 
 /**
  * Hands ExoPlayer a fresh [MlibDataSource] per read session, bound to
@@ -45,7 +45,7 @@ import java.io.IOException
 class MlibDataSourceFactory(
     private val counters: PlaybackCounters,
     private val lan: LanCacheRuntime? = null,
-    private val currentCore: () -> CoreClient?,
+    private val currentCore: () -> CoreInterface?,
 ) : DataSource.Factory {
     private val chunks: SetChunkSource = ChunkMemo(upstream = buildUpstream())
 
