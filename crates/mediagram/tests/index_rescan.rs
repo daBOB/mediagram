@@ -52,6 +52,40 @@ mod completion {
         assert_eq!(row.set_hash.as_deref(), Some(expected.as_str()));
     }
 
+    /// A set rescan finds whole in the channel is complete with nothing left
+    /// behind: the source an interrupted upload recorded is forgotten, as an
+    /// upload completing it would forget it.
+    #[test]
+    fn a_set_rescan_completes_forgets_its_source() {
+        let (_dir, conn) = open_db();
+        let set_id = "01JQ8F2K9M4XZ00000000001";
+        let t = template(set_id, 2, 200);
+        let first = vec![part_seen(&t, 0, 0, 100, "aa", 101, 9001)];
+        rescan::apply_seen(&conn, CHAT_ID, &first).unwrap();
+        mediagram::index::lifecycle::record_source(
+            &conn,
+            set_id,
+            std::path::Path::new("/media/film.mkv"),
+            true,
+        )
+        .unwrap();
+
+        let whole = vec![
+            part_seen(&t, 0, 0, 100, "aa", 101, 9001),
+            part_seen(&t, 1, 100, 100, "bb", 102, 9002),
+        ];
+        rescan::apply_seen(&conn, CHAT_ID, &whole).unwrap();
+
+        assert_eq!(
+            sets::get_set(&conn, set_id).unwrap().unwrap().status,
+            SetStatus::Complete
+        );
+        assert_eq!(
+            mediagram::index::lifecycle::source_of(&conn, set_id).unwrap(),
+            None
+        );
+    }
+
     /// A set missing a part stays pending, but the part count from the
     /// caption header is still recorded against it.
     #[test]

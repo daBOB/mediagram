@@ -8,7 +8,7 @@ use mlib_spec::{Caption, PartRange};
 use rusqlite::Connection;
 
 use crate::index::set_row::SetRow;
-use crate::index::{db, parts, sets};
+use crate::index::{lifecycle, parts, sets};
 
 /// Where a set's bytes come from.
 pub struct Source<'a> {
@@ -36,20 +36,15 @@ pub fn record_planned(
         "caption exceeds Telegram's budget; shorten the variant, the title or the language lists",
     )?;
     let row = SetRow::from_caption(caption, crate::clock::now_unix());
-    let source_value = source
+    let source_path = source
         .path
         .canonicalize()
-        .unwrap_or_else(|_| source.path.to_path_buf())
-        .to_string_lossy()
-        .into_owned();
+        .unwrap_or_else(|_| source.path.to_path_buf());
 
     let tx = conn.transaction().context("starting index transaction")?;
     sets::insert_set(&tx, &row)?;
     parts::insert_parts(&tx, &row.set_id, ranges)?;
-    db::set_meta(&tx, &db::source_key(&row.set_id), &source_value)?;
-    if source.remux {
-        db::set_meta(&tx, &db::tmp_key(&row.set_id), &source_value)?;
-    }
+    lifecycle::record_source(&tx, &row.set_id, &source_path, source.remux)?;
     also(&tx)?;
     tx.commit().context("committing index transaction")
 }

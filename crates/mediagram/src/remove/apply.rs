@@ -82,10 +82,7 @@ pub fn delete_rows(conn: &Connection, set_id: &str) -> Result<()> {
         .with_context(|| format!("deleting the index rows of {set_id}"))?;
     // The source path is remembered for `resume`; with the set gone it is
     // just a stale pointer.
-    for key in crate::index::db::set_keys(set_id) {
-        crate::index::db::delete_meta(conn, &key)?;
-    }
-    Ok(())
+    crate::index::lifecycle::forget(conn, set_id)
 }
 
 #[cfg(test)]

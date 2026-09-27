@@ -134,8 +134,11 @@ course/            reading a course folder: which files are lessons and which
 index/             library.db: open/migrate (after letting the session store
                    configure SQLite, see sqlite_init), sets/parts CRUD and
                    counts, typed set/part status, set labels, pin
-                   bookkeeping, rescan folding, snapshot/vacuum, custom
-                   poster/backdrop bytes (artwork.rs)
+                   bookkeeping, a set's lifecycle (lifecycle.rs: where a
+                   pending set uploads from, the remux to delete, and
+                   completing it in one transaction that forgets both),
+                   rescan folding, snapshot/vacuum, custom poster/backdrop
+                   bytes (artwork.rs)
 edit/              planning and applying a metadata correction: one caption
                    rewrite per part
 remove/            planning and applying a set's destruction

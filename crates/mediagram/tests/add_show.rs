@@ -4,7 +4,7 @@ use mediagram::commands::{add_show, args::AddShowArgs};
 use mediagram::config::Config;
 use mediagram::index::set_row::SetRow;
 use mediagram::index::status::SetStatus;
-use mediagram::index::{db, parts, sets};
+use mediagram::index::{db, lifecycle, parts, sets};
 use mediagram::media::test_fixtures::{ffmpeg_required, make_faststart_mp4};
 use mlib_spec::caption::{Episode, Kind};
 
@@ -37,12 +37,7 @@ async fn existing_episodes_are_not_replanned_or_deleted_by_a_bulk_rerun() {
             &mlib_spec::plan_parts(caption.total, 1024 * 1024).unwrap(),
         )
         .unwrap();
-        db::set_meta(
-            &conn,
-            &db::source_key(&row.set_id),
-            source.to_str().unwrap(),
-        )
-        .unwrap();
+        lifecycle::record_source(&conn, &row.set_id, &source, false).unwrap();
 
         // With no provider key, any attempt to plan a new episode fails before
         // network IO. An existing episode needs neither planning nor a login.
@@ -78,10 +73,8 @@ async fn existing_episodes_are_not_replanned_or_deleted_by_a_bulk_rerun() {
             status
         );
         assert_eq!(
-            db::get_meta(&conn, &db::source_key(&row.set_id))
-                .unwrap()
-                .as_deref(),
-            source.to_str()
+            lifecycle::source_of(&conn, &row.set_id).unwrap().as_deref(),
+            Some(source.as_path())
         );
         assert_eq!(std::fs::read(&source).unwrap(), bytes);
     }

@@ -104,6 +104,9 @@ pub fn apply_seen(conn: &Connection, chat_id: i64, seen: &[Seen]) -> Result<Resc
             let hashes = crate::index::parts::done_hashes(conn, set_id)?;
             let hash = mlib_spec::set_hash::set_hash(&hashes);
             sets::set_hash_and_complete(conn, set_id, &hash)?;
+            // A complete set records no source to resume from. Only forgotten
+            // here, inside the batch's transaction: rescan deletes no files.
+            crate::index::lifecycle::forget(conn, set_id)?;
             sets_complete += 1;
         } else {
             sets::set_status(conn, set_id, SetStatus::Pending)?;

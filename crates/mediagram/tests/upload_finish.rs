@@ -5,7 +5,7 @@
 
 use std::cell::Cell;
 
-use mediagram::index::db;
+use mediagram::index::lifecycle;
 use mediagram::upload::session::{Item, Outcome, Session, Set, Step};
 
 mod support;
@@ -55,7 +55,7 @@ async fn a_source_that_is_gone_is_refused_before_sending() {
     let caption = sample_caption("01J0000000000000000000FIN2", SIZE as u64, 3);
     let (dir, conn, set, _) = seeded_index(&caption).await;
     let gone = dir.path().join("moved-away.mkv");
-    db::set_meta(&conn, &db::source_key(&set.set_id), gone.to_str().unwrap()).unwrap();
+    lifecycle::record_source(&conn, &set.set_id, &gone, false).unwrap();
     let transport = FakeTransport::new();
 
     let refused = finish(dir.path(), &transport, &set.set_id).await.unwrap();
@@ -70,12 +70,7 @@ async fn a_source_that_changed_size_is_refused_before_sending() {
     let (dir, conn, set, _) = seeded_index(&caption).await;
     let source = dir.path().join("movie.mkv");
     std::fs::write(&source, vec![0u8; SIZE - 1]).unwrap();
-    db::set_meta(
-        &conn,
-        &db::source_key(&set.set_id),
-        source.to_str().unwrap(),
-    )
-    .unwrap();
+    lifecycle::record_source(&conn, &set.set_id, &source, false).unwrap();
     let transport = FakeTransport::new();
 
     let refused = finish(dir.path(), &transport, &set.set_id).await.unwrap();
@@ -90,12 +85,11 @@ async fn a_finished_set_forgets_its_source() {
     let (dir, conn, set, _) = seeded_index(&caption).await;
     let source = dir.path().join("movie.mkv");
     std::fs::write(&source, vec![7u8; SIZE]).unwrap();
-    let key = db::source_key(&set.set_id);
-    db::set_meta(&conn, &key, source.to_str().unwrap()).unwrap();
+    lifecycle::record_source(&conn, &set.set_id, &source, false).unwrap();
     let transport = FakeTransport::new();
 
     assert_eq!(finish(dir.path(), &transport, &set.set_id).await, None);
 
     assert_eq!(transport.send_count(), 3);
-    assert_eq!(db::get_meta(&conn, &key).unwrap(), None);
+    assert_eq!(lifecycle::source_of(&conn, &set.set_id).unwrap(), None);
 }

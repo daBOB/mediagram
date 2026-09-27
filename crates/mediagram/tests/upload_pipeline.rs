@@ -656,3 +656,23 @@ mod caption_and_naming {
         assert!(part_name.contains(".p000") || part_name.contains(".mkv"));
     }
 }
+
+/// The remux `add` wrote is deleted once its set is up; the index had
+/// recorded it as temporary, so it is never the person's own file.
+#[tokio::test]
+async fn completing_a_set_deletes_the_remux_it_was_uploaded_from() {
+    let tmp = tempfile::tempdir().unwrap();
+    let data = vec![3u8; 1024];
+    let remux = tmp.path().join("film.faststart.mp4");
+    tokio::fs::write(&remux, &data).await.unwrap();
+    let caption = sample_caption("01J0000000000000000000TMP1", data.len() as u64, 1);
+    let (_db_dir, conn, set_row, _) = seeded_index(&caption).await;
+    mediagram::index::lifecycle::record_source(&conn, &set_row.set_id, &remux, true).unwrap();
+
+    let complete = run_set(&conn, &FakeTransport::new(), 0, &set_row, &remux, None)
+        .await
+        .unwrap();
+
+    assert!(complete);
+    assert!(!remux.exists());
+}

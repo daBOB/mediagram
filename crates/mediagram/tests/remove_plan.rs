@@ -142,7 +142,9 @@ fn message_ids_are_deduplicated_and_ordered() {
 /// connection), its per-set meta keys go by name, and another set is not
 /// touched at all.
 mod deleting_rows {
-    use mediagram::index::{assets, db, parts, sets};
+    use std::path::Path;
+
+    use mediagram::index::{assets, db, lifecycle, parts, sets};
     use mediagram::remove::apply::delete_rows;
     use mlib_spec::part_plan::PartRange;
 
@@ -172,9 +174,7 @@ mod deleting_rows {
             sets::insert_set(&conn, &row(id, "An Episode")).unwrap();
             parts::insert_parts(&conn, id, &ranges).unwrap();
             assets::put(&conn, id, assets::Kind::Summary, "en", "text").unwrap();
-            for key in db::set_keys(id) {
-                db::set_meta(&conn, &key, "/some/file.mkv").unwrap();
-            }
+            lifecycle::record_source(&conn, id, Path::new("/some/file.mkv"), true).unwrap();
         }
         // A connection opened without the helper has foreign keys off, which
         // is the case the pragma inside `delete_rows` is there for.
@@ -202,9 +202,14 @@ mod deleting_rows {
             ),
             0
         );
-        for key in db::set_keys("01SET0000000000000000001") {
-            assert_eq!(db::get_meta(&conn, &key).unwrap(), None, "{key} survived");
-        }
+        // Whatever it recorded about the set, spelled however the index spells it.
+        assert_eq!(
+            count(
+                &conn,
+                "SELECT COUNT(*) FROM meta WHERE key LIKE '%:01SET0000000000000000001'"
+            ),
+            0
+        );
 
         assert!(
             sets::get_set(&conn, "01SET0000000000000000002")
@@ -225,11 +230,12 @@ mod deleting_rows {
             ),
             1
         );
-        for key in db::set_keys("01SET0000000000000000002") {
-            assert!(
-                db::get_meta(&conn, &key).unwrap().is_some(),
-                "{key} was taken too"
-            );
-        }
+        assert_eq!(
+            count(
+                &conn,
+                "SELECT COUNT(*) FROM meta WHERE key LIKE '%:01SET0000000000000000002'"
+            ),
+            2
+        );
     }
 }

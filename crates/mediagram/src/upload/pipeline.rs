@@ -13,12 +13,14 @@ use super::part_upload::SetUpload;
 use super::progress;
 use super::transport::Transport;
 use crate::index::set_row::SetRow;
-use crate::index::{db, parts, sets};
+use crate::index::{lifecycle, parts};
 use crate::upload::adopt::adoption_map;
 
 /// Finishes `set`: uploads/adopts every pending part in idx order, then
 /// finalizes the set once none remain. Safe to call again on a set that is
 /// already fully `done` (e.g. a crash between the last part and finalizing).
+/// Returns whether the set is now complete; completing it is the last thing
+/// that can fail, so an error always means it is not.
 pub async fn run_set<T: Transport>(
     conn: &Connection,
     transport: &T,
@@ -26,7 +28,7 @@ pub async fn run_set<T: Transport>(
     set: &SetRow,
     source_path: &Path,
     data_dir: Option<&Path>,
-) -> Result<()> {
+) -> Result<bool> {
     let template = set.caption_template();
     let total_parts = set.part_count;
 
@@ -86,32 +88,23 @@ pub async fn run_set<T: Transport>(
         }
     }
 
-    if parts::pending_parts(conn, &set.set_id)?.is_empty() {
-        let hash = mlib_spec::set_hash::set_hash(&parts::done_hashes(conn, &set.set_id)?);
-        sets::set_hash_and_complete(conn, &set.set_id, &hash)?;
-        remove_recorded_tmp(conn, &set.set_id).await;
-        // Nothing is being uploaded any more, and a note left behind would
-        // describe a set that is finished.
-        if let Some(dir) = data_dir {
-            progress::clear(dir);
+    if !parts::pending_parts(conn, &set.set_id)?.is_empty() {
+        return Ok(false);
+    }
+    let hash = mlib_spec::set_hash::set_hash(&parts::done_hashes(conn, &set.set_id)?);
+    let completed = lifecycle::complete(conn, &set.set_id, &hash)?;
+    if let Some(temp) = completed.temp {
+        // Already forgotten by the index. The remux sits in the configured
+        // temp directory, or beside the original when none is set, so a
+        // delete that fails is said with the path, for deleting by hand.
+        if let Err(err) = tokio::fs::remove_file(&temp).await {
+            tracing::warn!(path = %temp.display(), error = %err, "failed to remove the faststart remux; delete it by hand");
         }
     }
-
-    Ok(())
-}
-
-/// Deletes the remux temp file that `add` recorded for this set (meta key
-/// `tmp:<set_id>`), then forgets it. Sets without a recorded temp are untouched,
-/// so a user's original file can never be removed here.
-async fn remove_recorded_tmp(conn: &Connection, set_id: &str) {
-    let key = db::tmp_key(set_id);
-    let Ok(Some(path)) = db::get_meta(conn, &key) else {
-        return;
-    };
-    if let Err(err) = tokio::fs::remove_file(&path).await {
-        tracing::warn!(path = %path, error = %err, "failed to remove faststart temp file");
+    // Nothing is being uploaded any more, and a note left behind would
+    // describe a set that is finished.
+    if let Some(dir) = data_dir {
+        progress::clear(dir);
     }
-    if let Err(err) = db::delete_meta(conn, &key) {
-        tracing::warn!(error = %err, "failed to forget faststart temp path");
-    }
+    Ok(true)
 }

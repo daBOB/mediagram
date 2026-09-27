@@ -12,7 +12,7 @@ use std::cell::Cell;
 use mediagram::config::Config;
 use mediagram::index::set_row::SetRow;
 use mediagram::index::status::SetStatus;
-use mediagram::index::{db, parts, pins, sets};
+use mediagram::index::{db, lifecycle, parts, pins, sets};
 use mediagram::upload::lock;
 use mediagram::upload::new_set::{LessonOf, NewSet};
 use mediagram::upload::record_document::Document;
@@ -60,7 +60,7 @@ fn planned(dir: &TempDir, id: &str, bytes: u64) -> Item<String> {
     tx.commit().unwrap();
     let source = dir.path().join(format!("{id}.mkv"));
     std::fs::write(&source, vec![7u8; bytes as usize]).unwrap();
-    db::set_meta(&conn, &db::source_key(id), source.to_str().unwrap()).unwrap();
+    lifecycle::record_source(&conn, id, &source, false).unwrap();
     Item {
         tag: id.to_string(),
         set: Set::Planned(id.to_string()),
@@ -331,10 +331,11 @@ async fn a_planned_set_is_finished() {
     assert_eq!(published(&channel), ["01J0000000000000000000SES3"]);
 }
 
-/// A set can complete and its bookkeeping fail after: it is uploaded, and
-/// published, even though the session stops there.
+/// Completing a set is one transaction: when it cannot commit, the set is
+/// still pending — nothing is owed, nothing published — and the session
+/// stops, since the index is what failed.
 #[tokio::test]
-async fn a_set_completed_before_its_cleanup_failed_still_counts_and_is_published() {
+async fn a_set_whose_completion_cannot_commit_stays_pending() {
     let dir = tempfile::tempdir().unwrap();
     let cfg = config(&dir);
     let (transport, channel, connects) = (FakeTransport::new(), FakeChannel::new(), Cell::new(0));
@@ -354,14 +355,14 @@ async fn a_set_completed_before_its_cleanup_failed_still_counts_and_is_published
     assert_eq!(
         counts,
         Counts {
-            uploaded: 1,
+            pending: 1,
             ..Counts::default()
         }
     );
-    assert!(format!("{err:#}").contains("cleanup failed"));
-    assert_eq!(published(&channel), ["01J0000000000000000000SES4"]);
+    assert!(format!("{err:#}").contains("cleanup failed"), "{err:#}");
+    assert_eq!(sends(&channel), 0);
     let row = sets::get_set(&db::open(dir.path()).unwrap(), "01J0000000000000000000SES4").unwrap();
-    assert_eq!(row.unwrap().status, SetStatus::Complete);
+    assert_eq!(row.unwrap().status, SetStatus::Pending);
 }
 
 #[tokio::test]

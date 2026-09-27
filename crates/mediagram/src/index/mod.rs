@@ -6,6 +6,7 @@ pub mod assets;
 mod columns;
 pub mod db;
 pub mod label;
+pub mod lifecycle;
 pub mod merge;
 mod merge_artwork;
 mod merge_candidates;

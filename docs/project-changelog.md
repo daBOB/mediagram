@@ -5,6 +5,37 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.68.3 — a set completes in one transaction
+
+Architecture review candidate C. Review:
+`plans/reports/code-reviewer-260927-0345-set-lifecycle-review-report.md`.
+
+**Fixed**
+
+- Completing a set was three writes with three failure policies: the set
+  marked complete, then its remux forgotten (a failure ignored), then its
+  source forgotten (a failure fatal, after the set was already complete).
+  It is now one transaction that also records the publish the set is owed,
+  so a set is either pending with a source to resume from, or complete with
+  nothing left behind and a publish owed; a failed completion leaves it
+  pending and resumable.
+- `rescan` completing a set it finds whole in the channel now forgets the
+  source an interrupted upload recorded, so no stale path stays in the
+  index (and in every snapshot pushed from it).
+- A set removed while it was uploading is no longer reported "added" when
+  its last part lands, and its source file is not deleted as if it were.
+- A remux that cannot be deleted is named in the warning, to delete by hand:
+  it sits beside the original when no temp directory is configured.
+
+**Internal**
+
+- `index::lifecycle` is the one module that spells a set's `source:` and
+  `tmp:` meta keys (spellings unchanged, and pinned by a test, since
+  existing indexes resume through them); planning, uploading, rescan, the
+  upload session and `remove` go through it. `run_set` reports whether the
+  set completed, so the upload session no longer re-reads the status, and
+  the `finish_from` pass-through is gone.
+
 ## 0.68.2 — the series preload stops tripping Telegram's flood limit
 
 What the viewer saw: `[INFO] Sleeping for Ns on flood wait (Caused by

@@ -2,12 +2,13 @@
 
 use std::path::Path;
 
-use anyhow::anyhow;
+use anyhow::{Context, anyhow};
 
 use super::link::Link;
 use super::{Item, Outcome, Session, Set, Step, identity};
 use crate::index::status::SetStatus;
-use crate::index::{db, pins, sets};
+use crate::index::{lifecycle, sets};
+use crate::upload::pipeline::run_set;
 use crate::upload::prepare_set::prepare_and_record_set;
 use crate::upload::record_document::record_document_set;
 use crate::upload::{finish, lock};
@@ -83,7 +84,7 @@ impl<L: Link> Session<'_, L> {
             Ok(None) => return Some(Outcome::Failed(anyhow!("no set {set_id} in the index"))),
             Err(err) => return self.stop(err, planned),
         };
-        let recorded = match db::get_meta(&self.conn, &db::source_key(set_id)) {
+        let recorded = match lifecycle::source_of(&self.conn, set_id) {
             Ok(recorded) => recorded,
             Err(err) => return self.stop(err, planned),
         };
@@ -108,37 +109,30 @@ impl<L: Link> Session<'_, L> {
                 return planned;
             }
         };
-        let finished =
-            finish::finish_from(conn, transport, cfg.throttle_ms, &set, data_dir, &source).await;
-        let (complete, failure) = match finished {
-            Ok(complete) => (complete, None),
+        let finished = run_set(
+            conn,
+            transport,
+            cfg.throttle_ms,
+            &set,
+            &source,
+            Some(data_dir),
+        )
+        .await
+        .with_context(|| format!("uploading set {set_id}"));
+        let complete = match finished {
+            Ok(complete) => complete,
             // The transport has already retried each part; what failed now
             // is the connection or the index, and every later item would
-            // meet it too. A set that completed before the failure — its
-            // cleanup is what failed — still counts, and is published.
+            // meet it too. Completing a set is the last step that can fail,
+            // and one transaction, so this set is still pending.
             Err(err) => {
-                let complete = sets::get_set(conn, set_id)
-                    .is_ok_and(|row| row.is_some_and(|row| row.status == SetStatus::Complete));
-                (complete, Some(err))
+                *stopped = Some(err);
+                return planned;
             }
         };
-        if complete {
-            // Owed the moment it lands, not when the session ends: a walk
-            // interrupted after this still leaves the publish owed, and the
-            // next session pays it.
-            if let Err(err) = pins::owe_publish(conn) {
-                *stopped = Some(err);
-                return Some(Outcome::Uploaded);
-            }
-        }
-        if let Some(err) = failure {
-            *stopped = Some(err);
-            return Some(if complete {
-                Outcome::Uploaded
-            } else {
-                Outcome::Pending
-            });
-        }
+        // Completing the set also recorded the publish it is owed, in the
+        // same transaction: a walk interrupted after this still leaves it
+        // owed, and the next session pays it.
         if complete {
             println!("set {set_id} added");
         }
