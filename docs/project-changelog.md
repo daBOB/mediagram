@@ -5,6 +5,19 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.68.7 — an uploaded title arrives with its cast
+
+**Fixed**
+
+- Uploading a film or a show recorded its description but not its cast or
+  a film's franchise; those came only with the next `mediagram metadata` or
+  `sync-index`, so titles uploaded since the last run showed no Cast tab
+  (nine series added one evening, for instance). The upload now records
+  cast and franchise with the description, once per title, the way
+  `metadata` does; a provider that will not answer costs the tab, never the
+  upload. Titles already uploaded without cast get it from the next
+  `mediagram metadata`.
+
 ## 0.68.6 — finishing a title is one write, on the web and on Android
 
 Architecture review candidate E.

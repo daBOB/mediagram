@@ -118,9 +118,20 @@ pub async fn prepare_and_record_set(cfg: &Config, new: &NewSet) -> Result<Planne
     // already cached from resolving the title, so this is a read of disk.
     // A failure costs the show its description and nothing else — the upload
     // is the point, and a synopsis is not worth failing it for.
+    //
+    // Its cast and a film's franchise too, as `mediagram metadata` records
+    // them: without them a title uploaded since the last run had a synopsis
+    // and no Cast tab. Once per title (a show's later episodes find it held),
+    // and a provider that will not answer costs the tab, never the upload.
     if let Some(id) = title_id {
         match title_details::fetch(&api, title_kind, id, &cfg.tmdb_language).await {
-            Ok(row) => shows::upsert(&conn, &row)?,
+            Ok(row) => {
+                shows::upsert(&conn, &row)?;
+                title_details::backfill_credits(&conn, &api, title_kind, id).await?;
+                if let Some(collection) = row.collection_id {
+                    title_details::backfill_franchise(&conn, &api, collection).await?;
+                }
+            }
             Err(err) => tracing::warn!(id, error = %err, "no description recorded for this title"),
         }
     }
