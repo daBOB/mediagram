@@ -45,7 +45,7 @@ tablet, 1164×777 dp; web at 412 dp): scratchpad `home-web-{1,2,3}.png`,
 | # | Phase | Owns | Status |
 |---|-------|------|--------|
 | 01 | [Library chrome: rail + departments bar](phase-01-library-chrome-rail-departments-bar.md) | ui-mobile `ui/` shell, catalog tabs, new `ui/chrome/*`, rail icons | pending |
-| 02 | [Home body: cover, features, bands, shelves](phase-02-home-cover-features-bands-shelves.md) | ui-mobile `catalog/Home*`, `CoverStory`, `FeatureStrip`, `ResumeStrip`, `PullQuote`, new `catalog/home/*` | pending |
+| 02 | [Home body: cover, features, bands, shelves](phase-02-home-cover-features-bands-shelves.md) | ui-mobile `catalog/Home*`, `CoverStory`, `FeatureStrip`, `ResumeStrip`, `PullQuote`, new `catalog/home/*` | completed |
 | 03 | [Documentaries department](phase-03-documentaries-department.md) | core/model `Kind`, core/data kind mapping, feature/catalog shelves/tabs, ui-mobile department page | pending |
 | 04 | [Verify on tablet, docs, version](phase-04-verify-docs-version.md) | tests sweep, docs/, DESIGN.md, manifests | pending |
 

@@ -1,7 +1,7 @@
 package ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -88,12 +88,12 @@ internal fun LibraryBranches(
             RailData(chromeCountsOf(shelves, watch), libraryTallyLines(shelves), onHome = { at.toCatalog(); chosenTab = 0 })
         }
 
-    // Home's own grid state, hoisted here rather than kept inside
+    // Home's own list state, hoisted here rather than kept inside
     // CatalogScreen/HomeScreen — LibraryHome's departments bar reads its
     // scroll position for the over-cover blend, and a state this function
     // does not itself compose past never gets lost when the width class
     // switches (see LibraryHome's own note on the single content call site).
-    val homeGridState = rememberLazyGridState()
+    val homeListState = rememberLazyListState()
     // Shared with the same call CatalogScreen makes so the two can never
     // pick different editorial sets from two different moments — see
     // CatalogScreen's own note on `now`.
@@ -206,7 +206,7 @@ internal fun LibraryBranches(
             menu = menuActions,
             profile = profileBar,
             onSearch = at::openSearch,
-            homeScrollState = homeGridState,
+            homeScrollState = homeListState,
             hasCover = hasCover,
         ) {
             shelvesState.SaveableStateProvider(SHELVES_KEY) { CatalogScreen(
@@ -225,7 +225,8 @@ internal fun LibraryBranches(
                 onOpenFranchise = { id -> at.openFranchise(id.toString()) },
                 onPlayRun = at::openPlayer,
                 onFinish = { catalogViewModel.markFinished(it) },
-                homeGridState = homeGridState,
+                onToggleWatchlist = catalogViewModel::setWatchlisted,
+                homeListState = homeListState,
                 now = now,
                 titleInfo = catalogViewModel::titleInfo,
             ) }

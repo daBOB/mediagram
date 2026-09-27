@@ -2,7 +2,6 @@ package ui.chrome
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
@@ -104,7 +103,7 @@ class WidthClassStateTest {
         host {
             val holder = rememberSaveableStateHolder()
             val tabs = catalogTabsOf(emptyList())
-            LibraryHome(tabs, listOf(0, 3), 3, {}, browse, menu, profile, {}, rememberLazyGridState(), hasCover = false) {
+            LibraryHome(tabs, listOf(0, 3), 3, {}, browse, menu, profile, {}, rememberLazyListState(), hasCover = false) {
                 holder.SaveableStateProvider("shelves") { rows() }
             }
         }
@@ -115,7 +114,7 @@ class WidthClassStateTest {
         widthDp = 400
         host {
             val tabs = catalogTabsOf(emptyList())
-            LibraryHome(tabs, listOf(0, 3), 3, {}, browse, menu, profile, {}, rememberLazyGridState(), hasCover = false) { rows() }
+            LibraryHome(tabs, listOf(0, 3), 3, {}, browse, menu, profile, {}, rememberLazyListState(), hasCover = false) { rows() }
         }
         val before = compose.onNodeWithTag("rows").getUnclippedBoundsInRoot()
         val wordBefore = compose.onNodeWithText("mediagram").getUnclippedBoundsInRoot()

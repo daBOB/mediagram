@@ -6,8 +6,11 @@ import model.MediaSet
 import model.Progress
 import model.WatchSnapshot
 
-/** How many plates a row holds before the rest is left to its own shelf. */
+/** How many plates a row holds before the rest is left to its own shelf. Also TV's own row width — six plates fit a television without a rail (`TvHomeRow`'s own doc); changing it moves TV too, not just parity with the web's own row limits. */
 const val HOME_ROW_LIMIT = 6
+
+/** The web's own `POSTER_ROW_LIMIT` (`home-shelves.js:21`) — Recently Added and the Latest shelves' own poster rows hold this many on the phone/tablet page, more than [HOME_ROW_LIMIT] (which still governs Continue/Next up there, and TV's own row width everywhere). */
+const val HOME_POSTER_ROW_LIMIT = 8
 
 /**
  * One row of the start page. [seeAll] is the shelf "See all" opens; `null`
@@ -49,7 +52,14 @@ data class SetCard(val set: MediaSet, val caption: String, val progress: Float?,
  * badge onto Continue and Next up's own cards; the three Latest rows carry
  * none — a film or a show's plate there is [Entry], not [SetCard].
  */
-fun homeRowsOf(shelves: List<Shelf>, watch: WatchSnapshot, heldIds: Set<String> = emptySet(), limit: Int = HOME_ROW_LIMIT): List<HomeRow> {
+fun homeRowsOf(
+    shelves: List<Shelf>,
+    watch: WatchSnapshot,
+    heldIds: Set<String> = emptySet(),
+    limit: Int = HOME_ROW_LIMIT,
+    /** Overrides [limit] for the Latest shelves' own poster rows only — Continue/Next up still use [limit] alone. */
+    posterLimit: Int = limit,
+): List<HomeRow> {
     val collections = shelves.asSequence().flatMap { it.entries }.filterIsInstance<Entry.Collection>().toList()
     val underway = underwayOf(collections, indexById(shelves), watch, limit)
     val positions = watch.progress.associateBy { it.setId }
@@ -93,7 +103,7 @@ fun homeRowsOf(shelves: List<Shelf>, watch: WatchSnapshot, heldIds: Set<String> 
                 title = latestTitleFor(shelf.title),
                 seeAll = shelf.title,
                 total = shelf.entries.size,
-                content = RowContent.Entries(newestFirst(shelf.entries, limit)),
+                content = RowContent.Entries(newestFirst(shelf.entries, posterLimit)),
             )
     }
 

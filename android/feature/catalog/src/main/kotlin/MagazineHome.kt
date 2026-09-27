@@ -30,6 +30,8 @@ fun magazineHomeOf(
     now: Long,
     heldIds: Set<String> = emptySet(),
     limit: Int = HOME_ROW_LIMIT,
+    /** Overrides [limit] for "Recently added" only — Continue/Next up's own underway cards still use [limit] alone. */
+    recentLimit: Int = limit,
 ): MagazineHome {
     val byId = indexById(shelves)
     val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
@@ -38,7 +40,7 @@ fun magazineHomeOf(
     // decided parity over a series-eligible cover when the plan asked.
     val movieEntries = shelves.firstOrNull { it.title == "Movies" }?.entries.orEmpty().filterIsInstance<Entry.Film>()
     val movies = movieEntries.map { it.set }
-    val recentlyAdded = movies.sortedByDescending(MediaSet::addedAt).take(limit)
+    val recentlyAdded = movies.sortedByDescending(MediaSet::addedAt).take(recentLimit)
     val onRow = recentlyAdded.mapTo(HashSet(), MediaSet::setId)
 
     val editorial =

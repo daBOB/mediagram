@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,6 +24,7 @@ import catalog.Shelf
 import catalog.allSetsById
 import catalog.catalogTabsOf
 import catalog.continueWall
+import catalog.HOME_POSTER_ROW_LIMIT
 import catalog.franchisesIn
 import catalog.homeRowsOf
 import catalog.magazineHomeOf
@@ -84,13 +85,15 @@ fun CatalogScreen(
     onPlayRun: (setId: String, run: List<String>) -> Unit,
     /** Continue's "Mark finished". */
     onFinish: (setId: String) -> Unit,
+    /** The cover's "+ My List" pill and every card's own toggle — see [data.WatchStateRepository.setWatchlisted]. */
+    onToggleWatchlist: (setId: String, listed: Boolean) -> Unit,
     /**
-     * Home's own grid state, hoisted up to [ui.chrome.LibraryHome] so the
+     * Home's own list state, hoisted up to [ui.chrome.LibraryHome] so the
      * departments bar can read where the page actually is — the same
      * instance [magazineHomeOf] below is asked to draw into, not a state of
      * this screen's own that the bar would have no way to reach.
      */
-    homeGridState: LazyGridState,
+    homeListState: LazyListState,
     /** The magazine's own "now" — shared with whoever needs to know ahead of composing this whether Home has a cover to draw, so the two never pick different editorial sets from two different moments. */
     now: Long,
     /** What the index says about a title — the Featured reel's score and tagline. */
@@ -104,7 +107,7 @@ fun CatalogScreen(
         is CatalogUiState.Ready -> Shelves(
             state, fetching, chosenTab, onTabChange, onOpenTitle, onOpenCollection, onOpenList, onCreateList,
             onOpenGenre, onOpenGenresIndex, onOpenLatest, onOpenMoviesPage, onOpenFranchise, onPlayRun, onFinish,
-            homeGridState, now, titleInfo,
+            onToggleWatchlist, homeListState, now, titleInfo,
         )
     }
 }
@@ -134,7 +137,8 @@ private fun Shelves(
     onOpenFranchise: (Long) -> Unit,
     onPlayRun: (setId: String, run: List<String>) -> Unit,
     onFinish: (setId: String) -> Unit,
-    homeGridState: LazyGridState,
+    onToggleWatchlist: (setId: String, listed: Boolean) -> Unit,
+    homeListState: LazyListState,
     now: Long,
     titleInfo: suspend (String) -> TitleInfo?,
 ) {
@@ -170,16 +174,21 @@ private fun Shelves(
         when {
             selected == 0 -> HomeScreen(
                 magazine = remember(shelves, state.watch, state.heldIds, now) {
-                    magazineHomeOf(shelves, state.watch, editorsChoice = state.watch.editorsChoice, now = now, heldIds = state.heldIds)
+                    magazineHomeOf(
+                        shelves, state.watch, editorsChoice = state.watch.editorsChoice, now = now, heldIds = state.heldIds,
+                        recentLimit = HOME_POSTER_ROW_LIMIT,
+                    )
                 },
                 rows = remember(shelves, state.watch, state.heldIds) {
-                    homeRowsOf(shelves, state.watch, state.heldIds).filterNot { it.title in setOf("Continue", "Next up", "Latest films") }
+                    homeRowsOf(shelves, state.watch, state.heldIds, posterLimit = HOME_POSTER_ROW_LIMIT)
+                        .filterNot { it.title in setOf("Continue", "Next up", "Latest films") }
                 },
                 watch = state.watch,
-                columns = columns,
-                gridState = homeGridState,
+                listState = homeListState,
+                onPlay = { id -> onPlayRun(id, emptyList()) },
                 onOpenTitle = onOpenTitle,
                 onOpenCollection = onOpenCollection,
+                onToggleWatchlist = onToggleWatchlist,
                 onSeeAll = { shelf -> onTabChange(fullTabs.titles.indexOf(shelf).coerceAtLeast(0)) },
             )
 

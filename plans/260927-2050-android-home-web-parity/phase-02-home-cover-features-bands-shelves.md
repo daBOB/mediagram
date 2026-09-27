@@ -18,7 +18,7 @@
 
 ## Overview
 
-Priority P2 · pending. Rebuild the home tab's sections to the web's layout and type.
+Priority P2 · completed. Rebuild the home tab's sections to the web's layout and type.
 Data selection already matches the web (cover ≤5 seeded daily, lead/trending/staff,
 quote, this month, latest series/courses); this phase is layout, type and actions.
 
@@ -150,16 +150,16 @@ not Fraunces (today's "Recently added · 935" serif heading + hairline goes).
 
 ## Todo
 
-- [ ] fluid() + HomeType, weight/opsz verified on device
-- [ ] HomeCover (scrim, eyebrow, uppercase title, meta, three buttons, pager)
-- [ ] HomeFeatures (wide + two on tablet, uppercase rule)
-- [ ] ContinueBand (cards over image, quote beside)
-- [ ] RecentBand (posters no captions + This month)
-- [ ] Latest series row with captions, Latest courses list
-- [ ] HomeScreen LazyColumn, scroll hoisted
-- [ ] tests green, old composables deleted
-- [ ] tablet side-by-side shots
-- [ ] 0.70.1, changelog, commit
+- [x] fluid() + HomeType, weight/opsz verified on device
+- [x] HomeCover (scrim, eyebrow, uppercase title, meta, three buttons, pager)
+- [x] HomeFeatures (wide + two on tablet, uppercase rule)
+- [x] ContinueBand (cards over image, quote beside)
+- [x] RecentBand (posters no captions + This month)
+- [x] Latest series row with captions, Latest courses list
+- [x] HomeScreen LazyColumn, scroll hoisted
+- [x] tests green, old composables deleted
+- [x] tablet side-by-side shots
+- [x] 0.70.1, changelog, commit (version + changelog done; commit left to the coordinator per instructions)
 
 ## Success criteria
 

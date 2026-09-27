@@ -5,6 +5,38 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.71.1 — the Android home tab, in the web player's own layout
+
+**Changed**
+
+- The phone/tablet home tab is rebuilt to the web player's own magazine
+  front section, section for section: a cover story rotating through the
+  day's featured films under the chrome (uppercase Fraunces headline at the
+  web's own weight and optical size, eyebrow, deck, meta line, and three
+  pills — Watch now plays the film, + My List toggles and reads back "✓ My
+  List", Details opens its page), then the three editorial features (a
+  wide lead plus two beside it on a tablet, one column on a phone; the
+  second card alone keeps its own case rather than running uppercase),
+  Continue Watching beside a pull-quote in one band, Recently Added
+  (posters alone, no caption) beside This month's own numbered column,
+  Latest series with its own captions, and Latest courses as a plain list
+  — an index rather than posters, since a course carries no artwork of its
+  own. Replaces the plain poster grid the tab drew before.
+- A collection's own caption ("21 episodes · three seasons") now spells
+  counts under twenty-one as words the way the web's own captions do,
+  rather than printing every count as a figure.
+- The tab's own scroll position is what the departments bar reads to
+  decide how solid to draw itself over the cover, in place of a
+  viewport-percentage heuristic an earlier build used, which stopped
+  tracking the cover's real height once the cover stopped being a fixed
+  aspect ratio.
+- Fraunces across the whole app — not just the phone/tablet catalogue — now
+  draws through static, pre-instanced font files rather than the variable
+  font's own axis settings, which a device was found to ignore outright
+  away from the font's own heaviest default instance. The shared design
+  system carries this, so the television's own shelf headings and title
+  names change weight the same way the phone's do.
+
 ## 0.71.0 — Android library chrome, in the web player's own layout
 
 **Changed**

@@ -1,8 +1,23 @@
 // The optical-size axis is reached through `FontVariation.Setting`, which
-// carries Compose's experimental-text opt-in. The axis is the reason these
-// two faces are worth their bytes over shipping a static cut per size — see
-// PageTitle's own doc comment for the one place that trade held and a
-// static pair was shipped anyway.
+// carries Compose's experimental-text opt-in — Newsreader still takes that
+// route, and is worth its bytes for it. Fraunces does not, any more: on the
+// device that surfaced `PageTitle`'s own trap, its `wght`/`opsz` axes went
+// unhonoured wherever they were asked for away from the font's own default
+// instance (`wght 900`, `opsz 9`) — not only through `TextAutoSize`'s own
+// re-measurement, which is the trap `PageTitle`'s own doc comment already
+// named, but through a plain `Text` with an explicit `FontVariation.Settings`
+// too. A/B'd on-device to be sure: the same string at the same size, one
+// drawn through `FontVariation.Settings`, one through a static cut
+// fontTools' own instancer pinned at the same `wght`/`opsz` — the variable
+// one rendered at the font's own heavy default regardless of what was
+// asked for, the static one at the requested weight and optical size.
+// Every Fraunces cut this file exposes is a static instance for that
+// reason now, the same way `PageTitle`'s own pair already were. Newsreader
+// and Geist stay variable: Newsreader's own default instance (`wght 400`,
+// `opsz 18`) is close enough to what every call site here actually asks
+// for that nothing has shown the same failure, and Geist's requested
+// weights (500, 600) read correctly on the same device against its own
+// `wght 400` default.
 @file:OptIn(ExperimentalTextApi::class)
 
 package designsystem
@@ -21,34 +36,23 @@ import androidx.compose.ui.unit.sp
 import com.mediagram.android.core.designsystem.R
 
 /**
- * The catalogue's three faces, the same three the web player sets it in.
+ * Newsreader and Geist: still variable, unlike [Display]/[PageTitle]/
+ * [CoverTitle] below — see this file's own top note for why those three
+ * draw through static, pre-instanced files instead.
  *
- * Fraunces and Newsreader are variable on an optical-size axis, which is why
- * one file can set a title at 23sp and a count at 11sp without either
- * looking like the other scaled. The axis is declared per face here because
- * Android does nothing automatic with `opsz`: a browser has
- * `font-optical-sizing`, and this does not. Geist has no optical-size axis —
- * only weight — so [Interface] carries none.
- *
- * Fraunces is not asked for a weight below 500. On an ink ground its 400
- * goes thin enough to shimmer, and the catalogue sets its names in medium
- * on paper anyway.
+ * Newsreader is variable on an optical-size axis, which is why one file can
+ * set a title at 23sp and a count at 11sp without either looking like the
+ * other scaled. The axis is declared per face here because Android does
+ * nothing automatic with `opsz`: a browser has `font-optical-sizing`, and
+ * this does not. Geist has no optical-size axis — only weight — so
+ * [Interface] carries none.
  *
  * On API 24 and 25 variation settings are ignored and every face renders at
  * its default instance. That is a legible fallback on two releases this app
- * still supports, not a reason to ship a static cut of each.
+ * still supports — Newsreader's and Geist's own default instances are close
+ * enough to what every call site here actually asks for that neither showed
+ * the failure the top note describes, unlike Fraunces.
  */
-private fun display(weight: Int) =
-    Font(
-        resId = R.font.fraunces,
-        weight = FontWeight(weight),
-        variationSettings =
-            FontVariation.Settings(
-                FontVariation.weight(weight),
-                FontVariation.Setting("opsz", DISPLAY_OPTICAL),
-            ),
-    )
-
 private fun read(weight: Int) =
     Font(
         resId = R.font.newsreader,
@@ -67,14 +71,23 @@ private fun interfaceFont(weight: Int) =
         variationSettings = FontVariation.Settings(FontVariation.weight(weight)),
     )
 
-/** Drawn for a name held at arm's length: the wordmark, headings, titles. */
-private const val DISPLAY_OPTICAL = 28f
-
 /** Drawn for a sentence or a figure read at reading distance. */
 private const val READ_OPTICAL = 16f
 
-/** Fraunces: the wordmark, the shelf headings, and the name of a title. */
-internal val Display = FontFamily(display(500), display(600))
+/**
+ * Fraunces: the wordmark, the shelf headings, and the name of a title —
+ * static cuts at `opsz 28` (drawn for a name held at arm's length), one per
+ * weight this catalogue actually asks for. See this file's own top note on
+ * why a static pair, not `FontVariation.Settings`, draws these now.
+ *
+ * Never below 500: on an ink ground Fraunces' own 400 goes thin enough to
+ * shimmer, and the catalogue sets its names in medium on paper anyway.
+ */
+internal val Display =
+    FontFamily(
+        Font(resId = R.font.fraunces_display_500, weight = FontWeight.Medium),
+        Font(resId = R.font.fraunces_display_600, weight = FontWeight.SemiBold),
+    )
 
 /** Newsreader: everything meant to be read as a sentence or a figure. */
 internal val Read = FontFamily(read(400), read(500), read(600))
@@ -153,16 +166,18 @@ internal val CatalogueTypography =
  * `Trim.None` keep the 0.86em line height from clipping a capital's top and
  * bottom, which `Trim.Both` (Compose's own default) does not guarantee.
  *
- * A static font, not [display]'s own `variationSettings` trick: a page
- * title is the one face on this catalogue drawn through
- * `TextAutoSize.StepBased` (see [PageHead]), which re-measures the same
- * `FontFamily` at several candidate sizes in one pass. On the device that
- * surfaced this, that re-measurement left the requested `wght`/`opsz` axis
- * values behind and fell back to `fraunces.ttf`'s own registered default
- * instance — `wght 900`, `opsz 9`, its heaviest, most decorative cut, which
- * is exactly the wrong-weight wedge-serif look this shipped with. Nothing
- * else on this catalogue asks for `TextAutoSize`, so nothing else needed
- * this — nothing else showed the bug either.
+ * A static font, the same reason [Display] and [CoverTitle] are — see this
+ * file's own top note. This was the face that first surfaced the bug: a
+ * page title draws through `TextAutoSize.StepBased` (see [PageHead]),
+ * which re-measures the same `FontFamily` at several candidate sizes in one
+ * pass, and on the device that found this, that re-measurement left the
+ * requested `wght`/`opsz` axis values behind and fell back to
+ * `fraunces.ttf`'s own registered default instance — `wght 900`, `opsz 9`,
+ * its heaviest, most decorative cut. It was not the only face that carried
+ * the failure, only the one whose own re-measurement pass happened to
+ * surface it first — the top note's own on-device A/B is what showed
+ * [Display] dropped the same axis values through a plain `Text`, no
+ * `TextAutoSize` involved at all.
  */
 val PageTitle =
     TextStyle(
@@ -180,6 +195,23 @@ val PageTitle =
  */
 val PageTitleCompact =
     PageTitle.copy(fontFamily = FontFamily(Font(resId = R.font.fraunces_page_title_compact, weight = FontWeight.Medium)))
+
+/**
+ * The cover story's own headline — Fraunces at the widest cut the variable
+ * font's optical-size axis offers, `opsz 144` (`.cover-title`'s own
+ * `font-variation-settings: "opsz" 144`, `home.css:48-55`), a size no other
+ * title on this catalogue reaches for. A static cut, like [Display] — see
+ * this file's own top note; font size is left to the caller
+ * (`ui.catalog.home.HomeType`'s own `fluid()`), the same split [PageTitle]
+ * makes.
+ */
+val CoverTitle =
+    TextStyle(
+        fontFamily = FontFamily(Font(resId = R.font.fraunces_cover_600, weight = FontWeight.SemiBold)),
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = (-0.035).em,
+        lineHeight = 0.86.em,
+    )
 
 /** Spaced capitals over a page title, the way a magazine labels a department (`.eyebrow`, `theme.css:196-203`). */
 val Eyebrow =

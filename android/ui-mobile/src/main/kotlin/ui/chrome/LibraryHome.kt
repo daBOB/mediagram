@@ -1,7 +1,6 @@
 package ui.chrome
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -14,7 +13,7 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -58,7 +57,7 @@ import ui.setup.StartOverConfirmation
  * otherwise, and every `remember`/`rememberSaveable` under it — a scroll
  * position, a title already fetched — is lost with it.
  *
- * [homeScrollState] is the Home tab's own grid state, hoisted up here so the
+ * [homeScrollState] is the Home tab's own list state, hoisted up here so the
  * departments bar can read where the page actually is rather than tracking
  * scroll deltas of its own; [hasCover] is whether Home actually drew a cover
  * to bleed the bar's translucent opening state over — with nothing to bleed
@@ -79,7 +78,7 @@ internal fun LibraryHome(
     menu: MenuActions,
     profile: ProfileBarState,
     onSearch: () -> Unit,
-    homeScrollState: LazyGridState,
+    homeScrollState: LazyListState,
     hasCover: Boolean,
     content: @Composable () -> Unit,
 ) {
@@ -113,15 +112,30 @@ internal fun LibraryHome(
         if (expanded) {
             LibraryRail(active = activeRailItem, onHome = rail.onHome, onSelect = onRailSelect, modifier = Modifier.fillMaxHeight())
         }
-        BoxWithConstraints(Modifier.weight(1f).fillMaxHeight()) {
-            val viewportPx = with(density) { maxHeight.toPx() }
-            // Read from the Home grid's own position rather than tracked
+        Box(Modifier.weight(1f).fillMaxHeight()) {
+            val barHeightPx = with(density) { expandedChromeHeight.toPx() }
+            // Read from the Home list's own position rather than tracked
             // scroll deltas: a deep position restored after a back-navigate,
             // or reached by scrolling up from further down, both read right
             // the moment this recomposes, with nothing of its own to reset.
-            val blend by remember(isHome, viewportPx) {
+            // The cover's own measured height comes from the list's own
+            // layout info — its real on-screen size on this width class and
+            // orientation, not a guess at it from the viewport.
+            val blend by remember(isHome, hasCover, barHeightPx) {
                 derivedStateOf {
-                    if (!isHome) 1f else coverBlend(homeScrollState.firstVisibleItemIndex, homeScrollState.firstVisibleItemScrollOffset, viewportPx)
+                    // Not just `!isHome`: Home itself reads solid too once
+                    // it has no cover to bleed the bar's translucent
+                    // opening state over — a new library before its first
+                    // TMDB fetch, or a kids profile with no editor's pick.
+                    // Without `hasCover` here, item 0 was the features
+                    // block instead, and the blend still ramped as if it
+                    // were the cover's own height.
+                    if (!isHome || !hasCover) {
+                        1f
+                    } else {
+                        val coverHeightPx = homeScrollState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 0 }?.size?.toFloat() ?: 0f
+                        coverBlend(homeScrollState.firstVisibleItemIndex, homeScrollState.firstVisibleItemScrollOffset, coverHeightPx, barHeightPx)
+                    }
                 }
             }
             // Created once and read through the same `var ... by remember`
