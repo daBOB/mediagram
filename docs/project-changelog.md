@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.68.1 — a completed set is owed a publish the moment it lands
+
+Review follow-up to 0.68.0
+(`plans/reports/code-reviewer-260927-0325-upload-session-review-report.md`);
+the entries below under 0.68.0 describe the result.
+
 ## 0.68.0 — one upload session behind every uploading command
 
 Plan: `plans/260927-0302-upload-session-module/` (architecture review
@@ -15,8 +21,9 @@ candidate A). Terms: `CONTEXT.md` (Upload session).
 - `add-show`, `add-course`, `add-docu`, `finish-set` (behind `add`) and
   `resume` run through one upload session. Each item takes the upload lock
   on its own and re-reads what the index holds once it has it, so a file
-  added meanwhile goes between two episodes, and `resume` waits for a set a
-  background `add` is finishing instead of sending it twice.
+  added meanwhile goes between two episodes, and a background `add` whose
+  set `resume` finished first finds it complete (and deletes its file when
+  asked) instead of failing.
 - A failure while sending, after the transport's own retries, stops the
   session: the rest of the walk is not tried (each would fail the same way),
   what completed is published, and the command says how many items were not
@@ -24,12 +31,16 @@ candidate A). Terms: `CONTEXT.md` (Upload session).
 - An item counts as uploaded only when its set completed; `add-docu` on a
   single file no longer publishes when its set did not complete.
 - A session publishes once at its end, over the connection it uploaded with.
-  It skips the publish while another upload is running (that one publishes
-  when it ends, one pin instead of two), and whatever it does not publish is
-  owed in the local index: the next session that may publish does, even with
-  nothing of its own to upload.
-- `resume` says "set X added" for each set it completes, as every other
-  upload does.
+  Every set it completes is owed a publish the moment it lands, recorded in
+  the local index, so a walk interrupted after that (Ctrl-C mid-show) still
+  leaves the publish owed, and the next session pays it even with nothing of
+  its own to upload. It skips the publish while another upload is running
+  (one pin instead of two); the debt stays until a publish settles it.
+- Output: `resume` says "set X added" for each set it completes, as every
+  other upload does, and "already finished by another upload" for one it
+  finds done; `finish-set` says "set X added" only once the set completed;
+  `add-docu FILE` names the file before planning it rather than the resolved
+  title after. `resume` also fails when a set could not be resumed at all.
 
 **Internal**
 

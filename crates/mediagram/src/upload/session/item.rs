@@ -7,7 +7,7 @@ use anyhow::anyhow;
 use super::link::Link;
 use super::{Item, Outcome, Session, Set, Step, identity};
 use crate::index::status::SetStatus;
-use crate::index::{db, sets};
+use crate::index::{db, pins, sets};
 use crate::upload::prepare_set::prepare_and_record_set;
 use crate::upload::record_document::record_document_set;
 use crate::upload::{finish, lock};
@@ -33,6 +33,19 @@ impl<L: Link> Session<'_, L> {
             Err(err) => return self.stop(err, None),
         };
         let set_id = match (&item.set, status) {
+            // The set `add` planned for exactly this file, finished by
+            // another upload first: the file can go as surely as if this
+            // one had finished it.
+            (Set::Planned(id), Some(SetStatus::Complete)) => {
+                if let Some(path) = &item.delete_source {
+                    let total = sets::get_set(&self.conn, id)
+                        .ok()
+                        .flatten()
+                        .map_or(0, |s| s.total);
+                    report_deletion(path, true, total);
+                }
+                return Some(Outcome::AlreadyHeld);
+            }
             (_, Some(SetStatus::Complete)) => return Some(Outcome::AlreadyHeld),
             (Set::Planned(id), Some(SetStatus::Pending)) => {
                 say(&item.tag, Step::Start);
@@ -95,20 +108,10 @@ impl<L: Link> Session<'_, L> {
                 return planned;
             }
         };
-        match finish::finish_from(conn, transport, cfg.throttle_ms, &set, data_dir, &source).await {
-            Ok(complete) => {
-                if complete {
-                    println!("set {set_id} added");
-                }
-                if let Some(path) = delete {
-                    report_deletion(path, complete, set.total);
-                }
-                Some(if complete {
-                    Outcome::Uploaded
-                } else {
-                    Outcome::Pending
-                })
-            }
+        let finished =
+            finish::finish_from(conn, transport, cfg.throttle_ms, &set, data_dir, &source).await;
+        let (complete, failure) = match finished {
+            Ok(complete) => (complete, None),
             // The transport has already retried each part; what failed now
             // is the connection or the index, and every later item would
             // meet it too. A set that completed before the failure — its
@@ -116,14 +119,37 @@ impl<L: Link> Session<'_, L> {
             Err(err) => {
                 let complete = sets::get_set(conn, set_id)
                     .is_ok_and(|row| row.is_some_and(|row| row.status == SetStatus::Complete));
+                (complete, Some(err))
+            }
+        };
+        if complete {
+            // Owed the moment it lands, not when the session ends: a walk
+            // interrupted after this still leaves the publish owed, and the
+            // next session pays it.
+            if let Err(err) = pins::owe_publish(conn) {
                 *stopped = Some(err);
-                Some(if complete {
-                    Outcome::Uploaded
-                } else {
-                    Outcome::Pending
-                })
+                return Some(Outcome::Uploaded);
             }
         }
+        if let Some(err) = failure {
+            *stopped = Some(err);
+            return Some(if complete {
+                Outcome::Uploaded
+            } else {
+                Outcome::Pending
+            });
+        }
+        if complete {
+            println!("set {set_id} added");
+        }
+        if let Some(path) = delete {
+            report_deletion(path, complete, set.total);
+        }
+        Some(if complete {
+            Outcome::Uploaded
+        } else {
+            Outcome::Pending
+        })
     }
 
     fn stop(&mut self, err: anyhow::Error, outcome: Option<Outcome>) -> Option<Outcome> {

@@ -1,6 +1,6 @@
 //! `mediagram resume`: finish every set left pending by an interrupted `add`.
 
-use anyhow::{Context, Result, ensure};
+use anyhow::{Result, ensure};
 
 use crate::config::Config;
 use crate::index::{db, sets};
@@ -23,20 +23,26 @@ pub async fn run(cfg: &Config, no_push: bool) -> Result<()> {
     });
     let mut session = Session::new(cfg, TelegramLink::new(cfg))?;
     let counts = session
-        .upload(items, |id, step| {
-            if let Step::End(Outcome::Failed(err) | Outcome::Blocked(err)) = step {
+        .upload(items, |id, step| match step {
+            Step::End(Outcome::AlreadyHeld) => {
+                println!("set {id} already finished by another upload");
+            }
+            Step::End(Outcome::Failed(err) | Outcome::Blocked(err)) => {
                 println!("set {id}: {err:#}");
             }
+            _ => {}
         })
         .await;
-    session
-        .end(no_push)
-        .await
-        .context("resuming pending sets stopped")?;
+    session.end(no_push).await?;
     ensure!(
         counts.blocked == 0,
         "{} set(s) blocked by unavailable or changed sources",
         counts.blocked
+    );
+    ensure!(
+        counts.failed == 0,
+        "{} set(s) could not be resumed",
+        counts.failed
     );
     Ok(())
 }

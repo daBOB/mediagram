@@ -96,7 +96,6 @@ pub struct Session<'c, L> {
     data_dir: PathBuf,
     conn: Connection,
     link: L,
-    completed: usize,
     stopped: Option<anyhow::Error>,
     unreached: usize,
 }
@@ -111,7 +110,6 @@ impl<'c, L: Link> Session<'c, L> {
             data_dir,
             conn,
             link,
-            completed: 0,
             stopped: None,
             unreached: 0,
         })
@@ -137,18 +135,16 @@ impl<'c, L: Link> Session<'c, L> {
                 self.unreached += 1;
                 continue;
             };
-            if matches!(outcome, Outcome::Uploaded) {
-                self.completed += 1;
-            }
             counts.record(&outcome);
             say(&item.tag, Step::End(&outcome));
         }
         counts
     }
 
-    /// Publishes at most once — when this session completed a set or an
-    /// earlier one left a publish owed, unless `no_push` or another upload is
-    /// running and will publish when it ends — then disconnects. Fails with
+    /// Publishes at most once — when a publish is owed, which every
+    /// completed set leaves until a publish settles it — unless `no_push` or
+    /// another upload is running and will publish when it ends; then
+    /// disconnects. Fails with
     /// what stopped the session, else with a failed publish.
     pub async fn end(self, no_push: bool) -> Result<()> {
         end::end(self, no_push).await

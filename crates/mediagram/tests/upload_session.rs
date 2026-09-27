@@ -436,3 +436,138 @@ async fn a_documentary_collection_re_run_finds_its_episodes_held() {
     );
     assert_eq!(connects.get(), 0);
 }
+
+/// A debt recorded while a publish is under way — a set completing after
+/// that publish took its snapshot — is for sets the snapshot may lack, so it
+/// outlives the publish.
+#[tokio::test]
+async fn a_publish_owed_after_the_snapshot_is_still_owed_after_the_publish() {
+    let dir = tempfile::tempdir().unwrap();
+    let cfg = config(&dir);
+    let (transport, channel, connects) = (FakeTransport::new(), FakeChannel::new(), Cell::new(0));
+    let data_dir = dir.path().to_path_buf();
+    // The second look is the one just before sending, after the snapshot.
+    channel.on_look(2, move |_| {
+        pins::owe_publish(&db::open(&data_dir).unwrap()).unwrap()
+    });
+
+    let mut session = Session::new(&cfg, FakeLink::new(&transport, &channel, &connects)).unwrap();
+    session.upload([document(&dir, 1)], quiet).await;
+    session.end(false).await.unwrap();
+
+    assert_eq!(sends(&channel), 1);
+    assert!(
+        pins::publish_owed(&db::open(dir.path()).unwrap())
+            .unwrap()
+            .is_some()
+    );
+}
+
+#[tokio::test]
+async fn a_failed_publish_stays_owed_and_says_how_to_publish() {
+    let dir = tempfile::tempdir().unwrap();
+    let cfg = config(&dir);
+    let (transport, channel, connects) = (FakeTransport::new(), FakeChannel::new(), Cell::new(0));
+    channel.with(|c| c.send_fails = true);
+
+    let mut session = Session::new(&cfg, FakeLink::new(&transport, &channel, &connects)).unwrap();
+    session.upload([document(&dir, 1)], quiet).await;
+    let err = session.end(false).await.unwrap_err();
+
+    assert!(
+        format!("{err:#}").contains("mediagram push-index"),
+        "{err:#}"
+    );
+    assert!(
+        pins::publish_owed(&db::open(dir.path()).unwrap())
+            .unwrap()
+            .is_some()
+    );
+}
+
+/// The set a background `add` was handed, finished meanwhile by `resume`:
+/// found complete once the lock is held, so nothing is sent twice and
+/// nothing connects — and the file `add` was asked to delete goes.
+#[tokio::test]
+async fn a_planned_set_finished_by_another_upload_is_held_not_sent_again() {
+    let dir = tempfile::tempdir().unwrap();
+    let cfg = config(&dir);
+    let (transport, channel, connects) = (FakeTransport::new(), FakeChannel::new(), Cell::new(0));
+    let mut item = planned(&dir, "01J0000000000000000000SES6", 64);
+    let source = dir.path().join("01J0000000000000000000SES6.mkv");
+    item.delete_source = Some(source.clone());
+    let conn = db::open(dir.path()).unwrap();
+    sets::set_status(&conn, "01J0000000000000000000SES6", SetStatus::Complete).unwrap();
+
+    let mut session = Session::new(&cfg, FakeLink::new(&transport, &channel, &connects)).unwrap();
+    let counts = session.upload([item], quiet).await;
+    session.end(false).await.unwrap();
+
+    assert_eq!(
+        counts,
+        Counts {
+            held: 1,
+            ..Counts::default()
+        }
+    );
+    assert_eq!(connects.get(), 0);
+    assert_eq!(transport.send_count(), 0);
+    assert!(!source.exists());
+}
+
+/// Who an item is must be what its planning records, or a re-run uploads it
+/// again: a lesson and a collection's episode are planned for real (ffprobe),
+/// then found held by the same item.
+#[tokio::test]
+async fn a_planned_video_is_found_again_by_what_its_planning_recorded() {
+    if !mediagram::media::test_fixtures::ffmpeg_required("upload session identity round trip") {
+        return;
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let cfg = config(&dir);
+    let (transport, channel, connects) = (FakeTransport::new(), FakeChannel::new(), Cell::new(0));
+    let video = mediagram::media::test_fixtures::make_faststart_mp4(dir.path());
+    let item = |kind: Kind| Item {
+        tag: (),
+        set: Set::File(NewSet {
+            file: video.clone(),
+            no_remux: true,
+            lesson: Some(LessonOf {
+                course: "Walk".into(),
+                cid: "walk".into(),
+                chapter: Some(1),
+                chapter_title: None,
+                path: None,
+                number: Some(1),
+                kind,
+            }),
+            ..NewSet::default()
+        }),
+        delete_source: None,
+    };
+
+    for kind in [Kind::Tut, Kind::Docu] {
+        let mut session =
+            Session::new(&cfg, FakeLink::new(&transport, &channel, &connects)).unwrap();
+        let first = session.upload([item(kind)], quiet).await;
+        let again = session.upload([item(kind)], quiet).await;
+        session.end(true).await.unwrap();
+
+        assert_eq!(
+            first,
+            Counts {
+                uploaded: 1,
+                ..Counts::default()
+            },
+            "{kind}"
+        );
+        assert_eq!(
+            again,
+            Counts {
+                held: 1,
+                ..Counts::default()
+            },
+            "{kind}"
+        );
+    }
+}

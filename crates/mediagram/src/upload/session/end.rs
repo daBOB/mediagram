@@ -30,23 +30,20 @@ pub(super) async fn end<L: Link>(mut session: Session<'_, L>, no_push: bool) -> 
     Err(stop.context(said))
 }
 
-/// Publishes when this session completed a set or an earlier one left a
-/// publish owed. Not with `no_push`, and not while another upload runs: that
-/// one publishes when it ends, and one pin instead of two is what the flood
-/// limit on pins asks for. Whatever is not published here is owed, so the
-/// next session that may publish does.
+/// Publishes when a publish is owed — this session completed a set, or an
+/// earlier one did and never published. Not with `no_push`, and not while
+/// another upload runs: that one publishes when it ends, and one pin instead
+/// of two is what the flood limit on pins asks for. Nothing owed is ever
+/// lost: the debt stays in the local index until a publish settles it.
 async fn publish<L: Link>(session: &mut Session<'_, L>, no_push: bool) -> Result<()> {
-    let owed = pins::publish_owed(&session.conn)?.is_some();
-    if session.completed == 0 && !owed {
+    if no_push || pins::publish_owed(&session.conn)?.is_none() {
         return Ok(());
     }
-    if no_push || lock::is_held(&session.data_dir) {
-        if session.completed > 0 {
-            pins::owe_publish(&session.conn)?;
-        }
-        if !no_push {
-            println!("index not pushed: another upload is running and pushes it when it ends");
-        }
+    if lock::is_held(&session.data_dir) {
+        println!(
+            "index not pushed yet: another upload is running; the next upload or \
+             `mediagram push-index` publishes it"
+        );
         return Ok(());
     }
     let published = match session.link.open().await {
@@ -57,16 +54,7 @@ async fn publish<L: Link>(session: &mut Session<'_, L>, no_push: bool) -> Result
         }
         Err(err) => Err(err),
     };
-    match published {
-        Ok(id) => {
-            println!("pushed index as message {id}");
-            Ok(())
-        }
-        Err(err) => {
-            if session.completed > 0 {
-                pins::owe_publish(&session.conn)?;
-            }
-            Err(err).context("the index was not pushed; run `mediagram push-index`")
-        }
-    }
+    let id = published.context("the index was not pushed; run `mediagram push-index`")?;
+    println!("pushed index as message {id}");
+    Ok(())
 }

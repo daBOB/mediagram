@@ -54,9 +54,10 @@ commands/          one module per subcommand, each exposing `run(...)`; thin
   add_show/          walk a series folder, survey what will play badly, hand
                      the episodes to an upload session
   add_course.rs      walk a course folder and hand it to course::upload
-  add_docu/          upload a documentary: one file (add.rs's path), or a
-                     folder walked and grouped exactly like add_course.rs
-                     (collection.rs), `Kind::Docu` instead of `Kind::Tut`
+  add_docu/          upload a documentary: one file (a one-item upload
+                     session), or a folder walked and grouped exactly like
+                     add_course.rs (collection.rs, through course::upload),
+                     `Kind::Docu` instead of `Kind::Tut`
   artwork.rs         set or clear a title's custom poster/backdrop
                      (index/artwork.rs), resolved from a set id or a title
   finish_set.rs      a one-item upload session over the set `add` planned,
@@ -125,7 +126,8 @@ metadata/          interactive resolution of provider ids over
 course/            reading a course folder: which files are lessons and which
                    are documents, the numbers inferred from their names, its
                    identity (title, collection id), the sidecars beside a
-                   lesson, and the dry-run table. Chapter numbers come from
+                   lesson, the dry-run table, and upload.rs — the walk handed
+                   to an upload session, shared by add-course and add-docu. Chapter numbers come from
                    the folders holding video and only those — a document-only
                    folder that joined the numbering would shift every lesson's
                    identity and make a re-run upload the whole course again

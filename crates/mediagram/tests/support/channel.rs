@@ -34,6 +34,7 @@ pub struct Channel {
     pub unpin_fails: HashSet<i32>,
     pub unpin_lies: HashSet<i32>,
     pub captions_fail: bool,
+    pub send_fails: bool,
 }
 
 impl Channel {
@@ -166,6 +167,9 @@ impl ChannelRemote for FakeChannel {
 
     async fn send_index(&self, path: &Path, caption: &str) -> Result<i32> {
         tokio::task::yield_now().await;
+        if self.with(|c| c.send_fails) {
+            bail!("the channel refused the index document");
+        }
         let bytes = std::fs::read(path)?;
         Ok(self.with(|c| {
             c.sends += 1;
