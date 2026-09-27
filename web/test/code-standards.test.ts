@@ -28,10 +28,12 @@ const ROOT = join(import.meta.dir, "..");
  * through startup alongside the encoder probe it already ran next to. Lowered
  * again the same day for `app.js` and `shelf-view.js`, once the hash format
  * moved out to `lib/address.js` and every hand-built `#/…` string in the app
- * became one call into it.
+ * became one call into it. Lowered once more for `app.js`, when what plays
+ * next and what the server preloads became one answer in
+ * `lib/playback/plays-next.js`.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 772,
+  "public/app.js": 742,
   "public/lib/catalog/course-view.js": 234,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,

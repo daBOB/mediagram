@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.68.11 — what plays next and what is preloaded are one answer
+
+**Internal**
+
+- The web player's choice of what plays after a title, and of what the
+  server is asked to preload while it plays, moved out of `app.js` into
+  `web/public/lib/playback/plays-next.js` as one pure function, `playsNext`.
+  The rule it keeps is unchanged: the next two series episodes, and nothing
+  for a lesson, a documentary or a hand-built list, because the preload
+  fetches in the background from a flood-limited account. The browser half of
+  that rule had no test before; `web/test/plays-next.test.ts` now pins it,
+  beside the "next" it must always agree with. `app.js` is 30 lines shorter,
+  and its line ceiling came down with it.
+
 ## 0.68.10 — the web player's addresses have one home
 
 **Internal**

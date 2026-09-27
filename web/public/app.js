@@ -13,7 +13,6 @@
 import { el } from "./lib/dom.js";
 import { countOf } from "./lib/format.js";
 import { renderSearch } from "./lib/catalog/search-view.js";
-import { nextAfter, nextInQueue } from "./lib/library.js";
 import { countDocumentaries } from "./lib/documentaries.js";
 import { catalogOf, loadLink } from "./lib/link.js";
 import { colophonLine } from "./lib/colophon.js";
@@ -47,6 +46,7 @@ import { renderGenre, renderGenres, renderLatest } from "./lib/catalog/utility-p
 import { createLibrarySession } from "./lib/library-session.js";
 import { browserLibraryPort } from "./lib/library-session-port.js";
 import { go, href, parse, sectionOf } from "./lib/address.js";
+import { playsNext, requestPreload } from "./lib/playback/plays-next.js";
 
 const main = document.getElementById("main");
 const player = document.getElementById("player");
@@ -356,44 +356,14 @@ async function openTitle(set, queue, options, request) {
   const autoplay = options.autoplay ?? null;
   const { freshResume } = options;
 
-  if (queue) {
-    openPlayer(set, {
-      next: nextInQueue(queue, set.setId),
-      onOpenNext: (following, how) => play(following, queue, how),
-      autoplay,
-      freshResume,
-    });
-    return;
-  }
-  const collection = [...library.series, ...library.tutorials, ...library.documentaries.collections].find(
-    (entry) => entry.name === set.show,
-  );
-  if (collection && set.kind === "ep") preloadAfter(collection, set.setId);
+  const { next, preload } = playsNext(library, set, queue);
+  requestPreload(preload);
   openPlayer(set, {
-    next: collection ? nextAfter(collection, set.setId) : null,
-    onOpenNext: (following, how) => play(following, null, how),
+    next,
+    onOpenNext: (following, how) => play(following, queue, how),
     autoplay,
     freshResume,
   });
-}
-
-/**
- * Asks the server to take the next two episodes into its cache.
- *
- * Named here, with the `nextAfter` that decides Play next, so what is fetched
- * ahead is exactly what would play next. Fire and forget: a player with
- * preload turned off answers 404, and either way this episode plays the same.
- */
-function preloadAfter(collection, setId) {
-  const first = nextAfter(collection, setId);
-  const second = first ? nextAfter(collection, first.setId) : null;
-  const setIds = [first, second].filter(Boolean).map((next) => next.setId);
-  if (setIds.length === 0) return;
-  fetch("/api/preload", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ setIds }),
-  }).catch(() => {});
 }
 
 /**
