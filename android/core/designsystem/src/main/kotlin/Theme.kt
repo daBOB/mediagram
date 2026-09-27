@@ -158,7 +158,10 @@ fun MediagramTheme(
     // reader below and across the television surface sees this composition's
     // resolved accent, not a value they each had to be handed separately.
     SideEffect { Palette.Imprint = accentColor }
-    CompositionLocalProvider(LocalCatalogueTones provides if (dark) DarkTones else LightTones) {
+    CompositionLocalProvider(
+        LocalCatalogueTones provides if (dark) DarkTones else LightTones,
+        LocalBackdrop provides appearance.backdrop,
+    ) {
         MaterialTheme(
             colorScheme = catalogueColorScheme(dark, accentColor),
             typography = CatalogueTypography,

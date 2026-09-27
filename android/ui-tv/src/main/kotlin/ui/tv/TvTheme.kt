@@ -1,6 +1,7 @@
 package ui.tv
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.tv.material3.ColorScheme
@@ -8,6 +9,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Typography
 import androidx.tv.material3.darkColorScheme
 import designsystem.Accent
+import designsystem.Backdrop
+import designsystem.LocalBackdrop
 import designsystem.Palette
 import designsystem.TvTypeScale
 
@@ -82,19 +85,28 @@ private val TvTypography =
         bodySmall = TvTypeScale.body,
     )
 
-/** The one theme every TV screen composes under; no screen builds its own. */
+/**
+ * The one theme every TV screen composes under; no screen builds its own.
+ * Like [accent] and unlike theme, [backdrop] is not a phone-only question —
+ * see [LocalBackdrop]'s own doc for why a `CompositionLocal` carries it to
+ * every hero rather than each one reading the settings `StateFlow` for
+ * itself.
+ */
 @Composable
 fun TvTheme(
     accent: Accent = Accent.Default,
+    backdrop: Backdrop = Backdrop.Default,
     content: @Composable () -> Unit,
 ) {
     val accentColor = accent.dark
     // The one place this module is allowed to write Palette.Imprint: see
     // designsystem.MediagramTheme's own SideEffect for why.
     SideEffect { Palette.Imprint = accentColor }
-    MaterialTheme(
-        colorScheme = tvColorScheme(accentColor),
-        typography = TvTypography,
-        content = content,
-    )
+    CompositionLocalProvider(LocalBackdrop provides backdrop) {
+        MaterialTheme(
+            colorScheme = tvColorScheme(accentColor),
+            typography = TvTypography,
+            content = content,
+        )
+    }
 }

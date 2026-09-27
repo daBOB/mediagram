@@ -2,6 +2,7 @@ package setup
 
 import designsystem.Accent
 import designsystem.Appearance
+import designsystem.Backdrop
 import designsystem.InMemoryAppearanceSettings
 import designsystem.ThemeChoice
 import kotlin.test.Test
@@ -27,5 +28,16 @@ class AppearanceViewModelTest {
 
         assertEquals(Appearance(ThemeChoice.LIGHT, Accent.BLUE), model.state.value)
         assertEquals(Appearance(ThemeChoice.LIGHT, Accent.BLUE), settings.appearance.value)
+    }
+
+    @Test
+    fun choosingBackdropReachesTheSharedSettings() {
+        val settings = InMemoryAppearanceSettings()
+        val model = AppearanceViewModel(settings)
+
+        model.chooseBackdrop(Backdrop.SOLID)
+
+        assertEquals(Backdrop.SOLID, model.state.value.backdrop)
+        assertEquals(Backdrop.SOLID, settings.appearance.value.backdrop)
     }
 }

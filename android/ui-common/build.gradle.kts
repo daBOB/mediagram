@@ -29,6 +29,11 @@ dependencies {
     // Compose surface is not either surface's component library, so it
     // belongs here with the rest of the player glue both share.
     implementation(project(":core:playback"))
+    // HeroArtwork reads LocalBackdrop and draws through Coil itself — tokens
+    // and image loading, not either surface's own component library, so
+    // they belong here the same way core:model and core:playback do.
+    implementation(project(":core:designsystem"))
+    implementation(libs.findLibrary("coil.compose").get())
     implementation(libs.findLibrary("androidx.lifecycle.runtime.compose").get())
     implementation(libs.findLibrary("androidx.hilt.lifecycle.viewmodel.compose").get())
 

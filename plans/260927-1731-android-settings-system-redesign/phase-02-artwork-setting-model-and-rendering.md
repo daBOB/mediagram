@@ -91,13 +91,13 @@ Delete: none.
 
 ## Todo
 
-- [ ] Backdrop enum + LocalBackdrop + enum labels
-- [ ] Appearance/settings/VM + tests
-- [ ] Theme providers (phone, TV) + TvApp wiring
-- [ ] HeroArtwork in ui-common (+ deps)
-- [ ] TitleSpread / DepartmentHero / CoverStory / TvCoverStory + dept PullQuotes
-- [ ] HeroBackdropModesTest
-- [ ] Compile + unit tests green
+- [x] Backdrop enum + LocalBackdrop + enum labels
+- [x] Appearance/settings/VM + tests
+- [x] Theme providers (phone, TV) + TvApp wiring
+- [x] HeroArtwork in ui-common (+ deps)
+- [x] TitleSpread / DepartmentHero / CoverStory / TvCoverStory + dept PullQuotes
+- [x] HeroBackdropModesTest
+- [x] Compile + unit tests green
 
 ## Success criteria
 

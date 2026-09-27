@@ -15,14 +15,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
+import designsystem.Backdrop
+import designsystem.LocalBackdrop
 import designsystem.Spacing
-import java.io.File
 
 private val HERO_HEIGHT = 260.dp
 private val QUOTE_MAX_WIDTH = 220.dp
@@ -52,39 +51,39 @@ internal fun TitleSpread(
 ) {
     val background = MaterialTheme.colorScheme.background
     Column(modifier = modifier.fillMaxWidth()) {
-        Box(modifier = Modifier.fillMaxWidth().height(HERO_HEIGHT)) {
-            if (backdropPath != null) {
-                AsyncImage(
-                    model = File(backdropPath),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.matchParentSize(),
-                )
-                // Fades the artwork into the page along its foot, the same
-                // job the web's own CSS fade does over its own axis.
-                Box(
-                    modifier =
-                        Modifier
-                            .matchParentSize()
-                            .background(Brush.verticalGradient(listOf(Color.Transparent, background))),
-                )
-                if (!tagline.isNullOrBlank()) {
-                    Text(
-                        text = "“$tagline”",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontStyle = FontStyle.Italic,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis,
+        // Solid drops the whole block — no art, no placeholder, no tagline
+        // quote — the same "plain pages, no artwork" the web's own
+        // `[data-backdrop="solid"]` rule leaves behind.
+        if (LocalBackdrop.current != Backdrop.SOLID) {
+            Box(modifier = Modifier.fillMaxWidth().height(HERO_HEIGHT)) {
+                if (backdropPath != null) {
+                    HeroArtwork(path = backdropPath, modifier = Modifier.matchParentSize())
+                    // Fades the artwork into the page along its foot, the same
+                    // job the web's own CSS fade does over its own axis.
+                    Box(
                         modifier =
                             Modifier
-                                .align(Alignment.TopEnd)
-                                .widthIn(max = QUOTE_MAX_WIDTH)
-                                .padding(Spacing.large),
+                                .matchParentSize()
+                                .background(Brush.verticalGradient(listOf(Color.Transparent, background))),
                     )
+                    if (!tagline.isNullOrBlank()) {
+                        Text(
+                            text = "“$tagline”",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontStyle = FontStyle.Italic,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier =
+                                Modifier
+                                    .align(Alignment.TopEnd)
+                                    .widthIn(max = QUOTE_MAX_WIDTH)
+                                    .padding(Spacing.large),
+                        )
+                    }
+                } else {
+                    Box(modifier = Modifier.matchParentSize().background(MaterialTheme.colorScheme.surfaceVariant))
                 }
-            } else {
-                Box(modifier = Modifier.matchParentSize().background(MaterialTheme.colorScheme.surfaceVariant))
             }
         }
         Column(modifier = Modifier.padding(PaddingValues(horizontal = Spacing.large, vertical = Spacing.medium))) {

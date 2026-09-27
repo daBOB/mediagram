@@ -16,15 +16,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
+import designsystem.Backdrop
+import designsystem.LocalBackdrop
 import designsystem.Spacing
 import model.MediaSet
-import java.io.File
 
 /** The kicker's own letterspacing — a spaced-caps eyebrow, `department-hero.js`'s own look. */
 private val KICKER_TRACKING = 1.sp
@@ -49,7 +48,10 @@ internal fun DepartmentHero(
     onOpenTitle: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val art = lead?.backdropPath
+    // Solid is the existing no-art branch below, not a second one: a lead
+    // with no backdrop already draws kicker/title/line over the plain page,
+    // which is exactly what "plain pages, no artwork" asks for here too.
+    val art = lead?.backdropPath?.takeIf { LocalBackdrop.current != Backdrop.SOLID }
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -57,12 +59,7 @@ internal fun DepartmentHero(
             .let { if (lead != null) it.clickable(role = Role.Button) { onOpenTitle(lead.setId) } else it },
     ) {
         if (art != null) {
-            AsyncImage(
-                model = File(art),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.matchParentSize(),
-            )
+            HeroArtwork(path = art, modifier = Modifier.matchParentSize())
             Box(
                 modifier = Modifier
                     .matchParentSize()

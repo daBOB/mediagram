@@ -5,6 +5,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import designsystem.Accent
 import designsystem.Appearance
 import designsystem.AppearanceSettings
+import designsystem.Backdrop
 import designsystem.ThemeChoice
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
@@ -28,4 +29,6 @@ class AppearanceViewModel
         fun chooseTheme(theme: ThemeChoice) = appearanceSettings.chooseTheme(theme)
 
         fun chooseAccent(accent: Accent) = appearanceSettings.chooseAccent(accent)
+
+        fun chooseBackdrop(backdrop: Backdrop) = appearanceSettings.chooseBackdrop(backdrop)
     }

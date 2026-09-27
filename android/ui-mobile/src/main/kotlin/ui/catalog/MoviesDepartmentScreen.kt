@@ -23,6 +23,8 @@ import catalog.MoviesDepartment
 import catalog.Shelf
 import catalog.factsLine
 import catalog.pickFeatured
+import designsystem.Backdrop
+import designsystem.LocalBackdrop
 import designsystem.Spacing
 import model.MediaSet
 import model.WatchSnapshot
@@ -54,6 +56,7 @@ internal fun MoviesDepartmentScreen(
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
     var reel by remember { mutableStateOf<List<MediaSet>?>(null) }
     val featured = remember(films, watchedIds) { pickFeatured(films, watchedIds, Random, 1) }
+    val backdrop = LocalBackdrop.current
 
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Spacing.large)) {
         item {
@@ -65,7 +68,7 @@ internal fun MoviesDepartmentScreen(
                 onOpenTitle = onOpenTitle,
             )
         }
-        department.lead?.takeIf { !it.tagline.isNullOrEmpty() }?.let { lead ->
+        department.lead?.takeIf { !it.tagline.isNullOrEmpty() && backdrop != Backdrop.SOLID }?.let { lead ->
             item { PullQuote(set = lead, onOpenTitle = onOpenTitle) }
         }
         if (department.featured.isNotEmpty()) {

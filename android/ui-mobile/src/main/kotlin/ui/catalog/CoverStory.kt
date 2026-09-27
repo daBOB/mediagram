@@ -32,16 +32,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import designsystem.Spacing
 import kotlinx.coroutines.delay
 import model.MediaSet
-import java.io.File
 
 /** How long one cover story holds before advancing, the web's own `HOLD_MS`. */
 private const val HOLD_MS = 9_000L
@@ -129,12 +126,9 @@ private fun CoverSlide(
     Box(modifier = Modifier.fillMaxSize()) {
         val backdropPath = set.backdropPath
         if (backdropPath != null) {
-            AsyncImage(
-                model = File(backdropPath),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.matchParentSize(),
-            )
+            // Only Blurred changes the cover's own picture — Artwork and Solid
+            // keep it, the web's own `.cover-stage` never joins their rule.
+            HeroArtwork(path = backdropPath, modifier = Modifier.matchParentSize())
         } else {
             Box(modifier = Modifier.matchParentSize().background(MaterialTheme.colorScheme.surfaceVariant))
         }

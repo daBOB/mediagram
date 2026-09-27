@@ -75,6 +75,7 @@ internal fun TvShowsDepartmentPage(
                                 onOpenTitle = { onOpenCollection(lead.key) },
                                 kicker = DeptKicker,
                                 arrivalFocus = heroFocus,
+                                departmentHero = true,
                             )
                         }
                         Column(modifier = Modifier.padding(bottom = Spacing.medium)) {

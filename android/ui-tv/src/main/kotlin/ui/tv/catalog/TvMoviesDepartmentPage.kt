@@ -65,7 +65,14 @@ internal fun TvMoviesDepartmentPage(
                 // Inset like Home's cover: full-bleed, a 21:9 hero is taller than the space under
                 // the masthead and its words sit outside the overscan-safe margin.
                 Box(modifier = Modifier.padding(horizontal = Overscan.horizontal)) {
-                    TvCoverStory(films = listOf(lead), onPlay = onPlay, onOpenTitle = onOpenTitle, kicker = DeptKicker, arrivalFocus = heroFocus)
+                    TvCoverStory(
+                        films = listOf(lead),
+                        onPlay = onPlay,
+                        onOpenTitle = onOpenTitle,
+                        kicker = DeptKicker,
+                        arrivalFocus = heroFocus,
+                        departmentHero = true,
+                    )
                 }
             }
             Column(modifier = Modifier.padding(horizontal = Overscan.horizontal)) {

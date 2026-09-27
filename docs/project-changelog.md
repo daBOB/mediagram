@@ -5,6 +5,26 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.69.1 — Android pages follow the web's Artwork setting
+
+**Added**
+
+- The web's fourth Appearance question — Artwork: Default, Blurred, Artwork,
+  Solid — now has an Android answer, held per device beside theme and accent
+  in the same preferences file. Blurred softens a hero's picture to colour
+  and light (a real blur from API 31; a tiny decode upscaled by the crop
+  below it, everywhere older); Solid drops the picture and its tagline quote
+  from the title spread and a department's own hero, leaving the words on a
+  plain page; the magazine home's cover story keeps its picture in every
+  mode but Blurred, matching the web's own `.cover-stage`, which Solid never
+  touches either. Artwork reads the same as Default on Android by design:
+  the web's Artwork rule only changes its wide two-column spread, which
+  Android does not have yet — the phone's spread is already the web's own
+  narrow layout at every width, so there is nothing for the rule to move.
+- Not yet: a way to choose it. The model, persistence and every hero's
+  rendering are in place; the Settings picker that writes the choice is
+  separate, later work.
+
 ## 0.69.0 — the Android app takes the web player's colours and type
 
 **Changed**

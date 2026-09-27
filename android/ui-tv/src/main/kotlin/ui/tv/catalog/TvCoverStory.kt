@@ -28,18 +28,18 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.coverFactsLine
-import coil3.compose.AsyncImage
+import designsystem.Backdrop
+import designsystem.LocalBackdrop
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import kotlinx.coroutines.delay
 import model.MediaSet
-import java.io.File
+import ui.catalog.HeroArtwork
 import ui.tv.TvTextRow
 
 /** The web's own `HOLD_MS` — see the phone's `CoverStory`, this page's own reference. */
@@ -63,6 +63,11 @@ private const val HOLD_MS = 9_000L
  * own kicker; that hero has no rotation of its own either, which one film
  * already guarantees here). [arrivalFocus], attached to the first slide's
  * Watch now, is how a caller makes this cover the page's own arrival stop.
+ *
+ * [departmentHero] marks that reuse: Home's own cover keeps its picture in
+ * every Artwork setting but Blurred, the same as the phone's `CoverStory`,
+ * while a department page's hero drops it entirely under Solid — the same
+ * split `DepartmentHero` draws on the phone.
  */
 @Composable
 internal fun TvCoverStory(
@@ -71,6 +76,7 @@ internal fun TvCoverStory(
     onOpenTitle: (setId: String) -> Unit,
     kicker: String = "Cover story",
     arrivalFocus: FocusRequester? = null,
+    departmentHero: Boolean = false,
 ) {
     if (films.isEmpty()) return
     val pagerState = rememberPagerState(pageCount = { films.size })
@@ -91,6 +97,7 @@ internal fun TvCoverStory(
             TvCoverSlide(
                 set = set,
                 kicker = kicker,
+                departmentHero = departmentHero,
                 onPlay = { onPlay(set.setId) },
                 onDetails = { onOpenTitle(set.setId) },
                 onHeld = { held = it },
@@ -123,20 +130,19 @@ internal fun TvCoverStory(
 private fun TvCoverSlide(
     set: MediaSet,
     kicker: String,
+    departmentHero: Boolean,
     onPlay: () -> Unit,
     onDetails: () -> Unit,
     onHeld: (Boolean) -> Unit,
     arrivalFocus: FocusRequester?,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        val backdropPath = set.backdropPath
-        if (backdropPath != null) {
-            AsyncImage(
-                model = File(backdropPath),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.matchParentSize(),
-            )
+        // A department hero drops its picture under Solid, the same no-art
+        // branch already here for a lead with none; Home's own cover never
+        // does — [departmentHero]'s own doc, on TvCoverStory, says why.
+        val art = set.backdropPath?.takeIf { !(departmentHero && LocalBackdrop.current == Backdrop.SOLID) }
+        if (art != null) {
+            HeroArtwork(path = art, modifier = Modifier.matchParentSize())
         } else {
             Box(modifier = Modifier.matchParentSize().background(MaterialTheme.colorScheme.surfaceVariant))
         }

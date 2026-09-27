@@ -32,11 +32,21 @@ class SharedPreferencesAppearanceSettingsTest {
     }
 
     @Test
+    fun choosingBackdropSurvivesAFreshInstance() {
+        SharedPreferencesAppearanceSettings(context).chooseBackdrop(Backdrop.SOLID)
+
+        val reopened = SharedPreferencesAppearanceSettings(context).appearance.value
+
+        assertEquals(Backdrop.SOLID, reopened.backdrop)
+    }
+
+    @Test
     fun anUnrecognisedStoredValueFallsBackToTheDefault() {
         context.getSharedPreferences("appearance_settings", Context.MODE_PRIVATE)
             .edit()
             .putString("theme", "sepia")
             .putString("accent", "magenta")
+            .putString("backdrop", "sepia")
             .apply()
 
         assertEquals(Appearance(), SharedPreferencesAppearanceSettings(context).appearance.value)

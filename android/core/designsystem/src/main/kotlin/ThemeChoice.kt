@@ -5,10 +5,10 @@ package designsystem
  * device's own system theme) — the same three
  * `lib/catalog/settings-page.js` offers on the web.
  */
-enum class ThemeChoice(val storageKey: String) {
-    DARK("dark"),
-    LIGHT("light"),
-    AUTO("auto"),
+enum class ThemeChoice(val storageKey: String, val label: String, val note: String) {
+    DARK("dark", "Dark", "Cinematic and focused"),
+    LIGHT("light", "Light", "Clean and bright"),
+    AUTO("auto", "Auto", "Follows your device"),
     ;
 
     companion object {

@@ -30,8 +30,7 @@ import designsystem.ThemeChoice
 /**
  * Settings › Appearance, phone-side: theme cards then accent dots, the
  * same two questions and the same options `lib/catalog/settings-page.js`
- * asks on the web. Only the web's third question — artwork mode — is not
- * ported (user decision 2026-09-26, phase 8).
+ * asks on the web.
  */
 @Composable
 internal fun AppearanceSection(

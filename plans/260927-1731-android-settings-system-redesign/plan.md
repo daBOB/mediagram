@@ -37,7 +37,7 @@ stays. No Rust change, so the native `.so` does not need rebuilding.
 | # | Phase | Owns | Agent / human | Status |
 |---|-------|------|---------------|--------|
 | 01 | [Web tokens, Geist, 6dp radius, DESIGN.md](phase-01-web-tokens-geist-radius-design-doc.md) | core/designsystem, app res, DESIGN.md | 3h / 1d | complete |
-| 02 | [Artwork setting: model, storage, hero rendering](phase-02-artwork-setting-model-and-rendering.md) | designsystem Appearance, feature/setup VM, ui-common art, hero sites | 4h / 1.5d | pending |
+| 02 | [Artwork setting: model, storage, hero rendering](phase-02-artwork-setting-model-and-rendering.md) | designsystem Appearance, feature/setup VM, ui-common art, hero sites | 4h / 1.5d | complete |
 | 03 | [Settings + System, phone and tablet (B)](phase-03-settings-system-phone-tablet.md) | ui-mobile settings/system, ui-common settings, status fns | 7h / 3.5d | pending |
 | 04 | [TV two-pane Settings](phase-04-tv-settings-two-pane.md) | ui-tv system/*, TvMenuBranches | 4.5h / 2.5d | pending |
 | 05 | [Verify, docs, version](phase-05-verify-docs-version.md) | tests sweep, docs/, manifests | 2.5h / 1d | pending |

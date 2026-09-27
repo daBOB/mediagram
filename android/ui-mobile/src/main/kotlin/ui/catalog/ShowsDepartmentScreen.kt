@@ -22,6 +22,8 @@ import catalog.extentOf
 import catalog.firstItemOf
 import catalog.resumeLine
 import catalog.watchedFractionOf
+import designsystem.Backdrop
+import designsystem.LocalBackdrop
 import designsystem.Spacing
 import model.WatchSnapshot
 
@@ -63,6 +65,7 @@ internal fun ShowsDepartmentScreen(
     }
     val leadTitle = department.lead?.let { firstItemOf(it.divisions) }
     val leadKey = department.lead?.key
+    val backdrop = LocalBackdrop.current
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
@@ -80,7 +83,7 @@ internal fun ShowsDepartmentScreen(
                 onOpenTitle = { if (leadKey != null) onOpenCollection(leadKey) },
             )
         }
-        if (leadTitle != null && !leadTitle.tagline.isNullOrEmpty()) {
+        if (leadTitle != null && !leadTitle.tagline.isNullOrEmpty() && backdrop != Backdrop.SOLID) {
             item(key = "quote", span = { GridItemSpan(maxLineSpan) }) {
                 PullQuote(set = leadTitle, onOpenTitle = { if (leadKey != null) onOpenCollection(leadKey) })
             }
