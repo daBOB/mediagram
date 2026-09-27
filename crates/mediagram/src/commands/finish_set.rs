@@ -3,33 +3,36 @@
 //!
 //! A command of its own because `add` can either watch that happen or hand it
 //! to a process that outlives the terminal, and both must do exactly the same
-//! thing: [`finish_with`], then the index push a bulk command saves for last.
+//! thing: a one-item upload session.
 
 use std::path::Path;
 
-use anyhow::{Context, Result};
+use anyhow::{Result, ensure};
 
-use crate::channel_index::{self, Mode};
 use crate::config::Config;
-use crate::telegram::client::Tg;
-use crate::upload::finish_set::finish_with;
+use crate::upload::session::link::TelegramLink;
+use crate::upload::session::{Item, Outcome, Session, Set, Step};
 
 /// Uploads what is left of `set_id`, then deletes `delete` if the set
-/// reached the channel whole, and pushes the index unless told not to.
+/// reached the channel whole, and publishes unless told not to.
 pub async fn run(cfg: &Config, set_id: &str, delete: Option<&Path>, no_push: bool) -> Result<()> {
-    let tg = Tg::connect(cfg).await.context("connecting to Telegram")?;
-    let result = finish_with(cfg, &tg, set_id, delete).await;
-    tg.shutdown().await;
-    let complete = result?;
-    if complete && !no_push {
-        let message_id = channel_index::publish_to_channel(cfg, Mode::AfterPull)
-            .await
-            .with_context(|| {
-                format!(
-                    "set {set_id} is complete but the index push failed; run `mediagram sync-index`"
-                )
-            })?;
-        println!("pushed index as message {message_id}");
-    }
+    let item = Item {
+        tag: set_id,
+        set: Set::Planned(set_id.to_string()),
+        delete_source: delete.map(Path::to_path_buf),
+    };
+    let mut session = Session::new(cfg, TelegramLink::new(cfg))?;
+    let counts = session
+        .upload([item], |id, step| {
+            if let Step::End(Outcome::Failed(err) | Outcome::Blocked(err)) = step {
+                println!("set {id}: {err:#}");
+            }
+        })
+        .await;
+    session.end(no_push).await?;
+    ensure!(
+        counts.failed + counts.blocked == 0,
+        "set {set_id} was not uploaded"
+    );
     Ok(())
 }

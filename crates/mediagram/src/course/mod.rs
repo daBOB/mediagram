@@ -6,4 +6,5 @@ mod naming;
 pub mod plan;
 pub mod report;
 pub mod sidecars;
+pub mod upload;
 pub mod walk;

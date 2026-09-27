@@ -34,8 +34,9 @@ pub(super) async fn publish(
     .await?;
     let conn = db::open(data_dir)?;
     if mode == Mode::Force {
+        let owed = pins::publish_owed(&conn)?;
         let snapshot = Snapshot::take(&conn, data_dir)?;
-        return send(remote, &conn, &snapshot.0).await;
+        return send(remote, &conn, &snapshot.0, owed).await;
     }
 
     let mut seen = pull::current(remote).await?;
@@ -43,13 +44,16 @@ pub(super) async fn publish(
         if id_of(&seen) != pins::pulled(&conn)? {
             pull::pull_from(remote, data_dir, seen.as_ref(), false).await?;
         }
+        // Read before the snapshot: a debt recorded after it is for sets the
+        // snapshot may lack, and must outlive this publish.
+        let owed = pins::publish_owed(&conn)?;
         let snapshot = Snapshot::take(&conn, data_dir)?;
         // The window a publish from elsewhere could land in closes here; one
         // landing after this is at most seconds older than ours, and ours
         // holds everything up to the pull.
         let now = pull::current(remote).await?;
         if id_of(&now) == id_of(&seen) {
-            return send(remote, &conn, &snapshot.0).await;
+            return send(remote, &conn, &snapshot.0, owed).await;
         }
         seen = now;
     }
@@ -63,7 +67,12 @@ fn id_of(candidate: &Option<Candidate>) -> Option<i32> {
     candidate.as_ref().map(|c| c.id)
 }
 
-async fn send(remote: &impl ChannelRemote, conn: &Connection, path: &Path) -> Result<i32> {
+async fn send(
+    remote: &impl ChannelRemote,
+    conn: &Connection,
+    path: &Path,
+    owed: Option<u64>,
+) -> Result<i32> {
     let caption = mlib_spec::index_caption::render(now_unix(), i64::try_from(sets::count(conn)?)?);
     let id = remote
         .send_index(path, &caption)
@@ -74,6 +83,7 @@ async fn send(remote: &impl ChannelRemote, conn: &Connection, path: &Path) -> Re
     pins::record_current(conn, id)?;
     // What was just published holds everything the local index does.
     pins::record_pulled(conn, Some(id))?;
+    pins::settle_publish(conn, owed)?;
     Ok(id)
 }
 

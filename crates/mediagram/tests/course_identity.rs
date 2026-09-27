@@ -2,10 +2,11 @@
 //! hand what did not to `resume`. Identity is the collection id plus the two
 //! numbers, so it survives renaming or moving the course folder.
 
-use mediagram::course::report::{Outcome, Summary, dry_run_table};
+use mediagram::course::report::{Summary, dry_run_table};
 use mediagram::course::walk::Lesson;
 use mediagram::index::status::SetStatus;
 use mediagram::index::{db, set_lookup, set_row::SetRow, sets};
+use mediagram::upload::session::Counts;
 use mlib_spec::caption::{Caption, Episode, Kind, Part};
 use mlib_spec::ids::ProviderIds;
 
@@ -167,11 +168,16 @@ fn the_summary_tells_the_user_what_to_do_about_unfinished_lessons() {
         title: None,
     };
     let _ = &lesson;
-    let mut summary = Summary::default();
-    summary.record_lesson(Outcome::Uploaded);
-    summary.record_lesson(Outcome::AlreadyDone);
-    summary.record_lesson(Outcome::Pending);
-    summary.record_lesson(Outcome::Failed);
+    let summary = Summary {
+        lessons: Counts {
+            uploaded: 1,
+            held: 1,
+            pending: 1,
+            failed: 1,
+            blocked: 0,
+        },
+        documents: Counts::default(),
+    };
 
     let lines = summary.lines().join("\n");
     assert!(lines.contains("1 lesson(s) uploaded, 1 already done, 1 failed"));
@@ -186,10 +192,17 @@ fn the_summary_tells_the_user_what_to_do_about_unfinished_lessons() {
 /// of the two went wrong is the first thing anyone needs to know.
 #[test]
 fn the_summary_counts_documents_separately() {
-    let mut summary = Summary::default();
-    summary.record_lesson(Outcome::Uploaded);
-    summary.record_document(Outcome::Uploaded);
-    summary.record_document(Outcome::Failed);
+    let summary = Summary {
+        lessons: Counts {
+            uploaded: 1,
+            ..Counts::default()
+        },
+        documents: Counts {
+            uploaded: 1,
+            failed: 1,
+            ..Counts::default()
+        },
+    };
 
     let lines = summary.lines().join("\n");
     assert!(lines.contains("1 lesson(s) uploaded"), "{lines}");
@@ -198,7 +211,6 @@ fn the_summary_counts_documents_separately() {
         "{lines}"
     );
     assert_eq!(summary.failed_count(), 1);
-    assert!(summary.uploaded_anything());
 }
 
 #[test]

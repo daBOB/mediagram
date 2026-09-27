@@ -4,21 +4,18 @@
 //! `add-course`'s own ([`walk_course`], [`course_title`], [`collection_id`],
 //! [`dry_run_table`]), reused whole.
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Result, bail};
 use mlib_spec::Kind;
 
 use super::AddDocuArgs;
-use crate::channel_index::{self, Mode};
 use crate::config::Config;
 use crate::course::identity::{collection_id, course_title, duplicate_identity};
-use crate::course::report::{Outcome, Summary, dry_run_table};
-use crate::course::walk::{Document, Lesson, walk_course};
-use crate::index::status::SetStatus;
-use crate::index::{artwork, db, set_lookup};
-use crate::upload::finish_set::Uploader;
-use crate::upload::new_set::{LessonOf, NewSet};
-use crate::upload::prepare_set::prepare_and_record_set;
-use crate::upload::record_document::{Document as DocumentSet, record_document_set};
+use crate::course::report::dry_run_table;
+use crate::course::upload::{self, Walk};
+use crate::course::walk::walk_course;
+use crate::index::{artwork, db};
+use crate::upload::session::Session;
+use crate::upload::session::link::TelegramLink;
 
 pub(super) async fn run(cfg: &Config, args: AddDocuArgs) -> Result<()> {
     let collection = course_title(args.title.as_deref(), &args.path)?;
@@ -57,133 +54,24 @@ pub(super) async fn run(cfg: &Config, args: AddDocuArgs) -> Result<()> {
         }
     }
 
-    let mut uploader = Uploader::new(cfg);
-    let mut summary = Summary::default();
-    for episode in &walked.lessons {
-        let outcome = match set_lookup::lesson_status(
-            &conn,
-            &cid,
-            episode.chapter,
-            episode.lesson,
-            Kind::Docu,
-        )? {
-            Some(SetStatus::Complete) => Outcome::AlreadyDone,
-            Some(_) => Outcome::Pending,
-            None => {
-                match upload_episode(cfg, &mut uploader, &args, &collection, &cid, episode).await {
-                    Ok(()) => Outcome::Uploaded,
-                    // One unreadable file must not abandon the rest.
-                    Err(err) => {
-                        println!("  episode {}: {err:#}", episode.lesson);
-                        Outcome::Failed
-                    }
-                }
-            }
-        };
-        summary.record_lesson(outcome);
-    }
-
-    for document in &walked.documents {
-        let outcome =
-            match set_lookup::document_status(&conn, &cid, document.chapter, document.number)? {
-                Some(SetStatus::Complete) => Outcome::AlreadyDone,
-                Some(_) => Outcome::Pending,
-                None => {
-                    match upload_document(cfg, &mut uploader, &args, &collection, &cid, document)
-                        .await
-                    {
-                        Ok(()) => Outcome::Uploaded,
-                        Err(err) => {
-                            println!("  document {}: {err:#}", document.number);
-                            Outcome::Failed
-                        }
-                    }
-                }
-            };
-        summary.record_document(outcome);
-    }
     drop(conn);
-    uploader.close().await;
-
+    let mut session = Session::new(cfg, TelegramLink::new(cfg))?;
+    let walk = Walk {
+        course: &walked,
+        title: &collection,
+        cid: &cid,
+        kind: Kind::Docu,
+        variant: args.variant.clone(),
+        no_remux: args.no_remux,
+    };
+    let summary = upload::upload(&mut session, &walk).await;
     for line in summary.lines() {
         println!("{}", in_docu_words(&line));
     }
-
-    if summary.uploaded_anything() && !args.no_push {
-        let message_id = channel_index::publish_to_channel(cfg, Mode::AfterPull)
-            .await
-            .context("pushing the index after the collection")?;
-        println!("pushed index as message {message_id}");
-    }
+    session.end(args.no_push).await?;
     if summary.failed_count() > 0 {
         bail!("{} set(s) failed", summary.failed_count());
     }
-    Ok(())
-}
-
-async fn upload_episode(
-    cfg: &Config,
-    uploader: &mut Uploader<'_>,
-    args: &AddDocuArgs,
-    collection: &str,
-    cid: &str,
-    episode: &Lesson,
-) -> Result<()> {
-    println!(
-        "uploading c{:02}e{:02} {}",
-        episode.chapter,
-        episode.lesson,
-        episode.title.as_deref().unwrap_or("")
-    );
-    let new = NewSet {
-        file: episode.path.clone(),
-        variant: args.variant.clone(),
-        no_remux: args.no_remux,
-        lesson: Some(LessonOf {
-            course: collection.to_string(),
-            cid: cid.to_string(),
-            chapter: Some(episode.chapter),
-            chapter_title: episode.chapter_title.clone(),
-            path: Some(episode.rel_path.clone()).filter(|p| !p.is_empty()),
-            number: Some(episode.lesson),
-            kind: Kind::Docu,
-        }),
-        ..NewSet::default()
-    };
-    let planned = prepare_and_record_set(cfg, &new).await?;
-    uploader.finish(&planned.set_id, None).await?;
-    Ok(())
-}
-
-async fn upload_document(
-    cfg: &Config,
-    uploader: &mut Uploader<'_>,
-    args: &AddDocuArgs,
-    collection: &str,
-    cid: &str,
-    document: &Document,
-) -> Result<()> {
-    println!(
-        "uploading c{:02}d{:02} {}",
-        document.chapter,
-        document.number,
-        document.title.as_deref().unwrap_or("")
-    );
-    let set_id = record_document_set(
-        cfg,
-        &DocumentSet {
-            file: document.path.clone(),
-            course: collection.to_string(),
-            cid: cid.to_string(),
-            chapter: document.chapter,
-            chapter_title: document.chapter_title.clone(),
-            path: Some(document.rel_path.clone()).filter(|p| !p.is_empty()),
-            number: document.number,
-            title: document.title.clone(),
-            variant: args.variant.clone(),
-        },
-    )?;
-    uploader.finish(&set_id, None).await?;
     Ok(())
 }
 

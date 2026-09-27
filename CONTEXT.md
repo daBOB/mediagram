@@ -27,6 +27,11 @@ Merging the channel index into the local index, so this machine holds what other
 machines published.
 _Avoid_: sync, fetch, download (for the whole act)
 
+**Upload session**:
+One command's run of uploads: the sets it walks, one connection, and at most
+one publish at the end.
+_Avoid_: uploader, batch, job
+
 **Publish**:
 Replacing the channel index with a snapshot of the local index, after pulling so
 nothing another machine published is dropped.

@@ -367,6 +367,7 @@ all choose with it.
 | `index_message_id` | Message id of the currently pinned `#mlib-index` document. |
 | `stale_index_message_id` | Set when unpinning a previous index message failed; retried on the next push, cleared once it succeeds (or the message turns out to already be gone). |
 | `pulled_index_message_id` | Message id of the channel index this index last took in, pulled or published from here. A publish that finds it still current pulls nothing. Uploader bookkeeping; readers ignore it. |
+| `publish_owed` | Set when an upload session completed sets it did not publish (`--no-push`, another upload about to publish, a failed publish); a counter, so a publish settles only the debt it read before its snapshot. The next session that may publish does. Uploader bookkeeping; readers ignore it. |
 | `source:<set_id>` | Absolute path of the source file for a still-`pending` set, so `resume` can find it again. Deleted once the set completes. |
 | `tmp:<set_id>` | Path of a faststart-remux temp file `add` produced for a set, so it can be cleaned up once the set completes. Only set when a remux actually happened. |
 

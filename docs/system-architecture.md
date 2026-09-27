@@ -51,20 +51,19 @@ commands/          one module per subcommand, each exposing `run(...)`; thin
                    entry points over the domain modules below
   add.rs             turn flags into a NewSet, prepare and record it, then hand
                      the bytes to finish_set (--watch) or a background process
-  add_show/          walk a series folder, survey what will play badly, plan
-                     and upload each episode, push the index once at the end
-  add_course.rs      walk a course folder, upload each lesson then each
-                     document, push the index once at the end
+  add_show/          walk a series folder, survey what will play badly, hand
+                     the episodes to an upload session
+  add_course.rs      walk a course folder and hand it to course::upload
   add_docu/          upload a documentary: one file (add.rs's path), or a
                      folder walked and grouped exactly like add_course.rs
                      (collection.rs), `Kind::Docu` instead of `Kind::Tut`
   artwork.rs         set or clear a title's custom poster/backdrop
                      (index/artwork.rs), resolved from a set id or a title
-  finish_set.rs      upload one planned set, then push: what `add` runs, in
-                     this process or a background one
+  finish_set.rs      a one-item upload session over the set `add` planned,
+                     in this process or a background one
   background.rs      re-runs this binary detached, so an upload outlives the
                      terminal that started it
-  resume.rs          finish every set left `pending`
+  resume.rs          an upload session over every set left `pending`
   push_index.rs      publish through channel_index (`--force` skips the pull)
   pull_index.rs      pull through channel_index (`--dry-run` only reports)
   sync_index.rs      pull, describe, fetch artwork, publish
@@ -103,10 +102,17 @@ upload/            getting a file into the channel. Preparation: new_set (what
                    plan (the one transaction that records a set). Sending:
                    hashing byte-range reader (part_reader), the Transport
                    trait + its Telegram implementation, the resumable per-set
-                   pipeline, finish (one set) and finish_set (the lock, the
-                   source deletion, and the Uploader a bulk command holds),
-                   adoption (resume-without-reupload), the progress note and
-                   terminal line, and the flock that makes uploads take turns
+                   pipeline, finish (one set), adoption
+                   (resume-without-reupload), the progress note and terminal
+                   line, and the flock that makes uploads take turns.
+                   session/ is the upload session every uploading command
+                   walks its items through: per item the upload lock, a
+                   re-read of what the index holds (by the identity its
+                   planning data carries), planning, the source check, one
+                   lazy connection (the Link port: Telegram, or the tests'
+                   fake), sending and source deletion; then at most one
+                   publish, deferred to another running upload and owed
+                   (`publish_owed`) when it cannot happen now
 media/             probe (the one ffprobe runner and report), inspect (what a
                    caption records), streams (the stream model), HDR/quality
                    classification, file_names (video/document/number rules),
@@ -165,7 +171,8 @@ file ──▶ inspect (ffprobe) ──▶ resolve (TMDB / --manual / explicit i
    mark_done; once every part is `done`, compute set_hash, mark `complete`
                      │
                      ▼
-        publish (unless --no-push): pull, snapshot, pin
+        upload session end: publish once (unless --no-push, or another
+        upload is running and publishes when it ends), pull, snapshot, pin
 ```
 
 `inspect` runs `ffprobe` to read container/codec/duration/language tracks

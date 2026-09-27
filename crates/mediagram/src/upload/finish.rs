@@ -10,23 +10,6 @@ use crate::index::{db, parts};
 use crate::upload::pipeline::run_set;
 use crate::upload::transport::Transport;
 
-/// Uploads one set's pending parts through an already-open transport.
-/// Returns whether the set is now complete.
-///
-/// The source is the path the set was planned against, which is the
-/// faststart remux when there was one — never the file the user named.
-pub async fn finish_one(
-    conn: &Connection,
-    transport: &impl Transport,
-    throttle_ms: u64,
-    set: &SetRow,
-    data_dir: &Path,
-) -> Result<bool> {
-    let source = db::get_meta(conn, &db::source_key(&set.set_id))?;
-    let source_path = available_source(set, source.as_deref()).await?;
-    finish_from(conn, transport, throttle_ms, set, data_dir, &source_path).await
-}
-
 /// Validates only this set's local source, without touching the transport.
 pub(super) async fn available_source(set: &SetRow, recorded: Option<&str>) -> Result<PathBuf> {
     let source_path = recorded.ok_or_else(|| {

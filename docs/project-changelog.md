@@ -5,6 +5,39 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.68.0 — one upload session behind every uploading command
+
+Plan: `plans/260927-0302-upload-session-module/` (architecture review
+candidate A). Terms: `CONTEXT.md` (Upload session).
+
+**Changed**
+
+- `add-show`, `add-course`, `add-docu`, `finish-set` (behind `add`) and
+  `resume` run through one upload session. Each item takes the upload lock
+  on its own and re-reads what the index holds once it has it, so a file
+  added meanwhile goes between two episodes, and `resume` waits for a set a
+  background `add` is finishing instead of sending it twice.
+- A failure while sending, after the transport's own retries, stops the
+  session: the rest of the walk is not tried (each would fail the same way),
+  what completed is published, and the command says how many items were not
+  reached. A missing or changed source still blocks only its own set.
+- An item counts as uploaded only when its set completed; `add-docu` on a
+  single file no longer publishes when its set did not complete.
+- A session publishes once at its end, over the connection it uploaded with.
+  It skips the publish while another upload is running (that one publishes
+  when it ends, one pin instead of two), and whatever it does not publish is
+  owed in the local index: the next session that may publish does, even with
+  nothing of its own to upload.
+- `resume` says "set X added" for each set it completes, as every other
+  upload does.
+
+**Internal**
+
+- `upload/session/` replaces `Uploader`, `finish_with`, `finish_one` and
+  `upload::resume::pending`; `course::upload` is the one walk `add-course`
+  and `add-docu` share. Tests: `tests/upload_session.rs`, and the source
+  checks in `tests/upload_finish.rs`, through the session with a fake link.
+
 ## 0.67.1 — re-running `add-docu` on a folder no longer uploads it again
 
 **Fixed**

@@ -52,7 +52,10 @@ fn natural_cmp(a: &str, b: &str) -> std::cmp::Ordering {
         if x.is_ascii_digit() && y.is_ascii_digit() {
             let da = a.find(|c: char| !c.is_ascii_digit()).unwrap_or(a.len());
             let db = b.find(|c: char| !c.is_ascii_digit()).unwrap_or(b.len());
-            let (na, nb) = (a[..da].trim_start_matches('0'), b[..db].trim_start_matches('0'));
+            let (na, nb) = (
+                a[..da].trim_start_matches('0'),
+                b[..db].trim_start_matches('0'),
+            );
             let order = na.len().cmp(&nb.len()).then_with(|| na.cmp(nb));
             if order.is_ne() {
                 return order;
@@ -99,9 +102,23 @@ mod natural_order_tests {
 
     #[test]
     fn unnumbered_parts_run_in_numeric_order() {
-        let names = ["Die Römer - Teil 10", "Die Römer - Teil 2", "Die Römer - Teil 1"];
+        let names = [
+            "Die Römer - Teil 10",
+            "Die Römer - Teil 2",
+            "Die Römer - Teil 1",
+        ];
         let entries: Vec<(String, &str)> = names.iter().map(|n| (n.to_string(), *n)).collect();
-        let order: Vec<&str> = assign_numbers(&entries).into_iter().map(|(_, _, n)| n).collect();
-        assert_eq!(order, ["Die Römer - Teil 1", "Die Römer - Teil 2", "Die Römer - Teil 10"]);
+        let order: Vec<&str> = assign_numbers(&entries)
+            .into_iter()
+            .map(|(_, _, n)| n)
+            .collect();
+        assert_eq!(
+            order,
+            [
+                "Die Römer - Teil 1",
+                "Die Römer - Teil 2",
+                "Die Römer - Teil 10"
+            ]
+        );
     }
 }

@@ -14,12 +14,11 @@ mod collection;
 use anyhow::{Context, Result, bail};
 
 use super::args::AddDocuArgs;
-use crate::channel_index::{self, Mode};
 use crate::config::Config;
 use crate::metadata::resolve::{self, ResolveInput};
-use crate::upload::finish_set::Uploader;
 use crate::upload::new_set::NewSet;
-use crate::upload::prepare_set::prepare_and_record_set;
+use crate::upload::session::link::TelegramLink;
+use crate::upload::session::{Item, Outcome, Session, Set, Step};
 
 pub async fn run(cfg: &Config, args: AddDocuArgs) -> Result<()> {
     if args.path.is_file() {
@@ -62,17 +61,25 @@ async fn run_file(cfg: &Config, args: AddDocuArgs) -> Result<()> {
         docu_title: args.title.clone(),
         ..NewSet::default()
     };
-    let planned = prepare_and_record_set(cfg, &new).await?;
-    println!("uploading {}", planned.display_name);
-    let mut uploader = Uploader::new(cfg);
-    uploader.finish(&planned.set_id, None).await?;
-    uploader.close().await;
-
-    if !args.no_push {
-        let message_id = channel_index::publish_to_channel(cfg, Mode::AfterPull)
-            .await
-            .context("pushing the index after the documentary")?;
-        println!("pushed index as message {message_id}");
-    }
+    // No identity to find it by, so it is planned anew every time, as a
+    // single `add` is.
+    let item = Item {
+        tag: (),
+        set: Set::File(new),
+        delete_source: None,
+    };
+    let mut session = Session::new(cfg, TelegramLink::new(cfg))?;
+    let counts = session
+        .upload([item], |(), step| match step {
+            Step::Start => println!("uploading {file_name}"),
+            Step::End(Outcome::Failed(err) | Outcome::Blocked(err)) => println!("  {err:#}"),
+            Step::End(_) => {}
+        })
+        .await;
+    session.end(args.no_push).await?;
+    anyhow::ensure!(
+        counts.failed + counts.blocked == 0,
+        "{file_name} was not uploaded"
+    );
     Ok(())
 }

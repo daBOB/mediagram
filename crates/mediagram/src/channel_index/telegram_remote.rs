@@ -5,7 +5,9 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use anyhow::{Context, Result};
+use grammers_client::Client;
 use grammers_client::message::InputMessage;
+use grammers_session::types::PeerRef;
 
 use super::remote::{Candidate, ChannelRemote, Unpin};
 use crate::telegram::client::Tg;
@@ -26,18 +28,27 @@ const MAX_MARKED: usize = 50;
 /// state asked for.
 const NOTHING_TO_UNPIN: &[&str] = &["MESSAGE_ID_INVALID", "MESSAGE_NOT_MODIFIED"];
 
-pub struct TelegramRemote<'t> {
-    tg: &'t Tg,
+/// Holds its own handle on the connection, as `TelegramTransport` does, so
+/// an upload session can keep both beside the connection they share.
+pub struct TelegramRemote {
+    client: Client,
+    channel: PeerRef,
+    chat_id: i64,
     max_attempts: u32,
 }
 
-impl<'t> TelegramRemote<'t> {
-    pub fn new(tg: &'t Tg, max_attempts: u32) -> Self {
-        TelegramRemote { tg, max_attempts }
+impl TelegramRemote {
+    pub fn new(tg: &Tg, max_attempts: u32) -> Self {
+        TelegramRemote {
+            client: tg.client.clone(),
+            channel: tg.channel,
+            chat_id: tg.chat_id(),
+            max_attempts,
+        }
     }
 }
 
-impl ChannelRemote for TelegramRemote<'_> {
+impl ChannelRemote for TelegramRemote {
     async fn candidates(&self) -> Result<Vec<Candidate>> {
         let candidate = |message: &grammers_client::message::Message| Candidate {
             id: message.id(),
@@ -46,9 +57,8 @@ impl ChannelRemote for TelegramRemote<'_> {
         };
         let mut found = Vec::new();
         let mut pinned = self
-            .tg
             .client
-            .search_messages(self.tg.channel)
+            .search_messages(self.channel)
             .filter(grammers_tl_types::enums::MessagesFilter::InputMessagesFilterPinned)
             .limit(MAX_PINNED);
         while let Some(message) = pinned.next().await? {
@@ -57,9 +67,8 @@ impl ChannelRemote for TelegramRemote<'_> {
         // Allowed to fail, as it is for the players: the pins are the
         // cheaper half, and a channel that will not search still has them.
         let mut marked = self
-            .tg
             .client
-            .search_messages(self.tg.channel)
+            .search_messages(self.channel)
             .query(mlib_spec::index_caption::PREFIX)
             .limit(MAX_MARKED);
         while let Ok(Some(message)) = marked.next().await {
@@ -71,13 +80,12 @@ impl ChannelRemote for TelegramRemote<'_> {
     }
 
     async fn download(&self, id: i32) -> Result<Option<Vec<u8>>> {
-        let found =
-            fetch_messages(&self.tg.client, self.tg.channel, &[id], self.max_attempts).await?;
+        let found = fetch_messages(&self.client, self.channel, &[id], self.max_attempts).await?;
         let Some((document, _)) = found.get(&id).and_then(message_document) else {
             return Ok(None);
         };
         let mut bytes = Vec::new();
-        let mut chunks = self.tg.client.iter_download(&document);
+        let mut chunks = self.client.iter_download(&document);
         while let Some(chunk) = chunks.next().await? {
             bytes.extend_from_slice(&chunk);
         }
@@ -85,8 +93,7 @@ impl ChannelRemote for TelegramRemote<'_> {
     }
 
     async fn captions(&self, ids: &[i32]) -> Result<HashMap<i32, String>> {
-        let found =
-            fetch_messages(&self.tg.client, self.tg.channel, ids, self.max_attempts).await?;
+        let found = fetch_messages(&self.client, self.channel, ids, self.max_attempts).await?;
         Ok(found
             .into_iter()
             .map(|(id, m)| (id, m.text().to_string()))
@@ -94,7 +101,7 @@ impl ChannelRemote for TelegramRemote<'_> {
     }
 
     fn chat_id(&self) -> i64 {
-        self.tg.chat_id()
+        self.chat_id
     }
 
     async fn send_index(&self, path: &Path, caption: &str) -> Result<i32> {
@@ -108,12 +115,11 @@ impl ChannelRemote for TelegramRemote<'_> {
         // An explicit name lets the document be called `library.db`
         // whatever the snapshot's name on disk.
         let uploaded = self
-            .tg
             .client
             .upload_stream(&mut file, size, mlib_spec::schema::INDEX_FILE.to_string())
             .await
             .with_context(|| format!("uploading {}", path.display()))?;
-        let (client, channel) = (self.tg.client.clone(), self.tg.channel);
+        let (client, channel) = (self.client.clone(), self.channel);
         let caption = caption.to_string();
         // Not idempotent: a lost response after a committed send would
         // duplicate the index message, so only FLOOD_WAIT is retried.
@@ -132,7 +138,7 @@ impl ChannelRemote for TelegramRemote<'_> {
     }
 
     async fn pin(&self, id: i32) -> Result<()> {
-        let (client, channel) = (self.tg.client.clone(), self.tg.channel);
+        let (client, channel) = (self.client.clone(), self.channel);
         with_retry(self.max_attempts, move || {
             let client = client.clone();
             async move { client.pin_message(channel, id).await }
@@ -141,7 +147,7 @@ impl ChannelRemote for TelegramRemote<'_> {
     }
 
     async fn unpin(&self, id: i32) -> Result<Unpin> {
-        let (client, channel) = (self.tg.client.clone(), self.tg.channel);
+        let (client, channel) = (self.client.clone(), self.channel);
         let sent = with_retry(self.max_attempts, move || {
             let client = client.clone();
             async move { client.unpin_message(channel, id).await }
@@ -157,7 +163,7 @@ impl ChannelRemote for TelegramRemote<'_> {
     /// Asked of the message itself rather than of the pinned-message search,
     /// which is an index and can lag behind what the message carries.
     async fn is_pinned(&self, id: i32) -> Result<bool> {
-        let found = fetch_messages(&self.tg.client, self.tg.channel, &[id], self.max_attempts)
+        let found = fetch_messages(&self.client, self.channel, &[id], self.max_attempts)
             .await
             .context("reading back the pinned flag")?;
         // A deleted message is absent, and has no pin left to clear.

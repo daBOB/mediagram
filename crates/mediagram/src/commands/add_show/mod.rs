@@ -17,15 +17,13 @@ use std::io::IsTerminal;
 use anyhow::{Context, Result, bail};
 
 use super::args::AddShowArgs;
-use crate::channel_index::{self, Mode};
 use crate::config::Config;
-use crate::index::status::SetStatus;
-use crate::index::{artwork, db, set_lookup};
+use crate::index::{artwork, db};
 use crate::media::show_episodes::{Episode, duplicate_episode, walk};
 use crate::paths::file_name;
-use crate::upload::finish_set::Uploader;
 use crate::upload::new_set::NewSet;
-use crate::upload::prepare_set::prepare_and_record_set;
+use crate::upload::session::link::TelegramLink;
+use crate::upload::session::{Item, Outcome, Session, Set, Step};
 use survey::survey;
 
 pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
@@ -75,79 +73,57 @@ pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
         Ok(n) => println!("picked up {n} artwork file(s) from {}", args.dir.display()),
         Err(err) => println!("artwork not stored: {err:#}"),
     }
-    let mut uploader = Uploader::new(cfg);
-    let (mut uploaded, mut skipped, mut pending, mut failed) = (0usize, 0usize, 0usize, 0usize);
-    for ep in &episodes {
-        match set_lookup::episode_status(&conn, tmdb, ep.season, ep.episode)? {
-            Some(SetStatus::Complete) => {
-                println!("S{:02}E{:02} already uploaded", ep.season, ep.episode);
-                skipped += 1;
-                continue;
-            }
-            Some(SetStatus::Pending) => {
-                println!(
-                    "S{:02}E{:02} pending; run mediagram resume",
-                    ep.season, ep.episode
-                );
-                pending += 1;
-                continue;
-            }
-            None => {}
-        }
-        println!(
-            "uploading S{:02}E{:02} {}",
-            ep.season,
-            ep.episode,
-            file_name(&ep.path)
-        );
-        match upload_one(cfg, &mut uploader, tmdb, ep, args.delete_source).await {
-            Ok(()) => uploaded += 1,
-            // One unreadable file must not abandon the rest of the show.
-            Err(err) => {
-                println!("  S{:02}E{:02}: {err:#}", ep.season, ep.episode);
-                failed += 1;
-            }
-        }
-    }
     drop(conn);
-    uploader.close().await;
-
-    println!("\n{uploaded} uploaded, {skipped} already held, {failed} failed");
-    if pending > 0 {
-        println!("{pending} pending; run mediagram resume to finish them");
+    let mut session = Session::new(cfg, TelegramLink::new(cfg))?;
+    let items = episodes
+        .iter()
+        .map(|ep| episode_item(tmdb, ep, args.delete_source));
+    let counts = session
+        .upload(items, |ep: &&Episode, step| {
+            let code = format!("S{:02}E{:02}", ep.season, ep.episode);
+            match step {
+                Step::Start => println!("uploading {code} {}", file_name(&ep.path)),
+                Step::End(Outcome::AlreadyHeld) => println!("{code} already uploaded"),
+                Step::End(Outcome::Pending) => println!("{code} pending; run mediagram resume"),
+                Step::End(Outcome::Failed(err) | Outcome::Blocked(err)) => {
+                    println!("  {code}: {err:#}");
+                }
+                Step::End(Outcome::Uploaded) => {}
+            }
+        })
+        .await;
+    let failed = counts.failed + counts.blocked;
+    println!(
+        "\n{} uploaded, {} already held, {failed} failed",
+        counts.uploaded, counts.held
+    );
+    if counts.pending > 0 {
+        println!(
+            "{} pending; run mediagram resume to finish them",
+            counts.pending
+        );
     }
-    if uploaded > 0 && !args.no_push {
-        let message_id = channel_index::publish_to_channel(cfg, Mode::AfterPull)
-            .await
-            .context("pushing the index after the show")?;
-        println!("pushed index as message {message_id}");
-    }
+    session.end(args.no_push).await?;
     if failed > 0 {
         bail!("{failed} episode(s) failed");
     }
     Ok(())
 }
 
-async fn upload_one(
-    cfg: &Config,
-    uploader: &mut Uploader<'_>,
-    tmdb: u64,
-    ep: &Episode,
-    delete: bool,
-) -> Result<()> {
-    let new = NewSet {
-        file: ep.path.clone(),
-        tmdb: Some(tmdb),
-        season: Some(ep.season),
-        episode: Some(ep.episode),
-        ..NewSet::default()
-    };
-    let planned = prepare_and_record_set(cfg, &new).await?;
-    // The index is pushed once when the show is done, not per episode.
-    uploader
-        .finish(&planned.set_id, delete.then_some(ep.path.as_path()))
-        .await?;
-    Ok(())
+/// One episode, known by its show and numbers, so a re-run skips what
+/// finished. Its file goes once its set is complete, if asked.
+fn episode_item(tmdb: u64, ep: &Episode, delete: bool) -> Item<&Episode> {
+    Item {
+        tag: ep,
+        set: Set::File(NewSet {
+            file: ep.path.clone(),
+            tmdb: Some(tmdb),
+            season: Some(ep.season),
+            episode: Some(ep.episode),
+            ..NewSet::default()
+        }),
+        delete_source: delete.then(|| ep.path.clone()),
+    }
 }
 
 /// Asks before uploading something that will play badly.

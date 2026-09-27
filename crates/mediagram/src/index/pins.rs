@@ -38,6 +38,33 @@ pub fn pulled(conn: &Connection) -> Result<Option<i32>> {
     Ok(db::get_meta(conn, META_PULLED_INDEX_ID)?.and_then(|raw| raw.trim().parse().ok()))
 }
 
+/// Sets completed here that the channel index may lack: owed when an upload
+/// session completes sets without publishing them (`--no-push`, another
+/// upload about to publish, a failed publish), paid by the next publish.
+/// The value is a counter, so a publish settles only the debt it saw.
+const META_PUBLISH_OWED: &str = "publish_owed";
+
+/// Records that completed sets are waiting for a publish.
+pub fn owe_publish(conn: &Connection) -> Result<()> {
+    let next = publish_owed(conn)?.map_or(1, |n| n.saturating_add(1));
+    db::set_meta(conn, META_PUBLISH_OWED, &next.to_string()).context("recording a publish owed")
+}
+
+/// The publish owed, if any: a token for [`settle_publish`].
+pub fn publish_owed(conn: &Connection) -> Result<Option<u64>> {
+    Ok(db::get_meta(conn, META_PUBLISH_OWED)?.and_then(|raw| raw.trim().parse().ok()))
+}
+
+/// Clears the debt a publish paid: `seen` is what [`publish_owed`] read
+/// before the snapshot was taken. A debt recorded since is for sets that
+/// snapshot may lack, so it stays for the next publish.
+pub fn settle_publish(conn: &Connection, seen: Option<u64>) -> Result<()> {
+    if seen.is_some() && publish_owed(conn)? == seen {
+        db::delete_meta(conn, META_PUBLISH_OWED)?;
+    }
+    Ok(())
+}
+
 /// Records the snapshot a push just pinned as the current one.
 pub fn record_current(conn: &Connection, message_id: i32) -> Result<()> {
     db::set_meta(conn, META_INDEX_MESSAGE_ID, &message_id.to_string())

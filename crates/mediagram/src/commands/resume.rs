@@ -1,64 +1,42 @@
 //! `mediagram resume`: finish every set left pending by an interrupted `add`.
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, ensure};
 
-use crate::channel_index::{self, Mode};
 use crate::config::Config;
 use crate::index::{db, sets};
-use crate::telegram::client::Tg;
-use crate::upload::lock;
-use crate::upload::resume;
-use crate::upload::transport::TelegramTransport;
+use crate::upload::session::link::TelegramLink;
+use crate::upload::session::{Item, Outcome, Session, Set, Step};
 
-/// Finishes every pending set, then pushes the index once at the end
-/// (unless `no_push`) rather than after each individual set, since a bulk
-/// resume session is typically followed by one manual push anyway.
+/// Finishes every pending set in one upload session, which publishes once
+/// at the end (unless `no_push`). A set a background `add` is finishing right
+/// now is waited for and then found complete, not sent twice.
 pub async fn run(cfg: &Config, no_push: bool) -> Result<()> {
-    let data_dir = cfg.data_dir()?;
-    // Same queue as everything else: this finishes sets, and a background
-    // upload started by `add` is finishing one right now.
-    let _lock = lock::acquire(&data_dir, || {
-        println!("waiting for the upload already running");
-    })
-    .await?;
-    let conn = db::open(&data_dir)?;
-    let pending_sets = sets::list_pending(&conn)?;
-    if pending_sets.is_empty() {
+    let pending = sets::list_pending(&db::open(&cfg.data_dir()?)?)?;
+    if pending.is_empty() {
         println!("no pending sets");
         return Ok(());
     }
-
-    let tg = Tg::connect(cfg).await.context("connecting to Telegram")?;
-    let transport = TelegramTransport::new(&tg, cfg.max_attempts);
-
-    let summary = resume::pending(
-        &conn,
-        &transport,
-        cfg.throttle_ms,
-        &pending_sets,
-        &data_dir,
-        |id, result| match result {
-            Ok(true) => println!("set {id} complete"),
-            Ok(false) => {}
-            Err(error) => println!("set {id}: {error:#}"),
-        },
-    )
-    .await;
-    tg.shutdown().await;
-
-    if summary.completed > 0 && !no_push {
-        let message_id = channel_index::publish_to_channel(cfg, Mode::AfterPull)
-            .await
-            .context("completed sets could not be published; run `mediagram sync-index`")?;
-        println!("pushed index as message {message_id}");
-    }
-    if let Some(error) = summary.stopped {
-        return Err(error).context("resuming pending sets stopped");
-    }
-    anyhow::ensure!(
-        summary.blocked == 0,
+    let items = pending.into_iter().map(|set| Item {
+        tag: set.set_id.clone(),
+        set: Set::Planned(set.set_id),
+        delete_source: None,
+    });
+    let mut session = Session::new(cfg, TelegramLink::new(cfg))?;
+    let counts = session
+        .upload(items, |id, step| {
+            if let Step::End(Outcome::Failed(err) | Outcome::Blocked(err)) = step {
+                println!("set {id}: {err:#}");
+            }
+        })
+        .await;
+    session
+        .end(no_push)
+        .await
+        .context("resuming pending sets stopped")?;
+    ensure!(
+        counts.blocked == 0,
         "{} set(s) blocked by unavailable or changed sources",
-        summary.blocked
+        counts.blocked
     );
     Ok(())
 }

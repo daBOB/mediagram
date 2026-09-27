@@ -2,39 +2,16 @@
 //! Pure, so the output can be asserted without touching a disk or a network.
 
 use crate::course::walk::Course;
+use crate::upload::session::Counts;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Outcome {
-    Uploaded,
-    AlreadyDone,
-    /// A set exists but never finished; `resume` owns it, not this command.
-    Pending,
-    Failed,
-}
-
-/// How one kind of entry fared.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct Counts {
-    pub uploaded: u32,
-    pub skipped: u32,
-    pub pending: u32,
-    pub failed: u32,
-}
-
-impl Counts {
-    fn record(&mut self, outcome: Outcome) {
-        match outcome {
-            Outcome::Uploaded => self.uploaded += 1,
-            Outcome::AlreadyDone => self.skipped += 1,
-            Outcome::Pending => self.pending += 1,
-            Outcome::Failed => self.failed += 1,
-        }
-    }
+fn failed(counts: &Counts) -> u32 {
+    counts.failed + counts.blocked
 }
 
 /// Lessons and documents counted apart, because they fail apart: a course
 /// whose videos all went up and whose handouts all failed is a different
 /// situation from the reverse, and one number cannot say which happened.
+/// Each is what the upload session counted for that walk.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct Summary {
     pub lessons: Counts,
@@ -42,36 +19,27 @@ pub struct Summary {
 }
 
 impl Summary {
-    pub fn record_lesson(&mut self, outcome: Outcome) {
-        self.lessons.record(outcome);
-    }
-
-    pub fn record_document(&mut self, outcome: Outcome) {
-        self.documents.record(outcome);
-    }
-
-    /// Whether anything at all was sent, which is what decides if the index
-    /// is worth pushing.
-    pub fn uploaded_anything(&self) -> bool {
-        self.lessons.uploaded + self.documents.uploaded > 0
-    }
-
-    /// How many lessons and documents failed to upload.
+    /// How many lessons and documents failed to upload, a missing source
+    /// among them.
     pub fn failed_count(&self) -> u32 {
-        self.lessons.failed + self.documents.failed
+        failed(&self.lessons) + failed(&self.documents)
     }
 
     pub fn lines(&self) -> Vec<String> {
         let mut out = vec![format!(
             "{} lesson(s) uploaded, {} already done, {} failed",
-            self.lessons.uploaded, self.lessons.skipped, self.lessons.failed
+            self.lessons.uploaded,
+            self.lessons.held,
+            failed(&self.lessons)
         )];
         // Said only when there were any. A course of pure video should not
         // have to read a line of zeroes about documents it does not have.
         if self.documents != Counts::default() {
             out.push(format!(
                 "{} document(s) uploaded, {} already done, {} failed",
-                self.documents.uploaded, self.documents.skipped, self.documents.failed
+                self.documents.uploaded,
+                self.documents.held,
+                failed(&self.documents)
             ));
         }
         let pending = self.lessons.pending + self.documents.pending;

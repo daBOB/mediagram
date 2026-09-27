@@ -9,5 +9,6 @@
 pub mod channel;
 pub mod export;
 pub mod rescan;
+pub mod session;
 pub mod tmdb;
 pub mod upload;
