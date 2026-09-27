@@ -5,6 +5,15 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.67.1 — re-running `add-docu` on a folder no longer uploads it again
+
+**Fixed**
+
+- `add-docu` on a folder records its episodes as `docu` but looked them up as
+  course lessons (`tut`), so a re-run never saw what it had uploaded and sent
+  the whole collection again as duplicate sets. The lookup now takes the kind
+  the walk records (`set_lookup::lesson_status`).
+
 ## 0.67.0 — one module pulls and publishes the channel index
 
 Plan: `plans/260927-0146-channel-index-module/` (architecture review

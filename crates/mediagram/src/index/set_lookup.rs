@@ -92,18 +92,24 @@ pub fn document_status(
 
 /// The status of a lesson already in the index, if any, so a caller can tell
 /// "finished" from "interrupted" and route the second to `resume`.
+///
+/// `kind` is the kind the walk records its entries as: a course's lessons
+/// are `tut`, a documentary collection's episodes `docu`, numbered the same
+/// way. Asked under another kind, an entry is never found and a re-run
+/// uploads it again.
 pub fn lesson_status(
     conn: &Connection,
     cid: &str,
     chapter: u32,
     lesson: u32,
+    kind: mlib_spec::Kind,
 ) -> Result<Option<SetStatus>> {
     let episode = serde_json::to_string(&mlib_spec::caption::Episode::Single(lesson))?;
     let status: Option<SetStatus> = conn
         .query_row(
             "SELECT status FROM sets
-             WHERE group_key = ?1 AND season = ?2 AND episode = ?3 AND kind = 'tut'",
-            params![cid, chapter, episode],
+             WHERE group_key = ?1 AND season = ?2 AND episode = ?3 AND kind = ?4",
+            params![cid, chapter, episode, kind.as_str()],
             |row| row.get(0),
         )
         .optional()?;

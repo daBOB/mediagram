@@ -19,6 +19,7 @@ use crate::upload::finish_set::Uploader;
 use crate::upload::new_set::{LessonOf, NewSet};
 use crate::upload::prepare_set::prepare_and_record_set;
 use crate::upload::record_document::{Document, record_document_set};
+use mlib_spec::Kind;
 
 pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
     let course = course_title(args.course.as_deref(), &args.dir)?;
@@ -63,18 +64,20 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
         // Identity is the collection id plus the two numbers, so a re-run
         // after an interruption skips what finished without depending on
         // where the folder happens to live.
-        let outcome = match set_lookup::lesson_status(&conn, &cid, lesson.chapter, lesson.lesson)? {
-            Some(SetStatus::Complete) => Outcome::AlreadyDone,
-            Some(_) => Outcome::Pending,
-            None => match upload_one(cfg, &mut uploader, &args, &course, &cid, lesson).await {
-                Ok(()) => Outcome::Uploaded,
-                // One unreadable file must not abandon the rest of the course.
-                Err(err) => {
-                    println!("  lesson {}: {err:#}", lesson.lesson);
-                    Outcome::Failed
-                }
-            },
-        };
+        let outcome =
+            match set_lookup::lesson_status(&conn, &cid, lesson.chapter, lesson.lesson, Kind::Tut)?
+            {
+                Some(SetStatus::Complete) => Outcome::AlreadyDone,
+                Some(_) => Outcome::Pending,
+                None => match upload_one(cfg, &mut uploader, &args, &course, &cid, lesson).await {
+                    Ok(()) => Outcome::Uploaded,
+                    // One unreadable file must not abandon the rest of the course.
+                    Err(err) => {
+                        println!("  lesson {}: {err:#}", lesson.lesson);
+                        Outcome::Failed
+                    }
+                },
+            };
         summary.record_lesson(outcome);
     }
 

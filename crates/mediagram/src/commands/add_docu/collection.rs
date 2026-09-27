@@ -60,8 +60,13 @@ pub(super) async fn run(cfg: &Config, args: AddDocuArgs) -> Result<()> {
     let mut uploader = Uploader::new(cfg);
     let mut summary = Summary::default();
     for episode in &walked.lessons {
-        let outcome = match set_lookup::lesson_status(&conn, &cid, episode.chapter, episode.lesson)?
-        {
+        let outcome = match set_lookup::lesson_status(
+            &conn,
+            &cid,
+            episode.chapter,
+            episode.lesson,
+            Kind::Docu,
+        )? {
             Some(SetStatus::Complete) => Outcome::AlreadyDone,
             Some(_) => Outcome::Pending,
             None => {

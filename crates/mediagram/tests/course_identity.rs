@@ -120,8 +120,30 @@ fn an_unfinished_lesson_is_reported_rather_than_re_uploaded() {
 
     assert!(!set_lookup::complete_lesson_exists(&conn, "rust-course", 1, 1).unwrap());
     assert_eq!(
-        set_lookup::lesson_status(&conn, "rust-course", 1, 1).unwrap(),
+        set_lookup::lesson_status(&conn, "rust-course", 1, 1, Kind::Tut).unwrap(),
         Some(SetStatus::Pending)
+    );
+}
+
+/// A documentary collection files its episodes as `docu` and must find them
+/// as `docu`: looking them up as lessons made every re-run of `add-docu` on a
+/// folder upload the whole collection again, as duplicate sets.
+#[test]
+fn a_documentary_episode_is_found_under_its_own_kind() {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = db::open(dir.path()).unwrap();
+    let mut caption = lesson_caption("01SET0000000000000000001", "nature-docs", 1, 3);
+    caption.t = Kind::Docu;
+    sets::insert_set(&conn, &SetRow::from_caption(&caption, 1_700_000_000)).unwrap();
+    sets::set_status(&conn, "01SET0000000000000000001", SetStatus::Complete).unwrap();
+
+    assert_eq!(
+        set_lookup::lesson_status(&conn, "nature-docs", 1, 3, Kind::Docu).unwrap(),
+        Some(SetStatus::Complete)
+    );
+    assert_eq!(
+        set_lookup::lesson_status(&conn, "nature-docs", 1, 3, Kind::Tut).unwrap(),
+        None
     );
 }
 
@@ -129,7 +151,7 @@ fn an_unfinished_lesson_is_reported_rather_than_re_uploaded() {
 fn a_lesson_never_seen_has_no_status() {
     let (_d, conn) = index_with(&[]);
     assert_eq!(
-        set_lookup::lesson_status(&conn, "rust-course", 1, 1).unwrap(),
+        set_lookup::lesson_status(&conn, "rust-course", 1, 1, Kind::Tut).unwrap(),
         None
     );
 }
