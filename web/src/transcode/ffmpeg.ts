@@ -19,6 +19,8 @@ export interface FfmpegOptions {
   /** Where this server answers its own Range requests. */
   baseUrl: string;
   segmentSeconds: number;
+  /** Set from the startup probe in `encoders.ts`; see `TranscodeRequest.pacedReads`. */
+  pacedReads: boolean;
 }
 
 interface ChildProcess {
@@ -62,6 +64,7 @@ export class FfmpegRunner implements Runner {
       audioTrack: spec.audioTrack,
       copyVideo: spec.copyVideo,
       hevcCopy: spec.hevcCopy,
+      pacedReads: this.options.pacedReads,
       segmentSeconds: this.options.segmentSeconds,
       // Left to ffmpeg: it reads the real rate from the source, and
       // `-force_key_frames` holds the segment boundaries regardless.

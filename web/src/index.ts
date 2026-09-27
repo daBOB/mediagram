@@ -18,7 +18,7 @@ import { TelegramStateChannel } from "./telegram/state-channel";
 import { listenForLibraryEvents } from "./telegram/channel-events";
 import { isExposed, reachableUrls } from "./application/listen-address";
 import { CachedReader } from "./cache/reader";
-import { detectEncoder } from "./transcode/encoders";
+import { detectEncoder, detectPacedReads } from "./transcode/encoders";
 import { FfmpegRunner } from "./transcode/ffmpeg";
 import { TranscodeRegistry } from "./transcode/registry";
 import { TranscodeFiles } from "./transcode/server";
@@ -70,13 +70,14 @@ interface StartupIo {
   open: typeof Telegram.open;
   findIndex: (telegram: Telegram) => Promise<FoundIndex | NoIndex>;
   detectEncoder: typeof detectEncoder;
+  detectPacedReads: typeof detectPacedReads;
   listen: typeof listenForLibraryEvents;
   fetchPosters: typeof fetchPostersForIndex;
   fetch?: RefreshOptions["fetch"];
 }
 const startupIo: StartupIo = {
   open: (config) => Telegram.open(config), findIndex: findNewestChannelIndex,
-  detectEncoder, listen: listenForLibraryEvents, fetchPosters: fetchPostersForIndex,
+  detectEncoder, detectPacedReads, listen: listenForLibraryEvents, fetchPosters: fetchPostersForIndex,
 };
 
 /** Starts the real application; importing this module neither connects nor listens. */
@@ -140,15 +141,16 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     const cacheMaxBytes = startBudget(state.settings(), config.cacheMaxBytes);
     const cache = cacheMaxBytes > 0 ? new ChunkCache(config.cacheDir, cacheMaxBytes) : null;
 
-    // None of the three below need Telegram or each other, and none of their
+    // None of the four below need Telegram or each other, and none of their
     // results are needed until the lines that log or use them: a cold count
     // of the cache (a full stat of every chunk file), probing what ffmpeg can
-    // encode with, and clearing a previous run's leftovers. Run together
-    // rather than one after another so a restart is not the sum of three
-    // waits nobody is blocked on until here.
-    const [cacheBytes, encoder] = await Promise.all([
+    // encode with and whether it can pace a read, and clearing a previous
+    // run's leftovers. Run together rather than one after another so a
+    // restart is not the sum of four waits nobody is blocked on until here.
+    const [cacheBytes, encoder, pacedReads] = await Promise.all([
       cache ? cache.sizeOnDisk() : Promise.resolve(null),
       io.detectEncoder(),
+      io.detectPacedReads(),
       rm(config.transcodeDir, { recursive: true, force: true }),
     ]);
 
@@ -164,6 +166,9 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     // compiled in, not what initialises, and discovering that when someone
     // presses play is too late.
     console.log(`encoder: ${encoder.name}${encoder.kind === "vaapi" ? ` on ${encoder.device}` : ""}`);
+    // An older ffmpeg refuses -readrate outright, so this only ever runs
+    // paced once the probe above confirms it, and says why otherwise.
+    console.log(pacedReads ? "reads: paced" : "reads: unpaced (ffmpeg predates -readrate)");
 
     // Constructors perform no requests. The listener resolves before a request
     // can start media work, including when the OS chooses the port.
@@ -178,6 +183,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
       config.transcodeDir,
       new FfmpegRunner({
         encoder,
+        pacedReads,
         get baseUrl() { return endpoint.baseUrl; },
         segmentSeconds: 2,
       }),

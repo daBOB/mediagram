@@ -5,6 +5,22 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.68.9 — a conversion no longer pulls the whole film at once
+
+**Fixed**
+
+- A title converted in copy mode ran ffmpeg at 7.4x real time, reading its
+  input through the player's own stream route as fast as the Telegram link
+  allowed: about 700 `upload.getFile` requests in 73s on one measured title,
+  enough to trip 9 flood waits. Playback itself was unaffected — the decoder
+  stayed far ahead — but a seek meanwhile queued behind those flood-slept
+  requests, and the conversion fetched the whole film for a viewer who might
+  stop after ten minutes. Conversions now read at up to twice real time after
+  a 30-second burst (so start-up and a seek's restart are as quick as
+  before), on ffmpeg 6.1 or newer; an older ffmpeg is detected once at
+  startup and left unpaced rather than have every conversion fail on an
+  option it does not recognise.
+
 ## 0.68.8 — the System page counts real reconnects only
 
 **Fixed**

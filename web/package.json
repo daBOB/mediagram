@@ -1,6 +1,6 @@
 {
   "name": "mediagram-player",
-  "version": "0.68.8",
+  "version": "0.68.9",
   "private": true,
   "type": "module",
   "engines": {

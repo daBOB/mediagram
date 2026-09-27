@@ -44,6 +44,8 @@ export interface TranscodeRequest {
   copyVideo?: boolean;
   /** The copied picture is HEVC: fMP4 segments, tagged `hvc1`. See `SessionSpec`. */
   hevcCopy?: boolean;
+  /** Cap the read rate; set once the `encoders.ts` probe finds ffmpeg accepts it. */
+  pacedReads?: boolean;
 }
 
 /**
@@ -53,6 +55,18 @@ export interface TranscodeRequest {
  * and `-force_key_frames` below enforces the real boundary regardless.
  */
 const ASSUMED_FRAME_RATE = 25;
+
+/**
+ * Twice real time: fast enough a seek's restart never waits on the pipe,
+ * slow enough a copy-mode conversion (measured at 7.4x) stops pulling the
+ * whole film over Telegram in minutes for a viewer who has watched none of
+ * it. Exported so the `encoders.ts` startup probe tests the exact value
+ * used below, not a copy that could drift.
+ */
+export const READ_RATE = 2;
+
+/** Full speed for this long first — covers ffmpeg's own start-up and every seek's restart. */
+export const READ_BURST_SECONDS = 30;
 
 /**
  * Brings a picture larger than UHD down to fit inside it, keeping its shape;
@@ -90,6 +104,14 @@ export function transcodeArgs(request: TranscodeRequest): string[] {
     // Before -i: ffmpeg seeks the input rather than decoding and discarding
     // everything up to that point, which for a film is the whole difference.
     args.push("-ss", String(request.seekSeconds));
+  }
+
+  // Also before -i: an input option. Only set once the startup probe found
+  // this ffmpeg accepts it — an older one exits nonzero on the flag instead
+  // of ignoring it, which would fail every conversion rather than leave it
+  // unpaced.
+  if (request.pacedReads === true) {
+    args.push("-readrate", String(READ_RATE), "-readrate_initial_burst", String(READ_BURST_SECONDS));
   }
 
   args.push("-i", request.input);

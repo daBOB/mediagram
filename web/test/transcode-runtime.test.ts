@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { FfmpegRunner } from "../src/transcode/ffmpeg";
-import { detectEncoder } from "../src/transcode/encoders";
+import { detectEncoder, detectPacedReads } from "../src/transcode/encoders";
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -12,6 +12,7 @@ const OPTIONS = {
   encoder: { kind: "software", name: "libx264" } as const,
   baseUrl: "http://127.0.0.1:8770",
   segmentSeconds: 4,
+  pacedReads: false,
 };
 const SPEC = { setId: "01SET /?", seekSeconds: 600, maxrateBits: 3_000_000, audioTrack: 2, copyVideo: false };
 
@@ -95,6 +96,14 @@ describe("the production ffmpeg runner", () => {
     expect(command.at(-1)).toBe("/catalog/session/index.m3u8");
     fixture.finish(7);
     expect(await running.exited).toBe(7);
+  });
+
+  test("pacedReads on the options reaches the command, the same way the encoder does", async () => {
+    const fixture = processFixture();
+    const runner = new FfmpegRunner({ ...OPTIONS, pacedReads: true }, fixture.io);
+    runner.start("session", "/catalog/session", SPEC);
+    expect(valueOf(fixture.commands[0]!, "-readrate")).toBe("2");
+    fixture.finish();
   });
 
   test("stderr is decoded across chunk boundaries and written while the process is still running", async () => {
@@ -242,5 +251,42 @@ describe("encoder detection through the production probes", () => {
     const fixture = encoderFixture([], []);
     fixture.io.spawn = () => { throw new Error("ffmpeg ENOENT"); };
     await expect(detectEncoder(fixture.io)).rejects.toThrow("ffmpeg ENOENT");
+  });
+});
+
+describe("the paced-reads probe", () => {
+  test("answers true when ffmpeg accepts -readrate, with the exact values transcodeArgs uses", async () => {
+    const fixture = encoderFixture([], [0]);
+    expect(await detectPacedReads(fixture.io)).toBe(true);
+
+    const [command] = fixture.commands;
+    expect(valueOf(command!, "-readrate")).toBe("2");
+    expect(valueOf(command!, "-readrate_initial_burst")).toBe("30");
+    expect(command!.indexOf("-readrate")).toBeLessThan(command!.indexOf("-i"));
+  });
+
+  test("answers false when ffmpeg exits nonzero, as an older build would on an unknown flag", async () => {
+    const fixture = encoderFixture([], [1]);
+    expect(await detectPacedReads(fixture.io)).toBe(false);
+  });
+
+  test("a probe that cannot even spawn answers false instead of throwing", async () => {
+    const fixture = encoderFixture([], []);
+    fixture.io.spawn = () => { throw new Error("ffmpeg ENOENT"); };
+    expect(await detectPacedReads(fixture.io)).toBe(false);
+  });
+
+  test("a failing probe never breaks encoder detection running alongside it", async () => {
+    const encoderProbe = encoderFixture([], [0]);
+    const pacedProbe = encoderFixture([], []);
+    pacedProbe.io.spawn = () => { throw new Error("ffmpeg ENOENT"); };
+
+    const [encoder, pacedReads] = await Promise.all([
+      detectEncoder(encoderProbe.io),
+      detectPacedReads(pacedProbe.io),
+    ]);
+
+    expect(encoder).toEqual({ kind: "software", name: "libx264" });
+    expect(pacedReads).toBe(false);
   });
 });

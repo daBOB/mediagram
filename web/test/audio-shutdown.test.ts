@@ -89,7 +89,8 @@ test("production startup terminates and reaps an active audio probe before disco
   try {
     player = await startPlayer(configIn(root), {
       open: async () => telegramBoundary(order), findIndex: async () => "nothing-pinned",
-      detectEncoder: async () => ({ kind: "software", name: "libx264" }), listen: () => () => {},
+      detectEncoder: async () => ({ kind: "software", name: "libx264" }),
+      detectPacedReads: async () => false, listen: () => () => {},
     });
     await player.ready;
     request = fetch(`${player.server.baseUrl}/api/sets/01SET/audio`).then((response) => response.json()).catch(() => null);

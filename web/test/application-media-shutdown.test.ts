@@ -159,6 +159,7 @@ test("the production startup hands its preload and thumbnail workers to shutdown
     player = await startPlayer({ ...configIn(root), cacheMaxBytes: 100_000_000, seriesPreload: true }, {
       open: async () => telegram, findIndex: async () => "nothing-pinned",
       detectEncoder: async () => ({ kind: "software", name: "libx264" }),
+      detectPacedReads: async () => false,
       listen: () => () => {},
     });
     await player.ready;

@@ -31,6 +31,7 @@ describe("the production application startup", () => {
         newest = snapshot("After", 200);
         return { kind: "software", name: "libx264" };
       },
+      detectPacedReads: async () => false,
       listen: () => { order.push("subscribe"); return () => { order.push("unsubscribe"); }; },
       fetchPosters: async () => ({ ok: false, reason: "art disabled in this test" }),
     });
@@ -51,6 +52,7 @@ describe("the production application startup", () => {
     const player = await startPlayer(configIn(root), {
       open: async () => telegramBoundary(order), findIndex: async () => "nothing-pinned",
       detectEncoder: async () => ({ kind: "software", name: "libx264" }),
+      detectPacedReads: async () => false,
       listen: () => () => { order.push("unsubscribe"); },
       fetchPosters: async () => { throw new Error("local catalogs do not fetch channel art"); },
     });
@@ -81,6 +83,7 @@ describe("the production application startup", () => {
     await expect(startPlayer({ ...configIn(root), port: occupied.port }, {
       open: async () => telegramBoundary(order), findIndex: async () => snapshot("Candidate", 100),
       detectEncoder: async () => ({ kind: "software", name: "libx264" }),
+      detectPacedReads: async () => false,
       listen: () => { order.push("subscribe"); return () => { order.push("unsubscribe"); }; },
     })).rejects.toMatchObject({ code: "EADDRINUSE" });
     expect(order).toEqual(["subscribe", "unsubscribe", "disconnect"]);

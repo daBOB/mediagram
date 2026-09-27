@@ -67,6 +67,34 @@ describe("the bitrate cap", () => {
   });
 });
 
+describe("paced reads", () => {
+  /** Only once the startup probe found ffmpeg accepts them (`encoders.test.ts`). */
+  test("absent means today's args, unchanged", () => {
+    const args = argsFor();
+    expect(args).not.toContain("-readrate");
+    expect(args).not.toContain("-readrate_initial_burst");
+  });
+
+  test("false means the same", () => {
+    expect(argsFor({ pacedReads: false })).not.toContain("-readrate");
+  });
+
+  test("true adds both, before -i, at the values a copy-mode conversion needs", () => {
+    const args = argsFor({ pacedReads: true });
+
+    expect(valueOf(args, "-readrate")).toBe("2");
+    expect(valueOf(args, "-readrate_initial_burst")).toBe("30");
+    expect(args.indexOf("-readrate")).toBeLessThan(args.indexOf("-i"));
+  });
+
+  test("still before -i when seeking, after -ss", () => {
+    const args = argsFor({ pacedReads: true, seekSeconds: 300 });
+
+    expect(args.indexOf("-ss")).toBeLessThan(args.indexOf("-readrate"));
+    expect(args.indexOf("-readrate")).toBeLessThan(args.indexOf("-i"));
+  });
+});
+
 describe("seeking", () => {
   /** Before -i, ffmpeg seeks the input; after, it decodes and discards. */
   test("the seek comes before the input", () => {

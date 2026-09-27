@@ -76,7 +76,8 @@ test("production shutdown waits for speculative downloads before disconnecting T
   try {
     player = await startPlayer({ ...configIn(root), cacheMaxBytes: 100_000_000, cacheReadahead: 1 }, {
       open: async () => telegram, findIndex: async () => "nothing-pinned",
-      detectEncoder: async () => ({ kind: "software", name: "libx264" }), listen: () => () => {},
+      detectEncoder: async () => ({ kind: "software", name: "libx264" }),
+      detectPacedReads: async () => false, listen: () => () => {},
     });
     await player.ready;
     for (const offset of [0, CACHE_CHUNK]) {

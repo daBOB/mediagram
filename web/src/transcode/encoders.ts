@@ -9,7 +9,7 @@
  */
 
 import { readdirSync } from "node:fs";
-import type { Encoder } from "./args";
+import { READ_BURST_SECONDS, READ_RATE, type Encoder } from "./args";
 
 interface EncoderIo {
   readDirectory(path: string): string[];
@@ -40,6 +40,34 @@ async function works(io: EncoderIo, args: string[]): Promise<boolean> {
 }
 
 const TEST_SOURCE = ["-f", "lavfi", "-i", "testsrc=duration=1:size=640x480:rate=10"];
+
+/**
+ * Whether this ffmpeg accepts `-readrate`/`-readrate_initial_burst`.
+ *
+ * The former is ffmpeg 5.0+, the latter 6.1+; `running-the-player.md`
+ * promises only 4.4+. Either exits nonzero on an unrecognised option rather
+ * than ignoring it, so probing once here — the same trick `detectEncoder`
+ * uses below — beats every conversion failing outright on an older build.
+ * A probe that cannot even run (`works` throwing) means just as unpaced.
+ */
+export async function detectPacedReads(io: EncoderIo = encoderIo): Promise<boolean> {
+  try {
+    return await works(io, [
+      "-readrate",
+      String(READ_RATE),
+      "-readrate_initial_burst",
+      String(READ_BURST_SECONDS),
+      ...TEST_SOURCE,
+      "-c:v",
+      "libx264",
+      "-f",
+      "null",
+      "-",
+    ]);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * The best encoder available, hardware first.

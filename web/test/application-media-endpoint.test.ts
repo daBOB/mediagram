@@ -68,6 +68,7 @@ test.each(["127.0.0.2", "0.0.0.0", "::1", "::"])(
       player = await startPlayer(config, {
         open: async () => telegramBoundary(order), findIndex: async () => "nothing-pinned",
         detectEncoder: async () => ({ kind: "software", name: "libx264" }),
+        detectPacedReads: async () => false,
         listen: () => () => {},
       });
       expect(inputs).toEqual([]);

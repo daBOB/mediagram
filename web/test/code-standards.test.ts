@@ -24,6 +24,8 @@ const ROOT = join(import.meta.dir, "..");
  * 2026-09-27 for `app.js`, once the catalog and its update stream moved out
  * to `library-session.js`; raised the same day, by 7, for the re-entrant-draw
  * guard and the reactive player hold that review found still belonged there.
+ * Also 2026-09-27: `src/index.ts` grew by six lines wiring the paced-reads probe
+ * through startup alongside the encoder probe it already ran next to.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 786,
@@ -46,7 +48,7 @@ const CEILINGS: Record<string, number> = {
   "src/cache/reader.ts": 293,
   "src/cache/store.ts": 313,
   "src/config.ts": 265,
-  "src/index.ts": 435,
+  "src/index.ts": 441,
   "src/package/refresh.ts": 272,
   "src/server.ts": 269,
   "src/state/routes.ts": 267,

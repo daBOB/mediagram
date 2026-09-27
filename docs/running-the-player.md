@@ -158,7 +158,10 @@ stops matching them.
 A conversion is started with `-progress pipe:1 -stats_period 2`, which needs
 **ffmpeg 4.4 or newer**. An older ffmpeg refuses `-stats_period` outright, so
 this fails loudly at the first conversion rather than silently losing the
-System page's speed and segment figures.
+System page's speed and segment figures. With **ffmpeg 6.1 or newer**,
+a conversion also reads its input at up to twice real time after a 30-second
+burst, rather than as fast as the link allows; an older ffmpeg still converts,
+just unpaced.
 
 ### What the player remembers
 
