@@ -38,6 +38,33 @@ fn finishing_a_title_clears_its_position() {
     assert_eq!(db.with(|conn| watched_for(conn, &id)).unwrap().len(), 1);
 }
 
+/// One transaction: when the position cannot be cleared, the mark is not
+/// recorded either — a position gone with no completion is what lets another
+/// device's older copy of it come back.
+#[test]
+fn finishing_a_title_lands_whole_or_not_at_all() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = StateDb::new(dir.path().to_path_buf());
+    let id = profile(&db);
+    db.with(|conn| set_progress(conn, &id, "01A", 742.0, None))
+        .unwrap();
+    db.with(|conn| {
+        conn.execute_batch(
+            "CREATE TRIGGER refuse_clear BEFORE DELETE ON progress
+             BEGIN SELECT RAISE(ABORT, 'cannot clear'); END;",
+        )
+    })
+    .unwrap();
+
+    assert!(
+        db.with(|conn| set_watched(conn, &id, "01A", true))
+            .is_none()
+    );
+
+    assert_eq!(db.with(|conn| watched_for(conn, &id)).unwrap(), Vec::new());
+    assert_eq!(db.with(|conn| progress_for(conn, &id)).unwrap().len(), 1);
+}
+
 /// Taking a mark back leaves any position exactly where it was: `set_watched`
 /// pairs with `clear_progress` only on the way to `true`, never on the way
 /// back, and a resume point left in place must survive the un-mark.

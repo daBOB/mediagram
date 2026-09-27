@@ -34,10 +34,9 @@ describe("marking a title finished by hand", () => {
 
     expect(state.progressOf("film")).toBeNull();
     expect(state.isWatched("film")).toBe(true);
-    expect(requests).toEqual([
-      { url: "/api/profiles/base/progress/film", method: "DELETE" },
-      { url: "/api/profiles/base/watched/film", method: "PUT" },
-    ]);
+    // One write: the server clears the position in the same transaction that
+    // records the mark, so a lost request cannot leave one without the other.
+    expect(requests).toEqual([{ url: "/api/profiles/base/watched/film", method: "PUT" }]);
   });
 
   test("re-stamps a title already finished, so no device's older position can bring it back", () => {

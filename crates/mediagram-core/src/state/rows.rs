@@ -107,13 +107,17 @@ pub fn set_watched(
     finished: bool,
 ) -> rusqlite::Result<()> {
     if finished {
-        conn.execute(
+        // One transaction: the completion is the only tombstone the deleted
+        // position has, so the two must never land apart.
+        let tx = conn.unchecked_transaction()?;
+        tx.execute(
             "INSERT INTO watched(profile_id, set_id, finished_at, removed_at) VALUES (?1, ?2, ?3, NULL)
                ON CONFLICT(profile_id, set_id) DO UPDATE SET
                  finished_at = MAX(excluded.finished_at, COALESCE(removed_at, 0) + 1), removed_at = NULL",
             params![profile_id, set_id, now_ms()],
         )?;
-        clear_progress(conn, profile_id, set_id)?;
+        clear_progress(&tx, profile_id, set_id)?;
+        tx.commit()?;
     } else {
         conn.execute(
             "UPDATE watched SET removed_at = MAX(?3, finished_at + 1) WHERE profile_id = ?1 AND set_id = ?2 AND removed_at IS NULL",

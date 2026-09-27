@@ -67,9 +67,14 @@ class FakeWatchStateRepository(
     ) {
         if (chosenProfileId.value == null) return
         calls += "setWatched $setId $finished"
+        // As the core does: marking a title watched clears its position in the
+        // same step; taking the mark back leaves a position alone.
         _snapshot.value =
             if (finished) {
-                _snapshot.value.copy(watched = _snapshot.value.watched + Watched(setId, 0))
+                _snapshot.value.copy(
+                    watched = _snapshot.value.watched + Watched(setId, 0),
+                    progress = _snapshot.value.progress.filterNot { it.setId == setId },
+                )
             } else {
                 _snapshot.value.copy(watched = _snapshot.value.watched.filterNot { it.setId == setId })
             }

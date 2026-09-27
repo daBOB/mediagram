@@ -32,7 +32,7 @@ class ProgressRecorderTest {
             // Fifty seconds of a four-hour film left: inside its last minute.
             recorder.save("s1", atSeconds = 14350.0, observedDurationSeconds = 14400.0)
 
-            assertEquals(listOf("clearProgress s1", "setWatched s1 true"), repository.calls)
+            assertEquals(listOf("setWatched s1 true"), repository.calls)
         }
 
     @Test
@@ -58,6 +58,6 @@ class ProgressRecorderTest {
 
             recorder.save("s1", atSeconds = 14350.0, observedDurationSeconds = 14400.0)
 
-            assertEquals(listOf("clearProgress s1", "setWatched s1 true"), repository.calls)
+            assertEquals(listOf("setWatched s1 true"), repository.calls)
         }
 }

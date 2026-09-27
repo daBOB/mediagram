@@ -360,12 +360,13 @@ describe("titles watched to the end", () => {
   });
 
   test("taking it back never touches a position", () => {
-    // `setWatched` alone does not clear a position — the caller pairs it
-    // with `clearProgress` when finishing playback — so a position left in
-    // place must still be exactly there after an un-mark.
+    // After the mark, not before: marking a title watched clears its position
+    // in the same transaction, so a position set only before it would leave
+    // this vacuous. A position saved since must be exactly there after an
+    // un-mark.
     const { state, me } = stateIn();
-    state.setProgress(me, "01SET0000000000000000001", 30, 1800);
     state.setWatched(me, "01SET0000000000000000001", true);
+    state.setProgress(me, "01SET0000000000000000001", 30, 1800);
     state.setWatched(me, "01SET0000000000000000001", false);
     expect(state.snapshot(me).progress[0]).toMatchObject({ setId: "01SET0000000000000000001", at: 30 });
   });

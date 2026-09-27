@@ -267,10 +267,10 @@ export class WatchState {
   /**
    * Records that a title was watched to the end, or takes it back.
    *
-   * Only the completion marker changes here. Finishing playback also calls
-   * clearProgress separately, so the title no longer has a resume point;
-   * taking the mark back does not call it — see `merge.ts` on why a removal
-   * must not touch `progress`.
+   * Finishing clears the position in the same transaction, as the Android
+   * core does: the completion is the only tombstone a deleted position has
+   * (`merge.ts`), so the two must never land apart. Taking the mark back
+   * does not touch `progress` — see `merge.ts` on why a removal must not.
    *
    * A removal is kept as a tombstone (`removed_at`) rather than a deleted
    * row, the same reason and shape as `setWatchlisted`: so a sync round can
@@ -283,15 +283,14 @@ export class WatchState {
    */
   setWatched(profileId: string, setId: string, finished: boolean): void {
     if (finished) {
-      tolerate(() =>
-        this.db
-          ?.query(
-            `INSERT INTO watched(profile_id, set_id, finished_at, removed_at) VALUES (?1, ?2, ?3, NULL)
-               ON CONFLICT(profile_id, set_id) DO UPDATE SET
-                 finished_at = MAX(excluded.finished_at, COALESCE(removed_at, 0) + 1), removed_at = NULL`,
-          )
-          .run(profileId, setId, Date.now()),
-      );
+      const db = this.db;
+      if (db) tolerate(() => db.transaction(() => {
+        db.query(`INSERT INTO watched(profile_id, set_id, finished_at, removed_at) VALUES (?1, ?2, ?3, NULL)
+             ON CONFLICT(profile_id, set_id) DO UPDATE SET
+               finished_at = MAX(excluded.finished_at, COALESCE(removed_at, 0) + 1), removed_at = NULL`)
+          .run(profileId, setId, Date.now());
+        db.query("DELETE FROM progress WHERE profile_id = ?1 AND set_id = ?2").run(profileId, setId);
+      })());
     } else {
       this.db
         ?.query(

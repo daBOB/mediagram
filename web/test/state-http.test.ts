@@ -384,6 +384,20 @@ describe("recording that a title was watched to the end", () => {
     expect(row!.finishedAt).toBeLessThanOrEqual(Date.now() + 1);
   });
 
+  test("finishing clears the position in the same write; taking the mark back does not", async () => {
+    // One write, one transaction: a position gone with no completion is what
+    // lets another device's older copy of it bring a finished title back.
+    const positions = async () =>
+      ((await snapshot()).progress as { setId: string }[]).map((row) => row.setId);
+    await send(mine(`/progress/${SET}`), "PUT", { at: 600, duration: 2400 });
+    expect((await send(mine(`/watched/${SET}`), "PUT", {})).status).toBe(204);
+    expect(await positions()).not.toContain(SET);
+
+    await send(mine(`/progress/${SET}`), "PUT", { at: 30, duration: 2400 });
+    expect((await send(mine(`/watched/${SET}`), "DELETE")).status).toBe(204);
+    expect(await positions()).toContain(SET);
+  });
+
   test("refuses a title the catalog cannot play", async () => {
     expect((await send(mine("/watched/01SETNOTINTHELIBRARY1"), "PUT", {})).status).toBe(404);
   });

@@ -5,6 +5,23 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.68.6 — finishing a title is one write, on the web and on Android
+
+Architecture review candidate E.
+
+**Fixed**
+
+- Finishing a title (the credits rolling, or "mark watched") was two writes:
+  the position deleted, then the completion recorded. A second write that
+  never landed — a dropped request on the web, the Android app killed in
+  between — left the position gone with no completion, and the completion is
+  the only thing that beats another device's older copy of that position, so
+  the next sync brought the finished title back onto Continue. Marking a
+  title watched now clears its position in the same transaction, on the web
+  player's server as in the Android core (which gains an explicit
+  transaction), and both players send the one write. Taking the mark back
+  still leaves a position alone.
+
 ## 0.68.5 — the web player's library session has one home
 
 Architecture review candidate D.

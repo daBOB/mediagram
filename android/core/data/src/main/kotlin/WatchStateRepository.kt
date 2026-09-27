@@ -138,9 +138,12 @@ interface WatchStateRepository {
      * Stamped now even when the title was finished before: the completion is
      * the deleted position's only tombstone, and one older than another
      * device's copy of that position loses the merge.
+     *
+     * One call: the core's `setWatched` clears the position in the same
+     * transaction that records the mark. Clearing it first, as a call of its
+     * own, is what could leave a position gone with no completion.
      */
     suspend fun markFinished(setId: String) {
-        clearProgress(setId)
         setWatched(setId, true)
     }
     /** Clears retained account state after a successful reset; already-running reads cannot restore it. */

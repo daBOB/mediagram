@@ -68,7 +68,10 @@ internal class FakeWatchStateRepository(
         finished: Boolean,
     ) {
         val rest = mutableSnapshot.value.watched.filterNot { it.setId == setId }
-        mutableSnapshot.value = mutableSnapshot.value.copy(watched = if (finished) rest + Watched(setId, finishedAt = 1) else rest)
+        // As the core does: marking a title watched clears its position too.
+        val progress = mutableSnapshot.value.progress.let { all -> if (finished) all.filterNot { it.setId == setId } else all }
+        mutableSnapshot.value =
+            mutableSnapshot.value.copy(watched = if (finished) rest + Watched(setId, finishedAt = 1) else rest, progress = progress)
     }
 
     override suspend fun deleteProfile(id: String): Boolean {

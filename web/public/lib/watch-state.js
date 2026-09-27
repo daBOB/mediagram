@@ -351,11 +351,11 @@ export const isWatched = (setId) => held.watched.has(setId);
 export const watchedAt = (setId) => held.watched.get(setId) ?? null;
 
 /**
- * Records that a title reached its end.
+ * Records that a title reached its end, or takes that back.
  *
- * Called from the same branch that clears the position, because a finished
- * title has no resume point and this is the only thing left that remembers
- * it happened.
+ * Marking it clears its position on the server in the same transaction
+ * (`markFinished` clears the copy held here). Taking it back leaves the
+ * position alone: a removal has nothing to say about where the viewer is.
  * @returns {void} Local update only; persistence is best-effort.
  */
 export function setWatched(setId, finished) {
@@ -370,9 +370,9 @@ export function setWatched(setId, finished) {
  * roll, and what a viewer does by hand for something finished elsewhere or
  * given up on.
  *
- * The position goes, because a finished title has nowhere to resume to. The
- * fact that it finished stays, because otherwise nothing anywhere would
- * remember it was ever watched.
+ * The position goes — on the server in the one write that records the mark,
+ * so no lost request can leave it gone with no completion. That it finished
+ * stays, or nothing anywhere would remember it was ever watched.
  *
  * Stamped now even when the title was finished before. The completion is the
  * only tombstone the deleted position has: another device still holding the
@@ -382,7 +382,7 @@ export function setWatched(setId, finished) {
  * @returns {void} Local update only; persistence is best-effort.
  */
 export function markFinished(setId) {
-  clearProgress(setId);
+  held.progress.delete(setId);
   setWatched(setId, true);
 }
 

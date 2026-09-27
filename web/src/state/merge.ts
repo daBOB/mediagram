@@ -11,8 +11,8 @@
  * Watching S1E4 on the phone and S1E9 on the laptop leaves both correct.
  *
  * **A completion is the tombstone for `progress`.** Finishing a title deletes
- * its position and writes a completion at the same moment — `clearProgress`
- * and `setWatched` are called together, and the v4 migration exists because
+ * its position and writes a completion at the same moment — `setWatched`
+ * does both in one transaction, and the v4 migration exists because
  * finishing would otherwise erase every trace. So a device that has never
  * heard of the completion still holds a position, and merging naively would
  * hand it back and put a finished film on the Continue shelf. A completion at
