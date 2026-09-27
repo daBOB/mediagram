@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.HorizontalDivider
@@ -43,6 +44,12 @@ import model.WatchSnapshot
  * series and Latest courses; [magazine] already carries the cover,
  * features, resume strip and its own "Recently added" row, so [rows] must
  * not repeat Continue, Next up or the Movies shelf.
+ *
+ * [gridState] is hoisted up to [ui.chrome.LibraryHome] rather than kept as
+ * this screen's own — the departments bar over the cover reads where the
+ * page actually is from the same instance, rather than tracking scroll
+ * deltas of its own that a restored position or a scroll-up-from-deep would
+ * leave out of step with.
  */
 @Composable
 internal fun HomeScreen(
@@ -50,6 +57,7 @@ internal fun HomeScreen(
     rows: List<HomeRow>,
     watch: WatchSnapshot,
     columns: Int,
+    gridState: LazyGridState,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
     onSeeAll: (shelf: String) -> Unit,
@@ -59,6 +67,7 @@ internal fun HomeScreen(
     val editorial = magazine.editorial
 
     LazyVerticalGrid(
+        state = gridState,
         columns = GridCells.Fixed(columns),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = Spacing.medium),

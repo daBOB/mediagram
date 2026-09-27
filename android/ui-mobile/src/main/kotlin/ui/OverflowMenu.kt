@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 
@@ -33,11 +34,15 @@ data class BrowseActions(
 )
 
 /**
- * The overflow menu itself — the icon that opens it and the items behind
- * it, the same wherever [LibraryScaffold] renders it. [onAskStartOver] is
- * separate from the rest of [menu] because the item it is bound to does
- * not act immediately: the caller owns the confirmation that follows, and
- * this only asks for it.
+ * The full overflow menu — the icon that opens it and the items behind it.
+ * Only compact/medium pushed frames render this now: EXPANDED ones use
+ * [AndroidOnlyMenu] instead, the same trimmed menu the root chrome does,
+ * since [ui.chrome.LibraryRail] beside them already carries System,
+ * Settings, My List, Continue watching, Latest and Genres. Narrower than
+ * EXPANDED there is no rail beside a pushed frame to carry those, so this
+ * keeps them. [onAskStartOver] is separate from the rest of [menu] because
+ * the item it is bound to does not act immediately: the caller owns the
+ * confirmation that follows, and this only asks for it.
  */
 @Composable
 internal fun OverflowMenu(
@@ -70,30 +75,68 @@ internal fun OverflowMenu(
         DropdownMenuItem(text = { Text("Continue watching") }, onClick = { menuExpanded = false; browse.onContinueWatching() })
         DropdownMenuItem(text = { Text("Latest") }, onClick = { menuExpanded = false; browse.onLatest() })
         DropdownMenuItem(text = { Text("Genres") }, onClick = { menuExpanded = false; browse.onGenres() })
-        MenuItem(
-            label = "Update library",
-            note = menu.updateDisabledReason ?: menu.updateNote,
-            enabled = menu.updateDisabledReason == null,
-            onClick = {
-                menuExpanded = false
-                menu.onUpdate()
-            },
-        )
-        DropdownMenuItem(
-            text = { Text("TMDB key…") },
-            onClick = {
-                menuExpanded = false
-                menu.onTmdbKey()
-            },
-        )
-        DropdownMenuItem(
-            text = { Text("Start over") },
-            onClick = {
-                menuExpanded = false
-                onAskStartOver()
-            },
-        )
+        AndroidOnlyItems(menu = menu, onAskStartOver = onAskStartOver, close = { menuExpanded = false })
     }
+}
+
+/**
+ * The root chrome's own ⋮, and what a pushed frame's own bar falls back to
+ * on EXPANDED — the three actions that have no web counterpart at all,
+ * because the web server does them itself: Update library, TMDB key…,
+ * Start over. Every other item [OverflowMenu] carries — System, Settings,
+ * My List, Continue watching, Latest, Genres — has its own dedicated
+ * control right beside this one there: [ui.chrome.LibraryRail] on EXPANDED,
+ * [ui.chrome.CompactLibraryHeader]'s icon row on the root's own compact
+ * width. Shares [AndroidOnlyItems] with [OverflowMenu] rather than keeping
+ * its own second copy of the same three.
+ */
+@Composable
+internal fun AndroidOnlyMenu(
+    menu: MenuActions,
+    onAskStartOver: () -> Unit,
+    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
+    IconButton(
+        onClick = { menuExpanded = true },
+        modifier = Modifier.semantics { contentDescription = "Menu" },
+    ) { Icon(imageVector = Icons.Default.MoreVert, contentDescription = null, tint = tint) }
+    DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+        AndroidOnlyItems(menu = menu, onAskStartOver = onAskStartOver, close = { menuExpanded = false })
+    }
+}
+
+/** The three items [OverflowMenu] and [AndroidOnlyMenu] both end with — the ones the web has no counterpart for at all. [close] is called before each action, dismissing whichever of the two menus is asking for this. */
+@Composable
+private fun AndroidOnlyItems(
+    menu: MenuActions,
+    onAskStartOver: () -> Unit,
+    close: () -> Unit,
+) {
+    MenuItem(
+        label = "Update library",
+        note = menu.updateDisabledReason ?: menu.updateNote,
+        enabled = menu.updateDisabledReason == null,
+        onClick = {
+            close()
+            menu.onUpdate()
+        },
+    )
+    DropdownMenuItem(
+        text = { Text("TMDB key…") },
+        onClick = {
+            close()
+            menu.onTmdbKey()
+        },
+    )
+    DropdownMenuItem(
+        text = { Text("Start over") },
+        onClick = {
+            close()
+            onAskStartOver()
+        },
+    )
 }
 
 /**

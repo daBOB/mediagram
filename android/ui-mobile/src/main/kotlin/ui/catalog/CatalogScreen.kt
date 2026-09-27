@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -33,6 +34,7 @@ import designsystem.Spacing
 import model.Kind
 import model.WatchSnapshot
 import uniffi.mediagram_core.TitleInfo
+import ui.chrome.LocalTopChrome
 
 /**
  * Which of [tabs]'s own, full index space (Home, each shelf, then Continue,
@@ -57,10 +59,11 @@ internal fun visibleTabIndices(tabs: CatalogTabs): List<Int> {
  *
  * [chosenTab]/[onTabChange] name a position over [catalogTabsOf]'s own,
  * full index space — Home, each shelf, then Continue, Watchlist and
- * Collections — even though the masthead itself (see [ShelfTabs]) draws
- * only the departments: Continue and Watchlist moved to the overflow menu's
- * own utilities (`ui.BrowseActions`), and jump here to the same index they
- * always had rather than needing a frame of their own.
+ * Collections — even though the departments bar itself (`ui.chrome.DepartmentsBar`,
+ * built from the same [visibleTabIndices]) draws only the departments:
+ * Continue and Watchlist moved to the rail's own rows (`ui.BrowseActions`),
+ * and jump here to the same index they always had rather than needing a
+ * frame of their own.
  */
 @Composable
 fun CatalogScreen(
@@ -81,6 +84,15 @@ fun CatalogScreen(
     onPlayRun: (setId: String, run: List<String>) -> Unit,
     /** Continue's "Mark finished". */
     onFinish: (setId: String) -> Unit,
+    /**
+     * Home's own grid state, hoisted up to [ui.chrome.LibraryHome] so the
+     * departments bar can read where the page actually is — the same
+     * instance [magazineHomeOf] below is asked to draw into, not a state of
+     * this screen's own that the bar would have no way to reach.
+     */
+    homeGridState: LazyGridState,
+    /** The magazine's own "now" — shared with whoever needs to know ahead of composing this whether Home has a cover to draw, so the two never pick different editorial sets from two different moments. */
+    now: Long,
     /** What the index says about a title — the Featured reel's score and tagline. */
     titleInfo: suspend (String) -> TitleInfo? = { null },
 ) {
@@ -91,17 +103,19 @@ fun CatalogScreen(
         is CatalogUiState.Failed -> CenteredMessage(state.message)
         is CatalogUiState.Ready -> Shelves(
             state, fetching, chosenTab, onTabChange, onOpenTitle, onOpenCollection, onOpenList, onCreateList,
-            onOpenGenre, onOpenGenresIndex, onOpenLatest, onOpenMoviesPage, onOpenFranchise, onPlayRun, onFinish, titleInfo,
+            onOpenGenre, onOpenGenresIndex, onOpenLatest, onOpenMoviesPage, onOpenFranchise, onPlayRun, onFinish,
+            homeGridState, now, titleInfo,
         )
     }
 }
 
 /**
- * One department on screen, chosen from the masthead above it — Home, then
+ * One department on screen, chosen from the bar above it — Home, then
  * Movies, Series and Tutorials as their own department pages (see
  * [MoviesDepartmentScreen], [ShowsDepartmentScreen]), then Collections
  * (see [CollectionsScreen]). Continue and Watchlist still draw with
- * [KeptWall], reached from the overflow menu rather than a visible tab.
+ * [KeptWall], reached from the rail's own rows (`ui.BrowseActions`) rather
+ * than a visible pill.
  */
 @Composable
 private fun Shelves(
@@ -120,6 +134,8 @@ private fun Shelves(
     onOpenFranchise: (Long) -> Unit,
     onPlayRun: (setId: String, run: List<String>) -> Unit,
     onFinish: (setId: String) -> Unit,
+    homeGridState: LazyGridState,
+    now: Long,
     titleInfo: suspend (String) -> TitleInfo?,
 ) {
     val shelfViewModel: ShelfViewModel = hiltViewModel()
@@ -132,38 +148,36 @@ private fun Shelves(
     }
     val fullTabs = remember(shelves) { catalogTabsOf(shelves) }
     val firstKept = fullTabs.firstKept
-    val visible = remember(fullTabs) { visibleTabIndices(fullTabs) }
     val selected = chosenTab.coerceIn(0, fullTabs.titles.lastIndex)
     val columns = posterColumnsFor(currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass)
+    // Only Home ever draws under the bar (and only with a cover) — every
+    // other department, and Home without one, is padded clear of it, the
+    // same seam `ui.chrome.LibraryHome` reads to decide which.
+    val topChrome = LocalTopChrome.current
 
     Column(modifier = Modifier.fillMaxSize()) {
         if (state.refreshing || fetching) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(top = topChrome))
         }
-        ShelfTabs(
-            titles = visible.map(fullTabs.titles::get),
-            selected = visible.indexOf(selected).coerceAtLeast(0),
-            firstKeptIndex = visible.size,
-            onSelect = { position -> onTabChange(visible[position]) },
-        )
         state.notice?.let { notice ->
             Text(
                 text = notice,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small),
+                modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small).padding(top = topChrome),
             )
         }
         when {
             selected == 0 -> HomeScreen(
-                magazine = remember(shelves, state.watch, state.heldIds) {
-                    magazineHomeOf(shelves, state.watch, editorsChoice = state.watch.editorsChoice, now = System.currentTimeMillis(), heldIds = state.heldIds)
+                magazine = remember(shelves, state.watch, state.heldIds, now) {
+                    magazineHomeOf(shelves, state.watch, editorsChoice = state.watch.editorsChoice, now = now, heldIds = state.heldIds)
                 },
                 rows = remember(shelves, state.watch, state.heldIds) {
                     homeRowsOf(shelves, state.watch, state.heldIds).filterNot { it.title in setOf("Continue", "Next up", "Latest films") }
                 },
                 watch = state.watch,
                 columns = columns,
+                gridState = homeGridState,
                 onOpenTitle = onOpenTitle,
                 onOpenCollection = onOpenCollection,
                 onSeeAll = { shelf -> onTabChange(fullTabs.titles.indexOf(shelf).coerceAtLeast(0)) },

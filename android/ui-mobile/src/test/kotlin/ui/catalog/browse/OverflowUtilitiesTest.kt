@@ -23,10 +23,13 @@ import ui.LibraryFlowFixture
 import ui.LibraryFlowTestActivity
 
 /**
- * The masthead's departments-only tab row and the four browsing utilities
- * this phase moved into the overflow menu (`ui.BrowseActions`) — Continue
- * and Watchlist are no longer tabs, and Latest/Genres are reachable from
- * anywhere the same way. See `plans/260926-1330-android-editorial-departments-parity/phase-05-phone-departments-and-browse.md`.
+ * The departments bar's own pill row and the chrome's own reach for what
+ * used to be overflow-only utilities — My List, Continue watching, Latest,
+ * Genres are now icon buttons in the compact header's row 1 (or rows in
+ * [ui.chrome.LibraryRail] on EXPANDED), each with its own name for a content
+ * description rather than a `DropdownMenuItem`'s visible text. The ⋮ this
+ * width still carries holds only the three actions with no icon of their
+ * own — Update library, TMDB key…, Start over.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -57,45 +60,46 @@ class OverflowUtilitiesTest {
         }
     }
 
-    private fun openMenu(label: String) {
-        compose.onNodeWithContentDescription("Menu").performClick()
-        compose.onNodeWithText(label).performClick()
+    private fun tapIcon(description: String) {
+        compose.onNodeWithContentDescription(description).performScrollTo().performClick()
     }
 
-    @Test fun continueAndWatchlistAreNoLongerMastheadTabs() {
+    @Test fun continueAndWatchlistAreNoLongerDepartmentPills() {
         compose.onNodeWithText("Series").assertIsDisplayed()
         compose.onNodeWithText("Collections").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Continue").assertDoesNotExist()
         compose.onNodeWithText("Watchlist").assertDoesNotExist()
     }
 
-    @Test fun theOverflowMenuOffersAllFourNewUtilities() {
+    @Test fun theTrimmedMenuOffersOnlyTheAndroidOnlyActions() {
         compose.onNodeWithContentDescription("Menu").performClick()
-        compose.onNodeWithText("My List").assertIsDisplayed()
-        compose.onNodeWithText("Continue watching").assertIsDisplayed()
-        compose.onNodeWithText("Latest").assertIsDisplayed()
-        compose.onNodeWithText("Genres").assertIsDisplayed()
+        compose.onNodeWithText("Update library").assertIsDisplayed()
+        compose.onNodeWithText("TMDB key…").assertIsDisplayed()
+        compose.onNodeWithText("Start over").assertIsDisplayed()
+        compose.onNodeWithText("My List").assertDoesNotExist()
+        compose.onNodeWithText("Continue watching").assertDoesNotExist()
+        compose.onNodeWithText("Latest").assertDoesNotExist()
+        compose.onNodeWithText("Genres").assertDoesNotExist()
+    }
+
+    @Test fun everyFormerOverflowUtilityIsNowItsOwnIconInTheHeader() {
+        tapIcon("My List")
+        compose.onNodeWithText("Nothing on the list.").assertIsDisplayed()
+        compose.onNodeWithText("Series").performClick()
+        tapIcon("Continue watching")
+        compose.onNodeWithText("Nothing started yet.").assertIsDisplayed()
     }
 
     @Test fun genresOpensTheIndexPageOverAnEmptyLibrary() {
         // The fixture's only titles are episodes with no genres recorded.
-        openMenu("Genres")
+        tapIcon("Genres")
         compose.onNodeWithText("Nothing in the library has a genre recorded.").assertIsDisplayed()
     }
 
     @Test fun latestOpensOverTheShelvesFromAnywhere() {
-        openMenu("Latest")
-        // "Latest" itself names both the bar and the page's own heading;
+        tapIcon("Latest")
+        // "Latest" itself names both the icon and the page's own heading;
         // this one line is unique to the page having actually rendered.
         compose.onNodeWithText("Newest arrivals first").assertIsDisplayed()
-    }
-
-    @Test fun myListAndContinueWatchingLandOnTheirOwnHiddenTab() {
-        openMenu("My List")
-        compose.onNodeWithText("Nothing on the list.").assertIsDisplayed()
-        // Back to the catalog root, then the other utility.
-        compose.onNodeWithText("Series").performClick()
-        openMenu("Continue watching")
-        compose.onNodeWithText("Nothing started yet.").assertIsDisplayed()
     }
 }

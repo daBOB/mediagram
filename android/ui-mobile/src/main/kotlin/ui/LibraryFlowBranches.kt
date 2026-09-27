@@ -1,40 +1,40 @@
 package ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import catalog.BrowseViewModel
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.Destination
-import catalog.MenuScreen
 import catalog.Shelf
-import catalog.firstItemOf
+import catalog.catalogTabsOf
 import catalog.libraryTallyLines
+import catalog.magazineHomeOf
 import catalog.mediaSet
 import catalog.runFor
+import model.WatchSnapshot
 import system.FetchUiState
 import system.FetchViewModel
 import ui.catalog.CatalogScreen
-import ui.catalog.CollectionScreen
 import ui.catalog.GenreBranch
 import ui.catalog.ListScreen
 import ui.catalog.SearchBranch
 import ui.catalog.SeasonScreen
-import ui.catalog.TitleDetailScreen
 import ui.catalog.posterColumnsFor
-import ui.catalog.rememberTitleInfo
+import ui.catalog.visibleTabIndices
+import ui.chrome.LibraryHome
+import ui.chrome.LocalRailData
+import ui.chrome.RailData
+import ui.chrome.chromeCountsOf
 import ui.player.PlayerScreen
-import ui.settings.SettingsScreen
-import ui.settings.SettingsSection
-import ui.settings.TmdbKeyScreen
 
 /**
  * The library's own screens, one for each [FrameKind] — dispatched on
@@ -62,24 +62,59 @@ internal fun LibraryBranches(
     val columns = posterColumnsFor(currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass)
 
     // Which of catalogTabsOf's full index space the shelves screen shows —
-    // lifted up here (rather than kept inside CatalogScreen) so the
-    // overflow menu's own My List/Continue watching utilities can land on
-    // it from anywhere, the same way the web's rail-nav can. See
-    // [BrowseActions].
+    // lifted up here (rather than kept inside CatalogScreen) so the rail's
+    // own My List/Continue watching rows can land on it from anywhere, the
+    // same way the web's rail-nav can. See [BrowseActions].
     var chosenTab by rememberSaveable { mutableIntStateOf(0) }
-    val shelvesCount = (catalogState as? CatalogUiState.Ready)?.shelves?.size ?: 0
+    val shelves = (catalogState as? CatalogUiState.Ready)?.shelves.orEmpty()
+    val watch = (catalogState as? CatalogUiState.Ready)?.watch ?: WatchSnapshot.Empty
+    // firstKept, not a hand-counted offset: a shelf list this build has never
+    // seen (Documentaries, a future department) must not silently point My
+    // List and Continue watching at the wrong tab.
+    val fullTabs = remember(shelves) { catalogTabsOf(shelves) }
+    val visible = remember(fullTabs) { visibleTabIndices(fullTabs) }
     val browse = BrowseActions(
-        onMyList = { at.toCatalog(); chosenTab = shelvesCount + 2 },
-        onContinueWatching = { at.toCatalog(); chosenTab = shelvesCount + 1 },
+        onMyList = { at.toCatalog(); chosenTab = fullTabs.firstKept + 1 },
+        onContinueWatching = { at.toCatalog(); chosenTab = fullTabs.firstKept },
         onLatest = at::openLatest,
         onGenres = at::openGenresIndex,
     )
+    // The rail's own counts and tally, and its wordmark's "go home" — read
+    // fresh from the shelves wherever the rail renders (root or pushed
+    // frame alike) through [LocalRailData], rather than threaded through
+    // every branch below that never otherwise needs them.
+    val railData =
+        remember(shelves, watch) {
+            RailData(chromeCountsOf(shelves, watch), libraryTallyLines(shelves), onHome = { at.toCatalog(); chosenTab = 0 })
+        }
 
+    // Home's own grid state, hoisted here rather than kept inside
+    // CatalogScreen/HomeScreen — LibraryHome's departments bar reads its
+    // scroll position for the over-cover blend, and a state this function
+    // does not itself compose past never gets lost when the width class
+    // switches (see LibraryHome's own note on the single content call site).
+    val homeGridState = rememberLazyGridState()
+    // Shared with the same call CatalogScreen makes so the two can never
+    // pick different editorial sets from two different moments — see
+    // CatalogScreen's own note on `now`.
+    val now = remember { System.currentTimeMillis() }
+    val heldIds = catalogState.heldIdsOrEmpty()
+    val hasCover =
+        remember(shelves, watch, heldIds, now) {
+            magazineHomeOf(shelves, watch, editorsChoice = watch.editorsChoice, now = now, heldIds = heldIds).editorial.cover.isNotEmpty()
+        }
+
+    CompositionLocalProvider(LocalRailData provides railData) {
     when (at.top) {
         // The player gets the whole window; a film is the one thing here
         // that wants the space under the system bars.
-        FrameKind.PLAYER -> {
-            val setId = at.setId ?: return
+        // `?.let` rather than `?: return`: these branches now sit inside
+        // CompositionLocalProvider's own content lambda, which is not
+        // inline — a bare `return` there does not compile. `let` is
+        // inline, so calling it does not need the fix at all; using it
+        // here anyway reads the same as the early return did, and behaves
+        // the same, since nothing follows this `when` either way.
+        FrameKind.PLAYER -> at.setId?.let { setId ->
             val set = catalogState.mediaSet(setId)
             // An explicit run (a list, or the Kids marked-by-hand wall) wins;
             // everything else works its own out from the catalog — a title's
@@ -92,37 +127,11 @@ internal fun LibraryBranches(
             )
         }
 
-        FrameKind.MENU -> {
-            val menuScreen = at.menuScreen ?: return
-            when (menuScreen) {
-                // Settings/System render without LibraryScaffold — the
-                // approved mockups have no bar — and own their own back
-                // rule instead of LibraryBranch's single BackHandler(at::pop).
-                MenuScreen.System ->
-                    SettingsScreen(
-                        initial = SettingsSection.SYSTEM,
-                        leavesFromSection = true,
-                        tally = libraryTallyLines(catalogState.shelvesOrEmpty()),
-                        onLeave = at::pop,
-                    )
-
-                MenuScreen.Settings ->
-                    SettingsScreen(
-                        initial = null,
-                        leavesFromSection = false,
-                        tally = libraryTallyLines(catalogState.shelvesOrEmpty()),
-                        onLeave = at::pop,
-                    )
-
-                MenuScreen.TmdbKey ->
-                    LibraryBranch(menuScreen.destination, menuActions, profileBar, browse, at, at::pop) {
-                        TmdbKeyScreen(hasKey = fetchState.hasKey, onSave = fetchViewModel::saveKey)
-                    }
-            }
+        FrameKind.MENU -> at.menuScreen?.let { menuScreen ->
+            MenuBranch(menuScreen, at, catalogState, fetchState, fetchViewModel, menuActions, profileBar, browse)
         }
 
-        FrameKind.SEARCH -> {
-            val search = at.search ?: return
+        FrameKind.SEARCH -> at.search?.let { search ->
             LibraryBranch(Destination.Search, menuActions, profileBar, browse, at, at::pop) {
                 SearchBranch(
                     query = search,
@@ -139,8 +148,7 @@ internal fun LibraryBranches(
             }
         }
 
-        FrameKind.GENRE -> {
-            val genre = at.genre ?: return
+        FrameKind.GENRE -> at.genre?.let { genre ->
             LibraryBranch(Destination.Genre(genre), menuActions, profileBar, browse, at, at::pop) {
                 GenreBranch(
                     name = genre,
@@ -152,76 +160,13 @@ internal fun LibraryBranches(
             }
         }
 
-        FrameKind.TITLE -> ResolvedBranch(resolved.title, catalogState, Destination.Title(LOADING), menuActions, profileBar, browse, at, { Destination.Title(it.title) }) { title ->
-            val kidsProfile by catalogViewModel.kidsProfile.collectAsStateWithLifecycle()
-            val browseViewModel: BrowseViewModel = hiltViewModel()
-            TitleDetailScreen(
-                set = title,
-                info = rememberTitleInfo(title.posterKey, catalogViewModel::titleInfo),
-                onPlay = { at.openPlayer(title.setId) },
-                onOpenGenre = at::openGenre,
-                editorsChoice = resolved.watch.editorsChoice,
-                onToggleEditorsChoice =
-                    if (kidsProfile) {
-                        null
-                    } else {
-                        {
-                            catalogViewModel.setEditorsChoice(title.setId, resolved.watch.editorsChoice != title.setId)
-                        }
-                    },
-                watch = resolved.watch,
-                shelves = catalogState.shelvesOrEmpty(),
-                onOpenTitle = at::openTitle,
-                onOpenFranchise = { id -> at.openFranchise(id.toString()) },
-                onOpenPerson = { id -> at.openPerson(id.toString()) },
-                onToggleWatchlist = { catalogViewModel.setWatchlisted(title.setId, title.setId !in resolved.watch.watchlist) },
-                titleCredits = catalogViewModel::titleCredits,
-                fetchPortrait = browseViewModel::fetchPortrait,
-                shouldRequestPortrait = browseViewModel::shouldRequestPortrait,
-            )
-        }
+        FrameKind.TITLE -> TitleFrame(at, catalogState, catalogViewModel, resolved, menuActions, profileBar, browse)
 
         FrameKind.SEASON -> ResolvedBranch(resolved.season, catalogState, Destination.Season(LOADING), menuActions, profileBar, browse, at, { Destination.Season(it.title) }) { season ->
             SeasonScreen(division = season, watch = resolved.watch, heldIds = catalogState.heldIdsOrEmpty(), onOpenTitle = at::openTitle)
         }
 
-        FrameKind.COLLECTION -> ResolvedBranch(resolved.collection, catalogState, Destination.Collection(LOADING), menuActions, profileBar, browse, at, { Destination.Collection(it.name) }) { collection ->
-            val kidsProfile by catalogViewModel.kidsProfile.collectAsStateWithLifecycle()
-            val browseViewModel: BrowseViewModel = hiltViewModel()
-            // A show's first episode stands for the whole show, the same way
-            // its own page's pills already key "My List"/editor's choice off
-            // it (see `CollectionScreen`'s own `firstEpisode`); a course has
-            // none of these controls, so a null first episode never matters here.
-            val firstEpisodeId = firstItemOf(collection.divisions)?.setId
-            CollectionScreen(
-                collection = collection,
-                info = rememberTitleInfo(collection.posterKey, catalogViewModel::titleInfo),
-                watch = resolved.watch,
-                heldIds = catalogState.heldIdsOrEmpty(),
-                onOpenTitle = at::openTitle,
-                onOpenSeason = { at.openSeason(it.title) },
-                onOpenGenre = at::openGenre,
-                shelves = catalogState.shelvesOrEmpty(),
-                onOpenCollection = at::openCollection,
-                onOpenPerson = { id -> at.openPerson(id.toString()) },
-                onPlay = at::openPlayer,
-                editorsChoice = resolved.watch.editorsChoice,
-                onToggleEditorsChoice =
-                    if (kidsProfile || firstEpisodeId == null) {
-                        null
-                    } else {
-                        { catalogViewModel.setEditorsChoice(firstEpisodeId, resolved.watch.editorsChoice != firstEpisodeId) }
-                    },
-                onToggleWatchlist = {
-                    firstEpisodeId?.let { catalogViewModel.setWatchlisted(it, it !in resolved.watch.watchlist) }
-                },
-                titleCredits = catalogViewModel::titleCredits,
-                fetchPortrait = browseViewModel::fetchPortrait,
-                shouldRequestPortrait = browseViewModel::shouldRequestPortrait,
-                season = at.collectionSeason,
-                onSelectSeason = at::setCollectionSeason,
-            )
-        }
+        FrameKind.COLLECTION -> CollectionFrame(at, catalogState, catalogViewModel, resolved, menuActions, profileBar, browse)
 
         // A hand-built list, opened from the Collections tab — a peer of
         // the collection branch above rather than something under it: a
@@ -250,17 +195,19 @@ internal fun LibraryBranches(
         FrameKind.LATEST -> LatestFrame(at, catalogState, resolved.watch, columns, menuActions, profileBar, browse)
         FrameKind.MOVIES_PAGE -> MoviesPageFrame(at, catalogState, catalogViewModel, resolved.watch, columns, menuActions, profileBar, browse)
 
-        // Nothing open: the shelves.
-        null -> LibraryScaffold(
-            destination = Destination.Catalog,
-            // Never invoked: LibraryScaffold only wires onBack up when
-            // backLabelFor(Destination.Catalog) says there is a way back,
-            // and there is not — the catalog is the top of the tree.
-            onBack = {},
+        // Nothing open: the shelves, under the rail/departments-bar chrome
+        // rather than LibraryScaffold — see [ui.chrome.LibraryHome].
+        null -> LibraryHome(
+            tabs = fullTabs,
+            visible = visible,
+            chosenTab = chosenTab,
+            onTabChange = { chosenTab = it },
+            browse = browse,
             menu = menuActions,
             profile = profileBar,
-            browse = browse,
             onSearch = at::openSearch,
+            homeScrollState = homeGridState,
+            hasCover = hasCover,
         ) {
             shelvesState.SaveableStateProvider(SHELVES_KEY) { CatalogScreen(
                 state = catalogState,
@@ -278,9 +225,12 @@ internal fun LibraryBranches(
                 onOpenFranchise = { id -> at.openFranchise(id.toString()) },
                 onPlayRun = at::openPlayer,
                 onFinish = { catalogViewModel.markFinished(it) },
+                homeGridState = homeGridState,
+                now = now,
                 titleInfo = catalogViewModel::titleInfo,
             ) }
         }
+    }
     }
 }
 

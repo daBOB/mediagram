@@ -36,13 +36,13 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.mediagram.android.core.designsystem.R
 import designsystem.Eyebrow
 import designsystem.LocalCatalogueTones
 import designsystem.Radius
 import designsystem.Spacing
+import ui.chrome.Wordmark
 
 /**
  * Settings/System's left pane on every width, and the whole screen in one
@@ -87,15 +87,7 @@ internal fun SettingsIndex(
             IconButton(onClick = onBack, modifier = Modifier.semantics { contentDescription = "Back to the library" }) {
                 Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
             }
-            Text(
-                text = "mediagram",
-                style =
-                    MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 27.sp,
-                        letterSpacing = (-0.02).em,
-                    ),
-            )
+            Wordmark()
         }
         Text(
             text = "SETTINGS",

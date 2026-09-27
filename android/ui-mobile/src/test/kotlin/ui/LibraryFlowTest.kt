@@ -110,7 +110,7 @@ class LibraryFlowTest {
         systemBack()
         compose.onNode(hasText("Second episode", substring = true) and hasClickAction()).assertIsDisplayed()
         back()
-        compose.onNodeWithText("Mediagram").assertIsDisplayed()
+        compose.onNodeWithText("mediagram").assertIsDisplayed()
         compose.onNodeWithContentDescription("Back").assertDoesNotExist()
     }
 
@@ -148,7 +148,7 @@ class LibraryFlowTest {
         back()
         compose.onNode(hasText("Second episode", substring = true) and hasClickAction()).assertIsDisplayed()
         back()
-        compose.onNodeWithText("Mediagram").assertIsDisplayed()
+        compose.onNodeWithText("mediagram").assertIsDisplayed()
     }
 
     /**
@@ -164,7 +164,7 @@ class LibraryFlowTest {
         compose.runOnUiThread { fixture.catalogReady.complete(Unit) }
         compose.onNode(hasText("Second episode", substring = true) and hasClickAction()).assertIsDisplayed()
         back()
-        compose.onNodeWithText("Mediagram").assertIsDisplayed()
+        compose.onNodeWithText("mediagram").assertIsDisplayed()
     }
 
     @Test fun updatingFromAnOverlayReturnsToTheCatalogAndClearsTheDeepStack() {
@@ -174,7 +174,7 @@ class LibraryFlowTest {
         menu("TMDB key…")
         val before = fixture.refreshes
         menu("Update library")
-        compose.onNodeWithText("Mediagram").assertIsDisplayed()
+        compose.onNodeWithText("mediagram").assertIsDisplayed()
         compose.onNodeWithContentDescription("Back").assertDoesNotExist()
         assertEquals(before + 1, fixture.refreshes)
         collection()
@@ -191,7 +191,7 @@ class LibraryFlowTest {
         compose.onNodeWithText("Rename").assertIsDisplayed()
         compose.onNode(hasText("First episode", substring = true) and hasClickAction()).assertIsDisplayed()
         back()
-        compose.onNodeWithText("Mediagram").assertIsDisplayed()
+        compose.onNodeWithText("mediagram").assertIsDisplayed()
     }
 
     private fun restoreWhileLoading() {

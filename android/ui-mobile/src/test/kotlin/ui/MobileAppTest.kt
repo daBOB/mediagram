@@ -78,11 +78,11 @@ class MobileAppTest {
     private fun ready() {
         signIn()
         compose.onNodeWithText("Family films").performClick()
-        compose.onNodeWithText("Mediagram").assertDoesNotExist()
+        compose.onNodeWithText("mediagram").assertDoesNotExist()
         assertEquals(listOf("films"), fixture.installs)
         assertEquals(null, runBlocking { fixture.library.read() })
         compose.runOnUiThread { fixture.installReady.complete(Unit) }
-        compose.onNodeWithText("Mediagram").assertIsDisplayed()
+        compose.onNodeWithText("mediagram").assertIsDisplayed()
         compose.onNodeWithText("Which library should this device read?").assertDoesNotExist()
         assertEquals("films", runBlocking { fixture.library.read() })
         assertEquals(SetupUiState.Ready, fixture.setup.state.value)
@@ -108,27 +108,28 @@ class MobileAppTest {
         fixture.core.authorized = false
         compose.runOnUiThread { controller.restart().start().resume() }
         compose.onNodeWithText("Phone number").assertIsDisplayed()
-        compose.onNodeWithText("Mediagram").assertDoesNotExist()
+        compose.onNodeWithText("mediagram").assertDoesNotExist()
         assertEquals(reads + 1, fixture.core.authorizedReads, "entry must not replay the previous login's completion")
         submit("Phone number", "+49987654321")
         compose.onNodeWithText("Login code").assertIsDisplayed()
         assertEquals(listOf("+49123456789", "+49987654321"), fixture.core.requestedPhones)
         submit("Login code", "67890")
-        compose.onNodeWithText("Mediagram").assertIsDisplayed()
+        compose.onNodeWithText("mediagram").assertIsDisplayed()
         assertEquals(listOf("attempt-1" to "12345", "attempt-2" to "67890"), fixture.signInCalls)
     }
 
     @Test fun signingOutInSettingsReturnsToUsableSignInWithoutReplacingTheCore() {
         ready()
-        compose.onNodeWithContentDescription("Menu").performClick()
-        compose.onNodeWithText("Settings").performClick()
+        // Settings is its own icon in the compact header's row now, not a
+        // menu item — the trimmed ⋮ only still holds the Android-only three.
+        compose.onNodeWithContentDescription("Settings").performScrollTo().performClick()
         // Compact width opens on the index; Telegram is the row that carries Sign out.
         compose.onNodeWithText("Telegram").performClick()
         // The page scrolls; Sign out sits below the panels above it on a short window.
         compose.onNodeWithText("Sign out").performScrollTo().performClick()
         compose.onNode(hasText("Sign out") and hasAnyAncestor(isDialog())).performClick()
         compose.onNodeWithText("Phone number").assertIsDisplayed()
-        compose.onNodeWithText("Mediagram").assertDoesNotExist()
+        compose.onNodeWithText("mediagram").assertDoesNotExist()
         assertTrue(fixture.core.signedOut)
         assertEquals(1, fixture.core.signOutCalls)
         assertTrue(fixture.storage.cleared)

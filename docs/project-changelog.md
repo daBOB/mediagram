@@ -5,6 +5,37 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.71.0 — Android library chrome, in the web player's own layout
+
+**Changed**
+
+- The phone/tablet library's Material top app bar and serif tab row are
+  gone. A tablet held wide gets the web's own left rail — wordmark, My List
+  and Continue watching with their counts, Latest, Genres, Settings, System,
+  then the library's own tally — beside a Geist pill bar (Home, Movies,
+  Series, Tutorials, Collections, each with a count) laid over the Home
+  tab's content; the bar starts translucent over the cover and settles
+  toward solid as Home scrolls, and sits flush and solid above every other
+  department. A phone or a narrower tablet gets the web's own ≤900px shape
+  instead: the wordmark and icon-only rail row, a scrolling department pill
+  row, then a search field and the avatar — the whole header hiding on
+  scroll down and returning on scroll up, since a fixed three-row header
+  would eat a phone screen the way the web's own static one never has to.
+- The overflow ⋮ beside the departments bar now holds only the three
+  actions the web has no counterpart for at all — Update library, TMDB
+  key…, Start over — since every other destination it used to carry (My
+  List, Continue watching, Latest, Genres, Settings, System) now has its
+  own control right there in the rail or the header. A pushed page (a
+  title, a genre, Latest opened this way) keeps its own back bar; on a
+  tablet held wide the rail joins beside it and its own ⋮ trims to the
+  same three actions, since the rail beside it now carries the rest — a
+  phone or narrower tablet keeps the full menu there, with no rail to
+  carry them instead. Settings and System still render without either, on
+  every width.
+- The rail's icons are the web's own line-drawn marks, traced into vector
+  drawables at the same 1.4 stroke rather than redrawn from a different
+  icon set.
+
 ## 0.70.2 — the one watch-state fake follows the core's rules
 
 **Internal**

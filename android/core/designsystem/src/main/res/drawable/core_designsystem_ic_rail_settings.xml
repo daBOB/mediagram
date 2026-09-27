@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rail's Settings row — the web's gear mark, `index.html:56`, traced into a vector resource. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M9,12 A3,3 0 1,0 15,12 A3,3 0 1,0 9,12" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M12,3.5 v2.2 M12,18.3 v2.2 M20.5,12 h-2.2 M5.7,12 H3.5 M18,6 l-1.6,1.6 M7.6,16.4 6,18 M18,18 l-1.6,-1.6 M7.6,7.6 6,6" />
+</vector>
