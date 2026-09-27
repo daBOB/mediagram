@@ -1,11 +1,14 @@
 package designsystem
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 
@@ -124,6 +127,21 @@ internal fun catalogueColorScheme(
         )
     }
 
+/**
+ * Every control's corner, at the web's `--radius` (6dp) — inputs, buttons,
+ * panels and dialogs. `extraLarge` (sheets, full-screen dialogs) is left at
+ * M3's own default rather than swept into the same 6dp: nothing on this
+ * catalogue draws one yet, and a size guessed without a screen to check it
+ * against is a follow-up, not a decision.
+ */
+private val CatalogueShapes =
+    Shapes(
+        extraSmall = RoundedCornerShape(Radius.control),
+        small = RoundedCornerShape(Radius.control),
+        medium = RoundedCornerShape(Radius.control),
+        large = RoundedCornerShape(Radius.control),
+    )
+
 @Composable
 fun MediagramTheme(
     appearance: Appearance = Appearance(),
@@ -140,9 +158,12 @@ fun MediagramTheme(
     // reader below and across the television surface sees this composition's
     // resolved accent, not a value they each had to be handed separately.
     SideEffect { Palette.Imprint = accentColor }
-    MaterialTheme(
-        colorScheme = catalogueColorScheme(dark, accentColor),
-        typography = CatalogueTypography,
-        content = content,
-    )
+    CompositionLocalProvider(LocalCatalogueTones provides if (dark) DarkTones else LightTones) {
+        MaterialTheme(
+            colorScheme = catalogueColorScheme(dark, accentColor),
+            typography = CatalogueTypography,
+            shapes = CatalogueShapes,
+            content = content,
+        )
+    }
 }

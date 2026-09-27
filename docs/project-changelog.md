@@ -5,6 +5,27 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.69.0 — the Android app takes the web player's colours and type
+
+**Changed**
+
+- Every screen's dark palette is now the web player's own dark theme
+  (`styles/theme.css`'s `:root`), not a warmer near-black tuned separately
+  for the phone: pages read darker and cooler than before, most visibly on
+  the catalog wall's ground and app bar. Two web tones without an Android
+  equivalent, sidebar and rule-soft, are now carried too, for a settings rail
+  still to come.
+- Counts, labels, captions and other interface text — everywhere that isn't a
+  title or a whole sentence — is now set in Geist, the web's own interface
+  face, in place of Newsreader. Sentence-length text (loading, empty and
+  failure messages) stays in Newsreader.
+- A control — a button, an input, a dialog — now takes a 6dp corner, the
+  web's own radius, through Material's `Shapes`. A plate is deliberately not
+  a control and keeps its square corner.
+- Not changed yet: the Settings and System screens' own layout, the ported
+  Artwork setting, and plate corners, which stay square while the rest of
+  the system moves to a soft 6dp — each is separate, later work.
+
 ## 0.68.15 — the web player loads into the page it is loading
 
 **Fixed**

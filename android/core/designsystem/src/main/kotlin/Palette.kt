@@ -8,15 +8,15 @@ import androidx.compose.ui.graphics.Color
 /**
  * The catalogue's ink, for a surface that is read in the dark.
  *
- * The web player sets the same catalogue on uncoated paper and keeps only
- * its player black, because a poster reads best against a page and a
- * picture reads best against nothing. A phone or a tablet is held in the
- * room the film is about to play in, and a paper-white slab there is a
- * lamp. So the stock is inverted rather than reproduced: the same hues,
- * the same restraint, the page in ink.
+ * These are the web player's own dark-theme values, `styles/theme.css`
+ * `:root`, verbatim — not approximated, not re-lit for Android. Before this
+ * palette a phone or tablet ran a warmer near-black of its own, reasoned as
+ * paper inverted rather than reproduced; that reasoning is gone, and so is
+ * the divergence it caused. A viewer moving between the web player and this
+ * app now meets one ground, not two.
  *
- * Every value that carries text was measured against both grounds.
- * [Figures], [Ochre] and [Sage] clear 4.5:1 on each.
+ * Every value that carries text was measured against Ground, Page, Sunk and
+ * [Sidebar] — the Measured Colour Rule, held by `PaletteContrastTest`.
  *
  * Public so every surface reads it, not just the phone's M3 theme. A
  * television theme can't build a `ColorScheme` from this at all — it never
@@ -25,26 +25,40 @@ import androidx.compose.ui.graphics.Color
  * second file is a hex that can drift from this one unnoticed.
  */
 object Palette {
-    /** The deepest ground: what the window is cleared to. */
-    val Ground = Color(0xFF16130F)
+    /** The deepest ground: what the window is cleared to. The web's `--paper`. */
+    val Ground = Color(0xFF0D0D0E)
 
-    /** The page the plates sit on, one step up from the ground. */
-    val Page = Color(0xFF1E1B16)
+    /** The page the plates sit on, one step up from the ground. The web's `--surface`. */
+    val Page = Color(0xFF151517)
 
-    /** Where artwork is missing and the page itself shows through. */
-    val Sunk = Color(0xFF272319)
+    /** Where artwork is missing and the page itself shows through. The web's `--paper-sunk`. */
+    val Sunk = Color(0xFF1B1B1D)
 
-    /** Paper, at the weight a dark page carries without glare. */
-    val Text = Color(0xFFE8E2D4)
+    /** Paper, at the weight a dark page carries without glare. The web's `--ink`. */
+    val Text = Color(0xFFF3EFE7)
 
-    /** Runtimes, sizes and counts: present, and quieter than a title. */
-    val Figures = Color(0xFFA89B84)
+    /** Runtimes, sizes and counts: present, and quieter than a title. The web's `--ink-2`. */
+    val Figures = Color(0xFFCBC5BA)
 
-    /** A hairline. Structure, never a boundary anyone has to look at. */
-    val Rule = Color(0xFF3A342A)
+    /** A hairline. Structure, never a boundary anyone has to look at. The web's `--rule` (18% ink over the ground). */
+    val Rule = Color(0x2EF3EFE7)
 
-    /** Visible enough to read as an edge where one is doing work. */
-    val RuleStrong = Color(0xFF574E3E)
+    /** Visible enough to read as an edge where one is doing work. The web's `--ink-3`. */
+    val RuleStrong = Color(0xFF9C968B)
+
+    /**
+     * The rail's own ground, one step darker than [Ground] rather than a
+     * step up from it — the web's `--sidebar`. A settings index sits on
+     * this rather than on the page, the one surface this palette makes
+     * darker than the window it opens in.
+     */
+    val Sidebar = Color(0xFF09090A)
+
+    /**
+     * A quieter hairline than [Rule], for structure that separates without
+     * asking to be seen — the web's `--rule-soft` (8% ink over the ground).
+     */
+    val RuleSoft = Color(0x14F3EFE7)
 
     /**
      * One accent, for the thing this viewer is in the middle of — a
@@ -66,11 +80,11 @@ object Palette {
      */
     var Imprint: Color by mutableStateOf(Color(0xFFE57A61))
 
-    /** The one thing the catalogue ever warns about. */
-    val Ochre = Color(0xFFC99A3F)
+    /** The one thing the catalogue ever warns about. The web's `--warn`. */
+    val Ochre = Color(0xFFE6C47F)
 
-    /** The only good news it has: something already held on the device. */
-    val Sage = Color(0xFF8AA17A)
+    /** The only good news it has: something already held on the device. The web's `--held`. */
+    val Sage = Color(0xFFA3D3A4)
 
     /**
      * The light "paper" variant, chosen in Settings › Appearance as Light,
@@ -104,4 +118,10 @@ object Palette {
 
     /** Something already held on the device, on paper — the web's light `--held`. */
     val LightSage = Color(0xFF2F6A35)
+
+    /** [Sidebar], on paper — the web's light `--sidebar`, one step *lighter* than [LightGround] rather than darker. */
+    val LightSidebar = Color(0xFFEBE5D9)
+
+    /** [RuleSoft], on paper — the web's light `--rule-soft` (9% ink over the paper). */
+    val LightRuleSoft = Color(0x171B1916)
 }

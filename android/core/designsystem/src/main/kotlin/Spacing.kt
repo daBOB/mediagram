@@ -13,6 +13,16 @@ object Spacing {
 }
 
 /**
+ * The corner radius a control is drawn at — the web's `--radius`
+ * (`theme.css:111`). Applies to inputs, buttons, panels and dialogs; a
+ * plate stays square (see `DESIGN.md`'s Shapes section), so this is not
+ * every corner on the catalogue, only the ones a settings screen draws.
+ */
+object Radius {
+    val control: Dp = 6.dp
+}
+
+/**
  * The margin a television screen is padded by instead of by window insets.
  * A phone or tablet is held close enough that its own bezel is the frame;
  * a TV set is not — it crops or scales the edges of whatever it's sent, by

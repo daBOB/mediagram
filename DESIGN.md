@@ -1,17 +1,19 @@
 ---
 name: Mediagram (Android)
-description: A printed catalogue of things already owned, set in ink for a room with the lights off.
+description: A printed catalogue of things already owned, set in the web player's own dark theme.
 colors:
-  ground: "#16130F"
-  page: "#1E1B16"
-  sunk: "#272319"
-  text: "#E8E2D4"
-  figures: "#A89B84"
-  rule: "#3A342A"
-  rule-strong: "#574E3E"
-  imprint: "#D26A55"
-  ochre: "#C99A3F"
-  sage: "#8AA17A"
+  ground: "#0D0D0E"
+  page: "#151517"
+  sunk: "#1B1B1D"
+  sidebar: "#09090A"
+  text: "#F3EFE7"
+  figures: "#CBC5BA"
+  rule: "rgba(243, 239, 231, 0.18)"
+  rule-soft: "rgba(243, 239, 231, 0.08)"
+  rule-strong: "#9C968B"
+  imprint: "#E57A61"
+  ochre: "#E6C47F"
+  sage: "#A3D3A4"
 typography:
   display:
     fontFamily: "Fraunces"
@@ -35,30 +37,51 @@ typography:
     fontSize: "16sp"
     fontWeight: 500
     fontVariation: "opsz 28"
+  page-title:
+    fontFamily: "Fraunces"
+    fontWeight: 500
+    letterSpacing: "-0.03em"
+    lineHeight: "0.86em"
+    fontVariation: "opsz 112 (opsz 72 compact/TV)"
   body:
     fontFamily: "Newsreader"
     fontSize: "17sp"
     fontWeight: 400
     fontVariation: "opsz 16"
   body-small:
-    fontFamily: "Newsreader"
+    fontFamily: "Geist"
     fontSize: "13sp"
     fontWeight: 400
-    fontVariation: "opsz 16"
+  eyebrow:
+    fontFamily: "Geist"
+    fontSize: "11sp"
+    fontWeight: 500
+    letterSpacing: "0.32em"
+    lineHeight: "1.4em"
+  section-head:
+    fontFamily: "Geist"
+    fontSize: "16sp"
+    fontWeight: 600
   figures:
-    fontFamily: "Newsreader"
+    fontFamily: "Geist"
     fontSize: "13sp"
     fontWeight: 400
     fontFeature: "tnum"
-    fontVariation: "opsz 16"
   label:
-    fontFamily: "Newsreader"
+    fontFamily: "Geist"
     fontSize: "11sp"
     fontWeight: 400
     fontFeature: "tnum"
-    fontVariation: "opsz 16"
+  ledger-label:
+    fontFamily: "Geist"
+    fontSize: "14sp"
+  ledger-value:
+    fontFamily: "Geist"
+    fontSize: "15sp"
+    fontFeature: "tnum"
 rounded:
-  none: "0dp"
+  control: "6dp"
+  plate: "0dp"
 spacing:
   extraSmall: "4dp"
   small: "8dp"
@@ -68,7 +91,7 @@ spacing:
 components:
   plate:
     backgroundColor: "{colors.sunk}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.plate}"
     padding: "0dp"
   plate-name:
     textColor: "{colors.text}"
@@ -103,21 +126,67 @@ components:
     textColor: "{colors.ochre}"
     typography: "{typography.body-small}"
     padding: "8dp 16dp"
+  settings-index-row:
+    textColor: "{colors.figures}"
+    selectedTextColor: "{colors.text}"
+    typography: "{typography.title-small}"
+    subLabelColor: "{colors.rule-strong}"
+    rounded: "{rounded.control}"
+    minHeight: "64dp"
+    padding: "12dp 14dp"
+  page-head:
+    eyebrowColor: "{colors.rule-strong}"
+    eyebrowTypography: "{typography.eyebrow}"
+    titleColor: "{colors.text}"
+    titleTypography: "{typography.page-title}"
+  ledger-row:
+    labelColor: "{colors.rule-strong}"
+    labelTypography: "{typography.ledger-label}"
+    valueColor: "{colors.figures}"
+    valueTypography: "{typography.ledger-value}"
+    dividerColor: "{colors.rule-soft}"
+    minHeight: "48dp"
+  pill-line:
+    borderColor: "{colors.imprint}"
+    textColor: "{colors.imprint}"
+    rounded: "{rounded.control}"
+    minHeight: "48dp"
+    padding: "0dp 20dp"
+  pill-quiet:
+    borderColor: "{colors.rule}"
+    textColor: "{colors.figures}"
+    rounded: "{rounded.control}"
+    minHeight: "48dp"
+    padding: "0dp 20dp"
+  chip:
+    borderColor: "{colors.imprint}"
+    textColor: "{colors.imprint}"
+    rounded: "{rounded.control}"
+    minHeight: "36dp"
+    padding: "0dp 14dp"
+  swatch-card:
+    rounded: "12dp"
+    borderColor: "{colors.rule}"
+    selectedRingColor: "{colors.imprint}"
 ---
 
 # Design System: Mediagram (Android)
 
 ## Overview
 
-**Creative North Star: "The Catalogue Printed in Ink"**
+**Creative North Star: "The Catalogue, One Ground"**
 
-The web player sets this library on uncoated paper. The Android app sets the
-same catalogue in ink: the same hues, the same restraint, the page inverted.
-A phone or a tablet is held in the room the film is about to play in, and a
-paper-white slab there is a lamp — so the stock is inverted rather than
-reproduced. Everything else about the identity carries over unchanged: two
-serifs, hairline rules instead of cards, artwork set as plates with the name
-beneath, one imprint red for the one thing worth marking.
+The web player sets this library on a screening-room dark ground, with a warm
+paper variant a viewer can choose in Settings › Appearance. The Android app
+now sets the same catalogue in the same ground — the palette below is
+`styles/theme.css`'s `:root` block, verbatim, not re-lit or reasoned about
+for a phone. A phone or a tablet is held in the room the film is about to
+play in, and this catalogue no longer treats that as a reason to invert the
+web player's own choice of ground: the two surfaces read as one product
+because they are lit by one palette. Everything else about the identity
+carries over unchanged: two serifs plus one sans for the interface, hairline
+rules instead of cards, artwork set as plates with the name beneath, one
+accent for the thing a viewer is in the middle of.
 
 Density is a wall, not a rail. A shelf puts everything it holds on the page in
 one direction of travel, because this library is finite and already owned and
@@ -126,50 +195,76 @@ is the thesis, not a stylistic preference: a rail hides how much is on a shelf
 and promotes whatever it happens to show first.
 
 This is one screen's worth of system, recorded from the shipped catalogue
-screen. It is Material 3 underneath — Material's components, touch targets,
-back behaviour and system bars are kept — with Material's own colour and type
-defaults entirely replaced. Before this build the app called `darkColorScheme()`
-with no arguments and rendered Material's baseline violet in Roboto; that is
-what this system exists to have ended.
+screen, plus the tokens a Settings/System rebuild draws from. It is Material 3
+underneath — Material's components, touch targets, back behaviour and system
+bars are kept — with Material's own colour, type and shape defaults entirely
+replaced.
 
 **Key Characteristics:**
 
-- Ink ground, paper text, no white anywhere.
-- Flat by tonal layering. Three grounds, no shadows, no elevation.
-- Plates, not cards: square corners, a hairline, the name underneath.
-- Two variable serifs, both driven on the optical-size axis.
-- One accent, on the shelf you are on and nothing else.
+- Ink ground, paper text, no white anywhere — the web's own dark theme.
+- Flat by tonal layering. Three grounds plus a rail ground, no shadows, no
+  elevation.
+- Plates, not cards: square corners, a hairline, the name underneath — the
+  one shape this system keeps flat while everything a viewer operates gets
+  a soft 6dp corner.
+- Two variable serifs for names and sentences, one variable sans for
+  everything that reads as interface rather than as prose.
+- One accent, spent on the thing a viewer is in the middle of, on a focus
+  ring, or on an outline control — never a solid fill behind a whole surface.
 - Figures in tabular numerals, always.
 
 ## Colors
 
-Ink and paper with three warm signals, all of them carried over from the web
-player's uncoated-stock palette and re-lit for a dark ground.
+Ink and paper with three warm signals, all of them the web player's own dark
+theme — Android reads the same nine roles the web names, under the names the
+existing catalogue already used.
+
+### Role mapping
+
+| Android | Web | Role |
+|---|---|---|
+| Ground | `--paper` | the window, cleared before a frame draws |
+| Page | `--surface` | a plain screen |
+| Sunk | `--paper-sunk` | missing artwork, inset areas |
+| Sidebar | `--sidebar` | a settings index's own ground |
+| Text | `--ink` | titles, wordmark, selected shelf |
+| Figures | `--ink-2` | years, runtimes, counts, unselected shelf names |
+| Rule | `--rule` | a hairline that has to be seen |
+| Rule Soft | `--rule-soft` | a hairline that only has to separate |
+| Rule Strong (quiet) | `--ink-3` | tertiary text: eyebrows, sub-labels, ledger labels |
+| Imprint | `--accent` (Coral) | the one accent |
+| Ochre | `--warn` | the only warning |
+| Sage | `--held` | the only good news |
 
 ### Primary
 
-- **Imprint Red** (`{colors.imprint}`): the one accent. It marks the shelf
-  currently in view — drawn as the rule under the selected masthead label — and
-  is reserved for the thing a viewer is in the middle of. It appears nowhere
-  else on a surface. This is the web player's `#8c3b2e` lifted until it cleared
-  4.5:1 on the page (measured 4.85:1), because it lands on small text saying
-  where a viewer got to, not on decoration.
+- **Imprint** (`{colors.imprint}`): the one accent. It marks the shelf
+  currently in view — drawn as the rule under the selected masthead label —
+  and, on a settings screen, a focus ring, a selected row's ring, and an
+  outline pill's border and text. It is never a filled background behind a
+  whole control or surface: that is what the *rest* of the One Accent Rule
+  (below) still holds the line on, even as where the accent is allowed to
+  appear has grown past a single rule under a label. This is the web
+  player's own `#e57a61` — Coral, its default — now used verbatim rather
+  than lifted for a different ground, because the ground it has to clear
+  4.5:1 on is now the web's own.
 
 ### Secondary
 
-- **Figures Grey** (`{colors.figures}`): everything a title is *about* — years,
+- **Figures** (`{colors.figures}`): everything a title is *about* — years,
   runtimes, episode and chapter counts, the unselected shelf names, standing-in
-  initials. Present, and quieter than a title (6.28:1 on the page).
+  initials, and a ledger row's value. Present, and quieter than a title.
 
 ### Tertiary
 
 - **Ochre** (`{colors.ochre}`): the only thing the catalogue ever warns about. A
   refresh that failed is a warning, not an alarm — the library on screen is
   still every bit of the one that was there before — so ochre, not a signal red,
-  is bound to Material's `error` role (6.68:1).
+  is bound to Material's `error` role.
 - **Sage** (`{colors.sage}`): the only good news the catalogue has, something
-  already held on the device. Bound to `tertiary` (6.10:1). Defined and reserved;
-  the catalogue screen does not yet have a surface that shows it.
+  already held on the device. Bound to `tertiary`. Marks a ledger row's held
+  dot on a Storage screen.
 
 ### Neutral
 
@@ -178,42 +273,67 @@ player's uncoated-stock palette and re-lit for a dark ground.
 - **Page** (`{colors.page}`): one step up from the ground — the sheet the plates
   are tipped onto. The wall and the masthead are on the page.
 - **Sunk** (`{colors.sunk}`): where artwork is missing and the page itself shows
-  through. The plate's own ground behind a poster, and behind initials.
+  through. The plate's own ground behind a poster, behind initials, and a
+  toggle's track at rest.
+- **Sidebar** (`{colors.sidebar}`): a settings index's own ground — the one
+  surface this palette makes *darker* than the window it opens in, not
+  lighter. A viewer reads it as a rail, the same way the web's own sidebar
+  reads, not as another step of the ground/page/sunk stack.
 - **Text** (`{colors.text}`): paper, at the weight a dark page carries without
-  glare (13.29:1 on the page). Titles, wordmark, selected shelf.
+  glare. Titles, wordmark, selected shelf, a page's own huge title.
 - **Rule** (`{colors.rule}`): a hairline. Structure, never a boundary anyone has
-  to look at. Every plate's edge.
-- **Rule Strong** (`{colors.rule-strong}`): visible enough to read as an edge
-  where one is doing work; Material's `outline`.
+  to look at. Every plate's edge, a pill's own quiet border.
+- **Rule Soft** (`{colors.rule-soft}`): quieter still — the divider under a
+  ledger row, the line between a settings index and the page beside it.
+- **Rule Strong / quiet** (`{colors.rule-strong}`): visible enough to read as
+  an edge where one is doing work; Material's `outline`. Doubles as *quiet*
+  text — a page's eyebrow, a ledger row's label, a settings row's sub-label —
+  through `CatalogueTones.quiet`, the same value under a name a settings
+  screen reaches for without knowing it is reading an outline role.
 
 ### Named Rules
 
-**The One Accent Rule.** Imprint red says one thing: *this is the shelf you are
-on / this is the thing you are in the middle of*. It is never a button fill,
-never a heading colour, never a link. Its rarity is the whole of its meaning.
+**The One Accent Rule, widened.** Imprint red still says one thing: *this is
+the shelf you are on / this is the thing you are in the middle of / this is
+what you would undo by tapping it*. What changed is where it is allowed to
+say that: the catalogue screen still spends it on nothing but the selected
+shelf's rule, but a settings screen may also spend it on a focus ring, a
+selected row's background tint, and an outline pill's or a toggle's border —
+the same set of places the web spends its own accent (`web/DESIGN.md`'s Do's
+and Don'ts: *"use the active accent for focus outlines, active states, and
+interactive hints"*). It is still never a heading colour, never a link, and
+never a solid fill spanning a whole surface — an outline pill's *border* is
+accent; its background is not.
 
-**The Inverted Stock Rule.** The palette is the web player's, one relation
-inverted: ink where paper was. Ground is darker than page; page is darker than
-nothing else. Any surface lighter than the page it sits over breaks the one
-relation the palette names — which is why the top app bar is on ground, not on
-a lifted container.
+**One Palette, One Ground.** Android's palette is the web player's dark
+theme, not a re-lit variant of it. Ground is darker than page; page is
+darker than sunk; the sidebar is darker again than all three. Any surface
+lighter than the page it sits over breaks the relation the palette names —
+which is why the top app bar is on ground, not on a lifted container, and why
+a settings index sits on its own darker sidebar rather than on the page.
 
 **The Measured Colour Rule.** A colour that carries text is measured against
-both grounds before it ships. Every text-carrying value in this palette clears
-4.5:1 on ground and on page, and the doc comment beside it records the number.
+every ground a viewer can land it on before it ships. Every text-carrying
+value in this palette clears 4.5:1 on Ground, Page, Sunk and Sidebar, held by
+`PaletteContrastTest`.
 
 ## Typography
 
-**Display Font:** Fraunces (variable, `wght` 500–600, `opsz` 28)
+**Display Font:** Fraunces (variable, `wght` 500–600, `opsz` 28–112)
 **Body Font:** Newsreader (variable, `wght` 400–600, `opsz` 16)
+**Interface Font:** Geist (variable, `wght` 400–600)
 
-Both faces are the exact files the web player loads, decompressed from the same
+All three are the exact files the web player loads, decompressed from the same
 woff2 sources; OFL licences ship in `android/core/designsystem/licenses/`.
 
-**Character:** A press catalogue's pairing. Fraunces names things — it has the
-weight and the slight eccentricity of a title set on a cover. Newsreader says
-things — it is a reading face, and every sentence, year, runtime and count is
-set in it. Neither is ever asked to do the other's job.
+**Character:** A press catalogue's pairing, now with the web's own third
+voice added for chrome. Fraunces names things — it has the weight and the
+slight eccentricity of a title set on a cover, at arm's length or, on a page
+head, at the scale of a magazine's own department opener. Newsreader says a
+whole sentence — loading, empty and failure states, nothing else. Geist is
+everything that reads as interface rather than as prose: counts, labels,
+eyebrows, settings rows, ledger lines. None of the three is ever asked to do
+either of the others' jobs.
 
 ### Hierarchy
 
@@ -223,34 +343,44 @@ set in it. Neither is ever asked to do the other's job.
 - **Title** (Fraunces Medium, 18sp): shelf names in the masthead; standing-in
   initials on a plate with no artwork.
 - **Title Small** (Fraunces Medium, 16sp): the name under a plate, to two lines
-  then ellipsis.
+  then ellipsis; a settings index row's own label.
+- **Page Title** (Fraunces Medium, uppercase, −0.03em, 0.86 line height,
+  stepped down from 112sp on a phone/tablet or 72sp compact/TV): the huge
+  title atop a page — `PageHead`'s own title slot.
 - **Body** (Newsreader, 17sp): whole sentences — loading, empty, and failure
-  messages.
-- **Body Small** (Newsreader, 13sp): the notice above a shelf.
-- **Figures** (Newsreader, 13sp, `tnum`): the line under a plate's name — year
+  messages. The one role kept in the reading face rather than moved to Geist.
+- **Body Small** (Geist, 13sp): the notice above a shelf.
+- **Eyebrow** (Geist Medium, 11sp, 0.32em tracking, uppercase): the spaced
+  caps over a page title — `PageHead`'s own eyebrow slot.
+- **Section Head** (Geist SemiBold, 16sp): a settings section's own heading.
+- **Figures** (Geist, 13sp, `tnum`): the line under a plate's name — year
   and runtime, or the count of episodes and chapters.
-- **Label** (Newsreader, 11sp, `tnum`): the smallest figures.
+- **Label** (Geist, 11sp, `tnum`): the smallest figures.
+- **Ledger Label** (Geist, 14sp, quiet): what a ledger row's value is *of*.
+- **Ledger Value** (Geist, 15sp, `tnum`): a ledger row's own value, right-aligned.
 
 ### Named Rules
 
 **The Optical Size Rule.** Android does nothing automatic with `opsz` — there is
-no `font-optical-sizing` here. Every face is declared with its axis fixed at the
-distance it is read from: 28 for a name held at arm's length, 16 for a sentence
-or a figure. A new face declaration that omits the axis gives up the reason
-these two files are worth their bytes.
+no `font-optical-sizing` here. Every Fraunces and Newsreader declaration fixes
+the axis at the distance it is read from: 112 for a page title, 28 for a name
+held at arm's length, 16 for a sentence or a figure. Geist carries no optical
+axis at all — it has none to fix. A new face declaration that omits the axis
+it does have gives up the reason these files are worth their bytes.
 
 **The Tabular Figures Rule.** Anything countable — runtimes, years, counts,
-sizes — is set in tabular numerals, so a column of them lines up down a page
-instead of shifting with each digit's width.
+sizes, a ledger's own values — is set in tabular numerals, so a column of them
+lines up down a page instead of shifting with each digit's width.
 
 **The Fraunces Floor.** Fraunces is never asked for a weight below 500. On an
 ink ground its 400 goes thin enough to shimmer, and the catalogue sets its names
 in medium on paper anyway.
 
-**The Whole-Sentence Rule.** A first run, an empty library and a failed load are
-the three moments a viewer reads a whole sentence. They are set in the
-catalogue's reading face, not left at a platform default, because they are
-exactly the moments the app would otherwise stop sounding like itself.
+**The Whole-Sentence Rule.** A first run, an empty library, a failed load and
+a page's own eyebrow-and-title pair are the moments a viewer reads a line
+meant to be read rather than scanned. The first three are set in Newsreader;
+the eyebrow is deliberately not — it is a label, not a sentence, and Geist is
+what a label is set in here.
 
 ## Layout
 
@@ -295,20 +425,17 @@ screens below the fold with nothing on screen to say they existed.
 ## Elevation & Depth
 
 **There are no shadows and no elevation in this system.** Depth is entirely
-tonal: three grounds — ground, page, sunk — and a hairline. Nothing is lifted,
-nothing floats, and no Material elevation overlay is used.
-
-This is a deliberate translation, not an omission. On paper the web player gives
-each plate a short drop shadow so it reads as tipped onto the page. Against ink
-that shadow is invisible, so the hairline is what does that work here.
+tonal: four grounds — ground, page, sunk, sidebar — and a hairline in one of
+two weights. Nothing is lifted, nothing floats, and no Material elevation
+overlay is used.
 
 ### Named Rules
 
-**The Hairline Rule.** Structure is drawn with a 0.5dp hairline in rule
-(`{colors.rule}`), never with a shadow, a fill or a raised container. On a plate
-the hairline is painted as an overlay on top of the artwork, not as a border on
-the same box — a border modifier paints beneath the content, and a poster
-cropped to fill would cover it.
+**The Hairline Rule.** Structure is drawn with a hairline in rule or rule-soft
+(`{colors.rule}` / `{colors.rule-soft}`), never with a shadow, a fill or a
+raised container. On a plate the hairline is painted as an overlay on top of
+the artwork, not as a border on the same box — a border modifier paints
+beneath the content, and a poster cropped to fill would cover it.
 
 **The No Floating Container Rule.** The masthead's container is transparent so it
 reads as type on the page. Given a colour of its own it becomes a filled band
@@ -317,14 +444,20 @@ do.
 
 ## Shapes
 
-Square. The corner radius of this system is 0dp and there is one shape token to
-say so. A plate is a rectangle of artwork with a hairline around it; the
-catalogue has no pills, no rounded cards, no chips, and no clipped silhouettes.
-Material components that ship with a default radius are either given the
-catalogue's own flat treatment or not used.
+Two shapes, not one. A control — an input, a button, a pill, a settings row,
+a dialog — takes `{rounded.control}` (6dp), the web's own `--radius`, through
+M3's `Shapes(extraSmall..large = RoundedCornerShape(6.dp))`. A plate stays
+square at `{rounded.plate}` (0dp): a plate is a rectangle of artwork with a
+hairline around it, not a control, and the catalogue still has no rounded
+poster, no clipped silhouette on artwork. `extraLarge` (sheets, full-screen
+dialogs) is left at M3's own default — nothing on this catalogue draws one
+yet.
 
-The one recurring silhouette is the 2:3 plate, at every size, on every surface
-that shows artwork.
+The 2:3 plate remains the one recurring square silhouette, on every surface
+that shows artwork. A swatch card (Appearance's theme/artwork picker) is the
+one deliberate exception to 6dp on the *other* side: it takes a 12dp corner,
+the web's own `.swatch` radius, because it is a picture of a theme rather
+than a control that acts on one.
 
 ## Components
 
@@ -332,9 +465,9 @@ that shows artwork.
 
 The catalogue's one real component: artwork at 2:3, a hairline around it, the
 name beneath in Fraunces Medium 16sp to two lines, and a figures line 2dp under
-that in Newsreader 13sp tabular.
+that in Geist 13sp tabular.
 
-- **Corner style:** square (0dp).
+- **Corner style:** square (`{rounded.plate}`).
 - **Background:** sunk (`{colors.sunk}`) behind the artwork, so a poster still
   loading or absent shows the page's own stock rather than a hole.
 - **Border:** 0.5dp hairline in rule (`{colors.rule}`), overlaid on the artwork.
@@ -360,7 +493,7 @@ that in Newsreader 13sp tabular.
 - **Unselected:** figures grey (`{colors.figures}`).
 - **Target:** each label carries 4dp of vertical padding so a short word like
   "Series" still clears Material's 48dp.
-- **No icons.** There are no icons in this world, and a drawn one would be
+- **No icons.** There are no icons in the masthead, and a drawn one would be
   inventing a mark for a shelf that already has a name.
 
 ### Top app bar
@@ -372,9 +505,74 @@ that in Newsreader 13sp tabular.
 - **Icons:** the platform's own vector back and overflow marks, in figures grey,
   each carrying a content description.
 
+### Page head
+
+The huge uppercase page title over a small tracked-caps eyebrow — the web's
+`.dept-title`/`.eyebrow` pair, and this catalogue's opener for a screen that
+is not the wall: Settings, System, and anywhere else a screen wants to open
+the way a magazine department does.
+
+- **Eyebrow:** Geist Medium 11sp, 0.32em tracking, uppercase, in quiet
+  (`{colors.rule-strong}`).
+- **Title:** Fraunces Medium, uppercase, −0.03em tracking, 0.86 line height,
+  in text (`{colors.text}`), stepped down from 112sp (72sp compact/TV) to fit
+  one line rather than wrapping or clipping.
+- **Semantics:** eyebrow and title merge into one heading node, the same way
+  a plate merges artwork and caption.
+
+### Settings index row
+
+A left-pane row in a Settings/System index: an icon, a label in Fraunces
+Medium 16sp, and a one-line status underneath in quiet Geist 12sp.
+
+- **Corner style:** `{rounded.control}` (6dp).
+- **Rest:** figures (`{colors.figures}`) label, quiet sub-label.
+- **Selected:** text (`{colors.text}`) label, a tinted background reading as
+  the row a viewer is on — the one place besides the masthead's rule this
+  catalogue tints a whole row rather than drawing an accent border.
+- **Target:** 64dp minimum height, 12dp/14dp padding, the whole row.
+
+### Ledger
+
+A settings/system screen's own table: a quiet label left, a value right,
+tabular, divided by a soft rule.
+
+- **Row:** 48dp minimum height, `{colors.rule-soft}` divider beneath.
+- **Label:** Geist 14sp in quiet (`{colors.rule-strong}`).
+- **Value:** Geist 15sp tabular in figures (`{colors.figures}`); a held row's
+  own leading dot is sage (`{colors.sage}`).
+
+### Pill (line / quiet)
+
+A 6dp-radius outline control, 48dp minimum height, for an action a settings
+screen offers.
+
+- **Line:** border and text in imprint (`{colors.imprint}`) — an affirmative
+  action (add an account, start a scan).
+- **Quiet:** border in rule (`{colors.rule}`), text in figures
+  (`{colors.figures}`) — an action that undoes something (sign out, clear a
+  cache).
+- **Chip:** the same line pill at a 36dp compact height, for a smaller choice
+  inline with text rather than in its own row.
+
+### Toggle
+
+A settings switch, drawn rather than left at Material's default: track in
+sunk (`{colors.sunk}`) with a quiet (`{colors.rule-strong}`) border at rest,
+imprint (`{colors.imprint}`) border and fill when on. The thumb's own
+on-accent ink has no Palette token yet — see What this system does not yet
+cover.
+
+### Swatch card
+
+A picture of a theme or an artwork mode (Appearance's own pickers): 16:9,
+12dp corner (the one deliberate exception to `{rounded.control}` — see
+Shapes), a rule hairline at rest, ringed in imprint (`{colors.imprint}`) when
+selected.
+
 ### Notice
 
-- A single line of Newsreader 13sp in ochre, above the shelf and never instead of
+- A single line of Geist 13sp in ochre, above the shelf and never instead of
   it. The library below is the one that was on the device before the refresh was
   tried, and it is still every bit of it.
 
@@ -397,32 +595,36 @@ that in Newsreader 13sp tabular.
 
 - **Do** put everything a shelf holds on one vertical wall, and reach other
   shelves from the masthead.
-- **Do** set names in Fraunces at 500 or above and everything readable or
-  countable in Newsreader.
-- **Do** fix `opsz` explicitly on every face declaration: 28 for display, 16 for
-  reading.
+- **Do** set names in Fraunces at 500 or above, whole sentences in Newsreader,
+  and everything else that reads as interface — labels, counts, eyebrows,
+  settings rows, ledgers — in Geist.
+- **Do** fix `opsz` explicitly on every Fraunces or Newsreader declaration:
+  112 for a page title, 28 for a name at arm's length, 16 for a sentence or a
+  figure.
 - **Do** set every figure in tabular numerals.
-- **Do** draw structure with the 0.5dp hairline in rule, and keep surfaces flat.
-- **Do** measure any new text-carrying colour against ground and page, record the
-  ratio beside the value, and lift it until it clears 4.5:1 — as imprint was
-  lifted from the web player's `#8c3b2e`.
+- **Do** draw structure with a hairline in rule or rule-soft, and keep surfaces
+  flat.
+- **Do** measure any new text-carrying colour against every ground it can land
+  on (`PaletteContrastTest`) before it ships.
 - **Do** take the colour of a new surface from Material roles: a component that
   reaches for `colorScheme.surface` knowing nothing about this app must land on
   the page.
+- **Do** round a control 6dp (`{rounded.control}`); leave a plate and a swatch
+  card at their own radius instead.
 - **Do** keep the app dark on every device, regardless of system theme. A media
   library is looked at in the dark.
 
 ### Don't:
 
 - **Don't** ship a horizontally-scrolling poster rail.
-- **Don't** round a corner. The radius of this system is 0dp.
-- **Don't** add a shadow or a Material elevation overlay. Against ink they do not
-  render, and the hairline already carries that job.
+- **Don't** round a plate's corner. Its radius is `{rounded.plate}` (0dp).
+- **Don't** add a shadow or a Material elevation overlay. Depth here is tonal,
+  and the hairline already carries the job a shadow would.
 - **Don't** give a masthead, a shelf header or a grouping band a container colour.
   A filled container floating between the bar and the wall is the one thing this
   world does not do.
-- **Don't** spend imprint red on anything but the shelf in view or the thing a
-  viewer is in the middle of.
+- **Don't** fill a whole control or surface with imprint red. It borders, rings,
+  and underlines; it does not flood.
 - **Don't** put a name across a plate's face.
 - **Don't** offer dynamic colour. Material You would derive the scheme from a
   wallpaper, and a wallpaper cannot be allowed to decide what the catalogue
@@ -438,21 +640,35 @@ that in Newsreader 13sp tabular.
 Recorded honestly, because the next screen will have to decide these rather than
 look them up:
 
-- **One screen's worth of system.** The catalogue screen, its plates, its masthead
-  and the app bar are what shipped and what is recorded here. The player, the
-  title detail screen, the collection screen and the system screen have not been
-  restyled; they inherit the palette and type through the theme but their own
-  composition is undocumented and unreviewed.
-- **No component vocabulary for buttons, inputs, chips, dialogs or lists.** The
-  catalogue has none of these, so none are recorded. They are Material defaults
-  wherever they appear today.
-- **The player's palette is unresolved on Android.** The web player is black on
-  purpose and carries its own palette, because a picture reads best against
-  nothing. The Android surface is already ink; whether the player needs a second,
-  darker palette is open.
-- **Sage is defined and unused.** It has no surface on the catalogue yet.
-- **Dynamic type is untested.** The scale is declared in `sp`, so it will respond
-  to the system font scale, but no size has been checked at a large setting.
-- **API 24–25 render both faces at their default instance.** Variation settings
+- **One screen's worth of system, plus tokens for the next one.** The catalogue
+  screen, its plates, its masthead and the app bar are what shipped and are
+  recorded here from the running app. The Settings-index-row, ledger, pill,
+  toggle and swatch-card entries above are the token contract carried over
+  from the approved Settings/System mockups — colour, type, radius — not yet
+  composed as Kotlin. The player, the title detail screen and the collection
+  screen have not been restyled at all; they inherit the palette and type
+  through the theme but their own composition is undocumented and unreviewed.
+- **This palette change touches every screen at once.** Every surface that
+  reads `MaterialTheme.colorScheme` or a body/label typography role now reads
+  the web's dark theme and Geist rather than the values this system replaces.
+  Nothing here fixes a screen whose own layout assumed the old, warmer ground
+  or an all-Newsreader interface; that sweep is separate work, tracked
+  outside this file.
+- **The toggle's on-accent ink is undecided.** The web's own `--on-accent`
+  (the thumb colour on a filled track) has no equivalent in `Palette` yet —
+  it is a fixed value tuned to Coral specifically, not a role every accent
+  resolves the way the others do.
+- **No component vocabulary for dialogs or lists.** The catalogue has none of
+  these, so none are recorded. They are Material defaults wherever they
+  appear today, at the new 6dp radius.
+- **The player's palette is unresolved on Android.** The web player's own
+  screening room is this catalogue's own dark ground now, which narrows this
+  question rather than closing it: whether playback still wants a second,
+  darker palette of its own is open.
+- **Dynamic type is untested.** The scale is declared in `sp`, so it will
+  respond to the system font scale, but no size has been checked at a large
+  setting, and `TextAutoSize.StepBased` on the page title has not been
+  checked against one either.
+- **API 24–25 render every face at its default instance.** Variation settings
   are ignored there, so the optical-size axis and the weight axis do nothing on
   those two releases. The fallback is legible; it is not the designed type.
