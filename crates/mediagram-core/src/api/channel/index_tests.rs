@@ -29,24 +29,6 @@ fn reason(err: &CoreError) -> String {
 }
 
 #[test]
-fn the_one_index_among_other_messages_is_the_one_chosen() {
-    assert_eq!(
-        pick_index(&found(&["a note", INDEX, "another note"]), NOW).unwrap(),
-        1
-    );
-}
-
-/// The prefix, not the exact marker: a snapshot written by a later
-/// uploader is still the index this channel holds.
-#[test]
-fn a_later_snapshot_version_is_still_recognised_as_the_index() {
-    assert_eq!(
-        pick_index(&found(&["#mlib-index v=3\n{}"]), NOW).unwrap(),
-        0
-    );
-}
-
-#[test]
 fn a_channel_holding_no_snapshot_says_so() {
     assert_eq!(
         reason(&pick_index(&[], NOW).unwrap_err()),
@@ -58,40 +40,6 @@ fn a_channel_holding_no_snapshot_says_so() {
 fn pins_that_are_not_an_index_say_so_rather_than_nothing_is_pinned() {
     let err = message("welcome to the channel");
     assert_eq!(reason(&err), format!("library error: {NOT_AN_INDEX}"));
-}
-
-/// Two machines publishing to one channel is an ordinary state, not an
-/// impasse: the later snapshot is the library, and refusing to choose
-/// between them is how a reader ends up on the older one.
-#[test]
-fn the_later_snapshot_wins_however_the_pins_fell() {
-    let (old, new) = (pushed(1_781_568_000), pushed(1_789_946_371));
-    assert_eq!(pick_index(&found(&[&old, &new]), NOW).unwrap(), 1);
-    assert_eq!(pick_index(&found(&[&new, &old]), NOW).unwrap(), 0);
-}
-
-/// A snapshot whose timestamp this build cannot read is still an index,
-/// but it cannot outrank one that says when it was made.
-#[test]
-fn a_dated_snapshot_outranks_an_undated_one() {
-    let dated = pushed(1_781_568_000);
-    assert_eq!(
-        pick_index(&found(&["#mlib-index v=9", &dated]), NOW).unwrap(),
-        1
-    );
-    assert_eq!(
-        pick_index(&found(&[&dated, "#mlib-index v=9"]), NOW).unwrap(),
-        0
-    );
-}
-
-/// Two snapshots pushed in the same second still resolve the same way on
-/// every device, or two phones disagree about what the library is.
-#[test]
-fn snapshots_of_one_second_are_broken_by_the_later_message() {
-    let same = pushed(1_789_946_371);
-    assert_eq!(pick_index(&[(&same, 10), (&same, 11)], NOW).unwrap(), 1);
-    assert_eq!(pick_index(&[(&same, 11), (&same, 10)], NOW).unwrap(), 0);
 }
 
 /// Every named channel state, one sentence each. A person reading one has to be
@@ -162,17 +110,11 @@ fn a_server_side_failure_is_reported_as_one() {
     assert!(reason(&channel_error(&rpc(500, "INTERNAL"))).starts_with("network error"));
 }
 
-/// A snapshot dated far ahead would otherwise win every later choice.
-/// Its stamp is not believed, so it loses to a real one like any caption
-/// whose time cannot be read — and still installs, named for now, when it
-/// is the only index there is.
+/// A snapshot dated far ahead still installs when it is the only index there
+/// is, named for now rather than for the year it claims.
 #[test]
-fn a_stamp_from_the_future_is_not_believed() {
-    let real = pushed(NOW - 60);
-    let future = pushed(NOW + 400 * 24 * 60 * 60);
-    assert_eq!(pick_index(&found(&[&future, &real]), NOW).unwrap(), 1);
-    assert_eq!(pick_index(&found(&[&real, &future]), NOW).unwrap(), 0);
-    assert_eq!(pushed_at(&future, NOW), NOW);
+fn a_stamp_from_the_future_names_its_version_for_now() {
+    assert_eq!(pushed_at(&pushed(NOW + 400 * 24 * 60 * 60), NOW), NOW);
     assert_eq!(pushed_at(&pushed(NOW + 60), NOW), NOW + 60);
 }
 

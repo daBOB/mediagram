@@ -3,8 +3,8 @@
 use std::path::Path;
 
 /// Where this merge's backup goes. Named to the minute and the process, and
-/// never replaced: `sync-index` pulls twice in one process, often within one
-/// minute, and the second pull must not overwrite the first one's rollback
+/// never replaced: `sync-index` can pull twice in one process, often within
+/// one minute, and the second pull must not overwrite the first one's rollback
 /// point, so it takes the next free `-2`, `-3`… instead of failing.
 pub(super) fn free_backup_path(data_dir: &Path, stamp: &str) -> std::path::PathBuf {
     let base = format!(

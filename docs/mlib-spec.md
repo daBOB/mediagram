@@ -344,15 +344,19 @@ caption's `schema` field reads current on every push; READABLE_SCHEMAS
 (in the crate) defines which index versions this reader accepts. This marker
 (`#mlib-index v=`) never collides with a part caption's marker (`#mlib v=`),
 so a reader can tell the two apart by prefix alone. Each push pins the new
-index message and unpins whatever index message it replaces, so a reader
-looking for the current index reads the channel's pinned messages and picks
-the newest `#mlib-index` one. "Newest" is by `pushed_at`, and a reader does
+index message and unpins whatever index message it replaces. A reader
+looking for the current index reads the channel's pinned messages and also
+searches the channel for the marker — a publish interrupted between sending
+and pinning, or a second machine publishing, leaves a snapshot unpinned —
+and picks the newest `#mlib-index` one among both. "Newest" is by `pushed_at`, and a reader does
 not believe one more than a day ahead of its own clock — such a caption is
 treated like one whose time cannot be read, so it never outranks a real
 snapshot. Only the channel's own posts are candidates: a library is a broadcast
 channel, where only its admins can post, and a message anyone else managed to
 put there is not a snapshot anyone published. The marker, the JSON
-line and both rules live in `mlib_spec::index_caption`.
+line and the choice (`index_caption::newest`) live in
+`mlib_spec::index_caption`; the uploader, the Android core and the web player
+all choose with it.
 
 ### `meta` keys
 
@@ -362,6 +366,7 @@ line and both rules live in `mlib_spec::index_caption`.
 | `last_push_at` | Unix timestamp recorded into the snapshot just before it is vacuumed out, so the pushed copy carries its own push time. |
 | `index_message_id` | Message id of the currently pinned `#mlib-index` document. |
 | `stale_index_message_id` | Set when unpinning a previous index message failed; retried on the next push, cleared once it succeeds (or the message turns out to already be gone). |
+| `pulled_index_message_id` | Message id of the channel index this index last took in, pulled or published from here. A publish that finds it still current pulls nothing. Uploader bookkeeping; readers ignore it. |
 | `source:<set_id>` | Absolute path of the source file for a still-`pending` set, so `resume` can find it again. Deleted once the set completes. |
 | `tmp:<set_id>` | Path of a faststart-remux temp file `add` produced for a set, so it can be cleaned up once the set completes. Only set when a remux actually happened. |
 

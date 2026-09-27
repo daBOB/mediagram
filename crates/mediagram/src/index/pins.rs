@@ -17,6 +17,27 @@ const META_INDEX_MESSAGE_ID: &str = "index_message_id";
 /// Stored comma-separated, newest first.
 const META_STALE_INDEX_ID: &str = "stale_index_message_id";
 
+/// The channel index this local index last took in: pulled from the channel,
+/// or published from here. A publish that finds the channel index unchanged
+/// since has nothing to pull.
+const META_PULLED_INDEX_ID: &str = "pulled_index_message_id";
+
+/// Records which channel index the local index now holds everything of;
+/// `None` when the channel had none.
+pub fn record_pulled(conn: &Connection, message_id: Option<i32>) -> Result<()> {
+    match message_id {
+        Some(id) => db::set_meta(conn, META_PULLED_INDEX_ID, &id.to_string())
+            .context("recording which channel index was pulled"),
+        None => db::delete_meta(conn, META_PULLED_INDEX_ID),
+    }
+}
+
+/// The channel index last recorded by [`record_pulled`]. An unreadable value
+/// reads as none, which costs one extra pull and never a skipped one.
+pub fn pulled(conn: &Connection) -> Result<Option<i32>> {
+    Ok(db::get_meta(conn, META_PULLED_INDEX_ID)?.and_then(|raw| raw.trim().parse().ok()))
+}
+
 /// Records the snapshot a push just pinned as the current one.
 pub fn record_current(conn: &Connection, message_id: i32) -> Result<()> {
     db::set_meta(conn, META_INDEX_MESSAGE_ID, &message_id.to_string())

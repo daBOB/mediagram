@@ -9,7 +9,9 @@
 //! because the id it would have unpinned went with the database.
 
 use mediagram::index::db;
-use mediagram::index::pins::{pending_unpins, record_index_messages, record_unpin_outcome};
+use mediagram::index::pins::{
+    pending_unpins, pulled, record_index_messages, record_pulled, record_unpin_outcome,
+};
 
 fn open() -> rusqlite::Connection {
     let dir = tempfile::tempdir().unwrap();
@@ -110,9 +112,24 @@ fn a_push_keeps_only_what_it_could_not_clear() {
     assert_eq!(pending_unpins(&conn).unwrap(), vec![1558]);
 }
 
+/// Which channel index the local index last took in decides whether a
+/// publish has anything to pull; losing track of it may only ever cost a
+/// pull, never skip one.
+#[test]
+fn the_pulled_channel_index_is_remembered_and_forgotten() {
+    let conn = open();
+    assert_eq!(pulled(&conn).unwrap(), None);
+
+    record_pulled(&conn, Some(1561)).unwrap();
+    assert_eq!(pulled(&conn).unwrap(), Some(1561));
+
+    record_pulled(&conn, None).unwrap();
+    assert_eq!(pulled(&conn).unwrap(), None);
+}
+
 mod nothing_left_to_unpin {
     use grammers_mtsender::InvocationError;
-    use mediagram::telegram::unpin::message_is_gone;
+    use mediagram::channel_index::message_is_gone;
 
     fn rpc(code: i32, message: &str) -> anyhow::Error {
         anyhow::Error::new(InvocationError::Rpc(

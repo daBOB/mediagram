@@ -8,7 +8,7 @@
 use anyhow::{Context, Result, bail};
 
 use super::args::AddCourseArgs;
-use crate::commands::pull_index;
+use crate::channel_index::{self, Mode};
 use crate::config::Config;
 use crate::course::identity::{collection_id, course_title, duplicate_identity};
 use crate::course::report::{Outcome, Summary, dry_run_table};
@@ -106,7 +106,7 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
     }
 
     if summary.uploaded_anything() && !args.no_push {
-        let message_id = pull_index::merge_and_publish(cfg)
+        let message_id = channel_index::publish_to_channel(cfg, Mode::AfterPull)
             .await
             .context("pushing the index after the course")?;
         println!("pushed index as message {message_id}");

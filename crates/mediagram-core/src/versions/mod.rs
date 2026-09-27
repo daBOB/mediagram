@@ -27,10 +27,9 @@ pub use install::{Staging, install_staged};
 pub const CURRENT: &str = "current";
 pub const MANIFEST_FILE: &str = "manifest.json";
 
-/// How far ahead of now a catalog may claim to have been built. Clocks
-/// disagree by minutes, not days; a catalog dated next year is either a
-/// mistake or an attempt to make every later one look stale.
-pub const FUTURE_TOLERANCE_SECONDS: i64 = 24 * 60 * 60;
+/// How far ahead of now a catalog may claim to have been built: the same
+/// clock allowance the spec gives an index snapshot's own timestamp.
+pub use mlib_spec::index_caption::FUTURE_TOLERANCE_SECONDS;
 
 /// The version `current` points at, through the symlink.
 pub fn current(root: &Path) -> PathBuf {

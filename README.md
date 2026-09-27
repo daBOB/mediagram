@@ -201,10 +201,10 @@ answers a burst of pins with a long `FLOOD_WAIT`. That is why step 3 passes
 appear in the players), publish once:
 
 ```sh
-mediagram push-index --merge
+mediagram push-index
 ```
 
-`--merge` pulls the channel in again first, so titles another machine
+Every publish pulls the channel in first, so titles another machine
 uploaded in the meantime are kept rather than dropped. Two machines may
 upload at the same time, but each must upload its own folders: nothing
 de-duplicates across machines until the next merge.
@@ -222,9 +222,9 @@ de-duplicates across machines until the next merge.
 | `resume [--no-push]` | Finish every set an interrupted upload left `pending`, adopting parts already in the channel instead of sending them again. |
 | `status` | What the library holds and what is going in: the set on the wire with its progress, the queue, each show against what TMDB says exists, and anything unfinished. Read-only. |
 | `prepare <path> [--replace \| --out <dir>] [--mp4] [--audio a,b] [--subs a,b]` | Drop unwanted audio and subtitle tracks. `--mp4` also converts to a browser-playable mp4 (Matroska → mp4, audio → AAC, picture copied untouched). `--replace` rewrites in place, and only after the result passes every check. |
-| `push-index [--merge \| --check \| --force]` | Snapshot `library.db` and pin it in the channel. Refuses a push that would drop sets the channel holds; `--merge` pulls them in first. |
-| `pull-index [--dry-run]` | Merge the channel's index into this one, so titles uploaded from another machine are known here. Backs up the local index first. |
-| `sync-index [--refresh-older-than <days>]` | The whole round trip: `pull-index`, `metadata`, `posters`, then a merged push. A failed artwork fetch is reported and the push goes ahead. |
+| `push-index [--force]` | Pull the channel index in, then snapshot `library.db` and pin it in the channel. A publish landing from another machine meanwhile is pulled in too. `--force` replaces the channel index as it is, pulling nothing. |
+| `pull-index [--dry-run]` | Merge the channel index into this one, so titles uploaded from another machine are known here. Backs up the local index first; `--dry-run` only reports what would change (what `push-index --check` used to answer). |
+| `sync-index [--refresh-older-than <days>]` | The whole round trip: `pull-index`, `metadata`, `posters`, then a push. A failed artwork fetch is reported and the push goes ahead. |
 | `metadata` | Record what TMDB says about each film and series (synopsis, genres, rating, network, status, season and episode counts). Reads the payloads `add` cached, so it usually needs no key and no network. |
 | `posters` | Fetch cover art into `<data dir>/posters/` for a player reading this machine's index. Re-running skips what is held. |
 | `artwork` / `edit` | Override a title's poster or backdrop; correct a set's metadata and rewrite its captions. |

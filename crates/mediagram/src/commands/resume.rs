@@ -2,7 +2,7 @@
 
 use anyhow::{Context, Result};
 
-use crate::commands::pull_index;
+use crate::channel_index::{self, Mode};
 use crate::config::Config;
 use crate::index::{db, sets};
 use crate::telegram::client::Tg;
@@ -47,7 +47,7 @@ pub async fn run(cfg: &Config, no_push: bool) -> Result<()> {
     tg.shutdown().await;
 
     if summary.completed > 0 && !no_push {
-        let message_id = pull_index::merge_and_publish(cfg)
+        let message_id = channel_index::publish_to_channel(cfg, Mode::AfterPull)
             .await
             .context("completed sets could not be published; run `mediagram sync-index`")?;
         println!("pushed index as message {message_id}");

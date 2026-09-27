@@ -17,7 +17,7 @@ use std::io::IsTerminal;
 use anyhow::{Context, Result, bail};
 
 use super::args::AddShowArgs;
-use crate::commands::pull_index;
+use crate::channel_index::{self, Mode};
 use crate::config::Config;
 use crate::index::status::SetStatus;
 use crate::index::{artwork, db, set_lookup};
@@ -117,7 +117,7 @@ pub async fn run(cfg: &Config, args: AddShowArgs) -> Result<()> {
         println!("{pending} pending; run mediagram resume to finish them");
     }
     if uploaded > 0 && !args.no_push {
-        let message_id = pull_index::merge_and_publish(cfg)
+        let message_id = channel_index::publish_to_channel(cfg, Mode::AfterPull)
             .await
             .context("pushing the index after the show")?;
         println!("pushed index as message {message_id}");

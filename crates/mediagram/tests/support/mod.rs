@@ -6,6 +6,7 @@
 //! uses them.
 #![allow(dead_code)]
 
+pub mod channel;
 pub mod export;
 pub mod rescan;
 pub mod tmdb;

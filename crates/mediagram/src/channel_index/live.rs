@@ -10,18 +10,15 @@ use std::collections::HashSet;
 
 use anyhow::Result;
 
-use crate::config::Config;
+use super::remote::ChannelRemote;
 use crate::index::merge::Candidate;
-use crate::telegram::client::Tg;
-use crate::verify::download_hash::fetch_messages;
 
 /// The candidates whose every part message is still in the channel. A set
 /// with any part gone was removed after the channel's index was pushed. Fails
 /// closed: a set whose parts lack messages, or name another chat, is not
 /// taken as present.
 pub(super) async fn live_sets(
-    tg: &Tg,
-    cfg: &Config,
+    remote: &impl ChannelRemote,
     candidates: &[Candidate],
 ) -> Result<HashSet<String>> {
     if candidates.is_empty() {
@@ -35,8 +32,8 @@ pub(super) async fn live_sets(
                 .filter_map(|(_, mid)| i32::try_from(*mid).ok())
         })
         .collect();
-    let found = fetch_messages(&tg.client, tg.channel, &ids, cfg.max_attempts).await?;
-    let chat = tg.chat_id();
+    let found = remote.captions(&ids).await?;
+    let chat = remote.chat_id();
     Ok(candidates
         .iter()
         .filter(|c| {

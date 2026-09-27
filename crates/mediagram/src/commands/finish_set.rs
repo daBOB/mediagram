@@ -9,7 +9,7 @@ use std::path::Path;
 
 use anyhow::{Context, Result};
 
-use crate::commands::pull_index;
+use crate::channel_index::{self, Mode};
 use crate::config::Config;
 use crate::telegram::client::Tg;
 use crate::upload::finish_set::finish_with;
@@ -22,11 +22,13 @@ pub async fn run(cfg: &Config, set_id: &str, delete: Option<&Path>, no_push: boo
     tg.shutdown().await;
     let complete = result?;
     if complete && !no_push {
-        let message_id = pull_index::merge_and_publish(cfg).await.with_context(|| {
-            format!(
-                "set {set_id} is complete but the index push failed; run `mediagram sync-index`"
-            )
-        })?;
+        let message_id = channel_index::publish_to_channel(cfg, Mode::AfterPull)
+            .await
+            .with_context(|| {
+                format!(
+                    "set {set_id} is complete but the index push failed; run `mediagram sync-index`"
+                )
+            })?;
         println!("pushed index as message {message_id}");
     }
     Ok(())

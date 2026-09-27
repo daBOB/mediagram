@@ -14,7 +14,7 @@ mod collection;
 use anyhow::{Context, Result, bail};
 
 use super::args::AddDocuArgs;
-use crate::commands::pull_index;
+use crate::channel_index::{self, Mode};
 use crate::config::Config;
 use crate::metadata::resolve::{self, ResolveInput};
 use crate::upload::finish_set::Uploader;
@@ -69,7 +69,7 @@ async fn run_file(cfg: &Config, args: AddDocuArgs) -> Result<()> {
     uploader.close().await;
 
     if !args.no_push {
-        let message_id = pull_index::merge_and_publish(cfg)
+        let message_id = channel_index::publish_to_channel(cfg, Mode::AfterPull)
             .await
             .context("pushing the index after the documentary")?;
         println!("pushed index as message {message_id}");

@@ -62,24 +62,40 @@ pub fn pushed_at(caption: &str) -> Option<i64> {
         .filter(|pushed| *pushed > 0)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// How far ahead of a reader's clock a timestamp may be and still be
+/// believed. Clocks disagree by minutes, not days; a snapshot dated next year
+/// is either a mistake or an attempt to make every later one look stale.
+pub const FUTURE_TOLERANCE_SECONDS: i64 = 24 * 60 * 60;
 
-    #[test]
-    fn what_is_written_reads_back() {
-        let caption = render(1_781_568_000, 538);
-        assert!(is_index(&caption));
-        assert!(caption.starts_with(MARKER));
-        assert_eq!(pushed_at(&caption), Some(1_781_568_000));
-        assert!(caption.ends_with(&format!(
-            "{{\"pushed_at\":1781568000,\"schema\":{},\"sets\":538}}",
-            crate::schema::SCHEMA_VERSION
-        )));
-    }
-
-    #[test]
-    fn a_part_caption_is_not_an_index() {
-        assert!(!is_index("#mlib v=2\n{}"));
-    }
+/// The `pushed_at` a reader at `now` believes: `None` when the caption
+/// carries none, or one further ahead than [`FUTURE_TOLERANCE_SECONDS`].
+#[must_use]
+pub fn believed_pushed_at(caption: &str, now: i64) -> Option<i64> {
+    pushed_at(caption).filter(|pushed| *pushed <= now + FUTURE_TOLERANCE_SECONDS)
 }
+
+/// Which of `candidates` — `(caption, message id)` — is the channel's index
+/// (spec §7), or `None` when none of them is an index at all.
+///
+/// Newest by believed `pushed_at`, not by whichever one a pin points at: a
+/// pin can be left behind by a publish whose unpin failed, while the
+/// timestamp travels with the snapshot. A caption whose time cannot be
+/// believed loses to any that can, and the higher message id breaks a tie,
+/// so every reader makes the same choice.
+///
+/// Callers keep only the channel's own posts before asking: a message a
+/// member slipped in is not a snapshot anyone published, and telling the two
+/// apart needs the message, not its caption.
+#[must_use]
+pub fn newest(candidates: &[(&str, i64)], now: i64) -> Option<usize> {
+    candidates
+        .iter()
+        .enumerate()
+        .filter(|(_, (text, _))| is_index(text))
+        .max_by_key(|(_, (text, id))| (believed_pushed_at(text, now), *id))
+        .map(|(index, _)| index)
+}
+
+#[cfg(test)]
+#[path = "index_caption_tests.rs"]
+mod tests;

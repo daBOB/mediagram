@@ -65,8 +65,9 @@ commands/          one module per subcommand, each exposing `run(...)`; thin
   background.rs      re-runs this binary detached, so an upload outlives the
                      terminal that started it
   resume.rs          finish every set left `pending`
-  push_index.rs      report the result of telegram/index_publish; bulk
-                     uploads share that publisher (pins live in index/pins.rs)
+  push_index.rs      publish through channel_index (`--force` skips the pull)
+  pull_index.rs      pull through channel_index (`--dry-run` only reports)
+  sync_index.rs      pull, describe, fetch artwork, publish
   rescan.rs          rebuild the index from channel captions (disaster recovery)
   verify.rs          metadata check, or (--full) re-download + hash
   edit.rs            correct a set's metadata in place (see edit/)
@@ -85,6 +86,17 @@ commands/          one module per subcommand, each exposing `run(...)`; thin
   login.rs / whoami.rs / smoke_upload.rs
   args.rs            clap argument structs for the larger subcommands
 
+channel_index/     pulling the channel index into the local index and
+                   publishing the local index as the channel index, the
+                   whole round trip behind `ChannelIndex::{pull, publish}`:
+                   choosing the current channel index among the pins and
+                   the marker search (spec §7; the players' candidates and
+                   rule, through mlib-spec), download, backup, merge,
+                   re-reading conflicts, a publish lock per machine, pulling
+                   again when another machine publishes mid-publish, send,
+                   pin, and clearing the pins it replaces. The channel is
+                   reached through the ChannelRemote port: Telegram in
+                   production (telegram_remote), in memory in the tests
 upload/            getting a file into the channel. Preparation: new_set (what
                    to add), prepare_set (inspect → resolve → remux → record,
                    for a video), record_document (a course PDF, no probe/remux),
@@ -122,8 +134,7 @@ remove/            planning and applying a set's destruction
 export/            staging, posters, archive, pointer and publishing of the
                    metadata package
 serve/             the playback HTTP API: routes and Range responses
-telegram/          grammers client construction + login flow, retry policy,
-                   unpinning
+telegram/          grammers client construction + login flow, retry policy
 verify/            report (pure verdict logic) + download_hash (Telegram
                    download → SHA-256 streaming)
 ```
@@ -154,7 +165,7 @@ file ──▶ inspect (ffprobe) ──▶ resolve (TMDB / --manual / explicit i
    mark_done; once every part is `done`, compute set_hash, mark `complete`
                      │
                      ▼
-        push_index (unless --no-push): snapshot + pin
+        publish (unless --no-push): pull, snapshot, pin
 ```
 
 `inspect` runs `ffprobe` to read container/codec/duration/language tracks
@@ -635,6 +646,7 @@ All paths come from `directories::ProjectDirs::from("", "", "mediagram")`
 | `$XDG_DATA_HOME/mediagram/library.db` | The canonical index (WAL mode). |
 | `$XDG_DATA_HOME/mediagram/tmdb-cache/*.json` | Disk-cached TMDB responses, keyed by `sha256(path + sorted query)`. |
 | `$XDG_DATA_HOME/mediagram/upload.lock` | Held (`flock`) by whichever process is uploading, so the others queue behind it. |
+| `$XDG_DATA_HOME/mediagram/publish.lock` | Held (`flock`) by whichever process is publishing the index, so two uploads finishing together publish one after the other. |
 | `$XDG_DATA_HOME/mediagram/upload-progress.json` | How far the part in flight has got, for `status` to read. Rewritten every 2s, meaningless once stale. |
 | `$XDG_DATA_HOME/mediagram/background.log` | Output of the detached uploads `add` starts. |
 

@@ -23,29 +23,35 @@ pub fn path_in(data_dir: &Path) -> PathBuf {
 
 /// Held for as long as this value lives; released when it drops, and by the
 /// kernel if the process dies without dropping it.
-pub struct UploadLock {
+pub struct FileLock {
     _file: File,
 }
 
-/// Takes the lock, waiting for whoever holds it. `waiting` is called once if
-/// there is a wait, so a caller can say so rather than appearing to hang.
-pub async fn acquire(data_dir: &Path, waiting: impl FnOnce()) -> Result<UploadLock> {
-    let path = path_in(data_dir);
-    let file = open(&path)?;
+/// Takes the upload lock, waiting for whoever holds it. `waiting` is called
+/// once if there is a wait, so a caller can say so rather than appearing to
+/// hang.
+pub async fn acquire(data_dir: &Path, waiting: impl FnOnce()) -> Result<FileLock> {
+    acquire_file(&path_in(data_dir), waiting).await
+}
+
+/// The same kind of lock on any file: one holder across processes, waiting
+/// for the current one. `channel_index` takes its publish lock this way.
+pub async fn acquire_file(path: &Path, waiting: impl FnOnce()) -> Result<FileLock> {
+    let file = open(path)?;
     if try_lock(&file)? {
-        return Ok(UploadLock { _file: file });
+        return Ok(FileLock { _file: file });
     }
     waiting();
     // Blocking, on a thread of its own: this waits for another process to
-    // finish uploading, which can be an hour, and the runtime has an upload
-    // of its own to keep serving in the meantime.
+    // finish what it holds the lock for (an upload can take an hour), and
+    // the runtime has work of its own to keep serving in the meantime.
     let file = tokio::task::spawn_blocking(move || -> Result<File> {
         lock_blocking(&file)?;
         Ok(file)
     })
     .await
-    .context("waiting for the upload lock")??;
-    Ok(UploadLock { _file: file })
+    .with_context(|| format!("waiting for {}", path.display()))??;
+    Ok(FileLock { _file: file })
 }
 
 /// Whether somebody holds it right now, for a caller that only wants to say
@@ -82,7 +88,7 @@ fn try_lock(file: &File) -> Result<bool> {
     let err = std::io::Error::last_os_error();
     match err.raw_os_error() {
         Some(libc::EWOULDBLOCK) => Ok(false),
-        _ => Err(anyhow::Error::new(err).context("locking the upload lock")),
+        _ => Err(anyhow::Error::new(err).context("taking a file lock")),
     }
 }
 
@@ -90,8 +96,10 @@ fn lock_blocking(file: &File) -> Result<()> {
     // SAFETY: as above; the file outlives the call.
     match unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX) } {
         0 => Ok(()),
-        _ => Err(anyhow::Error::new(std::io::Error::last_os_error())
-            .context("waiting for the upload lock")),
+        _ => {
+            Err(anyhow::Error::new(std::io::Error::last_os_error())
+                .context("waiting for a file lock"))
+        }
     }
 }
 

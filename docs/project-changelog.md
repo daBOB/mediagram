@@ -5,6 +5,46 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.67.0 — one module pulls and publishes the channel index
+
+Plan: `plans/260927-0146-channel-index-module/` (architecture review
+candidate B). Terms: `CONTEXT.md`.
+
+**Changed (breaking)**
+
+- `push-index` always pulls the channel index first, as every publish after
+  an upload already did. `--merge` is gone (it is the default now), and so is
+  `--check`: `pull-index --dry-run` reports what the channel holds that this
+  index lacks, naming the first few sets. `--force` still replaces the channel index without pulling.
+
+**Fixed**
+
+- The uploader chose "the channel index" differently from the players: it
+  read only the pins, so a snapshot an interrupted publish left unpinned was
+  invisible to it though every player showed it, and it took a member's
+  pinned post and a snapshot dated in the future at face value. It now reads
+  the pins and the marker search like the players, and chooses with the rule
+  that now lives in `mlib-spec` (`index_caption::newest`), which core
+  delegates to and the web player's fixtures check.
+- A publish landing from another machine while this one was under way was
+  refused; it is now pulled in and the publish goes ahead. One that keeps
+  landing (three times) fails the publish, sending nothing.
+- Two background uploads on one machine could publish at the same moment.
+  Publishing now takes a `publish.lock` beside `upload.lock`.
+- A publish made two Telegram connections and downloaded the channel index
+  twice. It now makes one, and downloads nothing when the channel index is
+  the one this machine last pulled or published. A pull that fails, or that
+  leaves a conflict unresolved, does not count, so the next publish pulls
+  again.
+
+**Internal**
+
+- `crates/mediagram/src/channel_index/` replaces `commands/pull_index`'s
+  helpers and `telegram/{index_publish,index_guard,download_index,unpin}`.
+  The channel sits behind a `ChannelRemote` port with a Telegram adapter and
+  an in-memory one; `tests/channel_index.rs` covers the round trip, including
+  the refused and the silently ignored unpin.
+
 ## 0.66.4 — transcoding fits pictures larger than UHD
 
 **Fixed**
