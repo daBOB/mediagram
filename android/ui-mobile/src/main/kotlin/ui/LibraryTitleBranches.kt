@@ -8,7 +8,9 @@ import catalog.BrowseViewModel
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.Destination
+import catalog.MenuScreen
 import catalog.firstItemOf
+import model.Kind
 import ui.catalog.CollectionScreen
 import ui.catalog.TitleDetailScreen
 import ui.catalog.rememberTitleInfo
@@ -53,6 +55,10 @@ internal fun TitleFrame(
             titleCredits = catalogViewModel::titleCredits,
             fetchPortrait = browseViewModel::fetchPortrait,
             shouldRequestPortrait = browseViewModel::shouldRequestPortrait,
+            // Films only — a show's episodes preload two at a time on
+            // their own already; kids profiles get it too, unlike the
+            // editor's-choice pin above, since it is not a household mark.
+            preload = if (title.kind == Kind.MOVIE) rememberFilmPreloadUi(title) { at.openMenu(MenuScreen.Storage) } else null,
         )
     }
 }

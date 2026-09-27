@@ -5,6 +5,39 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.74.0 — Android: Preload reaches the film page
+
+**Added**
+
+- A Preload control beside Play on a film's own page, phone/tablet and TV
+  alike — the first thing on either screen that drives `FilmPreloader`
+  (0.70.1). Films only (`Kind.MOVIE`, with a real size on record; a show's
+  episodes already preload two at a time on their own): "Preload · 5.8 GB"
+  idle, "Preload · 36% held" once playback alone has already put some of it
+  in the cache, "Queued" waiting behind another film, "Preloading" with a
+  thin full-width bar underneath on both surfaces ("2.1 of 5.8 GB · 36%",
+  tap or OK to cancel), "Paused while playing" / "Waiting for Wi-Fi" / a
+  background-limit pause (tap or OK resumes it) with the bar left standing
+  through all three, "Preloaded ✓" with "Remove preload" in the phone's ⋯
+  menu or a second TV plate, and "Needs 5.8 GB · Try again" — retryable
+  the moment the cache budget is raised, not a dead end — beside a "Raise
+  the cache budget" link straight into Settings › Storage. Reachable for a
+  kids profile the same as Play is — it is not a household mark the way the
+  editor's-choice pin beside it is. The phone's own pill row wraps
+  (`FlowRow`) rather than crowding My List and ⋯ off a narrow phone once a
+  Preload pill joins them.
+- A quiet "Home server: x of y GB" line under the control once a paired LAN
+  cache server actually holds some of the film (`GET /v1/sets/{id}`,
+  0.70.0) — polled every 5s while the page is open and the film is
+  actually writing, once on open otherwise, and not at all with the LAN
+  cache off, no server paired, or an older server that has never heard of
+  the route.
+- `MenuScreen.Storage`: Settings opened straight to its Storage section,
+  the same direct-section shape `System` already had — what "Raise the
+  cache budget" actually opens.
+- Android-only, by the same decision `FilmPreloader` itself shipped under:
+  the web player has no film preload and gets none.
+
 ## 0.73.1 — Android: a film preload engine, not yet reachable from the UI
 
 **Added**

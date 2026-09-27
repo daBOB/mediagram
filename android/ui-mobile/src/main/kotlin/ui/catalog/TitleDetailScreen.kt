@@ -34,6 +34,7 @@ import model.WatchSnapshot
 import model.ageLabel
 import model.clockTime
 import model.humanSize
+import playback.FilmPreloadState
 import player.bitrateLabel
 import player.hdrLabel
 import uniffi.mediagram_core.TitleInfo
@@ -72,6 +73,7 @@ fun TitleDetailScreen(
     titleCredits: suspend (String) -> TitleCredits = { TitleCredits.Empty },
     fetchPortrait: suspend (Long) -> String? = { null },
     shouldRequestPortrait: (Long) -> Boolean = { false },
+    preload: TitlePreloadUi? = null,
 ) {
     val resumeAt =
         remember(set.setId, watch) {
@@ -107,7 +109,22 @@ fun TitleDetailScreen(
             editorsChoicePinned = editorsChoice == set.setId,
             onToggleEditorsChoice = onToggleEditorsChoice,
             modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.small),
+            preloadPill = preload?.let { p -> { PreloadPill(state = p.state, onClick = p.onToggle) } },
+            preloadRemoveItem =
+                preload?.takeIf { it.state == FilmPreloadState.Done }?.let { p ->
+                    { dismiss: () -> Unit -> PreloadRemoveMenuItem(onRemove = p.onRemove, onDismiss = dismiss) }
+                },
         )
+        preload?.takeIf { showsPreloadBar(it.state) || it.state is FilmPreloadState.NeedsSpace || it.serverLine != null }?.let { p ->
+            Column(
+                modifier = Modifier.padding(horizontal = Spacing.large).padding(bottom = Spacing.small),
+                verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
+            ) {
+                if (showsPreloadBar(p.state)) PreloadProgressBar(state = p.state, onCancel = p.onToggle)
+                if (p.state is FilmPreloadState.NeedsSpace) PreloadStorageLink(onClick = p.onOpenStorage)
+                PreloadServerLine(p.serverLine)
+            }
+        }
         TitleTabs(labels, modifier = Modifier.padding(top = Spacing.small)) { tab ->
             Box(modifier = Modifier.padding(Spacing.large)) {
                 when (tab) {

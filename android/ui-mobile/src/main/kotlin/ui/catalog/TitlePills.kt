@@ -1,7 +1,7 @@
 package ui.catalog
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -31,9 +31,13 @@ private val MIN_TOUCH_TARGET = 48.dp
  * first pill says and does — a resume label and its own destination are the
  * caller's to work out ([catalog.seriesResumeFor], [data.ResumePoint]).
  *
- * [onToggleEditorsChoice] absent hides the ⋯ menu entirely, the same as the
+ * [onToggleEditorsChoice] absent hides its own ⋯ item, the same as the
  * web's own `moreMenu` answering `null` for an empty item list — a kids
- * profile has nothing to put there yet, so there is nothing to open.
+ * profile has nothing to put there yet. The menu itself still opens when
+ * [preloadRemoveItem] alone has something to offer: a film's own Preload
+ * is not a household mark, so a kids profile keeps it (see
+ * `TitlePreload.kt`'s own doc — Android-only by decision, the web player
+ * has no film preload).
  */
 @Composable
 internal fun TitlePills(
@@ -44,13 +48,20 @@ internal fun TitlePills(
     editorsChoicePinned: Boolean,
     onToggleEditorsChoice: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    preloadPill: (@Composable () -> Unit)? = null,
+    preloadRemoveItem: (@Composable (dismiss: () -> Unit) -> Unit)? = null,
 ) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
+    FlowRow(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+        verticalArrangement = Arrangement.spacedBy(Spacing.small),
+    ) {
         if (playLabel != null) {
             Button(onClick = onPlay, modifier = Modifier.heightIn(min = MIN_TOUCH_TARGET)) {
                 Text("▶ $playLabel")
             }
         }
+        preloadPill?.invoke()
         OutlinedButton(
             onClick = onToggleWatchlist,
             modifier =
@@ -60,20 +71,23 @@ internal fun TitlePills(
         ) {
             Text(if (watchlisted) "✓ My List" else "+ My List")
         }
-        if (onToggleEditorsChoice != null) {
+        if (onToggleEditorsChoice != null || preloadRemoveItem != null) {
             var expanded by remember { mutableStateOf(false) }
             TextButton(
                 onClick = { expanded = true },
                 modifier = Modifier.heightIn(min = MIN_TOUCH_TARGET).semantics { contentDescription = "More" },
             ) { Text("⋯") }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                DropdownMenuItem(
-                    text = { Text(if (editorsChoicePinned) "Remove as editor's choice" else "Make editor's choice") },
-                    onClick = {
-                        expanded = false
-                        onToggleEditorsChoice()
-                    },
-                )
+                if (onToggleEditorsChoice != null) {
+                    DropdownMenuItem(
+                        text = { Text(if (editorsChoicePinned) "Remove as editor's choice" else "Make editor's choice") },
+                        onClick = {
+                            expanded = false
+                            onToggleEditorsChoice()
+                        },
+                    )
+                }
+                preloadRemoveItem?.invoke { expanded = false }
             }
         }
     }

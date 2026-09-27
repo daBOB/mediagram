@@ -560,6 +560,19 @@ screen offers.
 - **Chip:** the same line pill at a 36dp compact height, for a smaller choice
   inline with text rather than in its own row.
 
+A film's own Preload control (Android only — the web player has no film
+preload) reuses this pair rather than inventing a third look: Line while
+idle, retrying a failure, or retrying once the cache budget has been
+raised (NeedsSpace); Quiet once queued, running, done, or paused for any
+reason — a background-limit pause resumes on a tap too, but is a queue
+unclogging on its own, not a fresh choice the viewer made, so it stays
+Quiet with the rest of a pause rather than reading as a new affirmative
+action. TV reads the same states as a focusable plate, in this catalogue's
+one television focus treatment — the accent border and scale every other
+TV card and row already carries — with the same thin bar the phone draws,
+drawn plainly rather than focused (nothing here answers a direction key;
+cancelling or resuming is the plate's own OK, not the bar's).
+
 ### Toggle
 
 A settings switch, drawn rather than left at Material's default: track in

@@ -79,6 +79,8 @@ internal fun TvMenuScreenBranch(
     when (screen) {
         MenuScreen.System -> TvSettingsScreen(initial = SettingsSection.SYSTEM)
         MenuScreen.Settings -> TvSettingsScreen(initial = SettingsSection.TELEGRAM)
+        // A film page's own "Raise the cache budget" link.
+        MenuScreen.Storage -> TvSettingsScreen(initial = SettingsSection.STORAGE)
         MenuScreen.TmdbKey -> TvTmdbKeyScreen(hasKey = fetchState.hasKey, onSave = fetchViewModel::saveKey)
     }
 }

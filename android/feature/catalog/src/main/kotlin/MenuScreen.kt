@@ -15,4 +15,11 @@ enum class MenuScreen(
     System(Destination.System),
     TmdbKey(Destination.TmdbKey),
     Settings(Destination.Settings),
+
+    /**
+     * Settings opened straight to its Storage section — a film page's own
+     * "Raise the cache budget" link, the same shape [System] already gives
+     * a direct section link rather than the general index [Settings] opens.
+     */
+    Storage(Destination.Settings),
 }

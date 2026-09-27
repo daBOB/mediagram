@@ -1,6 +1,8 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -28,6 +30,7 @@ import model.MediaSet
 import model.Progress
 import model.TitleCredits
 import model.ageLabel
+import playback.FilmPreloadState
 import player.technicalLine
 import ui.tv.TvTextRow
 import uniffi.mediagram_core.TitleInfo
@@ -86,8 +89,10 @@ internal fun TvTitlePage(
     onOpenFranchise: (id: Long) -> Unit = {},
     editorsChoice: String? = null,
     onToggleEditorsChoice: (() -> Unit)? = null,
+    preload: TvTitlePreloadUi? = null,
 ) {
     val play = remember { FocusRequester() }
+    val preloadPlate = remember { FocusRequester() }
     val resume =
         remember(progress) {
             val resumes = progress?.let { ResumePoint.resumeAt(ProgressPoint(it.at, it.duration)) } != null
@@ -181,12 +186,31 @@ internal fun TvTitlePage(
                         // and codecs in the case the index recorded them.
                         technicalLine(set).takeIf(String::isNotEmpty)?.let { TvQuietLine(it) }
                         if (resume.isNotEmpty()) Text(text = resume, style = TvTypeScale.body)
-                        TvTextRow(
-                            text = if (resume.isEmpty()) "▶ Play" else "▶ Resume",
-                            onClick = onPlay,
-                            modifier = Modifier.padding(top = Spacing.small),
-                            focusRequester = play,
-                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.medium), modifier = Modifier.padding(top = Spacing.small)) {
+                            TvTextRow(
+                                text = if (resume.isEmpty()) "▶ Play" else "▶ Resume",
+                                onClick = onPlay,
+                                focusRequester = play,
+                            )
+                            preload?.let { p ->
+                                TvPreloadPlate(state = p.state, onClick = p.onToggle, focusRequester = preloadPlate)
+                                // Remove takes the plate it removed with it —
+                                // land back on the main plate rather than
+                                // wherever focus search finds next (the
+                                // Overview tab, at the top of the page).
+                                if (p.state is FilmPreloadState.Done) {
+                                    TvPreloadRemovePlate(onClick = { preloadPlate.requestFocus(); p.onRemove() })
+                                }
+                            }
+                        }
+                        preload?.let { p ->
+                            TvPreloadDetailLines(
+                                state = p.state,
+                                serverLine = p.serverLine,
+                                onOpenStorage = p.onOpenStorage,
+                                modifier = Modifier.padding(top = Spacing.small),
+                            )
+                        }
                     }
             }
         }

@@ -26,7 +26,10 @@ import model.Profile
 import model.TitleCredits
 import model.WatchSnapshot
 import playback.CacheOccupancy
+import playback.InMemoryLanCacheSettings
+import playback.LanServer
 import player.PlayerViewModel
+import player.TitlePreloadViewModel
 import settings.InMemoryTmdbSettings
 import setup.SettingsCompletion
 import setup.SettingsUiState
@@ -59,6 +62,11 @@ internal class LibraryFlowFixture(
     val watch = MutableStateFlow(WatchSnapshot.Empty.copy(collections = listOf(ListOfSets("list", "Favourites", listOf("episode-1")))))
     val catalog: CatalogViewModel
     val player: PlayerViewModel
+
+    /** Drives and counts what a film page's Preload control does — see `TitlePreloadFixtures.kt`. Paired by default, so the server line is reachable without a test wiring one up itself. */
+    val filmPreloading = FakeFilmPreloading()
+    val lanServerSource = FakeLanServerSource(LanServer(baseUrl = "http://192.168.1.9:7788", host = "192.168.1.9:7788"))
+    val lanChunkProtocol = FakeLanChunkProtocol()
 
     init {
         if (!loading) catalogReady.complete(Unit)
@@ -125,6 +133,12 @@ internal class LibraryFlowFixture(
                 SearchViewModel::class.java to SearchViewModel(repository),
                 BrowseViewModel::class.java to BrowseViewModel(repository, PortraitRequestLog()),
                 LanCacheViewModel::class.java to lanCache,
+                // A film's own TitleDetailScreen resolves TitlePreloadViewModel
+                // through hiltViewModel() too — the same reason every entry
+                // here exists. Real, over fakes this fixture exposes so a
+                // test can drive a state or count a poll.
+                TitlePreloadViewModel::class.java to
+                    TitlePreloadViewModel(filmPreloading, InMemoryLanCacheSettings(), lanServerSource, lanChunkProtocol),
                 // MobileApp's MediagramTheme and SettingsScreen (reachable from
                 // this flow's own menu) each resolve an AppearanceViewModel
                 // through hiltViewModel(); this owner has to hand it back too.
@@ -154,6 +168,7 @@ internal class LibraryFlowFixture(
         listOf(
             episode("episode-1", "First episode", 1),
             episode("episode-2", "Second episode", 2),
+            film("film-1", "Example Film"),
         )
 
     private fun episode(
@@ -174,5 +189,22 @@ internal class LibraryFlowFixture(
         durationSecs = 600,
         posterPath = null,
         totalBytes = 10,
+    )
+
+    /** A film's own Preload control needs [MediaSet.totalBytes] > 0 — a size real enough that a test can also check "5.0 GB" reads back correctly. */
+    private fun film(id: String, title: String) = MediaSet(
+        setId = id,
+        kind = Kind.MOVIE,
+        title = title,
+        show = null,
+        chapter = null,
+        path = null,
+        season = null,
+        episodeFirst = null,
+        episodeLast = null,
+        year = 2021,
+        durationSecs = 9000,
+        posterPath = null,
+        totalBytes = 5 * 1_073_741_824L,
     )
 }

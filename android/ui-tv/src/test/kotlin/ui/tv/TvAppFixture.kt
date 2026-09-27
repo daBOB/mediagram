@@ -30,7 +30,9 @@ import playback.CacheOccupancy
 import playback.CacheVolume
 import playback.HeldSetsQuery
 import playback.INTERNAL_VOLUME_ID
+import playback.InMemoryLanCacheSettings
 import player.PlayerViewModel
+import player.TitlePreloadViewModel
 import settings.InMemoryLibrarySettings
 import settings.InMemoryTelegramSettings
 import settings.InMemoryTmdbSettings
@@ -107,6 +109,19 @@ internal class TvAppFixture(
     val repository = mockk<CatalogRepository>()
     val cacheBudget = mockk<CacheBudgetViewModel>(relaxed = true)
     val lanCache = mockk<LanCacheViewModel>(relaxed = true)
+
+    /**
+     * A film page resolves this through `hiltViewModel()` too — see the
+     * comment on the [models] map below. Real, over fakes exposed here
+     * (`TitlePreloadFixtures.kt`) rather than a relaxed mock: a relaxed
+     * `Flow` never emits, which would leave every film stuck at whatever
+     * `collectAsStateWithLifecycle`'s own `initialValue` is and make the
+     * NeedsSpace → Storage route untestable through this fixture.
+     */
+    val filmPreloading = FakeFilmPreloading()
+    val lanServerSource = FakeLanServerSource()
+    val lanChunkProtocol = FakeLanChunkProtocol()
+    val titlePreload = TitlePreloadViewModel(filmPreloading, InMemoryLanCacheSettings(), lanServerSource, lanChunkProtocol)
     val lanCacheState =
         MutableStateFlow<LanCacheUiState?>(
             LanCacheUiState(
@@ -257,6 +272,9 @@ internal class TvAppFixture(
                 // for the same reason every entry above exists — see that
                 // comment.
                 BrowseViewModel::class.java to BrowseViewModel(repository, PortraitRequestLog()),
+                // A film's own TvTitlePage resolves TitlePreloadViewModel
+                // through hiltViewModel() too, films only — same reason.
+                TitlePreloadViewModel::class.java to titlePreload,
             )
         val held =
             ViewModelProvider(

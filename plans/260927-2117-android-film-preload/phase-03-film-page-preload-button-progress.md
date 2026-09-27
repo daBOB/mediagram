@@ -11,7 +11,7 @@
 
 ## Overview
 
-P2 · pending. Films only (`Kind.MOVIE`, and `DOCUMENTARY` if the home plan has added
+P2 · done. Films only (`Kind.MOVIE`, and `DOCUMENTARY` if the home plan has added
 it by then). A Preload control beside Play on both film pages, driven by a small
 Hilt ViewModel keyed by set id.
 
@@ -57,11 +57,11 @@ Hilt ViewModel keyed by set id.
 
 ## Todo
 
-- [ ] ViewModel + test
-- [ ] phone/tablet control + tests
-- [ ] TV control + test
-- [ ] server line (hidden on old server)
-- [ ] tests green, version, changelog
+- [x] ViewModel + test
+- [x] phone/tablet control + tests
+- [x] TV control + test
+- [x] server line (hidden on old server)
+- [x] tests green, version, changelog
 
 ## Success criteria
 

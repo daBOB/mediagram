@@ -46,6 +46,16 @@ internal fun MenuBranch(
                 onLeave = at::pop,
             )
 
+        // A film page's own "Raise the cache budget" link — the
+        // same direct-section shape MenuScreen.System already uses.
+        MenuScreen.Storage ->
+            SettingsScreen(
+                initial = SettingsSection.STORAGE,
+                leavesFromSection = true,
+                tally = libraryTallyLines(catalogState.shelvesOrEmpty()),
+                onLeave = at::pop,
+            )
+
         MenuScreen.TmdbKey ->
             LibraryBranch(menuScreen.destination, menuActions, profileBar, browse, at, at::pop) {
                 TmdbKeyScreen(hasKey = fetchState.hasKey, onSave = fetchViewModel::saveKey)

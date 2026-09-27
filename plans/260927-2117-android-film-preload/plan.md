@@ -47,7 +47,7 @@ progress (`ProgressListener` is `null`), dies with the process.
 |---|-------|------|--------|
 | 01 | [Cache server: per-film status route](phase-01-cache-server-per-film-status-route.md) | crates/mediagram-cache, `LanChunkClient` | done |
 | 02 | [Preload engine: queue, progress, pause, service](phase-02-preload-engine-queue-progress-service.md) | core/playback, feature/player, app manifest | done |
-| 03 | [Film pages: button, bar, server line](phase-03-film-page-preload-button-progress.md) | ui-mobile `TitlePills`/`TitleDetailScreen`, ui-tv `TvTitlePage`, a small ViewModel | pending |
+| 03 | [Film pages: button, bar, server line](phase-03-film-page-preload-button-progress.md) | ui-mobile `TitlePills`/`TitleDetailScreen`, ui-tv `TvTitlePage`, a small ViewModel | done |
 | 04 | [Verify on tablet + TV box, docs, version](phase-04-verify-docs-version.md) | tests, docs, manifests | pending |
 
 01 and 02 are independent; 03 needs both. One agent at a time in the worktree.

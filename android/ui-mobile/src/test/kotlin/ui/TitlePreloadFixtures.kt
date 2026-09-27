@@ -1,4 +1,4 @@
-package player
+package ui
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -8,51 +8,26 @@ import kotlinx.coroutines.flow.StateFlow
 import playback.ActivePreload
 import playback.FilmPreloadState
 import playback.FilmPreloading
-import playback.HeldSetsQuery
 import playback.LanChunkProtocol
 import playback.LanPutResult
 import playback.LanServer
 import playback.LanServerSource
 import playback.LanServerStatus
 import playback.LanSetStatus
-import playback.PreloadItem
-import playback.SeriesPreloading
 
-/** Records every [want] call rather than touching a real cache or thread — see [playback.SeriesPreloading]. */
-internal class FakeSeriesPreloader : SeriesPreloading {
-    val wantCalls = mutableListOf<Pair<List<PreloadItem>, Long>>()
-
-    private val _heldEvents = MutableSharedFlow<String>(extraBufferCapacity = 8)
-    override val heldEvents: SharedFlow<String> = _heldEvents
-
-    override fun want(items: List<PreloadItem>, currentPlayingBytes: Long) {
-        wantCalls += items to currentPlayingBytes
-    }
-
-    /** For a test that wants [heldEvents] to fire without a real write. */
-    fun emitHeld(setId: String) {
-        _heldEvents.tryEmit(setId)
-    }
-}
-
-/** A fixed answer rather than a real disk cache — see [playback.HeldSets]. */
-internal class FakeHeldSets(private val held: Set<String> = emptySet()) : HeldSetsQuery {
-    override suspend fun isHeld(setId: String, totalBytes: Long): Boolean = setId in held
-
-    override suspend fun heldIds(sets: List<Pair<String, Long>>): Set<String> =
-        sets.map { it.first }.filterTo(mutableSetOf()) { it in held }
-
-    override suspend fun heldBytes(setId: String, totalBytes: Long): Long = if (setId in held) totalBytes else 0L
-}
-
-/** A settable per-film [FilmPreloadState], plus every enqueue/cancel/remove call — see [playback.FilmPreloading]. */
+/**
+ * As `feature/player`'s own test-only fakes of the same name — duplicated
+ * here rather than shared across modules, the same reason `TvAppFixture`
+ * and this file's own `LibraryFlowFixture` already keep separate ViewModel
+ * fixtures rather than one shared one: each surface's test source set has
+ * no way to reach another module's test sources, only its main ones.
+ */
 internal class FakeFilmPreloading : FilmPreloading {
     private val states = mutableMapOf<String, MutableStateFlow<FilmPreloadState>>()
     val enqueueCalls = mutableListOf<Triple<String, String, Long>>()
     val cancelCalls = mutableListOf<String>()
     val removeCalls = mutableListOf<String>()
 
-    /** Pushes a new state for [setId] — the only way a test drives what [stateOf] reports. */
     fun setState(setId: String, totalBytes: Long, state: FilmPreloadState) {
         flowFor(setId, totalBytes).value = state
     }
@@ -82,7 +57,6 @@ internal class FakeFilmPreloading : FilmPreloading {
     override val active: StateFlow<ActivePreload?> = MutableStateFlow(null)
 }
 
-/** A fixed (or absent) paired server — see [playback.LanServerSource]. */
 internal class FakeLanServerSource(server: LanServer? = null) : LanServerSource {
     override val server: StateFlow<LanServer?> = MutableStateFlow(server)
     override val searching: StateFlow<Boolean> = MutableStateFlow(false)
@@ -90,7 +64,7 @@ internal class FakeLanServerSource(server: LanServer? = null) : LanServerSource 
     override fun discover() = Unit
 }
 
-/** Answers [setStatus] with whatever [answer] currently holds, and counts how often it was asked — the rest of [playback.LanChunkProtocol] is never exercised through this fake. */
+/** Counts every [setStatus] call — the H1 regression's own probe reads this. */
 internal class FakeLanChunkProtocol(var answer: LanSetStatus? = null) : LanChunkProtocol {
     var setStatusCalls = 0
         private set
