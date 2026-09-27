@@ -89,6 +89,21 @@ rendering; `status/` owns the system
 panel. Shared catalog, state, formatting, and playback-policy helpers remain
 at the library root. The installed HLS client is still served at `/lib/hls.mjs`.
 
+`library-session.js` owns the catalog this profile sees, kept current: fetching
+`/api/sets`, diffing by body text, the kids filter, grouping into shelves, and
+the `/api/events` stream (open only while the tab is visible, coalesced so one
+read is ever in flight and none is dropped — once `start()`'s own first read
+has committed; one arriving before that is dropped on purpose, since that
+first read already draws the page with whatever it would have asked for). It
+also holds a redraw back while the player or a list picker is open, releasing
+exactly one owed redraw when the last of either closes — counts and the
+colophon are not held back, and reach `app.js` at once. `app.js`'s own draw
+settles any redraw it owed before releasing the list-editing hold that
+navigating away leaves open, so that release never fires a second, re-entrant
+draw of the page already under way. It sits behind a small browser port
+(`library-session-port.js`), so its own tests (`test/library-session.test.ts`)
+run without a DOM; `app.js` still owns rendering, DOM counts and routing.
+
 Every `upload.getFile` — playback, its readahead, the audio-track probe,
 transcode reads and the series preload alike — passes through one process-wide
 `DownloadGate` (`telegram/download-gate.ts`, 4 slots): Telegram's flood limit is

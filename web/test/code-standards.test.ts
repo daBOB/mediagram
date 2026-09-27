@@ -20,10 +20,13 @@ const ROOT = join(import.meta.dir, "..");
  * Revised 2026-09-26 for the watched-removal sync and the streaming/startup
  * work, written alongside this list and merged after it. Revised again the
  * same day for the settings menu: a stored account and cache budget, an
- * admin-gated router, and the runtime wiring to swap either live.
+ * admin-gated router, and the runtime wiring to swap either live. Lowered
+ * 2026-09-27 for `app.js`, once the catalog and its update stream moved out
+ * to `library-session.js`; raised the same day, by 7, for the re-entrant-draw
+ * guard and the reactive player hold that review found still belonged there.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 888,
+  "public/app.js": 786,
   "public/lib/catalog/course-view.js": 234,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,

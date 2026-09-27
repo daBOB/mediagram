@@ -5,6 +5,32 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.68.5 — the web player's library session has one home
+
+Architecture review candidate D.
+
+**Internal**
+
+- The catalog a profile sees, and keeping it current, moved out of
+  `web/public/app.js` into `web/public/lib/library-session.js`: the fetch and
+  diff of `/api/sets`, the kids filter, grouping into shelves, the coalesced
+  `/api/events` stream (open only while the tab is visible), and holding a
+  redraw back while the player or a list picker is open. `app.js` keeps
+  rendering, DOM counts, the colophon and routing, reached through the new
+  module's `onData`/`onRedraw` notifications and a `hold()`/`release()` pair
+  the player and list editing each take one of. The ordering bugs of the last
+  week (coalescing, the wait-until-close redraw, one event stream per visible
+  tab) all lived in `app.js`'s shared state between unrelated concerns, which
+  is what this module now contains on its own. A few behaviours did change
+  along the way: becoming visible again now also refreshes the editor's
+  choice, not just positions; a title finishing while it plays updates its
+  shelf's count at once instead of waiting for the shelf itself; and startup
+  no longer asks `/api/player` twice. A `drawn()` on the module settles a
+  redraw the player or list-editing hold owed the moment `app.js` draws it
+  anyway, so a hold releasing afterwards does not draw the page a second time.
+  Behind a small browser port (`library-session-port.js`), so the module's own
+  tests (`web/test/library-session.test.ts`) run without a DOM.
+
 ## 0.68.4 — course lessons named with an outline number
 
 **Fixed**

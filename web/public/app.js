@@ -13,8 +13,8 @@
 import { el } from "./lib/dom.js";
 import { countOf } from "./lib/format.js";
 import { renderSearch } from "./lib/catalog/search-view.js";
-import { groupLibrary, nextAfter, nextInQueue } from "./lib/library.js";
-import { countDocumentaries, groupDocumentaries } from "./lib/documentaries.js";
+import { nextAfter, nextInQueue } from "./lib/library.js";
+import { countDocumentaries } from "./lib/documentaries.js";
 import { catalogOf, loadLink } from "./lib/link.js";
 import { colophonLine } from "./lib/colophon.js";
 import { watchStatus } from "./lib/status/status-view.js";
@@ -44,7 +44,8 @@ import { similarTo } from "./lib/catalog/similar.js";
 import { drawAt } from "./lib/redraw.js";
 import { turnPage } from "./lib/page-turn.js";
 import { renderGenre, renderGenres, renderLatest } from "./lib/catalog/utility-pages.js";
-import { forKidsProfile } from "./lib/age-rating.js";
+import { createLibrarySession } from "./lib/library-session.js";
+import { browserLibraryPort } from "./lib/library-session-port.js";
 
 const main = document.getElementById("main");
 const player = document.getElementById("player");
@@ -74,17 +75,58 @@ function loadPlayer() {
     }));
 }
 
-/** @type {import("./lib/library.js").Library} */
+/**
+ * The catalog this profile currently sees, and every set by id within it.
+ *
+ * Mirror `librarySession.current()`, kept in step by its `onData`
+ * notification below — almost every view here reads both, so they are read
+ * as plain locals rather than through the session on every call. Ids rather
+ * than titles in `byId` — a position is recorded against a set, not against
+ * a copy of one — so turning a list of ids back into things to show needs
+ * one lookup rather than a search of three shelves.
+ * @type {import("./lib/library.js").Library}
+ */
 let library = { movies: [], series: [], tutorials: [], documentaries: { collections: [], singles: [] } };
+let byId = new Map();
+
+const kidsProfile = () => state.profile()?.kids === true;
 
 /**
- * Every set by id, for the shelves built from watch state.
- *
- * Those hold ids rather than titles — a position is recorded against a set,
- * not against a copy of one — so turning a list of ids back into things to
- * show needs one lookup rather than a search of three shelves.
+ * The catalog this profile sees, kept current — fetch, diff, filter, the
+ * update stream, and holding a redraw back while the player or a list
+ * picker is open all live in `library-session.js`; see its module doc.
  */
-let byId = new Map();
+const librarySession = createLibrarySession({
+  port: browserLibraryPort(),
+  state,
+  // Another device's positions or marks, pulled by the server, on the same
+  // notification and deferred-redraw path as a local mutation.
+  remoteState: () => {
+    void state.refreshState();
+    void loadEditorsChoice();
+  },
+});
+
+// Counts and the colophon reach the page at once, even while a redraw waits;
+// safe to subscribe before a profile is chosen — `librarySession.start()`'s
+// own commit fires this once, against the whole catalog, and `reapply()`
+// fires it again moments later against whoever was actually chosen.
+librarySession.onData((change) => {
+  ({ library, byId } = librarySession.current());
+  document.getElementById("n-movies").textContent = String(library.movies.length);
+  document.getElementById("n-series").textContent = String(library.series.length);
+  document.getElementById("n-tutorials").textContent = String(library.tutorials.length);
+  document.getElementById("n-documentaries").textContent = String(countDocumentaries(library.documentaries));
+  document.getElementById("rail-masthead").textContent = ["movies", "series", "tutorials"]
+    .map((section) => countOf(library[section].length, SECTIONS[section].extent))
+    .join("\n");
+  renderColophon(librarySession.current().visibleSets);
+  // A new catalogue has a new publish date, which the colophon states and the
+  // link's answer carries: asked again for that, not for every state change.
+  if (change.catalog) void loadLink().then(() => renderColophon(librarySession.current().visibleSets));
+  // Reaches this at once too, even with the player open — a count is owed now.
+  refreshShelfCounts();
+});
 
 /** Views that are neither a catalog shelf nor one built from watch state. */
 const PAGES = new Set(["home", "search", "system", "film", "genre", "genres", "latest", "settings", "person"]);
@@ -355,44 +397,50 @@ function preloadAfter(collection, setId) {
 }
 
 /**
- * State changes update counts immediately; the application chooses when to
- * rebuild the shelf. Playback and list editing retain their current nodes
- * until the dialog or picker closes, preserving the viewer's place.
- *
- * Startup renders once after catalog and profile selection are complete.
+ * State changes update counts immediately; `librarySession` decides when the
+ * shelf itself may rebuild, held back while the player or a list picker is
+ * open — see `library-session.js`'s `hold()`/`onRedraw()`. Subscribed here
+ * regardless of startup's own progress: nothing reaches `route()` before
+ * `librarySession.onRedraw` is itself subscribed, near the end of startup.
  */
-let shelfStale = false;
-let shelfEditing = false;
-let pageReady = false;
-
-function invalidateShelf() {
+function onShelfAffectingChange() {
   refreshShelfCounts();
-  if (player.open || shelfEditing) {
-    shelfStale = true;
-    return;
-  }
-  shelfStale = false;
-  route();
+  librarySession.invalidate();
 }
-
-state.subscribeChanges(() => {
-  if (pageReady) invalidateShelf();
-});
+state.subscribeChanges(onShelfAffectingChange);
 // The pin lives outside watch state (it belongs to no profile), but a change
 // to it is redrawn the same way, deferred while a title plays.
-onEditorsChoice(() => {
-  if (pageReady) invalidateShelf();
-});
+onEditorsChoice(onShelfAffectingChange);
+
+/**
+ * Holds a redraw back for as long as the player is open.
+ *
+ * There is no event for a `<dialog>` opening itself, only for its closing, so
+ * this is discovered reactively rather than armed on open: the redraw handler
+ * below calls this the first time a change arrives while `player.open` is
+ * true, which is also the first moment there is anything to hold back for.
+ * The close listener releases it.
+ */
+let playerHeld = null;
+function ensurePlayerHold() {
+  if (player.open && !playerHeld) playerHeld = librarySession.hold();
+}
 
 player.addEventListener("close", () => {
   pendingOpen++;
-  if (shelfStale) invalidateShelf();
+  playerHeld?.();
+  playerHeld = null;
 });
 window.addEventListener("pagehide", () => { pendingOpen++; });
 
+/** A list picker's own hold, for as long as it is adding titles. */
+let editHeld = null;
 function setShelfEditing(editing) {
-  shelfEditing = editing;
-  if (!editing && shelfStale) invalidateShelf();
+  if (editing) editHeld ??= librarySession.hold();
+  else {
+    editHeld?.();
+    editHeld = null;
+  }
 }
 
 function refreshShelfCounts() {
@@ -419,8 +467,8 @@ async function switchProfile() {
   const chosen = await chooseProfile(document.body, { canCancel: true });
   if (chosen === before) return;
   showProfile();
-  applyCatalog();
-  refreshShelfCounts();
+  // Counts follow from the reapply itself, through `onData`.
+  librarySession.reapply();
   route();
 }
 document.getElementById("who").addEventListener("click", switchProfile);
@@ -465,75 +513,6 @@ async function viewSearch(query, generation) {
     main.textContent = "";
     main.append(el("p", "error", `Search failed: ${error.message}`));
   }
-}
-
-/**
- * The catalog exactly as the server last sent it.
- *
- * Kept as text so a refresh can tell "the same again" from "something
- * arrived" with one comparison — including a title that finished caching,
- * whose only change is its offline badge.
- */
-let catalogText = "";
-
-/** The catalog as the server last sent it, before any profile's filter. */
-let catalogSets = [];
-
-const kidsProfile = () => state.profile()?.kids === true;
-
-/** What the given profile may see of a catalog; the last one committed by default. */
-const visibleSets = (sets = catalogSets) =>
-  kidsProfile() ? forKidsProfile(sets, new Set(state.kids())) : sets;
-
-/**
- * Builds the library the current profile sees from a catalog.
- *
- * The one place a kids profile's filter is applied: every shelf, search,
- * reel and Play next reads `library` or `byId`, so none can miss it. Cheap
- * enough to run on every profile change, which is what lets switching
- * profile skip a second download.
- *
- * Takes the sets explicitly, defaulting to what is already committed, so
- * `loadCatalog` can build against a freshly parsed body and let a
- * construction failure (an entry `groupLibrary` cannot make sense of) throw
- * before that body is recorded as the current catalog — the same guarantee
- * a bad parse already had.
- */
-function applyCatalog(sets = catalogSets) {
-  const visible = visibleSets(sets);
-  const documentaries = groupDocumentaries(visible.filter((set) => set.kind === "docu"));
-  library = { ...groupLibrary(visible), documentaries };
-  byId = new Map(visible.map((set) => [set.setId, set]));
-  document.getElementById("n-movies").textContent = String(library.movies.length);
-  document.getElementById("n-series").textContent = String(library.series.length);
-  document.getElementById("n-tutorials").textContent = String(library.tutorials.length);
-  document.getElementById("n-documentaries").textContent = String(countDocumentaries(library.documentaries));
-  document.getElementById("rail-masthead").textContent = ["movies", "series", "tutorials"]
-    .map((section) => countOf(library[section].length, SECTIONS[section].extent))
-    .join("\n");
-  renderColophon(visible);
-}
-
-/**
- * Reads the catalog and rebuilds the shelves' data from it.
- *
- * Answers whether anything changed, so a caller can leave the page alone when
- * nothing did: redrawing an unchanged shelf would throw away where the viewer
- * had scrolled to.
- */
-async function loadCatalog() {
-  const response = await fetch("/api/sets");
-  if (!response.ok) throw new Error(`the catalog answered ${response.status}`);
-  const text = await response.text();
-  if (text === catalogText) return false;
-  const sets = JSON.parse(text);
-  // Nothing is recorded until this succeeds: a body that parses but that
-  // `groupLibrary` cannot make sense of must throw before `catalogSets` or
-  // `catalogText` change, exactly as a body that fails to parse already did.
-  applyCatalog(sets);
-  catalogSets = sets;
-  catalogText = text;
-  return true;
 }
 
 /** What the whole library adds up to, across the foot of the page. */
@@ -607,8 +586,17 @@ function drawRoute() {
   const navigation = navigationGeneration;
   const visitedHash = location.hash;
   const generation = ++routeGeneration;
-  shelfEditing = false;
-  shelfStale = false;
+  // Settled before a hold releases below — releasing first would let an owed
+  // redraw fire back in through `onRedraw`, re-entering this very draw.
+  librarySession.drawn();
+  // A list-editing session left open when the viewer navigates away by
+  // another route: this draw is the redraw its hold was withholding, so the
+  // hold ends here rather than sitting open for the rest of the session.
+  if (editHeld) {
+    const release = editHeld;
+    editHeld = null;
+    release();
+  }
   // A panel left polling after the viewer has gone is the failure mode of
   // every panel like this. Stopped on the way out of *any* route, so there is
   // one place it can happen rather than one per way of leaving.
@@ -738,90 +726,6 @@ window.addEventListener("hashchange", () => {
   turnPage(main, route, refining);
 });
 
-/**
- * Reads the catalog again and redraws what changed, or defers the redraw
- * while a title plays — rebuilding the shelf behind the dialog would lose the
- * viewer's place for a change they cannot see yet.
- *
- * One read at a time, but never a notice dropped: one that arrives while a
- * read is running may be about a catalog that read has already missed, so it
- * earns exactly one more.
- */
-let refreshing = false;
-let askedAgain = false;
-async function refreshCatalog() {
-  // Not before the first load has finished: that one draws the page itself.
-  if (catalogText === "") return;
-  if (refreshing) {
-    askedAgain = true;
-    return;
-  }
-  refreshing = true;
-  try {
-    do {
-      askedAgain = false;
-      await readCatalogOnce();
-    } while (askedAgain);
-  } finally {
-    refreshing = false;
-  }
-}
-
-async function readCatalogOnce() {
-  try {
-    if (!(await loadCatalog())) return;
-    // The colophon says how old the catalogue is, and that just changed.
-    // Filtered the same way `applyCatalog` left it, or a kids profile would
-    // see the whole library's totals return on every refresh.
-    await loadLink();
-    renderColophon(visibleSets());
-    invalidateShelf();
-  } catch {
-    // A server that is restarting answers nothing for a moment. The shelves
-    // already showing are still true, and the next event asks again.
-  }
-}
-
-/**
- * The server says when the library changes; the page never polls for it.
- *
- * It hears a new index from Telegram the moment it is pinned and tells every
- * open page here. Every (re)connect is treated as news too — the server
- * restarted, the laptop woke up — because an event sent while the page was
- * away is not sent again. `EventSource` reconnects by itself.
- *
- * Open only while the tab is visible. Without HTTP/2 a browser allows about
- * six connections to one host, and a stream held by every background tab
- * would leave the tab being watched none for its video. A tab brought back
- * opens its stream again, and that open reads the catalog.
- */
-let libraryEvents = null;
-function listenForLibrary() {
-  if (libraryEvents !== null) return;
-  libraryEvents = new EventSource("/api/events");
-  libraryEvents.addEventListener("catalog", () => void refreshCatalog());
-  // Another device's positions or marks, pulled by the server. Without this a
-  // tab left open showed its old Continue shelf until it was hidden and shown.
-  libraryEvents.addEventListener("state", () => {
-    void state.refreshState();
-    void loadEditorsChoice();
-  });
-  libraryEvents.addEventListener("open", () => void refreshCatalog());
-}
-function stopListeningForLibrary() {
-  libraryEvents?.close();
-  libraryEvents = null;
-}
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") {
-    listenForLibrary();
-    // State saved on another device while this tab was away follows the same
-    // notification and deferred-redraw path as a local mutation.
-    void state.refreshState();
-  } else stopListeningForLibrary();
-});
-if (document.visibilityState === "visible") listenForLibrary();
-
 try {
   // None of these depends on another: the link, the kids marks, the editor's
   // choice and the catalog are all facts about the library itself, and the
@@ -831,7 +735,7 @@ try {
     loadLink(),
     state.loadKids(),
     loadEditorsChoice(),
-    loadCatalog(),
+    librarySession.start(),
     state.loadProfiles(),
   ]);
 
@@ -844,12 +748,12 @@ try {
     stateFailed: known !== null,
   });
   showProfile();
-  // Read before anyone was chosen; a kids profile sees less of it.
-  applyCatalog();
+  // Read before anyone was chosen; a kids profile sees less of it. Counts
+  // follow from the reapply itself, through `onData`.
+  librarySession.reapply();
 
   void offerSystem();
   void offerSettings();
-  refreshShelfCounts();
 
   // The start page, which answers both halves of what used to be decided
   // here: what was left unfinished, and — for a viewer who finished
@@ -861,7 +765,15 @@ try {
     history.replaceState(history.state, "", "#/home");
     shownHash = location.hash;
   }
-  pageReady = true;
+  // Only from here does a redraw-worthy change actually redraw: a state or
+  // editor's-choice notification arriving during the work above (loading the
+  // Kids marks, choosing a remembered profile) had nothing yet to reach.
+  librarySession.onRedraw(() => {
+    // A title is still open: take the hold this is the first sign of, and
+    // leave the redraw owed rather than losing the viewer's place under it.
+    if (player.open) { ensurePlayerHold(); librarySession.invalidate(); return; }
+    route();
+  });
   // Kicked off once the first shelf is about to draw, not awaited: Play
   // usually finds it already there by the time anyone presses it. A failure
   // here is reported when Play actually asks for it, not against a page the

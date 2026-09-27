@@ -121,19 +121,6 @@ test.each(["{", "[null]"])("failed catalog construction is retried for the ident
   expect(page()).toContain("Recovered");
 });
 
-test("concurrent catalog events coalesce into one follow-up read", async () => {
-  await start();
-  const next = deferred<Response>();
-  let reads = 0;
-  intercept = (url) => url === "/api/sets" ? (++reads === 1 ? next.promise : Promise.resolve(new Response(JSON.stringify([film("Latest")])))) : null;
-  stream().fire("catalog"); stream().fire("catalog"); stream().fire("open");
-  expect(reads).toBe(1);
-  next.resolve(new Response(JSON.stringify([film("Intermediate")])));
-  await settle();
-  expect(reads).toBe(2);
-  expect(page()).toContain("Latest");
-});
-
 test("catalog updates wait until the player closes before rebuilding the page", async () => {
   await start();
   env.node("player").showModal();
@@ -222,6 +209,21 @@ test("collection picker keeps its editing session through mutation and redraws o
   trigger.fire("click");
   expect(page()).toContain("First");
   expect(page()).toContain("one title");
+});
+
+test("a redraw the picker owes does not draw twice when a search opens instead of closing it", async () => {
+  await start();
+  await env.navigate("#/collections/list");
+  const trigger = descendants(env.node("main")).find((node) => node.textContent === "Add titles")!;
+  trigger.fire("click");
+  state.setInCollection("list", "First", true);
+  let searches = 0;
+  intercept = (url) => url.startsWith("/api/search?") ? (searches++, Response.json({ hits: [] })) : null;
+  await env.navigate("#/search/x");
+  expect(searches).toBe(1);
+  // A page never shown before rises in; the redraw the picker's release owed
+  // must not sneak in ahead of this one and get mistaken for it.
+  expect(env.document.documentElement.classes.has("settled")).toBe(false);
 });
 
 test("remote list-only changes redraw without claiming progress changed", async () => {
