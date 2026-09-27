@@ -5,6 +5,30 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.69.2 — Android Settings and System, in the web player's look
+
+**Changed**
+
+- Settings and System are one screen now, not two: on a phone, an index of
+  four rows — Telegram, Storage, Appearance, System, each with its own
+  one-line status — opens the one asked for, with Back returning to the
+  index; on a tablet held wide, the index sits beside the open page the
+  whole time, Telegram selected by default. The overflow menu's System
+  shortcut still opens System directly, and Back from it leaves straight
+  back to what was on screen, since it was asked for directly rather than
+  found through the index.
+- Every row and page now draws in the web player's own settings look: a
+  huge uppercase title over a small tracked-caps line, quiet ledgers for
+  facts, outlined pills for actions, and one soft-cornered "ledger" table in
+  place of the plain label/value rows Settings and System used before.
+- Appearance gained the web's Artwork picker (Default/Blurred/Artwork/Solid)
+  — modelled and rendered since 0.69.1, now with a way to choose it — beside
+  round accent swatches and theme cards drawn the same way.
+- System re-reads every two seconds while its page stays open, the same
+  interval the web player's own status panel polls at, rather than only
+  once per visit.
+- Television's own Settings/System follows in a later release.
+
 ## 0.69.1 — Android pages follow the web's Artwork setting
 
 **Added**

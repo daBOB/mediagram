@@ -1,7 +1,8 @@
 // The optical-size axis is reached through `FontVariation.Setting`, which
 // carries Compose's experimental-text opt-in. The axis is the reason these
-// two faces are worth their bytes, and the alternative is shipping a static
-// cut per size; the opt-in is the cheaper of the two risks.
+// two faces are worth their bytes over shipping a static cut per size — see
+// PageTitle's own doc comment for the one place that trade held and a
+// static pair was shipped anyway.
 @file:OptIn(ExperimentalTextApi::class)
 
 package designsystem
@@ -66,34 +67,11 @@ private fun interfaceFont(weight: Int) =
         variationSettings = FontVariation.Settings(FontVariation.weight(weight)),
     )
 
-/**
- * Fraunces at [PageTitle]'s own optical size rather than [DISPLAY_OPTICAL]:
- * a page title is drawn many times larger than a headline, and the axis
- * this face is worth its bytes for exists precisely so that size gets its
- * own cut instead of a headline's scaled up.
- */
-private fun pageTitleFont(opticalSize: Float) =
-    Font(
-        resId = R.font.fraunces,
-        weight = FontWeight.Medium,
-        variationSettings =
-            FontVariation.Settings(
-                FontVariation.weight(500),
-                FontVariation.Setting("opsz", opticalSize),
-            ),
-    )
-
 /** Drawn for a name held at arm's length: the wordmark, headings, titles. */
 private const val DISPLAY_OPTICAL = 28f
 
 /** Drawn for a sentence or a figure read at reading distance. */
 private const val READ_OPTICAL = 16f
-
-/** [PageTitle]'s optical size on a wide viewport — a phone or tablet held in the hand. */
-private const val PAGE_TITLE_OPTICAL = 112f
-
-/** [PageTitleCompact]'s optical size — the web's narrow-viewport clamp ceiling, 4.5rem. */
-private const val PAGE_TITLE_COMPACT_OPTICAL = 72f
 
 /** Fraunces: the wordmark, the shelf headings, and the name of a title. */
 internal val Display = FontFamily(display(500), display(600))
@@ -174,10 +152,21 @@ internal val CatalogueTypography =
  * tracking, how tight the lines sit — belongs to the style. `Center` +
  * `Trim.None` keep the 0.86em line height from clipping a capital's top and
  * bottom, which `Trim.Both` (Compose's own default) does not guarantee.
+ *
+ * A static font, not [display]'s own `variationSettings` trick: a page
+ * title is the one face on this catalogue drawn through
+ * `TextAutoSize.StepBased` (see [PageHead]), which re-measures the same
+ * `FontFamily` at several candidate sizes in one pass. On the device that
+ * surfaced this, that re-measurement left the requested `wght`/`opsz` axis
+ * values behind and fell back to `fraunces.ttf`'s own registered default
+ * instance — `wght 900`, `opsz 9`, its heaviest, most decorative cut, which
+ * is exactly the wrong-weight wedge-serif look this shipped with. Nothing
+ * else on this catalogue asks for `TextAutoSize`, so nothing else needed
+ * this — nothing else showed the bug either.
  */
 val PageTitle =
     TextStyle(
-        fontFamily = FontFamily(pageTitleFont(PAGE_TITLE_OPTICAL)),
+        fontFamily = FontFamily(Font(resId = R.font.fraunces_page_title, weight = FontWeight.Medium)),
         fontWeight = FontWeight.Medium,
         letterSpacing = (-0.03).em,
         lineHeight = 0.86.em,
@@ -187,9 +176,10 @@ val PageTitle =
 /**
  * [PageTitle] at the web's narrow-viewport optical size (`departments.css:91`)
  * — a compact phone screen, or a television read from the couch rather than
- * a tablet held in the hand.
+ * a tablet held in the hand. Its own static instance for the same reason.
  */
-val PageTitleCompact = PageTitle.copy(fontFamily = FontFamily(pageTitleFont(PAGE_TITLE_COMPACT_OPTICAL)))
+val PageTitleCompact =
+    PageTitle.copy(fontFamily = FontFamily(Font(resId = R.font.fraunces_page_title_compact, weight = FontWeight.Medium)))
 
 /** Spaced capitals over a page title, the way a magazine labels a department (`.eyebrow`, `theme.css:196-203`). */
 val Eyebrow =
@@ -243,7 +233,7 @@ object TvTypeScale {
             fontSize = 18.sp,
         )
 
-    /** The size [PageHead] steps [PageTitleCompact] down from on a television — the ten-foot floor under [PAGE_TITLE_COMPACT_OPTICAL]'s own ceiling. */
+    /** The size [PageHead] steps [PageTitleCompact] down from on a television — the ten-foot floor under its own 72-opsz ceiling. */
     val pageTitleMax: TextUnit = 72.sp
 
     /** [Eyebrow], at the ten-foot floor: double the phone's 11sp, read from the couch rather than the hand. */

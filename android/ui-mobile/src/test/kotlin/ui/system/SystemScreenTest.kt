@@ -37,7 +37,7 @@ class SystemScreenTest {
         val failure = mutableStateOf<String?>("System information could not be read. Try again.")
         var retries = 0
         show {
-            SystemContent(snapshot.value, failure.value) {
+            SystemContent(expanded = false, current = snapshot.value, failure = failure.value) {
                 retries++
                 snapshot.value = facts()
                 failure.value = null
@@ -55,7 +55,9 @@ class SystemScreenTest {
 
     @Test fun aFailedRefreshKeepsTheSnapshotVisibleAlongsideRetry() {
         var retries = 0
-        show { SystemContent(facts(), "System information could not be read. Try again.") { retries++ } }
+        show {
+            SystemContent(expanded = false, current = facts(), failure = "System information could not be read. Try again.") { retries++ }
+        }
 
         compose.onNodeWithText("Catalogue").assertIsDisplayed()
         compose.onNodeWithText("4 playable sets, 2 posters").assertIsDisplayed()

@@ -6,29 +6,40 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material3.Button
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import designsystem.LocalCatalogueTones
+import designsystem.Radius
 import designsystem.Spacing
 import system.LanCacheConnection
 import system.LanCacheUiState
 import system.LanCacheViewModel
-import system.lanCacheStatusLine
+import system.lanCacheRows
 import ui.components.Block
+import ui.components.LedgerEntry
 
 private const val ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"
 
@@ -77,36 +88,118 @@ internal fun LanCacheBlockContent(
     if (state == null) return
     var address by remember(state.manualAddress) { mutableStateOf(state.manualAddress) }
     var token by remember { mutableStateOf("") }
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
-        Block(heading = "Home cache server", rows = listOf("Status" to lanCacheStatusLine(state)))
+    val tones = LocalCatalogueTones.current
+    Column {
+        Block(
+            heading = "Home cache server",
+            rows =
+                lanCacheRows(state).map { (label, value) ->
+                    LedgerEntry(label, value, held = label == "Status" && state.connection == LanCacheConnection.CONNECTED)
+                },
+        )
         if (state.connection == LanCacheConnection.NEEDS_PERMISSION) {
-            TextButton(onClick = onGrantPermission) { Text("Grant local network access") }
+            Row(modifier = Modifier.padding(top = Spacing.small)) {
+                LinePill(text = "Grant local network access", onClick = onGrantPermission)
+            }
         }
         if (state.tokenRejected) {
-            Text("Pairing token rejected.", color = MaterialTheme.colorScheme.error)
+            Text(
+                "Pairing token rejected.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = Spacing.small),
+            )
         }
         Row(
-            horizontalArrangement = Arrangement.spacedBy(Spacing.small),
-            modifier = Modifier.toggleable(value = state.enabled, onValueChange = onSetEnabled),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 64.dp)
+                    .toggleable(value = state.enabled, onValueChange = onSetEnabled, role = Role.Switch)
+                    .padding(vertical = Spacing.small),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Use the home cache server")
-            Switch(checked = state.enabled, onCheckedChange = null)
+            Text("Use the home cache server", style = MaterialTheme.typography.bodyMedium)
+            Switch(
+                checked = state.enabled,
+                onCheckedChange = null,
+                colors =
+                    SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primary,
+                        checkedBorderColor = MaterialTheme.colorScheme.primary,
+                        uncheckedThumbColor = tones.quiet,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        uncheckedBorderColor = tones.quiet,
+                    ),
+            )
         }
-        OutlinedTextField(
+        HorizontalDivider(color = tones.ruleSoft)
+        SettingsField(
+            label = "Server address",
             value = address,
             onValueChange = { address = it },
-            label = { Text("Server address (optional — leave blank to rely on discovery)") },
+            placeholder = "Found automatically",
+            note = state.addressError ?: "Optional. Leave blank to find the server on the network.",
+            noteIsError = state.addressError != null,
+            actionLabel = "Save",
+            actionDescription = "Save address",
+            onAction = { onSaveManualAddress(address) },
         )
-        state.addressError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        Button(onClick = { onSaveManualAddress(address) }) { Text("Save address") }
-        Text(if (state.hasToken) "A pairing token is stored." else "No pairing token is stored.")
-        OutlinedTextField(
+        SettingsField(
+            label = "Pairing token",
             value = token,
             onValueChange = { token = it },
-            label = { Text("Pairing token") },
-            visualTransformation = PasswordVisualTransformation(),
+            password = true,
+            note = state.tokenError ?: if (state.hasToken) "A pairing token is stored." else "No pairing token is stored.",
+            noteIsError = state.tokenError != null,
+            actionLabel = if (state.hasToken) "Replace" else "Save",
+            actionDescription = "Save token",
+            onAction = { onSaveToken(token); token = "" },
         )
-        state.tokenError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        Button(onClick = { onSaveToken(token); token = "" }) { Text("Save token") }
+    }
+}
+
+/** A labeled field beside its own inline action pill, and a note beneath it — Storage's Server address and Pairing token, the only two on this screen shaped this way. */
+@Composable
+private fun SettingsField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    note: String,
+    noteIsError: Boolean,
+    actionLabel: String,
+    actionDescription: String,
+    onAction: () -> Unit,
+    placeholder: String? = null,
+    password: Boolean = false,
+) {
+    Column(modifier = Modifier.padding(top = Spacing.large)) {
+        Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                // Material3's own default text style for a field's typed text,
+                // its label and its placeholder is bodyLarge — Newsreader on
+                // this catalogue, its one kept serif exception. A field is
+                // interface chrome, not a sentence, so all three ask for Geist
+                // explicitly instead, the way the mockup's own `.input` does.
+                label = { Text(label, style = MaterialTheme.typography.bodyMedium) },
+                placeholder = placeholder?.let { text -> { Text(text, style = MaterialTheme.typography.bodyMedium) } },
+                textStyle = MaterialTheme.typography.bodyMedium,
+                visualTransformation = if (password) PasswordVisualTransformation() else VisualTransformation.None,
+                singleLine = true,
+                shape = RoundedCornerShape(Radius.control),
+                modifier = Modifier.weight(1f),
+            )
+            LinePill(text = actionLabel, onClick = onAction, contentDescription = actionDescription, modifier = Modifier.padding(top = 8.dp))
+        }
+        Text(
+            text = note,
+            style = MaterialTheme.typography.bodySmall,
+            color = if (noteIsError) MaterialTheme.colorScheme.error else LocalCatalogueTones.current.quiet,
+            modifier = Modifier.padding(top = Spacing.small),
+        )
     }
 }

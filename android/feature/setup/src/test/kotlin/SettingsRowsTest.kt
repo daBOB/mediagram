@@ -32,4 +32,21 @@ class SettingsRowsTest {
             telegramRows(state),
         )
     }
+
+    @Test
+    fun theIndexRowReadsBeforeTheFirstReplyIsStillWaiting() {
+        assertEquals("Reading…", telegramStatus(SettingsUiState()))
+    }
+
+    @Test
+    fun theIndexRowNamesWhoIsSignedIn() {
+        val state = SettingsUiState(account = "A Viewer (@viewer)", connection = "Signed in; Telegram answered")
+        assertEquals("A Viewer (@viewer) · signed in", telegramStatus(state))
+    }
+
+    @Test
+    fun theIndexRowSaysNotSignedInWhenTelegramDidNotAnswer() {
+        val state = SettingsUiState(account = "—", connection = "Telegram did not answer")
+        assertEquals("Not signed in", telegramStatus(state))
+    }
 }

@@ -193,3 +193,25 @@ fun upstreamRows(state: SystemUiState): List<Pair<String, String?>> =
         "Since starting" to humanSize(state.fromUpstreamBytes),
         "Failed reads" to if (state.failedReads > 0) "${state.failedReads}" else "none",
     )
+
+/**
+ * The System index row's one-line status: this app's version, and an honest
+ * word on whether there is anything on the page worth a second look — a
+ * refused refresh, a lost Telegram session, or a read that raised. The
+ * approved mockup's own row is a fixed "all current"; this reads the real
+ * facts instead, which is the point of the row.
+ */
+fun systemStatus(
+    state: SystemUiState?,
+    failure: String?,
+): String {
+    val version = state?.versionName ?: "—"
+    val note =
+        when {
+            failure != null -> "could not read"
+            state == null -> "reading…"
+            state.failedReads > 0 || state.connected == false || state.lastRefresh is RefreshOutcome.Refused -> "needs attention"
+            else -> "all current"
+        }
+    return "$version · $note"
+}

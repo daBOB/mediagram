@@ -147,4 +147,25 @@ class SystemRowsTest {
         assertEquals("Telegram", sourceLine(false, null, lanHits = 0))
         assertNull(sourceLine(null, null, lanHits = 0))
     }
+
+    @Test
+    fun theIndexRowIsAllCurrentWhenNothingIsWrong() {
+        assertEquals("0.4.0 · all current", systemStatus(facts(), failure = null))
+    }
+
+    @Test
+    fun theIndexRowReadsBeforeTheFirstSnapshotArrives() {
+        assertEquals("— · reading…", systemStatus(null, failure = null))
+    }
+
+    @Test
+    fun theIndexRowNamesAFailedRead() {
+        assertEquals("0.4.0 · could not read", systemStatus(facts(), failure = "System information could not be read. Try again."))
+    }
+
+    @Test
+    fun theIndexRowFlagsFailedReadsOrALostSession() {
+        assertEquals("0.4.0 · needs attention", systemStatus(facts(failedReads = 1), failure = null))
+        assertEquals("0.4.0 · needs attention", systemStatus(facts().copy(connected = false), failure = null))
+    }
 }

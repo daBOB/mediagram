@@ -8,6 +8,7 @@ import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
 import io.mockk.every
@@ -121,7 +122,10 @@ class MobileAppTest {
         ready()
         compose.onNodeWithContentDescription("Menu").performClick()
         compose.onNodeWithText("Settings").performClick()
-        compose.onNodeWithText("Sign out").performClick()
+        // Compact width opens on the index; Telegram is the row that carries Sign out.
+        compose.onNodeWithText("Telegram").performClick()
+        // The page scrolls; Sign out sits below the panels above it on a short window.
+        compose.onNodeWithText("Sign out").performScrollTo().performClick()
         compose.onNode(hasText("Sign out") and hasAnyAncestor(isDialog())).performClick()
         compose.onNodeWithText("Phone number").assertIsDisplayed()
         compose.onNodeWithText("Mediagram").assertDoesNotExist()

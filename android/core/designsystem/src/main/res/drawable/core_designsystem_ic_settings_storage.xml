@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings index's Storage row — the web's cylinder mark, `round2/b-telegram.html`'s inline SVG, traced into a vector resource. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M4.5,6 A7.5,2.5 0 1,0 19.5,6 A7.5,2.5 0 1,0 4.5,6" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M4.5,6 v12 c0,1.4 3.4,2.5 7.5,2.5 s7.5,-1.1 7.5,-2.5 V6 M4.5,12 c0,1.4 3.4,2.5 7.5,2.5 s7.5,-1.1 7.5,-2.5" />
+</vector>

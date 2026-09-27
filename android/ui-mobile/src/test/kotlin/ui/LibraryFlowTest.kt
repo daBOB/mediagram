@@ -114,18 +114,28 @@ class LibraryFlowTest {
         compose.onNodeWithContentDescription("Back").assertDoesNotExist()
     }
 
+    // Settings/System render outside LibraryScaffold (the approved mockups
+    // have no bar), so there is no overflow menu inside either of them to
+    // switch onward from — only TMDB key still keeps the bar.
     @Test fun switchingMenuScreensKeepsTheUnderlyingTitleAndBackReturnsDirectlyToIt() {
         title()
-        menu("System")
-        compose.onNodeWithText("Catalogue").assertIsDisplayed()
         menu("TMDB key…")
         compose.onNodeWithText("Fetch poster artwork").assertIsDisplayed()
         menu("Settings")
+        // Compact width opens on the index; "Telegram" is one of its rows.
         compose.onNodeWithText("Telegram").assertIsDisplayed()
         systemBack()
         compose.onNodeWithText("▶ Play").assertIsDisplayed()
         back()
         compose.onNode(hasText("Second episode", substring = true) and hasClickAction()).assertIsDisplayed()
+    }
+
+    @Test fun openingSystemDirectlyLeavesBackToTheUnderlyingTitle() {
+        title()
+        menu("System")
+        compose.onNodeWithText("Catalogue").assertIsDisplayed()
+        systemBack()
+        compose.onNodeWithText("▶ Play").assertIsDisplayed()
     }
 
     @Test fun aSavedTitleResolvesAfterTheRecreatedCatalogFinishesLoading() {
@@ -159,7 +169,9 @@ class LibraryFlowTest {
 
     @Test fun updatingFromAnOverlayReturnsToTheCatalogAndClearsTheDeepStack() {
         title()
-        menu("System")
+        // TMDB key still keeps the bar (System/Settings no longer do), so
+        // it is the overlay this test opens the update from.
+        menu("TMDB key…")
         val before = fixture.refreshes
         menu("Update library")
         compose.onNodeWithText("Mediagram").assertIsDisplayed()

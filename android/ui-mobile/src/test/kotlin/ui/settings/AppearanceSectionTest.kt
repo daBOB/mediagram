@@ -6,12 +6,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Accent
 import designsystem.Appearance
+import designsystem.Backdrop
 import designsystem.InMemoryAppearanceSettings
 import designsystem.ThemeChoice
 import org.junit.After
@@ -31,8 +34,11 @@ import kotlin.test.assertEquals
  * picking Light then Blue on [AppearanceSection] must reach the stored [Appearance],
  * the same way a viewer's tap does through Settings' real Hilt-provided instance.
  */
+// A tall window: three groups of 220dp swatch cards easily run past
+// Robolectric's short default window, leaving the lower ones un-clickable —
+// see ui.LibraryFlowTest's own note on the same qualifier.
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35])
+@Config(sdk = [35], qualifiers = "w400dp-h2400dp")
 class AppearanceSectionTest {
     @get:Rule val compose = createEmptyComposeRule()
     private lateinit var controller: ActivityController<ComponentActivity>
@@ -46,7 +52,12 @@ class AppearanceSectionTest {
             controller.get().setContent {
                 val appearance by model.state.collectAsStateWithLifecycle()
                 MaterialTheme {
-                    AppearanceSection(appearance = appearance, onChooseTheme = model::chooseTheme, onChooseAccent = model::chooseAccent)
+                    AppearanceSection(
+                        appearance = appearance,
+                        onChooseTheme = model::chooseTheme,
+                        onChooseAccent = model::chooseAccent,
+                        onChooseBackdrop = model::chooseBackdrop,
+                    )
                 }
             }
         }
@@ -74,5 +85,22 @@ class AppearanceSectionTest {
     fun defaultsToAutoAndCoralSelected() {
         compose.onNodeWithText("Auto").assertIsSelected()
         compose.onNodeWithText("Coral").assertIsSelected()
+    }
+
+    @Test
+    fun defaultsToTheDefaultArtworkMode() {
+        compose.onNodeWithText("Default").assertIsSelected()
+        // "Artwork" is both this group's own heading and one of its four
+        // options — hasText alone would match either, isSelectable() is
+        // what tells the option's own card apart from the plain heading.
+        compose.onNode(hasText("Artwork") and isSelectable()).assertIsNotSelected()
+    }
+
+    @Test
+    fun pickingTheArtworkOptionUpdatesTheStoredBackdrop() {
+        compose.onNode(hasText("Artwork") and isSelectable()).performClick()
+        assertEquals(Appearance(ThemeChoice.AUTO, Accent.CORAL, Backdrop.ARTWORK), settings.appearance.value)
+        compose.onNode(hasText("Artwork") and isSelectable()).assertIsSelected()
+        compose.onNodeWithText("Default").assertIsNotSelected()
     }
 }

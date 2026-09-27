@@ -5,6 +5,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -104,8 +105,9 @@ class LanCacheBlockTest {
     fun savingTheAddressCallsBackWithWhatWasTyped() {
         var saved: String? = null
         show(state(), onSaveManualAddress = { saved = it })
-        compose.onNodeWithText("Server address (optional — leave blank to rely on discovery)").performTextInput("192.168.1.9:7788")
-        compose.onNodeWithText("Save address").performClick()
+        compose.onNodeWithText("Server address").performTextInput("192.168.1.9:7788")
+        // Both fields' own pills read "Save"; the address one is told apart by its content description.
+        compose.onNodeWithContentDescription("Save address").performClick()
         assertEquals("192.168.1.9:7788", saved)
     }
 
@@ -114,8 +116,14 @@ class LanCacheBlockTest {
         var saved: String? = null
         show(state(), onSaveToken = { saved = it })
         compose.onNodeWithText("Pairing token").performTextInput("a".repeat(64))
-        compose.onNodeWithText("Save token").performClick()
+        compose.onNodeWithContentDescription("Save token").performClick()
         assertEquals("a".repeat(64), saved)
+    }
+
+    @Test
+    fun theTokenPillReadsReplaceOnceATokenIsStored() {
+        show(state(hasToken = true))
+        compose.onNodeWithText("Replace").assertIsDisplayed()
     }
 
     @Test

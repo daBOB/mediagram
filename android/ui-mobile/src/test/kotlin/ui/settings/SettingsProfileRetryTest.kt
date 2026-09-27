@@ -19,9 +19,11 @@ import data.DefaultWatchStateRepository
 import data.InMemoryCoreStorage
 import data.StoredCoreProvider
 import io.mockk.every
+import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -37,14 +39,20 @@ import settings.InMemoryTelegramSettings
 import setup.AppearanceViewModel
 import setup.Libraries
 import setup.SettingsViewModel
+import system.CacheBudgetViewModel
+import system.LanCacheViewModel
+import system.SystemViewModel
 import testing.FakeCore
 import uniffi.mediagram_core.AccountSummary
 import java.io.IOException
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+// A tall window: SettingsPage's own huge title pushes "Application id and
+// hash…" past Robolectric's short default window — see
+// ui.LibraryFlowTest's own note on the same qualifier.
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35])
+@Config(sdk = [35], qualifiers = "w400dp-h2400dp")
 class SettingsProfileRetryTest {
     @get:Rule val compose = createEmptyComposeRule()
     private val owner =
@@ -74,14 +82,30 @@ class SettingsProfileRetryTest {
         val watch = DefaultWatchStateRepository(provider, Dispatchers.Main.immediate)
         compose.runOnUiThread {
             model = SettingsViewModel(provider, library, InMemoryCoreStorage(), settings, Dispatchers.Main.immediate, watch)
-            // SettingsScreen also resolves an AppearanceViewModel through
-            // hiltViewModel(); this owner has to hand back both, or that second
-            // lookup falls to ViewModelProvider's default factory, which cannot
-            // construct one with no Hilt entry point to supply its arguments.
+            // SettingsScreen is the hub: it resolves every Settings/System
+            // ViewModel through hiltViewModel(), not only this one — this
+            // owner has to hand back all five, or a lookup this test never
+            // exercises falls to ViewModelProvider's default factory, which
+            // cannot construct one with no Hilt entry point to supply its
+            // arguments. Storage/System's own facts are irrelevant here,
+            // relaxed mocks with an unread state are enough.
             val appearanceModel = AppearanceViewModel(InMemoryAppearanceSettings())
+            val cacheModel = mockk<CacheBudgetViewModel>(relaxed = true)
+            every { cacheModel.state } returns MutableStateFlow(null)
+            every { cacheModel.failure } returns MutableStateFlow(null)
+            every { cacheModel.volumes } returns MutableStateFlow(emptyList())
+            every { cacheModel.chosenVolumeId } returns MutableStateFlow(null)
+            val lanModel = mockk<LanCacheViewModel>(relaxed = true)
+            every { lanModel.state } returns MutableStateFlow(null)
+            val systemModel = mockk<SystemViewModel>(relaxed = true)
+            every { systemModel.state } returns MutableStateFlow(null)
+            every { systemModel.failure } returns MutableStateFlow(null)
             val models = mapOf<Class<out ViewModel>, ViewModel>(
                 SettingsViewModel::class.java to model,
                 AppearanceViewModel::class.java to appearanceModel,
+                CacheBudgetViewModel::class.java to cacheModel,
+                LanCacheViewModel::class.java to lanModel,
+                SystemViewModel::class.java to systemModel,
             )
             val held =
                 ViewModelProvider(
@@ -97,7 +121,9 @@ class SettingsProfileRetryTest {
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
             controller.get().setContent {
                 CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
-                    MaterialTheme { SettingsScreen(cache = {}) }
+                    MaterialTheme {
+                        SettingsScreen(initial = SettingsSection.TELEGRAM, leavesFromSection = false, tally = emptyList(), onLeave = {})
+                    }
                 }
             }
         }
@@ -126,7 +152,8 @@ class SettingsProfileRetryTest {
         assertTrue(model.completions.value.isEmpty())
         core.profilesFailure = null
         compose.onNodeWithText("Try again").performClick()
-        compose.onNodeWithText("Telegram").assertIsDisplayed()
+        // Back on the Telegram section itself, not the reload prompt.
+        compose.onNodeWithText("Change library").assertIsDisplayed()
         compose.onNodeWithText("Try again").assertDoesNotExist()
         assertEquals(2, builds)
         assertEquals(1, model.completions.value.size)

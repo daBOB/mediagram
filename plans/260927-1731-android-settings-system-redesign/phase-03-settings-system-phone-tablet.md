@@ -8,7 +8,7 @@
 
 ## Overview
 
-Priority P1. Status: pending. Replace the single-column Settings list and the separate
+Priority P1. Status: complete. Replace the single-column Settings list and the separate
 System screen with one Settings frame: an index (Telegram · Storage · Appearance ·
 System, each with a status line) and a page with the web's page head. Two panes on
 EXPANDED width; one pane (index → section, with back) below it. Same ViewModels.
@@ -112,17 +112,17 @@ Tests to update
 
 ## Todo
 
-- [ ] Shared commit: sections enum, status fns (+tests), tally (+test), icons, ledger Block
-- [ ] Controls (pills, chips, swatch cards)
-- [ ] Index + panes (insets, back rules, tally on expanded)
-- [ ] Hub SettingsScreen
-- [ ] Telegram section (+ sessions)
-- [ ] Storage section (rename + 3 blocks)
-- [ ] Appearance section (theme, accent, artwork)
-- [ ] System columns (+ poll per Q1)
-- [ ] MENU branch wiring
-- [ ] Tests updated + SettingsPanesTest
-- [ ] Compile + tests green
+- [x] Shared commit: sections enum, status fns (+tests), tally (+test), icons, ledger Block
+- [x] Controls (pills, chips, swatch cards)
+- [x] Index + panes (insets, back rules, tally on expanded)
+- [x] Hub SettingsScreen
+- [x] Telegram section (+ sessions)
+- [x] Storage section (rename + 3 blocks)
+- [x] Appearance section (theme, accent, artwork)
+- [x] System columns (+ poll per Q1)
+- [x] MENU branch wiring
+- [x] Tests updated + SettingsPanesTest
+- [x] Compile + tests green
 
 ## Success criteria
 

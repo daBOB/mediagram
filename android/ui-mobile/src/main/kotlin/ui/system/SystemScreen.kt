@@ -2,18 +2,16 @@ package ui.system
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Spacing
+import kotlinx.coroutines.delay
 import system.SystemUiState
 import system.SystemViewModel
 import system.cacheRows
@@ -21,6 +19,10 @@ import system.catalogueRows
 import system.thisAppRows
 import system.upstreamRows
 import ui.components.Block
+import ui.settings.SettingsColumns
+
+/** How often System re-reads while its page stays on screen — the web's own `status-lines.js:14` poll, matched rather than left a per-visit snapshot. */
+private const val POLL_INTERVAL_MS = 2_000L
 
 /**
  * What the app is actually doing, in four blocks: the installed catalog,
@@ -40,40 +42,55 @@ import ui.components.Block
  * its absence is not an oversight.
  */
 @Composable
-fun SystemScreen() {
+internal fun SystemScreen(expanded: Boolean) {
     val viewModel: SystemViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val failure by viewModel.failure.collectAsStateWithLifecycle()
-    SystemContent(state, failure, viewModel::retry)
+    // Re-reads while this page stays composed — left once this section is
+    // no longer on screen, the same `WhileSubscribed` window that already
+    // drops the read 5s after the last collector leaves.
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(POLL_INTERVAL_MS)
+            viewModel.retry()
+        }
+    }
+    SystemContent(expanded, state, failure, viewModel::retry)
 }
 
-/** A failed read leaves earlier facts visible and offers the same retry on a first visit. */
+/** A failed read leaves earlier facts visible and offers the same retry on a first visit. No own padding: [ui.settings.SettingsPage] already supplies it. */
 @Composable
 internal fun SystemContent(
+    expanded: Boolean,
     current: SystemUiState?,
     failure: String?,
     onRetry: () -> Unit,
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(Spacing.large),
-        verticalArrangement = Arrangement.spacedBy(Spacing.large),
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.large)) {
         if (failure != null) {
-            item {
-                Column {
-                    Text(failure, color = MaterialTheme.colorScheme.error)
-                    TextButton(onClick = onRetry) { Text("Try again") }
-                }
+            Column {
+                Text(failure, color = MaterialTheme.colorScheme.error)
+                TextButton(onClick = onRetry) { Text("Try again") }
             }
         }
-        if (current != null) {
-            item { CatalogueBlock(current) }
-            item { CacheBlock(current) }
-            item { UpstreamBlock(current) }
-            item { ThisAppBlock(current) }
-        } else if (failure == null) {
-            item { Text("Reading system information…") }
+        when {
+            current != null ->
+                SettingsColumns(
+                    expanded = expanded,
+                    columns =
+                        listOf(
+                            {
+                                Column(verticalArrangement = Arrangement.spacedBy(Spacing.large)) {
+                                    CatalogueBlock(current)
+                                    ThisAppBlock(current)
+                                }
+                            },
+                            { CacheBlock(current) },
+                            { UpstreamBlock(current) },
+                        ),
+                )
+
+            failure == null -> Text("Reading system information…")
         }
     }
 }

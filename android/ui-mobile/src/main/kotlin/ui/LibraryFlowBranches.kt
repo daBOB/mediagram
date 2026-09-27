@@ -17,6 +17,7 @@ import catalog.Destination
 import catalog.MenuScreen
 import catalog.Shelf
 import catalog.firstItemOf
+import catalog.libraryTallyLines
 import catalog.mediaSet
 import catalog.runFor
 import system.FetchUiState
@@ -31,10 +32,9 @@ import ui.catalog.TitleDetailScreen
 import ui.catalog.posterColumnsFor
 import ui.catalog.rememberTitleInfo
 import ui.player.PlayerScreen
-import ui.settings.CacheSection
 import ui.settings.SettingsScreen
+import ui.settings.SettingsSection
 import ui.settings.TmdbKeyScreen
-import ui.system.SystemScreen
 
 /**
  * The library's own screens, one for each [FrameKind] — dispatched on
@@ -94,13 +94,30 @@ internal fun LibraryBranches(
 
         FrameKind.MENU -> {
             val menuScreen = at.menuScreen ?: return
-            LibraryBranch(menuScreen.destination, menuActions, profileBar, browse, at, at::pop) {
-                when (menuScreen) {
-                    MenuScreen.System -> SystemScreen()
-                    MenuScreen.TmdbKey -> TmdbKeyScreen(hasKey = fetchState.hasKey, onSave = fetchViewModel::saveKey)
-                    // Stands in until the real screen lands.
-                    MenuScreen.Settings -> SettingsScreen(cache = { CacheSection() })
-                }
+            when (menuScreen) {
+                // Settings/System render without LibraryScaffold — the
+                // approved mockups have no bar — and own their own back
+                // rule instead of LibraryBranch's single BackHandler(at::pop).
+                MenuScreen.System ->
+                    SettingsScreen(
+                        initial = SettingsSection.SYSTEM,
+                        leavesFromSection = true,
+                        tally = libraryTallyLines(catalogState.shelvesOrEmpty()),
+                        onLeave = at::pop,
+                    )
+
+                MenuScreen.Settings ->
+                    SettingsScreen(
+                        initial = null,
+                        leavesFromSection = false,
+                        tally = libraryTallyLines(catalogState.shelvesOrEmpty()),
+                        onLeave = at::pop,
+                    )
+
+                MenuScreen.TmdbKey ->
+                    LibraryBranch(menuScreen.destination, menuActions, profileBar, browse, at, at::pop) {
+                        TmdbKeyScreen(hasKey = fetchState.hasKey, onSave = fetchViewModel::saveKey)
+                    }
             }
         }
 

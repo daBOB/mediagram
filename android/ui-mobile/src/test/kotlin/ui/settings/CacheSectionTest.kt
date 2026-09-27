@@ -49,7 +49,7 @@ import system.LanCacheViewModel
 private val WORKING_OCCUPANCY =
     CacheOccupancy(heldBytes = 0, budgetBytes = 1L shl 30, volumeLabel = "Internal storage", fellBack = false, capBytes = 8L shl 30)
 
-/** No discovery, no server, nothing pinged — [CacheSection]'s own test cares only that the block mounts. */
+/** No discovery, no server, nothing pinged — [StorageSection]'s own test cares only that the block mounts. */
 private class NoopLocator : LanServerSource {
     override val server: StateFlow<LanServer?> = MutableStateFlow(null)
     override val searching: StateFlow<Boolean> = MutableStateFlow(false)
@@ -80,10 +80,12 @@ private class NoopLanChunkProtocol : LanChunkProtocol {
 }
 
 /**
- * [CacheSection] hosts both cache blocks over one [CacheBudgetViewModel]
- * and is the only one of the three that triggers its read — see
- * `CacheBudgetBlock.kt` and `CacheVolumeBlock.kt`'s own comments on why
- * they no longer do.
+ * [StorageSection] lays out both cache blocks over one
+ * [CacheBudgetViewModel] and the Home cache server block beside them; the
+ * read itself is triggered once, by `SettingsScreen` on entry, not by any
+ * block here — see `CacheBudgetBlock.kt` and `CacheVolumeBlock.kt`'s own
+ * comments on why they no longer do. This test drives that read directly,
+ * the way `SettingsScreen` would.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -138,10 +140,13 @@ class CacheSectionTest {
                 }
             ViewModelProvider(owner.viewModelStore, factory)[CacheBudgetViewModel::class.java]
             ViewModelProvider(owner.viewModelStore, factory)[LanCacheViewModel::class.java]
+            // StorageSection no longer triggers this itself — SettingsScreen
+            // does, once, on entry; this test drives that same call directly.
+            cacheBudgetModel.refresh()
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
             controller.get().setContent {
                 CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
-                    MaterialTheme { CacheSection() }
+                    MaterialTheme { StorageSection(expanded = false) }
                 }
             }
         }
