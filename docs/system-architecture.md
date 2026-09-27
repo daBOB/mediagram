@@ -556,6 +556,19 @@ address, the phone keeps it in the shelves' saved state, which a title opened
 over them no longer clears. What differs on purpose, and why, is recorded in
 `docs/superpowers/specs/2026-09-20-android-system-menu-and-playback-stats-design.md` §9.
 
+### Settings and System
+
+Settings is a two-pane index — Telegram, Storage, Appearance, System — on phone,
+tablet and television alike (`260927-1731-android-settings-system-redesign`), set in
+the web player's own dark tokens (`DESIGN.md`). Compact width shows the index or one
+open section, never both, with Back returning to the index; expanded width (tablet
+landscape, television) shows both panes together. System is a Settings entry, not a
+screen of its own — the app menu also keeps its own direct shortcut to System, so
+"what is this player doing right now" stays one tap away without detouring through
+the index. Storage merges the local cache and the home cache server into one section;
+Appearance offers Theme, Accent and Artwork (see `DESIGN.md` § Artwork). Television
+polls System every 2 seconds while it is visible, the same as the web player.
+
 ### The television surface
 
 `:ui-tv` is a second renderer over the same `feature:*` ViewModels and UiState,
@@ -592,9 +605,11 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
 - **No picture-in-picture or gesture controls.** No touch input and no window to shrink
   into; these are phone affordances. The player does publish a media session, so the
   remote's play/pause, fast-forward and rewind keys reach it.
-- **Always dark; Appearance offers the accent only.** A television is watched in a dark
-  room, where a light 10-foot page glares, so the theme choice (Dark/Light/Auto) is not
-  ported; the seven accents are, at their dark values (user decision, 2026-09-26).
+- **Always dark; Appearance offers the accent and artwork.** A television is watched in
+  a dark room, where a light 10-foot page glares, so the theme choice (Dark/Light/Auto)
+  is not ported; the seven accents are, at their dark values (user decision,
+  2026-09-26), and so is the Artwork setting (Default/Blurred/Artwork/Solid) added
+  2026-09-27 — a hero's art softens or drops the same way it does on phone and tablet.
 - **Continue and My List live in the Menu, not the masthead.** The web moved them to its
   side rail's utilities; the Menu is the television's rail, so they sit there with Latest
   and Genres, reachable once each.

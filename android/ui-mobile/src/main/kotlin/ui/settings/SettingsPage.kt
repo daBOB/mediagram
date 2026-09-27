@@ -1,16 +1,17 @@
 package ui.settings
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,7 +57,12 @@ internal fun SettingsPage(
         modifier =
             Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                // Keyed on section, not remembered bare: EXPANDED keeps this
+                // same call site across a switch (only `section` changes), so
+                // an unkeyed rememberScrollState() would carry the outgoing
+                // section's offset into the incoming one — the same bug the
+                // TV pane already fixed for its own scroll state.
+                .verticalScroll(remember(section) { ScrollState(0) })
                 .padding(if (expanded) ExpandedPagePadding else CompactPagePadding),
     ) {
         PageHead(

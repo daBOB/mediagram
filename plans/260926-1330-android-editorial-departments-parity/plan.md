@@ -36,7 +36,9 @@ Installed Android builds read schemas 6–8 and refuse a v9 package; any build f
   parity, not a TV exception. (Phase 6.)
 - **Settings › Appearance: port theme (Dark/Light/Auto) + the seven accents**, stored per
   device as on the web. Artwork mode is **not** ported — a deliberate difference, recorded
-  in phase 8. (Phase 8.)
+  in phase 8. (Phase 8.) **Superseded 2026-09-27:** Artwork ported, phone/tablet and TV
+  alike, by `plans/260927-1731-android-settings-system-redesign/` — see that plan's
+  decision 3 and its own phase 02.
 - **TV ownership** (user, 2026-09-26): phase 6 and the TV half of phase 8 are built by
   this session (mediagram-55); session mediagram-93, which owns the TV surface, then
   reviews them and walks them on the TV box, fixing what it finds.

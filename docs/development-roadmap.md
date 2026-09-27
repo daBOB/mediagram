@@ -214,7 +214,38 @@ the catalog and player logic; TV adds remote navigation and 10-foot UI.
 Walked on the real TV box and smoke-tested on the phone on 2026-09-26
 (`plans/260924-2239-android-tv-surface/reports/validation-260926-android-tv-box-and-phone-walk-report.md`).
 Reviewed, fixed and versioned 0.64.0. Remaining before merge: the emulator walk
-from a fresh install, which needs a Telegram login code.
+from a fresh install, which needs a Telegram login code. Phase 6's own
+System/Settings scope (row above) was superseded before it was built: the
+two-pane redesign below replaced it outright rather than extending the old
+single-scroll menu.
+
+## Android: Settings/System redesign, web tokens and Artwork
+
+Complete. `plans/260927-1731-android-settings-system-redesign/`, released
+0.69.0–0.69.4. Moved every Android surface onto the web player's own dark
+tokens (`DESIGN.md`), ported the web's Artwork setting
+(Default/Blurred/Artwork/Solid), and rebuilt Settings and System as one
+two-pane index — Telegram, Storage, Appearance, System — on phone, tablet
+and television, replacing the old single-scroll Settings and System screens
+on every surface at once.
+
+| Phase | Scope | Status |
+|---|---|---|
+| 1 | Web tokens, Geist, 6dp radius, `DESIGN.md` rewrite | Complete |
+| 2 | Artwork setting: model, storage, hero rendering | Complete |
+| 3 | Settings + System, phone and tablet | Complete |
+| 4 | TV two-pane Settings | Complete |
+| 5 | Verify, docs, version | Complete |
+
+Verified on the tablet (Redmi Pad Pro, `caad49da`) and the TV box
+(`192.168.0.35:5555`); all unit and Robolectric suites green, lint clean.
+Phase 5 also fixed a regression the tablet pass surfaced: a Settings section
+opened at whatever scroll position the previous section had been left at,
+rather than its own top — the same bug the TV pane had already had fixed for
+it in phase 4's own review round. Follow-ups (other screens' colours and
+type not yet swept onto the new tokens, a still-square TV focus ring, and
+similar) are listed in the plan's own `plan.md` § Review rather than tracked
+as separate work.
 
 ## Explicitly deferred (from the v1 implementation logs, not tracked as bugs)
 

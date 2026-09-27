@@ -5,6 +5,24 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.69.4 — closing the Settings/System redesign
+
+**Fixed**
+
+- Switching Settings sections on phone and tablet (Telegram → Appearance →
+  Storage, and so on) could open the new section already scrolled to
+  wherever the previous one had been left, instead of at its own top — the
+  same bug the television's own Settings pane had already been fixed for.
+  Each section now keeps its own scroll position again.
+
+**Changed**
+
+- `DESIGN.md` and `docs/system-architecture.md` now record the shipped
+  Settings/System redesign: the Artwork picker's four modes, Settings'
+  two-pane index and its lack of a top app bar, and where television's own
+  Appearance answers fewer of the four questions than phone and tablet do.
+  No other behaviour changed in this release.
+
 ## 0.69.3 — the television's Settings, in the same look
 
 **Changed**

@@ -504,6 +504,11 @@ that in Geist 13sp tabular.
   spell it differently.
 - **Icons:** the platform's own vector back and overflow marks, in figures grey,
   each carrying a content description.
+- **Exception:** Settings and System draw no top app bar at all. `PageHead`
+  opens every section instead, and Back is the pane's own rule (the index's
+  arrow at compact width, the frame's leave action at expanded) rather than
+  an app-bar icon — the approved mockups draw no bar, so this screen owns
+  its own back behaviour entirely.
 
 ### Page head
 
@@ -569,6 +574,33 @@ A picture of a theme or an artwork mode (Appearance's own pickers): 16:9,
 12dp corner (the one deliberate exception to `{rounded.control}` — see
 Shapes), a rule hairline at rest, ringed in imprint (`{colors.imprint}`) when
 selected.
+
+### Artwork
+
+Appearance's fourth picker (Default/Blurred/Artwork/Solid — the web's own
+setting, ported), drawn everywhere a hero shows a title or department's own
+art: a film's title page, a department's cover story, Movies and Shows.
+
+- **Default:** artwork fades into the page — the hero draws plainly.
+- **Blurred:** the same artwork behind a 28dp blur, scaled 1.12× and
+  saturated 1.25×, so the colour and light carry without the picture
+  competing with the words over it.
+- **Artwork:** "the picture behind the words" — today this draws exactly as
+  Default does. The web's own version of this mode only separates from
+  Default in a wide two-column layout (`departments.css`'s ≥900px
+  breakpoint); Android has not built that layout yet (see What this system
+  does not yet cover), so a phone or a tablet showing the two identically is
+  web narrow parity, not a bug — the web's own narrow width draws them the
+  same way.
+- **Solid:** no artwork at all — the hero art, its gradient and the
+  department's own pull-quote are skipped entirely; a film's title page and
+  a department's own cover story fall back to the same no-art layout each
+  already had for a title with nothing fetched. Home is unaffected: its own
+  cover story keeps its art regardless of this setting.
+- **TV answers two of Appearance's four choices, not all of them.** Accent
+  and Artwork reach the television the same way they reach a phone; Theme
+  (Dark/Light/Auto) does not — the television stays dark regardless (`docs/
+  system-architecture.md` § Television differs from the web player).
 
 ### Notice
 
@@ -640,14 +672,17 @@ selected.
 Recorded honestly, because the next screen will have to decide these rather than
 look them up:
 
-- **One screen's worth of system, plus tokens for the next one.** The catalogue
-  screen, its plates, its masthead and the app bar are what shipped and are
-  recorded here from the running app. The Settings-index-row, ledger, pill,
-  toggle and swatch-card entries above are the token contract carried over
-  from the approved Settings/System mockups — colour, type, radius — not yet
-  composed as Kotlin. The player, the title detail screen and the collection
-  screen have not been restyled at all; they inherit the palette and type
-  through the theme but their own composition is undocumented and unreviewed.
+- **Two screens' worth of system now, not one.** The catalogue screen and
+  Settings/System are both composed and shipped: a two-pane index (Telegram
+  · Storage · Appearance · System) on phone and tablet, and a second,
+  D-pad-driven two-pane build on television, both drawing the
+  Settings-index-row, ledger, pill, toggle, swatch-card and artwork entries
+  above. A menu shortcut still opens System directly, without the index.
+  The player, the title detail screen and the collection screen have not
+  been restyled at all; they inherit the palette and type through the theme
+  but their own composition is undocumented and unreviewed — a sweep of
+  what that leaves off-token is tracked outside this file (see the
+  Settings/System redesign plan's own review).
 - **This palette change touches every screen at once.** Every surface that
   reads `MaterialTheme.colorScheme` or a body/label typography role now reads
   the web's dark theme and Geist rather than the values this system replaces.

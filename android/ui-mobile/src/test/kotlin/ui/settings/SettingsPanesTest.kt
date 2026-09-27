@@ -8,6 +8,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -150,6 +151,19 @@ class SettingsPanesTest {
         open(initial = null, leavesFromSection = false)
         compose.onNodeWithText("mediagram").assertIsDisplayed()
         compose.onNodeWithText("Sign out").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w1600dp-h1068dp")
+    fun eachSectionOpensScrolledToItsOwnTopRatherThanKeepingAnotherSectionsOffset() {
+        open(initial = null, leavesFromSection = false)
+        compose.onNodeWithText("Storage").performClick()
+        val freshTop = compose.onNodeWithText("STORAGE").fetchSemanticsNode().boundsInRoot.top
+        compose.onNodeWithText("Appearance").performClick()
+        compose.onNodeWithText("Solid").performScrollTo()
+        compose.onNodeWithText("Storage").performClick()
+        val afterTop = compose.onNodeWithText("STORAGE").fetchSemanticsNode().boundsInRoot.top
+        assertEquals(freshTop, afterTop, "expected Storage to reopen at its own top, not Appearance's scroll offset")
     }
 
     @Test

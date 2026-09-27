@@ -8,8 +8,9 @@
 
 ## Overview
 
-Priority P1. Status: pending. Prove the four phases on tests and on the tablet, write the
-docs, list what looks off elsewhere, bump the version.
+Priority P1. Status: complete. Proved the four phases on tests and on the tablet, wrote
+the docs, listed what looks off elsewhere, bumped the version. See `plan.md` § Review
+for the full report.
 
 ## Key insights
 
@@ -71,13 +72,16 @@ docs, list what looks off elsewhere, bump the version.
 
 ## Todo
 
-- [ ] All suites green
-- [ ] Tablet install pinned to caad49da, test profile
-- [ ] Four section screenshots compared to mockups; in-scope deltas fixed
-- [ ] Artwork-mode screenshots (title, Movies, home)
-- [ ] Other-screen sweep → follow-up list in plan.md § Review
-- [ ] DESIGN.md, system-architecture, changelog, roadmap, superseded note
-- [ ] Version bump (read Cargo.toml first; three manifests + versionCode)
+- [x] All suites green
+- [x] Tablet install pinned to caad49da, test profile
+- [x] Four section screenshots compared to mockups; in-scope deltas fixed (one
+      regression found and fixed: shared scroll state across sections)
+- [x] Artwork-mode screenshots (title, Movies department; home skipped per lead —
+      being redesigned on another branch)
+- [x] Other-screen sweep → follow-up list in plan.md § Review (14 items)
+- [x] DESIGN.md, system-architecture, changelog, roadmap, superseded note
+- [x] Version bump (patch, 0.69.4 — docs/fix-only close; versionCode untouched per
+      CLAUDE.md § Versioning, which does not tie it to a semver bump)
 
 ## Success criteria
 
