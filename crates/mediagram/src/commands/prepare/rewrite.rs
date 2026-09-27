@@ -132,7 +132,7 @@ async fn rewrite(
         "-i",
     ]);
     command.arg(source);
-    command.args(plan.map_args());
+    command.args(plan.map_args(to_mp4));
     if to_mp4 {
         // The picture is always copied. The audio is re-encoded only when it
         // has to be: a track a browser already plays is copied too, because
@@ -162,20 +162,7 @@ async fn rewrite(
     let new_size = std::fs::metadata(&working)
         .with_context(|| format!("sizing {}", working.display()))?
         .len();
-    // Languages actually present in the source decide what the output must
-    // keep: demanding a language the source never had would reject every
-    // correct result.
-    let expected = keep_audio
-        .iter()
-        .filter(|lang| {
-            plan.keep.iter().any(|s| {
-                s.language
-                    .as_deref()
-                    .is_some_and(|l| l.eq_ignore_ascii_case(lang))
-            })
-        })
-        .cloned()
-        .collect::<Vec<_>>();
+    let expected = plan.expected_audio_languages(keep_audio);
 
     let prepared = Measured {
         size: new_size,

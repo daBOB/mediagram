@@ -1,5 +1,6 @@
 //! Interactive resolution of provider ids, over the shared TMDB client.
 
+mod episode_value;
 pub mod lookup;
 mod search;
 

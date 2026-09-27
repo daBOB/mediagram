@@ -45,10 +45,35 @@ impl PreparePlan {
             })
     }
 
+    /// The audio languages a prepared file must still carry.
+    ///
+    /// Only languages the kept *audio* has: demanding one the source never
+    /// had would reject every correct result. A video track tagged `eng`
+    /// beside German-only audio once made every such file fail its check.
+    pub fn expected_audio_languages<S: AsRef<str> + Clone>(&self, keep_audio: &[S]) -> Vec<S> {
+        keep_audio
+            .iter()
+            .filter(|lang| {
+                self.keep.iter().any(|s| {
+                    s.kind == StreamKind::Audio
+                        && s.language
+                            .as_deref()
+                            .is_some_and(|l| l.eq_ignore_ascii_case(lang.as_ref()))
+                })
+            })
+            .cloned()
+            .collect()
+    }
+
     /// `-map` arguments naming exactly the kept streams, in order.
-    pub fn map_args(&self) -> Vec<String> {
+    ///
+    /// An mp4 holds only what it can carry, and ffmpeg refuses the whole file
+    /// over one stream it cannot: so when `to_mp4`, [`mp4_cannot_hold`]
+    /// streams stay behind.
+    pub fn map_args(&self, to_mp4: bool) -> Vec<String> {
         self.keep
             .iter()
+            .filter(|s| !(to_mp4 && mp4_cannot_hold(s)))
             .flat_map(|s| ["-map".to_string(), format!("0:{}", s.index)])
             .collect()
     }
@@ -133,5 +158,24 @@ fn language_wanted(stream: &Stream, keep: &[&str]) -> bool {
             let lang = lang.to_ascii_lowercase();
             keep.iter().any(|k| k.eq_ignore_ascii_case(&lang))
         }
+    }
+}
+
+/// Subtitle codecs that are images rather than text.
+const PICTURE_SUBTITLES: &[&str] = &["hdmv_pgs_subtitle", "dvd_subtitle", "dvb_subtitle", "xsub"];
+
+/// Streams an mp4 cannot carry: a picture-based subtitle (Blu-ray PGS, DVD
+/// VobSub), which `mov_text` cannot express, and anything that is neither
+/// picture, sound nor subtitle — a Matroska attachment such as a font or a
+/// release's `.nfo`, or a data stream. Chapters are not streams and still
+/// travel.
+fn mp4_cannot_hold(stream: &Stream) -> bool {
+    match stream.kind {
+        StreamKind::Other => true,
+        StreamKind::Subtitle => stream
+            .codec
+            .as_deref()
+            .is_some_and(|c| PICTURE_SUBTITLES.contains(&c)),
+        _ => false,
     }
 }

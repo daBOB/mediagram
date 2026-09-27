@@ -5,6 +5,37 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.68.4 — course lessons named with an outline number
+
+**Fixed**
+
+- `add-course` read `6.10 – Deep stage` as number 6, so every lesson in a
+  chapter named `6.1`, `6.2`, … `6.10` collided, was renumbered in text order
+  (`6.1, 6.10, 6.2`) and kept "10 –" in its title. A dotted prefix now counts
+  by its last segment (lesson 10, titled "Deep stage"), and a dash or colon
+  after the number is dropped from the title (`media/file_names.rs`).
+  Courses already uploaded under such names (Wall Street Story) have their
+  lessons stored under the old numbers: re-running `add-course` on them
+  would compute different identities, so re-running is not safe for them.
+- `add-show` filed a double episode (`S09E19E20`) as E19 alone, so `status`
+  reported E20 missing. It passes each episode's number explicitly, and an
+  explicit number dropped the range the file name gave. A number equal to
+  the name's own start episode now keeps the range
+  (`metadata/episode_value.rs`).
+- `prepare --mp4` failed on every file carrying a Blu-ray (PGS) or DVD
+  subtitle: an mp4 holds subtitles only as text, and ffmpeg refused the
+  whole file ("Error opening output files: Invalid argument"). Picture-based
+  subtitle tracks are now left out of an mp4; text ones are still converted
+  (`media/prepare/plan.rs`).
+- `prepare` rejected a correct result as `MissingLanguage("eng")` when the
+  video track was tagged `eng` beside German-only audio: the languages the
+  result must keep were read from every kept track, picture included. They
+  now come from the kept audio alone (`PreparePlan::expected_audio_languages`).
+- `prepare --mp4` also failed on a Matroska attachment — an embedded font,
+  or a release's `.nfo` — or a data stream: an mp4 cannot carry them and
+  ffmpeg refused the whole file. They are now left out of an mp4 too;
+  chapters are not streams and still travel (`media/prepare/plan.rs`).
+
 ## 0.68.3 — a set completes in one transaction
 
 Architecture review candidate C. Review:

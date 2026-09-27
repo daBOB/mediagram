@@ -196,8 +196,78 @@ fn a_zero_duration_file_does_not_divide_by_it() {
 #[test]
 fn the_map_arguments_name_exactly_the_kept_streams() {
     let plan = plan_prepare(&real_episode(), 4_426_249_518, 2547.136, KEEP, KEEP, LIMIT);
-    let args = plan.map_args();
+    let args = plan.map_args(false);
     let maps: Vec<&String> = args.iter().filter(|a| a.starts_with("0:")).collect();
     assert_eq!(maps.len(), plan.keep.len());
     assert!(maps.iter().any(|m| *m == "0:0"), "video mapped: {maps:?}");
+}
+
+/// Blu-ray subtitles are pictures; an mp4 holds only text subtitles, and
+/// ffmpeg refuses the whole file rather than drop the track itself.
+#[test]
+fn an_mp4_leaves_picture_subtitles_behind_and_keeps_text_ones() {
+    let mut pgs = subtitle(3, "ger");
+    pgs.codec = Some("hdmv_pgs_subtitle".to_string());
+    let mut srt = subtitle(4, "eng");
+    srt.codec = Some("subrip".to_string());
+    let streams = vec![video(), audio(1, "ger", 192_000), pgs, srt];
+    let plan = plan_prepare(&streams, 200_000_000, 1300.0, KEEP, KEEP, LIMIT);
+
+    let mp4 = plan.map_args(true);
+    assert!(
+        !mp4.contains(&"0:3".to_string()),
+        "picture subtitle mapped: {mp4:?}"
+    );
+    assert!(
+        mp4.contains(&"0:4".to_string()),
+        "text subtitle dropped: {mp4:?}"
+    );
+    assert!(
+        plan.map_args(false).contains(&"0:3".to_string()),
+        "mkv keeps every kept track"
+    );
+}
+
+/// A language tag on the picture is not an audio track the result must keep.
+#[test]
+fn a_tagged_video_track_does_not_make_its_language_expected_audio() {
+    let mut picture = video();
+    picture.language = Some("eng".to_string());
+    let streams = vec![picture, audio(1, "ger", 320_000)];
+    let plan = plan_prepare(&streams, 2_000_000_000, 1300.0, KEEP, KEEP, LIMIT);
+    assert_eq!(plan.expected_audio_languages(KEEP), ["ger"]);
+}
+
+/// A Matroska attachment (a font, a release's `.nfo`) cannot go into an mp4,
+/// and ffmpeg refuses the whole file over it.
+#[test]
+fn an_mp4_leaves_attachments_behind() {
+    let attachment = Stream {
+        index: 3,
+        kind: StreamKind::Other,
+        language: None,
+        bit_rate: None,
+        codec: None,
+    };
+    let streams = vec![
+        video(),
+        audio(1, "ger", 192_000),
+        subtitle(2, "ger"),
+        attachment,
+    ];
+    let plan = plan_prepare(&streams, 2_000_000_000, 1300.0, KEEP, KEEP, LIMIT);
+
+    let mp4 = plan.map_args(true);
+    assert!(
+        !mp4.contains(&"0:3".to_string()),
+        "attachment mapped: {mp4:?}"
+    );
+    assert!(
+        mp4.contains(&"0:2".to_string()),
+        "subtitle dropped: {mp4:?}"
+    );
+    assert!(
+        plan.map_args(false).contains(&"0:3".to_string()),
+        "mkv keeps attachments"
+    );
 }

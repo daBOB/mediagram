@@ -9,6 +9,7 @@ use mlib_spec::filename::{Guess, parse_filename};
 use mlib_spec::ids::normalize_imdb;
 use mlib_spec::{Episode, Kind, ProviderIds};
 
+use super::episode_value::episode_value;
 use super::lookup::{fetch_episode_title, find_by_external};
 use super::prompt::Prompter;
 use super::search::search_and_resolve;
@@ -107,16 +108,6 @@ fn determine_kind(input: &ResolveInput, guess: &Guess) -> Kind {
         Kind::Ep
     } else {
         Kind::Movie
-    }
-}
-
-/// Explicit `--episode` wins over the filename guess; a guessed end episode
-/// only applies when the flag didn't override the start episode.
-fn episode_value(input: &ResolveInput, guess: &Guess) -> Option<Episode> {
-    let first = input.episode.or(guess.episode)?;
-    match guess.episode_end {
-        Some(end) if input.episode.is_none() => Some(Episode::Range([first, end])),
-        _ => Some(Episode::Single(first)),
     }
 }
 
