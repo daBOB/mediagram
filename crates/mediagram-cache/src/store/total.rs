@@ -58,11 +58,15 @@ pub(super) fn pair(tmp_dir: &Path, path: &Path, total: u64) -> io::Result<Option
 }
 
 /// `Ok(None)` for "not there yet" (the caller should try to become the
-/// writer), never an error for empty or unparseable content — only a
-/// missing file and a genuinely unreadable one are `Err`/`Ok(None)`
-/// respectively; the ambiguous case belongs to the retry loop that calls
-/// this, not to a single read.
-fn read_valid(path: &Path) -> io::Result<Option<u64>> {
+/// writer), never an error for empty or unparseable content — of the two
+/// ways a read can actually fail, only a missing file is `Ok(None)`; a
+/// genuinely unreadable one (permissions, a damaged filesystem) is still
+/// `Err`. The ambiguous case, empty or unparseable content, belongs to the
+/// retry loop that calls this, not to a single read. Also how a status
+/// query answers "does this set have a recorded total" — `pub(super)` so
+/// `store.rs` can read it directly rather than reimplementing the same
+/// missing/unparseable leniency a second time.
+pub(super) fn read_valid(path: &Path) -> io::Result<Option<u64>> {
     match fs::read_to_string(path) {
         Ok(text) => Ok(text.trim().parse::<u64>().ok()),
         Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(None),

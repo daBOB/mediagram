@@ -106,3 +106,38 @@ async fn status_reports_version_held_budget_and_chunks() {
     assert_eq!(json["chunks"], 1);
     assert!(json["version"].is_string());
 }
+
+#[tokio::test]
+async fn set_status_of_an_unknown_id_is_200_with_zeros_and_a_null_total() {
+    let (_dir, app) = app(1 << 30);
+    let res = app
+        .oneshot(Request::get("/v1/sets/abc123").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let json: serde_json::Value = serde_json::from_slice(&body_bytes(res).await).unwrap();
+    assert_eq!(json["total"], serde_json::Value::Null);
+    assert_eq!(json["chunks_held"], 0);
+    assert_eq!(json["bytes_held"], 0);
+}
+
+#[tokio::test]
+async fn set_status_reports_the_total_and_bytes_held_for_a_partly_written_set() {
+    let (_dir, app) = app(1 << 30);
+    let total = rules::CHUNK * 3;
+    let body = vec![7u8; rules::CHUNK as usize];
+    app.clone()
+        .oneshot(signed_put("/v1/sets/abc123/chunks/0", total, &body))
+        .await
+        .unwrap();
+
+    let res = app
+        .oneshot(Request::get("/v1/sets/abc123").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let json: serde_json::Value = serde_json::from_slice(&body_bytes(res).await).unwrap();
+    assert_eq!(json["total"], total);
+    assert_eq!(json["chunks_held"], 1);
+    assert_eq!(json["bytes_held"], rules::CHUNK);
+}

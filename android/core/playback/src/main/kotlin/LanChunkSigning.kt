@@ -46,6 +46,19 @@ internal fun statusFromJson(body: String): LanServerStatus? {
     return LanServerStatus(held, budget, chunks)
 }
 
+/**
+ * Pulls `GET /v1/sets/{id}`'s three fields out of its flat JSON body the
+ * same way [statusFromJson] does. `total` is the one field that is
+ * genuinely absent when unset — the body carries a literal JSON `null`,
+ * not a missing key — so [longField]'s digits-only pattern simply does not
+ * match it there, and it comes out `null` with no separate case needed.
+ */
+internal fun setStatusFromJson(body: String): LanSetStatus? {
+    val chunksHeld = longField(body, "chunks_held") ?: return null
+    val bytesHeld = longField(body, "bytes_held") ?: return null
+    return LanSetStatus(longField(body, "total"), chunksHeld, bytesHeld)
+}
+
 private fun longField(
     body: String,
     name: String,

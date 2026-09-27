@@ -157,4 +157,55 @@ class LanChunkClientTest {
 
             assertNull(client.status(baseUrl()))
         }
+
+    @Test
+    fun setStatusOfAPartlyHeldSetParsesTotalChunksAndBytes() =
+        runTest {
+            server.enqueue(MockResponse().setResponseCode(200).setBody("""{"total":5242880,"chunks_held":2,"bytes_held":2097152}"""))
+            server.start()
+
+            val status = client.setStatus(baseUrl(), "abc123")
+
+            assertEquals(LanSetStatus(5_242_880, 2, 2_097_152), status)
+        }
+
+    @Test
+    fun setStatusOfAnUnknownSetParsesANullTotal() =
+        runTest {
+            server.enqueue(MockResponse().setResponseCode(200).setBody("""{"total":null,"chunks_held":0,"bytes_held":0}"""))
+            server.start()
+
+            val status = client.setStatus(baseUrl(), "abc123")
+
+            assertEquals(LanSetStatus(null, 0, 0), status)
+        }
+
+    /**
+     * A 404 here means a malformed id or a server too old to have this
+     * route at all — never an id the server simply holds nothing of, which
+     * is a 200 with zeros instead ([setStatusOfAnUnknownSetParsesANullTotal]).
+     */
+    @Test
+    fun aFourOhFourOnSetStatusIsNullRatherThanThrowing() =
+        runTest {
+            server.enqueue(MockResponse().setResponseCode(404))
+            server.start()
+
+            assertNull(client.setStatus(baseUrl(), "abc123"))
+        }
+
+    @Test
+    fun setStatusWithAMalformedBodyIsNullRatherThanThrowing() =
+        runTest {
+            server.enqueue(MockResponse().setResponseCode(200).setBody("""{"total":5}"""))
+            server.start()
+
+            assertNull(client.setStatus(baseUrl(), "abc123"))
+        }
+
+    @Test
+    fun setStatusOnASchemeLessAddressIsNullRatherThanThrowing() =
+        runTest {
+            assertNull(client.setStatus("192.168.1.5:7788", "abc123"))
+        }
 }

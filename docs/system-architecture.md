@@ -804,6 +804,7 @@ configured just talks to Telegram directly, as it always did.
 | HEAD | same | none | 200 + `Content-Length` / 404 |
 | PUT | same, header `X-Set-Total: <bytes>` | signed, see below | 201 stored / 200 already held / 400 bad length / 401 / 409 total mismatch / 413 over one chunk |
 | GET | `/v1/status` | none | `{"version","held_bytes","budget_bytes","chunks"}` |
+| GET | `/v1/sets/{id}` | none | 200 `{"total","chunks_held","bytes_held"}` (`total` null if unrecorded) / 404 |
 
 `id` matches `^[A-Za-z0-9]{1,64}$` — the same shape the web player's
 `STREAM_PATH` requires — and `n` is a plain decimal `u32`; either failing

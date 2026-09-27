@@ -8,52 +8,6 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 
-/** `GET /v1/status`'s body, for the Settings row that reports how much a paired server is holding. */
-data class LanServerStatus(val heldBytes: Long, val budgetBytes: Long, val chunks: Long)
-
-/** How a PUT to the LAN server came back. */
-sealed interface LanPutResult {
-    /** 201 (newly stored) or 200 (already held) — either way the server now has it. */
-    data object Stored : LanPutResult
-
-    /** The token this device holds does not match the server's; further writes must stop. */
-    data object Unauthorized : LanPutResult
-
-    /** A 400/409/413 — a shape or length the server refuses. Not a reason to stop writing altogether. */
-    data object Rejected : LanPutResult
-}
-
-/**
- * The wire protocol [LanFirstChunkSource], [LanWriteQueue] and
- * [LanServerLocator] actually depend on — narrow enough that each of their
- * tests fakes it directly, rather than running a real HTTP server for
- * every branch. [LanChunkClient] is the one real implementation, and the
- * one place any of it is proven against an actual server
- * ([LanChunkClientTest]'s `MockWebServer`).
- */
-interface LanChunkProtocol {
-    suspend fun get(
-        baseUrl: String,
-        setId: String,
-        index: Long,
-        expectedLength: Int,
-    ): ByteArray?
-
-    suspend fun put(
-        baseUrl: String,
-        token: String,
-        setId: String,
-        index: Long,
-        total: Long,
-        body: ByteArray,
-    ): LanPutResult
-
-    suspend fun verify(baseUrl: String): Boolean
-
-    /** `null` for anything but a clean 200 with a well-formed body — same leniency as [verify]. */
-    suspend fun status(baseUrl: String): LanServerStatus?
-}
-
 /**
  * Speaks the `mediagram_cache` wire protocol (`docs/running-the-player.md`,
  * "Home cache server"): one GET per chunk read, one signed PUT per chunk
@@ -159,16 +113,32 @@ class LanChunkClient(
             }
         }
 
-    override suspend fun status(baseUrl: String): LanServerStatus? =
+    override suspend fun status(baseUrl: String): LanServerStatus? = getJson("$baseUrl/v1/status", ::statusFromJson)
+
+    override suspend fun setStatus(
+        baseUrl: String,
+        setId: String,
+    ): LanSetStatus? = getJson("$baseUrl${setStatusPath(setId)}", ::setStatusFromJson)
+
+    /**
+     * One GET, parsed by [parse] on a clean 200 — the shared shape behind
+     * [status] and [setStatus]: `null` for anything else (a non-200, a
+     * connect/read failure, or a body [parse] itself refuses), never a
+     * thrown [IOException]. A real status body is well under a hundred
+     * bytes; anything past [STATUS_LIMIT_BYTES] is not one, and is not
+     * read into memory.
+     */
+    private suspend fun <T> getJson(
+        url: String,
+        parse: (String) -> T?,
+    ): T? =
         withContext(Dispatchers.IO) {
             try {
-                withCancellableConnection({ open("GET", "$baseUrl/v1/status") }) { connection ->
+                withCancellableConnection({ open("GET", url) }) { connection ->
                     if (connection.responseCode != HttpURLConnection.HTTP_OK) {
                         null
                     } else {
-                        // A real status is well under a hundred bytes; anything past
-                        // this is not one, and is not read into memory.
-                        readAtMost(connection, STATUS_LIMIT_BYTES)?.let { statusFromJson(it.toString(Charsets.UTF_8)) }
+                        readAtMost(connection, STATUS_LIMIT_BYTES)?.let { parse(it.toString(Charsets.UTF_8)) }
                     }
                 }
             } catch (e: IOException) {
@@ -190,6 +160,8 @@ class LanChunkClient(
         setId: String,
         index: Long,
     ): String = "/v1/sets/$setId/chunks/$index"
+
+    private fun setStatusPath(setId: String): String = "/v1/sets/$setId"
 }
 
 private const val STATUS_LIMIT_BYTES = 4 * 1024

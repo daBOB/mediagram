@@ -127,6 +127,9 @@ fn evicting_a_sets_last_chunk_clears_its_total_too() {
         !dir.path().join("set1").exists(),
         "the emptied set's directory, total included, should be gone"
     );
+    let status = store.set_status("set1").unwrap();
+    assert_eq!(status.total, None, "cleared along with the last chunk");
+    assert_eq!(status.chunks_held, 0);
 
     // A fresh PUT of "set1" with a different total is accepted as a first
     // write, not rejected as a mismatch against the cleared-out total.
@@ -140,4 +143,46 @@ fn evicting_a_sets_last_chunk_clears_its_total_too() {
 fn status_reports_the_configured_budget() {
     let (_dir, store) = open(42);
     assert_eq!(store.status().budget_bytes, 42);
+}
+
+#[test]
+fn set_status_drops_an_evicted_chunk_but_keeps_the_survivors_total() {
+    let chunk = rules::CHUNK;
+    let (_dir, store) = open(chunk * 2);
+    let body = vec![0u8; chunk as usize];
+
+    store.put("set1", 0, chunk * 3, &body).unwrap();
+    store.put("set1", 1, chunk * 3, &body).unwrap();
+    store.put("set1", 2, chunk * 3, &body).unwrap(); // evicts chunk 0
+
+    let status = store.set_status("set1").unwrap();
+    assert_eq!(status.chunks_held, 2);
+    assert_eq!(status.bytes_held, chunk * 2);
+    // The set is not gone, only down a chunk: its recorded total survives.
+    assert_eq!(status.total, Some(chunk * 3));
+}
+
+/// Polling a set's status must never count as use: unlike `get`, it is a
+/// question about what the store holds, not a read of any of it, so
+/// repeating it must not change which chunk eviction picks next.
+#[test]
+fn set_status_does_not_refresh_lru_order() {
+    let chunk = rules::CHUNK;
+    let (_dir, store) = open(chunk * 2);
+    let body = vec![0u8; chunk as usize];
+
+    store.put("set1", 0, chunk * 3, &body).unwrap();
+    store.put("set1", 1, chunk * 3, &body).unwrap();
+
+    for _ in 0..5 {
+        store.set_status("set1").unwrap();
+    }
+    store.put("set1", 2, chunk * 3, &body).unwrap();
+
+    assert_eq!(
+        store.get("set1", 0).unwrap(),
+        None,
+        "chunk 0 was still the least recently used, status polls or not"
+    );
+    assert!(store.get("set1", 1).unwrap().is_some());
 }

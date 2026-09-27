@@ -101,3 +101,48 @@ fn head_and_get_of_an_unknown_chunk_are_none() {
     assert_eq!(store.get("set1", 0).unwrap(), None);
     assert_eq!(store.head("set1", 0).unwrap(), None);
 }
+
+#[test]
+fn set_status_of_an_unknown_set_is_zero_with_no_total() {
+    let (_dir, store) = open(1 << 30);
+    let status = store.set_status("set1").unwrap();
+    assert_eq!(status.total, None);
+    assert_eq!(status.chunks_held, 0);
+    assert_eq!(status.bytes_held, 0);
+}
+
+#[test]
+fn set_status_reports_partial_progress_and_the_recorded_total() {
+    let (_dir, store) = open(1 << 30);
+    let chunk = rules::CHUNK;
+    let total = chunk * 3;
+    store
+        .put("set1", 0, total, &vec![0u8; chunk as usize])
+        .unwrap();
+    store
+        .put("set1", 1, total, &vec![0u8; chunk as usize])
+        .unwrap();
+
+    let status = store.set_status("set1").unwrap();
+    assert_eq!(status.total, Some(total));
+    assert_eq!(status.chunks_held, 2);
+    assert_eq!(status.bytes_held, chunk * 2);
+}
+
+#[test]
+fn set_status_reports_every_byte_once_the_set_is_complete() {
+    let (_dir, store) = open(1 << 30);
+    let chunk = rules::CHUNK;
+    let total = chunk * 2;
+    store
+        .put("set1", 0, total, &vec![0u8; chunk as usize])
+        .unwrap();
+    store
+        .put("set1", 1, total, &vec![0u8; chunk as usize])
+        .unwrap();
+
+    let status = store.set_status("set1").unwrap();
+    assert_eq!(status.total, Some(total));
+    assert_eq!(status.chunks_held, 2);
+    assert_eq!(status.bytes_held, total);
+}

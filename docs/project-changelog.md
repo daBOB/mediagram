@@ -5,6 +5,22 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.73.0 — Cache server: a per-film status route
+
+**Added**
+
+- `GET /v1/sets/{id}` on `mediagram_cache`: `{"total","chunks_held","bytes_held"}`
+  for one set, `total` null when the server holds no recorded total for it. A
+  question, not a read — it touches no chunk's mtime and moves nothing in the
+  LRU order, so polling it cannot itself change what eviction picks next.
+  Answered straight from the in-memory index (already keyed per chunk) rather
+  than a directory scan, since the index already makes a per-set tally cheap.
+  Android's `LanChunkProtocol.setStatus` reads it the same lenient way
+  `status()` already reads `/v1/status`: `null` for a 404 (a malformed id,
+  or an older server without the route at all), a network error, or a
+  malformed body — an id the server simply holds nothing of is a 200 with
+  zeros instead.
+
 ## 0.72.1 — the department hero, in the web player's own layout
 
 **Changed**

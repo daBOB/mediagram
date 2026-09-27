@@ -124,6 +124,22 @@ impl Index {
     pub(super) fn chunk_count(&self) -> u64 {
         self.meta.len() as u64
     }
+
+    /// One set's chunk count and byte total, for a status query. A plain
+    /// filter over `meta` rather than a second, per-id index kept in step
+    /// with `insert`/`refresh`/`forget`: this store's whole `meta` is
+    /// already bounded by `budget` (one entry per held chunk), so scanning
+    /// all of it in memory is cheaper than the bookkeeping a second index
+    /// would add, and — unlike those three — this never touches `order`, so
+    /// a status poll cannot itself change what eviction picks next.
+    pub(super) fn set_totals(&self, id: &str) -> (u64, u64) {
+        self.meta
+            .iter()
+            .filter(|(key, _)| key.0 == id)
+            .fold((0u64, 0u64), |(chunks, bytes), (_, meta)| {
+                (chunks + 1, bytes + meta.size)
+            })
+    }
 }
 
 #[cfg(test)]

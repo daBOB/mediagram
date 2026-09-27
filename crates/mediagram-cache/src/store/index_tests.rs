@@ -85,3 +85,15 @@ fn inserting_an_already_present_key_with_a_different_size_updates_held_bytes() {
     assert_eq!(index.held_bytes(), 40);
     assert_eq!(index.chunk_count(), 1);
 }
+
+#[test]
+fn set_totals_counts_only_the_requested_id() {
+    let mut index = Index::from_scan(Vec::new());
+    index.insert(("set1".to_string(), 0), 100, SystemTime::now());
+    index.insert(("set1".to_string(), 1), 50, SystemTime::now());
+    index.insert(("set2".to_string(), 0), 999, SystemTime::now());
+
+    assert_eq!(index.set_totals("set1"), (2, 150));
+    assert_eq!(index.set_totals("set2"), (1, 999));
+    assert_eq!(index.set_totals("unknown"), (0, 0));
+}

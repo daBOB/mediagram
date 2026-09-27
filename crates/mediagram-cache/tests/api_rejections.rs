@@ -53,6 +53,20 @@ async fn an_id_that_fails_the_shape_check_is_404_before_touching_the_store() {
 }
 
 #[tokio::test]
+async fn set_status_of_an_id_that_fails_the_shape_check_is_404() {
+    let (_dir, app) = app(1 << 30);
+    // `_` fails `rules::valid_id` (alphanumeric only) while still matching
+    // this route's single-segment shape, so this reaches — and is turned
+    // away by — the same check `get`/`head`/`put` use, not a path axum's
+    // router simply has no route for.
+    let res = app
+        .oneshot(Request::get("/v1/sets/bad_id").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
 async fn a_put_with_a_bad_length_is_400() {
     let (_dir, app) = app(1 << 30);
     // Neither a full CHUNK nor exactly the final remainder of `total`.
