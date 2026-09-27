@@ -5,6 +5,22 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.68.8 — the System page counts real reconnects only
+
+**Fixed**
+
+- The System page's Reconnects counter climbed by about one every 9 seconds
+  while the player sat idle, with nothing actually reconnecting — the main
+  connection's socket never closed or redialed the whole time. Cause:
+  `teleproto`'s keepalive loop treats any gap since the last pong of 5s or
+  more as "just woke from sleep" and announces a fresh connection on success,
+  but the loop itself only ever pings every 9s, so that gap was always past
+  the threshold and the "woke from sleep" branch fired on every ordinary
+  ping. Patched the vendored dependency (`web/patches/teleproto@1.229.0.patch`)
+  to raise that threshold above the ping interval, so it only fires on an
+  actual gap — a suspended laptop, a backgrounded tab. No connection was ever
+  dropped; only the count was wrong.
+
 ## 0.68.7 — an uploaded title arrives with its cast
 
 **Fixed**

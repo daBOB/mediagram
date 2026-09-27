@@ -70,6 +70,13 @@ export class MeasuredClient extends TelegramClient {
    * Counts a reconnect on the main connection; the first `connected` does not
    * count as one. Only the main connection: a download-DC sender is pooled and
    * rebuilt without notice, and its failures show up as per-DC request errors.
+   *
+   * Trustworthy only because `teleproto`'s keepalive loop is patched
+   * (`web/patches/teleproto@1.229.0.patch`, guarded by
+   * `test/teleproto-ping-patch.test.ts`): unpatched, that loop's own
+   * wake-from-sleep heuristic fires on every routine ~9s ping and dispatches
+   * this same `connected` event, which would count as a reconnect that never
+   * happened.
    */
   watchReconnects(): void {
     let seenFirstConnect = false;

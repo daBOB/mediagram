@@ -1,0 +1,13 @@
+diff --git a/client/updates/dispatch.js b/client/updates/dispatch.js
+index 8c5b99d83eeb5aeff4c93d3c46a6f995da714acc..e3a55a931d15cfa69eda26af072f346761988aa0 100644
+--- a/client/updates/dispatch.js
++++ b/client/updates/dispatch.js
+@@ -17,7 +17,7 @@ const PING_TIMEOUT = 10000; // 10 sec
+ const PING_FAIL_ATTEMPTS = 3;
+ const PING_FAIL_INTERVAL = 100; // ms
+ const PING_DISCONNECT_DELAY = 75;
+-const PING_INTERVAL_TO_WAKE_UP = 5000;
++const PING_INTERVAL_TO_WAKE_UP = 15000;
+ const PING_WAKE_UP_TIMEOUT = 3000;
+ const PING_WAKE_UP_WARNING_TIMEOUT = 1000;
+ class StopPropagation extends Error {
