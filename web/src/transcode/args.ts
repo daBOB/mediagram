@@ -54,6 +54,18 @@ export interface TranscodeRequest {
  */
 const ASSUMED_FRAME_RATE = 25;
 
+/**
+ * Brings a picture larger than UHD down to fit inside it, keeping its shape;
+ * anything already smaller passes through untouched.
+ *
+ * Screen recordings arrive at sizes like 4784x2464. VAAPI refuses to encode
+ * anything over 4096 wide, and a frame that size is past every H.264 level,
+ * so a browser could refuse it even from libx264. The quotes keep the commas
+ * in `min()` from being read as the next filter in the chain.
+ */
+const FIT_UHD =
+  "scale=w='min(iw,3840)':h='min(ih,2160)':force_original_aspect_ratio=decrease:force_divisible_by=2";
+
 export function transcodeArgs(request: TranscodeRequest): string[] {
   const fps = request.frameRate ?? ASSUMED_FRAME_RATE;
   // Frames, not seconds. This is the line the plan got wrong.
@@ -112,9 +124,8 @@ export function transcodeArgs(request: TranscodeRequest): string[] {
     // the bytes are the same, only the name on the box differs.
     if (request.hevcCopy === true) args.push("-tag:v", "hvc1");
   } else {
-    if (request.encoder.kind === "vaapi") {
-      args.push("-vf", "format=nv12,hwupload");
-    }
+    // Uploaded only after it is fitted: VAAPI checks the size at the upload.
+    args.push("-vf", request.encoder.kind === "vaapi" ? `${FIT_UHD},format=nv12,hwupload` : FIT_UHD);
     args.push(
       "-c:v",
       request.encoder.name,

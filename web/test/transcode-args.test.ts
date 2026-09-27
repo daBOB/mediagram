@@ -136,6 +136,21 @@ describe("encoders", () => {
   });
 });
 
+describe("the picture size", () => {
+  // A 4784x2464 screen recording: VAAPI refuses anything over 4096 wide,
+  // and the frame is past every H.264 level, so it has to come down.
+  const FIT = "scale=w='min(iw,3840)':h='min(ih,2160)':force_original_aspect_ratio=decrease:force_divisible_by=2";
+
+  test("an encode never goes out larger than UHD, whatever the source", () => {
+    expect(valueOf(argsFor(), "-vf")).toBe(FIT);
+  });
+
+  test("with VAAPI the frame is fitted before it is uploaded, which is where the size is checked", () => {
+    const vf = valueOf(argsFor({ encoder: { kind: "vaapi", name: "h264_vaapi", device: "/dev/dri/renderD128" } }), "-vf");
+    expect(vf).toBe(`${FIT},format=nv12,hwupload`);
+  });
+});
+
 describe("what must always be true", () => {
   test("the input is the range server, and it is named once", () => {
     const args = argsFor();

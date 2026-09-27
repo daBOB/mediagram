@@ -5,6 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.66.4 — transcoding fits pictures larger than UHD
+
+**Fixed**
+
+- A title larger than UHD (screen recordings at sizes like 4784x2464) could
+  not be converted for the browser: VAAPI refuses anything over 4096 wide,
+  and a frame that size is past every H.264 level. The transcode now scales
+  such a picture down to fit inside 3840x2160, keeping its shape, before
+  encoding (and before the VAAPI upload); anything smaller passes through
+  untouched (`web/src/transcode/args.ts`).
+
 ## 0.66.1 — the web player turns its pages cleanly
 
 **Fixed**
