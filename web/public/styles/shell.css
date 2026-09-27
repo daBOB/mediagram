@@ -171,16 +171,18 @@ main.turning { animation: page-in 420ms var(--ease) backwards; }
   letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
 }
-.loading-state { padding: 16px 0; }
-.loading-state p { color: var(--ink-2); margin: 0 0 24px; }
-.loading-posters { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 24px; }
-.loading-posters span { aspect-ratio: 2 / 3; border-radius: var(--radius); background: var(--paper-sunk); }
+/* Shaped like the cover story, not a shelf the home page no longer has, so the
+   catalogue arrives into the page it is loading instead of replacing another. */
+.loading-state { display: flex; align-items: flex-end; height: var(--cover-height); padding: 0 var(--gutter) 96px;
+  margin: calc(-1 * (var(--main-top) + var(--masthead-height))) calc(-1 * var(--gutter)) 0; background: #0a0a0b; }
+.loading-state p { margin: 0; color: var(--on-image-2); }
 
 @media (max-width: 1180px) {
   :root { --rail-width: 11.5rem; }
   .departments a { padding-inline: 12px; }
 }
 @media (max-width: 900px) {
+  .loading-state { height: 84vh; margin: calc(-1 * var(--main-top)) -16px 0; padding: 0 16px 104px; }
   :root { --rail-width: 0px; --masthead-height: auto; --main-top: 24px; }
   .library-rail {
     position: static;
@@ -210,7 +212,6 @@ main.turning { animation: page-in 420ms var(--ease) backwards; }
   .search::placeholder { color: var(--ink-3); }
   main { width: 100%; padding: var(--main-top) 16px 64px; }
   .colophon { padding: 24px 16px; line-height: 1.8; }
-  .loading-posters { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 }
 @media (max-width: 480px) {
   .brand { font-size: 1.3rem; }
@@ -228,6 +229,9 @@ main.turning { animation: page-in 420ms var(--ease) backwards; }
 @property --bar-ink { syntax: "<color>"; inherits: true; initial-value: black; }
 @supports (animation-timeline: scroll()) {
   @media (prefers-reduced-motion: no-preference) and (min-width: 901px) {
+    /* Opening colours for an idle timeline (the one-screen loading state):
+       otherwise transparent with black type over the dark cover. */
+    [data-cover] { --bar-bg: rgba(10, 10, 11, 0.35); --bar-ink: var(--on-image); }
     [data-cover] .masthead {
       background: var(--bar-bg);
       border-bottom-color: transparent;

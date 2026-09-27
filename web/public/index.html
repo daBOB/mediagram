@@ -36,7 +36,10 @@
     <link rel="modulepreload" href="/lib/catalog/shelf-view.js" />
     <link rel="modulepreload" href="/lib/catalog/course-view.js" />
   </head>
-  <body>
+  <!-- Starts as a cover page: the loading state is shaped like the cover story,
+       so the masthead wears the dark glass it has over one. The first draw
+       clears it for any page that is not the home page. -->
+  <body data-cover>
     <button type="button" class="skip-link" id="skip-library">Skip to library</button>
     <!-- Two navigations, each link in one of them: the departments along
          the top, the viewer's shelves and utilities down the side. -->
@@ -89,9 +92,6 @@
     <main id="main" tabindex="-1">
       <div class="loading-state" role="status">
         <p>Loading your library…</p>
-        <div class="loading-posters" aria-hidden="true">
-          <span></span><span></span><span></span><span></span><span></span><span></span>
-        </div>
       </div>
     </main>
 

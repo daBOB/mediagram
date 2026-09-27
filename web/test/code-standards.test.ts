@@ -47,7 +47,7 @@ const CEILINGS: Record<string, number> = {
   "public/lib/watch-state.js": 502,
   "public/styles/home.css": 363,
   "public/styles/playback.css": 752,
-  "public/styles/shell.css": 259,
+  "public/styles/shell.css": 257,
   "public/styles/theme.css": 209,
   "src/cache/held.ts": 202,
   "src/cache/reader.ts": 293,

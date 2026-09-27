@@ -5,6 +5,21 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.68.15 — the web player loads into the page it is loading
+
+**Fixed**
+
+- Opening the web player showed "Loading your library…" over a row of grey
+  poster boxes — the shelf layout the home page no longer has — and then the
+  magazine home replaced it: one layout, then another. The loading state is
+  now shaped like the cover story the first page opens with (the same dark,
+  full-bleed block, the words where its title will be), and the page starts
+  with the cover's dark-glass masthead, so the home fades in over the block it
+  was waiting in. The first draw clears the cover look for any other page.
+  The masthead also gets the cover's opening colours when its scroll timeline
+  is idle, which on the one-screen loading state left black links on the dark
+  cover.
+
 ## 0.68.14 — the Android catalog asks its core once per question
 
 **Changed**
