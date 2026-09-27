@@ -97,10 +97,40 @@ async fn the_departments_surface_is_empty_not_an_error_before_any_refresh() {
     assert_eq!(player.fetch_portrait(1).await, None);
 }
 
-#[test]
-fn a_poster_key_of_the_wrong_shape_is_never_looked_up() {
+/// The player's own way to resolve a saved id: one row, not the whole
+/// catalog searched afterwards for it.
+#[tokio::test]
+async fn media_set_finds_the_row_a_saved_id_names() {
     let dir = tempfile::tempdir().unwrap();
-    assert_eq!(core(dir.path()).poster_path("../escape".into()), None);
+    seed_one_set(dir.path(), "01SETHELD00000000000000001");
+
+    let found = core(dir.path())
+        .media_set("01SETHELD00000000000000001".into())
+        .await
+        .unwrap();
+    assert_eq!(found.unwrap().set_id, "01SETHELD00000000000000001");
+}
+
+#[tokio::test]
+async fn media_set_answers_none_for_an_id_the_catalog_does_not_hold() {
+    let dir = tempfile::tempdir().unwrap();
+    seed_one_set(dir.path(), "01SETHELD00000000000000001");
+
+    assert_eq!(
+        core(dir.path()).media_set("nosuchset".into()).await.unwrap(),
+        None
+    );
+}
+
+/// The same "nothing installed is an empty answer, not a failure" rule
+/// `listing_sets_before_any_refresh_is_empty_not_an_error` is held to above.
+#[tokio::test]
+async fn media_set_answers_none_before_any_refresh() {
+    let dir = tempfile::tempdir().unwrap();
+    assert_eq!(
+        core(dir.path()).media_set("anything".into()).await.unwrap(),
+        None
+    );
 }
 
 #[tokio::test]

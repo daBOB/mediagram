@@ -91,6 +91,12 @@ data class MediaSet(
     val seriesType: String? = null,
     /** TMDB's status for a show, e.g. `"Ended"`, `"Returning Series"`; `null` when unknown. */
     val showStatus: String? = null,
+    /**
+     * The resolved path to this episode's own season poster, present only
+     * when its season has one — see `SetSummary::season_poster_path` on the
+     * Rust side. `null` for anything that is not an episode.
+     */
+    val seasonPosterPath: String? = null,
 )
 
 enum class Kind {

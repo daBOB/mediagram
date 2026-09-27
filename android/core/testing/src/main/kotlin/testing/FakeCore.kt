@@ -71,8 +71,6 @@ class FakeCore(
     var refreshFails: String? = null,
     /** Whether [refreshLibrary] is cancelled rather than finishing or failing. */
     var refreshCancels: Boolean = false,
-    /** What [posterPath] answers for a key it holds; any other key answers nothing. */
-    var posters: Map<String, String> = emptyMap(),
     /** What each wait in [nextLibraryEvent] answers, in order; past the end, a wait waits for ever, as a quiet channel does. */
     var events: List<Result<LibraryEvent>> = emptyList(),
     /** What [account] answers when [accountFailure] is unset. */
@@ -163,8 +161,12 @@ class FakeCore(
     var refreshedHandle: String? = null
         private set
 
-    /** Every key [posterPath] was asked for, in order — a test's way of seeing how many sets a lookup actually mapped. */
-    val posterPathCalls: MutableList<String> = mutableListOf()
+    /** How many times [listSets] actually ran — a test's way of proving a caller did not list the whole catalog to find one set. */
+    var listSetsCalls: Int = 0
+        private set
+
+    /** Every id [mediaSet] was asked for, in order. */
+    val mediaSetCalls: MutableList<String> = mutableListOf()
 
     /** Every offset [read] was actually asked for, in order — what a chunk-alignment test checks against. */
     val requestedOffsets: MutableList<Long> = mutableListOf()
@@ -283,11 +285,19 @@ class FakeCore(
 
     override suspend fun refreshCatalog(pointerUrl: String, keyB64: String): ULong = refreshResult.toULong()
 
-    override suspend fun listSets(): List<SetSummary> = sets
+    override suspend fun listSets(): List<SetSummary> {
+        listSetsCalls++
+        return sets
+    }
 
-    override fun posterPath(posterKey: String): String? {
-        posterPathCalls += posterKey
-        return posters[posterKey]
+    /**
+     * The real core's own indexed lookup, not a listing searched afterwards
+     * — [mediaSetCalls] is how a test proves a caller asked for one set this
+     * way rather than falling back to [listSets] and searching its answer.
+     */
+    override suspend fun mediaSet(setId: String): SetSummary? {
+        mediaSetCalls += setId
+        return sets.find { it.setId == setId }
     }
 
     override suspend fun titleInfo(posterKey: String): TitleInfo? = null

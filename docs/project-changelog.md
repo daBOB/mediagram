@@ -5,6 +5,58 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.68.14 — the Android catalog asks its core once per question
+
+**Changed**
+
+- The catalog listing (`Core::list_sets`) now carries every set's poster,
+  backdrop and (for an episode) season poster already resolved to a path on
+  disk — matching what the web player's `/api/sets` has always carried for a
+  poster and a season poster. A backdrop is a known, pre-existing exception:
+  it resolves disk-only on Android, where the web also counts one the
+  `artwork` table alone carries (daBOB/mediagram#1 tracks closing that gap).
+  `CatalogRepository` used to make one further `posterPath` crossing per set
+  per artwork field to get there (poster, backdrop, and per season plate on
+  the TV surface); it now reads the resolved fields straight off the record.
+  A title's credits, a person page and search-by-name results carry their
+  portraits the same way, so a cast list or a page of people costs the one
+  crossing that fetched it, not one more per name.
+- A new `Core::media_set(setId)` answers one set by id directly
+  (`catalog::playable_set`'s own indexed lookup), replacing
+  `CatalogRepository.mediaSet`'s former "list everything, then find it" —
+  the player's five `mediaSet` calls opening one episode measured
+  107–251 ms each against a ~1,160-set catalog before this; the id is now
+  looked up without listing, enriching or crossing the boundary for every
+  other set in the library.
+- On a listing, the index's `artwork` table (custom poster/backdrop bytes,
+  see §10.1) is read once into the set of keys it actually holds, rather
+  than queried per set with a miss — a key the table does not hold is never
+  queried about at all, not just once a snapshot with no table at all is
+  ruled out.
+
+**Internal**
+
+- `Core::poster_path`, the per-key FFI method, is gone — nothing on the
+  Kotlin side still resolves a key to a path itself, now that a listing and
+  a one-set lookup both carry resolved artwork and credits carry resolved
+  portraits. The internal resolver it wrapped survives as `store::poster_path`,
+  still used for a single portrait fetch download; a title's credits, a
+  person page and search-by-name results resolve their portraits through
+  the batched resolver instead (`store::resolve_with`, reusing the
+  connection and the artwork-key set that call already read), rather than
+  reopening the index per name the way `poster_path` would on a miss.
+- `SetSummary.backdrop_key`/credit records' `portrait_key` are gone,
+  replaced by `backdrop_path`/`portrait_path` carrying the resolved value
+  directly — nothing needed the raw key once nothing resolves it separately.
+- TV season plates and the mobile `CollectionScreen` no longer take a
+  `posterPath` lookup of their own; `SeasonPlate.posterPath` reads straight
+  off the episodes the core already resolved it for.
+- Artwork materialised from the `artwork` table is now written beside its
+  final name and renamed into place, not written to the name directly — a
+  listing and a `mediaSet` call can now resolve the same key at the same
+  time, each against its own connection, and a reader must never see a
+  half-written file at the name it is about to open.
+
 ## 0.68.13 — the Android app speaks to its core through the generated interface
 
 **Internal**

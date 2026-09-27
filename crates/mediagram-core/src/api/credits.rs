@@ -7,9 +7,12 @@
 //! bulk, and never gated on a TMDB key: the image CDN is public, the same
 //! reason `posters::poster_url` needs none either.
 
+use std::collections::HashSet;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use mediagram_tmdb::posters::{PORTRAIT_WIDTH, PosterRef};
+use rusqlite::Connection;
 
 use crate::dto::{CreditRecord, FranchiseRecord, PeopleHitRecord, PersonRecord, TitleCreditsRecord};
 use crate::shows::title_of;
@@ -81,15 +84,16 @@ fn run_title_credits(core: &Core, key: &str) -> TitleCreditsRecord {
         tracing::warn!(error = %err, "a title's credits could not be read");
         Default::default()
     });
+    let portraits = Portraits::new(core, &conn);
     TitleCreditsRecord {
-        cast: credits.cast.into_iter().map(|c| shape(core, c)).collect(),
-        crew: credits.crew.into_iter().map(|c| shape(core, c)).collect(),
+        cast: credits.cast.into_iter().map(|c| shape(&portraits, c)).collect(),
+        crew: credits.crew.into_iter().map(|c| shape(&portraits, c)).collect(),
     }
 }
 
-fn shape(core: &Core, credited: crate::credits::Credited) -> CreditRecord {
+fn shape(portraits: &Portraits, credited: crate::credits::Credited) -> CreditRecord {
     CreditRecord {
-        portrait_key: portrait_if_held(core, credited.person_id),
+        portrait_path: portraits.resolve(credited.person_id),
         person_id: credited.person_id,
         name: credited.name,
         role: credited.role,
@@ -101,8 +105,9 @@ fn run_person(core: &Core, person_id: u64) -> Option<PersonRecord> {
     let found = crate::credits::for_person(&conn, person_id)
         .inspect_err(|err| tracing::warn!(error = %err, "a person's credits could not be read"))
         .ok()??;
+    let portraits = Portraits::new(core, &conn);
     Some(PersonRecord {
-        portrait_key: portrait_if_held(core, person_id),
+        portrait_path: portraits.resolve(person_id),
         person_id,
         name: found.name,
         title_keys: found.title_keys,
@@ -127,6 +132,7 @@ fn run_search_people(core: &Core, query: &str) -> Vec<PeopleHitRecord> {
     let Ok(conn) = store::open(core) else {
         return Vec::new();
     };
+    let portraits = Portraits::new(core, &conn);
     crate::credits::people_matching(&conn, query)
         .unwrap_or_else(|err| {
             tracing::warn!(error = %err, "people search could not be read");
@@ -134,7 +140,7 @@ fn run_search_people(core: &Core, query: &str) -> Vec<PeopleHitRecord> {
         })
         .into_iter()
         .map(|hit| PeopleHitRecord {
-            portrait_key: portrait_if_held(core, hit.person_id),
+            portrait_path: portraits.resolve(hit.person_id),
             person_id: hit.person_id,
             name: hit.name,
             title_keys: hit.title_keys,
@@ -142,11 +148,34 @@ fn run_search_people(core: &Core, query: &str) -> Vec<PeopleHitRecord> {
         .collect()
 }
 
-/// The key this person's portrait would be held under, present only when
-/// the file already exists on this device — see `SetSummary::backdrop_key`.
-fn portrait_if_held(core: &Core, person_id: u64) -> Option<String> {
-    let key = format!("tmdb-person-{person_id}");
-    store::poster_path(core, key.clone()).map(|_| key)
+/// A person's portrait, resolved against a connection and an artwork-key set
+/// the caller already read once — a title's whole cast, or a page of search
+/// hits, costs one "which keys does the table hold" query, not a fresh
+/// connection reopened per name the way `store::poster_path` would on every
+/// miss (fine for that function's own single-portrait callers, wrong here).
+struct Portraits<'a> {
+    conn: &'a Connection,
+    version_dir: PathBuf,
+    artwork_dir: PathBuf,
+    artwork_keys: HashSet<String>,
+}
+
+impl<'a> Portraits<'a> {
+    fn new(core: &Core, conn: &'a Connection) -> Self {
+        Portraits {
+            conn,
+            version_dir: store::current_dir(core),
+            artwork_dir: store::artwork_dir(core),
+            artwork_keys: crate::artwork::keys(conn).unwrap_or_default(),
+        }
+    }
+
+    /// Present only when the file already exists on this device — see
+    /// `SetSummary::backdrop_path`.
+    fn resolve(&self, person_id: u64) -> Option<String> {
+        let key = format!("tmdb-person-{person_id}");
+        store::resolve_with(&self.version_dir, &self.artwork_dir, self.conn, &key, &self.artwork_keys, true)
+    }
 }
 
 /// The profile path to fetch a portrait from: the index's own `credits`

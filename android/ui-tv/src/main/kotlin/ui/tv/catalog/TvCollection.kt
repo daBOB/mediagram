@@ -53,7 +53,6 @@ fun TvCollection(
     collection: Entry.Collection,
     info: TitleInfo?,
     watch: WatchSnapshot,
-    posterPath: suspend (key: String) -> String?,
     onOpenTitle: (setId: String) -> Unit,
     onOpenSeason: (Division) -> Unit,
     onOpenGenre: (String) -> Unit = {},
@@ -132,7 +131,7 @@ fun TvCollection(
                             restoreKey = restoreKey,
                             onOpen = { plate -> onOpenSeason(plate.division) },
                             header = header,
-                            plate = { plate, modifier, onOpen -> TvSeasonPlate(collection, plate, posterPath, onOpen, modifier) },
+                            plate = { plate, modifier, onOpen -> TvSeasonPlate(collection, plate, onOpen, modifier) },
                         )
                     } else {
                         val rows = remember(collection) { rowsOf(collection.divisions) }

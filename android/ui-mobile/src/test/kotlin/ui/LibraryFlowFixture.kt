@@ -75,7 +75,6 @@ internal class LibraryFlowFixture(
             sets
         }
         coEvery { repository.titleInfo(any()) } returns null
-        coEvery { repository.posterPath(any()) } returns null
         // The title/series page's own Cast tab and franchise link: this
         // fixture's own sets carry neither, so both stay off exactly as they
         // did before either existed — but the pages ask every time they

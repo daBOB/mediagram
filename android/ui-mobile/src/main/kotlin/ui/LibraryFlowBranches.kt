@@ -181,7 +181,6 @@ internal fun LibraryBranches(
                 info = rememberTitleInfo(collection.posterKey, catalogViewModel::titleInfo),
                 watch = resolved.watch,
                 heldIds = catalogState.heldIdsOrEmpty(),
-                posterPath = catalogViewModel::posterPath,
                 onOpenTitle = at::openTitle,
                 onOpenSeason = { at.openSeason(it.title) },
                 onOpenGenre = at::openGenre,

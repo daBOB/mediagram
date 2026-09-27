@@ -30,8 +30,6 @@ class FakeCatalogRepository(
 
     override suspend fun titleInfo(posterKey: String): TitleInfo? = null
 
-    override suspend fun posterPath(posterKey: String): String? = null
-
     override suspend fun mediaSet(setId: String): MediaSet? {
         gate?.await()
         return byId[setId]

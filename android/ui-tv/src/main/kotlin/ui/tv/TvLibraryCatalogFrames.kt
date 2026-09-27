@@ -133,7 +133,6 @@ internal fun TvCollectionFrame(
             collection = coll,
             info = rememberTitleInfo(coll.posterKey, catalogViewModel::titleInfo),
             watch = watch,
-            posterPath = catalogViewModel::posterPath,
             onOpenTitle = { setId ->
                 restore.opened(here, setId)
                 at.openTitle(setId)

@@ -73,9 +73,6 @@ class FakeCatalogRepository(
     /** Nothing is what a library assembled without a TMDB key answers, which is the ordinary case here. */
     override suspend fun titleInfo(posterKey: String): TitleInfo? = null
 
-    /** No artwork held for any key — the ordinary case for a library assembled without a TMDB key. */
-    override suspend fun posterPath(posterKey: String): String? = null
-
     override suspend fun searchPeople(query: String): List<PersonHit> = peopleHits
 }
 

@@ -147,7 +147,6 @@ class TvCollectionStateTest : TvScreenStateTest() {
             collection = collection,
             info = null,
             watch = watch,
-            posterPath = { null },
             onOpenTitle = onOpenTitle,
             onOpenSeason = onOpenSeason,
             restoreKey = restoreKey,

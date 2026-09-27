@@ -29,6 +29,12 @@ pub struct SetSummary {
     pub hdr: Option<String>,
     pub duration: Option<u32>,
     pub poster_key: Option<String>,
+    /// Where [`poster_key`](Self::poster_key)'s file actually sits. Every
+    /// set carries its own answer, but a listing works out any one key's
+    /// answer at most once, however many sets share it (many episodes of a
+    /// show share its poster key) — see `store::list_sets`. `None` when
+    /// there is no key, or the key names no file this device holds yet.
+    pub poster_path: Option<String>,
     pub total: u64,
     pub part_count: u32,
     /// When this set arrived, as a Unix time. Named as the web player names
@@ -47,11 +53,18 @@ pub struct SetSummary {
     pub subtitles: Vec<String>,
     /// Whether the index holds a plot summary for this set.
     pub has_summary: bool,
-    /// The key this title's backdrop is stored under, present only when the
-    /// file actually exists — `store::list_sets` checks disk, the way the
-    /// web player's `routes.ts` checks its poster store before ever naming
-    /// one. A series carries its show's, like `genres`.
-    pub backdrop_key: Option<String>,
+    /// Where this title's backdrop is on disk, present only when the file
+    /// actually exists — `store::list_sets` checks disk and disk alone,
+    /// rather than materialising one from the index's `artwork` table the
+    /// way `poster_path` does. A known gap from the web player rather than
+    /// parity with it: the web's own `has()` counts a backdrop the table
+    /// alone carries, this does not — see `store::editorial::resolve_artwork`'s
+    /// own doc. A series carries its show's, like `genres`.
+    pub backdrop_path: Option<String>,
+    /// Where this episode's season carries its own poster, present only for
+    /// an episode whose season has one — resolved and materialised the same
+    /// way `poster_path` is, `None` for anything that is not an episode.
+    pub season_poster_path: Option<String>,
     /// The provider's tagline, for the home page's typographic break. A
     /// series carries its show's, like `genres`.
     pub tagline: Option<String>,
@@ -106,6 +119,10 @@ pub fn summary_from(set: &PlayableSet) -> SetSummary {
         hdr: set.hdr.clone(),
         duration: set.duration,
         poster_key: poster_key_for(&set.kind, set.tmdb, set.show.as_deref(), set.title.as_deref()),
+        // Resolved by `store::list_sets`/`store::media_set`, not here: doing
+        // it in this flattening step would mean a filesystem check per set
+        // even for a caller that never enriches the result at all.
+        poster_path: None,
         total: set.total,
         part_count: set.part_count,
         added_at: set.created_at,
@@ -115,7 +132,8 @@ pub fn summary_from(set: &PlayableSet) -> SetSummary {
         genres: Vec::new(),
         subtitles: Vec::new(),
         has_summary: false,
-        backdrop_key: None,
+        backdrop_path: None,
+        season_poster_path: None,
         tagline: None,
         rating: None,
         popularity: None,

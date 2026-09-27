@@ -20,7 +20,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * [rememberTitleInfo] and [rememberPosterPath] share the same shape: an
+ * [rememberTitleInfo] and its siblings below share the same shape: an
  * ordinary failure is swallowed into a logged warning and a null result, but
  * a cancellation is let through as one. Exercised directly, without the
  * screens that call them — neither behaviour has anything to do with how
@@ -54,33 +54,12 @@ class RememberLookupTest {
     }
 
     @Test
-    fun unreadablePosterPathReportsTheFailedLookup() {
-        val failure = IllegalStateException("unreadable poster path")
-        show { rememberPosterPath("tmdb-tv-1-s1") { throw failure } }
-        assertEquals(failure, ShadowLog.getLogsForTag("CatalogMetadata").single().throwable)
-        assertTrue(ShadowLog.getLogsForTag("CatalogMetadata").single().msg.contains("season poster"))
-    }
-
-    @Test
     fun titleLookupCancellationRemainsCancellationWithoutAFailureDiagnostic() {
         var job: Job? = null
         show {
             rememberTitleInfo("tmdb-movie-1") {
                 job = currentCoroutineContext()[Job]
                 throw CancellationException("left title")
-            }
-        }
-        assertTrue(requireNotNull(job).isCancelled)
-        assertTrue(ShadowLog.getLogsForTag("CatalogMetadata").isEmpty())
-    }
-
-    @Test
-    fun posterLookupCancellationRemainsCancellationWithoutAFailureDiagnostic() {
-        var job: Job? = null
-        show {
-            rememberPosterPath("tmdb-tv-1-s1") {
-                job = currentCoroutineContext()[Job]
-                throw CancellationException("left season")
             }
         }
         assertTrue(requireNotNull(job).isCancelled)

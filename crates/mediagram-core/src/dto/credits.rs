@@ -3,15 +3,18 @@
 //! reads, flattened for the binding surface the way `TitleInfo` is.
 
 /// One person credited on a title, or found by a name search: their id,
-/// name, the character they played (cast) or their job (crew), and the key
-/// their portrait is held under — present only when this device already
-/// holds the file, the same rule `SetSummary::backdrop_key` is held to.
+/// name, the character they played (cast) or their job (crew), and where
+/// their portrait is held — present only when this device already holds the
+/// file, the same rule `SetSummary::backdrop_path` is held to. Resolved here
+/// rather than left as a key: a title's whole cast crosses the boundary in
+/// one call, and a caller resolving each member's key back into a path
+/// would turn that one crossing into one per name.
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
 pub struct CreditRecord {
     pub person_id: u64,
     pub name: String,
     pub role: Option<String>,
-    pub portrait_key: Option<String>,
+    pub portrait_path: Option<String>,
 }
 
 /// A title's cast, in billing order, apart from its crew (director(s), a
@@ -29,7 +32,7 @@ pub struct TitleCreditsRecord {
 pub struct PersonRecord {
     pub person_id: u64,
     pub name: String,
-    pub portrait_key: Option<String>,
+    pub portrait_path: Option<String>,
     pub title_keys: Vec<String>,
 }
 
@@ -47,6 +50,6 @@ pub struct FranchiseRecord {
 pub struct PeopleHitRecord {
     pub person_id: u64,
     pub name: String,
-    pub portrait_key: Option<String>,
+    pub portrait_path: Option<String>,
     pub title_keys: Vec<String>,
 }

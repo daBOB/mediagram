@@ -50,10 +50,11 @@ import ui.tv.TvFocus
  * a missing poster; the name is set right beneath either way.
  *
  * [posterPath] is a resolved [File], not a lookup key — a wall opens many
- * plates at once and resolving each one's artwork is a caller concern
- * (`rememberPosterPath`), not something a single plate should each do on
- * its own. [meta] and [caption] are the phone plate's two lines under the
- * name, in its order: [meta] a fact about the title itself (an episode's
+ * plates at once, and every one of them already arrives with its artwork
+ * resolved on the [model.MediaSet] the core's own listing carried, not
+ * something a single plate should each look up on its own. [meta] and
+ * [caption] are the phone plate's two lines under the name, in its order:
+ * [meta] a fact about the title itself (an episode's
  * show and number), [caption] one about this viewer's place in it or the
  * shelf's facts — "Next up" beside a resume line is the whole point of a
  * Home row, so a plate that dropped it would hide why it is there.

@@ -692,7 +692,7 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_list_sets(
     ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_poster_path(
+    external fun uniffi_mediagram_core_checksum_method_core_media_set(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_read(
     ): Int
@@ -816,8 +816,8 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_list_sets(`ptr`: Long,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_poster_path(`ptr`: Long,`posterKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
+    external fun uniffi_mediagram_core_fn_method_core_media_set(`ptr`: Long,`setId`: RustBuffer.ByValue,
+    ): Long
     external fun uniffi_mediagram_core_fn_method_core_read(`ptr`: Long,`setId`: RustBuffer.ByValue,`offset`: Long,`len`: Int,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_refresh_catalog(`ptr`: Long,`pointerUrl`: RustBuffer.ByValue,`keyB64`: RustBuffer.ByValue,
@@ -1039,7 +1039,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_list_sets() and 0xFFFF) != 30355) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_poster_path() and 0xFFFF) != 16393) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_media_set() and 0xFFFF) != 48923) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_read() and 0xFFFF) != 530) {
@@ -1726,10 +1726,11 @@ public interface CoreInterface {
     suspend fun `listSets`(): List<SetSummary>
 
     /**
-     * Where a poster's image is on disk, if it is. Sync, unlike the catalog
-     * reads: two `stat`s and no SQLite, which Kotlin already runs off-main.
+     * One set by id, resolved the same as [`Core::list_sets`] resolves
+     * every row — `None` for an id the catalog does not hold, including
+     * before any catalog is loaded.
      */
-    fun `posterPath`(`posterKey`: kotlin.String): kotlin.String?
+    suspend fun `mediaSet`(`setId`: kotlin.String): SetSummary?
 
     /**
      * Reads at most `len` bytes from `offset`, clamping the result at EOF.
@@ -2258,21 +2259,30 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
-     * Where a poster's image is on disk, if it is. Sync, unlike the catalog
-     * reads: two `stat`s and no SQLite, which Kotlin already runs off-main.
-     */override fun `posterPath`(`posterKey`: kotlin.String): kotlin.String? {
-            return FfiConverterOptionalString.lift(
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_mediagram_core_fn_method_core_poster_path(
-        it,
+     * One set by id, resolved the same as [`Core::list_sets`] resolves
+     * every row — `None` for an id the catalog does not hold, including
+     * before any catalog is loaded.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `mediaSet`(`setId`: kotlin.String) : SetSummary? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_media_set(
+                uniffiHandle,
 
-        FfiConverterString.lower(`posterKey`),_status)
-}
-    }
+        FfiConverterString.lower(`setId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalTypeSetSummary.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
     )
     }
-
 
 
     /**
@@ -3501,9 +3511,12 @@ public object FfiConverterTypeCatalogFacts: FfiConverterRustBuffer<CatalogFacts>
 
 /**
  * One person credited on a title, or found by a name search: their id,
- * name, the character they played (cast) or their job (crew), and the key
- * their portrait is held under — present only when this device already
- * holds the file, the same rule `SetSummary::backdrop_key` is held to.
+ * name, the character they played (cast) or their job (crew), and where
+ * their portrait is held — present only when this device already holds the
+ * file, the same rule `SetSummary::backdrop_path` is held to. Resolved here
+ * rather than left as a key: a title's whole cast crosses the boundary in
+ * one call, and a caller resolving each member's key back into a path
+ * would turn that one crossing into one per name.
  */
 data class CreditRecord (
     var `personId`: kotlin.ULong
@@ -3512,7 +3525,7 @@ data class CreditRecord (
     ,
     var `role`: kotlin.String?
     ,
-    var `portraitKey`: kotlin.String?
+    var `portraitPath`: kotlin.String?
 
 ){
 
@@ -3540,14 +3553,14 @@ public object FfiConverterTypeCreditRecord: FfiConverterRustBuffer<CreditRecord>
             FfiConverterULong.allocationSize(value.`personId`) +
             FfiConverterString.allocationSize(value.`name`) +
             FfiConverterOptionalString.allocationSize(value.`role`) +
-            FfiConverterOptionalString.allocationSize(value.`portraitKey`)
+            FfiConverterOptionalString.allocationSize(value.`portraitPath`)
     )
 
     override fun write(value: CreditRecord, buf: ByteBuffer) {
             FfiConverterULong.write(value.`personId`, buf)
             FfiConverterString.write(value.`name`, buf)
             FfiConverterOptionalString.write(value.`role`, buf)
-            FfiConverterOptionalString.write(value.`portraitKey`, buf)
+            FfiConverterOptionalString.write(value.`portraitPath`, buf)
     }
 }
 
@@ -3792,7 +3805,7 @@ data class PeopleHitRecord (
     ,
     var `name`: kotlin.String
     ,
-    var `portraitKey`: kotlin.String?
+    var `portraitPath`: kotlin.String?
     ,
     var `titleKeys`: List<kotlin.String>
 
@@ -3821,14 +3834,14 @@ public object FfiConverterTypePeopleHitRecord: FfiConverterRustBuffer<PeopleHitR
     override fun allocationSize(value: PeopleHitRecord) = (
             FfiConverterULong.allocationSize(value.`personId`) +
             FfiConverterString.allocationSize(value.`name`) +
-            FfiConverterOptionalString.allocationSize(value.`portraitKey`) +
+            FfiConverterOptionalString.allocationSize(value.`portraitPath`) +
             FfiConverterSequenceString.allocationSize(value.`titleKeys`)
     )
 
     override fun write(value: PeopleHitRecord, buf: ByteBuffer) {
             FfiConverterULong.write(value.`personId`, buf)
             FfiConverterString.write(value.`name`, buf)
-            FfiConverterOptionalString.write(value.`portraitKey`, buf)
+            FfiConverterOptionalString.write(value.`portraitPath`, buf)
             FfiConverterSequenceString.write(value.`titleKeys`, buf)
     }
 }
@@ -3845,7 +3858,7 @@ data class PersonRecord (
     ,
     var `name`: kotlin.String
     ,
-    var `portraitKey`: kotlin.String?
+    var `portraitPath`: kotlin.String?
     ,
     var `titleKeys`: List<kotlin.String>
 
@@ -3874,14 +3887,14 @@ public object FfiConverterTypePersonRecord: FfiConverterRustBuffer<PersonRecord>
     override fun allocationSize(value: PersonRecord) = (
             FfiConverterULong.allocationSize(value.`personId`) +
             FfiConverterString.allocationSize(value.`name`) +
-            FfiConverterOptionalString.allocationSize(value.`portraitKey`) +
+            FfiConverterOptionalString.allocationSize(value.`portraitPath`) +
             FfiConverterSequenceString.allocationSize(value.`titleKeys`)
     )
 
     override fun write(value: PersonRecord, buf: ByteBuffer) {
             FfiConverterULong.write(value.`personId`, buf)
             FfiConverterString.write(value.`name`, buf)
-            FfiConverterOptionalString.write(value.`portraitKey`, buf)
+            FfiConverterOptionalString.write(value.`portraitPath`, buf)
             FfiConverterSequenceString.write(value.`titleKeys`, buf)
     }
 }
@@ -4224,6 +4237,14 @@ data class SetSummary (
     ,
     var `posterKey`: kotlin.String?
     ,
+    /**
+     * Where [`poster_key`](Self::poster_key)'s file actually sits, resolved
+     * once per listing rather than once per set — `None` when there is no
+     * key, or the key names no file this device holds yet. See
+     * `store::list_sets`.
+     */
+    var `posterPath`: kotlin.String?
+    ,
     var `total`: kotlin.ULong
     ,
     var `partCount`: kotlin.UInt
@@ -4260,12 +4281,21 @@ data class SetSummary (
     var `hasSummary`: kotlin.Boolean
     ,
     /**
-     * The key this title's backdrop is stored under, present only when the
-     * file actually exists — `store::list_sets` checks disk, the way the
-     * web player's `routes.ts` checks its poster store before ever naming
-     * one. A series carries its show's, like `genres`.
+     * Where this title's backdrop is on disk, present only when the file
+     * actually exists — `store::list_sets` checks disk and disk alone, the
+     * way the web player's `routes.ts` checks its poster store before ever
+     * naming one, rather than materialising one from the index's `artwork`
+     * table the way `poster_path` does. A series carries its show's, like
+     * `genres`.
      */
-    var `backdropKey`: kotlin.String?
+    var `backdropPath`: kotlin.String?
+    ,
+    /**
+     * Where this episode's season carries its own poster, present only for
+     * an episode whose season has one — resolved and materialised the same
+     * way `poster_path` is, `None` for anything that is not an episode.
+     */
+    var `seasonPosterPath`: kotlin.String?
     ,
     /**
      * The provider's tagline, for the home page's typographic break. A
@@ -4341,6 +4371,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalUInt.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
             FfiConverterULong.read(buf),
             FfiConverterUInt.read(buf),
             FfiConverterLong.read(buf),
@@ -4348,6 +4379,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterSequenceString.read(buf),
             FfiConverterSequenceString.read(buf),
             FfiConverterBoolean.read(buf),
+            FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalDouble.read(buf),
@@ -4377,6 +4409,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.allocationSize(value.`hdr`) +
             FfiConverterOptionalUInt.allocationSize(value.`duration`) +
             FfiConverterOptionalString.allocationSize(value.`posterKey`) +
+            FfiConverterOptionalString.allocationSize(value.`posterPath`) +
             FfiConverterULong.allocationSize(value.`total`) +
             FfiConverterUInt.allocationSize(value.`partCount`) +
             FfiConverterLong.allocationSize(value.`addedAt`) +
@@ -4384,7 +4417,8 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterSequenceString.allocationSize(value.`genres`) +
             FfiConverterSequenceString.allocationSize(value.`subtitles`) +
             FfiConverterBoolean.allocationSize(value.`hasSummary`) +
-            FfiConverterOptionalString.allocationSize(value.`backdropKey`) +
+            FfiConverterOptionalString.allocationSize(value.`backdropPath`) +
+            FfiConverterOptionalString.allocationSize(value.`seasonPosterPath`) +
             FfiConverterOptionalString.allocationSize(value.`tagline`) +
             FfiConverterOptionalDouble.allocationSize(value.`rating`) +
             FfiConverterOptionalDouble.allocationSize(value.`popularity`) +
@@ -4412,6 +4446,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.write(value.`hdr`, buf)
             FfiConverterOptionalUInt.write(value.`duration`, buf)
             FfiConverterOptionalString.write(value.`posterKey`, buf)
+            FfiConverterOptionalString.write(value.`posterPath`, buf)
             FfiConverterULong.write(value.`total`, buf)
             FfiConverterUInt.write(value.`partCount`, buf)
             FfiConverterLong.write(value.`addedAt`, buf)
@@ -4419,7 +4454,8 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterSequenceString.write(value.`genres`, buf)
             FfiConverterSequenceString.write(value.`subtitles`, buf)
             FfiConverterBoolean.write(value.`hasSummary`, buf)
-            FfiConverterOptionalString.write(value.`backdropKey`, buf)
+            FfiConverterOptionalString.write(value.`backdropPath`, buf)
+            FfiConverterOptionalString.write(value.`seasonPosterPath`, buf)
             FfiConverterOptionalString.write(value.`tagline`, buf)
             FfiConverterOptionalDouble.write(value.`rating`, buf)
             FfiConverterOptionalDouble.write(value.`popularity`, buf)
@@ -5224,6 +5260,38 @@ public object FfiConverterOptionalTypeProfile: FfiConverterRustBuffer<Profile?> 
         } else {
             buf.put(1)
             FfiConverterTypeProfile.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeSetSummary: FfiConverterRustBuffer<SetSummary?> {
+    override fun read(buf: ByteBuffer): SetSummary? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeSetSummary.read(buf)
+    }
+
+    override fun allocationSize(value: SetSummary?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeSetSummary.allocationSize(value)
+        }
+    }
+
+    override fun write(value: SetSummary?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeSetSummary.write(value, buf)
         }
     }
 }

@@ -44,6 +44,11 @@ abstract class CoreContract {
     }
 
     @Test
+    fun aFreshCatalogsOneSetLookupAnswersNoneForAnyId() {
+        runBlocking { assertEquals(null, core().mediaSet("no-such-set")) }
+    }
+
+    @Test
     fun readingAnUnknownSetIsNotFound() {
         runBlocking { assertFailsWith<CoreException.NotFound> { core().read("no-such-set", 0uL, 0u) } }
     }

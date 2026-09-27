@@ -726,9 +726,23 @@ The canonical index (`library.db`, in `mlib-spec` schema) carries:
   its default collection id). Written by `mediagram artwork`, and picked up
   automatically from `poster.*`/`backdrop.*` at the root of a folder `add-show`,
   `add-course` or `add-docu` walks. The bytes ride the ordinary index push, so web
-  and Android both get them with no extra Telegram round trip; `poster_path`
-  (Android) and the web player's poster route both check this table before
-  falling back to a TMDB fetch.
+  and Android both get them with no extra Telegram round trip. On Android, one
+  function resolves it either way: `store::resolve_with`
+  (`crates/mediagram-core/src/api/store/resolve.rs`). `store::list_sets`/
+  `store::media_set` (`.../store/editorial.rs`) call it once per set for the
+  poster, backdrop and (for an episode) season poster a listing carries,
+  after reading which keys the table actually holds once for the whole pass
+  (`crate::artwork::keys`) and remembering each key's answer, so a few
+  hundred sets sharing one show's poster cost that key's resolution once, not
+  once per set. Title credits, a person page and search-by-name results call
+  the same function per portrait, over the one connection and key set that
+  call already read, rather than reopening the index per name. A table hit
+  materialises into `catalog/artwork/`, written beside its final name and
+  renamed into place so a concurrent listing and single-set lookup resolving
+  the same key can never leave a reader looking at a half-written file. The
+  web player's poster route checks this table the same way, per request; its
+  backdrop check additionally counts a table-only backdrop as present, which
+  Android's disk-only backdrop check does not (daBOB/mediagram#1).
 
 Version tracking: `SCHEMA_VERSION=10`, `READABLE_SCHEMAS=[6,7,8,9,10]`,
 `OLDEST_READABLE_SCHEMA=6`. Readers tolerant of v9 and earlier (optional

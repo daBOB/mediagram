@@ -157,7 +157,6 @@ internal class TvAppFixture(
         coEvery { repository.refresh() } returns Result.success(sets.size)
         coEvery { repository.sets() } returns sets
         coEvery { repository.titleInfo(any()) } returns null
-        coEvery { repository.posterPath(any()) } returns null
         coEvery { repository.search(any()) } answers {
             val query = firstArg<String>()
             sets.filter { it.title.contains(query, ignoreCase = true) }.map { SearchHit(setId = it.setId, matched = "title", excerpt = null) }

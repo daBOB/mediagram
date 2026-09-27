@@ -252,14 +252,6 @@ class CatalogViewModel
         suspend fun titleInfo(posterKey: String): TitleInfo? = repository.titleInfo(posterKey)
 
         /**
-         * The local file for a poster key with no set of its own to carry it —
-         * a season's artwork. Asked for on demand for the same reason
-         * [titleInfo] is: a wall renders a handful of these at a time, not the
-         * whole library's worth.
-         */
-        suspend fun posterPath(posterKey: String): String? = repository.posterPath(posterKey)
-
-        /**
          * A title's cast and crew, for the Cast tab that only appears once
          * credits arrive and name somebody — the same on-demand shape
          * [titleInfo] already follows, for the same reason.

@@ -43,33 +43,6 @@ fun rememberTitleInfo(
 }
 
 /**
- * The local file for a poster key, looked up once per key.
- *
- * The same shape as [rememberTitleInfo], generalised to artwork: a wall
- * opens several of these at once, one per plate, where a title screen only
- * ever asks for one synopsis.
- */
-@Composable
-fun rememberPosterPath(
-    key: String?,
-    lookup: suspend (String) -> String?,
-): String? {
-    var path by remember(key) { mutableStateOf<String?>(null) }
-    LaunchedEffect(key) {
-        try {
-            path = key?.let { lookup(it) }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught") e: Exception,
-        ) {
-            Log.w("CatalogMetadata", "Could not load season poster", e)
-        }
-    }
-    return path
-}
-
-/**
  * A title's cast and crew, looked up once per key — the same shape as
  * [rememberTitleInfo], for the Cast tab that only appears once credits
  * arrive and name somebody.

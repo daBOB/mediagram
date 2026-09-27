@@ -59,13 +59,32 @@ async fn a_person_carries_their_own_title_keys() {
     let found = Core::at(dir.path()).person(1).await.expect("credited");
     assert_eq!(found.name, "Recurring");
     assert_eq!(found.title_keys, vec!["tmdb-movie-550".to_string(), "tmdb-tv-1399".to_string()]);
-    assert_eq!(found.portrait_key, None, "nothing fetched this device's copy of the portrait");
+    assert_eq!(found.portrait_path, None, "nothing fetched this device's copy of the portrait");
 }
 
 #[tokio::test]
 async fn nobody_credited_is_no_person() {
     let dir = tempfile::tempdir().unwrap();
     assert_eq!(Core::at(dir.path()).person(1).await, None);
+}
+
+/// [`a_cast_members_portrait_already_on_disk_resolves_on_the_record`]'s own
+/// case for `person`, which resolves a portrait the same way through its own
+/// connection rather than `title_credits`'s.
+#[tokio::test]
+async fn a_persons_portrait_already_on_disk_resolves_on_the_record() {
+    let dir = tempfile::tempdir().unwrap();
+    let artwork = dir.path().join("catalog").join("artwork");
+    std::fs::create_dir_all(&artwork).unwrap();
+    std::fs::write(artwork.join("tmdb-person-1.jpg"), b"already-held").unwrap();
+    let conn = index_at(dir.path(), mlib_spec::schema::SCHEMA_VERSION);
+    insert_credit(&conn, "movie", 550, 0, 1, "Recurring", Some("Role"), "cast");
+    drop(conn);
+
+    let found = Core::at(dir.path()).person(1).await.expect("credited");
+
+    let expected = artwork.join("tmdb-person-1.jpg").display().to_string();
+    assert_eq!(found.portrait_path, Some(expected));
 }
 
 #[tokio::test]
@@ -105,6 +124,41 @@ async fn search_people_matches_every_word_most_credited_first() {
 
     let hits = Core::at(dir.path()).search_people("anna".into()).await;
     assert_eq!(hits.iter().map(|h| h.name.as_str()).collect::<Vec<_>>(), ["Anna Busy", "Anna Quiet"]);
+}
+
+/// The same case again, for a hit `search_people` returns.
+#[tokio::test]
+async fn a_search_hits_portrait_already_on_disk_resolves_on_the_record() {
+    let dir = tempfile::tempdir().unwrap();
+    let artwork = dir.path().join("catalog").join("artwork");
+    std::fs::create_dir_all(&artwork).unwrap();
+    std::fs::write(artwork.join("tmdb-person-1.jpg"), b"already-held").unwrap();
+    let conn = index_at(dir.path(), mlib_spec::schema::SCHEMA_VERSION);
+    insert_credit(&conn, "movie", 1, 0, 1, "Anna Busy", None, "cast");
+    drop(conn);
+
+    let hits = Core::at(dir.path()).search_people("anna".into()).await;
+
+    let expected = artwork.join("tmdb-person-1.jpg").display().to_string();
+    assert_eq!(hits[0].portrait_path, Some(expected));
+}
+
+/// A cast member's portrait, already on disk, arrives on the `CreditRecord`
+/// itself — Kotlin no longer resolves it with a call of its own per member.
+#[tokio::test]
+async fn a_cast_members_portrait_already_on_disk_resolves_on_the_record() {
+    let dir = tempfile::tempdir().unwrap();
+    let artwork = dir.path().join("catalog").join("artwork");
+    std::fs::create_dir_all(&artwork).unwrap();
+    std::fs::write(artwork.join("tmdb-person-1.jpg"), b"already-held").unwrap();
+    let conn = index_at(dir.path(), mlib_spec::schema::SCHEMA_VERSION);
+    insert_credit(&conn, "movie", 550, 0, 1, "Lead", Some("The Narrator"), "cast");
+    drop(conn);
+
+    let credits = Core::at(dir.path()).title_credits("tmdb-movie-550".into()).await;
+
+    let expected = artwork.join("tmdb-person-1.jpg").display().to_string();
+    assert_eq!(credits.cast[0].portrait_path, Some(expected));
 }
 
 #[tokio::test]

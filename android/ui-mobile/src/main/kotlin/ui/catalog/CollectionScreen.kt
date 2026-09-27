@@ -43,7 +43,7 @@ import uniffi.mediagram_core.TitleInfo
  * indented list, the same list a season screen shows for the one division
  * a search result may still open on its own.
  *
- * Every parameter beyond the original eight defaults to something inert, so
+ * Every parameter beyond the first seven defaults to something inert, so
  * a caller not yet wired for credits, similar shows or a person page keeps
  * compiling — see [TitleDetailScreen]'s own doc comment for the same rule
  * on the film side.
@@ -54,7 +54,6 @@ fun CollectionScreen(
     info: TitleInfo?,
     watch: WatchSnapshot,
     heldIds: Set<String>,
-    posterPath: suspend (key: String) -> String?,
     onOpenTitle: (setId: String) -> Unit,
     onOpenSeason: (Division) -> Unit,
     onOpenGenre: (String) -> Unit,

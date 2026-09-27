@@ -46,36 +46,39 @@ class SeasonWallTest {
     }
 
     @Test
-    fun aNumberedSeasonsPosterKeyIsDerivedFromTheShowsOwn() {
+    fun aSeasonsPlatePosterComesFromItsEpisodes() {
         val show =
             collection(
-                posterKey = "tmdb-tv-1396",
-                divisions = listOf(season(2, episodes = 3), season(3, episodes = 3)),
+                divisions = listOf(
+                    season(2, episodes = 3, seasonPosterPath = "/cache/1396-s2.jpg"),
+                    season(3, episodes = 3, seasonPosterPath = "/cache/1396-s3.jpg"),
+                ),
             )
 
         val plates = seasonPlatesOf(show)!!
-        assertEquals("tmdb-tv-1396-s2", plates[0].posterKey)
-        assertEquals("tmdb-tv-1396-s3", plates[1].posterKey)
+        assertEquals("/cache/1396-s2.jpg", plates[0].posterPath)
+        assertEquals("/cache/1396-s3.jpg", plates[1].posterPath)
     }
 
+    /**
+     * Gated on [Division.season] itself, not just on whether an episode
+     * happens to carry one: even an episode that (wrongly, for an
+     * unnumbered division) carries a resolved [model.MediaSet.seasonPosterPath]
+     * must not surface it here — a division with no season number is not a
+     * season, whatever its episodes' own fields say.
+     */
     @Test
-    fun anUnnumberedDivisionHasNoSeasonPosterKeyEvenWithAShowKey() {
+    fun anUnnumberedDivisionHasNoSeasonPosterEvenIfAnEpisodeResolvedOne() {
         val show =
             collection(
-                posterKey = "tmdb-tv-1396",
-                divisions = listOf(season(1, episodes = 3), unnumbered("Specials", episodes = 1)),
+                divisions = listOf(
+                    season(1, episodes = 3),
+                    unnumbered("Specials", episodes = 1, seasonPosterPath = "/cache/stray-season-poster.jpg"),
+                ),
             )
 
         val plates = seasonPlatesOf(show)!!
-        assertNull(plates.single { it.title == "Specials" }.posterKey)
-    }
-
-    @Test
-    fun noShowPosterKeyMeansNoSeasonPosterKeyEither() {
-        val show = collection(posterKey = null, divisions = listOf(season(1, episodes = 1), season(2, episodes = 1)))
-
-        val plates = seasonPlatesOf(show)!!
-        assertNull(plates[0].posterKey)
+        assertNull(plates.single { it.title == "Specials" }.posterPath)
     }
 
     /** A season is watched only once every episode under it is — one straggler keeps the plate untouched. */
@@ -102,14 +105,13 @@ class SeasonWallTest {
 
 private fun collection(
     kind: CollectionKind = CollectionKind.SHOW,
-    posterKey: String? = null,
     divisions: List<Division>,
 ) = Entry.Collection(
     key = "$kind/Show",
     kind = kind,
     name = "Show",
     posterPath = null,
-    posterKey = posterKey,
+    posterKey = null,
     count = divisions.sumOf { it.items.size },
     chapters = divisions.size,
     divisions = divisions,
@@ -118,32 +120,37 @@ private fun collection(
 private fun season(
     number: Int,
     episodes: Int,
-) = unnumbered("Season $number", episodes, season = number)
+    seasonPosterPath: String? = null,
+) = unnumbered("Season $number", episodes, season = number, seasonPosterPath = seasonPosterPath)
 
 private fun unnumbered(
     title: String,
     episodes: Int,
     season: Int? = null,
+    seasonPosterPath: String? = null,
 ) = Division(
     title = title,
     season = season,
-    items = (1..episodes).map { fakeSet("$title-$it") },
+    items = (1..episodes).map { fakeSet("$title-$it", seasonPosterPath) },
     children = emptyList(),
 )
 
-private fun fakeSet(id: String) =
-    model.MediaSet(
-        setId = id,
-        kind = model.Kind.EPISODE,
-        title = id,
-        show = "Show",
-        chapter = null,
-        path = null,
-        season = null,
-        episodeFirst = null,
-        episodeLast = null,
-        year = null,
-        durationSecs = null,
-        posterPath = null,
-        totalBytes = 0,
-    )
+private fun fakeSet(
+    id: String,
+    seasonPosterPath: String? = null,
+) = model.MediaSet(
+    setId = id,
+    kind = model.Kind.EPISODE,
+    title = id,
+    show = "Show",
+    chapter = null,
+    path = null,
+    season = null,
+    episodeFirst = null,
+    episodeLast = null,
+    year = null,
+    durationSecs = null,
+    posterPath = null,
+    totalBytes = 0,
+    seasonPosterPath = seasonPosterPath,
+)

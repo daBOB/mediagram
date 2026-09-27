@@ -211,10 +211,10 @@ async fn a_v8_index_reads_no_franchise_or_series_type() {
     assert_eq!(film.series_type, None);
 }
 
-/// A backdrop is named only when the file is actually on disk — a poster
+/// A backdrop resolves only when the file is actually on disk — a poster
 /// key that merely resolves is not a picture anyone can show.
 #[tokio::test]
-async fn a_backdrop_key_is_named_only_when_its_file_exists() {
+async fn a_backdrop_resolves_only_when_its_file_exists() {
     let dir = tempfile::tempdir().unwrap();
     let conn = index_at(dir.path(), mlib_spec::schema::SCHEMA_VERSION);
     add_set(&conn, "01FILM0000000000000000000C", "movie", Some(603));
@@ -227,8 +227,8 @@ async fn a_backdrop_key_is_named_only_when_its_file_exists() {
     let sets = core(dir.path()).list_sets().await.unwrap();
 
     assert_eq!(
-        set_of(&sets, "01FILM0000000000000000000C").backdrop_key.as_deref(),
-        Some("tmdb-movie-603-bg")
+        set_of(&sets, "01FILM0000000000000000000C").backdrop_path,
+        Some(posters.join("tmdb-movie-603-bg.jpg").display().to_string())
     );
-    assert_eq!(set_of(&sets, "01FILM0000000000000000000D").backdrop_key, None);
+    assert_eq!(set_of(&sets, "01FILM0000000000000000000D").backdrop_path, None);
 }

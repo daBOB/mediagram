@@ -46,6 +46,31 @@ class CatalogRepositoryTest {
         }
 
     /**
+     * The core's own listing already carries every set's resolved artwork —
+     * [sets] reads it straight off the record, asking the core nothing more
+     * per set.
+     */
+    @Test
+    fun setsCarryTheArtworkTheCoreAlreadyResolved() =
+        runTest {
+            val core = FakeCore(
+                sets = listOf(
+                    summary(
+                        posterPath = "/cache/tmdb-tv-1396.jpg",
+                        backdropPath = "/cache/tmdb-tv-1396-bg.jpg",
+                        seasonPosterPath = "/cache/tmdb-tv-1396-s2.jpg",
+                    ),
+                ),
+            )
+            val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+
+            val set = repo.sets().single()
+            assertEquals("/cache/tmdb-tv-1396.jpg", set.posterPath)
+            assertEquals("/cache/tmdb-tv-1396-bg.jpg", set.backdropPath)
+            assertEquals("/cache/tmdb-tv-1396-s2.jpg", set.seasonPosterPath)
+        }
+
+    /**
      * The start page ranks by arrival, so a catalog row that lost its
      * arrival time on the way through would leave every title equally new.
      */
@@ -95,24 +120,13 @@ class CatalogRepositoryTest {
         assertEquals("steuer", core.searchedFor)
     }
 
-    /** A season poster has no set of its own to carry it, so it is asked for by key directly. */
-    @Test
-    fun posterPathDelegatesToTheCore() =
-        runTest {
-            val core = FakeCore(posters = mapOf("tmdb-tv-1396-s2" to "/cache/1396-s2.jpg"))
-            val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
-
-            assertEquals("/cache/1396-s2.jpg", repo.posterPath("tmdb-tv-1396-s2"))
-            assertEquals(null, repo.posterPath("tmdb-tv-1396-s9"))
-        }
-
     /**
-     * The player asks for one title at a time; walking the whole catalog's
-     * worth of poster lookups to answer it would be the same main-thread
-     * cost [sets] pays once per rebuild, paid again on every open.
+     * The player asks for one title at a time; asking the core for the
+     * whole catalog to find it would be the same cost [sets] pays once per
+     * rebuild, paid again on every open.
      */
     @Test
-    fun mediaSetLooksUpOnlyTheMatchedSetsPoster() = runTest {
+    fun mediaSetAsksTheCoreForOneSetRatherThanListingEveryOne() = runTest {
         val core = FakeCore(
             sets = listOf(
                 summary(setId = "s1", posterKey = "key-1"),
@@ -125,7 +139,8 @@ class CatalogRepositoryTest {
         val found = repo.mediaSet("s2")
 
         assertEquals("s2", found?.setId)
-        assertEquals(listOf("key-2"), core.posterPathCalls)
+        assertEquals(listOf("s2"), core.mediaSetCalls)
+        assertEquals(0, core.listSetsCalls, "a single lookup must not fall back to a full listing")
     }
 
     @Test
@@ -172,14 +187,12 @@ class CatalogRepositoryTest {
         assertEquals(null, set.seriesType)
     }
 
+    /** The core resolves a portrait onto the record itself now; this only has to carry it through. */
     @Test
-    fun creditsResolveEachPersonsPortraitAgainstTheDeviceStore() = runTest {
-        val cast = CreditRecord(personId = 5uL, name = "Zendaya", role = "Chani", portraitKey = "tmdb-person-5")
-        val crew = CreditRecord(personId = 9uL, name = "Denis Villeneuve", role = "Director", portraitKey = null)
-        val core = FakeCore(
-            creditsAnswer = TitleCreditsRecord(cast = listOf(cast), crew = listOf(crew)),
-            posters = mapOf("tmdb-person-5" to "/cache/person-5.jpg"),
-        )
+    fun creditsCarryTheirResolvedPortraitPathsThrough() = runTest {
+        val cast = CreditRecord(personId = 5uL, name = "Zendaya", role = "Chani", portraitPath = "/cache/person-5.jpg")
+        val crew = CreditRecord(personId = 9uL, name = "Denis Villeneuve", role = "Director", portraitPath = null)
+        val core = FakeCore(creditsAnswer = TitleCreditsRecord(cast = listOf(cast), crew = listOf(crew)))
         val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
 
         val credits = repo.titleCredits("tmdb-movie-1")
@@ -221,6 +234,7 @@ private fun summary(
     hdr: String? = null,
     duration: Int? = null,
     posterKey: String? = null,
+    posterPath: String? = null,
     total: Long = 0L,
     partCount: Int = 1,
     addedAt: Long = 0,
@@ -228,7 +242,8 @@ private fun summary(
     genres: List<String> = emptyList(),
     subtitles: List<String> = emptyList(),
     hasSummary: Boolean = false,
-    backdropKey: String? = null,
+    backdropPath: String? = null,
+    seasonPosterPath: String? = null,
     tagline: String? = null,
     rating: Double? = null,
     popularity: Double? = null,
@@ -254,6 +269,7 @@ private fun summary(
     hdr = hdr,
     duration = duration?.toUInt(),
     posterKey = posterKey,
+    posterPath = posterPath,
     total = total.toULong(),
     partCount = partCount.toUInt(),
     addedAt = addedAt,
@@ -261,7 +277,8 @@ private fun summary(
     genres = genres,
     subtitles = subtitles,
     hasSummary = hasSummary,
-    backdropKey = backdropKey,
+    backdropPath = backdropPath,
+    seasonPosterPath = seasonPosterPath,
     tagline = tagline,
     rating = rating,
     popularity = popularity,

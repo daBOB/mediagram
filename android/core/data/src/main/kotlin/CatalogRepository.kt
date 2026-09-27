@@ -49,14 +49,6 @@ interface CatalogRepository {
     suspend fun titleInfo(posterKey: String): TitleInfo?
 
     /**
-     * The local file for a poster key that has no [model.MediaSet] of its
-     * own to carry it on — a season's artwork. `null` is ordinary: not
-     * every season has art of its own, and a library assembled without a
-     * TMDB key has none at all.
-     */
-    suspend fun posterPath(posterKey: String): String?
-
-    /**
      * One set by id, wherever it sits in the catalog — the player's own way
      * to resolve what a saved id names. Not `feature:catalog`'s
      * `CatalogUiState.mediaSet`, which walks a shelf tree built for
@@ -136,16 +128,13 @@ class DefaultCatalogRepository(
             refreshes.record(RefreshOutcome.Refused(it.refreshSentence()))
         }
 
-    // `posterPath` is a plain synchronous call — a disk check per set with
-    // a poster key — and `CoreInterface` makes no promise of its own about
-    // which thread a suspend function resumes on. Off [dispatcher] rather
-    // than left to run wherever the caller's scope happens to be (usually
-    // main, for a ViewModel): a few hundred of those in a row is exactly
-    // the kind of main-thread stall that drops the touch event landing on
-    // it, not just a slow frame.
+    // The core's own listing already carries every set's resolved artwork —
+    // `toMediaSet` reads it straight off `summary`, no per-set lookup of its
+    // own — so mapping the whole catalog costs the one crossing `listSets`
+    // already made, not one more per set.
     override suspend fun sets(): List<MediaSet> {
         val core = coreProvider.awaitCore()
-        return withContext(dispatcher) { core.listSets().map { toMediaSet(core, it) } }
+        return withContext(dispatcher) { core.listSets().map(::toMediaSet) }
     }
 
     override suspend fun search(query: String): List<SearchHit> = coreProvider.awaitCore().search(query)
@@ -153,23 +142,18 @@ class DefaultCatalogRepository(
     /** The core is awaited here rather than captured, as everywhere else. */
     override suspend fun titleInfo(posterKey: String): TitleInfo? = coreProvider.awaitCore().titleInfo(posterKey)
 
-    override suspend fun posterPath(posterKey: String): String? {
-        val core = coreProvider.awaitCore()
-        return core.posterPath(posterKey)
-    }
-
     /**
-     * Finds the one row before mapping any of them, rather than calling
-     * [sets] and searching the result — [toMediaSet] pays for a poster
-     * lookup per set, and the player asking for one title at a time has no
-     * use for the other few hundred. Off [dispatcher] for the same reason
-     * [sets] is; timed at debug level so a slow lookup shows up in logcat
-     * without a release build ever printing it.
+     * Asks the core for the one row directly, rather than calling [sets]
+     * and searching the result — a full listing costs a query and a
+     * crossing over every set in the library, and the player asking for one
+     * title at a time has no use for the other few hundred. Off
+     * [dispatcher] for the same reason [sets] is; timed at debug level so a
+     * slow lookup shows up in logcat without a release build ever printing it.
      */
     override suspend fun mediaSet(setId: String): MediaSet? = withContext(dispatcher) {
         val startedAt = System.nanoTime()
         val core = coreProvider.awaitCore()
-        val found = core.listSets().find { it.setId == setId }?.let { toMediaSet(core, it) }
+        val found = core.mediaSet(setId)?.let(::toMediaSet)
         Log.d(TAG, "mediaSet($setId): ${(System.nanoTime() - startedAt) / 1_000_000}ms")
         found
     }
@@ -183,10 +167,7 @@ class DefaultCatalogRepository(
      * library holds four kinds today against a parser that may learn a
      * fifth before this app is rebuilt.
      */
-    private fun toMediaSet(
-        core: CoreInterface,
-        summary: SetSummary,
-    ): MediaSet {
+    private fun toMediaSet(summary: SetSummary): MediaSet {
         val kind =
             when (summary.kind) {
                 "ep" -> Kind.EPISODE
@@ -207,7 +188,7 @@ class DefaultCatalogRepository(
             episodeLast = summary.episodeLast?.toInt(),
             year = summary.year?.toInt(),
             durationSecs = summary.duration?.toInt(),
-            posterPath = summary.posterKey?.let(core::posterPath),
+            posterPath = summary.posterPath,
             totalBytes = summary.total.toLong(),
             container = summary.container,
             vcodec = summary.vcodec,
@@ -221,7 +202,8 @@ class DefaultCatalogRepository(
             genres = summary.genres,
             subtitleLanguages = summary.subtitles,
             hasSummary = summary.hasSummary,
-            backdropPath = summary.backdropKey?.let(core::posterPath),
+            backdropPath = summary.backdropPath,
+            seasonPosterPath = summary.seasonPosterPath,
             tagline = summary.tagline,
             rating = summary.rating,
             popularity = summary.popularity,
@@ -232,33 +214,30 @@ class DefaultCatalogRepository(
         )
     }
 
+    // Every portrait below rides in already resolved — the core attaches it
+    // to the record itself, so a title's whole cast or a page of search
+    // hits costs the one crossing that fetched them, not one more per name.
     override suspend fun titleCredits(key: String): TitleCredits {
-        val core = coreProvider.awaitCore()
-        val record = core.titleCredits(key)
-        return TitleCredits(record.cast.map { it.toCredit(core) }, record.crew.map { it.toCredit(core) })
+        val record = coreProvider.awaitCore().titleCredits(key)
+        return TitleCredits(record.cast.map { it.toCredit() }, record.crew.map { it.toCredit() })
     }
 
     override suspend fun person(personId: Long): Person? {
-        val core = coreProvider.awaitCore()
-        val record: PersonRecord = core.person(personId.toULong()) ?: return null
-        return Person(record.personId.toLong(), record.name, record.portraitKey?.let(core::posterPath), record.titleKeys)
+        val record: PersonRecord = coreProvider.awaitCore().person(personId.toULong()) ?: return null
+        return Person(record.personId.toLong(), record.name, record.portraitPath, record.titleKeys)
     }
 
     override suspend fun franchises(): List<FranchiseInfo> =
         coreProvider.awaitCore().franchises().map { FranchiseInfo(it.id.toLong(), it.name, it.overview) }
 
-    override suspend fun searchPeople(query: String): List<PersonHit> {
-        val core = coreProvider.awaitCore()
-        return core.searchPeople(query).map { it.toPersonHit(core) }
-    }
+    override suspend fun searchPeople(query: String): List<PersonHit> =
+        coreProvider.awaitCore().searchPeople(query).map { it.toPersonHit() }
 
     override suspend fun fetchPortrait(personId: Long): String? = coreProvider.awaitCore().fetchPortrait(personId.toULong())
 
-    private fun CreditRecord.toCredit(core: CoreInterface): Credit =
-        Credit(personId.toLong(), name, role, portraitKey?.let(core::posterPath))
+    private fun CreditRecord.toCredit(): Credit = Credit(personId.toLong(), name, role, portraitPath)
 
-    private fun PeopleHitRecord.toPersonHit(core: CoreInterface): PersonHit =
-        PersonHit(personId.toLong(), name, portraitKey?.let(core::posterPath), titleKeys)
+    private fun PeopleHitRecord.toPersonHit(): PersonHit = PersonHit(personId.toLong(), name, portraitPath, titleKeys)
 
     private companion object {
         const val TAG = "catalog"

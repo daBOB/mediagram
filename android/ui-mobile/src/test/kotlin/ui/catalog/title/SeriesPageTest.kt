@@ -100,7 +100,7 @@ class SeriesPageTest {
         show {
             CollectionScreen(
                 collection = collection, info = null, watch = watch, heldIds = emptySet(),
-                posterPath = { null }, onOpenTitle = {}, onOpenSeason = {}, onOpenGenre = {},
+                onOpenTitle = {}, onOpenSeason = {}, onOpenGenre = {},
                 titleCredits = titleCredits,
                 season = chosenSeason,
                 onSelectSeason = { chosenSeason = it },
@@ -162,7 +162,7 @@ class SeriesPageTest {
         show {
             CollectionScreen(
                 collection = oneSeasonShow(), info = null, watch = watch, heldIds = emptySet(),
-                posterPath = { null }, onOpenTitle = {}, onOpenSeason = {}, onOpenGenre = {},
+                onOpenTitle = {}, onOpenSeason = {}, onOpenGenre = {},
                 titleCredits = { credits },
             )
         }

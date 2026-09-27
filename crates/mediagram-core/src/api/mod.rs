@@ -138,10 +138,11 @@ impl Core {
         self.blocking(store::list_sets).await
     }
 
-    /// Where a poster's image is on disk, if it is. Sync, unlike the catalog
-    /// reads: two `stat`s and no SQLite, which Kotlin already runs off-main.
-    pub fn poster_path(&self, poster_key: String) -> Option<String> {
-        store::poster_path(self, poster_key)
+    /// One set by id, resolved the same as [`Core::list_sets`] resolves
+    /// every row — `None` for an id the catalog does not hold, including
+    /// before any catalog is loaded.
+    pub async fn media_set(self: Arc<Self>, set_id: String) -> Result<Option<crate::dto::SetSummary>, CoreError> {
+        self.blocking(move |core| store::media_set(core, &set_id)).await
     }
 
     /// What is known about a title, or nothing. The index answers first and
@@ -154,8 +155,7 @@ impl Core {
     }
 
     pub async fn total_size(self: Arc<Self>, set_id: String) -> Result<u64, CoreError> {
-        self.blocking(move |core| store::total_size(core, set_id))
-            .await
+        self.blocking(move |core| store::total_size(core, set_id)).await
     }
 
     /// Installed-catalog status; unavailable counts are reported as zeroes

@@ -15,7 +15,6 @@ import designsystem.Spacing
 import designsystem.TvTypeScale
 import java.io.File
 import model.ageLabel
-import ui.catalog.rememberPosterPath
 import ui.tv.TvTextRow
 import uniffi.mediagram_core.TitleInfo
 
@@ -85,22 +84,20 @@ internal fun SeriesResumeRow(
 }
 
 /**
- * A season's plate, whose artwork falls back in three steps — its own
- * poster, then the show's, then the initials [TvPlate] draws on its own —
- * so the season's is the only one looked up here.
+ * A season's plate, whose artwork falls back in two steps — its own poster,
+ * already resolved onto [SeasonPlate.posterPath], then the show's, then the
+ * initials [TvPlate] draws on its own.
  */
 @Composable
 internal fun TvSeasonPlate(
     collection: Entry.Collection,
     plate: SeasonPlate,
-    posterPath: suspend (key: String) -> String?,
     onOpen: () -> Unit,
     modifier: Modifier,
 ) {
-    val seasonPoster = rememberPosterPath(plate.posterKey, posterPath)
     TvPlate(
         title = plate.title,
-        posterPath = (seasonPoster ?: collection.posterPath)?.let(::File),
+        posterPath = (plate.posterPath ?: collection.posterPath)?.let(::File),
         onOpen = onOpen,
         modifier = modifier,
         caption = plate.caption,
