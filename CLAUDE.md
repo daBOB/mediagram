@@ -112,7 +112,25 @@ Following semver:
 - **major** (`0.1.0` → `1.0.0`): breaking changes, removed APIs, schema migrations requiring manual
   steps
 
+While the version is `0.x` the project is pre-release, and a breaking change bumps **minor**
+instead. `1.0.0` is a release decision someone makes on purpose, not the side effect of a removed
+flag.
+
 Bump before committing so the commit reflects the new version.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues on `daBOB/mediagram`, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical labels, used as-is: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` plus `docs/adr/` at the repo root, both created lazily. See `docs/agents/domain.md`.
 
 ## Changelog
 - 2025-01-XX: Added §4 Meta Self-Improvement loop; CLAUDE.md now updates itself with user approval. Fixed typos ("Plan Node" → "Plan Mode", "One tack" → "One task", "Minimat" → "Minimal").
@@ -128,3 +146,5 @@ Bump before committing so the commit reflects the new version.
   while the other two moved. That is the disagreement the rule exists to prevent. `versionCode`
   is explicitly excluded: it counts builds for Android's upgrade check, not releases. Entries
   also re-ordered oldest-first, which the merge had scrambled.
+- 2026-09-27: Added § Agent skills (GitHub issues, default triage labels, single-context domain docs) so the engineering skills know where tickets and domain docs live.
+- 2026-09-27: § Versioning: while at `0.x`, a breaking change bumps minor, not major. Removing `push-index --merge`/`--check` would otherwise have made the project 1.0.0 as a side effect; the user chose 0.67.0 and asked for the rule to say so.
