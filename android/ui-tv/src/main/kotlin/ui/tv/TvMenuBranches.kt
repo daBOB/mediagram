@@ -11,8 +11,8 @@ import system.FetchUiState
 import system.FetchViewModel
 import ui.LibraryPositions
 import ui.MenuActions
+import ui.settings.SettingsSection
 import ui.tv.system.TvSettingsScreen
-import ui.tv.system.TvSystemScreen
 import ui.tv.system.TvTmdbKeyScreen
 import ui.tv.system.menuRestoreKey
 
@@ -77,8 +77,8 @@ internal fun TvMenuScreenBranch(
     }
     BackHandler(onBack = leave)
     when (screen) {
-        MenuScreen.System -> TvSystemScreen()
-        MenuScreen.Settings -> TvSettingsScreen()
+        MenuScreen.System -> TvSettingsScreen(initial = SettingsSection.SYSTEM)
+        MenuScreen.Settings -> TvSettingsScreen(initial = SettingsSection.TELEGRAM)
         MenuScreen.TmdbKey -> TvTmdbKeyScreen(hasKey = fetchState.hasKey, onSave = fetchViewModel::saveKey)
     }
 }

@@ -1,6 +1,5 @@
 package ui.tv.system
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -12,39 +11,64 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import setup.AppearanceViewModel
 import setup.SettingsViewModel
-import ui.tv.setup.TvApplicationScreen
+import setup.telegramStatus
+import system.CacheBudgetViewModel
+import system.LanCacheViewModel
+import system.SystemViewModel
+import system.storageStatus
+import system.systemStatus
+import ui.settings.IndexStatus
+import ui.settings.SettingsSection
 import ui.tv.setup.TvConfirmDialog
-import ui.tv.setup.TvLibraryChoiceScreen
-
-/** A part of Settings that takes the whole screen while it is open. */
-internal enum class TvSettingsPanel { Library, Application, LanAddress, LanToken }
 
 /**
- * The phone's Settings on a television: the Telegram connection — who,
- * which library, which datacentre, and changing any of it — then the disk
- * cache, over the same [SettingsViewModel] and in the same order.
+ * Settings and System, one hub, television-side: an index (Telegram ·
+ * Storage · Appearance · System, each with its own one-line status) beside
+ * the section it is showing — the approved round-2 mockups' own EXPANDED
+ * layout, at ten-foot sizes; [TvMenuBranches] opens this on [initial],
+ * `TELEGRAM` for the Settings menu row, `SYSTEM` for the System shortcut.
+ * Every ViewModel underneath is the one Settings and System always used;
+ * only the layout is new.
  *
- * Changing the library and the application identity reuse the very
- * screens setup asks them on, laid over this one, and Back from either
- * returns here with the remote on the row that opened it. A finished
- * change closes its panel the way the phone's does. What signing out and a
- * changed library lead to is `SettingsOutcomes`' to act on, in the library
- * around this screen, exactly as on the phone.
+ * [section] and [focusInContent] are hoisted here rather than kept inside
+ * [TvSettingsPanes]: a library-choice or an address panel takes the whole
+ * screen over that composable, unmounting it, and both have to survive that
+ * for Back closing the panel to land back where it left.
+ *
+ * Read afresh once per visit, not once per section shown: an index status
+ * has to be true while a different section is on screen, so
+ * [SettingsViewModel.refresh], [CacheBudgetViewModel.refresh] and
+ * [LanCacheViewModel.open] all run here, not inside whichever section
+ * happens to be entered first.
  */
 @Composable
-internal fun TvSettingsScreen() {
-    val viewModel: SettingsViewModel = hiltViewModel()
-    val state by viewModel.state.collectAsStateWithLifecycle()
+internal fun TvSettingsScreen(initial: SettingsSection) {
+    val settingsViewModel: SettingsViewModel = hiltViewModel()
+    val state by settingsViewModel.state.collectAsStateWithLifecycle()
     val appearanceViewModel: AppearanceViewModel = hiltViewModel()
     val appearance by appearanceViewModel.state.collectAsStateWithLifecycle()
+    val cacheViewModel: CacheBudgetViewModel = hiltViewModel()
+    val cacheState by cacheViewModel.state.collectAsStateWithLifecycle()
+    val lanViewModel: LanCacheViewModel = hiltViewModel()
+    val lanState by lanViewModel.state.collectAsStateWithLifecycle()
+    val systemViewModel: SystemViewModel = hiltViewModel()
+    val systemState by systemViewModel.state.collectAsStateWithLifecycle()
+    val systemFailure by systemViewModel.failure.collectAsStateWithLifecycle()
+
+    var section by rememberSaveable { mutableStateOf(initial) }
+    // Always false on a fresh open: even the System shortcut lands on its
+    // own index row first, the remote's Right or OK the only way in.
+    var focusInContent by rememberSaveable { mutableStateOf(false) }
     var panel by rememberSaveable { mutableStateOf<TvSettingsPanel?>(null) }
     var lastPanel by rememberSaveable { mutableStateOf<TvSettingsPanel?>(null) }
     var openedBeforeAction by rememberSaveable { mutableStateOf(state.completedActionId) }
     var askingSignOut by remember { mutableStateOf(false) }
 
-    // Read afresh on every visit: the ViewModel outlives this screen, and a
-    // row read before a sign-out and a new sign-in would name the old account.
-    LaunchedEffect(Unit) { viewModel.refresh() }
+    LaunchedEffect(Unit) {
+        settingsViewModel.refresh()
+        cacheViewModel.refresh()
+        lanViewModel.open()
+    }
 
     // Independent of the library's acknowledgement: both surfaces must see
     // success, even when this form was detached when the action finished.
@@ -52,61 +76,86 @@ internal fun TvSettingsScreen() {
         if (state.completedActionId > openedBeforeAction) panel = null
     }
 
+    // lastPanel only means something for the one section it closed back
+    // into; left set, a later plain index re-entry (no panel involved at
+    // all) would wrongly replay that panel's own return-focus instead of
+    // this section's default first control.
+    LaunchedEffect(panel) { if (panel == null) lastPanel = null }
+
     val open = { which: TvSettingsPanel ->
-        viewModel.clearNotice()
+        settingsViewModel.clearNotice()
         openedBeforeAction = state.completedActionId
         panel = which
         lastPanel = which
     }
 
-    when (panel) {
-        TvSettingsPanel.Library -> {
-            BackHandler { panel = null }
-            TvLibraryChoiceScreen(
-                choices = state.choices,
-                error = state.notice,
-                // One install at a time; a second press waits for the first.
-                onChoose = { handle -> if (!state.busy) viewModel.chooseLibrary(handle) },
-                onLookAgain = viewModel::listLibraries,
+    // A local val, not the `panel` property itself: only a true local can
+    // be smart-cast to the non-null enum the panel screen takes, once this
+    // branch is the one running.
+    val openPanel = panel
+    if (openPanel != null) {
+        TvSettingsPanelScreen(panel = openPanel, state = state, settingsViewModel = settingsViewModel, onClose = { panel = null })
+    } else {
+        val statuses =
+            mapOf(
+                SettingsSection.TELEGRAM to IndexStatus(telegramStatus(state)),
+                SettingsSection.STORAGE to storageStatus(cacheState, lanState).let { (text, held) -> IndexStatus(text, held) },
+                SettingsSection.APPEARANCE to IndexStatus("${appearance.accent.label} · ${appearance.backdrop.label}"),
+                SettingsSection.SYSTEM to IndexStatus(systemStatus(systemState, systemFailure)),
             )
-        }
+        TvSettingsPanes(
+            section = section,
+            statuses = statuses,
+            focusInContent = focusInContent,
+            onSelectSection = { section = it },
+            onFocusInContentChange = { focusInContent = it },
+        ) { shown, entered, entryRequester ->
+            when (shown) {
+                SettingsSection.TELEGRAM ->
+                    TvTelegramSection(
+                        state = state,
+                        focusInContent = entered,
+                        returningFrom = lastPanel,
+                        entryFocusRequester = entryRequester,
+                        onChangeLibrary = {
+                            open(TvSettingsPanel.Library)
+                            settingsViewModel.listLibraries()
+                        },
+                        onChangeApplication = { open(TvSettingsPanel.Application) },
+                        onSignOut = { askingSignOut = true },
+                        onRetryProfiles = settingsViewModel::retryProfiles,
+                        onLoadSessions = settingsViewModel::loadSessions,
+                        onRevokeSession = settingsViewModel::revokeSession,
+                    )
 
-        TvSettingsPanel.Application -> {
-            BackHandler { panel = null }
-            if (state.profileReloadNeeded) {
-                TvProfileReload(state, viewModel::retryProfiles, takesFocus = true)
-            } else {
-                TvApplicationScreen(
-                    error = state.notice,
-                    onSubmit = viewModel::changeApplication,
-                    initialApiId = state.apiId?.toString().orEmpty(),
-                )
+                SettingsSection.STORAGE ->
+                    TvStorageSection(
+                        focusInContent = entered,
+                        returningFrom = lastPanel,
+                        entryFocusRequester = entryRequester,
+                        onOpenLanCache = open,
+                    )
+
+                SettingsSection.APPEARANCE ->
+                    TvAppearanceBlock(
+                        accent = appearance.accent,
+                        backdrop = appearance.backdrop,
+                        focusInContent = entered,
+                        entryFocusRequester = entryRequester,
+                        onSelectAccent = appearanceViewModel::chooseAccent,
+                        onSelectBackdrop = appearanceViewModel::chooseBackdrop,
+                    )
+
+                SettingsSection.SYSTEM ->
+                    TvSystemContent(
+                        focusInContent = entered,
+                        current = systemState,
+                        failure = systemFailure,
+                        entryFocusRequester = entryRequester,
+                        onRetry = systemViewModel::retry,
+                    )
             }
         }
-
-        TvSettingsPanel.LanAddress, TvSettingsPanel.LanToken -> {
-            val close = { panel = null }
-            BackHandler(onBack = close)
-            TvLanCachePanel(panel = checkNotNull(panel), onDone = close)
-        }
-
-        null ->
-            TvSettingsRows(
-                state = state,
-                accent = appearance.accent,
-                onChooseAccent = appearanceViewModel::chooseAccent,
-                returningFrom = lastPanel,
-                onChangeLibrary = {
-                    open(TvSettingsPanel.Library)
-                    viewModel.listLibraries()
-                },
-                onChangeApplication = { open(TvSettingsPanel.Application) },
-                onOpenLanCache = open,
-                onSignOut = { askingSignOut = true },
-                onRetryProfiles = viewModel::retryProfiles,
-                onLoadSessions = viewModel::loadSessions,
-                onRevokeSession = viewModel::revokeSession,
-            )
     }
 
     if (askingSignOut) {
@@ -116,7 +165,7 @@ internal fun TvSettingsScreen() {
             confirmLabel = "Sign out",
             confirm = {
                 askingSignOut = false
-                viewModel.signOut()
+                settingsViewModel.signOut()
             },
             cancel = { askingSignOut = false },
         )

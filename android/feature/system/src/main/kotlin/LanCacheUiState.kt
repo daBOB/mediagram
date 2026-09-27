@@ -25,4 +25,8 @@ data class LanCacheUiState(
     val addressError: String? = null,
     /** A sentence to show under the token field when the last save was refused, or `null` between attempts. */
     val tokenError: String? = null,
+    /** The connected server's own budget, from the same `GET /v1/status` as [heldBytes], or `null` when that could not be read. */
+    val budgetBytes: Long? = null,
+    /** How many chunks the connected server holds, from the same `GET /v1/status`, or `null` when that could not be read. */
+    val chunks: Long? = null,
 )

@@ -5,9 +5,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -158,10 +160,12 @@ internal fun SwatchCard(
 }
 
 /**
- * A section's own columns: side by side on EXPANDED (`round2/tokens.css`'s
- * `.cols`, 72dp gap), stacked on a compact/medium width — every multi-column
- * section (Telegram, Storage, System) arranges itself through this rather
- * than repeating the branch.
+ * A section's own columns, every multi-column section (Telegram, Storage,
+ * System) arranges itself through this rather than repeating the branch.
+ * On EXPANDED as many sit side by side as keep each at least
+ * [ColumnMinWidth]; the rest move to the next row rather than every
+ * column squeezing narrower — a ledger value or a device name wrapping in a
+ * 190dp column reads worse than a second row. Stacked on compact/medium.
  */
 @Composable
 internal fun SettingsColumns(
@@ -170,8 +174,21 @@ internal fun SettingsColumns(
     columns: List<@Composable () -> Unit>,
 ) {
     if (expanded) {
-        Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(72.dp)) {
-            for (column in columns) Box(modifier = Modifier.weight(1f)) { column() }
+        BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+            val perRow = ((maxWidth + ColumnGap) / (ColumnMinWidth + ColumnGap)).toInt().coerceIn(1, columns.size.coerceAtLeast(1))
+            // Rows of equal weights rather than a FlowRow of computed widths:
+            // two widths that add up to the whole row exactly can still round
+            // a pixel over it, and a FlowRow then drops the second column onto
+            // a line of its own.
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.extraLarge)) {
+                for (row in columns.chunked(perRow)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(ColumnGap)) {
+                        for (column in row) Box(modifier = Modifier.weight(1f)) { column() }
+                        // A short last row keeps its columns the width of the ones above.
+                        repeat(perRow - row.size) { Spacer(modifier = Modifier.weight(1f)) }
+                    }
+                }
+            }
         }
     } else {
         Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.extraLarge)) {
@@ -179,3 +196,9 @@ internal fun SettingsColumns(
         }
     }
 }
+
+/** The narrowest a settings column gets before the next one moves to a new line. */
+private val ColumnMinWidth = 320.dp
+
+/** Between side-by-side settings columns. */
+private val ColumnGap = 40.dp

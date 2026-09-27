@@ -24,7 +24,9 @@ import designsystem.ThemeChoice
 import setup.SettingsUiState
 import ui.system.SystemScreen
 
-private val ExpandedPagePadding = PaddingValues(start = 72.dp, top = 76.dp, end = 64.dp, bottom = 32.dp)
+// Margins sized to the screen a tablet actually has (≈1160dp), not the
+// mockups' 1600dp canvas: the page head and the columns under it get the width.
+private val ExpandedPagePadding = PaddingValues(start = 48.dp, top = 64.dp, end = 40.dp, bottom = 32.dp)
 private val CompactPagePadding = PaddingValues(24.dp)
 private val HeadGap = 56.dp
 

@@ -5,6 +5,43 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.69.3 — the television's Settings, in the same look
+
+**Changed**
+
+- The television gets the same Settings/System index the phone and tablet
+  already have: a focusable column on the left — Telegram, Storage,
+  Appearance, System, each with its own one-line status — beside the open
+  section on the right, at ten-foot type and overscan-safe spacing. Moving
+  the remote along the column only shows a section; Right or OK actually
+  steps into it, onto its own first control. Left inside a row of controls —
+  the accent swatches, the artwork cards — moves along that row first, only
+  reaching the index once nothing is left of it; Up or Down at a section's
+  own top or bottom edge stays put rather than falling through to the index
+  above or below. Back from anywhere inside still comes straight back to the
+  row that opened it, and each section opens scrolled to its own top. The
+  overflow menu's System shortcut still opens straight to that row.
+- Appearance gained the same Artwork question (Default/Blurred/Artwork/Solid)
+  the phone and tablet ask, beside the accent swatches already there; a
+  television still never asks Theme, since it stays dark regardless. The
+  chosen accent and the chosen artwork now wear a light ring even when the
+  remote is elsewhere — before, only a screen reader could tell which one
+  was current.
+- System re-reads every two seconds while its section stays the one shown,
+  matching the web player's own poll and the phone/tablet's own release.
+- The old single-scroll Settings and System screens, and their plain
+  label/value rows, are gone — replaced by the same ledger look (a quiet
+  label, its value, a soft rule beneath) the phone and tablet already draw.
+- On the tablet, Settings' columns get room to breathe: the index is 280dp
+  rather than the mockups' 320dp, the page margins are sized to the
+  ≈1160dp a tablet actually has, and a section's columns sit side by side
+  only while each keeps at least 320dp — the rest move to a second row
+  instead of every column squeezing narrower.
+- Storage's home cache server block reads the server's own `GET /v1/status`:
+  what it holds against its budget ("1.0 MB of 10 MB (10%)") and how many
+  chunks, on every surface that shows the block — the television's own copy
+  included, which before this only ever read the connection line.
+
 ## 0.69.2 — Android Settings and System, in the web player's look
 
 **Changed**

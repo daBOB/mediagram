@@ -1,11 +1,14 @@
 package ui.tv
 
+import android.view.KeyEvent
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performImeAction
@@ -86,41 +89,161 @@ class TvMenuTest {
     }
 
     @Test
-    fun systemTakesTheRemoteAndBackLandsOnSystemThenTheMasthead() {
+    fun systemLandsOnItsIndexRowThenOkEntersItAndBackWalksOutOneStepAtATime() {
         openMenu()
         press(compose.onNodeWithText("System"))
 
+        // Selecting the index alone does not step in yet — a real remote's
+        // own directional focus, not a click, would have moved the remote
+        // here; see movingTheIndexOnlySwapsThePageHeadWithoutEnteringTheSection.
+        compose.onNodeWithText("System").assertIsFocused()
+        compose.onNodeWithText("WHAT THIS PLAYER IS DOING, REFRESHED AS IT HAPPENS", substring = true).assertExists()
+
+        press(compose.onNodeWithText("System"))
         compose.onNode(hasText("Catalogue")).assertIsFocused()
         compose.onNode(hasText("This app")).assertExists()
 
         back()
         compose.onNodeWithText("System").assertIsFocused()
+        // This back leaves the two-pane frame itself for the masthead's own
+        // System row, not yet the closed menu's Menu button — a further
+        // back (untested here, the menu overlay's own business) would reach
+        // that; the index row shares System's name, so the page having
+        // actually gone is what the eyebrow below proves.
         back()
-        compose.onNodeWithText("Menu").assertIsFocused()
+        compose.onNodeWithText("System").assertIsFocused()
+        compose.onNodeWithText("WHAT THIS PLAYER IS DOING, REFRESHED AS IT HAPPENS", substring = true).assertDoesNotExist()
     }
 
     @Test
-    fun settingsLandsOnChangeLibraryAndBackLandsOnSettings() {
+    fun settingsLandsOnItsIndexRowThenOkEntersTelegramAndBackWalksOutOneStepAtATime() {
         openMenu()
         press(compose.onNodeWithText("Settings"))
 
+        telegramRow().assertIsFocused()
+
+        press(telegramRow())
         compose.onNodeWithText("Change library").assertIsFocused()
         compose.onNodeWithText("Ada").assertExists()
         compose.onNodeWithText("Sign out").assertExists()
+
+        back()
+        telegramRow().assertIsFocused()
+        back()
+        compose.onNodeWithText("Settings").assertIsFocused()
+    }
+
+    @Test
+    fun movingTheIndexOnlySwapsThePageHeadWithoutEnteringTheSection() {
+        openMenu()
+        press(compose.onNodeWithText("Settings"))
+        compose.onNodeWithText("TELEGRAM").assertExists()
+
+        compose.onNodeWithText("Storage").performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Storage").assertIsFocused()
+        compose.onNodeWithText("STORAGE").assertExists()
+        // Still only selected, not entered: nothing inside Storage has the remote.
+        compose.onNodeWithText("Change library").assertDoesNotExist()
 
         back()
         compose.onNodeWithText("Settings").assertIsFocused()
     }
 
     @Test
-    fun aSettingsPanelIsLeftForSettingsBeforeTheMenu() {
+    fun upAtTheTopOfASectionStaysThereRatherThanJumpingIntoTheIndex() {
         openMenu()
         press(compose.onNodeWithText("Settings"))
+        press(telegramRow())
+        compose.onNodeWithText("Change library").assertIsFocused()
+
+        key(KeyEvent.KEYCODE_DPAD_UP)
+
+        compose.onNodeWithText("Change library").assertIsFocused()
+        compose.onNodeWithText("WHAT THIS PLAYER IS DOING", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun leftAmongTheAccentSwatchesMovesToThePreviousOneRatherThanLeavingTheSection() {
+        openMenu()
+        press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithText("Appearance"))
+        compose.onNodeWithContentDescription("Coral").assertIsFocused()
+
+        key(KeyEvent.KEYCODE_DPAD_RIGHT)
+        key(KeyEvent.KEYCODE_DPAD_RIGHT)
+        key(KeyEvent.KEYCODE_DPAD_LEFT)
+
+        compose.onNodeWithContentDescription("Blue").assertIsFocused()
+    }
+
+    @Test
+    fun leftFromTheLeftmostSwatchReturnsToTheAppearanceRow() {
+        openMenu()
+        press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithText("Appearance"))
+        compose.onNodeWithContentDescription("Coral").assertIsFocused()
+
+        key(KeyEvent.KEYCODE_DPAD_LEFT)
+
+        compose.onNodeWithText("Appearance").assertIsFocused()
+    }
+
+    @Test
+    fun eachSectionOpensScrolledToItsOwnTopRatherThanKeepingAnotherSectionsOffset() {
+        openMenu()
+        press(compose.onNodeWithText("Settings"))
+        val freshTelegramTitleTop = compose.onNodeWithText("TELEGRAM").fetchSemanticsNode().boundsInRoot.top
+
+        press(compose.onNodeWithText("Storage"))
+        compose.onNode(hasText("Cache")).assertIsFocused()
+        // Deep enough to scroll Storage's own column: Cache, its one
+        // budget choice (the fixture's cap sits under the ladder's own
+        // floor), the two "Where" rows, then the home cache server's
+        // switch, address and token rows.
+        repeat(6) { key(KeyEvent.KEYCODE_DPAD_DOWN) }
+        compose.onNodeWithText("Pairing token — none").assertIsFocused()
+
+        back()
+        key(KeyEvent.KEYCODE_DPAD_UP)
+
+        compose.onNodeWithText("TELEGRAM").assertExists()
+        val reenteredTelegramTitleTop = compose.onNodeWithText("TELEGRAM").fetchSemanticsNode().boundsInRoot.top
+        assertEquals(freshTelegramTitleTop, reenteredTelegramTitleTop)
+    }
+
+    @Test
+    fun aFailedPollWithAStaleSnapshotDoesNotStealFocusFromWhereTheViewerAlreadyIs() {
+        val failure = MutableStateFlow<String?>(null)
+        every { fixture.system.failure } returns failure
+        openMenu()
+        press(compose.onNodeWithText("System"))
+        press(compose.onNodeWithText("System"))
+        compose.onNode(hasText("Catalogue")).assertIsFocused()
+
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
+        compose.onNode(hasText("Cache")).assertIsFocused()
+
+        failure.value = "System information could not be read. Try again."
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Try again").assertExists()
+        compose.onNode(hasText("Cache")).assertIsFocused()
+    }
+
+    @Test
+    fun aSettingsPanelIsLeftForTelegramThenTheIndexThenTheMenu() {
+        openMenu()
+        press(compose.onNodeWithText("Settings"))
+        press(telegramRow())
         press(compose.onNodeWithText("Application id and hash…"))
         compose.onNodeWithTag(TvTextQuestionFieldTag).assertIsFocused()
 
         back()
         compose.onNodeWithText("Application id and hash…").assertIsFocused()
+        back()
+        telegramRow().assertIsFocused()
         back()
         compose.onNodeWithText("Settings").assertIsFocused()
     }
@@ -129,6 +252,7 @@ class TvMenuTest {
     fun signOutAsksFirstInThePhonesWords() {
         openMenu()
         press(compose.onNodeWithText("Settings"))
+        press(telegramRow())
         press(compose.onNodeWithText("Sign out"))
 
         compose.onNodeWithText("Sign out?").assertExists()
@@ -169,6 +293,7 @@ class TvMenuTest {
     fun settingsOffersEveryCacheVolumeAndChoosingOneReachesTheModel() {
         openMenu()
         press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithText("Storage"))
         compose.onNodeWithText("Where").assertExists()
         compose.onNodeWithText("●  Internal storage", substring = true).assertExists()
         press(compose.onNodeWithText("○  USB drive", substring = true))
@@ -180,6 +305,7 @@ class TvMenuTest {
         every { fixture.lanCache.setManualAddress("192.168.0.9:7788") } returns true
         openMenu()
         press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithText("Storage"))
         compose.onNodeWithText("Not found").assertExists()
         compose.onNodeWithText("Use the home cache server — on").assertExists()
         press(compose.onNodeWithText("Server address — found on the network"))
@@ -196,6 +322,7 @@ class TvMenuTest {
         every { fixture.lanCache.saveToken("short") } returns false
         openMenu()
         press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithText("Storage"))
         press(compose.onNodeWithText("Pairing token — none"))
         compose.onNode(hasSetTextAction()).performTextInput("short")
         compose.onNode(hasSetTextAction()).performImeAction()
@@ -210,6 +337,7 @@ class TvMenuTest {
     fun reopeningAQuestionClearsTheLastRefusal() {
         openMenu()
         press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithText("Storage"))
         press(compose.onNodeWithText("Server address — found on the network"))
         verify { fixture.lanCache.clearErrors() }
     }
@@ -218,6 +346,7 @@ class TvMenuTest {
     fun theSwitchRowTurnsTheServerOff() {
         openMenu()
         press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithText("Storage"))
         press(compose.onNodeWithText("Use the home cache server — on"))
         verify { fixture.lanCache.setEnabled(false) }
     }
@@ -234,6 +363,7 @@ class TvMenuTest {
             )
         openMenu()
         press(compose.onNodeWithText("Settings"))
+        press(telegramRow())
         compose.onNodeWithText("Living room TV (this device)").assertExists()
         compose.onNodeWithText("Sign out Living room TV").assertDoesNotExist()
         press(compose.onNodeWithText("Sign out Old laptop"))
@@ -252,6 +382,14 @@ class TvMenuTest {
         press(compose.onNodeWithText("Menu"))
     }
 
+    /**
+     * The Telegram index row, specifically — its own label collides with
+     * [ui.tv.system.TvTelegramSection]'s own "Telegram" ledger heading,
+     * which is always in the tree once Telegram is the section shown, not
+     * only once entered; only the row carries a click action.
+     */
+    private fun telegramRow() = compose.onNode(hasText("Telegram", substring = true) and hasClickAction())
+
     private fun press(node: SemanticsNodeInteraction) {
         node.performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
@@ -260,5 +398,11 @@ class TvMenuTest {
     private fun back() {
         compose.runOnUiThread { controller.get().onBackPressedDispatcher.onBackPressed() }
         compose.waitForIdle()
+    }
+
+    /** A real D-pad press, the way [TvSearchAndGenreTest]'s own helper drives one — where a click alone would skip the directional focus search a click never exercises. */
+    private fun key(code: Int) {
+        compose.runOnUiThread { controller.get().dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, code)) }
+        compose.runOnUiThread { controller.get().dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, code)) }
     }
 }

@@ -168,6 +168,9 @@ class LanCacheViewModelTest {
                 assertEquals(LanCacheConnection.CONNECTED, state.connection)
                 assertEquals("10.0.0.5:7788", state.connectedHost)
                 assertEquals(5_000_000L, state.heldBytes)
+                // The same status read carries the server's budget and chunk count.
+                assertEquals(10_000_000L, state.budgetBytes)
+                assertEquals(1L, state.chunks)
             } finally {
                 vm.viewModelScope.cancel()
             }

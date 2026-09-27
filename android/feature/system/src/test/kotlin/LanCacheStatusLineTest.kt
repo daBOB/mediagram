@@ -8,6 +8,8 @@ private fun state(
     connection: LanCacheConnection,
     connectedHost: String? = null,
     heldBytes: Long? = null,
+    budgetBytes: Long? = null,
+    chunks: Long? = null,
 ) = LanCacheUiState(
     enabled = true,
     hasToken = false,
@@ -16,40 +18,41 @@ private fun state(
     connectedHost = connectedHost,
     heldBytes = heldBytes,
     tokenRejected = false,
+    budgetBytes = budgetBytes,
+    chunks = chunks,
 )
 
 class LanCacheStatusLineTest {
     @Test
     fun theFourStatusWordsMatchTheirConnectionState() {
-        assertEquals("Searching", lanCacheStatusLine(state(LanCacheConnection.SEARCHING)))
-        assertEquals("Not found", lanCacheStatusLine(state(LanCacheConnection.NOT_FOUND)))
-        assertEquals("Needs local network permission", lanCacheStatusLine(state(LanCacheConnection.NEEDS_PERMISSION)))
-        assertEquals(
-            "Connected to 10.0.0.5:7788, holding 1.0 MB",
-            lanCacheStatusLine(
-                state(LanCacheConnection.CONNECTED, connectedHost = "10.0.0.5:7788", heldBytes = 1_048_576),
-            ),
-        )
-    }
-
-    @Test
-    fun aConnectedServerWithNoHeldFigureOmitsTheComma() {
+        assertEquals("Searching", lanCacheRows(state(LanCacheConnection.SEARCHING))[0].second)
+        assertEquals("Not found", lanCacheRows(state(LanCacheConnection.NOT_FOUND))[0].second)
+        assertEquals("Needs local network permission", lanCacheRows(state(LanCacheConnection.NEEDS_PERMISSION))[0].second)
         assertEquals(
             "Connected to 10.0.0.5:7788",
-            lanCacheStatusLine(state(LanCacheConnection.CONNECTED, connectedHost = "10.0.0.5:7788", heldBytes = null)),
+            lanCacheRows(state(LanCacheConnection.CONNECTED, connectedHost = "10.0.0.5:7788", heldBytes = 1_048_576))[0].second,
         )
     }
 
     @Test
     fun theStorageLedgerSplitsConnectionAndHoldingIntoTheirOwnRows() {
         val rows = lanCacheRows(state(LanCacheConnection.CONNECTED, connectedHost = "10.0.0.5:7788", heldBytes = 1_048_576))
-        assertEquals(listOf("Status" to "Connected to 10.0.0.5:7788", "Holding" to "1.0 MB"), rows)
+        assertEquals(listOf("Status" to "Connected to 10.0.0.5:7788", "Holding" to "1.0 MB", "Chunks" to null), rows)
+    }
+
+    @Test
+    fun theStorageLedgerShowsTheServersOwnBudgetAndChunkCount() {
+        val rows =
+            lanCacheRows(
+                state(LanCacheConnection.CONNECTED, connectedHost = "10.0.0.5:7788", heldBytes = 1_048_576, budgetBytes = 10_485_760, chunks = 1),
+            )
+        assertEquals(listOf("Status" to "Connected to 10.0.0.5:7788", "Holding" to "1.0 MB of 10 MB (10%)", "Chunks" to "1"), rows)
     }
 
     @Test
     fun theStorageLedgerOmitsHoldingWhenNothingIsKnown() {
         val rows = lanCacheRows(state(LanCacheConnection.SEARCHING))
-        assertEquals(listOf("Status" to "Searching", "Holding" to null), rows)
+        assertEquals(listOf("Status" to "Searching", "Holding" to null, "Chunks" to null), rows)
     }
 
     private fun occupancy(

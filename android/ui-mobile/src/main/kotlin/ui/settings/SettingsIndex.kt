@@ -44,8 +44,13 @@ import designsystem.LocalCatalogueTones
 import designsystem.Radius
 import designsystem.Spacing
 
-/** Settings/System's left pane on every width, and the whole screen in one pane on compact — the mockups' own `.index` (`round2/tokens.css:59-80`). */
-internal val SettingsIndexWidth = 320.dp
+/**
+ * Settings/System's left pane on every width, and the whole screen in one
+ * pane on compact. Narrower than the mockups' 320dp: they were drawn at
+ * 1600dp, and a tablet held in the hand is closer to 1160dp wide, where
+ * every dp the index keeps is one a section's columns cannot have.
+ */
+internal val SettingsIndexWidth = 280.dp
 
 private val IconOf =
     mapOf(

@@ -21,7 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Spacing
 import system.LanCacheConnection
 import system.LanCacheViewModel
-import system.lanCacheStatusLine
+import system.lanCacheRows
 import ui.tv.TvTextRow
 import ui.tv.catalog.TvQuietLine
 
@@ -37,6 +37,10 @@ private const val ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWOR
  * The permission prompt is asked where the phone asks it: when a token is
  * saved (in [TvLanCachePanel]) and from the Grant row. `ACCESS_LOCAL_NETWORK`
  * exists only from API 37, so below that neither asks anything.
+ *
+ * The read itself is triggered once, by the hub on entry — see that
+ * comment on [TvSettingsScreen] for why a second trigger here would open
+ * the connection twice.
  */
 @Composable
 internal fun TvLanCacheBlock(
@@ -48,7 +52,6 @@ internal fun TvLanCacheBlock(
     val requestPermission = rememberLocalNetworkRequest(viewModel::permissionResolved)
     val address = remember { FocusRequester() }
     val token = remember { FocusRequester() }
-    LaunchedEffect(Unit) { viewModel.open() }
     val current = state ?: return
 
     // Keyed on the first composition with rows to land on: the state is read
@@ -62,7 +65,7 @@ internal fun TvLanCacheBlock(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
-        TvInfoBlock(heading = "Home cache server", rows = listOf("Status" to lanCacheStatusLine(current)))
+        TvInfoBlock(heading = "Home cache server", rows = lanCacheRows(current))
         if (current.connection == LanCacheConnection.NEEDS_PERMISSION) {
             TvTextRow(text = "Grant local network access", onClick = requestPermission)
         }

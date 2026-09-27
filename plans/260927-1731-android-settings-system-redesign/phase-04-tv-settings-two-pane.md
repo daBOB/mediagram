@@ -9,7 +9,7 @@
 
 ## Overview
 
-Priority P2. Status: pending. Give the television the same Settings structure: index on
+Priority P2. Status: complete. Give the television the same Settings structure: index on
 the left (focusable, each row with its status), the selected section on the right under
 the page head, driven by the D-pad. Existing TV controls, words and question panels are
 kept; this is layout, tokens and the Artwork question.
@@ -79,14 +79,14 @@ Delete: none.
 
 ## Todo
 
-- [ ] Hub (VMs, entry effects, initial section, statuses)
-- [ ] Index rows + focus-selects
-- [ ] Panes + focus/Back wiring
-- [ ] Telegram/Storage/System/Appearance(+artwork) sections
-- [ ] TvInfoBlock ledger
-- [ ] Menu branch wiring
-- [ ] TvMenuTest + TvAppearanceBlockTest updated/extended
-- [ ] Compile + tests green
+- [x] Hub (VMs, entry effects, initial section, statuses)
+- [x] Index rows + focus-selects
+- [x] Panes + focus/Back wiring
+- [x] Telegram/Storage/System/Appearance(+artwork) sections
+- [x] TvInfoBlock ledger
+- [x] Menu branch wiring
+- [x] TvMenuTest + TvAppearanceBlockTest updated/extended
+- [x] Compile + tests green
 
 ## Success criteria
 

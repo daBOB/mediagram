@@ -1,9 +1,10 @@
 package system
 
+import model.heldOfBudget
 import model.humanSize
 import playback.CacheOccupancy
 
-/** The connection half of [lanCacheStatusLine], without what is held — [lanCacheRows] draws that as its own row instead. */
+/** The Status row's own wording, in the words both Android surfaces show: "Searching" / "Connected to host" / "Not found" / "Needs local network permission". */
 private fun connectionLine(state: LanCacheUiState): String =
     when (state.connection) {
         LanCacheConnection.NEEDS_PERMISSION -> "Needs local network permission"
@@ -13,26 +14,24 @@ private fun connectionLine(state: LanCacheUiState): String =
     }
 
 /**
- * The home cache server's Status row, in the words both Android surfaces
- * show: "Searching" / "Connected to host, holding X" / "Not found" /
- * "Needs local network permission". Kept beside [LanCacheUiState] so the
- * phone and the television read one sentence rather than two copies.
- */
-fun lanCacheStatusLine(state: LanCacheUiState): String {
-    val held = state.heldBytes?.let { ", holding ${humanSize(it)}" }.orEmpty()
-    return connectionLine(state) + held
-}
-
-/**
  * Settings › Storage's Home cache server ledger: the connection, then what
- * it is holding as its own row — the approved mockup splits what
- * [lanCacheStatusLine] says in one sentence into two ledger rows instead.
+ * the server reports in `GET /v1/status` — what it holds against its own
+ * budget, and how many chunks that is — each as its own row. Kept beside
+ * [LanCacheUiState] so the phone and the television read the same sentences
+ * rather than two copies.
  */
 fun lanCacheRows(state: LanCacheUiState): List<Pair<String, String?>> =
     listOf(
         "Status" to connectionLine(state),
-        "Holding" to state.heldBytes?.let(::humanSize),
+        "Holding" to state.heldBytes?.let { held -> heldAgainstServerBudget(held, state.budgetBytes) },
+        "Chunks" to state.chunks?.toString(),
     )
+
+/** The server's held amount against its own budget, as the device's cache reads its own; just the amount when the budget is unknown. */
+private fun heldAgainstServerBudget(
+    held: Long,
+    budget: Long?,
+): String = if (budget != null && budget > 0) heldOfBudget(held, budget) else humanSize(held)
 
 /**
  * Settings index's Storage row: held against the budget, and — only when it

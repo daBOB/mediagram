@@ -102,7 +102,7 @@ internal class TvAppFixture(
     private val playback: TvPlayerFixture
     private val player: PlayerViewModel
     val settings = mockk<SettingsViewModel>(relaxed = true)
-    private val system = mockk<SystemViewModel>(relaxed = true)
+    val system = mockk<SystemViewModel>(relaxed = true)
     /** Exposed so a test can restub a single call — `searchPeople`, for a grouped-search test naming a person the query matches. */
     val repository = mockk<CatalogRepository>()
     val cacheBudget = mockk<CacheBudgetViewModel>(relaxed = true)

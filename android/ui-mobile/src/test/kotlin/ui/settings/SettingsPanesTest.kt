@@ -154,11 +154,11 @@ class SettingsPanesTest {
 
     @Test
     @Config(sdk = [35], qualifiers = "w1600dp-h1068dp")
-    fun theIndexPaneNeverGrowsPastItsOwn320dpEvenWithAStartInset() {
+    fun theIndexPaneNeverGrowsPastItsOwnWidthEvenWithAStartInset() {
         open(initial = null, leavesFromSection = false)
-        // The mockup's own index width, exactly — requiredWidth (not width)
-        // is what a start inset on a real device is not able to push past.
+        // The index's own width, exactly — requiredWidth (not width) is what
+        // a start inset on a real device is not able to push past.
         val right = compose.onNodeWithText("Telegram").fetchSemanticsNode().boundsInRoot.right
-        assertTrue(right <= 320f, "expected the index row's own right edge at or under 320dp, was ${right}px")
+        assertTrue(right <= SettingsIndexWidth.value, "expected the index row's own right edge at or under ${SettingsIndexWidth}, was ${right}px")
     }
 }

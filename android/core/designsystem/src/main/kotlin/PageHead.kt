@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.TextUnit
 
 /**
@@ -36,6 +37,10 @@ import androidx.compose.ui.unit.TextUnit
  * heading, so a screen reader meets one page head once rather than two
  * unrelated pieces of text — the same merge `DESIGN.md`'s plate uses for
  * artwork and caption together.
+ *
+ * [eyebrowStyle] defaults to [Eyebrow] itself, the phone's own size; a
+ * caller reading from further away — a television, read from the couch
+ * rather than the hand — passes its own scale instead.
  */
 @Composable
 fun PageHead(
@@ -45,6 +50,7 @@ fun PageHead(
     eyebrowColor: Color,
     maxTitleSize: TextUnit,
     modifier: Modifier = Modifier,
+    eyebrowStyle: TextStyle = Eyebrow,
 ) {
     val titleStyle = if (maxTitleSize.value >= WideTitleFloor) PageTitle else PageTitleCompact
     Column(
@@ -60,7 +66,7 @@ fun PageHead(
             autoSize = TextAutoSize.StepBased(maxFontSize = maxTitleSize),
             maxLines = 1,
         )
-        BasicText(text = eyebrow, style = Eyebrow.copy(color = eyebrowColor))
+        BasicText(text = eyebrow, style = eyebrowStyle.copy(color = eyebrowColor))
     }
 }
 

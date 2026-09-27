@@ -6,6 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
@@ -25,27 +27,49 @@ import ui.tv.catalog.TvQuietLine
  * against the allowance, then the allowance as a choice, one row for each
  * size with the chosen one marked. Choosing a smaller one frees the
  * difference at once, and the Held row says so on the next read.
+ *
+ * The "Cache" heading is [entryFocusRequester]'s own target — it draws
+ * whether the read has finished or not, so [TvStorageSection] always has a
+ * stop ready the moment it is entered, the same reason [TvSystemContent]
+ * lands on its own Catalogue heading rather than a row further down. The
+ * read itself is triggered once, by the hub on entry — see that comment on
+ * [TvSettingsScreen] for why a second trigger here would read it twice.
  */
 @Composable
-internal fun TvCacheBudgetBlock() {
+internal fun TvCacheBudgetBlock(
+    focusInContent: Boolean,
+    returningFrom: TvSettingsPanel?,
+    entryFocusRequester: FocusRequester,
+) {
     val viewModel: CacheBudgetViewModel = hiltViewModel()
     val occupancy by viewModel.state.collectAsStateWithLifecycle()
     val failure by viewModel.failure.collectAsStateWithLifecycle()
-    // On every visit, not once per process: Held grows with every film played.
-    LaunchedEffect(Unit) { viewModel.refresh() }
+    // Keyed on focusInContent alone, not also on returningFrom — see the
+    // same note on TvTelegramSection's own effect for why keying on both
+    // would steal focus back after TvLanCacheBlock has already landed it
+    // on its own row, once the hub clears lastPanel a moment later.
+    LaunchedEffect(focusInContent) {
+        if (focusInContent && returningFrom == null) entryFocusRequester.requestFocus()
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         val current = occupancy
-        if (current == null) {
-            TvInfoBlock(heading = "Cache", rows = emptyList())
-            if (failure == null) TvQuietLine("Reading the cache…")
-        }
+        // One call site, loading or not: entryFocusRequester lands here once
+        // on entry, and since the heading node is never swapped out for a
+        // second one once the read finishes, that focus survives the read
+        // finishing rather than being left on a node that just got replaced.
+        TvInfoBlock(
+            heading = "Cache",
+            rows = current?.let { listOf("Held" to heldOfBudget(it.heldBytes, it.budgetBytes)) }.orEmpty(),
+            modifier = Modifier.focusRequester(entryFocusRequester),
+            focusable = true,
+        )
+        if (current == null && failure == null) TvQuietLine("Reading the cache…")
         failure?.let {
             TvQuietLine(it)
             TvTextRow(text = "Try again", onClick = viewModel::refresh)
         }
         if (current == null) return@Column
-        TvInfoBlock(heading = "Cache", rows = listOf("Held" to heldOfBudget(current.heldBytes, current.budgetBytes)))
         if (current.fellBack) TvQuietLine("Could not use the chosen location; using ${current.volumeLabel} instead.")
         for (bytes in cacheBudgetChoices(current.capBytes)) {
             val chosen = bytes == current.budgetBytes

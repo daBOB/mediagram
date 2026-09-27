@@ -6,7 +6,7 @@ package ui.settings
  * own huge title — the same per-section line the web's Settings/System pages
  * carry (`settings-page.js`, `status-view.js:85-113`).
  *
- * Shared between `:ui-mobile` and `:ui-tv` (phase 04's own two-pane build),
+ * Shared between `:ui-mobile` and the television's own two-pane Settings,
  * which is why this lives in `:ui-common` rather than beside either surface's
  * own screens.
  */

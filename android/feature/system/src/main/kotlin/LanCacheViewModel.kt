@@ -138,13 +138,19 @@ class LanCacheViewModel
                     searching -> LanCacheConnection.SEARCHING
                     else -> LanCacheConnection.NOT_FOUND
                 }
+            // One read of the server's status for all three figures, so the
+            // held amount, the budget it is measured against and the chunk
+            // count always describe the same moment.
+            val status = server?.let { client.status(it.baseUrl) }
             return LanCacheUiState(
                 enabled = settings.enabled(),
                 hasToken = tokenSettings.read() != null,
                 manualAddress = settings.manualAddress().orEmpty(),
                 connection = connection,
                 connectedHost = server?.host,
-                heldBytes = server?.let { client.status(it.baseUrl)?.heldBytes },
+                heldBytes = status?.heldBytes,
+                budgetBytes = status?.budgetBytes,
+                chunks = status?.chunks,
                 tokenRejected = tokenRejected,
                 addressError = addressError,
                 tokenError = tokenError,
