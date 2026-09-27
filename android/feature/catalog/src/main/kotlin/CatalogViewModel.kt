@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 import model.MediaSet
 import model.TitleCredits
 import model.forKidsProfile
+import playback.FilmPreloading
 import playback.HeldSetsQuery
 import playback.SeriesPreloading
 import uniffi.mediagram_core.LibraryEvent
@@ -43,6 +44,7 @@ class CatalogViewModel
         libraryEvents: LibraryEvents = LibraryEvents.None,
         private val heldSets: HeldSetsQuery = HeldSetsQuery.Noop,
         seriesPreloader: SeriesPreloading = SeriesPreloading.Noop,
+        filmPreloader: FilmPreloading = FilmPreloading.Noop,
     ) : ViewModel() {
         private val catalog = MutableStateFlow<CatalogUiState>(CatalogUiState.Loading)
         private var lastReady: CatalogUiState.Ready? = null
@@ -111,6 +113,12 @@ class CatalogViewModel
                 // A preload that finishes a title is folded into the shelves
                 // already up, so its "offline" badge shows without a rescan.
                 launch { seriesPreloader.heldEvents.collect(::heldEventApplied) }
+                launch { filmPreloader.heldEvents.collect(::heldEventApplied) }
+                // A film a viewer removed drops its badge the same way — the
+                // one case heldEventApplied's own event never covers, since
+                // nothing else in the app ever un-holds a title once it is on
+                // disk.
+                launch { filmPreloader.unheldEvents.collect(::heldEventRemoved) }
                 combine(catalog, updates.refreshing, watchState.snapshot) { shown, refreshing, watch ->
                     when {
                         shown is CatalogUiState.Ready -> shown.copy(refreshing = refreshing, watch = watch)
@@ -233,6 +241,11 @@ class CatalogViewModel
         private fun heldEventApplied(setId: String) {
             val kept = lastReady ?: return
             if (setId !in kept.heldIds) show(kept.copy(heldIds = kept.heldIds + setId))
+        }
+
+        private fun heldEventRemoved(setId: String) {
+            val kept = lastReady ?: return
+            if (setId in kept.heldIds) show(kept.copy(heldIds = kept.heldIds - setId))
         }
 
         private fun show(answer: CatalogUiState) {

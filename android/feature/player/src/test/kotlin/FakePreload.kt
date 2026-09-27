@@ -29,4 +29,6 @@ internal class FakeHeldSets(private val held: Set<String> = emptySet()) : HeldSe
 
     override suspend fun heldIds(sets: List<Pair<String, Long>>): Set<String> =
         sets.map { it.first }.filterTo(mutableSetOf()) { it in held }
+
+    override suspend fun heldBytes(setId: String, totalBytes: Long): Long = if (setId in held) totalBytes else 0L
 }

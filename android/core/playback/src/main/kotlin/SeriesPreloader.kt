@@ -56,6 +56,10 @@ interface SeriesPreloading {
  * it would be written — a set another preload already finished, or a
  * budget the last item's own write has since filled, both have to be
  * caught right there rather than at the moment [want] was called.
+ *
+ * [lane] serialises the actual write against `FilmPreloader`'s own — a
+ * viewer's manual film preload and this show's next-episode preload never
+ * write at once, whichever asked first simply goes first.
  */
 class SeriesPreloader(
     scope: CoroutineScope,
@@ -64,6 +68,8 @@ class SeriesPreloader(
     private val isHeld: suspend (PreloadItem) -> Boolean,
     private val fits: suspend (candidateBytes: Long, currentBytes: Long) -> Boolean,
     private val log: (String) -> Unit = {},
+    /** Shared with `FilmPreloader` in production; a private one by default, since no test here writes concurrently with anything else. */
+    private val lane: DownloadLane = DownloadLane(),
 ) : SeriesPreloading {
     private val wanted = Channel<List<PreloadItem>>(Channel.CONFLATED)
 
@@ -121,7 +127,7 @@ class SeriesPreloader(
                 log("preload: ${item.title} skipped (budget or network)")
                 return
             }
-            writer.write(item)
+            lane.withLane { writer.write(item) }
             _heldEvents.emit(item.setId)
             log("preload: ${item.title} held")
         } catch (e: CancellationException) {

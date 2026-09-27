@@ -15,7 +15,7 @@ AndroidManifest.xml:29-34` (POST_NOTIFICATIONS deliberately absent).
 
 ## Overview
 
-P2 · pending. A `FilmPreloader` (name to taste) the film pages drive: enqueue, cancel,
+P2 · done. A `FilmPreloader` (name to taste) the film pages drive: enqueue, cancel,
 remove, and observe per-film progress. Downloads one film at a time into the player's
 cache through the same strict writer the series preloader uses (so the LAN path reads
 what the home server holds and uploads what it lacks).
@@ -78,13 +78,13 @@ manifest. 6. `./gradlew :core:playback:testDebugUnitTest :feature:player:testDeb
 
 ## Todo
 
-- [ ] writer progress + cancel
-- [ ] shared lane with SeriesPreloader
-- [ ] FilmPreloader + states + tests
-- [ ] pause while playing, resume after
-- [ ] dataSync service, manifest, no POST_NOTIFICATIONS
-- [ ] held events on completion/remove
-- [ ] tests green, version, changelog
+- [x] writer progress + cancel
+- [x] shared lane with SeriesPreloader
+- [x] FilmPreloader + states + tests
+- [x] pause while playing, resume after
+- [x] dataSync service, manifest, no POST_NOTIFICATIONS
+- [x] held events on completion/remove
+- [x] tests green, version, changelog
 
 ## Success criteria
 

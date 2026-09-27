@@ -10,7 +10,7 @@ android {
     defaultConfig {
         applicationId = "com.mediagram.android"
         versionCode = 18
-        versionName = "0.73.0"
+        versionName = "0.73.1"
     }
 
     buildTypes {
@@ -40,6 +40,18 @@ android {
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += listOf("release")
         }
+    }
+
+    lint {
+        // PreloadService posts a plain notification without POST_NOTIFICATIONS
+        // by design — see the app manifest's own note beside that permission,
+        // and PreloadService's class doc. NotificationPermission is a
+        // manifest-level check that does not honour a @SuppressLint at the
+        // call site the way MissingPermission does. A baseline (not
+        // `disable +=`) captures only this one already-known finding, so a
+        // NotificationPermission issue anywhere else in the app is still
+        // caught rather than silenced project-wide.
+        baseline = file("lint-baseline.xml")
     }
 }
 

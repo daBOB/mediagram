@@ -22,11 +22,19 @@ interface HeldSetsQuery {
     /** The held ones among `sets` (setId to its own total bytes). */
     suspend fun heldIds(sets: List<Pair<String, Long>>): Set<String>
 
+    /**
+     * How much of [setId] this device actually holds, `0` for a total of
+     * zero or less. What `FilmPreloader`'s `Idle` state starts a half-held
+     * film at, rather than the all-or-nothing answer [isHeld] gives.
+     */
+    suspend fun heldBytes(setId: String, totalBytes: Long): Long
+
     companion object {
         /** Nothing is ever held — a constructor default for a caller that does not care, e.g. a test exercising something else entirely. */
         val Noop: HeldSetsQuery = object : HeldSetsQuery {
             override suspend fun isHeld(setId: String, totalBytes: Long) = false
             override suspend fun heldIds(sets: List<Pair<String, Long>>): Set<String> = emptySet()
+            override suspend fun heldBytes(setId: String, totalBytes: Long) = 0L
         }
     }
 }
@@ -66,5 +74,12 @@ class HeldSets(
             .filter { (_, totalBytes) -> totalBytes > 0 }
             .filter { (setId, totalBytes) -> cache.isCached(setUri(setId).toString(), 0, totalBytes) }
             .mapTo(mutableSetOf()) { (setId, _) -> setId }
+    }
+
+    override suspend fun heldBytes(setId: String, totalBytes: Long): Long {
+        if (totalBytes <= 0) return 0L
+        return withContext(dispatcher) {
+            CacheProvider.get(context, dispatcher).getCachedBytes(setUri(setId).toString(), 0, totalBytes)
+        }
     }
 }

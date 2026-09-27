@@ -10,6 +10,14 @@
                 <action android:name="androidx.media3.session.MediaSessionService" />
             </intent-filter>
         </service>
+
+        <!-- Started by PlaybackModule while FilmPreloading.hasWork is true;
+             stops itself once it isn't. No intent-filter: nothing starts
+             this but that one explicit Intent. -->
+        <service
+            android:name="player.PreloadService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
     </application>
 
 </manifest>

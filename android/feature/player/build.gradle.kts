@@ -29,6 +29,11 @@ dependencies {
     // deliberately (see that module's build script); the session artifact
     // belongs to whichever module actually builds a session.
     implementation(libs.findLibrary("androidx.media3.session").get())
+    // PreloadService's notification: NotificationCompat/ServiceCompat carry
+    // the pre-O channel and pre-Q foreground-type branching so this module
+    // does not hand-roll SDK_INT checks for either. Already a dependency of
+    // :app; not a new one to the project.
+    implementation(libs.findLibrary("androidx.core").get())
 
     testImplementation(libs.findLibrary("mockk").get())
     // DefaultPlayerHandle.open() builds a real android.net.Uri (via

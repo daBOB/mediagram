@@ -16,6 +16,11 @@
          :core:playback's own manifest (SystemUnmeteredNetworkCheck). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- PreloadService's own type — a manual film preload surviving the
+         viewer leaving the app. See PreloadService and the POST_NOTIFICATIONS
+         note below: this one is not exempt the way PlaybackService's is, and
+         is declared anyway, deliberately without that permission. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <!-- Enforced only on API 37+ (Android 17) devices; without it there,
          TCP to the home cache server's LAN address times out and NSD
          finds nothing. Declaring it is harmless on older OS versions —
@@ -26,12 +31,18 @@
     <!-- Not a runtime permission — declared only. Held for the duration of
          one discovery pass (LanServerLocator.discover()), never continuously. -->
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
-    <!-- No android.permission.POST_NOTIFICATIONS: PlaybackService's own
-         notification is a MediaSession one (see the "Media sessions" row
-         of https://developer.android.com/develop/ui/views/notifications/notification-permission#exemptions),
-         exempt on API 33+ from the runtime permission entirely — there is
-         nothing here to request, and nothing else in the app posts a
-         notification that would need it. -->
+    <!-- No android.permission.POST_NOTIFICATIONS. Two services post a
+         notification and neither needs it: PlaybackService's is a
+         MediaSession one (see the "Media sessions" row of
+         https://developer.android.com/develop/ui/views/notifications/notification-permission#exemptions),
+         exempt on API 33+ entirely. PreloadService's is a plain one and is
+         deliberately left unrequested: the service still runs and still
+         preloads without it — a foreground service needs a `Notification`
+         object to start with, not the permission to actually show it — the
+         notification is simply never shown, and the film page's own
+         progress bar is where a viewer actually watches it. Request this
+         only if a future notification genuinely needs to reach someone who
+         is not looking at the app. -->
 
     <application
         android:name=".MediagramApp"

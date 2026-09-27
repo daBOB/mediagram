@@ -9,8 +9,11 @@ import data.WatchStateRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -24,6 +27,9 @@ import model.Profile
 import model.Progress
 import model.WatchSnapshot
 import org.junit.After
+import playback.ActivePreload
+import playback.FilmPreloadState
+import playback.FilmPreloading
 import settings.InMemoryTmdbSettings
 import testing.CatalogCoreProvider
 import testing.FakeCore
@@ -39,8 +45,39 @@ private fun catalogViewModel(
     repository: CatalogRepository,
     watchState: WatchStateRepository,
     enrichment: CatalogEnrichmentFetcher = CatalogEnrichmentFetcher(CatalogCoreProvider(FakeCore()), InMemoryTmdbSettings()),
+    filmPreloader: FilmPreloading = FilmPreloading.Noop,
+    // Last so existing trailing-lambda call sites (`catalogViewModel(a, b) { pushed }`,
+    // LibraryEvents being a fun interface) keep binding to this one.
     events: LibraryEvents = LibraryEvents.None,
-): CatalogViewModel = CatalogViewModel(repository, watchState, LibraryUpdateCoordinator(repository, enrichment), events)
+): CatalogViewModel =
+    CatalogViewModel(
+        repository,
+        watchState,
+        LibraryUpdateCoordinator(repository, enrichment),
+        events,
+        filmPreloader = filmPreloader,
+    )
+
+/** A [FilmPreloading] a test can fire [heldEvents]/[unheldEvents] through directly — nothing here ever actually preloads anything. */
+private class FakeFilmPreloading : FilmPreloading {
+    private val _heldEvents = MutableSharedFlow<String>(extraBufferCapacity = 8)
+    override val heldEvents: SharedFlow<String> = _heldEvents
+
+    private val _unheldEvents = MutableSharedFlow<String>(extraBufferCapacity = 8)
+    override val unheldEvents: SharedFlow<String> = _unheldEvents
+
+    override val hasWork: StateFlow<Boolean> = MutableStateFlow(false)
+    override val active: StateFlow<ActivePreload?> = MutableStateFlow(null)
+
+    override fun stateOf(setId: String, totalBytes: Long): Flow<FilmPreloadState> = MutableStateFlow(FilmPreloadState.Idle(0L, totalBytes))
+    override fun enqueue(setId: String, title: String, totalBytes: Long) = Unit
+    override fun cancel(setId: String) = Unit
+    override fun remove(setId: String) = Unit
+    override fun pauseForTimeLimit() = Unit
+
+    fun emitHeld(setId: String) = _heldEvents.tryEmit(setId)
+    fun emitUnheld(setId: String) = _unheldEvents.tryEmit(setId)
+}
 
 /**
  * A snapshot this test can hold still — [CatalogViewModel] reads [snapshot]
@@ -867,6 +904,33 @@ class CatalogViewModelTest {
                     }
                 assertEquals(setOf("Family"), ids)
                 cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    /**
+     * `heldEventApplied` (fed by `SeriesPreloading`/`FilmPreloading.heldEvents`)
+     * only ever adds a badge; a film the preloader removes needs its own
+     * signal to drop one, which is what `FilmPreloading.unheldEvents` and
+     * `heldEventRemoved` are for.
+     */
+    @Test
+    fun aFilmThePreloaderRemovesDropsItsHeldBadge() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val filmPreloader = FakeFilmPreloading()
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), FakeCatalogWatchState(), filmPreloader = filmPreloader)
+            vm.state.test {
+                awaitItem()
+                val before = awaitItem() as CatalogUiState.Ready
+                assertTrue(before.heldIds.isEmpty())
+
+                filmPreloader.emitHeld("movie-0")
+                val held = awaitItem() as CatalogUiState.Ready
+                assertEquals(setOf("movie-0"), held.heldIds)
+
+                filmPreloader.emitUnheld("movie-0")
+                val unheld = awaitItem() as CatalogUiState.Ready
+                assertTrue(unheld.heldIds.isEmpty())
             }
         }
 }

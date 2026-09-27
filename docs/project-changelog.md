@@ -5,6 +5,53 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.73.1 — Android: a film preload engine, not yet reachable from the UI
+
+**Added**
+
+- `FilmPreloader` (`:core:playback`): takes one film at a time into the
+  device cache through the same strict `CacheWriter` writer `SeriesPreloader`
+  already uses, now sharing one writer instance behind a `DownloadLane` so
+  the two never write at once. `CacheWriter.cache()` blocks its own
+  dedicated thread (`CacheDataSourceWriter`'s own dispatcher, not the
+  preloader's worker), and is interrupted by cancelling the coroutine that
+  called it — cancel, remove, and Android's own foreground-service time
+  limit each cancel that one film's own `Job`, which reaches a running
+  write, a metered-network wait, and a retry backoff alike. Per-film state
+  (`Idle`/`Queued`/`Running`/`Paused`/`Done`/`NeedsSpace`/`Failed`) reads
+  its held bytes from the cache on every observation, not once and
+  remembered — a film already part-held from playback starts at its real
+  percentage, a cancelled or removed one settles back to one just as
+  honestly, and a `Done` film that eviction later took back stops claiming
+  to be held. Pauses while a title is open in the player — playing,
+  buffering, or paused by the viewer, any film, not only this one — and
+  resumes once the player closes; pauses on a metered network instead of
+  failing, checked both before a write starts and while one is running. A
+  film's own whole size, not what else the cache happens to hold, decides
+  whether it fits the budget (the LRU cache evicts older content to make
+  room; only the title open in the player, if a different film, is
+  reserved); a write failure backs off and retries a bounded number of
+  times rather than giving up outright, since the core has no way to tell
+  Kotlin a Telegram `FLOOD_WAIT` apart from any other transient fault.
+- `PreloadService`: a `dataSync` foreground service that keeps a queued
+  preload running while the app is backgrounded, started the moment
+  anything is enqueued and stopping itself once the queue empties (staying
+  foreground through a pause, since a `dataSync` service cannot be
+  restarted from the background). Android's own 6h/24h ceiling for the
+  type surfaces as a resumable pause rather than a crash. No
+  `POST_NOTIFICATIONS` — the service runs regardless; its own notification
+  is simply never shown, and a film page's progress bar is where a viewer
+  actually watches it.
+- `ActivePlayback`: feeds the engine what the player has open from a
+  main-thread listener only — a film's own worker never touches the real
+  `ExoPlayer` directly, which media3 does not allow off its own thread —
+  and starts listening lazily, the first time a film is actually
+  preloaded, so the catalogue merely being open never forces the app's
+  player to build.
+- Nothing in the app calls any of this yet: no button, no bar, no route
+  into `FilmPreloader.enqueue`. The engine exists on its own; the film page
+  that drives it is a later change.
+
 ## 0.73.0 — Cache server: a per-film status route
 
 **Added**
