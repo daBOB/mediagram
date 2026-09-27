@@ -17,6 +17,7 @@ import { collectionGrid, movieGrid } from "./shelf-view.js";
 import { GRID } from "./shelf-mode.js";
 import { personCard } from "./cast.js";
 import { destination } from "./collections-page.js";
+import { href } from "../address.js";
 
 /** How a hit earned its place, in words rather than a field name. */
 const WHY = {
@@ -57,9 +58,9 @@ export function renderSearch(main, query, hits, { play, openFilm, shows, openSho
   const named = (name) => words.length > 0 && words.every((word) => name.toLocaleLowerCase().includes(word));
   const places = [
     ...franchises.filter((f) => named(f.name))
-      .map((f) => destination(f.name, countOf(f.films.length, "film"), f.art, `#/collections/tmdb-${f.id}`)),
+      .map((f) => destination(f.name, countOf(f.films.length, "film"), f.art, href({ page: "franchise", id: f.id }))),
     ...lists.filter((list) => named(list.name))
-      .map((list) => destination(list.name, countOf(list.items.length, "title"), null, `#/collections/${encodeURIComponent(list.id)}`)),
+      .map((list) => destination(list.name, countOf(list.items.length, "title"), null, href({ page: "list", id: list.id }))),
   ];
   const head = el("header", "shelf-head");
   head.append(el("h1", null, `“${query}”`));

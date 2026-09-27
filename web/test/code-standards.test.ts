@@ -25,14 +25,17 @@ const ROOT = join(import.meta.dir, "..");
  * to `library-session.js`; raised the same day, by 7, for the re-entrant-draw
  * guard and the reactive player hold that review found still belonged there.
  * Also 2026-09-27: `src/index.ts` grew by six lines wiring the paced-reads probe
- * through startup alongside the encoder probe it already ran next to.
+ * through startup alongside the encoder probe it already ran next to. Lowered
+ * again the same day for `app.js` and `shelf-view.js`, once the hash format
+ * moved out to `lib/address.js` and every hand-built `#/…` string in the app
+ * became one call into it.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 786,
+  "public/app.js": 772,
   "public/lib/catalog/course-view.js": 234,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,
-  "public/lib/catalog/shelf-view.js": 289,
+  "public/lib/catalog/shelf-view.js": 285,
   "public/lib/library.js": 309,
   "public/lib/playback/notes/markdown.js": 227,
   "public/lib/playback/player.js": 996,

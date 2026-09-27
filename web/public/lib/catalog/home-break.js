@@ -10,6 +10,7 @@
 
 import { el } from "../dom.js";
 import { genresOf } from "./genres.js";
+import { href } from "../address.js";
 
 /** A film's tagline as a pull-quote, credited to the film. */
 export function pullQuote(set) {
@@ -19,7 +20,7 @@ export function pullQuote(set) {
   figure.append(quote);
   const credit = el("figcaption");
   const link = el("a", null, [set.title ?? set.setId, set.year].filter(Boolean).join(", "));
-  link.href = `#/film/${encodeURIComponent(set.setId)}`;
+  link.href = href({ page: "film", setId: set.setId });
   // The rule above the credit stands where a dash would.
   credit.append(link);
   figure.append(credit);
@@ -37,7 +38,7 @@ export function thisMonth(films) {
   films.forEach((set, index) => {
     const item = el("li");
     const link = el("a");
-    link.href = `#/film/${encodeURIComponent(set.setId)}`;
+    link.href = href({ page: "film", setId: set.setId });
     link.append(el("span", "this-month-num", String(index + 1).padStart(2, "0")));
     const text = el("span", "this-month-text");
     text.append(el("span", "this-month-name", set.title ?? set.setId));

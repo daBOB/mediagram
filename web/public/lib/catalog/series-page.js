@@ -26,6 +26,7 @@ import { similarTo } from "./similar.js";
 import { heading } from "./shelf-view.js";
 import { inProgress, isWatched, progressOf } from "../watch-state.js";
 import { resumeAt } from "../resume-point.js";
+import { href } from "../address.js";
 
 /**
  * The route: one show, with the season the URL names (if any) in view.
@@ -76,7 +77,7 @@ export function seriesPage(collection, { season, resume, play, openSeason, simil
 
   const start = resume ? playPill(`${resume.verb} ${episodeShort(resume.set)}`, () => play(resume.set)) : null;
   const hero = titleSpread({
-    back: { href: "#/series", label: "Back to Series" },
+    back: { href: href({ page: "department", section: "series" }), label: "Back to Series" },
     title: collection.name,
     facts: factsLine(facts, null, first),
     art: first?.backdrop ?? first?.poster ?? null,

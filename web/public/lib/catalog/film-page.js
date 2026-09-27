@@ -20,6 +20,7 @@ import { tabbed } from "./tabs.js";
 import { offerCast } from "./cast.js";
 import { movieGrid } from "./shelf-view.js";
 import { GRID } from "./shelf-mode.js";
+import { href } from "../address.js";
 
 /**
  * The page for `set`. `resume` is the second to carry on from, or `null`.
@@ -36,7 +37,7 @@ export function filmPage(set, { resume, onPlay, similar, openFilm, hasFranchise 
     .filter(Boolean).join(" · ");
   const play = playPill(resume ? `Resume from ${clockTime(resume)}` : "Play", () => onPlay(set));
   page.append(titleSpread({
-    back: { href: "#/movies", label: "Back to Movies" },
+    back: { href: href({ page: "department", section: "movies" }), label: "Back to Movies" },
     title,
     facts,
     art: set.backdrop ?? set.poster,
@@ -84,7 +85,7 @@ function overview(set, hasFranchise) {
 function franchiseLink(set) {
   if (!set.collectionId || !set.collectionName) return null;
   const link = el("a", "franchise-link", set.collectionName);
-  link.href = `#/collections/tmdb-${set.collectionId}`;
+  link.href = href({ page: "franchise", id: set.collectionId });
   return link;
 }
 

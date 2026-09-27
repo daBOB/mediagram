@@ -20,6 +20,7 @@ import { genreIndex, genreTiles } from "./utility-pages.js";
 import { homeShelves } from "./home-shelves.js";
 import { resumeCards } from "./home-resume.js";
 import { revealWithin } from "../reveal.js";
+import { href } from "../address.js";
 
 const ROW = 12;
 const ACCLAIMED = 7.5;
@@ -47,24 +48,24 @@ export function renderMoviesDept(main, cx) {
     line: [countOf(films.length, "film"), hours > 0 ? `${hours.toLocaleString()} hours` : null].filter(Boolean).join(" · "),
     lead,
     leadName: lead?.title ?? null,
-    leadHref: lead ? `#/film/${encodeURIComponent(lead.setId)}` : null,
+    leadHref: lead ? href({ page: "film", setId: lead.setId }) : null,
   }));
 
   const shelf = (sets) => movieGrid(sets, cx.openFilm, { mode: GRID, strip: true });
-  const all = { href: "#/movies/page/1", label: `All ${films.length} films` };
+  const all = { href: href({ page: "moviesPage", n: 1 }), label: `All ${films.length} films` };
   const featured = byPopularity.filter((set) => set !== lead).slice(0, ROW);
   if (featured.length > 0) {
     main.append(deptRow("Featured Movies", shelf(featured), all, cx.reel));
   }
   const genres = genreIndex(films).slice(0, 12);
-  if (genres.length > 0) main.append(deptRow("Genres", genreTiles(genres), { href: "#/genres", label: "Every genre" }));
+  if (genres.length > 0) main.append(deptRow("Genres", genreTiles(genres), { href: href({ page: "genres" }), label: "Every genre" }));
 
   const acclaimed = unwatched.filter((set) => (set.rating ?? 0) >= ACCLAIMED)
     .sort((a, b) => b.rating - a.rating).slice(0, ROW);
   if (acclaimed.length > 0) main.append(deptRow("Acclaimed, not yet seen", shelf(acclaimed)));
 
   const latest = homeShelves({ library: cx.library, byId: cx.byId, posterLimit: ROW }).latestMovies;
-  if (latest.length > 0) main.append(deptRow("Recently added", shelf(latest), { href: "#/latest", label: "Latest" }));
+  if (latest.length > 0) main.append(deptRow("Recently added", shelf(latest), { href: href({ page: "latest" }), label: "Latest" }));
 
   main.append(allLink(all));
   revealWithin(main);
@@ -111,7 +112,7 @@ export function renderDocumentariesDept(main, cx) {
     const groupItems = flattenCollection(group);
     if (groupItems.length === 0) continue;
     const more = groupItems.length > ROW
-      ? { href: `#/documentaries/${encodeURIComponent(group.name)}`, label: `All ${groupItems.length}` }
+      ? { href: href({ page: "show", section: "documentaries", name: group.name, folders: [] }), label: `All ${groupItems.length}` }
       : null;
     main.append(deptRow(group.name, shelf(groupItems.slice(0, ROW)), more));
   }
@@ -137,7 +138,7 @@ export function renderShowsDept(main, section, cx) {
     line: [countOf(shows.length, SECTIONS[section].extent), countOf(items, series ? "episode" : "lesson")].join(" · "),
     lead,
     leadName: lead?.show ?? null,
-    leadHref: lead?.show ? `#/${section}/${encodeURIComponent(lead.show)}` : null,
+    leadHref: lead?.show ? href({ page: "show", section, name: lead.show, folders: [] }) : null,
   }));
 
   const kind = series ? "ep" : "tut";

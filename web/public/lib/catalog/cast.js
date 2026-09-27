@@ -11,6 +11,7 @@ import { firstItemOf } from "../library.js";
 import { artworkUrl, initialsOf } from "./plate.js";
 import { collectionGrid, heading, movieGrid } from "./shelf-view.js";
 import { GRID } from "./shelf-mode.js";
+import { href } from "../address.js";
 
 /** Fetches `key`'s credits and, if anyone is listed, adds a Cast tab to `tabs` at `at`. */
 export function offerCast(tabs, key, at = 1) {
@@ -45,7 +46,7 @@ function faceOf({ name, portrait }) {
 export function personCard(person) {
   const { personId, name, role } = person;
   const card = el("a", "person");
-  card.href = `#/person/${personId}`;
+  card.href = href({ page: "person", id: personId });
   card.append(faceOf(person), el("span", "person-name", name));
   if (role) card.append(el("span", "person-role", role));
   return card;
@@ -57,7 +58,7 @@ function castPanel({ cast, crew }) {
     const line = el("p", "cast-crew");
     line.append(...crew.flatMap((person, at) => {
       const link = el("a", null, person.name);
-      link.href = `#/person/${person.personId}`;
+      link.href = href({ page: "person", id: person.personId });
       return [at > 0 ? ", " : `${person.role === "Creator" ? "Created by" : "Directed by"} `, link];
     }));
     box.append(line);

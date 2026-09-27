@@ -5,6 +5,34 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.68.10 — the web player's addresses have one home
+
+**Internal**
+
+- The hash address format — `parse`, `href`, `go` — moved into one module,
+  `web/public/lib/address.js` (+ `address.d.ts`). `drawRoute` (`app.js`) now
+  dispatches on a typed address instead of splitting `location.hash` by hand,
+  and every card, crumb, pager and `location.hash =` that used to build a
+  `#/…` string itself (about 47 sites across 16 files) now calls `href` or
+  `go`. The three separate show-openers in `app.js` are one function,
+  `openShow`, now. The format itself is unchanged — every address the app
+  accepted before still parses to the same page, an already-bookmarked link
+  still opens where it always did — this only gives the format one owner.
+  `docs/web-player.md`'s address table was also wrong in three places (search
+  took a query string rather than a path segment; a list's own route was
+  listed twice, once wrongly; a season's route was described as an episode's)
+  and missing four real pages (`#/documentaries`, `#/continue`, `#/watchlist`,
+  `#/system`); corrected, and `web/test/address.test.ts` now parses every row
+  in it, so the table cannot drift from the code again. Its two Movies rows
+  were wrong too: `#/movies` is the department's front page, and the paged
+  shelf is always numbered from `#/movies/page/1`.
+- One address opens something different: a section named after a built-in
+  object property (`#/constructor`, `#/toString`) used to pass for a real
+  section and then fail to draw, leaving a blank page. It now opens Movies,
+  as every other unknown section does.
+- `pager.js` lost `parsePage`, which `address.js` now does alone, and the
+  `section` argument its links never used.
+
 ## 0.68.9 — a conversion no longer pulls the whole film at once
 
 **Fixed**

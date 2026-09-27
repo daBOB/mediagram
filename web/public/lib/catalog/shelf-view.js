@@ -15,6 +15,7 @@ import { firstItemOf } from "../library.js";
 import { offlineBadge, transcodeBadge } from "./set-badge.js";
 import { GRID, LIST } from "./shelf-mode.js";
 import { SECTIONS } from "./sections.js";
+import { href } from "../address.js";
 
 /**
  * `strip` lays plates out as one row that scrolls sideways, as the home page
@@ -263,17 +264,13 @@ export function heading(main, title, subtitle, control) {
  */
 export function crumbs(section, label, collectionName, folders) {
   const nav = el("nav", "crumbs");
-  let hash = `#/${section}`;
-  const trail = [{ label: label, hash }];
-
-  if (collectionName !== null) {
-    hash += `/${encodeURIComponent(collectionName)}`;
-    trail.push({ label: collectionName, hash });
-  }
-  for (const folder of folders) {
-    hash += `/${encodeURIComponent(folder)}`;
-    trail.push({ label: folder, hash });
-  }
+  // "Collections" has no department front page of its own; every other
+  // section here does.
+  const front = section === "collections" ? { page: "collections" } : { page: "department", section };
+  const showAt = (name, upTo) => href({ page: "show", section, name, folders: upTo });
+  const trail = [{ label, hash: href(front) }];
+  if (collectionName !== null) trail.push({ label: collectionName, hash: showAt(collectionName, []) });
+  folders.forEach((folder, i) => trail.push({ label: folder, hash: showAt(collectionName, folders.slice(0, i + 1)) }));
   // The last entry is where the viewer already is — unless it is the only
   // one, in which case it is the shelf above and the way back out.
   if (trail.length > 1) trail.pop();

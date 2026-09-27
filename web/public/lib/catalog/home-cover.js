@@ -15,6 +15,7 @@ import { genresOf, scoreLabel } from "./genres.js";
 import { artworkUrl } from "./plate.js";
 import { playPill } from "./title-spread.js";
 import { listToggle } from "./list-toggle.js";
+import { href } from "../address.js";
 
 const HOLD_MS = 9000;
 /** Past this many characters a title is set a size smaller, so it still fits in three lines. */
@@ -136,7 +137,7 @@ function slide(set, at, count, play) {
   const actions = el("div", "cover-actions");
   const watch = playPill("Watch now", () => play(set));
   const details = el("a", "cover-details", "Details");
-  details.href = `#/film/${encodeURIComponent(set.setId)}`;
+  details.href = href({ page: "film", setId: set.setId });
   details.setAttribute("aria-label", `Details: ${title}`);
   actions.append(watch, listToggle(set.setId), details);
   copy.append(actions);

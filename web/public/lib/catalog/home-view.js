@@ -21,6 +21,7 @@ import { featureStrip } from "./home-features.js";
 import { resumeCards } from "./home-resume.js";
 import { pullQuote, thisMonth } from "./home-break.js";
 import { revealWithin } from "../reveal.js";
+import { href } from "../address.js";
 
 /**
  * A row's header: its name, and the way to the whole shelf.
@@ -77,7 +78,7 @@ export function renderHome(main, shelves, editorial, { play, open, openFilm }) {
   if (cards.length > 0) {
     const strip = el("div", "resume-strip");
     strip.append(...cards);
-    band.append(section("resume", "continue", "Continue Watching", null, "#/continue", strip));
+    band.append(section("resume", "continue", "Continue Watching", null, href({ page: "continue" }), strip));
   }
   if (editorial.quote) {
     const quote = pullQuote(editorial.quote);
@@ -88,7 +89,8 @@ export function renderHome(main, shelves, editorial, { play, open, openFilm }) {
 
   const library = el("div", "home-band home-library");
   if (shelves.latestMovies.length > 0) {
-    library.append(section("latest", "latestMovies", "Recently Added", shelves.totals.latestMovies, "#/movies",
+    library.append(section("latest", "latestMovies", "Recently Added", shelves.totals.latestMovies,
+      href({ page: "department", section: "movies" }),
       movieGrid(shelves.latestMovies, openFilm, { mode: GRID, strip: true, captions: false })));
   }
   if (editorial.thisMonth.length > 0) {
@@ -99,13 +101,15 @@ export function renderHome(main, shelves, editorial, { play, open, openFilm }) {
   if (library.childElementCount > 0) main.append(library);
 
   if (shelves.latestSeries.length > 0) {
-    main.append(section("series-row", "latestSeries", "Latest series", shelves.totals.latestSeries, "#/series",
+    main.append(section("series-row", "latestSeries", "Latest series", shelves.totals.latestSeries,
+      href({ page: "department", section: "series" }),
       collectionGrid("series", shelves.latestSeries, (name) => open("series", name), { mode: GRID, strip: true })));
   }
   if (shelves.latestCourses.length > 0) {
     // An index, not plates, for the reason the Tutorials shelf is one: a
     // course has no artwork, so a plate would be a poster-shaped blank.
-    main.append(section("courses-row", "latestCourses", "Latest courses", shelves.totals.latestCourses, "#/tutorials",
+    main.append(section("courses-row", "latestCourses", "Latest courses", shelves.totals.latestCourses,
+      href({ page: "department", section: "tutorials" }),
       collectionGrid("tutorials", shelves.latestCourses, (name) => open("tutorials", name), { mode: LIST })));
   }
   revealWithin(main);

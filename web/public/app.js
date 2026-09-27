@@ -23,7 +23,7 @@ import { probeSettings } from "./lib/settings-api.js";
 import { renderCollection } from "./lib/catalog/course-view.js";
 import { SECTIONS, emptyState, heading, movieGrid, setGrid } from "./lib/catalog/shelf-view.js";
 import { GRID, LIST, setShelfMode, shelfMode } from "./lib/catalog/shelf-mode.js";
-import { pageOf, pager, parsePage } from "./lib/catalog/pager.js";
+import { pageOf, pager } from "./lib/catalog/pager.js";
 import { pickFeatured } from "./lib/catalog/featured-picks.js";
 import { openFeatured } from "./lib/catalog/featured-reel.js";
 import * as state from "./lib/watch-state.js";
@@ -46,6 +46,7 @@ import { turnPage } from "./lib/page-turn.js";
 import { renderGenre, renderGenres, renderLatest } from "./lib/catalog/utility-pages.js";
 import { createLibrarySession } from "./lib/library-session.js";
 import { browserLibraryPort } from "./lib/library-session-port.js";
+import { go, href, parse, sectionOf } from "./lib/address.js";
 
 const main = document.getElementById("main");
 const player = document.getElementById("player");
@@ -128,14 +129,10 @@ librarySession.onData((change) => {
   refreshShelfCounts();
 });
 
-/** Views that are neither a catalog shelf nor one built from watch state. */
-const PAGES = new Set(["home", "search", "system", "film", "genre", "genres", "latest", "settings", "person"]);
-
 /** The shelves that come from what has been watched rather than the catalog. */
 const KEPT = {
   continue: { label: "Continue", empty: "Nothing started yet." },
   watchlist: { label: "My List", empty: "Nothing on your list." },
-  collections: { label: "Collections", empty: "No lists yet." },
 };
 
 /** Ids to sets, quietly dropping any the catalog no longer holds. */
@@ -216,10 +213,13 @@ function viewHome() {
   renderHome(main, shelves, editorial, {
     play: (set) => play(set),
     openFilm,
-    open: (section, name) => {
-      location.hash = `#/${section}/${encodeURIComponent(name)}`;
-    },
+    open: openShow,
   });
+}
+
+/** Opens a show or course's own page — the one show-opener every caller shares. */
+function openShow(section, name, folders = []) {
+  go({ page: "show", section, name, folders });
 }
 
 // A multiple of two, three, four, six and eight, so a wall of plates ends
@@ -240,7 +240,7 @@ function viewMovies(requested) {
   );
   if (library.movies.length === 0) return main.append(emptyState("movies", { kids: kidsProfile() }));
   main.append(movieGrid(items, openFilm, { mode }));
-  const links = pager("movies", page, pages);
+  const links = pager(page, pages);
   if (links) main.append(links);
 }
 
@@ -270,12 +270,12 @@ function reelButton() {
 const deptContext = () => ({
   library, byId, progress: state.inProgress(), watchedAt: state.watchedAt, isWatched: state.isWatched,
   kids: kidsProfile(), play: (set) => play(set), openFilm, reel: reelButton(),
-  openShow: (section, name) => { location.hash = `#/${section}/${encodeURIComponent(name)}`; },
+  openShow,
 });
 
 /** A film's card opens its page; the page's button plays it. */
 function openFilm(set) {
-  location.hash = `#/film/${encodeURIComponent(set.setId)}`;
+  go({ page: "film", setId: set.setId });
 }
 
 /**
@@ -551,7 +551,7 @@ async function offerSettings() {
   }
   adminSettings = true;
   // Settings may already be open: redraw so the tab appears.
-  if (location.hash.startsWith("#/settings")) route();
+  if (location.hash.startsWith(href({ page: "settings" }))) route();
 }
 /** Whether this viewer is offered the admin tab; set by `offerSettings`. */
 let adminSettings = false;
@@ -609,15 +609,8 @@ function drawRoute() {
     stopSettings = null;
   }
 
-  // Everything after the collection is the trail of folders into a course.
-  // Each segment is encoded on the way out, so a folder whose name contains a
-  // slash survives the split rather than becoming two folders.
-  const parts = location.hash
-    .replace(/^#\/?/, "")
-    .split("/")
-    .filter((part) => part !== "");
-  const [section = "movies", name, ...folders] = parts;
-  const known = SECTIONS[section] || KEPT[section] || PAGES.has(section) ? section : "movies";
+  const address = parse(location.hash);
+  const known = sectionOf(address);
 
   // Which page is showing, for the stylesheet: the home page's masthead sits
   // dark over the cover before it settles into the page's own colour.
@@ -633,60 +626,53 @@ function drawRoute() {
 
   main.textContent = "";
   refreshShelfCounts();
-  if (known === "search") {
-    const query = decodeURIComponent(name ?? "");
-    searchBox.value = query;
-    void viewSearch(query, generation);
+  if (address.page === "search") {
+    searchBox.value = address.query;
+    void viewSearch(address.query, generation);
     return;
   }
   // Leaving a search clears the box, so the shelf and the field agree.
   if (searchBox.value !== "") searchBox.value = "";
 
-  if (known === "home") return viewHome();
-  if (known === "film") return viewFilm(decodeURIComponent(name ?? ""));
-  const openers = { openFilm, openShow: (kind, title) => { location.hash = `#/${kind}/${encodeURIComponent(title)}`; } };
-  if (known === "genre") return renderGenre(main, library, decodeURIComponent(name ?? ""), openers);
-  if (known === "genres") return renderGenres(main, library);
-  if (known === "latest") return renderLatest(main, library, byId, openers);
-  if (known === "person") return renderPerson(main, name ?? "", { ...openers, byKey: titlesByKey(library) }, () => generation === routeGeneration);
-  if (known === "settings") {
+  if (address.page === "home") return viewHome();
+  if (address.page === "film") return viewFilm(address.setId);
+  const openers = { openFilm, openShow };
+  if (address.page === "genre") return renderGenre(main, library, address.name, openers);
+  if (address.page === "genres") return renderGenres(main, library);
+  if (address.page === "latest") return renderLatest(main, library, byId, openers);
+  if (address.page === "person") return renderPerson(main, address.id, { ...openers, byKey: titlesByKey(library) }, () => generation === routeGeneration);
+  if (address.page === "settings") {
     stopSettings = renderSettings(main, {
       profile: state.profile(), switchProfile, systemVisible: !document.getElementById("nav-system").hidden,
       admin: adminSettings ? renderSettingsPage : null,
     });
     return;
   }
-  if (known === "system") return viewSystem();
-  if (known === "continue") return viewContinue();
-  if (known === "watchlist") return viewWatchlist();
-  if (known === "collections") {
-    if (name?.startsWith("tmdb-")) return renderFranchise(main, name.slice(5), { library, openFilm }, () => generation === routeGeneration);
-    const list = state.collections().find((entry) => entry.id === decodeURIComponent(name ?? ""));
-    return name
-      ? renderList(main, list, list ? setsFor(list.items) : [], {
-          play, onEditing: setShelfEditing, onGone: () => {
-            if (navigation === navigationGeneration && location.hash === visitedHash) {
-              location.hash = "#/collections";
-            }
-          },
-        })
-      : renderCollectionsPage(main, { library, lists: state.collections(), setsFor });
+  if (address.page === "system") return viewSystem();
+  if (address.page === "continue") return viewContinue();
+  if (address.page === "watchlist") return viewWatchlist();
+  if (address.page === "franchise") return renderFranchise(main, address.id, { library, openFilm }, () => generation === routeGeneration);
+  if (address.page === "list") {
+    const list = state.collections().find((entry) => entry.id === address.id);
+    return renderList(main, list, list ? setsFor(list.items) : [], {
+      play, onEditing: setShelfEditing, onGone: () => {
+        if (navigation === navigationGeneration && location.hash === visitedHash) go({ page: "collections" });
+      },
+    });
   }
+  if (address.page === "collections") return renderCollectionsPage(main, { library, lists: state.collections(), setsFor });
 
-  // Checked before a collection name: films have no collections, and "page"
-  // must never be looked up as one.
-  if (known === "movies") return name === "page" ? viewMovies(parsePage(folders[0])) : renderMoviesDept(main, deptContext());
-  if (known === "documentaries" && !name) return renderDocumentariesDept(main, deptContext());
+  if (address.page === "moviesPage") return viewMovies(address.n);
+  if (address.page === "department" && address.section === "movies") return renderMoviesDept(main, deptContext());
+  if (address.page === "department" && address.section === "documentaries") return renderDocumentariesDept(main, deptContext());
+  if (address.page === "department") return renderShowsDept(main, address.section, deptContext());
 
-  if (name) {
-    const decoded = decodeURIComponent(name);
-    const shelf = known === "documentaries" ? library.documentaries.collections : library[known];
-    (known === "series" ? renderSeries : renderCollection)(main, known, shelf.find((entry) => entry.name === decoded), decoded,
-      folders.map(decodeURIComponent), { play, shelf, open: (section, collection, path) => {
-        location.hash = `#/${section}/${[collection, ...path].map(encodeURIComponent).join("/")}`;
-      } });
-  }
-  else renderShowsDept(main, known, deptContext());
+  // address.page === "show"
+  const shelf = address.section === "documentaries" ? library.documentaries.collections : library[address.section];
+  (address.section === "series" ? renderSeries : renderCollection)(
+    main, address.section, shelf.find((entry) => entry.name === address.name), address.name, address.folders,
+    { play, shelf, open: openShow },
+  );
 }
 
 /**
@@ -703,10 +689,10 @@ searchBox.addEventListener("input", () => {
   typing = setTimeout(() => {
     const query = searchBox.value.trim();
     if (query === "") {
-      location.hash = "#/movies";
+      go({ page: "department", section: "movies" });
       return;
     }
-    location.hash = `#/search/${encodeURIComponent(query)}`;
+    go({ page: "search", query });
   }, 200);
 });
 
@@ -721,7 +707,7 @@ searchBox.addEventListener("input", () => {
 let shownHash = location.hash;
 window.addEventListener("hashchange", () => {
   navigationGeneration++;
-  const refining = shownHash.startsWith("#/search/") && location.hash.startsWith("#/search/");
+  const refining = [shownHash, location.hash].every((hash) => hash.startsWith(href({ page: "search", query: "" })));
   shownHash = location.hash;
   turnPage(main, route, refining);
 });
@@ -762,7 +748,7 @@ try {
   // Replaced, not assigned: assigning fires `hashchange`, which would draw the
   // page twice, the second rising in again, which reads as a flicker.
   if (!location.hash) {
-    history.replaceState(history.state, "", "#/home");
+    history.replaceState(history.state, "", href({ page: "home" }));
     shownHash = location.hash;
   }
   // Only from here does a redraw-worthy change actually redraw: a state or

@@ -13,10 +13,11 @@
  */
 
 import { firstItemOf } from "../library.js";
+import { href } from "../address.js";
 
 /** Where a genre's shelf lives. */
 export function genreHash(name) {
-  return `#/genre/${encodeURIComponent(name)}`;
+  return href({ page: "genre", name });
 }
 
 /** A title's genres, whether or not the catalog recorded any. */

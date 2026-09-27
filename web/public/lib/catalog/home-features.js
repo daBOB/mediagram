@@ -11,6 +11,7 @@
 import { el } from "../dom.js";
 import { genresOf } from "./genres.js";
 import { artworkUrl } from "./plate.js";
+import { href } from "../address.js";
 
 const FEATURE_LABELS = {
   editor: "Editor’s choice",
@@ -22,8 +23,8 @@ const FEATURE_LABELS = {
 /** Where a featured title opens: a film's page, or its show's. */
 function featureHref(set) {
   return set.kind === "ep" && set.show
-    ? `#/series/${encodeURIComponent(set.show)}`
-    : `#/film/${encodeURIComponent(set.setId)}`;
+    ? href({ page: "show", section: "series", name: set.show, folders: [] })
+    : href({ page: "film", setId: set.setId });
 }
 
 /** @param {import("./editorial-picks.js").Feature[]} features */

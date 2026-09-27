@@ -8,6 +8,7 @@
  */
 
 import { el } from "../dom.js";
+import { href } from "../address.js";
 
 /** Where the pager leaves pages out. */
 export const GAP = "gap";
@@ -33,23 +34,12 @@ export function pageOf(items, page, size) {
 }
 
 /**
- * The page a hash segment names; anything that is not a positive whole number
- * is the first page, so a mistyped address still shows a shelf.
- * @param {string|undefined} text
- */
-export function parsePage(text) {
-  return /^[1-9]\d*$/.test(text ?? "") ? Number(text) : 1;
-}
-
-/**
  * The address of one page. Always numbered: the plain `#/movies` is the
- * department's front page, not the shelf's first page.
- * @param {string} section
+ * department's front page, not the shelf's first page. Movies is the only
+ * shelf long enough to paginate.
  * @param {number} page
  */
-export function pageHash(section, page) {
-  return `#/${section}/page/${Math.max(1, page)}`;
-}
+const pageHash = (page) => href({ page: "moviesPage", n: page });
 
 /**
  * The page numbers the pager shows: both ends, the current page and its
@@ -79,13 +69,12 @@ export function pageLinks(current, pages) {
 }
 
 /**
- * The row of links under a paged shelf, or null when there is one page.
+ * The row of links under Movies' paged shelf, or null when there is one page.
  * Real links, as the crumbs are: every page is a URL that works on its own.
- * @param {string} section
  * @param {number} current
  * @param {number} pages
  */
-export function pager(section, current, pages) {
+export function pager(current, pages) {
   const links = pageLinks(current, pages);
   if (links.length === 0) return null;
 
@@ -94,7 +83,7 @@ export function pager(section, current, pages) {
   const step = (label, page, rel) => {
     if (page < 1 || page > pages) return el("span", "pager-step off", label);
     const link = el("a", "pager-step", label);
-    link.href = pageHash(section, page);
+    link.href = pageHash(page);
     link.rel = rel;
     return link;
   };
@@ -109,7 +98,7 @@ export function pager(section, current, pages) {
       nav.append(here);
     } else {
       const link = el("a", "pager-page", String(page));
-      link.href = pageHash(section, page);
+      link.href = pageHash(page);
       nav.append(link);
     }
   }

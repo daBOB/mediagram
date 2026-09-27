@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { GAP, pageHash, pageLinks, pageOf, parsePage } from "../public/lib/catalog/pager.js";
+import { GAP, pageLinks, pageOf } from "../public/lib/catalog/pager.js";
 
 const films = Array.from({ length: 100 }, (_, index) => index);
 
@@ -23,20 +23,6 @@ describe("pageOf", () => {
 
   test("an empty shelf is one empty page", () => {
     expect(pageOf([], 4, 48)).toEqual({ items: [], page: 1, pages: 1 });
-  });
-});
-
-describe("parsePage", () => {
-  test("reads a positive whole number and nothing else", () => {
-    expect(parsePage("5")).toBe(5);
-    for (const text of [undefined, "", "0", "-1", "2.5", "x", "3a"]) expect(parsePage(text)).toBe(1);
-  });
-});
-
-describe("pageHash", () => {
-  test("every page is numbered, because the plain #/movies is the department's front page", () => {
-    expect(pageHash("movies", 1)).toBe("#/movies/page/1");
-    expect(pageHash("movies", 4)).toBe("#/movies/page/4");
   });
 });
 

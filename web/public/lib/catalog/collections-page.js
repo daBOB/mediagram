@@ -17,6 +17,7 @@ import { movieGrid } from "./shelf-view.js";
 import { GRID } from "./shelf-mode.js";
 import { newListButton } from "./collections-view.js";
 import { revealWithin } from "../reveal.js";
+import { href } from "../address.js";
 
 /**
  * The franchises with at least two films held, largest first; each with its
@@ -70,18 +71,18 @@ export function renderCollectionsPage(main, { library, lists, setsFor }) {
       .filter(Boolean).join(" · "),
     lead,
     leadName: lead?.title ?? null,
-    leadHref: lead ? `#/film/${encodeURIComponent(lead.setId)}` : null,
+    leadHref: lead ? href({ page: "film", setId: lead.setId }) : null,
   }));
   if (franchises.length > 0) {
     const grid = el("div", "destinations");
-    grid.append(...franchises.map((f) => destination(f.name, countOf(f.films.length, "film"), f.art, `#/collections/tmdb-${f.id}`)));
+    grid.append(...franchises.map((f) => destination(f.name, countOf(f.films.length, "film"), f.art, href({ page: "franchise", id: f.id }))));
     main.append(deptRow("Franchises", grid));
   }
   const yours = el("div", "destinations");
   for (const list of lists) {
     const first = setsFor(list.items).find((set) => set.backdrop || set.poster);
     yours.append(destination(list.name, countOf(list.items.length, "title"),
-      first?.backdrop ?? first?.poster ?? null, `#/collections/${encodeURIComponent(list.id)}`));
+      first?.backdrop ?? first?.poster ?? null, href({ page: "list", id: list.id })));
   }
   const section = deptRow("Your lists", yours);
   section.append(newListButton());
@@ -108,7 +109,7 @@ export function renderFranchise(main, id, { library, openFilm }, stillHere) {
     line: [countOf(franchise.films.length, "film"), span].filter(Boolean).join(" · "),
     lead,
     leadName: lead?.title ?? null,
-    leadHref: lead ? `#/film/${encodeURIComponent(lead.setId)}` : null,
+    leadHref: lead ? href({ page: "film", setId: lead.setId }) : null,
   });
   hero.classList.add("franchise-hero");
   main.append(hero);

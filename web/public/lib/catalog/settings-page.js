@@ -11,6 +11,7 @@
 
 import { el } from "../dom.js";
 import { tabbed } from "./tabs.js";
+import { href } from "../address.js";
 
 const THEMES = [
   ["dark", "Dark", "Cinematic and focused"],
@@ -107,7 +108,7 @@ function profilePanel(profile, switchProfile, systemVisible) {
   box.append(set);
   if (systemVisible) {
     const system = el("a", "dept-all", "System and playback status →");
-    system.href = "#/system";
+    system.href = href({ page: "system" });
     box.append(system);
   }
   return box;

@@ -136,7 +136,8 @@ remains available until those owners release it.
 
 The Movies shelf draws 48 films a page, which fills the last row of plates
 at every column count the grid uses. The page is part of the address
-(`#/movies/page/3`; page one stays the plain `#/movies`), so back, reload and
+(`#/movies/page/3`; the plain `#/movies` is the department's front page, so
+page one is `#/movies/page/1`), so back, reload and
 a shared link all land on it. The library is already whole in the page:
 `public/lib/catalog/pager.js` only slices it and draws the links, and the
 router matches `page` before any collection name. Series and Tutorials shelves
@@ -227,25 +228,44 @@ from `web/src/routes.ts` and its handlers.
 
 ### Client routes (fragments)
 
+The format lives in one place, `public/lib/address.js`: `parse(hash)` and
+`href(address)` are each other's inverse, and every link the player builds
+and every `location.hash =` goes through one of the two (the nav's fixed links
+in `index.html` are plain markup). The table below
+is not documentation of intent — `web/test/address.test.ts` parses every row,
+so it fails if this table and `address.js` ever disagree.
+
 | Route | Page |
 |---|---|
 | `#/home` | Home (magazine layout, editor's picks) |
-| `#/movies` | Movies department (paged shelf) |
-| `#/movies/page/N` | Movies page N (1–max, page 1 is plain `#/movies`) |
+| `#/movies` | Movies department front page |
+| `#/movies/page/N` | The paged Movies shelf, page N (always numbered, from 1) |
 | `#/series` | Series department |
+| `#/series/<show>` | A show's own page (season picker over its episodes) |
+| `#/series/<show>/<season>` | The named season in view |
 | `#/tutorials` | Tutorials department |
-| `#/<list-id>` | User-created list detail |
+| `#/tutorials/<course>` | A course's own page, its top folder |
+| `#/tutorials/<course>/<folder>/...` | A folder within the course, nested arbitrarily deep |
+| `#/documentaries` | Documentaries department |
+| `#/documentaries/<collection>/<folder>/...` | A documentary collection, folders as `tutorials` above |
 | `#/collections` | Collections page (franchises and lists) |
-| `#/collections/<id>` | Collection detail (tmdb-<id> or list UUID) |
-| `#/person/<id>` | Person page (cast/crew filmography) |
+| `#/collections/tmdb-<id>` | Franchise detail, by TMDB collection id |
+| `#/collections/<list-id>` | A viewer's own list |
+| `#/film/<setId>` | Film detail (Overview/Cast/Similar/Details tabs) |
+| `#/genre/<name>` | Genre page |
 | `#/genres` | All genres |
-| `#/genre/<slug>` | Genre page |
 | `#/latest` | Latest added |
-| `#/search[?q=...]` | Search results (grouped by type) |
+| `#/person/<id>` | Person page (cast/crew filmography) |
+| `#/search/<query>` | Search results (grouped by type) |
 | `#/settings` | Settings (Appearance/Profile/admin Library & Telegram) |
-| `#/film/<key>` | Film detail (Overview/Cast/Similar/Details tabs) |
-| `#/series/<show>` | Series detail with season selector |
-| `#/series/<show>/<division-title>` | Episode detail (unchanged from pre-0.62.0) |
+| `#/system` | Player status, own-network viewers only |
+| `#/continue` | Continue Watching |
+| `#/watchlist` | My List |
+
+An address `parse` does not recognise falls back to `#/movies`, trailing
+segments and all — so a typo'd section followed by `/page/N` still opens that
+page of Movies, the same as `#/movies/page/N` always has. `#`, `#/` and no
+hash at all fall back the same way.
 
 ### HTTP endpoints (JSON)
 
