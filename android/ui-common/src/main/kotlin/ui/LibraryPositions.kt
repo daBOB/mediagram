@@ -159,11 +159,17 @@ class LibraryPositions(frames: MutableState<String>) {
      * the title that just finished; and so a rotation or process restore
      * reopens the title actually playing, not the one that ended. A no-op
      * with the player not on top, which should not happen.
+     *
+     * [run] is kept only when the frame already carried one: a show's own
+     * run is worked out from the catalog again for the next title, so [run]
+     * still means "started on a hand-built run" after the switch — which is
+     * what keeps a list, however many titles in, from preloading.
      */
     fun replacePlayer(id: String, run: List<String>) {
         val current = stack
         if (current.lastOrNull()?.kind != FrameKind.PLAYER) return
-        setStack(current.dropLast(1) + Frame(FrameKind.PLAYER, playerPayload(id, run)))
+        val kept = if (this.run != null) run else null
+        setStack(current.dropLast(1) + Frame(FrameKind.PLAYER, playerPayload(id, kept)))
     }
 
     private fun playerPayload(id: String, run: List<String>?) =

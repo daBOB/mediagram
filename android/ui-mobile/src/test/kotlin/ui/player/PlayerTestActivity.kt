@@ -33,6 +33,7 @@ class PlayerTestActivity : ComponentActivity() {
                             "set-one",
                             emptyList(),
                             null,
+                            handPicked = false,
                             onBack = { showingPlayer = false },
                             onSwitch = { _, _ -> },
                             viewModel = playerViewModel,

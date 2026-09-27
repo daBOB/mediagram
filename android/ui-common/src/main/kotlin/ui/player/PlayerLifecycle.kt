@@ -81,10 +81,11 @@ fun PlayerNavigationEffects(
     setId: String,
     run: List<String>,
     fsk: String?,
+    handPicked: Boolean,
     onSwitch: (setId: String, run: List<String>) -> Unit,
 ) {
     val pendingSwitch by viewModel.pendingSwitch.collectAsStateWithLifecycle()
-    LaunchedEffect(setId) { viewModel.open(setId, run, fsk) }
+    LaunchedEffect(setId) { viewModel.open(setId, run, fsk, handPicked) }
     // The run alone changing (the catalog finishing its own load after this
     // title already opened) must not reopen the title — `open` would, since
     // that is not `sameTitle` to it either; only the run itself moves.

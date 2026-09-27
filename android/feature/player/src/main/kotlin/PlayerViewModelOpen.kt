@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
  * republishes rather than reloading (`DefaultPlayerHandle.open`), and
  * only a real reload floors the rate to 1x (`DefaultPlayerHandle.openOn`).
  */
-fun PlayerViewModel.open(setId: String, run: List<String> = emptyList(), fsk: String? = null) {
+fun PlayerViewModel.open(setId: String, run: List<String> = emptyList(), fsk: String? = null, handPicked: Boolean = false) {
     val sameTitle = session.openSetId == setId
     session.open(setId)
     if (!sameTitle) marksController.reset()
@@ -58,6 +58,6 @@ fun PlayerViewModel.open(setId: String, run: List<String> = emptyList(), fsk: St
     if (!sameTitle) {
         viewModelScope.launch { choicesController.resolve(setId) }
         upNextController.startTitle(setId, run)
-        preloadController.startTitle(setId, run)
+        preloadController.startTitle(setId, run, handPicked)
     }
 }

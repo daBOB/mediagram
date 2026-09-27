@@ -63,6 +63,7 @@ fun PlayerScreen(
     setId: String,
     run: List<String>,
     fsk: String?,
+    handPicked: Boolean,
     onBack: () -> Unit,
     onSwitch: (setId: String, run: List<String>) -> Unit,
     viewModel: PlayerViewModel = hiltViewModel(),
@@ -80,7 +81,7 @@ fun PlayerScreen(
     val isInPip = LocalIsInPictureInPicture.current
     val pip = PipController(player = player, isPlaying = state is PlayerUiState.Playing, onDismissed = viewModel::pauseForPipDismissal)
 
-    PlayerNavigationEffects(viewModel, setId, run, fsk, onSwitch)
+    PlayerNavigationEffects(viewModel, setId, run, fsk, handPicked, onSwitch)
     PlayerLifecycleEffects(
         viewModel,
         // The countdown drops `isPlaying` (the title has ended) and the gate

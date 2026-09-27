@@ -5,6 +5,23 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.68.12 — Android preloads what the web player preloads
+
+**Fixed**
+
+- The Android player preloaded episodes the web player never would. Played
+  from a hand-built list or the Kids wall, it walked the list and took the
+  next two episodes it found; and it walked past anything that was not an
+  episode to find two. The web player — the reference — preloads only while
+  an episode plays through its own show, only the next two positions, and
+  only those that are episodes, because the preload fetches in the
+  background from a flood-limited account. Android now keeps the same rule
+  (`PlayerViewModelPreload.kt`, after `playsNext`).
+- Behind it: an up-next switch stored a show's own run on the player frame
+  as if the viewer had picked it by hand, so "played from a list" could not
+  be told apart after the first episode. `LibraryPositions.replacePlayer` now
+  keeps a run only when the frame already had one.
+
 ## 0.68.11 — what plays next and what is preloaded are one answer
 
 **Internal**

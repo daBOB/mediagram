@@ -38,6 +38,7 @@ class TvPlayerTestActivity : ComponentActivity() {
                             setId = open,
                             set = set?.takeIf { it.setId == open },
                             run = run,
+                            handPicked = false,
                             onBack = { playing = false },
                             onSwitch = { id, _ ->
                                 switches += id

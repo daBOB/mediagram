@@ -61,12 +61,15 @@ import ui.player.PlayerNavigationEffects
  * [run] is what the title plays into, as on the phone: up next, the next
  * episodes taken ahead, and the remote's Next and Previous ([TvRunSteps])
  * all walk it; [onSwitch] moves the library to another title of it.
+ * [handPicked] says [run] is a list or the Kids wall rather than the
+ * title's own show, which takes nothing ahead.
  */
 @Composable
 fun TvPlayerScreen(
     setId: String,
     set: MediaSet?,
     run: List<String>,
+    handPicked: Boolean,
     onBack: () -> Unit,
     onSwitch: (setId: String, run: List<String>) -> Unit,
     viewModel: PlayerViewModel = hiltViewModel(),
@@ -85,7 +88,7 @@ fun TvPlayerScreen(
     val failed = state is PlayerUiState.Failed
 
     PlayerLifecycle(viewModel)
-    PlayerNavigationEffects(viewModel, setId, run, set?.fsk, onSwitch)
+    PlayerNavigationEffects(viewModel, setId, run, set?.fsk, handPicked, onSwitch)
     // The phone's rule: the countdown drops playing (the title has ended)
     // and the wait for the next title's buffer pauses on purpose; neither
     // is a viewer looking away.

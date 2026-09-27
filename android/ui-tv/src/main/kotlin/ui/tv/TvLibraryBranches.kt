@@ -93,7 +93,10 @@ internal fun TvPlayerBranch(
     val setId = at.setId ?: return
     val set = catalogState.mediaSet(setId)
     val run = at.run ?: set?.let { runFor(it, catalogState) }.orEmpty()
-    TvPlayerScreen(setId = setId, set = set, run = run, onBack = leave, onSwitch = at::replacePlayer)
+    TvPlayerScreen(
+        setId = setId, set = set, run = run, handPicked = at.run != null,
+        onBack = leave, onSwitch = at::replacePlayer,
+    )
 }
 
 /**

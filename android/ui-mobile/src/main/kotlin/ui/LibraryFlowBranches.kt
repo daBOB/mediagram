@@ -86,7 +86,10 @@ internal fun LibraryBranches(
             // own collection, or nothing for a film.
             val run = at.run ?: set?.let { runFor(it, catalogState) }.orEmpty()
             BackHandler(onBack = at::pop)
-            PlayerScreen(setId = setId, run = run, fsk = set?.fsk, onBack = at::pop, onSwitch = at::replacePlayer)
+            PlayerScreen(
+                setId = setId, run = run, fsk = set?.fsk, handPicked = at.run != null,
+                onBack = at::pop, onSwitch = at::replacePlayer,
+            )
         }
 
         FrameKind.MENU -> {

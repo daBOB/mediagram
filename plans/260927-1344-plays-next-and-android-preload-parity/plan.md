@@ -19,10 +19,28 @@ route change, as the review claimed). A module around them would be shallow.
 | Phase | Status |
 |-------|--------|
 | 01 Web: `lib/playback/plays-next.js` (`playsNext`, `requestPreload`), tests, `app.js` ceiling 772 → 742; 0.68.11 | done |
-| 02 Android: `PlayerViewModelPreload` matches `playsNext`; unit tests; tablet check; 0.68.12 | todo |
+| 02 Android: `PlayerViewModelPreload` matches `playsNext`; unit tests; tablet check; 0.68.12 | done |
 
 ## Facts (Android, before)
 - `PlayerViewModelPreload.kt:24-50` preloads when the open title is an episode, walking
   the run and skipping non-episodes until it has two; a hand-built list's run is walked too.
 - The web takes the next two positions of the show (not of a list), and preloads nothing
   when the open title is not an episode.
+
+## Review (2026-09-27)
+- Web (0.68.11): code review found the behaviour identical to main across every
+  case; applied its two notes (the first test now pins "no more than two"; the
+  comment says the server keeps two, not refuses). A pre-existing quirk it
+  noticed and left alone: a lesson or documentary whose collection shares a
+  series' name matches the series first and loses Play next.
+- Android (0.68.12): unit tests for `:feature:player`, `:feature:catalog`,
+  `:ui-common`, `:ui-mobile`, `:ui-tv` pass; the two new rules were broken on
+  purpose and each failed its test (hand-picked run preloads; a switch keeps a
+  show's run).
+- Tablet `caad49da`, test profile, native core rebuilt: the app launches; an
+  episode opened from its show (30 Rock S3E2) preloads — `SeriesPreload:
+  preload: Die verrückte Freundin held` (S3E3), the cache growing ~50 MB/15 s
+  while paused. The list case was not reached on the device: the Collections
+  page would not scroll past "+ New list" to the test list ("probe", S3E2 +
+  S3E7, present in `state.db`), so it rests on the unit tests. Whether that
+  scroll stop predates this change was not checked.
