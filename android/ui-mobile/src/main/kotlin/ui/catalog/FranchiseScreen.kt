@@ -51,6 +51,7 @@ internal fun FranchiseScreen(
                 line = listOfNotNull(countOf(franchise.films.size, "film"), span).joinToString(" · "),
                 lead = lead,
                 onOpenTitle = onOpenTitle,
+                franchiseTitle = true,
             )
         }
         page.overview?.let { overview ->

@@ -44,9 +44,9 @@ Documentaries hero is still the pre-redesign one.
 
 ## Todo
 
-- [ ] DepartmentHero rebuilt (wide + compact) with tests
-- [ ] hero under the bar on department tabs, blend reused
-- [ ] quote inside the hero; PullQuote callers checked
-- [ ] backdrop modes + light theme
-- [ ] gate green incl. `:core:designsystem` and `:ui-tv` (TV untouched)
-- [ ] tablet sheets vs web, patch bump, changelog
+- [x] DepartmentHero rebuilt (wide + compact) with tests
+- [x] hero under the bar on department tabs, blend reused
+- [x] quote inside the hero; PullQuote callers checked
+- [x] backdrop modes + light theme
+- [x] gate green incl. `:core:designsystem` and `:ui-tv` (TV untouched)
+- [x] tablet sheets vs web, patch bump, changelog

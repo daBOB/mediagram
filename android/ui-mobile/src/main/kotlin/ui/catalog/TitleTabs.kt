@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -43,7 +44,17 @@ internal fun TitleTabRow(
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    ScrollableTabRow(selectedTabIndex = labels.indexOf(shown), modifier = modifier, edgePadding = 0.dp) {
+    // No `containerColor`, so `ScrollableTabRow` painted its M3 default
+    // (`surface`) — invisible while the page beneath it was `surface` too,
+    // a full-width band once the page moved to `background` (`ui.pageGround`).
+    // `Transparent` lets the page's own ground show through instead, the
+    // way `.tab-list` draws no fill of its own (`title-page.css:121`).
+    ScrollableTabRow(
+        selectedTabIndex = labels.indexOf(shown),
+        modifier = modifier,
+        edgePadding = 0.dp,
+        containerColor = Color.Transparent,
+    ) {
         labels.forEach { label ->
             Tab(
                 selected = label == shown,

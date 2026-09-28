@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -24,8 +26,6 @@ import catalog.documentariesDepartmentOf
 import catalog.factsLine
 import catalog.resumeLine
 import catalog.watchedFractionOf
-import designsystem.Backdrop
-import designsystem.LocalBackdrop
 import designsystem.Spacing
 import model.MediaSet
 import model.Progress
@@ -49,6 +49,7 @@ internal fun DocumentariesDepartment(
     shelf: Shelf,
     state: CatalogUiState.Ready,
     onOpenCollection: (String) -> Unit,
+    listState: LazyListState = rememberLazyListState(),
     onPlay: (String) -> Unit,
 ) {
     val byId = remember(state.shelves) { allSetsById(state.shelves) }
@@ -66,6 +67,7 @@ internal fun DocumentariesDepartment(
             heldIds = state.heldIds,
             onOpenCollection = onOpenCollection,
             onPlay = onPlay,
+            state = listState,
         )
     } ?: CenteredMessage("No documentaries yet. Upload one with mediagram add-docu <file|folder>.")
 }
@@ -88,8 +90,8 @@ internal fun DocumentariesDepartmentScreen(
     heldIds: Set<String>,
     onOpenCollection: (String) -> Unit,
     onPlay: (String) -> Unit,
+    state: LazyListState = rememberLazyListState(),
 ) {
-    val backdrop = LocalBackdrop.current
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
     val resumeCards = remember(department.continuing, positions, watchedIds, heldIds) {
@@ -97,6 +99,7 @@ internal fun DocumentariesDepartmentScreen(
     }
 
     LazyColumn(
+        state = state,
         modifier = Modifier.fillMaxSize().testTag(DOCUMENTARIES_DEPT_TEST_TAG),
         contentPadding = PaddingValues(bottom = Spacing.large),
     ) {
@@ -106,11 +109,12 @@ internal fun DocumentariesDepartmentScreen(
                 title = "Documentaries",
                 line = spelledCountOf(department.itemCount, "documentary"),
                 lead = department.lead,
-                onOpenTitle = {},
+                // The web never links a documentaries hero anywhere
+                // (`leadHref: null`, `department-pages.js`) — nothing here
+                // comes from a provider, so there is no film page for the
+                // quote's credit to open either.
+                onOpenTitle = null,
             )
-        }
-        department.lead?.takeIf { !it.tagline.isNullOrEmpty() && backdrop != Backdrop.SOLID }?.let { lead ->
-            item { PullQuote(set = lead, onOpenTitle = onPlay) }
         }
         if (resumeCards.isNotEmpty()) {
             item { DeptRowHeading(title = "Continue watching") }

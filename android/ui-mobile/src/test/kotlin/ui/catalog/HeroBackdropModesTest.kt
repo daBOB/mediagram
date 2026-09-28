@@ -27,8 +27,8 @@ import org.robolectric.annotation.Config
 /**
  * The Artwork setting's Solid mode, at the two hero sites this module owns:
  * [TitleSpread] draws its own art and tagline quote directly, and
- * [MoviesDepartmentScreen] draws [DepartmentHero] plus a separate
- * [PullQuote] the screen guards on its own. Both drop to text-only under
+ * [MoviesDepartmentScreen] draws [DepartmentHero], which carries its own
+ * lead's tagline as a quote inside itself. Both drop to text-only under
  * Solid and keep drawing under every other mode, [Backdrop.DEFAULT] here
  * standing in for the three that are not Solid.
  */
@@ -79,17 +79,21 @@ class HeroBackdropModesTest {
     }
 
     @Test
-    fun solidDropsTheDepartmentHeroesArtAndPullQuote() {
+    fun solidDropsTheDepartmentHeroesArtAndQuote() {
         show(Backdrop.SOLID) { moviesDepartmentScreen() }
         compose.onNodeWithTag(HERO_ARTWORK_TEST_TAG, useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithText(QUOTED_TAGLINE).assertDoesNotExist()
     }
 
     @Test
-    fun defaultKeepsTheDepartmentHeroesArtAndPullQuote() {
+    fun defaultKeepsTheDepartmentHeroesArt() {
+        // No quote assertion here: this class runs at a compact width
+        // (w400dp), where the hero never draws the quote at all regardless
+        // of backdrop mode — the web's own `.dept-quote{display:none}`
+        // below 900px (`departments.css:92`), checked directly at every
+        // width in `DepartmentHeroTest`.
         show(Backdrop.DEFAULT) { moviesDepartmentScreen() }
         compose.onNodeWithTag(HERO_ARTWORK_TEST_TAG, useUnmergedTree = true).assertIsDisplayed()
-        compose.onNodeWithText(QUOTED_TAGLINE).assertIsDisplayed()
     }
 
     @Composable

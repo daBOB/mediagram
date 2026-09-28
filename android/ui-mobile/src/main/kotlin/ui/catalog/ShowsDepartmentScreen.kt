@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items as lazyRowItems
 import androidx.compose.runtime.Composable
@@ -22,8 +24,6 @@ import catalog.extentOf
 import catalog.firstItemOf
 import catalog.resumeLine
 import catalog.watchedFractionOf
-import designsystem.Backdrop
-import designsystem.LocalBackdrop
 import designsystem.Spacing
 import model.WatchSnapshot
 
@@ -49,6 +49,7 @@ internal fun ShowsDepartmentScreen(
     columns: Int,
     onOpenTitle: (String) -> Unit,
     onOpenCollection: (String) -> Unit,
+    state: LazyGridState = rememberLazyGridState(),
 ) {
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
@@ -65,10 +66,10 @@ internal fun ShowsDepartmentScreen(
     }
     val leadTitle = department.lead?.let { firstItemOf(it.divisions) }
     val leadKey = department.lead?.key
-    val backdrop = LocalBackdrop.current
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
+        state = state,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = Spacing.large),
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
@@ -80,13 +81,15 @@ internal fun ShowsDepartmentScreen(
                 title = label,
                 line = "${countOf(department.showCount, if (label == "Series") "show" else "course")} · ${countOf(department.itemCount, unit)}",
                 lead = leadTitle,
-                onOpenTitle = { if (leadKey != null) onOpenCollection(leadKey) },
+                // The show's own name, not whichever episode happened to
+                // lead — the web's own `lead?.show` (`department-pages.js`).
+                leadName = leadTitle?.show,
+                // `null`, not a lambda that quietly no-ops, once there is no
+                // collection to open — the quote's credit is the hero's only
+                // tap target now, and one with nowhere to go should not draw
+                // as a link at all.
+                onOpenTitle = leadKey?.let { key -> { onOpenCollection(key) } },
             )
-        }
-        if (leadTitle != null && !leadTitle.tagline.isNullOrEmpty() && backdrop != Backdrop.SOLID) {
-            item(key = "quote", span = { GridItemSpan(maxLineSpan) }) {
-                PullQuote(set = leadTitle, onOpenTitle = { if (leadKey != null) onOpenCollection(leadKey) })
-            }
         }
         if (resumeCards.isNotEmpty()) {
             item(key = "continue-heading", span = { GridItemSpan(maxLineSpan) }) {

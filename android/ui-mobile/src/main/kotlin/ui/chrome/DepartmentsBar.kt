@@ -52,8 +52,9 @@ private val NarrowBreakpoint = 1180.dp
  * beside each — `index.html`'s `nav.departments` (58-65) — plus search,
  * avatar and the trimmed [AndroidOnlyMenu]. EXPANDED-only, drawn over
  * [ui.chrome.LibraryHome]'s content; [blend] is 0 for the translucent
- * opening state over the Home tab's cover and 1 for the solid state every
- * other department starts in.
+ * opening state over whichever tab's own hero art is on screen — Home's
+ * cover, or a department's own — and 1 for the solid state everything else
+ * starts in.
  */
 @Composable
 internal fun DepartmentsBar(

@@ -103,7 +103,7 @@ class WidthClassStateTest {
         host {
             val holder = rememberSaveableStateHolder()
             val tabs = catalogTabsOf(emptyList())
-            LibraryHome(tabs, listOf(0, 3), 3, {}, browse, menu, profile, {}, rememberLazyListState(), hasCover = false) {
+            LibraryHome(tabs, listOf(0, 3), 3, {}, browse, menu, profile, {}, heroState = null) {
                 holder.SaveableStateProvider("shelves") { rows() }
             }
         }
@@ -114,7 +114,7 @@ class WidthClassStateTest {
         widthDp = 400
         host {
             val tabs = catalogTabsOf(emptyList())
-            LibraryHome(tabs, listOf(0, 3), 3, {}, browse, menu, profile, {}, rememberLazyListState(), hasCover = false) { rows() }
+            LibraryHome(tabs, listOf(0, 3), 3, {}, browse, menu, profile, {}, heroState = null) { rows() }
         }
         val before = compose.onNodeWithTag("rows").getUnclippedBoundsInRoot()
         val wordBefore = compose.onNodeWithText("mediagram").getUnclippedBoundsInRoot()

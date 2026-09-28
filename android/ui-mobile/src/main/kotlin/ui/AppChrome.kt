@@ -142,7 +142,10 @@ fun LibraryScaffold(
                         },
                     )
                 },
-                containerColor = MaterialTheme.colorScheme.surface,
+                // The page, not a plate on it — [pageGround], matching
+                // `MobileApp`'s own root `Surface` and every hero's own
+                // scrim, which all fade into this same ground.
+                containerColor = MaterialTheme.colorScheme.pageGround,
             ) { innerPadding ->
                 Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) { content() }
             }

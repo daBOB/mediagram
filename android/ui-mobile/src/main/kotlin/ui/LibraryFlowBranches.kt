@@ -16,21 +16,21 @@ import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.Destination
 import catalog.HOME
-import catalog.Shelf
 import catalog.catalogTabsOf
 import catalog.libraryTallyLines
-import catalog.magazineHomeOf
 import catalog.mediaSet
 import catalog.runFor
 import model.WatchSnapshot
 import system.FetchUiState
 import system.FetchViewModel
 import ui.catalog.CatalogScreen
+import ui.catalog.DepartmentScrollStates
 import ui.catalog.GenreBranch
 import ui.catalog.ListScreen
 import ui.catalog.SearchBranch
 import ui.catalog.SeasonScreen
 import ui.catalog.posterColumnsFor
+import ui.catalog.rememberDepartmentScrollStates
 import ui.catalog.visibleTabIndices
 import ui.chrome.LibraryHome
 import ui.chrome.LocalRailData
@@ -105,15 +105,18 @@ internal fun LibraryBranches(
     // does not itself compose past never gets lost when the width class
     // switches (see LibraryHome's own note on the single content call site).
     val homeListState = rememberLazyListState()
+    // One more per department that can draw a hero — Movies, Series,
+    // Tutorials, Documentaries — hoisted the same way and for the same
+    // reason: switching tabs and back must not lose where a viewer scrolled
+    // to, and the bar needs the active one's own position, not Home's.
+    val deptScroll = rememberDepartmentScrollStates()
     // Shared with the same call CatalogScreen makes so the two can never
     // pick different editorial sets from two different moments — see
     // CatalogScreen's own note on `now`.
     val now = remember { System.currentTimeMillis() }
     val heldIds = catalogState.heldIdsOrEmpty()
-    val hasCover =
-        remember(shelves, watch, heldIds, now) {
-            magazineHomeOf(shelves, watch, editorsChoice = watch.editorsChoice, now = now, heldIds = heldIds).editorial.cover.isNotEmpty()
-        }
+    val activeShelfTitle = fullTabs.titles.getOrNull(chosenTab)
+    val heroState = rememberActiveHeroState(shelves, watch, heldIds, now, chosenTab, activeShelfTitle, homeListState, deptScroll)
 
     CompositionLocalProvider(LocalRailData provides railData) {
     when (at.top) {
@@ -217,8 +220,7 @@ internal fun LibraryBranches(
             menu = menuActions,
             profile = profileBar,
             onSearch = at::openSearch,
-            homeScrollState = homeListState,
-            hasCover = hasCover,
+            heroState = heroState,
         ) {
             shelvesState.SaveableStateProvider(SHELVES_KEY) { CatalogScreen(
                 state = catalogState,
@@ -238,6 +240,7 @@ internal fun LibraryBranches(
                 onFinish = { catalogViewModel.markFinished(it) },
                 onToggleWatchlist = catalogViewModel::setWatchlisted,
                 homeListState = homeListState,
+                deptScroll = deptScroll,
                 now = now,
                 titleInfo = catalogViewModel::titleInfo,
             ) }
@@ -247,56 +250,3 @@ internal fun LibraryBranches(
 }
 
 private const val SHELVES_KEY = "shelves"
-
-/**
- * One screen of the library under the app's chrome, and what leaving it
- * means.
- *
- * The system back gesture and the bar's back arrow are the same departure
- * said twice, so they are given the same lambda here rather than at each
- * branch — a screen that wired one and forgot the other would go back in
- * two different places depending on which the viewer reached for.
- *
- * Takes [at] itself rather than an `onSearch` lambda: every branch opens
- * search the same way — pushed over whatever it was already showing — so
- * there is nothing left for a caller to decide.
- */
-@Composable
-internal fun LibraryBranch(
-    destination: Destination,
-    menu: MenuActions,
-    profile: ProfileBarState,
-    browse: BrowseActions,
-    at: LibraryPositions,
-    onLeave: () -> Unit,
-    content: @Composable () -> Unit,
-) {
-    BackHandler(onBack = onLeave)
-    LibraryScaffold(
-        destination = destination,
-        onBack = onLeave,
-        menu = menu,
-        profile = profile,
-        browse = browse,
-        onSearch = at::openSearch,
-        content = content,
-    )
-}
-
-/**
- * Which of [tabs]' own tabs [title] names, or Home when it names none.
- *
- * A title saved before a shelf list shift (Documentaries landing between
- * Series and Tutorials, or any future department) no longer matches
- * anything at its old index, so restoring by the plain index would reopen
- * on whichever tab now sits there instead of the one that was actually
- * left open. A title survives the shift; only a title this build no longer
- * has at all — a stale save, or nothing chosen yet — falls back to Home.
- */
-internal fun restoredTabIndex(tabs: CatalogTabs, title: String): Int = tabs.titles.indexOf(title).takeIf { it >= 0 } ?: 0
-
-/** What this device holds in full, or nothing while the shelves are still loading. */
-internal fun CatalogUiState.heldIdsOrEmpty(): Set<String> = (this as? CatalogUiState.Ready)?.heldIds.orEmpty()
-
-/** The shelves a title or a collection page ranks Similar/a franchise link against, or nothing while still loading. */
-internal fun CatalogUiState.shelvesOrEmpty(): List<Shelf> = (this as? CatalogUiState.Ready)?.shelves.orEmpty()

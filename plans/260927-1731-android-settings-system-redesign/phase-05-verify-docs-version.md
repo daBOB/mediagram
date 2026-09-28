@@ -58,10 +58,10 @@ for the full report.
 
 ## Known follow-ups (listed, not fixed — decision 2)
 
-1. Pages sit on `surface` (#151517): `ui-mobile/.../AppChrome.kt:117` `containerColor = surface`; the web page is paper (#0d0d0e). Consider `background`.
+1. ~~Pages sit on `surface` (#151517)~~ **Addressed 2026-09-28** (department hero web-look phase, `mediagram-home` worktree): `AppChrome.kt`'s `Scaffold` and `MobileApp.kt`'s root `Surface` now both read a shared `ui.pageGround` (`= colorScheme.background`), the same token every hero's own scrim already fades toward — no more separate `surface` reading for a page's own container. Caught because a department hero's scrim, correctly fading toward `background` already, showed a seam exactly where the page around it was still `surface`.
 2. `TitleSpread.kt:94` sets the title in `FontFamily.Serif` (system serif, not Fraunces); its overview uses `bodyMedium` (now Geist) where the web uses Newsreader 17px (`title-page.css:102`) → `bodyLarge`.
-3. Department hero default is words over art (`DepartmentHero.kt:44-100`, `TvCoverStory.kt`); the web's default fades art into the page with words beneath (`departments.css:89-90` narrow, `:16-27` wide).
-4. Hero scrims fade to `Color.Black` (`DepartmentHero.kt`, `CoverStory.kt`) also in the light theme; the web fades to paper.
+3. Department hero default is words over art (`DepartmentHero.kt:44-100`, `TvCoverStory.kt`); the web's default fades art into the page with words beneath (`departments.css:89-90` narrow, `:16-27` wide). **`DepartmentHero.kt`'s own half addressed 2026-09-28** (department hero web-look phase) — `TvCoverStory.kt` stays open.
+4. Hero scrims fade to `Color.Black` (`DepartmentHero.kt`, `CoverStory.kt`) also in the light theme; the web fades to paper. **`DepartmentHero.kt`'s own half addressed 2026-09-28** — its scrim now fades to the theme's own page ground (and its copy text, found reading fixed on-image colours even off the picture, now reads the theme's own ink) in both themes. `CoverStory.kt` no longer exists (replaced by `ui/catalog/home/CoverSlide.kt` + `CoverControls.kt`'s `CoverScrim` in the home web-parity phase); checked directly — its own scrim already fades to `colorScheme.background`, and its copy text's own fixed on-image colours are correct there by design (the cover's own scrim darkens the whole picture the copy sits on, unlike a department hero's, which only shades its own left edge). Not a live instance of this item any more.
 5. M3 buttons elsewhere keep the full pill (their shape is not theme-driven); web controls are 6px.
 6. TV focus/plate shape square (`TvFocus.kt:70`); web thumbs 3px, controls 6px.
 7. Sheets/dialogs keep M3 `extraLarge` corners; web dialogs are 6px (`library-controls.css:64`).

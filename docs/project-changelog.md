@@ -5,6 +5,44 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.72.1 — the department hero, in the web player's own layout
+
+**Changed**
+
+- Movies, Series, Tutorials, Documentaries, Collections and a franchise's
+  own page open the way the web player's own department pages do: a lead
+  title's art fading into the page from the left under the departments bar,
+  an uppercase Fraunces name set as large as the cover's own, a Geist
+  eyebrow, a Newsreader facts line, and that lead's own tagline as a
+  pull-quote — top-right on a wide window, matching the web's own 900px
+  breakpoint exactly (hidden below it, not kept visible, on a phone). The
+  hero itself is never a tap target, on any of the six; only the quote's
+  own credit opens the lead it names, the same as the web. Replaces the
+  smaller, hard-edged hero these pages drew before, and the separate
+  pull-quote block Movies, Series and Tutorials each drew under it — the
+  quote is part of the hero now, so `PullQuote` is gone. A department's own
+  name — one line always, "Documentaries" included — shrinks to fit its
+  column rather than wrapping or truncating; a franchise's own name, never
+  chosen to fit the way a department's is, wraps across up to three lines
+  instead.
+- A department tab bleeds its own hero under the departments bar the same
+  way Home's cover does — the bar starts translucent and settles solid as
+  the tab's own list scrolls the hero's bottom edge past the bar's, driven
+  by that tab's own scroll position rather than Home's. A department with
+  no lead art (or Solid artwork mode) keeps its bar solid from the top, the
+  same as before.
+- Every screen's own page ground moves from `colorScheme.surface`
+  (`#151517` dark, `#FBF8F2` light) to `colorScheme.background` (`#0D0D0E`
+  dark, `#F4F0E8` light) — the web's own `--paper`, which `surface` sat one
+  step above. A department hero's own art already faded toward
+  `background`; the page around it had not caught up to drawing on that
+  colour until now, which is what the hard edge at the art's own bottom
+  was.
+- Collections gained the same kind of hero the four departments already
+  have, crediting a franchise's own lead film, and its own franchise row
+  and lists now scroll together as one page rather than a fixed column
+  that could clip "＋ New list" off the bottom of a phone screen.
+
 ## 0.72.0 — Documentaries get their own place on Android
 
 **Added**

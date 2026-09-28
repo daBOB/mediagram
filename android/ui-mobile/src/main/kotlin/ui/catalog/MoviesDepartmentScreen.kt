@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,12 +25,11 @@ import catalog.MoviesDepartment
 import catalog.Shelf
 import catalog.factsLine
 import catalog.pickFeatured
-import designsystem.Backdrop
-import designsystem.LocalBackdrop
 import designsystem.Spacing
 import model.MediaSet
 import model.WatchSnapshot
 import uniffi.mediagram_core.TitleInfo
+import java.text.NumberFormat
 import kotlin.random.Random
 
 /** How wide one poster runs in a department's own horizontal rows. */
@@ -52,13 +53,13 @@ internal fun MoviesDepartmentScreen(
     onSeeAllFilms: () -> Unit,
     onPlay: (String) -> Unit,
     titleInfo: suspend (String) -> TitleInfo?,
+    state: LazyListState = rememberLazyListState(),
 ) {
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
     var reel by remember { mutableStateOf<List<MediaSet>?>(null) }
     val featured = remember(films, watchedIds) { pickFeatured(films, watchedIds, Random, 1) }
-    val backdrop = LocalBackdrop.current
 
-    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Spacing.large)) {
+    LazyColumn(state = state, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Spacing.large)) {
         item {
             DepartmentHero(
                 kicker = "Only in your library",
@@ -67,9 +68,6 @@ internal fun MoviesDepartmentScreen(
                 lead = department.lead,
                 onOpenTitle = onOpenTitle,
             )
-        }
-        department.lead?.takeIf { !it.tagline.isNullOrEmpty() && backdrop != Backdrop.SOLID }?.let { lead ->
-            item { PullQuote(set = lead, onOpenTitle = onOpenTitle) }
         }
         if (department.featured.isNotEmpty()) {
             item {
@@ -111,7 +109,7 @@ internal fun MoviesDepartmentScreen(
 private fun movieDeptLine(department: MoviesDepartment): String =
     listOfNotNull(
         countOf(department.filmCount, "film"),
-        department.hours.takeIf { it > 0 }?.let { "$it hours" },
+        department.hours.takeIf { it > 0 }?.let { "${NumberFormat.getIntegerInstance().format(it)} hours" },
     ).joinToString(" · ")
 
 @Composable

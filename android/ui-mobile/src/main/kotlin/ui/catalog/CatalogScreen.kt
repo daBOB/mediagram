@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -69,7 +70,7 @@ internal fun visibleTabIndices(tabs: CatalogTabs): List<Int> {
  * frame of their own.
  */
 @Composable
-fun CatalogScreen(
+internal fun CatalogScreen(
     state: CatalogUiState,
     fetching: Boolean,
     chosenTab: Int,
@@ -96,6 +97,12 @@ fun CatalogScreen(
      * this screen's own that the bar would have no way to reach.
      */
     homeListState: LazyListState,
+    /**
+     * One list state per department that can draw a hero, hoisted the same
+     * way [homeListState] is — [ui.chrome.LibraryHome] reads whichever one
+     * is the active tab's for the departments bar's own over-hero blend.
+     */
+    deptScroll: DepartmentScrollStates,
     /** The magazine's own "now" — shared with whoever needs to know ahead of composing this whether Home has a cover to draw, so the two never pick different editorial sets from two different moments. */
     now: Long,
     /** What the index says about a title — the Featured reel's score and tagline. */
@@ -109,7 +116,7 @@ fun CatalogScreen(
         is CatalogUiState.Ready -> Shelves(
             state, fetching, chosenTab, onTabChange, onOpenTitle, onOpenCollection, onOpenList, onCreateList,
             onOpenGenre, onOpenGenresIndex, onOpenLatest, onOpenMoviesPage, onOpenFranchise, onPlayRun, onFinish,
-            onToggleWatchlist, homeListState, now, titleInfo,
+            onToggleWatchlist, homeListState, deptScroll, now, titleInfo,
         )
     }
 }
@@ -141,6 +148,7 @@ private fun Shelves(
     onFinish: (setId: String) -> Unit,
     onToggleWatchlist: (setId: String, listed: Boolean) -> Unit,
     homeListState: LazyListState,
+    deptScroll: DepartmentScrollStates,
     now: Long,
     titleInfo: suspend (String) -> TitleInfo?,
 ) {
@@ -156,9 +164,9 @@ private fun Shelves(
     val firstKept = fullTabs.firstKept
     val selected = chosenTab.coerceIn(0, fullTabs.titles.lastIndex)
     val columns = posterColumnsFor(currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass)
-    // Only Home ever draws under the bar (and only with a cover) — every
-    // other department, and Home without one, is padded clear of it, the
-    // same seam `ui.chrome.LibraryHome` reads to decide which.
+    // Home, and a department whose own hero drew lead art, both draw under
+    // the bar — everything else, and a hero with nothing to lead with, is
+    // padded clear of it, the same seam `ui.chrome.LibraryHome` reads to decide which.
     val topChrome = LocalTopChrome.current
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -205,6 +213,7 @@ private fun Shelves(
                     onOpenFranchise = onOpenFranchise,
                     onOpenList = onOpenList,
                     onCreateList = onCreateList,
+                    onOpenTitle = onOpenTitle,
                 )
             }
 
@@ -226,12 +235,13 @@ private fun Shelves(
                                 onSeeAllFilms = onOpenMoviesPage,
                                 onPlay = { id -> onPlayRun(id, emptyList()) },
                                 titleInfo = titleInfo,
+                                state = deptScroll.movies,
                             )
                         }
                     }
-                    "Series" -> ShowsDepartment(Kind.EPISODE, "Series", "episode", shelf, state, columns, onOpenTitle, onOpenCollection)
-                    "Tutorials" -> ShowsDepartment(Kind.TUTORIAL, "Tutorials", "lesson", shelf, state, columns, onOpenTitle, onOpenCollection)
-                    DOCUMENTARIES -> DocumentariesDepartment(shelf, state, onOpenCollection) { id -> onPlayRun(id, emptyList()) }
+                    "Series" -> ShowsDepartment(Kind.EPISODE, "Series", "episode", shelf, state, columns, onOpenTitle, onOpenCollection, deptScroll.series)
+                    "Tutorials" -> ShowsDepartment(Kind.TUTORIAL, "Tutorials", "lesson", shelf, state, columns, onOpenTitle, onOpenCollection, deptScroll.tutorials)
+                    DOCUMENTARIES -> DocumentariesDepartment(shelf, state, onOpenCollection, listState = deptScroll.documentaries) { id -> onPlayRun(id, emptyList()) }
                     else -> ShelfWall(shelf, state.watch, state.heldIds, columns, shelfView, onOpenTitle, onOpenCollection)
                 }
             }
@@ -249,11 +259,12 @@ private fun ShowsDepartment(
     columns: Int,
     onOpenTitle: (String) -> Unit,
     onOpenCollection: (String) -> Unit,
+    listState: LazyGridState,
 ) {
     val shows = remember(shelf) { shelf.entries.filterIsInstance<Entry.Collection>() }
     val byId = remember(state.shelves) { allSetsById(state.shelves) }
     val department = remember(shows, byId, state.watch) { showsDepartmentOf(kind, shows, byId, state.watch) }
     department?.let {
-        ShowsDepartmentScreen(label, unit, it, state.watch, state.heldIds, columns, onOpenTitle, onOpenCollection)
+        ShowsDepartmentScreen(label, unit, it, state.watch, state.heldIds, columns, onOpenTitle, onOpenCollection, listState)
     }
 }

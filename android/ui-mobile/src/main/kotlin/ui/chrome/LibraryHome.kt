@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -57,11 +56,13 @@ import ui.setup.StartOverConfirmation
  * otherwise, and every `remember`/`rememberSaveable` under it — a scroll
  * position, a title already fetched — is lost with it.
  *
- * [homeScrollState] is the Home tab's own list state, hoisted up here so the
- * departments bar can read where the page actually is rather than tracking
- * scroll deltas of its own; [hasCover] is whether Home actually drew a cover
- * to bleed the bar's translucent opening state over — with nothing to bleed
- * over, Home is padded like every other department instead.
+ * [heroState] reads whichever tab is actually on screen right now — Home's
+ * own list state when it drew a cover, a department's own when its hero
+ * drew lead art, `null` for everything else (a kept wall, Collections, a
+ * plain shelf, or a hero with nothing to lead with) — hoisted up here so
+ * the departments bar can read where the page actually is rather than
+ * tracking scroll deltas of its own. `null` is also what turns bleeding off:
+ * with nothing to bleed over, a tab is padded clear of the bar instead.
  *
  * [chosenTab]/[tabs]/[visible] are [ui.LibraryBranches]'s own full index
  * space; this only reads [chosenTab] against [tabs.firstKept] to know
@@ -78,18 +79,16 @@ internal fun LibraryHome(
     menu: MenuActions,
     profile: ProfileBarState,
     onSearch: () -> Unit,
-    homeScrollState: LazyListState,
-    hasCover: Boolean,
+    heroState: HeroListState?,
     content: @Composable () -> Unit,
 ) {
     var askingStartOver by remember { mutableStateOf(false) }
     val rail = LocalRailData.current
     val expanded = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED
-    val isHome = chosenTab == 0
-    // Only Home, only with a cover to show through it, only on EXPANDED where
-    // the bar never itself moves — everywhere else the chrome is opaque from
-    // the start and content is padded clear of it instead of drawn under it.
-    val bleed = expanded && isHome && hasCover
+    // Only a tab with a hero to show through it, only on EXPANDED where the
+    // bar never itself moves — everywhere else the chrome is opaque from the
+    // start and content is padded clear of it instead of drawn under it.
+    val bleed = expanded && heroState != null
     val pills = remember(tabs, visible, rail.counts) { visible.map { i -> DepartmentPill(tabs.titles[i], rail.counts.departmentCount(tabs.titles[i])) } }
     // -1 when chosenTab is a kept wall (My List/Continue) rather than a
     // department — no pill is the current one then, not Home by default.
@@ -114,28 +113,21 @@ internal fun LibraryHome(
         }
         Box(Modifier.weight(1f).fillMaxHeight()) {
             val barHeightPx = with(density) { expandedChromeHeight.toPx() }
-            // Read from the Home list's own position rather than tracked
-            // scroll deltas: a deep position restored after a back-navigate,
-            // or reached by scrolling up from further down, both read right
-            // the moment this recomposes, with nothing of its own to reset.
-            // The cover's own measured height comes from the list's own
-            // layout info — its real on-screen size on this width class and
-            // orientation, not a guess at it from the viewport.
-            val blend by remember(isHome, hasCover, barHeightPx) {
+            // Read from the active tab's own list position rather than
+            // tracked scroll deltas: a deep position restored after a
+            // back-navigate, or reached by scrolling up from further down,
+            // both read right the moment this recomposes, with nothing of
+            // its own to reset. `heroState` is `null` wherever there is no
+            // hero to bleed the bar's translucent opening state over — a
+            // kept wall, Collections, a plain shelf, Home or a department
+            // with nothing to lead its own hero with (a new library before
+            // its first TMDB fetch, a kids profile with no editor's pick) —
+            // every one of those reads solid instead of ramping as if item 0
+            // were a hero it does not have.
+            val blend by remember(heroState, barHeightPx) {
                 derivedStateOf {
-                    // Not just `!isHome`: Home itself reads solid too once
-                    // it has no cover to bleed the bar's translucent
-                    // opening state over — a new library before its first
-                    // TMDB fetch, or a kids profile with no editor's pick.
-                    // Without `hasCover` here, item 0 was the features
-                    // block instead, and the blend still ramped as if it
-                    // were the cover's own height.
-                    if (!isHome || !hasCover) {
-                        1f
-                    } else {
-                        val coverHeightPx = homeScrollState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 0 }?.size?.toFloat() ?: 0f
-                        coverBlend(homeScrollState.firstVisibleItemIndex, homeScrollState.firstVisibleItemScrollOffset, coverHeightPx, barHeightPx)
-                    }
+                    val hero = heroState
+                    if (hero == null) 1f else coverBlend(hero.firstVisibleItemIndex, hero.firstVisibleItemScrollOffset, hero.heroHeightPx, barHeightPx)
                 }
             }
             // Created once and read through the same `var ... by remember`

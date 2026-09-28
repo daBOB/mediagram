@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,7 +42,9 @@ fun MobileApp() {
     val appearanceViewModel: AppearanceViewModel = hiltViewModel()
     val appearance by appearanceViewModel.state.collectAsStateWithLifecycle()
     MediagramTheme(appearance = appearance) {
-        Surface(modifier = Modifier.fillMaxSize()) {
+        // [pageGround], not M3's own default `color` param (`colorScheme.surface`) —
+        // see its own doc for why the two must not be the same token here.
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.pageGround) {
             val setupViewModel: SetupViewModel = hiltViewModel()
             val setupState by setupViewModel.state.collectAsStateWithLifecycle()
 
