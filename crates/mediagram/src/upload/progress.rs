@@ -6,7 +6,9 @@
 //! that must survive, and would have a reader contending with the writer for
 //! the same database while an upload is the thing under way.
 //!
-//! So it is one small file, rewritten whole, and read as a hint. A reader
+//! So it is one small file per upload, rewritten whole, and read as a hint.
+//! Per upload because `upload_slots` lets several run at once: one shared
+//! file had them overwrite each other, and the first to finish cleared it. A reader
 //! must treat a stale one as nothing: the process that wrote it can die
 //! without clearing it, and a number that stopped moving an hour ago says
 //! nothing about now.
@@ -18,9 +20,15 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 
-/// Where the file lives, given the data directory.
+/// The single shared file of versions before `upload_slots`; still read, as
+/// an older process may be running beside a newer one.
 pub fn path_in(data_dir: &Path) -> PathBuf {
     data_dir.join("upload-progress.json")
+}
+
+/// This set's own file.
+pub fn path_for(data_dir: &Path, set_id: &str) -> PathBuf {
+    data_dir.join(format!("upload-progress-{set_id}.json"))
 }
 
 /// How often the file is rewritten. Often enough that a reader watching it
@@ -61,19 +69,30 @@ impl Progress {
     }
 }
 
-/// Reads the file, or `None` when there is none or it cannot be understood.
+/// Every upload's file, the shared legacy one included.
 ///
 /// A malformed file is treated as absent rather than as an error: it is a
 /// hint, and a half-written one must not stop a reader reporting everything
 /// else it knows.
-pub fn read(data_dir: &Path) -> Option<Progress> {
-    let text = std::fs::read_to_string(path_in(data_dir)).ok()?;
-    serde_json::from_str(&text).ok()
+pub fn read_all(data_dir: &Path) -> Vec<Progress> {
+    let Ok(entries) = std::fs::read_dir(data_dir) else {
+        return Vec::new();
+    };
+    entries
+        .flatten()
+        .filter(|e| {
+            let name = e.file_name();
+            let name = name.to_string_lossy();
+            name.starts_with("upload-progress") && name.ends_with(".json")
+        })
+        .filter_map(|e| std::fs::read_to_string(e.path()).ok())
+        .filter_map(|text| serde_json::from_str(&text).ok())
+        .collect()
 }
 
-/// Removes the file, when there is no longer an upload to describe.
-pub fn clear(data_dir: &Path) {
-    let _ = std::fs::remove_file(path_in(data_dir));
+/// Removes this set's file, when it is no longer being uploaded.
+pub fn clear(data_dir: &Path, set_id: &str) {
+    let _ = std::fs::remove_file(path_for(data_dir, set_id));
 }
 
 /// Rewrites the file while `counter` moves, until the returned handle drops.
@@ -87,7 +106,7 @@ pub struct Reporter {
 
 impl Reporter {
     pub fn start(data_dir: &Path, counter: Arc<AtomicU64>, shape: Progress) -> Reporter {
-        let path = path_in(data_dir);
+        let path = path_for(data_dir, &shape.set_id);
         let task = tokio::spawn(async move {
             let mut ticker = tokio::time::interval(INTERVAL);
             loop {

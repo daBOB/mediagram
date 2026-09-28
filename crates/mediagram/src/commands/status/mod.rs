@@ -87,13 +87,16 @@ pub fn run(cfg: &Config) -> Result<()> {
     // about: a part is recorded in the index when it lands, and a 3.5 GiB
     // part takes minutes to land, so the index alone cannot tell a set
     // three minutes into its first part from one that has not begun.
-    let live = upload_progress::read(&data_dir).filter(|p| p.is_fresh(now));
+    let live: Vec<_> = upload_progress::read_all(&data_dir)
+        .into_iter()
+        .filter(|p| p.is_fresh(now))
+        .collect();
     // A hint, and only about now: with nobody holding the lock, nothing is
     // uploading and nothing is queued — what is left is waiting for someone
     // to run `resume`.
-    let running = lock::is_held(&data_dir);
+    let running = lock::any_held(&data_dir, cfg.upload_slots);
     for set in &unfinished {
-        let moving = live.as_ref().filter(|p| p.set_id == set.set_id);
+        let moving = live.iter().find(|p| p.set_id == set.set_id);
         println!();
         println!("{:<14} {}", heading(moving.is_some(), running), label(set));
         match moving {
@@ -107,7 +110,7 @@ pub fn run(cfg: &Config) -> Result<()> {
         println!();
         if running {
             println!(
-                "               the rest go up as the one ahead finishes, `mediagram remove <id>` discards one"
+                "               the rest go up as the ones ahead finish, `mediagram remove <id>` discards one"
             );
         } else {
             println!(

@@ -22,6 +22,26 @@ pub fn flood_wait_secs(err: &InvocationError) -> Option<u64> {
     }
 }
 
+/// Whether an error is Telegram's transport-level "too many requests" — the
+/// server closing a connection with status 429, which reaches us as
+/// `transport error: bad status (negative length -429)`. Unlike `FLOOD_WAIT`
+/// it carries no duration, and it clears in tens of seconds to minutes, not
+/// in the milliseconds [`backoff`] waits. Matched on the text because the
+/// error arrives through several wrapping types.
+pub fn is_rate_limited(err: &dyn std::fmt::Display) -> bool {
+    let text = format!("{err}");
+    text.contains("-429") || text.contains("status 429")
+}
+
+/// Extra attempts a part gets for rate limiting, beyond `max_attempts`.
+pub const RATE_LIMIT_RETRIES: u32 = 8;
+
+/// How long to wait after the `n`th rate limit in a row: 30 s, doubling, at
+/// most ten minutes — enough in total (about 45 min) to outlast one.
+pub fn rate_limit_backoff(n: u32) -> Duration {
+    Duration::from_secs((30u64 << n.saturating_sub(1).min(5)).min(600))
+}
+
 /// How long to wait before attempt `attempt + 1`, doubling each time. Capped
 /// so a generous `max_attempts` cannot shift the multiplier past what a `u64`
 /// of milliseconds holds.

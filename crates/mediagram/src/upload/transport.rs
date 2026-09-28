@@ -81,6 +81,7 @@ impl Transport for TelegramTransport {
         // somebody notices and runs `resume`.
         let attempts = self.max_attempts.max(1);
         let mut attempt = 0u32;
+        let mut limited = 0u32;
         let uploaded = loop {
             attempt += 1;
             match self
@@ -89,6 +90,22 @@ impl Transport for TelegramTransport {
                 .await
             {
                 Ok(uploaded) => break uploaded,
+                // Telegram asking this connection to slow down: waited out,
+                // on a budget of its own, so it does not end the whole run.
+                Err(err) if retry::is_rate_limited(&err) && limited < retry::RATE_LIMIT_RETRIES => {
+                    limited += 1;
+                    let delay = retry::rate_limit_backoff(limited);
+                    println!(
+                        "  Telegram asked to slow down (429); retrying this part in {} s",
+                        delay.as_secs()
+                    );
+                    tokio::time::sleep(delay).await;
+                    reader
+                        .rewind()
+                        .await
+                        .context("rereading the part to retry it")?;
+                    attempt -= 1;
+                }
                 Err(err) if attempt >= attempts => {
                     return Err(err).context("uploading part bytes");
                 }

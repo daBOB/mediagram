@@ -5,6 +5,34 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.70.0 — more than one upload at a time
+
+**Added**
+
+- `upload_slots` (config, default 1): how many uploads may run at once
+  across processes. Telegram limits upload speed per connection, not per
+  account: measured with one film uploading beside the normal queue, two
+  uploads together moved 26–31 MB/s against 12–13 MB/s for one, with no
+  flood waits. Each slot is its own lock file; slot 0 is the historic
+  `upload.lock`, so an older binary still running shares it and the total
+  never exceeds the setting (`upload/lock.rs`).
+
+**Fixed**
+
+- Opening the Telegram session no longer fails when another process has the
+  session file locked for a moment ("database is locked"); it waits and
+  tries again, for up to about a minute (`telegram/client.rs`).
+- `mediagram status` showed one upload with two running: both wrote their
+  progress to one shared file, overwriting each other, and the first to
+  finish deleted it. Each upload now keeps `upload-progress-<set>.json`,
+  `status` reads them all (and the old shared file an older process may
+  still write), and counts uploads as running while any slot is held.
+- A part upload that Telegram rate-limits at the transport level (`bad
+  status (negative length -429)`) is now waited out — 30 s, doubling to ten
+  minutes, on a budget of its own — instead of being retried within three
+  seconds and ending the whole run. Two seasons had stopped on it the hour
+  two upload slots first ran (`upload/transport.rs`, `telegram/retry.rs`).
+
 ## 0.69.4 — closing the Settings/System redesign
 
 **Fixed**

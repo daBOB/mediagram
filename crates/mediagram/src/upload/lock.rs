@@ -1,4 +1,5 @@
-//! One upload at a time, across processes.
+//! A fixed number of uploads at a time, across processes: `upload_slots`,
+//! one unless configured otherwise.
 //!
 //! `add` hands its bytes to a background process, so two adds a minute apart
 //! would otherwise have two uploads competing for the same line — each half
@@ -9,6 +10,11 @@
 //! An advisory `flock` on a file in the data directory, held for as long as
 //! the uploading process lives. The kernel releases it when that process
 //! exits however it exits, which a pid file written by hand does not.
+//!
+//! Each slot is its own lock file. Slot 0 is `upload.lock`, the file a single
+//! slot always used, so an older binary still running beside a newer one
+//! shares that slot rather than adding one: the total never exceeds the
+//! configured number.
 
 use std::fs::{File, OpenOptions};
 use std::os::fd::AsRawFd;
@@ -19,6 +25,15 @@ use anyhow::{Context, Result};
 /// The lock file, beside the index it guards writes to.
 pub fn path_in(data_dir: &Path) -> PathBuf {
     data_dir.join("upload.lock")
+}
+
+/// Slot `n`'s lock file: slot 0 is the historic `upload.lock`.
+pub fn slot_path(data_dir: &Path, slot: usize) -> PathBuf {
+    if slot == 0 {
+        path_in(data_dir)
+    } else {
+        data_dir.join(format!("upload.lock.{slot}"))
+    }
 }
 
 /// Held for as long as this value lives; released when it drops, and by the
@@ -32,6 +47,50 @@ pub struct FileLock {
 /// hang.
 pub async fn acquire(data_dir: &Path, waiting: impl FnOnce()) -> Result<FileLock> {
     acquire_file(&path_in(data_dir), waiting).await
+}
+
+/// Takes whichever of `slots` upload slots is free first, waiting while all
+/// are held. `waiting` is called once if there is a wait.
+///
+/// With one slot this is [`acquire`] exactly. With more, no single file can
+/// be waited on, so the free one is found by trying each in turn every
+/// couple of seconds; a wait is for a whole upload, so the poll costs nothing.
+pub async fn acquire_slot(
+    data_dir: &Path,
+    slots: usize,
+    waiting: impl FnOnce(),
+) -> Result<FileLock> {
+    if slots <= 1 {
+        return acquire(data_dir, waiting).await;
+    }
+    let mut waiting = Some(waiting);
+    loop {
+        for slot in 0..slots {
+            let file = open(&slot_path(data_dir, slot))?;
+            if try_lock(&file)? {
+                return Ok(FileLock { _file: file });
+            }
+        }
+        if let Some(say) = waiting.take() {
+            say();
+        }
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+    }
+}
+
+/// Whether any of `slots` slots is held right now: something is uploading.
+pub fn any_held(data_dir: &Path, slots: usize) -> bool {
+    (0..slots.max(1)).any(|slot| {
+        open(&slot_path(data_dir, slot)).is_ok_and(|file| !matches!(try_lock(&file), Ok(true)))
+    })
+}
+
+/// Whether every one of `slots` slots is held right now, so a new upload
+/// would queue. A hint, like [`is_held`].
+pub fn all_held(data_dir: &Path, slots: usize) -> bool {
+    (0..slots.max(1)).all(|slot| {
+        open(&slot_path(data_dir, slot)).is_ok_and(|file| !matches!(try_lock(&file), Ok(true)))
+    })
 }
 
 /// The same kind of lock on any file: one holder across processes, waiting
@@ -104,31 +163,5 @@ fn lock_blocking(file: &File) -> Result<()> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn a_second_holder_waits_and_is_told_it_is_waiting() {
-        let dir = tempfile::tempdir().unwrap();
-        let held = acquire(dir.path(), || panic!("nothing else holds it"))
-            .await
-            .unwrap();
-        assert!(is_held(dir.path()));
-
-        // Nobody can take it while it is held, and letting go frees it.
-        let file = open(&path_in(dir.path())).unwrap();
-        assert!(!try_lock(&file).unwrap());
-        drop(held);
-        assert!(!is_held(dir.path()));
-        assert!(try_lock(&file).unwrap());
-    }
-
-    #[tokio::test]
-    async fn waiting_is_only_reported_when_there_is_a_wait() {
-        let dir = tempfile::tempdir().unwrap();
-        let mut said = false;
-        let lock = acquire(dir.path(), || said = true).await.unwrap();
-        assert!(!said);
-        drop(lock);
-    }
-}
+#[path = "lock_tests.rs"]
+mod tests;

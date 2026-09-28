@@ -46,15 +46,50 @@ fn a_round_trip_through_the_file_survives() {
     let dir = tempfile::tempdir().unwrap();
     let written = note("01ABC", 1700);
     std::fs::write(
-        progress::path_in(dir.path()),
+        progress::path_for(dir.path(), "01ABC"),
         serde_json::to_string(&written).unwrap(),
     )
     .unwrap();
 
-    assert_eq!(progress::read(dir.path()), Some(written));
+    assert_eq!(progress::read_all(dir.path()), vec![written]);
 
-    progress::clear(dir.path());
-    assert_eq!(progress::read(dir.path()), None);
+    progress::clear(dir.path(), "01ABC");
+    assert!(progress::read_all(dir.path()).is_empty());
+}
+
+/// With `upload_slots` above one, two uploads run at once. Each keeps its
+/// own note, so neither overwrites the other, and one finishing clears only
+/// its own; the shared file an older version writes is still read.
+#[test]
+fn two_uploads_at_once_each_keep_their_own_note() {
+    let dir = tempfile::tempdir().unwrap();
+    for (id, at) in [("A", 10), ("B", 20)] {
+        std::fs::write(
+            progress::path_for(dir.path(), id),
+            serde_json::to_string(&note(id, at)).unwrap(),
+        )
+        .unwrap();
+    }
+    std::fs::write(
+        progress::path_in(dir.path()),
+        serde_json::to_string(&note("OLD", 30)).unwrap(),
+    )
+    .unwrap();
+
+    let mut ids: Vec<String> = progress::read_all(dir.path())
+        .into_iter()
+        .map(|p| p.set_id)
+        .collect();
+    ids.sort();
+    assert_eq!(ids, ["A", "B", "OLD"]);
+
+    progress::clear(dir.path(), "A");
+    let mut ids: Vec<String> = progress::read_all(dir.path())
+        .into_iter()
+        .map(|p| p.set_id)
+        .collect();
+    ids.sort();
+    assert_eq!(ids, ["B", "OLD"]);
 }
 
 /// A half-written file must not stop a reader reporting everything else it
@@ -62,13 +97,18 @@ fn a_round_trip_through_the_file_survives() {
 #[test]
 fn a_file_that_cannot_be_understood_is_treated_as_absent() {
     let dir = tempfile::tempdir().unwrap();
-    std::fs::write(progress::path_in(dir.path()), "{not json").unwrap();
+    std::fs::write(progress::path_for(dir.path(), "X"), "{not json").unwrap();
+    std::fs::write(
+        progress::path_for(dir.path(), "Y"),
+        serde_json::to_string(&note("Y", 1)).unwrap(),
+    )
+    .unwrap();
 
-    assert_eq!(progress::read(dir.path()), None);
+    assert_eq!(progress::read_all(dir.path()), vec![note("Y", 1)]);
 }
 
 #[test]
 fn no_file_at_all_is_no_answer_rather_than_a_failure() {
     let dir = tempfile::tempdir().unwrap();
-    assert_eq!(progress::read(dir.path()), None);
+    assert!(progress::read_all(dir.path()).is_empty());
 }

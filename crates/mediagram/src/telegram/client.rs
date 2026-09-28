@@ -63,11 +63,7 @@ impl Tg {
 /// before issuing authenticated requests.
 pub async fn open_client(cfg: &Config) -> Result<(Client, SenderPoolFatHandle, JoinHandle<()>)> {
     let path = session_path(cfg)?;
-    let session = Arc::new(
-        SqliteSession::open(&path)
-            .await
-            .with_context(|| format!("cannot open session {}", path.display()))?,
-    );
+    let session = Arc::new(open_session(&path).await?);
     // The session file holds the account's authorization key.
     crate::paths::restrict_file(&path)?;
 
@@ -139,4 +135,30 @@ pub fn chat_id_of(channel: PeerRef) -> i64 {
         .id
         .bot_api_dialog_id()
         .unwrap_or_else(|| channel.id.bare_id_unchecked())
+}
+
+/// Opens the session file, riding out another process holding it.
+///
+/// Every upload, publish and query opens this one SQLite file, and with many
+/// running at once one of them sometimes finds it locked for a moment
+/// ("database is locked"). That is contention, not damage: waiting a little
+/// and trying again is the whole fix.
+async fn open_session(path: &std::path::Path) -> Result<SqliteSession> {
+    const ATTEMPTS: u32 = 30;
+    for attempt in 1.. {
+        match SqliteSession::open(path).await {
+            Ok(session) => return Ok(session),
+            Err(err) if attempt < ATTEMPTS && format!("{err:#}").contains("database is locked") => {
+                tokio::time::sleep(std::time::Duration::from_millis(
+                    250 * u64::from(attempt.min(8)),
+                ))
+                .await;
+            }
+            Err(err) => {
+                return Err(anyhow::Error::from(err))
+                    .with_context(|| format!("cannot open session {}", path.display()));
+            }
+        }
+    }
+    unreachable!()
 }

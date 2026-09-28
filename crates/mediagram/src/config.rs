@@ -42,6 +42,9 @@ pub struct Config {
     /// Pause between part uploads, to stay clear of flood limits.
     #[serde(default)]
     pub throttle_ms: u64,
+    /// Uploads at once across processes; Telegram limits speed per connection.
+    #[serde(default = "default_upload_slots")]
+    pub upload_slots: usize,
     /// Retry attempts for transient Telegram/network errors.
     #[serde(default = "default_max_attempts")]
     pub max_attempts: u32,
@@ -77,6 +80,7 @@ impl std::fmt::Debug for Config {
             .field("publish_base_url", &self.publish_base_url)
             .field("part_size", &self.part_size)
             .field("throttle_ms", &self.throttle_ms)
+            .field("upload_slots", &self.upload_slots)
             .field("max_attempts", &self.max_attempts)
             .field("tmp_dir", &self.tmp_dir)
             .field("data_dir", &self.data_dir)
@@ -92,6 +96,9 @@ fn default_tmdb_language() -> String {
 
 fn default_part_size() -> u64 {
     DEFAULT_PART_SIZE
+}
+fn default_upload_slots() -> usize {
+    1
 }
 fn default_max_attempts() -> u32 {
     5

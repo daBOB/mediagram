@@ -42,7 +42,8 @@ one and watching it.
   uploaded, and an interrupted upload resumes without sending a part twice.
 - `prepare` makes files browser-playable before upload (mp4 container, AAC
   audio, faststart), so the player does not convert them on every play.
-- Uploads run in the background and queue behind each other; `status` shows
+- Uploads run in the background and queue behind each other, one at a time
+  or a few side by side (`upload_slots`); `status` shows each upload's
   progress from any terminal.
 - Two machines can publish to the same channel: every publish merges the
   channel's index first.
@@ -193,7 +194,8 @@ report.
 - Skip anything still downloading (`*.tmp`, `*.part`).
 
 Uploads queue behind each other, so it is fine to start them one after
-another; `mediagram status` shows the one on the wire and the rest waiting.
+another; `mediagram status` shows what is on the wire and the rest waiting.
+One goes at a time unless `upload_slots` says more (see Configuration).
 
 **4. Publish once at the end.** Every push re-pins the index, and Telegram
 answers a burst of pins with a long `FLOOD_WAIT`. That is why step 3 passes
@@ -398,8 +400,8 @@ but the app crashes at launch.
 `mediagram login` writes `$XDG_CONFIG_HOME/mediagram/config.toml` on first run.
 To write it by hand, copy [`config.example.toml`](config.example.toml) and fill
 in `api_id`, `api_hash`, `channel` (a `-100…` id or the exact title) and
-`tmdb_key`. Optional keys: `part_size`, `throttle_ms`, `max_attempts`,
-`tmp_dir`, `data_dir`, and the package settings. Every key can be overridden
+`tmdb_key`. Optional keys: `part_size`, `throttle_ms`, `upload_slots`,
+`max_attempts`, `tmp_dir`, `data_dir`, and the package settings. Every key can be overridden
 with a `MEDIAGRAM_<KEY>` environment variable, and `--config` points at a
 different file.
 
@@ -411,6 +413,15 @@ never re-encoded, sized to a multiple of 1 MiB: **3,758,096,384 bytes
 document cap however it is enforced; a live test uploading a full 3.5 GiB part
 to a Premium channel saw no throttling. `part_size` can go up to
 `4 GiB − 1 MiB`.
+
+**Parallel uploads.** Telegram limits upload speed per connection, not per
+account, so `upload_slots = 2` lets two uploads run at once: measured, two
+moved 26–31 MB/s where one moved 12–13 MB/s. The catch is rate limiting.
+Within an hour of running two, Telegram answered with a transport-level
+429 ("too many requests"). An upload now waits that out — 30 s, doubling to
+ten minutes — and says so in its output ("Telegram asked to slow down"),
+rather than ending the run; if those lines are frequent, the waiting eats
+the gain and one slot is the better setting. The default is one.
 
 **Repository layout.**
 

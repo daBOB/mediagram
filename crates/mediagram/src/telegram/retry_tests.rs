@@ -183,3 +183,25 @@ async fn flood_only_stops_on_an_ambiguous_failure_after_an_allowed_retry() {
         Some(InvocationError::Rpc(rpc)) if rpc.code == 500
     ));
 }
+
+/// Telegram's transport-level 429 is recognised however it is wrapped, and
+/// nothing else is mistaken for it.
+#[test]
+fn a_transport_429_is_recognised_as_rate_limiting() {
+    assert!(is_rate_limited(
+        &"request error: transport error: bad status (negative length -429)"
+    ));
+    assert!(!is_rate_limited(
+        &"request error: transport error: bad status (negative length -404)"
+    ));
+    assert!(!is_rate_limited(&"connection reset by peer"));
+}
+
+/// Waits long enough to outlast a rate limit, but never more than ten minutes.
+#[test]
+fn a_rate_limit_is_waited_out_in_growing_steps() {
+    let secs: Vec<u64> = (1..=RATE_LIMIT_RETRIES)
+        .map(|n| rate_limit_backoff(n).as_secs())
+        .collect();
+    assert_eq!(secs, [30, 60, 120, 240, 480, 600, 600, 600]);
+}

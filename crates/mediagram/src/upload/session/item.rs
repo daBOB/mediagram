@@ -21,11 +21,11 @@ impl<L: Link> Session<'_, L> {
         item: &Item<T>,
         say: &mut impl FnMut(&T, Step<'_>),
     ) -> Option<Outcome> {
-        // One upload at a time across processes, taken per item so a file
+        // `upload_slots` uploads at a time across processes, taken per item so a file
         // added meanwhile goes between two of this walk's rather than after
         // all of them; what the index says is read only once it is held.
         let waiting = || println!("waiting for the upload already running");
-        let _lock = match lock::acquire(&self.data_dir, waiting).await {
+        let _lock = match lock::acquire_slot(&self.data_dir, self.cfg.upload_slots, waiting).await {
             Ok(lock) => lock,
             Err(err) => return self.stop(err, None),
         };

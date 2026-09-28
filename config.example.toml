@@ -10,6 +10,7 @@ tmdb_key = ""                      # https://www.themoviedb.org/settings/api
                                    # episode titles arrive translated
 # part_size = 3758096384           # 3.5 GiB, must be a multiple of 1 MiB
 # throttle_ms = 0                  # pause between part uploads
+# upload_slots = 1                 # uploads at once; a second one roughly doubles throughput
 # max_attempts = 5
 # tmp_dir = "/fast/scratch"        # faststart remux output; default: next to source
 # data_dir = "/var/lib/mediagram"  # session, library.db, tmdb cache; default: XDG data dir

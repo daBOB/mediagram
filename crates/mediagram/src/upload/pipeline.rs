@@ -104,7 +104,7 @@ pub async fn run_set<T: Transport>(
     // Nothing is being uploaded any more, and a note left behind would
     // describe a set that is finished.
     if let Some(dir) = data_dir {
-        progress::clear(dir);
+        progress::clear(dir, &set.set_id);
     }
     Ok(true)
 }
