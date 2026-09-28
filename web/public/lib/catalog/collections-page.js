@@ -11,6 +11,7 @@
 
 import { el } from "../dom.js";
 import { countOf } from "../format.js";
+import { everyFilm } from "../departments.js";
 import { artworkUrl } from "./plate.js";
 import { departmentHero, deptRow } from "./department-hero.js";
 import { movieGrid } from "./shelf-view.js";
@@ -62,7 +63,7 @@ export function destination(name, meta, art, href) {
  *   setsFor: (ids: string[]) => any[] }} on
  */
 export function renderCollectionsPage(main, { library, lists, setsFor }) {
-  const franchises = franchisesIn(library.movies);
+  const franchises = franchisesIn(everyFilm(library));
   const lead = franchises[0]?.films.find((film) => film.backdrop) ?? null;
   main.append(departmentHero({
     kicker: "Only in your library",
@@ -95,7 +96,7 @@ let overviews = null;
 
 /** One franchise: its introduction, then its films in release order. */
 export function renderFranchise(main, id, { library, openFilm }, stillHere) {
-  const franchise = franchisesIn(library.movies).find((f) => String(f.id) === String(id));
+  const franchise = franchisesIn(everyFilm(library)).find((f) => String(f.id) === String(id));
   if (!franchise) {
     main.append(el("p", "error", "That collection is not in the library."));
     return;

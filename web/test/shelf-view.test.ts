@@ -1,14 +1,21 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { collectionGrid, movieGrid, setGrid } from "../public/lib/catalog/shelf-view.js";
+import { collectionGrid, emptyState, movieGrid, setGrid } from "../public/lib/catalog/shelf-view.js";
 import { GRID, LIST } from "../public/lib/catalog/shelf-mode.js";
 
 const priorDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
 
 beforeEach(() => {
-  // Empty shelves only create their container; keep the DOM boundary local.
+  // Empty shelves only create their container; `emptyState` also appends a
+  // few text nodes and a `<code>`, so the stub node collects what it is
+  // given rather than only carrying a class and a text.
   Object.defineProperty(globalThis, "document", {
     configurable: true,
-    value: { createElement: () => ({ className: "", textContent: "" }) },
+    value: {
+      createElement: () => ({
+        className: "", textContent: "", children: [] as unknown[],
+        append(...items: unknown[]) { this.children.push(...items); },
+      }),
+    },
   });
 });
 
@@ -33,5 +40,19 @@ describe.each(grids)("%s shelf layout", (_name, render) => {
     expect(render().className).toBe("grid");
     expect(render({}).className).toBe("grid");
     expect(render({ mode: LIST }).className).toBe("grid");
+  });
+});
+
+describe("emptyState", () => {
+  test("a kids profile is told to wait for a rating, not to upload", () => {
+    expect(emptyState("anime", { kids: true }).textContent).toBe("Nothing rated FSK 12 or under yet.");
+  });
+
+  test("anime points at the edit command, not an upload one — there is nothing to upload", () => {
+    const empty = emptyState("anime") as unknown as { className: string; children: unknown[] };
+    expect(empty.className).toBe("empty");
+    expect(empty.children).toContainEqual(
+      expect.objectContaining({ textContent: "mediagram edit <set-id> --anime yes" }),
+    );
   });
 });

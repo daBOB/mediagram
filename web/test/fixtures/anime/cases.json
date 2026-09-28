@@ -1,0 +1,82 @@
+[
+  {
+    "name": "anime film",
+    "kind": "movie",
+    "genres": ["Animation", "Familie", "Fantasy"],
+    "originalLanguage": "ja",
+    "override": null,
+    "anime": true
+  },
+  {
+    "name": "anime series",
+    "kind": "ep",
+    "genres": ["Animation", "Sci-Fi & Fantasy", "Mystery"],
+    "originalLanguage": "ja",
+    "override": null,
+    "anime": true
+  },
+  {
+    "name": "Western animation",
+    "kind": "movie",
+    "genres": ["Animation", "Familie", "Fantasy", "Horror"],
+    "originalLanguage": "en",
+    "override": null,
+    "anime": false
+  },
+  {
+    "name": "live-action Japanese",
+    "kind": "movie",
+    "genres": ["Action", "Drama"],
+    "originalLanguage": "ja",
+    "override": null,
+    "anime": false
+  },
+  {
+    "name": "override in - donghua",
+    "kind": "ep",
+    "genres": ["Animation"],
+    "originalLanguage": "zh",
+    "override": true,
+    "anime": true
+  },
+  {
+    "name": "override out - Japanese animation that is not anime",
+    "kind": "movie",
+    "genres": ["Animation"],
+    "originalLanguage": "ja",
+    "override": false,
+    "anime": false
+  },
+  {
+    "name": "older index - no language",
+    "kind": "movie",
+    "genres": ["Animation"],
+    "originalLanguage": null,
+    "override": null,
+    "anime": false
+  },
+  {
+    "name": "older index, overridden in",
+    "kind": "ep",
+    "genres": [],
+    "originalLanguage": null,
+    "override": true,
+    "anime": true
+  },
+  {
+    "name": "a documentary is never anime",
+    "kind": "docu",
+    "genres": ["Animation"],
+    "originalLanguage": "ja",
+    "override": true,
+    "anime": false
+  },
+  {
+    "name": "genre in another library language",
+    "kind": "movie",
+    "genres": ["Animación"],
+    "originalLanguage": "ja",
+    "override": null,
+    "anime": false
+  }
+]

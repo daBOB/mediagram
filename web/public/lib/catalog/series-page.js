@@ -18,21 +18,22 @@ import { listToggle } from "./list-toggle.js";
 import { tabbed } from "./tabs.js";
 import { offerCast } from "./cast.js";
 import { seasonBlock } from "./course-view.js";
-import { collectionGrid } from "./shelf-view.js";
+import { collectionGrid, heading, SECTIONS } from "./shelf-view.js";
 import { GRID } from "./shelf-mode.js";
 import { detailRows, pictureLine, provenance, scaleLine, summarize, yearLine } from "./series-summary.js";
 import { episodeShort, seriesResume } from "./series-resume.js";
 import { similarTo } from "./similar.js";
-import { heading } from "./shelf-view.js";
 import { inProgress, isWatched, progressOf } from "../watch-state.js";
 import { resumeAt } from "../resume-point.js";
 import { href } from "../address.js";
 
 /**
  * The route: one show, with the season the URL names (if any) in view.
- * `shelf` is every show, which Similar ranks against.
+ * `pool` is every show, plain and anime alike, which Similar ranks against.
+ * `section` is which shelf this show itself came from ("series" or "anime"),
+ * so the back link and season links return to the shelf it was opened from.
  */
-export function renderSeries(main, _section, collection, name, folders, { play, open, shelf }) {
+export function renderSeries(main, section, collection, name, folders, { play, open, pool }) {
   if (!collection) {
     heading(main, "Series");
     main.append(el("p", "error", `No show called "${name}".`));
@@ -40,6 +41,7 @@ export function renderSeries(main, _section, collection, name, folders, { play, 
   }
   const lead = (c) => ({ ...firstItemOf(c.divisions), setId: c.name, show: c });
   const page = seriesPage(collection, {
+    section,
     season: folders[0] ?? null,
     resume: seriesResume(collection, {
       resumeOf: (setId) => resumeAt(progressOf(setId)),
@@ -47,9 +49,13 @@ export function renderSeries(main, _section, collection, name, folders, { play, 
       watched: isWatched,
     }),
     play,
-    openSeason: (title) => open("series", collection.name, [title]),
-    similar: () => similarTo(lead(collection), shelf.map(lead),
+    openSeason: (title) => open(section, collection.name, [title]),
+    similar: () => similarTo(lead(collection), pool.map(lead),
       (item) => item.show.divisions.every((d) => d.items.every((set) => isWatched(set.setId)))).map((item) => item.show),
+    // Unconditionally "series": a Similar result may be on either shelf, and
+    // `openShow` (app.js) is the one place that resolves a name it does not
+    // find there onto Anime — the same call every other opener outside
+    // Series and Anime themselves already makes.
     openShow: (show) => open("series", show, []),
   });
   main.append(page);
@@ -64,11 +70,11 @@ export function renderSeries(main, _section, collection, name, folders, { play, 
 
 /**
  * @param {import("../library.js").Collection} collection
- * @param {{ season: string|null, resume: ReturnType<typeof import("./series-resume.js").seriesResume>,
+ * @param {{ section: string, season: string|null, resume: ReturnType<typeof import("./series-resume.js").seriesResume>,
  *   play: (set: any) => void, openSeason: (title: string) => void,
  *   similar: () => import("../library.js").Collection[], openShow: (name: string) => void }} on
  */
-export function seriesPage(collection, { season, resume, play, openSeason, similar, openShow }) {
+export function seriesPage(collection, { section, season, resume, play, openSeason, similar, openShow }) {
   const facts = summarize(collection);
   const first = firstItemOf(collection.divisions);
   const page = el("article", "title-page series-page");
@@ -77,7 +83,7 @@ export function seriesPage(collection, { season, resume, play, openSeason, simil
 
   const start = resume ? playPill(`${resume.verb} ${episodeShort(resume.set)}`, () => play(resume.set)) : null;
   const hero = titleSpread({
-    back: { href: href({ page: "department", section: "series" }), label: "Back to Series" },
+    back: { href: href({ page: "department", section }), label: `Back to ${SECTIONS[section].label}` },
     title: collection.name,
     facts: factsLine(facts, null, first),
     art: first?.backdrop ?? first?.poster ?? null,

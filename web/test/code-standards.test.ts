@@ -30,14 +30,17 @@ const ROOT = join(import.meta.dir, "..");
  * moved out to `lib/address.js` and every hand-built `#/…` string in the app
  * became one call into it. Lowered once more for `app.js`, when what plays
  * next and what the server preloads became one answer in
- * `lib/playback/plays-next.js`.
+ * `lib/playback/plays-next.js`. Raised 2026-09-28 for `app.js`, by 11, for the
+ * Anime department's routing, nav count and the show route's shelf-by-section
+ * lookup, and for `shelf-view.js`, by 2, for the Anime empty state's upload
+ * hint and its section unions.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 742,
+  "public/app.js": 753,
   "public/lib/catalog/course-view.js": 234,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,
-  "public/lib/catalog/shelf-view.js": 285,
+  "public/lib/catalog/shelf-view.js": 287,
   "public/lib/library.js": 309,
   "public/lib/playback/notes/markdown.js": 227,
   "public/lib/playback/player.js": 996,

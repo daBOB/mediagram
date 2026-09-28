@@ -8,14 +8,13 @@
 
 import { describe, expect, test } from "bun:test";
 import { catalogSet as set } from "./support/catalog-set";
-import { groupLibrary } from "../public/lib/library.js";
-import { groupDocumentaries } from "../public/lib/documentaries.js";
+import { groupDepartments } from "../public/lib/departments.js";
 import { playsNext } from "../public/lib/playback/plays-next.js";
 import type { CatalogSet, Library } from "../public/lib/library.js";
 
 /** A library the way the session builds one. */
 function libraryOf(sets: CatalogSet[]): Library {
-  return { ...groupLibrary(sets), documentaries: groupDocumentaries(sets.filter((s) => s.kind === "docu")) };
+  return groupDepartments(sets);
 }
 
 const e1 = set({ kind: "ep", show: "Star City", season: 1, episode: "1", title: "S1E1" });
@@ -27,7 +26,9 @@ const l2 = set({ kind: "tut", show: "Kurs", path: "A", episode: "2", title: "A2"
 const d1 = set({ kind: "docu", show: "Terra X", episode: "1", title: "Terra 1" });
 const d2 = set({ kind: "docu", show: "Terra X", episode: "2", title: "Terra 2" });
 const film = set({ kind: "movie", title: "Blade" });
-const library = libraryOf([e1, e2, e3, e4, l1, l2, d1, d2, film]);
+const a1 = set({ kind: "ep", show: "Dragonball", episode: "1", title: "A1", anime: true });
+const a2 = set({ kind: "ep", show: "Dragonball", episode: "2", title: "A2", anime: true });
+const library = libraryOf([e1, e2, e3, e4, l1, l2, d1, d2, film, a1, a2]);
 
 describe("playsNext", () => {
   test("an episode plays on through its show and preloads the next two, across seasons, and no more", () => {
@@ -56,5 +57,9 @@ describe("playsNext", () => {
 
   test("a list plays on in its own order and preloads nothing, even when it holds episodes", () => {
     expect(playsNext(library, e1, [e1, e4, film])).toEqual({ next: e4, preload: [] });
+  });
+
+  test("an anime episode plays the next one, and preloads the same as any other show", () => {
+    expect(playsNext(library, a1, null)).toEqual({ next: a2, preload: [a2.setId] });
   });
 });

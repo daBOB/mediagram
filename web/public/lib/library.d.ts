@@ -46,6 +46,8 @@ export interface CatalogSet {
   offline: boolean;
   hasSummary: boolean;
   subtitles: string[];
+  /** Japanese animation, or a hand-set override; `movie`/`ep` only. */
+  anime: boolean;
 }
 
 /**
@@ -81,6 +83,8 @@ export interface Library {
   tutorials: Collection[];
   /** Set by `applyCatalog`, from `documentaries.js`; empty before the first catalog load. */
   documentaries: import("./documentaries.js").DocumentaryLibrary;
+  /** Set by `applyCatalog`, from `departments.js`; empty before the first catalog load. */
+  anime: import("./departments.js").AnimeLibrary;
 }
 
 export function groupLibrary(sets: CatalogSet[]): Omit<Library, "documentaries">;

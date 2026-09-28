@@ -10,7 +10,8 @@
 
 import { describe, expect, test } from "bun:test";
 import { catalogSet } from "./support/catalog-set";
-import { groupLibrary, type CatalogSet } from "../public/lib/library.js";
+import type { CatalogSet } from "../public/lib/library.js";
+import { groupDepartments } from "../public/lib/departments.js";
 import { POSTER_ROW_LIMIT, homeShelves } from "../public/lib/catalog/home-shelves.js";
 
 const set = (over: Partial<CatalogSet> = {}): CatalogSet => catalogSet({ duration: 3600, addedAt: 1_000, ...over });
@@ -43,7 +44,7 @@ function shelvesOf(
 ) {
   const watched = state.watched ?? {};
   return homeShelves({
-    library: { ...groupLibrary(sets), documentaries: { collections: [], singles: [] } },
+    library: groupDepartments(sets),
     byId: new Map(sets.map((one) => [one.setId, one])),
     // The store hands these over newest first; so does this.
     progress: [...(state.progress ?? [])].sort((a, b) => b.updatedAt - a.updatedAt),
@@ -187,6 +188,17 @@ describe("what is underway", () => {
     });
 
     expect(shelves.nextUp[0]!.collection.name).toBe("Show");
+  });
+
+  test("Next up offers an anime series the same way it offers a plain one", () => {
+    const anime = [
+      episode("Dragonball", 1, 1, { anime: true }),
+      episode("Dragonball", 1, 2, { anime: true }),
+    ];
+    const shelves = shelvesOf(anime, { watched: { [anime[0]!.setId]: 5_000 } });
+
+    expect(shelves.nextUp).toHaveLength(1);
+    expect(shelves.nextUp[0]!.set.setId).toBe(anime[1]!.setId);
   });
 
   test("courses are underway the same way series are", () => {

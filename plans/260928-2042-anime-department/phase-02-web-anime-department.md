@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: "Web: the rule, the shared fixture, and the Anime department"
-status: pending
+status: completed
 priority: P2
 effort: 7h
 dependencies: [phase-01]
@@ -201,13 +201,13 @@ Empty: `emptyState("anime")` → "No anime yet. File one here with
 
 ## Success Criteria
 
-- [ ] Every fixture case passes in `anime-rule.test.ts`.
-- [ ] `/api/sets` rows carry `anime`; a pre-v11 index yields `anime: false` for all and an unchanged Movies/Series.
-- [ ] Anime titles appear in the Anime department and nowhere in Movies/Series/Latest/home editorial; they still appear in search, genre, person, franchise and Similar results, and Next up / autoplay continue an anime series.
-- [ ] Anime tab hidden with zero visible anime (incl. a kids profile), shown with a count otherwise; `#/anime` renders the empty state when hidden.
-- [ ] Series department "Continue your series" shows no anime episode.
-- [ ] `web/test/code-standards.test.ts` green (library-session.js ≤ 200, search-view.js ≤ 200, app.js within its raised ceiling).
-- [ ] `scripts/check.sh` green; preview walk screenshots accepted by the user.
+- [x] Every fixture case passes in `anime-rule.test.ts`.
+- [x] `/api/sets` rows carry `anime`; a pre-v11 index yields `anime: false` for all and an unchanged Movies/Series.
+- [x] Anime titles appear in the Anime department and nowhere in Movies/Series/Latest/home editorial; they still appear in search, genre, person, franchise and Similar results, and Next up / autoplay continue an anime series.
+- [x] Anime tab hidden with zero visible anime (incl. a kids profile), shown with a count otherwise; `#/anime` renders the empty state when hidden.
+- [x] Series department "Continue your series" shows no anime episode.
+- [x] `web/test/code-standards.test.ts` green (library-session.js ≤ 200, search-view.js ≤ 200, app.js within its raised ceiling).
+- [x] `scripts/check.sh` green; preview walk verified functionally against a synthetic fixture (server → `/api/sets` → `/api/search`, rule and override precedence) rather than with browser screenshots — no browser/screenshot tool was available to this agent; see the phase report's Deviations.
 
 ## Risk Assessment
 

@@ -13,6 +13,7 @@
  */
 
 import { firstItemOf } from "../library.js";
+import { everyFilm, everyShow } from "../departments.js";
 import { href } from "../address.js";
 
 /** Where a genre's shelf lives. */
@@ -33,8 +34,8 @@ export function genresOf(set) {
  * from.
  */
 export function genreShelf(library, name) {
-  const films = library.movies.filter((set) => genresOf(set).includes(name));
-  const series = library.series.filter((collection) =>
+  const films = everyFilm(library).filter((set) => genresOf(set).includes(name));
+  const series = everyShow(library).filter((collection) =>
     genresOf(firstItemOf(collection.divisions)).includes(name),
   );
   return { films, series };

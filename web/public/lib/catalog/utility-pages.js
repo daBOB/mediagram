@@ -9,6 +9,7 @@
 import { el } from "../dom.js";
 import { countOf } from "../format.js";
 import { firstItemOf } from "../library.js";
+import { everyFilm, everyShow } from "../departments.js";
 import { collectionGrid, heading, movieGrid, SECTIONS } from "./shelf-view.js";
 import { GRID, LIST } from "./shelf-mode.js";
 import { genreHash, genreShelf, genresOf } from "./genres.js";
@@ -64,7 +65,7 @@ export function genreIndex(titles) {
 
 /** The whole library's titles: films, and each show by its first episode. */
 export function titlesOf(library) {
-  return [...library.movies, ...library.series.map((show) => firstItemOf(show.divisions)).filter(Boolean)];
+  return [...everyFilm(library), ...everyShow(library).map((show) => firstItemOf(show.divisions)).filter(Boolean)];
 }
 
 /** Genres as image tiles, each a link to its shelf. */

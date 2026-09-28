@@ -11,13 +11,12 @@
  *
  * DOM-free: everything the outside world touches is behind `port`, so this
  * is tested without a browser. The one guarantee `loadCatalog` always made
- * survives the move unchanged — nothing is recorded until `groupLibrary` and
- * `groupDocumentaries` have made sense of a body, so one they cannot parse
- * leaves the current catalog exactly as it was.
+ * survives the move unchanged — nothing is recorded until `groupDepartments`
+ * has made sense of a body, so one it cannot parse leaves the current
+ * catalog exactly as it was.
  */
 
-import { groupLibrary } from "./library.js";
-import { groupDocumentaries } from "./documentaries.js";
+import { groupDepartments } from "./departments.js";
 import { forKidsProfile } from "./age-rating.js";
 
 /**
@@ -37,7 +36,7 @@ export function createLibrarySession({ port, state, remoteState }) {
   /** The catalog as the server last sent it, before any profile's filter. */
   let catalogSets = [];
 
-  let library = { movies: [], series: [], tutorials: [], documentaries: { collections: [], singles: [] } };
+  let library = groupDepartments([]);
   let byId = new Map();
   let visibleSets = [];
 
@@ -84,8 +83,7 @@ export function createLibrarySession({ port, state, remoteState }) {
    */
   function applyCatalog(sets = catalogSets, catalog = false) {
     const visible = filtered(sets);
-    const documentaries = groupDocumentaries(visible.filter((set) => set.kind === "docu"));
-    library = { ...groupLibrary(visible), documentaries };
+    library = groupDepartments(visible);
     byId = new Map(visible.map((set) => [set.setId, set]));
     visibleSets = visible;
     // Said, so a view that states something about the catalogue itself (the

@@ -16,7 +16,7 @@ import { join } from "node:path";
 import { mergeStates, type MergedState } from "../src/state/merge";
 import { parseRecord, type SyncRecord } from "../src/state/sync-record";
 import type { CatalogSet } from "../public/lib/library.js";
-import { groupLibrary } from "../public/lib/library.js";
+import { groupDepartments } from "../public/lib/departments.js";
 import { homeShelves } from "../public/lib/catalog/home-shelves.js";
 import {
   isFinished,
@@ -176,7 +176,7 @@ describe("next-up fixtures", () => {
     test(one.name, () => {
       const sets = one.order.map((setId, index) => episodeOf(setId, index + 1));
       const shelves = homeShelves({
-        library: { ...groupLibrary(sets), documentaries: { collections: [], singles: [] } },
+        library: groupDepartments(sets),
         byId: new Map(sets.map((set) => [set.setId, set])),
         // The store hands these over newest first; so does this.
         progress: [...one.progress].sort((a, b) => b.updatedAt - a.updatedAt),

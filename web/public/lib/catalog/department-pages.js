@@ -143,9 +143,11 @@ export function renderShowsDept(main, section, cx) {
 
   const kind = series ? "ep" : "tut";
   const shelves = homeShelves({ library: cx.library, byId: cx.byId, progress: cx.progress, watchedAt: cx.watchedAt });
+  // Kind alone is not enough for Series: an anime episode is kind "ep" too,
+  // and anime has its own "Continue watching" on its own department page.
   const underway = resumeCards({
-    continues: shelves.continues.filter((set) => set.kind === kind),
-    nextUp: shelves.nextUp.filter((entry) => entry.set.kind === kind),
+    continues: shelves.continues.filter((set) => set.kind === kind && !set.anime),
+    nextUp: shelves.nextUp.filter((entry) => entry.set.kind === kind && !entry.set.anime),
   }, cx.play);
   if (underway.length > 0) {
     const strip = el("div", "resume-strip");

@@ -36,8 +36,9 @@ export function filmPage(set, { resume, onPlay, similar, openFilm, hasFranchise 
   const facts = [set.year, humanDuration(set.duration), ageLabel(set), genresOf(set).slice(0, 3).join(", ")]
     .filter(Boolean).join(" · ");
   const play = playPill(resume ? `Resume from ${clockTime(resume)}` : "Play", () => onPlay(set));
+  const backSection = set.anime ? "anime" : "movies";
   page.append(titleSpread({
-    back: { href: href({ page: "department", section: "movies" }), label: "Back to Movies" },
+    back: { href: href({ page: "department", section: backSection }), label: `Back to ${set.anime ? "Anime" : "Movies"}` },
     title,
     facts,
     art: set.backdrop ?? set.poster,

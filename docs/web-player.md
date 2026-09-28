@@ -221,6 +221,39 @@ written verbatim by `server.ts`.
 Nothing the browser is served ever carries a `chat_id`, a `message_id` or a
 `doc_id`. The browser is told what it may play, never where the bytes live.
 
+## Anime
+
+Japanese animation gets its own department rather than sitting among Movies
+and Series: `web/src/catalog/anime.ts`'s `isAnime(kind, genres,
+originalLanguage, forced)` — a film or an episode only, TMDB genre
+"Animation" plus original language `ja`, unless `mediagram edit --anime`
+overrode it. `web/public/lib/departments.js`'s `groupDepartments` pulls a
+matching title out ahead of `groupLibrary`, the way Documentaries already
+does, so a title never sits on two shelves at once.
+
+Department views (a shelf, browsed) leave anime out; a lookup (a title found
+by identity or relation) finds it wherever it is shelved:
+
+| Excludes anime | Includes anime |
+|---|---|
+| Movies, Series departments; `#/movies/page/N` | Anime department (only anime) |
+| Latest, home editorial picks (cover, features, "This month") | Search, genre pages, person pages, franchises, Similar |
+| Rail masthead, Movies/Series nav counts | Continue, Next up, autoplay — the viewer's own progress |
+
+Home's editorial picks stay Movies-only on purpose, the same rule
+Documentaries already followed: anime never reaches the cover or "This
+month" even though it reaches Continue and Next up, which are the viewer's
+own progress rather than a curated pick.
+
+The Anime nav tab hides at zero rather than staying visible the way
+Documentaries does. Documentaries' empty state names an upload command
+(`mediagram add-docu`); anime has none — a title files itself in by the rule,
+so an empty tab on a library with no Japanese animation would be a dead end.
+`#/anime` itself still renders (the empty state, reachable by URL), and a
+kids profile whose age limit hides every anime title sees the tab hidden the
+same way. Android follows the same rule for the same reason (`Shelves.kt`
+already drops empty Movies/Series/Tutorials this way).
+
 ## Routes and API endpoints
 
 Catalog routes (`#/`) are client-side (no server state); API endpoints answer
@@ -248,6 +281,8 @@ so it fails if this table and `address.js` ever disagree.
 | `#/tutorials/<course>/<folder>/...` | A folder within the course, nested arbitrarily deep |
 | `#/documentaries` | Documentaries department |
 | `#/documentaries/<collection>/<folder>/...` | A documentary collection, folders as `tutorials` above |
+| `#/anime` | Anime department (Japanese animation; hidden from the nav at zero) |
+| `#/anime/<show>` | An anime show's own page, same as `#/series/<show>` |
 | `#/collections` | Collections page (franchises and lists) |
 | `#/collections/tmdb-<id>` | Franchise detail, by TMDB collection id |
 | `#/collections/<list-id>` | A viewer's own list |

@@ -26,7 +26,7 @@ import { nextAfter, nextInQueue } from "../library.js";
  */
 export function playsNext(library, set, queue) {
   if (queue) return { next: nextInQueue(queue, set.setId), preload: [] };
-  const collection = [...library.series, ...library.tutorials, ...library.documentaries.collections].find(
+  const collection = [...library.series, ...library.anime.collections, ...library.tutorials, ...library.documentaries.collections].find(
     (entry) => entry.name === set.show,
   );
   if (!collection) return { next: null, preload: [] };

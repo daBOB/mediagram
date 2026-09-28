@@ -36,7 +36,7 @@ export function homeShelves({
   const positions = new Map(progress.map((row) => [row.setId, row]));
 
   const underway = [];
-  for (const collection of [...library.series, ...library.tutorials]) {
+  for (const collection of [...library.series, ...library.anime.collections, ...library.tutorials]) {
     const entry = nextInCollection(collection, positions, watchedAt);
     if (entry) underway.push(entry);
   }

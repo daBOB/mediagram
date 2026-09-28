@@ -8,6 +8,7 @@
 
 import { el } from "../dom.js";
 import { firstItemOf } from "../library.js";
+import { everyFilm, everyShow } from "../departments.js";
 import { artworkUrl, initialsOf } from "./plate.js";
 import { collectionGrid, heading, movieGrid } from "./shelf-view.js";
 import { GRID } from "./shelf-mode.js";
@@ -125,7 +126,7 @@ export function visiblePeople(people, byKey) {
 /** Resolves a title key to the films and shows this profile's library holds under it. */
 export function titlesByKey(library) {
   return (key) => ({
-    films: library.movies.filter((set) => set.showKey === key),
-    shows: library.series.filter((show) => firstItemOf(show.divisions)?.showKey === key),
+    films: everyFilm(library).filter((set) => set.showKey === key),
+    shows: everyShow(library).filter((show) => firstItemOf(show.divisions)?.showKey === key),
   });
 }

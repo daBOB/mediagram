@@ -90,11 +90,13 @@ const UPLOAD_HINT = {
   series: ["Upload episodes with ", "mediagram add <file> --season 1 --episode 1"],
   tutorials: ["Upload a course with ", "mediagram add-course <folder>"],
   documentaries: ["Upload one with ", "mediagram add-docu <file|folder>"],
+  // Titles file themselves in as anime; there is only a title to mark.
+  anime: ["File one here with ", "mediagram edit <set-id> --anime yes"],
 };
 
 /**
  * What to say when a shelf is empty: the command that would fill it.
- * @param {"movies"|"series"|"tutorials"|"documentaries"} section
+ * @param {"movies"|"series"|"tutorials"|"documentaries"|"anime"} section
  * @param {{kids?: boolean}} [options] a kids profile is waiting for ratings,
  *   not uploads, so it is told that instead of how to upload
  */
@@ -207,7 +209,7 @@ function withAction(card, label, onAction) {
 /**
  * Shows, courses and documentary collections: a grid of collections, each
  * opening its own view.
- * @param {"series"|"tutorials"|"documentaries"} section
+ * @param {"series"|"tutorials"|"documentaries"|"anime"} section
  * @param {Collection[]} collections
  * @param {(name: string) => void} onOpen
  * @param {GridOptions} [options]

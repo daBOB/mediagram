@@ -37,6 +37,8 @@ import { editorsChoice, loadEditorsChoice, onEditorsChoice } from "./lib/editors
 import { describeFilm, filmPage } from "./lib/catalog/film-page.js";
 import { renderSeries } from "./lib/catalog/series-page.js";
 import { renderDocumentariesDept, renderMoviesDept, renderShowsDept } from "./lib/catalog/department-pages.js";
+import { renderAnimeDept } from "./lib/catalog/anime-department.js";
+import { countAnime, everyFilm, everyShow, groupDepartments, sectionForShow } from "./lib/departments.js";
 import { renderSettings } from "./lib/catalog/settings-page.js";
 import { renderPerson, titlesByKey, visiblePeople } from "./lib/catalog/cast.js";
 import { similarTo } from "./lib/catalog/similar.js";
@@ -87,7 +89,7 @@ function loadPlayer() {
  * one lookup rather than a search of three shelves.
  * @type {import("./lib/library.js").Library}
  */
-let library = { movies: [], series: [], tutorials: [], documentaries: { collections: [], singles: [] } };
+let library = groupDepartments([]);
 let byId = new Map();
 
 const kidsProfile = () => state.profile()?.kids === true;
@@ -118,6 +120,9 @@ librarySession.onData((change) => {
   document.getElementById("n-series").textContent = String(library.series.length);
   document.getElementById("n-tutorials").textContent = String(library.tutorials.length);
   document.getElementById("n-documentaries").textContent = String(countDocumentaries(library.documentaries));
+  const animeCount = countAnime(library.anime);
+  document.getElementById("n-anime").textContent = String(animeCount);
+  document.getElementById("nav-anime").hidden = animeCount === 0;
   document.getElementById("rail-masthead").textContent = ["movies", "series", "tutorials"]
     .map((section) => countOf(library[section].length, SECTIONS[section].extent))
     .join("\n");
@@ -217,9 +222,12 @@ function viewHome() {
   });
 }
 
-/** Opens a show or course's own page — the one show-opener every caller shares. */
+/**
+ * Opens a show or course's own page — the one show-opener every caller
+ * shares; `sectionForShow` resolves a name onto Anime when it lives there.
+ */
 function openShow(section, name, folders = []) {
-  go({ page: "show", section, name, folders });
+  go({ page: "show", section: sectionForShow(library, section, name), name, folders });
 }
 
 // A multiple of two, three, four, six and eight, so a wall of plates ends
@@ -292,9 +300,9 @@ function viewFilm(setId) {
   const page = filmPage(set, {
     resume: resumeAt(state.progressOf(set.setId)),
     onPlay: (film) => play(film),
-    similar: () => similarTo(set, library.movies, (film) => state.isWatched(film.setId)),
+    similar: () => similarTo(set, everyFilm(library), (film) => state.isWatched(film.setId)),
     openFilm,
-    hasFranchise: franchisesIn(library.movies).some((franchise) => franchise.id === set.collectionId),
+    hasFranchise: franchisesIn(everyFilm(library)).some((franchise) => franchise.id === set.collectionId),
   });
   main.append(page);
   if (set.showKey) {
@@ -476,7 +484,8 @@ async function viewSearch(query, generation) {
     main.textContent = "";
     // The server's search knows no profile; keep only what this one can see.
     renderSearch(main, query, hits.filter((hit) => byId.has(hit.setId)), {
-      ...deptContext(), shows: library.series, people: visiblePeople(people ?? [], titlesByKey(library)), franchises: franchisesIn(library.movies), lists: state.collections(),
+      ...deptContext(), shows: library.series, animeShows: library.anime.collections,
+      people: visiblePeople(people ?? [], titlesByKey(library)), franchises: franchisesIn(everyFilm(library)), lists: state.collections(),
     });
   } catch (error) {
     if (generation !== routeGeneration) return;
@@ -635,13 +644,15 @@ function drawRoute() {
   if (address.page === "moviesPage") return viewMovies(address.n);
   if (address.page === "department" && address.section === "movies") return renderMoviesDept(main, deptContext());
   if (address.page === "department" && address.section === "documentaries") return renderDocumentariesDept(main, deptContext());
+  if (address.page === "department" && address.section === "anime") return renderAnimeDept(main, deptContext());
   if (address.page === "department") return renderShowsDept(main, address.section, deptContext());
 
   // address.page === "show"
-  const shelf = address.section === "documentaries" ? library.documentaries.collections : library[address.section];
-  (address.section === "series" ? renderSeries : renderCollection)(
-    main, address.section, shelf.find((entry) => entry.name === address.name), address.name, address.folders,
-    { play, shelf, open: openShow },
+  const collections = { documentaries: library.documentaries.collections, anime: library.anime.collections }[address.section]
+    ?? library[address.section];
+  (address.section === "series" || address.section === "anime" ? renderSeries : renderCollection)(
+    main, address.section, collections.find((entry) => entry.name === address.name), address.name, address.folders,
+    { play, pool: everyShow(library), open: openShow },
   );
 }
 

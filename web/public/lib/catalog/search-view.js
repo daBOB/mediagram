@@ -49,11 +49,14 @@ let chosen = "all";
  * Renders `hits` into `main`.
  *
  * @param {{ play: (set: any) => void, openFilm: (set: any) => void,
- *   shows: import("../library.js").Collection[], openShow: (section: string, name: string) => void,
+ *   shows: import("../library.js").Collection[], animeShows: import("../library.js").Collection[],
+ *   openShow: (section: string, name: string) => void,
  *   people: any[], franchises: {id: number, name: string, films: any[], art: string|null}[],
  *   lists: {id: string, name: string, items: string[]}[] }} on
  */
-export function renderSearch(main, query, hits, { play, openFilm, shows, openShow, people = [], franchises = [], lists = [] }) {
+export function renderSearch(main, query, hits, {
+  play, openFilm, shows, animeShows = [], openShow, people = [], franchises = [], lists = [],
+}) {
   const words = query.toLocaleLowerCase().split(/\s+/).filter(Boolean);
   const named = (name) => words.length > 0 && words.every((word) => name.toLocaleLowerCase().includes(word));
   const places = [
@@ -74,16 +77,25 @@ export function renderSearch(main, query, hits, { play, openFilm, shows, openSho
     return;
   }
 
-  const films = hits.filter((hit) => hit.kind === "movie");
-  const episodes = hits.filter((hit) => hit.kind === "ep");
+  // Anime is its own group, split off before the kind split the way it is
+  // split off every shelf: a `movie`/`ep` hit never lands in both.
+  const animeHits = hits.filter((hit) => hit.anime);
+  const rest = hits.filter((hit) => !hit.anime);
+  const films = rest.filter((hit) => hit.kind === "movie");
+  const episodes = rest.filter((hit) => hit.kind === "ep");
   const matchedShows = [...new Set(episodes.map((hit) => hit.show))]
     .map((name) => shows.find((show) => show.name === name)).filter(Boolean);
-  const docus = hits.filter((hit) => hit.kind === "docu");
-  const lessons = hits.filter((hit) => !["movie", "ep", "docu"].includes(hit.kind));
+  const docus = rest.filter((hit) => hit.kind === "docu");
+  const lessons = rest.filter((hit) => !["movie", "ep", "docu"].includes(hit.kind));
+  const animeFilms = animeHits.filter((hit) => hit.kind === "movie");
+  const animeEpisodes = animeHits.filter((hit) => hit.kind === "ep");
+  const matchedAnimeShows = [...new Set(animeEpisodes.map((hit) => hit.show))]
+    .map((name) => animeShows.find((show) => show.name === name)).filter(Boolean);
   const kinds = [
     ["all", "All", total],
     ["movies", "Movies", films.length],
     ["series", "Series", episodes.length],
+    ["anime", "Anime", animeFilms.length + animeEpisodes.length],
     ["documentaries", "Documentaries", docus.length],
     ["tutorials", "Tutorials", lessons.length],
     ["people", "People", people.length],
@@ -105,6 +117,11 @@ export function renderSearch(main, query, hits, { play, openFilm, shows, openSho
       part("series", "Series", collectionGrid("series", matchedShows, (name) => openShow("series", name), { mode: GRID }));
     }
     if (episodes.length > 0) part("series", "Episodes", rows(episodes, play));
+    if (animeFilms.length > 0) part("anime", "Anime films", movieGrid(animeFilms, openFilm, { mode: GRID }));
+    if (matchedAnimeShows.length > 0) {
+      part("anime", "Anime series", collectionGrid("anime", matchedAnimeShows, (name) => openShow("anime", name), { mode: GRID }));
+    }
+    if (animeEpisodes.length > 0) part("anime", "Anime episodes", rows(animeEpisodes, play));
     if (docus.length > 0) part("documentaries", "Documentaries", rows(docus, play));
     if (lessons.length > 0) part("tutorials", "Lessons", rows(lessons, play));
     if (people.length > 0) {

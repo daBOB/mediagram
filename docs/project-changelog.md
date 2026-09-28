@@ -5,6 +5,22 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.77.0 — an Anime department for Japanese animation
+
+**Added**
+
+- The web player: Japanese animation (TMDB genre "Animation" plus original
+  language `ja`, or a `mediagram edit --anime` override) leaves Movies and
+  Series for its own Anime department — a hero, Continue watching, every
+  anime series and every anime film, the same shape Documentaries already
+  has. The nav tab hides at zero (no upload command points at an empty one);
+  `#/anime` itself still renders the empty state. Genre pages, search, person
+  pages, franchises, Similar, Continue and Next up all still find an anime
+  title where it actually is; the home page's editorial picks stay
+  Movies-only, the same rule Documentaries already followed. An index older
+  than schema v11 shows no anime at all — Movies and Series read exactly as
+  they did before this release.
+
 ## 0.76.0 — titles carry their original language, and anime can be set by hand
 
 **Added**

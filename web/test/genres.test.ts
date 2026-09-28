@@ -12,12 +12,13 @@ describe("a genre's shelf", () => {
     movies: [film("Logan Lucky", ["Komödie", "Krimi"]), film("Looper", ["Action", "Thriller"]), film("Untagged")],
     series: [show("30 Rock", ["Komödie"]), show("Star City", ["Drama"])],
     tutorials: [],
+    anime: { collections: [], singles: [] },
   };
 
   test("holds the films and the series tagged with it", () => {
     const { films, series } = genreShelf(library, "Komödie");
-    expect(films.map((set: { title: string }) => set.title)).toEqual(["Logan Lucky"]);
-    expect(series.map((c: { name: string }) => c.name)).toEqual(["30 Rock"]);
+    expect(films.map((set) => set.title)).toEqual(["Logan Lucky"]);
+    expect(series.map((c) => c.name)).toEqual(["30 Rock"]);
   });
 
   test("matches the name exactly, as the uploader stored it", () => {
@@ -27,7 +28,7 @@ describe("a genre's shelf", () => {
 
   test("a title with no genres recorded is on no shelf, and does not break one", () => {
     expect(genresOf(film("Untagged"))).toEqual([]);
-    expect(genreShelf(library, "Action").films.map((set: { title: string }) => set.title)).toEqual(["Looper"]);
+    expect(genreShelf(library, "Action").films.map((set) => set.title)).toEqual(["Looper"]);
   });
 });
 

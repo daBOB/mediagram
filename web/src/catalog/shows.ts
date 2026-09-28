@@ -69,12 +69,15 @@ export interface ProviderFacts {
   seriesType: string | null;
   /** A show's run: `Ended`, `Returning Series`, … */
   status: string | null;
+  /** TMDB's own code for the title (`ja`, `en`, …), v11; `null` on an older index. */
+  originalLanguage: string | null;
 }
 
 type FactsRow = {
   kind: string; id: number; genres: string | null; tagline: string | null;
   rating: number | null; fsk: string | null; popularity: number | null;
   collectionId: number | null; collectionName: string | null; seriesType: string | null; status: string | null;
+  originalLanguage: string | null;
 };
 
 /**
@@ -99,14 +102,15 @@ export function providerFactsByShow(db: Database): Map<string, ProviderFacts> {
   );
   if (columns.size === 0) return byKey; // No such table: an index written before it.
   // Only these two literals are ever spliced into the query below.
-  const optional = (name: "status" | "certification" | "popularity" | "collection_id" | "collection_name" | "series_type") =>
-    (columns.has(name) ? name : "NULL");
+  const optional = (
+    name: "status" | "certification" | "popularity" | "collection_id" | "collection_name" | "series_type" | "original_language",
+  ) => (columns.has(name) ? name : "NULL");
   const rows = db
     .query(
       `SELECT kind, id, genres, tagline, rating, ${optional("status")} AS status,
               ${optional("certification")} AS fsk, ${optional("popularity")} AS popularity,
               ${optional("collection_id")} AS collectionId, ${optional("collection_name")} AS collectionName,
-              ${optional("series_type")} AS seriesType
+              ${optional("series_type")} AS seriesType, ${optional("original_language")} AS originalLanguage
          FROM shows WHERE source = 'tmdb'`,
     )
     .all() as FactsRow[];
@@ -125,6 +129,7 @@ export function providerFactsByShow(db: Database): Map<string, ProviderFacts> {
       collectionName: row.collectionName?.trim() || null,
       seriesType: row.seriesType?.trim() || null,
       status: row.status?.trim() || null,
+      originalLanguage: row.originalLanguage?.trim() || null,
     });
   }
   return byKey;

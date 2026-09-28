@@ -24,7 +24,7 @@
  * never had to ask which sections existed.
  */
 const KNOWN_SECTIONS = new Set([
-  "movies", "series", "tutorials", "documentaries",
+  "movies", "series", "tutorials", "documentaries", "anime",
   "continue", "watchlist", "collections",
   "home", "search", "system", "film", "genre", "genres", "latest", "settings", "person",
 ]);

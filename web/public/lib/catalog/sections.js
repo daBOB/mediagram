@@ -14,4 +14,5 @@ export const SECTIONS = {
     label: "Documentaries", empty: "No documentaries yet.", extent: "documentary",
     noun: "documentary", chapterNoun: "chapter",
   },
+  anime: { label: "Anime", empty: "No anime yet.", extent: "title", noun: "episode", chapterNoun: "season" },
 };
