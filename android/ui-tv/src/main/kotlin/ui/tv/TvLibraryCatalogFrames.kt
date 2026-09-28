@@ -105,9 +105,9 @@ internal fun TvSeasonFrame(
         TvSeason(
             division = division,
             watch = watch,
-            onOpenTitle = { setId ->
+            onPlay = { setId ->
                 restore.opened(here, setId)
-                at.openTitle(setId)
+                at.openPlayer(setId)
             },
             restoreKey = restore.of(here),
             heldIds = heldIds,
@@ -138,9 +138,9 @@ internal fun TvCollectionFrame(
             collection = coll,
             info = rememberTitleInfo(coll.posterKey, catalogViewModel::titleInfo),
             watch = watch,
-            onOpenTitle = { setId ->
+            onPlay = { setId ->
                 restore.opened(here, setId)
-                at.openTitle(setId)
+                at.openPlayer(setId)
             },
             onOpenSeason = { division ->
                 restore.opened(here, division.title)

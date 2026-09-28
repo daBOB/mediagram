@@ -43,7 +43,7 @@ class TvCollectionTabsStateTest : TvScreenStateTest() {
 
     @Test
     fun withNoCastOrSimilarOnlyEpisodesAndAboutAreOffered() {
-        show { TvCollection(show, info = null, watch = WatchSnapshot.Empty, onOpenTitle = {}, onOpenSeason = {}) }
+        show { TvCollection(show, info = null, watch = WatchSnapshot.Empty, onPlay = {}, onOpenSeason = {}) }
 
         listOf("Episodes", "About").forEach { compose.onNodeWithText(it).assertExists() }
         compose.onNodeWithText("Cast").assertDoesNotExist()
@@ -61,7 +61,7 @@ class TvCollectionTabsStateTest : TvScreenStateTest() {
                 show,
                 info = null,
                 watch = WatchSnapshot.Empty,
-                onOpenTitle = {},
+                onPlay = {},
                 onOpenSeason = {},
                 credits = credits,
                 onOpenPerson = { opened = it },
@@ -93,7 +93,7 @@ class TvCollectionTabsStateTest : TvScreenStateTest() {
                 show,
                 info = null,
                 watch = WatchSnapshot.Empty,
-                onOpenTitle = {},
+                onPlay = {},
                 onOpenSeason = {},
                 similar = listOf(other),
                 onOpenCollection = { opened = it },
@@ -115,7 +115,7 @@ class TvCollectionTabsStateTest : TvScreenStateTest() {
                 show,
                 info = null,
                 watch = WatchSnapshot.Empty,
-                onOpenTitle = {},
+                onPlay = {},
                 onOpenSeason = {},
                 resume = pick,
                 onResume = { played = it },
@@ -148,7 +148,7 @@ class TvCollectionTabsStateTest : TvScreenStateTest() {
                 show,
                 info = null,
                 watch = WatchSnapshot.Empty,
-                onOpenTitle = {},
+                onPlay = {},
                 onOpenSeason = {},
                 credits = credits,
                 restoreKey = "5",
@@ -178,7 +178,7 @@ class TvCollectionTabsStateTest : TvScreenStateTest() {
                 show,
                 info = null,
                 watch = WatchSnapshot.Empty,
-                onOpenTitle = {},
+                onPlay = {},
                 onOpenSeason = {},
                 similar = listOf(other),
                 restoreKey = "SHOW/Another Show",
@@ -199,7 +199,7 @@ class TvCollectionTabsStateTest : TvScreenStateTest() {
                 show,
                 info = null,
                 watch = WatchSnapshot.Empty,
-                onOpenTitle = {},
+                onPlay = {},
                 onOpenSeason = {},
                 credits = currentCredits.value,
             )

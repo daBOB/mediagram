@@ -72,7 +72,7 @@ class TvPageScrollTest {
      */
     @Test
     fun upFromAShowsFirstSeasonReachesItsOverviewThenItsName() {
-        show { TvCollection(collection = show, info = info, watch = WatchSnapshot.Empty, onOpenTitle = {}, onOpenSeason = {}) }
+        show { TvCollection(collection = show, info = info, watch = WatchSnapshot.Empty, onPlay = {}, onOpenSeason = {}) }
         waitUntilFocused("Season 1")
 
         compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionUp) }

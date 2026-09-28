@@ -43,15 +43,17 @@ import ui.tv.TvTextRow
  * it — a course runs from one folder deep to four, and a viewer reads the
  * indent rather than headings that each repeat their parents.
  *
- * The remote lands on the first thing that can be opened, or on the set
- * [restoreKey] names when coming back from its title. [header] is whatever
+ * A row plays rather than opening a title page first, as the phone's and
+ * the web's (`course-view.js`'s `lessonRow`) do. The remote lands on the
+ * first thing that can be played, or on the set [restoreKey] names when
+ * coming back from the player. [header] is whatever
  * stands above the rows and scrolls away with them.
  */
 @Composable
 internal fun TvCollectionRows(
     rows: List<CollectionRow>,
     watch: WatchSnapshot,
-    onOpenTitle: (setId: String) -> Unit,
+    onPlay: (setId: String) -> Unit,
     restoreKey: String?,
     header: (@Composable () -> Unit)?,
     heldIds: Set<String> = emptySet(),
@@ -106,7 +108,7 @@ internal fun TvCollectionRows(
                         progress = watchedFractionOf(positions[row.set.setId]),
                         watched = row.set.setId in watchedIds,
                         held = row.set.setId in heldIds,
-                        onOpenTitle = onOpenTitle,
+                        onPlay = onPlay,
                         focus = focus.takeIf { index == focusIndex },
                     )
             }
@@ -115,7 +117,7 @@ internal fun TvCollectionRows(
 }
 
 /**
- * One lesson or episode to open, or one document, as the phone's own row:
+ * One lesson or episode to play, or one document, as the phone's own row:
  * the tick before the title so a column of them reads at a glance, and a
  * progress rule along its foot, and the offline badge under that for an
  * episode or lesson this device holds.
@@ -132,7 +134,7 @@ private fun ItemRow(
     progress: Float?,
     watched: Boolean,
     held: Boolean,
-    onOpenTitle: (setId: String) -> Unit,
+    onPlay: (setId: String) -> Unit,
     focus: FocusRequester?,
 ) {
     val text = "${row.position}. ${if (watched) "✓ " else ""}${row.set.title}"
@@ -140,7 +142,7 @@ private fun ItemRow(
         if (row.set.kind == Kind.DOCUMENT) {
             DocumentRow(text, focus)
         } else {
-            TvTextRow(text = text, onClick = { onOpenTitle(row.set.setId) }, modifier = Modifier.fillMaxWidth(), focusRequester = focus)
+            TvTextRow(text = text, onClick = { onPlay(row.set.setId) }, modifier = Modifier.fillMaxWidth(), focusRequester = focus)
             TvItemMarks(progress, held)
         }
     }

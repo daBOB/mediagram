@@ -45,13 +45,13 @@ class TvCollectionStateTest : TvScreenStateTest() {
 
     @Test
     fun aShowOfOneSeasonListsItsEpisodesAndFocusesTheFirst() {
-        var opened: String? = null
+        var played: String? = null
         val show = show(division("Season 1", 1, episode("e1", "Pilot"), episode("e2", "Return")))
-        showCollection(show, onOpenTitle = { opened = it }, watch = WatchSnapshot.Empty.copy(watched = listOf(Watched("e1", 1))))
+        showCollection(show, onPlay = { played = it }, watch = WatchSnapshot.Empty.copy(watched = listOf(Watched("e1", 1))))
 
         compose.onNodeWithText("1. ✓ Pilot").assertIsFocused()
         compose.onNodeWithText("2. Return").performSemanticsAction(SemanticsActions.OnClick)
-        assertEquals("e2", opened)
+        assertEquals("e2", played)
     }
 
     @Test
@@ -96,20 +96,20 @@ class TvCollectionStateTest : TvScreenStateTest() {
 
     @Test
     fun aSeasonOfDocumentsOnlyFocusesItsFirstDocument() {
-        show { TvSeason(division("Extras", null, document("d1", "Script"), document("d2", "Notes")), WatchSnapshot.Empty, onOpenTitle = {}) }
+        show { TvSeason(division("Extras", null, document("d1", "Script"), document("d2", "Notes")), WatchSnapshot.Empty, onPlay = {}) }
 
         compose.onNodeWithText("1. Script", substring = true).assertIsFocused()
     }
 
     @Test
     fun aSeasonListsItsOwnEpisodesAndFocusesTheFirst() {
-        var opened: String? = null
-        show { TvSeason(division("Season 2", 2, episode("e3", "Late"), episode("e4", "Later")), WatchSnapshot.Empty, onOpenTitle = { opened = it }) }
+        var played: String? = null
+        show { TvSeason(division("Season 2", 2, episode("e3", "Late"), episode("e4", "Later")), WatchSnapshot.Empty, onPlay = { played = it }) }
 
         compose.onNodeWithText("Season 2").assertExists()
         compose.onNodeWithText("1. Late").assertIsFocused()
         compose.onNodeWithText("2. Later").performSemanticsAction(SemanticsActions.OnClick)
-        assertEquals("e4", opened)
+        assertEquals("e4", played)
     }
 
     @Test
@@ -118,7 +118,7 @@ class TvCollectionStateTest : TvScreenStateTest() {
             TvSeason(
                 division("Season 2", 2, episode("e3", "Late"), episode("e4", "Later")),
                 WatchSnapshot.Empty,
-                onOpenTitle = {},
+                onPlay = {},
                 heldIds = setOf("e4"),
             )
         }
@@ -130,7 +130,7 @@ class TvCollectionStateTest : TvScreenStateTest() {
     /** Named at a page's size, as the phone's bar names it — and once, not again as the rows' own heading under it. */
     @Test
     fun aSeasonIsHeadedWithItsTitleOnce() {
-        show { TvSeason(division("Season 2", 2, episode("e3", "Late")), WatchSnapshot.Empty, onOpenTitle = {}) }
+        show { TvSeason(division("Season 2", 2, episode("e3", "Late")), WatchSnapshot.Empty, onPlay = {}) }
 
         compose.onAllNodesWithText("Season 2").assertCountEquals(1)
         compose.onNodeWithText("1. Late").assertIsFocused()
@@ -139,7 +139,7 @@ class TvCollectionStateTest : TvScreenStateTest() {
     private fun showCollection(
         collection: Entry.Collection,
         watch: WatchSnapshot = WatchSnapshot.Empty,
-        onOpenTitle: (String) -> Unit = {},
+        onPlay: (String) -> Unit = {},
         onOpenSeason: (Division) -> Unit = {},
         restoreKey: String? = null,
     ) = show {
@@ -147,7 +147,7 @@ class TvCollectionStateTest : TvScreenStateTest() {
             collection = collection,
             info = null,
             watch = watch,
-            onOpenTitle = onOpenTitle,
+            onPlay = onPlay,
             onOpenSeason = onOpenSeason,
             restoreKey = restoreKey,
         )

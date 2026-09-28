@@ -5,6 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.75.5 — the television's episode rows play too
+
+**Fixed**
+
+- On the television, an episode or lesson row plays, on a show, a season and
+  a course alike, as it does on the phone since 0.75.3 and on the web
+  (`lessonRow`); it used to open a title page first. Back from the player
+  lands on the row that was played. The television's own Continue rows still
+  open a title page — `TvHome` documents that difference, and its Series and
+  Tutorials pages keep to it.
+
 ## 0.75.4 — the app opens in the theme you chose
 
 **Fixed**

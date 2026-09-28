@@ -81,10 +81,12 @@ class TvLibraryTest {
         compose.onNodeWithText("Season 1").assertIsFocused()
         press(compose.onNodeWithText("Season 1"))
         compose.onNodeWithText("1. Pilot").assertIsFocused()
+        // An episode row plays, as on the phone and the web; no title page between.
         press(compose.onNodeWithText("1. Pilot"))
-        compose.onNodeWithText("▶ Play").assertIsFocused()
+        compose.onNodeWithTag(TvPlayerScreenTag).assertExists()
 
-        back()
+        back() // the controls
+        back() // the player
         compose.onNodeWithText("1. Pilot").assertIsFocused()
         back()
         compose.onNodeWithText("Season 1").assertIsFocused()
@@ -134,7 +136,6 @@ class TvLibraryTest {
         press(plate("A Show"))
         press(compose.onNodeWithText("Season 1"))
         press(compose.onNodeWithText("1. Pilot"))
-        press(compose.onNodeWithText("▶ Play"))
         compose.onNodeWithText("Pilot", substring = true).assertExists()
 
         compose.runOnUiThread { controller.get().dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_NEXT)) }
@@ -144,7 +145,7 @@ class TvLibraryTest {
         compose.onNodeWithText("Return", substring = true).assertExists()
         back()
         back()
-        compose.onNodeWithText("▶ Play").assertIsFocused()
+        compose.onNodeWithText("1. Pilot").assertIsFocused()
     }
 
     /**
