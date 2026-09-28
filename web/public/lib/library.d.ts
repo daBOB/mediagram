@@ -48,6 +48,8 @@ export interface CatalogSet {
   subtitles: string[];
   /** Japanese animation, or a hand-set override; `movie`/`ep` only. */
   anime: boolean;
+  /** The hand-set category on this set's course, collection or documentary; `null` otherwise. */
+  category: string | null;
 }
 
 /**

@@ -1,0 +1,86 @@
+[
+  {
+    "name": "nothing categorised yields no rows",
+    "units": [
+      { "name": "A", "category": null },
+      { "name": "B", "category": null }
+    ],
+    "rows": []
+  },
+  {
+    "name": "no units yields no rows",
+    "units": [],
+    "rows": []
+  },
+  {
+    "name": "one filed, two not: a Trading row and an Other row",
+    "units": [
+      { "name": "Forex", "category": "Trading" },
+      { "name": "Geld", "category": null },
+      { "name": "Wall", "category": null }
+    ],
+    "rows": [
+      { "title": "Trading", "units": ["Forex"] },
+      { "title": "Other", "units": ["Geld", "Wall"] }
+    ]
+  },
+  {
+    "name": "every unit filed: no Other row",
+    "units": [
+      { "name": "A", "category": "Trading" },
+      { "name": "B", "category": "Health" }
+    ],
+    "rows": [
+      { "title": "Health", "units": ["B"] },
+      { "title": "Trading", "units": ["A"] }
+    ]
+  },
+  {
+    "name": "categories sort in natural order",
+    "units": [
+      { "name": "C", "category": "Level 10" },
+      { "name": "A", "category": "Basics" },
+      { "name": "B", "category": "Level 2" }
+    ],
+    "rows": [
+      { "title": "Basics", "units": ["A"] },
+      { "title": "Level 2", "units": ["B"] },
+      { "title": "Level 10", "units": ["C"] }
+    ]
+  },
+  {
+    "name": "Other sorts last even when a category alphabetically follows it",
+    "units": [
+      { "name": "Z1", "category": "Zoology" },
+      { "name": "N1", "category": null }
+    ],
+    "rows": [
+      { "title": "Zoology", "units": ["Z1"] },
+      { "title": "Other", "units": ["N1"] }
+    ]
+  },
+  {
+    "name": "units keep the order they were given in within a row",
+    "units": [
+      { "name": "C", "category": "Basics" },
+      { "name": "A", "category": "Basics" },
+      { "name": "B", "category": null }
+    ],
+    "rows": [
+      { "title": "Basics", "units": ["C", "A"] },
+      { "title": "Other", "units": ["B"] }
+    ]
+  },
+  {
+    "name": "a category literally named Other shares the uncategorised row, input order kept",
+    "units": [
+      { "name": "C", "category": "Trading" },
+      { "name": "A", "category": "Other" },
+      { "name": "B", "category": null }
+    ],
+    "rows": [
+      { "title": "Trading", "units": ["C"] },
+      { "title": "Other", "units": ["A", "B"] }
+    ]
+  }
+]

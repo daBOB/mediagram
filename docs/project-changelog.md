@@ -5,6 +5,24 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.80.0 — Tutorials and Documentaries grouped by category
+
+**Added**
+
+- The web player draws the categories 0.79.0's uploader can now set:
+  `/api/sets` and `/api/search` carry `category: string | null` on every
+  row (`null` for a film, an episode, or an unfiled unit, and for every
+  row of an index older than v12). Once at least one course, documentary
+  collection or standalone documentary in a department is filed, its page
+  gains one strip per category, right after Continue — alphabetical,
+  natural order, with an "Other" strip last for whatever is not yet
+  filed. Nothing is filed yet: every existing library keeps rendering
+  exactly as before, since a department with nothing categorised draws no
+  rows at all. The rule (`categoryRows`, `web/public/lib/categories.js`)
+  and its key derivation (`web/src/catalog/categories.ts`, a TypeScript
+  twin of `mlib_spec::category_key`) are both held to fixtures the Android
+  port will run too.
+
 ## 0.79.0 — courses and documentaries can be given a category
 
 **Added**

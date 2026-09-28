@@ -11,6 +11,7 @@ import { bodiless, withBody } from "../response";
 import { SearchIndex } from "../search/index";
 import { providerFactsByShow, showMeta } from "./shows";
 import { animeOverrides, isAnime } from "./anime";
+import { categoryNames, categoryOf } from "./categories";
 import { creditsFor, franchises, peopleSearch, personFor } from "./credits";
 import type { SheetStore } from "../thumbs/sheets";
 import { artworkKeys, artworkResponse } from "./artwork-routes";
@@ -42,6 +43,7 @@ export function createCatalogRouter(options: CatalogRouterOptions) {
   const index = new SearchIndex(listSearchable(db));
   const provider = providerFactsByShow(db);
   const overrides = animeOverrides(db);
+  const categories = categoryNames(db);
   const has = (key: string | null) => key !== null && (posters.has(key) || artwork.has(key));
   const people = peopleSearch(db, has);
 
@@ -73,6 +75,7 @@ export function createCatalogRouter(options: CatalogRouterOptions) {
       seriesType: facts?.seriesType ?? null,
       showStatus: facts?.status ?? null,
       anime: isAnime(set.kind, facts?.genres ?? [], facts?.originalLanguage ?? null, key === null ? null : overrides.get(key) ?? null),
+      category: categoryOf(categories, set.kind, set.show, set.title),
       seasonPoster: has(seasonKey) ? seasonKey : null,
       hasSummary: summary(db, set.setId) !== null,
       subtitles: subtitleLanguages(db, set.setId),

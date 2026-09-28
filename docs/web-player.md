@@ -263,6 +263,46 @@ and a Continue row on that page would only repeat the television's own Home
 Continue for the same titles rather than say anything new — the reason
 Documentaries already gets the plain wall instead of a department page.
 
+## Categories
+
+A course, a documentary collection, or a standalone documentary — exactly
+what the Tutorials and Documentaries department pages each draw as one card
+— can carry one hand-set category, filed by `mediagram add-course
+--category`, `add-docu --category` or `edit <set-id> --category`/
+`--clear-category`. The key is `(department, item_key)`, the same
+`title_art_key(show ?? title)` a unit's custom artwork already lives under;
+`web/src/catalog/categories.ts`'s `categoryKey` is the TypeScript twin of
+`mlib_spec::category_key`, held to the fixture the Rust side runs too
+(`web/test/fixtures/categories/keys.json`). `categoryNames(db)` probes for
+the v12 `categories` table the way `anime.ts` probes for `anime_overrides`,
+and drops `NULL` rows ("cleared") the same way. `routes.ts` attaches
+`category: string | null` to every catalog row.
+
+`web/public/lib/categories.js`'s `categoryRows(units, categoryOf)` is the
+row rule, held to its own fixture (`web/test/fixtures/categories/rows.json`)
+shared with the Android port: no unit categorised → no rows at all (the page
+reads exactly as it did before any unit was ever filed — an "Other" row
+alone would just repeat the shelf below it card for card); otherwise one row
+per distinct category, units keeping the order the department already gives
+them, sorted by the library's own title collator (`byTitle`), with "Other"
+always last and left out when nothing is uncategorised. A unit whose
+category is literally "Other" shares that row too — reader robustness, since
+the uploader itself refuses the name. Alphabetical rather than recency: it
+never reshuffles when something new is uploaded, and it is the one order both
+surfaces can share with no extra data.
+
+`web/public/lib/catalog/category-rows.js` draws the rows: `courseCategoryRows`
+for Tutorials (a course's category is its first lesson's, since every set of
+a course shares its key), `documentaryCategoryRows` for Documentaries (a
+collection's category the same way, a standalone documentary's own). Both
+department pages append the rows right after their Continue row, before
+their existing sections; Series never gets one, since an episode carries no
+category and the shared `renderShowsDept` needs no branch for it. Rows are
+uncapped strips with no "All" link — a department has few enough categories
+that paging one would be solving a problem nobody has yet — and a category
+appears nowhere else the player draws: not on a title page, search, home, or
+Latest.
+
 ## Routes and API endpoints
 
 Catalog routes (`#/`) are client-side (no server state); API endpoints answer

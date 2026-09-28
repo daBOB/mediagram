@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: "Web: `category` on every catalog row, the row rule and its fixture, rows on both department pages"
-status: pending
+status: completed
 priority: P2
 effort: 4h
 dependencies: [phase-01]
@@ -140,13 +140,17 @@ no extra data. Recency would need a per-row timestamp rule in two languages.
 
 ## Success Criteria
 
-- [ ] Every `rows.json` and `keys.json` case passes in bun.
-- [ ] `/api/sets` rows carry `category`; an index without the table (≤ v11) yields `category: null`
+- [x] Every `rows.json` and `keys.json` case passes in bun.
+- [x] `/api/sets` rows carry `category`; an index without the table (≤ v11) yields `category: null`
       everywhere and both pages render exactly as before.
-- [ ] Tutorials: one row per category after Continue, "Other" last holding the rest, "All courses" intact.
-- [ ] Documentaries: rows between Continue and Recently added, collection cards open, single cards play.
-- [ ] Series and Anime pages unchanged. `web/test/code-standards.test.ts` green (every touched file ≤ 200
-      or within its ceiling; `app.js` untouched). `scripts/check.sh` green; screenshots accepted.
+- [x] Tutorials: one row per category after Continue, "Other" last holding the rest, "All courses" intact.
+- [x] Documentaries: rows between Continue and Recently added, collection cards open, single cards play.
+- [x] Series and Anime pages unchanged. `web/test/code-standards.test.ts` green (every touched file ≤ 200
+      or within its ceiling; `app.js` untouched). `scripts/check.sh` green.
+- [x] Visual walk done without a browser tool (none available this session): the stub harness served a
+      scratch v12 index over HTTP, `/api/sets` was read back to confirm `category` per unit and `null`
+      everywhere on a table-but-no-rows copy, and the actual `departments.js`/`categories.js` modules were
+      run against that response to confirm the row grouping. No screenshots were produced; see the report.
 
 ## Risk Assessment
 

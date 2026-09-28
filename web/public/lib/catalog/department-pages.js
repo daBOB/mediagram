@@ -8,6 +8,10 @@
  * shows by what is underway and what is new. The whole film shelf is paged
  * at `#/movies/page/N`; shows and courses are few enough to list in full at
  * the foot of their page.
+ *
+ * Tutorials and Documentaries also draw a row per hand-set category, right
+ * after Continue — see `category-rows.js` for the rule and the shape of
+ * each strip.
  */
 
 import { el } from "../dom.js";
@@ -16,6 +20,7 @@ import { firstItemOf, flattenCollection } from "../library.js";
 import { collectionGrid, emptyState, movieGrid, SECTIONS } from "./shelf-view.js";
 import { GRID, LIST } from "./shelf-mode.js";
 import { departmentHero, deptRow } from "./department-hero.js";
+import { courseCategoryRows, documentaryCategoryRows } from "./category-rows.js";
 import { genreIndex, genreTiles } from "./utility-pages.js";
 import { homeShelves } from "./home-shelves.js";
 import { resumeCards } from "./home-resume.js";
@@ -73,8 +78,9 @@ export function renderMoviesDept(main, cx) {
 
 /**
  * Documentaries: no popularity or genre to browse by, since none of these
- * came from TMDB — a hero, what is underway, what arrived, then a row for
- * every collected folder and one more for whatever was uploaded on its own.
+ * came from TMDB — a hero, what is underway, category rows, what arrived,
+ * then a row for every collected folder and one more for whatever was
+ * uploaded on its own.
  * @param {HTMLElement} main @param {Context} cx
  */
 export function renderDocumentariesDept(main, cx) {
@@ -105,6 +111,8 @@ export function renderDocumentariesDept(main, cx) {
     strip.append(...underway);
     main.append(deptRow("Continue watching", strip));
   }
+
+  main.append(...documentaryCategoryRows(groups, singles, (name) => cx.openShow("documentaries", name), cx.play));
 
   if (byRecent.length > 0) main.append(deptRow("Recently added", shelf(byRecent.slice(0, ROW))));
 
@@ -156,6 +164,9 @@ export function renderShowsDept(main, section, cx) {
   }
 
   const open = (name) => cx.openShow(section, name);
+  // Series never draws a row here: an episode never carries a category, so
+  // this always resolves to `[]` for it — no section check needed.
+  main.append(...courseCategoryRows(shows, open));
   const mode = series ? GRID : LIST;
   // Rows only once there are enough shows for a row to be a selection; below
   // that, the full shelf underneath already is every row at once.
