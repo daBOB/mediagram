@@ -61,6 +61,8 @@ data class DocumentariesDepartment(
     /** Already-started documentaries, newest touch first — no "next up": a documentary has no next episode. */
     val continuing: List<MediaSet>,
     val recentlyAdded: List<MediaSet>,
+    /** One row per hand-set category, collections before singles, "Other" last — [categoryRowsOf] over [Entry]. */
+    val categories: List<CategoryRow<Entry>>,
     val collections: List<DocumentaryGroupRow>,
     /** Capped to [DEPARTMENT_ROW], same as the web's own "Standalone documentaries" row — ponytail: caps a single row rather than paging it; add a page if a library ever holds more standalone documentaries than one row shows. */
     val singles: List<MediaSet>,
@@ -86,11 +88,13 @@ fun documentariesDepartmentOf(
     // so passing none here is what keeps this call a plain narrowing rather
     // than a second, documentary-flavoured underway computation.
     val continuing = underwayOf(emptyList(), byId, watch, DEPARTMENT_ROW).continues.filter { it.kind == Kind.DOCUMENTARY }
+    val categoryUnits: List<Entry> = library.collections + library.singles.map(Entry::Film)
     return DocumentariesDepartment(
         itemCount = items.size,
         lead = byRecent.firstOrNull { it.backdropPath != null },
         continuing = continuing,
         recentlyAdded = byRecent.take(DEPARTMENT_ROW),
+        categories = categoryRowsOf(categoryUnits, ::categoryOf),
         collections = library.collections.map { DocumentaryGroupRow(it, playOrder(it.divisions).take(DEPARTMENT_ROW)) },
         singles = library.singles.take(DEPARTMENT_ROW),
     )
@@ -111,6 +115,8 @@ data class ShowsDepartment(
     val itemCount: Int,
     val lead: Entry.Collection?,
     val underway: Underway,
+    /** One row per hand-set category, "Other" last — empty for Series by construction: only a course ever carries one. */
+    val categories: List<CategoryRow<Entry.Collection>>,
     val popular: List<Entry.Collection>,
     val newEpisodes: List<Entry.Collection>,
     val all: List<Entry.Collection>,
@@ -149,6 +155,7 @@ fun showsDepartmentOf(
         itemCount = shows.sumOf { it.count },
         lead = lead,
         underway = underway,
+        categories = categoryRowsOf(shows, ::categoryOf),
         popular = popular,
         newEpisodes = newEpisodes,
         all = shows,

@@ -91,6 +91,11 @@ pub struct SetSummary {
     /// Whether this title is shelved in Anime; see `shows::is_anime`. A
     /// series carries its show's, like `genres`.
     pub anime: bool,
+    /// The hand-set category of the unit this set belongs to — a course, a
+    /// documentary collection, or a standalone documentary; see
+    /// `mlib_spec::category_key::category_key`. `None` for a film or an
+    /// episode, for an unfiled unit, or for an index written before v12.
+    pub category: Option<String>,
 }
 
 /// Flattens one catalog row. Never fails: a set whose episode field this
@@ -148,6 +153,10 @@ pub fn summary_from(set: &PlayableSet) -> SetSummary {
         // index's genres, original language and overrides, none of which
         // this flattening step reads.
         anime: false,
+        // Resolved by `store::editorial::enrich`, not here: it needs the
+        // index's own `categories` table, which this flattening step never
+        // opens.
+        category: None,
     }
 }
 

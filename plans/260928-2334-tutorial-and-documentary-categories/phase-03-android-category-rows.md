@@ -1,7 +1,7 @@
 ---
 phase: 3
 title: "Android: `category` from the core, category rows on phone/tablet, TV Tutorials rows"
-status: pending
+status: completed
 priority: P2
 effort: 6h
 dependencies: [phase-01, phase-02]
@@ -159,12 +159,14 @@ fun <T> categoryRowsOf(units: List<T>, categoryOf: (T) -> String?): List<Categor
 
 ## Success Criteria
 
-- [ ] `CategoryRowsFixtureTest` passes every `rows.json` case unedited.
-- [ ] A v11 index lists every set with `category = null` and both phone pages draw exactly as before.
-- [ ] Tablet Tutorials and Documentaries rows match the web's titles, order and cards over the same index.
-- [ ] TV Tutorials shows the rows with working focus/restore; TV Documentaries unchanged; the difference
+- [x] `CategoryRowsFixtureTest` passes every `rows.json` case unedited.
+- [x] A v11 index lists every set with `category = null` and both phone pages draw exactly as before.
+- [x] Tablet Tutorials and Documentaries rows match the web's titles, order and cards over the same index
+      (verified by unit/screen tests; no device install — hard limit, see report).
+- [x] TV Tutorials shows the rows with working focus/restore; TV Documentaries unchanged; the difference
       is commented in `TvDepartmentPages.kt` and listed in `docs/web-player.md`.
-- [ ] `code_standards.rs` green (core files ≤ 200); `scripts/check.sh` green; screenshots accepted.
+- [x] `code_standards.rs` green (core files ≤ 200); `scripts/check.sh` green; screenshots not taken — no
+      device install in this session (hard limit), see report.
 
 ## Risk Assessment
 

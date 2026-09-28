@@ -5,6 +5,24 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.81.0 — Android: Tutorials and Documentaries grouped by category
+
+**Added**
+
+- The Android app draws the same category rows the web player does: the core
+  attaches `category` to every `SetSummary` (`mlib_spec::category_key`
+  against the index's `categories` table, `None` for a film, an episode, an
+  unfiled unit, or an index older than v12), carried through to
+  `MediaSet.category`. On the phone and tablet, the Tutorials and
+  Documentaries department pages gain one row per category after the
+  Continue row — same alphabetical, natural-order rule as the web
+  (`categoryRowsOf`, `android/feature/catalog/src/main/kotlin/Categories.kt`),
+  held to the same shared fixture (`web/test/fixtures/categories/rows.json`).
+  On television, the Tutorials front page gets the same rows between Continue
+  and Popular/New; Documentaries stays the plain wall it already was — its
+  own front page never became a rows page in the first place, the same
+  reason Anime is a wall there.
+
 ## 0.80.0 — Tutorials and Documentaries grouped by category
 
 **Added**

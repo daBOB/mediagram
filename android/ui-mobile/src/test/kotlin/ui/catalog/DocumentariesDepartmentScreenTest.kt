@@ -5,12 +5,14 @@ import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import catalog.CategoryRow
 import catalog.CollectionKind
 import catalog.DocumentaryGroupRow
 import catalog.Entry
@@ -72,6 +74,7 @@ class DocumentariesDepartmentScreenTest {
         lead = docSet("lead", backdrop = "lead-bg", tagline = "A quotable line."),
         continuing = listOf(docSet("resuming")),
         recentlyAdded = listOf(docSet("recent")),
+        categories = emptyList(),
         collections = listOf(group),
         singles = listOf(docSet("standalone")),
     )
@@ -147,6 +150,39 @@ class DocumentariesDepartmentScreenTest {
         compose.onNode(matcher).performClick()
         assertEquals("DOCUMENTARY/Terra X", openedCollection)
         assertEquals(null, played)
+    }
+
+    /** A category mixes a folder and a single side by side: the folder opens, the single plays. */
+    @Test
+    fun aCategoryRowOpensItsFolderAndPlaysItsSingle() {
+        val folder = Entry.Collection(
+            key = "DOCUMENTARY/Cosmos", kind = CollectionKind.COURSE, name = "Cosmos", posterPath = null, posterKey = null,
+            count = 5, chapters = 1, divisions = emptyList(),
+        )
+        val categorised = department.copy(categories = listOf(CategoryRow("Science", listOf(folder, Entry.Film(docSet("solo"))))))
+        compose.runOnUiThread {
+            controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
+            controller.get().setContent {
+                MaterialTheme {
+                    DocumentariesDepartmentScreen(
+                        department = categorised,
+                        watch = WatchSnapshot.Empty,
+                        heldIds = emptySet(),
+                        onOpenCollection = { openedCollection = it },
+                        onPlay = { played = it },
+                    )
+                }
+            }
+        }
+        compose.waitForIdle()
+
+        compose.onNodeWithTag(DOCUMENTARIES_DEPT_TEST_TAG).performScrollToNode(hasText("Cosmos"))
+        compose.onNode(hasText("Cosmos", substring = true) and hasClickAction()).performClick()
+        assertEquals("DOCUMENTARY/Cosmos", openedCollection)
+
+        compose.onNodeWithTag(DOCUMENTARIES_DEPT_TEST_TAG).performScrollToNode(hasText("solo"))
+        compose.onNode(hasText("solo", substring = true) and hasClickAction()).performClick()
+        assertEquals("solo", played)
     }
 
     /** The web's `leadHref: null` — the hero is not a link, unlike Movies' own hero. */

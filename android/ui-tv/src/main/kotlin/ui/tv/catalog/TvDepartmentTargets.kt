@@ -41,10 +41,12 @@ internal fun moviesDeptTargetOf(
 
 /**
  * Where [TvShowsDepartmentPage] sends the remote: the hero (when
- * [heroFocusable], its own Watch now), a header row's own stop, or `null` to
- * leave [TvWall]'s own restore-key/first-plate default alone — [restoreKey]
- * naming a show further down the wall itself, which that default already
- * finds, rather than one of the header rows above it.
+ * [heroFocusable], its own Watch now), a header row's own stop — Continue,
+ * then a category row (in [ShowsDepartment.categories]'s own order), then
+ * Popular/New episodes — or `null` to leave [TvWall]'s own
+ * restore-key/first-plate default alone — [restoreKey] naming a show
+ * further down the wall itself, which that default already finds, rather
+ * than one of the header rows above it.
  */
 internal fun showsDeptTargetOf(
     dept: ShowsDepartment,
@@ -54,6 +56,9 @@ internal fun showsDeptTargetOf(
 ): Pair<String, Int>? {
     if (restoreKey != null) {
         underway.indexOfFirst { keyOf(it) == restoreKey }.takeIf { it >= 0 }?.let { return "underway" to it }
+        for ((i, row) in dept.categories.withIndex()) {
+            row.units.indexOfFirst { keyOf(it) == restoreKey }.takeIf { it >= 0 }?.let { return "category:$i" to it }
+        }
         dept.popular.indexOfFirst { keyOf(it) == restoreKey }.takeIf { it >= 0 }?.let { return "popular" to it }
         dept.newEpisodes.indexOfFirst { keyOf(it) == restoreKey }.takeIf { it >= 0 }?.let { return "newEpisodes" to it }
         return null
@@ -61,6 +66,7 @@ internal fun showsDeptTargetOf(
     return when {
         heroFocusable -> "hero" to 0
         underway.isNotEmpty() -> "underway" to 0
+        dept.categories.isNotEmpty() -> "category:0" to 0
         dept.popular.isNotEmpty() -> "popular" to 0
         dept.newEpisodes.isNotEmpty() -> "newEpisodes" to 0
         else -> null

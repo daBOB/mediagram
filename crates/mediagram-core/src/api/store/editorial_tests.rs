@@ -395,3 +395,99 @@ fn a_v10_index_lists_everything_as_not_anime() {
     let set = list_sets(&core).unwrap().into_iter().next().unwrap();
     assert!(!set.anime);
 }
+
+/// A course lesson and one of its documents key by the same show name, so a
+/// category filed on the course reaches both.
+#[test]
+fn a_filed_courses_lesson_and_document_both_carry_its_category() {
+    let dir = tempfile::tempdir().unwrap();
+    let core = Core::at(dir.path());
+    let conn = index_at(dir.path());
+    insert_set(&conn, "lesson", "tut", Some("Rust Course"), None, None, None);
+    insert_set(&conn, "handout", "doc", Some("Rust Course"), None, None, None);
+    conn.execute(
+        "INSERT INTO categories(department, item_key, category, set_at) VALUES ('tutorials', 'title-rust-course', 'Programming', 1)",
+        [],
+    )
+    .unwrap();
+    drop(conn);
+
+    let sets = list_sets(&core).unwrap();
+    assert_eq!(sets.iter().find(|s| s.set_id == "lesson").unwrap().category.as_deref(), Some("Programming"));
+    assert_eq!(sets.iter().find(|s| s.set_id == "handout").unwrap().category.as_deref(), Some("Programming"));
+}
+
+/// A documentary inside a collection keys by the collection's own name, not
+/// its own episode title.
+#[test]
+fn a_documentary_in_a_filed_collection_carries_its_category() {
+    let dir = tempfile::tempdir().unwrap();
+    let core = Core::at(dir.path());
+    let conn = index_at(dir.path());
+    insert_set(&conn, "ep1", "docu", Some("Terra X"), Some("Volcanoes"), None, None);
+    conn.execute(
+        "INSERT INTO categories(department, item_key, category, set_at) VALUES ('documentaries', 'title-terra-x', 'Science', 1)",
+        [],
+    )
+    .unwrap();
+    drop(conn);
+
+    let set = list_sets(&core).unwrap().into_iter().next().unwrap();
+    assert_eq!(set.category.as_deref(), Some("Science"));
+}
+
+/// A standalone documentary has no show, so it keys by its own title.
+#[test]
+fn a_standalone_documentary_carries_its_own_category_by_title() {
+    let dir = tempfile::tempdir().unwrap();
+    let core = Core::at(dir.path());
+    let conn = index_at(dir.path());
+    insert_set(&conn, "solo", "docu", None, Some("Free Solo"), None, None);
+    conn.execute(
+        "INSERT INTO categories(department, item_key, category, set_at) VALUES ('documentaries', 'title-free-solo', 'Sport', 1)",
+        [],
+    )
+    .unwrap();
+    drop(conn);
+
+    let set = list_sets(&core).unwrap().into_iter().next().unwrap();
+    assert_eq!(set.category.as_deref(), Some("Sport"));
+}
+
+/// A film never carries a category, filed or not — only a course or a
+/// documentary unit has one to carry.
+#[test]
+fn a_film_never_carries_a_category() {
+    let dir = tempfile::tempdir().unwrap();
+    let core = Core::at(dir.path());
+    let conn = index_at(dir.path());
+    insert_set(&conn, "m1", "movie", None, Some("Dune"), None, Some(550));
+    conn.execute(
+        "INSERT INTO categories(department, item_key, category, set_at) VALUES ('tutorials', 'title-dune', 'Trading', 1)",
+        [],
+    )
+    .unwrap();
+    drop(conn);
+
+    let set = list_sets(&core).unwrap().into_iter().next().unwrap();
+    assert_eq!(set.category, None);
+}
+
+/// A v11 index has no `categories` table: every title lists `category:
+/// None`, never an error.
+#[test]
+fn a_v11_index_lists_every_category_as_none() {
+    let dir = tempfile::tempdir().unwrap();
+    let core = Core::at(dir.path());
+    let current = dir.path().join("catalog").join("current");
+    std::fs::create_dir_all(&current).unwrap();
+    let conn = Connection::open(current.join("library.db")).unwrap();
+    for stmt in mlib_spec::schema::migrations_up_to(11) {
+        conn.execute(stmt, []).unwrap();
+    }
+    insert_set(&conn, "lesson", "tut", Some("Rust Course"), None, None, None);
+    drop(conn);
+
+    let set = list_sets(&core).unwrap().into_iter().next().unwrap();
+    assert_eq!(set.category, None);
+}

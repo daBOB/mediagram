@@ -4346,6 +4346,14 @@ data class SetSummary (
      * series carries its show's, like `genres`.
      */
     var `anime`: kotlin.Boolean
+    ,
+    /**
+     * The hand-set category of the unit this set belongs to — a course, a
+     * documentary collection, or a standalone documentary; see
+     * `mlib_spec::category_key::category_key`. `None` for a film or an
+     * episode, for an unfiled unit, or for an index written before v12.
+     */
+    var `category`: kotlin.String?
 
 ){
 
@@ -4397,6 +4405,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterBoolean.read(buf),
+            FfiConverterOptionalString.read(buf),
         )
     }
 
@@ -4435,7 +4444,8 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalULong.allocationSize(value.`collectionId`) +
             FfiConverterOptionalString.allocationSize(value.`collectionName`) +
             FfiConverterOptionalString.allocationSize(value.`seriesType`) +
-            FfiConverterBoolean.allocationSize(value.`anime`)
+            FfiConverterBoolean.allocationSize(value.`anime`) +
+            FfiConverterOptionalString.allocationSize(value.`category`)
     )
 
     override fun write(value: SetSummary, buf: ByteBuffer) {
@@ -4474,6 +4484,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.write(value.`collectionName`, buf)
             FfiConverterOptionalString.write(value.`seriesType`, buf)
             FfiConverterBoolean.write(value.`anime`, buf)
+            FfiConverterOptionalString.write(value.`category`, buf)
     }
 }
 

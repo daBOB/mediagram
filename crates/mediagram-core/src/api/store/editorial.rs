@@ -69,6 +69,8 @@ fn enrich(core: &Core, conn: &Connection, sets: Vec<PlayableSet>) -> Result<Vec<
         crate::shows::certifications(conn).map_err(CoreError::io("reading age ratings"))?;
     let anime_overrides =
         crate::shows::anime_overrides(conn).map_err(CoreError::io("reading anime overrides"))?;
+    let categories =
+        crate::catalog_categories::categories(conn).map_err(CoreError::io("reading categories"))?;
     let subtitles = crate::catalog_assets::subtitle_languages(conn)
         .map_err(CoreError::io("reading subtitle languages"))?;
     let summarized = crate::catalog_assets::summaries(conn)
@@ -138,6 +140,8 @@ fn enrich(core: &Core, conn: &Connection, sets: Vec<PlayableSet>) -> Result<Vec<
             summary.poster_key.as_ref().and_then(|key| facts.get(key)).and_then(|row| row.original_language.as_deref());
         let forced = summary.poster_key.as_ref().and_then(|key| anime_overrides.get(key)).copied();
         summary.anime = crate::shows::is_anime(&summary.kind, &summary.genres, original_language, forced);
+        summary.category =
+            crate::catalog_categories::category_of(&categories, &set.kind, set.show.as_deref(), set.title.as_deref());
         resolve_artwork(&mut summary, &version_dir, &artwork, conn, set, &artwork_keys, &mut resolved);
         out.push(summary);
     }

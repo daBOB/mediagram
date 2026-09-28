@@ -1,5 +1,6 @@
 package ui.tv.catalog
 
+import catalog.CategoryRow
 import catalog.CollectionKind
 import catalog.Entry
 import catalog.GenreIndexEntry
@@ -91,12 +92,35 @@ class TvDepartmentTargetsTest {
         assertNull(showsDeptTargetOf(dept, underway = emptyList(), heroFocusable = true, restoreKey = "SHOW/Somewhere Else"))
     }
 
-    private fun showsDeptOf(popular: List<Entry.Collection>) =
+    /** A category row wins over Popular/New, but a title already underway still wins over it. */
+    @Test
+    fun withNoHeroAndNothingUnderwayTheFirstCategoryRowWinsOverPopular() {
+        val popular = listOf(collection("SHOW/A", "A"))
+        val categories = listOf(CategoryRow("Trading", listOf(collection("COURSE/B", "B"))))
+        val dept = showsDeptOf(popular = popular, categories = categories)
+
+        assertEquals("category:0" to 0, showsDeptTargetOf(dept, underway = emptyList(), heroFocusable = false, restoreKey = null))
+    }
+
+    @Test
+    fun aRestoreKeyMatchingACategoryRowEntryLandsOnItRatherThanPopularOrTheHero() {
+        val popular = listOf(collection("SHOW/A", "A"))
+        val categories = listOf(
+            CategoryRow("Trading", listOf(collection("COURSE/B", "B"))),
+            CategoryRow("Health", listOf(collection("COURSE/C", "C"))),
+        )
+        val dept = showsDeptOf(popular = popular, categories = categories)
+
+        assertEquals("category:1" to 0, showsDeptTargetOf(dept, underway = emptyList(), heroFocusable = true, restoreKey = "COURSE/C"))
+    }
+
+    private fun showsDeptOf(popular: List<Entry.Collection> = emptyList(), categories: List<CategoryRow<Entry.Collection>> = emptyList()) =
         ShowsDepartment(
             showCount = popular.size,
             itemCount = popular.size,
             lead = null,
             underway = Underway(continues = emptyList(), nextUp = emptyList(), continuesTotal = 0, nextUpTotal = 0),
+            categories = categories,
             popular = popular,
             newEpisodes = emptyList(),
             all = popular,

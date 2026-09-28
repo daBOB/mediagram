@@ -826,7 +826,7 @@ The canonical index (`library.db`, in `mlib-spec` schema) carries:
   trimmed, collapsed, refused empty or "Other" in any case, and a
   case-insensitive match of a spelling already used by another unit in the
   same department adopts that spelling instead — writer-side only; readers
-  compare exactly. No reader draws from this table yet.
+  compare exactly.
 
 `mediagram_core::shows::is_anime` — a line-for-line port of the web
 player's own `isAnime` (`web/src/catalog/anime.ts`), held to the same
@@ -836,6 +836,17 @@ fixture cases (`shared_anime_fixtures.rs`) — decides `SetSummary.anime`
 the same way `genres`/`fsk`/`tagline` are: the index's own facts first, this
 device's fetched sidecar filling in what the index does not have. Only the
 index's own overrides apply — a device never overrides on its own.
+
+`SetSummary.category` (`MediaSet.category` on Android) is resolved the same
+place, from `mediagram_core::catalog_categories::category_of` against
+`mlib_spec::category_key::category_key(kind, show, title)` — the same key
+the `categories` table above is written under, so a category set at upload
+or by `edit` reaches every device without a caption rewrite. `None` for a
+film, an episode, an unfiled unit, or an index older than v12; no
+device-side fallback, unlike anime — a category is only ever set by hand, so
+there is nothing for a sidecar to fetch. The web player reads the table
+directly (`web/src/catalog/categories.ts`); the two are held to the same key
+fixture (`web/test/fixtures/categories/keys.json`).
 
 Version tracking: `SCHEMA_VERSION=12`, `READABLE_SCHEMAS=[6,7,8,9,10,11,12]`,
 `OLDEST_READABLE_SCHEMA=6`. Readers tolerant of v11 and earlier (optional

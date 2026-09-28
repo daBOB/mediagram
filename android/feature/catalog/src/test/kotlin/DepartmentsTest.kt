@@ -17,12 +17,14 @@ class DepartmentsTest {
         backdropPath: String? = null,
         addedAt: Long = 0,
         durationSecs: Int? = null,
+        kind: Kind = Kind.MOVIE,
+        category: String? = null,
     ): MediaSet =
         MediaSet(
-            setId = setId, kind = Kind.MOVIE, title = setId, show = null, chapter = null, path = null,
+            setId = setId, kind = kind, title = setId, show = null, chapter = null, path = null,
             season = null, episodeFirst = null, episodeLast = null, year = null, durationSecs = durationSecs,
             posterPath = null, totalBytes = 0, popularity = popularity, rating = rating, backdropPath = backdropPath,
-            addedAt = addedAt,
+            addedAt = addedAt, category = category,
         )
 
     @Test
@@ -69,11 +71,18 @@ class DepartmentsTest {
         assertEquals(3, dept.hours)
     }
 
-    private fun show(name: String, popularity: Double? = null, backdropPath: String? = null, addedAt: Long = 0): Entry.Collection {
+    private fun show(
+        name: String,
+        popularity: Double? = null,
+        backdropPath: String? = null,
+        addedAt: Long = 0,
+        category: String? = null,
+    ): Entry.Collection {
         val first = MediaSet(
             setId = "$name-e1", kind = Kind.EPISODE, title = "E1", show = name, chapter = null, path = null,
             season = 1, episodeFirst = 1, episodeLast = null, year = null, durationSecs = null,
             posterPath = null, totalBytes = 0, popularity = popularity, backdropPath = backdropPath, addedAt = addedAt,
+            category = category,
         )
         return Entry.Collection(
             key = "series/$name", kind = CollectionKind.SHOW, name = name, posterPath = null, posterKey = null,
@@ -151,5 +160,53 @@ class DepartmentsTest {
         val dept = showsDepartmentOf(Kind.EPISODE, listOf(show("Plain Show")), byId, watch)!!
 
         assertEquals(listOf(plainEpisode.setId), dept.underway.continues.map { it.setId })
+    }
+
+    @Test
+    fun aFiledCourseGetsItsOwnRowAndAnUnfiledOneFallsToOther() {
+        val courses = listOf(show("Forex", category = "Trading"), show("Geld"))
+        val dept = showsDepartmentOf(Kind.TUTORIAL, courses, emptyMap(), WatchSnapshot.Empty)!!
+
+        assertEquals(listOf("Trading" to listOf("Forex"), "Other" to listOf("Geld")), dept.categories.map { it.title to it.units.map(Entry.Collection::name) })
+    }
+
+    @Test
+    fun noCourseFiledMeansNoCategoryRowsAtAll() {
+        val dept = showsDepartmentOf(Kind.TUTORIAL, listOf(show("Geld")), emptyMap(), WatchSnapshot.Empty)!!
+        assertTrue(dept.categories.isEmpty())
+    }
+
+    /** A category is only ever set on a course or a documentary unit — a show never carries one. */
+    @Test
+    fun theSeriesDepartmentNeverGetsCategoryRows() {
+        val dept = showsDepartmentOf(Kind.EPISODE, listOf(show("Breaking Bad")), emptyMap(), WatchSnapshot.Empty)!!
+        assertTrue(dept.categories.isEmpty())
+    }
+
+    private fun collectionOf(name: String, category: String?, key: String = "DOCUMENTARY/$name"): Entry.Collection {
+        val lead = film("$name-ep1", category = category, kind = Kind.DOCUMENTARY)
+        return Entry.Collection(
+            key = key, kind = CollectionKind.COURSE, name = name, posterPath = null, posterKey = null,
+            count = 1, chapters = 1, divisions = listOf(Division(name, null, listOf(lead), emptyList())),
+        )
+    }
+
+    @Test
+    fun documentariesCategoryRowsHoldCollectionsBeforeSinglesInDepartmentOrder() {
+        val collection = collectionOf("Terra X", category = "Science")
+        val single = film("solo", category = "Science", kind = Kind.DOCUMENTARY)
+        val library = DocumentaryLibrary(collections = listOf(collection), singles = listOf(single))
+
+        val dept = documentariesDepartmentOf(library, emptyMap(), WatchSnapshot.Empty)!!
+
+        val row = dept.categories.single { it.title == "Science" }
+        assertEquals(listOf(collection.key, single.setId), row.units.map(::keyOf))
+    }
+
+    @Test
+    fun documentariesWithNothingCategorisedHasNoRows() {
+        val library = DocumentaryLibrary(collections = listOf(collectionOf("Terra X", category = null)), singles = listOf(film("solo", kind = Kind.DOCUMENTARY)))
+        val dept = documentariesDepartmentOf(library, emptyMap(), WatchSnapshot.Empty)!!
+        assertTrue(dept.categories.isEmpty())
     }
 }

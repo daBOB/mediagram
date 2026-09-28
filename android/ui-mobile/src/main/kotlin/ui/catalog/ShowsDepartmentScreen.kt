@@ -32,9 +32,10 @@ private val DEPT_CARD_WIDTH = 140.dp
 /**
  * The Series or Tutorials department's opening page — a Compose port of
  * `department-pages.js#renderShowsDept`: a hero, the resume strip for what
- * is underway (a card there plays, as `home-resume.js`'s do), Popular/New
- * rows when [ShowsDepartment] offers them (a big enough Series shelf only),
- * then every show or course.
+ * is underway (a card there plays, as `home-resume.js`'s do), one row per
+ * hand-set category, Popular/New rows when [ShowsDepartment] offers them (a
+ * big enough Series shelf only — a course is never categorised and never
+ * gets these rows either), then every show or course.
  *
  * @param label "Series" or "Tutorials", both the hero's title and what the
  *   Continue row and the foot section call it.
@@ -99,6 +100,14 @@ internal fun ShowsDepartmentScreen(
             }
             item(key = "continue", span = { GridItemSpan(maxLineSpan) }) {
                 ResumeStrip(cards = resumeCards, onOpenTitle = onPlay)
+            }
+        }
+        for (row in department.categories) {
+            item(key = "category-heading-${row.title}", span = { GridItemSpan(maxLineSpan) }) {
+                DeptRowHeading(title = row.title)
+            }
+            item(key = "category-${row.title}", span = { GridItemSpan(maxLineSpan) }) {
+                CollectionRow(row.units, onOpenCollection)
             }
         }
         if (department.popular.isNotEmpty()) {

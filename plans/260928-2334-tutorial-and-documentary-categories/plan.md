@@ -1,7 +1,7 @@
 ---
 title: "Categories for Tutorials and Documentaries"
 description: "A hand-set category per course, documentary collection or standalone documentary, kept in the channel index, drawn as one row per category on both department pages."
-status: pending
+status: completed
 priority: P2
 effort: 15h
 branch: main
@@ -24,7 +24,7 @@ category, then the existing sections; uncategorised units under "Other".
 |---|---|---|---|---|
 | 1 | [Index: schema v12 `categories`, key rule, merge, `--category` flags](phase-01-index-categories-and-uploader-flags.md) | 5h | completed | 0.79.0 |
 | 2 | [Web: `category` per set, row rule + fixture, rows on both department pages](phase-02-web-category-rows.md) | 4h | completed | 0.80.0 |
-| 3 | [Android: core field + bindings, rows on phone/tablet, TV Tutorials rows](phase-03-android-category-rows.md) | 6h | pending | minor |
+| 3 | [Android: core field + bindings, rows on phone/tablet, TV Tutorials rows](phase-03-android-category-rows.md) | 6h | completed | 0.81.0 |
 
 Strict order 1 → 2 → 3; each green on `scripts/check.sh`, ships alone, one version bump
 (all three manifests in step, by pattern from whatever `main` carries; `versionCode` untouched).

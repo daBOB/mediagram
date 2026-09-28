@@ -94,6 +94,13 @@ data class MediaSet(
     /** Whether the core shelves this title in Anime; see `shows::is_anime` on the Rust side. */
     val anime: Boolean = false,
     /**
+     * The hand-set category of the unit this set belongs to — a course, a
+     * documentary collection, or a standalone documentary; see
+     * `mlib_spec::category_key::category_key` on the Rust side. `null` for a
+     * film, an episode, or an unfiled unit.
+     */
+    val category: String? = null,
+    /**
      * The resolved path to this episode's own season poster, present only
      * when its season has one — see `SetSummary::season_poster_path` on the
      * Rust side. `null` for anything that is not an episode.

@@ -303,6 +303,13 @@ that paging one would be solving a problem nobody has yet — and a category
 appears nowhere else the player draws: not on a title page, search, home, or
 Latest.
 
+Android's phone and tablet pages draw the same rows (`Categories.kt`'s
+`categoryRowsOf`, held to the same `rows.json`), and so does television's
+Tutorials front page. **Television's Documentaries front page does not**, a
+deliberate difference: that shelf never had a rows-style front page to add
+them to in the first place (`TvDepartmentPages.kt`'s `DOCUMENTARIES` branch
+above already gets the plain wall, the same reason Anime does).
+
 ## Routes and API endpoints
 
 Catalog routes (`#/`) are client-side (no server state); API endpoints answer

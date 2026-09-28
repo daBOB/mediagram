@@ -18,11 +18,12 @@ import model.WatchSnapshot
 /**
  * The Series or Tutorials department's own front page — `renderShowsDept`'s
  * television twin: a hero for the most popular show with a backdrop, then
- * what is underway, Popular and New episodes (both empty below a dozen
- * shows — [ShowsDepartment]'s own gate), and finally every show the shelf
- * holds, as one wall rather than a separate link: unlike Movies, a show's
- * own card is already the whole of what "all" would add, so there is no
- * second flat page to send "All N" to.
+ * what is underway, one row per hand-set category (Tutorials only — a
+ * Series shelf is never categorised), Popular and New episodes (both empty
+ * below a dozen shows — [ShowsDepartment]'s own gate), and finally every
+ * show the shelf holds, as one wall rather than a separate link: unlike
+ * Movies, a show's own card is already the whole of what "all" would add,
+ * so there is no second flat page to send "All N" to.
  *
  * Arrival focus and [restoreKey] favour the hero, then a header row, over
  * [TvWall]'s own plate-0 default — [showsDeptTargetOf]'s own reading, `null`
@@ -51,8 +52,8 @@ internal fun TvShowsDepartmentPage(
         if (!takesFocus) return@LaunchedEffect
         when (target?.first) {
             "hero" -> heroFocus.requestFocus()
-            "underway", "popular", "newEpisodes" -> rowFocus.requestFocus()
-            else -> Unit // null: the wall below claims it instead.
+            null -> Unit // the wall below claims it instead.
+            else -> rowFocus.requestFocus() // "underway", "popular", "newEpisodes", or "category:<i>".
         }
     }
 
@@ -91,6 +92,20 @@ internal fun TvShowsDepartmentPage(
                                 focus = rowFocus,
                                 takesFocus = takesFocus,
                             )
+                            for ((i, row) in dept.categories.withIndex()) {
+                                DeptEntryRow(
+                                    row.title,
+                                    row.units,
+                                    positions,
+                                    watchedIds,
+                                    onOpenTitle,
+                                    onOpenCollection,
+                                    heldIds,
+                                    focusAt = target?.second?.takeIf { target.first == "category:$i" },
+                                    focus = rowFocus,
+                                    takesFocus = takesFocus,
+                                )
+                            }
                             DeptEntryRow(
                                 "Popular",
                                 dept.popular,

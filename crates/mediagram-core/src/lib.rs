@@ -7,6 +7,7 @@ pub mod api;
 pub mod artwork;
 pub mod catalog;
 pub mod catalog_assets;
+pub mod catalog_categories;
 pub mod connection_params;
 pub mod credits;
 pub mod dto;

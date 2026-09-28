@@ -198,6 +198,17 @@ class CatalogRepositoryTest {
         assertEquals(false, sets["dune"]?.anime)
     }
 
+    /** The core decides which unit a set belongs to; this only has to carry its category through unchanged. */
+    @Test
+    fun aSetCarriesItsCategory() = runTest {
+        val core = FakeCore(sets = listOf(summary(setId = "rust-course", category = "Programming"), summary(setId = "dune")))
+        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+
+        val sets = repo.sets().associateBy { it.setId }
+        assertEquals("Programming", sets["rust-course"]?.category)
+        assertEquals(null, sets["dune"]?.category)
+    }
+
     /** The core resolves a portrait onto the record itself now; this only has to carry it through. */
     @Test
     fun creditsCarryTheirResolvedPortraitPathsThrough() = runTest {
@@ -263,6 +274,7 @@ private fun summary(
     collectionName: String? = null,
     seriesType: String? = null,
     anime: Boolean = false,
+    category: String? = null,
 ): SetSummary = SetSummary(
     setId = setId,
     kind = kind,
@@ -299,4 +311,5 @@ private fun summary(
     collectionName = collectionName,
     seriesType = seriesType,
     anime = anime,
+    category = category,
 )

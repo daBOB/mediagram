@@ -101,6 +101,12 @@ internal fun DepartmentOrShelfWall(
         // same as any shelf with no front page of its own. Unlike every
         // other shelf, this one is never itself omitted for being empty, so
         // the wall's own empty message is the one thing added here.
+        //
+        // No category rows here either, deliberately: the phone/tablet page
+        // draws them (`DocumentariesDepartmentScreen.kt`), but this wall is
+        // the only front page television has for this shelf — the same
+        // reason Anime is a wall here (`:88-96` above) rather than getting
+        // its own department page.
         if (shelf.entries.isEmpty()) {
             TvCenteredMessage("No documentaries yet. Upload one with mediagram add-docu <file|folder>.")
             return

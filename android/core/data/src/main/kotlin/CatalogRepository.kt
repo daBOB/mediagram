@@ -213,6 +213,7 @@ class DefaultCatalogRepository(
             seriesType = summary.seriesType,
             showStatus = summary.showStatus,
             anime = summary.anime,
+            category = summary.category,
         )
     }
 

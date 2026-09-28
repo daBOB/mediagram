@@ -75,7 +75,8 @@ internal fun DocumentariesDepartment(
 /**
  * The Documentaries department's opening page — a Compose port of
  * `department-pages.js#renderDocumentariesDept`: a hero, what is underway,
- * what arrived, one row per folder, then whatever was uploaded on its own.
+ * one row per hand-set category, what arrived, one row per folder, then
+ * whatever was uploaded on its own.
  *
  * Unlike Movies, a plate here plays on tap rather than opening a title page
  * — the web's own `renderDocumentariesDept` wires every row to `cx.play`,
@@ -119,6 +120,10 @@ internal fun DocumentariesDepartmentScreen(
         if (resumeCards.isNotEmpty()) {
             item { DeptRowHeading(title = "Continue watching") }
             item { ResumeStrip(cards = resumeCards, onOpenTitle = onPlay) }
+        }
+        for (row in department.categories) {
+            item(key = "category-heading-${row.title}") { DeptRowHeading(title = row.title) }
+            item(key = "category-row-${row.title}") { DocumentaryUnitRow(row.units, watchedIds, onOpenCollection, onPlay) }
         }
         if (department.recentlyAdded.isNotEmpty()) {
             item { DeptRowHeading(title = "Recently added") }
