@@ -2,15 +2,8 @@
 //!
 //! `id` and `n` are taken as raw path segments and checked by
 //! [`crate::rules`] before either touches the store, so a bad shape is
-//! always a 404 before any filesystem call, on every row.
-//!
-//! [`set_status`] is the one row that then tells a well-formed id apart
-//! from an absent one — unauthenticated, it confirms a set exists and how
-//! much of it is held. That is the accepted exposure, not a hole to close:
-//! `HEAD` already gives an unauthenticated caller the same proof, one chunk
-//! at a time. Answering unknown ids with a uniform 404 here would break the
-//! one thing Android's `null` for "an older server" actually leans on —
-//! that a 404 from this route means exactly that, nothing else.
+//! always a 404 before any filesystem call, on every row. The one row that
+//! answers for a whole set, and why it may say one exists, is [`set_status`].
 
 use std::sync::Arc;
 
@@ -25,6 +18,8 @@ use crate::rules;
 use crate::store::{ChunkStore, PutOutcome};
 use crate::token;
 
+mod set_status;
+
 #[derive(Clone)]
 struct AppState {
     store: Arc<ChunkStore>,
@@ -38,7 +33,7 @@ pub fn router(store: Arc<ChunkStore>, token: String) -> Router {
             "/v1/sets/{id}/chunks/{n}",
             get(get_chunk).head(head_chunk).put(put_chunk),
         )
-        .route("/v1/sets/{id}", get(set_status))
+        .route("/v1/sets/{id}", get(set_status::set_status))
         .route("/v1/status", get(status))
         .with_state(AppState {
             store,
@@ -68,12 +63,6 @@ fn validate(raw_id: &str, raw_n: &str) -> Option<(String, u32)> {
     }
     let n = rules::parse_chunk_num(raw_n)?;
     Some((raw_id.to_string(), n))
-}
-
-/// `id` alone, for the one route with no chunk number — the same 404
-/// before any filesystem call as [`validate`].
-fn validate_id(raw_id: &str) -> Option<String> {
-    rules::valid_id(raw_id).then(|| raw_id.to_string())
 }
 
 async fn get_chunk(
@@ -165,26 +154,6 @@ fn auth_signature(headers: &HeaderMap) -> Option<&str> {
         .ok()?
         .strip_prefix(token::SCHEME)?
         .strip_prefix(' ')
-}
-
-/// `GET /v1/sets/{id}`: a question about one set, not a read of it — polled
-/// instead of `HEAD`ing every chunk, so it must never itself change what
-/// eviction picks next. An unrecognized but well-shaped id is `200` with
-/// zeros and a `null` total; only a malformed id is a 404.
-async fn set_status(State(state): State<AppState>, Path(raw_id): Path<String>) -> Response {
-    let Some(id) = validate_id(&raw_id) else {
-        return empty(StatusCode::NOT_FOUND);
-    };
-    let store = state.store.clone();
-    match blocking(move || store.set_status(&id)).await {
-        Ok(status) => Json(serde_json::json!({
-            "total": status.total,
-            "chunks_held": status.chunks_held,
-            "bytes_held": status.bytes_held,
-        }))
-        .into_response(),
-        Err(err) => server_error(&err),
-    }
 }
 
 async fn status(State(state): State<AppState>) -> Response {

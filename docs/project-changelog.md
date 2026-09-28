@@ -5,6 +5,16 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.75.2 — the cache server's set status, in files of its own
+
+**Internal**
+
+- `GET /v1/sets/{id}` and the store query behind it move into
+  `http/set_status.rs` and `store/set_status.rs`. The 0.73.0 change that
+  added them left `http.rs` at 224 lines and `store.rs` at 223, over the
+  200-line limit `code_standards` holds every source file to, which failed
+  the pre-push check. Nothing the route answers changed.
+
 ## 0.75.1 — `PreloadService` teardown, made robust
 
 **Fixed**
