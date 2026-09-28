@@ -123,4 +123,11 @@ class FilmPageTest {
         show { TitleDetailScreen(film(), null, {}, onOpenGenre = {}, watch = watch) }
         compose.onNodeWithText("▶ Resume from 10:00").assertIsDisplayed()
     }
+
+    /** [ui.catalog.PosterRow]'s own empty message — a film page carries it just by calling that shared row unconditionally. */
+    @Test fun theSimilarTabNamesWhyItHasNothingToOfferWhenNothingSharesAGenre() {
+        show { TitleDetailScreen(film(), null, {}, onOpenGenre = {}) }
+        compose.onNodeWithText("Similar").performScrollTo().performClick()
+        compose.onNodeWithText("Nothing else in the library shares its genres.").assertIsDisplayed()
+    }
 }

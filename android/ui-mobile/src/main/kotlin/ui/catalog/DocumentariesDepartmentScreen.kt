@@ -122,7 +122,7 @@ internal fun DocumentariesDepartmentScreen(
         }
         if (department.recentlyAdded.isNotEmpty()) {
             item { DeptRowHeading(title = "Recently added") }
-            item { DocumentaryRow(department.recentlyAdded, onPlay) }
+            item { DocumentaryRow(department.recentlyAdded, watchedIds, onPlay) }
         }
         for (group in department.collections) {
             val hasMore = group.collection.count > group.preview.size
@@ -133,17 +133,17 @@ internal fun DocumentariesDepartmentScreen(
                     seeAllLabel = "All ${group.collection.count} →",
                 )
             }
-            item(key = "group-row-${group.collection.key}") { DocumentaryRow(group.preview, onPlay) }
+            item(key = "group-row-${group.collection.key}") { DocumentaryRow(group.preview, watchedIds, onPlay) }
         }
         if (department.singles.isNotEmpty()) {
             item { DeptRowHeading(title = "Standalone documentaries") }
-            item { DocumentaryRow(department.singles, onPlay) }
+            item { DocumentaryRow(department.singles, watchedIds, onPlay) }
         }
     }
 }
 
 @Composable
-private fun DocumentaryRow(sets: List<MediaSet>, onPlay: (String) -> Unit) {
+private fun DocumentaryRow(sets: List<MediaSet>, watchedIds: Set<String>, onPlay: (String) -> Unit) {
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
@@ -154,7 +154,7 @@ private fun DocumentaryRow(sets: List<MediaSet>, onPlay: (String) -> Unit) {
                 posterPath = set.posterPath,
                 title = set.title,
                 caption = factsLine(set.year, set.durationSecs),
-                watched = false,
+                watched = set.setId in watchedIds,
                 modifier = Modifier.width(DEPT_CARD_WIDTH),
                 onClick = { onPlay(set.setId) },
             )

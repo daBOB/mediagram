@@ -102,6 +102,16 @@ class DepartmentsTest {
         assertEquals("Show 13", dept.newEpisodes.first().name)
     }
 
+    /** `renderShowsDept`'s gate is `series && shows.length > ROW`: courses never get rows, however many there are. */
+    @Test
+    fun aCourseLibraryAboveTheRowSizeStillGetsNoPopularOrNewRows() {
+        val courses = (1..13).map { show("Course $it", popularity = it.toDouble(), addedAt = it.toLong()) }
+        val dept = showsDepartmentOf(Kind.TUTORIAL, courses, emptyMap(), WatchSnapshot.Empty)!!
+        assertTrue(dept.popular.isEmpty())
+        assertTrue(dept.newEpisodes.isEmpty())
+        assertEquals(13, dept.all.size)
+    }
+
     @Test
     fun theLeadIsTheMostPopularShowWithABackdrop() {
         val shows = listOf(show("No Art", popularity = 99.0), show("Lead", popularity = 10.0, backdropPath = "lead-bg"))

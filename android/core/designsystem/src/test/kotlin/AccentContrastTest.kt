@@ -24,4 +24,26 @@ class AccentContrastTest {
             )
         }
     }
+
+    /**
+     * The page is not the only place an accent has to read: `catalogueColorScheme`
+     * sets `onPrimaryContainer = accent` over `primaryContainer`, which is
+     * [Palette.Sunk] in the dark scheme and [Palette.LightSunk] in the light
+     * one — a chip or a button's own container, not the ground behind it.
+     * [Palette.LightPage] is checked too: the light scheme's `surface`, where
+     * a light-theme control carrying the accent most often sits.
+     */
+    @Test
+    fun everyAccentReadsAtLeast4Point5ToOneOnTheContainersItSitsOn() {
+        for (accent in Accent.entries) {
+            for ((color, ground, name) in listOf(
+                Triple(accent.dark, Palette.Sunk, "dark on Palette.Sunk"),
+                Triple(accent.light, Palette.LightSunk, "light on Palette.LightSunk"),
+                Triple(accent.light, Palette.LightPage, "light on Palette.LightPage"),
+            )) {
+                val ratio = contrast(color, ground)
+                assertTrue(ratio >= MINIMUM_CONTRAST, "${accent.name} $name reads $ratio, need $MINIMUM_CONTRAST")
+            }
+        }
+    }
 }

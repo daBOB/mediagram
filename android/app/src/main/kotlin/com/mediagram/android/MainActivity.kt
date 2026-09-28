@@ -43,18 +43,20 @@ class MainActivity : ComponentActivity() {
     private var isInPip by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Before the first frame, and before Hilt: the bars are told they
-        // are sitting over a dark app, so their icons come up light. The
-        // insets are already handled — the scaffold and the setup screens
-        // both consume them — and this only settles appearance.
-        //
-        // Both styles are `dark` rather than `auto`, for the same reason
-        // the theme is: this app is dark whatever the system is set to, so
-        // a light-mode device must not be handed dark icons on ink.
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
-        )
+        // Before the first frame, and before Hilt, so a guess is needed: the
+        // real answer is Settings › Appearance's theme choice, which lives
+        // in Compose state this Activity has no synchronous way to read yet.
+        // `MediagramTheme`'s own `SideEffect` corrects the phone's bars the
+        // moment that choice is known and on every change after; this only
+        // picks the starting guess, from the system's night mode, so an Auto
+        // device (the default) never shows the wrong icon colour even for
+        // that first frame. The television is dark whatever the system says.
+        // The insets are already handled — the scaffold and the setup
+        // screens both consume them — and this only settles appearance.
+        val onTelevision = isTelevision(this)
+        val systemDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        val barStyle = if (onTelevision || systemDark) SystemBarStyle.dark(Color.TRANSPARENT) else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+        enableEdgeToEdge(statusBarStyle = barStyle, navigationBarStyle = barStyle)
         super.onCreate(savedInstanceState)
         // Seeded from the framework's own answer, not left at the default
         // `false`: a recreate this activity's `configChanges` does not
@@ -63,7 +65,6 @@ class MainActivity : ComponentActivity() {
         // that window until the next mode change told it otherwise.
         isInPip = isInPictureInPictureMode
 
-        val onTelevision = isTelevision(this)
         setContent {
             if (onTelevision) {
                 TvApp()

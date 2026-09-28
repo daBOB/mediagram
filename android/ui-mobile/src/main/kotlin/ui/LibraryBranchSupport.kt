@@ -3,7 +3,10 @@ package ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.SaveableStateHolder
 import catalog.CatalogTabs
 import catalog.CatalogUiState
 import catalog.DOCUMENTARIES
@@ -109,5 +112,25 @@ internal fun rememberActiveHeroState(
             activeShelfTitle == DOCUMENTARIES -> deptScroll.documentaries.asHeroListState()
             else -> null
         }
+    }
+}
+
+/**
+ * Gives [content] a saved-state slot of its own under [frameKey], or none
+ * for the shelves (a `null` key), which keep theirs in a holder of their own.
+ *
+ * A slot outlives its frame leaving the screen while [isHeld] still says the
+ * frame is on the stack — something was pushed over it, and back must find it
+ * as it was — and is dropped once it is not: a popped frame's key only comes
+ * round again if the same title is reopened at the same depth, which should
+ * open fresh, and a slot held forever would ride along in the saved instance
+ * state for the rest of the session.
+ */
+@Composable
+internal fun SaveableStateHolder.keyedFrame(frameKey: String?, isHeld: (String) -> Boolean, content: @Composable () -> Unit) {
+    if (frameKey == null) return content()
+    key(frameKey) {
+        DisposableEffect(frameKey) { onDispose { if (!isHeld(frameKey)) removeState(frameKey) } }
+        SaveableStateProvider(frameKey, content)
     }
 }

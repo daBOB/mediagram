@@ -115,7 +115,7 @@ fun CollectionScreen(
                 )
             }
         }
-        items(rows, positions, watchedIds, heldIds, onOpenTitle)
+        items(rows, positions, watchedIds, heldIds, onPlay)
     }
 }
 
@@ -160,8 +160,11 @@ private fun SeriesPage(
     val credits = rememberTitleCredits(collection.posterKey, titleCredits)
     val facts = remember(collection) { summarize(collection.divisions) }
 
+    // Keyed on [resume] too: watch state usually arrives after the first
+    // frame, and a default picked once, before it, never opened on the
+    // season the resume point is in.
     val defaultSeason =
-        remember(collection) {
+        remember(collection, resume) {
             collection.divisions.find { d -> resume != null && d.walk().any { div -> div.items.any { it.setId == resume.set.setId } } }
                 ?.title ?: collection.divisions.firstOrNull()?.title
         }
@@ -211,7 +214,7 @@ private fun SeriesPage(
         }
         item(key = "tab-row") { TitleTabRow(labels, shownTab, onSelectTab, modifier = Modifier.padding(top = Spacing.small)) }
         when (shownTab) {
-            "Episodes" -> seriesEpisodes(collection, shownSeason, onSelectSeason, watch, heldIds, onOpenTitle)
+            "Episodes" -> seriesEpisodes(collection, shownSeason, onSelectSeason, watch, heldIds, onPlay)
             "Cast" ->
                 item(key = "cast") {
                     CastPanel(credits, onOpenPerson, fetchPortrait, shouldRequestPortrait)

@@ -55,7 +55,7 @@ internal fun LazyListScope.seriesEpisodes(
     onSelectSeason: (String) -> Unit,
     watch: WatchSnapshot,
     heldIds: Set<String>,
-    onOpenTitle: (setId: String) -> Unit,
+    onPlay: (setId: String) -> Unit,
 ) {
     val shown = collection.divisions.find { it.title == season } ?: collection.divisions.firstOrNull() ?: return
     if (collection.divisions.size > 1) {
@@ -64,7 +64,7 @@ internal fun LazyListScope.seriesEpisodes(
     val rows = rowsOf(listOf(shown))
     val positions = watch.progress.associateBy { it.setId }
     val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
-    items(rows, positions, watchedIds, heldIds, onOpenTitle)
+    items(rows, positions, watchedIds, heldIds, onPlay)
 }
 
 @Composable
@@ -110,7 +110,7 @@ private fun SeasonPicker(
  * direct link may still open on its own, the same way it always has.
  */
 @Composable
-internal fun SeasonScreen(division: Division, watch: WatchSnapshot, heldIds: Set<String>, onOpenTitle: (setId: String) -> Unit) {
+internal fun SeasonScreen(division: Division, watch: WatchSnapshot, heldIds: Set<String>, onPlay: (setId: String) -> Unit) {
     val rows = remember(division) { rowsOf(listOf(division)) }
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
@@ -119,6 +119,6 @@ internal fun SeasonScreen(division: Division, watch: WatchSnapshot, heldIds: Set
         contentPadding = PaddingValues(Spacing.large),
         verticalArrangement = Arrangement.spacedBy(Spacing.small),
     ) {
-        items(rows, positions, watchedIds, heldIds, onOpenTitle)
+        items(rows, positions, watchedIds, heldIds, onPlay)
     }
 }

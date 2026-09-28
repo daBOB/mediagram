@@ -3,6 +3,8 @@ package ui.catalog.browse
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -90,10 +92,10 @@ class OverflowUtilitiesTest {
         compose.onNodeWithText("Nothing started yet.").assertIsDisplayed()
     }
 
-    @Test fun genresOpensTheIndexPageOverAnEmptyLibrary() {
-        // The fixture's only titles are episodes with no genres recorded.
+    @Test fun genresOpensTheIndexPage() {
+        // The fixture's two films share the one genre it records.
         tapIcon("Genres")
-        compose.onNodeWithText("Nothing in the library has a genre recorded.").assertIsDisplayed()
+        compose.onAllNodesWithText("Drama").onFirst().assertIsDisplayed()
     }
 
     @Test fun latestOpensOverTheShelvesFromAnywhere() {

@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -80,7 +81,7 @@ class LibraryRailTest {
 
     @Test fun genresLandsOnTheGenresIndex() {
         compose.onNodeWithText("Genres").performClick()
-        compose.onNodeWithText("Nothing in the library has a genre recorded.").assertIsDisplayed()
+        compose.onAllNodesWithText("Drama").onFirst().assertIsDisplayed()
     }
 
     @Test fun systemLandsOnTheSystemScreen() {

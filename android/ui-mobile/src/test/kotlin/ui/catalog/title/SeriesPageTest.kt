@@ -153,6 +153,30 @@ class SeriesPageTest {
         compose.onNodeWithText("Ep 2.1", substring = true).assertIsDisplayed()
     }
 
+    /**
+     * The default season used to be picked once, on first composition, and
+     * never revisited — a resume point that arrived afterwards (the common
+     * case: `watch` loads asynchronously) was computed but never actually
+     * used to choose which season opens.
+     */
+    @Test fun theDefaultSeasonPicksUpAResumePointThatArrivesAfterFirstComposition() {
+        var watch by mutableStateOf(WatchSnapshot.Empty)
+        show {
+            CollectionScreen(
+                collection = twoSeasonShow(), info = null, watch = watch, heldIds = emptySet(),
+                onOpenTitle = {}, onOpenSeason = {}, onOpenGenre = {},
+            )
+        }
+        compose.onNodeWithText("Ep 1.1", substring = true).assertIsDisplayed()
+
+        compose.runOnUiThread {
+            watch = WatchSnapshot.Empty.copy(progress = listOf(Progress(setId = "s2e1", at = 600.0, duration = 1800.0, updatedAt = 1)))
+        }
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Ep 2.1", substring = true).assertIsDisplayed()
+    }
+
     @Test fun tabSelectionSurvivesAWatchStateUpdate() {
         val credits = TitleCredits(
             cast = listOf(Credit(2, "Bryan Cranston", "Walter White", null)),

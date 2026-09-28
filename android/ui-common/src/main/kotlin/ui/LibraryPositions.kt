@@ -146,6 +146,32 @@ class LibraryPositions(frames: MutableState<String>) {
     /** The franchise a collection card opened, by its id. */
     val franchiseId: String? get() = payloadOf(FrameKind.FRANCHISE)
 
+    /**
+     * A key unique to the screen on top: where it sits, what kind it is,
+     * and its own payload, so a screen pushed straight over one of the same
+     * kind (a title's own "Similar" row opening another title, or a pop back
+     * to the shelves followed by a different one opened from there) gets a
+     * saved-state slot of its own rather than inheriting the one before it.
+     * `null` for the catalog itself, which keeps its own slot elsewhere.
+     *
+     * Two kinds leave the payload out. Search's payload is the query text,
+     * changing on every keystroke; keying on it would tear the field down
+     * mid-word. The player's changes when [replacePlayer] moves to the next
+     * episode, and keying on it would rebuild the video surface between two
+     * episodes. There is only ever one of either at a given depth, so depth
+     * and kind alone already identify it.
+     */
+    val frameKey: String? get() = frameKeyAt(stack.size)
+
+    /** Whether [frameKey] still names a frame on the stack: one pushed over keeps its saved state, a popped one does not. */
+    fun holdsFrameKey(frameKey: String): Boolean = (1..stack.size).any { frameKeyAt(it) == frameKey }
+
+    private fun frameKeyAt(depth: Int): String? =
+        stack.getOrNull(depth - 1)?.let { frame ->
+            val identity = if (frame.kind == FrameKind.SEARCH || frame.kind == FrameKind.PLAYER) "" else frame.payload
+            "$depth$FIELD_SEP${frame.kind}$FIELD_SEP$identity"
+        }
+
     private fun push(kind: FrameKind, payload: String) = setStack(stack + Frame(kind, payload))
 
     /** @param run The explicit run [id] belongs to (a list or the Kids marked-by-hand wall); `null` everywhere else. */

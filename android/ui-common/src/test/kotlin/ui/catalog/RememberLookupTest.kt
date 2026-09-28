@@ -117,6 +117,36 @@ class RememberLookupTest {
         show { rememberPortrait(personId = PersonId + 1, known = null, shouldRequest = shouldRequest) { attempts++; "portrait.jpg" } }
         assertEquals(1, attempts)
     }
+
+    /**
+     * A card leaving composition and coming back — a `LazyRow` scroll-out,
+     * a tab switch — starts a fresh `remember` with [known] still `null`,
+     * the same shape [aFinishedPortraitFetchIsNotRetried] exercises but
+     * checking its returned portrait too, not just that no second fetch ran:
+     * the found path must survive that remount, not fall back to initials
+     * because the shared log already says no.
+     */
+    @Test
+    fun aRemountedCardKeepsThePortraitAFinishedFetchFound() {
+        var attempts = 0
+        var result: String? = null
+        val reserved = mutableSetOf<Long>()
+        val shouldRequest: (Long) -> Boolean = { id -> reserved.add(id) }
+        show {
+            result =
+                rememberPortrait(personId = PersonId + 2, known = null, shouldRequest = shouldRequest) { attempts++; "portrait.jpg" }
+        }
+        assertEquals(1, attempts)
+        assertEquals("portrait.jpg", result)
+
+        result = null
+        show {
+            result =
+                rememberPortrait(personId = PersonId + 2, known = null, shouldRequest = shouldRequest) { attempts++; "portrait.jpg" }
+        }
+        assertEquals(1, attempts)
+        assertEquals("portrait.jpg", result)
+    }
 }
 
 /** Distinct from any personId another test in this class or module might use, so the process-wide portrait sets never collide across tests. */

@@ -26,6 +26,19 @@ import kotlinx.coroutines.CancellationException
  * itself still says no. Both sets are keyed by [personId] alone, so a person
  * reserved by one screen and abandoned mid-fetch is retried by whichever
  * screen next asks for them, not only the one that first tried.
+ *
+ * A path a fetch actually found is also kept in [portraitPaths], separately
+ * from the two sets above: [path] itself lives in `remember`, scoped to
+ * this call site's own composition, so a card that leaves composition and
+ * returns later — scrolled out of a `LazyRow` and back, a tab switched away
+ * from and back to — starts a fresh `remember` with [known] still `null`.
+ * Without [portraitPaths] that fresh start had nothing to seed [path] from,
+ * and [shouldRequest] already says no for a person the shared log marked
+ * asked, so the portrait a fetch already found would show as initials for
+ * the rest of the session, not just as a brief re-fetch flicker. Only found
+ * paths are kept — a person confirmed to have none is correctly `null`
+ * again on remount, and re-showing initials for them is not the bug this
+ * guards against.
  */
 @Composable
 fun rememberPortrait(
@@ -34,14 +47,16 @@ fun rememberPortrait(
     shouldRequest: (Long) -> Boolean,
     fetch: suspend (Long) -> String?,
 ): String? {
-    var path by remember(personId, known) { mutableStateOf(known) }
+    var path by remember(personId, known) { mutableStateOf(known ?: portraitPaths[personId]) }
     LaunchedEffect(personId, known) {
         if (known != null) return@LaunchedEffect
         val retrying = personId in attemptedPortraitFetches && personId !in donePortraitFetches
         if (!retrying && !shouldRequest(personId)) return@LaunchedEffect
         attemptedPortraitFetches += personId
         try {
-            path = fetch(personId)
+            val fetched = fetch(personId)
+            path = fetched
+            if (fetched != null) portraitPaths[personId] = fetched
             donePortraitFetches += personId
         } catch (e: CancellationException) {
             throw e // cut short, not done: retried next time something asks
@@ -60,3 +75,6 @@ private val attemptedPortraitFetches = ConcurrentHashMap.newKeySet<Long>()
 
 /** Every person [rememberPortrait] has finished a fetch for this session — successfully or not, but never cut short. */
 private val donePortraitFetches = ConcurrentHashMap.newKeySet<Long>()
+
+/** Every person [rememberPortrait] has found a real portrait path for this session, surviving a card leaving and re-entering composition. */
+private val portraitPaths = ConcurrentHashMap<Long, String>()

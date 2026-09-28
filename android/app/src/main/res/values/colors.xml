@@ -1,10 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  One value, duplicated from `Palette.Ground` on purpose: the window opens
-  before Compose exists, so the platform needs the number in its own
-  vocabulary. A reader who changes one must change the other, which is why
-  they name the same thing.
+  Duplicated from `Palette.Ground` and `Palette.LightGround` on purpose: the
+  window opens before Compose exists, so the platform needs the numbers in
+  its own vocabulary. A reader who changes one must change the other, which
+  is why they name the same thing.
+
+  `window_ground` is the cold-start window's colour. Settings › Appearance's
+  theme choice lives in app storage, which a resource qualifier cannot read,
+  so this matches Auto (the default): light here, dark in `values-night`, and
+  dark in `values-television` whatever the night mode, since the television
+  surface is dark always and its qualifier outranks night mode. An explicit
+  Light on a dark system, or the reverse, gets `MediagramTheme`'s own colours
+  once Compose takes over, just not before.
 -->
 <resources>
     <color name="ground">#FF0D0D0E</color>
+    <color name="light_ground">#FFF4F0E8</color>
+    <color name="window_ground">@color/light_ground</color>
 </resources>

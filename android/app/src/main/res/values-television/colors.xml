@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The dark half of `values/colors.xml`'s `window_ground`; see that file's comment. -->
+<resources>
+    <color name="window_ground">@color/ground</color>
+</resources>

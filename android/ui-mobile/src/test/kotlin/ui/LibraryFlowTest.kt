@@ -4,8 +4,10 @@ import android.os.Bundle
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -81,10 +83,22 @@ class LibraryFlowTest {
         compose.onNode(hasText("Second episode", substring = true) and hasClickAction()).assertIsDisplayed()
     }
 
+    /**
+     * Opens a film's own title page from the Movies tab — a poster tap opens
+     * details, where an episode row plays instead (see
+     * [anEpisodeRowInTheSeasonListPlaysRatherThanOpeningATitlePage]). The
+     * department front page can carry the one film under more than one
+     * heading; either leads to the same set id.
+     */
     private fun title() {
-        season()
-        compose.onNode(hasText("Second episode", substring = true) and hasClickAction()).performClick()
+        compose.onNode(hasText("Movies") and hasClickAction()).performClick()
+        compose.onAllNodes(hasText("Example Film") and hasClickAction()).onFirst().performClick()
         compose.onNodeWithText("▶ Play").assertIsDisplayed()
+    }
+
+    private fun assertAtTheShelves() {
+        compose.onNodeWithText("mediagram").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Back").assertDoesNotExist()
     }
 
     private fun menu(label: String) {
@@ -99,7 +113,7 @@ class LibraryFlowTest {
         compose.waitForIdle()
     }
 
-    @Test fun collectionSeasonTitlePlayerAndBothBackActionsTraverseTheRealBranches() {
+    @Test fun titlePlayerAndBothBackActionsTraverseTheRealBranches() {
         title()
         compose.onNodeWithText("▶ Play").performClick()
         compose.onNodeWithText("←").assertIsDisplayed()
@@ -108,10 +122,33 @@ class LibraryFlowTest {
         compose.onNodeWithText("▶ Play").assertIsDisplayed()
         verify(exactly = 1) { fixture.playback.media.stop() }
         systemBack()
-        compose.onNode(hasText("Second episode", substring = true) and hasClickAction()).assertIsDisplayed()
+        assertAtTheShelves()
+    }
+
+    /** Every episode row plays straight into the player — `course-view.js`'s `lessonRow`, which never opens a title page first. */
+    @Test fun anEpisodeRowInTheSeasonListPlaysRatherThanOpeningATitlePage() {
+        season()
+        compose.onNode(hasText("Second episode", substring = true) and hasClickAction()).performClick()
+        compose.onNodeWithText("←").assertIsDisplayed()
+        assertEquals(PlayerUiState.Playing, fixture.player.state.value)
+    }
+
+    /**
+     * A second title pushed straight over the first, from its own Similar
+     * row, opens fresh rather than inheriting the first one's tab — and back
+     * finds the first as it was left ([ui.LibraryPositions.frameKey]).
+     */
+    @Test fun aSimilarTitleOpensFreshAndBackRestoresTheFirstTitlesOwnTab() {
+        title()
+        compose.onNodeWithText("Similar").performScrollTo().performClick()
+        compose.onNode(hasText("Second Feature", substring = true) and hasClickAction()).performClick()
+
+        compose.onNode(hasText("Overview") and isSelected()).assertExists()
+
         back()
-        compose.onNodeWithText("mediagram").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Back").assertDoesNotExist()
+
+        compose.onNode(hasText("Similar") and isSelected()).assertExists()
+        compose.onNode(hasText("Second Feature", substring = true) and hasClickAction()).assertExists()
     }
 
     // Settings/System render outside LibraryScaffold (the approved mockups
@@ -127,7 +164,7 @@ class LibraryFlowTest {
         systemBack()
         compose.onNodeWithText("▶ Play").assertIsDisplayed()
         back()
-        compose.onNode(hasText("Second episode", substring = true) and hasClickAction()).assertIsDisplayed()
+        assertAtTheShelves()
     }
 
     @Test fun openingSystemDirectlyLeavesBackToTheUnderlyingTitle() {
@@ -146,9 +183,7 @@ class LibraryFlowTest {
         compose.runOnUiThread { fixture.catalogReady.complete(Unit) }
         compose.onNodeWithText("▶ Play").assertIsDisplayed()
         back()
-        compose.onNode(hasText("Second episode", substring = true) and hasClickAction()).assertIsDisplayed()
-        back()
-        compose.onNodeWithText("mediagram").assertIsDisplayed()
+        assertAtTheShelves()
     }
 
     /**

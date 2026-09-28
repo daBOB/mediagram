@@ -10,9 +10,10 @@
 -->
 <resources>
     <style name="Theme.Mediagram" parent="@android:style/Theme.Material.NoActionBar">
-        <!-- The catalogue's ground, so the cold-start window is already the
-             colour the first frame will be. -->
-        <item name="android:windowBackground">@color/ground</item>
+        <!-- The catalogue's ground for the likely theme (see colors.xml), so
+             the cold-start window is already the colour the first frame
+             will most likely be. -->
+        <item name="android:windowBackground">@color/window_ground</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
     </style>

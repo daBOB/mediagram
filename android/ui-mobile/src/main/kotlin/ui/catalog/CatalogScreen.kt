@@ -239,8 +239,8 @@ private fun Shelves(
                             )
                         }
                     }
-                    "Series" -> ShowsDepartment(Kind.EPISODE, "Series", "episode", shelf, state, columns, onOpenTitle, onOpenCollection, deptScroll.series)
-                    "Tutorials" -> ShowsDepartment(Kind.TUTORIAL, "Tutorials", "lesson", shelf, state, columns, onOpenTitle, onOpenCollection, deptScroll.tutorials)
+                    "Series" -> ShowsDepartment(Kind.EPISODE, "Series", "episode", shelf, state, columns, onOpenTitle, onOpenCollection, deptScroll.series) { id -> onPlayRun(id, emptyList()) }
+                    "Tutorials" -> ShowsDepartment(Kind.TUTORIAL, "Tutorials", "lesson", shelf, state, columns, onOpenTitle, onOpenCollection, deptScroll.tutorials) { id -> onPlayRun(id, emptyList()) }
                     DOCUMENTARIES -> DocumentariesDepartment(shelf, state, onOpenCollection, listState = deptScroll.documentaries) { id -> onPlayRun(id, emptyList()) }
                     else -> ShelfWall(shelf, state.watch, state.heldIds, columns, shelfView, onOpenTitle, onOpenCollection)
                 }
@@ -260,11 +260,12 @@ private fun ShowsDepartment(
     onOpenTitle: (String) -> Unit,
     onOpenCollection: (String) -> Unit,
     listState: LazyGridState,
+    onPlay: (String) -> Unit,
 ) {
     val shows = remember(shelf) { shelf.entries.filterIsInstance<Entry.Collection>() }
     val byId = remember(state.shelves) { allSetsById(state.shelves) }
     val department = remember(shows, byId, state.watch) { showsDepartmentOf(kind, shows, byId, state.watch) }
     department?.let {
-        ShowsDepartmentScreen(label, unit, it, state.watch, state.heldIds, columns, onOpenTitle, onOpenCollection, listState)
+        ShowsDepartmentScreen(label, unit, it, state.watch, state.heldIds, columns, onOpenTitle, onOpenCollection, onPlay, listState)
     }
 }

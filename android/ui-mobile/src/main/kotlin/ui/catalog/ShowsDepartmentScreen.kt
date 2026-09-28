@@ -32,8 +32,9 @@ private val DEPT_CARD_WIDTH = 140.dp
 /**
  * The Series or Tutorials department's opening page — a Compose port of
  * `department-pages.js#renderShowsDept`: a hero, the resume strip for what
- * is underway, Popular/New rows once there are enough shows for a row to be
- * a selection rather than the whole shelf, then every show or course.
+ * is underway (a card there plays, as `home-resume.js`'s do), Popular/New
+ * rows when [ShowsDepartment] offers them (a big enough Series shelf only),
+ * then every show or course.
  *
  * @param label "Series" or "Tutorials", both the hero's title and what the
  *   Continue row and the foot section call it.
@@ -49,6 +50,7 @@ internal fun ShowsDepartmentScreen(
     columns: Int,
     onOpenTitle: (String) -> Unit,
     onOpenCollection: (String) -> Unit,
+    onPlay: (String) -> Unit,
     state: LazyGridState = rememberLazyGridState(),
 ) {
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
@@ -96,12 +98,12 @@ internal fun ShowsDepartmentScreen(
                 DeptRowHeading(title = if (label == "Series") "Continue your series" else "Continue your courses")
             }
             item(key = "continue", span = { GridItemSpan(maxLineSpan) }) {
-                ResumeStrip(cards = resumeCards, onOpenTitle = onOpenTitle)
+                ResumeStrip(cards = resumeCards, onOpenTitle = onPlay)
             }
         }
         if (department.popular.isNotEmpty()) {
             item(key = "popular-heading", span = { GridItemSpan(maxLineSpan) }) {
-                DeptRowHeading(title = if (label == "Series") "Popular series" else "Popular courses")
+                DeptRowHeading(title = "Popular series")
             }
             item(key = "popular", span = { GridItemSpan(maxLineSpan) }) {
                 CollectionRow(department.popular, onOpenCollection)
@@ -109,7 +111,7 @@ internal fun ShowsDepartmentScreen(
         }
         if (department.newEpisodes.isNotEmpty()) {
             item(key = "new-heading", span = { GridItemSpan(maxLineSpan) }) {
-                DeptRowHeading(title = "New ${unit}s")
+                DeptRowHeading(title = "New episodes")
             }
             item(key = "new", span = { GridItemSpan(maxLineSpan) }) {
                 CollectionRow(department.newEpisodes, onOpenCollection)

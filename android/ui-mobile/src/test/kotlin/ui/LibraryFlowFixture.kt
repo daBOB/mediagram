@@ -168,7 +168,10 @@ internal class LibraryFlowFixture(
         listOf(
             episode("episode-1", "First episode", 1),
             episode("episode-2", "Second episode", 2),
+            // Two films sharing a genre — a film's own "Similar" tab needs a
+            // second one to offer, per `similarTo`'s "shares a genre" gate.
             film("film-1", "Example Film"),
+            film("film-2", "Second Feature"),
         )
 
     private fun episode(
@@ -206,5 +209,6 @@ internal class LibraryFlowFixture(
         durationSecs = 9000,
         posterPath = null,
         totalBytes = 5 * 1_073_741_824L,
+        genres = listOf("Drama"),
     )
 }

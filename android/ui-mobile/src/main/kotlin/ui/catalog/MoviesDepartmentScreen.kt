@@ -78,7 +78,7 @@ internal fun MoviesDepartmentScreen(
                     extra = { if (featured.isNotEmpty()) TextButton(onClick = { reel = pickFeatured(films, watchedIds, Random) }) { Text("Featured") } },
                 )
             }
-            item { FilmRow(department.featured, onOpenTitle) }
+            item { FilmRow(department.featured, watchedIds, onOpenTitle) }
         }
         if (department.genres.isNotEmpty()) {
             item { DeptRowHeading(title = "Genres", onSeeAll = onOpenGenresIndex, seeAllLabel = "Every genre") }
@@ -86,11 +86,11 @@ internal fun MoviesDepartmentScreen(
         }
         if (department.acclaimed.isNotEmpty()) {
             item { DeptRowHeading(title = "Acclaimed, not yet seen") }
-            item { FilmRow(department.acclaimed, onOpenTitle) }
+            item { FilmRow(department.acclaimed, watchedIds, onOpenTitle) }
         }
         if (department.recentlyAdded.isNotEmpty()) {
             item { DeptRowHeading(title = "Recently added", onSeeAll = onOpenLatest, seeAllLabel = "Latest") }
-            item { FilmRow(department.recentlyAdded, onOpenTitle) }
+            item { FilmRow(department.recentlyAdded, watchedIds, onOpenTitle) }
         }
     }
 
@@ -113,7 +113,7 @@ private fun movieDeptLine(department: MoviesDepartment): String =
     ).joinToString(" · ")
 
 @Composable
-private fun FilmRow(films: List<MediaSet>, onOpenTitle: (String) -> Unit) {
+private fun FilmRow(films: List<MediaSet>, watchedIds: Set<String>, onOpenTitle: (String) -> Unit) {
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
@@ -124,7 +124,7 @@ private fun FilmRow(films: List<MediaSet>, onOpenTitle: (String) -> Unit) {
                 posterPath = set.posterPath,
                 title = set.title,
                 caption = factsLine(set.year, set.durationSecs),
-                watched = false,
+                watched = set.setId in watchedIds,
                 modifier = Modifier.width(DEPT_CARD_WIDTH),
                 onClick = { onOpenTitle(set.setId) },
             )

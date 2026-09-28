@@ -61,6 +61,10 @@ internal fun LibraryBranches(
     // far down — outlives a title, collection or the player opened over them,
     // so coming back finds the shelf as it was left, as the web's back button does.
     val shelvesState = rememberSaveableStateHolder()
+    // Every other frame's, one slot each, keyed by where it sits and what it
+    // shows ([LibraryPositions.frameKey]): a title opened from another
+    // title's Similar row opens fresh, and back finds the first as it was.
+    val frameState = rememberSaveableStateHolder()
     val columns = posterColumnsFor(currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass)
 
     // Which of catalogTabsOf's full index space the shelves screen shows —
@@ -119,6 +123,7 @@ internal fun LibraryBranches(
     val heroState = rememberActiveHeroState(shelves, watch, heldIds, now, chosenTab, activeShelfTitle, homeListState, deptScroll)
 
     CompositionLocalProvider(LocalRailData provides railData) {
+    frameState.keyedFrame(at.frameKey, at::holdsFrameKey) {
     when (at.top) {
         // The player gets the whole window; a film is the one thing here
         // that wants the space under the system bars.
@@ -177,7 +182,7 @@ internal fun LibraryBranches(
         FrameKind.TITLE -> TitleFrame(at, catalogState, catalogViewModel, resolved, menuActions, profileBar, browse)
 
         FrameKind.SEASON -> ResolvedBranch(resolved.season, catalogState, Destination.Season(LOADING), menuActions, profileBar, browse, at, { Destination.Season(it.title) }) { season ->
-            SeasonScreen(division = season, watch = resolved.watch, heldIds = catalogState.heldIdsOrEmpty(), onOpenTitle = at::openTitle)
+            SeasonScreen(division = season, watch = resolved.watch, heldIds = catalogState.heldIdsOrEmpty(), onPlay = at::openPlayer)
         }
 
         FrameKind.COLLECTION -> CollectionFrame(at, catalogState, catalogViewModel, resolved, menuActions, profileBar, browse)
@@ -246,6 +251,7 @@ internal fun LibraryBranches(
                 titleInfo = catalogViewModel::titleInfo,
             ) }
         }
+    }
     }
     }
 }

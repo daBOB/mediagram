@@ -5,6 +5,48 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.75.3 — the phone after review, ported onto the redesign
+
+The phone review's fixes from 2026-09-26, never committed until now, carried
+onto the pages the home and department redesign rebuilt since. Fixes the
+redesign had already made (Collections scrolling as one list, the department
+hero's height, the Similar tab's empty sentence, no department highlighted for
+Continue or My List) were left as they are.
+
+**Fixed**
+
+- The app opens in the right colours. The cold-start window is light on a
+  light system and dark on a dark one (`window_ground`, per night mode), and
+  always dark on the television, which is dark whatever the system says. The
+  status and navigation bar icons follow the theme actually chosen in
+  Settings › Appearance, live, not a guess made before Compose started.
+- An actor's portrait no longer falls back to initials when its card scrolls
+  away and back: a found portrait is remembered for the session.
+- Every episode and lesson row plays, on a series page, a course page and a
+  season page alike, as the web's `lessonRow` does; none opens a title page
+  first.
+- A Continue card on the Series or Tutorials page plays, like every other
+  resume card; it used to open the title page.
+- Popular and New rows appear on Series only, never on Tutorials, however
+  many courses there are: the web's own `series && shows.length > ROW` gate,
+  now in the shared model, so the television follows it too.
+- A title opened from another title's Similar row opens on Overview, and
+  going back finds the first one still on the tab and scroll it was left on.
+  Each screen keeps its own saved state, dropped once it is popped.
+- A series page opens on the season the resume point is in even when watch
+  state arrives after the first frame, which it usually does.
+- Film and documentary rows on the department pages mark what has been
+  watched; they drew every card as unwatched.
+- A title page's tagline is drawn over its art in the web's `--on-image`
+  with a text shadow, readable in Light, and only on a wide window, as the web
+  hides `.spread-quote` below 900px. The art is capped at 40% of the screen's
+  height, so a landscape phone keeps the title and tabs above the fold.
+
+**Tests**
+
+- Accent colours are checked at 4.5:1 against the containers they sit on
+  (`Sunk`, `LightSunk`, `LightPage`), not only the page.
+
 ## 0.75.2 — the cache server's set status, in files of its own
 
 **Internal**

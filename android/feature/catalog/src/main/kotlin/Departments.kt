@@ -100,9 +100,11 @@ fun documentariesDepartmentOf(
  * The Series or Tutorials department's opening page — ported from
  * `renderShowsDept`. `null` for an empty shelf.
  *
- * [popular] and [newEpisodes] are only offered once there are enough shows
- * for a row to be a selection rather than the whole shelf; below
- * [DEPARTMENT_ROW], [all] beneath them already shows every one at once.
+ * [popular] and [newEpisodes] are only offered for Series, and only once
+ * there are enough shows for a row to be a selection rather than the whole
+ * shelf; below [DEPARTMENT_ROW], [all] beneath them already shows every one
+ * at once. The web's gate is `series && shows.length > ROW`: a course
+ * library of any size gets no rows of its own.
  */
 data class ShowsDepartment(
     val showCount: Int,
@@ -126,7 +128,7 @@ fun showsDepartmentOf(
     val underway = underwayOf(shows, byId, watch, DEPARTMENT_ROW).let {
         it.copy(continues = it.continues.filter { set -> set.kind == kind }, nextUp = it.nextUp.filter { entry -> entry.set.kind == kind })
     }
-    val bigEnough = shows.size > DEPARTMENT_ROW
+    val bigEnough = kind == Kind.EPISODE && shows.size > DEPARTMENT_ROW
     val popular =
         if (bigEnough) {
             shows.sortedByDescending { firstItemOf(it.divisions)?.popularity ?: 0.0 }.take(DEPARTMENT_ROW)

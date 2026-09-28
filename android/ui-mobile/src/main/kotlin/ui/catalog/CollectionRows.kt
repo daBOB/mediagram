@@ -31,7 +31,7 @@ internal fun LazyListScope.items(
     positions: Map<String, Progress>,
     watchedIds: Set<String>,
     heldIds: Set<String>,
-    onOpenTitle: (setId: String) -> Unit,
+    onPlay: (setId: String) -> Unit,
 ) {
     items(
         count = rows.size,
@@ -44,13 +44,15 @@ internal fun LazyListScope.items(
                 modifier = Modifier.padding(start = indentOf(row.depth), top = Spacing.medium),
             )
 
-            is CollectionRow.Item -> ItemRow(row, positions[row.set.setId], row.set.setId in watchedIds, row.set.setId in heldIds, onOpenTitle)
+            is CollectionRow.Item -> ItemRow(row, positions[row.set.setId], row.set.setId in watchedIds, row.set.setId in heldIds, onPlay)
         }
     }
 }
 
 /**
- * One lesson or episode to open, or one document.
+ * One lesson or episode to play, or one document. A row plays rather than
+ * opening a title page first, as `course-view.js`'s `lessonRow` does on the
+ * web's course and series pages alike.
  *
  * A document is shown and not opened. Nothing here can display a handout —
  * the player would be handed a PDF — so the row says what it is rather than
@@ -69,7 +71,7 @@ internal fun LazyListScope.items(
  * where a viewer looks for what the preload already took.
  */
 @Composable
-private fun ItemRow(row: CollectionRow.Item, progress: Progress?, watched: Boolean, held: Boolean, onOpenTitle: (setId: String) -> Unit) {
+private fun ItemRow(row: CollectionRow.Item, progress: Progress?, watched: Boolean, held: Boolean, onPlay: (setId: String) -> Unit) {
     val document = row.set.kind == Kind.DOCUMENT
     Column(modifier = Modifier.padding(start = indentOf(row.depth))) {
         Text(
@@ -84,7 +86,7 @@ private fun ItemRow(row: CollectionRow.Item, progress: Progress?, watched: Boole
                     if (document) {
                         Modifier
                     } else {
-                        Modifier.clickable(role = Role.Button) { onOpenTitle(row.set.setId) }
+                        Modifier.clickable(role = Role.Button) { onPlay(row.set.setId) }
                     },
                 )
                 .padding(top = Spacing.small, bottom = if (document) 0.dp else Spacing.small),
