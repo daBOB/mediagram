@@ -18,11 +18,18 @@ class SearchGroupsTest {
             posterPath = null, totalBytes = 0,
         )
 
-    private fun episode(setId: String, show: String): MediaSet =
+    private fun episode(setId: String, show: String, anime: Boolean = false): MediaSet =
         MediaSet(
             setId = setId, kind = Kind.EPISODE, title = setId, show = show, chapter = null, path = null,
             season = 1, episodeFirst = 1, episodeLast = null, year = null, durationSecs = null,
-            posterPath = null, totalBytes = 0,
+            posterPath = null, totalBytes = 0, anime = anime,
+        )
+
+    private fun animeFilm(setId: String): MediaSet =
+        MediaSet(
+            setId = setId, kind = Kind.MOVIE, title = setId, show = null, chapter = null, path = null,
+            season = null, episodeFirst = null, episodeLast = null, year = null, durationSecs = null,
+            posterPath = null, totalBytes = 0, anime = true,
         )
 
     private fun documentary(setId: String): MediaSet =
@@ -88,6 +95,34 @@ class SearchGroupsTest {
 
         val none = searchGroupsOf("weekend", state, emptyList(), emptyList(), listOf(franchise), listOf(list))
         assertEquals(listOf("Weekend Watch"), none.collections.map(SearchDestination::name))
+    }
+
+    /**
+     * Anime is split off before the kind split, the same way it is split
+     * off every shelf: a hit's own `anime` flag decides its group, not
+     * which shelf happens to hold the show it belongs to.
+     */
+    @Test
+    fun animeHitsGroupSeparatelyFromThePlainKindsTheyShareAKindWith() {
+        val animeShow = Entry.Collection(
+            key = "ANIME/Dragonball", kind = CollectionKind.SHOW, name = "Dragonball", posterPath = null, posterKey = null,
+            count = 1, chapters = 1, divisions = listOf(Division("Dragonball", 1, listOf(episode("ae1", "Dragonball", anime = true)), emptyList())),
+        )
+        val state = readyState(
+            listOf(
+                Shelf("Movies", listOf(Entry.Film(film("f1")))),
+                Shelf(ANIME, listOf(Entry.Film(animeFilm("af1")), animeShow)),
+            ),
+        )
+        val hits = listOf(SearchHit("f1", "title", null), SearchHit("af1", "title", null), SearchHit("ae1", "title", null))
+
+        val groups = searchGroupsOf("d", state, hits, emptyList(), emptyList(), emptyList())
+
+        assertEquals(listOf("f1"), groups.films.map { it.set.setId })
+        assertEquals(listOf("af1"), groups.animeFilms.map { it.set.setId })
+        assertEquals(listOf("ae1"), groups.animeEpisodes.map { it.set.setId })
+        assertEquals(listOf("ANIME/Dragonball"), groups.matchedAnimeShows.map(Entry.Collection::key))
+        assertTrue(groups.filters.any { it.first == SearchFilter.ANIME && it.second == 2 }, "the anime films and episodes count together under one chip")
     }
 
     @Test

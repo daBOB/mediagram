@@ -1,9 +1,12 @@
 package ui
 
+import catalog.ANIME
+import catalog.AnimeLibrary
 import catalog.DOCUMENTARIES
 import catalog.DocumentaryLibrary
 import catalog.Entry
 import catalog.Shelf
+import catalog.animeDepartmentOf
 import catalog.documentariesDepartmentOf
 import catalog.firstItemOf
 import catalog.moviesDepartmentOf
@@ -36,6 +39,14 @@ internal fun heroArtOf(
             ?.lead?.let { firstItemOf(it.divisions) }?.backdropPath
         "Tutorials" -> showsDepartmentOf(Kind.TUTORIAL, shelf.entries.filterIsInstance<Entry.Collection>(), byId, watch)
             ?.lead?.let { firstItemOf(it.divisions) }?.backdropPath
+        ANIME -> animeDepartmentOf(
+            AnimeLibrary(
+                shows = shelf.entries.filterIsInstance<Entry.Collection>(),
+                films = shelf.entries.filterIsInstance<Entry.Film>().map { it.set },
+            ),
+            byId,
+            watch,
+        )?.lead?.backdropPath
         DOCUMENTARIES -> documentariesDepartmentOf(
             DocumentaryLibrary(
                 collections = shelf.entries.filterIsInstance<Entry.Collection>(),

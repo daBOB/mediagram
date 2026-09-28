@@ -13,6 +13,7 @@ import catalog.CatalogUiState
 import catalog.BrowseViewModel
 import catalog.CatalogViewModel
 import catalog.Entry
+import catalog.everyFilm
 import catalog.fetchResultMessage
 import catalog.resolvableQueueRows
 import player.TitlePreloadViewModel
@@ -83,7 +84,12 @@ internal fun TvLibrary(
     // Built once per shelves change, from shelves rather than a per-frame
     // fetch: every screen below that needs "every film"/"every show" reads
     // this, the same pool `feature:catalog`'s own pure rules already expect.
-    val allFilms = remember(shelves) {
+    // Every film across Movies and Anime alike — what a title's own Similar
+    // or franchise page ranks against, the same pool `everyFilm` names on
+    // the phone. `MOVIES_PAGE` below keeps its own, narrower Movies-only
+    // pool: "All N films" is the Movies shelf's own wall, not a lookup.
+    val allFilms = remember(shelves) { everyFilm(shelves) }
+    val movieFilms = remember(shelves) {
         shelves.firstOrNull { it.title == "Movies" }?.entries.orEmpty().filterIsInstance<Entry.Film>().map { it.set }
     }
     val allShows = remember(shelves) {
@@ -129,7 +135,7 @@ internal fun TvLibrary(
 
         FrameKind.LATEST -> TvLatestFrame(at, shelves, watch, heldIds, restore, here, leave)
 
-        FrameKind.MOVIES_PAGE -> TvMoviesPageFrame(at, allFilms, watch, heldIds, restore, here, leave)
+        FrameKind.MOVIES_PAGE -> TvMoviesPageFrame(at, movieFilms, watch, heldIds, restore, here, leave)
 
         FrameKind.PRELOADS -> TvPreloadsFrame(at, catalogState, restore, here, leave)
 

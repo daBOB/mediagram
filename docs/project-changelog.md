@@ -5,6 +5,22 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.78.0 — an Anime department on phone, tablet and television
+
+**Added**
+
+- Android draws the Anime department the web player already shipped in
+  0.77.0: `shelvesOf` pulls anime out ahead of Movies and Series the same
+  way it already pulls out Documentaries, and the shelf sits between Series
+  and Documentaries — a hero, Continue watching, every anime series and
+  every anime film. The tab hides at zero; genre pages, search, person
+  pages, franchises, Similar, Continue, Next up and autoplay all still find
+  an anime title where it actually is, and a kids profile that cannot see
+  any of it gets no Anime tab. On television it draws as a plain poster
+  wall, the same as Documentaries, rather than the Series-style department
+  page phone and tablet get — a show-only page there would drop every anime
+  film.
+
 ## 0.77.1 — Android: the core knows which titles are anime, not yet reachable from the UI
 
 **Added**

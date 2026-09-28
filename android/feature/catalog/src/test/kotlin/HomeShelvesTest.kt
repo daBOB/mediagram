@@ -131,6 +131,30 @@ class HomeShelvesTest {
         assertEquals(listOf(e2.setId), cards.map { it.set.setId })
         assertEquals("Series", nextUpRow.seeAll)
     }
+
+    /** An anime series feeds Next up the same way a plain one does — [collectionsForNextUp] walks every shelf but Documentaries, Anime included. */
+    @Test
+    fun aFinishedAnimeEpisodeOffersNextUpTheSameWayAPlainOneDoes() {
+        val e1 = set(Kind.EPISODE, "One", show = "Dragonball", season = 1, episodeFirst = 1, anime = true)
+        val e2 = set(Kind.EPISODE, "Two", show = "Dragonball", season = 1, episodeFirst = 2, anime = true)
+        val watch = WatchSnapshot.Empty.copy(watched = listOf(Watched(e1.setId, finishedAt = 100)))
+
+        val rows = homeRowsOf(shelvesOf(listOf(e1, e2)), watch)
+        val nextUpRow = rows.single { it.title == "Next up" }
+        val cards = (nextUpRow.content as RowContent.Sets).cards
+        assertEquals(listOf(e2.setId), cards.map { it.set.setId })
+    }
+
+    /** No "Latest anime" — `home-shelves.js` never names one, so this port draws none either. */
+    @Test
+    fun thereIsNoLatestAnimeRow() {
+        val filmSet = film("Alien", at = 1)
+        val animeFilm = set(Kind.MOVIE, "Your Name", addedAt = 2, anime = true)
+
+        val rows = homeRowsOf(shelvesOf(listOf(filmSet, animeFilm)), WatchSnapshot.Empty)
+
+        assertTrue(rows.none { it.title == "Latest anime" })
+    }
 }
 
 private fun HomeRow.entries(): List<Entry> = (content as RowContent.Entries).entries
@@ -159,6 +183,7 @@ private fun set(
     season: Int? = null,
     episodeFirst: Int? = null,
     addedAt: Long = 0,
+    anime: Boolean = false,
 ) = MediaSet(
     setId = "$kind-$show-$title",
     kind = kind,
@@ -174,4 +199,5 @@ private fun set(
     posterPath = null,
     totalBytes = 0,
     addedAt = addedAt,
+    anime = anime,
 )

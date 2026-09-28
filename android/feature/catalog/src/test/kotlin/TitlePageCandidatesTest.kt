@@ -26,12 +26,13 @@ class TitlePageCandidatesTest {
         )
 
     @Test
-    fun filmsOfCollectsEveryFilmAcrossEveryShelfAndSkipsCollections() {
+    fun everyFilmCollectsMoviesAndAnimeFilmsButSkipsCollectionsAndOtherShelves() {
         val shelves = listOf(
             Shelf("Movies", listOf(Entry.Film(film("a")), Entry.Film(film("b")))),
             Shelf("Series", listOf(show("Show"))),
+            Shelf(ANIME, listOf(Entry.Film(film("c")))),
         )
-        assertEquals(listOf("a", "b"), filmsOf(shelves).map { it.setId })
+        assertEquals(listOf("a", "b", "c"), everyFilm(shelves).map { it.setId })
     }
 
     @Test
@@ -42,5 +43,15 @@ class TitlePageCandidatesTest {
             Shelf("Tutorials", listOf(course("Course"))),
         )
         assertEquals(listOf("series/Show"), showsOf(shelves).map { it.key })
+    }
+
+    /** An anime show is still [CollectionKind.SHOW] — [showsOf] never had to learn about the Anime shelf by name. */
+    @Test
+    fun showsOfCollectsAnAnimeShowTheSameWayAsAPlainOne() {
+        val shelves = listOf(
+            Shelf("Series", listOf(show("Show"))),
+            Shelf(ANIME, listOf(show("Dragonball"))),
+        )
+        assertEquals(listOf("series/Show", "series/Dragonball"), showsOf(shelves).map { it.key })
     }
 }

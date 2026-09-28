@@ -155,6 +155,45 @@ class ShelvesTest {
         assertEquals(listOf("Movies", "Documentaries"), shelvesOf(listOf(film("Alien"))).map { it.title })
     }
 
+    /** Anime sits between Series and Documentaries — the web nav's own order — and drops out at zero the same way Movies/Series/Tutorials do. */
+    @Test
+    fun animeSitsBetweenSeriesAndDocumentariesAndIsOmittedWhenEmpty() {
+        val shelves = shelvesOf(
+            listOf(
+                film("Alien"),
+                episode("30 Rock", season = 1, episode = 1, title = "Pilot"),
+                anime(Kind.MOVIE, show = null, season = null, episode = null, title = "Your Name"),
+            ),
+        )
+
+        assertEquals(listOf("Movies", "Series", ANIME, "Documentaries"), shelves.map { it.title })
+    }
+
+    /** An anime title leaves Movies and Series entirely, the same exclusivity Documentaries already has. */
+    @Test
+    fun anAnimeTitleNeverJoinsMoviesOrSeries() {
+        val shelves = shelvesOf(
+            listOf(
+                anime(Kind.MOVIE, show = null, season = null, episode = null, title = "Your Name"),
+                anime(Kind.EPISODE, show = "Dragonball", season = 1, episode = 1, title = "One"),
+            ),
+        )
+
+        assertNull(shelves.find { it.title == "Movies" })
+        assertNull(shelves.find { it.title == "Series" })
+        val animeShelf = shelves.single { it.title == ANIME }
+        assertEquals(2, animeShelf.entries.size)
+    }
+
+    /** Keyed under its own prefix, the same reason a documentary folder is — a live-action show and an anime one are free to share a name. */
+    @Test
+    fun anAnimeShowIsKeyedUnderItsOwnAnimePrefix() {
+        val shelves = shelvesOf(listOf(anime(Kind.EPISODE, show = "Dragonball", season = 1, episode = 1, title = "One")))
+
+        val show = shelves.single { it.title == ANIME }.entries.single() as Entry.Collection
+        assertEquals("ANIME/Dragonball", show.key)
+    }
+
     /** A key has to survive the process being killed and find its way back. */
     @Test
     fun aCollectionIsFoundAgainByItsKey() {
@@ -260,6 +299,9 @@ private fun document(
     title: String,
 ) = set(Kind.DOCUMENT, title, show = course, path = path)
 
+private fun anime(kind: Kind, show: String?, season: Int?, episode: Int?, title: String) =
+    set(kind, title, show = show, season = season, episodeFirst = episode, anime = true)
+
 private fun set(
     kind: Kind,
     title: String,
@@ -268,6 +310,7 @@ private fun set(
     season: Int? = null,
     episodeFirst: Int? = null,
     poster: String? = null,
+    anime: Boolean = false,
 ) = MediaSet(
     setId = "$kind-$show-$season-$title",
     kind = kind,
@@ -282,4 +325,5 @@ private fun set(
     durationSecs = null,
     posterPath = poster,
     totalBytes = 0,
+    anime = anime,
 )

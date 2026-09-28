@@ -5,9 +5,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.focus.FocusRequester
 import catalog.CatalogTabs
 import catalog.CatalogUiState
-import catalog.Entry
 import catalog.KeptKind
 import catalog.Shelf
+import catalog.everyFilm
 import catalog.franchisesIn
 import catalog.homeRowsOf
 import catalog.magazineHomeOf
@@ -92,10 +92,7 @@ internal fun TvCatalogBody(
             )
         }
         selected == collectionsIndex -> {
-            val movies =
-                remember(shelves) {
-                    shelves.firstOrNull { it.title == "Movies" }?.entries.orEmpty().filterIsInstance<Entry.Film>().map { it.set }
-                }
+            val movies = remember(shelves) { everyFilm(shelves) }
             TvCollectionsPage(
                 franchises = remember(movies) { franchisesIn(movies) },
                 lists = ready.watch.collections,

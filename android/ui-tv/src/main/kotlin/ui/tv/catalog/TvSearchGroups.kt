@@ -36,6 +36,7 @@ internal fun labelFor(filter: SearchFilter): String =
         SearchFilter.ALL -> "All"
         SearchFilter.MOVIES -> "Movies"
         SearchFilter.SERIES -> "Series"
+        SearchFilter.ANIME -> "Anime"
         SearchFilter.DOCUMENTARIES -> "Documentaries"
         SearchFilter.TUTORIALS -> "Tutorials"
         SearchFilter.PEOPLE -> "People"
@@ -62,6 +63,15 @@ internal fun sectionsFor(groups: SearchGroups, filter: SearchFilter): List<Searc
         }
         if (wants(SearchFilter.SERIES) && groups.episodes.isNotEmpty()) {
             add(SearchSection("Episodes", groups.episodes.map(SearchEntry::Title)))
+        }
+        if (wants(SearchFilter.ANIME) && groups.animeFilms.isNotEmpty()) {
+            add(SearchSection("Anime films", groups.animeFilms.map(SearchEntry::Title)))
+        }
+        if (wants(SearchFilter.ANIME) && groups.matchedAnimeShows.isNotEmpty()) {
+            add(SearchSection("Anime series", groups.matchedAnimeShows.map(SearchEntry::Show)))
+        }
+        if (wants(SearchFilter.ANIME) && groups.animeEpisodes.isNotEmpty()) {
+            add(SearchSection("Anime episodes", groups.animeEpisodes.map(SearchEntry::Title)))
         }
         if (wants(SearchFilter.DOCUMENTARIES) && groups.documentaries.isNotEmpty()) {
             add(SearchSection("Documentaries", groups.documentaries.map(SearchEntry::Title)))

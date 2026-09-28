@@ -46,6 +46,15 @@ class RunForTest {
     fun aTitleWithNoMatchingCollectionHasNoRun() {
         assertEquals(emptyList(), runFor(set("Orphan", Kind.EPISODE, "Nowhere", 1), readyState(emptyList())))
     }
+
+    /** [runFor] walks every shelf's own collections — the Anime shelf included, not just Series. */
+    @Test
+    fun anAnimeEpisodesRunIsFoundOnTheAnimeShelf() {
+        val season1 = division("Season 1", 1, listOf(set("D1", Kind.EPISODE, "Dragonball", 1), set("D2", Kind.EPISODE, "Dragonball", 2)))
+        val state = CatalogUiState.Ready(shelves = listOf(Shelf(ANIME, listOf(collection("ANIME/Dragonball", "Dragonball", listOf(season1))))))
+
+        assertEquals(listOf("D1", "D2"), runFor(set("D1", Kind.EPISODE, "Dragonball", 1), state))
+    }
 }
 
 private fun readyState(entries: List<Entry.Collection>) = CatalogUiState.Ready(shelves = listOf(Shelf("Series", entries)))

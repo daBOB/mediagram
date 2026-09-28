@@ -2,6 +2,7 @@ package catalog
 
 import model.Kind
 import model.MediaSet
+import model.Progress
 import model.WatchSnapshot
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -117,5 +118,38 @@ class DepartmentsTest {
         val shows = listOf(show("No Art", popularity = 99.0), show("Lead", popularity = 10.0, backdropPath = "lead-bg"))
         val dept = showsDepartmentOf(Kind.EPISODE, shows, emptyMap(), WatchSnapshot.Empty)!!
         assertEquals("Lead", dept.lead?.name)
+    }
+
+    /**
+     * The general Continue list resolves any started title by [Kind] alone
+     * — an anime episode is still `Kind.EPISODE` — so the Series department
+     * has to drop `anime: true` sets itself rather than leave them to leak
+     * in from a viewer's own watch snapshot. Anime left this shelf entirely
+     * at `shelvesOf`, and offers the same title under its own Continue
+     * watching instead.
+     */
+    @Test
+    fun theSeriesDepartmentsContinueRowDropsAnAnimeEpisodeEvenThoughItSharesTheKind() {
+        val plainEpisode = MediaSet(
+            setId = "plain-ep", kind = Kind.EPISODE, title = "Plain", show = "Plain Show", chapter = null, path = null,
+            season = 1, episodeFirst = 1, episodeLast = null, year = null, durationSecs = 1200,
+            posterPath = null, totalBytes = 0, anime = false,
+        )
+        val animeEpisode = MediaSet(
+            setId = "anime-ep", kind = Kind.EPISODE, title = "Anime", show = "Anime Show", chapter = null, path = null,
+            season = 1, episodeFirst = 1, episodeLast = null, year = null, durationSecs = 1200,
+            posterPath = null, totalBytes = 0, anime = true,
+        )
+        val byId = mapOf(plainEpisode.setId to plainEpisode, animeEpisode.setId to animeEpisode)
+        val watch = WatchSnapshot.Empty.copy(
+            progress = listOf(
+                Progress(plainEpisode.setId, at = 60.0, duration = 1200.0, updatedAt = 1),
+                Progress(animeEpisode.setId, at = 60.0, duration = 1200.0, updatedAt = 2),
+            ),
+        )
+
+        val dept = showsDepartmentOf(Kind.EPISODE, listOf(show("Plain Show")), byId, watch)!!
+
+        assertEquals(listOf(plainEpisode.setId), dept.underway.continues.map { it.setId })
     }
 }

@@ -7,6 +7,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.SaveableStateHolder
+import catalog.ANIME
 import catalog.CatalogTabs
 import catalog.CatalogUiState
 import catalog.DOCUMENTARIES
@@ -108,6 +109,7 @@ internal fun rememberActiveHeroState(
             !hasHeroArt -> null
             activeShelfTitle == "Movies" -> deptScroll.movies.asHeroListState()
             activeShelfTitle == "Series" -> deptScroll.series.asHeroListState()
+            activeShelfTitle == ANIME -> deptScroll.anime.asHeroListState()
             activeShelfTitle == "Tutorials" -> deptScroll.tutorials.asHeroListState()
             activeShelfTitle == DOCUMENTARIES -> deptScroll.documentaries.asHeroListState()
             else -> null

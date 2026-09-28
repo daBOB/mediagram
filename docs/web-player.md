@@ -254,6 +254,15 @@ kids profile whose age limit hides every anime title sees the tab hidden the
 same way. Android follows the same rule for the same reason (`Shelves.kt`
 already drops empty Movies/Series/Tutorials this way).
 
+**Android's television surface draws Anime as a plain poster wall**, the
+same as Documentaries, rather than the Series-style department page phone and
+tablet get (`TvDepartmentPages.kt`'s `DepartmentOrShelfWall`). A show-style
+department page would resolve its own shows with
+`filterIsInstance<Entry.Collection>()` and silently drop every anime film,
+and a Continue row on that page would only repeat the television's own Home
+Continue for the same titles rather than say anything new — the reason
+Documentaries already gets the plain wall instead of a department page.
+
 ## Routes and API endpoints
 
 Catalog routes (`#/`) are client-side (no server state); API endpoints answer

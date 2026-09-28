@@ -69,6 +69,9 @@ internal fun SearchGroupsView(
     val shows = groups.matchedShows.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.SERIES }.orEmpty()
     val films = groups.films.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.MOVIES }.orEmpty()
     val episodes = groups.episodes.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.SERIES }.orEmpty()
+    val animeShows = groups.matchedAnimeShows.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.ANIME }.orEmpty()
+    val animeFilms = groups.animeFilms.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.ANIME }.orEmpty()
+    val animeEpisodes = groups.animeEpisodes.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.ANIME }.orEmpty()
     val documentaries = groups.documentaries.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.DOCUMENTARIES }.orEmpty()
     val lessons = groups.lessons.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.TUTORIALS }.orEmpty()
     val people = groups.people.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.PEOPLE }.orEmpty()
@@ -85,6 +88,15 @@ internal fun SearchGroupsView(
             }
             if (episodes.isNotEmpty()) {
                 item(key = "episodes") { RowSection("Episodes", episodes, positions, watchedIds, onPlay) }
+            }
+            if (animeFilms.isNotEmpty()) {
+                item(key = "anime-films") { PosterSection("Anime films", posterCards(animeFilms, watchedIds, onOpenTitle)) }
+            }
+            if (animeShows.isNotEmpty()) {
+                item(key = "anime-series") { PosterSection("Anime series", animeShows.map { show -> { ShowPoster(show, onOpenCollection) } }) }
+            }
+            if (animeEpisodes.isNotEmpty()) {
+                item(key = "anime-episodes") { RowSection("Anime episodes", animeEpisodes, positions, watchedIds, onPlay) }
             }
             if (documentaries.isNotEmpty()) {
                 item(key = "documentaries") { RowSection("Documentaries", documentaries, positions, watchedIds, onPlay) }
@@ -131,6 +143,7 @@ private fun filterLabel(filter: SearchFilter): String = when (filter) {
     SearchFilter.ALL -> "All"
     SearchFilter.MOVIES -> "Movies"
     SearchFilter.SERIES -> "Series"
+    SearchFilter.ANIME -> "Anime"
     SearchFilter.DOCUMENTARIES -> "Documentaries"
     SearchFilter.TUTORIALS -> "Tutorials"
     SearchFilter.PEOPLE -> "People"

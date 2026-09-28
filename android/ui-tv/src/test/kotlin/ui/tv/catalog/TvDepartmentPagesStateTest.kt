@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import catalog.ANIME
 import catalog.DOCUMENTARIES
 import catalog.Entry
 import catalog.Shelf
@@ -95,6 +96,40 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
         }
 
         compose.onNodeWithText("No documentaries yet. Upload one with mediagram add-docu <file|folder>.").assertIsDisplayed()
+    }
+
+    /**
+     * The deliberate difference: Anime draws the plain wall, not a
+     * Series-style department page. Proven by what a department page would
+     * have dropped — `filterIsInstance<Entry.Collection>()` would silently
+     * lose the film, so seeing it on screen here is what tells the two
+     * branches apart.
+     */
+    @Test
+    fun theAnimeShelfIsAPlainWallThatKeepsBothItsShowAndItsFilm() {
+        val animeShow = Entry.Collection(
+            key = "ANIME/Dragonball", kind = catalog.CollectionKind.SHOW, name = "Dragonball", posterPath = null, posterKey = null,
+            count = 1, chapters = 1, divisions = emptyList(),
+        )
+        val animeFilm = set("your-name", Kind.MOVIE, "Your Name", addedAt = 0)
+
+        show {
+            DepartmentOrShelfWall(
+                shelf = Shelf(ANIME, listOf(animeShow, Entry.Film(animeFilm))),
+                watch = WatchSnapshot.Empty,
+                heldIds = emptySet(),
+                byId = emptyMap(),
+                onOpenTitle = {},
+                onPlay = {},
+                onOpenCollection = {},
+                onOpenGenre = {},
+                onOpenMoviesPage = {},
+                restoreKey = null,
+            )
+        }
+
+        compose.onNodeWithText("Dragonball").assertIsDisplayed()
+        compose.onNodeWithText("Your Name").assertIsDisplayed()
     }
 
     private fun seriesEntriesOf(sets: List<MediaSet>): List<Entry.Collection> =

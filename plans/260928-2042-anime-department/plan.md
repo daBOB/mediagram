@@ -1,7 +1,7 @@
 ---
 title: "Anime department"
 description: "Japanese animation (TMDB genre Animation + original language ja, or a hand-set override) leaves Movies/Series for one Anime department on web and Android."
-status: pending
+status: completed
 priority: P2
 effort: 22h
 branch: main
@@ -23,7 +23,7 @@ exclusivity); one department mixing anime series (seasons kept) and anime films.
 | 1 | [Index: original language, overrides, backfill, `edit --anime`](phase-01-index-language-and-anime-overrides.md) | 5h | completed | minor |
 | 2 | [Web: rule, shared fixture, Anime department](phase-02-web-anime-department.md) | 7h | completed | minor |
 | 3 | [Core: Rust rule, `SetSummary.anime`, bindings, `MediaSet.anime`](phase-03-core-anime-flag-and-android-data.md) | 3h | completed | patch |
-| 4 | [Android: Anime shelf on phone, tablet, TV](phase-04-android-anime-department.md) | 7h | pending | minor |
+| 4 | [Android: Anime shelf on phone, tablet, TV](phase-04-android-anime-department.md) | 7h | completed | minor |
 
 Order is strict 1 → 2 → 3 → 4; each ends green on `scripts/check.sh` and ships alone.
 Version: one bump per shipped phase, all three manifests in step, by pattern from

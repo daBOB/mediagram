@@ -4,8 +4,8 @@ import model.Kind
 import model.MediaSet
 import model.WatchSnapshot
 
-/** How many plates a department's curated rows hold — ported from `ROW` in `department-pages.js`. */
-private const val DEPARTMENT_ROW = 12
+/** How many plates a department's curated rows hold — ported from `ROW` in `department-pages.js`. Internal rather than private: [animeDepartmentOf] (`Anime.kt`) caps its own underway row at the same size. */
+internal const val DEPARTMENT_ROW = 12
 
 /** The rating a film needs to be offered under "Acclaimed, not yet seen". */
 private const val ACCLAIMED_RATING = 7.5
@@ -126,7 +126,15 @@ fun showsDepartmentOf(
     val lead = shows.filter { firstItemOf(it.divisions)?.backdropPath != null }
         .maxByOrNull { firstItemOf(it.divisions)?.popularity ?: 0.0 }
     val underway = underwayOf(shows, byId, watch, DEPARTMENT_ROW).let {
-        it.copy(continues = it.continues.filter { set -> set.kind == kind }, nextUp = it.nextUp.filter { entry -> entry.set.kind == kind })
+        it.copy(
+            // An anime episode is still `Kind.EPISODE`, so kind alone would
+            // let it leak into the Series department's own Continue row —
+            // anime left this shelf entirely at `shelvesOf`, and its own
+            // department page offers the same title under its own Continue
+            // watching instead (`animeDepartmentOf`).
+            continues = it.continues.filter { set -> set.kind == kind && !set.anime },
+            nextUp = it.nextUp.filter { entry -> entry.set.kind == kind },
+        )
     }
     val bigEnough = kind == Kind.EPISODE && shows.size > DEPARTMENT_ROW
     val popular =

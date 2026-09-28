@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import catalog.Franchise
 import catalog.Shelf
 import catalog.factsLine
-import catalog.filmsOf
+import catalog.everyFilm
 import catalog.franchisesIn
 import catalog.humanDuration
 import catalog.languageName
@@ -82,7 +82,7 @@ fun TitleDetailScreen(
     val credits = rememberTitleCredits(set.posterKey, titleCredits)
     val franchise =
         remember(set.setId, set.collectionId, shelves) {
-            set.collectionId?.let { id -> franchisesIn(filmsOf(shelves)).find { it.id == id } }
+            set.collectionId?.let { id -> franchisesIn(everyFilm(shelves)).find { it.id == id } }
         }
 
     val labels =
@@ -181,7 +181,7 @@ private fun FilmSimilarTab(
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
     val similar =
         remember(set.setId, shelves, watchedIds) {
-            similarTo(set, filmsOf(shelves), seen = { it.setId in watchedIds })
+            similarTo(set, everyFilm(shelves), seen = { it.setId in watchedIds })
         }
     PosterRow(
         similar.map { pick ->

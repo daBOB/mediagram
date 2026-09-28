@@ -61,6 +61,18 @@ class ChromeCountsTest {
         assertEquals(4, chromeCountsOf(shelves, WatchSnapshot.Empty).departmentCount(DOCUMENTARIES))
     }
 
+    /** Anime counts its own cards, a show and a film alike, the same as any plain shelf — no special case was needed for it here. */
+    @Test
+    fun animeCountsItsOwnCardsLikeAnyOtherShelf() {
+        val show = Entry.Collection(
+            key = "ANIME/Dragonball", kind = CollectionKind.SHOW, name = "Dragonball", posterPath = null, posterKey = null,
+            count = 2, chapters = 1, divisions = emptyList(),
+        )
+        val shelves = listOf(Shelf(catalog.ANIME, listOf(show, Entry.Film(film("Your Name")))))
+
+        assertEquals(2, chromeCountsOf(shelves, WatchSnapshot.Empty).departmentCount(catalog.ANIME))
+    }
+
     @Test
     fun profileInitialUppercasesTheFirstLetterOrFallsBackToAQuestionMark() {
         assertEquals("T", profileInitial("test"))

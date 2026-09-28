@@ -20,15 +20,14 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import catalog.CatalogUiState
-import catalog.Entry
 import catalog.Franchise
 import catalog.SearchFilter
 import catalog.SearchUiState
 import catalog.SearchViewModel
+import catalog.everyFilm
 import catalog.franchisesIn
 import catalog.searchGroupsOf
 import designsystem.Spacing
-import model.MediaSet
 import model.WatchSnapshot
 
 /**
@@ -146,13 +145,14 @@ private fun SearchResults(
     val ready = state as? SearchUiState.Ready ?: return
     val catalogReady = catalogState is CatalogUiState.Ready
     val franchises: List<Franchise> = remember(catalogState) {
-        if (catalogReady) franchisesIn(moviesOf(catalogState)) else emptyList()
+        if (catalogReady) franchisesIn(everyFilm((catalogState as CatalogUiState.Ready).shelves)) else emptyList()
     }
     val groups = remember(query, ready, catalogState, franchises, watch.collections) {
         if (catalogReady) searchGroupsOf(query, catalogState, ready.hits, ready.people, franchises, watch.collections) else null
     }
     val empty = groups?.let {
         it.films.isEmpty() && it.matchedShows.isEmpty() && it.episodes.isEmpty() &&
+            it.animeFilms.isEmpty() && it.matchedAnimeShows.isEmpty() && it.animeEpisodes.isEmpty() &&
             it.lessons.isEmpty() && it.people.isEmpty() && it.collections.isEmpty()
     } ?: true
 
@@ -178,8 +178,3 @@ private fun SearchResults(
         }
     }
 }
-
-/** The Movies shelf's own films, from an already-ready [catalogState] — [franchisesIn]'s own input. */
-private fun moviesOf(catalogState: CatalogUiState): List<MediaSet> =
-    (catalogState as? CatalogUiState.Ready)?.shelves?.firstOrNull { it.title == "Movies" }?.entries
-        ?.filterIsInstance<Entry.Film>()?.map { it.set }.orEmpty()

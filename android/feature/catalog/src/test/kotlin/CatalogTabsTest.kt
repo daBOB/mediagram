@@ -29,4 +29,16 @@ class CatalogTabsTest {
         val split = mastheadSplitOf(shelves)
         assertEquals(listOf("Home", "Movies", "Series", DOCUMENTARIES, "Tutorials", "Collections"), split.departments)
     }
+
+    /** [ANIME] lands the same way — a real shelf `shelvesOf` returns between Series and Documentaries, and neither reader has to name it specially. */
+    @Test
+    fun animeSitsBetweenSeriesAndDocumentariesInBothTabRows() {
+        val shelves = listOf(Shelf("Movies", emptyList()), Shelf("Series", emptyList()), Shelf(ANIME, emptyList()), Shelf(DOCUMENTARIES, emptyList()))
+
+        val tabs = catalogTabsOf(shelves)
+        assertEquals(listOf("Home", "Movies", "Series", ANIME, DOCUMENTARIES, "Continue", "Watchlist", "Collections"), tabs.titles)
+
+        val split = mastheadSplitOf(shelves)
+        assertEquals(listOf("Home", "Movies", "Series", ANIME, DOCUMENTARIES, "Collections"), split.departments)
+    }
 }

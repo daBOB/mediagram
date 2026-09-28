@@ -17,11 +17,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import catalog.CatalogUiState
-import catalog.Entry
 import catalog.SearchDestination
 import catalog.SearchFilter
 import catalog.SearchUiState
 import catalog.SearchViewModel
+import catalog.everyFilm
 import catalog.franchisesIn
 import catalog.searchGroupsOf
 import designsystem.Overscan
@@ -111,12 +111,7 @@ internal fun TvSearchScreen(
     val field = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     val catalogReady = catalogState is CatalogUiState.Ready
-    val movies =
-        remember(catalogState) {
-            (catalogState as? CatalogUiState.Ready)?.shelves?.firstOrNull { it.title == "Movies" }
-                ?.entries.orEmpty().filterIsInstance<Entry.Film>().map { it.set }
-                ?: emptyList()
-        }
+    val movies = remember(catalogState) { everyFilm((catalogState as? CatalogUiState.Ready)?.shelves.orEmpty()) }
     val franchises = remember(movies) { franchisesIn(movies) }
     val groups =
         remember(state, catalogState, text, franchises, watch.collections) {

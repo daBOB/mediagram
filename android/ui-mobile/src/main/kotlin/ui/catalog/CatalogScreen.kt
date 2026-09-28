@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import catalog.ANIME
 import catalog.CatalogTabs
 import catalog.CatalogUiState
 import catalog.DOCUMENTARIES
@@ -26,6 +27,7 @@ import catalog.Shelf
 import catalog.allSetsById
 import catalog.catalogTabsOf
 import catalog.continueWall
+import catalog.everyFilm
 import catalog.HOME_POSTER_ROW_LIMIT
 import catalog.franchisesIn
 import catalog.hasContent
@@ -206,7 +208,7 @@ private fun Shelves(
             selected == firstKept + 1 -> KeptWall(KeptKind.WATCHLIST, watchlistWall(shelves, state.watch), state.watch, columns, onOpenTitle, state.heldIds)
 
             selected == fullTabs.titles.lastIndex -> {
-                val movies = remember(shelves) { shelves.firstOrNull { it.title == "Movies" }?.let(::filmsOf).orEmpty() }
+                val movies = remember(shelves) { everyFilm(shelves) }
                 CollectionsScreen(
                     franchises = remember(movies) { franchisesIn(movies) },
                     lists = state.watch.collections,
@@ -240,6 +242,7 @@ private fun Shelves(
                         }
                     }
                     "Series" -> ShowsDepartment(Kind.EPISODE, "Series", "episode", shelf, state, columns, onOpenTitle, onOpenCollection, deptScroll.series) { id -> onPlayRun(id, emptyList()) }
+                    ANIME -> AnimeDepartment(shelf, state, columns, onOpenTitle, onOpenCollection, deptScroll.anime) { id -> onPlayRun(id, emptyList()) }
                     "Tutorials" -> ShowsDepartment(Kind.TUTORIAL, "Tutorials", "lesson", shelf, state, columns, onOpenTitle, onOpenCollection, deptScroll.tutorials) { id -> onPlayRun(id, emptyList()) }
                     DOCUMENTARIES -> DocumentariesDepartment(shelf, state, onOpenCollection, listState = deptScroll.documentaries) { id -> onPlayRun(id, emptyList()) }
                     else -> ShelfWall(shelf, state.watch, state.heldIds, columns, shelfView, onOpenTitle, onOpenCollection)

@@ -39,6 +39,7 @@ import uniffi.mediagram_core.LibraryEvent
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 private fun catalogViewModel(
@@ -810,6 +811,57 @@ class CatalogViewModelTest {
                 val kidsView = awaitItem() as CatalogUiState.Ready
                 val documentaries = kidsView.shelves.single { it.title == DOCUMENTARIES }
                 assertEquals(emptyList(), documentaries.entries)
+            }
+        }
+
+    /**
+     * The kids filter runs on [MediaSet]s, before `shelvesOf` ever splits
+     * anime out — the same filter every shelf gets, not a rule Anime needed
+     * of its own. A kids profile that cannot see the one anime title in the
+     * library gets no Anime tab at all, the same way it gets no Movies tab
+     * with nothing rated for it.
+     */
+    @Test
+    fun aKidsProfileWithNoVisibleAnimeGetsNoAnimeTab() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val repository = FakeCatalogRepository(
+                given = listOf(
+                    fakeSet(Kind.MOVIE, "Family").copy(fsk = "6"),
+                    fakeSet(Kind.MOVIE, "Grown Up Anime").copy(fsk = "16", anime = true),
+                ),
+            )
+            val watch = FakeCatalogWatchState()
+            watch.profiles.value = listOf(Profile("k", "Mia", kids = true))
+            watch.chosenProfileId.value = "k"
+            val vm = catalogViewModel(repository, watch)
+            vm.state.test {
+                awaitItem()
+                val kidsView = awaitItem() as CatalogUiState.Ready
+                assertNull(kidsView.shelves.find { it.title == ANIME }, "Anime is omitted at zero, the same as Movies/Series/Tutorials")
+            }
+        }
+
+    /** The mirror case: a rated anime title still reaches a kids profile, on its own Anime tab. */
+    @Test
+    fun aKidsProfileWithARatedAnimeTitleGetsTheAnimeTab() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val repository = FakeCatalogRepository(
+                given = listOf(
+                    fakeSet(Kind.MOVIE, "Grown Up Anime").copy(fsk = "16", anime = true),
+                    fakeSet(Kind.MOVIE, "Kids Anime").copy(fsk = "6", anime = true),
+                ),
+            )
+            val watch = FakeCatalogWatchState()
+            watch.profiles.value = listOf(Profile("k", "Mia", kids = true))
+            watch.chosenProfileId.value = "k"
+            val vm = catalogViewModel(repository, watch)
+            vm.state.test {
+                awaitItem()
+                val kidsView = awaitItem() as CatalogUiState.Ready
+                val animeIds = kidsView.shelves.single { it.title == ANIME }.entries.filterIsInstance<Entry.Film>().map { it.set.setId }
+                assertEquals(setOf("Kids Anime"), animeIds.toSet())
             }
         }
 

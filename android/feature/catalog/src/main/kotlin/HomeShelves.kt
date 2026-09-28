@@ -97,10 +97,10 @@ fun homeRowsOf(
     }
 
     for (shelf in shelves) {
-        // No "Latest documentaries" — home-shelves.js's own `homeShelves`
-        // only ever names latestMovies/latestSeries/latestCourses, so the
-        // web this is ported from never draws one either.
-        if (shelf.title == DOCUMENTARIES) continue
+        // No "Latest documentaries" or "Latest anime" — home-shelves.js's
+        // own `homeShelves` only ever names latestMovies/latestSeries/latestCourses,
+        // so the web this is ported from never draws either row.
+        if (shelf.title == DOCUMENTARIES || shelf.title == ANIME) continue
         rows +=
             HomeRow(
                 title = latestTitleFor(shelf.title),

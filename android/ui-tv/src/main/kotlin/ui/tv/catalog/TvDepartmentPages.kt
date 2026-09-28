@@ -2,6 +2,7 @@ package ui.tv.catalog
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import catalog.ANIME
 import catalog.DOCUMENTARIES
 import catalog.Entry
 import catalog.Shelf
@@ -84,6 +85,14 @@ internal fun DepartmentOrShelfWall(
             TvMoviesDepartmentPage(dept, onOpenTitle, onPlay, onOpenGenre, onOpenMoviesPage, restoreKey, heldIds)
             return
         }
+    } else if (shelf.title == ANIME) {
+        // A plain poster wall, the same deliberate difference Documentaries
+        // already draws (see `docs/web-player.md`'s "Differences from
+        // Android"): a Series-style department page (`:99-106` below) would
+        // resolve this shelf's own `filterIsInstance<Entry.Collection>()`
+        // and silently drop every anime film, and a Continue row here would
+        // only repeat the television's own Home Continue for the same
+        // titles rather than say anything new.
     } else if (shelf.title == DOCUMENTARIES) {
         // Documentaries mixes folders and standalone singles, not shows —
         // treating its own folders as episodes below would mislabel them and

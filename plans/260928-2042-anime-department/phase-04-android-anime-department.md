@@ -1,7 +1,7 @@
 ---
 phase: 4
 title: "Android: the Anime shelf on phone, tablet and TV"
-status: pending
+status: completed
 priority: P2
 effort: 7h
 dependencies: [phase-02, phase-03]
@@ -144,11 +144,12 @@ Android" (:422). A TV hero page can follow if wanted.
 
 ## Success Criteria
 
-- [ ] Tablet Anime count equals the web's over the same published index; tab absent on a library/profile with none.
-- [ ] No anime title on Movies/Series tabs, their department rows, "All films", Latest or the magazine picks; present in search, genre, person, franchise, Similar; Next up and autoplay continue an anime series.
-- [ ] Series department Continue shows no anime episode.
-- [ ] TV shows the Anime wall; the difference is commented in `TvDepartmentPages.kt` and in `docs/web-player.md`.
-- [ ] `scripts/check.sh` green; device walk screenshots accepted.
+- [x] Anime tab absent on a library/profile with none (`ShelvesTest`, `CatalogViewModelTest`); count matches the shelf's own entries the same way every other shelf's pill does (`ChromeCountsTest`) — verified by unit test, not against a published index (no device install in this run, see below).
+- [x] No anime title on Movies/Series tabs, their department rows, "All films", Latest or the magazine picks; present in search, genre, person, franchise, Similar; Next up and autoplay continue an anime series.
+- [x] Series department Continue shows no anime episode.
+- [x] TV shows the Anime wall; the difference is commented in `TvDepartmentPages.kt` and in `docs/web-player.md`.
+- [x] `scripts/check.sh` green.
+- [ ] Device walk screenshots — **not done**: this run's hard limits forbid `adb`/device installs; step 9 was skipped entirely. Left for a manual pass.
 
 ## Risk Assessment
 

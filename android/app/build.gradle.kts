@@ -10,7 +10,7 @@ android {
     defaultConfig {
         applicationId = "com.mediagram.android"
         versionCode = 18
-        versionName = "0.77.1"
+        versionName = "0.78.0"
     }
 
     buildTypes {

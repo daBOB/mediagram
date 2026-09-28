@@ -16,12 +16,12 @@ import catalog.Destination
 import catalog.Entry
 import catalog.ShelfViewModel
 import catalog.allTitles
+import catalog.everyFilm
 import catalog.franchisePageOf
 import catalog.genreIndex
 import catalog.heldFilms
 import catalog.personPageOf
 import catalog.resolvableQueueRows
-import model.MediaSet
 import model.WatchSnapshot
 import player.TitlePreloadViewModel
 import ui.catalog.CenteredMessage
@@ -60,7 +60,7 @@ internal fun FranchiseFrame(
     }
     val browseViewModel: BrowseViewModel = hiltViewModel()
     val overviews = rememberFranchiseOverviews(browseViewModel::franchiseOverviews)
-    val movies = moviesOf(catalogState)
+    val movies = everyFilm(catalogState.shelvesOrEmpty())
     val page = remember(id, movies, overviews) { franchisePageOf(id, movies, overviews) }
     ResolvedBranch(page, catalogState, Destination.Franchise(LOADING), menuActions, profileBar, browse, at, { Destination.Franchise(it.franchise.name) }) { resolvedPage ->
         FranchiseScreen(page = resolvedPage, watch = watch, columns = columns, onOpenTitle = at::openTitle)
@@ -176,11 +176,6 @@ internal fun PreloadsFrame(
         )
     }
 }
-
-/** The Movies shelf's own films, from an already-ready [catalogState] — a franchise page's own input. */
-private fun moviesOf(catalogState: CatalogUiState): List<MediaSet> =
-    (catalogState as? CatalogUiState.Ready)?.shelves?.firstOrNull { it.title == "Movies" }?.entries
-        ?.filterIsInstance<Entry.Film>()?.map { it.set }.orEmpty()
 
 /**
  * A person's page — resolved in two steps, unlike [ResolvedBranch]'s one:

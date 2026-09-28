@@ -30,32 +30,41 @@ private val COLLECTED = setOf(Kind.EPISODE, Kind.TUTORIAL, Kind.DOCUMENT)
  * Documentaries is always present, even holding nothing — the web never
  * hides a department, and this is the one shelf a library can genuinely
  * have none of, so the one whose own empty state a viewer can actually
- * reach. The other three drop out instead: a library with no films or no
- * courses reads as one that has not been pointed at either yet, which an
- * empty department page would say far more quietly than simply not
- * offering the tab.
+ * reach. The other four drop out instead: a library with no films, no
+ * anime, or no courses reads as one that has not been pointed at either
+ * yet, which an empty department page would say far more quietly than
+ * simply not offering the tab.
+ *
+ * Anime is pulled out first, the same rule Documentaries already
+ * follows — Japanese animation (`MediaSet.anime`) leaves Movies and Series
+ * entirely rather than sitting on both, so [rest] below never sees a title
+ * that belongs to it.
  *
  * Derived here rather than inside a render loop, because the television
  * surface needs the same answer and neither surface should be where it is
  * worked out.
  */
 fun shelvesOf(sets: List<MediaSet>): List<Shelf> {
-    val episodes = sets.filter { it.kind == Kind.EPISODE }
+    val (anime, rest) = sets.partition(MediaSet::anime)
+    val episodes = rest.filter { it.kind == Kind.EPISODE }
     // A document belongs to the course it was uploaded with, so it goes
     // into that tree beside the lessons rather than onto a shelf of its
     // own. On the film shelf a handout would read as a broken film.
-    val course = sets.filter { it.kind == Kind.TUTORIAL || it.kind == Kind.DOCUMENT }
+    val course = rest.filter { it.kind == Kind.TUTORIAL || it.kind == Kind.DOCUMENT }
     // Everything else, which is films and any kind this build has never
     // heard of. Placing an unknown kind beats hiding it: the wrong shelf is
     // something a viewer can report, an absence is not. Documentaries has
     // its own shelf below, so it is the one recognised kind excluded here.
-    val films = sets.filter { it.kind !in COLLECTED && it.kind != Kind.DOCUMENTARY }
-    val documentaries = groupDocumentaries(sets.filter { it.kind == Kind.DOCUMENTARY })
+    val films = rest.filter { it.kind !in COLLECTED && it.kind != Kind.DOCUMENTARY }
+    val documentaries = groupDocumentaries(rest.filter { it.kind == Kind.DOCUMENTARY })
+    val animeLibrary = groupAnime(anime)
 
     return listOfNotNull(
         Shelf("Movies", films.sortedWith(compareBy(NATURAL) { it.title }).map(Entry::Film))
             .takeIf { it.entries.isNotEmpty() },
         Shelf("Series", collections(episodes, CollectionKind.SHOW, UNKNOWN_SHOW))
+            .takeIf { it.entries.isNotEmpty() },
+        Shelf(ANIME, animeLibrary.shows + animeLibrary.films.map(Entry::Film))
             .takeIf { it.entries.isNotEmpty() },
         Shelf(DOCUMENTARIES, documentaries.collections + documentaries.singles.map(Entry::Film)),
         Shelf("Tutorials", collections(course, CollectionKind.COURSE, UNKNOWN_COURSE))
