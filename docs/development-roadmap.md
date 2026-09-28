@@ -249,27 +249,27 @@ as separate work.
 
 ## Android: film preload
 
-In progress. `plans/260927-2117-android-film-preload/`, released
-0.70.0–0.72.0 (worktree `feat/android-film-preload`). A Preload button
-beside Play on every film page (phone, tablet, TV), backed by a new
-`FilmPreloader` engine sharing `SeriesPreloader`'s writer and download lane,
-plus a per-film status route (`GET /v1/sets/{id}`) on the home cache server
-so the page can show what the paired server already holds. The queue itself
-is now visible: a Preloads page (phone/tablet and TV) lists what is
-preloading, queued, or already fully on the device, a queued film's own
-label names what it is waiting on, `NeedsSpace` names the live cache budget,
-and a film paused by Android's own background time limit stays listed with
-one Resume action rather than disappearing. Android-only by decision — the
-web player has no film preload; see `DESIGN.md` § Pill and
-`docs/system-architecture.md`'s own "Film preload (Android only)".
+`plans/260927-2117-android-film-preload/`, released 0.70.0–0.72.0 (worktree
+`feat/android-film-preload`). A Preload button beside Play on every film
+page (phone, tablet, TV), backed by a new `FilmPreloader` engine sharing
+`SeriesPreloader`'s writer and download lane, plus a per-film status route
+(`GET /v1/sets/{id}`) on the home cache server so the page can show what the
+paired server already holds. The queue itself is visible: a Preloads page
+(phone/tablet and TV) lists what is preloading, queued, or already fully on
+the device, a queued film's own label names what it is waiting on,
+`NeedsSpace` names the live cache budget, and a film paused by Android's own
+background time limit stays listed with one Resume action rather than
+disappearing. Android-only by decision — the web player has no film
+preload; see `DESIGN.md` § Pill and `docs/system-architecture.md`'s own
+"Film preload (Android only)".
 
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Cache server: per-film status route | Complete |
 | 2 | Preload engine: queue, progress, pause, service | Complete |
 | 3 | Film pages: button, bar, server line | Complete |
-| 3b | Show the preload queue: engine queue list, Queued/NeedsSpace labels, a Preloads page, menu entry, time-limit-paused films kept listed | Complete; device check pending |
-| 4 | Verify on tablet + TV box, docs, version | TV box done for phases 1–3; tablet and the 3b device check still pending |
+| 3b | Show the preload queue: engine queue list, Queued/NeedsSpace labels, a Preloads page, menu entry, time-limit-paused films kept listed | Complete, device-checked |
+| 4 | Verify on tablet + TV box, docs, version | Both devices done |
 
 Verified on the TV box (`192.168.0.35:5555`, benchmark build), for phases
 1–3: a film preloads with a live bar and MB/s, survives backgrounding,
@@ -277,13 +277,57 @@ pauses while a different film plays and resumes after, cancels mid-way and
 resumes from the held share on a second tap, finishes to "Preloaded ✓", and
 plays back with no further Telegram reads. NeedsSpace confirmed against the
 box's own configured budget — the same walk that found the budget silently
-missing from the reason shown, which is what asked for phase 3b. Tablet pass
-and phase 3b's own device check (the Preloads page, the queued-ahead label,
-the time-limit-paused Resume action, all against a real device) still
-pending. One unrelated finding from the same session: a Realtek hardware
-AV1 decoder stall on that TV box (any AV1+HDR10 title, with or without
-preload involved) — tracked as a follow-up, not part of this feature's
-surface.
+missing from the reason shown, which is what asked for phase 3b. One
+unrelated finding from the same session: a Realtek hardware AV1 decoder
+stall on that TV box (any AV1+HDR10 title, with or without preload
+involved) — tracked as a follow-up, not part of this feature's surface.
+
+Verified on the tablet (Redmi Pad Pro, `caad49da`, Android 16/API 36,
+targetSdk 37) for phase 3b and the whole feature: the Preload button, bar,
+Queued-ahead label, NeedsSpace-with-budget label, the Preloads page's three
+sections, the "Preloads · n" menu entry (hidden while idle, as designed),
+cancel of both the queued and the running item, resume from the held share,
+completion to "Preloaded ✓", Remove, and offline playback (Wi-Fi off, 30s+
+continuous, zero Telegram log lines) all matched the design.
+
+A first pass on this device read `PreloadService` being torn down roughly
+55–75s after every start (logged by `ActivityManager` as "Stop FGS
+timeout", preceded by a MIUI-only "does not have any types" warning) as a
+possible platform/targetSdk bug and left it as an open follow-up. A
+dedicated root-cause pass the same day closed it: `dumpsys activity
+services` shows the service correctly holding its `dataSync` type
+(`types=0x00000001`) for its whole life; AOSP's own
+`ActiveServices.maybeStopFgsTimeoutLocked` — the function behind that log
+line — runs on the *ordinary* `stopService`/`stopForeground` paths, not on
+the abuse-prevention timer itself (`onFgsTimeout`); it is bookkeeping
+cleanup for a stop that already happened, not evidence one was forced. A
+clean, isolated repro on the same tablet showed the timing lining up
+exactly with the film's own completion (the app's own `FilmPreload: ...
+held` line logged 119ms before "Stop FGS timeout") — this service's own
+`hasWork.filter { !it }.collect { stopSelf() }` stopping itself normally
+once its queue emptied. No platform bug, no targetSdk issue, no manifest
+change needed. `PreloadService.onDestroy` gained a small, unconditional-
+adjacent guard regardless (0.72.1): if a *future* teardown ever does
+happen while real work remains — a battery-saver kill, a policy this
+device doesn't use today, anything else this class cannot name — it now
+mirrors `onTimeout`'s own `pauseForTimeLimit()` call so the affected film
+reads "Paused — background limit" + Resume rather than reverting to a bare
+"Preload · N% held" pill. Two new Robolectric tests
+(`PreloadServiceTest`) cover both branches (real Robolectric `Service`
+construction via `ServiceController`, Hilt injection deliberately
+bypassed since this module has no Hilt test harness — `preloader` is
+assigned directly instead). Re-verified on the same tablet afterward: a
+film the home server had never held (so a genuine cold Telegram fetch, not
+a fast LAN one) preloaded across a full 5.5-minute backgrounded window with
+zero interruption — CPU accounting confirmed the process working the
+entire time, the film reached "Preloaded ✓", and the home server line
+climbed from 0 B to the full 1.0 GB. Forcing the defensive branch itself
+live (`adb shell am stopservice` targeting just `PreloadService`) was
+attempted and refused by this device/ROM even as a diagnostic, so that
+exact path is verified by the Robolectric test's real `Service` instance
+rather than a live fault injection — appropriate given the normal path
+never needs it in practice. See the phase-04 root-cause report for the
+full reproduction.
 
 ## Explicitly deferred (from the v1 implementation logs, not tracked as bugs)
 

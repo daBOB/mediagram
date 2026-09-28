@@ -5,6 +5,43 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.75.1 — `PreloadService` teardown, made robust
+
+**Fixed**
+
+- `PreloadService.onDestroy` now mirrors `onTimeout`'s own
+  `pauseForTimeLimit()` call whenever the service is torn down while a
+  preload is still genuinely outstanding (`FilmPreloading.hasWork` true at
+  that moment) — previously only `onTimeout` (Android's own dataSync
+  ceiling firing) did this; any *other* reason the service stops mid-work
+  left the affected film reverting to a bare "Preload · N% held" pill
+  instead of the already-designed "Paused — background limit" + Resume
+  treatment. Guarded on `hasWork` itself so the service's own ordinary
+  self-stop (once the queue empties) stays a no-op, not a blind call.
+
+**Investigated, not a bug**
+
+- A tablet device-verification pass had flagged `PreloadService` being
+  torn down roughly 55–75s after every start, logged by
+  `ActivityManager` as "Stop FGS timeout" preceded by a MIUI-only
+  "does not have any types" warning — read at the time as a possible
+  platform/targetSdk issue. Root-caused this pass: `dumpsys activity
+  services` shows the service's own foreground type correctly held as
+  `dataSync` (`types=0x00000001`) for its entire life; AOSP's
+  `ActiveServices.maybeStopFgsTimeoutLocked` (the function behind that log
+  line) is called from the *ordinary* `stopService`/`stopForeground`
+  paths, not from the abuse-prevention timer itself (`onFgsTimeout`) — it
+  is bookkeeping cleanup for a stop that already happened, not evidence
+  one was forced. A clean, isolated repro on the same tablet confirmed the
+  timing lines up exactly with the film's own completion (`FilmPreload:
+  ... held` logged 119ms before "Stop FGS timeout"), i.e. this service's
+  own `hasWork.filter { !it }.collect { stopSelf() }` stopping itself
+  normally once the queue emptied. The MIUI "no types" warning does not
+  reflect the real, correctly-typed service record either. No manifest or
+  targetSdk change made. `PreloadService.onDestroy`'s new guard above
+  stands regardless, as defense against whatever *does* someday stop this
+  service outside the two paths it already expects.
+
 ## 0.75.0 — Android: the preload queue, made visible
 
 **Added**

@@ -75,11 +75,24 @@ internal class FakeFilmPreloading : FilmPreloading {
         removeCalls += setId
     }
 
-    override fun pauseForTimeLimit() = Unit
+    var pauseForTimeLimitCallCount = 0
+        private set
+
+    override fun pauseForTimeLimit() {
+        pauseForTimeLimitCallCount++
+    }
 
     override val heldEvents: SharedFlow<String> = MutableSharedFlow()
     override val unheldEvents: SharedFlow<String> = MutableSharedFlow()
-    override val hasWork: StateFlow<Boolean> = MutableStateFlow(false)
+
+    private val _hasWork = MutableStateFlow(false)
+    override val hasWork: StateFlow<Boolean> = _hasWork
+
+    /** The only way a test drives what [hasWork] reports — real work still outstanding, or not. */
+    fun setHasWork(value: Boolean) {
+        _hasWork.value = value
+    }
+
     override val active: StateFlow<ActivePreload?> = MutableStateFlow(null)
 
     private val _queueOverview = MutableStateFlow<List<FilmPreloadRow>>(emptyList())

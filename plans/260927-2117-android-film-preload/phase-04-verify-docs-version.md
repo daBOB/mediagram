@@ -22,3 +22,15 @@
 
 A film preloaded on the TV box plays with the network off; the page's bar matched the
 real held bytes throughout.
+
+## Status
+
+Both devices verified. TV box: see
+`reports/fullstack-developer-260928-0115-preload-device-verification-report.md`.
+Tablet (`caad49da`, Android 16/API 36, test profile, covering phase 3b's queue view
+too): see
+`reports/fullstack-developer-260928-0345-preload-tablet-verification-report.md`.
+Headline finding from the tablet pass: `PreloadService`'s `dataSync` foreground
+service gets torn down by the OS ("Stop FGS timeout") roughly 55–75s after every
+start on this device — reproducible, not fixed in this pass, full detail in that
+report. No version bump this pass (no code changed).

@@ -27,7 +27,16 @@ import javax.inject.Inject
  * turns `false`, or once [onTimeout] says Android's own ceiling for a
  * continuously running `dataSync` service (6h a run, 24h a day) has been
  * reached — [FilmPreloading.pauseForTimeLimit] surfaces that on the film
- * page, resumable from there.
+ * page, resumable from there. [onDestroy] mirrors that same pause for any
+ * *other* reason this service stops while work remains: AOSP's own
+ * `ActiveServices.maybeStopFgsTimeoutLocked` logs "Stop FGS timeout" on
+ * every ordinary `dataSync` stop, including this class's own `hasWork`
+ * self-stop below — it is bookkeeping cleanup, not the abuse-prevention
+ * timer itself (that path is `onFgsTimeout`/[onTimeout]), so the log line
+ * alone is not a sign anything is wrong. A real teardown from a cause this
+ * class cannot name (a battery saver, a policy this device enforces,
+ * anything else) is exactly what [onDestroy] now catches instead of
+ * leaving a viewer with a preload that silently stopped moving.
  *
  * Stays foreground while a preload is merely *paused* (something opened
  * in the player, say) rather than stopping and letting [hasWork] restart
@@ -85,7 +94,23 @@ class PreloadService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    /**
+     * Mirrors [onTimeout]'s own [FilmPreloading.pauseForTimeLimit] call —
+     * see the class doc for why. Guarded on [FilmPreloading.hasWork]
+     * itself, not called unconditionally: the *ordinary* stop this service
+     * asks for once the queue empties (`hasWork.filter { !it }` above)
+     * already reaches here with nothing left to pause — calling it
+     * unconditionally would be a same-thread no-op in that case (an empty
+     * queue), but would risk quietly pausing whatever a viewer enqueued in
+     * the brief window between that empty read and this method actually
+     * running. Reading [FilmPreloading.hasWork] synchronously right here
+     * closes that window: `true` only when real work is still genuinely
+     * outstanding at the moment of teardown.
+     */
     override fun onDestroy() {
+        if (preloader.hasWork.value) {
+            preloader.pauseForTimeLimit()
+        }
         scope.cancel()
         super.onDestroy()
     }

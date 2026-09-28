@@ -48,8 +48,8 @@ progress (`ProgressListener` is `null`), dies with the process.
 | 01 | [Cache server: per-film status route](phase-01-cache-server-per-film-status-route.md) | crates/mediagram-cache, `LanChunkClient` | done |
 | 02 | [Preload engine: queue, progress, pause, service](phase-02-preload-engine-queue-progress-service.md) | core/playback, feature/player, app manifest | done |
 | 03 | [Film pages: button, bar, server line](phase-03-film-page-preload-button-progress.md) | ui-mobile `TitlePills`/`TitleDetailScreen`, ui-tv `TvTitlePage`, a small ViewModel | done |
-| 03b | [Show the preload queue](phase-03b-preload-queue-view.md) | engine queue flow, film pages' Queued label, a Preloads page, menu entries | done (device check on TV box/tablet still pending) |
-| 04 | [Verify on tablet + TV box, docs, version](phase-04-verify-docs-version.md) | tests, docs, manifests | TV box done, tablet pending |
+| 03b | [Show the preload queue](phase-03b-preload-queue-view.md) | engine queue flow, film pages' Queued label, a Preloads page, menu entries | done, device-checked |
+| 04 | [Verify on tablet + TV box, docs, version](phase-04-verify-docs-version.md) | tests, docs, manifests | Both devices done |
 
 01 and 02 are independent; 03 needs both. One agent at a time in the worktree.
 

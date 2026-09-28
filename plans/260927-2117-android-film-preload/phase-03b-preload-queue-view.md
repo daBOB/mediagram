@@ -32,6 +32,6 @@ page**; **first come, first served** (no reordering — cancel and re-add to cha
 - [x] Preloads page (phone/tablet, TV) + tests
 - [x] menu entries with count, hidden when idle
 - [x] gate green (`testDebugUnitTest lint :app:assembleDebug`); minor bump to
-      0.72.0; changelog — device check on the TV box/tablet still pending
-      (TV box and tablet both in use by other work this session, per
-      instruction)
+      0.72.0; changelog — device-checked on the TV box (phases 1–3, prior
+      session) and the tablet (this phase's own queue view, phase-04's own
+      report)
