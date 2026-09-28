@@ -707,3 +707,11 @@ look them up:
 - **API 24–25 render every face at its default instance.** Variation settings
   are ignored there, so the optical-size axis and the weight axis do nothing on
   those two releases. The fallback is legible; it is not the designed type.
+- **Documentaries has no television front page.** Television falls back to
+  the same generic wall any shelf without one draws: a folder's own plate
+  reads "N chapters" (`extentOf`'s course wording, the closest existing fit
+  — a documentary folder is not measured in seasons any more than a course
+  is), and a standalone documentary opens its title page on tap rather than
+  playing, unlike the phone's department page, which plays every plate on
+  tap. A television front page that carries the phone's own play-on-tap
+  rule over is undecided.

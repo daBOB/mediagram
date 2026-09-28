@@ -157,7 +157,7 @@ class CatalogViewModel
             when {
                 shown is CatalogUiState.Ready && kids != null -> {
                     val shelves = shelvesOf(forKidsProfile(lastSets, kids))
-                    if (shelves.isEmpty()) CatalogUiState.KidsEmpty else shown.copy(shelves = shelves)
+                    if (!shelves.hasContent()) CatalogUiState.KidsEmpty else shown.copy(shelves = shelves)
                 }
                 else -> shown
             }
@@ -190,7 +190,7 @@ class CatalogViewModel
                     lastSets = sets
                     val shelves = shelvesOf(sets)
                     when {
-                        shelves.isNotEmpty() -> CatalogUiState.Ready(shelves, heldIds = heldIdsOf(shelves), notice = failure?.refreshSentence())
+                        shelves.hasContent() -> CatalogUiState.Ready(shelves, heldIds = heldIdsOf(shelves), notice = failure?.refreshSentence())
                         failure != null -> CatalogUiState.Failed(failure.refreshSentence())
                         else -> CatalogUiState.Empty
                     }
@@ -211,7 +211,7 @@ class CatalogViewModel
                 val sets = repository.sets()
                 val shelves = shelvesOf(sets)
                 val kept = lastReady ?: return
-                if (shelves.isNotEmpty()) {
+                if (shelves.hasContent()) {
                     lastSets = sets
                     show(kept.copy(shelves = shelves, heldIds = heldIdsOf(shelves)))
                 }

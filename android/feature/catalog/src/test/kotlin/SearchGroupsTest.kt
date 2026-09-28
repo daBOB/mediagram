@@ -25,6 +25,13 @@ class SearchGroupsTest {
             posterPath = null, totalBytes = 0,
         )
 
+    private fun documentary(setId: String): MediaSet =
+        MediaSet(
+            setId = setId, kind = Kind.DOCUMENTARY, title = setId, show = null, chapter = null, path = null,
+            season = null, episodeFirst = null, episodeLast = null, year = null, durationSecs = null,
+            posterPath = null, totalBytes = 0,
+        )
+
     private fun readyState(shelves: List<Shelf>) = CatalogUiState.Ready(shelves, WatchSnapshot.Empty)
 
     @Test
@@ -41,6 +48,23 @@ class SearchGroupsTest {
         assertEquals(listOf("f1"), groups.films.map { it.set.setId })
         assertEquals(listOf("e1"), groups.episodes.map { it.set.setId })
         assertEquals(listOf("series/Show"), groups.matchedShows.map(Entry.Collection::key))
+    }
+
+    /**
+     * A regression: moving `docu` off `Kind.MOVIE` (its own department) took
+     * every documentary out of the film bucket without giving it one of its
+     * own, so a hit like "Baraka" matched none of films/episodes/lessons and
+     * simply vanished from search.
+     */
+    @Test
+    fun aDocumentaryIsFoundAsItsOwnGroupBetweenSeriesAndTutorials() {
+        val state = readyState(listOf(Shelf(DOCUMENTARIES, listOf(Entry.Film(documentary("baraka"))))))
+        val hits = listOf(SearchHit("baraka", "title", null))
+
+        val groups = searchGroupsOf("baraka", state, hits, emptyList(), emptyList(), emptyList())
+
+        assertEquals(listOf("baraka"), groups.documentaries.map { it.set.setId })
+        assertEquals(listOf(SearchFilter.DOCUMENTARIES to 1), groups.filters)
     }
 
     @Test

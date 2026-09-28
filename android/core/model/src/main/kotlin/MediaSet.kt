@@ -110,4 +110,14 @@ enum class Kind {
      * the index says what it is, and no container sniffing is involved.
      */
     DOCUMENT,
+
+    /**
+     * A documentary recorded off the air rather than looked up at a
+     * provider — a TMDB film tagged with the documentary genre stays
+     * [MOVIE]. It plays like one, but is shelved and browsed on its own:
+     * a folder of them groups by show like a course does, and a single one
+     * stays a plain title, the way [MediaSet.show] already tells the two
+     * apart for any other kind.
+     */
+    DOCUMENTARY,
 }

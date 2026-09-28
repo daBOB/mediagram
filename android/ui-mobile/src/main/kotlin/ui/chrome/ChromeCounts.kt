@@ -1,9 +1,11 @@
 package ui.chrome
 
+import catalog.DOCUMENTARIES
 import catalog.HOME
 import catalog.KeptKind
 import catalog.Shelf
 import catalog.continueWall
+import catalog.documentaryCountOf
 import catalog.watchlistWall
 import model.WatchSnapshot
 
@@ -44,7 +46,11 @@ fun chromeCountsOf(
     ChromeCounts(
         myList = watchlistWall(shelves, watch).size,
         continueWatching = continueWall(shelves, watch).size,
-        perShelf = shelves.associate { it.title to it.entries.size },
+        // Every other pill counts its own cards — a show or a course is one
+        // card each. Documentaries' pill counts documentaries themselves,
+        // the way its own tab does on the web, so a folder there counts
+        // what it holds rather than standing for one.
+        perShelf = shelves.associate { it.title to (if (it.title == DOCUMENTARIES) documentaryCountOf(it.entries) else it.entries.size) },
         collections = watch.collections.size,
     )
 

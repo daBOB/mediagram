@@ -29,7 +29,10 @@ fun locationOf(set: MediaSet): String? = when (set.kind) {
         set.path?.takeIf(String::isNotBlank) ?: set.chapter?.takeIf(String::isNotBlank),
     ).joinToString(" · ").takeIf(String::isNotEmpty)
 
-    Kind.MOVIE -> set.year?.takeIf { it > 0 }?.toString()
+    // A documentary says its year, the same as a film — nothing about
+    // where it sits in its own folder is worth a search hit's one line,
+    // the same choice the web's own `locationOf` already makes.
+    Kind.MOVIE, Kind.DOCUMENTARY -> set.year?.takeIf { it > 0 }?.toString()
 }
 
 /**

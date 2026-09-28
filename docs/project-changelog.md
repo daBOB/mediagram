@@ -5,6 +5,59 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.72.0 — Documentaries get their own place on Android
+
+**Added**
+
+- `Kind.DOCUMENTARY` for the index's own `docu` kind, which the Android app
+  had been filing under Movies since documentaries themselves shipped
+  (0.63.0) — a library's film count and film wall previously folded
+  documentaries in with films for exactly that reason. A documentary plays
+  and resumes like a film; a folder of them groups by show the way a
+  course groups by folder, and anything uploaded on its own stays a plain,
+  standalone title, the same split the web's own `groupDocumentaries` makes.
+- A Documentaries tab, between Series and Tutorials, the same place the web
+  player's own bar has carried it since 0.63.0 — the one department pill
+  that is never hidden, reading "0" rather than dropping out of the bar for
+  a library that holds none yet.
+- The Documentaries department page: a hero ("Only in your library" ·
+  "Documentaries" · a spelled count, not itself a link), Continue watching,
+  Recently added, one row per folder ("All N" on the row's own heading opens
+  it, the same course-style page a folder of lessons already opens), and a
+  Standalone documentaries row for the rest — a Compose port of the web's
+  own `renderDocumentariesDept`. Every plate here plays on tap rather than
+  opening a title page, matching the web: nothing about a documentary comes
+  from a provider, so there is no synopsis or cast worth a stop before
+  playing it. An empty Documentaries library — every library, until someone
+  uploads one — shows the same upload hint the web's own empty state does,
+  on the phone and on television alike.
+- Documentaries in search, between Series and Tutorials in the filter pills,
+  the same order the web's own pills carry them in. A search hit had quietly
+  stopped finding any documentary once `docu` moved off `Kind.MOVIE` here;
+  it has its own group again now, playing on tap the same as an episode or
+  a lesson row does.
+
+**Changed**
+
+- A film's Similar row and franchise link (`filmsOf`) now read the Movies
+  shelf alone rather than every shelf's own films — what keeps a
+  documentary, shelved on its own now, from turning up as "similar" to an
+  unrelated film.
+- A documentary folder gets its own collection key, distinct from a course
+  or a show that happens to share its name — the two no longer resolve to
+  whichever shelf is searched first.
+- `runFor` (what a title not opened from a list or a search result plays
+  into) now finds the collection that actually holds the set, not just the
+  first one with a matching name — a documentary in a folder plays on
+  through the rest of the folder, the same as a lesson or an episode does,
+  and two collections that happen to share a name (a course and a
+  documentary folder, or two shows) no longer hand a title the wrong one's
+  run.
+- The chosen tab is kept by its name rather than its plain position for the
+  rest of a session — a profile switch, or a rail tap made while the
+  library is still loading, now lands on the same tab regardless of
+  whether a department shifted everything after it by one in between.
+
 ## 0.71.1 — the Android home tab, in the web player's own layout
 
 **Changed**

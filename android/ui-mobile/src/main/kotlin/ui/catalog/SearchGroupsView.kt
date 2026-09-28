@@ -69,6 +69,7 @@ internal fun SearchGroupsView(
     val shows = groups.matchedShows.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.SERIES }.orEmpty()
     val films = groups.films.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.MOVIES }.orEmpty()
     val episodes = groups.episodes.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.SERIES }.orEmpty()
+    val documentaries = groups.documentaries.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.DOCUMENTARIES }.orEmpty()
     val lessons = groups.lessons.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.TUTORIALS }.orEmpty()
     val people = groups.people.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.PEOPLE }.orEmpty()
     val collections = groups.collections.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.COLLECTIONS }.orEmpty()
@@ -84,6 +85,9 @@ internal fun SearchGroupsView(
             }
             if (episodes.isNotEmpty()) {
                 item(key = "episodes") { RowSection("Episodes", episodes, positions, watchedIds, onPlay) }
+            }
+            if (documentaries.isNotEmpty()) {
+                item(key = "documentaries") { RowSection("Documentaries", documentaries, positions, watchedIds, onPlay) }
             }
             if (lessons.isNotEmpty()) {
                 item(key = "lessons") { RowSection("Lessons", lessons, positions, watchedIds, onPlay) }
@@ -127,6 +131,7 @@ private fun filterLabel(filter: SearchFilter): String = when (filter) {
     SearchFilter.ALL -> "All"
     SearchFilter.MOVIES -> "Movies"
     SearchFilter.SERIES -> "Series"
+    SearchFilter.DOCUMENTARIES -> "Documentaries"
     SearchFilter.TUTORIALS -> "Tutorials"
     SearchFilter.PEOPLE -> "People"
     SearchFilter.COLLECTIONS -> "Collections"

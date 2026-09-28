@@ -1,9 +1,12 @@
 package ui.tv.catalog
 
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import catalog.DOCUMENTARIES
 import catalog.Entry
+import catalog.Shelf
 import catalog.allSetsById
 import catalog.moviesDepartmentOf
 import catalog.shelvesOf
@@ -65,6 +68,33 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
         show { TvMoviesDepartmentPage(dept = dept, onOpenTitle = {}, onPlay = {}, onOpenGenre = {}, onOpenAllFilms = {}) }
 
         compose.onNodeWithText("Action").assertIsFocused()
+    }
+
+    /**
+     * Unlike Movies/Series/Tutorials — omitted from the shelf list while
+     * empty, so [DepartmentOrShelfWall] never meets one with nothing in it —
+     * Documentaries is always present, so an empty library, or a kids
+     * profile with nothing rated for it, reaches this wall with zero
+     * entries. [TvWall] draws nothing of its own for that; the message is.
+     */
+    @Test
+    fun anEmptyDocumentariesWallShowsTheUploadHintRatherThanNothing() {
+        show {
+            DepartmentOrShelfWall(
+                shelf = Shelf(DOCUMENTARIES, emptyList()),
+                watch = WatchSnapshot.Empty,
+                heldIds = emptySet(),
+                byId = emptyMap(),
+                onOpenTitle = {},
+                onPlay = {},
+                onOpenCollection = {},
+                onOpenGenre = {},
+                onOpenMoviesPage = {},
+                restoreKey = null,
+            )
+        }
+
+        compose.onNodeWithText("No documentaries yet. Upload one with mediagram add-docu <file|folder>.").assertIsDisplayed()
     }
 
     private fun seriesEntriesOf(sets: List<MediaSet>): List<Entry.Collection> =

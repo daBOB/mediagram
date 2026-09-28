@@ -2,6 +2,7 @@ package ui.tv.catalog
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import catalog.DOCUMENTARIES
 import catalog.Entry
 import catalog.Shelf
 import catalog.moviesDepartmentOf
@@ -81,6 +82,18 @@ internal fun DepartmentOrShelfWall(
         val dept = remember(films, watchedIds) { moviesDepartmentOf(films) { it in watchedIds } }
         if (dept != null) {
             TvMoviesDepartmentPage(dept, onOpenTitle, onPlay, onOpenGenre, onOpenMoviesPage, restoreKey, heldIds)
+            return
+        }
+    } else if (shelf.title == DOCUMENTARIES) {
+        // Documentaries mixes folders and standalone singles, not shows —
+        // treating its own folders as episodes below would mislabel them and
+        // `filterIsInstance<Entry.Collection>()` would silently drop every
+        // standalone documentary, so it gets the plain wall instead, the
+        // same as any shelf with no front page of its own. Unlike every
+        // other shelf, this one is never itself omitted for being empty, so
+        // the wall's own empty message is the one thing added here.
+        if (shelf.entries.isEmpty()) {
+            TvCenteredMessage("No documentaries yet. Upload one with mediagram add-docu <file|folder>.")
             return
         }
     } else {

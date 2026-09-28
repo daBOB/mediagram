@@ -125,8 +125,9 @@ class TvCatalogScreenTest {
         compose.onNodeWithText("Film 9").performKeyInput { pressKey(Key.DirectionUp) }
         waitUntilFocused("Home")
 
-        // Home, three shelves, four kept entries: eight steps to the name.
-        repeat(8) { compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionRight) } }
+        // Home, four shelves (Documentaries is always among them, even
+        // holding nothing here), four kept entries: nine steps to the name.
+        repeat(9) { compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionRight) } }
 
         waitUntilFocused("andre")
     }

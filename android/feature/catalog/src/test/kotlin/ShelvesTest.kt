@@ -149,9 +149,10 @@ class ShelvesTest {
         assertEquals("/art/30rock.jpg", show.posterPath)
     }
 
+    /** Every other shelf still drops out empty; Documentaries is the one exception, always present even holding nothing. */
     @Test
     fun anEmptyShelfIsOmittedRatherThanRenderedEmpty() {
-        assertEquals(listOf("Movies"), shelvesOf(listOf(film("Alien"))).map { it.title })
+        assertEquals(listOf("Movies", "Documentaries"), shelvesOf(listOf(film("Alien"))).map { it.title })
     }
 
     /** A key has to survive the process being killed and find its way back. */
@@ -159,7 +160,7 @@ class ShelvesTest {
     fun aCollectionIsFoundAgainByItsKey() {
         val shelves = shelvesOf(listOf(episode("30 Rock", season = 1, episode = 1, title = "Pilot")))
         val state = CatalogUiState.Ready(shelves)
-        val key = (shelves.single().entries.single() as Entry.Collection).key
+        val key = (shelves.single { it.title == "Series" }.entries.single() as Entry.Collection).key
 
         assertEquals("30 Rock", state.collection(key)?.name)
         assertNull(state.collection("SHOW/Nothing here"), "a stale key names nothing rather than guessing")
@@ -169,7 +170,7 @@ class ShelvesTest {
     fun aShowWithNoNameIsStillReachable() {
         val shelves = shelvesOf(listOf(episode(show = null, season = 1, episode = 1, title = "Orphan")))
 
-        val show = shelves.single().entries.single() as Entry.Collection
+        val show = shelves.single { it.title == "Series" }.entries.single() as Entry.Collection
         assertEquals("Unknown show", show.name)
     }
 
@@ -191,6 +192,27 @@ class ShelvesTest {
         assertNull(shelves.find { it.title == "Movies" }, "a handout is not a film")
         val course = assertIs<Entry.Collection>(shelves.single { it.title == "Tutorials" }.entries.single())
         assertEquals(2, course.count, "the workbook is counted with the lesson")
+    }
+
+    /**
+     * A documentary that happens to share a show's name and carries its own
+     * season/episode numbers (an upload structured like an episode) is still
+     * kind `DOCUMENTARY`, and kind alone is what `episodes` filters on — not
+     * a folder name or a season number two kinds can equally carry.
+     */
+    @Test
+    fun aDocumentaryNeverJoinsASeriesEvenWhenItSharesAShowNameAndHasSeasonEpisodeFields() {
+        val shelves = shelvesOf(
+            listOf(
+                episode("Show A", season = 1, episode = 1, title = "Real Episode"),
+                set(Kind.DOCUMENTARY, "Not An Episode", show = "Show A", season = 1, episodeFirst = 1),
+            ),
+        )
+
+        val series = shelves.single { it.title == "Series" }.entries.single() as Entry.Collection
+        assertEquals(1, series.count, "the documentary must not be counted as a second episode of Show A")
+        val documentaries = shelves.single { it.title == DOCUMENTARIES }
+        assertEquals(1, documentaries.entries.size)
     }
 
     /**

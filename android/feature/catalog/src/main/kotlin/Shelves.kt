@@ -6,16 +6,34 @@ import model.MediaSet
 private const val UNKNOWN_SHOW = "Unknown show"
 private const val UNKNOWN_COURSE = "Unknown course"
 
+/**
+ * The title the Documentaries shelf carries — named once here rather than
+ * spelled out at each of the handful of places that treat it differently
+ * from an ordinary shelf: routing a department to its own page (`CatalogScreen.kt`,
+ * `TvDepartmentPages.kt`), the pill count that sums a folder's own items
+ * rather than counting folders (`ChromeCounts.kt`), and the home rows that
+ * leave it out of "Latest" and "what is underway" (`HomeShelves.kt`).
+ */
+const val DOCUMENTARIES = "Documentaries"
+
 /** The kinds that belong to a show or a course rather than standing alone. */
 private val COLLECTED = setOf(Kind.EPISODE, Kind.TUTORIAL, Kind.DOCUMENT)
 
 /**
- * Turns a flat catalog into the three shelves a viewer expects.
+ * Turns a flat catalog into the shelves a viewer expects.
  *
  * The index stores one row per set. Films are already cards; episodes and
  * lessons are not — they belong to a show or a course, and a shelf that
  * listed them one by one would show a hundred and eighty cards that each
  * repeat the same poster and say nothing about what they are part of.
+ *
+ * Documentaries is always present, even holding nothing — the web never
+ * hides a department, and this is the one shelf a library can genuinely
+ * have none of, so the one whose own empty state a viewer can actually
+ * reach. The other three drop out instead: a library with no films or no
+ * courses reads as one that has not been pointed at either yet, which an
+ * empty department page would say far more quietly than simply not
+ * offering the tab.
  *
  * Derived here rather than inside a render loop, because the television
  * surface needs the same answer and neither surface should be where it is
@@ -29,22 +47,38 @@ fun shelvesOf(sets: List<MediaSet>): List<Shelf> {
     val course = sets.filter { it.kind == Kind.TUTORIAL || it.kind == Kind.DOCUMENT }
     // Everything else, which is films and any kind this build has never
     // heard of. Placing an unknown kind beats hiding it: the wrong shelf is
-    // something a viewer can report, an absence is not.
-    val films = sets.filter { it.kind !in COLLECTED }
+    // something a viewer can report, an absence is not. Documentaries has
+    // its own shelf below, so it is the one recognised kind excluded here.
+    val films = sets.filter { it.kind !in COLLECTED && it.kind != Kind.DOCUMENTARY }
+    val documentaries = groupDocumentaries(sets.filter { it.kind == Kind.DOCUMENTARY })
 
-    return listOf(
-        Shelf("Movies", films.sortedWith(compareBy(NATURAL) { it.title }).map(Entry::Film)),
-        Shelf("Series", collections(episodes, CollectionKind.SHOW, UNKNOWN_SHOW)),
-        Shelf("Tutorials", collections(course, CollectionKind.COURSE, UNKNOWN_COURSE)),
-    ).filter { it.entries.isNotEmpty() }
+    return listOfNotNull(
+        Shelf("Movies", films.sortedWith(compareBy(NATURAL) { it.title }).map(Entry::Film))
+            .takeIf { it.entries.isNotEmpty() },
+        Shelf("Series", collections(episodes, CollectionKind.SHOW, UNKNOWN_SHOW))
+            .takeIf { it.entries.isNotEmpty() },
+        Shelf(DOCUMENTARIES, documentaries.collections + documentaries.singles.map(Entry::Film)),
+        Shelf("Tutorials", collections(course, CollectionKind.COURSE, UNKNOWN_COURSE))
+            .takeIf { it.entries.isNotEmpty() },
+    )
 }
 
-/** Groups one kind's sets by the show or course holding them, then by folder. */
-private fun collections(
+/**
+ * Whether any shelf actually holds something.
+ *
+ * Documentaries is always present even at zero, so `shelves.isEmpty()` no
+ * longer says whether a library is empty — a library with nothing at all
+ * still returns one, empty, Documentaries shelf. Every place that used to
+ * gate "is there a library here" on the plain list reads this instead.
+ */
+fun List<Shelf>.hasContent(): Boolean = any { it.entries.isNotEmpty() }
+
+/** Groups one kind's sets by the show or course holding them, then by folder. Internal rather than private: [groupDocumentaries] (`Documentaries.kt`) groups a folder of documentaries the same way a course does. */
+internal fun collections(
     sets: List<MediaSet>,
     kind: CollectionKind,
     fallback: String,
-): List<Entry> {
+): List<Entry.Collection> {
     val byName = LinkedHashMap<String, MutableNode>()
 
     for (set in sets) {

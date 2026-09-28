@@ -62,9 +62,10 @@ class LibraryRailTest {
         for (label in listOf("My List", "Continue watching", "Latest", "Genres", "Settings", "System")) {
             compose.onNodeWithText(label).assertIsDisplayed()
         }
-        // My List and Continue watching are both empty in this fixture — the
-        // only two rows that print a count at all — so both read "0".
-        compose.onAllNodesWithText("0").assertCountEquals(2)
+        // My List and Continue watching are both empty in this fixture, and
+        // so is Documentaries — the one department pill that still prints
+        // its count at zero rather than dropping out — so all three read "0".
+        compose.onAllNodesWithText("0").assertCountEquals(3)
         // The fixture's one shelf, "Series", holds one show — the tally
         // prints it uppercase, the same as SettingsIndex's own tally does.
         compose.onNodeWithText("ONE SHOW").assertIsDisplayed()

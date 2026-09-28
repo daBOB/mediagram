@@ -74,13 +74,13 @@ it lands. Do not build a TV page here.
 
 ## Todo
 
-- [ ] Kind + mapping
-- [ ] grouping + count + tests
-- [ ] shelf, tab, counts; films exclude docs
-- [ ] department page + test
-- [ ] TV builds, tests green, no TV page added
-- [ ] tablet check vs web
-- [ ] 0.71.0, changelog, commit
+- [x] Kind + mapping
+- [x] grouping + count + tests
+- [x] shelf, tab, counts; films exclude docs
+- [x] department page + test
+- [x] TV builds, tests green, no TV page added
+- [x] tablet check vs web
+- [x] 0.71.0, changelog, commit (bumped; not committed — orchestrator's call)
 
 ## Success criteria
 

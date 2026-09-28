@@ -82,7 +82,7 @@ class CatalogUiStateTest {
     fun aCourseNoProviderKnowsCarriesNoKey() {
         val shelves = shelvesOf(listOf(lesson("Rust", path = "Basics", title = "Moves")))
 
-        val course = shelves.single().entries.single() as Entry.Collection
+        val course = shelves.single { it.title == "Tutorials" }.entries.single() as Entry.Collection
         assertNull(course.posterKey)
     }
 }

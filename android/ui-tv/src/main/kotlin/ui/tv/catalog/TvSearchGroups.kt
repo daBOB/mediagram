@@ -36,6 +36,7 @@ internal fun labelFor(filter: SearchFilter): String =
         SearchFilter.ALL -> "All"
         SearchFilter.MOVIES -> "Movies"
         SearchFilter.SERIES -> "Series"
+        SearchFilter.DOCUMENTARIES -> "Documentaries"
         SearchFilter.TUTORIALS -> "Tutorials"
         SearchFilter.PEOPLE -> "People"
         SearchFilter.COLLECTIONS -> "Collections"
@@ -43,7 +44,8 @@ internal fun labelFor(filter: SearchFilter): String =
 
 /**
  * [groups] as the sections [filter] asks to see, in the web's own order —
- * films, matched shows, episodes, lessons, people, collections — with
+ * films, matched shows, episodes, documentaries, lessons, people,
+ * collections — with
  * [SearchFilter.ALL] showing every one that has something in it and every
  * other filter narrowing to its own single kind (also only when it has
  * something — a filter with a count of zero is never offered as a chip in
@@ -60,6 +62,9 @@ internal fun sectionsFor(groups: SearchGroups, filter: SearchFilter): List<Searc
         }
         if (wants(SearchFilter.SERIES) && groups.episodes.isNotEmpty()) {
             add(SearchSection("Episodes", groups.episodes.map(SearchEntry::Title)))
+        }
+        if (wants(SearchFilter.DOCUMENTARIES) && groups.documentaries.isNotEmpty()) {
+            add(SearchSection("Documentaries", groups.documentaries.map(SearchEntry::Title)))
         }
         if (wants(SearchFilter.TUTORIALS) && groups.lessons.isNotEmpty()) {
             add(SearchSection("Tutorials", groups.lessons.map(SearchEntry::Title)))

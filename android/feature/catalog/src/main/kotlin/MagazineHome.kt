@@ -53,8 +53,7 @@ fun magazineHomeOf(
             onRow = onRow,
         )
 
-    val collections = shelves.asSequence().flatMap { it.entries }.filterIsInstance<Entry.Collection>().toList()
-    val underway = underwayOf(collections, byId, watch, limit)
+    val underway = underwayOf(collectionsForNextUp(shelves), byId, watch, limit)
     val positions = watch.progress.associateBy { it.setId }
     val resumeCards =
         buildList {

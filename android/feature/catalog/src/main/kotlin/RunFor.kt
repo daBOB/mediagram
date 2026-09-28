@@ -17,12 +17,17 @@ import model.MediaSet
 fun runFor(set: MediaSet, state: CatalogUiState): List<String> {
     if (set.kind == Kind.MOVIE) return emptyList()
     val show = set.show ?: return emptyList()
-    val collection = (state as? CatalogUiState.Ready)
+    val sameName = (state as? CatalogUiState.Ready)
         ?.shelves
         ?.asSequence()
         ?.flatMap { it.entries }
         ?.filterIsInstance<Entry.Collection>()
-        ?.find { it.name == show }
+        ?.filter { it.name == show }
         ?: return emptyList()
-    return playOrder(collection.divisions).map(MediaSet::setId)
+    // A name alone can name two collections — a course and a documentary
+    // folder, or two shows, sharing it by coincidence — so the one that
+    // actually holds this set, not just the first with a matching name, is
+    // the one it belongs to.
+    val order = sameName.map { playOrder(it.divisions) }.find { items -> items.any { it.setId == set.setId } }
+    return order?.map(MediaSet::setId) ?: emptyList()
 }

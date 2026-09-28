@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import catalog.CatalogTabs
 import catalog.CatalogUiState
+import catalog.DOCUMENTARIES
 import catalog.Entry
 import catalog.KeptKind
 import catalog.Shelf
@@ -26,6 +27,7 @@ import catalog.catalogTabsOf
 import catalog.continueWall
 import catalog.HOME_POSTER_ROW_LIMIT
 import catalog.franchisesIn
+import catalog.hasContent
 import catalog.homeRowsOf
 import catalog.magazineHomeOf
 import catalog.moviesDepartmentOf
@@ -146,7 +148,7 @@ private fun Shelves(
     val chosenView by shelfViewModel.view.collectAsStateWithLifecycle()
     val shelfView = ShelfViewChoice(chosenView, shelfViewModel::choose)
     val shelves = state.shelves
-    if (shelves.isEmpty()) {
+    if (!shelves.hasContent()) {
         CenteredMessage("The library is empty.")
         return
     }
@@ -229,6 +231,7 @@ private fun Shelves(
                     }
                     "Series" -> ShowsDepartment(Kind.EPISODE, "Series", "episode", shelf, state, columns, onOpenTitle, onOpenCollection)
                     "Tutorials" -> ShowsDepartment(Kind.TUTORIAL, "Tutorials", "lesson", shelf, state, columns, onOpenTitle, onOpenCollection)
+                    DOCUMENTARIES -> DocumentariesDepartment(shelf, state, onOpenCollection) { id -> onPlayRun(id, emptyList()) }
                     else -> ShelfWall(shelf, state.watch, state.heldIds, columns, shelfView, onOpenTitle, onOpenCollection)
                 }
             }

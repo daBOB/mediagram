@@ -262,7 +262,7 @@ class CatalogViewModelTest {
                     "/artwork/movie-0.jpg",
                     (
                         ready.shelves
-                            .single()
+                            .single { it.title == "Movies" }
                             .entries
                             .single() as Entry.Film
                     ).set.posterPath,
@@ -421,7 +421,7 @@ class CatalogViewModelTest {
             vm.state.test {
                 assertEquals(CatalogUiState.Loading, awaitItem())
                 val ready = awaitItem() as CatalogUiState.Ready
-                assertEquals(listOf("Movies", "Series"), ready.shelves.map { it.title })
+                assertEquals(listOf("Movies", "Series", "Documentaries"), ready.shelves.map { it.title })
             }
         }
 
@@ -439,7 +439,7 @@ class CatalogViewModelTest {
             vm.state.test {
                 awaitItem()
                 val ready = awaitItem() as CatalogUiState.Ready
-                assertEquals(listOf("Movies"), ready.shelves.map { it.title })
+                assertEquals(listOf("Movies", "Documentaries"), ready.shelves.map { it.title })
             }
         }
 
@@ -744,6 +744,35 @@ class CatalogViewModelTest {
                 val all = adultView.shelves.flatMap { it.entries }.filterIsInstance<Entry.Film>().map { it.set.setId }
                 assertEquals(setOf("Family", "Grown", "Marked"), all.toSet())
                 assertEquals(readsBefore, repository.reads)
+            }
+        }
+
+    /**
+     * A `docu` set is never looked up at a provider, so it never carries an
+     * FSK rating and stays [model.KidsVerdict.UNRATED] — hidden from a kids
+     * profile unless hand-marked, the same rule any other unrated title
+     * follows. The Documentaries shelf is not omitted for being empty the
+     * way Movies/Series/Tutorials are, so a kids profile with nothing
+     * marked reaches a present, empty Documentaries shelf rather than
+     * never seeing one at all — the scenario the empty state on that page
+     * has to draw something for.
+     */
+    @Test
+    fun aKidsProfileWithAnUnratedDocumentaryDoesNotSeeItButStillGetsAPresentEmptyShelf() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val repository = FakeCatalogRepository(
+                given = listOf(fakeSet(Kind.MOVIE, "Family").copy(fsk = "6"), fakeSet(Kind.DOCUMENTARY, "Baraka")),
+            )
+            val watch = FakeCatalogWatchState()
+            watch.profiles.value = listOf(Profile("k", "Mia", kids = true))
+            watch.chosenProfileId.value = "k"
+            val vm = catalogViewModel(repository, watch)
+            vm.state.test {
+                awaitItem()
+                val kidsView = awaitItem() as CatalogUiState.Ready
+                val documentaries = kidsView.shelves.single { it.title == DOCUMENTARIES }
+                assertEquals(emptyList(), documentaries.entries)
             }
         }
 

@@ -22,6 +22,7 @@ import androidx.tv.material3.Text
 import catalog.CatalogUiState
 import catalog.allSetsById
 import catalog.catalogTabsOf
+import catalog.hasContent
 import catalog.mastheadSplitOf
 import catalog.updateDisabledReason
 import designsystem.Overscan
@@ -82,7 +83,7 @@ fun TvCatalogScreen(
     onOpenMoviesPage: () -> Unit = {},
     onPlay: (setId: String) -> Unit = onOpenTitle,
 ) {
-    val ready = (state as? CatalogUiState.Ready)?.takeIf { it.shelves.isNotEmpty() }
+    val ready = (state as? CatalogUiState.Ready)?.takeIf { it.shelves.hasContent() }
     val shelves = ready?.shelves.orEmpty()
     // Ordering, index-to-tab mapping and the labels themselves are
     // catalogTabsOf's, the same function the phone's masthead reads — the

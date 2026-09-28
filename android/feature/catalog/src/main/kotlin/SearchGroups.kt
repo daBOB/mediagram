@@ -6,7 +6,7 @@ import model.PersonHit
 import uniffi.mediagram_core.SearchHit
 
 /** Which part of a grouped search result a viewer has narrowed the page to. */
-enum class SearchFilter { ALL, MOVIES, SERIES, TUTORIALS, PEOPLE, COLLECTIONS }
+enum class SearchFilter { ALL, MOVIES, SERIES, DOCUMENTARIES, TUTORIALS, PEOPLE, COLLECTIONS }
 
 /** A franchise or a hand-built list matched by name — ported from `destination` in `collections-page.js`. */
 data class SearchDestination(val filter: SearchFilter, val name: String, val itemCount: Int, val art: String?, val href: String)
@@ -27,6 +27,7 @@ data class SearchGroups(
     val films: List<SearchRow>,
     val matchedShows: List<Entry.Collection>,
     val episodes: List<SearchRow>,
+    val documentaries: List<SearchRow>,
     val lessons: List<SearchRow>,
     val people: List<VisiblePerson>,
     val collections: List<SearchDestination>,
@@ -45,6 +46,7 @@ fun searchGroupsOf(
     val rows = searchRowsOf(hits, catalogState)
     val films = rows.filter { it.set.kind == Kind.MOVIE }
     val episodes = rows.filter { it.set.kind == Kind.EPISODE }
+    val documentaries = rows.filter { it.set.kind == Kind.DOCUMENTARY }
     val lessons = rows.filter { it.set.kind == Kind.TUTORIAL || it.set.kind == Kind.DOCUMENT }
     val showNames = episodes.mapNotNullTo(LinkedHashSet()) { it.set.show }
     val matchedShows = shelves.asSequence().flatMap { it.entries }.filterIsInstance<Entry.Collection>()
@@ -69,12 +71,13 @@ fun searchGroupsOf(
     val counts = listOf(
         SearchFilter.MOVIES to films.size,
         SearchFilter.SERIES to episodes.size,
+        SearchFilter.DOCUMENTARIES to documentaries.size,
         SearchFilter.TUTORIALS to lessons.size,
         SearchFilter.PEOPLE to people.size,
         SearchFilter.COLLECTIONS to collections.size,
     ).filter { it.second > 0 }
-    val total = films.size + episodes.size + lessons.size + people.size + collections.size
+    val total = films.size + episodes.size + documentaries.size + lessons.size + people.size + collections.size
     val filters = if (counts.size >= 2) listOf(SearchFilter.ALL to total) + counts else counts
 
-    return SearchGroups(films, matchedShows, episodes, lessons, people, collections, filters)
+    return SearchGroups(films, matchedShows, episodes, documentaries, lessons, people, collections, filters)
 }

@@ -6,14 +6,16 @@ import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
+import catalog.CatalogTabs
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.Destination
+import catalog.HOME
 import catalog.Shelf
 import catalog.catalogTabsOf
 import catalog.libraryTallyLines
@@ -65,17 +67,26 @@ internal fun LibraryBranches(
     // lifted up here (rather than kept inside CatalogScreen) so the rail's
     // own My List/Continue watching rows can land on it from anywhere, the
     // same way the web's rail-nav can. See [BrowseActions].
-    var chosenTab by rememberSaveable { mutableIntStateOf(0) }
+    //
+    // Persisted by title, not by the plain index a tab sits at: a shelf list
+    // gaining or losing a department shifts every later tab's index, and an
+    // index saved across a process restart (a rotation, or the OS reclaiming
+    // memory while this task sits in recents) would then restore onto
+    // whichever tab now sits at that number rather than the one that was
+    // actually left open.
+    var chosenTabTitle by rememberSaveable { mutableStateOf(HOME) }
     val shelves = (catalogState as? CatalogUiState.Ready)?.shelves.orEmpty()
     val watch = (catalogState as? CatalogUiState.Ready)?.watch ?: WatchSnapshot.Empty
-    // firstKept, not a hand-counted offset: a shelf list this build has never
-    // seen (Documentaries, a future department) must not silently point My
-    // List and Continue watching at the wrong tab.
+    // firstKept, not a hand-counted offset: a shelf list gaining or losing a
+    // department must not silently point My List and Continue watching at
+    // the wrong tab.
     val fullTabs = remember(shelves) { catalogTabsOf(shelves) }
     val visible = remember(fullTabs) { visibleTabIndices(fullTabs) }
+    val chosenTab = restoredTabIndex(fullTabs, chosenTabTitle)
+    val chooseTab = { index: Int -> chosenTabTitle = fullTabs.titles.getOrElse(index) { HOME } }
     val browse = BrowseActions(
-        onMyList = { at.toCatalog(); chosenTab = fullTabs.firstKept + 1 },
-        onContinueWatching = { at.toCatalog(); chosenTab = fullTabs.firstKept },
+        onMyList = { at.toCatalog(); chooseTab(fullTabs.firstKept + 1) },
+        onContinueWatching = { at.toCatalog(); chooseTab(fullTabs.firstKept) },
         onLatest = at::openLatest,
         onGenres = at::openGenresIndex,
     )
@@ -85,7 +96,7 @@ internal fun LibraryBranches(
     // every branch below that never otherwise needs them.
     val railData =
         remember(shelves, watch) {
-            RailData(chromeCountsOf(shelves, watch), libraryTallyLines(shelves), onHome = { at.toCatalog(); chosenTab = 0 })
+            RailData(chromeCountsOf(shelves, watch), libraryTallyLines(shelves), onHome = { at.toCatalog(); chooseTab(0) })
         }
 
     // Home's own list state, hoisted here rather than kept inside
@@ -201,7 +212,7 @@ internal fun LibraryBranches(
             tabs = fullTabs,
             visible = visible,
             chosenTab = chosenTab,
-            onTabChange = { chosenTab = it },
+            onTabChange = chooseTab,
             browse = browse,
             menu = menuActions,
             profile = profileBar,
@@ -213,7 +224,7 @@ internal fun LibraryBranches(
                 state = catalogState,
                 fetching = fetchState.running,
                 chosenTab = chosenTab,
-                onTabChange = { chosenTab = it },
+                onTabChange = chooseTab,
                 onOpenTitle = at::openTitle,
                 onOpenCollection = at::openCollection,
                 onOpenList = at::openList,
@@ -271,6 +282,18 @@ internal fun LibraryBranch(
         content = content,
     )
 }
+
+/**
+ * Which of [tabs]' own tabs [title] names, or Home when it names none.
+ *
+ * A title saved before a shelf list shift (Documentaries landing between
+ * Series and Tutorials, or any future department) no longer matches
+ * anything at its old index, so restoring by the plain index would reopen
+ * on whichever tab now sits there instead of the one that was actually
+ * left open. A title survives the shift; only a title this build no longer
+ * has at all — a stale save, or nothing chosen yet — falls back to Home.
+ */
+internal fun restoredTabIndex(tabs: CatalogTabs, title: String): Int = tabs.titles.indexOf(title).takeIf { it >= 0 } ?: 0
 
 /** What this device holds in full, or nothing while the shelves are still loading. */
 internal fun CatalogUiState.heldIdsOrEmpty(): Set<String> = (this as? CatalogUiState.Ready)?.heldIds.orEmpty()

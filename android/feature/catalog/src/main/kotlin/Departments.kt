@@ -47,6 +47,56 @@ fun moviesDepartmentOf(films: List<MediaSet>, watched: (String) -> Boolean): Mov
 }
 
 /**
+ * The Documentaries department's opening page — ported from
+ * `renderDocumentariesDept`. `null` for an empty library, the same empty
+ * state a department page falls back to.
+ *
+ * Nothing here comes from a provider — no popularity, no rating, no genre —
+ * so unlike Movies there is no Featured or Acclaimed row to rank; what is
+ * underway, what arrived, then one row per folder and the rest.
+ */
+data class DocumentariesDepartment(
+    val itemCount: Int,
+    val lead: MediaSet?,
+    /** Already-started documentaries, newest touch first — no "next up": a documentary has no next episode. */
+    val continuing: List<MediaSet>,
+    val recentlyAdded: List<MediaSet>,
+    val collections: List<DocumentaryGroupRow>,
+    /** Capped to [DEPARTMENT_ROW], same as the web's own "Standalone documentaries" row — ponytail: caps a single row rather than paging it; add a page if a library ever holds more standalone documentaries than one row shows. */
+    val singles: List<MediaSet>,
+)
+
+/** One documentary folder's own row: the card ["All N"] opens, and the row's own first plates. */
+data class DocumentaryGroupRow(
+    val collection: Entry.Collection,
+    val preview: List<MediaSet>,
+)
+
+fun documentariesDepartmentOf(
+    library: DocumentaryLibrary,
+    byId: Map<String, MediaSet>,
+    watch: WatchSnapshot,
+): DocumentariesDepartment? {
+    val items = library.singles + library.collections.flatMap { playOrder(it.divisions) }
+    if (items.isEmpty()) return null
+    val byRecent = items.sortedByDescending(MediaSet::addedAt)
+    // The general Continue list, any kind, narrowed to documentaries after
+    // the fact — the same order `renderDocumentariesDept` reads it in: this
+    // page never contributes its own folders to that list's "next up" half,
+    // so passing none here is what keeps this call a plain narrowing rather
+    // than a second, documentary-flavoured underway computation.
+    val continuing = underwayOf(emptyList(), byId, watch, DEPARTMENT_ROW).continues.filter { it.kind == Kind.DOCUMENTARY }
+    return DocumentariesDepartment(
+        itemCount = items.size,
+        lead = byRecent.firstOrNull { it.backdropPath != null },
+        continuing = continuing,
+        recentlyAdded = byRecent.take(DEPARTMENT_ROW),
+        collections = library.collections.map { DocumentaryGroupRow(it, playOrder(it.divisions).take(DEPARTMENT_ROW)) },
+        singles = library.singles.take(DEPARTMENT_ROW),
+    )
+}
+
+/**
  * The Series or Tutorials department's opening page — ported from
  * `renderShowsDept`. `null` for an empty shelf.
  *

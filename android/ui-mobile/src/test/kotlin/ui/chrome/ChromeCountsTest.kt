@@ -1,5 +1,8 @@
 package ui.chrome
 
+import catalog.CollectionKind
+import catalog.DOCUMENTARIES
+import catalog.Division
 import catalog.Entry
 import catalog.Shelf
 import model.Kind
@@ -44,6 +47,18 @@ class ChromeCountsTest {
         assertEquals(1, counts.departmentCount("Collections"))
         assertNull(counts.departmentCount("Home"))
         assertNull(counts.departmentCount("Documentaries"))
+    }
+
+    /** Documentaries counts what its folders and singles hold, not one card per folder — the pill names documentaries, not folders. */
+    @Test
+    fun documentariesCountsItemsInsideFoldersRatherThanTheFoldersThemselves() {
+        val folder = Entry.Collection(
+            key = "COURSE/Terra X", kind = CollectionKind.COURSE, name = "Terra X", posterPath = null, posterKey = null,
+            count = 3, chapters = 1, divisions = listOf(Division("Chapter 1", null, listOf(film("A"), film("B"), film("C")), emptyList())),
+        )
+        val shelves = listOf(Shelf(DOCUMENTARIES, listOf(folder, Entry.Film(film("Standalone")))))
+
+        assertEquals(4, chromeCountsOf(shelves, WatchSnapshot.Empty).departmentCount(DOCUMENTARIES))
     }
 
     @Test

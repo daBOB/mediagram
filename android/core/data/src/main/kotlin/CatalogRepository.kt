@@ -173,6 +173,7 @@ class DefaultCatalogRepository(
                 "ep" -> Kind.EPISODE
                 "tut" -> Kind.TUTORIAL
                 "doc" -> Kind.DOCUMENT
+                "docu" -> Kind.DOCUMENTARY
                 else -> Kind.MOVIE
             }
         return MediaSet(

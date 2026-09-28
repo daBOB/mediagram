@@ -60,8 +60,7 @@ fun homeRowsOf(
     /** Overrides [limit] for the Latest shelves' own poster rows only — Continue/Next up still use [limit] alone. */
     posterLimit: Int = limit,
 ): List<HomeRow> {
-    val collections = shelves.asSequence().flatMap { it.entries }.filterIsInstance<Entry.Collection>().toList()
-    val underway = underwayOf(collections, indexById(shelves), watch, limit)
+    val underway = underwayOf(collectionsForNextUp(shelves), indexById(shelves), watch, limit)
     val positions = watch.progress.associateBy { it.setId }
     val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
 
@@ -98,6 +97,10 @@ fun homeRowsOf(
     }
 
     for (shelf in shelves) {
+        // No "Latest documentaries" — home-shelves.js's own `homeShelves`
+        // only ever names latestMovies/latestSeries/latestCourses, so the
+        // web this is ported from never draws one either.
+        if (shelf.title == DOCUMENTARIES) continue
         rows +=
             HomeRow(
                 title = latestTitleFor(shelf.title),
@@ -109,6 +112,17 @@ fun homeRowsOf(
 
     return rows
 }
+
+/**
+ * [shelves]' own collections, for [underwayOf]'s "what is underway" —
+ * Documentaries excluded, the same way `home-shelves.js`'s own underway loop
+ * only ever walks `library.series` and `library.tutorials`: a documentary
+ * has no "next episode" the way a show or a course does, so its folders
+ * never offer one here even though a viewer can still resume one directly
+ * through the flat, kind-agnostic Continue list [underwayOf] also returns.
+ */
+internal fun collectionsForNextUp(shelves: List<Shelf>): List<Entry.Collection> =
+    shelves.asSequence().filterNot { it.title == DOCUMENTARIES }.flatMap { it.entries }.filterIsInstance<Entry.Collection>().toList()
 
 /** Internal, not private: [magazineHomeOf] builds the same card for the merged resume strip. */
 internal fun setCard(

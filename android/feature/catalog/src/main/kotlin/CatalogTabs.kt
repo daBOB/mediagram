@@ -32,17 +32,13 @@ private val KEPT_TITLES: List<String> = KeptKind.entries.map(KeptKind::label)
 /**
  * Where each destination in web 0.62.1's masthead belongs on a screen too
  * narrow to print `index.html`'s two navigations side by side: the
- * departments (`nav.departments` — Home, Movies, Series, Tutorials,
- * Collections) as the visible tabs, and the rail's own utilities (My List,
- * Continue watching, Latest, Genres, Settings) reachable once each from the
- * overflow menu that already carries System, Settings, TMDB key and Start
- * over — see [android.ui.OverflowMenu]. `catalogTabsOf` above is untouched:
- * both phone and TV screens still read it, and this is additive for the
- * phase that rebuilds those screens onto the new split.
- *
- * Web has no Documentaries counterpart here: that department has no
- * Android kind of its own (a prior, already-recorded difference), so it is
- * not part of either list.
+ * departments (`nav.departments` — Home, Movies, Series, Documentaries,
+ * Tutorials, Collections) as the visible tabs, and the rail's own utilities
+ * (My List, Continue watching, Latest, Genres, Settings) reachable once each
+ * from the overflow menu that already carries System, Settings, TMDB key and
+ * Start over — see [android.ui.OverflowMenu]. `catalogTabsOf` above is
+ * untouched: both phone and TV screens still read it, and this is additive
+ * for the phase that rebuilds those screens onto the new split.
  */
 data class MastheadSplit(val departments: List<String>, val utilities: List<UtilityDestination>)
 
