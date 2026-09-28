@@ -28,6 +28,10 @@ pub struct AddCourseArgs {
     /// Skip the MP4 faststart remux
     #[arg(long)]
     pub no_remux: bool,
+    /// File this course under a category, drawn as a row on the Tutorials
+    /// department page. Absent leaves any existing category untouched
+    #[arg(long)]
+    pub category: Option<String>,
 }
 
 /// Arguments for `mediagram add-docu`.
@@ -55,6 +59,11 @@ pub struct AddDocuArgs {
     /// Skip the MP4 faststart remux
     #[arg(long)]
     pub no_remux: bool,
+    /// File this documentary (or collection) under a category, drawn as a
+    /// row on the Documentaries department page. Absent leaves any existing
+    /// category untouched
+    #[arg(long)]
+    pub category: Option<String>,
 }
 
 /// Arguments for `mediagram artwork`.

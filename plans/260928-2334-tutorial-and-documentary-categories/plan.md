@@ -22,7 +22,7 @@ category, then the existing sections; uncategorised units under "Other".
 
 | # | Phase | Effort | Status | Release |
 |---|---|---|---|---|
-| 1 | [Index: schema v12 `categories`, key rule, merge, `--category` flags](phase-01-index-categories-and-uploader-flags.md) | 5h | pending | minor |
+| 1 | [Index: schema v12 `categories`, key rule, merge, `--category` flags](phase-01-index-categories-and-uploader-flags.md) | 5h | completed | 0.79.0 |
 | 2 | [Web: `category` per set, row rule + fixture, rows on both department pages](phase-02-web-category-rows.md) | 4h | pending | minor |
 | 3 | [Android: core field + bindings, rows on phone/tablet, TV Tutorials rows](phase-03-android-category-rows.md) | 6h | pending | minor |
 

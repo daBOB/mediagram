@@ -20,6 +20,13 @@ use crate::upload::session::link::TelegramLink;
 pub(super) async fn run(cfg: &Config, args: AddDocuArgs) -> Result<()> {
     let collection = course_title(args.title.as_deref(), &args.path)?;
     let cid = collection_id(&collection, args.cid.as_deref())?;
+    // Validated before anything is uploaded, so a bad `--category` fails the
+    // same way whether or not `--dry-run` was given.
+    let category = args
+        .category
+        .as_deref()
+        .map(|raw| crate::edit::category::planned(Kind::Docu, Some(&collection), raw))
+        .transpose()?;
 
     let walked = walk_course(&args.path)?;
     if walked.is_empty() {
@@ -42,6 +49,9 @@ pub(super) async fn run(cfg: &Config, args: AddDocuArgs) -> Result<()> {
         for line in dry_run_table(&collection, &cid, &walked) {
             println!("{}", in_docu_words(&line));
         }
+        if let Some(category) = &category {
+            println!("category: {}", category.category.as_deref().unwrap_or("-"));
+        }
         return Ok(());
     }
 
@@ -52,6 +62,9 @@ pub(super) async fn run(cfg: &Config, args: AddDocuArgs) -> Result<()> {
             Ok(n) => println!("picked up {n} artwork file(s) from {}", args.path.display()),
             Err(err) => println!("artwork not stored: {err:#}"),
         }
+    }
+    if let Some(category) = &category {
+        crate::edit::category::write(&conn, category)?;
     }
 
     drop(conn);

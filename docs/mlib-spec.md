@@ -343,6 +343,38 @@ a series, including ones uploaded later. `set_at` is what a merge compares —
 the newer value wins outright, `anime` included, unlike `shows`'s NULL-only
 fill.
 
+### Schema v12 additions
+
+Version 12 adds a hand-set category per course, documentary collection or
+standalone documentary — the same unit its custom artwork already keys:
+
+```sql
+-- A category on one unit — a course, a documentary collection or a
+-- standalone documentary. Kept apart from 'shows' and from a set's own row
+-- for the same reason 'anime_overrides' is: it must survive both a
+-- 'metadata' run and a 'rescan', and neither writes it.
+CREATE TABLE IF NOT EXISTS categories(
+    department TEXT NOT NULL,             -- 'tutorials' or 'documentaries'
+    item_key TEXT NOT NULL,                -- title_art_key(show ?? title)
+    category TEXT,                         -- NULL = cleared, kept as a row
+    set_at INTEGER NOT NULL,               -- Unix seconds; decides a merge
+    PRIMARY KEY(department, item_key)
+);
+```
+
+`item_key` is `mlib_spec::package::title_art_key(show ?? title)` — the same
+key a unit's custom poster or backdrop already lives under, so a category
+survives a re-upload or a resume and follows a course uploaded from two
+folders under one title, the way its artwork does. `category` NULL is a kept
+row, not a deleted one, for the reason `anime_overrides.anime` NULL is: a
+clear has to reach the other machine on the next merge. Set by `mediagram
+edit <set-id> --category "<name>"`/`--clear-category`, or by `add-course`/
+`add-docu --category "<name>"` before the first upload. A name is trimmed,
+collapsed, refused empty or "Other" in any case, and — writer-side only — a
+case-insensitive match of a spelling already used by another unit in the
+same department adopts that spelling instead. `set_at` is what a merge
+compares — the newer value wins outright, `category` included.
+
 A reader on v10 or older simply never sees this column or table; its next
 snapshot, once it upgrades, refreshes both from the channel.
 

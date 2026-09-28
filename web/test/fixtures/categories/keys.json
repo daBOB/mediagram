@@ -1,0 +1,65 @@
+[
+  {
+    "name": "a course lesson keys by its course",
+    "kind": "tut",
+    "show": "Rust Course",
+    "title": null,
+    "key": ["tutorials", "title-rust-course"]
+  },
+  {
+    "name": "a course document keys the same as a lesson of that course",
+    "kind": "doc",
+    "show": "Rust Course",
+    "title": null,
+    "key": ["tutorials", "title-rust-course"]
+  },
+  {
+    "name": "a documentary in a collection keys by the collection",
+    "kind": "docu",
+    "show": "Terra X",
+    "title": "Volcanoes",
+    "key": ["documentaries", "title-terra-x"]
+  },
+  {
+    "name": "a standalone documentary keys by its own title",
+    "kind": "docu",
+    "show": null,
+    "title": "Free Solo",
+    "key": ["documentaries", "title-free-solo"]
+  },
+  {
+    "name": "a film has no unit to file a category under",
+    "kind": "movie",
+    "show": null,
+    "title": "A Film",
+    "key": null
+  },
+  {
+    "name": "an episode has no unit to file a category under",
+    "kind": "ep",
+    "show": "A Show",
+    "title": null,
+    "key": null
+  },
+  {
+    "name": "a spelling no version of the spec defines has no department",
+    "kind": "bogus",
+    "show": "Something",
+    "title": null,
+    "key": null
+  },
+  {
+    "name": "a name of only punctuation slugs to nothing",
+    "kind": "tut",
+    "show": "!!!",
+    "title": null,
+    "key": null
+  },
+  {
+    "name": "a title with umlauts slugs the same way everywhere",
+    "kind": "docu",
+    "show": null,
+    "title": "Über Alles",
+    "key": ["documentaries", "title-ber-alles"]
+  }
+]

@@ -756,7 +756,7 @@ and `web/.env` are not like that — losing both means logging in again, because
 a session string cannot be recovered from anywhere else. `state.db` is the
 only thing this process writes that cannot be refetched at all.
 
-## 10.1. Index schema (library.db, v11)
+## 10.1. Index schema (library.db, v12)
 
 The canonical index (`library.db`, in `mlib-spec` schema) carries:
 
@@ -811,6 +811,22 @@ The canonical index (`library.db`, in `mlib-spec` schema) carries:
   replaces a row whole on every `metadata` run. Written by `mediagram edit
   <set-id> --anime yes|no|auto`, keyed to the TMDB title so one override
   covers every episode of a series, including ones uploaded later.
+- **categories** table (new in v12): a hand-set label on a course, a
+  documentary collection or a standalone documentary. Rows: `(department,
+  item_key, category, set_at)` — `department` is `tutorials` (courses and
+  their documents) or `documentaries`; `item_key` is
+  `mlib_spec::package::title_art_key(show ?? title)`, the same key a unit's
+  custom artwork already lives under, so a category survives a re-upload or
+  a resume and follows a course uploaded from two folders under one title;
+  `category` is the name, or `NULL` for cleared (kept as a row so a merge
+  can carry the clear); `set_at` is Unix seconds, and a merge takes
+  whichever side's row is newer, `category` included. Written by `mediagram
+  edit <set-id> --category "<name>"`/`--clear-category`, or by `add-course`/
+  `add-docu --category "<name>"` before the first upload. A name is
+  trimmed, collapsed, refused empty or "Other" in any case, and a
+  case-insensitive match of a spelling already used by another unit in the
+  same department adopts that spelling instead — writer-side only; readers
+  compare exactly. No reader draws from this table yet.
 
 `mediagram_core::shows::is_anime` — a line-for-line port of the web
 player's own `isAnime` (`web/src/catalog/anime.ts`), held to the same
@@ -821,11 +837,11 @@ the same way `genres`/`fsk`/`tagline` are: the index's own facts first, this
 device's fetched sidecar filling in what the index does not have. Only the
 index's own overrides apply — a device never overrides on its own.
 
-Version tracking: `SCHEMA_VERSION=11`, `READABLE_SCHEMAS=[6,7,8,9,10,11]`,
-`OLDEST_READABLE_SCHEMA=6`. Readers tolerant of v10 and earlier (optional
-columns/tables); writers from the release introducing this table produce v11.
+Version tracking: `SCHEMA_VERSION=12`, `READABLE_SCHEMAS=[6,7,8,9,10,11,12]`,
+`OLDEST_READABLE_SCHEMA=6`. Readers tolerant of v11 and earlier (optional
+columns/tables); writers from the release introducing this table produce v12.
 Both uploaders and Android installs must run that release or later before any
-push/export; older Android builds refuse v11 packages.
+push/export; older Android builds refuse v12 packages.
 
 ## 11. Telegram limits relied on
 

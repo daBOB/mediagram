@@ -190,6 +190,62 @@ fn anime_accepts_the_three_choices_and_conflicts_with_other_edits() {
 }
 
 #[test]
+fn category_and_clear_category_conflict_with_every_other_edit_flag_and_each_other() {
+    let Cmd::Edit(args) =
+        Cli::try_parse_from(["mediagram", "edit", "set-a", "--category", "Trading"])
+            .unwrap()
+            .cmd
+    else {
+        panic!("expected edit");
+    };
+    assert_eq!(args.category, Some("Trading".to_string()));
+    assert!(!args.clear_category);
+
+    let Cmd::Edit(args) = Cli::try_parse_from(["mediagram", "edit", "set-a", "--clear-category"])
+        .unwrap()
+        .cmd
+    else {
+        panic!("expected edit");
+    };
+    assert!(args.clear_category);
+    assert_eq!(args.category, None);
+
+    for conflicting in [
+        vec!["--category", "Trading", "--clear-category"],
+        vec!["--category", "Trading", "--title", "x"],
+        vec!["--category", "Trading", "--anime", "yes"],
+        vec!["--clear-category", "--anime", "yes"],
+    ] {
+        let args = [vec!["mediagram", "edit", "set-a"], conflicting].concat();
+        let error = Cli::try_parse_from(args.clone())
+            .err()
+            .expect("--category/--clear-category must conflict with the other edit flags");
+        assert_eq!(error.kind(), ErrorKind::ArgumentConflict, "{args:?}");
+    }
+}
+
+#[test]
+fn add_course_and_add_docu_accept_a_category() {
+    let Cmd::AddCourse(args) =
+        Cli::try_parse_from(["mediagram", "add-course", "dir", "--category", "Trading"])
+            .unwrap()
+            .cmd
+    else {
+        panic!("expected add-course");
+    };
+    assert_eq!(args.category, Some("Trading".to_string()));
+
+    let Cmd::AddDocu(args) =
+        Cli::try_parse_from(["mediagram", "add-docu", "path", "--category", "Nature"])
+            .unwrap()
+            .cmd
+    else {
+        panic!("expected add-docu");
+    };
+    assert_eq!(args.category, Some("Nature".to_string()));
+}
+
+#[test]
 fn invalid_arguments_are_rejected_by_the_parser_before_any_handler() {
     for (args, kind) in [
         (

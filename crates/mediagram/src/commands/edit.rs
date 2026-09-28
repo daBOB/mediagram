@@ -33,6 +33,10 @@ pub async fn run(cfg: &Config, args: EditArgs) -> Result<()> {
         return crate::edit::anime::run(&conn, &row, choice, args.dry_run);
     }
 
+    if args.category.is_some() || args.clear_category {
+        return crate::edit::category::run(&conn, &row, args.category.as_deref(), args.dry_run);
+    }
+
     let clear = args
         .clear
         .iter()

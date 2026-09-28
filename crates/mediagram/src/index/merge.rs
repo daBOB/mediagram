@@ -14,6 +14,7 @@
 //! | `shows` | Missing keys inserted; shared keys get their `NULL`s filled. |
 //! | `credits`, `franchises`, `artwork` | Missing keys inserted whole; never partially filled. |
 //! | `anime_overrides` | Missing keys inserted; shared keys take the later `set_at`. |
+//! | `categories` | Missing keys inserted; shared keys take the later `set_at`. |
 //! | `meta` | Never touched — machine-local state, not library content. |
 //!
 //! A shared set whose metadata differs between the two is not decided here:
@@ -28,6 +29,7 @@ use rusqlite::Connection;
 use crate::index::merge_anime_overrides;
 use crate::index::merge_artwork;
 use crate::index::merge_candidates;
+use crate::index::merge_categories;
 use crate::index::merge_columns::shared_columns;
 use crate::index::merge_copy::{fill_missing_assets, insert_row};
 use crate::index::merge_credits;
@@ -56,6 +58,7 @@ pub struct MergeReport {
     pub franchises_added: usize,
     pub artwork_added: usize,
     pub anime_overrides_taken: usize,
+    pub categories_taken: usize,
 }
 
 /// Merges `channel_path`'s index into `local`, one transaction, via `ATTACH`.
@@ -157,6 +160,7 @@ fn copy_kept(
     let (credits_added, franchises_added) = merge_credits::merge(conn)?;
     let artwork_added = merge_artwork::merge(conn)?;
     let anime_overrides_taken = merge_anime_overrides::merge(conn)?;
+    let categories_taken = merge_categories::merge(conn)?;
 
     Ok(MergeReport {
         sets_added,
@@ -167,6 +171,7 @@ fn copy_kept(
         franchises_added,
         artwork_added,
         anime_overrides_taken,
+        categories_taken,
         ..MergeReport::default()
     })
 }

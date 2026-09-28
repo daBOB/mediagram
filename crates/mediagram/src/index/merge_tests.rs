@@ -621,3 +621,107 @@ fn original_language_is_filled_from_the_channel_even_across_a_language_mismatch(
         .unwrap();
     assert_eq!(original_language.as_deref(), Some("ja"));
 }
+
+fn insert_category(conn: &Connection, item_key: &str, category: Option<&str>, set_at: i64) {
+    conn.execute(
+        "INSERT INTO categories(department, item_key, category, set_at) VALUES ('tutorials', ?1, ?2, ?3)",
+        rusqlite::params![item_key, category, set_at],
+    )
+    .unwrap();
+}
+
+fn category_row(conn: &Connection, item_key: &str) -> (Option<String>, i64) {
+    conn.query_row(
+        "SELECT category, set_at FROM categories WHERE department='tutorials' AND item_key=?1",
+        [item_key],
+        |r| Ok((r.get(0)?, r.get(1)?)),
+    )
+    .unwrap()
+}
+
+#[test]
+fn a_channel_only_category_is_inserted_and_a_local_only_one_is_kept() {
+    let (_local_dir, local) = open_local();
+    insert_category(&local, "title-a", Some("Trading"), 1_700_000_000);
+    let (_channel_dir, channel_path, channel) = open_channel();
+    insert_category(&channel, "title-b", Some("Nature"), 1_700_000_000);
+    drop(channel);
+
+    let report = merge_from(&local, &channel_path, keep_all).unwrap();
+
+    assert_eq!(report.categories_taken, 1);
+    assert_eq!(category_row(&local, "title-a"), (Some("Trading".to_string()), 1_700_000_000));
+    assert_eq!(category_row(&local, "title-b"), (Some("Nature".to_string()), 1_700_000_000));
+}
+
+#[test]
+fn a_newer_channel_category_replaces_the_local_one() {
+    let (_local_dir, local) = open_local();
+    insert_category(&local, "title-a", Some("Trading"), 1_700_000_000);
+    let (_channel_dir, channel_path, channel) = open_channel();
+    insert_category(&channel, "title-a", Some("Finance"), 1_700_000_100);
+    drop(channel);
+
+    let report = merge_from(&local, &channel_path, keep_all).unwrap();
+
+    assert_eq!(report.categories_taken, 1);
+    assert_eq!(category_row(&local, "title-a"), (Some("Finance".to_string()), 1_700_000_100));
+}
+
+#[test]
+fn an_older_channel_category_does_not_replace_the_local_one() {
+    let (_local_dir, local) = open_local();
+    insert_category(&local, "title-a", Some("Trading"), 1_700_000_100);
+    let (_channel_dir, channel_path, channel) = open_channel();
+    insert_category(&channel, "title-a", Some("Finance"), 1_700_000_000);
+    drop(channel);
+
+    let report = merge_from(&local, &channel_path, keep_all).unwrap();
+
+    assert_eq!(report.categories_taken, 0);
+    assert_eq!(category_row(&local, "title-a"), (Some("Trading".to_string()), 1_700_000_100));
+}
+
+/// A newer clear (`category` back to `NULL`) is a value like any other
+/// here: it must overwrite the local name, or clearing a category on one
+/// machine would never reach the other.
+#[test]
+fn a_newer_channel_clear_overwrites_a_local_category() {
+    let (_local_dir, local) = open_local();
+    insert_category(&local, "title-a", Some("Trading"), 1_700_000_000);
+    let (_channel_dir, channel_path, channel) = open_channel();
+    insert_category(&channel, "title-a", None, 1_700_000_100);
+    drop(channel);
+
+    let report = merge_from(&local, &channel_path, keep_all).unwrap();
+
+    assert_eq!(report.categories_taken, 1);
+    assert_eq!(category_row(&local, "title-a"), (None, 1_700_000_100));
+}
+
+#[test]
+fn a_v11_channel_index_has_no_categories_table_and_still_merges() {
+    let (_local_dir, local) = open_local();
+    let (_channel_dir, channel_path, channel) = open_channel_at(11);
+    insert_set(&channel, "S10", "A Film", "complete", 1);
+    insert_part(&channel, "S10", 0, 100, 10_001);
+    drop(channel);
+
+    let report = merge_from(&local, &channel_path, keep_all).unwrap();
+
+    assert_eq!(report.sets_added, ["S10"]);
+    assert_eq!(report.categories_taken, 0);
+}
+
+#[test]
+fn merging_the_same_category_twice_reports_zero_the_second_time() {
+    let (_local_dir, local) = open_local();
+    let (_channel_dir, channel_path, channel) = open_channel();
+    insert_category(&channel, "title-a", Some("Trading"), 1_700_000_000);
+    drop(channel);
+
+    merge_from(&local, &channel_path, keep_all).unwrap();
+    let second = merge_from(&local, &channel_path, keep_all).unwrap();
+
+    assert_eq!(second.categories_taken, 0);
+}

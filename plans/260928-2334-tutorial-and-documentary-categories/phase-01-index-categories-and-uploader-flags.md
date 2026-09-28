@@ -1,7 +1,7 @@
 ---
 phase: 1
 title: "Index: schema v12 `categories`, the key rule, merge, `--category` flags"
-status: pending
+status: completed
 priority: P2
 effort: 5h
 dependencies: []
@@ -200,13 +200,13 @@ category; nothing to do".
 
 ## Success Criteria
 
-- [ ] A v11 `library.db` opened by the new build is v12 with the table; matches a fresh v12.
-- [ ] `edit <lesson> --category Trading` writes `('tutorials','title-<course slug>','Trading',now)`; the
+- [x] A v11 `library.db` opened by the new build is v12 with the table; matches a fresh v12.
+- [x] `edit <lesson> --category Trading` writes `('tutorials','title-<course slug>','Trading',now)`; the
       same on a `doc` of that course is "already says Trading"; `--clear-category` leaves a NULL row.
-- [ ] `add-course <dir> --category Trading --dry-run` prints it and writes nothing; the real run writes
+- [x] `add-course <dir> --category Trading --dry-run` prints it and writes nothing; the real run writes
       the row before the first lesson uploads; `--category other` refuses before uploading.
-- [ ] Merge tests pass; `pull-index --dry-run` twice → 0 category rows the second time.
-- [ ] `keys.json` passes in `shared_category_keys.rs`; `code_standards.rs` green; `scripts/check.sh` green.
+- [x] Merge tests pass; `pull-index --dry-run` twice → 0 category rows the second time.
+- [x] `keys.json` passes in `shared_category_keys.rs`; `code_standards.rs` green; `scripts/check.sh` green.
 
 ## Risk Assessment
 

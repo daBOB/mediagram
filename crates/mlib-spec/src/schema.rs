@@ -5,7 +5,7 @@
 mod schema_versions;
 use schema_versions::{V1, V2, V3, V4, V5, V6};
 
-pub const SCHEMA_VERSION: i64 = 11;
+pub const SCHEMA_VERSION: i64 = 12;
 
 /// The oldest index a *reader* of someone else's snapshot still accepts.
 ///
@@ -14,18 +14,19 @@ pub const SCHEMA_VERSION: i64 = 11;
 /// would stop every reader. v7 only added `shows.certification`, v8 only
 /// `shows.popularity`, v9 only `shows.collection_id`/`collection_name`/
 /// `series_type` plus the wholly new `credits` and `franchises` tables, v10
-/// only the wholly new `artwork` table, and v11 only `shows.original_language`
-/// plus the wholly new `anime_overrides` table — every one of which every
-/// reader treats as optional. The web player's `OLDEST_READABLE_SCHEMA`
-/// (`web/src/catalog.ts`) is the same number. The uploader's own index is
-/// still held to [`SCHEMA_VERSION`]: that one it can migrate.
+/// only the wholly new `artwork` table, v11 only `shows.original_language`
+/// plus the wholly new `anime_overrides` table, and v12 only the wholly new
+/// `categories` table — every one of which every reader treats as optional.
+/// The web player's `OLDEST_READABLE_SCHEMA` (`web/src/catalog.ts`) is the
+/// same number. The uploader's own index is still held to
+/// [`SCHEMA_VERSION`]: that one it can migrate.
 pub const OLDEST_READABLE_SCHEMA: i64 = 6;
 
 /// Every layout a reader accepts: [`OLDEST_READABLE_SCHEMA`] through
 /// [`SCHEMA_VERSION`], each one. Spelled out because a package pointer is
 /// checked by membership — listing only the two ends once refused every
 /// version between them. A test holds this to the range.
-pub const READABLE_SCHEMAS: &[i64] = &[6, 7, 8, 9, 10, 11];
+pub const READABLE_SCHEMAS: &[i64] = &[6, 7, 8, 9, 10, 11, 12];
 
 /// The index's file name, wherever a copy of it sits: the uploader's data
 /// directory, the snapshot pinned in the channel, and a metadata package all
@@ -39,7 +40,7 @@ pub const INDEX_FILE: &str = "library.db";
 /// what lets a migration do something other than `CREATE ... IF NOT EXISTS`.
 /// SQLite has no `ADD COLUMN IF NOT EXISTS`, so an idempotent-by-wording list
 /// could never gain a column.
-pub const GROUPS: &[&[&str]] = &[V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11];
+pub const GROUPS: &[&[&str]] = &[V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12];
 
 /// Every statement needed to reach `version` from an empty database. Used by
 /// tests and by anyone reconstructing an older layout.
@@ -148,6 +149,26 @@ const V11: &[&str] = &[
         PRIMARY KEY(source, kind, id)
     )",
 ];
+
+/// v11 → v12: a hand-set category per course, documentary collection or
+/// standalone documentary — the same unit its custom artwork already keys
+/// ([`crate::package::title_art_key`]), for the row each files into on its
+/// department page.
+///
+/// Kept apart from `shows` and from a set's own row for the reason
+/// `anime_overrides` is: it must survive both a `metadata` run and a
+/// `rescan`, and neither writes it. `category` `NULL` is a kept row, not a
+/// deleted one — clearing a category has to reach the other uploading
+/// machine on the next merge, and a deleted row carries nothing to merge.
+/// `set_at` (Unix seconds) is what a merge compares to decide whose value is
+/// newer, `NULL` included, the same way `anime_overrides.set_at` does.
+const V12: &[&str] = &["CREATE TABLE IF NOT EXISTS categories(
+        department TEXT NOT NULL,
+        item_key TEXT NOT NULL,
+        category TEXT,
+        set_at INTEGER NOT NULL,
+        PRIMARY KEY(department, item_key)
+    )"];
 
 /// How `sets.status` and `parts.status` spell each state. Written once here,
 /// beside the one SQL fragment that has to spell them inline; every other

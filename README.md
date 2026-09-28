@@ -219,8 +219,8 @@ de-duplicates across machines until the next merge.
 | `whoami` | Print the signed-in account and the resolved library channel. |
 | `add <file>` | Split, upload, caption and index one file. Returns once the set is planned; `--watch` stays and shows the upload. `--delete-source` removes the file once every part is in the channel. Does not de-duplicate. See [`add` flags](#add-flags). |
 | `add-show <dir> --tmdb <id> [--dry-run] [--yes]` | Upload every episode of a series, one set each. Season and episode come from the file name, the show from `--tmdb` (required, because release prefixes defeat the title guess). Reports what the player would convert and asks first. Re-running skips complete episodes. |
-| `add-course <dir> [--dry-run]` | Upload a course: subfolders are chapters, videos are lessons, PDFs beside them are documents. Re-running skips what finished. |
-| `add-docu <path> [--dry-run]` | Upload a documentary, or a folder of them as one collection. Re-running skips what finished. |
+| `add-course <dir> [--dry-run] [--category <name>]` | Upload a course: subfolders are chapters, videos are lessons, PDFs beside them are documents. Re-running skips what finished. `--category` files the course into a row on the Tutorials department page. |
+| `add-docu <path> [--dry-run] [--category <name>]` | Upload a documentary, or a folder of them as one collection. Re-running skips what finished. `--category` files it into a row on the Documentaries department page. |
 | `resume [--no-push]` | Finish every set an interrupted upload left `pending`, adopting parts already in the channel instead of sending them again. |
 | `status` | What the library holds and what is going in: the set on the wire with its progress, the queue, each show against what TMDB says exists, and anything unfinished. Read-only. |
 | `prepare <path> [--replace \| --out <dir>] [--mp4] [--audio a,b] [--subs a,b]` | Drop unwanted audio and subtitle tracks. `--mp4` also converts to a browser-playable mp4 (Matroska → mp4, audio → AAC, picture copied untouched). `--replace` rewrites in place, and only after the result passes every check. |
@@ -229,7 +229,7 @@ de-duplicates across machines until the next merge.
 | `sync-index [--refresh-older-than <days>]` | The whole round trip: `pull-index`, `metadata`, `posters`, then a push. A failed artwork fetch is reported and the push goes ahead. |
 | `metadata` | Record what TMDB says about each film and series (synopsis, genres, rating, network, status, season and episode counts, original language). Reads the payloads `add` cached, so it usually needs no key and no network. |
 | `posters` | Fetch cover art into `<data dir>/posters/` for a player reading this machine's index. Re-running skips what is held. |
-| `artwork` / `edit` | Override a title's poster or backdrop; correct a set's metadata and rewrite its captions. `edit <set-id> --anime yes\|no\|auto` forces a title in or out of the Anime department, or drops back to the automatic rule — index-only, keyed to the TMDB title. |
+| `artwork` / `edit` | Override a title's poster or backdrop; correct a set's metadata and rewrite its captions. `edit <set-id> --anime yes\|no\|auto` forces a title in or out of the Anime department, or drops back to the automatic rule — index-only, keyed to the TMDB title. `edit <set-id> --category <name>\|--clear-category` files a course or documentary into a row on its department page, or removes it — index-only. |
 | `verify <set-id> \| --all [--full] [--since <unix>]` | Compare each part's message against the index; `--full` re-downloads and hashes every part, and `--since` lets an interrupted sweep resume. |
 | `remove <set-id>` | Permanently delete a set: its channel messages and its index rows. |
 | `rescan` | Rebuild `library.db` from channel captions. Additive only: it never demotes or deletes a set the index already has. |

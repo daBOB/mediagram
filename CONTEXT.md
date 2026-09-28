@@ -36,3 +36,8 @@ _Avoid_: uploader, batch, job
 Replacing the channel index with a snapshot of the local index, after pulling so
 nothing another machine published is dropped.
 _Avoid_: push (except as the `push-index` command's name), upload (reserved for sets)
+
+**Category**:
+A hand-set label on a course, a documentary collection or a standalone
+documentary, one each, that files it into a row on its department page.
+_Avoid_: genre, tag

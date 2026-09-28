@@ -21,7 +21,7 @@ import type { PartSpan } from "./range";
  * `crates/mediagram/tests/shared_playable_sql.rs`, which fails if the two
  * drift — the player reads the uploader's database and cannot migrate it.
  */
-export const EXPECTED_SCHEMA = 11;
+export const EXPECTED_SCHEMA = 12;
 
 /**
  * The oldest layout this build still reads.
@@ -29,11 +29,12 @@ export const EXPECTED_SCHEMA = 11;
  * v7 only adds `shows.certification`, v8 only `shows.popularity`, v9 only
  * `shows.collection_id`/`collection_name`/`series_type` plus the wholly new
  * `credits` and `franchises` tables, v10 only the wholly new `artwork` table,
- * and v11 only `shows.original_language` plus the wholly new
- * `anime_overrides` table — every one of which every reader treats as
- * optional. Keeping v6 readable is what lets the player follow a channel
- * whose uploader has not been upgraded yet: refusing its snapshots would
- * freeze the shelf until someone upgraded another machine.
+ * v11 only `shows.original_language` plus the wholly new `anime_overrides`
+ * table, and v12 only the wholly new `categories` table — every one of
+ * which every reader treats as optional. Keeping v6 readable is what lets
+ * the player follow a channel whose uploader has not been upgraded yet:
+ * refusing its snapshots would freeze the shelf until someone upgraded
+ * another machine.
  */
 export const OLDEST_READABLE_SCHEMA = 6;
 

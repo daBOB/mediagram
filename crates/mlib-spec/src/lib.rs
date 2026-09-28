@@ -3,6 +3,7 @@
 //!
 //! - [`caption`]: the JSON record carried on every uploaded part
 //! - [`caption_codec`]: caption text ⇄ [`caption::Caption`] with the 1,024-char budget
+//! - [`category_key`]: the per-unit key a hand-set category is filed under
 //! - [`part_plan`]: byte-range planning for raw splits
 //! - [`part_name`]: ≤60-char Telegram file names
 //! - [`filename`]: fallback grammar for un-captioned files
@@ -13,6 +14,7 @@
 
 pub mod caption;
 pub mod caption_codec;
+pub mod category_key;
 pub mod filename;
 pub mod ids;
 pub mod index_caption;

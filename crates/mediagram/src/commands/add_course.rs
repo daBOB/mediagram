@@ -21,6 +21,13 @@ use mlib_spec::Kind;
 pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
     let course = course_title(args.course.as_deref(), &args.dir)?;
     let cid = collection_id(&course, args.cid.as_deref())?;
+    // Validated before anything is uploaded, so a bad `--category` fails the
+    // same way whether or not `--dry-run` was given.
+    let category = args
+        .category
+        .as_deref()
+        .map(|raw| crate::edit::category::planned(Kind::Tut, Some(&course), raw))
+        .transpose()?;
 
     let walked = walk_course(&args.dir)?;
     if walked.is_empty() {
@@ -44,6 +51,9 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
         for line in dry_run_table(&course, &cid, &walked) {
             println!("{line}");
         }
+        if let Some(category) = &category {
+            println!("category: {}", category.category.as_deref().unwrap_or("-"));
+        }
         return Ok(());
     }
 
@@ -54,6 +64,9 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
             Ok(n) => println!("picked up {n} artwork file(s) from {}", args.dir.display()),
             Err(err) => println!("artwork not stored: {err:#}"),
         }
+    }
+    if let Some(category) = &category {
+        crate::edit::category::write(&conn, category)?;
     }
     drop(conn);
     let mut session = Session::new(cfg, TelegramLink::new(cfg))?;

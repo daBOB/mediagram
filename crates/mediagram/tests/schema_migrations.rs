@@ -114,3 +114,47 @@ fn column_names(conn: &rusqlite::Connection, table: &str) -> Vec<String> {
         .map(|r| r.unwrap())
         .collect()
 }
+
+fn has_table(conn: &rusqlite::Connection, table: &str) -> bool {
+    conn.query_row(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?1",
+        [table],
+        |r| r.get::<_, i64>(0),
+    )
+    .unwrap()
+        > 0
+}
+
+/// A v11 database — the layout before `categories` existed — must gain the
+/// table on open, keeping its rows, which is what an upgrade on a real
+/// uploading machine looks like.
+#[test]
+fn a_database_at_v11_gains_the_categories_table_on_upgrade() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("library.db");
+    {
+        let conn = mediagram::index::sqlite_init::open(&path).unwrap();
+        for statement in mlib_spec::schema::migrations_up_to(11) {
+            conn.execute(statement, []).unwrap();
+        }
+        conn.execute(
+            "INSERT INTO meta(key, value) VALUES('schema_version', '11')",
+            [],
+        )
+        .unwrap();
+        assert!(!has_table(&conn, "categories"), "v11 has no categories table");
+    }
+
+    let upgraded = db::open(dir.path()).unwrap();
+
+    assert!(has_table(&upgraded, "categories"), "upgrade adds the table");
+    assert_eq!(schema_version(&upgraded), mlib_spec::schema::SCHEMA_VERSION);
+
+    let fresh_dir = tempfile::tempdir().unwrap();
+    let fresh = db::open(fresh_dir.path()).unwrap();
+    let mut fresh_cols = column_names(&fresh, "categories");
+    let mut upgraded_cols = column_names(&upgraded, "categories");
+    fresh_cols.sort();
+    upgraded_cols.sort();
+    assert_eq!(fresh_cols, upgraded_cols, "one definition of the schema");
+}

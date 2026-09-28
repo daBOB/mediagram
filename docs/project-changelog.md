@@ -5,6 +5,23 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.79.0 — courses and documentaries can be given a category
+
+**Added**
+
+- Schema v12: a `categories` table holding a hand-set label on a course, a
+  documentary collection or a standalone documentary, keyed the way a
+  unit's custom artwork already is (`department`,
+  `title_art_key(show ?? title)`), so a category survives a re-upload or a
+  resume and follows a course uploaded from two folders under one title.
+  `add-course`/`add-docu --category "<name>"` file a unit at upload time;
+  `edit <set-id> --category "<name>"`/`--clear-category` correct it
+  afterwards, index-only. A name is trimmed, collapsed, refused empty or
+  "Other" in any case, and a case-insensitive match of a spelling already
+  used elsewhere in the same department adopts that spelling instead.
+  `pull-index`/`push-index` merge the table last-writer-wins between two
+  uploading machines. Uploader-only: no reader draws from the table yet.
+
 ## 0.78.0 — an Anime department on phone, tablet and television
 
 **Added**

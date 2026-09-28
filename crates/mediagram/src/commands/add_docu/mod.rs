@@ -12,9 +12,11 @@
 mod collection;
 
 use anyhow::{Context, Result, bail};
+use mlib_spec::Kind;
 
 use super::args::AddDocuArgs;
 use crate::config::Config;
+use crate::index::db;
 use crate::metadata::resolve::{self, ResolveInput};
 use crate::upload::new_set::NewSet;
 use crate::upload::session::link::TelegramLink;
@@ -40,17 +42,38 @@ async fn run_file(cfg: &Config, args: AddDocuArgs) -> Result<()> {
         .with_context(|| format!("{} has no usable file name", args.path.display()))?
         .to_string();
 
+    // The same title the dry run reports and `prepare_and_record_set` (via
+    // `resolve::docu_file`) resolves again for the upload itself — resolved
+    // twice on purpose, since a standalone documentary is never looked up at
+    // any provider and has nothing else to cache the answer in.
+    let resolved = resolve::docu_file(
+        args.title.as_deref(),
+        &ResolveInput {
+            file_name: file_name.clone(),
+            ..ResolveInput::default()
+        },
+    );
+    // Validated before anything is uploaded, so a bad `--category` fails the
+    // same way whether or not `--dry-run` was given.
+    let category = args
+        .category
+        .as_deref()
+        .map(|raw| crate::edit::category::planned(Kind::Docu, resolved.title.as_deref(), raw))
+        .transpose()?;
+
     if args.dry_run {
-        let resolved = resolve::docu_file(
-            args.title.as_deref(),
-            &ResolveInput {
-                file_name,
-                ..ResolveInput::default()
-            },
-        );
         println!("documentary: {}", resolved.title.as_deref().unwrap_or("-"));
         println!("file:        {}", args.path.display());
+        if let Some(category) = &category {
+            println!("category:    {}", category.category.as_deref().unwrap_or("-"));
+        }
         return Ok(());
+    }
+
+    if let Some(category) = &category {
+        let conn = db::open(&cfg.data_dir()?)?;
+        crate::edit::category::write(&conn, category)?;
+        drop(conn);
     }
 
     let new = NewSet {

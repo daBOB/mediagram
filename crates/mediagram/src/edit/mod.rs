@@ -8,4 +8,5 @@
 pub mod anime;
 pub mod apply;
 pub mod captions;
+pub mod category;
 pub mod plan;
