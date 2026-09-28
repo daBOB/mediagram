@@ -7,8 +7,6 @@ import model.WatchSnapshot
 import testing.FakeCore
 import testing.ResolvedCoreProvider
 import uniffi.mediagram_core.CoreInterface
-import uniffi.mediagram_core.ProgressRow
-import uniffi.mediagram_core.StateSnapshot
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -16,89 +14,32 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import uniffi.mediagram_core.Profile as CoreProfile
 
-/**
- * A core whose state calls are backed by plain in-memory maps rather than
- * `FakeCore`'s fixed answers — this repository writes and immediately reads
- * back what it wrote, which a canned list of results cannot stand in for.
- */
-private class StateCore(
-    initialProfiles: List<CoreProfile> = emptyList(),
-    private var chosen: String? = null,
-    private val refuseChoose: Boolean = false,
-) : CoreInterface by FakeCore() {
-    private val profileList = initialProfiles.toMutableList()
-    private val snapshots = mutableMapOf<String, StateSnapshot>()
-
-    /** Every write call this test asked for, in order — `"setProgress p1 s1"` and so on. */
-    val writes = mutableListOf<String>()
-
-    override suspend fun profiles(): List<CoreProfile> = profileList.toList()
-
-    override suspend fun createProfile(
-        name: String,
-        kids: Boolean,
-    ): CoreProfile {
-        val created = CoreProfile("p${profileList.size + 1}", name, kids)
-        profileList += created
-        return created
-    }
-
-    override suspend fun chosenProfile(): String? = chosen
-
-    override suspend fun chooseProfile(id: String): Boolean {
-        if (refuseChoose || profileList.none { it.id == id }) return false
-        chosen = id
-        return true
-    }
-
-    override suspend fun snapshot(profileId: String): StateSnapshot =
-        snapshots[profileId] ?: StateSnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), null)
-
-    override suspend fun setProgress(
-        profileId: String,
-        setId: String,
-        at: Double,
-        duration: Double?,
-    ) {
-        writes += "setProgress $profileId $setId"
-        val current = snapshots[profileId] ?: emptySnapshot()
-        snapshots[profileId] = current.copy(progress = current.progress + ProgressRow(setId, at, duration, 0))
-    }
-
-    override suspend fun setKids(
-        setId: String,
-        marked: Boolean,
-    ) {
-        writes += "setKids $setId $marked"
-        // Global: every profile's next snapshot read sees it, same as the core.
-        for (id in profileList.map { it.id }) {
-            val current = snapshots[id] ?: emptySnapshot()
-            snapshots[id] = current.copy(kids = if (marked) current.kids + setId else current.kids - setId)
-        }
-    }
-
-    private fun emptySnapshot() = StateSnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), null)
-}
-
 class WatchStateRepositoryTest {
     @Test
     fun reloadPopulatesProfilesAndTheChosenOnesSnapshot() =
         runTest {
-            val alice = CoreProfile("p1", "Alice")
-            val core = StateCore(initialProfiles = listOf(alice), chosen = "p1")
+            val core =
+                FakeCore().apply {
+                    profiles = listOf(CoreProfile("p1", "Alice"))
+                    chosen = "p1"
+                }
+            // Seeded directly on the core, ahead of reload — a reload that
+            // never actually read the snapshot would still pass against an
+            // empty one.
+            core.setProgress("p1", "set-1", 12.0, 100.0)
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             repository.reload()
 
             assertEquals(listOf(Profile("p1", "Alice")), repository.profiles.value)
             assertEquals("p1", repository.chosenProfileId.value)
-            assertEquals(WatchSnapshot.Empty, repository.snapshot.value)
+            assertEquals(listOf("set-1"), repository.snapshot.value.progress.map { it.setId })
         }
 
     @Test
     fun noProfileChosenReloadsToAnEmptySnapshot() =
         runTest {
-            val core = StateCore()
+            val core = FakeCore()
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             repository.reload()
@@ -110,19 +51,26 @@ class WatchStateRepositoryTest {
     @Test
     fun choosingAKnownProfileSetsItAndLoadsItsSnapshot() =
         runTest {
-            val core = StateCore(initialProfiles = listOf(CoreProfile("p1", "Alice")))
+            val core = FakeCore().apply { profiles = listOf(CoreProfile("p1", "Alice")) }
+            // Seeded ahead of the choice, so the assertion below only holds if
+            // choosing actually loaded this profile's own snapshot.
+            core.setWatchlisted("p1", "set-1", true)
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             val chose = repository.chooseProfile("p1")
 
             assertTrue(chose)
             assertEquals("p1", repository.chosenProfileId.value)
+            assertEquals(listOf("set-1"), repository.snapshot.value.watchlist)
         }
 
     @Test
     fun choosingAnUnknownProfileChangesNothing() =
         runTest {
-            val core = StateCore(refuseChoose = true)
+            // No profile named "nobody" exists — the real core's own rule for
+            // an unknown id, which the fake now follows without needing to be
+            // told to refuse.
+            val core = FakeCore()
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             val chose = repository.chooseProfile("nobody")
@@ -134,7 +82,7 @@ class WatchStateRepositoryTest {
     @Test
     fun creatingAProfileAddsItWithoutChoosingIt() =
         runTest {
-            val core = StateCore()
+            val core = FakeCore()
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             val created = repository.createProfile("Bea")
@@ -147,7 +95,7 @@ class WatchStateRepositoryTest {
     @Test
     fun aKidsProfileIsCreatedAndListedAsOne() =
         runTest {
-            val core = StateCore()
+            val core = FakeCore()
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             val created = repository.createProfile("Mia", kids = true)
@@ -159,42 +107,90 @@ class WatchStateRepositoryTest {
     @Test
     fun aWriteWithNoChosenProfileDoesNothing() =
         runTest {
-            val core = StateCore()
+            // Intercepts the call itself, under any profile id at all — a
+            // profile-scoped snapshot check could only ever rule out one id.
+            var wrote = false
+            val seeded = FakeCore().apply { profiles = listOf(CoreProfile("p1", "Alice")) }
+            val core =
+                object : CoreInterface by seeded {
+                    override suspend fun setProgress(profileId: String, setId: String, at: Double, duration: Double?) {
+                        wrote = true
+                    }
+                }
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             repository.setProgress("set-1", 12.0, 100.0)
 
-            assertEquals(emptyList<String>(), core.writes)
+            assertFalse(wrote)
         }
 
     @Test
     fun setProgressWritesUnderTheChosenProfileAndRefreshesTheSnapshot() =
         runTest {
-            val core = StateCore(initialProfiles = listOf(CoreProfile("p1", "Alice")), chosen = "p1")
+            val core =
+                FakeCore().apply {
+                    profiles = listOf(CoreProfile("p1", "Alice"), CoreProfile("p2", "Ben"))
+                    chosen = "p1"
+                }
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
             repository.reload()
 
             repository.setProgress("set-1", 12.0, 100.0)
 
-            assertEquals(listOf("setProgress p1 set-1"), core.writes)
             assertEquals(
                 listOf("set-1"),
                 repository.snapshot.value.progress
                     .map { it.setId },
             )
+            // Landed under "p1", not anywhere else a wrong id could have sent it.
+            assertEquals(emptyList(), core.snapshot("p2").progress)
         }
 
-    /** [CoreInterface.setKids] takes no profile id — marking is shared, not this profile's own. */
+    /** `setKids` takes no profile id — marking is shared, not this profile's own. */
     @Test
     fun setKidsWritesGloballyRatherThanUnderAProfile() =
         runTest {
-            val core = StateCore(initialProfiles = listOf(CoreProfile("p1", "Alice")), chosen = "p1")
+            val core =
+                FakeCore().apply {
+                    profiles = listOf(CoreProfile("p1", "Alice"), CoreProfile("p2", "Ben"))
+                    chosen = "p1"
+                }
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
             repository.reload()
 
             repository.setKids("set-1", true)
 
-            assertEquals(listOf("setKids set-1 true"), core.writes)
             assertEquals(listOf("set-1"), repository.snapshot.value.kids)
+            // A second profile that never wrote anything sees the same mark.
+            assertEquals(listOf("set-1"), core.snapshot("p2").kids)
+        }
+
+    /**
+     * `markFinished` must re-stamp on every call, even a repeat one with no
+     * un-mark in between, and must always go through the core's own one-call
+     * `setWatched` rather than a separate clear followed by a separate mark
+     * — a `markFinished` that skipped the second call while already watched,
+     * or that split it into two, would still land here as "finished", but
+     * with a `finishedAt` that never moved and a position that only
+     * sometimes cleared.
+     */
+    @Test
+    fun markingAWatchedTitleFinishedAgainReStampsItAndDropsThePosition() =
+        runTest {
+            val core =
+                FakeCore().apply {
+                    profiles = listOf(CoreProfile("p1", "Alice"))
+                    chosen = "p1"
+                }
+            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            repository.reload()
+
+            repository.markFinished("s1")
+            val first = repository.snapshot.value.watched.single().finishedAt
+            repository.setProgress("s1", 30.0, 100.0)
+            repository.markFinished("s1")
+
+            assertTrue(repository.snapshot.value.watched.single().finishedAt > first)
+            assertEquals(emptyList(), repository.snapshot.value.progress)
         }
 }

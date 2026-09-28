@@ -5,6 +5,28 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.70.2 — the one watch-state fake follows the core's rules
+
+**Internal**
+
+- `FakeCore`'s progress, watched marks, watchlist, Kids, editor's choice and
+  collection stubs (`core:testing`) are no longer no-ops: a new
+  `FakeWatchState` (its own file, so `FakeCore.kt` keeps its line budget)
+  keeps them per profile, against a test-controlled clock that defaults to a
+  plain monotonic count. `CoreContract` gains one case per rule — progress
+  upsert and its non-negative clamp, newest-first order, finishing always
+  re-stamping and clearing the position even on a repeat mark, taking a mark
+  back leaving the position alone, the watchlist and Kids both idempotent
+  and tombstoned, Kids shared across every profile, the editor's choice
+  keeping one live pick, a list's rename/delete/membership refused off its
+  owning profile — run against the fake now (`core:testing`'s unit test) and
+  compiled for the real core's device run (`core:rust`'s `androidTest`) next
+  phase. `WatchStateRepositoryTest` (`core:data`) drops its own hand-written
+  `StateCore` for this one fake; two of its nine cases now check the actual
+  written state on a second profile instead of a call-log string, which is a
+  stronger proof of the same claim they always made.
+- No behaviour change: this is test infrastructure only.
+
 ## 0.70.1 — a watched test that failed on a fast run
 
 **Fixed**

@@ -1,11 +1,13 @@
 package testing
 
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.CoreInterface
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -29,6 +31,19 @@ import kotlin.test.assertTrue
  *   (`api::state::{profiles,create_profile,choose_profile,delete_profile}`);
  *   [aBlankProfileNameIsRefused] pins `clean_name`'s own rule
  *   (`state/profiles.rs`), also checked before any row is written.
+ * - the watch-state cases below are `state_db` reads/writes too
+ *   (`state::rows`, `state::editors_choice`, `state::lists`) — progress,
+ *   watched marks, the watchlist, Kids, the editor's choice and
+ *   collections, each against a profile [createProfile] made moments
+ *   earlier, since every one of those tables but Kids and the editor's
+ *   choice has a foreign key to `profiles(id)` — [aWriteForAProfileNobodyCreatedIsDropped]
+ *   and [removingAProfileTakesItsWatchStateWithIt] pin that foreign key and
+ *   its cascade directly. Three cases ([progressListsNewestFirst],
+ *   [finishingATitleAlwaysReStampsAndClearsItsPosition],
+ *   [reAddingALiveWatchlistMarkDoesNotMoveItToTheFront]) `delay` between the
+ *   writes whose order the assertion depends on — the real core's clock is
+ *   wall time in milliseconds, and two calls back to back could otherwise
+ *   land in the same one.
  *
  * Every case has a block body, not an expression body: `assertFailsWith`
  * answers the exception it caught rather than `Unit`, and an expression body
@@ -95,5 +110,277 @@ abstract class CoreContract {
     @Test
     fun aBlankProfileNameIsRefused() {
         runBlocking { assertEquals(null, core().createProfile("  ", false)) }
+    }
+
+    private suspend fun CoreInterface.freshProfile(name: String) =
+        createProfile(name, false) ?: error("a local profile must be creatable offline")
+
+    @Test
+    fun settingProgressTwiceKeepsOneRowWithTheNewestValue() {
+        runBlocking {
+            val core = core()
+            val profile = core.freshProfile("Dana")
+            core.setProgress(profile.id, "01A", 100.0, 900.0)
+            core.setProgress(profile.id, "01A", 742.0, 900.0)
+            val progress = core.snapshot(profile.id).progress
+            assertEquals(1, progress.size)
+            assertEquals(742.0, progress.single().at)
+        }
+    }
+
+    @Test
+    fun progressNeverStoresANegativePosition() {
+        runBlocking {
+            val core = core()
+            val profile = core.freshProfile("Eli")
+            core.setProgress(profile.id, "01A", -50.0, null)
+            assertEquals(0.0, core.snapshot(profile.id).progress.single().at)
+        }
+    }
+
+    @Test
+    fun progressListsNewestFirst() {
+        runBlocking {
+            val core = core()
+            val profile = core.freshProfile("Faye")
+            core.setProgress(profile.id, "01A", 10.0, null)
+            delay(5)
+            core.setProgress(profile.id, "01B", 20.0, null)
+            assertEquals(listOf("01B", "01A"), core.snapshot(profile.id).progress.map { it.setId })
+        }
+    }
+
+    @Test
+    fun clearingProgressForgetsThePositionWithoutMarkingItWatched() {
+        runBlocking {
+            val core = core()
+            val profile = core.freshProfile("Gus")
+            core.setProgress(profile.id, "01A", 300.0, null)
+            core.clearProgress(profile.id, "01A")
+            val snapshot = core.snapshot(profile.id)
+            assertEquals(emptyList(), snapshot.progress)
+            assertEquals(emptyList(), snapshot.watched)
+        }
+    }
+
+    @Test
+    fun finishingATitleAlwaysReStampsAndClearsItsPosition() {
+        runBlocking {
+            val core = core()
+            val profile = core.freshProfile("Hana")
+            core.setProgress(profile.id, "01A", 700.0, 1000.0)
+
+            core.setWatched(profile.id, "01A", true)
+            val first = core.snapshot(profile.id)
+            assertEquals(emptyList(), first.progress)
+            val firstFinishedAt = first.watched.single { it.setId == "01A" }.finishedAt
+
+            delay(5)
+            core.setWatched(profile.id, "01A", true)
+            val second = core.snapshot(profile.id).watched
+            assertEquals(1, second.count { it.setId == "01A" })
+            assertTrue(second.single { it.setId == "01A" }.finishedAt > firstFinishedAt)
+        }
+    }
+
+    @Test
+    fun takingAMarkBackNeverTouchesAPosition() {
+        runBlocking {
+            val core = core()
+            val profile = core.freshProfile("Ivo")
+            core.setWatched(profile.id, "01A", true)
+            core.setProgress(profile.id, "01A", 300.0, null)
+
+            core.setWatched(profile.id, "01A", false)
+
+            val snapshot = core.snapshot(profile.id)
+            assertEquals(emptyList(), snapshot.watched)
+            assertEquals(300.0, snapshot.progress.single().at)
+        }
+    }
+
+    @Test
+    fun aRemarkAfterARemovalIsWatchedAgain() {
+        runBlocking {
+            val core = core()
+            val profile = core.freshProfile("Jael")
+            core.setWatched(profile.id, "01A", true)
+            core.setWatched(profile.id, "01A", false)
+            core.setWatched(profile.id, "01A", true)
+
+            assertEquals(listOf("01A"), core.snapshot(profile.id).watched.map { it.setId })
+        }
+    }
+
+    @Test
+    fun addingToTheWatchlistTwiceIsNotTwoRows() {
+        runBlocking {
+            val core = core()
+            val profile = core.freshProfile("Kalle")
+            core.setWatchlisted(profile.id, "01A", true)
+            core.setWatchlisted(profile.id, "01A", true)
+            assertEquals(listOf("01A"), core.snapshot(profile.id).watchlist)
+        }
+    }
+
+    @Test
+    fun removingFromTheWatchlistThenAddingBackIsVisibleAgain() {
+        runBlocking {
+            val core = core()
+            val profile = core.freshProfile("Lior")
+            core.setWatchlisted(profile.id, "01A", true)
+            core.setWatchlisted(profile.id, "01A", false)
+            assertEquals(emptyList(), core.snapshot(profile.id).watchlist)
+
+            core.setWatchlisted(profile.id, "01A", true)
+            assertEquals(listOf("01A"), core.snapshot(profile.id).watchlist)
+        }
+    }
+
+    /** A second `true` on a mark already live must not move it — only a tombstoned or absent mark is (re)dated. */
+    @Test
+    fun reAddingALiveWatchlistMarkDoesNotMoveItToTheFront() {
+        runBlocking {
+            val core = core()
+            val profile = core.freshProfile("Vico")
+            core.setWatchlisted(profile.id, "01A", true)
+            delay(5)
+            core.setWatchlisted(profile.id, "01B", true)
+            delay(5)
+            core.setWatchlisted(profile.id, "01A", true)
+            assertEquals(listOf("01B", "01A"), core.snapshot(profile.id).watchlist)
+        }
+    }
+
+    @Test
+    fun markingATitleForKidsTwiceIsNotTwoRows() {
+        runBlocking {
+            val core = core()
+            val profile = core.freshProfile("Mira")
+            core.setKids("01A", true)
+            core.setKids("01A", true)
+            assertEquals(listOf("01A"), core.snapshot(profile.id).kids)
+        }
+    }
+
+    @Test
+    fun removingATitleFromKidsThenAddingBackIsVisibleAgain() {
+        runBlocking {
+            val core = core()
+            val profile = core.freshProfile("Noor")
+            core.setKids("01A", true)
+            core.setKids("01A", false)
+            assertEquals(emptyList(), core.snapshot(profile.id).kids)
+
+            core.setKids("01A", true)
+            assertEquals(listOf("01A"), core.snapshot(profile.id).kids)
+        }
+    }
+
+    @Test
+    fun kidsMarksAreSharedAcrossEveryProfile() {
+        runBlocking {
+            val core = core()
+            val parent = core.freshProfile("Omar")
+            val child = core.freshProfile("Pia")
+
+            core.setKids("01A", true)
+
+            assertEquals(listOf("01A"), core.snapshot(parent.id).kids)
+            assertEquals(listOf("01A"), core.snapshot(child.id).kids)
+        }
+    }
+
+    @Test
+    fun pinningAnEditorsChoiceReplacesTheLastPick() {
+        runBlocking {
+            val core = core()
+            core.setEditorsChoice("01A", true)
+            core.setEditorsChoice("01B", true)
+            assertEquals("01B", core.editorsChoice())
+        }
+    }
+
+    @Test
+    fun unpinningTheEditorsChoiceClearsIt() {
+        runBlocking {
+            val core = core()
+            core.setEditorsChoice("01A", true)
+            core.setEditorsChoice("01A", false)
+            assertEquals(null, core.editorsChoice())
+        }
+    }
+
+    @Test
+    fun creatingRenamingAndDeletingAListWorksForItsOwner() {
+        runBlocking {
+            val core = core()
+            val profile = core.freshProfile("Quinn")
+            val created = core.createCollection(profile.id, "Weekend") ?: error("a list must be creatable for its own profile")
+
+            assertTrue(core.renameCollection(profile.id, created.id, "Weeknights"))
+            assertEquals("Weeknights", core.snapshot(profile.id).collections.single().name)
+
+            assertTrue(core.deleteCollection(profile.id, created.id))
+            assertEquals(emptyList(), core.snapshot(profile.id).collections)
+        }
+    }
+
+    @Test
+    fun listsBelongToOneProfileAndAreUntouchableByAnother() {
+        runBlocking {
+            val core = core()
+            val owner = core.freshProfile("Remy")
+            val other = core.freshProfile("Skye")
+            val created = core.createCollection(owner.id, "Weekend") ?: error("a list must be creatable for its own profile")
+
+            assertFalse(core.renameCollection(other.id, created.id, "Hijacked"))
+            assertFalse(core.deleteCollection(other.id, created.id))
+            assertEquals("Weekend", core.snapshot(owner.id).collections.single().name)
+        }
+    }
+
+    @Test
+    fun addingAndRemovingATitleInAListIsIdempotent() {
+        runBlocking {
+            val core = core()
+            val profile = core.freshProfile("Tao")
+            val created = core.createCollection(profile.id, "Weekend") ?: error("a list must be creatable for its own profile")
+
+            assertTrue(core.setInCollection(profile.id, created.id, "01A", true))
+            assertTrue(core.setInCollection(profile.id, created.id, "01A", true))
+            assertEquals(listOf("01A"), core.snapshot(profile.id).collections.single().items)
+
+            assertTrue(core.setInCollection(profile.id, created.id, "01A", false))
+            assertEquals(emptyList(), core.snapshot(profile.id).collections.single().items)
+        }
+    }
+
+    /** Every per-profile table but Kids and the editor's choice cascades off `profiles(id)` — see `schema.rs`. */
+    @Test
+    fun removingAProfileTakesItsWatchStateWithIt() {
+        runBlocking {
+            val core = core()
+            val profile = core.freshProfile("Wren")
+            core.setProgress(profile.id, "01A", 300.0, null)
+            core.setWatchlisted(profile.id, "01B", true)
+
+            assertTrue(core.deleteProfile(profile.id))
+
+            val snapshot = core.snapshot(profile.id)
+            assertEquals(emptyList(), snapshot.progress)
+            assertEquals(emptyList(), snapshot.watchlist)
+        }
+    }
+
+    /** No [freshProfile] call on purpose — the id below names no profile at all. */
+    @Test
+    fun aWriteForAProfileNobodyCreatedIsDropped() {
+        runBlocking {
+            val core = core()
+            core.setProgress("no-such-profile", "01A", 300.0, null)
+            assertEquals(emptyList(), core.snapshot("no-such-profile").progress)
+            assertEquals(null, core.createCollection("no-such-profile", "Weekend"))
+        }
     }
 }

@@ -134,7 +134,26 @@ class FakeCore(
     var signInFailure: Throwable? = null,
     var passwordFailure: Throwable? = null,
     var profilesFailure: Throwable? = null,
+    /**
+     * What [FakeWatchState] reads as "now" for every progress, watched,
+     * watchlist, Kids, editor's choice and collection write. Reassignable
+     * mid-test the same as every other field above — a test that must
+     * control ordering across two writes replaces it directly; everything
+     * else gets a plain monotonic count, which needs no test to move it and
+     * can never tie the way two writes inside the same real millisecond
+     * could. Two writes given equal timestamps sort by insertion order here;
+     * the real core's order for a tie is unspecified.
+     */
+    var clock: () -> Long = monotonicClock(),
 ) : FakeCoreHandle {
+    // Wrapped rather than passed straight through: `clock` is a `var`, and a
+    // lambda over it keeps reading whatever it holds now, including after a
+    // test reassigns it mid-run. `exists` reads `profiles` below the same
+    // way — a lambda, not the list itself, so it always sees this fake's
+    // current profiles rather than whatever the list held when this field
+    // was built (before `profiles` even has its own initial value).
+    private val watchState = FakeWatchState(now = { clock() }, exists = { id -> profiles.any { it.id == id } })
+
     /** Every profile this fake knows about. Written directly to seed a test, or grown through [createProfile]. */
     var profiles: List<Profile> = emptyList()
 
@@ -398,11 +417,14 @@ class FakeCore(
     // Monotonic rather than derived from the current list's size: a create
     // after a delete must not reissue an id a still-live row once had —
     // crates/mediagram-core/src/state/profiles.rs mints a fresh ULID per
-    // row for the same reason, just not one this fake needs to match.
+    // row for the same reason, just not one this fake needs to match. Also
+    // skipped past any id a test seeded directly into `profiles` — a seeded
+    // "p1" must not be handed out again to a second, distinct profile.
     private var nextProfileId = 1
 
     override suspend fun createProfile(name: String, kids: Boolean): Profile? {
         val cleanName = cleanProfileName(name) ?: return null
+        while (profiles.any { it.id == "p$nextProfileId" }) nextProfileId++
         val created = Profile("p${nextProfileId++}", cleanName, kids)
         profiles = profiles + created
         return created
@@ -421,7 +443,10 @@ class FakeCore(
             .joinToString(" ")
             .takeIf { it.isNotEmpty() }
 
-    override suspend fun chosenProfile(): String? = chosen
+    // Checked against `profiles` on every read, not trusted from whatever
+    // was last written — the same reason `profiles::chosen` re-checks on
+    // the real core: a profile named here can have been deleted since.
+    override suspend fun chosenProfile(): String? = chosen?.takeIf { id -> profiles.any { it.id == id } }
 
     override suspend fun chooseProfile(id: String): Boolean {
         if (profiles.none { it.id == id }) return false
@@ -433,33 +458,38 @@ class FakeCore(
         if (profiles.none { it.id == id }) return false
         profiles = profiles.filterNot { it.id == id }
         if (chosen == id) chosen = null
+        watchState.forget(id)
         return true
     }
 
-    override suspend fun snapshot(profileId: String): StateSnapshot =
-        StateSnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), null)
+    override suspend fun snapshot(profileId: String): StateSnapshot = watchState.snapshot(profileId)
 
-    override suspend fun setProgress(profileId: String, setId: String, at: Double, duration: Double?) = Unit
+    override suspend fun setProgress(profileId: String, setId: String, at: Double, duration: Double?) =
+        watchState.setProgress(profileId, setId, at, duration)
 
-    override suspend fun clearProgress(profileId: String, setId: String) = Unit
+    override suspend fun clearProgress(profileId: String, setId: String) = watchState.clearProgress(profileId, setId)
 
-    override suspend fun setWatched(profileId: String, setId: String, finished: Boolean) = Unit
+    override suspend fun setWatched(profileId: String, setId: String, finished: Boolean) =
+        watchState.setWatched(profileId, setId, finished)
 
-    override suspend fun setWatchlisted(profileId: String, setId: String, listed: Boolean) = Unit
+    override suspend fun setWatchlisted(profileId: String, setId: String, listed: Boolean) =
+        watchState.setWatchlisted(profileId, setId, listed)
 
-    override suspend fun setKids(setId: String, marked: Boolean) = Unit
+    override suspend fun setKids(setId: String, marked: Boolean) = watchState.setKids(setId, marked)
 
-    override suspend fun editorsChoice(): String? = null
+    override suspend fun editorsChoice(): String? = watchState.editorsChoice()
 
-    override suspend fun setEditorsChoice(setId: String, marked: Boolean) = Unit
+    override suspend fun setEditorsChoice(setId: String, marked: Boolean) = watchState.setEditorsChoice(setId, marked)
 
-    override suspend fun createCollection(profileId: String, name: String): ListRow? = null
+    override suspend fun createCollection(profileId: String, name: String): ListRow? = watchState.createCollection(profileId, name)
 
-    override suspend fun renameCollection(profileId: String, id: String, name: String): Boolean = false
+    override suspend fun renameCollection(profileId: String, id: String, name: String): Boolean =
+        watchState.renameCollection(profileId, id, name)
 
-    override suspend fun deleteCollection(profileId: String, id: String): Boolean = false
+    override suspend fun deleteCollection(profileId: String, id: String): Boolean = watchState.deleteCollection(profileId, id)
 
-    override suspend fun setInCollection(profileId: String, id: String, setId: String, included: Boolean): Boolean = false
+    override suspend fun setInCollection(profileId: String, id: String, setId: String, included: Boolean): Boolean =
+        watchState.setInCollection(profileId, id, setId, included)
 
     override suspend fun preferences(profileId: String): List<PreferenceRow> = emptyList()
 
