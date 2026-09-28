@@ -73,8 +73,16 @@ Starts from `main` at 0.78.0 / schema v11 (anime phase 4 landed first).
   2026, Wall Street Story) get the category "Trading". The 7 documentary collections
   and 6 standalone documentaries are listed for the user when the flag exists.
 
+- Documentaries (chosen 2026-09-29): **China** — Die Geschichte Chinas,
+  China – Wie eine Nation entstand, Mao – Chinas roter Kaiser (collections),
+  Pekinger Frühling (single); **Geschichte** — Die Inquisition, Die amerikanische
+  Revolution – Geburtsstunde der USA (collections), Versailles – Palast des
+  Sonnenkönigs, Frauen und Männer der Steinzeit – Gleicher als gedacht? (singles);
+  **Politik** — Bin Laden – Gesicht des Terrors, Kapitalismus made in USA – Reichtum
+  als Kult (collections), Enthüllt: Die Suche nach Osama bin Laden (single);
+  **Kultur** — Falco - Mon Amour, Venedig retten (singles).
+
 ## Unresolved questions
 
-1. Categories for the 7 documentary collections and 6 standalone documentaries.
-2. The local index is still at schema v10 (anime backfill not run yet); run both in one
+1. The local index is still at schema v10 (anime backfill not run yet); run both in one
    session per phase 1's operator steps.
