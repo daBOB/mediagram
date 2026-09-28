@@ -573,6 +573,15 @@ TV card and row already carries — with the same thin bar the phone draws,
 drawn plainly rather than focused (nothing here answers a direction key;
 cancelling or resuming is the plate's own OK, not the bar's).
 
+The Preloads page (Android only, the same reason) is a plain list rather
+than a poster wall — three sections, Preloading/Queued/On this device, each
+row a title beside one action (Cancel or Remove) — since what it shows is a
+handful of films at most, not a library's worth of cards. A queued film's
+own Preload control names what it is waiting on the same way: the running
+film's own title and percent when it is next, otherwise how many films
+stand ahead of it, read off the engine's one ordered queue rather than kept
+apart from what the Preloads page itself shows.
+
 ### Toggle
 
 A settings switch, drawn rather than left at Material's default: track in

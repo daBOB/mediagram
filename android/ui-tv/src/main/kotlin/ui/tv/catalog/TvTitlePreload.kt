@@ -36,8 +36,16 @@ internal fun TvPreloadPlate(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     focusRequester: FocusRequester? = null,
+    queuedAheadLabel: String? = null,
+    needsSpaceBudgetBytes: Long? = null,
 ) {
-    TvTextRow(text = preloadLabel(state), onClick = onClick, enabled = preloadIsEnabled(state), modifier = modifier, focusRequester = focusRequester)
+    TvTextRow(
+        text = preloadLabel(state, queuedAheadLabel, needsSpaceBudgetBytes),
+        onClick = onClick,
+        enabled = preloadIsEnabled(state),
+        modifier = modifier,
+        focusRequester = focusRequester,
+    )
 }
 
 /** The second plate Done offers beside the main one — see [TvPreloadPlate]. */
@@ -111,4 +119,6 @@ data class TvTitlePreloadUi(
     val onToggle: () -> Unit,
     val onRemove: () -> Unit,
     val onOpenStorage: () -> Unit,
+    val queuedAheadLabel: String? = null,
+    val needsSpaceBudgetBytes: Long? = null,
 )

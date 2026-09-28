@@ -56,6 +56,9 @@ sealed interface Destination {
     /** Films, shows and courses, newest arrival first. */
     data object Latest : Destination
 
+    /** What is preloading, queued, or already fully on this device — Android only, the web has no film preload. */
+    data object Preloads : Destination
+
     data object System : Destination
 
     data object TmdbKey : Destination
@@ -82,6 +85,7 @@ fun barTitleFor(destination: Destination): String =
         Destination.MoviesPage -> "Movies"
         Destination.Genres -> "Genres"
         Destination.Latest -> "Latest"
+        Destination.Preloads -> "Preloads"
         Destination.System -> "System"
         Destination.TmdbKey -> "TMDB key"
         Destination.Settings -> "Settings"
@@ -106,6 +110,7 @@ fun backLabelFor(destination: Destination): String? =
         Destination.MoviesPage -> "Back"
         Destination.Genres -> "Back"
         Destination.Latest -> "Back"
+        Destination.Preloads -> "Back"
         Destination.System -> "Back"
         Destination.TmdbKey -> "Back"
         Destination.Settings -> "Back"

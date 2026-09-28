@@ -40,6 +40,10 @@ data class TitlePreloadUi(
     val onToggle: () -> Unit,
     val onRemove: () -> Unit,
     val onOpenStorage: () -> Unit,
+    /** What a [FilmPreloadState.Queued] film's own label adds beyond "Queued" — see [player.queuedAheadLabel]. */
+    val queuedAheadLabel: String? = null,
+    /** The live cache budget a [FilmPreloadState.NeedsSpace] film's own label names — see [player.TitlePreloadViewModel.needsSpaceBudget]. */
+    val needsSpaceBudgetBytes: Long? = null,
 )
 
 /**
@@ -56,8 +60,14 @@ data class TitlePreloadUi(
  * so once one of them is this control's own tap.
  */
 @Composable
-internal fun PreloadPill(state: FilmPreloadState, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val label = preloadLabel(state)
+internal fun PreloadPill(
+    state: FilmPreloadState,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    queuedAheadLabel: String? = null,
+    needsSpaceBudgetBytes: Long? = null,
+) {
+    val label = preloadLabel(state, queuedAheadLabel, needsSpaceBudgetBytes)
     val hint = preloadAccessibilityHint(state)
     val enabled = preloadIsEnabled(state)
     val description = if (hint != null) "$label. $hint" else null

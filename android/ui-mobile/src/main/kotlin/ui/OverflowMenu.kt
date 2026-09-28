@@ -114,6 +114,9 @@ private fun AndroidOnlyItems(
     onAskStartOver: () -> Unit,
     close: () -> Unit,
 ) {
+    menu.onPreloads?.let { onPreloads ->
+        DropdownMenuItem(text = { Text("Preloads · ${menu.preloadCount}") }, onClick = { close(); onPreloads() })
+    }
     MenuItem(
         label = "Update library",
         note = menu.updateDisabledReason ?: menu.updateNote,

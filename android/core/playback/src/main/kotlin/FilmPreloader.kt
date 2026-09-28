@@ -75,6 +75,13 @@ class FilmPreloader(
     private val _active = MutableStateFlow<ActivePreload?>(null)
     override val active: StateFlow<ActivePreload?> = _active
 
+    /** See [filmPreloadOverview]: [stateOf] is asked only for whichever film [queue]'s own snapshot names as active, never for every queued one. */
+    override val queueOverview: Flow<List<FilmPreloadRow>> = filmPreloadOverview(queue.snapshot, ::stateOf)
+
+    /** Films [pauseForTimeLimit] paused — cleared per film by [enqueue] (the Preloads page's own Resume) or [remove]. */
+    private val _timeLimitPaused = MutableStateFlow<List<FilmPreloadRow.TimeLimitPaused>>(emptyList())
+    override val timeLimitPaused: StateFlow<List<FilmPreloadRow.TimeLimitPaused>> = _timeLimitPaused
+
     init {
         scope.launch(dispatcher) { runWorker() }
     }
@@ -101,6 +108,7 @@ class FilmPreloader(
         if (totalBytes <= 0) return
         if (!queue.enqueue(PreloadItem(setId, title, totalBytes))) return
         override(setId).value = FilmPreloadState.Queued
+        dropFromTimeLimitPaused(setId)
         wake.trySend(Unit)
     }
 
@@ -123,6 +131,7 @@ class FilmPreloader(
     override fun remove(setId: String) {
         externallySettled += setId
         queue.cancel(setId)
+        dropFromTimeLimitPaused(setId)
         scope.launch(dispatcher) {
             itemJobs[setId]?.let {
                 it.cancel()
@@ -148,12 +157,15 @@ class FilmPreloader(
      * platform does not allow starting from the background. Every film
      * this touches is dropped from [queue] entirely, the same as
      * [cancel]/[remove] — resuming any of them, active or merely queued,
-     * is a fresh [enqueue] once the viewer is back.
+     * is a fresh [enqueue] once the viewer is back. Reported through
+     * [timeLimitPaused] so a Preloads page can still list them while the
+     * real queue itself is empty.
      */
     override fun pauseForTimeLimit() {
         scope.launch(dispatcher) {
             val activeItem = queue.activeItem
             val pendingItems = queue.drainPending()
+            val paused = mutableListOf<FilmPreloadRow.TimeLimitPaused>()
             if (activeItem != null) {
                 externallySettled += activeItem.setId
                 queue.cancel(activeItem.setId)
@@ -162,15 +174,22 @@ class FilmPreloader(
                     it.join()
                 }
                 externallySettled -= activeItem.setId
-                pauseForTimeLimit(activeItem)
+                paused += pauseForTimeLimit(activeItem, wasActive = true)
             }
-            for (item in pendingItems) pauseForTimeLimit(item)
+            for (item in pendingItems) paused += pauseForTimeLimit(item, wasActive = false)
+            _timeLimitPaused.value = _timeLimitPaused.value + paused
         }
     }
 
-    private suspend fun pauseForTimeLimit(item: PreloadItem) {
+    private suspend fun pauseForTimeLimit(item: PreloadItem, wasActive: Boolean): FilmPreloadRow.TimeLimitPaused {
         val held = heldSets.heldBytes(item.setId, item.totalBytes)
         override(item.setId).value = FilmPreloadState.Paused(held, item.totalBytes, PauseReason.TimeLimit)
+        return FilmPreloadRow.TimeLimitPaused(item.setId, item.title, item.totalBytes, held, wasActive)
+    }
+
+    /** [enqueue] (the Preloads page's own Resume) or [remove] taking [setId] out of limbo. */
+    private fun dropFromTimeLimitPaused(setId: String) {
+        _timeLimitPaused.value = _timeLimitPaused.value.filterNot { it.setId == setId }
     }
 
     private fun override(setId: String): MutableStateFlow<FilmPreloadState?> =

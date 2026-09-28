@@ -324,6 +324,44 @@ class FilmPreloaderTest {
     }
 
     @Test
+    fun queueOverviewListsTheRunningFilmFirstThenQueuedFilmsInOrder() = runTest {
+        val writer = FakeFilmWriter()
+        writer.gate = CompletableDeferred()
+        val preloader = engine(writer)
+
+        preloader.enqueue("f1", "Film f1", 1_000L)
+        runCurrent()
+        preloader.enqueue("f2", "Film f2", 500L)
+        runCurrent()
+        preloader.enqueue("f3", "Film f3", 300L)
+        runCurrent()
+
+        val rows = preloader.queueOverview.first()
+        assertEquals(FilmPreloadRow.Running("f1", "Film f1", 1_000L, heldBytes = 0L, pauseReason = null), rows[0])
+        assertEquals(FilmPreloadRow.Waiting("f2", "Film f2", 500L), rows[1])
+        assertEquals(FilmPreloadRow.Waiting("f3", "Film f3", 300L), rows[2])
+    }
+
+    @Test
+    fun queueOverviewDropsAFilmOnceCancelledAndPromotesTheNextOne() = runTest {
+        val writer = FakeFilmWriter()
+        writer.gate = CompletableDeferred()
+        val preloader = engine(writer)
+
+        preloader.enqueue("f1", "Film f1", 1_000L)
+        runCurrent()
+        preloader.enqueue("f2", "Film f2", 500L)
+        runCurrent()
+
+        preloader.cancel("f1")
+        runCurrent()
+
+        val rows = preloader.queueOverview.first()
+        assertEquals("f2", rows.single().setId)
+        assertIs<FilmPreloadRow.Running>(rows.single())
+    }
+
+    @Test
     fun theOpenTitleIsReservedOnlyWhenItIsADifferentFilm() = runTest {
         val writer = FakeFilmWriter()
         val open = FakeOpenTitleSource(OpenTitle("f1", 1_000L))

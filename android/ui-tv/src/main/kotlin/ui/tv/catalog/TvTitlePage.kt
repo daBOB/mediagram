@@ -193,7 +193,13 @@ internal fun TvTitlePage(
                                 focusRequester = play,
                             )
                             preload?.let { p ->
-                                TvPreloadPlate(state = p.state, onClick = p.onToggle, focusRequester = preloadPlate)
+                                TvPreloadPlate(
+                                    state = p.state,
+                                    onClick = p.onToggle,
+                                    focusRequester = preloadPlate,
+                                    queuedAheadLabel = p.queuedAheadLabel,
+                                    needsSpaceBudgetBytes = p.needsSpaceBudgetBytes,
+                                )
                                 // Remove takes the plate it removed with it —
                                 // land back on the main plate rather than
                                 // wherever focus search finds next (the

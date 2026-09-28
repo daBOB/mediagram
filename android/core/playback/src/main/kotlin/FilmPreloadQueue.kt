@@ -27,6 +27,16 @@ class FilmPreloadQueue {
     private val _hasWork = MutableStateFlow(false)
     val hasWork: StateFlow<Boolean> = _hasWork.asStateFlow()
 
+    /**
+     * [active] and [pending] together, republished from the same
+     * [publish] every method here already calls — a [FilmPreloadRow] list
+     * is built from this rather than from [activeItem]/[pending] read
+     * apart, so the two can never disagree about which film led at the
+     * moment either was read.
+     */
+    private val _snapshot = MutableStateFlow(QueueSnapshot(null, emptyList()))
+    val snapshot: StateFlow<QueueSnapshot> = _snapshot.asStateFlow()
+
     /** The item downloading right now, if any. */
     val activeItem: PreloadItem?
         @Synchronized get() = active
@@ -91,5 +101,9 @@ class FilmPreloadQueue {
 
     private fun publish() {
         _hasWork.value = pending.isNotEmpty() || active != null
+        _snapshot.value = QueueSnapshot(active, pending.toList())
     }
 }
+
+/** [active] (`null` when nothing is writing or paused) and [pending] in FIFO order — see [FilmPreloadQueue.snapshot]. */
+data class QueueSnapshot(val active: PreloadItem?, val pending: List<PreloadItem>)

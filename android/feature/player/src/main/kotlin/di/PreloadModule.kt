@@ -25,6 +25,7 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import playback.CacheBudgetQuery
 import playback.CacheDataSourceWriter
 import playback.CacheProvider
 import playback.DownloadLane
@@ -53,6 +54,13 @@ object PreloadModule {
     @Provides
     @Singleton
     fun provideDownloadLane(): DownloadLane = DownloadLane()
+
+    /** Wraps [CacheProvider.occupancy] — the same live figure [provideFilmPreloader]'s own `fits` lambda already reads — so a NeedsSpace label can name it without a test needing a real disk cache behind it. */
+    @Provides
+    @Singleton
+    fun provideCacheBudgetQuery(
+        @ApplicationContext context: Context,
+    ): CacheBudgetQuery = CacheBudgetQuery { CacheProvider.occupancy(context).budgetBytes }
 
     /**
      * The one strict writer the series and film preloaders both take into

@@ -5,6 +5,43 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.75.0 — Android: the preload queue, made visible
+
+**Added**
+
+- `FilmPreloader` exposes its own queue as one ordered list — the running
+  film first (its live held bytes and pause reason, if paused), then every
+  waiting film in FIFO order — without touching any of the engine's own
+  rules. A queued film's own label on the film page now names what it is
+  actually waiting on instead of the bare "Queued": "Queued · after Der
+  Pate, 36%" when nothing but the running film precedes it, "Queued · 2
+  ahead" otherwise. Phone and TV alike; a tap still cancels.
+- A Preloads page (phone/tablet and TV), reachable from the overflow menu
+  (phone) or the TV menu once anything is running or queued — "Preloads ·
+  n", present only then. Three sections, empty ones hidden: Preloading
+  (title, bar, "x of y · n%", its own pause reason, Cancel), Queued (in
+  FIFO order, Cancel), On this device (films fully held — the catalogue's
+  own held set, Remove). Each row opens its film. An idle, empty page says
+  nothing is preloading rather than showing three empty headings.
+  Android-only, the web has no film preload.
+- `NeedsSpace` now names the live cache budget beside what the film needs
+  — "Needs 30 GB · budget is 8.0 GB · Try again" — the same figure the
+  engine's own `fits` rule reads, so the reason a 30 GB film cannot start
+  is visible without opening Settings first. A test walk against a real
+  8 GB TV box budget is what asked for this.
+- A film Android's own background time limit paused stays listed on the
+  Preloads page — under Preloading if it was the one actually writing,
+  under Queued otherwise — named "Paused — background limit" with one
+  Resume action, rather than disappearing along with the rest of the
+  queue the time limit clears. The engine reports these apart from the
+  queue itself (`FilmPreloader.timeLimitPaused`), since pausing for the
+  time limit empties the queue by design; the menu's own count includes
+  them.
+- A kids profile's Preloads page, menu count, and a queued film's own
+  "Queued · after …" label all read only what that profile's own catalogue
+  can resolve — a grown-up's own preload never surfaces there, the same
+  reason it never appears on a kids profile's shelves.
+
 ## 0.74.0 — Android: Preload reaches the film page
 
 **Added**

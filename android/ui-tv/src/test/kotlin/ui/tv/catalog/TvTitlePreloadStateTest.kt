@@ -36,7 +36,9 @@ class TvTitlePreloadStateTest : TvScreenStateTest() {
         onToggle: () -> Unit = {},
         onRemove: () -> Unit = {},
         onOpenStorage: () -> Unit = {},
-    ) = TvTitlePreloadUi(state, serverLine, onToggle, onRemove, onOpenStorage)
+        queuedAheadLabel: String? = null,
+        needsSpaceBudgetBytes: Long? = null,
+    ) = TvTitlePreloadUi(state, serverLine, onToggle, onRemove, onOpenStorage, queuedAheadLabel, needsSpaceBudgetBytes)
 
     @Test
     fun withNoPreloadWiredPlayStillTakesFocusAlone() {
@@ -117,6 +119,23 @@ class TvTitlePreloadStateTest : TvScreenStateTest() {
         // Left takes back to the main plate, not the Overview tab a plain
         // focus-search would have landed on once Remove tore itself down.
         compose.onNodeWithText("Preloaded ✓").assertIsFocused()
+    }
+
+    @Test
+    fun queuedNamesWhatItIsWaitingOnWhenTheViewModelSaysSo() {
+        show { TvTitlePage(set = film, info = null, progress = null, onPlay = {}, preload = ui(FilmPreloadState.Queued, queuedAheadLabel = "Queued · after Der Pate, 36%")) }
+        compose.onNodeWithText("Queued · after Der Pate, 36%").assertExists()
+    }
+
+    @Test
+    fun needsSpaceNamesTheLiveBudgetWhenTheViewModelSaysSo() {
+        show {
+            TvTitlePage(
+                set = film, info = null, progress = null, onPlay = {},
+                preload = ui(FilmPreloadState.NeedsSpace(TOTAL), needsSpaceBudgetBytes = 8L shl 30),
+            )
+        }
+        compose.onNodeWithText("Needs 5.0 GB · budget is 8.0 GB · Try again").assertExists()
     }
 
     @Test

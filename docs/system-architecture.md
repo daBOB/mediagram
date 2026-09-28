@@ -569,6 +569,47 @@ the index. Storage merges the local cache and the home cache server into one sec
 Appearance offers Theme, Accent and Artwork (see `DESIGN.md` § Artwork). Television
 polls System every 2 seconds while it is visible, the same as the web player.
 
+### Film preload (Android only)
+
+`FilmPreloader` (`core:playback`) is a FIFO queue, one film writing at a
+time, over the same `CacheDataSourceWriter` and `DownloadLane`
+`SeriesPreloader` already shared — a film preload and a series preload can
+never write concurrently, so the LAN PUTs to §12 that fall out of either
+never race each other. A tap enqueues; the worker judges `fits` against the
+live cache budget (`CacheProvider.occupancy`, not a stale read) only once a
+film reaches the front of the queue, reserving whatever film is currently
+open in the player if it differs from the one being judged — an open title
+never pauses the judgement itself, only the writing that follows it.
+`ActivePlayback` publishes what the app's one `ExoPlayer` has open by
+listening to it directly (`Player.STATE_IDLE` is the only thing that clears
+it — backgrounding the app or merely pausing does not), which is what lets
+the worker pause for `PauseReason.Playing` without the two ever touching each
+other's state. A `dataSync` foreground service (`PreloadService`) keeps the
+queue alive while the app is backgrounded, within Android's own 6h/24h
+ceiling for that service type; `POST_NOTIFICATIONS` stays undeclared, so its
+notification is built but never shown, and the time limit pauses every film
+the queue was holding (`FilmPreloader.pauseForTimeLimit`), reported apart
+from the queue itself (`timeLimitPaused`) so a Preloads page can still name
+them once the queue proper is empty. None of this is persisted — a process
+death loses the queue and any paused-by-limit list alike, same as
+`SeriesPreloader` before it.
+
+The queue is visible in two places. A film page's own control
+(`TitlePreloadViewModel`) shows that one film's state, its bar filled from
+the engine's own progress callback (not from a poll — the bar is live), and
+polls §12's `GET /v1/sets/{id}` every 5s only for the quiet "Home server:
+x of y GB" line, which the bar itself never needs. A Preloads page
+(phone/tablet and TV) shows every film at once, built from
+`FilmPreloader.queueOverview` (one ordered list — the running film first,
+with its held bytes and pause reason if paused, then every waiting film in
+FIFO order — a pure projection over the same `QueueSnapshot`
+`FilmPreloadQueue` already published, changing none of the engine's own
+rules) merged with `timeLimitPaused`. A queued film's own label on its film
+page reads the same list to name what it is waiting on: the running film's
+own title and percent when it is immediately next, otherwise how many films
+stand ahead of it. The control's own states and visual pair are
+`DESIGN.md`'s (§ Pill).
+
 ### The television surface
 
 `:ui-tv` is a second renderer over the same `feature:*` ViewModels and UiState,

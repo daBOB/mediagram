@@ -2,12 +2,15 @@ package ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogViewModel
 import catalog.MenuScreen
 import catalog.fetchResultMessage
+import catalog.resolvableQueueRows
 import catalog.updateDisabledReason
+import player.TitlePreloadViewModel
 import system.FetchViewModel
 import ui.catalog.FetchResultDialog
 import ui.profile.ProfileGate
@@ -34,6 +37,11 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
     val catalogState by catalogViewModel.state.collectAsStateWithLifecycle()
     val fetchViewModel: FetchViewModel = hiltViewModel()
     val fetchState by fetchViewModel.state.collectAsStateWithLifecycle()
+    val titlePreloadViewModel: TitlePreloadViewModel = hiltViewModel()
+    val rawQueueRows by titlePreloadViewModel.queueRows.collectAsStateWithLifecycle(initialValue = emptyList())
+    // Never the raw engine count: a kids profile must not see a grown-up's
+    // own preloads counted into its own menu badge.
+    val queueCount = remember(rawQueueRows, catalogState) { catalogState.resolvableQueueRows(rawQueueRows).size }
     val at = rememberLibraryPositions()
 
     SettingsOutcomes(onLibraryChanged = catalogViewModel::reload, onSignedOut = onSignedOut)
@@ -57,6 +65,8 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
         onStartOver = onStartOver,
         updateDisabledReason = updateDisabledReason(catalogState, fetchState.running),
         updateNote = if (fetchState.hasKey) null else "Artwork and descriptions need a TMDB key",
+        onPreloads = if (queueCount > 0) at::openPreloads else null,
+        preloadCount = queueCount,
     )
 
     LibraryBranches(at, catalogState, catalogViewModel, fetchState, fetchViewModel, menuActions, profileBar)

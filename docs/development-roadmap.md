@@ -247,6 +247,44 @@ type not yet swept onto the new tokens, a still-square TV focus ring, and
 similar) are listed in the plan's own `plan.md` § Review rather than tracked
 as separate work.
 
+## Android: film preload
+
+In progress. `plans/260927-2117-android-film-preload/`, released
+0.70.0–0.72.0 (worktree `feat/android-film-preload`). A Preload button
+beside Play on every film page (phone, tablet, TV), backed by a new
+`FilmPreloader` engine sharing `SeriesPreloader`'s writer and download lane,
+plus a per-film status route (`GET /v1/sets/{id}`) on the home cache server
+so the page can show what the paired server already holds. The queue itself
+is now visible: a Preloads page (phone/tablet and TV) lists what is
+preloading, queued, or already fully on the device, a queued film's own
+label names what it is waiting on, `NeedsSpace` names the live cache budget,
+and a film paused by Android's own background time limit stays listed with
+one Resume action rather than disappearing. Android-only by decision — the
+web player has no film preload; see `DESIGN.md` § Pill and
+`docs/system-architecture.md`'s own "Film preload (Android only)".
+
+| Phase | Scope | Status |
+|---|---|---|
+| 1 | Cache server: per-film status route | Complete |
+| 2 | Preload engine: queue, progress, pause, service | Complete |
+| 3 | Film pages: button, bar, server line | Complete |
+| 3b | Show the preload queue: engine queue list, Queued/NeedsSpace labels, a Preloads page, menu entry, time-limit-paused films kept listed | Complete; device check pending |
+| 4 | Verify on tablet + TV box, docs, version | TV box done for phases 1–3; tablet and the 3b device check still pending |
+
+Verified on the TV box (`192.168.0.35:5555`, benchmark build), for phases
+1–3: a film preloads with a live bar and MB/s, survives backgrounding,
+pauses while a different film plays and resumes after, cancels mid-way and
+resumes from the held share on a second tap, finishes to "Preloaded ✓", and
+plays back with no further Telegram reads. NeedsSpace confirmed against the
+box's own configured budget — the same walk that found the budget silently
+missing from the reason shown, which is what asked for phase 3b. Tablet pass
+and phase 3b's own device check (the Preloads page, the queued-ahead label,
+the time-limit-paused Resume action, all against a real device) still
+pending. One unrelated finding from the same session: a Realtek hardware
+AV1 decoder stall on that TV box (any AV1+HDR10 title, with or without
+preload involved) — tracked as a follow-up, not part of this feature's
+surface.
+
 ## Explicitly deferred (from the v1 implementation logs, not tracked as bugs)
 
 Recorded here so they are not silently forgotten, not because they are

@@ -14,6 +14,8 @@ import catalog.BrowseViewModel
 import catalog.CatalogViewModel
 import catalog.Entry
 import catalog.fetchResultMessage
+import catalog.resolvableQueueRows
+import player.TitlePreloadViewModel
 import system.FetchViewModel
 import ui.FrameKind
 import ui.LibraryPositions
@@ -60,6 +62,8 @@ internal fun TvLibrary(
     val fetchState by fetchViewModel.state.collectAsStateWithLifecycle()
     val browse: BrowseViewModel = hiltViewModel()
     val kidsProfile by catalogViewModel.kidsProfile.collectAsStateWithLifecycle()
+    val titlePreloadViewModel: TitlePreloadViewModel = hiltViewModel()
+    val rawQueueRows by titlePreloadViewModel.queueRows.collectAsStateWithLifecycle(initialValue = emptyList())
     val at = rememberLibraryPositions()
     val restore = rememberTvRestoreKeys()
     val saved = rememberSaveableStateHolder()
@@ -91,7 +95,10 @@ internal fun TvLibrary(
         restore.forget(here)
         at.pop()
     }
-    val menu = tvMenuActions(at, restore, here, catalogState, catalogViewModel, fetchState, { menuOpen = false }, onStartOver)
+    // Never the raw engine count: a kids profile must not see a
+    // grown-up's own preloads counted into its own menu badge.
+    val queueCount = remember(rawQueueRows, catalogState) { catalogState.resolvableQueueRows(rawQueueRows).size }
+    val menu = tvMenuActions(at, restore, here, catalogState, catalogViewModel, fetchState, { menuOpen = false }, onStartOver, queueCount)
 
     when (top) {
         FrameKind.PLAYER -> TvPlayerBranch(at, catalogState, leave)
@@ -123,6 +130,8 @@ internal fun TvLibrary(
         FrameKind.LATEST -> TvLatestFrame(at, shelves, watch, heldIds, restore, here, leave)
 
         FrameKind.MOVIES_PAGE -> TvMoviesPageFrame(at, allFilms, watch, heldIds, restore, here, leave)
+
+        FrameKind.PRELOADS -> TvPreloadsFrame(at, catalogState, restore, here, leave)
 
         // Nothing open, the menu page chosen from the masthead: Back from
         // it puts the remote back on the masthead's Menu.

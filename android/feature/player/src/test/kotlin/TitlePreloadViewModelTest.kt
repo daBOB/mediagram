@@ -1,8 +1,11 @@
 package player
 
 import app.cash.turbine.test
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
+import playback.CacheBudgetQuery
+import playback.FilmPreloadRow
 import playback.FilmPreloadState
 import playback.InMemoryLanCacheSettings
 import playback.LanServer
@@ -176,5 +179,124 @@ class TitlePreloadViewModelTest {
             expectNoEvents()
             assertEquals(callsAtStop, client.setStatusCalls, "polling stopped once the film left Running")
         }
+    }
+
+    @Test
+    fun needsSpaceNamesTheLiveBudgetOnceItArrives() = runTest {
+        val vm =
+            TitlePreloadViewModel(
+                preloading, lanSettings, FakeLanServerSource(server), FakeLanChunkProtocol(),
+                cacheBudget = CacheBudgetQuery { 8L shl 30 },
+            )
+        preloading.setState("f1", 30L shl 30, FilmPreloadState.NeedsSpace(30L shl 30))
+        vm.needsSpaceBudget("f1", 30L shl 30).test { assertEquals(8L shl 30, awaitItem()) }
+    }
+
+    @Test
+    fun needsSpaceBudgetIsNullOutsideNeedsSpace() = runTest {
+        val vm = viewModel()
+        preloading.setState("f1", 100L, FilmPreloadState.Idle(0L, 100L))
+        vm.needsSpaceBudget("f1", 100L).test { assertNull(awaitItem()) }
+    }
+
+    @Test
+    fun queuedAheadNamesTheRunningFilmAndItsPercentWhenNext() = runTest {
+        val vm = viewModel()
+        preloading.setState("f1", 100L, FilmPreloadState.Queued)
+        preloading.setQueueOverview(
+            listOf(
+                FilmPreloadRow.Running("running", "Der Pate", 30_000_000_000L, heldBytes = 30_000_000_000L * 36 / 100, pauseReason = null),
+                FilmPreloadRow.Waiting("f1", "Dune", 100L),
+            ),
+        )
+        vm.queuedAhead("f1", 100L).test { assertEquals("Queued · after Der Pate, 36%", awaitItem()) }
+    }
+
+    /** A real title can run well past a phone's own width — ellipsized the same reason `Failed`'s reason already is. */
+    @Test
+    fun queuedAheadEllipsizesALongRunningTitle() {
+        val rows =
+            listOf(
+                FilmPreloadRow.Running("running", "Chihiros Reise ins Zauberland", 100L, heldBytes = 40L, pauseReason = null),
+                FilmPreloadRow.Waiting("f1", "Dune", 100L),
+            )
+        assertEquals("Queued · after Chihiros Reise ins…, 40%", queuedAheadLabel(rows, "f1"))
+    }
+
+    @Test
+    fun queuedAheadCountsEveryFilmAheadOfItOtherwise() = runTest {
+        val vm = viewModel()
+        preloading.setState("f1", 100L, FilmPreloadState.Queued)
+        preloading.setQueueOverview(
+            listOf(
+                FilmPreloadRow.Running("running", "Der Pate", 100L, heldBytes = 10L, pauseReason = null),
+                FilmPreloadRow.Waiting("other", "Another film", 100L),
+                FilmPreloadRow.Waiting("f1", "Dune", 100L),
+            ),
+        )
+        vm.queuedAhead("f1", 100L).test { assertEquals("Queued · 2 ahead", awaitItem()) }
+    }
+
+    /**
+     * A kids-profile wiring passes its own already-filtered rows rather
+     * than the raw [player.TitlePreloadViewModel.queueRows]. The VM's own
+     * `queueRows` here disagrees on purpose, to prove the explicit [rows]
+     * parameter — not the default — is what actually gets read.
+     */
+    @Test
+    fun queuedAheadReadsWhicheverRowsFlowItIsGiven() = runTest {
+        val vm = viewModel()
+        preloading.setState("f1", 100L, FilmPreloadState.Queued)
+        preloading.setQueueOverview(listOf(FilmPreloadRow.Waiting("f1", "Dune", 100L)))
+        val filtered =
+            flowOf(
+                listOf(
+                    FilmPreloadRow.Running("running", "Der Pate", 100L, heldBytes = 10L, pauseReason = null),
+                    FilmPreloadRow.Waiting("f1", "Dune", 100L),
+                ),
+            )
+
+        vm.queuedAhead("f1", 100L, rows = filtered).test { assertEquals("Queued · after Der Pate, 10%", awaitItem()) }
+    }
+
+    @Test
+    fun queuedAheadIsNullOutsideQueued() = runTest {
+        val vm = viewModel()
+        preloading.setState("f1", 100L, FilmPreloadState.Idle(0L, 100L))
+        vm.queuedAhead("f1", 100L).test { assertNull(awaitItem()) }
+    }
+
+    @Test
+    fun queueCountReflectsTheOverviewSize() = runTest {
+        val vm = viewModel()
+        preloading.setQueueOverview(
+            listOf(
+                FilmPreloadRow.Running("f1", "Dune", 100L, heldBytes = 10L, pauseReason = null),
+                FilmPreloadRow.Waiting("f2", "Another film", 100L),
+            ),
+        )
+        vm.queueCount.test { assertEquals(2, awaitItem()) }
+    }
+
+    /** A time-limit pause empties the real queue, so `queueRows`/`queueCount` must still count them from the engine's own separate list. */
+    @Test
+    fun queueRowsAndCountIncludeFilmsPausedByTheTimeLimit() = runTest {
+        val vm = viewModel()
+        preloading.setQueueOverview(listOf(FilmPreloadRow.Running("f1", "Dune", 100L, heldBytes = 10L, pauseReason = null)))
+        preloading.setTimeLimitPaused(listOf(FilmPreloadRow.TimeLimitPaused("f2", "Another film", 100L, heldBytes = 5L, wasActive = false)))
+
+        vm.queueRows.test {
+            val rows = awaitItem()
+            assertEquals(2, rows.size)
+            assertEquals(setOf("f1", "f2"), rows.map { it.setId }.toSet())
+        }
+        vm.queueCount.test { assertEquals(2, awaitItem()) }
+    }
+
+    @Test
+    fun resumeReachesEnqueueTheSameWayATimeLimitPauseTapWould() = runTest {
+        val vm = viewModel()
+        vm.resume("f1", "Dune", 100L)
+        assertEquals(listOf(Triple("f1", "Dune", 100L)), preloading.enqueueCalls)
     }
 }

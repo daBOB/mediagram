@@ -109,7 +109,17 @@ fun TitleDetailScreen(
             editorsChoicePinned = editorsChoice == set.setId,
             onToggleEditorsChoice = onToggleEditorsChoice,
             modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.small),
-            preloadPill = preload?.let { p -> { PreloadPill(state = p.state, onClick = p.onToggle) } },
+            preloadPill =
+                preload?.let { p ->
+                    {
+                        PreloadPill(
+                            state = p.state,
+                            onClick = p.onToggle,
+                            queuedAheadLabel = p.queuedAheadLabel,
+                            needsSpaceBudgetBytes = p.needsSpaceBudgetBytes,
+                        )
+                    }
+                },
             preloadRemoveItem =
                 preload?.takeIf { it.state == FilmPreloadState.Done }?.let { p ->
                     { dismiss: () -> Unit -> PreloadRemoveMenuItem(onRemove = p.onRemove, onDismiss = dismiss) }

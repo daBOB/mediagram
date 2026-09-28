@@ -355,6 +355,34 @@ class FilmPreloaderBlockingWriterTest {
             assertTrue(waitUntil(timeoutMs = 1_000) { !preloader.hasWork.value }, "nothing should be left queued")
             scope.cancel()
         }
+
+    /** A Preloads page has nowhere else to read these once the real queue is emptied by the pause itself — [FilmPreloader.timeLimitPaused] is that list. */
+    @Test
+    fun timeLimitPausedReportsBothFilmsThenDropsOneOnceItIsResumed() =
+        runBlocking {
+            val scope = CoroutineScope(SupervisorJob())
+            val writer = BlockingWriter(stepMs = 20L, chunkBytes = 20L)
+            val preloader = engine(writer, scope)
+
+            preloader.enqueue("a", "Film A", 1_000_000L)
+            waitUntil { writer.started.contains("a") }
+            preloader.enqueue("b", "Film B", 500L)
+            waitUntil { preloader.stateOf("b", 500L).first() is FilmPreloadState.Queued }
+
+            preloader.pauseForTimeLimit()
+            assertTrue(waitUntil(timeoutMs = 1_000) { preloader.timeLimitPaused.value.size == 2 })
+            val paused = preloader.timeLimitPaused.value.associateBy { it.setId }
+            assertTrue(paused.getValue("a").wasActive, "the film that was actually writing is marked as such")
+            assertFalse(paused.getValue("b").wasActive, "a merely queued film is not")
+
+            preloader.enqueue("a", "Film A", 1_000_000L)
+            val onlyBLeft =
+                waitUntil(timeoutMs = 1_000) {
+                    preloader.timeLimitPaused.value.map { it.setId } == listOf("b")
+                }
+            assertTrue(onlyBLeft, "resuming a takes it out of the paused list, leaving the film that is still waiting")
+            scope.cancel()
+        }
 }
 
 /** Polls [condition] until it is true or [timeoutMs] elapses — the plain, dependency-free way to await a real background coroutine's effect without a virtual clock. */

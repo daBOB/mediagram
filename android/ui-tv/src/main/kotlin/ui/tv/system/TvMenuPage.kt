@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,14 +29,19 @@ import ui.tv.setup.TvConfirmDialog
 
 /**
  * The phone's overflow menu as a page: a television has no dropdown to
- * hang off a bar, so the same five items, in [MenuActions]' order and with
- * its words, stand as rows of their own. Update library says under itself
- * what the phone's item says — why it is waiting, or what it will leave
- * out — and is drawn faint while it waits.
+ * hang off a bar, so the phone's five fixed items, in [MenuActions]' order
+ * and with its words, stand as rows of their own, followed by the four
+ * browse utilities and then a conditional row of their own for whatever
+ * else the menu carries (currently, "Preloads · n"). Update library says
+ * under itself what the phone's item says — why it is waiting, or what it
+ * will leave out — and is drawn faint while it waits.
  *
  * [restoreKey] is the row whose screen was just left, so Back from System
  * lands on System; with none, the first row takes the remote. Start over
- * asks first, in the phone's words, with Cancel under the remote.
+ * asks first, in the phone's words, with Cancel under the remote. The
+ * column itself scrolls: enough rows (a TMDB-key note, a larger font
+ * scale) can push the last of them below the fold of a ten-foot screen,
+ * where a fixed column would leave them impossible to reach at all.
  *
  * [onMyList]/[onContinueWatching]/[onLatest]/[onGenres] are the four
  * utilities `mastheadSplitOf` moved off the masthead's own tab row and into
@@ -59,7 +66,7 @@ internal fun TvMenuPage(
     BackHandler(onBack = onBack)
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         Text(text = "Menu", style = TvTypeScale.title)
@@ -80,6 +87,7 @@ internal fun TvMenuPage(
         TvTextRow(text = "Continue watching", onClick = onContinueWatching, focusRequester = rows.getValue(MenuRow.ContinueWatching))
         TvTextRow(text = "Latest", onClick = onLatest, focusRequester = rows.getValue(MenuRow.Latest))
         TvTextRow(text = "Genres", onClick = onGenres, focusRequester = rows.getValue(MenuRow.Genres))
+        menu.onPreloads?.let { onPreloads -> TvTextRow(text = "Preloads · ${menu.preloadCount}", onClick = onPreloads) }
     }
 
     if (askingStartOver) {

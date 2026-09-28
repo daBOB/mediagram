@@ -5,6 +5,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import catalog.CatalogUiState
+import catalog.resolvableQueueRows
+import kotlinx.coroutines.flow.map
 import model.MediaSet
 import player.TitlePreloadViewModel
 import ui.catalog.TitlePreloadUi
@@ -31,9 +34,13 @@ import ui.catalog.TitlePreloadUi
  * whenever the `Flow` instance it was given changes identity. Left
  * unkeyed, this had the server line polling on every progress tick
  * (`ProgressThrottle`'s ~4/s) instead of every 5s.
+ *
+ * [catalogState] filters what [queuedAhead][TitlePreloadViewModel.queuedAhead]
+ * reads before it ever names another film — a kids profile must not learn
+ * a grown-up's own queued title through "Queued · after …" either.
  */
 @Composable
-internal fun rememberFilmPreloadUi(set: MediaSet, onOpenStorage: () -> Unit): TitlePreloadUi? {
+internal fun rememberFilmPreloadUi(set: MediaSet, catalogState: CatalogUiState, onOpenStorage: () -> Unit): TitlePreloadUi? {
     if (set.totalBytes <= 0) return null
     val viewModel: TitlePreloadViewModel = hiltViewModel()
     val state by
@@ -42,6 +49,13 @@ internal fun rememberFilmPreloadUi(set: MediaSet, onOpenStorage: () -> Unit): Ti
     val serverLine by
         remember(viewModel, set.setId, set.totalBytes) { viewModel.serverLine(set.setId, set.totalBytes) }
             .collectAsStateWithLifecycle(initialValue = null)
+    val resolvableRows = remember(viewModel, catalogState) { viewModel.queueRows.map { catalogState.resolvableQueueRows(it) } }
+    val queuedAheadLabel by
+        remember(viewModel, set.setId, set.totalBytes, resolvableRows) { viewModel.queuedAhead(set.setId, set.totalBytes, resolvableRows) }
+            .collectAsStateWithLifecycle(initialValue = null)
+    val needsSpaceBudgetBytes by
+        remember(viewModel, set.setId, set.totalBytes) { viewModel.needsSpaceBudget(set.setId, set.totalBytes) }
+            .collectAsStateWithLifecycle(initialValue = null)
     val currentState = state ?: return null
     return TitlePreloadUi(
         state = currentState,
@@ -49,5 +63,7 @@ internal fun rememberFilmPreloadUi(set: MediaSet, onOpenStorage: () -> Unit): Ti
         onToggle = { viewModel.toggle(set.setId, set.title, set.totalBytes, currentState) },
         onRemove = { viewModel.remove(set.setId) },
         onOpenStorage = onOpenStorage,
+        queuedAheadLabel = queuedAheadLabel,
+        needsSpaceBudgetBytes = needsSpaceBudgetBytes,
     )
 }

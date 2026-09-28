@@ -34,6 +34,7 @@ internal fun tvMenuActions(
     fetchState: FetchUiState,
     onLeavePage: () -> Unit,
     onStartOver: () -> Unit,
+    preloadCount: Int = 0,
 ): MenuActions {
     val open = { screen: MenuScreen ->
         restore.opened(depth, menuRestoreKey(screen))
@@ -52,6 +53,17 @@ internal fun tvMenuActions(
         onStartOver = onStartOver,
         updateDisabledReason = updateDisabledReason(catalogState, fetchState.running),
         updateNote = if (fetchState.hasKey) null else "Artwork and descriptions need a TMDB key",
+        onPreloads =
+            if (preloadCount > 0) {
+                {
+                    onLeavePage()
+                    restore.forget(depth)
+                    at.openPreloads()
+                }
+            } else {
+                null
+            },
+        preloadCount = preloadCount,
     )
 }
 

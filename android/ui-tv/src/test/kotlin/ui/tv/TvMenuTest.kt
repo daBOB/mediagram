@@ -30,6 +30,7 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
+import playback.FilmPreloadRow
 import setup.SettingsUiState
 import ui.tv.catalog.films
 import ui.tv.setup.TvTextQuestionFieldTag
@@ -290,6 +291,41 @@ class TvMenuTest {
     }
 
     @Test
+    fun thePreloadsRowIsAbsentWhileNothingIsRunningOrQueued() {
+        openMenu()
+        compose.onNode(hasText("Preloads", substring = true)).assertDoesNotExist()
+    }
+
+    /** M5: the page scrolls, so a row this far down (ninth, past a screen this short) is still reachable by remote, not just by a semantics click a real D-pad walk could not perform. */
+    @Test
+    fun thePreloadsRowIsReachableByRemoteNamesTheCountAndOpensTheRealPreloadsPage() {
+        fixture.filmPreloading.setQueueOverview(
+            listOf(
+                FilmPreloadRow.Running("film-0", "Film 0", TOTAL, heldBytes = HELD_40_PERCENT, pauseReason = null),
+            ),
+        )
+        compose.waitForIdle()
+        openMenu()
+        compose.onNodeWithText("System").assertIsFocused()
+
+        // System, Settings, Update library, TMDB key…, Start over, My List,
+        // Continue watching, Latest, Genres, then Preloads — nine rows down.
+        repeat(9) { key(KeyEvent.KEYCODE_DPAD_DOWN) }
+        compose.onNodeWithText("Preloads · 1").assertIsFocused()
+
+        press(compose.onNodeWithText("Preloads · 1"))
+        compose.onNodeWithText("Film 0").assertExists()
+        compose.onNodeWithText("2.0 of 5.0 GB · 40%").assertExists()
+
+        // Specifically the home wall, not merely a screen that happens to
+        // carry a "Menu" node too (the menu page's own title reads the
+        // same word): Preloads clears the menu page before it pushes its
+        // own frame, so Back lands past it, on the shelves themselves.
+        back()
+        compose.onNode(hasText("Film 1") and hasClickAction()).assertExists()
+    }
+
+    @Test
     fun settingsOffersEveryCacheVolumeAndChoosingOneReachesTheModel() {
         openMenu()
         press(compose.onNodeWithText("Settings"))
@@ -404,5 +440,10 @@ class TvMenuTest {
     private fun key(code: Int) {
         compose.runOnUiThread { controller.get().dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, code)) }
         compose.runOnUiThread { controller.get().dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, code)) }
+    }
+
+    private companion object {
+        const val TOTAL = 5 * 1_073_741_824L
+        const val HELD_40_PERCENT = TOTAL * 40 / 100
     }
 }

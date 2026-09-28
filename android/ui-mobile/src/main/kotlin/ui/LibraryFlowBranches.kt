@@ -208,6 +208,7 @@ internal fun LibraryBranches(
         FrameKind.GENRES -> GenresFrame(at, catalogState, columns, menuActions, profileBar, browse)
         FrameKind.LATEST -> LatestFrame(at, catalogState, resolved.watch, columns, menuActions, profileBar, browse)
         FrameKind.MOVIES_PAGE -> MoviesPageFrame(at, catalogState, catalogViewModel, resolved.watch, columns, menuActions, profileBar, browse)
+        FrameKind.PRELOADS -> PreloadsFrame(at, catalogState, menuActions, profileBar, browse)
 
         // Nothing open: the shelves, under the rail/departments-bar chrome
         // rather than LibraryScaffold — see [ui.chrome.LibraryHome].

@@ -96,6 +96,23 @@ interface FilmPreloading {
     /** What is actually writing right now, for `PreloadService`'s notification text. */
     val active: StateFlow<ActivePreload?>
 
+    /**
+     * The queue as one ordered list — see [FilmPreloadRow]. A concrete
+     * default (always empty) rather than an abstract member: a caller that
+     * only enqueues/cancels/removes one film at a time, such as a plain
+     * test fake, has nothing to report here and should not have to.
+     */
+    val queueOverview: Flow<List<FilmPreloadRow>>
+        get() = flowOf(emptyList())
+
+    /**
+     * Films [pauseForTimeLimit] paused, reported apart from [queueOverview]
+     * — see [FilmPreloadRow.TimeLimitPaused]. Same default reasoning as
+     * [queueOverview].
+     */
+    val timeLimitPaused: Flow<List<FilmPreloadRow.TimeLimitPaused>>
+        get() = flowOf(emptyList())
+
     companion object {
         /** Nothing queued, nothing held — a constructor default for a caller that does not care. */
         val Noop: FilmPreloading = object : FilmPreloading {

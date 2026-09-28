@@ -2,6 +2,7 @@ package catalog
 
 import model.MediaSet
 import model.WatchSnapshot
+import playback.FilmPreloadRow
 
 /** What the catalog screen renders; the television surface renders the same states. */
 sealed interface CatalogUiState {
@@ -97,3 +98,30 @@ fun CatalogUiState.mediaSet(setId: String): MediaSet? =
                 }
             }
         }?.find { it.setId == setId }
+
+/**
+ * Films this device holds in full — the Preloads page's own "On this
+ * device" section, read off [CatalogUiState.Ready.heldIds] rather than a
+ * second held-set query of its own. [Entry.Film] is exactly the shelves'
+ * own film card (a documentary included — TMDB shelves it under the same
+ * kind), so filtering to it is the film/documentary distinction the
+ * engine's own films-only preload already draws, with nothing further to
+ * decide here. Empty while the library is still loading, the same as
+ * [heldIdsOrEmpty] and its neighbours.
+ */
+fun CatalogUiState.heldFilms(): List<MediaSet> =
+    (this as? CatalogUiState.Ready)
+        ?.let { ready -> ready.shelves.asSequence().flatMap { it.entries }.filterIsInstance<Entry.Film>().map { it.set }.filter { it.setId in ready.heldIds } }
+        ?.toList()
+        .orEmpty()
+
+/**
+ * Only the rows this profile's own catalogue can resolve — a kids
+ * profile's shelves never carry a title above its own age limit, so a
+ * grown-up's preload for one must not surface here either: not its title
+ * in a "Queued · after" label, not its row on the Preloads page, not its
+ * count in the menu badge. A grown-up's own catalogue resolves every
+ * title, so nothing changes there.
+ */
+fun CatalogUiState.resolvableQueueRows(rows: List<FilmPreloadRow>): List<FilmPreloadRow> =
+    rows.filter { mediaSet(it.setId) != null }

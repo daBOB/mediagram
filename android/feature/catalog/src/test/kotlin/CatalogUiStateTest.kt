@@ -2,6 +2,7 @@ package catalog
 
 import model.Kind
 import model.MediaSet
+import playback.FilmPreloadRow
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -84,6 +85,66 @@ class CatalogUiStateTest {
 
         val course = shelves.single { it.title == "Tutorials" }.entries.single() as Entry.Collection
         assertNull(course.posterKey)
+    }
+
+    @Test
+    fun heldFilmsIsOnlyTheHeldOnesAmongTheFilmCards() {
+        val heldFilm = film("Alien")
+        val unheldFilm = film("The Green Mile")
+        val shelves = shelvesOf(listOf(heldFilm, unheldFilm))
+        val state = CatalogUiState.Ready(shelves, heldIds = setOf(heldFilm.setId))
+
+        assertEquals(listOf("Alien"), state.heldFilms().map { it.title })
+    }
+
+    /** An episode held in full is not a film — heldFilms only ever answers with [Entry.Film] cards. */
+    @Test
+    fun anEpisodeHeldInFullIsNotAFilm() {
+        val heldEpisode = episode("30 Rock", season = 7, episode = 1, title = "One")
+        val state = CatalogUiState.Ready(shelvesOf(listOf(heldEpisode)), heldIds = setOf(heldEpisode.setId))
+
+        assertEquals(emptyList(), state.heldFilms())
+    }
+
+    @Test
+    fun heldFilmsIsEmptyBeforeTheLibraryArrives() {
+        assertEquals(emptyList(), CatalogUiState.Loading.heldFilms())
+    }
+
+    /**
+     * A kids profile's own catalogue only ever holds its own kids-marked
+     * films ([model.forKidsProfile] is what narrows it there first) — a
+     * grown-up's queued or preloading film that this projection carries no
+     * shelf for must not surface in the kids profile's own row, title, or
+     * count either, the same reason it is not on a shelf.
+     */
+    @Test
+    fun resolvableQueueRowsDropsAGrownUpsFilmAKidsCatalogueCannotResolve() {
+        val kidsFilm = film("Kids Movie")
+        val grownUpsFilm = film("Grown-up Movie")
+        val kidsCatalogue = readyWith(kidsFilm)
+        val rows =
+            listOf(
+                FilmPreloadRow.Running(kidsFilm.setId, kidsFilm.title, 100L, heldBytes = 10L, pauseReason = null),
+                FilmPreloadRow.Waiting(grownUpsFilm.setId, grownUpsFilm.title, 100L),
+            )
+
+        assertEquals(listOf(kidsFilm.setId), kidsCatalogue.resolvableQueueRows(rows).map { it.setId })
+    }
+
+    /** The grown-up's own catalogue resolves every film, so nothing here changes for it. */
+    @Test
+    fun resolvableQueueRowsKeepsEverythingAGrownUpsCatalogueResolves() {
+        val first = film("Alien")
+        val second = film("Aliens")
+        val grownUpsCatalogue = readyWith(first, second)
+        val rows =
+            listOf(
+                FilmPreloadRow.Running(first.setId, first.title, 100L, heldBytes = 10L, pauseReason = null),
+                FilmPreloadRow.Waiting(second.setId, second.title, 100L),
+            )
+
+        assertEquals(rows, grownUpsCatalogue.resolvableQueueRows(rows))
     }
 }
 

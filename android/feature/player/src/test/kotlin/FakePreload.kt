@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import playback.ActivePreload
+import playback.FilmPreloadRow
 import playback.FilmPreloadState
 import playback.FilmPreloading
 import playback.HeldSetsQuery
@@ -80,6 +81,22 @@ internal class FakeFilmPreloading : FilmPreloading {
     override val unheldEvents: SharedFlow<String> = MutableSharedFlow()
     override val hasWork: StateFlow<Boolean> = MutableStateFlow(false)
     override val active: StateFlow<ActivePreload?> = MutableStateFlow(null)
+
+    private val _queueOverview = MutableStateFlow<List<FilmPreloadRow>>(emptyList())
+    override val queueOverview: StateFlow<List<FilmPreloadRow>> = _queueOverview
+
+    /** The only way a test drives what [queueOverview] reports. */
+    fun setQueueOverview(rows: List<FilmPreloadRow>) {
+        _queueOverview.value = rows
+    }
+
+    private val _timeLimitPaused = MutableStateFlow<List<FilmPreloadRow.TimeLimitPaused>>(emptyList())
+    override val timeLimitPaused: StateFlow<List<FilmPreloadRow.TimeLimitPaused>> = _timeLimitPaused
+
+    /** The only way a test drives what [timeLimitPaused] reports. */
+    fun setTimeLimitPaused(rows: List<FilmPreloadRow.TimeLimitPaused>) {
+        _timeLimitPaused.value = rows
+    }
 }
 
 /** A fixed (or absent) paired server — see [playback.LanServerSource]. */

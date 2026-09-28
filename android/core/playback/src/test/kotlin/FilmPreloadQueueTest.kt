@@ -100,4 +100,21 @@ class FilmPreloadQueueTest {
 
         assertNull(queue.cancel("nowhere"))
     }
+
+    @Test
+    fun snapshotStartsEmptyAndTracksActiveAndPendingTogether() {
+        val queue = FilmPreloadQueue()
+
+        assertEquals(QueueSnapshot(null, emptyList()), queue.snapshot.value)
+
+        queue.enqueue(film("f1"))
+        queue.enqueue(film("f2"))
+        assertEquals(QueueSnapshot(null, listOf(film("f1"), film("f2"))), queue.snapshot.value)
+
+        queue.nextToRun()
+        assertEquals(QueueSnapshot(film("f1"), listOf(film("f2"))), queue.snapshot.value)
+
+        queue.clearActive()
+        assertEquals(QueueSnapshot(null, listOf(film("f2"))), queue.snapshot.value)
+    }
 }

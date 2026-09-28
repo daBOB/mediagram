@@ -64,7 +64,9 @@ class TitlePreloadTest {
         onToggle: () -> Unit = {},
         onRemove: () -> Unit = {},
         onOpenStorage: () -> Unit = {},
-    ) = TitlePreloadUi(state, serverLine, onToggle, onRemove, onOpenStorage)
+        queuedAheadLabel: String? = null,
+        needsSpaceBudgetBytes: Long? = null,
+    ) = TitlePreloadUi(state, serverLine, onToggle, onRemove, onOpenStorage, queuedAheadLabel, needsSpaceBudgetBytes)
 
     @Test
     fun idleWithNothingHeldNamesTheFilmsSize() {
@@ -160,6 +162,28 @@ class TitlePreloadTest {
     fun noMenuAtAllWithNeitherEditorsChoiceNorARemovablePreload() {
         show { TitleDetailScreen(film, null, {}, onOpenGenre = {}) }
         assertTrue(compose.onAllNodesWithContentDescription("More").fetchSemanticsNodes().isEmpty())
+    }
+
+    @Test
+    fun queuedNamesWhatItIsWaitingOnWhenTheViewModelSaysSo() {
+        show {
+            TitleDetailScreen(
+                film, null, {}, onOpenGenre = {},
+                preload = ui(FilmPreloadState.Queued, queuedAheadLabel = "Queued · after Der Pate, 36%"),
+            )
+        }
+        compose.onNodeWithText("Queued · after Der Pate, 36%").assertIsDisplayed()
+    }
+
+    @Test
+    fun needsSpaceNamesTheLiveBudgetWhenTheViewModelSaysSo() {
+        show {
+            TitleDetailScreen(
+                film, null, {}, onOpenGenre = {},
+                preload = ui(FilmPreloadState.NeedsSpace(TOTAL), needsSpaceBudgetBytes = 8L shl 30),
+            )
+        }
+        compose.onNodeWithText("Needs 5.0 GB · budget is 8.0 GB · Try again").assertIsDisplayed()
     }
 
     @Test

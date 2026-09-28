@@ -1,6 +1,7 @@
 package player
 
 import model.humanSize
+import playback.FilmPreloadRow
 import playback.FilmPreloadState
 import playback.PauseReason
 
@@ -27,18 +28,63 @@ private fun normalized(state: FilmPreloadState): FilmPreloadState =
         state
     }
 
-/** The control's own visible text — "Preload · 5.8 GB", "Preloaded ✓", and so on. */
-fun preloadLabel(state: FilmPreloadState): String =
+/**
+ * The control's own visible text — "Preload · 5.8 GB", "Preloaded ✓", and
+ * so on. [queuedAhead] names what a [FilmPreloadState.Queued] film is
+ * waiting on (`null` for the bare "Queued", either because nothing asked
+ * or because the engine's own queue does not (yet) place it); [budgetBytes]
+ * is the live cache allowance a [FilmPreloadState.NeedsSpace] film's label
+ * names, `null` when a caller has not read it.
+ */
+fun preloadLabel(state: FilmPreloadState, queuedAhead: String? = null, budgetBytes: Long? = null): String =
     when (val s = normalized(state)) {
         is FilmPreloadState.Idle ->
             if (s.heldBytes <= 0) "Preload · ${humanSize(s.totalBytes)}" else "Preload · ${heldPercentLabel(s.heldBytes, s.totalBytes)} held"
-        FilmPreloadState.Queued -> "Queued"
+        FilmPreloadState.Queued -> queuedAhead ?: "Queued"
         is FilmPreloadState.Running -> "Preloading"
         is FilmPreloadState.Paused -> pauseLabel(s.reason)
         FilmPreloadState.Done -> "Preloaded ✓"
-        is FilmPreloadState.NeedsSpace -> "Needs ${humanSize(s.neededBytes)} · Try again"
+        is FilmPreloadState.NeedsSpace -> needsSpaceLabel(s.neededBytes, budgetBytes)
         is FilmPreloadState.Failed -> "${ellipsize(s.reason, FAILED_REASON_MAX_LENGTH)} · Retry"
     }
+
+private fun needsSpaceLabel(neededBytes: Long, budgetBytes: Long?): String =
+    if (budgetBytes == null) {
+        "Needs ${humanSize(neededBytes)} · Try again"
+    } else {
+        "Needs ${humanSize(neededBytes)} · budget is ${humanSize(budgetBytes)} · Try again"
+    }
+
+/**
+ * What a [FilmPreloadState.Queued] film's label says beyond the bare
+ * "Queued" — "after <running title>, 36%" when nothing but the running
+ * film (paused or not) precedes it, "N ahead" otherwise, where N counts
+ * every film ahead of it in [rows] including the running one. `null` when
+ * [setId] leads [rows] itself (nothing precedes it — about to run) or is
+ * not in it at all (already settled elsewhere by the time this is read).
+ * The running title is ellipsized the same reason [FilmPreloadState.Failed]'s
+ * reason already is: a long real title would otherwise wrap this pill onto
+ * a second line at a phone's own width.
+ */
+fun queuedAheadLabel(rows: List<FilmPreloadRow>, setId: String): String? {
+    val index = rows.indexOfFirst { it.setId == setId }
+    if (index <= 0) return null
+    val running = rows.firstOrNull() as? FilmPreloadRow.Running
+    return if (index == 1 && running != null) {
+        "Queued · after ${ellipsize(running.title, QUEUED_AHEAD_TITLE_MAX_LENGTH)}, ${heldPercentLabel(running.heldBytes, running.totalBytes)}"
+    } else {
+        "Queued · $index ahead"
+    }
+}
+
+/**
+ * The [FilmPreloadState] a Preloads page's own [FilmPreloadRow.Running] row
+ * corresponds to — reusing [preloadLabel]/[preloadBarLabel] rather than a
+ * second copy of the same words for a page that only ever shows the front
+ * of the queue in a different place.
+ */
+fun preloadRowState(row: FilmPreloadRow.Running): FilmPreloadState =
+    row.pauseReason?.let { FilmPreloadState.Paused(row.heldBytes, row.totalBytes, it) } ?: FilmPreloadState.Running(row.heldBytes, row.totalBytes)
 
 private fun pauseLabel(reason: PauseReason): String =
     when (reason) {
@@ -140,6 +186,9 @@ private fun unitOf(sized: String): String = sized.substringAfterLast(' ')
 
 /** How long [FilmPreloadState.Failed]'s reason gets to run before the pill would grow past a reasonable width — the full sentence still reaches a screen reader through [preloadAccessibilityHint]. */
 private const val FAILED_REASON_MAX_LENGTH = 28
+
+/** As [FAILED_REASON_MAX_LENGTH], for the running title [queuedAheadLabel] names — shorter, since it shares the line with a percentage. */
+private const val QUEUED_AHEAD_TITLE_MAX_LENGTH = 20
 
 private fun ellipsize(text: String, maxLength: Int): String =
     if (text.length <= maxLength) text else text.take(maxLength - 1).trimEnd() + "…"

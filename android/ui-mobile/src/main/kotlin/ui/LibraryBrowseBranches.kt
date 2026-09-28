@@ -18,15 +18,19 @@ import catalog.ShelfViewModel
 import catalog.allTitles
 import catalog.franchisePageOf
 import catalog.genreIndex
+import catalog.heldFilms
 import catalog.personPageOf
+import catalog.resolvableQueueRows
 import model.MediaSet
 import model.WatchSnapshot
+import player.TitlePreloadViewModel
 import ui.catalog.CenteredMessage
 import ui.catalog.FilmShelfActions
 import ui.catalog.FranchiseScreen
 import ui.catalog.GenresIndexScreen
 import ui.catalog.LatestScreen
 import ui.catalog.PersonScreen
+import ui.catalog.PreloadsScreen
 import ui.catalog.ShelfViewChoice
 import ui.catalog.ShelfWall
 import ui.catalog.rememberFranchiseOverviews
@@ -133,6 +137,43 @@ internal fun MoviesPageFrame(
                 films = FilmShelfActions(onPlay = { at.openPlayer(it.setId) }, titleInfo = catalogViewModel::titleInfo),
             )
         }
+    }
+}
+
+/**
+ * What is preloading, queued, or already fully on this device — Android
+ * only, follows [GenresFrame]/[LatestFrame]'s own shape: one frame of its
+ * own on [at]'s stack, no menu screen involved. [TitlePreloadViewModel] is
+ * the same instance a film page resolves through `hiltViewModel()`, so
+ * this reads the one engine every other screen already does, not a second
+ * subscription of its own.
+ *
+ * [catalogState] filters the engine's own rows to what this profile's
+ * catalogue can resolve before they reach the screen — a kids profile
+ * must never see a grown-up's own preload, the same reason its shelves
+ * never carry that title either.
+ */
+@Composable
+internal fun PreloadsFrame(
+    at: LibraryPositions,
+    catalogState: CatalogUiState,
+    menuActions: MenuActions,
+    profileBar: ProfileBarState,
+    browse: BrowseActions,
+) {
+    val viewModel: TitlePreloadViewModel = hiltViewModel()
+    val rawRows by viewModel.queueRows.collectAsStateWithLifecycle(initialValue = emptyList())
+    val rows = remember(rawRows, catalogState) { catalogState.resolvableQueueRows(rawRows) }
+    val heldFilms = remember(catalogState) { catalogState.heldFilms() }
+    LibraryBranch(Destination.Preloads, menuActions, profileBar, browse, at, at::pop) {
+        PreloadsScreen(
+            rows = rows,
+            heldFilms = heldFilms,
+            onOpenTitle = at::openTitle,
+            onCancel = viewModel::cancel,
+            onRemove = viewModel::remove,
+            onResume = { row -> viewModel.resume(row.setId, row.title, row.totalBytes) },
+        )
     }
 }
 

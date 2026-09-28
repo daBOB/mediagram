@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import playback.ActivePreload
+import playback.FilmPreloadRow
 import playback.FilmPreloadState
 import playback.FilmPreloading
 import playback.LanChunkProtocol
@@ -55,6 +56,14 @@ internal class FakeFilmPreloading : FilmPreloading {
     override val unheldEvents: SharedFlow<String> = MutableSharedFlow()
     override val hasWork: StateFlow<Boolean> = MutableStateFlow(false)
     override val active: StateFlow<ActivePreload?> = MutableStateFlow(null)
+
+    private val _queueOverview = MutableStateFlow<List<FilmPreloadRow>>(emptyList())
+    override val queueOverview: StateFlow<List<FilmPreloadRow>> = _queueOverview
+
+    /** The only way a test drives what [queueOverview] reports. */
+    fun setQueueOverview(rows: List<FilmPreloadRow>) {
+        _queueOverview.value = rows
+    }
 }
 
 internal class FakeLanServerSource(server: LanServer? = null) : LanServerSource {
