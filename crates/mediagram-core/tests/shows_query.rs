@@ -79,6 +79,7 @@ fn fetched_describes(core: &Core, kind: Kind, id: u64, overview: &str) {
         collection_id: None,
         collection_name: None,
         series_type: None,
+        original_language: None,
     };
     let conn = details::open_or_create(core).unwrap();
     details::upsert(&conn, &row).unwrap();

@@ -49,6 +49,7 @@ fn a_fully_populated_row() -> TitleDetailsRow {
         collection_id: Some(115),
         collection_name: Some("A Franchise".into()),
         series_type: Some("Scripted".into()),
+        original_language: Some("ja".into()),
     }
 }
 

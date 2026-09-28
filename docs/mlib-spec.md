@@ -309,6 +309,43 @@ hash to `sha256`, and clears it as soon as that part fails a later check. A
 non-null value means "this part matched its recorded hash then and has not
 failed since"; null means unverified, never verified, or last seen failing.
 
+### Schema v11 additions
+
+Version 11 adds a title's original language and a hand-set anime decision:
+
+```sql
+-- New column on existing 'shows' table (nullable):
+ALTER TABLE shows ADD COLUMN original_language TEXT;  -- TMDB ISO 639-1 code, e.g. 'ja'
+
+-- A person's decision that a title is, or is not, anime — kept apart from
+-- 'shows' because that table's one writer replaces a row whole on every
+-- 'metadata' run, which would clobber the decision.
+CREATE TABLE IF NOT EXISTS anime_overrides(
+    source TEXT NOT NULL,                 -- 'tmdb'
+    kind TEXT NOT NULL,                   -- 'movie' or 'tv'
+    id INTEGER NOT NULL,                  -- TMDB title id
+    anime INTEGER,                        -- 1 = force in, 0 = force out, NULL = automatic
+    set_at INTEGER NOT NULL,              -- Unix seconds; decides a merge
+    PRIMARY KEY(source, kind, id)
+);
+```
+
+`original_language` rides the same backfill every other `shows` column does:
+`mediagram metadata` reads it back out of the TMDB details payload `add`
+already cached, so filling it for an existing library costs no request and
+no API key.
+
+`anime_overrides.anime` NULL is a kept row, not a deleted one: clearing an
+override has to reach the other machine on the next merge, and a deleted row
+carries nothing to merge. Set by `mediagram edit <set-id> --anime
+yes|no|auto`, keyed to the TMDB title so one override covers every episode of
+a series, including ones uploaded later. `set_at` is what a merge compares —
+the newer value wins outright, `anime` included, unlike `shows`'s NULL-only
+fill.
+
+A reader on v10 or older simply never sees this column or table; its next
+snapshot, once it upgrades, refreshes both from the channel.
+
 ### Playable invariant
 
 A set is considered complete/playable exactly when:

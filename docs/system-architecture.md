@@ -756,14 +756,17 @@ and `web/.env` are not like that — losing both means logging in again, because
 a session string cannot be recovered from anywhere else. `state.db` is the
 only thing this process writes that cannot be refetched at all.
 
-## 10.1. Index schema (library.db, v10)
+## 10.1. Index schema (library.db, v11)
 
 The canonical index (`library.db`, in `mlib-spec` schema) carries:
 
 - **shows** table: all titles (movies, TV series, tutorials). Gains in v9:
   `collection_id` (TMDB franchises), `collection_name`, `series_type` (tv types:
   Scripted, Miniseries, Documentary, Reality, News, Talk Show, Video; null for
-  movies).
+  movies). Gains in v11: `original_language`, TMDB's ISO 639-1 code for the
+  title (`ja`, `en`, …) — read back from the same cached details payload as
+  every other `shows` column, so backfilling an existing library costs no
+  request.
 - **credits** table (new in v9): cast, crew, creators. Rows: `(source, kind, id,
   ord, person_id, name, role, dept, profile)` — `ord` is display order within
   a title (cast by billing, then directors, then creators); `dept` is 'cast' or
@@ -799,12 +802,21 @@ The canonical index (`library.db`, in `mlib-spec` schema) carries:
   web player's poster route checks this table the same way, per request; its
   backdrop check additionally counts a table-only backdrop as present, which
   Android's disk-only backdrop check does not (daBOB/mediagram#1).
+- **anime_overrides** table (new in v11): a hand-set decision that a title is,
+  or is not, anime. Rows: `(source, kind, id, anime, set_at)` — `anime` is `1`
+  (force in), `0` (force out) or `NULL` (back to the automatic genre/language
+  rule, kept as a row so a merge can carry the clear to the other machine);
+  `set_at` is Unix seconds, and a merge takes whichever side's row is newer,
+  `anime` included. Kept apart from `shows` because that table's one writer
+  replaces a row whole on every `metadata` run. Written by `mediagram edit
+  <set-id> --anime yes|no|auto`, keyed to the TMDB title so one override
+  covers every episode of a series, including ones uploaded later.
 
-Version tracking: `SCHEMA_VERSION=10`, `READABLE_SCHEMAS=[6,7,8,9,10]`,
-`OLDEST_READABLE_SCHEMA=6`. Readers tolerant of v9 and earlier (optional
-columns/tables); writers from the release introducing this table produce v10.
+Version tracking: `SCHEMA_VERSION=11`, `READABLE_SCHEMAS=[6,7,8,9,10,11]`,
+`OLDEST_READABLE_SCHEMA=6`. Readers tolerant of v10 and earlier (optional
+columns/tables); writers from the release introducing this table produce v11.
 Both uploaders and Android installs must run that release or later before any
-push/export; older Android builds refuse v10 packages.
+push/export; older Android builds refuse v11 packages.
 
 ## 11. Telegram limits relied on
 

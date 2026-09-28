@@ -17,7 +17,8 @@ fn details() -> DetailsResponse {
         "first_air_date": "2026-01-08",
         "tagline": "",
         "number_of_seasons": 1,
-        "number_of_episodes": 8
+        "number_of_episodes": 8,
+        "original_language": "ja"
     }))
     .unwrap()
 }
@@ -115,4 +116,23 @@ fn a_payload_records_its_popularity_and_nought_is_none() {
     let mut payload = details();
     payload.popularity = Some(0.0);
     assert_eq!(from_details(Kind::Ep, "de-DE", &payload).popularity, None);
+}
+
+#[test]
+fn a_payload_records_the_original_language() {
+    assert_eq!(
+        from_details(Kind::Ep, "de-DE", &details()).original_language.as_deref(),
+        Some("ja")
+    );
+}
+
+/// A blank code is TMDB saying it has none, worth no more than a missing one.
+#[test]
+fn a_blank_original_language_is_recorded_as_none() {
+    let mut payload = details();
+    payload.original_language = Some(String::new());
+    assert_eq!(
+        from_details(Kind::Ep, "de-DE", &payload).original_language,
+        None
+    );
 }

@@ -60,6 +60,9 @@ pub struct TitleDetailsRow {
     pub collection_name: Option<String>,
     /// What TMDB calls a series: `Scripted`, `Miniseries`, … Absent for a movie.
     pub series_type: Option<String>,
+    /// TMDB's ISO 639-1 code for the title's original language (`ja`, `en`,
+    /// …). What decides, together with genre, whether a title is anime.
+    pub original_language: Option<String>,
 }
 
 /// Reads a details payload into a row, keeping only what a viewer would read.
@@ -104,5 +107,9 @@ pub fn from_details(kind: Kind, lang: &str, details: &DetailsResponse) -> TitleD
             .and_then(|c| c.name.clone())
             .filter(|t| !t.trim().is_empty()),
         series_type: details.series_type.clone().filter(|t| !t.trim().is_empty()),
+        original_language: details
+            .original_language
+            .clone()
+            .filter(|t| !t.trim().is_empty()),
     }
 }

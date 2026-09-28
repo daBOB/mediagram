@@ -5,6 +5,24 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.76.0 — titles carry their original language, and anime can be set by hand
+
+**Added**
+
+- Schema v11: `shows.original_language`, TMDB's code for a title (`ja`, `en`,
+  …), backfilled by `mediagram metadata` from the cached TMDB payload — no key,
+  no network needed for a library `add` already resolved. A new
+  `anime_overrides` table holds a hand-set decision that a title is, or is
+  not, anime, kept apart from `shows` because that table's writer replaces a
+  row whole on every `metadata` run. `mediagram edit <set-id> --anime
+  yes|no|auto` sets or clears an override, keyed to the TMDB title so it
+  covers every episode of a series, including ones uploaded later;
+  index-only, `--dry-run` supported, refuses a set with no TMDB id or a
+  course. `pull-index`/`push-index` merge both: `original_language` rides the
+  existing NULL-fill, and overrides take whichever machine's `set_at` is
+  newer. Readers on v10 or older simply do not see the column or table yet;
+  no reader behaviour changes in this release.
+
 ## 0.75.5 — the television's episode rows play too
 
 **Fixed**

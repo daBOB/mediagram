@@ -29,6 +29,10 @@ pub async fn run(cfg: &Config, args: EditArgs) -> Result<()> {
     let row = sets::get_set(&conn, &args.set_id)?
         .with_context(|| format!("no set {} in the index", args.set_id))?;
 
+    if let Some(choice) = args.anime {
+        return crate::edit::anime::run(&conn, &row, choice, args.dry_run);
+    }
+
     let clear = args
         .clear
         .iter()

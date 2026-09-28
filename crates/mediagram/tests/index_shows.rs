@@ -35,6 +35,7 @@ fn row(kind: Kind, id: u64) -> TitleDetailsRow {
         collection_id: None,
         collection_name: None,
         series_type: None,
+        original_language: None,
     }
 }
 

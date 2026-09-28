@@ -1,6 +1,7 @@
 //! Local SQLite index (`library.db`): the canonical record of every set and
 //! part, independent of what has actually reached the channel.
 
+pub mod anime_overrides;
 pub mod artwork;
 pub mod assets;
 mod columns;
@@ -8,6 +9,7 @@ pub mod db;
 pub mod label;
 pub mod lifecycle;
 pub mod merge;
+mod merge_anime_overrides;
 mod merge_artwork;
 mod merge_candidates;
 mod merge_columns;

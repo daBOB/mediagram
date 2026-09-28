@@ -64,6 +64,7 @@ fn fetched_row(id: u64, genres: &str) -> TitleDetailsRow {
         collection_id: None,
         collection_name: None,
         series_type: None,
+        original_language: None,
     }
 }
 

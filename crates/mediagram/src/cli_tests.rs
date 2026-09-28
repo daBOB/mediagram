@@ -152,6 +152,44 @@ fn verification_and_hidden_smoke_commands_parse_without_executing_them() {
 }
 
 #[test]
+fn anime_accepts_the_three_choices_and_conflicts_with_other_edits() {
+    let Cmd::Edit(args) =
+        Cli::try_parse_from(["mediagram", "edit", "set-a", "--anime", "yes"])
+            .unwrap()
+            .cmd
+    else {
+        panic!("expected edit");
+    };
+    assert!(matches!(
+        args.anime,
+        Some(mediagram::edit::anime::AnimeChoice::Yes)
+    ));
+
+    for value in ["no", "auto"] {
+        let Cmd::Edit(args) =
+            Cli::try_parse_from(["mediagram", "edit", "set-a", "--anime", value])
+                .unwrap()
+                .cmd
+        else {
+            panic!("expected edit");
+        };
+        assert!(args.anime.is_some());
+    }
+
+    let error = Cli::try_parse_from(["mediagram", "edit", "set-a", "--anime", "maybe"])
+        .err()
+        .expect("an unknown choice must be rejected");
+    assert_eq!(error.kind(), ErrorKind::InvalidValue);
+
+    let error = Cli::try_parse_from([
+        "mediagram", "edit", "set-a", "--anime", "yes", "--title", "x",
+    ])
+    .err()
+    .expect("--anime must conflict with the other edit flags");
+    assert_eq!(error.kind(), ErrorKind::ArgumentConflict);
+}
+
+#[test]
 fn invalid_arguments_are_rejected_by_the_parser_before_any_handler() {
     for (args, kind) in [
         (

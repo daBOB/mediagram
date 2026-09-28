@@ -51,4 +51,7 @@ pub(super) fn print(report: &MergeReport, dry_run: bool) {
     if report.artwork_added > 0 {
         println!("{} artwork row(s) added", report.artwork_added);
     }
+    if report.anime_overrides_taken > 0 {
+        println!("{} anime override(s) taken", report.anime_overrides_taken);
+    }
 }

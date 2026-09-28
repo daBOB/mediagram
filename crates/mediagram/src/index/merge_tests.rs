@@ -483,3 +483,141 @@ fn a_v9_channel_index_has_no_artwork_table_and_still_merges() {
     assert_eq!(report.sets_added, ["S8"]);
     assert_eq!(report.artwork_added, 0);
 }
+
+fn insert_override(conn: &Connection, kind: &str, id: i64, anime: Option<i64>, set_at: i64) {
+    conn.execute(
+        "INSERT INTO anime_overrides(source, kind, id, anime, set_at) VALUES ('tmdb', ?1, ?2, ?3, ?4)",
+        rusqlite::params![kind, id, anime, set_at],
+    )
+    .unwrap();
+}
+
+fn override_row(conn: &Connection, id: i64) -> (Option<i64>, i64) {
+    conn.query_row(
+        "SELECT anime, set_at FROM anime_overrides WHERE source='tmdb' AND kind='tv' AND id=?1",
+        [id],
+        |r| Ok((r.get(0)?, r.get(1)?)),
+    )
+    .unwrap()
+}
+
+#[test]
+fn a_channel_only_override_is_inserted_and_a_local_only_one_is_kept() {
+    let (_local_dir, local) = open_local();
+    insert_override(&local, "tv", 1, Some(1), 1_700_000_000);
+    let (_channel_dir, channel_path, channel) = open_channel();
+    insert_override(&channel, "tv", 2, Some(0), 1_700_000_000);
+    drop(channel);
+
+    let report = merge_from(&local, &channel_path, keep_all).unwrap();
+
+    assert_eq!(report.anime_overrides_taken, 1);
+    assert_eq!(override_row(&local, 1), (Some(1), 1_700_000_000));
+    assert_eq!(override_row(&local, 2), (Some(0), 1_700_000_000));
+}
+
+#[test]
+fn a_newer_channel_override_replaces_the_local_one() {
+    let (_local_dir, local) = open_local();
+    insert_override(&local, "tv", 1, Some(0), 1_700_000_000);
+    let (_channel_dir, channel_path, channel) = open_channel();
+    insert_override(&channel, "tv", 1, Some(1), 1_700_000_100);
+    drop(channel);
+
+    let report = merge_from(&local, &channel_path, keep_all).unwrap();
+
+    assert_eq!(report.anime_overrides_taken, 1);
+    assert_eq!(override_row(&local, 1), (Some(1), 1_700_000_100));
+}
+
+#[test]
+fn an_older_channel_override_does_not_replace_the_local_one() {
+    let (_local_dir, local) = open_local();
+    insert_override(&local, "tv", 1, Some(1), 1_700_000_100);
+    let (_channel_dir, channel_path, channel) = open_channel();
+    insert_override(&channel, "tv", 1, Some(0), 1_700_000_000);
+    drop(channel);
+
+    let report = merge_from(&local, &channel_path, keep_all).unwrap();
+
+    assert_eq!(report.anime_overrides_taken, 0);
+    assert_eq!(override_row(&local, 1), (Some(1), 1_700_000_100));
+}
+
+/// A newer clear (`anime` back to `NULL`) is a value like any other here: it
+/// must overwrite the local `1`, or clearing an override on one machine
+/// would never reach the other.
+#[test]
+fn a_newer_channel_clear_overwrites_a_local_forced_value() {
+    let (_local_dir, local) = open_local();
+    insert_override(&local, "tv", 1, Some(1), 1_700_000_000);
+    let (_channel_dir, channel_path, channel) = open_channel();
+    insert_override(&channel, "tv", 1, None, 1_700_000_100);
+    drop(channel);
+
+    let report = merge_from(&local, &channel_path, keep_all).unwrap();
+
+    assert_eq!(report.anime_overrides_taken, 1);
+    assert_eq!(override_row(&local, 1), (None, 1_700_000_100));
+}
+
+#[test]
+fn a_v10_channel_index_has_no_anime_overrides_table_and_still_merges() {
+    let (_local_dir, local) = open_local();
+    let (_channel_dir, channel_path, channel) = open_channel_at(10);
+    insert_set(&channel, "S9", "A Film", "complete", 1);
+    insert_part(&channel, "S9", 0, 100, 9001);
+    drop(channel);
+
+    let report = merge_from(&local, &channel_path, keep_all).unwrap();
+
+    assert_eq!(report.sets_added, ["S9"]);
+    assert_eq!(report.anime_overrides_taken, 0);
+}
+
+#[test]
+fn merging_the_same_anime_override_twice_reports_zero_the_second_time() {
+    let (_local_dir, local) = open_local();
+    let (_channel_dir, channel_path, channel) = open_channel();
+    insert_override(&channel, "tv", 1, Some(1), 1_700_000_000);
+    drop(channel);
+
+    merge_from(&local, &channel_path, keep_all).unwrap();
+    let second = merge_from(&local, &channel_path, keep_all).unwrap();
+
+    assert_eq!(second.anime_overrides_taken, 0);
+}
+
+/// `shows.original_language` is not `LANGUAGE_TEXT` — it names the title's
+/// own language, not the language a row's text is written in — so it fills
+/// across a language mismatch the way `rating` or `popularity` does.
+#[test]
+fn original_language_is_filled_from_the_channel_even_across_a_language_mismatch() {
+    let (_local_dir, local) = open_local();
+    local
+        .execute(
+            "INSERT INTO shows(source, kind, id, lang) VALUES ('tmdb', 'tv', 4, 'de-DE')",
+            [],
+        )
+        .unwrap();
+    let (_channel_dir, channel_path, channel) = open_channel();
+    channel
+        .execute(
+            "INSERT INTO shows(source, kind, id, lang, original_language)
+             VALUES ('tmdb', 'tv', 4, 'en-US', 'ja')",
+            [],
+        )
+        .unwrap();
+    drop(channel);
+
+    merge_from(&local, &channel_path, keep_all).unwrap();
+
+    let original_language: Option<String> = local
+        .query_row(
+            "SELECT original_language FROM shows WHERE id = 4",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(original_language.as_deref(), Some("ja"));
+}

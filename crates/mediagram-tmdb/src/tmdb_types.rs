@@ -2,6 +2,8 @@
 
 use serde::Deserialize;
 
+pub use crate::tmdb_title_refs::{CollectionRef, CreatedBy, SeasonRef};
+
 /// One entry from a `/search/movie`, `/search/tv`, or `/find` response.
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct SearchHit {
@@ -134,38 +136,11 @@ pub struct DetailsResponse {
     /// either — TMDB keeps it only on the details payload.
     #[serde(default)]
     pub created_by: Vec<CreatedBy>,
-}
-
-/// The franchise (TMDB "collection") a film's `belongs_to_collection` names.
-///
-/// `name` is optional though TMDB always sends it: these ride on the details
-/// payload, and a required field there that one record left null would fail
-/// the whole parse — costing the title its description and its artwork for
-/// the sake of a franchise name.
-#[derive(Debug, Clone, Default, Deserialize)]
-pub struct CollectionRef {
-    pub id: u64,
+    /// TMDB's own ISO 639-1 code for the title's original language (`ja`,
+    /// `en`, …) — what the Anime rule checks alongside genre, since a dub's
+    /// spoken track never changes what TMDB recorded the title as made in.
     #[serde(default)]
-    pub name: Option<String>,
-}
-
-/// One entry of a series' `created_by`. `name` is optional for the reason
-/// [`CollectionRef`]'s is; a creator without one is skipped.
-#[derive(Debug, Clone, Default, Deserialize)]
-pub struct CreatedBy {
-    pub id: u64,
-    #[serde(default)]
-    pub name: Option<String>,
-    #[serde(default)]
-    pub profile_path: Option<String>,
-}
-
-/// One entry of a series' `seasons`: its number and its artwork, if any.
-#[derive(Debug, Clone, Default, Deserialize)]
-pub struct SeasonRef {
-    pub season_number: u32,
-    #[serde(default)]
-    pub poster_path: Option<String>,
+    pub original_language: Option<String>,
 }
 
 /// TMDB spells a genre, a network and a company all the same way.

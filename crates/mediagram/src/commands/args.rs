@@ -151,6 +151,16 @@ pub struct EditArgs {
     /// Show what would change and stop
     #[arg(long)]
     pub dry_run: bool,
+    /// Force a title in or out of the Anime department, or drop back to the
+    /// automatic genre-and-language rule. Index-only: no caption rewrite
+    #[arg(
+        long,
+        conflicts_with_all = [
+            "refresh", "kind", "tmdb", "clear", "title", "show", "year",
+            "season", "episode", "chap", "path",
+        ],
+    )]
+    pub anime: Option<crate::edit::anime::AnimeChoice>,
 }
 
 /// `mediagram add-show`: upload a series folder, one set per episode.

@@ -5,6 +5,7 @@
 //! [`plan`] (the corrected row) and [`captions`] (the text each part will
 //! carry); performing it talks to Telegram and lives in [`apply`].
 
+pub mod anime;
 pub mod apply;
 pub mod captions;
 pub mod plan;

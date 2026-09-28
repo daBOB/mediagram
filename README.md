@@ -227,9 +227,9 @@ de-duplicates across machines until the next merge.
 | `push-index [--force]` | Pull the channel index in, then snapshot `library.db` and pin it in the channel. A publish landing from another machine meanwhile is pulled in too. `--force` replaces the channel index as it is, pulling nothing. |
 | `pull-index [--dry-run]` | Merge the channel index into this one, so titles uploaded from another machine are known here. Backs up the local index first; `--dry-run` only reports what would change (what `push-index --check` used to answer). |
 | `sync-index [--refresh-older-than <days>]` | The whole round trip: `pull-index`, `metadata`, `posters`, then a push. A failed artwork fetch is reported and the push goes ahead. |
-| `metadata` | Record what TMDB says about each film and series (synopsis, genres, rating, network, status, season and episode counts). Reads the payloads `add` cached, so it usually needs no key and no network. |
+| `metadata` | Record what TMDB says about each film and series (synopsis, genres, rating, network, status, season and episode counts, original language). Reads the payloads `add` cached, so it usually needs no key and no network. |
 | `posters` | Fetch cover art into `<data dir>/posters/` for a player reading this machine's index. Re-running skips what is held. |
-| `artwork` / `edit` | Override a title's poster or backdrop; correct a set's metadata and rewrite its captions. |
+| `artwork` / `edit` | Override a title's poster or backdrop; correct a set's metadata and rewrite its captions. `edit <set-id> --anime yes\|no\|auto` forces a title in or out of the Anime department, or drops back to the automatic rule — index-only, keyed to the TMDB title. |
 | `verify <set-id> \| --all [--full] [--since <unix>]` | Compare each part's message against the index; `--full` re-downloads and hashes every part, and `--since` lets an interrupted sweep resume. |
 | `remove <set-id>` | Permanently delete a set: its channel messages and its index rows. |
 | `rescan` | Rebuild `library.db` from channel captions. Additive only: it never demotes or deletes a set the index already has. |
