@@ -5,13 +5,12 @@
   its own vocabulary. A reader who changes one must change the other, which
   is why they name the same thing.
 
-  `window_ground` is the cold-start window's colour. Settings › Appearance's
-  theme choice lives in app storage, which a resource qualifier cannot read,
-  so this matches Auto (the default): light here, dark in `values-night`, and
-  dark in `values-television` whatever the night mode, since the television
-  surface is dark always and its qualifier outranks night mode. An explicit
-  Light on a dark system, or the reverse, gets `MediagramTheme`'s own colours
-  once Compose takes over, just not before.
+  `window_ground` is the cold-start window's colour: light here, dark in
+  `values-night`, and dark in `values-television` whatever the night mode,
+  since the television surface is dark always and its qualifier outranks
+  night mode. Night mode is the app's own on API 31+ — Settings › Appearance
+  hands its choice to the system (`SharedPreferencesAppearanceSettings`) — so
+  Dark on a light-mode device still opens dark; below 31 it is the device's.
 -->
 <resources>
     <color name="ground">#FF0D0D0E</color>

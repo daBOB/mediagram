@@ -43,19 +43,17 @@ class MainActivity : ComponentActivity() {
     private var isInPip by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Before the first frame, and before Hilt, so a guess is needed: the
-        // real answer is Settings › Appearance's theme choice, which lives
-        // in Compose state this Activity has no synchronous way to read yet.
-        // `MediagramTheme`'s own `SideEffect` corrects the phone's bars the
-        // moment that choice is known and on every change after; this only
-        // picks the starting guess, from the system's night mode, so an Auto
-        // device (the default) never shows the wrong icon colour even for
-        // that first frame. The television is dark whatever the system says.
+        // Before the first frame, and before Hilt: the bars take their icon
+        // colour from this configuration's night mode, which on API 31+ is
+        // the app's own — Settings › Appearance hands its choice to the
+        // system — and below that the device's. `MediagramTheme`'s own
+        // `SideEffect` corrects the phone's bars once Compose draws, and on
+        // every change after. The television is dark whatever it says.
         // The insets are already handled — the scaffold and the setup
         // screens both consume them — and this only settles appearance.
         val onTelevision = isTelevision(this)
-        val systemDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-        val barStyle = if (onTelevision || systemDark) SystemBarStyle.dark(Color.TRANSPARENT) else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+        val nightMode = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        val barStyle = if (onTelevision || nightMode) SystemBarStyle.dark(Color.TRANSPARENT) else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
         enableEdgeToEdge(statusBarStyle = barStyle, navigationBarStyle = barStyle)
         super.onCreate(savedInstanceState)
         // Seeded from the framework's own answer, not left at the default

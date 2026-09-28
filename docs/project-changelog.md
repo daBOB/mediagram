@@ -5,6 +5,18 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.75.4 — the app opens in the theme you chose
+
+**Fixed**
+
+- The window Android draws before the app's first frame follows the theme
+  chosen in Settings › Appearance, not the device's own mode. 0.75.3 made it
+  follow the device, so Dark chosen on a light-mode device opened on a light
+  flash; the choice is now handed to the system as the app's own night mode
+  (`UiModeManager.setApplicationNightMode`, API 31+), at startup and on every
+  change. Checked on the tablet (light system, Dark chosen): the cold start
+  opens dark. Below API 31 the window still follows the device.
+
 ## 0.75.3 — the phone after review, ported onto the redesign
 
 The phone review's fixes from 2026-09-26, never committed until now, carried

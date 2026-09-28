@@ -1,6 +1,8 @@
 package designsystem
 
+import android.app.UiModeManager
 import android.content.Context
+import android.os.Build
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -50,7 +52,7 @@ class InMemoryAppearanceSettings(initial: Appearance = Appearance()) : Appearanc
  * an accent and a backdrop are not a secret, and a keystore failure should
  * never be able to cost a viewer their Appearance choice.
  */
-class SharedPreferencesAppearanceSettings(context: Context) : AppearanceSettings {
+class SharedPreferencesAppearanceSettings(private val context: Context) : AppearanceSettings {
     private val preferences = context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
     private val _appearance =
         MutableStateFlow(
@@ -62,9 +64,34 @@ class SharedPreferencesAppearanceSettings(context: Context) : AppearanceSettings
         )
     override val appearance: StateFlow<Appearance> = _appearance.asStateFlow()
 
+    init {
+        applyNightMode(_appearance.value.theme)
+    }
+
     override fun chooseTheme(theme: ThemeChoice) {
         _appearance.value = _appearance.value.copy(theme = theme)
         preferences.edit().putString(KEY_THEME, theme.storageKey).apply()
+        applyNightMode(theme)
+    }
+
+    /**
+     * Tells the system this app's own night mode, so the window it opens
+     * before Compose exists — `values-night`'s ground, the first frame's bar
+     * icons — follows the theme chosen here rather than the device's: Dark on
+     * a light-mode device opens dark, not on a light flash. Persisted by the
+     * system across restarts; set again at startup so a choice made before
+     * this existed reaches it too. API 31+; below that the window follows the
+     * device, and `MediagramTheme` corrects it once Compose draws.
+     */
+    private fun applyNightMode(theme: ThemeChoice) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+        val mode =
+            when (theme) {
+                ThemeChoice.DARK -> UiModeManager.MODE_NIGHT_YES
+                ThemeChoice.LIGHT -> UiModeManager.MODE_NIGHT_NO
+                ThemeChoice.AUTO -> UiModeManager.MODE_NIGHT_AUTO
+            }
+        context.getSystemService(UiModeManager::class.java)?.setApplicationNightMode(mode)
     }
 
     override fun chooseAccent(accent: Accent) {

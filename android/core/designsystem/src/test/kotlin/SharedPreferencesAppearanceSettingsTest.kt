@@ -1,11 +1,13 @@
 package designsystem
 
+import android.app.UiModeManager
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /** [SharedPreferencesAppearanceSettings] round-trips through a real `SharedPreferences` file. */
@@ -50,5 +52,21 @@ class SharedPreferencesAppearanceSettingsTest {
             .apply()
 
         assertEquals(Appearance(), SharedPreferencesAppearanceSettings(context).appearance.value)
+    }
+
+    /** The cold-start window follows the choice, not the device, only if the system is told it. */
+    @Test
+    fun theChosenThemeBecomesTheAppsOwnNightMode() {
+        val uiModeManager = context.getSystemService(UiModeManager::class.java)
+        val settings = SharedPreferencesAppearanceSettings(context)
+
+        settings.chooseTheme(ThemeChoice.DARK)
+        assertEquals(UiModeManager.MODE_NIGHT_YES, shadowOf(uiModeManager).applicationNightMode)
+
+        settings.chooseTheme(ThemeChoice.LIGHT)
+        assertEquals(UiModeManager.MODE_NIGHT_NO, shadowOf(uiModeManager).applicationNightMode)
+
+        settings.chooseTheme(ThemeChoice.AUTO)
+        assertEquals(UiModeManager.MODE_NIGHT_AUTO, shadowOf(uiModeManager).applicationNightMode)
     }
 }
