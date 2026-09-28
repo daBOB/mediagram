@@ -378,10 +378,12 @@ describe("recording that a title was watched to the end", () => {
 
     expect(row).toBeDefined();
     expect(row!.finishedAt).toBeGreaterThanOrEqual(before);
-    // +1: the previous test tombstoned this same set a moment ago, and a
-    // re-mark is clamped to at least one millisecond past that removal
-    // (R1) — on a fast run the two can land in the same millisecond.
-    expect(row!.finishedAt).toBeLessThanOrEqual(Date.now() + 1);
+    // +2: the previous test marked this same set and took the mark back a
+    // moment ago. Taking it back is clamped to at least one millisecond past
+    // that mark, and this re-mark to at least one past the removal, so when
+    // all three land in the same millisecond the stamp runs two ahead of the
+    // clock that read it.
+    expect(row!.finishedAt).toBeLessThanOrEqual(Date.now() + 2);
   });
 
   test("finishing clears the position in the same write; taking the mark back does not", async () => {

@@ -5,6 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.70.1 — a watched test that failed on a fast run
+
+**Fixed**
+
+- The web's "a finished show says when" test allowed the re-marked stamp one
+  millisecond past the clock, but the test before it marks and un-marks the
+  same title, and each of those clamps a millisecond forward — so when all
+  three land in one millisecond the stamp is two ahead. The bound is now two,
+  with the reason beside it; nothing in the state rules changed. It had
+  started failing the pre-push run intermittently.
+
 ## 0.70.0 — more than one upload at a time
 
 **Added**
