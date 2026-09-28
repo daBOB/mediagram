@@ -7,11 +7,13 @@
 //! independently and one row belongs to a whole series rather than to each
 //! episode of it.
 
+mod anime;
 mod facts;
 mod genres;
 mod poster_key;
 pub mod sidecar;
 
+pub use anime::{anime_overrides, is_anime};
 pub use facts::{ShowFacts, facts};
 pub use genres::genres;
 pub use poster_key::{read, title_of};

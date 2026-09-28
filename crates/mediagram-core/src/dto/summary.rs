@@ -88,6 +88,9 @@ pub struct SetSummary {
     /// What TMDB calls a series: `Scripted`, `Miniseries`, … Absent for a
     /// film, and from an index written before v9.
     pub series_type: Option<String>,
+    /// Whether this title is shelved in Anime; see `shows::is_anime`. A
+    /// series carries its show's, like `genres`.
+    pub anime: bool,
 }
 
 /// Flattens one catalog row. Never fails: a set whose episode field this
@@ -141,6 +144,10 @@ pub fn summary_from(set: &PlayableSet) -> SetSummary {
         collection_id: None,
         collection_name: None,
         series_type: None,
+        // Resolved by `store::editorial::enrich`, not here: it needs the
+        // index's genres, original language and overrides, none of which
+        // this flattening step reads.
+        anime: false,
     }
 }
 

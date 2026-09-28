@@ -289,3 +289,109 @@ fn one_set_lookup_answers_none_before_any_catalog_is_loaded() {
 
     assert_eq!(media_set(&core, "m1").unwrap(), None);
 }
+
+/// The automatic rule, from the index's own `original_language`: Japanese
+/// animation is anime, everything else is not.
+#[test]
+fn anime_is_decided_from_index_facts() {
+    let dir = tempfile::tempdir().unwrap();
+    let core = Core::at(dir.path());
+    let conn = index_at(dir.path());
+    insert_set(&conn, "m1", "movie", None, Some("Spirited Away"), None, Some(129));
+    conn.execute(
+        "INSERT INTO shows(source, kind, id, genres, original_language) VALUES ('tmdb', 'movie', 129, 'Animation,Fantasy', 'ja')",
+        [],
+    )
+    .unwrap();
+    insert_set(&conn, "m2", "movie", None, Some("Dune"), None, Some(550));
+    drop(conn);
+
+    let sets = list_sets(&core).unwrap();
+    assert!(sets.iter().find(|s| s.set_id == "m1").unwrap().anime);
+    assert!(!sets.iter().find(|s| s.set_id == "m2").unwrap().anime);
+}
+
+/// The web has no device sidecar (`enrich`'s own doc), but Android does: a
+/// title the index says nothing about, fetched with `ja` and `Animation` by
+/// this device, still shelves as anime.
+#[test]
+fn anime_is_decided_from_sidecar_facts_when_the_index_lacks_the_language() {
+    let dir = tempfile::tempdir().unwrap();
+    let core = Core::at(dir.path());
+    let conn = index_at(dir.path());
+    insert_set(&conn, "m1", "movie", None, Some("Spirited Away"), None, Some(129));
+    drop(conn);
+
+    let catalog_dir = crate::api::store::dir(&core);
+    std::fs::create_dir_all(&catalog_dir).unwrap();
+    let fetched = Connection::open(catalog_dir.join("details.db")).unwrap();
+    for stmt in mlib_spec::schema::migrations_up_to(mlib_spec::schema::SCHEMA_VERSION) {
+        fetched.execute(stmt, []).unwrap();
+    }
+    fetched
+        .execute(
+            "INSERT INTO shows(source, kind, id, genres, original_language) VALUES ('tmdb', 'movie', 129, 'Animation', 'ja')",
+            [],
+        )
+        .unwrap();
+    drop(fetched);
+
+    let set = list_sets(&core).unwrap().into_iter().next().unwrap();
+    assert!(set.anime);
+}
+
+/// An override wins over the automatic rule either way.
+#[test]
+fn an_override_wins_over_the_automatic_rule() {
+    let dir = tempfile::tempdir().unwrap();
+    let core = Core::at(dir.path());
+    let conn = index_at(dir.path());
+    insert_set(&conn, "in", "ep", Some("Donghua"), None, Some(1), Some(1));
+    conn.execute(
+        "INSERT INTO shows(source, kind, id, genres, original_language) VALUES ('tmdb', 'tv', 1, 'Animation', 'zh')",
+        [],
+    )
+    .unwrap();
+    conn.execute(
+        "INSERT INTO anime_overrides(source, kind, id, anime, set_at) VALUES ('tmdb', 'tv', 1, 1, 1)",
+        [],
+    )
+    .unwrap();
+    insert_set(&conn, "out", "movie", None, Some("Not Really Anime"), None, Some(2));
+    conn.execute(
+        "INSERT INTO shows(source, kind, id, genres, original_language) VALUES ('tmdb', 'movie', 2, 'Animation', 'ja')",
+        [],
+    )
+    .unwrap();
+    conn.execute(
+        "INSERT INTO anime_overrides(source, kind, id, anime, set_at) VALUES ('tmdb', 'movie', 2, 0, 1)",
+        [],
+    )
+    .unwrap();
+    drop(conn);
+
+    let sets = list_sets(&core).unwrap();
+    assert!(sets.iter().find(|s| s.set_id == "in").unwrap().anime);
+    assert!(!sets.iter().find(|s| s.set_id == "out").unwrap().anime);
+}
+
+/// A v10 index has neither `original_language` nor `anime_overrides`: every
+/// title lists `anime: false`, never an error.
+#[test]
+fn a_v10_index_lists_everything_as_not_anime() {
+    let dir = tempfile::tempdir().unwrap();
+    let core = Core::at(dir.path());
+    let current = dir.path().join("catalog").join("current");
+    std::fs::create_dir_all(&current).unwrap();
+    let conn = Connection::open(current.join("library.db")).unwrap();
+    for stmt in mlib_spec::schema::migrations_up_to(10) {
+        conn.execute(stmt, []).unwrap();
+    }
+    insert_set(&conn, "m1", "movie", None, Some("Dune"), None, Some(550));
+    conn.execute("INSERT INTO shows(source, kind, id, genres) VALUES ('tmdb', 'movie', 550, 'Animation')", [])
+        .unwrap();
+    drop(conn);
+
+    let set = list_sets(&core).unwrap().into_iter().next().unwrap();
+    assert!(!set.anime);
+}

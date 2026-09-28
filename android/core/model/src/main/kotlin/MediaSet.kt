@@ -91,6 +91,8 @@ data class MediaSet(
     val seriesType: String? = null,
     /** TMDB's status for a show, e.g. `"Ended"`, `"Returning Series"`; `null` when unknown. */
     val showStatus: String? = null,
+    /** Whether the core shelves this title in Anime; see `shows::is_anime` on the Rust side. */
+    val anime: Boolean = false,
     /**
      * The resolved path to this episode's own season poster, present only
      * when its season has one — see `SetSummary::season_poster_path` on the

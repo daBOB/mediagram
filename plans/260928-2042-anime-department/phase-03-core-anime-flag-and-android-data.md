@@ -1,7 +1,7 @@
 ---
 phase: 3
 title: "Core: the rule in Rust, `anime` on every catalog row, Android data layer"
-status: pending
+status: completed
 priority: P2
 effort: 3h
 dependencies: [phase-01, phase-02]
@@ -110,12 +110,12 @@ so the fetched-language fallback comes free.
 
 ## Success Criteria
 
-- [ ] `shared_anime_fixtures.rs` passes every web fixture case with no case edited for Rust.
+- [x] `shared_anime_fixtures.rs` passes every web fixture case with no case edited for Rust.
 - [ ] Same verdicts as the web on real data: checked end to end in phase 4 (tablet Anime count = web Anime count over the same published index). No probe binary is added for it.
-- [ ] A v10 index and an index with no overrides table list with `anime = false` and no error.
-- [ ] Sidecar-only facts (device-fetched) with `ja` + Animation mark the title anime.
-- [ ] Kotlin `MediaSet.anime` round-trips from `SetSummary`; `scripts/check.sh` green.
-- [ ] `.so` rebuilt in the same working tree as the bindings.
+- [x] A v10 index and an index with no overrides table list with `anime = false` and no error.
+- [x] Sidecar-only facts (device-fetched) with `ja` + Animation mark the title anime.
+- [x] Kotlin `MediaSet.anime` round-trips from `SetSummary`; `scripts/check.sh` green.
+- [x] `.so` rebuilt in the same working tree as the bindings.
 
 ## Risk Assessment
 

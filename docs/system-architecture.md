@@ -812,6 +812,15 @@ The canonical index (`library.db`, in `mlib-spec` schema) carries:
   <set-id> --anime yes|no|auto`, keyed to the TMDB title so one override
   covers every episode of a series, including ones uploaded later.
 
+`mediagram_core::shows::is_anime` — a line-for-line port of the web
+player's own `isAnime` (`web/src/catalog/anime.ts`), held to the same
+fixture cases (`shared_anime_fixtures.rs`) — decides `SetSummary.anime`
+(`MediaSet.anime` on Android) from a title's genres, `original_language` and
+`anime_overrides`, computed once per listing in `store::editorial::enrich`
+the same way `genres`/`fsk`/`tagline` are: the index's own facts first, this
+device's fetched sidecar filling in what the index does not have. Only the
+index's own overrides apply — a device never overrides on its own.
+
 Version tracking: `SCHEMA_VERSION=11`, `READABLE_SCHEMAS=[6,7,8,9,10,11]`,
 `OLDEST_READABLE_SCHEMA=6`. Readers tolerant of v10 and earlier (optional
 columns/tables); writers from the release introducing this table produce v11.

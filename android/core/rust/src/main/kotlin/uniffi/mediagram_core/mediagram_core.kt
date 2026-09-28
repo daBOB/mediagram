@@ -4238,10 +4238,11 @@ data class SetSummary (
     var `posterKey`: kotlin.String?
     ,
     /**
-     * Where [`poster_key`](Self::poster_key)'s file actually sits, resolved
-     * once per listing rather than once per set — `None` when there is no
-     * key, or the key names no file this device holds yet. See
-     * `store::list_sets`.
+     * Where [`poster_key`](Self::poster_key)'s file actually sits. Every
+     * set carries its own answer, but a listing works out any one key's
+     * answer at most once, however many sets share it (many episodes of a
+     * show share its poster key) — see `store::list_sets`. `None` when
+     * there is no key, or the key names no file this device holds yet.
      */
     var `posterPath`: kotlin.String?
     ,
@@ -4282,11 +4283,12 @@ data class SetSummary (
     ,
     /**
      * Where this title's backdrop is on disk, present only when the file
-     * actually exists — `store::list_sets` checks disk and disk alone, the
-     * way the web player's `routes.ts` checks its poster store before ever
-     * naming one, rather than materialising one from the index's `artwork`
-     * table the way `poster_path` does. A series carries its show's, like
-     * `genres`.
+     * actually exists — `store::list_sets` checks disk and disk alone,
+     * rather than materialising one from the index's `artwork` table the
+     * way `poster_path` does. A known gap from the web player rather than
+     * parity with it: the web's own `has()` counts a backdrop the table
+     * alone carries, this does not — see `store::editorial::resolve_artwork`'s
+     * own doc. A series carries its show's, like `genres`.
      */
     var `backdropPath`: kotlin.String?
     ,
@@ -4338,6 +4340,12 @@ data class SetSummary (
      * film, and from an index written before v9.
      */
     var `seriesType`: kotlin.String?
+    ,
+    /**
+     * Whether this title is shelved in Anime; see `shows::is_anime`. A
+     * series carries its show's, like `genres`.
+     */
+    var `anime`: kotlin.Boolean
 
 ){
 
@@ -4388,6 +4396,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalULong.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterBoolean.read(buf),
         )
     }
 
@@ -4425,7 +4434,8 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.allocationSize(value.`showStatus`) +
             FfiConverterOptionalULong.allocationSize(value.`collectionId`) +
             FfiConverterOptionalString.allocationSize(value.`collectionName`) +
-            FfiConverterOptionalString.allocationSize(value.`seriesType`)
+            FfiConverterOptionalString.allocationSize(value.`seriesType`) +
+            FfiConverterBoolean.allocationSize(value.`anime`)
     )
 
     override fun write(value: SetSummary, buf: ByteBuffer) {
@@ -4463,6 +4473,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalULong.write(value.`collectionId`, buf)
             FfiConverterOptionalString.write(value.`collectionName`, buf)
             FfiConverterOptionalString.write(value.`seriesType`, buf)
+            FfiConverterBoolean.write(value.`anime`, buf)
     }
 }
 

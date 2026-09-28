@@ -27,6 +27,9 @@ pub struct ShowFacts {
     /// What TMDB calls a series: `Scripted`, `Miniseries`, … Absent for a
     /// film, and for an index written before v9.
     pub series_type: Option<String>,
+    /// TMDB's own code for the title (`ja`, `en`, …), for `shows::is_anime`.
+    /// Absent for an index written before v11.
+    pub original_language: Option<String>,
 }
 
 /// Every title's tagline, rating, popularity, status and franchise, by the
@@ -42,8 +45,9 @@ pub fn facts(conn: &Connection) -> rusqlite::Result<HashMap<String, ShowFacts>> 
     let collection_id = optional_column(conn, "collection_id")?;
     let collection_name = optional_column(conn, "collection_name")?;
     let series_type = optional_column(conn, "series_type")?;
+    let original_language = optional_column(conn, "original_language")?;
     let mut stmt = conn.prepare(&format!(
-        "SELECT kind, id, tagline, rating, {popularity}, status, {collection_id}, {collection_name}, {series_type}
+        "SELECT kind, id, tagline, rating, {popularity}, status, {collection_id}, {collection_name}, {series_type}, {original_language}
            FROM shows WHERE source = ?1"
     ))?;
     let rows = stmt.query_map([SOURCE], |row| {
@@ -59,6 +63,7 @@ pub fn facts(conn: &Connection) -> rusqlite::Result<HashMap<String, ShowFacts>> 
                 collection_id: row.get(6)?,
                 collection_name: row.get(7)?,
                 series_type: row.get(8)?,
+                original_language: row.get(9)?,
             },
         ))
     })?;
@@ -154,5 +159,19 @@ mod tests {
         assert_eq!(row.collection_id, None, "v9 columns predate this index too");
         assert_eq!(row.collection_name, None);
         assert_eq!(row.series_type, None);
+        assert_eq!(row.original_language, None, "v11's original_language predates this index too");
+    }
+
+    #[test]
+    fn reads_original_language_for_shows_is_anime() {
+        let conn = conn_with_shows();
+        conn.execute(
+            "INSERT INTO shows(source, kind, id, genres, original_language) VALUES ('tmdb', 'movie', 603, 'Animation', 'ja')",
+            [],
+        )
+        .unwrap();
+
+        let row = facts(&conn).unwrap().remove("tmdb-movie-603").expect("row present");
+        assert_eq!(row.original_language.as_deref(), Some("ja"));
     }
 }

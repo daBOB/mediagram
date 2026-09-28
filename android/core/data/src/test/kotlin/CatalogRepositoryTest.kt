@@ -187,6 +187,17 @@ class CatalogRepositoryTest {
         assertEquals(null, set.seriesType)
     }
 
+    /** The core decides the rule; this only has to carry the boolean through unchanged. */
+    @Test
+    fun aSetSaysWhetherItIsAnime() = runTest {
+        val core = FakeCore(sets = listOf(summary(setId = "spirited-away", anime = true), summary(setId = "dune", anime = false)))
+        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+
+        val sets = repo.sets().associateBy { it.setId }
+        assertEquals(true, sets["spirited-away"]?.anime)
+        assertEquals(false, sets["dune"]?.anime)
+    }
+
     /** The core resolves a portrait onto the record itself now; this only has to carry it through. */
     @Test
     fun creditsCarryTheirResolvedPortraitPathsThrough() = runTest {
@@ -251,6 +262,7 @@ private fun summary(
     collectionId: Long? = null,
     collectionName: String? = null,
     seriesType: String? = null,
+    anime: Boolean = false,
 ): SetSummary = SetSummary(
     setId = setId,
     kind = kind,
@@ -286,4 +298,5 @@ private fun summary(
     collectionId = collectionId?.toULong(),
     collectionName = collectionName,
     seriesType = seriesType,
+    anime = anime,
 )

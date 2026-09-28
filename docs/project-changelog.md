@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.77.1 — Android: the core knows which titles are anime, not yet reachable from the UI
+
+**Added**
+
+- `mediagram_core::shows::is_anime`, a line-for-line port of the web
+  player's own rule, held to the same fixture cases the web's own tests run
+  (`shared_anime_fixtures.rs`). `SetSummary.anime` carries the verdict across
+  the UniFFI boundary — computed in `store::editorial::enrich` from the
+  index's genres and `original_language`, this device's own fetched sidecar
+  as a fallback, and the index's `anime_overrides` — and lands on
+  `MediaSet.anime`. An index older than schema v11 lists everything
+  `anime = false`, same as it always has. Android-only: the web player
+  already shipped this in 0.77.0.
+
 ## 0.77.0 — an Anime department for Japanese animation
 
 **Added**
