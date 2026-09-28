@@ -74,6 +74,7 @@ whatever `main` carries (another session commits there); `versionCode` untouched
 
 ## Resolved with the user (2026-09-28)
 
+- Released 2026-09-29 01:59: `pull-index` (the other uploader had already backfilled 986 languages), `metadata`, `push-index` as channel message 9793. Live: 36 anime titles (4 series, 32 films) on the web player and the tablet (0.81.0).
 - Home editorial picks stay Movies-only: anime films (Ghibli included) leave
   the cover, features and "This month"; Continue/Next up still include anime.
 - Genre pages include anime, under their "Movies"/"Series" headings, so a

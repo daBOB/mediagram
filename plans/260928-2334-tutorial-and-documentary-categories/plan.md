@@ -69,6 +69,7 @@ Starts from `main` at 0.78.0 / schema v11 (anime phase 4 landed first).
 
 ## Resolved with the user (2026-09-28)
 
+- Released 2026-09-29 01:59 with the anime backfill: the 17 categories above set with `mediagram edit --category`, published as channel message 9793. Live on the web player and the tablet (0.81.0): Trading 4; China 4, Geschichte 4, Politik 3, Kultur 2.
 - All four courses (Forex Mentor - Trendline Mastery, Geldhochschule, Mentfx Course
   2026, Wall Street Story) get the category "Trading". The 7 documentary collections
   and 6 standalone documentaries are listed for the user when the flag exists.
