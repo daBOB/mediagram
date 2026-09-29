@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: "TV Home body: cover, features, bands, shelves"
-status: in-review
+status: completed
 priority: P2
 effort: 10h
 dependencies: [1]
