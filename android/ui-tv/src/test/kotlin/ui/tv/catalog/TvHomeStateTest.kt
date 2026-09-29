@@ -2,6 +2,8 @@ package ui.tv.catalog
 
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.onNodeWithText
@@ -41,6 +43,7 @@ class TvHomeStateTest : TvScreenStateTest() {
                 onOpenCollection = {},
                 onToggleWatchlist = { _, _ -> },
                 onSeeAll = {},
+                upExit = remember { FocusRequester() },
             )
         }
 
@@ -61,6 +64,7 @@ class TvHomeStateTest : TvScreenStateTest() {
                 onOpenCollection = {},
                 onToggleWatchlist = { _, _ -> },
                 onSeeAll = {},
+                upExit = remember { FocusRequester() },
                 restoreKey = "show-another-show",
             )
         }
@@ -83,6 +87,7 @@ class TvHomeStateTest : TvScreenStateTest() {
                 onOpenCollection = {},
                 onToggleWatchlist = { _, _ -> },
                 onSeeAll = {},
+                upExit = remember { FocusRequester() },
                 restoreKey = "show-a-show",
             )
         }

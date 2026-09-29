@@ -266,6 +266,7 @@ fun TvCatalogScreen(
                             wallKey = nav.wallKey,
                             railActive = nav.railActive,
                             railRowFocus = nav.chromeFocus.railRowFocus,
+                            selectedPillFocus = nav.chromeFocus.selectedPillFocus,
                             homeListState = homeListState,
                             homeMagazine = homeMagazine,
                             homeRows = homeRows,

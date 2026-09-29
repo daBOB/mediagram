@@ -5,6 +5,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
@@ -161,6 +162,33 @@ class TvCatalogScreenStateTest {
         show(ready(films(3)), restoreKey = "film-0")
 
         compose.onNodeWithText("Film 0").assertIsFocused()
+    }
+
+    /**
+     * A poster opened from a section below Home's own first one, and left
+     * again, must restore focus to that poster — not fall through to a
+     * pill in the bar, which is what a request fired before the outer
+     * `LazyColumn` had actually scrolled that section into its own
+     * composition once did. "Latest series" sits below "Recently added"
+     * here (`films(10)`'s own eight posters, plus a show), so restoring to
+     * it genuinely exercises the scroll, not just a first-item lookup.
+     */
+    @Test
+    @Config(qualifiers = "w960dp-h540dp")
+    fun homeRestoresFocusToAPosterBelowTheFirstSectionRatherThanAPill() {
+        val episodes = (1..3).map { set("ep-$it", Kind.EPISODE, "Episode $it", show = "A Show", addedAt = 0, episode = it) }
+        var openedCollection: String? = null
+        show(ready(films(10) + episodes), onOpenCollection = { openedCollection = it })
+
+        compose.onNodeWithText("A Show").performSemanticsAction(SemanticsActions.OnClick)
+        val collectionKey = requireNotNull(openedCollection) { "clicking the series poster never opened a collection" }
+        close()
+
+        show(ready(films(10) + episodes), restoreKey = collectionKey)
+
+        compose.onNodeWithText("A Show").assertIsFocused()
+        compose.onNodeWithText("Movies").assertIsNotFocused()
+        compose.onNodeWithText("Series").assertIsNotFocused()
     }
 
     @Test

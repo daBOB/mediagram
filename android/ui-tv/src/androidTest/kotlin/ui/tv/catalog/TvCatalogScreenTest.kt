@@ -113,6 +113,25 @@ class TvCatalogScreenTest {
         compose.onNodeWithContentDescription("Who's watching: andre").assertIsDisplayed()
     }
 
+    /**
+     * The chrome's contract, already proven for Back: leaving content
+     * upward lands on the *selected* pill, wherever it now sits — not
+     * whichever pill happens to sit geometrically above whatever control
+     * the remote was on. The cover's own action row is Home's own first,
+     * so a plain geometric search is most likely to land somewhere else
+     * here — `TvCoverActions`' own explicit `up` wiring on every stop in
+     * that row is what this proves, on a real window's own focus search.
+     */
+    @Test
+    fun upFromTheCoversWatchNowLandsOnTheSelectedPillNotWhicheverSitsAboveIt() {
+        show(featuredFilms(4))
+        waitUntilFocused("Watch now", substring = true)
+
+        compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionUp) }
+
+        waitUntilFocused("Home")
+    }
+
     private fun show(
         sets: List<MediaSet> = films(10),
         profileName: String = "Ada",
@@ -131,13 +150,20 @@ class TvCatalogScreenTest {
         }
     }
 
-    private fun waitUntilFocused(text: String) {
+    private fun waitUntilFocused(
+        text: String,
+        substring: Boolean = false,
+    ) {
         compose.waitUntil(timeoutMillis = 5_000) {
-            compose.onAllNodes(hasText(text) and isFocused()).fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodes(hasText(text, substring = substring) and isFocused()).fetchSemanticsNodes().isNotEmpty()
         }
     }
 
     private fun films(count: Int) = (0 until count).map { set("film-$it", Kind.MOVIE, "Film $it", null, it.toLong()) }
+
+    /** Films with a backdrop and a poster — enough for the cover and the feature cards to draw something, unlike [films]' own bare fixture. */
+    private fun featuredFilms(count: Int) =
+        films(count).map { it.copy(backdropPath = "/bd${it.setId}", posterPath = "/p${it.setId}") }
 
     private fun set(
         id: String,

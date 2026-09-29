@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -41,6 +42,16 @@ import ui.tv.TvTextRow
  * toggle here could only ever be pressed while rotation is already held —
  * a control with nothing left for it to do. A deliberate, documented
  * difference from the phone, not a silent gap.
+ *
+ * [upExit] is where Up leads from every stop in this row — explicit on
+ * each control, the same pattern the departments bar's own pills carry
+ * their `down` target on ([ui.tv.chrome.TvDepartmentsBar]'s own
+ * `downModifier`), rather than depending on the chrome's own content-region
+ * `onExit` to catch it: this row is the page's own first, so a plain
+ * geometric search for "whatever sits above" can land on a pill that is
+ * not the selected one, once a viewer has scrolled the bar sideways — the
+ * bar's own contract (proven for Back already) is that leaving content
+ * upward always lands on the *selected* pill, wherever it now sits.
  */
 @Composable
 internal fun TvCoverActions(
@@ -53,8 +64,10 @@ internal fun TvCoverActions(
     onDetails: () -> Unit,
     onFocusDot: (Int) -> Unit,
     watchNowFocus: FocusRequester,
+    upExit: FocusRequester,
     modifier: Modifier = Modifier,
 ) {
+    val up = Modifier.focusProperties { up = upExit }
     Row(
         modifier = modifier.padding(start = Spacing.extraLarge, bottom = Spacing.extraLarge),
         verticalAlignment = Alignment.CenterVertically,
@@ -65,19 +78,20 @@ internal fun TvCoverActions(
             description = "Watch now: $title",
             filled = true,
             onClick = onPlay,
-            modifier = Modifier.focusRequester(watchNowFocus),
+            modifier = up.focusRequester(watchNowFocus),
         )
         TvCoverPill(
             text = if (watchlisted) "✓ My List" else "+ My List",
             description = if (watchlisted) "Remove from My List" else "Add to My List",
             filled = false,
             onClick = { onToggleWatchlist(!watchlisted) },
+            modifier = up,
         )
-        TvTextRow(text = "Details", onClick = onDetails)
+        TvTextRow(text = "Details", onClick = onDetails, modifier = up)
         if (dotCount > 1) {
             Row(modifier = Modifier.padding(start = Spacing.small), horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
                 for (index in 0 until dotCount) {
-                    TvCoverDot(selected = index == current, index = index, count = dotCount, onFocused = { onFocusDot(index) })
+                    TvCoverDot(selected = index == current, index = index, count = dotCount, onFocused = { onFocusDot(index) }, modifier = up)
                 }
             }
         }
@@ -131,11 +145,12 @@ private fun TvCoverDot(
     index: Int,
     count: Int,
     onFocused: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Surface(
         onClick = {},
         modifier =
-            Modifier
+            modifier
                 .size(32.dp)
                 .onFocusChanged { if (it.isFocused) onFocused() }
                 .semantics {

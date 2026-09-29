@@ -64,8 +64,17 @@ internal fun TvHomeCover(
     onPlay: (MediaSet) -> Unit,
     onOpenTitle: (String) -> Unit,
     onToggleWatchlist: (String, Boolean) -> Unit,
+    // Where the requester ends up (Watch now) — whether and when it is
+    // actually asked to take focus is `TvHome`'s own call, made once after
+    // its outer list has confirmed the cover is really composed, not this
+    // composable's to decide on its own mount (a real regression once it
+    // was: a request fired the instant this mounted, racing a sentinel
+    // elsewhere handing the remote to Search or the bar's own ⋮ instead).
     arrivalFocus: FocusRequester,
-    takesFocus: Boolean,
+    // Where Up from the action row leads once it runs out of the cover's
+    // own subtree to search — the bar's own selected pill, the same stop
+    // Back already reaches from anywhere in the page.
+    upExit: FocusRequester,
     modifier: Modifier = Modifier,
 ) {
     if (films.isEmpty()) return
@@ -82,8 +91,6 @@ internal fun TvHomeCover(
             currentId = films[(at + 1) % films.size].setId
         }
     }
-
-    LaunchedEffect(takesFocus) { if (takesFocus) arrivalFocus.requestFocus() }
 
     val windowHeight = LocalConfiguration.current.screenHeightDp.dp
     val coverHeight = (windowHeight - CoverBarClearance).coerceAtLeast(0.dp)
@@ -114,6 +121,7 @@ internal fun TvHomeCover(
             onDetails = { onOpenTitle(current.setId) },
             onFocusDot = { index -> currentId = films[index].setId },
             watchNowFocus = arrivalFocus,
+            upExit = upExit,
             modifier = Modifier.align(Alignment.BottomStart),
         )
     }

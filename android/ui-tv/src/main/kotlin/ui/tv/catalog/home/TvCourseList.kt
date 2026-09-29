@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -42,24 +41,15 @@ import ui.tv.TvFocus
 internal fun TvCourseList(
     courses: List<Entry.Collection>,
     onOpen: (String) -> Unit,
+    // Where the requester ends up (which row, at [focusAt]'s own index) —
+    // whether and when it is actually asked to take focus is `TvHome`'s
+    // own call, made once after its outer list has confirmed this whole
+    // list is really composed, not this list's to decide on its own mount.
     focusAt: Int? = null,
     focus: FocusRequester? = null,
     lastStop: Modifier = Modifier,
-    // Read fresh inside the effect below, never added to its own key: a
-    // sentinel elsewhere (Search, the bar's ⋮) can make this read `false`
-    // for exactly one composition and then flip back to `true` once it is
-    // consumed, with `focusAt` itself unchanged throughout — keying on it
-    // too would re-run the request and steal the remote right back.
-    takesFocus: Boolean = true,
 ) {
     if (courses.isEmpty()) return
-    // Not a lazy list, so nothing here has to be scrolled into place first
-    // — arrival only ever has to call `requestFocus()` once this row is
-    // composed at all.
-    LaunchedEffect(focusAt) {
-        if (focusAt == null || focus == null || !takesFocus) return@LaunchedEffect
-        focus.requestFocus()
-    }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         courses.forEachIndexed { index, course ->
             Card(

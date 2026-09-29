@@ -34,6 +34,7 @@ internal fun TvCatalogBody(
     wallKey: String?,
     railActive: RailItem?,
     railRowFocus: Map<RailItem, FocusRequester>,
+    selectedPillFocus: FocusRequester,
     homeListState: LazyListState,
     homeMagazine: MagazineHome?,
     homeRows: List<HomeRow>,
@@ -71,6 +72,7 @@ internal fun TvCatalogBody(
                 onOpenCollection = onOpenCollection,
                 onToggleWatchlist = onToggleWatchlist,
                 onSeeAll = { shelf -> choose(tabs.titles.indexOf(shelf).coerceAtLeast(0)) },
+                upExit = selectedPillFocus,
                 restoreKey = wallKey,
             )
         }

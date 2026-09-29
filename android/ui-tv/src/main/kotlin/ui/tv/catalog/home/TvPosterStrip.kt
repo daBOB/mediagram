@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -52,18 +51,15 @@ private val PosterWidth = 160.dp
 internal fun TvPosterStrip(
     shows: List<Entry.Collection>,
     onOpen: (String) -> Unit,
+    // Where the requester ends up (which poster, at [focusAt]'s own index)
+    // — whether and when it is actually asked to take focus is `TvHome`'s
+    // own call, made once after its outer list has confirmed this whole
+    // strip is really composed, not this strip's to decide on its own mount.
     focusAt: Int? = null,
     focus: FocusRequester? = null,
     lastStop: Modifier = Modifier,
-    // Read fresh inside the effect below, never added to its own key — see
-    // [TvCourseList]'s own doc on the same parameter for why.
-    takesFocus: Boolean = true,
 ) {
     if (shows.isEmpty()) return
-    LaunchedEffect(focusAt) {
-        if (focusAt == null || focus == null || !takesFocus) return@LaunchedEffect
-        focus.requestFocus()
-    }
     Row(
         modifier = Modifier.horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),

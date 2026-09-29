@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,23 +53,15 @@ internal fun TvContinueBand(
     onPlay: (String) -> Unit,
     onOpenTitle: (String) -> Unit,
     onSeeAllContinue: () -> Unit,
+    // Where the requester ends up (which card, at [focusAt]'s own index) —
+    // whether and when it is actually asked to take focus is `TvHome`'s
+    // own call, made once after its outer list has confirmed this whole
+    // band is really composed, not this band's to decide on its own mount.
     focusAt: Int? = null,
     focus: FocusRequester? = null,
-    // Read fresh inside the effect below, never added to its own key — see
-    // [TvCourseList]'s own doc on the same parameter for why.
-    takesFocus: Boolean = true,
 ) {
     if (cards.isEmpty() && quote == null) return
     val link = remember { SeeAllLink() }
-    LaunchedEffect(focusAt) {
-        if (focusAt == null || focus == null || !takesFocus) return@LaunchedEffect
-        // A plain, always-fully-composed row (at most `HOME_ROW_LIMIT`
-        // cards, not a plate wall's own hundreds): focusing straight away
-        // is enough, since Compose's own scrollable-ancestor relocation
-        // brings a newly focused card into view without this needing to
-        // scroll it there itself first.
-        focus.requestFocus()
-    }
 
     val continueBlock: @Composable () -> Unit = {
         if (cards.isNotEmpty()) {

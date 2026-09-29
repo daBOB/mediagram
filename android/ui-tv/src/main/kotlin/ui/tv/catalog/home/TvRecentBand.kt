@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,11 +53,12 @@ internal fun TvRecentBand(
     thisMonth: List<MediaSet>,
     onOpenTitle: (String) -> Unit,
     onSeeAllMovies: () -> Unit,
+    // Where the requester ends up (which poster, at [focusAt]'s own index)
+    // — whether and when it is actually asked to take focus is `TvHome`'s
+    // own call, made once after its outer list has confirmed this whole
+    // band is really composed, not this band's to decide on its own mount.
     focusAt: Int? = null,
     focus: FocusRequester? = null,
-    // Read fresh inside [TvRecentPosterRow]'s own effect, never added to
-    // its key — see [TvCourseList]'s own doc on the same parameter for why.
-    takesFocus: Boolean = true,
 ) {
     if (recentlyAdded.isEmpty() && thisMonth.isEmpty()) return
     val link = remember { SeeAllLink() }
@@ -68,7 +68,7 @@ internal fun TvRecentBand(
                 TvBandHeading(title = "Recently Added", count = totalFilms) {
                     TvTextRow(text = "See all", onClick = onSeeAllMovies, modifier = link.seeAll, focusRequester = link.focus)
                 }
-                TvRecentPosterRow(recentlyAdded, onOpenTitle, focusAt, focus, link.lastStop, takesFocus)
+                TvRecentPosterRow(recentlyAdded, onOpenTitle, focusAt, focus, link.lastStop)
             }
         }
     }
@@ -99,12 +99,7 @@ private fun TvRecentPosterRow(
     focusAt: Int?,
     focus: FocusRequester?,
     lastStop: Modifier,
-    takesFocus: Boolean,
 ) {
-    LaunchedEffect(focusAt) {
-        if (focusAt == null || focus == null || !takesFocus) return@LaunchedEffect
-        focus.requestFocus()
-    }
     Row(
         modifier = Modifier.padding(top = Spacing.medium).horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
