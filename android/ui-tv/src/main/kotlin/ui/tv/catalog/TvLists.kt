@@ -92,12 +92,7 @@ internal fun TvLists(
             item(key = "empty") { TvQuietLine(KeptKind.COLLECTIONS.empty) }
         }
         itemsIndexed(items = lists, key = { _, list -> list.id }) { index, list ->
-            TvTextRow(
-                text = "${list.name} · ${countLabel(list.items.size)}",
-                onClick = { onOpen(list.id) },
-                modifier = Modifier.fillMaxWidth(),
-                focusRequester = focus.takeIf { index == focusIndex },
-            )
+            TvListRow(list, onOpen = onOpen, focusRequester = focus.takeIf { index == focusIndex })
         }
         item(key = "new") {
             TvTextRow(
@@ -110,5 +105,27 @@ internal fun TvLists(
     }
 }
 
+/**
+ * One saved list, its own row — shared with [TvCollectionsPage], which
+ * inlines this same row into its own single outer list rather than nesting
+ * [TvLists]' own scrollable one under a hero tall enough to need the room a
+ * nested scroll can't measure (Compose refuses two vertical scrollables,
+ * one inside the other).
+ */
+@Composable
+internal fun TvListRow(
+    list: ListOfSets,
+    onOpen: (id: String) -> Unit,
+    focusRequester: FocusRequester? = null,
+    modifier: Modifier = Modifier,
+) {
+    TvTextRow(
+        text = "${list.name} · ${countLabel(list.items.size)}",
+        onClick = { onOpen(list.id) },
+        modifier = modifier.fillMaxWidth(),
+        focusRequester = focusRequester,
+    )
+}
+
 /** `1 title` / `12 titles` — the phone's own count beside each list. */
-private fun countLabel(count: Int): String = "$count ${if (count == 1) "title" else "titles"}"
+internal fun countLabel(count: Int): String = "$count ${if (count == 1) "title" else "titles"}"

@@ -8,6 +8,7 @@ import org.junit.Test
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.junit.runner.RunWith
+import ui.tv.catalog.TvBarClearance
 import ui.tv.catalog.TvScreenStateTest
 import kotlin.test.assertTrue
 
@@ -21,7 +22,7 @@ import kotlin.test.assertTrue
  * content forces that overflow deterministically here, rather than relying
  * on a long title or tagline actually wrapping under whatever font metrics
  * this test happens to run with (Fraunces has a documented history of
- * rendering bigger on a real device than in this harness) — [TvHomeBarClearance]'s
+ * rendering bigger on a real device than in this harness) — [TvBarClearance]'s
  * own top padding is what still keeps the title clear of the bar either way.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -43,7 +44,7 @@ class TvCoverSlideStateTest : TvScreenStateTest() {
         }
 
         val title = compose.onNodeWithText("THE GREEN KNIGHT").fetchSemanticsNode()
-        val clearancePx = with(compose.density) { TvHomeBarClearance.toPx() }
+        val clearancePx = with(compose.density) { TvBarClearance.toPx() }
         assertTrue(
             title.boundsInRoot.top >= clearancePx - 1f,
             "title starts at ${title.boundsInRoot.top}px, short of its own ${clearancePx}px clearance",

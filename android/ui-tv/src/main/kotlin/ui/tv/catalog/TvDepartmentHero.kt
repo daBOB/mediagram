@@ -129,7 +129,7 @@ private fun TvDeptQuote(
     leadName: String,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.padding(Spacing.medium)) {
+    Column(modifier = modifier.testTag(TvDepartmentHeroQuoteTestTag).padding(Spacing.medium)) {
         Text(
             text = "“$tagline”",
             style = TvTypeScale.body.copy(fontStyle = FontStyle.Italic),
@@ -162,14 +162,31 @@ internal val TvDepartmentHeroHeight = 360.dp
 /** [DeptHeroText]'s own ceiling (`fluid(56f,0.085f,120f,width)`) evaluated at the department bar's fixed 960dp width, never read from a window television has no reason to resize. */
 private val HeroTitleSize = 81.6f.sp
 
-/** [DEPT_COPY_MAX_WIDTH]'s own cap (`departments.css:29`). */
-private val HeroCopyMaxWidth = 640.dp
+/**
+ * Narrower than the tablet's own [DEPT_COPY_MAX_WIDTH] (640dp): that cap
+ * assumes a window wide enough — the tablet's own "wide" layout starts past
+ * 900dp and commonly runs well past 960 — that a 320dp quote top-right
+ * never reaches into it. Television's own width is always exactly 960dp,
+ * where 640 (copy) and 320 (quote), each measured from its own gutter,
+ * overlap by as much as 80dp — the huge title's own name plus a long
+ * tagline once actually did, on Collections. 480dp instead leaves the two
+ * their own [pagePadding]-gutters plus a real, unconditional 80dp gap
+ * between them, for every department's own title and quote, not only the
+ * one that first showed it. Internal, not private: `TvDepartmentHeroGeometryTest`
+ * pins the arithmetic this doc claims directly, rather than trusting a
+ * rendered measurement Robolectric's own font fallback cannot be held to
+ * (Fraunces measures narrower there than on a real device).
+ */
+internal val HeroCopyMaxWidth = 480.dp
 
-/** [DEPT_QUOTE_MAX_WIDTH]'s own cap (`departments.css:42`). */
-private val HeroQuoteMaxWidth = 320.dp
+/** [DEPT_QUOTE_MAX_WIDTH]'s own cap (`departments.css:42`) — within the 480/320 split [HeroCopyMaxWidth]'s own doc guarantees never overlaps it. */
+internal val HeroQuoteMaxWidth = 320.dp
 
 /** For a test to find the hero without matching on its own words. */
 internal const val TvDepartmentHeroTestTag = "tv-department-hero"
 
 /** For a test to check the title node exists rather than guessing at its rendered text after `uppercase()`. */
 internal const val TvDepartmentHeroTitleTestTag = "tv-department-hero-title"
+
+/** For a test to measure the quote's own bounds against the title's, at the fixed 960dp width — see [HeroCopyMaxWidth]'s own doc. */
+internal const val TvDepartmentHeroQuoteTestTag = "tv-department-hero-quote"

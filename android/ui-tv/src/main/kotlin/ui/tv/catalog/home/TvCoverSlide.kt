@@ -22,36 +22,15 @@ import designsystem.Backdrop
 import designsystem.CoverTitle
 import designsystem.Eyebrow
 import designsystem.LocalBackdrop
-import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import model.MediaSet
 import ui.catalog.CoverScrim
 import ui.catalog.HeroArtwork
-import ui.tv.chrome.TvDepartmentsBarHeight
+import ui.tv.catalog.TvBarClearance
 
 /** Past this many characters the title steps down a size, the phone cover's own rule (`HOME_COVER`, `CoverSlide.kt`). */
 private const val LONG_TITLE = 18
-
-/**
- * How far below the screen's own top edge the cover's own words are ever
- * allowed to start — the bar's full drawn height (its own row plus the
- * overscan margin above it), plus a little breathing room. The cover's own
- * *picture* still bleeds all the way to the top, under the bar, on
- * purpose; only the words themselves are kept clear of it.
- *
- * Read on the words column's own top padding below, not on [TvHomeCover]'s
- * `coverHeight` floor: that floor sizes the cover for the common case, but
- * a long title, a three-line tagline and the facts line together can still
- * ask for more room than the floor leaves under the bar — the words column
- * is `Alignment.BottomStart`-aligned within a `Box` whose own height then
- * grows to fit them, and without a top padding of its own the words simply
- * start at that (taller) box's own top edge, which is the screen's own
- * y=0, squarely behind the bar. A `top` padding this size is what actually
- * guarantees the invariant, regardless of exactly how tall the words turn
- * out to be — see `TvCoverSlideBarClearanceTest`.
- */
-internal val TvHomeBarClearance = TvDepartmentsBarHeight + Overscan.vertical + Spacing.medium
 
 /**
  * One cover story's own picture, headline and facts over its own backdrop —
@@ -93,7 +72,7 @@ internal fun TvCoverSlide(
                     .padding(
                         start = Spacing.extraLarge,
                         end = Spacing.extraLarge,
-                        // See `TvHomeBarClearance`'s own doc: this is what
+                        // See `TvBarClearance`'s own doc: this is what
                         // actually keeps the words clear of the bar when
                         // they need more room than the cover's own floor
                         // height reserves — bottom-alignment alone only
@@ -101,7 +80,7 @@ internal fun TvCoverSlide(
                         // once the words are tall enough to fill the whole
                         // box, their own top IS the box's top, which the
                         // bar draws straight over without this.
-                        top = TvHomeBarClearance,
+                        top = TvBarClearance,
                         bottom = CoverActionsReservedHeight,
                     ),
         ) {

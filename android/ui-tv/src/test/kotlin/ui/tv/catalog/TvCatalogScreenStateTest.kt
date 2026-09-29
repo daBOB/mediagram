@@ -143,6 +143,7 @@ class TvCatalogScreenStateTest {
 
     /** Collections is a department tab now, not a kept tab — franchises beside the household's own lists. */
     @Test
+    @Config(qualifiers = "w960dp-h540dp")
     fun collectionsShowsFranchisesAndLists() {
         val a1 = set("a1", Kind.MOVIE, "Adventure One", addedAt = 0).copy(collectionId = 9L, collectionName = "Adventure Saga")
         val a2 = set("a2", Kind.MOVIE, "Adventure Two", addedAt = 1).copy(collectionId = 9L, collectionName = "Adventure Saga")
@@ -150,6 +151,11 @@ class TvCatalogScreenStateTest {
 
         compose.onNodeWithText("Collections").performSemanticsAction(SemanticsActions.OnClick)
         compose.onNodeWithText("Adventure Saga").assertExists()
+        // Arrival focuses the franchise row, same as a real remote's Down
+        // from the pill; "Your lists" sits below it, off the first screen at
+        // this fixed TV height, so a real remote's own Down scrolls it into
+        // view the same way this test does.
+        compose.onNode(hasTestTag(TvCollectionsPageTestTag)).performScrollToNode(hasText("Your lists"))
         compose.onNodeWithText("Your lists").assertExists()
     }
 

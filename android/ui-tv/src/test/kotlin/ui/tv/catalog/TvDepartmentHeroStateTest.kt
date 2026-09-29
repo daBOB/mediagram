@@ -10,12 +10,15 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import designsystem.Backdrop
 import designsystem.LocalBackdrop
+import designsystem.Overscan
 import model.Kind
 import model.MediaSet
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import ui.tv.chrome.TvContentGutter
+import kotlin.test.assertTrue
 
 /**
  * [TvDepartmentHero] over the television's own fixed 960dp width, the width
@@ -68,6 +71,28 @@ class TvDepartmentHeroStateTest : TvScreenStateTest() {
     fun artAndATaglineTogetherDrawTheQuote() {
         show { TvDepartmentHero(kicker = "Only in your library", title = "Movies", line = "four films", lead = lead()) }
         compose.onNodeWithText("“A tagline”").assertIsDisplayed()
+    }
+
+    /**
+     * A long title plus a long, wrapping tagline once actually overlapped
+     * on Collections at the real 960dp width — [HeroCopyMaxWidth]'s own
+     * doc. Pinned as arithmetic rather than a rendered measurement: under
+     * Robolectric's own font fallback, "COLLECTIONS" measures narrower than
+     * on a real device (the same gap `TvCoverSlideStateTest`'s own doc
+     * names), so a bounds-based assertion here would pass even at the old,
+     * overlapping 640dp width — this instead proves the *maximum* either
+     * column can ever reach, which a real device's own wider metrics still
+     * has to answer to.
+     */
+    @Test
+    fun theCopyAndQuoteColumnsNeverOverlapAtTheFixedTvWidth() {
+        val screenWidth = 960f
+        val copyRight = TvContentGutter.value + HeroCopyMaxWidth.value
+        val quoteLeft = screenWidth - Overscan.horizontal.value - HeroQuoteMaxWidth.value
+        assertTrue(
+            copyRight <= quoteLeft,
+            "the copy column's own maximum right edge ${copyRight}dp reaches past the quote's own maximum left edge ${quoteLeft}dp",
+        )
     }
 
     /** Never a focus stop, quote included — see [TvDepartmentHero]'s own doc on why. */

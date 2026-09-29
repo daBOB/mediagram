@@ -1,6 +1,5 @@
 package ui.tv.catalog
 
-import androidx.compose.foundation.gestures.BringIntoViewSpec
 import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import catalog.Entry
 import catalog.HomeRow
@@ -39,7 +37,6 @@ import model.WatchSnapshot
 import ui.tv.catalog.home.TvBandHeading
 import ui.tv.catalog.home.TvContinueBand
 import ui.tv.catalog.home.TvCourseList
-import ui.tv.catalog.home.TvHomeBarClearance
 import ui.tv.catalog.home.TvHomeCover
 import ui.tv.catalog.home.TvHomeFeatures
 import ui.tv.catalog.home.TvHomeSection
@@ -215,13 +212,8 @@ internal fun TvHome(
     // Latest series): this clearance is a vertical-axis concept — applied
     // to a horizontal `Row` too, it would reserve blank space on its own
     // *left* the bar never touches, for no reason.
-    val density = LocalDensity.current
     val defaultBringIntoView = LocalBringIntoViewSpec.current
-    val homeBringIntoView =
-        remember(density, defaultBringIntoView) {
-            val clearancePx = with(density) { TvHomeBarClearance.toPx() }
-            TvHomeBringIntoViewSpec(clearancePx, defaultBringIntoView)
-        }
+    val homeBringIntoView = rememberTvBarClearanceBringIntoView()
 
     CompositionLocalProvider(LocalBringIntoViewSpec provides homeBringIntoView) {
         LazyColumn(
@@ -339,26 +331,6 @@ internal fun TvHome(
             }
         }
     }
-}
-
-/**
- * Pretends the scrollable's own leading edge sits [clearancePx] further in
- * than it really does, so the ordinary "smallest scroll that brings this
- * fully into view" rule [fallback] implements never settles a target
- * flush against the true edge — which, for Home's own vertical list, is
- * exactly where the departments bar draws over whatever is there. Nothing
- * else about how much scrolling happens changes: everything not near that
- * edge is untouched, delegated straight through.
- */
-private class TvHomeBringIntoViewSpec(
-    private val clearancePx: Float,
-    private val fallback: BringIntoViewSpec,
-) : BringIntoViewSpec {
-    override fun calculateScrollDistance(
-        offset: Float,
-        size: Float,
-        containerSize: Float,
-    ): Float = fallback.calculateScrollDistance(offset - clearancePx, size, containerSize - clearancePx)
 }
 
 /** [row]'s own entries, narrowed to the collections a poster row or a course list actually draws — [HomeRow] can also carry [catalog.SetCard]s (Continue, Next up), which never reach here. */

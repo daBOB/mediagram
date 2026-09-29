@@ -1,6 +1,7 @@
 package ui.tv.catalog
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +13,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
@@ -21,6 +23,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import designsystem.Spacing
 import kotlinx.coroutines.flow.first
+import ui.tv.catalog.home.TvBandHeading
 import ui.tv.chrome.LocalTvPagePadding
 import ui.tv.chrome.asPaddingValues
 
@@ -97,6 +100,18 @@ fun <T> TvWall(
 ) {
     val takesFocus = LocalTakesArrivalFocus.current
     val focusRequester = remember { FocusRequester() }
+    // Every heading and plate cell below is wrapped to read [barClearance]
+    // rather than the ambient default — moving one up or down inside this
+    // grid used to leave the focused cell's own top behind the bar, the same
+    // risk `TvHome`'s own vertical list already carries a fix for. [header]'s
+    // own cell is wrapped back to [defaultBringIntoView] instead, captured
+    // here before the override exists: a horizontal row inside it (Anime's
+    // own Continue watching) reads the vertical clearance as a horizontal
+    // offset otherwise, reserving blank space on its own left the bar never
+    // touches, for no reason — `TvHome`'s own doc on why it resets the same
+    // way for its own bands.
+    val defaultBringIntoView = LocalBringIntoViewSpec.current
+    val barClearance = rememberTvBarClearanceBringIntoView()
     val cells = remember(items, header != null, headings) { cellsOf(items, header != null, headings) }
     val focusIndex =
         remember(items, restoreKey) {
@@ -157,12 +172,18 @@ fun <T> TvWall(
             contentType = { cell -> cell::class },
         ) { cell ->
             when (cell) {
-                WallCell.Header -> header?.invoke()
-                is WallCell.Heading -> TvSectionHeading(cell.label)
+                WallCell.Header ->
+                    CompositionLocalProvider(LocalBringIntoViewSpec provides defaultBringIntoView) { header?.invoke() }
+                is WallCell.Heading ->
+                    CompositionLocalProvider(LocalBringIntoViewSpec provides barClearance) {
+                        TvBandHeading(title = cell.label, count = null)
+                    }
                 is WallCell.Plate -> {
                     val item = items[cell.index]
                     val itemModifier = if (cell.index == focusIndex) Modifier.focusRequester(focusRequester) else Modifier
-                    plate(item, itemModifier) { onOpen(item) }
+                    CompositionLocalProvider(LocalBringIntoViewSpec provides barClearance) {
+                        plate(item, itemModifier) { onOpen(item) }
+                    }
                 }
             }
         }

@@ -98,7 +98,7 @@ class TvKeptWallStateTest : TvScreenStateTest() {
         // this list little of the 540dp screen — a real remote's Down
         // scrolls it same as any lazy list; this test does the same before
         // reaching a row two allotted screens' worth of scrolling away.
-        compose.onNode(hasTestTag(TvListsTestTag)).performScrollToIndex(1)
+        compose.onNode(hasTestTag(TvCollectionsPageTestTag)).performScrollToIndex(3)
         compose.onNodeWithText("Later · 0 titles").performSemanticsAction(SemanticsActions.OnClick)
         assertEquals("b", opened)
     }
