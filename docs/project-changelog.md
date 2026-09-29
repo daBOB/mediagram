@@ -5,6 +5,49 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.84.0 — Android TV: department pages in the web player's own layout
+
+**Added**
+
+- Every television department pill — Movies, Series, Tutorials, Anime,
+  Documentaries, Collections — now opens the web player's own department
+  hero (kicker, huge title, a figures line, lead art fading in from the
+  right, a pull-quote top-right) above the web's own rows, in place of the
+  old, department-specific headers. The hero is fixed at 360dp (the web's
+  own fluid clamp would fill most of a 540dp screen) and is never a focus
+  stop itself — Down from the pill lands on the first row's own first stop.
+- Anime and Documentaries stop being plain poster walls: Anime draws a hero,
+  Continue watching, then every show and film as one wall with "Series" and
+  "Films" headings sections (a show's plate opens the show; a film's opens
+  the title page, never plays directly — a locked, deliberate difference
+  from the web's own direct play). Documentaries draws a hero, Continue
+  watching, one row per hand-set category (a folder opens, a single plays),
+  Recently added, one row per folder ("All N →" when it holds more), and
+  Standalone documentaries — every plate here plays on OK, the same as the
+  web and the tablet.
+- Movies' front page is a `LazyColumn` now, not a `Column` with
+  `verticalScroll`; Documentaries' is too. Every department row is keyed by
+  its own id, and each page carries its own `focusRestorer` so the rail's
+  Right returns to the plate it left without outranking an explicit restore
+  key naming a row further down.
+- `heroArtOf`, the department hero's own spelled figures line
+  (`moviesLineOf`/`showsLineOf`/`animeLineOf`/`documentariesLineOf`/
+  `collectionsLineOf`) and `resumeCardsOf` moved to `feature:catalog`,
+  shared by the tablet and the television rather than each keeping its own
+  copy — the tablet's own Movies, Series/Tutorials, Anime and Collections
+  hero lines now spell a count of twenty or fewer the way the web's
+  `countOf` and Documentaries' own line already did ("four courses", not
+  "4 courses").
+- The departments bar's own bar-over-hero blend, until now Home's alone,
+  now reads whichever department tab is showing too, through the same
+  fixed hero height every department page draws.
+
+**Removed**
+
+- The two written-down differences from the web player — Anime and
+  Documentaries drawing as plain poster walls with no category rows — no
+  longer exist to record.
+
 ## 0.83.0 — Android TV: Home in the web player's own magazine layout
 
 **Added**

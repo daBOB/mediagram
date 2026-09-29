@@ -4,7 +4,6 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
-import catalog.ANIME
 import catalog.DOCUMENTARIES
 import catalog.Entry
 import catalog.Shelf
@@ -29,36 +28,36 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w1920dp-h1080dp")
 class TvDepartmentPagesStateTest : TvScreenStateTest() {
-    /** M2: a header row past the old six-plate Home limit shows every one of its own up-to-a-dozen stops, not just six. */
+    /** A header row past the old six-plate Home limit shows every one of its own up-to-a-dozen stops, not just six. */
     @Test
     fun aPopularRowOfMoreThanSixShowsShowsAllOfThem() {
         val shows = (0 until 13).map { i -> set("s$i", Kind.EPISODE, "Ep", show = "Show %02d".format(i), addedAt = i.toLong(), episode = 1) }
         val dept = showsDepartmentOf(Kind.EPISODE, seriesEntriesOf(shows), allSetsById(shelvesOf(shows)), WatchSnapshot.Empty)!!
 
-        show { TvShowsDepartmentPage(dept, WatchSnapshot.Empty, onOpenTitle = {}, onOpenCollection = {}) }
+        show { TvShowsDepartmentPage("Series", "episode", dept, WatchSnapshot.Empty, onOpenTitle = {}, onOpenCollection = {}, onPlay = {}) }
 
         for (i in 0..7) {
             compose.onAllNodesWithText("Show %02d".format(i)).fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "Show %02d missing".format(i) } }
         }
     }
 
-    /** M3: a focusable hero (a backdrop to show and a title to open) wins arrival focus over the header rows and the wall beneath it. */
+    /** With no header row to win arrival (too few shows for Popular/New, no categories on a Series shelf), the wall's own first plate takes it — the hero itself is never a focus stop any more. */
     @Test
-    fun aFocusableHeroTakesArrivalFocusOverTheWallsFirstPlate() {
+    fun withNoHeaderRowsArrivalLandsOnTheWallsFirstPlate() {
         val lead = set("s0-e1", Kind.EPISODE, "Ep", show = "Lead Show", addedAt = 0, episode = 1).copy(backdropPath = "/bd0")
         val other = set("s1-e1", Kind.EPISODE, "Ep", show = "Other Show", addedAt = 1, episode = 1)
         val shows = listOf(lead, other)
         val dept = showsDepartmentOf(Kind.EPISODE, seriesEntriesOf(shows), allSetsById(shelvesOf(shows)), WatchSnapshot.Empty)!!
 
-        show { TvShowsDepartmentPage(dept, WatchSnapshot.Empty, onOpenTitle = {}, onOpenCollection = {}) }
+        show { TvShowsDepartmentPage("Series", "episode", dept, WatchSnapshot.Empty, onOpenTitle = {}, onOpenCollection = {}, onPlay = {}) }
 
-        compose.onNodeWithText("▶ Watch now").assertIsFocused()
+        compose.onNodeWithText("Lead Show").assertIsFocused()
     }
 
     /**
-     * [DeptRow]/[GenreTileRow]'s own lazy rewrite (N9) still wires arrival
-     * focus correctly: every film watched empties Featured and Acclaimed, so
-     * Genres — [GenreTileRow], the row rewritten to a [LazyRow][androidx.compose.foundation.lazy.LazyRow] —
+     * [DeptRow]/[GenreTileRow]'s own lazy rewrite still wires arrival focus
+     * correctly: every film watched empties Featured and Acclaimed, so
+     * Genres — the row over a [LazyRow][androidx.compose.foundation.lazy.LazyRow] —
      * is the first non-empty row left, and its own tile takes the remote.
      */
     @Test
@@ -72,11 +71,30 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
     }
 
     /**
+     * Featured, Genres and Acclaimed all empty (every film watched, none
+     * carries a genre) — three rows in a row skipped, two of them still
+     * their own zero-height `item()` in the outer list rather than absent
+     * from it. Recently added ignores watched status, so it alone is left
+     * to take arrival; this pins the scroll-to-item math staying correct
+     * across more than one skipped row, not just the one row the other test
+     * above already covers.
+     */
+    @Test
+    fun recentlyAddedTakesArrivalFocusWhenEveryEarlierRowIsEmpty() {
+        val films = (0 until 3).map { i -> set("f$i", Kind.MOVIE, "Film $i", addedAt = i.toLong()) }
+        val dept = moviesDepartmentOf(films) { true }!!
+
+        show { TvMoviesDepartmentPage(dept = dept, onOpenTitle = {}, onPlay = {}, onOpenGenre = {}, onOpenAllFilms = {}) }
+
+        compose.onNodeWithText("Film 2").assertIsFocused()
+    }
+
+    /**
      * Unlike Movies/Series/Tutorials — omitted from the shelf list while
      * empty, so [DepartmentOrShelfWall] never meets one with nothing in it —
      * Documentaries is always present, so an empty library, or a kids
      * profile with nothing rated for it, reaches this wall with zero
-     * entries. [TvWall] draws nothing of its own for that; the message is.
+     * entries.
      */
     @Test
     fun anEmptyDocumentariesWallShowsTheUploadHintRatherThanNothing() {
@@ -86,6 +104,7 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
                 watch = WatchSnapshot.Empty,
                 heldIds = emptySet(),
                 byId = emptyMap(),
+                deptScroll = rememberTvDepartmentScrollStates(),
                 onOpenTitle = {},
                 onPlay = {},
                 onOpenCollection = {},
@@ -99,37 +118,41 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
     }
 
     /**
-     * The deliberate difference: Anime draws the plain wall, not a
-     * Series-style department page. Proven by what a department page would
-     * have dropped — `filterIsInstance<Entry.Collection>()` would silently
-     * lose the film, so seeing it on screen here is what tells the two
-     * branches apart.
+     * The page's own outer list carries a [androidx.compose.ui.focus.focusRestorer]
+     * (`TvMoviesDepartmentPage`'s own doc on why) so the rail's Right returns
+     * to the plate it left; an explicit restore key naming a row further
+     * down still has to win over it, not the restorer's own fallback.
      */
     @Test
-    fun theAnimeShelfIsAPlainWallThatKeepsBothItsShowAndItsFilm() {
-        val animeShow = Entry.Collection(
-            key = "ANIME/Dragonball", kind = catalog.CollectionKind.SHOW, name = "Dragonball", posterPath = null, posterKey = null,
-            count = 1, chapters = 1, divisions = emptyList(),
-        )
-        val animeFilm = set("your-name", Kind.MOVIE, "Your Name", addedAt = 0)
+    fun aRestoreKeyNamingARowPastTheHeroWinsOverThePagesOwnRestorer() {
+        val films = (0 until 3).map { i -> set("f$i", Kind.MOVIE, "Film $i", addedAt = (2 - i).toLong()) }
+        val dept = moviesDepartmentOf(films) { true }!!
+
+        show { TvMoviesDepartmentPage(dept = dept, onOpenTitle = {}, onPlay = {}, onOpenGenre = {}, onOpenAllFilms = {}, restoreKey = "f1") }
+
+        compose.onNodeWithText("Film 1").assertIsFocused()
+    }
+
+    /**
+     * [TvWall] carries no restorer of its own (tried and reverted: it
+     * restored into whichever plate a *different* page's own header last
+     * remembered, ahead of an explicit restore key naming a show further
+     * down — `TvSearchAndGenreTest`'s own regression). This still proves
+     * the explicit key wins over the wall's own plain plate-0 default.
+     */
+    @Test
+    fun aRestoreKeyNamingAShowFurtherDownTheWallStillWinsOverTheFirstPlate() {
+        val shows = (0 until 3).map { i -> set("s$i", Kind.EPISODE, "Ep", show = "Show $i", addedAt = i.toLong(), episode = 1) }
+        val dept = showsDepartmentOf(Kind.EPISODE, seriesEntriesOf(shows), allSetsById(shelvesOf(shows)), WatchSnapshot.Empty)!!
 
         show {
-            DepartmentOrShelfWall(
-                shelf = Shelf(ANIME, listOf(animeShow, Entry.Film(animeFilm))),
-                watch = WatchSnapshot.Empty,
-                heldIds = emptySet(),
-                byId = emptyMap(),
-                onOpenTitle = {},
-                onPlay = {},
-                onOpenCollection = {},
-                onOpenGenre = {},
-                onOpenMoviesPage = {},
-                restoreKey = null,
+            TvShowsDepartmentPage(
+                "Series", "episode", dept, WatchSnapshot.Empty,
+                onOpenTitle = {}, onOpenCollection = {}, onPlay = {}, restoreKey = "SHOW/Show 2",
             )
         }
 
-        compose.onNodeWithText("Dragonball").assertIsDisplayed()
-        compose.onNodeWithText("Your Name").assertIsDisplayed()
+        compose.onNodeWithText("Show 2").assertIsFocused()
     }
 
     private fun seriesEntriesOf(sets: List<MediaSet>): List<Entry.Collection> =

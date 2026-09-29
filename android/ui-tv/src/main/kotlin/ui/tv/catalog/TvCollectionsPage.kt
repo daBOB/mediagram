@@ -17,6 +17,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import catalog.Franchise
+import catalog.collectionsLineOf
 import designsystem.Spacing
 import java.io.File
 import model.ListOfSets
@@ -80,9 +81,14 @@ internal fun TvCollectionsPage(
     // fills whatever is left (`Modifier.weight`) with its own scroll intact.
     // Only the franchises and the headings take this page's horizontal inset:
     // `TvLists` insets itself, and padding it here too indented every list twice.
+    // The same lead a franchise's own page would pick — the tablet's own
+    // hero links its quote to this film's page too (`collections-page.js:74`),
+    // not to a franchise or a list; television never links its hero at all.
+    val lead = remember(franchises) { franchises.firstOrNull()?.films?.find { it.backdropPath != null } }
     val pagePadding = LocalTvPagePadding.current
     Column(modifier = Modifier.fillMaxSize().padding(top = pagePadding.top)) {
         Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
+            TvDepartmentHero(title = "Collections", line = collectionsLineOf(franchises.size, lists.size), lead = lead)
             if (franchises.isNotEmpty()) {
                 TvCountedHeading("Franchises", franchises.size)
                 // Lazy: seventy franchise posters composed at once is a stall on a television's CPU.

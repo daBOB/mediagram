@@ -18,12 +18,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import catalog.Entry
-import catalog.SetCard
 import catalog.ShowsDepartment
 import catalog.extentOf
 import catalog.firstItemOf
-import catalog.resumeLine
-import catalog.watchedFractionOf
+import catalog.resumeCardsOf
+import catalog.showsLineOf
 import designsystem.Spacing
 import model.WatchSnapshot
 
@@ -56,16 +55,8 @@ internal fun ShowsDepartmentScreen(
 ) {
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
-    val resumeCards = remember(department.underway, positions, watchedIds, heldIds) {
-        buildList {
-            for (set in department.underway.continues) {
-                add(SetCard(set, resumeLine(positions[set.setId]), watchedFractionOf(positions[set.setId]), set.setId in watchedIds, set.setId in heldIds))
-            }
-            for (entry in department.underway.nextUp) {
-                val caption = if (entry.resume) resumeLine(positions[entry.set.setId]) else "Next up"
-                add(SetCard(entry.set, caption, watchedFractionOf(positions[entry.set.setId]), entry.set.setId in watchedIds, entry.set.setId in heldIds))
-            }
-        }
+    val resumeCards = remember(department.underway, watch, heldIds) {
+        resumeCardsOf(department.underway.continues, department.underway.nextUp, watch, heldIds)
     }
     val leadTitle = department.lead?.let { firstItemOf(it.divisions) }
     val leadKey = department.lead?.key
@@ -82,7 +73,7 @@ internal fun ShowsDepartmentScreen(
             DepartmentHero(
                 kicker = "Only in your library",
                 title = label,
-                line = "${countOf(department.showCount, if (label == "Series") "show" else "course")} · ${countOf(department.itemCount, unit)}",
+                line = showsLineOf(department, label, unit),
                 lead = leadTitle,
                 // The show's own name, not whichever episode happened to
                 // lead — the web's own `lead?.show` (`department-pages.js`).

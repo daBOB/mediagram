@@ -100,8 +100,11 @@ class AnimeDepartmentScreenTest {
     fun everySectionAppears() {
         show()
         assertRowReachable("ANIME")
-        assertRowReachable("1 show", substring = true)
-        assertRowReachable("2 films", substring = true)
+        // Spelled, not figures — the department-line parity fix: a count of
+        // twenty or fewer reads as a word on every surface now, matching the
+        // web's own `countOf` (`format.js`).
+        assertRowReachable("one show", substring = true)
+        assertRowReachable("two films", substring = true)
         assertRowReachable("Continue watching")
         assertRowReachable("Series")
         assertRowReachable("Films")

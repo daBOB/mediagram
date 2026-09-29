@@ -5,20 +5,23 @@ import catalog.CollectionKind
 import catalog.Entry
 import catalog.GenreIndexEntry
 import catalog.MoviesDepartment
+import catalog.SetCard
 import catalog.ShowsDepartment
 import catalog.Underway
 import model.Kind
+import model.MediaSet
 import org.junit.Test
 import ui.tv.TvMoviesPageEntryKey
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 /**
- * [moviesDeptTargetOf] and [showsDeptTargetOf] as plain functions, pure and
- * fast — the arithmetic N7 and M3 actually depend on, checked without
- * standing up a screen: a genre or the "All N films" link resolving from
- * [restoreKey], and a header row or the hero winning arrival over
- * [TvWall]'s own plate-0 default.
+ * [moviesDeptTargetOf], [showsDeptTargetOf], [animeDeptTargetOf] and
+ * [documentariesDeptTargetOf] as plain functions, pure and fast: a genre or
+ * the "All N films" link resolving from a restore key, a header row winning
+ * over [TvWall]'s own plate-0 default, and [lastSection] breaking a tie
+ * between two rows that both carry the same key — [restoreTargetOf]'s own
+ * rule, shared by every one of them.
  */
 class TvDepartmentTargetsTest {
     private val dept =
@@ -29,7 +32,7 @@ class TvDepartmentTargetsTest {
             featured = listOf(film("f0"), film("f1")),
             genres = listOf(GenreIndexEntry("Action", 3, null), GenreIndexEntry("Drama", 2, null)),
             acclaimed = listOf(film("a0")),
-            recentlyAdded = listOf(film("r0")),
+            recentlyAdded = listOf(film("r0"), film("f0")),
         )
 
     @Test
@@ -53,19 +56,11 @@ class TvDepartmentTargetsTest {
         assertEquals("featured" to 0, moviesDeptTargetOf(dept, "no-such-id"))
     }
 
+    /** "f0" sits in both Featured and Recently added; [lastSection] breaks the tie. */
     @Test
-    fun theMoviesHeroTakesArrivalButNeverOutranksATitleToReturnTo() {
-        assertEquals("hero" to 0, moviesDeptTargetOf(dept, null, heroFocusable = true))
-        assertEquals("hero" to 0, moviesDeptTargetOf(dept, "no-such-id", heroFocusable = true))
-        assertEquals("acclaimed" to 0, moviesDeptTargetOf(dept, "a0", heroFocusable = true))
-    }
-
-    @Test
-    fun aFocusableHeroOutranksANonEmptyHeaderRowWithNoRestoreKey() {
-        val popular = listOf(collection("SHOW/A", "A"))
-        val dept = showsDeptOf(popular = popular)
-
-        assertEquals("hero" to 0, showsDeptTargetOf(dept, underway = emptyList(), heroFocusable = true, restoreKey = null))
+    fun aKeyCarriedByTwoRowsGoesBackToTheRowTheRemoteWasLastIn() {
+        assertEquals("featured" to 0, moviesDeptTargetOf(dept, "f0", lastSection = null))
+        assertEquals("recentlyAdded" to 1, moviesDeptTargetOf(dept, "f0", lastSection = "recentlyAdded"))
     }
 
     @Test
@@ -73,15 +68,15 @@ class TvDepartmentTargetsTest {
         val popular = listOf(collection("SHOW/A", "A"))
         val dept = showsDeptOf(popular = popular)
 
-        assertEquals("popular" to 0, showsDeptTargetOf(dept, underway = emptyList(), heroFocusable = false, restoreKey = null))
+        assertEquals("popular" to 0, showsDeptTargetOf(dept, underway = emptyList(), restoreKey = null))
     }
 
     @Test
-    fun aRestoreKeyMatchingAPopularEntryLandsOnItRatherThanTheHero() {
+    fun aRestoreKeyMatchingAPopularEntryLandsOnItRatherThanTheFirstRow() {
         val popular = listOf(collection("SHOW/A", "A"), collection("SHOW/B", "B"))
         val dept = showsDeptOf(popular = popular)
 
-        assertEquals("popular" to 1, showsDeptTargetOf(dept, underway = emptyList(), heroFocusable = true, restoreKey = "SHOW/B"))
+        assertEquals("popular" to 1, showsDeptTargetOf(dept, underway = emptyList(), restoreKey = "SHOW/B"))
     }
 
     @Test
@@ -89,44 +84,78 @@ class TvDepartmentTargetsTest {
         val popular = listOf(collection("SHOW/A", "A"))
         val dept = showsDeptOf(popular = popular)
 
-        assertNull(showsDeptTargetOf(dept, underway = emptyList(), heroFocusable = true, restoreKey = "SHOW/Somewhere Else"))
+        assertNull(showsDeptTargetOf(dept, underway = emptyList(), restoreKey = "SHOW/Somewhere Else"))
     }
 
-    /** A category row wins over Popular/New, but a title already underway still wins over it. */
+    /** A category row wins over Popular, but a title already underway still wins over it. */
     @Test
-    fun withNoHeroAndNothingUnderwayTheFirstCategoryRowWinsOverPopular() {
+    fun withNothingUnderwayTheFirstCategoryRowWinsOverPopular() {
         val popular = listOf(collection("SHOW/A", "A"))
         val categories = listOf(CategoryRow("Trading", listOf(collection("COURSE/B", "B"))))
         val dept = showsDeptOf(popular = popular, categories = categories)
 
-        assertEquals("category:0" to 0, showsDeptTargetOf(dept, underway = emptyList(), heroFocusable = false, restoreKey = null))
+        assertEquals("category:0" to 0, showsDeptTargetOf(dept, underway = emptyList(), restoreKey = null))
     }
 
     @Test
-    fun aRestoreKeyMatchingACategoryRowEntryLandsOnItRatherThanPopularOrTheHero() {
+    fun aRestoreKeyMatchingACategoryRowEntryLandsOnItRatherThanPopular() {
         val popular = listOf(collection("SHOW/A", "A"))
-        val categories = listOf(
-            CategoryRow("Trading", listOf(collection("COURSE/B", "B"))),
-            CategoryRow("Health", listOf(collection("COURSE/C", "C"))),
-        )
+        val categories =
+            listOf(
+                CategoryRow("Trading", listOf(collection("COURSE/B", "B"))),
+                CategoryRow("Health", listOf(collection("COURSE/C", "C"))),
+            )
         val dept = showsDeptOf(popular = popular, categories = categories)
 
-        assertEquals("category:1" to 0, showsDeptTargetOf(dept, underway = emptyList(), heroFocusable = true, restoreKey = "COURSE/C"))
+        assertEquals("category:1" to 0, showsDeptTargetOf(dept, underway = emptyList(), restoreKey = "COURSE/C"))
     }
 
-    private fun showsDeptOf(popular: List<Entry.Collection> = emptyList(), categories: List<CategoryRow<Entry.Collection>> = emptyList()) =
-        ShowsDepartment(
-            showCount = popular.size,
-            itemCount = popular.size,
-            lead = null,
-            underway = Underway(continues = emptyList(), nextUp = emptyList(), continuesTotal = 0, nextUpTotal = 0),
-            categories = categories,
-            popular = popular,
-            newEpisodes = emptyList(),
-            all = popular,
-        )
+    @Test
+    fun aResumeCardRestoreKeyLandsOnTheUnderwayRow() {
+        val cards = listOf(card("s0"), card("s1"))
+        assertEquals("underway" to 1, showsDeptTargetOf(showsDeptOf(), underway = cards, restoreKey = "s1"))
+    }
+
+    @Test
+    fun animeContinueWinsArrivalWhenItHasCards() {
+        assertEquals("continue" to 0, animeDeptTargetOf(listOf(card("s0")), restoreKey = null))
+    }
+
+    @Test
+    fun animeWithNothingUnderwayDefersToTheWall() {
+        assertNull(animeDeptTargetOf(emptyList(), restoreKey = null))
+        assertNull(animeDeptTargetOf(listOf(card("s0")), restoreKey = "not-underway"))
+    }
+
+    @Test
+    fun documentariesFallsBackToTheFirstNonEmptySectionInOrder() {
+        val sections = listOf(DeptSection("continue", emptyList()), DeptSection("recentlyAdded", listOf("d0")))
+        assertEquals("recentlyAdded" to 0, documentariesDeptTargetOf(sections, restoreKey = null))
+    }
+
+    @Test
+    fun documentariesRestoreKeyWinsOverTheFallbackSection() {
+        val sections = listOf(DeptSection("continue", listOf("d1")), DeptSection("recentlyAdded", listOf("d0", "d1")))
+        assertEquals("continue" to 0, documentariesDeptTargetOf(sections, restoreKey = "d1"))
+    }
+
+    private fun showsDeptOf(
+        popular: List<Entry.Collection> = emptyList(),
+        categories: List<CategoryRow<Entry.Collection>> = emptyList(),
+    ) = ShowsDepartment(
+        showCount = popular.size,
+        itemCount = popular.size,
+        lead = null,
+        underway = Underway(continues = emptyList(), nextUp = emptyList(), continuesTotal = 0, nextUpTotal = 0),
+        categories = categories,
+        popular = popular,
+        newEpisodes = emptyList(),
+        all = popular,
+    )
 
     private fun film(id: String) = set(id, Kind.MOVIE, id, addedAt = 0)
+
+    private fun card(setId: String) = SetCard(film(setId), "", null, false)
 
     private fun collection(
         key: String,

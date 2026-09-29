@@ -1,7 +1,7 @@
 ---
 phase: 3
 title: "TV department pages: heroes, rows, Anime, Documentaries"
-status: pending
+status: in-review
 priority: P2
 effort: 8h
 dependencies: [2]
@@ -152,14 +152,15 @@ Delete
 
 ## Todo
 
-- [ ] heroArtOf, DepartmentLines (spelled), resumeCardsOf shared; ui-mobile switched and green
-- [ ] TvDepartmentHero + tests
-- [ ] Movies, Series, Tutorials pages on the new hero and rows
-- [ ] Anime page (Series/Films sections), Documentaries page (categories, folders, standalone)
-- [ ] Collections hero; routing; targets; blend
-- [ ] TvCoverStory deleted; recorded differences removed from code and docs
-- [ ] tests, check.sh green; box sheets vs tablet
-- [ ] version, changelog, commit
+- [x] heroArtOf, DepartmentLines (spelled), resumeCardsOf shared; ui-mobile switched and green
+- [x] TvDepartmentHero + tests
+- [x] Movies, Series, Tutorials pages on the new hero and rows
+- [x] Anime page (Series/Films sections), Documentaries page (categories, folders, standalone)
+- [x] Collections hero; routing; targets; blend
+- [x] TvCoverStory deleted; recorded differences removed from code and docs
+- [x] tests, check.sh green; box sheets vs tablet — box sheets are step 7, explicitly the lead's own
+      on-box verification (out of scope for this implementing pass); everything else green
+- [x] version, changelog, commit
 
 ## Success criteria
 

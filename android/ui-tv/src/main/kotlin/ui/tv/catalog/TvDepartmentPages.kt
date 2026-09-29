@@ -3,9 +3,13 @@ package ui.tv.catalog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import catalog.ANIME
+import catalog.AnimeLibrary
 import catalog.DOCUMENTARIES
+import catalog.DocumentaryLibrary
 import catalog.Entry
 import catalog.Shelf
+import catalog.animeDepartmentOf
+import catalog.documentariesDepartmentOf
 import catalog.moviesDepartmentOf
 import catalog.showsDepartmentOf
 import model.Kind
@@ -70,6 +74,7 @@ internal fun DepartmentOrShelfWall(
     watch: WatchSnapshot,
     heldIds: Set<String>,
     byId: Map<String, MediaSet>,
+    deptScroll: TvDepartmentScrollStates,
     onOpenTitle: (setId: String) -> Unit,
     onPlay: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
@@ -82,33 +87,41 @@ internal fun DepartmentOrShelfWall(
         val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
         val dept = remember(films, watchedIds) { moviesDepartmentOf(films) { it in watchedIds } }
         if (dept != null) {
-            TvMoviesDepartmentPage(dept, onOpenTitle, onPlay, onOpenGenre, onOpenMoviesPage, restoreKey, heldIds)
+            TvMoviesDepartmentPage(dept, onOpenTitle, onPlay, onOpenGenre, onOpenMoviesPage, restoreKey, heldIds, deptScroll.movies)
             return
         }
     } else if (shelf.title == ANIME) {
-        // A plain poster wall, the same deliberate difference Documentaries
-        // already draws (see `docs/web-player.md`'s "Differences from
-        // Android"): a Series-style department page (`:99-106` below) would
-        // resolve this shelf's own `filterIsInstance<Entry.Collection>()`
-        // and silently drop every anime film, and a Continue row here would
-        // only repeat the television's own Home Continue for the same
-        // titles rather than say anything new.
+        val library =
+            remember(shelf) {
+                AnimeLibrary(
+                    shows = shelf.entries.filterIsInstance<Entry.Collection>(),
+                    films = shelf.entries.filterIsInstance<Entry.Film>().map { it.set },
+                )
+            }
+        val dept = remember(library, byId, watch) { animeDepartmentOf(library, byId, watch) }
+        if (dept != null) {
+            TvAnimeDepartmentPage(dept, watch, onOpenTitle, onOpenCollection, onPlay, restoreKey, heldIds, deptScroll.anime)
+            return
+        }
     } else if (shelf.title == DOCUMENTARIES) {
-        // Documentaries mixes folders and standalone singles, not shows —
-        // treating its own folders as episodes below would mislabel them and
-        // `filterIsInstance<Entry.Collection>()` would silently drop every
-        // standalone documentary, so it gets the plain wall instead, the
-        // same as any shelf with no front page of its own. Unlike every
-        // other shelf, this one is never itself omitted for being empty, so
-        // the wall's own empty message is the one thing added here.
-        //
-        // No category rows here either, deliberately: the phone/tablet page
-        // draws them (`DocumentariesDepartmentScreen.kt`), but this wall is
-        // the only front page television has for this shelf — the same
-        // reason Anime is a wall here (`:88-96` above) rather than getting
-        // its own department page.
+        // Unlike every other department, Documentaries is never itself
+        // omitted from the shelf list for being empty (its pill still
+        // reads "0"), so this is the one department whose own empty state
+        // actually has to be drawn rather than never reached.
         if (shelf.entries.isEmpty()) {
             TvCenteredMessage("No documentaries yet. Upload one with mediagram add-docu <file|folder>.")
+            return
+        }
+        val library =
+            remember(shelf) {
+                DocumentaryLibrary(
+                    collections = shelf.entries.filterIsInstance<Entry.Collection>(),
+                    singles = shelf.entries.filterIsInstance<Entry.Film>().map { it.set },
+                )
+            }
+        val dept = remember(library, byId, watch) { documentariesDepartmentOf(library, byId, watch) }
+        if (dept != null) {
+            TvDocumentariesDepartmentPage(dept, watch, onOpenCollection, onPlay, restoreKey, heldIds, deptScroll.documentaries)
             return
         }
     } else {
@@ -116,7 +129,10 @@ internal fun DepartmentOrShelfWall(
         val kind = if (shelf.title == "Tutorials") Kind.TUTORIAL else Kind.EPISODE
         val dept = remember(shows, watch, byId) { showsDepartmentOf(kind, shows, byId, watch) }
         if (dept != null) {
-            TvShowsDepartmentPage(dept, watch, onOpenTitle, onOpenCollection, restoreKey, heldIds)
+            val label = shelf.title
+            val unit = if (label == "Series") "episode" else "lesson"
+            val gridState = if (label == "Series") deptScroll.series else deptScroll.tutorials
+            TvShowsDepartmentPage(label, unit, dept, watch, onOpenTitle, onOpenCollection, onPlay, restoreKey, heldIds, gridState)
             return
         }
     }

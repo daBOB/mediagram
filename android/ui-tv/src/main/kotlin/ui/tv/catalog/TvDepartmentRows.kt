@@ -2,6 +2,7 @@ package ui.tv.catalog
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
@@ -16,6 +17,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import catalog.Entry
 import catalog.GenreIndexEntry
@@ -26,6 +28,7 @@ import java.io.File
 import kotlinx.coroutines.flow.first
 import model.MediaSet
 import model.Progress
+import ui.tv.catalog.home.TvBandHeading
 
 /** How wide a tile is on a department page's film, entry and genre rows. */
 internal val DeptTileWidth = 160.dp
@@ -51,12 +54,24 @@ internal fun DeptRow(
     focus: FocusRequester? = null,
     takesFocus: Boolean = true,
     heldIds: Set<String> = emptySet(),
+    onSectionFocused: (() -> Unit)? = null,
+    // Documentaries' own "All N →", beside a folder row's own heading —
+    // every other caller leaves this at its default, drawing no trailing at
+    // all, the same as the web's own `deptRow` with no `more` link.
+    trailing: @Composable () -> Unit = {},
 ) {
     if (films.isEmpty()) return
-    TvSectionHeading(title, modifier = Modifier.padding(top = Spacing.large))
+    Box(Modifier.padding(top = Spacing.large)) { TvBandHeading(title = title, count = null, trailing = trailing) }
     val state = rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = DeptCacheAhead, behind = DeptCacheBehind) })
     LaunchedEffect(focusAt, takesFocus) { scrollThenFocus(state, focusAt, focus, takesFocus) }
-    LazyRow(state = state, modifier = Modifier.padding(top = Spacing.small), horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
+    LazyRow(
+        state = state,
+        modifier =
+            Modifier
+                .padding(top = Spacing.small)
+                .let { if (onSectionFocused != null) it.onFocusChanged { s -> if (s.hasFocus) onSectionFocused() } else it },
+        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+    ) {
         itemsIndexed(films, key = { _, set -> set.setId }) { index, set ->
             TvPlate(
                 title = set.title,
@@ -84,12 +99,20 @@ internal fun DeptEntryRow(
     focusAt: Int? = null,
     focus: FocusRequester? = null,
     takesFocus: Boolean = true,
+    onSectionFocused: (() -> Unit)? = null,
 ) {
     if (entries.isEmpty()) return
-    TvSectionHeading(title, modifier = Modifier.padding(top = Spacing.large))
+    Box(Modifier.padding(top = Spacing.large)) { TvBandHeading(title = title, count = null) }
     val state = rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = DeptCacheAhead, behind = DeptCacheBehind) })
     LaunchedEffect(focusAt, takesFocus) { scrollThenFocus(state, focusAt, focus, takesFocus) }
-    LazyRow(state = state, modifier = Modifier.padding(top = Spacing.small), horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
+    LazyRow(
+        state = state,
+        modifier =
+            Modifier
+                .padding(top = Spacing.small)
+                .let { if (onSectionFocused != null) it.onFocusChanged { s -> if (s.hasFocus) onSectionFocused() } else it },
+        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+    ) {
         itemsIndexed(entries, key = { _, entry -> keyOf(entry) }) { index, entry ->
             TvEntryPlate(
                 entry = entry,
@@ -112,10 +135,18 @@ internal fun GenreTileRow(
     focusAt: Int? = null,
     focus: FocusRequester? = null,
     takesFocus: Boolean = true,
+    onSectionFocused: (() -> Unit)? = null,
 ) {
     val state = rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = DeptCacheAhead, behind = DeptCacheBehind) })
     LaunchedEffect(focusAt, takesFocus) { scrollThenFocus(state, focusAt, focus, takesFocus) }
-    LazyRow(state = state, modifier = Modifier.padding(top = Spacing.small), horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
+    LazyRow(
+        state = state,
+        modifier =
+            Modifier
+                .padding(top = Spacing.small)
+                .let { if (onSectionFocused != null) it.onFocusChanged { s -> if (s.hasFocus) onSectionFocused() } else it },
+        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+    ) {
         itemsIndexed(genres, key = { _, genre -> genre.name }) { index, genre ->
             TvPlate(
                 title = genre.name,
@@ -132,9 +163,11 @@ internal fun GenreTileRow(
  * Scrolls [focusAt] on screen before asking for its focus, the way [TvWall]
  * does for its own grid: a lazy row composes only what is near the
  * viewport, so a [FocusRequester] beyond it has nothing to attach to until
- * scrolling has laid that stop out.
+ * scrolling has laid that stop out. Internal, not private: [DeptResumeRow]
+ * (`TvDepartmentResumeRow.kt`) shares this same rule over its own cards
+ * rather than a second copy of it.
  */
-private suspend fun scrollThenFocus(
+internal suspend fun scrollThenFocus(
     state: LazyListState,
     focusAt: Int?,
     focus: FocusRequester?,

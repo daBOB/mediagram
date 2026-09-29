@@ -6,12 +6,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import catalog.CatalogUiState
 import catalog.factsLine
@@ -119,14 +121,24 @@ class TvCatalogScreenStateTest {
         compose.onAllNodesWithText("Watch now", substring = true).fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "no Watch now on the cover" } }
     }
 
-    /** Past a dozen films, Movies gets its own department front page instead of the plain wall. */
+    /**
+     * Past a dozen films, Movies gets its own department front page instead
+     * of the plain wall. The real TV viewport: the department hero is a
+     * fixed 360dp regardless of whether it has a lead, tall enough that a
+     * short default Robolectric screen never scrolls the wall's own cache
+     * window far enough to compose the "All N films" link below it.
+     */
     @Test
+    @Config(qualifiers = "w960dp-h540dp")
     fun aLargeMoviesShelfGetsItsOwnDepartmentFrontPage() {
         val films = (0 until 20).map { set("film-$it", Kind.MOVIE, "Film $it", addedAt = it.toLong()) }
         show(ready(films))
 
         compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.OnClick)
-        compose.onNodeWithText("All 20 films").assertExists()
+        // Lazy now, unlike the `Column` + `verticalScroll` this page used to
+        // be: a real remote's Down scrolls the link into view the same way.
+        compose.onNode(hasTestTag(TvMoviesDepartmentPageTestTag)).performScrollToNode(hasText("All 20 films →"))
+        compose.onNodeWithText("All 20 films →").assertExists()
     }
 
     /** Collections is a department tab now, not a kept tab — franchises beside the household's own lists. */
@@ -201,7 +213,9 @@ class TvCatalogScreenStateTest {
         compose.onNodeWithText("one lesson · one chapter").assertExists()
     }
 
+    /** The real TV viewport — [aLargeMoviesShelfGetsItsOwnDepartmentFrontPage]'s own doc on why the department pages need it now. */
     @Test
+    @Config(qualifiers = "w960dp-h540dp")
     fun aShelfWallOpensAFilmsTitleAndACollection() {
         var title: String? = null
         var collection: String? = null
@@ -226,6 +240,8 @@ class TvCatalogScreenStateTest {
      * is what steps it into the new wall's first plate, which is real
      * window-manager focus search and lives in `TvCatalogScreenTest` instead.
      */
+    /** The real TV viewport — [aLargeMoviesShelfGetsItsOwnDepartmentFrontPage]'s own doc on why the department pages need it now. */
+    @Config(qualifiers = "w960dp-h540dp")
     @Test
     fun choosingAnotherPillKeepsTheRemoteOnItRatherThanOnThePreviousWallsPlate() {
         val pilot = set("pilot", Kind.EPISODE, "Pilot", show = "A Show", addedAt = 5, episode = 1)
@@ -263,6 +279,8 @@ class TvCatalogScreenStateTest {
         compose.onNodeWithContentDescription("Next up").assertExists()
     }
 
+    /** The real TV viewport — [aLargeMoviesShelfGetsItsOwnDepartmentFrontPage]'s own doc on why the department pages need it now. */
+    @Config(qualifiers = "w960dp-h540dp")
     @Test
     fun shelfPlatesCarryThePhonesCaptions() {
         show(ready(listOf(set("film-0", Kind.MOVIE, "A Film", addedAt = 0, year = 1999, durationSecs = 5_400)) + courses(1)))

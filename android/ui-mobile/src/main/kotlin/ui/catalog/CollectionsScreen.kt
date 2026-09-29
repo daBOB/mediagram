@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import catalog.Franchise
+import catalog.collectionsLineOf
 import designsystem.Spacing
 import model.ListOfSets
 import model.MediaSet
@@ -60,7 +61,7 @@ internal fun CollectionsScreen(
             DepartmentHero(
                 kicker = "Only in your library",
                 title = "Collections",
-                line = collectionsLine(franchises.size, lists.size),
+                line = collectionsLineOf(franchises.size, lists.size),
                 lead = lead,
                 onOpenTitle = onOpenTitle,
             )
@@ -101,10 +102,3 @@ internal fun CollectionsScreen(
         )
     }
 }
-
-/** "N franchises · M lists" — the franchise count dropped when there are none, matching the web's own line. */
-private fun collectionsLine(franchiseCount: Int, listCount: Int): String =
-    listOfNotNull(
-        franchiseCount.takeIf { it > 0 }?.let { countOf(it, "franchise") },
-        countOf(listCount, "list"),
-    ).joinToString(" · ")

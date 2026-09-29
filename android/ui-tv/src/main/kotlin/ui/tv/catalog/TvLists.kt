@@ -16,12 +16,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.platform.testTag
 import catalog.KeptKind
 import designsystem.Overscan
 import designsystem.Spacing
 import model.ListOfSets
 import ui.tv.TvTextRow
 import ui.tv.chrome.LocalTvPagePadding
+
+/** For a test to scroll this list to a row a small allotted height (Collections' own hero above it) leaves uncomposed. */
+internal const val TvListsTestTag = "tv-lists"
 
 /**
  * The lists a viewer has built, each a door to its own — `listsView` in
@@ -80,7 +84,7 @@ internal fun TvLists(
     val pagePadding = LocalTvPagePadding.current
     LazyColumn(
         state = listState,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().testTag(TvListsTestTag),
         contentPadding = PaddingValues(start = pagePadding.start, end = pagePadding.end, top = Overscan.vertical, bottom = Overscan.vertical),
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {

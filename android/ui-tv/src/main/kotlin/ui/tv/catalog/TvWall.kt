@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -87,9 +88,13 @@ fun <T> TvWall(
     onOpen: (T) -> Unit,
     header: (@Composable () -> Unit)? = null,
     headings: Map<Int, String> = emptyMap(),
+    // Hoisted by a caller that also needs this wall's own scroll position —
+    // a department page's own bar blend, read live through the same
+    // instance rather than a second, disagreeing one this wall kept to
+    // itself.
+    gridState: LazyGridState = rememberLazyGridState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = CacheAhead, behind = CacheBehind) }),
     plate: @Composable (item: T, modifier: Modifier, onOpen: () -> Unit) -> Unit,
 ) {
-    val gridState = rememberLazyGridState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = CacheAhead, behind = CacheBehind) })
     val takesFocus = LocalTakesArrivalFocus.current
     val focusRequester = remember { FocusRequester() }
     val cells = remember(items, header != null, headings) { cellsOf(items, header != null, headings) }

@@ -254,14 +254,13 @@ kids profile whose age limit hides every anime title sees the tab hidden the
 same way. Android follows the same rule for the same reason (`Shelves.kt`
 already drops empty Movies/Series/Tutorials this way).
 
-**Android's television surface draws Anime as a plain poster wall**, the
-same as Documentaries, rather than the Series-style department page phone and
-tablet get (`TvDepartmentPages.kt`'s `DepartmentOrShelfWall`). A show-style
-department page would resolve its own shows with
-`filterIsInstance<Entry.Collection>()` and silently drop every anime film,
-and a Continue row on that page would only repeat the television's own Home
-Continue for the same titles rather than say anything new — the reason
-Documentaries already gets the plain wall instead of a department page.
+Android's television surface draws Anime as its own department page too
+(`TvAnimeDepartmentPage.kt`): a hero, Continue watching, then every show and
+every film as one wall with two headings sections — "Series" then "Films" —
+rather than the Series-style page's single kind of card, since this shelf
+mixes the two the way none of Movies/Series/Tutorials does. A show's plate
+opens the show; a film's opens the title page rather than playing directly,
+a locked, deliberate difference from the web's own direct play.
 
 ## Categories
 
@@ -303,12 +302,10 @@ that paging one would be solving a problem nobody has yet — and a category
 appears nowhere else the player draws: not on a title page, search, home, or
 Latest.
 
-Android's phone and tablet pages draw the same rows (`Categories.kt`'s
-`categoryRowsOf`, held to the same `rows.json`), and so does television's
-Tutorials front page. **Television's Documentaries front page does not**, a
-deliberate difference: that shelf never had a rows-style front page to add
-them to in the first place (`TvDepartmentPages.kt`'s `DOCUMENTARIES` branch
-above already gets the plain wall, the same reason Anime does).
+Android's phone, tablet and television pages all draw the same rows
+(`Categories.kt`'s `categoryRowsOf`, held to the same `rows.json`) —
+television's Tutorials and Documentaries front pages both carry them now,
+right after their own Continue row, the same as the other two surfaces.
 
 ## Routes and API endpoints
 

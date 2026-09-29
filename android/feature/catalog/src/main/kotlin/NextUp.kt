@@ -195,3 +195,29 @@ private fun leadingNumber(text: String?): Int? =
     }
 
 private fun Progress.toProgressPoint(): ProgressPoint = ProgressPoint(at, duration)
+
+/**
+ * [continues] and [nextUp] as the one merged resume strip Home, the Series
+ * or Tutorials department page, the Anime department page and Documentaries
+ * all draw the same underway titles into — [magazineHomeOf]'s own inline
+ * build, lifted here once four call sites (Home, and three department
+ * screens on both Android surfaces) had each grown their own copy of it.
+ */
+fun resumeCardsOf(
+    continues: List<MediaSet>,
+    nextUp: List<NextUpEntry>,
+    watch: WatchSnapshot,
+    heldIds: Set<String> = emptySet(),
+): List<SetCard> {
+    val positions = watch.progress.associateBy { it.setId }
+    val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
+    return buildList {
+        for (set in continues) {
+            add(SetCard(set, resumeLine(positions[set.setId]), watchedFractionOf(positions[set.setId]), set.setId in watchedIds, set.setId in heldIds))
+        }
+        for (entry in nextUp) {
+            val caption = if (entry.resume) resumeLine(positions[entry.set.setId]) else "Next up"
+            add(SetCard(entry.set, caption, watchedFractionOf(positions[entry.set.setId]), entry.set.setId in watchedIds, entry.set.setId in heldIds))
+        }
+    }
+}

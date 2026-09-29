@@ -65,9 +65,11 @@ internal val TvHomeBarClearance = TvDepartmentsBarHeight + Overscan.vertical + S
  * `heightIn(min = ...)` reason the phone's own slide gives: nothing here
  * ever asks a child to fill the unbounded height a `LazyColumn` item offers.
  * Home's own cover keeps its picture under every [Backdrop] but
- * [Backdrop.SOLID] — [LocalBackdrop] is read directly rather than taking a
- * `departmentHero` flag the way [ui.tv.catalog.TvCoverStory] does, since
- * this composable never draws a department's own hero.
+ * [Backdrop.SOLID], unlike a department's own hero
+ * ([ui.tv.catalog.TvDepartmentHero]), which drops it under [Backdrop.SOLID]
+ * too — [LocalBackdrop] is read directly here rather than taking a flag for
+ * that split, since this composable never draws a department's own hero at
+ * all.
  */
 @Composable
 internal fun TvCoverSlide(

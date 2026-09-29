@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -17,7 +16,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -33,16 +31,12 @@ import catalog.libraryTallyLines
 import catalog.magazineHomeOf
 import catalog.mastheadSplitOf
 import catalog.updateDisabledReason
-import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import ui.MenuActions
 import ui.RailItem
-import ui.chrome.asHeroListState
-import ui.chrome.coverBlend
 import ui.tv.chrome.LocalTvPagePadding
 import ui.tv.chrome.TvDepartmentPill
-import ui.tv.chrome.TvDepartmentsBarHeight
 import ui.tv.chrome.TvLibraryChrome
 import ui.tv.profile.TvChosenProfile
 
@@ -197,19 +191,19 @@ fun TvCatalogScreen(
         }
     val homeListState =
         rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = HomeCacheWindow, behind = HomeCacheWindow) })
+    val deptScroll = rememberTvDepartmentScrollStates()
     val hasCover = homeMagazine?.editorial?.cover?.isNotEmpty() == true
-    val density = LocalDensity.current
-    val barHeightPx = remember(density) { with(density) { (TvDepartmentsBarHeight + Overscan.vertical).toPx() } }
-    val blend by remember(hasCover) {
-        derivedStateOf {
-            if (!hasCover) {
-                1f
-            } else {
-                val hero = homeListState.asHeroListState()
-                coverBlend(hero.firstVisibleItemIndex, hero.firstVisibleItemScrollOffset, hero.heroHeightPx, barHeightPx)
-            }
-        }
-    }
+    val blend =
+        rememberTvCatalogBlend(
+            selected = selected,
+            tabs = tabs,
+            shelves = shelves,
+            byId = byId,
+            watch = ready?.watch,
+            homeListState = homeListState,
+            homeHasCover = hasCover,
+            deptScroll = deptScroll,
+        )
 
     TvLibraryChrome(
         blend = blend,
@@ -270,6 +264,7 @@ fun TvCatalogScreen(
                             homeListState = homeListState,
                             homeMagazine = homeMagazine,
                             homeRows = homeRows,
+                            deptScroll = deptScroll,
                             onOpenTitle = onOpenTitle,
                             onPlay = onPlay,
                             onOpenCollection = onOpenCollection,

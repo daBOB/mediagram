@@ -18,11 +18,10 @@ import catalog.AnimeLibrary
 import catalog.CatalogUiState
 import catalog.Entry
 import catalog.Shelf
-import catalog.SetCard
 import catalog.allSetsById
 import catalog.animeDepartmentOf
-import catalog.resumeLine
-import catalog.watchedFractionOf
+import catalog.animeLineOf
+import catalog.resumeCardsOf
 import designsystem.Spacing
 import model.WatchSnapshot
 
@@ -86,16 +85,8 @@ internal fun AnimeDepartmentScreen(
 ) {
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
-    val resumeCards = remember(department.continuing, department.nextUp, positions, watchedIds, heldIds) {
-        buildList {
-            for (set in department.continuing) {
-                add(SetCard(set, resumeLine(positions[set.setId]), watchedFractionOf(positions[set.setId]), set.setId in watchedIds, set.setId in heldIds))
-            }
-            for (entry in department.nextUp) {
-                val caption = if (entry.resume) resumeLine(positions[entry.set.setId]) else "Next up"
-                add(SetCard(entry.set, caption, watchedFractionOf(positions[entry.set.setId]), entry.set.setId in watchedIds, entry.set.setId in heldIds))
-            }
-        }
+    val resumeCards = remember(department.continuing, department.nextUp, watch, heldIds) {
+        resumeCardsOf(department.continuing, department.nextUp, watch, heldIds)
     }
 
     LazyVerticalGrid(
@@ -110,7 +101,7 @@ internal fun AnimeDepartmentScreen(
             DepartmentHero(
                 kicker = "Only in your library",
                 title = "Anime",
-                line = animeDeptLine(department),
+                line = animeLineOf(department),
                 lead = department.lead,
                 onOpenTitle = onOpenTitle,
             )
@@ -141,10 +132,3 @@ internal fun AnimeDepartmentScreen(
         }
     }
 }
-
-/** "N shows · M films" — the web's own `line` for the Anime hero, dropping whichever count is zero. */
-private fun animeDeptLine(department: AnimeDepartment): String =
-    listOfNotNull(
-        if (department.showCount > 0) countOf(department.showCount, "show") else null,
-        if (department.filmCount > 0) countOf(department.filmCount, "film") else null,
-    ).joinToString(" · ")

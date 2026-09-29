@@ -54,17 +54,7 @@ fun magazineHomeOf(
         )
 
     val underway = underwayOf(collectionsForNextUp(shelves), byId, watch, limit)
-    val positions = watch.progress.associateBy { it.setId }
-    val resumeCards =
-        buildList {
-            for (set in underway.continues) {
-                add(setCard(set, resumeLine(positions[set.setId]), positions, watchedIds, heldIds))
-            }
-            for (entry in underway.nextUp) {
-                val caption = if (entry.resume) resumeLine(positions[entry.set.setId]) else "Next up"
-                add(setCard(entry.set, caption, positions, watchedIds, heldIds))
-            }
-        }
+    val resumeCards = resumeCardsOf(underway.continues, underway.nextUp, watch, heldIds)
 
     val recentlyAddedRow =
         HomeRow(

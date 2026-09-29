@@ -20,17 +20,14 @@ import catalog.DocumentariesDepartment
 import catalog.DocumentaryLibrary
 import catalog.Entry
 import catalog.Shelf
-import catalog.SetCard
 import catalog.allSetsById
 import catalog.documentariesDepartmentOf
+import catalog.documentariesLineOf
 import catalog.factsLine
-import catalog.resumeLine
-import catalog.watchedFractionOf
+import catalog.resumeCardsOf
 import designsystem.Spacing
 import model.MediaSet
-import model.Progress
 import model.WatchSnapshot
-import ui.catalog.home.countOf as spelledCountOf
 
 private val DEPT_CARD_WIDTH = 140.dp
 
@@ -95,8 +92,8 @@ internal fun DocumentariesDepartmentScreen(
 ) {
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
-    val resumeCards = remember(department.continuing, positions, watchedIds, heldIds) {
-        department.continuing.map { set -> setCardFor(set, positions, watchedIds, heldIds) }
+    val resumeCards = remember(department.continuing, watch, heldIds) {
+        resumeCardsOf(department.continuing, emptyList(), watch, heldIds)
     }
 
     LazyColumn(
@@ -108,7 +105,7 @@ internal fun DocumentariesDepartmentScreen(
             DepartmentHero(
                 kicker = "Only in your library",
                 title = "Documentaries",
-                line = spelledCountOf(department.itemCount, "documentary"),
+                line = documentariesLineOf(department),
                 lead = department.lead,
                 // The web never links a documentaries hero anywhere
                 // (`leadHref: null`, `department-pages.js`) — nothing here
@@ -166,11 +163,3 @@ private fun DocumentaryRow(sets: List<MediaSet>, watchedIds: Set<String>, onPlay
         }
     }
 }
-
-private fun setCardFor(
-    set: MediaSet,
-    positions: Map<String, Progress>,
-    watchedIds: Set<String>,
-    heldIds: Set<String>,
-): SetCard =
-    SetCard(set, resumeLine(positions[set.setId]), watchedFractionOf(positions[set.setId]), set.setId in watchedIds, set.setId in heldIds)

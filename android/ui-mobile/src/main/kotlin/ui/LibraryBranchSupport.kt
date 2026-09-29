@@ -14,6 +14,7 @@ import catalog.DOCUMENTARIES
 import catalog.Destination
 import catalog.Shelf
 import catalog.allSetsById
+import catalog.heroArtOf
 import catalog.magazineHomeOf
 import designsystem.Backdrop
 import designsystem.LocalBackdrop

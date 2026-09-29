@@ -24,12 +24,12 @@ import catalog.GenreIndexEntry
 import catalog.MoviesDepartment
 import catalog.Shelf
 import catalog.factsLine
+import catalog.moviesLineOf
 import catalog.pickFeatured
 import designsystem.Spacing
 import model.MediaSet
 import model.WatchSnapshot
 import uniffi.mediagram_core.TitleInfo
-import java.text.NumberFormat
 import kotlin.random.Random
 
 /** How wide one poster runs in a department's own horizontal rows. */
@@ -64,7 +64,7 @@ internal fun MoviesDepartmentScreen(
             DepartmentHero(
                 kicker = "Only in your library",
                 title = "Movies",
-                line = movieDeptLine(department),
+                line = moviesLineOf(department),
                 lead = department.lead,
                 onOpenTitle = onOpenTitle,
             )
@@ -104,13 +104,6 @@ internal fun MoviesDepartmentScreen(
         )
     }
 }
-
-/** "N films · H hours" — the web's own `line` for the Movies hero, dropping the hours when there are none. */
-private fun movieDeptLine(department: MoviesDepartment): String =
-    listOfNotNull(
-        countOf(department.filmCount, "film"),
-        department.hours.takeIf { it > 0 }?.let { "${NumberFormat.getIntegerInstance().format(it)} hours" },
-    ).joinToString(" · ")
 
 @Composable
 private fun FilmRow(films: List<MediaSet>, watchedIds: Set<String>, onOpenTitle: (String) -> Unit) {
