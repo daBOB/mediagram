@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.82.1 — the TV chrome could close the app before the remote landed anywhere
+
+**Fixed**
+
+- The new chrome's Back chain (0.82.0) only caught Back once the remote had
+  genuinely reached content, the bar or the rail — every fresh mount of the
+  chrome (arriving on Home, or returning to it from a title, the player, any
+  pushed page) has a real gap, at least one frame wide, between that mount
+  and arrival focus actually landing: none of the three regions has focus
+  yet, the same shape a viewer genuinely resting on the rail leaves. A Back
+  arriving in that gap fell through and closed the app uninvited. Fixed by
+  tracking the rail's own focus alongside content's and the bar's, and
+  catching (not redirecting) a Back while none of the three has settled yet.
+
 ## 0.82.0 — Android TV: the library wears the web player's chrome
 
 **Added**

@@ -32,6 +32,7 @@ import org.robolectric.annotation.Config
 import ui.tv.TvTheme
 import ui.tv.profile.TvChosenProfile
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * What Robolectric can check about [TvCatalogScreen] without a real window
@@ -304,6 +305,43 @@ class TvCatalogScreenStateTest {
 
         compose.onNodeWithContentDescription("Search").assertIsFocused()
         compose.onNode(hasText("Film", substring = true) and isFocused()).assertDoesNotExist()
+    }
+
+    /**
+     * `TvLibraryChrome`'s own gap: arrival focus (here, `TvHome`'s cover)
+     * lands from a `LaunchedEffect`, which runs at least one frame after
+     * the chrome's own `BackHandler`s register during `setContent`'s
+     * first composition — checked here, before this test's own
+     * `waitForIdle()` lets that frame turn over. A Back landing in that
+     * gap must not find every region's `hasFocus` still at its initial
+     * `false`, indistinguishable from genuinely resting on the rail
+     * (`TvLibraryTest.backAtTheCatalogRootGoesUpThroughThePillThenTheRailBeforeTheAppFinishes`'s
+     * own, deliberate, case for that shape) and fall through to close the app.
+     */
+    @Test
+    fun aBackBeforeArrivalFocusHasLandedAnywhereIsStillCaught() {
+        lateinit var built: ActivityController<ComponentActivity>
+        compose.runOnUiThread {
+            built = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
+            controller = built
+            built.get().setContent {
+                TvTheme {
+                    TvCatalogScreen(
+                        state = ready(films(1)),
+                        profile = TvChosenProfile(name = "Ada", onChoose = {}),
+                        onOpenTitle = {},
+                        onOpenCollection = {},
+                        onOpenList = {},
+                        onCreateList = {},
+                    )
+                }
+            }
+            assertTrue(
+                built.get().onBackPressedDispatcher.hasEnabledCallbacks(),
+                "no region has taken arrival focus yet, so a Back landing right now must still be caught rather than falling through",
+            )
+        }
+        compose.waitForIdle()
     }
 
     private fun show(

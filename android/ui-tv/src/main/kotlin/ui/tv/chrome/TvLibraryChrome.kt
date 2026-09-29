@@ -99,6 +99,18 @@ internal fun rememberTvChromeFocus(): TvChromeFocus =
  * leaves for the rail; the rail is left unhandled, so a further Back closes
  * the app the way Back at the top of any television app does.
  *
+ * That last step only holds once the remote has genuinely reached the
+ * rail: [contentHasFocus]/[barHasFocus] (and the rail's own, mirrored into
+ * [railHasFocus]) all start `false` on every fresh mount of this
+ * composable — arrival focus only lands once whichever page below calls
+ * `requestFocus()` from its own `LaunchedEffect`, at least one frame after
+ * this composable's own `BackHandler`s have already registered. A Back
+ * arriving in that gap — this chrome (re)appearing under a stray or
+ * doubled key event, with nothing pressed since — would otherwise be
+ * indistinguishable from genuinely resting on the rail and finish the
+ * activity uninvited; the fourth [BackHandler] below exists only to catch
+ * that gap, never to redirect focus anywhere on its own.
+ *
  * [focus] is [rememberTvChromeFocus]'s own bundle — built by the caller so
  * a restore key it already knows about (`masthead:search`, `rail:latest`…)
  * can drive the very requesters this composable renders onto, without this
@@ -127,6 +139,7 @@ internal fun TvLibraryChrome(
 ) {
     var barHasFocus by remember { mutableStateOf(false) }
     var contentHasFocus by remember { mutableStateOf(false) }
+    var railHasFocus by remember { mutableStateOf(false) }
 
     fun railArrivalTarget(): FocusRequester = focus.railRowFocus.getValue(railActive ?: RailItem.MY_LIST)
 
@@ -142,9 +155,19 @@ internal fun TvLibraryChrome(
     BackHandler(enabled = barHasFocus) {
         railArrivalTarget().requestFocus()
     }
-    // Rail: no handler here at all — a further Back falls through to
-    // whatever the caller (or, at the root, the activity itself) does with
-    // an unhandled Back, "the activity finishes" at the top of this app.
+    // Rail: still no handler that goes anywhere — Back there falls
+    // through to the activity, "the activity finishes" at the top of this
+    // app, exactly as the plan asks.
+    //
+    // What *is* caught here is the narrow gap the class doc above names:
+    // this chrome just (re)mounted and none of the three regions has
+    // taken arrival focus yet, so every one of `contentHasFocus`,
+    // `barHasFocus` and `railHasFocus` still reads its initial `false` —
+    // the same shape as "genuinely resting on the rail". Absorbing it
+    // (never redirecting: the arrival-focus effect already queued below
+    // settles this on its own a frame later) is what keeps a Back that
+    // lands in that gap from reading as the rail's own "close the app".
+    BackHandler(enabled = !contentHasFocus && !barHasFocus && !railHasFocus) {}
 
     // `top` matches the bar's own rendered height: the bar draws opaquely
     // over this same region (a `Box`, not a `Column` — see the doc above),
@@ -207,7 +230,7 @@ internal fun TvLibraryChrome(
             rowRequesters = focus.railRowFocus,
             onSelect = onRailSelect,
             regionFocus = focus.regionFocus,
-            onHasFocusChanged = {},
+            onHasFocusChanged = { railHasFocus = it },
             modifier = Modifier.align(Alignment.CenterStart),
         )
     }
