@@ -5,6 +5,18 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.82.2 — a backdrop kept only in the index's artwork table now shows on Android too
+
+**Fixed**
+
+- Android's backdrop resolution checked disk and disk alone, unlike a poster
+  or a season poster, which already materialise from the index's `artwork`
+  table on a miss. A title whose backdrop an uploader supplied only into
+  that table — no packaged or fetched file on disk — showed its backdrop on
+  the web player and not in the Android app; 12 titles on the current index
+  were affected. Backdrop resolution now materialises the same way a poster
+  does, closing the gap.
+
 ## 0.82.1 — the TV chrome could close the app before the remote landed anywhere
 
 **Fixed**

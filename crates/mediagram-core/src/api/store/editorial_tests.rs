@@ -162,13 +162,12 @@ fn a_backdrop_already_on_disk_resolves() {
     assert_eq!(set.backdrop_path, Some(expected));
 }
 
-/// The one place a poster and a backdrop are resolved differently: a poster
-/// missing on disk still materialises from the `artwork` table (below), a
-/// backdrop does not. A deliberate, *known* gap from the web player rather
-/// than parity with it — see `resolve_artwork`'s own doc for why, and the
-/// issue tracker entry it names.
+/// A backdrop missing on disk materialises from the `artwork` table exactly
+/// as a poster does (below) — parity with the web player's own `has()`,
+/// which counts a backdrop the table alone carries the same way it does a
+/// poster.
 #[test]
-fn a_backdrop_held_only_in_the_artwork_table_does_not_resolve() {
+fn a_backdrop_held_only_in_the_artwork_table_materialises() {
     let dir = tempfile::tempdir().unwrap();
     let core = Core::at(dir.path());
     let conn = index_at(dir.path());
@@ -177,7 +176,9 @@ fn a_backdrop_held_only_in_the_artwork_table_does_not_resolve() {
     drop(conn);
 
     let set = list_sets(&core).unwrap().into_iter().next().unwrap();
-    assert_eq!(set.backdrop_path, None);
+    let expected = artwork_dir(&core).join("tmdb-movie-550-bg.jpg");
+    assert_eq!(set.backdrop_path, Some(expected.display().to_string()));
+    assert_eq!(std::fs::read(&expected).unwrap(), vec![1]);
 }
 
 #[test]

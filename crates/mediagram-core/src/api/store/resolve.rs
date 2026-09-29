@@ -105,18 +105,15 @@ fn write_from_conn(conn: &Connection, poster_key: &str, dest: &Path) -> bool {
 /// one connection and one "which keys does the table hold" query, not one of
 /// each per key, and never queries a key the table plainly does not have.
 ///
-/// `materialize` gates the table step: on for a poster or a season poster,
-/// matching what `poster_path` always does; off for a backdrop, whose
-/// listing has only ever named one already sitting on disk (`editorial`'s
-/// own gate, kept exactly as it was before this moved here — see its own
-/// doc for why that is a known gap from the web player, not parity with it).
+/// Every kind of key this resolves — poster, backdrop, season poster,
+/// portrait — materialises from the table on a miss the same way; none of
+/// them is disk-only.
 pub(in crate::api) fn resolve_with(
     version_dir: &Path,
     artwork_dir: &Path,
     conn: &Connection,
     key: &str,
     artwork_keys: &HashSet<String>,
-    materialize: bool,
 ) -> Option<String> {
     if !mlib_spec::package::poster_key_is_valid(key) {
         return None;
@@ -124,7 +121,7 @@ pub(in crate::api) fn resolve_with(
     if let Some(path) = on_disk(version_dir, artwork_dir, key) {
         return Some(path);
     }
-    if !materialize || !artwork_keys.contains(key) {
+    if !artwork_keys.contains(key) {
         return None;
     }
     let dest = artwork_dir.join(format!("{key}.jpg"));
@@ -143,12 +140,11 @@ pub(in crate::api) fn resolve_cached(
     conn: &Connection,
     key: &str,
     artwork_keys: &HashSet<String>,
-    materialize: bool,
 ) -> Option<String> {
     if let Some(hit) = cache.get(key) {
         return hit.clone();
     }
-    let resolved = resolve_with(version_dir, artwork_dir, conn, key, artwork_keys, materialize);
+    let resolved = resolve_with(version_dir, artwork_dir, conn, key, artwork_keys);
     cache.insert(key.to_string(), resolved.clone());
     resolved
 }

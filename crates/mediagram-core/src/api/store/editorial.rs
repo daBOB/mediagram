@@ -150,17 +150,11 @@ fn enrich(core: &Core, conn: &Connection, sets: Vec<PlayableSet>) -> Result<Vec<
 
 /// The poster, backdrop and (for an episode) season poster a set's own key
 /// names, each resolved at most once per distinct key across the whole
-/// enrichment (`resolved`). A poster or a season poster is materialised from
-/// the index's `artwork` table on a miss, the same as `store::poster_path`
-/// already did per key; a backdrop only ever names a file already on disk.
-///
-/// That last rule is a known gap from the web player, not parity with it:
-/// the web's own `has()` (`web/src/catalog/routes.ts`) counts a backdrop the
-/// `artwork` table alone carries, same as it does a poster: an uploader who
-/// supplies only a backdrop for a title — no packaged or fetched poster file
-/// — shows it on the web and not here. Carried over unchanged from before
-/// this pass existed rather than fixed in the same change that batched it;
-/// see daBOB/mediagram#1 for the open question of whether to close the gap.
+/// enrichment (`resolved`). All three materialise from the index's `artwork`
+/// table on a miss, the same as `store::poster_path` already did per key —
+/// parity with the web player's own `has()` (`web/src/catalog/routes.ts`),
+/// which counts a backdrop the `artwork` table alone carries exactly as it
+/// does a poster.
 fn resolve_artwork(
     summary: &mut SetSummary,
     version_dir: &std::path::Path,
@@ -171,16 +165,15 @@ fn resolve_artwork(
     resolved: &mut HashMap<String, Option<String>>,
 ) {
     let Some(key) = summary.poster_key.clone() else { return };
-    summary.poster_path = resolve_cached(resolved, version_dir, artwork_dir, conn, &key, artwork_keys, true);
+    summary.poster_path = resolve_cached(resolved, version_dir, artwork_dir, conn, &key, artwork_keys);
     let backdrop_key = mlib_spec::package::backdrop_key(&key);
-    summary.backdrop_path =
-        resolve_cached(resolved, version_dir, artwork_dir, conn, &backdrop_key, artwork_keys, false);
+    summary.backdrop_path = resolve_cached(resolved, version_dir, artwork_dir, conn, &backdrop_key, artwork_keys);
     if set.kind == "ep"
         && let Some(season) = set.season
     {
         let season_key = mlib_spec::package::season_poster_key(&key, season);
         summary.season_poster_path =
-            resolve_cached(resolved, version_dir, artwork_dir, conn, &season_key, artwork_keys, true);
+            resolve_cached(resolved, version_dir, artwork_dir, conn, &season_key, artwork_keys);
     }
 }
 

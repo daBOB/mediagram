@@ -174,7 +174,7 @@ impl<'a> Portraits<'a> {
     /// `SetSummary::backdrop_path`.
     fn resolve(&self, person_id: u64) -> Option<String> {
         let key = format!("tmdb-person-{person_id}");
-        store::resolve_with(&self.version_dir, &self.artwork_dir, self.conn, &key, &self.artwork_keys, true)
+        store::resolve_with(&self.version_dir, &self.artwork_dir, self.conn, &key, &self.artwork_keys)
     }
 }
 

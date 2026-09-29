@@ -53,13 +53,12 @@ pub struct SetSummary {
     pub subtitles: Vec<String>,
     /// Whether the index holds a plot summary for this set.
     pub has_summary: bool,
-    /// Where this title's backdrop is on disk, present only when the file
-    /// actually exists — `store::list_sets` checks disk and disk alone,
-    /// rather than materialising one from the index's `artwork` table the
-    /// way `poster_path` does. A known gap from the web player rather than
-    /// parity with it: the web's own `has()` counts a backdrop the table
-    /// alone carries, this does not — see `store::editorial::resolve_artwork`'s
-    /// own doc. A series carries its show's, like `genres`.
+    /// Where this title's backdrop is on disk, present when the file already
+    /// exists or `store::list_sets` can materialise one from the index's
+    /// `artwork` table — the same rule `poster_path` is held to, and the
+    /// same parity with the web player's own `has()`, which counts a
+    /// backdrop the table alone carries exactly as it does a poster. A
+    /// series carries its show's, like `genres`.
     pub backdrop_path: Option<String>,
     /// Where this episode's season carries its own poster, present only for
     /// an episode whose season has one — resolved and materialised the same
