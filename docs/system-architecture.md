@@ -625,12 +625,18 @@ web player's own: a left rail (collapsed to icons until the remote reaches it, t
 opening to My List, Continue watching, Latest, Genres, Settings, System and the
 library's own tally) beside a departments bar across the top (Home, the shelves,
 Collections, search, the viewer's avatar, ⋮) — see § Television differs, above, for
-where the two surfaces deliberately part. Home holds shelves of up to 6 plates each,
-no sideways scroll. Walls are 2:3 posters in a 6-column grid; focus restores to the
-plate that was opened when Back returns. Settings and System are reached straight from
-the rail; Settings there includes cache volume choice ("Where" — a USB drive must be
-set up as *portable* storage to appear; adopted storage never shows), and the home
-cache server status and pairing.
+where the two surfaces deliberately part. Home draws the web's own magazine layout
+(`ui-tv/.../catalog/home/`) as a `LazyColumn`: a cover story bleeding under the bar
+(which reads translucent-to-opaque from the same list, through `ui.chrome.coverBlend`,
+shared with the tablet's own hero pages), three feature cards, Continue watching beside
+a pull-quote, Recently added beside This month, then Latest series and Latest courses —
+each poster or resume-card row a plain, always-composed row (at most eight items, or
+`HOME_ROW_LIMIT` for Continue/Next up), not a plate wall's own virtualised hundreds. A
+department's own wall stays plain: 2:3 posters in a 6-column grid, no sideways scroll;
+focus restores to the plate that was opened when Back returns. Settings and System are
+reached straight from the rail; Settings there includes cache volume choice ("Where" —
+a USB drive must be set up as *portable* storage to appear; adopted storage never
+shows), and the home cache server status and pairing.
 
 ### Television differs from the web player
 
@@ -694,6 +700,16 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
 - **Subtitles never rise above the title band.** Lifted clear of the controls and the
   up-next card as on phone, but capped under the statistics bar so cues over the title
   are not unreadable.
+- **Home's cover has no pause button, no drift zoom.** The phone's cover pauses its own
+  rotation on hover and slowly zooms its art; a television has no pointer to hover with
+  (focus anywhere on the cover already holds rotation, so a button could only ever be
+  pressed while it is already held) and a continuous redraw for the zoom is not worth it
+  on a weak box. A focused dot in the cover's own pager still shows its film, focus-select
+  rather than needing OK.
+- **Continue's resume cards carry the offline badge; the phone's do not.** Continue was a
+  plain plate row before this surface's own magazine layout, and that row's plates always
+  showed it — kept on the new card rather than silently dropped, since a viewer relied on
+  it to know a title would play from local storage before pressing Watch now.
 
 ## 9. Backend portability
 

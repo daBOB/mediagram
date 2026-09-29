@@ -29,6 +29,16 @@ const val THIS_MONTH_LIMIT = 5
 
 enum class FeatureKind { EDITOR, STAFF, TRENDING, NEW }
 
+/** The label naming the rule that chose the title — the web's `FEATURE_LABELS` (`home-features.js`), shared by both Android surfaces rather than each spelling it out on its own. */
+val FeatureKind.label: String
+    get() =
+        when (this) {
+            FeatureKind.EDITOR -> "Editor's choice"
+            FeatureKind.STAFF -> "Staff pick"
+            FeatureKind.TRENDING -> "Trending on TMDB"
+            FeatureKind.NEW -> "New in the library"
+        }
+
 /** One of the three feature cards: which fact earned it a slot, and the title itself. */
 data class Feature(val kind: FeatureKind, val set: MediaSet)
 

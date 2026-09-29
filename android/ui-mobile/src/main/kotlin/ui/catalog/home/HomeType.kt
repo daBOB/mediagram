@@ -29,30 +29,15 @@ internal val CompactBreakpoint = 900.dp
 internal val WideBreakpoint = 1180.dp
 
 /**
- * Numbers this catalogue prints as words, up to twenty — the web's own
- * `NUMBER_WORDS`/`spellCount` (`format.js:152-165`): a spelled-out count is
- * quicker to read than the figure until the words themselves get long.
- * [ui.catalog.countOf] (ui-common) is the rest of this app's own, plainer
- * `"$count $noun"` — this one is only for the captions the web's own
- * `collectionGrid` spells the same way (Latest series, Latest courses).
+ * An extent, spelled the way the web's own `countOf` does: `"three shows"`,
+ * `"one show"`, `"170 lessons"` (`format.js:171-175`). [ui.catalog.countOf]
+ * (ui-common) is the rest of this app's own, plainer `"$count $noun"` — this
+ * one is only for the captions the web's own `collectionGrid` spells the
+ * same way (Latest series, Latest courses); [catalog.spelledCountOf]
+ * (feature:catalog) is where the actual word list and pluralisation rule
+ * live, shared with the Settings tally and the television's own Home.
  */
-private val NumberWords =
-    listOf(
-        "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
-        "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen",
-        "nineteen", "twenty",
-    )
-
-private fun spellCount(count: Int): String = if (count in 0..20) NumberWords[count] else count.toString()
-
-/** An extent, spelled the way the web's own `countOf` does: `"three shows"`, `"one show"`, `"170 lessons"` (`format.js:171-175`). */
 internal fun countOf(
     count: Int,
     noun: String,
-): String {
-    val word = spellCount(count)
-    if (count == 1) return "$word $noun"
-    val precededByConsonant = noun.length > 1 && noun[noun.length - 2].lowercaseChar() !in "aeiou"
-    val plural = if (noun.endsWith("y", ignoreCase = true) && precededByConsonant) "${noun.dropLast(1)}ies" else "${noun}s"
-    return "$word $plural"
-}
+): String = catalog.spelledCountOf(count, noun)

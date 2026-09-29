@@ -5,6 +5,37 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.83.0 — Android TV: Home in the web player's own magazine layout
+
+**Added**
+
+- The television's start page draws the web player's own magazine layout
+  instead of a plain row of "Latest films": a cover story under the
+  departments bar (bleeding full-width, the bar reading translucent-to-opaque
+  from its own scroll position), three feature cards, Continue watching
+  beside a pull-quote, Recently added beside This month, then Latest series
+  and Latest courses. Watch now plays straight away; + My List reaches
+  `CatalogViewModel.setWatchlisted`, new on this surface; a focused dot in the
+  cover's own pager shows its film. Home is now a `LazyColumn` of these
+  sections rather than a `Column` that composed every row at once, with a
+  cache window generous enough (six sections at most) to keep them all
+  composed almost all the time on a 540dp screen.
+- `CoverBlend` and the cover's own scrim moved to `ui-common` so the
+  television's bar-over-cover bleed reads the same live measurement the
+  tablet's own hero pages already do, and `spelledCountOf`/`FeatureKind`'s
+  label mapping moved to `feature:catalog` so both surfaces spell a series'
+  episode/season count and a feature's own label the same way.
+- The open rail's own "Continue watching" row is no longer missing its
+  count: its label pushed the number past the row's own clipped edge for
+  want of a `weight(1f)` "My List" (a shorter label) never needed.
+
+**Fixed**
+
+- The television's own resume cards (Continue, Next up) now carry the
+  offline badge held titles already show everywhere else on this surface —
+  dropped by mistake when Continue moved from a plain row into this band,
+  which would have been a silent loss of something a viewer relied on before
+  pressing Watch now.
 ## 0.82.3 — a runtime that rounds up to the hour no longer reads "2h 60m"
 
 **Fixed**

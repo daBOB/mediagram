@@ -120,6 +120,11 @@ internal fun rememberTvChromeFocus(): TvChromeFocus =
  * never repaints or remeasures when the rail opens over it, since the rail
  * is a sibling overlay in this [Box], not a sibling in a [Row] the rail's
  * own width could push against.
+ *
+ * [blend] passes straight through to [TvDepartmentsBar]'s own parameter of
+ * the same name — `1f` (opaque) for every tab without a hero to bleed
+ * under; Home, over its own magazine cover, is the first real caller of
+ * anything less.
  */
 @Composable
 internal fun TvLibraryChrome(
@@ -135,6 +140,7 @@ internal fun TvLibraryChrome(
     onMenu: () -> Unit,
     focus: TvChromeFocus,
     modifier: Modifier = Modifier,
+    blend: Float = 1f,
     content: @Composable () -> Unit,
 ) {
     var barHasFocus by remember { mutableStateOf(false) }
@@ -219,6 +225,7 @@ internal fun TvLibraryChrome(
                 selectedPillFocus = focus.selectedPillFocus,
                 searchFocus = focus.searchFocus,
                 menuFocus = focus.menuButtonFocus,
+                blend = blend,
                 modifier = Modifier.align(Alignment.TopStart).onFocusChanged { state -> barHasFocus = state.hasFocus },
             )
         }

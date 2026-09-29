@@ -52,8 +52,10 @@ class TvCatalogRootPlayStateTest : TvScreenStateTest() {
 
         // A pager, possibly with a neighbour composed too: the first is
         // the one on screen, the same defensive finder the cover story's
-        // own existence test already uses.
-        compose.onAllNodesWithText("▶ Watch now").onFirst().performSemanticsAction(SemanticsActions.OnClick)
+        // own existence test already uses. Substring, not the icon's exact
+        // spacing: `TvCoverActions`' own pill carries the phone's own
+        // "▶  Watch now" (two spaces), which an exact match here would miss.
+        compose.onAllNodesWithText("Watch now", substring = true).onFirst().performSemanticsAction(SemanticsActions.OnClick)
 
         assertNull(opened)
         assertEquals(true, played?.startsWith("film-"))

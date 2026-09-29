@@ -20,8 +20,15 @@ private val NUMBER_WORDS =
 /** A count as a word while it is small enough to be one, else as figures. Mirrors the web's `spellCount`. */
 private fun spellCount(count: Int): String = if (count in 0..20) NUMBER_WORDS[count] else count.toString()
 
-/** `three shows`, `one show`, `170 lessons` — mirrors the web's `countOf`, spelled rather than figures-only. */
-private fun spelledCountOf(
+/**
+ * `three shows`, `one show`, `170 lessons` — mirrors the web's `countOf`,
+ * spelled rather than figures-only. Public: the magazine home page's own
+ * captions (a series' episode/season count, a course's lesson/chapter
+ * count) spell the same way, on both Android surfaces — `ui.catalog.home.countOf`
+ * (ui-mobile) is a one-line delegate to this rather than a second copy of
+ * [spellCount]'s own word list.
+ */
+fun spelledCountOf(
     count: Int,
     noun: String,
 ): String {

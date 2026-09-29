@@ -46,6 +46,7 @@ internal fun TvCatalogRoot(
     onOpenFranchise: (id: Long) -> Unit = {},
     onOpenMoviesPage: () -> Unit = {},
     onPlay: (setId: String) -> Unit = onOpenTitle,
+    onToggleWatchlist: (setId: String, listed: Boolean) -> Unit = { _, _ -> },
 ) {
     TvCatalogScreen(
         state = state,
@@ -68,6 +69,7 @@ internal fun TvCatalogRoot(
         onOpenFranchise = onOpenFranchise,
         onOpenMoviesPage = onOpenMoviesPage,
         onPlay = onPlay,
+        onToggleWatchlist = onToggleWatchlist,
     )
 }
 
@@ -175,6 +177,7 @@ internal fun TvLibraryHomeFrame(
                 restore.opened(here, setId)
                 at.openPlayer(setId)
             },
+            onToggleWatchlist = catalogViewModel::setWatchlisted,
         )
     }
 }

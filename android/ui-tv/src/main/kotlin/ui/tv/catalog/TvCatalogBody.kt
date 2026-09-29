@@ -1,16 +1,17 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.focus.FocusRequester
 import catalog.CatalogTabs
 import catalog.CatalogUiState
+import catalog.HomeRow
 import catalog.KeptKind
+import catalog.MagazineHome
 import catalog.Shelf
 import catalog.everyFilm
 import catalog.franchisesIn
-import catalog.homeRowsOf
-import catalog.magazineHomeOf
 import model.MediaSet
 import ui.RailItem
 
@@ -33,6 +34,9 @@ internal fun TvCatalogBody(
     wallKey: String?,
     railActive: RailItem?,
     railRowFocus: Map<RailItem, FocusRequester>,
+    homeListState: LazyListState,
+    homeMagazine: MagazineHome?,
+    homeRows: List<HomeRow>,
     onOpenTitle: (setId: String) -> Unit,
     onPlay: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
@@ -42,6 +46,7 @@ internal fun TvCatalogBody(
     onOpenFranchise: (id: Long) -> Unit,
     onOpenMoviesPage: () -> Unit,
     onFinish: (setId: String) -> Unit,
+    onToggleWatchlist: (setId: String, listed: Boolean) -> Unit,
     choose: (Int) -> Unit,
 ) {
     when {
@@ -50,30 +55,23 @@ internal fun TvCatalogBody(
         state is CatalogUiState.Failed -> TvCenteredMessage(state.message)
         ready == null -> TvCenteredMessage("The library is empty.")
         selected == 0 -> {
+            // Computed by the caller, not here: the departments bar above
+            // reads the same magazine's own cover to decide whether it has
+            // anything to bleed under in the first place — a second,
+            // independent `magazineHomeOf` call here could read a different
+            // `now` and disagree with it on the rare tie that falls right on
+            // a day boundary.
             TvHome(
-                rows =
-                    remember(shelves, ready.watch, ready.heldIds) {
-                        homeRowsOf(shelves, ready.watch, ready.heldIds).filterNot { it.title == "Latest films" }
-                    },
+                magazine = requireNotNull(homeMagazine) { "Home selected with no magazine computed for it" },
+                rows = homeRows,
                 watch = ready.watch,
-                onOpenTitle = onOpenTitle,
+                listState = homeListState,
                 onPlay = onPlay,
+                onOpenTitle = onOpenTitle,
                 onOpenCollection = onOpenCollection,
+                onToggleWatchlist = onToggleWatchlist,
                 onSeeAll = { shelf -> choose(tabs.titles.indexOf(shelf).coerceAtLeast(0)) },
                 restoreKey = wallKey,
-                // The magazine header already carries its own "Recently
-                // added" row over the Movies shelf — dropping "Latest films"
-                // above is what keeps Home from showing the same films twice.
-                magazine =
-                    remember(shelves, ready.watch, ready.heldIds) {
-                        magazineHomeOf(
-                            shelves,
-                            ready.watch,
-                            editorsChoice = ready.watch.editorsChoice,
-                            now = System.currentTimeMillis(),
-                            heldIds = ready.heldIds,
-                        )
-                    },
             )
         }
         selected < tabs.firstKept -> {

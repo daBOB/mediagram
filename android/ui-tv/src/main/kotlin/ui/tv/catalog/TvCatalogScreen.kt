@@ -5,8 +5,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -14,23 +17,32 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.CatalogUiState
 import catalog.ChromeCounts
+import catalog.HOME_POSTER_ROW_LIMIT
 import catalog.allSetsById
 import catalog.catalogTabsOf
 import catalog.chromeCountsOf
 import catalog.hasContent
+import catalog.homeRowsOf
 import catalog.libraryTallyLines
+import catalog.magazineHomeOf
 import catalog.mastheadSplitOf
 import catalog.updateDisabledReason
+import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import ui.MenuActions
 import ui.RailItem
+import ui.chrome.asHeroListState
+import ui.chrome.coverBlend
 import ui.tv.chrome.LocalTvPagePadding
 import ui.tv.chrome.TvDepartmentPill
+import ui.tv.chrome.TvDepartmentsBarHeight
 import ui.tv.chrome.TvLibraryChrome
 import ui.tv.profile.TvChosenProfile
 
@@ -87,6 +99,7 @@ fun TvCatalogScreen(
     onOpenFranchise: (id: Long) -> Unit = {},
     onOpenMoviesPage: () -> Unit = {},
     onPlay: (setId: String) -> Unit = onOpenTitle,
+    onToggleWatchlist: (setId: String, listed: Boolean) -> Unit = { _, _ -> },
 ) {
     val ready = (state as? CatalogUiState.Ready)?.takeIf { it.shelves.hasContent() }
     val shelves = ready?.shelves.orEmpty()
@@ -151,7 +164,55 @@ fun TvCatalogScreen(
         }
     }
 
+    // Computed once here, not inside `TvCatalogBody`'s own Home branch: the
+    // departments bar below reads this same magazine's own cover to decide
+    // whether it has anything to bleed under, so both need the one instance
+    // rather than two calls that could disagree on the rare tie that falls
+    // right on a day boundary.
+    val homeMagazine =
+        remember(shelves, ready?.watch, ready?.heldIds, selected) {
+            ready?.takeIf { selected == 0 }?.let {
+                magazineHomeOf(
+                    shelves,
+                    it.watch,
+                    editorsChoice = it.watch.editorsChoice,
+                    now = System.currentTimeMillis(),
+                    heldIds = it.heldIds,
+                    recentLimit = HOME_POSTER_ROW_LIMIT,
+                )
+            }
+        }
+    // The magazine header already carries Continue, Next up (as
+    // `resumeCards`) and "Recently added" over the Movies shelf — dropped
+    // here so Home never shows any of the three twice, the same filter the
+    // phone's own `CatalogScreen` applies.
+    val homeRows =
+        remember(shelves, ready?.watch, ready?.heldIds, selected) {
+            if (selected == 0 && ready != null) {
+                homeRowsOf(shelves, ready.watch, ready.heldIds, posterLimit = HOME_POSTER_ROW_LIMIT)
+                    .filterNot { it.title in setOf("Continue", "Next up", "Latest films") }
+            } else {
+                emptyList()
+            }
+        }
+    val homeListState =
+        rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = HomeCacheWindow, behind = HomeCacheWindow) })
+    val hasCover = homeMagazine?.editorial?.cover?.isNotEmpty() == true
+    val density = LocalDensity.current
+    val barHeightPx = remember(density) { with(density) { (TvDepartmentsBarHeight + Overscan.vertical).toPx() } }
+    val blend by remember(hasCover) {
+        derivedStateOf {
+            if (!hasCover) {
+                1f
+            } else {
+                val hero = homeListState.asHeroListState()
+                coverBlend(hero.firstVisibleItemIndex, hero.firstVisibleItemScrollOffset, hero.heroHeightPx, barHeightPx)
+            }
+        }
+    }
+
     TvLibraryChrome(
+        blend = blend,
         pills = if (ready != null) pills else emptyList(),
         selectedPill = nav.selectedPill,
         onSelectPill = nav.onSelectPill,
@@ -205,6 +266,9 @@ fun TvCatalogScreen(
                             wallKey = nav.wallKey,
                             railActive = nav.railActive,
                             railRowFocus = nav.chromeFocus.railRowFocus,
+                            homeListState = homeListState,
+                            homeMagazine = homeMagazine,
+                            homeRows = homeRows,
                             onOpenTitle = onOpenTitle,
                             onPlay = onPlay,
                             onOpenCollection = onOpenCollection,
@@ -214,6 +278,7 @@ fun TvCatalogScreen(
                             onOpenFranchise = onOpenFranchise,
                             onOpenMoviesPage = onOpenMoviesPage,
                             onFinish = onFinish,
+                            onToggleWatchlist = onToggleWatchlist,
                             choose = choose,
                         )
                     }
@@ -226,3 +291,13 @@ fun TvCatalogScreen(
 /** [TvCatalogScreen]'s own default: every previewing caller of this composable that has no rail rows to wire yet passes nothing, and the rail's Settings/System rows harmlessly do nothing rather than crashing on a missing [MenuActions]. */
 private val NoopMenuActions =
     MenuActions(onSystem = {}, onSettings = {}, onUpdate = {}, onTmdbKey = {}, onStartOver = {})
+
+/**
+ * How far past Home's own viewport its `LazyColumn` keeps a section
+ * composed. Six sections at most, none of them a plate wall's own hundreds
+ * — this can afford to be generous enough that every section stays
+ * composed almost all the time on a 540dp screen, which is the mitigation
+ * for `Down` reaching a section the list would otherwise not have decided
+ * to compose yet.
+ */
+private val HomeCacheWindow = 900.dp

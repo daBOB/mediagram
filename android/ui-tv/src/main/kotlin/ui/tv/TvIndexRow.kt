@@ -109,7 +109,14 @@ internal fun TvIndexRow(
             modifier = Modifier.size(22.dp),
         )
         if (expanded) {
-            Column {
+            // Weighted, not left to its own intrinsic width: an unweighted
+            // `Column` in a `Row` measures against the *row's* own max width
+            // rather than what is actually left after the icon, so a long
+            // label ("Continue watching") could size wide enough to push
+            // `trailing`'s own count past this row's `.clip()` bounds —
+            // invisible, not merely uncounted. Weighted, the label always
+            // ellipsizes into whatever room remains instead.
+            Column(modifier = Modifier.weight(1f)) {
                 Text(text = label, style = TvFocus.textStyle(TvTypeScale.body.copy(color = baseColor), focused), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 status?.invoke()
             }

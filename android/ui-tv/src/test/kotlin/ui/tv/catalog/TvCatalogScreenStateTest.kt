@@ -87,13 +87,14 @@ class TvCatalogScreenStateTest {
 
     /** The magazine layout's own "Recently added" replaces the plain grid's "Latest films" on Home — see `TvHome`'s own doc. */
     @Test
-    fun aHomeRowOfTenShowsSixPlatesAndSeeAll() {
+    fun aHomeRowOfTenShowsEightPlatesAndSeeAll() {
         show(ready(films(10)))
 
-        compose.onNodeWithText("Recently added · 10").assertExists()
-        // Newest first: films 9 down to 4 are on the row, 3 down to 0 are not.
-        (4..9).forEach { compose.onNodeWithText("Film $it").assertExists() }
-        (0..3).forEach { compose.onNodeWithText("Film $it").assertDoesNotExist() }
+        compose.onNodeWithText("Recently Added · 10").assertExists()
+        // Newest first, at the magazine layout's own eight-wide poster
+        // limit: films 9 down to 2 are on the row, 1 and 0 are not.
+        (2..9).forEach { compose.onNodeWithText("Film $it").assertExists() }
+        (0..1).forEach { compose.onNodeWithText("Film $it").assertDoesNotExist() }
         compose.onNodeWithText("See all").assertExists()
     }
 
@@ -103,7 +104,7 @@ class TvCatalogScreenStateTest {
 
         compose.onNodeWithText("See all").performSemanticsAction(SemanticsActions.OnClick)
 
-        compose.onNodeWithText("Recently added · 10").assertDoesNotExist()
+        compose.onNodeWithText("Recently Added · 10").assertDoesNotExist()
         compose.onAllNodesWithText("Film 0").fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "Film 0 missing from the Movies shelf" } }
     }
 
@@ -113,8 +114,8 @@ class TvCatalogScreenStateTest {
         val featured = (0 until 4).map { set("film-$it", Kind.MOVIE, "Film $it", addedAt = it.toLong()).copy(backdropPath = "/bd$it", posterPath = "/p$it") }
         show(ready(featured))
 
-        compose.onAllNodesWithText("Cover story", substring = true).fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "no cover story" } }
-        compose.onAllNodesWithText("▶ Watch now").fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "no Watch now on the cover" } }
+        compose.onAllNodesWithText("FEATURED TODAY", substring = true).fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "no cover story" } }
+        compose.onAllNodesWithText("Watch now", substring = true).fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "no Watch now on the cover" } }
     }
 
     /** Past a dozen films, Movies gets its own department front page instead of the plain wall. */
@@ -166,7 +167,10 @@ class TvCatalogScreenStateTest {
     fun coursesOnHomeAreLinesOfTextNotPlates() {
         show(ready(courses(1)))
 
-        compose.onNodeWithText("Course 0 · 1 chapter").assertExists()
+        compose.onNodeWithText("Course 0").assertExists()
+        // Spelled, the same rule the web's own `collectionGrid` counts by —
+        // "one lesson · one chapter", not "1 lesson · 1 chapter".
+        compose.onNodeWithText("one lesson · one chapter").assertExists()
     }
 
     @Test
@@ -223,8 +227,12 @@ class TvCatalogScreenStateTest {
             )
         show(CatalogUiState.Ready(shelvesOf(film + episodes), watch = watch))
 
-        compose.onNodeWithText(resumeLine(stopped)).assertExists()
-        compose.onNodeWithText("Next up").assertExists()
+        // The magazine band's own resume cards hold this line back from
+        // view the same way the phone's own `ResumeCard` does (the progress
+        // bar already draws it) — said only for TalkBack, on the card's
+        // own content description.
+        compose.onNodeWithContentDescription(resumeLine(stopped)).assertExists()
+        compose.onNodeWithContentDescription("Next up").assertExists()
     }
 
     @Test

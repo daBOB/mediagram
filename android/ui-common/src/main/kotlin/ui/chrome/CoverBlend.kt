@@ -15,8 +15,12 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
  * from the viewport), so this tracks the real height on every width class
  * and orientation rather than a fraction of the viewport that only happened
  * to be close to it once.
+ *
+ * Shared by the tablet's own hero-bleeding pages and the television's Home,
+ * over its own magazine cover — both read the same live measurement rather
+ * than each tracking its own scroll delta.
  */
-internal fun coverBlend(
+fun coverBlend(
     firstVisibleItemIndex: Int,
     firstVisibleItemScrollOffset: Int,
     coverHeightPx: Float,
@@ -35,7 +39,7 @@ internal fun coverBlend(
  * (a kept wall, Collections, a plain shelf) — the bar reads that as "start
  * solid", the same as a hero that turned out to have no lead art.
  */
-internal interface HeroListState {
+interface HeroListState {
     val firstVisibleItemIndex: Int
     val firstVisibleItemScrollOffset: Int
 
@@ -43,8 +47,8 @@ internal interface HeroListState {
     val heroHeightPx: Float
 }
 
-/** [HeroListState] over a [LazyListState] — Movies, Documentaries: the hero is item 0 of a plain column. */
-internal fun LazyListState.asHeroListState(): HeroListState =
+/** [HeroListState] over a [LazyListState] — Movies, Documentaries, the television's Home: the hero is item 0 of a plain column. */
+fun LazyListState.asHeroListState(): HeroListState =
     object : HeroListState {
         override val firstVisibleItemIndex get() = this@asHeroListState.firstVisibleItemIndex
         override val firstVisibleItemScrollOffset get() = this@asHeroListState.firstVisibleItemScrollOffset
@@ -52,7 +56,7 @@ internal fun LazyListState.asHeroListState(): HeroListState =
     }
 
 /** [HeroListState] over a [LazyGridState] — Series, Tutorials: the hero is item 0, spanning every column. */
-internal fun LazyGridState.asHeroListState(): HeroListState =
+fun LazyGridState.asHeroListState(): HeroListState =
     object : HeroListState {
         override val firstVisibleItemIndex get() = this@asHeroListState.firstVisibleItemIndex
         override val firstVisibleItemScrollOffset get() = this@asHeroListState.firstVisibleItemScrollOffset

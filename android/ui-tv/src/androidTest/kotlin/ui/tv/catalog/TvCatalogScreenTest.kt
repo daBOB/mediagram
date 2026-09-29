@@ -6,14 +6,15 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
+import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import catalog.CatalogUiState
 import catalog.shelvesOf
-import designsystem.Overscan
 import model.Kind
 import model.MediaSet
 import org.junit.Assert.assertTrue
@@ -25,10 +26,12 @@ import ui.tv.TvTheme
 import ui.tv.profile.TvChosenProfile
 
 /**
- * The D-pad paths between the masthead and Home, which only run true on a
- * real window manager — what composes where is proven without one in
- * `TvCatalogScreenStateTest`. Home's first row here is "Latest films",
- * newest first, so "Film 9" is its first plate.
+ * The D-pad paths through the bar, the rail and Home, which only run true
+ * on a real window manager — what composes where is proven without one in
+ * `TvCatalogScreenStateTest`. Home's own first section here is Recently
+ * added, newest first (`films(10)` carries no backdrop or poster data, so
+ * the cover, the features and Continue all draw nothing) — "Film 9" is its
+ * first poster.
  */
 @RunWith(AndroidJUnit4::class)
 class TvCatalogScreenTest {
@@ -37,99 +40,77 @@ class TvCatalogScreenTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
     @Test
-    fun homeFocusesItsFirstPlateAsSoonAsItAppears() {
+    fun launchFocusLandsOnHomesFirstPoster() {
         show()
 
         waitUntilFocused("Film 9")
     }
 
+    /** The plan's own rule: pressing a pill selects its department but leaves the remote on the pill, not on the new wall's own first plate. */
     @Test
-    fun upFromTheTopRowReturnsToTheMasthead() {
-        show()
-        waitUntilFocused("Film 9")
-
-        compose.onNodeWithText("Film 9").performKeyInput { pressKey(Key.DirectionUp) }
-
-        waitUntilFocused("Home")
-    }
-
-    /** A shelf wall's top row sits under the masthead as Home's does, and Up from it goes the same way. */
-    @Test
-    fun upFromAShelfWallsTopRowReturnsToTheMasthead() {
+    fun pillPressKeepsTheRemoteOnThePillAndDownEntersThePage() {
         show()
         waitUntilFocused("Film 9")
         compose.onNodeWithText("Film 9").performKeyInput { pressKey(Key.DirectionUp) }
         waitUntilFocused("Home")
         compose.onNodeWithText("Home").performKeyInput { pressKey(Key.DirectionRight) }
         waitUntilFocused("Movies")
+
         compose.onNodeWithText("Movies").performKeyInput { pressKey(Key.DirectionCenter) }
+
+        waitUntilFocused("Movies")
+        compose.onNode(hasText("Film", substring = true) and isFocused()).assertDoesNotExist()
+
+        compose.onNodeWithText("Movies").performKeyInput { pressKey(Key.DirectionDown) }
+
         compose.waitUntil(timeoutMillis = 5_000) {
             compose.onAllNodes(isFocused() and hasText("Film", substring = true)).fetchSemanticsNodes().isNotEmpty()
         }
-
-        compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionUp) }
-
-        waitUntilFocused("Movies")
     }
 
     @Test
-    fun downFromTheMastheadLandsOnTheFirstPlateOfTheFirstRow() {
+    fun leftAtTheContentsLeftEdgeOpensTheFullRail() {
         show()
         waitUntilFocused("Film 9")
-        compose.onNodeWithText("Film 9").performKeyInput { pressKey(Key.DirectionUp) }
+
+        compose.onNodeWithText("Film 9").performKeyInput { pressKey(Key.DirectionLeft) }
+
+        // The rail opens over the content the moment the remote reaches it
+        // — its own wordmark, hidden while collapsed, is what proves that.
+        compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodesWithText("mediagram").fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    @Test
+    fun backWalksFromContentToThePillThenToTheRail() {
+        show()
+        waitUntilFocused("Film 9")
+
+        Espresso.pressBack()
         waitUntilFocused("Home")
 
-        compose.onNodeWithText("Home").performKeyInput { pressKey(Key.DirectionDown) }
-
-        waitUntilFocused("Film 9")
+        Espresso.pressBack()
+        // No pill was ever pressed here, so the rail's own active row is
+        // My List, the kept row a viewer on the Home pill has never left —
+        // proven by the wordmark, hidden until the rail actually opens.
+        compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodesWithText("mediagram").fetchSemanticsNodes().isNotEmpty() }
     }
 
     @Test
-    fun rightAlongARowReachesSeeAllAfterTheSixthPlate() {
+    fun rightAlongARowReachesSeeAllAfterTheEighthPoster() {
         show()
         waitUntilFocused("Film 9")
 
-        repeat(6) { compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionRight) } }
+        repeat(8) { compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionRight) } }
 
         waitUntilFocused("See all")
     }
 
-    /**
-     * Every shelf the library can have, so the masthead is as full as it
-     * gets: the viewer's name at its far end must still be on screen, not
-     * pushed past the edge by the tabs before it.
-     */
+    /** The avatar carries the viewer's own initial, not the full name — phase 01's own choice, proven here on a real window. */
     @Test
-    fun theViewersNameIsOnScreenBesideAFullMasthead() {
-        show(films(10) + episodes() + lessons(), profileName = "andre")
+    fun theAvatarShowsTheViewersInitial() {
+        show(films(2), profileName = "andre")
 
-        compose.onNodeWithText("andre").assertIsDisplayed()
-        // assertIsDisplayed passes on the merged entry while only its
-        // leading rule is on screen, and the clipped text beside it reports
-        // bounds of nothing at all. So each label's visible width has to be
-        // its whole laid-out width, ending inside the overscan-safe edge.
-        val safeRight = compose.onRoot().fetchSemanticsNode().boundsInWindow.right -
-            with(compose.density) { Overscan.horizontal.toPx() }
-        for (text in listOf("andre", "Collections")) {
-            val node = compose.onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode()
-            val shown = node.boundsInWindow
-            assertTrue("$text shows ${shown.width} of ${node.size.width}px", shown.width >= node.size.width - 1f)
-            assertTrue("$text ends at ${shown.right}, past the safe edge at $safeRight", shown.right <= safeRight + 1f)
-        }
-    }
-
-    @Test
-    fun rightAlongTheMastheadReachesTheViewersName() {
-        show(films(10) + episodes() + lessons(), profileName = "andre")
-        waitUntilFocused("Film 9")
-        compose.onNodeWithText("Film 9").performKeyInput { pressKey(Key.DirectionUp) }
-        waitUntilFocused("Home")
-
-        // Home, four shelves (Documentaries is always among them, even
-        // holding nothing here), four kept entries: nine steps to the name.
-        repeat(9) { compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionRight) } }
-
-        waitUntilFocused("andre")
+        compose.onNodeWithContentDescription("Who's watching: andre").assertIsDisplayed()
     }
 
     private fun show(
@@ -157,10 +138,6 @@ class TvCatalogScreenTest {
     }
 
     private fun films(count: Int) = (0 until count).map { set("film-$it", Kind.MOVIE, "Film $it", null, it.toLong()) }
-
-    private fun episodes() = listOf(set("episode-0", Kind.EPISODE, "Pilot", "A Show", 0))
-
-    private fun lessons() = listOf(set("lesson-0", Kind.TUTORIAL, "Lesson", "A Course", 0))
 
     private fun set(
         id: String,

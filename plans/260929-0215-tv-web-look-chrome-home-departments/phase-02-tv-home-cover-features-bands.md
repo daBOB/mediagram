@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: "TV Home body: cover, features, bands, shelves"
-status: pending
+status: in-review
 priority: P2
 effort: 10h
 dependencies: [1]
@@ -154,15 +154,15 @@ Delete
 
 ## Todo
 
-- [ ] shared lifts (blend, scrims, spelled counts, feature labels); ui-mobile tests green
-- [ ] homeTargetOf + test
-- [ ] cover: slide, actions, focus-selecting dots, focus-held rotation, setId crossfade
-- [ ] features, Continue band + quote, Recent band + This month, series strip, course list
-- [ ] LazyColumn Home, hoisted state, bar blend over the cover
-- [ ] + My List wiring; old files deleted
-- [ ] tests, check.sh green
-- [ ] box shots vs tablet/web; R1–R2 benchmark clean
-- [ ] version, changelog, commit
+- [x] shared lifts (blend, scrims, spelled counts, feature labels); ui-mobile tests green
+- [x] homeTargetOf + test
+- [x] cover: slide, actions, focus-selecting dots, focus-held rotation, setId crossfade
+- [x] features, Continue band + quote, Recent band + This month, series strip, course list
+- [x] LazyColumn Home, hoisted state, bar blend over the cover
+- [x] + My List wiring; old files deleted
+- [x] tests, check.sh green
+- [ ] box shots vs tablet/web; R1–R2 benchmark clean — left for the lead, see report
+- [x] version, changelog, commit
 
 ## Success criteria
 

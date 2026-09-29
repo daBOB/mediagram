@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import catalog.Feature
-import catalog.FeatureKind
+import catalog.label
 import coil3.compose.AsyncImage
 import designsystem.Eyebrow
 import model.Kind
@@ -41,15 +41,6 @@ import java.io.File
 
 /** The features block's own outer bounds, for a test to check it lands under the cover, not behind it. */
 internal const val HOME_FEATURES_TEST_TAG = "home-features"
-
-/** The label naming the rule that chose the title — `home-features.js`'s `FEATURE_LABELS`, verbatim. */
-private fun labelFor(kind: FeatureKind): String =
-    when (kind) {
-        FeatureKind.EDITOR -> "Editor's choice"
-        FeatureKind.STAFF -> "Staff pick"
-        FeatureKind.TRENDING -> "Trending on TMDB"
-        FeatureKind.NEW -> "New in the library"
-    }
 
 /**
  * The features under the cover: each one title over its own backdrop, a
@@ -187,7 +178,7 @@ private fun FeatureCard(
                     .widthIn(max = 416.dp)
                     .padding(vertical = 36.dp, horizontal = fluid(24f, 0.026f, 40f, width.value).dp),
         ) {
-            Text(text = labelFor(feature.kind).uppercase(), style = Eyebrow, color = OnImage2, modifier = Modifier.padding(bottom = 18.dp))
+            Text(text = feature.kind.label.uppercase(), style = Eyebrow, color = OnImage2, modifier = Modifier.padding(bottom = 18.dp))
             val titleSize = if (secondCard) fluid(32f, 0.03f, 49.6f, width.value) else fluid(28.8f, 0.028f, 46.4f, width.value)
             Text(
                 text = if (secondCard) title else title.uppercase(),

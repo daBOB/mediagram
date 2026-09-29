@@ -52,15 +52,22 @@ class TvLibraryRemoteTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
     @Test
-    fun backAtTheRootGoesToTheMastheadThenLeavesTheApp() {
+    fun backAtTheRootWalksContentToThePillToTheRailThenLeavesTheApp() {
         showRoot(restoreKey = null)
         waitUntilFocused("Film 9")
 
         Espresso.pressBack()
         waitUntilFocused("Home")
-        // Held here: once the second Back closes it, the rule has no
-        // activity left to hand out.
         val activity = compose.activity
+        assertFalse(activity.isFinishing)
+
+        Espresso.pressBack()
+        // The rail — Home's own pill has no wall of its own to fall back
+        // to, so this lands on My List, the rail's own default active row;
+        // the wordmark, hidden until the rail actually opens, is what
+        // proves the remote reached it rather than the app already
+        // closing on this same Back.
+        compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasText("mediagram")).fetchSemanticsNodes().isNotEmpty() }
         assertFalse(activity.isFinishing)
 
         Espresso.pressBackUnconditionally()
