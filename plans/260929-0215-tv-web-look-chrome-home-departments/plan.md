@@ -47,7 +47,7 @@ helpers, scrims and tokens are shared, never re-derived**.
 
 | # | Phase | Effort | Status |
 |---|-------|--------|--------|
-| 01 | [Chrome: rail, departments bar, focus model](phase-01-tv-chrome-rail-departments-bar-focus.md) | 8h | pending |
+| 01 | [Chrome: rail, departments bar, focus model](phase-01-tv-chrome-rail-departments-bar-focus.md) | 8h | completed |
 | 02 | [Home body: cover, features, bands, shelves](phase-02-tv-home-cover-features-bands.md) | 10h | pending |
 | 03 | [Department pages: heroes, rows, Anime, Documentaries](phase-03-tv-department-pages-heroes-rows.md) | 8h | pending |
 | 04 | [Home kept alive, measured; device walk; docs](phase-04-tv-home-kept-alive-measure-docs.md) | 6h | pending |

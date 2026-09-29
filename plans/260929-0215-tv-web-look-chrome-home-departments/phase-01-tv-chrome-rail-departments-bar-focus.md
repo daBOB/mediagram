@@ -1,7 +1,7 @@
 ---
 phase: 1
 title: "TV chrome: rail, departments bar, focus model"
-status: pending
+status: completed
 priority: P2
 effort: 8h
 dependencies: []
@@ -181,15 +181,15 @@ Delete
 
 ## Todo
 
-- [ ] baseline measurements (benchmark + debug) recorded
-- [ ] ChromeCounts / RailItem moved, ui-mobile + feature tests green
-- [ ] TvFocus shapes; TvIndexRow shared with Settings
-- [ ] rail (collapsed/open, counts, tally), bar (pills, search, avatar, ⋮)
-- [ ] chrome regions, Left/Right/Up/Down routing, Back chain, padding seam
-- [ ] pill-press keeps focus; rail restore keys; menu page trimmed; masthead deleted
-- [ ] tests updated/added, check.sh green
-- [ ] box screenshots vs tablet; R1 still clean
-- [ ] docs, version, changelog, commit
+- [x] baseline measurements recorded (benchmark; debug numbers are in the decoder-freeze closeout)
+- [x] ChromeCounts / RailItem moved, ui-mobile + feature tests green
+- [x] TvFocus shapes; TvIndexRow shared with Settings
+- [x] rail (collapsed/open, counts, tally), bar (pills, search, avatar, ⋮)
+- [x] chrome regions, Left/Right/Up/Down routing, Back chain, padding seam
+- [x] pill-press keeps focus; rail restore keys; menu page trimmed; masthead deleted
+- [x] tests updated/added, check.sh green
+- [x] box screenshots vs tablet; R1 still clean (0.82.1; see reports/lead-verification-phase-01-on-box.md)
+- [x] docs, version, changelog, commit
 
 ## Success criteria
 
